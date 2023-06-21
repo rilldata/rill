@@ -343,6 +343,17 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 	return res, nil
 }
 
+func (c *connection) UpdateProjectVariables(ctx context.Context, id string, prodVariables map[string]string) (*database.Project, error) {
+	res := &database.Project{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE projects SET prod_variables=$1, updated_on=now() WHERE id=$2 RETURNING *",
+		prodVariables, id,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("project", err)
+	}
+	return res, nil
+}
+
 func (c *connection) CountProjectsForOrganization(ctx context.Context, orgID string) (int, error) {
 	var count int
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT COUNT(*) FROM projects WHERE org_id = $1", orgID).Scan(&count)

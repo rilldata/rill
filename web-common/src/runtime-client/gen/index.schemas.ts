@@ -224,8 +224,6 @@ export type RuntimeServiceListCatalogEntriesParams = {
   type?: RuntimeServiceListCatalogEntriesType;
 };
 
-export type RuntimeServiceEditInstanceBodyVariables = { [key: string]: string };
-
 /**
  * Request message for RuntimeService.EditInstance.
 See message Instance for field descriptions.
@@ -236,8 +234,18 @@ export type RuntimeServiceEditInstanceBody = {
   repoDriver?: string;
   repoDsn?: string;
   embedCatalog?: boolean;
-  variables?: RuntimeServiceEditInstanceBodyVariables;
   ingestionLimitBytes?: string;
+};
+
+export type RuntimeServiceEditInstanceVariablesBodyVariables = {
+  [key: string]: string;
+};
+
+/**
+ * Request message for RuntimeService.EditInstanceVariables.
+ */
+export type RuntimeServiceEditInstanceVariablesBody = {
+  variables?: RuntimeServiceEditInstanceVariablesBodyVariables;
 };
 
 export type RuntimeServiceDeleteInstanceBody = {
@@ -436,6 +444,16 @@ export interface V1RenameFileResponse {
   [key: string]: any;
 }
 
+export interface V1RenameFileAndReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
+}
+
 export interface V1RenameFileAndReconcileRequest {
   instanceId?: string;
   fromPath?: string;
@@ -500,16 +518,6 @@ Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: ReconcileErrorCharLocation;
   endLocation?: ReconcileErrorCharLocation;
-}
-
-export interface V1RenameFileAndReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
 }
 
 export interface V1ReconcileResponse {
@@ -750,12 +758,6 @@ export interface V1ListFilesResponse {
   paths?: string[];
 }
 
-export interface V1Example {
-  name?: string;
-  title?: string;
-  description?: string;
-}
-
 export interface V1ListExamplesResponse {
   examples?: V1Example[];
 }
@@ -859,6 +861,16 @@ export const V1ExportFormat = {
   EXPORT_FORMAT_CSV: "EXPORT_FORMAT_CSV",
   EXPORT_FORMAT_XLSX: "EXPORT_FORMAT_XLSX",
 } as const;
+
+export interface V1Example {
+  name?: string;
+  title?: string;
+  description?: string;
+}
+
+export interface V1EditInstanceVariablesResponse {
+  instance?: V1Instance;
+}
 
 export interface V1EditInstanceResponse {
   instance?: V1Instance;

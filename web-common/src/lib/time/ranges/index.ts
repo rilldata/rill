@@ -14,7 +14,6 @@ import {
 } from "../grains";
 import {
   getDurationMultiple,
-  getEndOfPeriod,
   getOffset,
   getStartOfPeriod,
   getTimeWidth,
@@ -31,19 +30,6 @@ import {
 } from "../types";
 import { removeTimezoneOffset } from "../../formatters";
 
-/**
- * Returns true if the range defined by start and end is completely
- * inside the range defined by otherStart and otherEnd.
- */
-export function isRangeInsideOther(
-  start: Date,
-  end: Date,
-  otherStart: Date,
-  otherEnd: Date
-) {
-  return otherStart >= start && otherEnd <= end;
-}
-
 // Loop through all presets to check if they can be a part of subset of given start and end date
 export function getChildTimeRanges(
   start: Date,
@@ -58,12 +44,15 @@ export function getChildTimeRanges(
   for (const timePreset in ranges) {
     const timeRange = ranges[timePreset];
     if (timeRange.rangePreset == RangePresetType.ALL_TIME) {
+      // End date is exclusive, so we need to add 1 millisecond to it
+      const exclusiveEndDate = new Date(end.getTime() + 1);
+
       // All time is always an option
       timeRanges.push({
         name: timePreset,
         label: timeRange.label,
         start,
-        end,
+        end: exclusiveEndDate,
       });
     } else {
       const timeRangeDates = relativePointInTimeToAbsolute(
@@ -136,7 +125,7 @@ export function convertTimeRangePreset(
     return {
       name: timeRangePreset,
       start,
-      end,
+      end: new Date(end.getTime() + 1),
     };
   }
   const timeRange = DEFAULT_TIME_RANGES[timeRangePreset];
@@ -158,7 +147,13 @@ export function convertTimeRangePreset(
  * NOTE: this is primarily used for the time range picker. We might want to
  * colocate the code w/ the component.
  */
-export const prettyFormatTimeRange = (start: Date, end: Date): string => {
+export const prettyFormatTimeRange = (
+  start: Date,
+  end: Date,
+  timePreset: TimeRangeType
+): string => {
+  const isAllTime = timePreset === TimeRangePreset.ALL_TIME;
+  const isCustom = timePreset === TimeRangePreset.CUSTOM;
   if (!start && end) {
     return `- ${end}`;
   }
@@ -177,18 +172,17 @@ export const prettyFormatTimeRange = (start: Date, end: Date): string => {
   const startDate = start.getUTCDate(); // use start.getDate() for local timezone
   const startMonth = start.getUTCMonth();
   const startYear = start.getUTCFullYear();
-  const endDate = end.getUTCDate();
-  const endMonth = end.getUTCMonth();
-  const endYear = end.getUTCFullYear();
+  let endDate = end.getUTCDate();
+  let endMonth = end.getUTCMonth();
+  let endYear = end.getUTCFullYear();
 
-  // day is the same
   if (
     startDate === endDate &&
     startMonth === endMonth &&
     startYear === endYear
   ) {
     return `${start.toLocaleDateString(undefined, {
-      month: "long",
+      month: "short",
       timeZone: TIMEZONE,
     })} ${startDate}, ${startYear} (${start
       .toLocaleString(undefined, {
@@ -207,10 +201,20 @@ export const prettyFormatTimeRange = (start: Date, end: Date): string => {
       .replace(/\s/g, "")})`;
   }
 
-  // month is the same
-  if (startMonth === endMonth && startYear === endYear) {
+  const timeRangeDurationMs = getTimeWidth(start, end);
+  if (
+    timeRangeDurationMs <= durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
+  ) {
+    if (isCustom) {
+      // For custom time ranges, we want to show just the date
+      return `${start.toLocaleDateString(undefined, {
+        month: "short",
+        timeZone: TIMEZONE,
+      })} ${startDate}`;
+    }
+
     return `${start.toLocaleDateString(undefined, {
-      month: "long",
+      month: "short",
       timeZone: TIMEZONE,
     })} ${startDate}-${endDate}, ${startYear} (${start
       .toLocaleString(undefined, {
@@ -228,14 +232,38 @@ export const prettyFormatTimeRange = (start: Date, end: Date): string => {
       })
       .replace(/\s/g, "")})`;
   }
+
+  let inclusiveEndDate;
+
+  if (isAllTime) {
+    inclusiveEndDate = new Date(end);
+  } else {
+    // beyond this point, we're dealing with time ranges that are full day periods
+    // since time range is exclusive at the end, we need to subtract a day
+    inclusiveEndDate = new Date(
+      end.getTime() - durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
+    );
+    endDate = inclusiveEndDate.getUTCDate();
+    endMonth = inclusiveEndDate.getUTCMonth();
+    endYear = inclusiveEndDate.getUTCFullYear();
+  }
+
+  // month is the same
+  if (startMonth === endMonth && startYear === endYear) {
+    return `${start.toLocaleDateString(undefined, {
+      month: "short",
+      timeZone: TIMEZONE,
+    })} ${startDate}-${endDate}, ${startYear}`;
+  }
+
   // year is the same
   if (startYear === endYear) {
     return `${start.toLocaleDateString(undefined, {
-      month: "long",
+      month: "short",
       day: "numeric",
       timeZone: TIMEZONE,
-    })} - ${end.toLocaleDateString(undefined, {
-      month: "long",
+    })} - ${inclusiveEndDate.toLocaleDateString(undefined, {
+      month: "short",
       day: "numeric",
       timeZone: TIMEZONE,
     })}, ${startYear}`;
@@ -243,14 +271,14 @@ export const prettyFormatTimeRange = (start: Date, end: Date): string => {
   // year is different
   const dateFormatOptions: Intl.DateTimeFormatOptions = {
     year: "numeric",
-    month: "long",
+    month: "short",
     day: "numeric",
     timeZone: TIMEZONE,
   };
   return `${start.toLocaleDateString(
     undefined,
     dateFormatOptions
-  )} - ${end.toLocaleDateString(undefined, dateFormatOptions)}`;
+  )} - ${inclusiveEndDate.toLocaleDateString(undefined, dateFormatOptions)}`;
 };
 
 /** Get extra data points for extrapolating the chart on both ends */
@@ -259,7 +287,7 @@ export function getAdjustedFetchTime(
   endTime: Date,
   interval: V1TimeGrain
 ) {
-  if (!startTime || !endTime) return undefined;
+  if (!startTime || !endTime) return { start: startTime, end: endTime };
   const offsetedStartTime = getOffset(
     startTime,
     TIME_GRAIN[interval].duration,
@@ -293,8 +321,7 @@ export function getAdjustedFetchTime(
 export function getAdjustedChartTime(
   start: Date,
   end: Date,
-  interval: V1TimeGrain,
-  boundEnd: Date
+  interval: V1TimeGrain
 ) {
   if (!start || !end)
     return {
@@ -304,13 +331,10 @@ export function getAdjustedChartTime(
 
   const grainDuration = TIME_GRAIN[interval].duration;
 
-  // Only plot the chart till the last period containing a datum
-  let adjustedEnd = new Date(boundEnd);
-  adjustedEnd = getEndOfPeriod(adjustedEnd, grainDuration);
+  let adjustedEnd = new Date(end);
 
-  // Remove half extra period with no data from chart
-  const halfPeriod = getDurationMultiple(grainDuration, 0.4);
-  adjustedEnd = getOffset(adjustedEnd, halfPeriod, TimeOffsetType.SUBTRACT);
+  const offsetDuration = getDurationMultiple(grainDuration, 0.45);
+  adjustedEnd = getOffset(adjustedEnd, offsetDuration, TimeOffsetType.SUBTRACT);
 
   adjustedEnd = removeTimezoneOffset(adjustedEnd);
 

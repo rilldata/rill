@@ -41,47 +41,68 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 				// prompt for name from user
 				name = cmdutil.SelectPrompt("Select project", names, "")
 			}
-
-			resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: cfg.Org, Name: name})
-			if err != nil {
-				return err
+			if name == "" {
+				return fmt.Errorf("pass project name as argument or with --project flag")
 			}
 
-			proj := resp.Project
+			req := &adminv1.UpdateProjectRequest{
+				OrganizationName: cfg.Org,
+				Name:             name,
+			}
+			promptFlagValues := cfg.Interactive
+			if cmd.Flags().Changed("prod-slots") {
+				promptFlagValues = false
+				prodSlots := int64(slots)
+				req.ProdSlots = &prodSlots
+			}
+			if cmd.Flags().Changed("region") {
+				promptFlagValues = false
+				req.Region = &region
+			}
+			if cmd.Flags().Changed("description") {
+				promptFlagValues = false
+				req.Description = &description
+			}
+			if cmd.Flags().Changed("prod-branch") {
+				promptFlagValues = false
+				req.ProdBranch = &prodBranch
+			}
+			if cmd.Flags().Changed("public") {
+				promptFlagValues = false
+				req.Public = &public
+			}
 
-			// Set the default values for edit flags with current values for project
-			cmd.Flag("description").DefValue = proj.Description
-			cmd.Flag("prod-branch").DefValue = proj.ProdBranch
-			cmd.Flag("public").DefValue = fmt.Sprintf("%v", proj.Public)
-			cmd.Flag("prod_ttl_seconds").DefValue = fmt.Sprintf("%v", proj.ProdTtlSeconds)
+			if cmd.Flags().Changed("prod-ttl-seconds") {
+				promptFlagValues = false
+				req.ProdTtlSeconds = &prodTTL
+			}
 
-			if cfg.Interactive {
-				err = cmdutil.SetFlagsByInputPrompts(*cmd, "description", "prod-branch", "public", "prod_ttl_seconds")
+			if promptFlagValues {
+				resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: cfg.Org, Name: name})
 				if err != nil {
 					return err
 				}
+				proj := resp.Project
+
+				description, err = cmdutil.InputPrompt("Enter the description", proj.Description)
+				if err != nil {
+					return err
+				}
+				req.Description = &description
+
+				prodBranch, err = cmdutil.InputPrompt("Enter the production branch", proj.ProdBranch)
+				if err != nil {
+					return err
+				}
+				req.ProdBranch = &prodBranch
+
+				public = cmdutil.ConfirmPrompt("Make project public", "", proj.Public)
+				req.Public = &public
 			}
 
-			if !cmd.Flags().Changed("prod-slots") {
-				slots = int(proj.ProdSlots)
-			}
-			if !cmd.Flags().Changed("region") {
-				region = proj.Region
-			}
 			// Todo: Need to add prompt for repo_path <path_for_monorepo>
 
-			updatedProj, err := client.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
-				Id:               proj.Id,
-				OrganizationName: cfg.Org,
-				Name:             proj.Name,
-				Description:      description,
-				Public:           public,
-				ProdBranch:       prodBranch,
-				GithubUrl:        proj.GithubUrl,
-				ProdSlots:        int64(slots),
-				Region:           region,
-				ProdTtlSeconds:   prodTTL,
-			})
+			updatedProj, err := client.UpdateProject(ctx, req)
 			if err != nil {
 				return err
 			}
@@ -99,7 +120,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 	editCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
 	editCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 	editCmd.Flags().IntVar(&slots, "prod-slots", 0, "Slots to allocate for production deployments (default: current slots)")
-	editCmd.Flags().Int64Var(&prodTTL, "prod_ttl_seconds", 0, "Prod deployment TTL in seconds")
+	editCmd.Flags().Int64Var(&prodTTL, "prod-ttl-seconds", 0, "Prod deployment TTL in seconds")
 	editCmd.Flags().StringVar(&region, "region", "", "Deployment region (default: current region)")
 	if !cfg.IsDev() {
 		if err := editCmd.Flags().MarkHidden("prod-slots"); err != nil {
