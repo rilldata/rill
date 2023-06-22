@@ -28,7 +28,7 @@
   }
 
   .ui-copy {
-    @apply text-gray-700 dark:text-white;
+    @apply text-gray-900 dark:text-white;
   }
 
   .ui-copy-dashboard-header {
@@ -41,7 +41,7 @@
   }
 
   .ui-copy-strong {
-    @apply text-gray-700 dark:text-white font-semibold;
+    @apply text-gray-900 dark:text-white font-semibold;
   }
 
   .ui-copy-icon {
