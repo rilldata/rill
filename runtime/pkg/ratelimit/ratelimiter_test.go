@@ -6,6 +6,7 @@ import (
 	"github.com/alicebob/miniredis"
 	"github.com/go-redis/redis_rate/v10"
 	"github.com/redis/go-redis/v9"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -36,4 +37,12 @@ func TestRequestRateLimiter_Limit(t *testing.T) {
 			t.Errorf("QuotaExceededError expected: %v", err)
 		}
 	})
+}
+
+func TestAuthReqLimitKey(t *testing.T) {
+	assert.Equal(t, "auth:TestMethod:authID", AuthLimitKey("TestMethod", "authID"))
+}
+
+func TestAnonReqLimitKey(t *testing.T) {
+	assert.Equal(t, "anon:TestMethod:192.168.0.1", AnonLimitKey("TestMethod", "192.168.0.1"))
 }

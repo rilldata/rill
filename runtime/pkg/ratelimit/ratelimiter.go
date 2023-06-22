@@ -8,6 +8,7 @@ import (
 	"math"
 )
 
+// Limiter returns an error if quota per key is exceeded.
 type Limiter interface {
 	Limit(ctx context.Context, limitKey string, limit redis_rate.Limit) error
 }
@@ -74,4 +75,12 @@ func (e QuotaExceededError) Error() string {
 
 func NewQuotaExceededError(message string) QuotaExceededError {
 	return QuotaExceededError{message}
+}
+
+func AuthLimitKey(methodName, authID string) string {
+	return fmt.Sprintf("auth:%s:%s", methodName, authID)
+}
+
+func AnonLimitKey(methodName, peer string) string {
+	return fmt.Sprintf("anon:%s:%s", methodName, peer)
 }

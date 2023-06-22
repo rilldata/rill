@@ -121,7 +121,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			grpc_auth.StreamServerInterceptor(checkUserAgent),
 			grpc_validator.StreamServerInterceptor(),
 			s.authenticator.StreamServerInterceptor(),
-			limiterStreamServerInterceptor(s.limiter, ratelimit.Default, ratelimit.Default),
+			middleware.RequestStreamServerInterceptor(s.checkRateLimit),
 		),
 		grpc.ChainUnaryInterceptor(
 			middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
@@ -131,7 +131,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			grpc_auth.UnaryServerInterceptor(checkUserAgent),
 			grpc_validator.UnaryServerInterceptor(),
 			s.authenticator.UnaryServerInterceptor(),
-			limiterUnaryServerInterceptor(s.limiter, ratelimit.Default, ratelimit.Default),
+			middleware.RequestUnaryServerInterceptor(s.checkRateLimit),
 		),
 	)
 
@@ -338,4 +338,22 @@ func newURLRegistry(opts *Options) *externalURLs {
 		githubAuthRetry:       urlutil.MustJoinURL(opts.FrontendURL, "/-/github/connect/retry-auth"),
 		authLogin:             urlutil.MustJoinURL(opts.ExternalURL, "/auth/login"),
 	}
+}
+
+func (s *Server) checkRateLimit(md middleware.Metadata) error {
+	var limitKey string
+	if auth.IsAnonymous(md.Ctx) {
+		limitKey = ratelimit.AnonLimitKey(md.Method, md.Peer)
+	} else {
+		limitKey = ratelimit.AuthLimitKey(md.Method, auth.GetClaims(md.Ctx).OwnerID())
+	}
+
+	if err := s.limiter.Limit(md.Ctx, limitKey, ratelimit.Default); err != nil {
+		if errors.As(err, &ratelimit.QuotaExceededError{}) {
+			return status.Errorf(codes.ResourceExhausted, err.Error())
+		}
+		return err
+	}
+
+	return nil
 }

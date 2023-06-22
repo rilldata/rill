@@ -107,7 +107,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			errorMappingStreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
 			auth.StreamServerInterceptor(s.aud),
-			limiterStreamServerInterceptor(s.limiter, ratelimit.Public, ratelimit.Unlimited),
+			middleware.RequestStreamServerInterceptor(s.checkRateLimit),
 		),
 		grpc.ChainUnaryInterceptor(
 			middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
@@ -116,7 +116,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			errorMappingUnaryServerInterceptor(),
 			grpc_validator.UnaryServerInterceptor(),
 			auth.UnaryServerInterceptor(s.aud),
-			limiterUnaryServerInterceptor(s.limiter, ratelimit.Public, ratelimit.Unlimited),
+			middleware.RequestUnaryServerInterceptor(s.checkRateLimit),
 		),
 	)
 
@@ -276,4 +276,18 @@ func mapGRPCError(err error) error {
 		return status.Error(codes.Canceled, err.Error())
 	}
 	return err
+}
+
+func (s *Server) checkRateLimit(md middleware.Metadata) error {
+	if auth.IsAnonymous(md.Ctx) {
+		limitKey := ratelimit.AnonLimitKey(md.Method, md.Peer)
+		if err := s.limiter.Limit(md.Ctx, limitKey, ratelimit.Public); err != nil {
+			if errors.As(err, &ratelimit.QuotaExceededError{}) {
+				return status.Errorf(codes.ResourceExhausted, err.Error())
+			}
+			return err
+		}
+	}
+
+	return nil
 }

@@ -1,11 +1,11 @@
 package auth
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"fmt"
-	"github.com/go-redis/redis_rate/v10"
+	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"net/http"
 	"net/url"
@@ -28,24 +28,37 @@ const (
 // The mux must be served on the ExternalURL of the Authenticator since the logic in these handlers relies on knowing the full external URIs.
 // Note that these are not gRPC handlers, just regular HTTP endpoints that we mount on the gRPC-gateway mux.
 func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux, limiter ratelimit.Limiter) {
+	// checkLimit needs access to limiter
+	var checkLimit = func(md middleware.Metadata) error {
+		if IsAnonymous(md.Ctx) {
+			limitKey := ratelimit.AnonLimitKey(md.Method, md.Peer)
+			if err := limiter.Limit(md.Ctx, limitKey, ratelimit.Sensitive); err != nil {
+				if errors.As(err, &ratelimit.QuotaExceededError{}) {
+					return middleware.NewHTTPError(http.StatusTooManyRequests, err.Error())
+				}
+				return err
+			}
+		}
+		return nil
+	}
 	// TODO: Add helper utils to clean this up
 	inner := http.NewServeMux()
 	inner.Handle("/auth/login", otelhttp.WithRouteTag("/auth/login",
-		LimiterHTTPHandler("/auth/login", limiter, ratelimit.Sensitive, http.HandlerFunc(a.authLogin))))
+		middleware.RequestHTTPHandler("/auth/login", checkLimit, http.HandlerFunc(a.authLogin))))
 	inner.Handle("/auth/callback", otelhttp.WithRouteTag("/auth/callback",
-		LimiterHTTPHandler("/auth/callback", limiter, ratelimit.Sensitive, http.HandlerFunc(a.authLoginCallback))))
+		middleware.RequestHTTPHandler("/auth/callback", checkLimit, http.HandlerFunc(a.authLoginCallback))))
 	inner.Handle("/auth/with-token", otelhttp.WithRouteTag("/auth/with-token",
-		LimiterHTTPHandler("/auth/with-token", limiter, ratelimit.Sensitive, http.HandlerFunc(a.authWithToken))))
+		middleware.RequestHTTPHandler("/auth/with-token", checkLimit, http.HandlerFunc(a.authWithToken))))
 	inner.Handle("/auth/logout", otelhttp.WithRouteTag("/auth/logout",
-		LimiterHTTPHandler("/auth/logout", limiter, ratelimit.Sensitive, http.HandlerFunc(a.authLogout))))
+		middleware.RequestHTTPHandler("/auth/logout", checkLimit, http.HandlerFunc(a.authLogout))))
 	inner.Handle("/auth/logout/callback", otelhttp.WithRouteTag("/auth/logout/callback",
-		LimiterHTTPHandler("/auth/logout/callback", limiter, ratelimit.Sensitive, http.HandlerFunc(a.authLogoutCallback))))
+		middleware.RequestHTTPHandler("/auth/logout/callback", checkLimit, http.HandlerFunc(a.authLogoutCallback))))
 	inner.Handle("/auth/oauth/device_authorization", otelhttp.WithRouteTag("/auth/oauth/device_authorization",
-		LimiterHTTPHandler("/auth/oauth/device_authorization", limiter, ratelimit.Sensitive, http.HandlerFunc(a.handleDeviceCodeRequest))))
+		middleware.RequestHTTPHandler("/auth/oauth/device_authorization", checkLimit, http.HandlerFunc(a.handleDeviceCodeRequest))))
 	inner.Handle("/auth/oauth/device", otelhttp.WithRouteTag("/auth/oauth/device",
-		LimiterHTTPHandler("/auth/oauth/device", limiter, ratelimit.Sensitive, a.HTTPMiddleware(http.HandlerFunc(a.handleUserCodeConfirmation))))) // NOTE: Uses auth middleware
+		a.HTTPMiddleware(middleware.RequestHTTPHandler("/auth/oauth/device", checkLimit, http.HandlerFunc(a.handleUserCodeConfirmation))))) // NOTE: Uses auth middleware
 	inner.Handle("/auth/oauth/token", otelhttp.WithRouteTag("/auth/oauth/token",
-		LimiterHTTPHandler("/auth/oauth/token", limiter, ratelimit.Sensitive, http.HandlerFunc(a.getAccessToken))))
+		middleware.RequestHTTPHandler("/auth/oauth/token", checkLimit, http.HandlerFunc(a.getAccessToken))))
 	mux.Handle("/auth/", observability.Middleware("admin", a.logger, inner))
 }
 
@@ -309,18 +322,4 @@ func (a *Authenticator) authLogoutCallback(w http.ResponseWriter, r *http.Reques
 
 	// Redirect to UI (usually)
 	http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
-}
-
-type CtxInspector struct{}
-
-func (i CtxInspector) IsAuthenticated(ctx context.Context) bool {
-	return !IsAnonymous(ctx)
-}
-
-func (i CtxInspector) GetAuthID(ctx context.Context) string {
-	return GetClaims(ctx).OwnerID()
-}
-
-func LimiterHTTPHandler(route string, l ratelimit.Limiter, anonLimit redis_rate.Limit, next http.Handler) http.Handler {
-	return ratelimit.NewInterceptor(l, CtxInspector{}, anonLimit, ratelimit.Unlimited).HTTPHandler(route, next)
 }
