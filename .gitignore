@@ -76,3 +76,6 @@ sysroot/
 latest.txt
 /web-common/coverage
 /web-local/.jest/rill-e2e-test
+
+# docker data directory
+postgres-data
