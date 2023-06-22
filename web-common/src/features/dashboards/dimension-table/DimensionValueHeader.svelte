@@ -45,6 +45,7 @@
     enableResize={false}
     position="top-left"
     borderRight={horizontalScrolling}
+    bgClass="bg-white"
   >
     <span class="px-1">{column?.label || column?.name}</span>
   </StickyHeader>
@@ -55,6 +56,7 @@
       position="left"
       header={{ size: width, start: row.start }}
       borderRight={horizontalScrolling}
+      bgClass="bg-white"
     >
       <Cell
         positionStatic
