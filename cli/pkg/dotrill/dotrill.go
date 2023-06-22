@@ -167,6 +167,18 @@ func GetVersionUpdatedAt() (string, error) {
 	return Get(StateFilename, VersionUpdatedAtKey)
 }
 
+// SetDefaultAdminURL loads the default admin URL (if set)
+func SetEnvToken(env, token string) error {
+	key := fmt.Sprintf("tokens.%s", env)
+	return Set(CredentialsFilename, key, token)
+}
+
+// GetDefaultAdminURL loads the default admin URL (if set)
+func GetEnvToken(env string) (string, error) {
+	key := fmt.Sprintf("tokens.%s", env)
+	return Get(CredentialsFilename, key)
+}
+
 // AnalyticsInfo returns analytics info.
 // It loads a persistent install ID from ~/.rill/state.yaml (setting one if not found).
 // It gets analytics enabled/disabled info from ~/.rill/config.yaml (key "analytics_enabled").
