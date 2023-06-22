@@ -11,6 +11,7 @@
   export let noPin = false;
   export let showDataIcon = false;
   export let selectedColumn: string = null;
+  export let fallbackBGClass = "";
 
   const getColumnHeaderProps = (header) => {
     const name = columns[header.index]?.label || columns[header.index]?.name;
@@ -49,7 +50,7 @@
       on:reset-column-size
       bgClass={props.isSelected || isHighlightedColumn(header?.key)
         ? `bg-gray-50`
-        : ""}
+        : fallbackBGClass}
       {...props}
       {header}
       {noPin}
