@@ -114,7 +114,7 @@
   $: summaries = getSummaries(
     sourceName,
     $runtime?.instanceId,
-    $profileColumns?.data?.profileColumns
+    $profileColumns
   );
 
   let totalNulls = undefined;

@@ -3,6 +3,7 @@ import { fileArtifactsStore } from "@rilldata/web-common/features/entity-managem
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type { V1ReconcileResponse } from "@rilldata/web-common/runtime-client";
 import {
+  getQueryServiceTableColumnsQueryKey,
   getRuntimeServiceGetCatalogEntryQueryKey,
   getRuntimeServiceGetFileQueryKey,
   getRuntimeServiceListCatalogEntriesQueryKey,
@@ -98,11 +99,19 @@ export function invalidationForMetricsViewData(query, metricsViewName: string) {
   );
 }
 
-export function isProfilingQuery(queryHash: string, name: string) {
-  const r = new RegExp(
-    `/v1/instances/[a-zA-Z0-9-]+/queries/[a-zA-Z0-9-]+/tables/${name}`
+const ProfilingQueryExtractor =
+  /v1\/instances\/[a-zA-Z0-9-]+\/queries\/([a-zA-Z0-9-]+)\/tables\/(.+?)"/;
+export function isProfilingQuery(
+  queryHash: string,
+  name: string,
+  ignoreProfileColumns = false
+) {
+  const queryExtractorMatch = ProfilingQueryExtractor.exec(queryHash);
+  if (!queryExtractorMatch) return false;
+  const [, type, table] = queryExtractorMatch;
+  return (
+    table === name && (!ignoreProfileColumns || type !== "columns-profile")
   );
-  return r.test(queryHash);
 }
 
 export const invalidateMetricsViewData = (
@@ -128,7 +137,7 @@ export const invalidateMetricsViewData = (
   });
 };
 
-export function invalidateProfilingQueries(
+export async function invalidateProfilingQueries(
   queryClient: QueryClient,
   name: string,
   failed: boolean
@@ -140,8 +149,18 @@ export function invalidateProfilingQueries(
   // do not re-fetch for failed entities.
   if (failed) return Promise.resolve();
 
-  return queryClient.refetchQueries({
-    predicate: (query) => isProfilingQuery(query.queryHash, name),
+  await queryClient.invalidateQueries({
+    predicate: (query) => {
+      const queryExtractorMatch = ProfilingQueryExtractor.exec(query.queryHash);
+      if (!queryExtractorMatch) return false;
+      const [, type, table] = queryExtractorMatch;
+      return table === name && type === "columns-profile";
+    },
+    type: "active",
+  });
+
+  return queryClient.invalidateQueries({
+    predicate: (query) => isProfilingQuery(query.queryHash, name, true),
     type: "active",
   });
 }
