@@ -167,13 +167,13 @@ func GetVersionUpdatedAt() (string, error) {
 	return Get(StateFilename, VersionUpdatedAtKey)
 }
 
-// SetDefaultAdminURL loads the default admin URL (if set)
+// SetEnvToken backup the token for given env
 func SetEnvToken(env, token string) error {
 	key := fmt.Sprintf("tokens.%s", env)
 	return Set(CredentialsFilename, key, token)
 }
 
-// GetDefaultAdminURL loads the default admin URL (if set)
+// GetEnvToken loads the token for given env
 func GetEnvToken(env string) (string, error) {
 	key := fmt.Sprintf("tokens.%s", env)
 	return Get(CredentialsFilename, key)
