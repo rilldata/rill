@@ -3,6 +3,8 @@
   import { fly } from "svelte/transition";
   import Portal from "../Portal.svelte";
   import Overlay from "./Overlay.svelte";
+  import Modal from "./modal";
+  import { lockBodyScrolling, unlockBodyScrolling } from "./scroll";
 
   const dispatch = createEventDispatcher();
 
@@ -13,18 +15,6 @@
   let autoFocusTarget;
 
   let containerMountedInPortal = false;
-  let Modal;
-  let lockBodyScrolling;
-  let unlockBodyScrolling;
-  onMount(async () => {
-    const scroll = await import(
-      "@shoelace-style/shoelace/dist/internal/scroll"
-    );
-    lockBodyScrolling = scroll.lockBodyScrolling;
-    unlockBodyScrolling = scroll.unlockBodyScrolling;
-    Modal = (await import("@shoelace-style/shoelace/dist/internal/modal"))
-      .default;
-  });
 
   /** post-mount, and post-portal (which is to say, as soon as container is actually mounted)
    * let's go ahead and instantiate the modal.
