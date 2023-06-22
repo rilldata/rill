@@ -10,7 +10,7 @@ import (
 // This is a collection of gRPC and HTTP interceptors that call fn per request.
 
 // RequestStreamServerInterceptor wraps a ServerStream and calls fn on each RecvMsg.
-func RequestStreamServerInterceptor(fn func(info Metadata) error) grpc.StreamServerInterceptor {
+func RequestStreamServerInterceptor(fn func(md Metadata) error) grpc.StreamServerInterceptor {
 	return func(
 		srv interface{},
 		ss grpc.ServerStream,
@@ -22,13 +22,13 @@ func RequestStreamServerInterceptor(fn func(info Metadata) error) grpc.StreamSer
 			return err
 		}
 
-		wss := wrappedServerStream{ss, *newMetadata(ss.Context(), method, observability.GrpcPeer(ss.Context())), fn}
+		wss := wrappedServerStream{ss, method, observability.GrpcPeer(ss.Context()), fn}
 		return handler(srv, &wss)
 	}
 }
 
 // RequestUnaryServerInterceptor calls fn on each request
-func RequestUnaryServerInterceptor(fn func(info Metadata) error) grpc.UnaryServerInterceptor {
+func RequestUnaryServerInterceptor(fn func(md Metadata) error) grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
 		req interface{},
@@ -40,7 +40,8 @@ func RequestUnaryServerInterceptor(fn func(info Metadata) error) grpc.UnaryServe
 			return nil, err
 		}
 
-		if err = fn(*newMetadata(ctx, method, observability.GrpcPeer(ctx))); err != nil {
+		md := Metadata{ctx, req, method, observability.GrpcPeer(ctx)}
+		if err = fn(md); err != nil {
 			return nil, err
 		}
 
@@ -50,22 +51,24 @@ func RequestUnaryServerInterceptor(fn func(info Metadata) error) grpc.UnaryServe
 
 type wrappedServerStream struct {
 	grpc.ServerStream
-	info Metadata
-	fn   func(info Metadata) error
+	method string
+	peer string
+	fn   func(md Metadata) error
 }
 
 func (wss *wrappedServerStream) RecvMsg(m interface{}) error {
-	if err := wss.fn(wss.info); err != nil {
+	md := Metadata{wss.Context(), m, wss.method, wss.peer}
+	if err := wss.fn(md); err != nil {
 		return err
 	}
 	return wss.ServerStream.RecvMsg(m)
 }
 
 // RequestHTTPHandler calls fn on each request.
-func RequestHTTPHandler(route string, fn func(info Metadata) error, next http.Handler) http.Handler {
+func RequestHTTPHandler(route string, fn func(md Metadata) error, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		if err := fn(*newMetadata(ctx, route, observability.HTTPPeer(r))); err != nil {
+		md := Metadata{r.Context(), r, route, observability.HTTPPeer(r)}
+		if err := fn(md); err != nil {
 			switch err := err.(type) {
 			case *HTTPError:
 				http.Error(w, err.Error(), err.Code)
@@ -94,10 +97,7 @@ func (h *HTTPError) Error() string {
 
 type Metadata struct {
 	Ctx    context.Context
+	Req    interface{}
 	Method string
 	Peer   string
-}
-
-func newMetadata(ctx context.Context, method string, peer string) *Metadata {
-	return &Metadata{Ctx: ctx, Method: method, Peer: peer}
 }

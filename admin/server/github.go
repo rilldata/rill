@@ -592,7 +592,7 @@ func (s *Server) redirectLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) checkGithubRateLimit(md middleware.Metadata) error {
-	if auth.IsAnonymous(md.Ctx) {
+	if auth.GetClaims(md.Ctx).OwnerType() == auth.OwnerTypeAnon {
 		limitKey := ratelimit.AnonLimitKey(md.Method, md.Peer)
 		if err := s.limiter.Limit(md.Ctx, limitKey, ratelimit.Sensitive); err != nil {
 			if errors.As(err, &ratelimit.QuotaExceededError{}) {

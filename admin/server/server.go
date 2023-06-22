@@ -342,7 +342,7 @@ func newURLRegistry(opts *Options) *externalURLs {
 
 func (s *Server) checkRateLimit(md middleware.Metadata) error {
 	var limitKey string
-	if auth.IsAnonymous(md.Ctx) {
+	if auth.GetClaims(md.Ctx).OwnerType() == auth.OwnerTypeAnon {
 		limitKey = ratelimit.AnonLimitKey(md.Method, md.Peer)
 	} else {
 		limitKey = ratelimit.AuthLimitKey(md.Method, auth.GetClaims(md.Ctx).OwnerID())

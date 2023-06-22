@@ -30,7 +30,7 @@ const (
 func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux, limiter ratelimit.Limiter) {
 	// checkLimit needs access to limiter
 	var checkLimit = func(md middleware.Metadata) error {
-		if IsAnonymous(md.Ctx) {
+		if GetClaims(md.Ctx).OwnerType() == OwnerTypeAnon {
 			limitKey := ratelimit.AnonLimitKey(md.Method, md.Peer)
 			if err := limiter.Limit(md.Ctx, limitKey, ratelimit.Sensitive); err != nil {
 				if errors.As(err, &ratelimit.QuotaExceededError{}) {

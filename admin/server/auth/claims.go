@@ -218,10 +218,6 @@ func (c *authTokenClaims) Superuser(ctx context.Context) bool {
 	return *c.superuser
 }
 
-func IsAnonymous(ctx context.Context) bool {
-	return GetClaims(ctx) == anonClaims{}
-}
-
 // ensure *authTokenClaims implements Claims
 var _ Claims = &authTokenClaims{}
 
