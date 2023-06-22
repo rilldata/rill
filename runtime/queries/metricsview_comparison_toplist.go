@@ -340,7 +340,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 
 	args := []any{}
 	if mv.TimeDimension == "" {
-		return "", nil, fmt.Errorf("Metrics view '%s' doesn't have time dimension", mv.Name)
+		return "", nil, fmt.Errorf("metrics view '%s' doesn't have time dimension", mv.Name)
 	}
 
 	td := safeName(mv.TimeDimension)
@@ -377,7 +377,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 	for _, s := range q.Sort {
 		i, ok := measureMap[s.MeasureName]
 		if !ok {
-			return "", nil, fmt.Errorf("Metrics view '%s' doesn't contain '%s' sort column", q.MetricsViewName, s.MeasureName)
+			return "", nil, fmt.Errorf("metrics view '%s' doesn't contain '%s' sort column", q.MetricsViewName, s.MeasureName)
 		}
 		orderClause += ", "
 		subQueryOrderClause += ", "
@@ -554,13 +554,13 @@ func (q *MetricsViewComparisonToplist) Export(ctx context.Context, rt *runtime.R
 
 func validateSort(sorts []*runtimev1.MetricsViewComparisonSort) error {
 	if len(sorts) == 0 {
-		return fmt.Errorf("Sorting is required")
+		return fmt.Errorf("sorting is required")
 	}
 	firstSort := sorts[0]
 
 	for _, s := range sorts {
 		if firstSort != s {
-			return fmt.Errorf("Diffirent sort types are not supported in a single query")
+			return fmt.Errorf("diffirent sort types are not supported in a single query")
 		}
 	}
 	return nil

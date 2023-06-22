@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -89,6 +90,10 @@ func metricsQuery(ctx context.Context, olap drivers.OLAPStore, priority int, sql
 
 func rowsToData(rows *drivers.Result) ([]*structpb.Struct, error) {
 	var data []*structpb.Struct
+	schema := make(map[string]*runtimev1.Type, len(rows.Schema.Fields))
+	for _, field := range rows.Schema.Fields {
+		schema[field.Name] = field.Type
+	}
 	for rows.Next() {
 		rowMap := make(map[string]any)
 		err := rows.MapScan(rowMap)
@@ -99,6 +104,13 @@ func rowsToData(rows *drivers.Result) ([]*structpb.Struct, error) {
 		rowStruct, err := pbutil.ToStruct(rowMap)
 		if err != nil {
 			return nil, err
+		}
+
+		// date type should be formatted to remove the time part.
+		for key := range rowStruct.Fields {
+			if t, ok := schema[key]; ok && t.Code == runtimev1.Type_CODE_DATE {
+				rowStruct.Fields[key] = structpb.NewStringValue(rowMap[key].(time.Time).Format(time.DateOnly))
+			}
 		}
 
 		data = append(data, rowStruct)
