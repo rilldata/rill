@@ -279,7 +279,7 @@ func mapGRPCError(err error) error {
 }
 
 func (s *Server) checkRateLimit(md middleware.Metadata) error {
-	if auth.IsAnonymous(md.Ctx) {
+	if auth.GetClaims(md.Ctx).Subject() == "" {
 		limitKey := ratelimit.AnonLimitKey(md.Method, md.Peer)
 		if err := s.limiter.Limit(md.Ctx, limitKey, ratelimit.Public); err != nil {
 			if errors.As(err, &ratelimit.QuotaExceededError{}) {

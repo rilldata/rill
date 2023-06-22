@@ -185,7 +185,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				} else {
 					opts, err := redis.ParseURL(conf.RedisURL)
 					if err != nil {
-						logger.Fatal("failed to parse redis url")
+						logger.Fatal("failed to parse redis url", zap.Error(err))
 					}
 					limiter = ratelimit.NewRedis(redis.NewClient(opts))
 				}

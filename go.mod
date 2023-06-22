@@ -9,6 +9,7 @@ require (
 	github.com/MicahParks/keyfunc v1.9.0
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/XSAM/otelsql v0.23.0
+	github.com/alicebob/miniredis v2.5.0+incompatible
 	github.com/apache/arrow/go/v11 v11.0.0
 	github.com/apache/calcite-avatica-go/v5 v5.2.0
 	github.com/aws/aws-sdk-go v1.44.268
@@ -25,6 +26,7 @@ require (
 	github.com/go-git/go-git/v5 v5.7.0
 	github.com/go-logr/zapr v1.2.4
 	github.com/go-playground/validator/v10 v10.14.0
+	github.com/go-redis/redis_rate/v10 v10.0.1
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/go-github/v50 v50.2.0
 	github.com/google/uuid v1.3.0
@@ -44,6 +46,7 @@ require (
 	github.com/marcboeker/go-duckdb v1.4.1
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/prometheus/client_golang v1.15.1
+	github.com/redis/go-redis/v9 v9.0.2
 	github.com/rs/cors v1.9.0
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
@@ -94,7 +97,6 @@ require (
 	github.com/ProtonMail/go-crypto v0.0.0-20230518184743-7afd39499903 // indirect
 	github.com/acomagu/bufpipe v1.0.4 // indirect
 	github.com/alicebob/gopher-json v0.0.0-20230218143504-906a9b012302 // indirect
-	github.com/alicebob/miniredis v2.5.0+incompatible // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/apache/thrift v0.18.1 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.18.0 // indirect
@@ -139,7 +141,6 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/go-redis/redis_rate/v10 v10.0.1 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v1.1.1 // indirect
@@ -207,7 +208,6 @@ require (
 	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.10.0 // indirect
-	github.com/redis/go-redis/v9 v9.0.2 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/richardlehane/mscfb v1.0.4 // indirect
 	github.com/richardlehane/msoleps v1.0.3 // indirect
