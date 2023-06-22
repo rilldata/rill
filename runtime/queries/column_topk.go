@@ -3,6 +3,7 @@ package queries
 import (
 	"context"
 	"fmt"
+	"io"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -28,8 +29,11 @@ func (q *ColumnTopK) Deps() []string {
 	return []string{q.TableName}
 }
 
-func (q *ColumnTopK) MarshalResult() any {
-	return q.Result
+func (q *ColumnTopK) MarshalResult() *runtime.QueryResult {
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: sizeProtoMessage(q.Result),
+	}
 }
 
 func (q *ColumnTopK) UnmarshalResult(v any) error {
@@ -64,8 +68,9 @@ func (q *ColumnTopK) Resolve(ctx context.Context, rt *runtime.Runtime, instanceI
 
 	// Run query
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    qry,
-		Priority: priority,
+		Query:            qry,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
 		return err
@@ -81,10 +86,12 @@ func (q *ColumnTopK) Resolve(ctx context.Context, rt *runtime.Runtime, instanceI
 		if err != nil {
 			return err
 		}
+
 		entry.Value, err = pbutil.ToValue(val)
 		if err != nil {
 			return err
 		}
+
 		res.Entries = append(res.Entries, entry)
 	}
 
@@ -96,4 +103,8 @@ func (q *ColumnTopK) Resolve(ctx context.Context, rt *runtime.Runtime, instanceI
 	// Save result
 	q.Result = res
 	return nil
+}
+
+func (q *ColumnTopK) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.ExportFormat, w io.Writer) error {
+	return ErrExportNotSupported
 }

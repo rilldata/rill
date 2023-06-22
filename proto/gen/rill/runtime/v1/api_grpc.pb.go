@@ -24,12 +24,16 @@ const (
 	RuntimeService_GetInstance_FullMethodName            = "/rill.runtime.v1.RuntimeService/GetInstance"
 	RuntimeService_CreateInstance_FullMethodName         = "/rill.runtime.v1.RuntimeService/CreateInstance"
 	RuntimeService_EditInstance_FullMethodName           = "/rill.runtime.v1.RuntimeService/EditInstance"
+	RuntimeService_EditInstanceVariables_FullMethodName  = "/rill.runtime.v1.RuntimeService/EditInstanceVariables"
 	RuntimeService_DeleteInstance_FullMethodName         = "/rill.runtime.v1.RuntimeService/DeleteInstance"
 	RuntimeService_ListFiles_FullMethodName              = "/rill.runtime.v1.RuntimeService/ListFiles"
 	RuntimeService_GetFile_FullMethodName                = "/rill.runtime.v1.RuntimeService/GetFile"
 	RuntimeService_PutFile_FullMethodName                = "/rill.runtime.v1.RuntimeService/PutFile"
 	RuntimeService_DeleteFile_FullMethodName             = "/rill.runtime.v1.RuntimeService/DeleteFile"
 	RuntimeService_RenameFile_FullMethodName             = "/rill.runtime.v1.RuntimeService/RenameFile"
+	RuntimeService_ListExamples_FullMethodName           = "/rill.runtime.v1.RuntimeService/ListExamples"
+	RuntimeService_UnpackExample_FullMethodName          = "/rill.runtime.v1.RuntimeService/UnpackExample"
+	RuntimeService_UnpackEmpty_FullMethodName            = "/rill.runtime.v1.RuntimeService/UnpackEmpty"
 	RuntimeService_ListCatalogEntries_FullMethodName     = "/rill.runtime.v1.RuntimeService/ListCatalogEntries"
 	RuntimeService_GetCatalogEntry_FullMethodName        = "/rill.runtime.v1.RuntimeService/GetCatalogEntry"
 	RuntimeService_TriggerRefresh_FullMethodName         = "/rill.runtime.v1.RuntimeService/TriggerRefresh"
@@ -56,6 +60,8 @@ type RuntimeServiceClient interface {
 	CreateInstance(ctx context.Context, in *CreateInstanceRequest, opts ...grpc.CallOption) (*CreateInstanceResponse, error)
 	// EditInstance edits an existing instance
 	EditInstance(ctx context.Context, in *EditInstanceRequest, opts ...grpc.CallOption) (*EditInstanceResponse, error)
+	// EditInstanceVariables edits the instance variable
+	EditInstanceVariables(ctx context.Context, in *EditInstanceVariablesRequest, opts ...grpc.CallOption) (*EditInstanceVariablesResponse, error)
 	// DeleteInstance deletes an instance
 	DeleteInstance(ctx context.Context, in *DeleteInstanceRequest, opts ...grpc.CallOption) (*DeleteInstanceResponse, error)
 	// ListFiles lists all the files matching a glob in a repo.
@@ -69,6 +75,12 @@ type RuntimeServiceClient interface {
 	DeleteFile(ctx context.Context, in *DeleteFileRequest, opts ...grpc.CallOption) (*DeleteFileResponse, error)
 	// RenameFile renames a file in a repo
 	RenameFile(ctx context.Context, in *RenameFileRequest, opts ...grpc.CallOption) (*RenameFileResponse, error)
+	// ListExamples lists all the examples embedded into binary
+	ListExamples(ctx context.Context, in *ListExamplesRequest, opts ...grpc.CallOption) (*ListExamplesResponse, error)
+	// UnpackExample unpacks an example project
+	UnpackExample(ctx context.Context, in *UnpackExampleRequest, opts ...grpc.CallOption) (*UnpackExampleResponse, error)
+	// UnpackEmpty unpacks an empty project
+	UnpackEmpty(ctx context.Context, in *UnpackEmptyRequest, opts ...grpc.CallOption) (*UnpackEmptyResponse, error)
 	// ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
 	ListCatalogEntries(ctx context.Context, in *ListCatalogEntriesRequest, opts ...grpc.CallOption) (*ListCatalogEntriesResponse, error)
 	// GetCatalogEntry returns information about a specific entry in the catalog
@@ -151,6 +163,15 @@ func (c *runtimeServiceClient) EditInstance(ctx context.Context, in *EditInstanc
 	return out, nil
 }
 
+func (c *runtimeServiceClient) EditInstanceVariables(ctx context.Context, in *EditInstanceVariablesRequest, opts ...grpc.CallOption) (*EditInstanceVariablesResponse, error) {
+	out := new(EditInstanceVariablesResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_EditInstanceVariables_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) DeleteInstance(ctx context.Context, in *DeleteInstanceRequest, opts ...grpc.CallOption) (*DeleteInstanceResponse, error) {
 	out := new(DeleteInstanceResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_DeleteInstance_FullMethodName, in, out, opts...)
@@ -199,6 +220,33 @@ func (c *runtimeServiceClient) DeleteFile(ctx context.Context, in *DeleteFileReq
 func (c *runtimeServiceClient) RenameFile(ctx context.Context, in *RenameFileRequest, opts ...grpc.CallOption) (*RenameFileResponse, error) {
 	out := new(RenameFileResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_RenameFile_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) ListExamples(ctx context.Context, in *ListExamplesRequest, opts ...grpc.CallOption) (*ListExamplesResponse, error) {
+	out := new(ListExamplesResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_ListExamples_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) UnpackExample(ctx context.Context, in *UnpackExampleRequest, opts ...grpc.CallOption) (*UnpackExampleResponse, error) {
+	out := new(UnpackExampleResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_UnpackExample_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) UnpackEmpty(ctx context.Context, in *UnpackEmptyRequest, opts ...grpc.CallOption) (*UnpackEmptyResponse, error) {
+	out := new(UnpackEmptyResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_UnpackEmpty_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -309,6 +357,8 @@ type RuntimeServiceServer interface {
 	CreateInstance(context.Context, *CreateInstanceRequest) (*CreateInstanceResponse, error)
 	// EditInstance edits an existing instance
 	EditInstance(context.Context, *EditInstanceRequest) (*EditInstanceResponse, error)
+	// EditInstanceVariables edits the instance variable
+	EditInstanceVariables(context.Context, *EditInstanceVariablesRequest) (*EditInstanceVariablesResponse, error)
 	// DeleteInstance deletes an instance
 	DeleteInstance(context.Context, *DeleteInstanceRequest) (*DeleteInstanceResponse, error)
 	// ListFiles lists all the files matching a glob in a repo.
@@ -322,6 +372,12 @@ type RuntimeServiceServer interface {
 	DeleteFile(context.Context, *DeleteFileRequest) (*DeleteFileResponse, error)
 	// RenameFile renames a file in a repo
 	RenameFile(context.Context, *RenameFileRequest) (*RenameFileResponse, error)
+	// ListExamples lists all the examples embedded into binary
+	ListExamples(context.Context, *ListExamplesRequest) (*ListExamplesResponse, error)
+	// UnpackExample unpacks an example project
+	UnpackExample(context.Context, *UnpackExampleRequest) (*UnpackExampleResponse, error)
+	// UnpackEmpty unpacks an empty project
+	UnpackEmpty(context.Context, *UnpackEmptyRequest) (*UnpackEmptyResponse, error)
 	// ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
 	ListCatalogEntries(context.Context, *ListCatalogEntriesRequest) (*ListCatalogEntriesResponse, error)
 	// GetCatalogEntry returns information about a specific entry in the catalog
@@ -371,6 +427,9 @@ func (UnimplementedRuntimeServiceServer) CreateInstance(context.Context, *Create
 func (UnimplementedRuntimeServiceServer) EditInstance(context.Context, *EditInstanceRequest) (*EditInstanceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method EditInstance not implemented")
 }
+func (UnimplementedRuntimeServiceServer) EditInstanceVariables(context.Context, *EditInstanceVariablesRequest) (*EditInstanceVariablesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EditInstanceVariables not implemented")
+}
 func (UnimplementedRuntimeServiceServer) DeleteInstance(context.Context, *DeleteInstanceRequest) (*DeleteInstanceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteInstance not implemented")
 }
@@ -388,6 +447,15 @@ func (UnimplementedRuntimeServiceServer) DeleteFile(context.Context, *DeleteFile
 }
 func (UnimplementedRuntimeServiceServer) RenameFile(context.Context, *RenameFileRequest) (*RenameFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RenameFile not implemented")
+}
+func (UnimplementedRuntimeServiceServer) ListExamples(context.Context, *ListExamplesRequest) (*ListExamplesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListExamples not implemented")
+}
+func (UnimplementedRuntimeServiceServer) UnpackExample(context.Context, *UnpackExampleRequest) (*UnpackExampleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnpackExample not implemented")
+}
+func (UnimplementedRuntimeServiceServer) UnpackEmpty(context.Context, *UnpackEmptyRequest) (*UnpackEmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnpackEmpty not implemented")
 }
 func (UnimplementedRuntimeServiceServer) ListCatalogEntries(context.Context, *ListCatalogEntriesRequest) (*ListCatalogEntriesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListCatalogEntries not implemented")
@@ -522,6 +590,24 @@ func _RuntimeService_EditInstance_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_EditInstanceVariables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EditInstanceVariablesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).EditInstanceVariables(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_EditInstanceVariables_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).EditInstanceVariables(ctx, req.(*EditInstanceVariablesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_DeleteInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteInstanceRequest)
 	if err := dec(in); err != nil {
@@ -626,6 +712,60 @@ func _RuntimeService_RenameFile_Handler(srv interface{}, ctx context.Context, de
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).RenameFile(ctx, req.(*RenameFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_ListExamples_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListExamplesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ListExamples(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_ListExamples_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ListExamples(ctx, req.(*ListExamplesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_UnpackExample_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnpackExampleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).UnpackExample(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_UnpackExample_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).UnpackExample(ctx, req.(*UnpackExampleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_UnpackEmpty_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnpackEmptyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).UnpackEmpty(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_UnpackEmpty_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).UnpackEmpty(ctx, req.(*UnpackEmptyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -838,6 +978,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_EditInstance_Handler,
 		},
 		{
+			MethodName: "EditInstanceVariables",
+			Handler:    _RuntimeService_EditInstanceVariables_Handler,
+		},
+		{
 			MethodName: "DeleteInstance",
 			Handler:    _RuntimeService_DeleteInstance_Handler,
 		},
@@ -860,6 +1004,18 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RenameFile",
 			Handler:    _RuntimeService_RenameFile_Handler,
+		},
+		{
+			MethodName: "ListExamples",
+			Handler:    _RuntimeService_ListExamples_Handler,
+		},
+		{
+			MethodName: "UnpackExample",
+			Handler:    _RuntimeService_UnpackExample_Handler,
+		},
+		{
+			MethodName: "UnpackEmpty",
+			Handler:    _RuntimeService_UnpackEmpty_Handler,
 		},
 		{
 			MethodName: "ListCatalogEntries",

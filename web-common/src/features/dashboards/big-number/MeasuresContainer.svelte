@@ -1,22 +1,15 @@
 <script lang="ts">
   import {
     useMetaQuery,
-    selectBestMeasureStrings,
-    selectMeasureKeys,
+    useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
-  import {
-    createQueryServiceMetricsViewTotals,
-    V1MetricsViewTotalsResponse,
-  } from "@rilldata/web-common/runtime-client";
-  import type { CreateQueryResult } from "@tanstack/svelte-query";
+  import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { MEASURE_CONFIG } from "../config";
-  import {
-    MetricsExplorerEntity,
-    metricsExplorerStore,
-  } from "../dashboard-stores";
+  import { useDashboardStore } from "../dashboard-stores";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
 
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
@@ -42,15 +35,14 @@
     MEASURES_PADDING_LEFT -
     LEADERBOARD_PADDING_RIGHT;
 
-  let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  $: dashboardStore = useDashboardStore(metricViewName);
 
   $: instanceId = $runtime.instanceId;
 
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
 
-  $: selectedMeasureNames = metricsExplorer?.selectedMeasureNames;
+  $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
 
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
@@ -130,26 +122,30 @@
     }
   }
 
-  let totalsQuery: CreateQueryResult<V1MetricsViewTotalsResponse, Error>;
   $: numColumns = 3;
 
-  $: if (
-    metricsExplorer &&
-    metaQuery &&
-    $metaQuery.isSuccess &&
-    !$metaQuery.isRefetching
-  ) {
-    let totalsQueryParams = {
+  $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricViewName);
+  $: hasTimeSeries = $metricTimeSeries.data;
+  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
+  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
+  $: totalsQuery = createQueryServiceMetricsViewTotals(
+    instanceId,
+    metricViewName,
+    {
       measureNames: selectedMeasureNames,
-      filter: metricsExplorer?.filters,
-    };
-
-    totalsQuery = createQueryServiceMetricsViewTotals(
-      instanceId,
-      metricViewName,
-      totalsQueryParams
-    );
-  }
+      timeStart: timeStart,
+      timeEnd: timeEnd,
+      filter: $dashboardStore?.filters,
+    },
+    {
+      query: {
+        enabled:
+          selectedMeasureNames?.length > 0 &&
+          (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
+          !!$dashboardStore?.filters,
+      },
+    }
+  );
 
   let measureNodes = [];
 
@@ -157,35 +153,24 @@
     calculateGridColumns();
   }
 
-  $: availableMeasureLabels = selectBestMeasureStrings($metaQuery);
-  $: availableMeasureKeys = selectMeasureKeys($metaQuery);
-  $: visibleMeasureKeys = metricsExplorer?.visibleMeasureKeys;
-  $: visibleMeasuresBitmask = availableMeasureKeys.map((k) =>
-    visibleMeasureKeys.has(k)
-  );
+  $: showHideMeasures = createShowHideMeasuresStore(metricViewName, metaQuery);
 
   const toggleMeasureVisibility = (e) => {
-    metricsExplorerStore.toggleMeasureVisibilityByKey(
-      metricViewName,
-      availableMeasureKeys[e.detail.index]
-    );
+    showHideMeasures.toggleVisibility(e.detail.name);
   };
   const setAllMeasuresNotVisible = () => {
-    metricsExplorerStore.hideAllMeasures(metricViewName);
+    showHideMeasures.setAllToNotVisible();
   };
   const setAllMeasuresVisible = () => {
-    metricsExplorerStore.setMultipleMeasuresVisible(
-      metricViewName,
-      availableMeasureKeys
-    );
+    showHideMeasures.setAllToVisible();
   };
 </script>
 
 <svelte:window on:resize={() => calculateGridColumns()} />
 <div
-  use:listenToNodeResize
   style:height="calc(100% - {GRID_MARGIN_TOP}px)"
   style:width={containerWidths[numColumns]}
+  use:listenToNodeResize
 >
   <div
     bind:this={measuresWrapper}
@@ -194,17 +179,17 @@
   >
     <div class="bg-white sticky top-0" style="z-index:100">
       <SeachableFilterButton
-        selectableItems={availableMeasureLabels}
-        selectedItems={visibleMeasuresBitmask}
-        on:item-clicked={toggleMeasureVisibility}
-        on:deselect-all={setAllMeasuresNotVisible}
-        on:select-all={setAllMeasuresVisible}
         label="Measures"
+        on:deselect-all={setAllMeasuresNotVisible}
+        on:item-clicked={toggleMeasureVisibility}
+        on:select-all={setAllMeasuresVisible}
+        selectableItems={$showHideMeasures.selectableItems}
+        selectedItems={$showHideMeasures.selectedItems}
         tooltipText="Choose measures to display"
       />
     </div>
     {#if $metaQuery.data?.measures}
-      {#each $metaQuery.data?.measures.filter((_, i) => visibleMeasuresBitmask[i]) as measure, index (measure.name)}
+      {#each $metaQuery.data?.measures.filter((_, i) => $showHideMeasures.selectedItems[i]) as measure, index (measure.name)}
         <!-- FIXME: I can't select the big number by the measure id. -->
         {@const bigNum = $totalsQuery?.data?.data?.[measure.name]}
         <div

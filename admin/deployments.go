@@ -20,21 +20,34 @@ import (
 	"go.uber.org/zap"
 )
 
-func (s *Service) createDeployment(ctx context.Context, proj *database.Project) (*database.Deployment, error) {
+type createDeploymentOptions struct {
+	ProjectID            string
+	Region               string
+	GithubURL            *string
+	GithubInstallationID *int64
+	Subpath              string
+	ProdBranch           string
+	ProdVariables        database.Variables
+	ProdOLAPDriver       string
+	ProdOLAPDSN          string
+	ProdSlots            int
+}
+
+func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOptions) (*database.Deployment, error) {
 	// We require Github info on project to create a deployment
-	if proj.GithubURL == nil || proj.GithubInstallationID == nil || proj.ProdBranch == "" {
+	if opts.GithubURL == nil || opts.GithubInstallationID == nil || opts.ProdBranch == "" {
 		return nil, fmt.Errorf("cannot create project without github info")
 	}
-	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*proj.GithubURL, *proj.GithubInstallationID, proj.Subpath, proj.ProdBranch)
+	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*opts.GithubURL, *opts.GithubInstallationID, opts.Subpath, opts.ProdBranch)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get a runtime with capacity for the deployment
-	alloc, err := s.provisioner.Provision(ctx, &provisioner.ProvisionOptions{
-		OLAPDriver: proj.ProdOLAPDriver,
-		Slots:      proj.ProdSlots,
-		Region:     proj.Region,
+	alloc, err := s.Provisioner.Provision(ctx, &provisioner.ProvisionOptions{
+		OLAPDriver: opts.ProdOLAPDriver,
+		Slots:      opts.ProdSlots,
+		Region:     opts.Region,
 	})
 	if err != nil {
 		return nil, err
@@ -42,15 +55,15 @@ func (s *Service) createDeployment(ctx context.Context, proj *database.Project) 
 
 	// Build instance config
 	instanceID := strings.ReplaceAll(uuid.New().String(), "-", "")
-	olapDriver := proj.ProdOLAPDriver
-	olapDSN := proj.ProdOLAPDSN
+	olapDriver := opts.ProdOLAPDriver
+	olapDSN := opts.ProdOLAPDSN
 	var embedCatalog bool
 	var ingestionLimit int64
 	if olapDriver == "duckdb" {
 		if olapDSN != "" {
 			return nil, fmt.Errorf("passing a DSN is not allowed for driver 'duckdb'")
 		}
-		if proj.ProdSlots == 0 {
+		if opts.ProdSlots == 0 {
 			return nil, fmt.Errorf("slot count can't be 0 for driver 'duckdb'")
 		}
 
@@ -58,6 +71,15 @@ func (s *Service) createDeployment(ctx context.Context, proj *database.Project) 
 		ingestionLimit = alloc.StorageBytes
 
 		olapDSN = fmt.Sprintf("%s.db?rill_pool_size=%d&threads=%d&max_memory=%dGB", path.Join(alloc.DataDir, instanceID), alloc.CPU, alloc.CPU, alloc.MemoryGB)
+	} else if olapDriver == "motherduck" {
+		if opts.ProdSlots == 0 {
+			return nil, fmt.Errorf("slot count can't be 0 for driver 'duckdb'")
+		}
+
+		embedCatalog = true
+		ingestionLimit = alloc.StorageBytes
+
+		olapDSN = fmt.Sprintf("md:%s?rill_pool_size=%d&threads=%d&max_memory=%dGB", instanceID, alloc.CPU, alloc.CPU, alloc.MemoryGB)
 	}
 
 	// Open a runtime client
@@ -75,7 +97,7 @@ func (s *Service) createDeployment(ctx context.Context, proj *database.Project) 
 		RepoDriver:          repoDriver,
 		RepoDsn:             repoDSN,
 		EmbedCatalog:        embedCatalog,
-		Variables:           proj.ProdVariables,
+		Variables:           opts.ProdVariables,
 		IngestionLimitBytes: ingestionLimit,
 	})
 	if err != nil {
@@ -84,9 +106,9 @@ func (s *Service) createDeployment(ctx context.Context, proj *database.Project) 
 
 	// Create the deployment
 	depl, err := s.DB.InsertDeployment(ctx, &database.InsertDeploymentOptions{
-		ProjectID:         proj.ID,
-		Branch:            proj.ProdBranch,
-		Slots:             proj.ProdSlots,
+		ProjectID:         opts.ProjectID,
+		Branch:            opts.ProdBranch,
+		Slots:             opts.ProdSlots,
 		RuntimeHost:       alloc.Host,
 		RuntimeInstanceID: instanceID,
 		RuntimeAudience:   alloc.Audience,
@@ -96,7 +118,7 @@ func (s *Service) createDeployment(ctx context.Context, proj *database.Project) 
 	if err != nil {
 		_, err2 := rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
 			InstanceId: instanceID,
-			DropDb:     olapDriver == "duckdb", // Only drop DB if it's DuckDB
+			DropDb:     olapDriver == "duckdb" || olapDriver == "motherduck", // Only drop DB if it's DuckDB/motherduck
 		})
 		return nil, multierr.Combine(err, err2)
 	}
@@ -110,7 +132,6 @@ type updateDeploymentOptions struct {
 	Subpath              string
 	Branch               string
 	Variables            map[string]string
-	Reconcile            bool
 }
 
 func (s *Service) updateDeployment(ctx context.Context, depl *database.Deployment, opts *updateDeploymentOptions) error {
@@ -129,21 +150,10 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 	}
 	defer rt.Close()
 
-	res, err := rt.GetInstance(ctx, &runtimev1.GetInstanceRequest{InstanceId: depl.RuntimeInstanceID})
-	if err != nil {
-		return err
-	}
-	inst := res.Instance
-
 	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
-		InstanceId:          inst.InstanceId,
-		OlapDriver:          inst.OlapDriver,
-		OlapDsn:             inst.OlapDsn,
-		RepoDriver:          repoDriver,
-		RepoDsn:             repoDSN,
-		EmbedCatalog:        inst.EmbedCatalog,
-		Variables:           opts.Variables,
-		IngestionLimitBytes: inst.IngestionLimitBytes,
+		InstanceId: depl.RuntimeInstanceID,
+		RepoDriver: &repoDriver,
+		RepoDsn:    &repoDSN,
 	})
 	if err != nil {
 		return err
@@ -160,14 +170,25 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 		depl.UpdatedOn = newDepl.UpdatedOn
 	}
 
-	if opts.Reconcile {
-		if err := s.triggerReconcile(ctx, depl); err != nil {
-			s.logger.Error("failed to trigger reconcile", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
-			return err
-		}
+	if err := s.triggerReconcile(ctx, depl); err != nil {
+		s.logger.Error("failed to trigger reconcile", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
+		return err
 	}
-
 	return nil
+}
+
+func (s *Service) updateDeplVariables(ctx context.Context, depl *database.Deployment, variables map[string]string) error {
+	rt, err := s.openRuntimeClientForDeployment(depl)
+	if err != nil {
+		return err
+	}
+	defer rt.Close()
+
+	_, err = rt.EditInstanceVariables(ctx, &runtimev1.EditInstanceVariablesRequest{
+		InstanceId: depl.RuntimeInstanceID,
+		Variables:  variables,
+	})
+	return err
 }
 
 func (s *Service) teardownDeployment(ctx context.Context, proj *database.Project, depl *database.Deployment) error {
@@ -187,7 +208,7 @@ func (s *Service) teardownDeployment(ctx context.Context, proj *database.Project
 	// Delete the instance
 	_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
 		InstanceId: depl.RuntimeInstanceID,
-		DropDb:     proj.ProdOLAPDriver == "duckdb", // Only drop DB if it's DuckDB
+		DropDb:     proj.ProdOLAPDriver == "duckdb" || proj.ProdOLAPDriver == "motherduck", // Only drop DB if it's DuckDB/motherduck
 	})
 	if err != nil {
 		return err

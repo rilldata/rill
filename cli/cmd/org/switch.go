@@ -50,7 +50,7 @@ func SwitchCmd(cfg *config.Config) *cobra.Command {
 			}
 			cfg.Org = defaultOrg
 
-			fmt.Printf("Set default organization to %q.", defaultOrg)
+			fmt.Printf("Set default organization to %q.\n", defaultOrg)
 			return nil
 		},
 	}

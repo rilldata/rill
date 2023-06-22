@@ -6,7 +6,9 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
+	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -32,6 +34,10 @@ func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstances
 
 // GetInstance implements RuntimeService.
 func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequest) (*runtimev1.GetInstanceResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+	)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadInstance) {
 		return nil, ErrForbidden
 	}
@@ -51,6 +57,12 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 
 // CreateInstance implements RuntimeService.
 func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstanceRequest) (*runtimev1.CreateInstanceResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.olap_driver", req.OlapDriver),
+		attribute.String("args.repo_driver", req.RepoDriver),
+	)
+
 	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
 		return nil, ErrForbidden
 	}
@@ -78,22 +90,35 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 
 // EditInstance implements RuntimeService.
 func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRequest) (*runtimev1.EditInstanceResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.instance_id", req.InstanceId))
+	if req.OlapDriver != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.olap_driver", *req.OlapDriver))
+	}
+	if req.RepoDriver != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.repo_driver", *req.RepoDriver))
+	}
+
 	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
 		return nil, ErrForbidden
 	}
 
-	inst := &drivers.Instance{
-		ID:                  req.InstanceId,
-		OLAPDriver:          req.OlapDriver,
-		OLAPDSN:             req.OlapDsn,
-		RepoDriver:          req.RepoDriver,
-		RepoDSN:             req.RepoDsn,
-		EmbedCatalog:        req.EmbedCatalog,
-		Variables:           req.Variables,
-		IngestionLimitBytes: req.IngestionLimitBytes,
+	oldInst, err := s.runtime.FindInstance(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
 	}
 
-	err := s.runtime.EditInstance(ctx, inst)
+	inst := &drivers.Instance{
+		ID:                  req.InstanceId,
+		OLAPDriver:          valOrDefault(req.OlapDriver, oldInst.OLAPDriver),
+		OLAPDSN:             valOrDefault(req.OlapDsn, oldInst.OLAPDSN),
+		RepoDriver:          valOrDefault(req.RepoDriver, oldInst.RepoDriver),
+		RepoDSN:             valOrDefault(req.RepoDsn, oldInst.RepoDSN),
+		EmbedCatalog:        valOrDefault(req.EmbedCatalog, oldInst.EmbedCatalog),
+		Variables:           oldInst.Variables,
+		IngestionLimitBytes: valOrDefault(req.IngestionLimitBytes, oldInst.IngestionLimitBytes),
+	}
+
+	err = s.runtime.EditInstance(ctx, inst)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -103,8 +128,46 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 	}, nil
 }
 
+// EditInstanceVariables implements RuntimeService.
+func (s *Server) EditInstanceVariables(ctx context.Context, req *runtimev1.EditInstanceVariablesRequest) (*runtimev1.EditInstanceVariablesResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.instance_id", req.InstanceId))
+	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
+		return nil, ErrForbidden
+	}
+
+	oldInst, err := s.runtime.FindInstance(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+
+	inst := &drivers.Instance{
+		ID:                  req.InstanceId,
+		OLAPDriver:          oldInst.OLAPDriver,
+		OLAPDSN:             oldInst.OLAPDSN,
+		RepoDriver:          oldInst.RepoDriver,
+		RepoDSN:             oldInst.RepoDSN,
+		EmbedCatalog:        oldInst.EmbedCatalog,
+		IngestionLimitBytes: oldInst.IngestionLimitBytes,
+		Variables:           req.Variables,
+	}
+
+	err = s.runtime.EditInstance(ctx, inst)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &runtimev1.EditInstanceVariablesResponse{
+		Instance: instanceToPB(inst),
+	}, nil
+}
+
 // DeleteInstance implements RuntimeService.
 func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstanceRequest) (*runtimev1.DeleteInstanceResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.Bool("args.drop_db", req.DropDb),
+	)
+
 	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
 		return nil, ErrForbidden
 	}
@@ -129,4 +192,11 @@ func instanceToPB(inst *drivers.Instance) *runtimev1.Instance {
 		ProjectVariables:    inst.ProjectVariables,
 		IngestionLimitBytes: inst.IngestionLimitBytes,
 	}
+}
+
+func valOrDefault[T any](ptr *T, def T) T {
+	if ptr != nil {
+		return *ptr
+	}
+	return def
 }

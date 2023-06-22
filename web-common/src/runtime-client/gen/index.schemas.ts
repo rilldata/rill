@@ -4,6 +4,20 @@
  * rill/runtime/v1/schema.proto
  * OpenAPI spec version: version not set
  */
+export type ConnectorServiceS3ListBucketsParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type ConnectorServiceS3ListObjectsParams = {
+  pageSize?: number;
+  pageToken?: string;
+  region?: string;
+  prefix?: string;
+  startAfter?: string;
+  delimiter?: string;
+};
+
 export type RuntimeServiceReconcileBody = {
   /** Changed paths provides a way to "hint" what files have changed in the repo, enabling
 reconciliation to execute faster by not scanning all code artifacts for changes. */
@@ -36,7 +50,6 @@ export type QueryServiceColumnTimeSeriesBody = {
   measures?: ColumnTimeSeriesRequestBasicMeasure[];
   timestampColumnName?: string;
   timeRange?: V1TimeSeriesTimeRange;
-  filters?: V1MetricsViewFilter;
   pixels?: number;
   sampleSize?: number;
   priority?: number;
@@ -72,7 +85,7 @@ export type QueryServiceColumnRollupIntervalBody = {
 };
 
 export type QueryServiceColumnNumericHistogramHistogramMethod =
-  typeof QueryServiceColumnNumericHistogramHistogramMethod[keyof typeof QueryServiceColumnNumericHistogramHistogramMethod];
+  (typeof QueryServiceColumnNumericHistogramHistogramMethod)[keyof typeof QueryServiceColumnNumericHistogramHistogramMethod];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const QueryServiceColumnNumericHistogramHistogramMethod = {
@@ -134,6 +147,26 @@ export type QueryServiceMetricsViewRowsBody = {
   priority?: number;
 };
 
+export type QueryServiceMetricsViewComparisonToplistBody = {
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  baseTimeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  sort?: V1MetricsViewComparisonSort[];
+  filter?: V1MetricsViewFilter;
+  limit?: string;
+  offset?: string;
+  priority?: number;
+};
+
+export type QueryServiceExportBody = {
+  limit?: number;
+  format?: V1ExportFormat;
+  metricsViewToplistRequest?: V1MetricsViewToplistRequest;
+  metricsViewRowsRequest?: V1MetricsViewRowsRequest;
+};
+
 export type QueryServiceColumnDescriptiveStatisticsParams = {
   columnName?: string;
   priority?: number;
@@ -146,6 +179,16 @@ export type QueryServiceTableColumnsParams = {
 export type QueryServiceColumnCardinalityParams = {
   columnName?: string;
   priority?: number;
+};
+
+export type RuntimeServiceUnpackExampleBody = {
+  name?: string;
+  force?: boolean;
+};
+
+export type RuntimeServiceUnpackEmptyBody = {
+  title?: string;
+  force?: boolean;
 };
 
 export type RuntimeServiceRenameFileBody = {
@@ -166,7 +209,7 @@ export type RuntimeServiceListFilesParams = {
 };
 
 export type RuntimeServiceListCatalogEntriesType =
-  typeof RuntimeServiceListCatalogEntriesType[keyof typeof RuntimeServiceListCatalogEntriesType];
+  (typeof RuntimeServiceListCatalogEntriesType)[keyof typeof RuntimeServiceListCatalogEntriesType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const RuntimeServiceListCatalogEntriesType = {
@@ -181,8 +224,6 @@ export type RuntimeServiceListCatalogEntriesParams = {
   type?: RuntimeServiceListCatalogEntriesType;
 };
 
-export type RuntimeServiceEditInstanceBodyVariables = { [key: string]: string };
-
 /**
  * Request message for RuntimeService.EditInstance.
 See message Instance for field descriptions.
@@ -193,8 +234,18 @@ export type RuntimeServiceEditInstanceBody = {
   repoDriver?: string;
   repoDsn?: string;
   embedCatalog?: boolean;
-  variables?: RuntimeServiceEditInstanceBodyVariables;
   ingestionLimitBytes?: string;
+};
+
+export type RuntimeServiceEditInstanceVariablesBodyVariables = {
+  [key: string]: string;
+};
+
+/**
+ * Request message for RuntimeService.EditInstanceVariables.
+ */
+export type RuntimeServiceEditInstanceVariablesBody = {
+  variables?: RuntimeServiceEditInstanceVariablesBodyVariables;
 };
 
 export type RuntimeServiceDeleteInstanceBody = {
@@ -206,7 +257,29 @@ export type RuntimeServiceListInstancesParams = {
   pageToken?: string;
 };
 
-export type V1TypeCode = typeof V1TypeCode[keyof typeof V1TypeCode];
+export type ConnectorServiceGCSListBucketsParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type ConnectorServiceGCSListObjectsParams = {
+  pageSize?: number;
+  pageToken?: string;
+  prefix?: string;
+  startOffset?: string;
+  endOffset?: string;
+  delimiter?: string;
+};
+
+export interface V1UnpackExampleResponse {
+  [key: string]: any;
+}
+
+export interface V1UnpackEmptyResponse {
+  [key: string]: any;
+}
+
+export type V1TypeCode = (typeof V1TypeCode)[keyof typeof V1TypeCode];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1TypeCode = {
@@ -269,7 +342,6 @@ export interface V1TimeSeriesTimeRange {
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
-  timeRange?: V1TimeSeriesTimeRange;
   sampleSize?: number;
 }
 
@@ -279,7 +351,12 @@ export interface V1TimeRangeSummary {
   interval?: TimeRangeSummaryInterval;
 }
 
-export type V1TimeGrain = typeof V1TimeGrain[keyof typeof V1TimeGrain];
+export interface V1TimeRange {
+  start?: string;
+  end?: string;
+}
+
+export type V1TimeGrain = (typeof V1TimeGrain)[keyof typeof V1TimeGrain];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1TimeGrain = {
@@ -291,6 +368,7 @@ export const V1TimeGrain = {
   TIME_GRAIN_DAY: "TIME_GRAIN_DAY",
   TIME_GRAIN_WEEK: "TIME_GRAIN_WEEK",
   TIME_GRAIN_MONTH: "TIME_GRAIN_MONTH",
+  TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
 
@@ -336,8 +414,44 @@ export interface V1Source {
   timeoutSeconds?: number;
 }
 
+export interface V1S3Object {
+  name?: string;
+  modifiedOn?: string;
+  size?: string;
+  isDir?: boolean;
+}
+
+export interface V1S3ListObjectsResponse {
+  nextPageToken?: string;
+  objects?: V1S3Object[];
+}
+
+export interface V1S3ListBucketsResponse {
+  nextPageToken?: string;
+  buckets?: string[];
+}
+
+export interface V1S3GetCredentialsInfoResponse {
+  exist?: boolean;
+  provider?: string;
+}
+
+export interface V1S3GetBucketMetadataResponse {
+  region?: string;
+}
+
 export interface V1RenameFileResponse {
   [key: string]: any;
+}
+
+export interface V1RenameFileAndReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
 }
 
 export interface V1RenameFileAndReconcileRequest {
@@ -377,7 +491,7 @@ export interface V1RefreshAndReconcileRequest {
  - CODE_SOURCE_PERMISSION_DENIED: Error returned when unauthorised to access remote sources
  */
 export type V1ReconcileErrorCode =
-  typeof V1ReconcileErrorCode[keyof typeof V1ReconcileErrorCode];
+  (typeof V1ReconcileErrorCode)[keyof typeof V1ReconcileErrorCode];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1ReconcileErrorCode = {
@@ -404,16 +518,6 @@ Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: ReconcileErrorCharLocation;
   endLocation?: ReconcileErrorCharLocation;
-}
-
-export interface V1RenameFileAndReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
 }
 
 export interface V1ReconcileResponse {
@@ -471,7 +575,7 @@ export interface V1PingResponse {
   time?: string;
 }
 
-export type V1ObjectType = typeof V1ObjectType[keyof typeof V1ObjectType];
+export type V1ObjectType = (typeof V1ObjectType)[keyof typeof V1ObjectType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1ObjectType = {
@@ -554,6 +658,73 @@ export interface V1MetricsViewFilter {
   exclude?: MetricsViewFilterCond[];
 }
 
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  filter?: V1MetricsViewFilter;
+  priority?: number;
+}
+
+export interface V1MetricsViewRowsRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  timeStart?: string;
+  timeEnd?: string;
+  filter?: V1MetricsViewFilter;
+  sort?: V1MetricsViewSort[];
+  limit?: number;
+  offset?: string;
+  priority?: number;
+}
+
+export interface V1MetricsViewComparisonValue {
+  measureName?: string;
+  baseValue?: unknown;
+  comparisonValue?: unknown;
+  deltaAbs?: unknown;
+  deltaRel?: unknown;
+}
+
+export interface V1MetricsViewComparisonToplistResponse {
+  rows?: V1MetricsViewComparisonRow[];
+}
+
+export type V1MetricsViewComparisonSortType =
+  (typeof V1MetricsViewComparisonSortType)[keyof typeof V1MetricsViewComparisonSortType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1MetricsViewComparisonSortType = {
+  METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED:
+    "METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED",
+  METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE:
+    "METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE",
+  METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE:
+    "METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE",
+  METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA:
+    "METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA",
+  METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA:
+    "METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA",
+} as const;
+
+export interface V1MetricsViewComparisonSort {
+  measureName?: string;
+  ascending?: boolean;
+  type?: V1MetricsViewComparisonSortType;
+}
+
+export interface V1MetricsViewComparisonRow {
+  dimensionValue?: unknown;
+  measureValues?: V1MetricsViewComparisonValue[];
+}
+
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
@@ -585,6 +756,10 @@ export interface V1ListInstancesResponse {
 
 export interface V1ListFilesResponse {
   paths?: string[];
+}
+
+export interface V1ListExamplesResponse {
+  examples?: V1Example[];
 }
 
 export interface V1ListConnectorsResponse {
@@ -629,7 +804,7 @@ export interface V1InlineMeasure {
 }
 
 export type V1HistogramMethod =
-  typeof V1HistogramMethod[keyof typeof V1HistogramMethod];
+  (typeof V1HistogramMethod)[keyof typeof V1HistogramMethod];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1HistogramMethod = {
@@ -649,6 +824,52 @@ export interface V1GetFileResponse {
 
 export interface V1GetCatalogEntryResponse {
   entry?: V1CatalogEntry;
+}
+
+export interface V1GCSObject {
+  name?: string;
+  modifiedOn?: string;
+  size?: string;
+  isDir?: boolean;
+}
+
+export interface V1GCSListObjectsResponse {
+  nextPageToken?: string;
+  objects?: V1GCSObject[];
+}
+
+export interface V1GCSListBucketsResponse {
+  nextPageToken?: string;
+  buckets?: string[];
+}
+
+export interface V1GCSGetCredentialsInfoResponse {
+  exist?: boolean;
+  projectId?: string;
+}
+
+export interface V1ExportResponse {
+  downloadUrlPath?: string;
+}
+
+export type V1ExportFormat =
+  (typeof V1ExportFormat)[keyof typeof V1ExportFormat];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ExportFormat = {
+  EXPORT_FORMAT_UNSPECIFIED: "EXPORT_FORMAT_UNSPECIFIED",
+  EXPORT_FORMAT_CSV: "EXPORT_FORMAT_CSV",
+  EXPORT_FORMAT_XLSX: "EXPORT_FORMAT_XLSX",
+} as const;
+
+export interface V1Example {
+  name?: string;
+  title?: string;
+  description?: string;
+}
+
+export interface V1EditInstanceVariablesResponse {
+  instance?: V1Instance;
 }
 
 export interface V1EditInstanceResponse {
@@ -802,7 +1023,7 @@ export interface RpcStatus {
  - NULL_VALUE: Null value.
  */
 export type ProtobufNullValue =
-  typeof ProtobufNullValue[keyof typeof ProtobufNullValue];
+  (typeof ProtobufNullValue)[keyof typeof ProtobufNullValue];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ProtobufNullValue = {
@@ -858,7 +1079,7 @@ export interface NumericHistogramBinsBin {
   count?: number;
 }
 
-export type ModelDialect = typeof ModelDialect[keyof typeof ModelDialect];
+export type ModelDialect = (typeof ModelDialect)[keyof typeof ModelDialect];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ModelDialect = {
@@ -884,10 +1105,11 @@ export interface MetricsViewDimension {
   name?: string;
   label?: string;
   description?: string;
+  column?: string;
 }
 
 export type ExtractPolicyStrategy =
-  typeof ExtractPolicyStrategy[keyof typeof ExtractPolicyStrategy];
+  (typeof ExtractPolicyStrategy)[keyof typeof ExtractPolicyStrategy];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ExtractPolicyStrategy = {
@@ -897,7 +1119,7 @@ export const ExtractPolicyStrategy = {
 } as const;
 
 export type ConnectorPropertyType =
-  typeof ConnectorPropertyType[keyof typeof ConnectorPropertyType];
+  (typeof ConnectorPropertyType)[keyof typeof ConnectorPropertyType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ConnectorPropertyType = {

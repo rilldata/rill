@@ -12,7 +12,7 @@ import (
 func getTestServer(t *testing.T) (*Server, string) {
 	rt, instanceID := testruntime.NewInstance(t)
 
-	server, err := NewServer(&Options{}, rt, nil)
+	server, err := NewServer(context.Background(), &Options{}, rt, nil)
 	require.NoError(t, err)
 
 	return server, instanceID

@@ -13,6 +13,8 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.uber.org/zap"
 	"gocloud.dev/blob"
 	"golang.org/x/sync/errgroup"
 )
@@ -44,6 +46,7 @@ type blobIterator struct {
 	// all localfiles are created in this dir
 	tempDir string
 	opts    *Options
+	logger  *zap.Logger
 }
 
 type Options struct {
@@ -96,13 +99,14 @@ func (opts *Options) validateLimits(size int64, matchCount int, fetched int64) e
 // the iterator keeps list of blob objects eagerly planned as per user's glob pattern and extract policies
 // clients should call close once done to release all resources like closing the bucket
 // the iterator takes responsibility of closing the bucket
-func NewIterator(ctx context.Context, bucket *blob.Bucket, opts Options) (connectors.FileIterator, error) {
+func NewIterator(ctx context.Context, bucket *blob.Bucket, opts Options, l *zap.Logger) (connectors.FileIterator, error) {
 	opts.validate()
 
 	it := &blobIterator{
 		ctx:    ctx,
 		bucket: bucket,
 		opts:   &opts,
+		logger: l,
 	}
 
 	tempDir, err := os.MkdirTemp(os.TempDir(), "blob_ingestion")
@@ -182,12 +186,20 @@ func (it *blobIterator) NextBatch(n int) ([]string, error) {
 			// Collect metrics of download size and time
 			startTime := time.Now()
 			defer func() {
+				size := obj.obj.Size
+				st, err := file.Stat()
+				if err == nil {
+					size = st.Size()
+				}
+
+				duration := time.Since(startTime)
+				it.logger.Info("download complete", zap.String("object", obj.obj.Key), zap.Duration("duration", duration), observability.ZapCtx(it.ctx))
 				connectors.RecordDownloadMetrics(grpCtx, &connectors.DownloadMetrics{
 					Connector: "blob",
 					Ext:       ext,
 					Partial:   !downloadFull,
-					Duration:  time.Since(startTime),
-					Size:      obj.obj.Size,
+					Duration:  duration,
+					Size:      size,
 				})
 			}()
 
@@ -233,7 +245,25 @@ func (it *blobIterator) plan() ([]*objectWithPlan, error) {
 		return nil, err
 	}
 
-	listOpts := listOptions(it.opts.GlobPattern)
+	listOpts, ok := listOptions(it.opts.GlobPattern)
+	if !ok {
+		it.logger.Info("glob pattern corresponds to single object", zap.String("glob", it.opts.GlobPattern))
+		// required to fetch size to enforce disk limits
+		attr, err := it.bucket.Attributes(it.ctx, it.opts.GlobPattern)
+		if err != nil {
+			// can fail due to permission not available
+			it.logger.Info("failed to fetch attributes of the object", zap.Error(err))
+		} else {
+			size = attr.Size
+		}
+
+		planner.add(&blob.ListObject{Key: it.opts.GlobPattern, Size: size})
+		if err := it.opts.validateLimits(size, 1, 1); err != nil {
+			return nil, err
+		}
+		return planner.items(), nil
+	}
+	it.logger.Info("planner started", zap.String("glob", it.opts.GlobPattern), zap.String("prefix", listOpts.Prefix), observability.ZapCtx(it.ctx))
 	token := blob.FirstPageToken
 	for token != nil && !planner.done() {
 		objs, nextToken, err := it.bucket.ListPage(it.ctx, token, it.opts.GlobPageSize, listOpts)
@@ -257,6 +287,8 @@ func (it *blobIterator) plan() ([]*objectWithPlan, error) {
 		}
 	}
 
+	it.logger.Info("planner completed", zap.String("glob", it.opts.GlobPattern), zap.Int64("listed_objects", fetched), zap.Int("matched", matchCount), zap.Int64("bytes_matched", size), observability.ZapCtx(it.ctx))
+
 	items := planner.items()
 	if len(items) == 0 {
 		return nil, fmt.Errorf("no files found for glob pattern %q", it.opts.GlobPattern)
@@ -265,7 +297,7 @@ func (it *blobIterator) plan() ([]*objectWithPlan, error) {
 }
 
 // listOptions for page listing api
-func listOptions(globPattern string) *blob.ListOptions {
+func listOptions(globPattern string) (*blob.ListOptions, bool) {
 	listOptions := &blob.ListOptions{BeforeList: func(as func(interface{}) bool) error {
 		// Access storage.Query via q here.
 		var q *storage.Query
@@ -280,11 +312,12 @@ func listOptions(globPattern string) *blob.ListOptions {
 	if !fileutil.IsGlob(glob) {
 		// single file
 		listOptions.Prefix = globPattern
+		return nil, false
 	} else if prefix != "." {
 		listOptions.Prefix = prefix
 	}
 
-	return listOptions
+	return listOptions, true
 }
 
 // download full object

@@ -5,8 +5,8 @@ import type {
   V1Model,
   V1ReconcileError,
 } from "@rilldata/web-common/runtime-client";
-import { readable, Subscriber } from "svelte/store";
-import { Document, ParsedNode, parseDocument, YAMLMap } from "yaml";
+import { Subscriber, readable } from "svelte/store";
+import { Document, ParsedNode, YAMLMap, parseDocument } from "yaml";
 import type { Collection } from "yaml/dist/nodes/Collection";
 import { selectTimestampColumnFromSchema } from "./column-selectors";
 
@@ -32,11 +32,19 @@ export interface MeasureEntity {
   __ERROR__?: string;
 }
 export interface DimensionEntity {
+  name?: string;
   label?: string;
   property?: string;
+  column?: string;
   description?: string;
   __ERROR__?: string;
 }
+
+// This is used to extract the base name from an auto incremented name.
+// EG: "measure_2".replace(NameNumberRegex, "") => "measure"
+const NameNumberRegex = new RegExp(/(\d+)$/);
+const MeasureNamePrefix = "measure";
+const DimensionNamePrefix = "dimension";
 
 export class MetricsInternalRepresentation {
   // All operations are done on the document to preserve comments
@@ -70,20 +78,16 @@ export class MetricsInternalRepresentation {
 
   decorateInternalRepresentation(yamlString: string) {
     const internalRepresentationDoc = parseDocument(yamlString);
-    const numberOfMeasures =
-      (internalRepresentationDoc.get("measures") as Collection)?.items
-        ?.length || 0;
 
-    Array(numberOfMeasures)
-      .fill(0)
-      .map((_, i) => {
-        const measure = internalRepresentationDoc.getIn([
-          "measures",
-          i,
-        ]) as YAMLMap;
-
-        measure.add({ key: "__GUID__", value: guidGenerator() });
-      });
+    this.fillNames(
+      (internalRepresentationDoc.get("measures") as Collection)
+        ?.items as YAMLMap[],
+      MeasureNamePrefix
+    );
+    this.fixDimensions(
+      (internalRepresentationDoc.get("dimensions") as Collection)
+        ?.items as YAMLMap[]
+    );
 
     this.internalRepresentationDocument = internalRepresentationDoc;
 
@@ -181,8 +185,8 @@ export class MetricsInternalRepresentation {
 
   addNewMeasure() {
     const newName = getName(
-      "measure",
-      this.internalRepresentation.measures.map((measure) => measure.name)
+      MeasureNamePrefix,
+      this.internalRepresentation.measures.map((measure) => measure?.name || "")
     );
 
     const measureNode = this.internalRepresentationDocument.createNode({
@@ -214,9 +218,15 @@ export class MetricsInternalRepresentation {
   }
 
   addNewDimension() {
+    const newName = getName(
+      DimensionNamePrefix,
+      this.internalRepresentation.dimensions.map((dimension) => dimension.name)
+    );
+
     const dimensionNode = this.internalRepresentationDocument.createNode({
+      name: newName,
       label: "",
-      property: "",
+      column: "",
       description: "",
     });
 
@@ -235,6 +245,54 @@ export class MetricsInternalRepresentation {
   deleteDimension(index: number) {
     this.internalRepresentationDocument.deleteIn(["dimensions", index]);
     this.regenerateInternalYAML();
+  }
+
+  fixDimensions(dimensions: Array<YAMLMap>) {
+    this.fillNames(dimensions, DimensionNamePrefix);
+
+    for (const dimension of dimensions) {
+      const property = dimension.get("property");
+      if (property) {
+        dimension.delete("property");
+      }
+
+      const column = dimension.get("column");
+      if (!column) {
+        dimension.set("column", property);
+      }
+    }
+  }
+
+  fillNames(entities: Array<YAMLMap>, namePrefix: string) {
+    const numberOfEntities = entities?.length || 0;
+    const availableNames = new Array<number>(numberOfEntities).fill(1);
+    let missingName = false;
+
+    for (let i = 0; i < numberOfEntities; i++) {
+      if (entities[i].has("name")) {
+        const name = entities[i].get("name") as string;
+        const baseName = name.toLowerCase().replace(NameNumberRegex, "");
+        if (baseName === namePrefix) {
+          availableNames[i] = 0;
+        }
+      } else {
+        missingName = true;
+      }
+    }
+
+    // skip the following loop if all measures have names
+    if (!missingName) return;
+
+    for (let i = 0, nameCur = 0; i < numberOfEntities; i++) {
+      if (entities[i].has("name")) continue;
+      while (availableNames[nameCur] === 0) {
+        nameCur++;
+      }
+
+      const newName = nameCur === 0 ? namePrefix : `${namePrefix}_${nameCur}`;
+      entities[i].add({ key: "name", value: newName });
+      nameCur++;
+    }
   }
 }
 
@@ -297,8 +355,9 @@ export function addQuickMetricsToDashboardYAML(yaml: string, model: V1Model) {
     })
     .map((field) => {
       return {
+        name: field.name,
         label: capitalize(field.name),
-        property: field.name,
+        column: field.name,
         description: "",
       };
     });

@@ -37,7 +37,7 @@ service AdminService {
   // UpdateOrganization deletes an organizations
   rpc UpdateOrganization(UpdateOrganizationRequest) returns (UpdateOrganizationResponse) {
     option (google.api.http) = {
-      put: "/v1/organizations/{name}",
+      patch: "/v1/organizations/{name}",
       body: "*"
     };
   }
@@ -73,7 +73,7 @@ service AdminService {
   // UpdateProject updates a project
   rpc UpdateProject(UpdateProjectRequest) returns (UpdateProjectResponse) {
     option (google.api.http) = {
-      put: "/v1/organizations/{organization_name}/projects/{name}",
+      patch: "/v1/organizations/{organization_name}/projects/{name}",
       body: "*"
     };
   }
@@ -184,6 +184,14 @@ service AdminService {
     };
   }
 
+  // IssueRepresentativeAuthToken returns the temporary token for given email
+  rpc IssueRepresentativeAuthToken(IssueRepresentativeAuthTokenRequest) returns (IssueRepresentativeAuthTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/tokens/represent",
+      body: "*"
+    };
+  }
+
   // RevokeCurrentAuthToken revoke the current auth token
   rpc RevokeCurrentAuthToken(RevokeCurrentAuthTokenRequest) returns (RevokeCurrentAuthTokenResponse) {
     option (google.api.http) = {delete: "/v1/tokens/current"};
@@ -195,18 +203,72 @@ service AdminService {
     option (google.api.http) = {get: "/v1/github/repositories"};
   }
 
-  // CreateAutoinviteDomain adds a domain to the autoinvite list
-  rpc CreateAutoinviteDomain(CreateAutoinviteDomainRequest) returns (CreateAutoinviteDomainResponse) {
+  // GetGitCredentials returns credentials and other details for a project's Git repository.
+  rpc GetGitCredentials(GetGitCredentialsRequest) returns (GetGitCredentialsResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/git-credentials"};
+  }
+
+  // CreateWhitelistedDomain adds a domain to the whitelist
+  rpc CreateWhitelistedDomain(CreateWhitelistedDomainRequest) returns (CreateWhitelistedDomainResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/autoinvite",
+      post: "/v1/organizations/{organization}/whitelisted",
       body: "*"
     };
   }
 
-  // RemoveAutoinviteDomain removes a domain from the autoinvite list
-  rpc RemoveAutoinviteDomain(RemoveAutoinviteDomainRequest) returns (RemoveAutoinviteDomainResponse) {
-    option (google.api.http) = {delete: "/v1/organizations/{organization}/autoinvite/{domain}"};
+  // RemoveWhitelistedDomain removes a domain from the whitelist list
+  rpc RemoveWhitelistedDomain(RemoveWhitelistedDomainRequest) returns (RemoveWhitelistedDomainResponse) {
+    option (google.api.http) = {delete: "/v1/organizations/{organization}/whitelisted/{domain}"};
   }
+
+  // ListWhitelistedDomains lists all the whitelisted domains for the organization
+  rpc ListWhitelistedDomains(ListWhitelistedDomainsRequest) returns (ListWhitelistedDomainsResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/whitelisted"};
+  }
+
+  // GetUser returns user by email
+  rpc GetUser(GetUserRequest) returns (GetUserResponse) {
+    option (google.api.http) = {get: "/v1/users"};
+  }
+   // GetUsersByEmail returns users by email
+  rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse) {
+    option (google.api.http) = {get: "/v1/users/search"};
+  }
+
+  // ListSuperusers lists all the superusers
+  rpc ListSuperusers(ListSuperusersRequest) returns (ListSuperusersResponse) {
+    option (google.api.http) = {get: "/v1/superuser/members"};
+  }
+
+  // SetSuperuser adds/remove a superuser
+  rpc SetSuperuser(SetSuperuserRequest) returns (SetSuperuserResponse) {
+    option (google.api.http) = {
+      post: "/v1/superuser/members",
+      body: "*"
+    };
+  }
+
+   // SudoGetResource returns details about a resource by ID lookup
+  rpc SudoGetResource(SudoGetResourceRequest) returns (SudoGetResourceResponse) {
+    option (google.api.http) = {get: "/v1/superuser/resource"};
+  }
+
+  // SudoUpdateUserQuotas update the quotas for users
+  rpc SudoUpdateUserQuotas(SudoUpdateUserQuotasRequest) returns (SudoUpdateUserQuotasResponse) {
+    option (google.api.http) = {
+      patch: "/v1/superuser/quotas/user",
+      body: "*"
+    };
+  }
+
+  // SudoUpdateOrganizationQuotas update the quotas available for orgs
+  rpc SudoUpdateOrganizationQuotas(SudoUpdateOrganizationQuotasRequest) returns (SudoUpdateOrganizationQuotasResponse) {
+    option (google.api.http) = {
+      patch: "/v1/superuser/quotas/organization",
+      body: "*"
+    };
+  }
+
 }
 
 message PingRequest {}
@@ -217,7 +279,7 @@ message PingResponse {
 }
 
 message ListOrganizationsRequest {
-  uint32 page_size = 1 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  uint32 page_size = 1 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 2;
 }
 
@@ -251,9 +313,9 @@ message DeleteOrganizationRequest {
 message DeleteOrganizationResponse {}
 
 message UpdateOrganizationRequest {
-  string id = 1;
-  string name = 2 [(validate.rules).string.min_len = 1];
-  string description = 3;
+  string name = 1 [(validate.rules).string.min_len = 1];
+  optional string description = 2;
+  optional string new_name = 3;
 }
 
 message UpdateOrganizationResponse {
@@ -262,7 +324,7 @@ message UpdateOrganizationResponse {
 
 message ListProjectsForOrganizationRequest {
   string organization_name = 1 [(validate.rules).string.min_len = 1];
-  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
 }
 
@@ -319,13 +381,15 @@ message DeleteProjectRequest {
 message DeleteProjectResponse {}
 
 message UpdateProjectRequest {
-  string id = 1;
-  string organization_name = 2 [(validate.rules).string.min_len = 1];
-  string name = 3 [(validate.rules).string.min_len = 1];
-  string description = 4;
-  bool public = 5;
-  string prod_branch = 6;
-  string github_url = 7;
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string name = 2 [(validate.rules).string.min_len = 1];
+  optional string description = 3;
+  optional bool public = 4;
+  optional string prod_branch = 5;
+  optional string github_url = 6;
+  optional int64 prod_slots = 7;
+  optional string region = 8;
+  optional string new_name = 9;
 }
 
 message UpdateProjectResponse {
@@ -363,7 +427,7 @@ message TriggerRedeployResponse {}
 
 message ListOrganizationMembersRequest {
   string organization = 1;
-  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
 }
 
@@ -374,7 +438,7 @@ message ListOrganizationMembersResponse {
 
 message ListOrganizationInvitesRequest {
   string organization = 1;
-  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
 }
 
@@ -415,10 +479,71 @@ message SetOrganizationMemberRoleRequest {
 
 message SetOrganizationMemberRoleResponse {}
 
+message ListSuperusersRequest {}
+
+message ListSuperusersResponse {
+  repeated User users = 1;
+}
+
+message SetSuperuserRequest {
+  string email = 1 [(validate.rules).string.email = true];
+  bool superuser = 2;
+}
+
+message SetSuperuserResponse {}
+
+// SudoGetResourceRequest
+message SudoGetResourceRequest {
+  oneof id {
+    string user_id = 1;
+    string org_id = 2;
+    string project_id = 3;
+    string deployment_id = 4;
+    string instance_id = 5;
+  }
+}
+
+// SudoGetResourceResponse
+message SudoGetResourceResponse {
+  oneof resource {
+    User user = 1;
+    Organization org = 2;
+    Project project = 3;
+    Deployment deployment = 4;
+    Deployment instance = 5;
+  }
+}
+
+// SudoUpdateOrganizationQuotasRequest
+message SudoUpdateOrganizationQuotasRequest {
+  string org_name = 1;
+  optional uint32 projects = 2;
+  optional uint32 deployments = 3;
+  optional uint32 slots_total = 4;
+  optional uint32 slots_per_deployment = 5;
+  optional uint32 outstanding_invites = 6;
+}
+
+// SudoUpdateOrganizationQuotasResponse
+message SudoUpdateOrganizationQuotasResponse {
+  Organization organization = 1;
+}
+
+// SudoUpdateUserQuotasRequest
+message SudoUpdateUserQuotasRequest {
+  string email = 1;
+  optional uint32 singleuser_orgs = 2;
+}
+
+// SudoUpdateUserQuotasResponse
+message SudoUpdateUserQuotasResponse {
+  User user = 1;
+}
+
 message ListProjectMembersRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
-  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 4 ;
 }
 
@@ -430,7 +555,7 @@ message ListProjectMembersResponse {
 message ListProjectInvitesRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
-  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 4;
 }
 
@@ -473,10 +598,39 @@ message GetCurrentUserResponse {
   User user = 1;
 }
 
+message GetUserRequest {
+  string email = 1 [(validate.rules).string.email = true];
+}
+
+message GetUserResponse {
+  User user = 1;
+}
+
+// It can be some string as well so not validating for email here
+message SearchUsersRequest {
+  string email_pattern = 1 [(validate.rules).string.min_len = 1];
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
+  string page_token = 3;
+}
+
+message SearchUsersResponse {
+  repeated User users = 1;
+  string next_page_token = 2;
+}
+
 message RevokeCurrentAuthTokenRequest {}
 
 message RevokeCurrentAuthTokenResponse {
   string token_id = 1;
+}
+
+message IssueRepresentativeAuthTokenRequest {
+  string email = 1 [(validate.rules).string.email = true];
+  int64 ttl_minutes = 2;
+}
+
+message IssueRepresentativeAuthTokenResponse {
+  string token = 1;
 }
 
 message GetGithubRepoStatusRequest {
@@ -489,36 +643,71 @@ message GetGithubRepoStatusResponse {
   string default_branch = 3;
 }
 
-message CreateAutoinviteDomainRequest {
+message GetGitCredentialsRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+}
+
+message GetGitCredentialsResponse {
+  string repo_url = 1;
+  string username = 2;
+  string password = 3;
+  string subpath = 4;
+  string prod_branch = 5;
+}
+
+message CreateWhitelistedDomainRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string domain = 2 [(validate.rules).string.min_len = 1];
   string role = 3 [(validate.rules).string.min_len = 1];
 }
 
-message CreateAutoinviteDomainResponse {}
+message CreateWhitelistedDomainResponse {}
 
-message RemoveAutoinviteDomainRequest {
+message RemoveWhitelistedDomainRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string domain = 2 [(validate.rules).string.min_len = 1];
 }
 
-message RemoveAutoinviteDomainResponse {}
+message RemoveWhitelistedDomainResponse {}
+
+message ListWhitelistedDomainsRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+}
+
+message ListWhitelistedDomainsResponse {
+  repeated WhitelistedDomain domains = 1;
+}
 
 message User {
   string id = 1;
   string email = 2;
   string display_name = 3;
   string photo_url = 4;
-  google.protobuf.Timestamp created_on = 5;
-  google.protobuf.Timestamp updated_on = 6;
+  UserQuotas quotas = 5;
+  google.protobuf.Timestamp created_on = 6;
+  google.protobuf.Timestamp updated_on = 7;
 }
 
 message Organization {
   string id = 1;
   string name = 2; // Globally unique
   string description = 3;
-  google.protobuf.Timestamp created_on = 4;
-  google.protobuf.Timestamp updated_on = 5;
+  OrganizationQuotas quotas = 4;
+  google.protobuf.Timestamp created_on = 5;
+  google.protobuf.Timestamp updated_on = 6;
+}
+
+message UserQuotas {
+  uint32 singleuser_orgs = 1;
+}
+
+message OrganizationQuotas {
+  uint32 projects = 1;
+  uint32 deployments = 2;
+  uint32 slots_total = 3;
+  uint32 slots_per_deployment = 4;
+  uint32 outstanding_invites = 5;
 }
 
 message Project {
@@ -598,4 +787,9 @@ message UserInvite {
   string email = 1;
   string role = 2;
   string invited_by = 3;
+}
+
+message WhitelistedDomain {
+  string domain = 1;
+  string role = 2;
 }

@@ -1,6 +1,7 @@
 package user
 
 import (
+	"github.com/rilldata/rill/cli/cmd/user/whitelist"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/spf13/cobra"
@@ -17,6 +18,7 @@ func UserCmd(cfg *config.Config) *cobra.Command {
 	userCmd.AddCommand(AddCmd(cfg))
 	userCmd.AddCommand(RemoveCmd(cfg))
 	userCmd.AddCommand(SetRoleCmd(cfg))
+	userCmd.AddCommand(whitelist.WhitelistCmd(cfg))
 
 	return userCmd
 }

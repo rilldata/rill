@@ -4,6 +4,7 @@ import {
   getFilterForComparsion,
   updateFilterOnSearch,
 } from "./dimension-table-utils";
+import { describe, it, expect } from "vitest";
 
 const emptyFilter = {
   include: [],

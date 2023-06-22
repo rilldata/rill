@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { justEnoughPrecision } from "./formatters";
 
 interface TestCase {

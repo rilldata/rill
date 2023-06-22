@@ -12,6 +12,7 @@
   export let scrolling = false;
   export let activeIndex: number;
   export let excludeMode = false;
+  export let cellLabel = undefined;
 
   $: atLeastOneSelected = !!selectedIndex?.length;
 
@@ -46,6 +47,7 @@
         {...getCellProps(row, column)}
         on:inspect
         on:select-item
+        label={cellLabel}
       />
     {/each}
   </Row>

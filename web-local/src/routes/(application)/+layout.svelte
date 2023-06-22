@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { RillDeveloperLayout } from "@rilldata/web-common/layout";
+  import RillDeveloperLayout from "@rilldata/web-common/layout/RillDeveloperLayout.svelte";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
   import { RuntimeUrl } from "@rilldata/web-local/lib/application-state-stores/initialize-node-store-contexts";
   import { QueryClientProvider } from "@tanstack/svelte-query";

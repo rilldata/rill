@@ -15,9 +15,9 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 	var name, description string
 
 	createCmd := &cobra.Command{
-		Use:   "create",
+		Use:   "create [<org-name>]",
 		Short: "Create organization",
-		Args:  cobra.NoArgs,
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -25,9 +25,12 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			if !cmd.Flags().Changed("name") {
-				// Get the new org name from user if not provided in the flag
-				name, err = cmdutil.InputPrompt("Enter the org name", "")
+			if len(args) > 0 {
+				name = args[0]
+			}
+
+			if len(args) == 0 && cfg.Interactive {
+				err = cmdutil.SetFlagsByInputPrompts(*cmd, "name")
 				if err != nil {
 					return err
 				}
@@ -52,13 +55,13 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Created organization")
+			cmdutil.PrintlnSuccess("Created organization")
 			cmdutil.TablePrinter(toRow(res.Organization))
 			return nil
 		},
 	}
 	createCmd.Flags().SortFlags = false
-	createCmd.Flags().StringVar(&name, "name", "", "Name")
+	createCmd.Flags().StringVar(&name, "name", "", "Organization Name")
 	createCmd.Flags().StringVar(&description, "description", "", "Description")
 	return createCmd
 }

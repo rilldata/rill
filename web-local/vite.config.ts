@@ -12,12 +12,15 @@ try {
   console.error(e);
 }
 
-const config = defineConfig({
+const config = defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       src: "/src", // trick to get absolute imports to work
       "@rilldata/web-local": "/src",
       "@rilldata/web-common": "/../web-common/src",
+      // Adding $img alias to fix Vite build warnings due to static assets referenced in CSS
+      // See: https://stackoverflow.com/questions/75843825/sveltekit-dev-build-and-path-problems-with-static-assets-referenced-in-css
+      $img: mode === "production" ? "/../web-common/static/img" : "../img",
     },
   },
   server: {
@@ -31,6 +34,6 @@ const config = defineConfig({
     RILL_RUNTIME_URL: `"${runtimeUrl}"`,
   },
   plugins: [sveltekit()],
-});
+}));
 
 export default config;

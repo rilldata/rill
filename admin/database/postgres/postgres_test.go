@@ -2,43 +2,23 @@ package postgres
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 // TestPostgres starts Postgres using testcontainers and runs all other tests in
 // this file as sub-tests (to prevent spawning many clusters).
 func TestPostgres(t *testing.T) {
 	ctx := context.Background()
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		Started: true,
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "postgres:14",
-			ExposedPorts: []string{"5432/tcp"},
-			WaitingFor:   wait.ForListeningPort("5432/tcp"),
-			Env: map[string]string{
-				"POSTGRES_USER":     "postgres",
-				"POSTGRES_PASSWORD": "postgres",
-				"POSTGRES_DB":       "postgres",
-			},
-		},
-	})
-	require.NoError(t, err)
-	defer container.Terminate(ctx)
 
-	host, err := container.Host(ctx)
-	require.NoError(t, err)
-	port, err := container.MappedPort(ctx, "5432/tcp")
-	require.NoError(t, err)
-	databaseURL := fmt.Sprintf("postgres://postgres:postgres@%s:%d/postgres", host, port.Int())
+	pg := pgtestcontainer.New(t)
+	defer pg.Terminate(t)
 
-	db, err := database.Open("postgres", databaseURL)
+	db, err := database.Open("postgres", pg.DatabaseURL)
 	require.NoError(t, err)
 	require.NotNil(t, db)
 

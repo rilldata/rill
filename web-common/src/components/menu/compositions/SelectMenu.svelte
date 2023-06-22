@@ -34,6 +34,8 @@ A slot is provided to change the text within the button.
   export let paddingTop = 1;
   export let paddingBottom = 1;
 
+  export let label: undefined | string = undefined;
+
   if (dark) {
     setContext("rill:menu:dark", dark);
   }
@@ -73,6 +75,7 @@ A slot is provided to change the text within the button.
     {block}
     {disabled}
     {level}
+    {label}
   >
     <slot>
       <div>

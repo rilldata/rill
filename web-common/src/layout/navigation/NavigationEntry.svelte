@@ -5,7 +5,6 @@
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
-  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import { Menu } from "@rilldata/web-common/components/menu";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -92,11 +91,9 @@
     class="
     focus:bg-gray-200
     focus:outline-none
-    navigation-entry-title grid gap-x-1 items-center pl-2 pr-2 {!isActive &&
-    !mousedown
-      ? 'hover:bg-gray-100'
-      : ''}"
-    style:grid-template-columns="max-content auto max-content"
+    flex gap-x-[7px] items-center {expandable
+      ? 'pl-[11px]'
+      : 'pl-8'} pr-2 py-1 {!isActive && !mousedown ? 'hover:bg-gray-100' : ''}"
     use:commandClickAction
     use:shiftClickAction
     on:command-click
@@ -104,19 +101,15 @@
   >
     <!-- slot for navigation click -->
 
-    <div>
-      {#if expandable}
-        <ExpanderButton
-          bind:isHovered={seeMoreHovered}
-          rotated={showDetails}
-          on:click={onShowDetails}
-        >
-          <CaretDownIcon size="14px" />
-        </ExpanderButton>
-      {:else}
-        <Spacer size="14px" />
-      {/if}
-    </div>
+    {#if expandable}
+      <ExpanderButton
+        bind:isHovered={seeMoreHovered}
+        rotated={showDetails}
+        on:click={onShowDetails}
+      >
+        <CaretDownIcon size="14px" />
+      </ExpanderButton>
+    {/if}
 
     <div
       class="ui-copy flex items-center gap-x-1 w-full text-ellipsis overflow-hidden whitespace-nowrap"

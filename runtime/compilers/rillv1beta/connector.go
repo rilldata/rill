@@ -158,7 +158,7 @@ func read(ctx context.Context, path string) (*drivers.CatalogEntry, error) {
 		return nil, fmt.Errorf("error in reading file %v : %w", path, err)
 	}
 
-	catalog, err := artifact.DeSerialise(ctx, path, string(content))
+	catalog, err := artifact.DeSerialise(ctx, path, string(content), false)
 	if err != nil {
 		return nil, err
 	}

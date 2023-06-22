@@ -11,6 +11,9 @@ import (
 // ErrNotFound indicates the resource wasn't found.
 var ErrNotFound = errors.New("driver: not found")
 
+// ErrDropNotSupported indicates the driver doesn't support dropping its underlying store.
+var ErrDropNotSupported = errors.New("driver: drop not supported")
+
 // Drivers is a registry of drivers.
 var Drivers = make(map[string]Driver)
 
@@ -37,9 +40,23 @@ func Open(driver, dsn string, logger *zap.Logger) (Connection, error) {
 	return conn, nil
 }
 
+// Drop tears down a store. Drivers that do not support it return ErrDropNotSupported.
+func Drop(driver, dsn string, logger *zap.Logger) error {
+	d, ok := Drivers[driver]
+	if !ok {
+		return fmt.Errorf("unknown driver: %s", driver)
+	}
+
+	return d.Drop(dsn, logger)
+}
+
 // Driver represents an underlying DB.
 type Driver interface {
+	// Open opens a new connection to an underlying store.
 	Open(dsn string, logger *zap.Logger) (Connection, error)
+
+	// Drop tears down a store. Drivers that do not support it return ErrDropNotSupported.
+	Drop(dsn string, logger *zap.Logger) error
 }
 
 // Connection represents a connection to an underlying DB.

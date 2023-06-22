@@ -14,6 +14,7 @@
   export let isHovered = false;
   export let rounded = false;
   export let border = false;
+  export let label: string | undefined = undefined;
 
   const { hovered, captureHoverState } = createHoverStateActionFactory();
   hovered.subscribe((trueOrFalse) => {
@@ -50,6 +51,7 @@
         border-transparent
         hover:border-gray-400
         {rotated ? '-rotate-90' : ''}"
+    aria-label={label}
   >
     <slot />
   </button>

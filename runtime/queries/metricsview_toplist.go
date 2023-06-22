@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -41,8 +42,11 @@ func (q *MetricsViewToplist) Deps() []string {
 	return []string{q.MetricsViewName}
 }
 
-func (q *MetricsViewToplist) MarshalResult() any {
-	return q.Result
+func (q *MetricsViewToplist) MarshalResult() *runtime.QueryResult {
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: sizeProtoMessage(q.Result),
+	}
 }
 
 func (q *MetricsViewToplist) UnmarshalResult(v any) error {
@@ -93,14 +97,36 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	return nil
 }
 
+func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.ExportFormat, writer io.Writer) error {
+	err := q.Resolve(ctx, rt, instanceID, priority)
+	if err != nil {
+		return err
+	}
+
+	switch format {
+	case runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED:
+		return fmt.Errorf("unspecified format")
+	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
+		return writeCSV(q.Result.Meta, q.Result.Data, writer)
+	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
+		return writeXLSX(q.Result.Meta, q.Result.Data, writer)
+	}
+
+	return nil
+}
+
 func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect) (string, []any, error) {
 	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
 	if err != nil {
 		return "", nil, err
 	}
 
-	dimName := safeName(q.DimensionName)
-	selectCols := []string{dimName}
+	colName, err := metricsViewDimensionToSafeColumn(mv, q.DimensionName)
+	if err != nil {
+		return "", nil, err
+	}
+
+	selectCols := []string{colName}
 	for _, m := range ms {
 		expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
 		selectCols = append(selectCols, expr)
@@ -120,7 +146,7 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, d
 	}
 
 	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(q.Filter, dialect)
+		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -148,13 +174,14 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, d
 		q.Limit = 100
 	}
 
-	sql := fmt.Sprintf("SELECT %s FROM %q WHERE %s GROUP BY %s %s LIMIT %d",
+	sql := fmt.Sprintf("SELECT %s FROM %q WHERE %s GROUP BY %s %s LIMIT %d OFFSET %d",
 		strings.Join(selectCols, ", "),
 		mv.Model,
 		whereClause,
-		dimName,
+		colName,
 		orderClause,
 		q.Limit,
+		q.Offset,
 	)
 
 	return sql, args, nil

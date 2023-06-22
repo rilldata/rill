@@ -192,6 +192,7 @@
 
     <Tooltip location="right" distance={8} suppress={active}>
       <IconButton
+        ariaLabel="Remove timestamp column"
         compact
         rounded
         marginClasses="ml-1"

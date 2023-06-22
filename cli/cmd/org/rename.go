@@ -29,7 +29,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 
 			fmt.Println("Warn: Renaming an org would invalidate dashboard URLs")
 
-			if !cmd.Flags().Changed("org") {
+			if !cmd.Flags().Changed("org") && cfg.Interactive {
 				orgNames, err := cmdutil.OrgNames(ctx, client)
 				if err != nil {
 					return err
@@ -38,12 +38,15 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				name = cmdutil.SelectPrompt("Select org to rename", orgNames, "")
 			}
 
-			if !cmd.Flags().Changed("new-name") {
-				// Get the new org name from user if not provided in the flag, passing current name as default
-				newName, err = cmdutil.InputPrompt("Rename to", "")
+			if cfg.Interactive {
+				err = cmdutil.SetFlagsByInputPrompts(*cmd, "new-name")
 				if err != nil {
 					return err
 				}
+			}
+
+			if newName == "" {
+				return fmt.Errorf("please provide valid org new-name, provided: %q", newName)
 			}
 
 			msg := fmt.Sprintf("Do you want to rename org \"%s\" to \"%s\"?", color.YellowString(name), color.YellowString(newName))
@@ -51,16 +54,9 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				return nil
 			}
 
-			resp, err := client.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: name})
-			if err != nil {
-				return err
-			}
-
-			org := resp.Organization
 			updatedOrg, err := client.UpdateOrganization(ctx, &adminv1.UpdateOrganizationRequest{
-				Id:          org.Id,
-				Name:        newName,
-				Description: org.Description,
+				Name:    name,
+				NewName: &newName,
 			})
 			if err != nil {
 				return err
@@ -71,7 +67,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Renamed organization")
+			cmdutil.PrintlnSuccess("Renamed organization")
 			cmdutil.TablePrinter(toRow(updatedOrg.Organization))
 			return nil
 		},

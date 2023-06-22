@@ -19,5 +19,4 @@ rill docs [flags]
 ### SEE ALSO
 
 * [rill](../cli.md)	 - Rill CLI
-* [rill docs generate](generate.md)	 - Generate CLI documentation
 

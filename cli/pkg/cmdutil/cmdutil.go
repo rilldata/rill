@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,6 +17,8 @@ import (
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -76,10 +79,10 @@ func Spinner(prefix string) *spinner.Spinner {
 func TablePrinter(v interface{}) {
 	var b strings.Builder
 	tableprinter.Print(&b, v)
-	fmt.Fprintln(os.Stdout, b.String())
+	fmt.Fprint(os.Stdout, b.String())
 }
 
-func SuccessPrinter(str string) {
+func PrintlnSuccess(str string) {
 	boldGreen := color.New(color.FgGreen).Add(color.Bold)
 	boldGreen.Fprintln(color.Output, str)
 }
@@ -146,7 +149,7 @@ func InputPrompt(msg, def string) (string, error) {
 		fmt.Printf("Prompt failed %v\n", err)
 		return "", err
 	}
-	return result, nil
+	return strings.TrimSpace(result), nil
 }
 
 func StringPromptIfEmpty(input *string, msg string) {
@@ -162,6 +165,7 @@ func StringPromptIfEmpty(input *string, msg string) {
 		fmt.Printf("Prompt failed %v\n", err)
 		os.Exit(1)
 	}
+	*input = strings.TrimSpace(*input)
 }
 
 func SelectPromptIfEmpty(input *string, msg string, options []string, def string) {
@@ -197,18 +201,26 @@ func OrgExists(ctx context.Context, c *client.Client, name string) (bool, error)
 	return true, nil
 }
 
-func WarnPrinter(str string) {
+func PrintlnWarn(str string) {
 	boldYellow := color.New(color.FgYellow).Add(color.Bold)
 	boldYellow.Fprintln(color.Output, str)
 }
 
-func PrintMembers(members []*adminv1.Member) {
-	if len(members) == 0 {
-		WarnPrinter("No members found")
+func PrintUsers(users []*adminv1.User) {
+	if len(users) == 0 {
+		PrintlnWarn("No users found")
 		return
 	}
 
-	SuccessPrinter("Members list")
+	TablePrinter(toUsersTable(users))
+}
+
+func PrintMembers(members []*adminv1.Member) {
+	if len(members) == 0 {
+		PrintlnWarn("No members found")
+		return
+	}
+
 	TablePrinter(toMemberTable(members))
 }
 
@@ -217,8 +229,18 @@ func PrintInvites(invites []*adminv1.UserInvite) {
 		return
 	}
 
-	SuccessPrinter("Pending user invites")
+	PrintlnSuccess("Pending user invites")
 	TablePrinter(toInvitesTable(invites))
+}
+
+func toUsersTable(users []*adminv1.User) []*user {
+	allUsers := make([]*user, 0, len(users))
+
+	for _, m := range users {
+		allUsers = append(allUsers, toUserRow(m))
+	}
+
+	return allUsers
 }
 
 func toMemberTable(members []*adminv1.Member) []*member {
@@ -241,12 +263,24 @@ func toMemberRow(m *adminv1.Member) *member {
 	}
 }
 
+func toUserRow(m *adminv1.User) *user {
+	return &user{
+		Name:  m.DisplayName,
+		Email: m.Email,
+	}
+}
+
 type member struct {
 	Name      string `header:"name" json:"display_name"`
 	Email     string `header:"email" json:"email"`
-	RoleName  string `header:"role_name" json:"role_name"`
+	RoleName  string `header:"role" json:"role_name"`
 	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_on"`
 	UpdatedOn string `header:"updated_on,timestamp(ms|utc|human)" json:"updated_on"`
+}
+
+type user struct {
+	Name  string `header:"name" json:"display_name"`
+	Email string `header:"email" json:"email"`
 }
 
 func toInvitesTable(invites []*adminv1.UserInvite) []*userInvite {
@@ -268,7 +302,7 @@ func toInviteRow(i *adminv1.UserInvite) *userInvite {
 
 type userInvite struct {
 	Email     string `header:"email" json:"email"`
-	RoleName  string `header:"role_name" json:"role_name"`
+	RoleName  string `header:"role" json:"role_name"`
 	InvitedBy string `header:"invited_by" json:"invited_by"`
 }
 
@@ -291,11 +325,9 @@ func ProjectNamesByGithubURL(ctx context.Context, c *client.Client, org, githubU
 	}
 
 	names := make([]string, 0)
-	i := 0
 	for _, p := range resp.Projects {
 		if strings.EqualFold(p.GithubUrl, githubURL) {
-			names[i] = p.Name
-			i++
+			names = append(names, p.Name)
 		}
 	}
 
@@ -374,4 +406,61 @@ func DefaultProjectName() string {
 	}
 
 	return ""
+}
+
+func SetFlagsByInputPrompts(cmd cobra.Command, flags ...string) error {
+	var err error
+	var val string
+	cmd.Flags().VisitAll(func(f *pflag.Flag) {
+		if !f.Changed && slices.Contains(flags, f.Name) {
+			if f.Value.Type() == "string" {
+				val, err = InputPrompt(fmt.Sprintf("Enter the %s", f.Usage), f.DefValue)
+				if err != nil {
+					fmt.Println("error while input prompt, error:", err)
+					return
+				}
+			}
+
+			if f.Value.Type() == "bool" {
+				var public bool
+				defVal, err := strconv.ParseBool(f.DefValue)
+				if err != nil {
+					return
+				}
+
+				prompt := &survey.Confirm{
+					Message: fmt.Sprintf("Confirm \"%s\"?", f.Usage),
+					Default: defVal,
+				}
+
+				err = survey.AskOne(prompt, &public)
+				if err != nil {
+					return
+				}
+
+				val = fmt.Sprintf("%t", public)
+			}
+
+			err = f.Value.Set(val)
+			if err != nil {
+				fmt.Println("error while setting values, error:", err)
+				return
+			}
+		}
+	})
+
+	return err
+}
+
+func FetchUserID(ctx context.Context, cfg *config.Config) (string, error) {
+	c, err := Client(cfg)
+	if err != nil {
+		return "", err
+	}
+	defer c.Close()
+	user, err := c.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
+	if err != nil {
+		return "", err
+	}
+	return user.GetUser().GetId(), nil
 }

@@ -15,8 +15,8 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 	var orgName, description string
 
 	editCmd := &cobra.Command{
-		Use:   "edit",
-		Args:  cobra.NoArgs,
+		Use:   "edit [<org-name>]",
+		Args:  cobra.MaximumNArgs(1),
 		Short: "Edit organization details",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -27,21 +27,16 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			if !cmd.Flags().Changed("org") {
+			if len(args) > 0 {
+				orgName = args[0]
+			}
+			if !cmd.Flags().Changed("org") && len(args) == 0 && cfg.Interactive {
 				orgNames, err := cmdutil.OrgNames(ctx, client)
 				if err != nil {
 					return err
 				}
 
 				orgName = cmdutil.SelectPrompt("Select org to edit", orgNames, cfg.Org)
-			}
-
-			if !cmd.Flags().Changed("description") {
-				// Get the new org description from user if not provided in the flag
-				description, err = cmdutil.InputPrompt("Enter the org description", description)
-				if err != nil {
-					return err
-				}
 			}
 
 			resp, err := client.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: orgName})
@@ -57,17 +52,30 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			org := resp.Organization
+			req := &adminv1.UpdateOrganizationRequest{
+				Name: org.Name,
+			}
 
-			updatedOrg, err := client.UpdateOrganization(ctx, &adminv1.UpdateOrganizationRequest{
-				Id:          org.Id,
-				Name:        org.Name,
-				Description: description,
-			})
+			promptFlagValues := cfg.Interactive
+			if cmd.Flags().Changed("description") {
+				promptFlagValues = false
+				req.Description = &description
+			}
+
+			if promptFlagValues {
+				description, err = cmdutil.InputPrompt("Enter the description", org.Description)
+				if err != nil {
+					return err
+				}
+				req.Description = &description
+			}
+
+			updatedOrg, err := client.UpdateOrganization(ctx, req)
 			if err != nil {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Updated organization")
+			cmdutil.PrintlnSuccess("Updated organization")
 			cmdutil.TablePrinter(toRow(updatedOrg.Organization))
 			return nil
 		},

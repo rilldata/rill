@@ -1,5 +1,9 @@
 # CONTRIBUTING
 
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/rilldata/rill)](https://pkg.go.dev/github.com/rilldata/rill)
+[![Go Report Card](https://goreportcard.com/badge/github.com/rilldata/rill)](https://goreportcard.com/report/github.com/rilldata/rill)
+[![codecov](https://codecov.io/gh/rilldata/rill/branch/main/graph/badge.svg?token=RQA182JGA5)](https://codecov.io/gh/rilldata/rill)
+
 This file should serve as an entrypoint for learning about and contributing to Rill Developer.
 
 ## Development environment
@@ -39,7 +43,7 @@ This will trigger the `cli-release.yml` Github Action, which will:
 - Create a Github release containing an auto-generated changelog and the new binaries
 - Publish the new version to our brew tap `rilldata/tap/rill`
 
-You can follow the progress of the release action from the ["Actions" tab](https://github.com/rilldata/rill-developer/actions). It usually completes in about 10 minutes. See our internal [release run book](https://www.notion.so/rilldata/Release-Run-Book-20a4afb8f2f64d06814a0c89d51bfdcf) for more details.
+You can follow the progress of the release action from the ["Actions" tab](https://github.com/rilldata/rill/actions). It usually completes in about 10 minutes. See our internal [release run book](https://www.notion.so/rilldata/Release-Run-Book-20a4afb8f2f64d06814a0c89d51bfdcf) for more details.
 
 ## Technologies
 

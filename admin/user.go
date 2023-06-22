@@ -2,12 +2,13 @@ package admin
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/mail"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/rilldata/rill/admin/database"
+	"go.uber.org/zap"
 )
 
 func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL string) (*database.User, error) {
@@ -21,9 +22,10 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	user, err := s.DB.FindUserByEmail(ctx, email)
 	if err == nil {
 		return s.DB.UpdateUser(ctx, user.ID, &database.UpdateUserOptions{
-			DisplayName:    name,
-			PhotoURL:       photoURL,
-			GithubUsername: user.GithubUsername,
+			DisplayName:         name,
+			PhotoURL:            photoURL,
+			GithubUsername:      user.GithubUsername,
+			QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
 		})
 	} else if !errors.Is(err, database.ErrNotFound) {
 		return nil, err
@@ -47,19 +49,28 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	// Create user
-	user, err = s.DB.InsertUser(ctx, &database.InsertUserOptions{
-		Email:               email,
-		DisplayName:         name,
-		PhotoURL:            photoURL,
-		QuotaSingleuserOrgs: database.DefaultQuotaSingleuserOrgs,
-	})
+	isFirstUser, err := s.DB.CheckUsersEmpty(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	addedToOrgs := make(map[string]bool)
+	opts := &database.InsertUserOptions{
+		Email:               email,
+		DisplayName:         name,
+		PhotoURL:            photoURL,
+		QuotaSingleuserOrgs: database.DefaultQuotaSingleuserOrgs,
+		Superuser:           isFirstUser,
+	}
+
+	// Create user
+	user, err = s.DB.InsertUser(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+
 	// handle org invites
+	addedToOrgIDs := make(map[string]bool)
+	addedToOrgNames := make([]string, 0)
 	for _, invite := range orgInvites {
 		org, err := s.DB.FindOrganization(ctx, invite.OrgID)
 		if err != nil {
@@ -77,25 +88,26 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
-		addedToOrgs[org.ID] = true
+		addedToOrgIDs[org.ID] = true
+		addedToOrgNames = append(addedToOrgNames, org.Name)
 	}
 
-	// check if users email domain is in autoinvite list
+	// check if users email domain is whitelisted
 	domain := email[strings.LastIndex(email, "@")+1:]
-	autoinvites, err := s.DB.FindOrganizationAutoinviteDomainsForDomain(ctx, domain)
+	whitelists, err := s.DB.FindOrganizationWhitelistedDomainsForDomain(ctx, domain)
 	if err != nil {
 		return nil, err
 	}
-	for _, autoinvite := range autoinvites {
-		// if user is already a member of the org then skip, prefer explicit invite over autoinvite
-		if _, ok := addedToOrgs[autoinvite.OrgID]; ok {
+	for _, whitelist := range whitelists {
+		// if user is already a member of the org then skip, prefer explicit invite to whitelist
+		if _, ok := addedToOrgIDs[whitelist.OrgID]; ok {
 			continue
 		}
-		org, err := s.DB.FindOrganization(ctx, autoinvite.OrgID)
+		org, err := s.DB.FindOrganization(ctx, whitelist.OrgID)
 		if err != nil {
 			return nil, err
 		}
-		err = s.DB.InsertOrganizationMemberUser(ctx, autoinvite.OrgID, user.ID, autoinvite.OrgRoleID)
+		err = s.DB.InsertOrganizationMemberUser(ctx, whitelist.OrgID, user.ID, whitelist.OrgRoleID)
 		if err != nil {
 			return nil, err
 		}
@@ -103,6 +115,8 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
+		addedToOrgIDs[org.ID] = true
+		addedToOrgNames = append(addedToOrgNames, org.Name)
 	}
 
 	// handle project invites
@@ -121,6 +135,13 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	if err != nil {
 		return nil, err
 	}
+
+	s.logger.Info("created user",
+		zap.String("user_id", user.ID),
+		zap.String("email", user.Email),
+		zap.String("name", user.DisplayName),
+		zap.String("org", strings.Join(addedToOrgNames, ",")),
+	)
 
 	return user, nil
 }
@@ -154,49 +175,10 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 	if err != nil {
 		return nil, err
 	}
+
+	s.logger.Info("created org", zap.String("name", orgName), zap.String("user_id", userID))
+
 	return org, nil
-}
-
-func (s *Service) InviteUserToOrganization(ctx context.Context, email, inviterID, orgID, roleID, orgName, roleName string) error {
-	// Create invite
-	err := s.DB.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{
-		Email:     email,
-		InviterID: inviterID,
-		OrgID:     orgID,
-		RoleID:    roleID,
-	})
-	if err != nil {
-		return err
-	}
-
-	// Send invitation email
-	err = s.Email.SendOrganizationInvite(email, "", orgName, roleName)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s *Service) InviteUserToProject(ctx context.Context, email, inviterID, projectID, roleID, projectName, roleName string) error {
-	// Create invite
-	err := s.DB.InsertProjectInvite(ctx, &database.InsertProjectInviteOptions{
-		Email:     email,
-		InviterID: inviterID,
-		ProjectID: projectID,
-		RoleID:    roleID,
-	})
-	if err != nil {
-		return err
-	}
-
-	// Send invitation email
-	err = s.Email.SendProjectInvite(email, "", projectName, roleName)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string) (*database.Organization, error) {
@@ -216,7 +198,7 @@ func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string)
 
 	role, err := s.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
 	if err != nil {
-		panic(errors.Wrap(err, "failed to find organization admin role"))
+		panic(err)
 	}
 
 	// Add user to created org with org admin role

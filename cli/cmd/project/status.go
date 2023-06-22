@@ -17,8 +17,8 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 	var name, path string
 
 	statusCmd := &cobra.Command{
-		Use:   "status",
-		Args:  cobra.NoArgs,
+		Use:   "status [<project-name>]",
+		Args:  cobra.MaximumNArgs(1),
 		Short: "Project deployment status",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
@@ -27,7 +27,11 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			if !cmd.Flags().Changed("project") {
+			if len(args) > 0 {
+				name = args[0]
+			}
+
+			if !cmd.Flags().Changed("project") && len(args) == 0 && cfg.Interactive {
 				name, err = inferProjectName(cmd.Context(), client, cfg.Org, path)
 				if err != nil {
 					return err
@@ -42,7 +46,6 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Found project")
 			cmdutil.TablePrinter(toRow(proj.Project))
 
 			depl := proj.ProdDeployment
@@ -52,12 +55,13 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 					logs = fmt.Sprintf("  Logs: %s\n\n", depl.Logs)
 				}
 
-				cmdutil.SuccessPrinter("Deployment info\n")
+				cmdutil.PrintlnSuccess("Deployment info\n")
 				fmt.Printf("  Web: %s\n", proj.Project.FrontendUrl)
 				fmt.Printf("  Runtime: %s\n", depl.RuntimeHost)
 				fmt.Printf("  Instance: %s\n", depl.RuntimeInstanceId)
 				fmt.Printf("  Slots: %d\n", depl.Slots)
 				fmt.Printf("  Branch: %s\n", depl.Branch)
+				fmt.Printf("  Created: %s\n", depl.CreatedOn.AsTime().Local().Format(time.RFC3339))
 				fmt.Printf("  Updated: %s\n", depl.UpdatedOn.AsTime().Local().Format(time.RFC3339))
 				fmt.Printf("  Status: %s\n", depl.Status.String())
 				if proj.ProjectPermissions.ReadProdStatus {
@@ -69,7 +73,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 		},
 	}
 
-	statusCmd.Flags().StringVar(&name, "project", "", "Name")
+	statusCmd.Flags().StringVar(&name, "project", "", "Project Name")
 	statusCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 
 	return statusCmd

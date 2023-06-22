@@ -33,6 +33,9 @@ func NewService(
 	if logger == nil {
 		logger = zap.NewNop()
 	}
+	if instID != "default" {
+		logger = logger.With(zap.String("instance_id", instID))
+	}
 	return &Service{
 		Catalog:       catalog,
 		Repo:          repo,
@@ -40,8 +43,7 @@ func NewService(
 		RegistryStore: registry,
 		InstID:        instID,
 		logger:        logger,
-
-		Meta: m,
+		Meta:          m,
 	}
 }
 
@@ -50,6 +52,8 @@ func (s *Service) FindEntries(ctx context.Context, typ drivers.ObjectType) ([]*d
 	if err != nil {
 		return nil, err
 	}
+	s.Meta.lock.RLock()
+	defer s.Meta.lock.RUnlock()
 	for _, entry := range entries {
 		s.Meta.fillDAGInEntry(entry)
 	}
@@ -61,6 +65,8 @@ func (s *Service) FindEntry(ctx context.Context, name string) (*drivers.CatalogE
 	if err != nil {
 		return nil, err
 	}
+	s.Meta.lock.RLock()
+	defer s.Meta.lock.RUnlock()
 	s.Meta.fillDAGInEntry(entry)
 	return entry, nil
 }
@@ -75,7 +81,7 @@ type MigrationMeta struct {
 	NameToPath map[string]string
 
 	hasMigrated bool
-	lock        sync.Mutex
+	lock        sync.RWMutex
 }
 
 func NewMigrationMeta() *MigrationMeta {

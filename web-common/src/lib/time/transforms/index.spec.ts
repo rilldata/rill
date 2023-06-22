@@ -4,10 +4,11 @@ import {
   TimeOffsetType,
   TimeTruncationType,
 } from "../types";
-import { transformDate } from "./";
+import { getDurationMultiple, transformDate } from "./";
 
 import { durationToMillis } from "../grains";
 import { getEndOfPeriod, getOffset, getStartOfPeriod, getTimeWidth } from "./";
+import { describe, it, expect } from "vitest";
 
 describe("getStartOfPeriod", () => {
   it("should return the start of the week for given date", () => {
@@ -204,4 +205,15 @@ describe("transformDate", () => {
       ).toEqual(transformation.output.toISOString());
     });
   }
+});
+
+describe("getDurationMultiple", () => {
+  it("should return the half of given week duration", () => {
+    const duration = getDurationMultiple("P1W", 0.5);
+    expect(duration).toEqual("P3DT12H");
+  });
+  it("should return the triple of given arbitary duration", () => {
+    const duration = getDurationMultiple("P2DT12H", 3);
+    expect(duration).toEqual("P7DT12H");
+  });
 });

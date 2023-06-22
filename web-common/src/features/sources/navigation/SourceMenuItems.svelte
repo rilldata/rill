@@ -62,6 +62,7 @@
   $: source = $getSource?.data?.entry?.source;
   $: embedded = $getSource?.data?.entry?.embedded;
   $: path = source?.properties?.path;
+  $: hasNoSourceCatalog = !source;
 
   $: sourceFromYaml = useSourceFromYaml(
     $runtime.instanceId,
@@ -199,12 +200,18 @@
 </MenuItem>
 
 <MenuItem
+  disabled={hasNoSourceCatalog}
   icon
   on:select={() => handleCreateDashboardFromSource(sourceName)}
   propogateSelect={false}
 >
   <Explore slot="icon" />
   Autogenerate dashboard
+  <svelte:fragment slot="description">
+    {#if hasNoSourceCatalog}
+      Source has errors
+    {/if}
+  </svelte:fragment>
 </MenuItem>
 
 {#if $getSource?.data?.entry?.source?.connector === "local_file"}

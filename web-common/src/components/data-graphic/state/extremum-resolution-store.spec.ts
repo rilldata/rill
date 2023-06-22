@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { createExtremumResolutionStore } from "./extremum-resolution-store";
 import { get } from "svelte/store";
 

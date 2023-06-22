@@ -8,6 +8,7 @@
     useSourceNames,
   } from "@rilldata/web-common/features/sources/selectors";
   import {
+    createRuntimeServiceListCatalogEntries,
     createRuntimeServicePutFileAndReconcile,
     V1CatalogEntry,
   } from "@rilldata/web-common/runtime-client";
@@ -18,12 +19,20 @@
   import NavigationEntry from "../../../layout/navigation/NavigationEntry.svelte";
   import NavigationHeader from "../../../layout/navigation/NavigationHeader.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import AddAssetButton from "../../entity-management/AddAssetButton.svelte";
   import { useModelNames } from "../../models/selectors";
   import AddSourceModal from "../add-source/AddSourceModal.svelte";
   import { createModelFromSource } from "../createModel";
   import EmbeddedSourceNav from "./EmbeddedSourceNav.svelte";
   import SourceMenuItems from "./SourceMenuItems.svelte";
   import SourceTooltip from "./SourceTooltip.svelte";
+  import { behaviourEvent } from "../../../metrics/initMetrics";
+  import {
+    BehaviourEventAction,
+    BehaviourEventMedium,
+  } from "../../../metrics/service/BehaviourEventTypes";
+  import { appScreen } from "../../../layout/app-store";
+  import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
 
   $: sourceNames = useSourceNames($runtime.instanceId);
   $: modelNames = useModelNames($runtime.instanceId);
@@ -41,6 +50,13 @@
 
   const openShowAddSourceModal = () => {
     showAddSourceModal = true;
+
+    behaviourEvent?.fireSourceTriggerEvent(
+      BehaviourEventAction.SourceAdd,
+      BehaviourEventMedium.Button,
+      $appScreen,
+      MetricsEventSpace.LeftPanel
+    );
   };
 
   const queryHandler = async (tableName: string) => {
@@ -62,17 +78,14 @@
     showRenameTableModal = true;
     renameTableName = tableName;
   };
+
+  $: catalogQuery = createRuntimeServiceListCatalogEntries($runtime.instanceId);
+  $: hasNoAssets = $catalogQuery?.data?.entries.length === 0;
 </script>
 
-<NavigationHeader
-  bind:show={showTables}
-  contextButtonID={"add-table"}
-  on:add={openShowAddSourceModal}
-  toggleText="sources"
-  tooltipText="Add a new data source"
+<NavigationHeader bind:show={showTables} toggleText="sources"
+  >Sources</NavigationHeader
 >
-  Sources
-</NavigationHeader>
 
 {#if showTables}
   <div class="pb-3" transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
@@ -112,6 +125,12 @@
       {/each}
     {/if}
     <EmbeddedSourceNav />
+    <AddAssetButton
+      id="add-table"
+      label="Add source"
+      bold={hasNoAssets}
+      on:click={openShowAddSourceModal}
+    />
   </div>
 {/if}
 

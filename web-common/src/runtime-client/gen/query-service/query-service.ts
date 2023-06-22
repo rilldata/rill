@@ -21,6 +21,10 @@ import type {
   QueryServiceTableColumnsParams,
   V1ColumnDescriptiveStatisticsResponse,
   QueryServiceColumnDescriptiveStatisticsParams,
+  V1ExportResponse,
+  QueryServiceExportBody,
+  V1MetricsViewComparisonToplistResponse,
+  QueryServiceMetricsViewComparisonToplistBody,
   V1MetricsViewRowsResponse,
   QueryServiceMetricsViewRowsBody,
   V1MetricsViewTimeSeriesResponse,
@@ -282,6 +286,122 @@ export const createQueryServiceColumnDescriptiveStatistics = <
   return query;
 };
 
+/**
+ * @summary Export builds a URL to download the results of a query as a file.
+ */
+export const queryServiceExport = (
+  instanceId: string,
+  queryServiceExportBody: QueryServiceExportBody
+) => {
+  return httpClient<V1ExportResponse>({
+    url: `/v1/instances/${instanceId}/queries/export`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceExportBody,
+  });
+};
+
+export type QueryServiceExportMutationResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceExport>>
+>;
+export type QueryServiceExportMutationBody = QueryServiceExportBody;
+export type QueryServiceExportMutationError = RpcStatus;
+
+export const createQueryServiceExport = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof queryServiceExport>>,
+    TError,
+    { instanceId: string; data: QueryServiceExportBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof queryServiceExport>>,
+    { instanceId: string; data: QueryServiceExportBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return queryServiceExport(instanceId, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof queryServiceExport>>,
+    TError,
+    { instanceId: string; data: QueryServiceExportBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+export const queryServiceMetricsViewComparisonToplist = (
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewComparisonToplistBody: QueryServiceMetricsViewComparisonToplistBody
+) => {
+  return httpClient<V1MetricsViewComparisonToplistResponse>({
+    url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/compare-toplist`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceMetricsViewComparisonToplistBody,
+  });
+};
+
+export type QueryServiceMetricsViewComparisonToplistMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof queryServiceMetricsViewComparisonToplist>>
+  >;
+export type QueryServiceMetricsViewComparisonToplistMutationBody =
+  QueryServiceMetricsViewComparisonToplistBody;
+export type QueryServiceMetricsViewComparisonToplistMutationError = RpcStatus;
+
+export const createQueryServiceMetricsViewComparisonToplist = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof queryServiceMetricsViewComparisonToplist>>,
+    TError,
+    {
+      instanceId: string;
+      metricsViewName: string;
+      data: QueryServiceMetricsViewComparisonToplistBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof queryServiceMetricsViewComparisonToplist>>,
+    {
+      instanceId: string;
+      metricsViewName: string;
+      data: QueryServiceMetricsViewComparisonToplistBody;
+    }
+  > = (props) => {
+    const { instanceId, metricsViewName, data } = props ?? {};
+
+    return queryServiceMetricsViewComparisonToplist(
+      instanceId,
+      metricsViewName,
+      data
+    );
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof queryServiceMetricsViewComparisonToplist>>,
+    TError,
+    {
+      instanceId: string;
+      metricsViewName: string;
+      data: QueryServiceMetricsViewComparisonToplistBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
  */

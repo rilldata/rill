@@ -1,4 +1,5 @@
 import { smallestPrecisionMagnitude } from "./smallest-precision-magnitude";
+import { describe, it, expect } from "vitest";
 
 const testCases: [number, number][] = [
   [Infinity, NaN],

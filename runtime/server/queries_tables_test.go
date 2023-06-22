@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"testing"
 
 	"github.com/jmoiron/sqlx"
@@ -10,6 +11,7 @@ import (
 )
 
 func TestServer_TableCardinality(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getTableTestServer(t)
 	cr, err := server.TableCardinality(testCtx(), &runtimev1.TableCardinalityRequest{
 		InstanceId: instanceId,
@@ -20,6 +22,7 @@ func TestServer_TableCardinality(t *testing.T) {
 }
 
 func TestServer_TableCardinality_EmptyModel(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getTableTestServerWithEmptyModel(t)
 	cr, err := server.TableCardinality(testCtx(), &runtimev1.TableCardinalityRequest{
 		InstanceId: instanceId,
@@ -30,6 +33,7 @@ func TestServer_TableCardinality_EmptyModel(t *testing.T) {
 }
 
 func TestServer_TableColumns(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getTableTestServer(t)
 	cr, err := server.TableColumns(testCtx(), &runtimev1.TableColumnsRequest{
 		InstanceId: instanceId,
@@ -47,6 +51,7 @@ func TestServer_TableColumns(t *testing.T) {
 }
 
 func TestServer_TableColumns_DuplicateNames(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getTableTestServerWithSql(t, "select * from (select 1 as a) a join (select 1 as a) b on a.a = b.a")
 	cr, err := server.TableColumns(testCtx(), &runtimev1.TableColumnsRequest{
 		InstanceId: instanceId,
@@ -62,6 +67,7 @@ func TestServer_TableColumns_DuplicateNames(t *testing.T) {
 }
 
 func TestServer_TableColumns_EmptyModel(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getTableTestServerWithEmptyModel(t)
 	cr, err := server.TableColumns(testCtx(), &runtimev1.TableColumnsRequest{
 		InstanceId: instanceId,
@@ -79,6 +85,7 @@ func TestServer_TableColumns_EmptyModel(t *testing.T) {
 }
 
 func TestServer_TableRows(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getTableTestServer(t)
 	cr, err := server.TableRows(testCtx(), &runtimev1.TableRowsRequest{
 		InstanceId: instanceId,
@@ -90,6 +97,7 @@ func TestServer_TableRows(t *testing.T) {
 }
 
 func TestServer_TableRows_EmptyModel(t *testing.T) {
+	t.Parallel()
 	server, instanceId := getTableTestServerWithEmptyModel(t)
 	cr, err := server.TableRows(testCtx(), &runtimev1.TableRowsRequest{
 		InstanceId: instanceId,
@@ -105,7 +113,7 @@ func getTableTestServer(t *testing.T) (*Server, string) {
 		SELECT 1::int AS a, 10::int AS "b""b"
 	`)
 
-	server, err := NewServer(&Options{}, rt, nil)
+	server, err := NewServer(context.Background(), &Options{}, rt, nil)
 	require.NoError(t, err)
 
 	return server, instanceID
@@ -114,7 +122,7 @@ func getTableTestServer(t *testing.T) (*Server, string) {
 func getTableTestServerWithSql(t *testing.T, sql string) (*Server, string) {
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", sql)
 
-	server, err := NewServer(&Options{}, rt, nil)
+	server, err := NewServer(context.Background(), &Options{}, rt, nil)
 	require.NoError(t, err)
 
 	return server, instanceID
@@ -135,7 +143,7 @@ func getTableTestServerWithEmptyModel(t *testing.T) (*Server, string) {
 		SELECT 1::int AS a, 10::int AS "b""b" where 1<>1
 	`)
 
-	server, err := NewServer(&Options{}, rt, nil)
+	server, err := NewServer(context.Background(), &Options{}, rt, nil)
 	require.NoError(t, err)
 
 	return server, instanceID

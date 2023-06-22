@@ -7,7 +7,7 @@ That in turn means that when other items can occupy the same slot that the dashb
 
 This could probably simplified away in the future, but for now, this is the simplest way to get the desired behavior.
 
-https://github.com/rilldata/rill-developer/pull/2398#issuecomment-1544671818
+https://github.com/rilldata/rill/pull/2398#issuecomment-1544671818
 -->
 
 <div class="overflow-auto h-full"><slot /></div>

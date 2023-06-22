@@ -55,6 +55,7 @@
   );
   let model: V1Model;
   $: model = $modelQuery.data?.entry?.model;
+  $: hasNoModelCatalog = !model;
 
   const createDashboardFromModel = (modelName: string) => {
     overlay.set({
@@ -127,12 +128,18 @@
 </script>
 
 <MenuItem
+  disabled={hasNoModelCatalog}
   icon
   on:select={() => createDashboardFromModel(modelName)}
   propogateSelect={false}
 >
   <Explore slot="icon" />
   Autogenerate dashboard
+  <svelte:fragment slot="description">
+    {#if hasNoModelCatalog}
+      Model has errors
+    {/if}
+  </svelte:fragment>
 </MenuItem>
 <Divider />
 <MenuItem

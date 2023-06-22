@@ -35,6 +35,10 @@ func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 	return c, nil
 }
 
+func (d driver) Drop(dsn string, logger *zap.Logger) error {
+	return drivers.ErrDropNotSupported
+}
+
 type connection struct {
 	// root should be absolute path
 	root string

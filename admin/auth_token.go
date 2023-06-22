@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/authtoken"
@@ -26,19 +27,31 @@ func (t *userAuthToken) Token() *authtoken.Token {
 }
 
 func (t *userAuthToken) OwnerID() string {
+	if t.model.RepresentingUserID != nil {
+		return *t.model.RepresentingUserID
+	}
+
 	return t.model.UserID
 }
 
 // IssueUserAuthToken generates and persists a new auth token for a user.
-func (s *Service) IssueUserAuthToken(ctx context.Context, userID, clientID, displayName string) (AuthToken, error) {
+func (s *Service) IssueUserAuthToken(ctx context.Context, userID, clientID, displayName string, representingUserID *string, ttl *time.Duration) (AuthToken, error) {
 	tkn := authtoken.NewRandom(authtoken.TypeUser)
 
+	var expiresOn *time.Time
+	if ttl != nil {
+		t := time.Now().Add(*ttl)
+		expiresOn = &t
+	}
+
 	uat, err := s.DB.InsertUserAuthToken(ctx, &database.InsertUserAuthTokenOptions{
-		ID:           tkn.ID.String(),
-		SecretHash:   tkn.SecretHash(),
-		UserID:       userID,
-		AuthClientID: &clientID,
-		DisplayName:  displayName,
+		ID:                 tkn.ID.String(),
+		SecretHash:         tkn.SecretHash(),
+		UserID:             userID,
+		AuthClientID:       &clientID,
+		DisplayName:        displayName,
+		RepresentingUserID: representingUserID,
+		ExpiresOn:          expiresOn,
 	})
 	if err != nil {
 		return nil, err
@@ -59,6 +72,10 @@ func (s *Service) ValidateAuthToken(ctx context.Context, token string) (AuthToke
 		uat, err := s.DB.FindUserAuthToken(ctx, parsed.ID.String())
 		if err != nil {
 			return nil, err
+		}
+
+		if uat.ExpiresOn != nil && uat.ExpiresOn.Before(time.Now()) {
+			return nil, fmt.Errorf("auth token is expired")
 		}
 
 		if !bytes.Equal(uat.SecretHash, parsed.SecretHash()) {

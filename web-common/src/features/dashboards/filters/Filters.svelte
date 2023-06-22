@@ -222,6 +222,7 @@ The main feature-set component for dashboard filters
             name={isInclude ? label : `Exclude ${label}`}
             excludeMode={isInclude ? false : true}
             colors={isInclude ? defaultChipColors : excludeChipColors}
+            label="View filter"
             {selectedValues}
             {searchedValues}
           >

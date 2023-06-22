@@ -16,6 +16,12 @@ import dotenv from "dotenv";
 dotenv.config();
 const production = !process.env.ROLLUP_WATCH;
 
+const environmentVars = [
+  "VITE_RILL_CLOUD_AUTH0_CLIENT_IDS",
+  "VITE_DISABLE_FORGOT_PASS_DOMAINS",
+  "VITE_CONNECTION_MAP",
+];
+
 const removeUnusedCss = purgeCss({
   content: [
     "./src/**/*.html",
@@ -36,11 +42,12 @@ function inlineSvelte(template) {
       // Replace script tag with svelte component bundle
       bundle[file].code = output.replace("%%script%%", () => code);
 
-      // Replace client params with env vars
-      bundle[file].code = bundle[file].code.replace(
-        "%%cloudClientIDs%%",
-        () => process.env.VITE_RILL_CLOUD_AUTH0_CLIENT_IDS
-      );
+      // Replace all environment variables
+      environmentVars.forEach((envVar) => {
+        bundle[file].code = bundle[file].code.replace(`"%%${envVar}%%"`, () =>
+          JSON.stringify(process.env[envVar])
+        );
+      });
     },
   };
 }
@@ -67,7 +74,7 @@ function serve() {
 }
 
 export default {
-  input: "src/exporter.js",
+  input: "src/exporter.ts",
   output: {
     sourcemap: false,
     format: "iife",
@@ -104,6 +111,7 @@ export default {
       browser: true,
       dedupe: ["svelte"],
       exportConditions: ["svelte"],
+      extensions: [".js", ".svelte", ".ts"],
     }),
     commonjs(),
 

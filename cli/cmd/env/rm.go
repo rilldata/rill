@@ -45,7 +45,7 @@ func RmCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.SuccessPrinter("Updated project")
+			cmdutil.PrintlnSuccess("Updated project")
 			return nil
 		},
 	}

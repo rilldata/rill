@@ -9,15 +9,22 @@ import (
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/email"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
+	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.ListProjectsForOrganizationRequest) (*adminv1.ListProjectsForOrganizationResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.OrganizationName),
+	)
+
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -68,6 +75,11 @@ func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.L
 }
 
 func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest) (*adminv1.GetProjectResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.OrganizationName),
+		attribute.String("args.project", req.Name),
+	)
+
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -135,6 +147,19 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 }
 
 func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRequest) (*adminv1.CreateProjectResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.OrganizationName),
+		attribute.String("args.project", req.Name),
+		attribute.String("args.description", req.Description),
+		attribute.Bool("args.public", req.Public),
+		attribute.String("args.region", req.Region),
+		attribute.String("args.prod_olap_driver", req.ProdOlapDriver),
+		attribute.Int64("args.prod_slots", req.ProdSlots),
+		attribute.String("args.sub_path", req.Subpath),
+		attribute.String("args.prod_branch", req.ProdBranch),
+		attribute.String("args.github_url", req.GithubUrl),
+	)
+
 	// Check the request is made by a user
 	claims := auth.GetClaims(ctx)
 	if claims.OwnerType() != auth.OwnerTypeUser {
@@ -210,6 +235,11 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 }
 
 func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRequest) (*adminv1.DeleteProjectResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.OrganizationName),
+		attribute.String("args.project", req.Name),
+	)
+
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -229,41 +259,73 @@ func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRe
 }
 
 func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRequest) (*adminv1.UpdateProjectResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.OrganizationName),
+		attribute.String("args.project", req.Name),
+	)
+	if req.Description != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.description", *req.Description))
+	}
+	if req.Region != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.region", *req.Region))
+	}
+	if req.ProdBranch != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.prod_branch", *req.ProdBranch))
+	}
+	if req.GithubUrl != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.github_url", *req.GithubUrl))
+	}
+	if req.Public != nil {
+		observability.AddRequestAttributes(ctx, attribute.Bool("args.public", *req.Public))
+	}
+	if req.ProdSlots != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int64("args.prod_slots", *req.ProdSlots))
+	}
+	if req.NewName != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.new_name", *req.NewName))
+	}
+
+	// Check the request is made by a user
+	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated")
+	}
+
 	// Find project
-	proj, err := s.admin.DB.FindProject(ctx, req.Id)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	claims := auth.GetClaims(ctx)
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete project")
 	}
 
-	// If changing the Github URL, check github app is installed and caller has access on the repo
-	if safeStr(proj.GithubURL) != req.GithubUrl {
-		_, err = s.getAndCheckGithubInstallationID(ctx, req.GithubUrl, claims.OwnerID())
-		if err != nil {
-			return nil, err
+	githubURL := proj.GithubURL
+	if req.GithubUrl != nil {
+		// If changing the Github URL, check github app is installed and caller has access on the repo
+		if safeStr(proj.GithubURL) != *req.GithubUrl {
+			_, err = s.getAndCheckGithubInstallationID(ctx, *req.GithubUrl, claims.OwnerID())
+			if err != nil {
+				return nil, err
+			}
+			githubURL = req.GithubUrl
 		}
 	}
 
-	githubURL := proj.GithubURL
-	if req.GithubUrl != "" {
-		githubURL = &req.GithubUrl
-	}
-
 	opts := &database.UpdateProjectOptions{
-		Name:                 req.Name,
-		Description:          req.Description,
-		Public:               req.Public,
-		ProdBranch:           req.ProdBranch,
+		Name:                 valOrDefault(req.NewName, proj.Name),
+		Description:          valOrDefault(req.Description, proj.Description),
+		Public:               valOrDefault(req.Public, proj.Public),
+		ProdBranch:           valOrDefault(req.ProdBranch, proj.ProdBranch),
 		ProdVariables:        proj.ProdVariables,
 		GithubURL:            githubURL,
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdDeploymentID:     proj.ProdDeploymentID,
+		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
+		Region:               valOrDefault(req.Region, proj.Region),
 	}
-	proj, err = s.admin.UpdateProject(ctx, proj, opts, true)
+	proj, err = s.admin.UpdateProject(ctx, proj, opts)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -274,6 +336,11 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 }
 
 func (s *Server) GetProjectVariables(ctx context.Context, req *adminv1.GetProjectVariablesRequest) (*adminv1.GetProjectVariablesResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.OrganizationName),
+		attribute.String("args.project", req.Name),
+	)
+
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -293,22 +360,17 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	// Check the request is made by a user
 	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated")
+	}
+
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to update project variables")
 	}
 
-	opts := &database.UpdateProjectOptions{
-		Name:                 proj.Name,
-		Description:          proj.Description,
-		Public:               proj.Public,
-		ProdBranch:           proj.ProdBranch,
-		GithubURL:            proj.GithubURL,
-		GithubInstallationID: proj.GithubInstallationID,
-		ProdDeploymentID:     proj.ProdDeploymentID,
-		ProdVariables:        req.Variables,
-	}
-	proj, err = s.admin.UpdateProject(ctx, proj, opts, false)
+	proj, err = s.admin.UpdateProjectVariables(ctx, proj, req.Variables)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "variables updated failed with error %s", err.Error())
 	}
@@ -317,6 +379,11 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 }
 
 func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjectMembersRequest) (*adminv1.ListProjectMembersResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
+	)
+
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -355,6 +422,11 @@ func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjec
 }
 
 func (s *Server) ListProjectInvites(ctx context.Context, req *adminv1.ListProjectInvitesRequest) (*adminv1.ListProjectInvitesResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
+	)
+
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -394,6 +466,12 @@ func (s *Server) ListProjectInvites(ctx context.Context, req *adminv1.ListProjec
 }
 
 func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMemberRequest) (*adminv1.AddProjectMemberResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
+		attribute.String("args.role", req.Role),
+	)
+
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -422,6 +500,16 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	var invitedByUserID, invitedByName string
+	if claims.OwnerType() == auth.OwnerTypeUser {
+		user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+		if err != nil && !errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		invitedByUserID = user.ID
+		invitedByName = user.DisplayName
+	}
+
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
@@ -429,14 +517,29 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 		}
 
 		// Invite user to join the project
-		invitedBy := ""
-		if claims.OwnerType() == auth.OwnerTypeUser {
-			invitedBy = claims.OwnerID()
-		}
-		err = s.admin.InviteUserToProject(ctx, req.Email, invitedBy, proj.ID, role.ID, proj.Name, role.Name)
+		err := s.admin.DB.InsertProjectInvite(ctx, &database.InsertProjectInviteOptions{
+			Email:     req.Email,
+			InviterID: invitedByUserID,
+			ProjectID: proj.ID,
+			RoleID:    role.ID,
+		})
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
+
+		// Send invitation email
+		err = s.admin.Email.SendProjectInvite(&email.ProjectInvite{
+			ToEmail:       req.Email,
+			ToName:        "",
+			OrgName:       org.Name,
+			ProjectName:   proj.Name,
+			RoleName:      role.Name,
+			InvitedByName: invitedByName,
+		})
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
 		return &adminv1.AddProjectMemberResponse{
 			PendingSignup: true,
 		}, nil
@@ -447,7 +550,14 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	err = s.admin.Email.SendProjectAdditionNotification(req.Email, "", proj.Name, role.Name)
+	err = s.admin.Email.SendProjectAddition(&email.ProjectAddition{
+		ToEmail:       req.Email,
+		ToName:        "",
+		OrgName:       org.Name,
+		ProjectName:   proj.Name,
+		RoleName:      role.Name,
+		InvitedByName: invitedByName,
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -458,6 +568,11 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 }
 
 func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemoveProjectMemberRequest) (*adminv1.RemoveProjectMemberResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
+	)
+
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -497,6 +612,12 @@ func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemovePro
 }
 
 func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProjectMemberRoleRequest) (*adminv1.SetProjectMemberRoleResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
+		attribute.String("args.role", req.Role),
+	)
+
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -592,6 +713,7 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		ProdOlapDsn:      p.ProdOLAPDSN,
 		ProdSlots:        int64(p.ProdSlots),
 		ProdBranch:       p.ProdBranch,
+		Subpath:          p.Subpath,
 		GithubUrl:        safeStr(p.GithubURL),
 		ProdDeploymentId: safeStr(p.ProdDeploymentID),
 		FrontendUrl:      frontendURL,
@@ -636,4 +758,11 @@ func safeStr(s *string) string {
 		return ""
 	}
 	return *s
+}
+
+func valOrDefault[T any](ptr *T, def T) T {
+	if ptr != nil {
+		return *ptr
+	}
+	return def
 }

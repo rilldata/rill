@@ -45,7 +45,7 @@
     // check if all the measures have a valid expression
     measures?.filter((measure) => measure?.expression?.length)?.length === 0 ||
     // and if the dimensions all have a valid property
-    dimensions?.filter((dimension) => dimension?.property?.length)?.length === 0
+    dimensions?.filter((dimension) => dimension?.column?.length)?.length === 0
   ) {
     buttonDisabled = true;
     buttonStatus = ["Add measures and dimensions before exploring metrics"];
@@ -64,6 +64,7 @@
   <!-- TODO: we need to standardize these buttons. -->
   <Button
     disabled={buttonDisabled}
+    label="Go to dashboard"
     on:click={() => viewDashboard()}
     type="primary"
   >

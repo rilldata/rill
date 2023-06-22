@@ -9,6 +9,7 @@
 
   export let columnNames: ColumnConfig<any>[];
   export let rows: any[];
+  export let label: string | undefined = undefined;
 
   const dispatch = createEventDispatcher();
 
@@ -27,6 +28,7 @@
   on:mouseleave
   class="relative border-collapse bg-white"
   bind:this={tableElement}
+  aria-label={label}
 >
   <!-- headers -->
   <TableRow>
@@ -42,7 +44,11 @@
   </TableRow>
   <!-- values -->
   {#each rows as row, index}
-    <TableRowWithMenu {index} on:delete={() => dispatch("delete", index)}>
+    <TableRowWithMenu
+      {index}
+      on:delete={() => dispatch("delete", index)}
+      menuLabel="More"
+    >
       {#each columnNames as column (index + column.name + column.label)}
         <TableCellRenderer columnConfig={column} {row} {index} />
       {/each}

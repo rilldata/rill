@@ -2,6 +2,7 @@ package observability
 
 import (
 	"context"
+	"strconv"
 
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -30,5 +31,23 @@ type zapSpan struct {
 func (z zapSpan) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("trace_id", z.traceID)
 	enc.AddString("span_id", z.spanID)
+	enc.AddString("dd.trace_id", convertToDatadogID(z.traceID))
+	enc.AddString("dd.span_id", convertToDatadogID(z.spanID))
 	return nil
+}
+
+// convertToDatadogID returns a Datadog compatible 64bit unsigned int version of the OpenTelemetry 128bit unsigned int ID,
+// adapted from https://docs.datadoghq.com/tracing/other_telemetry/connect_logs_and_traces/opentelemetry
+func convertToDatadogID(otelID string) string {
+	if len(otelID) < 16 {
+		return ""
+	}
+	if len(otelID) > 16 {
+		otelID = otelID[16:]
+	}
+	intValue, err := strconv.ParseUint(otelID, 16, 64)
+	if err != nil {
+		return ""
+	}
+	return strconv.FormatUint(intValue, 10)
 }

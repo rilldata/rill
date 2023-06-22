@@ -1,5 +1,6 @@
 import { FormatterFactoryOptions, NumberKind } from "../humanizer-types";
 import { IntTimesPowerOfTenFormatter } from "./IntTimesPowerOfTen";
+import { describe, it, expect } from "vitest";
 
 const baseOptions: FormatterFactoryOptions = {
   strategy: "intTimesPowerOfTen",

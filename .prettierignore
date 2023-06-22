@@ -43,6 +43,7 @@ docs
 *.json
 *.cjs
 _redirects
+Makefile
 
 # Java SQL lib
 sql/

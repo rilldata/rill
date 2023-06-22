@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@jest/globals";
+import { describe, expect, it } from "vitest";
 import { fileHasValidExtension } from "@rilldata/web-common/features/sources/add-source/possible-file-extensions";
 
 describe("fileHasValidExtension", () => {

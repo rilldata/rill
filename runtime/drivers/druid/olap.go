@@ -43,17 +43,39 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 		return nil, prepared.Close()
 	}
 
+	var cancelFunc context.CancelFunc
+	if stmt.ExecutionTimeout != 0 {
+		ctx, cancelFunc = context.WithTimeout(ctx, stmt.ExecutionTimeout)
+	}
+
 	rows, err := c.db.QueryxContext(ctx, stmt.Query, stmt.Args...)
 	if err != nil {
+		if cancelFunc != nil {
+			cancelFunc()
+		}
+
 		return nil, err
 	}
 
 	schema, err := rowsToSchema(rows)
 	if err != nil {
+		if cancelFunc != nil {
+			cancelFunc()
+		}
+
 		return nil, err
 	}
 
-	return &drivers.Result{Rows: rows, Schema: schema}, nil
+	r := &drivers.Result{Rows: rows, Schema: schema}
+	r.SetCleanupFunc(func() error {
+		if cancelFunc != nil {
+			cancelFunc()
+		}
+
+		return nil
+	})
+
+	return r, nil
 }
 
 func (c *connection) DropDB() error {

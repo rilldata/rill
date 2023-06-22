@@ -28,6 +28,7 @@ var ErrRillIntake = errors.New("failed to fire telemetry")
 type Action string
 
 const (
+	ActionInstallSuccess         Action = "install-success"
 	ActionDeployStart            Action = "deploy-start"
 	ActionDeploySuccess          Action = "deploy-success"
 	ActionGithubConnectedStart   Action = "ghconnected-start"
@@ -42,6 +43,7 @@ type Telemetry struct {
 	Enabled   bool
 	InstallID string
 	Version   config.Version
+	UserID    string
 	events    [][]byte
 }
 
@@ -57,8 +59,13 @@ func New(ver config.Version) *Telemetry {
 		Enabled:   enabled,
 		InstallID: installID,
 		Version:   ver,
+		UserID:    "",
 		events:    make([][]byte, 0),
 	}
+}
+
+func (t *Telemetry) WithUserID(userID string) {
+	t.UserID = userID
 }
 
 func (t *Telemetry) Emit(action Action) {
@@ -85,6 +92,7 @@ type behaviourEventFields struct {
 	InstallID     string `json:"install_id"`
 	BuildID       string `json:"build_id"`
 	Version       string `json:"version"`
+	UserID        string `json:"user_id"`
 	IsDev         bool   `json:"is_dev"`
 	Mode          string `json:"mode"`
 	Action        string `json:"action"`
@@ -105,6 +113,7 @@ func (t *Telemetry) emitBehaviourEvent(action, medium, space, screenName string)
 		InstallID:     t.InstallID,
 		BuildID:       t.Version.Commit,
 		Version:       t.Version.Number,
+		UserID:        t.UserID,
 		IsDev:         t.Version.IsDev(),
 		Mode:          "edit",
 		Action:        action,

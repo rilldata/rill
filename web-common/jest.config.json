@@ -1,7 +1,8 @@
 {
   "transform": {
     "^.+\\.svelte$": "svelte-jester",
-    "^.+\\.[tj]s?$": "ts-jest"
+    "^.+\\.[tj]s?$": "ts-jest",
+    "@tanstack\\/svelte-query\\/.*$": "ts-jest"
   },
   "moduleNameMapper": {
     "^\\@rilldata\\/web-common(.*)$": "<rootDir>/src/$1",

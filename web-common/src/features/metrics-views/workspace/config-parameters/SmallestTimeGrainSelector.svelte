@@ -3,8 +3,8 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-  import { getTimeGrainOptions } from "@rilldata/web-common/lib/time/grains";
-  import type { TimeGrainOption } from "@rilldata/web-common/lib/time/types";
+  import { getAllowedTimeGrains } from "@rilldata/web-common/lib/time/grains";
+  import type { TimeGrain } from "@rilldata/web-common/lib/time/types";
   import {
     createQueryServiceColumnTimeRange,
     V1Model,
@@ -54,28 +54,27 @@
     };
   }
 
-  let selectableTimeGrains: TimeGrainOption[] = [];
+  let allowedTimeGrains: TimeGrain[] = [];
   let maxTimeGrainPossibleIndex = 0;
+
+  const timeGrains = Object.values(TIME_GRAIN);
+
   $: if (allTimeRange) {
-    selectableTimeGrains = getTimeGrainOptions(
+    allowedTimeGrains = getAllowedTimeGrains(
       allTimeRange.start,
       allTimeRange.end
     );
 
-    maxTimeGrainPossibleIndex =
-      selectableTimeGrains.length -
-      1 -
-      selectableTimeGrains
-        .slice()
-        .reverse()
-        .findIndex((grain) => grain.enabled);
+    const maxTimeGrainPossible =
+      allowedTimeGrains[allowedTimeGrains.length - 1];
+    maxTimeGrainPossibleIndex = timeGrains.findIndex(
+      (grain) => grain.label === maxTimeGrainPossible.label
+    );
   }
 
   $: isValidTimeGrain =
     defaultTimeGrainValue === "__DEFAULT_VALUE__" ||
-    Object.values(TIME_GRAIN).some(
-      (timeGrain) => timeGrain.label === defaultTimeGrainValue
-    );
+    timeGrains.some((timeGrain) => timeGrain.label === defaultTimeGrainValue);
 
   $: level = isValidTimeGrain ? "" : "error";
 
@@ -101,7 +100,7 @@
           },
         ]
       : []),
-    ...(selectableTimeGrains.map((grain, i) => {
+    ...(timeGrains.map((grain, i) => {
       const isGrainPossible = i <= maxTimeGrainPossibleIndex;
       return {
         divider: false,
@@ -168,6 +167,7 @@
   <div class={SELECTOR_CONTAINER.classes} style={SELECTOR_CONTAINER.style}>
     <Tooltip alignment="start" distance={16} location="right" suppress={active}>
       <SelectMenu
+        label="Change smallest time grain"
         paddingTop={1}
         paddingBottom={1}
         bind:active

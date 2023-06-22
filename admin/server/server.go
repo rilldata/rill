@@ -21,9 +21,11 @@ import (
 	"github.com/rilldata/rill/admin/server/cookies"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -32,7 +34,13 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-var minCliVersion = version.Must(version.NewVersion("0.20.0"))
+var (
+	_minCliVersion         = version.Must(version.NewVersion("0.20.0"))
+	_minCliVersionByMethod = map[string]*version.Version{
+		"/rill.admin.v1.AdminService/UpdateProject":      version.Must(version.NewVersion("0.28.0")),
+		"/rill.admin.v1.AdminService/UpdateOrganization": version.Must(version.NewVersion("0.28.0")),
+	}
+)
 
 type Options struct {
 	HTTPPort               int
@@ -64,7 +72,7 @@ type Server struct {
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
 
-func New(opts *Options, logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer) (*Server, error) {
+func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, opts *Options) (*Server, error) {
 	externalURL, err := url.Parse(opts.ExternalURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse external URL: %w", err)
@@ -105,6 +113,7 @@ func New(opts *Options, logger *zap.Logger, adm *admin.Service, issuer *runtimea
 func (s *Server) ServeGRPC(ctx context.Context) error {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
+			middleware.TimeoutStreamServerInterceptor(timeoutSelector),
 			observability.TracingStreamServerInterceptor(),
 			observability.LoggingStreamServerInterceptor(s.logger),
 			errorMappingStreamServerInterceptor(),
@@ -113,6 +122,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			s.authenticator.StreamServerInterceptor(),
 		),
 		grpc.ChainUnaryInterceptor(
+			middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
 			observability.TracingUnaryServerInterceptor(),
 			observability.LoggingUnaryServerInterceptor(s.logger),
 			errorMappingUnaryServerInterceptor(),
@@ -170,6 +180,9 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 
 	// Add Github-related endpoints (not gRPC handlers, just regular endpoints on /github/*)
 	s.registerGithubEndpoints(mux)
+
+	// Add temporary internal endpoint for refreshing sources
+	mux.Handle("/internal/projects/trigger-refresh", otelhttp.WithRouteTag("/internal/projects/trigger-refresh", http.HandlerFunc(s.triggerRefreshSourcesInternal)))
 
 	// Build CORS options for admin server
 
@@ -229,6 +242,10 @@ func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.P
 	return resp, nil
 }
 
+func timeoutSelector(service, method string) time.Duration {
+	return time.Minute
+}
+
 // errorMappingUnaryServerInterceptor is an interceptor that applies mapGRPCError.
 func errorMappingUnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
@@ -279,8 +296,14 @@ func checkUserAgent(ctx context.Context) (context.Context, error) {
 		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("could not parse rill-cli version: %s", err.Error()))
 	}
 
-	if v.LessThan(minCliVersion) {
-		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Rill %s is no longer supported, please upgrade to the latest version", v))
+	method, _ := grpc.Method(ctx)
+	minVersion, ok := _minCliVersionByMethod[method]
+	if !ok {
+		minVersion = _minCliVersion
+	}
+
+	if v.LessThan(minVersion) {
+		return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("Rill %s is no longer supported for given operation, please upgrade to the latest version", v))
 	}
 
 	return ctx, nil

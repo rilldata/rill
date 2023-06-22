@@ -214,7 +214,12 @@ TableCells – the cell contents.
   }
 </script>
 
-<div bind:clientWidth={containerWidth} style="height: 100%;">
+<div
+  bind:clientWidth={containerWidth}
+  style="height: 100%;"
+  role="table"
+  aria-label="Dimension table"
+>
   <div
     bind:this={container}
     on:scroll={() => {
@@ -287,6 +292,7 @@ TableCells – the cell contents.
             {excludeMode}
             on:select-item={(event) => onSelectItem(event)}
             on:inspect={setActiveIndex}
+            cellLabel="Filter dimension value"
           />
         {:else}
           <div class="flex text-gray-500 justify-center mt-[30vh]">

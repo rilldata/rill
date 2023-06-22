@@ -3,6 +3,7 @@ package queries
 import (
 	"context"
 	"fmt"
+	"io"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -25,8 +26,16 @@ func (q *ColumnRugHistogram) Deps() []string {
 	return []string{q.TableName}
 }
 
-func (q *ColumnRugHistogram) MarshalResult() any {
-	return q.Result
+func (q *ColumnRugHistogram) MarshalResult() *runtime.QueryResult {
+	var size int64
+	if len(q.Result) > 0 {
+		// approx
+		size = sizeProtoMessage(q.Result[0]) * int64(len(q.Result))
+	}
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: size,
+	}
 }
 
 func (q *ColumnRugHistogram) UnmarshalResult(v any) error {
@@ -114,8 +123,9 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	  WHERE present=true`, selectColumn, sanitizedColumnName, safeName(q.TableName), outlierPseudoBucketSize)
 
 	outlierResults, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    rugSQL,
-		Priority: priority,
+		Query:            rugSQL,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
 		return err
@@ -140,4 +150,8 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	q.Result = outlierBins
 
 	return nil
+}
+
+func (q *ColumnRugHistogram) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.ExportFormat, w io.Writer) error {
+	return ErrExportNotSupported
 }

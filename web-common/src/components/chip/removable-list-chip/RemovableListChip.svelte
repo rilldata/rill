@@ -32,6 +32,7 @@ are details left to the consumer of the component; this component should remain 
   export let typeLabel: string;
   export let excludeMode;
   export let colors: ChipColors = defaultChipColors;
+  export let label = undefined;
 
   const dispatch = createEventDispatcher();
 
@@ -59,6 +60,7 @@ are details left to the consumer of the component; this component should remain 
       on:remove={() => dispatch("remove")}
       {active}
       {...colors}
+      {label}
     >
       <!-- remove button tooltip -->
       <svelte:fragment slot="remove-tooltip">

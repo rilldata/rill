@@ -21,6 +21,7 @@
   import { errorStore } from "../../../../components/errors/error-store";
   import ProjectBuilding from "../../../../components/projects/ProjectBuilding.svelte";
   import ProjectErrored from "../../../../components/projects/ProjectErrored.svelte";
+  import DashboardStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardStateProvider.svelte";
 
   const queryClient = useQueryClient();
 
@@ -104,9 +105,11 @@
 {:else if currentDashboard && !currentDashboard.isValid}
   <ProjectErrored organization={orgName} project={projectName} />
 {:else}
-  <Dashboard
-    leftMargin={"48px"}
-    hasTitle={false}
-    metricViewName={dashboardName}
-  />
+  <DashboardStateProvider metricViewName={dashboardName}>
+    <Dashboard
+      leftMargin={"48px"}
+      hasTitle={false}
+      metricViewName={dashboardName}
+    />
+  </DashboardStateProvider>
 {/if}

@@ -4,13 +4,13 @@
   import WithSelectMenu from "@rilldata/web-common/components/menu/wrappers/WithSelectMenu.svelte";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
-  import type { TimeGrainOption } from "@rilldata/web-common/lib/time/types";
+  import type { TimeGrain } from "@rilldata/web-common/lib/time/types";
   import { createEventDispatcher } from "svelte";
   import type { V1TimeGrain } from "../../../runtime-client";
   import { useDashboardStore } from "../dashboard-stores";
 
   export let metricViewName: string;
-  export let timeGrainOptions: TimeGrainOption[];
+  export let timeGrainOptions: TimeGrain[];
   export let minTimeGrain: V1TimeGrain;
 
   const dispatch = createEventDispatcher();
@@ -21,10 +21,7 @@
 
   $: timeGrains = timeGrainOptions
     ? timeGrainOptions
-        .filter(
-          (timeGrain) =>
-            !isGrainBigger(minTimeGrain, timeGrain.grain) && timeGrain.enabled
-        )
+        .filter((timeGrain) => !isGrainBigger(minTimeGrain, timeGrain.grain))
         .map((timeGrain) => {
           return {
             main: timeGrain.label,

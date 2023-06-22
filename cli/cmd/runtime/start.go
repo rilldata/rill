@@ -26,6 +26,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/drivers/github"
+	_ "github.com/rilldata/rill/runtime/drivers/motherduck"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 )
@@ -47,7 +48,7 @@ type Config struct {
 	AuthAudienceURL     string                 `default:"" split_words:"true"`
 	SafeSourceRefresh   bool                   `default:"false" split_words:"true"`
 	ConnectionCacheSize int                    `default:"100" split_words:"true"`
-	QueryCacheSize      int                    `default:"10000" split_words:"true"`
+	QueryCacheSizeBytes int64                  `default:"104857600" split_words:"true"` // 100MB by default
 	// AllowHostAccess controls whether instance can use host credentials and
 	// local_file sources can access directory outside repo
 	AllowHostAccess bool `default:"false" split_words:"true"`
@@ -66,16 +67,17 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			var conf Config
 			err := envconfig.Process("rill_runtime", &conf)
 			if err != nil {
-				fmt.Printf("failed to load config: %s", err.Error())
+				fmt.Printf("failed to load config: %s\n", err.Error())
 				os.Exit(1)
 			}
 
 			// Init logger
 			cfg := zap.NewProductionConfig()
 			cfg.Level.SetLevel(conf.LogLevel)
+			cfg.EncoderConfig.NameKey = zapcore.OmitKey
 			logger, err := cfg.Build()
 			if err != nil {
-				fmt.Printf("error: failed to create logger: %s", err.Error())
+				fmt.Printf("error: failed to create logger: %s\n", err.Error())
 				os.Exit(1)
 			}
 
@@ -104,7 +106,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				ConnectionCacheSize: conf.ConnectionCacheSize,
 				MetastoreDriver:     conf.MetastoreDriver,
 				MetastoreDSN:        conf.MetastoreURL,
-				QueryCacheSize:      conf.QueryCacheSize,
+				QueryCacheSizeBytes: conf.QueryCacheSizeBytes,
 				AllowHostAccess:     conf.AllowHostAccess,
 				SafeSourceRefresh:   conf.SafeSourceRefresh,
 			}
@@ -113,6 +115,9 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				logger.Fatal("error: could not create runtime", zap.Error(err))
 			}
 			defer rt.Close()
+
+			// Create ctx that cancels on termination signals
+			ctx := graceful.WithCancelOnTerminate(context.Background())
 
 			// Init server
 			srvOpts := &server.Options{
@@ -124,19 +129,19 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				AuthIssuerURL:   conf.AuthIssuerURL,
 				AuthAudienceURL: conf.AuthAudienceURL,
 			}
-			s, err := server.NewServer(srvOpts, rt, logger)
+			s, err := server.NewServer(ctx, srvOpts, rt, logger)
 			if err != nil {
 				logger.Fatal("error: could not create server", zap.Error(err))
 			}
 
 			// Run server
-			ctx := graceful.WithCancelOnTerminate(context.Background())
 			group, cctx := errgroup.WithContext(ctx)
 			group.Go(func() error { return s.ServeGRPC(cctx) })
 			group.Go(func() error { return s.ServeHTTP(cctx, nil) })
 			err = group.Wait()
 			if err != nil {
-				logger.Fatal("server crashed", zap.Error(err))
+				logger.Error("server crashed", zap.Error(err))
+				return
 			}
 
 			logger.Info("server shutdown gracefully")

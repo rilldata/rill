@@ -3,34 +3,29 @@
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
-  import {
-    metricsExplorerStore,
-    useDashboardStore,
-  } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import {
     humanizeDataType,
     NicelyFormattedTypes,
     nicelyFormattedTypesToNumberKind,
   } from "@rilldata/web-common/features/dashboards/humanize-numbers";
   import {
-    selectBestMeasureStrings,
-    selectMeasureKeys,
     useMetaQuery,
     useModelAllTimeRange,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-  import { getOffset } from "@rilldata/web-common/lib/time/transforms";
-  import { TimeOffsetType } from "@rilldata/web-common/lib/time/types";
   import {
     createQueryServiceMetricsViewTimeSeries,
     createQueryServiceMetricsViewTotals,
     V1MetricsViewTimeSeriesResponse,
-    V1MetricsViewTotalsResponse,
   } from "@rilldata/web-common/runtime-client";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
-  import { isRangeInsideOther } from "../../../lib/time/ranges";
+  import {
+    getAdjustedChartTime,
+    getAdjustedFetchTime,
+  } from "@rilldata/web-common/lib/time/ranges";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
@@ -49,8 +44,7 @@
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
   $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
   $: showComparison = $dashboardStore?.showComparison;
-
-  let totalsQuery: CreateQueryResult<V1MetricsViewTotalsResponse, Error>;
+  $: interval = $dashboardStore?.selectedTimeRange?.interval;
 
   $: allTimeRangeQuery = useModelAllTimeRange(
     $runtime.instanceId,
@@ -71,59 +65,51 @@
     name = $dashboardStore.selectedTimeRange.name;
   }
 
-  let totalsComparisonQuery: CreateQueryResult<
-    V1MetricsViewTotalsResponse,
-    Error
-  >;
-
-  let isComparisonRangeAvailable = false;
-  let displayComparison = false;
-
-  /** Generate the totals & big number comparison query */
-  $: if (
-    name &&
-    $dashboardStore &&
-    metaQuery &&
-    $metaQuery.isSuccess &&
-    !$metaQuery.isRefetching &&
-    allTimeRange?.start &&
-    $dashboardStore?.selectedTimeRange?.start
-  ) {
-    isComparisonRangeAvailable = isRangeInsideOther(
-      allTimeRange?.start,
-      allTimeRange?.end,
-      $dashboardStore?.selectedComparisonTimeRange?.start,
-      $dashboardStore?.selectedComparisonTimeRange?.end
-    );
-    displayComparison = showComparison && isComparisonRangeAvailable;
-
-    const totalsQueryParams = {
+  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
+  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
+  $: totalsQuery = createQueryServiceMetricsViewTotals(
+    instanceId,
+    metricViewName,
+    {
       measureNames: selectedMeasureNames,
+      timeStart: timeStart,
+      timeEnd: timeEnd,
       filter: $dashboardStore?.filters,
-      timeStart: $dashboardStore.selectedTimeRange?.start.toISOString(),
-      timeEnd: $dashboardStore.selectedTimeRange?.end.toISOString(),
-    };
+    },
+    {
+      query: {
+        enabled: !!timeStart && !!timeEnd && !!$dashboardStore?.filters,
+      },
+    }
+  );
 
-    totalsQuery = createQueryServiceMetricsViewTotals(
-      instanceId,
-      metricViewName,
-      totalsQueryParams
-    );
+  /** Generate the big number comparison query */
+  $: displayComparison = showComparison;
 
-    totalsComparisonQuery = createQueryServiceMetricsViewTotals(
-      instanceId,
-      metricViewName,
-      {
-        ...totalsQueryParams,
-        timeStart: displayComparison
-          ? $dashboardStore?.selectedComparisonTimeRange?.start.toISOString()
-          : undefined,
-        timeEnd: displayComparison
-          ? $dashboardStore?.selectedComparisonTimeRange?.end.toISOString()
-          : undefined,
-      }
-    );
-  }
+  $: comparisonTimeStart =
+    $dashboardStore?.selectedComparisonTimeRange?.start?.toISOString();
+  $: comparisonTimeEnd =
+    $dashboardStore?.selectedComparisonTimeRange?.end?.toISOString();
+  $: totalsComparisonQuery = createQueryServiceMetricsViewTotals(
+    instanceId,
+    metricViewName,
+    {
+      measureNames: selectedMeasureNames,
+      timeStart: comparisonTimeStart,
+      timeEnd: comparisonTimeEnd,
+      filter: $dashboardStore?.filters,
+    },
+    {
+      query: {
+        enabled: Boolean(
+          displayComparison &&
+            !!comparisonTimeStart &&
+            !!comparisonTimeEnd &&
+            !!$dashboardStore?.filters
+        ),
+      },
+    }
+  );
 
   // get the totalsComparisons.
   $: totalsComparisons = $totalsComparisonQuery?.data?.data;
@@ -145,29 +131,40 @@
     !$metaQuery.isRefetching &&
     $dashboardStore?.selectedTimeRange?.start
   ) {
+    const { start: adjustedStart, end: adjustedEnd } = getAdjustedFetchTime(
+      $dashboardStore.selectedTimeRange?.start,
+      $dashboardStore.selectedTimeRange?.end,
+      interval
+    );
+
     timeSeriesQuery = createQueryServiceMetricsViewTimeSeries(
       instanceId,
       metricViewName,
       {
         measureNames: selectedMeasureNames,
         filter: $dashboardStore?.filters,
-        timeStart: $dashboardStore.selectedTimeRange?.start.toISOString(),
-        timeEnd: $dashboardStore.selectedTimeRange?.end.toISOString(),
-        timeGranularity: $dashboardStore.selectedTimeRange?.interval,
+        timeStart: adjustedStart,
+        timeEnd: adjustedEnd,
+        timeGranularity: interval,
       }
     );
     if (displayComparison) {
+      const { start: compAdjustedStart, end: compAdjustedEnd } =
+        getAdjustedFetchTime(
+          $dashboardStore.selectedComparisonTimeRange?.start,
+          $dashboardStore.selectedComparisonTimeRange?.end,
+          interval
+        );
+
       timeSeriesComparisonQuery = createQueryServiceMetricsViewTimeSeries(
         instanceId,
         metricViewName,
         {
           measureNames: selectedMeasureNames,
           filter: $dashboardStore?.filters,
-          timeStart:
-            $dashboardStore?.selectedComparisonTimeRange?.start.toISOString(),
-          timeEnd:
-            $dashboardStore?.selectedComparisonTimeRange?.end.toISOString(),
-          timeGranularity: $dashboardStore.selectedTimeRange?.interval,
+          timeStart: compAdjustedStart,
+          timeEnd: compAdjustedEnd,
+          timeGranularity: interval,
         }
       );
     }
@@ -188,7 +185,11 @@
   // formattedData adjusts the data to account for Javascript's handling of timezones
   let formattedData;
   $: if (dataCopy && dataCopy?.length) {
-    formattedData = prepareTimeSeries(dataCopy, dataComparisonCopy);
+    formattedData = prepareTimeSeries(
+      dataCopy,
+      dataComparisonCopy,
+      TIME_GRAIN[interval].duration
+    );
   }
 
   let mouseoverValue = undefined;
@@ -201,63 +202,43 @@
     $dashboardStore?.selectedTimeRange &&
     $dashboardStore?.selectedTimeRange?.start
   ) {
-    startValue = removeTimezoneOffset(
-      new Date($dashboardStore?.selectedTimeRange?.start)
+    const adjustedChartValue = getAdjustedChartTime(
+      $dashboardStore.selectedTimeRange?.start,
+      $dashboardStore.selectedTimeRange?.end,
+      interval
     );
 
-    // selectedTimeRange.end is exclusive and rounded to the time grain ("interval").
-    // Since values are grouped with DATE_TRUNC, we subtract one grain to get the (inclusive) axis end.
-    endValue = new Date($dashboardStore?.selectedTimeRange?.end);
-
-    endValue = getOffset(
-      new Date($dashboardStore?.selectedTimeRange?.end),
-      TIME_GRAIN[$dashboardStore?.selectedTimeRange?.interval].duration,
-      TimeOffsetType.SUBTRACT
-    );
-
-    endValue = removeTimezoneOffset(endValue);
+    startValue = adjustedChartValue?.start;
+    endValue = adjustedChartValue?.end;
   }
 
-  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
-
-  $: availableMeasureLabels = selectBestMeasureStrings($metaQuery);
-  $: availableMeasureKeys = selectMeasureKeys($metaQuery);
-  $: visibleMeasureKeys = metricsExplorer?.visibleMeasureKeys;
-  $: visibleMeasuresBitmask = availableMeasureKeys.map((k) =>
-    visibleMeasureKeys.has(k)
-  );
+  $: showHideMeasures = createShowHideMeasuresStore(metricViewName, metaQuery);
 
   const toggleMeasureVisibility = (e) => {
-    metricsExplorerStore.toggleMeasureVisibilityByKey(
-      metricViewName,
-      availableMeasureKeys[e.detail.index]
-    );
+    showHideMeasures.toggleVisibility(e.detail.name);
   };
   const setAllMeasuresNotVisible = () => {
-    metricsExplorerStore.hideAllMeasures(metricViewName);
+    showHideMeasures.setAllToNotVisible();
   };
   const setAllMeasuresVisible = () => {
-    metricsExplorerStore.setMultipleMeasuresVisible(
-      metricViewName,
-      availableMeasureKeys
-    );
+    showHideMeasures.setAllToVisible();
   };
 </script>
 
-<TimeSeriesChartContainer {workspaceWidth} start={startValue} end={endValue}>
+<TimeSeriesChartContainer end={endValue} start={startValue} {workspaceWidth}>
   <div class="bg-white sticky top-0" style="z-index:100">
     <SeachableFilterButton
-      selectableItems={availableMeasureLabels}
-      selectedItems={visibleMeasuresBitmask}
-      on:item-clicked={toggleMeasureVisibility}
-      on:deselect-all={setAllMeasuresNotVisible}
-      on:select-all={setAllMeasuresVisible}
       label="Measures"
+      on:deselect-all={setAllMeasuresNotVisible}
+      on:item-clicked={toggleMeasureVisibility}
+      on:select-all={setAllMeasuresVisible}
+      selectableItems={$showHideMeasures.selectableItems}
+      selectedItems={$showHideMeasures.selectedItems}
       tooltipText="Choose measures to display"
     />
   </div>
   <div class="bg-white sticky left-0 top-0">
-    <div style:padding-left="24px" style:height="20px" />
+    <div style:height="20px" style:padding-left="24px" />
     <!-- top axis element -->
     <div />
     {#if $dashboardStore?.selectedTimeRange}
@@ -274,7 +255,8 @@
   </div>
   <!-- bignumbers and line charts -->
   {#if $metaQuery.data?.measures && $totalsQuery?.isSuccess}
-    {#each $metaQuery.data?.measures.filter((_, i) => visibleMeasuresBitmask[i]) as measure, index (measure.name)}
+    <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
+    {#each $metaQuery.data?.measures.filter((_, i) => $showHideMeasures.selectedItems[i]) as measure, index (measure.name)}
       <!-- FIXME: I can't select the big number by the measure id. -->
       {@const bigNum = $totalsQuery?.data.data?.[measure.name]}
       {@const showComparison = displayComparison}
@@ -311,8 +293,9 @@
           <MeasureChart
             bind:mouseoverValue
             data={formattedData}
-            xAccessor="ts"
-            timeGrain={$dashboardStore?.selectedTimeRange?.interval}
+            xAccessor="ts_position"
+            labelAccessor="ts"
+            timeGrain={interval}
             yAccessor={measure.name}
             xMin={startValue}
             xMax={endValue}
@@ -321,17 +304,14 @@
               /** format the date according to the time grain */
               return new Date(value).toLocaleDateString(
                 undefined,
-                TIME_GRAIN[$dashboardStore?.selectedTimeRange?.interval]
-                  .formatDate
+                TIME_GRAIN[interval].formatDate
               );
             }}
             numberKind={nicelyFormattedTypesToNumberKind(measure?.format)}
             mouseoverFormat={(value) =>
               formatPreset === NicelyFormattedTypes.NONE
                 ? `${value}`
-                : humanizeDataType(value, measure?.format, {
-                    excludeDecimalZeros: true,
-                  })}
+                : humanizeDataType(value, measure?.format)}
           />
         {:else}
           <div>

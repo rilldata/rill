@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"go.uber.org/zap"
 )
 
 var ErrIngestionLimitExceeded = fmt.Errorf("connectors: source ingestion exceeds limit")
@@ -42,7 +43,7 @@ type Connector interface {
 	// how to communicate splits and long-running/streaming data (e.g. for Kafka).
 	// Consume(ctx context.Context, source Source) error
 
-	ConsumeAsIterator(ctx context.Context, env *Env, source *Source) (FileIterator, error)
+	ConsumeAsIterator(ctx context.Context, env *Env, source *Source, logger *zap.Logger) (FileIterator, error)
 
 	// HasAnonymousAccess returns true if external system can be accessed without credentials
 	HasAnonymousAccess(ctx context.Context, env *Env, source *Source) (bool, error)
@@ -168,12 +169,12 @@ func (s *Source) Validate() error {
 	return nil
 }
 
-func ConsumeAsIterator(ctx context.Context, env *Env, source *Source) (FileIterator, error) {
+func ConsumeAsIterator(ctx context.Context, env *Env, source *Source, logger *zap.Logger) (FileIterator, error) {
 	connector, ok := Connectors[source.Connector]
 	if !ok {
 		return nil, fmt.Errorf("connector: not found")
 	}
-	return connector.ConsumeAsIterator(ctx, env, source)
+	return connector.ConsumeAsIterator(ctx, env, source, logger)
 }
 
 func (s *Source) PropertiesEquals(o *Source) bool {

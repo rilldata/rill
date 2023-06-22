@@ -4,6 +4,24 @@
  * rill/admin/v1/api.proto
  * OpenAPI spec version: version not set
  */
+export type AdminServiceSearchUsersParams = {
+  emailPattern?: string;
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceGetUserParams = {
+  email?: string;
+};
+
+export type AdminServiceSudoGetResourceParams = {
+  userId?: string;
+  orgId?: string;
+  projectId?: string;
+  deploymentId?: string;
+  instanceId?: string;
+};
+
 export type AdminServiceUpdateProjectVariablesBodyVariables = {
   [key: string]: string;
 };
@@ -13,11 +31,13 @@ export type AdminServiceUpdateProjectVariablesBody = {
 };
 
 export type AdminServiceUpdateProjectBody = {
-  id?: string;
   description?: string;
   public?: boolean;
   prodBranch?: string;
   githubUrl?: string;
+  prodSlots?: string;
+  region?: string;
+  newName?: string;
 };
 
 export type AdminServiceCreateProjectBodyVariables = { [key: string]: string };
@@ -39,6 +59,11 @@ export type AdminServiceCreateProjectBody = {
 export type AdminServiceListProjectsForOrganizationParams = {
   pageSize?: number;
   pageToken?: string;
+};
+
+export type AdminServiceCreateWhitelistedDomainBody = {
+  domain?: string;
+  role?: string;
 };
 
 export type AdminServiceListProjectMembersParams = {
@@ -65,14 +90,9 @@ export type AdminServiceListOrganizationInvitesParams = {
   pageToken?: string;
 };
 
-export type AdminServiceCreateAutoinviteDomainBody = {
-  domain?: string;
-  role?: string;
-};
-
 export type AdminServiceUpdateOrganizationBody = {
-  id?: string;
   description?: string;
+  newName?: string;
 };
 
 export type AdminServiceListOrganizationsParams = {
@@ -99,6 +119,15 @@ export type AdminServiceSetOrganizationMemberRoleBodyBody = {
 
 export type AdminServiceTriggerReconcileBodyBody = { [key: string]: any };
 
+export interface V1WhitelistedDomain {
+  domain?: string;
+  role?: string;
+}
+
+export interface V1UserQuotas {
+  singleuserOrgs?: number;
+}
+
 export interface V1UserInvite {
   email?: string;
   role?: string;
@@ -110,6 +139,7 @@ export interface V1User {
   email?: string;
   displayName?: string;
   photoUrl?: string;
+  quotas?: V1UserQuotas;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -142,6 +172,45 @@ export interface V1TriggerReconcileResponse {
   [key: string]: any;
 }
 
+export interface V1SudoUpdateUserQuotasResponse {
+  user?: V1User;
+}
+
+export interface V1SudoUpdateUserQuotasRequest {
+  email?: string;
+  singleuserOrgs?: number;
+}
+
+export interface V1SudoUpdateOrganizationQuotasResponse {
+  organization?: V1Organization;
+}
+
+export interface V1SudoUpdateOrganizationQuotasRequest {
+  orgName?: string;
+  projects?: number;
+  deployments?: number;
+  slotsTotal?: number;
+  slotsPerDeployment?: number;
+  outstandingInvites?: number;
+}
+
+export interface V1SudoGetResourceResponse {
+  user?: V1User;
+  org?: V1Organization;
+  project?: V1Project;
+  deployment?: V1Deployment;
+  instance?: V1Deployment;
+}
+
+export interface V1SetSuperuserResponse {
+  [key: string]: any;
+}
+
+export interface V1SetSuperuserRequest {
+  email?: string;
+  superuser?: boolean;
+}
+
 export interface V1SetProjectMemberRoleResponse {
   [key: string]: any;
 }
@@ -150,8 +219,17 @@ export interface V1SetOrganizationMemberRoleResponse {
   [key: string]: any;
 }
 
+export interface V1SearchUsersResponse {
+  users?: V1User[];
+  nextPageToken?: string;
+}
+
 export interface V1RevokeCurrentAuthTokenResponse {
   tokenId?: string;
+}
+
+export interface V1RemoveWhitelistedDomainResponse {
+  [key: string]: any;
 }
 
 export interface V1RemoveProjectMemberResponse {
@@ -159,10 +237,6 @@ export interface V1RemoveProjectMemberResponse {
 }
 
 export interface V1RemoveOrganizationMemberResponse {
-  [key: string]: any;
-}
-
-export interface V1RemoveAutoinviteDomainResponse {
   [key: string]: any;
 }
 
@@ -204,6 +278,14 @@ export interface V1PingResponse {
   time?: string;
 }
 
+export interface V1OrganizationQuotas {
+  projects?: number;
+  deployments?: number;
+  slotsTotal?: number;
+  slotsPerDeployment?: number;
+  outstandingInvites?: number;
+}
+
 export interface V1OrganizationPermissions {
   readOrg?: boolean;
   manageOrg?: boolean;
@@ -218,6 +300,7 @@ export interface V1Organization {
   id?: string;
   name?: string;
   description?: string;
+  quotas?: V1OrganizationQuotas;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -229,6 +312,14 @@ export interface V1Member {
   roleName?: string;
   createdOn?: string;
   updatedOn?: string;
+}
+
+export interface V1ListWhitelistedDomainsResponse {
+  domains?: V1WhitelistedDomain[];
+}
+
+export interface V1ListSuperusersResponse {
+  users?: V1User[];
 }
 
 export interface V1ListProjectsForOrganizationResponse {
@@ -265,6 +356,19 @@ export interface V1LeaveOrganizationResponse {
   [key: string]: any;
 }
 
+export interface V1IssueRepresentativeAuthTokenResponse {
+  token?: string;
+}
+
+export interface V1IssueRepresentativeAuthTokenRequest {
+  email?: string;
+  ttlMinutes?: string;
+}
+
+export interface V1GetUserResponse {
+  user?: V1User;
+}
+
 export type V1GetProjectVariablesResponseVariables = { [key: string]: string };
 
 export interface V1GetProjectVariablesResponse {
@@ -289,12 +393,20 @@ export interface V1GetGithubRepoStatusResponse {
   defaultBranch?: string;
 }
 
+export interface V1GetGitCredentialsResponse {
+  repoUrl?: string;
+  username?: string;
+  password?: string;
+  subpath?: string;
+  prodBranch?: string;
+}
+
 export interface V1GetCurrentUserResponse {
   user?: V1User;
 }
 
 export type V1DeploymentStatus =
-  typeof V1DeploymentStatus[keyof typeof V1DeploymentStatus];
+  (typeof V1DeploymentStatus)[keyof typeof V1DeploymentStatus];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1DeploymentStatus = {
@@ -326,6 +438,10 @@ export interface V1DeleteOrganizationResponse {
   [key: string]: any;
 }
 
+export interface V1CreateWhitelistedDomainResponse {
+  [key: string]: any;
+}
+
 export interface V1CreateProjectResponse {
   project?: V1Project;
 }
@@ -337,10 +453,6 @@ export interface V1CreateOrganizationResponse {
 export interface V1CreateOrganizationRequest {
   name?: string;
   description?: string;
-}
-
-export interface V1CreateAutoinviteDomainResponse {
-  [key: string]: any;
 }
 
 export interface V1AddProjectMemberResponse {

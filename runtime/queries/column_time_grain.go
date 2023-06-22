@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"io"
+	"reflect"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -26,8 +28,11 @@ func (q *ColumnTimeGrain) Deps() []string {
 	return []string{q.TableName}
 }
 
-func (q *ColumnTimeGrain) MarshalResult() any {
-	return q.Result
+func (q *ColumnTimeGrain) MarshalResult() *runtime.QueryResult {
+	return &runtime.QueryResult{
+		Value: q.Result,
+		Bytes: int64(reflect.TypeOf(q.Result).Size()),
+	}
 }
 
 func (q *ColumnTimeGrain) UnmarshalResult(v any) error {
@@ -107,8 +112,9 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	}
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    estimateSQL,
-		Priority: priority,
+		Query:            estimateSQL,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
 		return err
@@ -135,4 +141,8 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 
 	q.Result = toTimeGrain(timeGrainString.String)
 	return nil
+}
+
+func (q *ColumnTimeGrain) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.ExportFormat, w io.Writer) error {
+	return ErrExportNotSupported
 }

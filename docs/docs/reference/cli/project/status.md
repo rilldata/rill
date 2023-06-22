@@ -6,14 +6,14 @@ title: rill project status
 Project deployment status
 
 ```
-rill project status [flags]
+rill project status [<project-name>] [flags]
 ```
 
 ### Flags
 
 ```
       --path string      Project directory (default ".")
-      --project string   Name
+      --project string   Project Name
 ```
 
 ### Global flags

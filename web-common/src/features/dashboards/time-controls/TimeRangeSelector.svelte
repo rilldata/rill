@@ -108,6 +108,7 @@
   // closes *before* the `click-outside` event is fired. A workaround is to check for `isCalendarRecentlyClosed`.
   function onCalendarClose() {
     isCalendarRecentlyClosed = true;
+
     setTimeout(() => {
       isCalendarRecentlyClosed = false;
     }, 300);
@@ -115,6 +116,12 @@
 
   $: currentSelection = $dashboardStore?.selectedTimeRange?.name;
   $: intermediateSelection = currentSelection;
+
+  const handleMenuOpen = () => {
+    if (intermediateSelection !== TimeRangePreset.CUSTOM) {
+      isCustomRangeOpen = false;
+    }
+  };
 </script>
 
 <WithTogglableFloatingElement
@@ -122,11 +129,13 @@
   distance={8}
   let:active
   let:toggleFloatingElement
+  on:open={handleMenuOpen}
 >
   <button
     class:bg-gray-200={active}
     class="px-3 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600 items-baseline"
     on:click={toggleFloatingElement}
+    aria-label="Select time range"
   >
     <div class="flex flew-row gap-x-3">
       <div class="font-bold flex flex-row items-center gap-x-3">
@@ -146,7 +155,8 @@
       <span style:transform="translateY(1px)">
         {prettyFormatTimeRange(
           $dashboardStore?.selectedTimeRange?.start,
-          $dashboardStore?.selectedTimeRange?.end
+          $dashboardStore?.selectedTimeRange?.end,
+          $dashboardStore?.selectedTimeRange?.name
         )}
       </span>
     </div>
@@ -160,12 +170,14 @@
     on:click-outside={() => onClickOutside(toggleFloatingElement)}
     on:escape={toggleFloatingElement}
     slot="floating-element"
+    label="Time range selector"
+    maxWidth="300px"
   >
     {@const allTime = {
       name: TimeRangePreset.ALL_TIME,
       label: ALL_TIME.label,
       start: boundaryStart,
-      end: boundaryEnd,
+      end: new Date(boundaryEnd.getTime() + 1), // end is exclusive
     }}
     <MenuItem
       on:before-select={setIntermediateSelection(allTime.name)}

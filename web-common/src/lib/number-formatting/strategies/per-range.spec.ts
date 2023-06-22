@@ -1,5 +1,6 @@
 import { FormatterFactoryOptions, NumberKind } from "../humanizer-types";
 import { PerRangeFormatter } from "./per-range";
+import { describe, it, expect } from "vitest";
 
 const invalidRangeOptions1: FormatterFactoryOptions = {
   strategy: "perRange",

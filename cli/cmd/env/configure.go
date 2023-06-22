@@ -48,7 +48,7 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 				}
 
 				warn.Printf("Directory at %q doesn't contain a valid Rill project.\n\n", fullpath)
-				warn.Printf("Run \"rill env configure\" from a Rill project directory or use \"--path\" to pass a project path.\n")
+				warn.Printf("Run `rill env configure` from a Rill project directory or use `--path` to pass a project path.\n")
 				return nil
 			}
 
@@ -112,7 +112,7 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to update variables %w", err)
 			}
-			cmdutil.SuccessPrinter("Updated project variables")
+			cmdutil.PrintlnSuccess("Updated project variables")
 
 			if !cmd.Flags().Changed("redeploy") {
 				redploy = cmdutil.ConfirmPrompt("Do you want to redeploy project", "", redploy)
@@ -126,10 +126,10 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 
 				_, err = client.TriggerRedeploy(ctx, &adminv1.TriggerRedeployRequest{DeploymentId: project.ProdDeployment.Id})
 				if err != nil {
-					warn.Printf("Redeploy trigger failed. Trigger redeploy again with `rill project reconcile --reset=true` if required.")
+					warn.Printf("Redeploy trigger failed. Trigger redeploy again with `rill project reconcile --reset=true` if required.\n")
 					return err
 				}
-				cmdutil.SuccessPrinter("Redeploy triggered successfully.")
+				cmdutil.PrintlnSuccess("Redeploy triggered successfully.")
 			}
 			return nil
 		},

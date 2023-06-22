@@ -2,13 +2,11 @@ package drivers_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
+	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"go.uber.org/zap"
 
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
@@ -76,41 +74,10 @@ func withFile(t *testing.T, fn func(driver string, dsn string)) error {
 }
 
 func withPostgres(t *testing.T, fn func(driver string, dsn string)) error {
-	// Start a Postgres test container
-	ctx := context.Background()
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		Started: true,
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "postgres:14",
-			ExposedPorts: []string{"5432/tcp"},
-			WaitingFor:   wait.ForListeningPort("5432/tcp"),
-			Env: map[string]string{
-				"POSTGRES_USER":     "postgres",
-				"POSTGRES_PASSWORD": "postgres",
-				"POSTGRES_DB":       "postgres",
-			},
-		},
-	})
-	if err != nil {
-		return err
-	}
+	pg := pgtestcontainer.New(t)
+	defer pg.Terminate(t)
 
-	// Make sure container is terminated
-	defer container.Terminate(ctx)
-
-	// Get Postgres database URL
-	host, err := container.Host(ctx)
-	if err != nil {
-		return err
-	}
-	port, err := container.MappedPort(ctx, "5432/tcp")
-	if err != nil {
-		return err
-	}
-	dsn := fmt.Sprintf("postgres://postgres:postgres@%s:%d/postgres", host, port.Int())
-
-	// Call wrapped function
-	fn("postgres", dsn)
+	fn("postgres", pg.DatabaseURL)
 	return nil
 }
 

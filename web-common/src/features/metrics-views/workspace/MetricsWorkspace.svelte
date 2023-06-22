@@ -200,6 +200,7 @@
         <LayoutManager let:bottomResizeCallback let:topResizeCallback>
           <MetricsEntityTable
             addButtonId={"add-measure-button"}
+            addLabel="Add measure"
             addEntityHandler={handleCreateMeasure}
             columnNames={MeasuresColumns}
             deleteEntityHandler={handleDeleteMeasure}
@@ -213,6 +214,7 @@
 
           <MetricsEntityTable
             addButtonId={"add-dimension-button"}
+            addLabel="Add dimension"
             addEntityHandler={handleCreateDimension}
             columnNames={DimensionColumns}
             deleteEntityHandler={handleDeleteDimension}

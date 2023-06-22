@@ -6,7 +6,7 @@ title: rill project reconcile
 Send trigger to deployment
 
 ```
-rill project reconcile [flags]
+rill project reconcile [<project-name>] [flags]
 ```
 
 ### Flags

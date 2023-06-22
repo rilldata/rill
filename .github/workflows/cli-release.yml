@@ -24,7 +24,7 @@ env:
 
 jobs:
   release:
-    name: Release rill-developer
+    name: Release rill
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -73,10 +73,10 @@ jobs:
               -e CGO_ENABLED=1 \
               --env-file .release-env \
               -v /var/run/docker.sock:/var/run/docker.sock \
-              -v `pwd`:/go/src/rilldata/rill-developer \
+              -v `pwd`:/go/src/rilldata/rill \
               -v `pwd`/sysroot:/sysroot \
               -v `pwd`/rill-binary-sa.json:/rill-binary-sa.json \
-              -w /go/src/rilldata/rill-developer \
+              -w /go/src/rilldata/rill \
               goreleaser/goreleaser-cross:v1.20.3 \
               release ${NIGHTLY}
 

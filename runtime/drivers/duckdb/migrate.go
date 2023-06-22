@@ -31,26 +31,26 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 	// Create rill schema if it doesn't exist
 	_, err = conn.ExecContext(ctx, "create schema if not exists rill")
 	if err != nil {
-		return err
+		return c.checkErr(err)
 	}
 
 	// Create migrationVersionTable if it doesn't exist
 	_, err = conn.ExecContext(ctx, fmt.Sprintf("create table if not exists %s(version integer not null)", migrationVersionTable))
 	if err != nil {
-		return err
+		return c.checkErr(err)
 	}
 
 	// Set the version to 0 if table is empty
 	_, err = conn.ExecContext(ctx, fmt.Sprintf("insert into %s(version) select 0 where 0=(select count(*) from %s)", migrationVersionTable, migrationVersionTable))
 	if err != nil {
-		return err
+		return c.checkErr(err)
 	}
 
 	// Get version of latest migration
 	var currentVersion int
 	err = conn.QueryRowContext(ctx, fmt.Sprintf("select version from %s", migrationVersionTable)).Scan(&currentVersion)
 	if err != nil {
-		return err
+		return c.checkErr(err)
 	}
 
 	// Iterate over migrations (sorted by filename)
@@ -92,30 +92,30 @@ func (c *connection) migrateSingle(ctx context.Context, conn *sqlx.Conn, name st
 	if err != nil {
 		return err
 	}
-	defer func() { _ = tx.Rollback() }()
+	defer func() { err := tx.Rollback(); _ = c.checkErr(err) }()
 
 	// Run migration
 	_, err = tx.ExecContext(ctx, string(sql))
 	if err != nil {
-		return fmt.Errorf("failed to run migration '%s': %w", name, err)
+		return fmt.Errorf("failed to run migration '%s': %w", name, c.checkErr(err))
 	}
 
 	// Update migration version
 	_, err = tx.ExecContext(ctx, fmt.Sprintf("UPDATE %s SET version=?", migrationVersionTable), version)
 	if err != nil {
-		return err
+		return c.checkErr(err)
 	}
 
 	// Commit migration
 	err = tx.Commit()
 	if err != nil {
-		return err
+		return c.checkErr(err)
 	}
 
 	// Force DuckDB to merge WAL into .db file
 	_, err = conn.ExecContext(ctx, "CHECKPOINT;")
 	if err != nil {
-		return err
+		return c.checkErr(err)
 	}
 	return nil
 }
@@ -131,7 +131,7 @@ func (c *connection) MigrationStatus(ctx context.Context) (current, desired int,
 	// Get current version
 	err = conn.QueryRowxContext(ctx, fmt.Sprintf("select version from %s", migrationVersionTable)).Scan(&current)
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, c.checkErr(err)
 	}
 
 	// Set desired to version number of last migration file

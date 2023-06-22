@@ -15,12 +15,14 @@ export const initMeasuresColumns = (
     {
       name: "label",
       label: "Label",
+      ariaLabel: "Measure label",
       headerTooltip: "A human readable name for this measure (optional)",
       cellRenderer: new CellConfigInput(inputChangeHandler),
     },
     {
       name: "expression",
       label: "Expression",
+      ariaLabel: "Measure expression",
       headerTooltip: "A valid SQL aggregation expression for this measure",
       cellRenderer: new CellConfigInput(
         inputChangeHandler,
@@ -38,7 +40,7 @@ export const initMeasuresColumns = (
     {
       name: "description",
       label: "Description",
-
+      ariaLabel: "Measure description",
       headerTooltip: "A human readable description of this measure (optional)",
 
       cellRenderer: new CellConfigInput(inputChangeHandler),
@@ -46,6 +48,7 @@ export const initMeasuresColumns = (
     {
       name: "format_preset",
       label: "Number formatting",
+      ariaLabel: "Measure number formatting",
       headerTooltip:
         "The number formatting used for this measure in the Metrics Explorer",
       cellRenderer: new CellConfigSelector(

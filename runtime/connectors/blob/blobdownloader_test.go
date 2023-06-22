@@ -8,6 +8,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"gocloud.dev/blob"
 	_ "gocloud.dev/blob/memblob"
 )
@@ -38,12 +39,6 @@ func TestFetchFileNames(t *testing.T) {
 			args:    args{context.Background(), prepareBucket(t), Options{GlobPattern: "2020/01/01/aata.txt", StorageLimitInBytes: TenGB}},
 			want:    map[string]struct{}{"hello": {}},
 			wantErr: false,
-		},
-		{
-			name:    "single file absent",
-			args:    args{context.Background(), prepareBucket(t), Options{GlobPattern: "2020/01/01/eata.txt", StorageLimitInBytes: TenGB}},
-			want:    nil,
-			wantErr: true,
 		},
 		{
 			name:    "recursive glob",
@@ -91,7 +86,7 @@ func TestFetchFileNames(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			it, err := NewIterator(tt.args.ctx, tt.args.bucket, tt.args.opt)
+			it, err := NewIterator(tt.args.ctx, tt.args.bucket, tt.args.opt, zap.NewNop())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FetchFileNames() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -157,7 +152,7 @@ func TestFetchFileNamesWithParitionLimits(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			it, err := NewIterator(tt.args.ctx, tt.args.bucket, tt.args.opts)
+			it, err := NewIterator(tt.args.ctx, tt.args.bucket, tt.args.opts, zap.NewNop())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FetchFileNames() error = %v, wantErr %v", err, tt.wantErr)
 				return

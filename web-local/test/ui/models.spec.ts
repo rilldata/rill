@@ -20,7 +20,7 @@ import { useRegisteredServer } from "./utils/serverConfigs";
 import { createOrReplaceSource } from "./utils/sourceHelpers";
 import { entityNotPresent, waitForEntity } from "./utils/waitHelpers";
 
-describe.skip("models", () => {
+describe("models", () => {
   const testBrowser = useRegisteredServer("models");
 
   it("Create and edit model", async () => {
