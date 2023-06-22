@@ -9,6 +9,8 @@
   } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
   import { useModelNames } from "@rilldata/web-common/features/models/selectors";
   import {
+    V1GetCatalogEntryResponse,
+    getRuntimeServiceGetCatalogEntryQueryKey,
     runtimeServiceGetCatalogEntry,
     runtimeServicePutFileAndReconcile,
   } from "@rilldata/web-common/runtime-client";
@@ -31,16 +33,15 @@
     str = undefined
   ) {
     if (str === undefined) {
-      //       const model = await queryClient.fetchQuery<V1Model>(
-      //   getRuntimeServiceGetCatalogEntryQueryKey(
-      //     $runtime?.instanceId,
-      //     modelName
-      //   )
-      // );
-      const model = await runtimeServiceGetCatalogEntry(
-        $runtime?.instanceId,
-        modelName
-      );
+      const model = await queryClient.fetchQuery<V1GetCatalogEntryResponse>({
+        queryKey: getRuntimeServiceGetCatalogEntryQueryKey(
+          $runtime?.instanceId,
+          modelName
+        ),
+        queryFn: () =>
+          runtimeServiceGetCatalogEntry($runtime?.instanceId, modelName),
+      });
+
       str = addQuickMetricsToDashboardYAML("", model?.entry?.model);
     }
 
