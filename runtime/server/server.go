@@ -279,6 +279,9 @@ func mapGRPCError(err error) error {
 }
 
 func (s *Server) checkRateLimit(md middleware.Metadata) error {
+	// Any request type might be limited separately as it is part of Metadata
+	// Any request type might be excluded from this limit check and limited later,
+	// e.g. in the corresponding request handler by calling s.limiter.Limit(ctx, "limitKey", redis_rate.PerMinute(100))
 	if auth.GetClaims(md.Ctx).Subject() == "" {
 		limitKey := ratelimit.AnonLimitKey(md.Method, md.Peer)
 		if err := s.limiter.Limit(md.Ctx, limitKey, ratelimit.Public); err != nil {
