@@ -2,15 +2,17 @@ package middleware
 
 import (
 	"context"
-	"github.com/rilldata/rill/runtime/pkg/observability"
+	"errors"
 	"google.golang.org/grpc"
 	"net/http"
+
+	"github.com/rilldata/rill/runtime/pkg/observability"
 )
 
 // This is a collection of gRPC and HTTP interceptors that call fn per request.
 
 // RequestStreamServerInterceptor wraps a ServerStream and calls fn on each RecvMsg.
-func RequestStreamServerInterceptor(fn func(md Metadata) error) grpc.StreamServerInterceptor {
+func RequestStreamServerInterceptor(fn func(Metadata) error) grpc.StreamServerInterceptor {
 	return func(
 		srv interface{},
 		ss grpc.ServerStream,
@@ -28,7 +30,7 @@ func RequestStreamServerInterceptor(fn func(md Metadata) error) grpc.StreamServe
 }
 
 // RequestUnaryServerInterceptor calls fn on each request
-func RequestUnaryServerInterceptor(fn func(md Metadata) error) grpc.UnaryServerInterceptor {
+func RequestUnaryServerInterceptor(fn func(Metadata) error) grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
 		req interface{},
@@ -52,8 +54,8 @@ func RequestUnaryServerInterceptor(fn func(md Metadata) error) grpc.UnaryServerI
 type wrappedServerStream struct {
 	grpc.ServerStream
 	method string
-	peer string
-	fn   func(md Metadata) error
+	peer   string
+	fn     func(Metadata) error
 }
 
 func (wss *wrappedServerStream) RecvMsg(m interface{}) error {
@@ -65,14 +67,14 @@ func (wss *wrappedServerStream) RecvMsg(m interface{}) error {
 }
 
 // RequestHTTPHandler calls fn on each request.
-func RequestHTTPHandler(route string, fn func(md Metadata) error, next http.Handler) http.Handler {
+func RequestHTTPHandler(route string, fn func(Metadata) error, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		md := Metadata{r.Context(), r, route, observability.HTTPPeer(r)}
 		if err := fn(md); err != nil {
-			switch err := err.(type) {
-			case *HTTPError:
-				http.Error(w, err.Error(), err.Code)
-			default:
+			var httpError *HTTPError
+			if errors.As(err, &httpError) {
+				http.Error(w, err.Error(), httpError.Code)
+			} else {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
 			return
@@ -91,8 +93,8 @@ func NewHTTPError(code int, msg string) *HTTPError {
 	return &HTTPError{code, msg}
 }
 
-func (h *HTTPError) Error() string {
-	return h.Message
+func (e *HTTPError) Error() string {
+	return e.Message
 }
 
 type Metadata struct {

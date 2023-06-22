@@ -3,9 +3,10 @@ package ratelimit
 import (
 	"context"
 	"fmt"
+	"math"
+
 	"github.com/go-redis/redis_rate/v10"
 	"github.com/redis/go-redis/v9"
-	"math"
 )
 
 // Limiter returns an error if quota per key is exceeded.
@@ -13,9 +14,7 @@ type Limiter interface {
 	Limit(ctx context.Context, limitKey string, limit redis_rate.Limit) error
 }
 
-// Redis offers rate limiting functionality using a Redis-based rate limiter from the `go-redis/redis_rate`.
-// The Redis supports the concept of 'No-operation' (Noop) that performs no rate limiting.
-// This can be useful in local/testing environments or when rate limiting is not required.
+// Redis offers rate limiting functionality using a Redis-based rate limiter.
 type Redis struct {
 	*redis_rate.Limiter
 }
@@ -45,6 +44,8 @@ func (l *Redis) Limit(ctx context.Context, limitKey string, limit redis_rate.Lim
 	return nil
 }
 
+// Noop performs no rate limiting.
+// This can be useful in local/testing environments or when rate limiting is not required.
 type Noop struct{}
 
 func NewNoop() *Noop {

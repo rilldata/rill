@@ -5,14 +5,14 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/rilldata/rill/runtime/pkg/middleware"
-	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"net/http"
 	"net/url"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.uber.org/zap"
 )
