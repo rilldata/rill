@@ -391,6 +391,8 @@ func writeXLSX(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, wri
 		if err := sw.SetRow(cell, row); err != nil {
 			return err
 		}
+
+		row = row[:0]
 	}
 
 	if err := sw.Flush(); err != nil {
