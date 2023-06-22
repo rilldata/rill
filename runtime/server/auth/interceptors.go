@@ -30,6 +30,10 @@ func GetClaims(ctx context.Context) Claims {
 	return claims
 }
 
+func IsAnonymous(ctx context.Context) bool {
+	return GetClaims(ctx) == anonClaims{}
+}
+
 // UnaryServerInterceptor is a middleware for setting claims on runtime server requests.
 // The assigned claims can be retrieved using GetClaims. If the interceptor succeeds, a Claims value is guaranteed to be set on the ctx.
 // The claim parsing logic is as follows

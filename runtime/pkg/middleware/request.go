@@ -3,10 +3,10 @@ package middleware
 import (
 	"context"
 	"errors"
-	"google.golang.org/grpc"
 	"net/http"
 
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"google.golang.org/grpc"
 )
 
 // This is a collection of gRPC and HTTP interceptors that call fn per request.
@@ -43,7 +43,7 @@ func RequestUnaryServerInterceptor(fn func(Metadata) error) grpc.UnaryServerInte
 		}
 
 		md := Metadata{ctx, req, method, observability.GrpcPeer(ctx)}
-		if err = fn(md); err != nil {
+		if err := fn(md); err != nil {
 			return nil, err
 		}
 

@@ -29,7 +29,7 @@ const (
 // Note that these are not gRPC handlers, just regular HTTP endpoints that we mount on the gRPC-gateway mux.
 func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux, limiter ratelimit.Limiter) {
 	// checkLimit needs access to limiter
-	var checkLimit = func(md middleware.Metadata) error {
+	checkLimit := func(md middleware.Metadata) error {
 		if GetClaims(md.Ctx).OwnerType() == OwnerTypeAnon {
 			limitKey := ratelimit.AnonLimitKey(md.Method, md.Peer)
 			if err := limiter.Limit(md.Ctx, limitKey, ratelimit.Sensitive); err != nil {
