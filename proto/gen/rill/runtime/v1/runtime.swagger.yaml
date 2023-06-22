@@ -1227,6 +1227,10 @@ paths:
           in: path
           required: true
           type: string
+        - name: sql
+          in: query
+          required: false
+          type: string
         - name: priority
           in: query
           required: false

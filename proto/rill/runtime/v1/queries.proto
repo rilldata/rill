@@ -641,7 +641,8 @@ message TableRowsResponse {
 
 message CustomQueryRequest {
   string instance_id = 1;
-  int32 priority = 4;
+  string sql = 2;
+  int32 priority = 3;
 }
 
 message CustomQueryResponse {

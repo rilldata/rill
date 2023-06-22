@@ -8765,6 +8765,8 @@ func (m *CustomQueryRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
+	// no validation rules for Sql
+
 	// no validation rules for Priority
 
 	if len(errors) > 0 {

@@ -60,6 +60,31 @@ func (s *Server) Query(ctx context.Context, req *runtimev1.QueryRequest) (*runti
 	return resp, nil
 }
 
+func (s *Server) CustomQuery(ctx context.Context, req *runtimev1.CustomQueryRequest) (*runtimev1.CustomQueryResponse, error) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadOLAP) {
+		return nil, ErrForbidden
+	}
+
+	olap, err := s.runtime.OLAP(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := olap.Execute(ctx, &drivers.Statement{
+		Query:    fmt.Sprintf("select json_serialize_sql(?)",
+		Args:  []any{
+			req.Sql,
+		},
+		Priority: int(req.Priority),
+	})
+
+	res, err := olap.Execute(ctx, &drivers.Statement{
+		Query:    req.Sql,
+		Priority: int(req.Priority),
+	})
+
+}
+
 func rowsToData(rows *drivers.Result) ([]*structpb.Struct, error) {
 	var data []*structpb.Struct
 	for rows.Next() {
