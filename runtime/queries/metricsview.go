@@ -373,9 +373,10 @@ func writeXLSX(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, wri
 	}
 
 	row := make([]interface{}, 0, len(meta))
-	for i, s := range data {
-		for _, f := range s.Fields {
-			value, err := convertToXLSXValue(f)
+	for i, structs := range data {
+		for _, field := range meta {
+			pbvalue := structs.Fields[field.Name]
+			value, err := convertToXLSXValue(pbvalue)
 			if err != nil {
 				return err
 			}
