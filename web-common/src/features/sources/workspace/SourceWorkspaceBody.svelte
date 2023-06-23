@@ -39,7 +39,13 @@
   style:grid-template-rows="max-content auto"
   style:height="100vh"
 >
-  <SourceEditor {yaml} {sourceName} on:error={(evt) => (error = evt.detail)} />
+  <div class="p-4">
+    <SourceEditor
+      {yaml}
+      {sourceName}
+      on:error={(evt) => (error = evt.detail)}
+    />
+  </div>
   {#if !error}
     <div
       style:overflow="auto"

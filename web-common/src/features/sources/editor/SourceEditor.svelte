@@ -111,27 +111,21 @@
   // const placeholder = createPlaceholder(placeholderElement.DOMElement);
 </script>
 
-<div class="editor flex flex-col">
-  <div class="grow flex bg-white overflow-y-auto">
-    <div
-      class="border-white w-full overflow-y-auto"
-      class:border-b-hidden={mainError && yaml?.length}
-      class:border-red-500={mainError && yaml?.length}
-    >
-      <YAMLEditor
-        content={yaml}
-        on:update
-        on:cursor={(event) => {
-          cursor = event.detail;
-        }}
-        extensions={[
-          editorTheme(),
-          // placeholder,
-          lineStatusExtensions,
-          indentGuide,
-        ]}
-        stateFieldUpdaters={[updateLineStatus]}
-      />
-    </div>
+<div class="editor flex flex-col border border-gray-200 rounded">
+  <div class="grow flex bg-white overflow-y-auto rounded">
+    <YAMLEditor
+      content={yaml}
+      on:update
+      on:cursor={(event) => {
+        cursor = event.detail;
+      }}
+      extensions={[
+        editorTheme(),
+        // placeholder,
+        lineStatusExtensions,
+        indentGuide,
+      ]}
+      stateFieldUpdaters={[updateLineStatus]}
+    />
   </div>
 </div>
