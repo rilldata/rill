@@ -2,6 +2,7 @@
   "name": "web-common",
   "version": "0.0.1",
   "scripts": {
+    "no-op-change": "echo 'no-op change that should force Build and Test web code to run'",
     "lint": "prettier --check . && eslint .",
     "format": "prettier --write .",
     "generate:runtime-client": "orval",
@@ -9,8 +10,7 @@
     "coverage": "vitest run --coverage",
     "test:watch": "npm run test -- --watch",
     "storybook": "STORYBOOK_MODE=true storybook dev -p 6006",
-    "build-storybook": "storybook build",
-    "dummy-change": "echo 'dummy change'"
+    "build-storybook": "storybook build"
   },
   "devDependencies": {
     "@storybook/addon-essentials": "^7.0.18",
