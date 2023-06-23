@@ -2,19 +2,13 @@
   import { goto } from "$app/navigation";
   import {
     Button,
-    IconButton,
     IconSpaceFixer,
   } from "@rilldata/web-common/components/button";
-  import Add from "@rilldata/web-common/components/icons/Add.svelte";
-  import Import from "@rilldata/web-common/components/icons/Import.svelte";
-  import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import Source from "@rilldata/web-common/components/icons/Source.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
@@ -254,63 +248,21 @@
               )}
             </div>
           {/if}
-          {#if connector === "file"}
-            <Tooltip location="bottom" distance={8}>
-              <div style="transformY(-1px)">
-                <IconButton on:click={() => onRefreshClick(sourceName)}>
-                  <Import size="15px" />
-                </IconButton>
-              </div>
-              <TooltipContent slot="tooltip-content">
-                Import local file to refresh source
-              </TooltipContent>
-            </Tooltip>
-          {:else}
-            <Tooltip location="bottom" distance={8}>
-              <IconButton on:click={() => onRefreshClick(sourceName)}>
-                <RefreshIcon size="15px" />
-              </IconButton>
-              <TooltipContent slot="tooltip-content">
-                Refresh the source data
-              </TooltipContent>
-            </Tooltip>
-          {/if}
         </div>
       {/if}
     </svelte:fragment>
     <svelte:fragment slot="cta">
       <PanelCTA side="right">
-        <Tooltip distance={16} location="left">
-          <Button on:click={handleCreateModelFromSource} type="secondary">
-            <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}
-              ><Model size="12px" /></IconSpaceFixer
-            >
+        {#if !embedded}
+          <Button on:click={() => onRefreshClick(sourceName)} type="primary">
+            <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}>
+              <RefreshIcon size="14px" />
+            </IconSpaceFixer>
+
             <ResponsiveButtonText collapse={isHeaderWidthSmall}>
-              Create Model
+              Refresh
             </ResponsiveButtonText>
           </Button>
-          <TooltipContent slot="tooltip-content">
-            Model this source with SQL
-          </TooltipContent>
-        </Tooltip>
-        {#if !embedded}
-          <Tooltip alignment="right" distance={16} location="bottom">
-            <Button
-              on:click={() => handleCreateDashboardFromSource(sourceName)}
-              type="primary"
-            >
-              <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}
-                ><Add /></IconSpaceFixer
-              >
-
-              <ResponsiveButtonText collapse={isHeaderWidthSmall}>
-                Create Dashboard
-              </ResponsiveButtonText>
-            </Button>
-            <TooltipContent slot="tooltip-content">
-              Create a dashboard for this source
-            </TooltipContent>
-          </Tooltip>
         {/if}
       </PanelCTA>
     </svelte:fragment>
