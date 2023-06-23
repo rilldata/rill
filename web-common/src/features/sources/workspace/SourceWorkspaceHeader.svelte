@@ -9,16 +9,8 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
-  import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
-  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
-  import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
-  import {
-    MetricsEventScreenName,
-    MetricsEventSpace,
-  } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import {
     createRuntimeServiceGetCatalogEntry,
     createRuntimeServicePutFileAndReconcile,
@@ -26,22 +18,17 @@
     createRuntimeServiceRenameFileAndReconcile,
     getRuntimeServiceGetCatalogEntryQueryKey,
     V1CatalogEntry,
-    V1ReconcileResponse,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
   import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
-  import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { fade } from "svelte/transition";
   import { WorkspaceHeader } from "../../../layout/workspace";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { renameFileArtifact } from "../../entity-management/actions";
   import { getRouteFromName } from "../../entity-management/entity-mappers";
-  import { getName, isDuplicateName } from "../../entity-management/name-utils";
+  import { isDuplicateName } from "../../entity-management/name-utils";
   import { useAllNames } from "../../entity-management/selectors";
-  import { useModelNames } from "../../models/selectors";
-  import { useCreateDashboardFromSource } from "../createDashboard";
-  import { createModelFromSource } from "../createModel";
   import { refreshAndReconcile, refreshSource } from "../refreshSource";
 
   export let sourceName: string;
@@ -69,71 +56,10 @@
   $: entry = $getSource?.data?.entry;
   $: source = entry?.source;
 
-  $: modelNames = useModelNames(runtimeInstanceId);
-  $: dashboardNames = useDashboardNames(runtimeInstanceId);
-  const createModelMutation = createRuntimeServicePutFileAndReconcile();
-  const createDashboardFromSourceMutation = useCreateDashboardFromSource();
-
   let connector: string;
   $: connector = $getSource.data?.entry?.source.connector as string;
 
   $: allNamesQuery = useAllNames(runtimeInstanceId);
-
-  const handleCreateModelFromSource = async () => {
-    const modelName = await createModelFromSource(
-      queryClient,
-      runtimeInstanceId,
-      $modelNames.data,
-      sourceName,
-      embedded ? `"${path}"` : sourceName,
-      $createModelMutation
-    );
-    behaviourEvent.fireNavigationEvent(
-      modelName,
-      BehaviourEventMedium.Button,
-      MetricsEventSpace.RightPanel,
-      MetricsEventScreenName.Source,
-      MetricsEventScreenName.Model
-    );
-  };
-
-  const handleCreateDashboardFromSource = (sourceName: string) => {
-    overlay.set({
-      title: "Creating a dashboard for " + sourceName,
-    });
-    const newModelName = getName(`${sourceName}_model`, $modelNames.data);
-    const newDashboardName = getName(
-      `${sourceName}_dashboard`,
-      $dashboardNames.data
-    );
-    $createDashboardFromSourceMutation.mutate(
-      {
-        data: {
-          instanceId: $runtime.instanceId,
-          sourceName,
-          newModelName,
-          newDashboardName,
-        },
-      },
-      {
-        onSuccess: async (resp: V1ReconcileResponse) => {
-          fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-          goto(`/dashboard/${newDashboardName}`);
-          behaviourEvent.fireNavigationEvent(
-            newDashboardName,
-            BehaviourEventMedium.Button,
-            MetricsEventSpace.RightPanel,
-            MetricsEventScreenName.Source,
-            MetricsEventScreenName.Dashboard
-          );
-          return invalidateAfterReconcile(queryClient, runtimeInstanceId, resp);
-        },
-        onSettled: () => {
-          overlay.set(null);
-        },
-      }
-    );
-  };
 
   const onChangeCallback = async (e) => {
     if (!e.target.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
