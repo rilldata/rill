@@ -316,6 +316,7 @@ message MetricsViewRowsRequest {
   string metrics_view_name = 2;
   google.protobuf.Timestamp time_start = 3;
   google.protobuf.Timestamp time_end = 4;
+  TimeGrain time_granularity = 10;
   MetricsViewFilter filter = 5;
   repeated MetricsViewSort sort = 6;
   int32 limit = 7;

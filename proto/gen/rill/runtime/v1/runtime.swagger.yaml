@@ -833,6 +833,8 @@ paths:
               timeEnd:
                 type: string
                 format: date-time
+              timeGranularity:
+                $ref: '#/definitions/v1TimeGrain'
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
               sort:
@@ -2468,6 +2470,8 @@ definitions:
       timeEnd:
         type: string
         format: date-time
+      timeGranularity:
+        $ref: '#/definitions/v1TimeGrain'
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
       sort:
