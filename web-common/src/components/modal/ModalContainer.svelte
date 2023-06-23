@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher, onDestroy, onMount } from "svelte";
+  import { createEventDispatcher, onDestroy } from "svelte";
   import { fly } from "svelte/transition";
   import Portal from "../Portal.svelte";
   import Overlay from "./Overlay.svelte";
