@@ -98,11 +98,9 @@ func (q *MetricsViewComparisonToplist) executeToplist(ctx context.Context, olap 
 	if err != nil {
 		return err
 	}
-
 	defer rows.Close()
 
 	var data []*runtimev1.MetricsViewComparisonRow
-
 	for rows.Next() {
 		values, err := rows.SliceScan()
 		if err != nil {
@@ -111,7 +109,7 @@ func (q *MetricsViewComparisonToplist) executeToplist(ctx context.Context, olap 
 		measureValues := make([]*runtimev1.MetricsViewComparisonValue, 0, len(q.MeasureNames))
 
 		for i, name := range q.MeasureNames {
-			v, err := pbutil.ToValue(values[1+i])
+			v, err := pbutil.ToValue(values[1+i], safeFieldType(rows.Schema, 1+i))
 			if err != nil {
 				return err
 			}
@@ -122,7 +120,7 @@ func (q *MetricsViewComparisonToplist) executeToplist(ctx context.Context, olap 
 			})
 		}
 
-		dv, err := pbutil.ToValue(values[0])
+		dv, err := pbutil.ToValue(values[0], safeFieldType(rows.Schema, 0))
 		if err != nil {
 			return err
 		}
@@ -165,22 +163,22 @@ func (q *MetricsViewComparisonToplist) executeComparisonToplist(ctx context.Cont
 		measureValues := []*runtimev1.MetricsViewComparisonValue{}
 
 		for i, name := range q.MeasureNames {
-			bv, err := pbutil.ToValue(values[1+i*4])
+			bv, err := pbutil.ToValue(values[1+i*4], safeFieldType(rows.Schema, 1+i*4))
 			if err != nil {
 				return err
 			}
 
-			cv, err := pbutil.ToValue(values[2+i*4])
+			cv, err := pbutil.ToValue(values[2+i*4], safeFieldType(rows.Schema, 2+i*4))
 			if err != nil {
 				return err
 			}
 
-			da, err := pbutil.ToValue(values[3+i*4])
+			da, err := pbutil.ToValue(values[3+i*4], safeFieldType(rows.Schema, 3+i*4))
 			if err != nil {
 				return err
 			}
 
-			dr, err := pbutil.ToValue(values[4+i*4])
+			dr, err := pbutil.ToValue(values[4+i*4], safeFieldType(rows.Schema, 4+i*4))
 			if err != nil {
 				return err
 			}
@@ -194,7 +192,7 @@ func (q *MetricsViewComparisonToplist) executeComparisonToplist(ctx context.Cont
 			})
 		}
 
-		dv, err := pbutil.ToValue(values[0])
+		dv, err := pbutil.ToValue(values[0], safeFieldType(rows.Schema, 0))
 		if err != nil {
 			return err
 		}
