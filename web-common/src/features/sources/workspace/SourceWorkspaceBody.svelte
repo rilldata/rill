@@ -8,7 +8,7 @@
   import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
   import { EntityType } from "../../entity-management/types";
   import SourceEditor from "../editor/SourceEditor.svelte";
-  import SourceWorkspaceErrorStates from "./SourceWorkspaceErrorStates.svelte";
+  import ErrorPane from "../errors/ErrorPane.svelte";
 
   export let sourceName: string;
 
@@ -30,6 +30,8 @@
   );
 
   $: yaml = $fileQuery.data?.blob || "";
+
+  let error;
 </script>
 
 <div
@@ -37,8 +39,8 @@
   style:grid-template-rows="max-content auto"
   style:height="100vh"
 >
-  <SourceEditor {yaml} {sourceName} />
-  {#if isValidSource}
+  <SourceEditor {yaml} {sourceName} on:error={(evt) => (error = evt.detail)} />
+  {#if !error}
     <div
       style:overflow="auto"
       style:height="calc(100vh - var(--header-height) - 2rem)"
@@ -49,6 +51,6 @@
       {/key}
     </div>
   {:else}
-    <SourceWorkspaceErrorStates {sourceName} />
+    <ErrorPane {error} />
   {/if}
 </div>

@@ -3,14 +3,14 @@
   import { createLineStatusSystem } from "@rilldata/web-common/components/editor/line-status";
   import { editorTheme } from "@rilldata/web-common/components/editor/theme";
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
-  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
-  import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
-  import { slide } from "svelte/transition";
+  import { createEventDispatcher } from "svelte";
   import { parseDocument } from "yaml";
 
   export let yaml: string;
   export let sourceName: string;
+
+  const dispatch = createEventDispatcher();
 
   /** a temporary set of enums that shoul be emitted by orval's codegen */
   enum ConfigErrors {
@@ -92,9 +92,9 @@
   $: mainError = [
     ...mappedSyntaxErrors,
     ...(mappedErrors || []),
-
     ...(errors || []),
   ]?.at(0);
+  $: dispatch("error", mainError);
 
   /** create the line status system */
   const { createUpdater, extension: lineStatusExtensions } =
@@ -134,14 +134,4 @@
       />
     </div>
   </div>
-  {#if mainError && yaml?.length}
-    <div
-      transition:slide|local={{ duration: LIST_SLIDE_DURATION }}
-      class="ui-editor-text-error ui-editor-bg-error border border-red-500 border-l-4 px-2 py-5"
-    >
-      <div class="flex gap-x-2 items-center">
-        <CancelCircle />{mainError.message}
-      </div>
-    </div>
-  {/if}
 </div>
