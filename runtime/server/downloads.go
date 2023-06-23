@@ -28,7 +28,7 @@ func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*run
 		return nil, err
 	}
 
-	out := fmt.Sprintf("/v1/download?%s=%s", "request", base64.StdEncoding.EncodeToString(r))
+	out := fmt.Sprintf("/v1/download?%s=%s", "request", base64.URLEncoding.EncodeToString(r))
 
 	return &runtimev1.ExportResponse{
 		DownloadUrlPath: out,
@@ -36,7 +36,7 @@ func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*run
 }
 
 func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
-	marshalled, err := base64.StdEncoding.DecodeString(req.URL.Query().Get("request"))
+	marshalled, err := base64.URLEncoding.DecodeString(req.URL.Query().Get("request"))
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to parse request: %s", err), http.StatusBadRequest)
 		return
