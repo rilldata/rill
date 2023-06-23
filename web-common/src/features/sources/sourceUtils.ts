@@ -2,17 +2,17 @@ import type {
   V1Connector,
   V1ReconcileError,
 } from "@rilldata/web-common/runtime-client";
-import { sanitizeEntityName } from "./extract-table-name";
-import type { SourceConnectionType } from "../../metrics/service/SourceEventTypes";
 import { behaviourEvent, errorEvent } from "../../metrics/initMetrics";
-import { categorizeSourceError } from "./add-source/errors";
+import type { BehaviourEventMedium } from "../../metrics/service/BehaviourEventTypes";
 import type {
   MetricsEventScreenName,
   MetricsEventSpace,
 } from "../../metrics/service/MetricsTypes";
-import type { BehaviourEventMedium } from "../../metrics/service/BehaviourEventTypes";
+import type { SourceConnectionType } from "../../metrics/service/SourceEventTypes";
 import { getFilePathFromNameAndType } from "../entity-management/entity-mappers";
 import { EntityType } from "../entity-management/types";
+import { sanitizeEntityName } from "./extract-table-name";
+import { categorizeSourceError } from "./modal/errors";
 
 export function compileCreateSourceYAML(
   values: Record<string, unknown>,
