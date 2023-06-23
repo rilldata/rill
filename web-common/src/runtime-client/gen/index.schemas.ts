@@ -140,6 +140,7 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
 export type QueryServiceMetricsViewRowsBody = {
   timeStart?: string;
   timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
   filter?: V1MetricsViewFilter;
   sort?: V1MetricsViewSort[];
   limit?: number;
@@ -678,6 +679,7 @@ export interface V1MetricsViewRowsRequest {
   metricsViewName?: string;
   timeStart?: string;
   timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
   filter?: V1MetricsViewFilter;
   sort?: V1MetricsViewSort[];
   limit?: number;

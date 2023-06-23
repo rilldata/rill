@@ -3035,6 +3035,8 @@ func (m *MetricsViewRowsRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for TimeGranularity
+
 	if all {
 		switch v := interface{}(m.GetFilter()).(type) {
 		case interface{ ValidateAll() error }:
