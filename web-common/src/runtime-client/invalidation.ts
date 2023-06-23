@@ -3,7 +3,6 @@ import { fileArtifactsStore } from "@rilldata/web-common/features/entity-managem
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type { V1ReconcileResponse } from "@rilldata/web-common/runtime-client";
 import {
-  getQueryServiceTableColumnsQueryKey,
   getRuntimeServiceGetCatalogEntryQueryKey,
   getRuntimeServiceGetFileQueryKey,
   getRuntimeServiceListCatalogEntriesQueryKey,
@@ -108,6 +107,7 @@ export function isProfilingQuery(
 ) {
   const queryExtractorMatch = ProfilingQueryExtractor.exec(queryHash);
   if (!queryExtractorMatch) return false;
+  // TODO: move the query matching to a separate module and reuse in http queue
   const [, type, table] = queryExtractorMatch;
   return (
     table === name && (!ignoreProfileColumns || type !== "columns-profile")
@@ -151,6 +151,7 @@ export async function invalidateProfilingQueries(
 
   await queryClient.invalidateQueries({
     predicate: (query) => {
+      // TODO: move the query matching to a separate module and reuse in http queue
       const queryExtractorMatch = ProfilingQueryExtractor.exec(query.queryHash);
       if (!queryExtractorMatch) return false;
       const [, type, table] = queryExtractorMatch;
