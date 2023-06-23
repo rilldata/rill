@@ -179,7 +179,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 			}
 
 			delete(rowMap, tsAlias)
-			records, err := pbutil.ToStruct(rowMap)
+			records, err := pbutil.ToStruct(rowMap, rows.Schema)
 			if err != nil {
 				rows.Close()
 				return err

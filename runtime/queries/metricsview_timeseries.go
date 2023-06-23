@@ -172,7 +172,7 @@ func (q *MetricsViewTimeSeries) resolveDruid(ctx context.Context, olap drivers.O
 		}
 
 		delete(rowMap, tsAlias)
-		records, err := pbutil.ToStruct(rowMap)
+		records, err := pbutil.ToStruct(rowMap, rows.Schema)
 		if err != nil {
 			return err
 		}
