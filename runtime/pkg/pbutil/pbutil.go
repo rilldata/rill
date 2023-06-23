@@ -121,7 +121,7 @@ func ToStruct(v map[string]any, t *runtimev1.StructType) (*structpb.Struct, erro
 	} else {
 		for _, f := range t.Fields {
 			var err error
-			x.Fields[f.Name], err = ToValue(v, f.Type)
+			x.Fields[f.Name], err = ToValue(v[f.Name], f.Type)
 			if err != nil {
 				return nil, err
 			}
