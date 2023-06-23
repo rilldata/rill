@@ -2,7 +2,7 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { appStore } from "@rilldata/web-common/layout/app-store";
   import { WorkspaceContainer } from "../../../layout/workspace";
-  import SourceInspector from "./SourceInspector.svelte";
+  import SourceInspector from "../inspector/SourceInspector.svelte";
   import SourceWorkspaceBody from "./SourceWorkspaceBody.svelte";
   import SourceWorkspaceHeader from "./SourceWorkspaceHeader.svelte";
 

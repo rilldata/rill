@@ -5,7 +5,7 @@
   import {
     openFileUploadDialog,
     uploadTableFiles,
-  } from "@rilldata/web-common/features/sources/add-source/file-upload";
+  } from "@rilldata/web-common/features/sources/modal/file-upload";
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
   import { appScreen, appStore } from "@rilldata/web-common/layout/app-store";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
@@ -18,6 +18,9 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
+  import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
+  import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
+  import { SourceConnectionType } from "../../../metrics/service/SourceEventTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
   import { useModelNames } from "../../models/selectors";
@@ -25,15 +28,12 @@
   import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
   import {
     compileCreateSourceYAML,
-    getSourceError,
     emitSourceErrorTelemetry,
     emitSourceSuccessTelemetry,
+    getSourceError,
   } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { hasDuckDBUnicodeError, niceDuckdbUnicodeError } from "./errors";
-  import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
-  import { SourceConnectionType } from "../../../metrics/service/SourceEventTypes";
-  import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
 
   const dispatch = createEventDispatcher();
 
