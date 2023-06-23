@@ -13,7 +13,8 @@
     "jest-ui": "jest --forceExit --detectOpenHandles test/ui",
     "test": "bash ./test/setup.sh && npm run jest-ui && bash ./test/teardown.sh",
     "test:watch": "npm run test -- --watch",
-    "manual-publish": "./build-tools/npm_publish.sh"
+    "manual-publish": "./build-tools/npm_publish.sh",
+    "dummy-change": "echo 'dummy change'"
   },
   "files": [
     "dist",

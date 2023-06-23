@@ -9,7 +9,8 @@
     "coverage": "vitest run --coverage",
     "test:watch": "npm run test -- --watch",
     "storybook": "STORYBOOK_MODE=true storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "dummy-change": "echo 'dummy change'"
   },
   "devDependencies": {
     "@storybook/addon-essentials": "^7.0.18",
