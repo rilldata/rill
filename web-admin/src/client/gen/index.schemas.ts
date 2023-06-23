@@ -22,6 +22,10 @@ export type AdminServiceSudoGetResourceParams = {
   instanceId?: string;
 };
 
+export type AdminServiceSearchProjectNamesParams = {
+  namePattern?: string;
+};
+
 export type AdminServiceUpdateProjectVariablesBodyVariables = {
   [key: string]: string;
 };
@@ -202,6 +206,10 @@ export interface V1SudoGetResourceResponse {
   instance?: V1Deployment;
 }
 
+export interface V1SudoGetProjectResponse {
+  project?: V1Project;
+}
+
 export interface V1SetSuperuserResponse {
   [key: string]: any;
 }
@@ -251,6 +259,15 @@ export interface V1ProjectPermissions {
   manageDev?: boolean;
   readProjectMembers?: boolean;
   manageProjectMembers?: boolean;
+}
+
+export interface V1ProjectName {
+  orgName?: string;
+  projectName?: string;
+}
+
+export interface V1SearchProjectNamesResponse {
+  projects?: V1ProjectName[];
 }
 
 export interface V1Project {

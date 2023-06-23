@@ -65,6 +65,7 @@ type DB interface {
 	DeleteOrganizationWhitelistedDomain(ctx context.Context, id string) error
 
 	FindProjects(ctx context.Context, afterName string, limit int) ([]*Project, error)
+	FindProjectNamesByPattern(ctx context.Context, namePattern string) ([]*ProjectNames, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
 	FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user
@@ -229,6 +230,11 @@ type Project struct {
 	ProdDeploymentID     *string   `db:"prod_deployment_id"`
 	CreatedOn            time.Time `db:"created_on"`
 	UpdatedOn            time.Time `db:"updated_on"`
+}
+
+type ProjectNames struct {
+	OrgName     string `db:"org_name"`
+	ProjectName string `db:"project_name"`
 }
 
 // Variables implements JSON SQL encoding of variables in Project.
