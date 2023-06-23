@@ -44,6 +44,10 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 	case uint16:
 		return structpb.NewNumberValue(float64(v)), nil
 	case time.Time:
+		if t != nil && t.Code == runtimev1.Type_CODE_DATE {
+			s := v.Format(time.DateOnly)
+			return structpb.NewStringValue(s), nil
+		}
 		s := v.Format(time.RFC3339Nano)
 		return structpb.NewStringValue(s), nil
 	case float32:
