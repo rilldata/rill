@@ -4,7 +4,11 @@ import {
   createRuntimeServiceListFiles,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
+import { get } from "svelte/store";
 import { parse } from "yaml";
+import { getFilePathFromNameAndType } from "../entity-management/entity-mappers";
+import { EntityType } from "../entity-management/types";
+import { useSourceStore } from "./sources-store";
 
 /**
  * Calls {@link createRuntimeServiceListFiles} using glob to select only sources.
@@ -59,4 +63,23 @@ export function useEmbeddedSources(instanceId: string) {
       },
     }
   );
+}
+
+export function useIsSourceNotSaved(instanceId: string, sourceName: string) {
+  // Get serverYAML
+  const file = createRuntimeServiceGetFile(
+    instanceId,
+    getFilePathFromNameAndType(sourceName, EntityType.Table)
+  );
+  const serverYAML = get(file).data?.blob;
+
+  // Get clientYAML
+  const sourceStore = useSourceStore(sourceName);
+  const clientYAML = get(sourceStore).clientYAML;
+
+  // Compute difference
+  // Note: if clientYAML is undefined, it means the source has not been touched
+  const isContentUnsaved = clientYAML && clientYAML !== serverYAML;
+
+  return isContentUnsaved;
 }
