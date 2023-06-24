@@ -5,7 +5,6 @@
     IconSpaceFixer,
   } from "@rilldata/web-common/components/button";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
-  import Source from "@rilldata/web-common/components/icons/Source.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
@@ -155,9 +154,6 @@
     let:width
     width={headerWidth}
   >
-    <svelte:fragment slot="icon">
-      <Source />
-    </svelte:fragment>
     <svelte:fragment slot="workspace-controls">
       {#if $refreshSourceMutation.isLoading}
         Refreshing...
