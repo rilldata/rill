@@ -43,6 +43,7 @@
     <SourceEditor
       {yaml}
       {sourceName}
+      on:update
       on:error={(evt) => (error = evt.detail)}
     />
   </div>

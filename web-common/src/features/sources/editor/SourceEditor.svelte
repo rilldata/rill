@@ -6,11 +6,14 @@
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { createEventDispatcher } from "svelte";
   import { parseDocument } from "yaml";
+  import { useSourceStore } from "../sources-store";
 
   export let yaml: string;
   export let sourceName: string;
 
   const dispatch = createEventDispatcher();
+
+  $: sourceStore = useSourceStore(sourceName);
 
   /** a temporary set of enums that shoul be emitted by orval's codegen */
   enum ConfigErrors {
@@ -113,7 +116,7 @@
   <div class="grow flex bg-white overflow-y-auto rounded">
     <YAMLEditor
       content={yaml}
-      on:update
+      on:update={(e) => $sourceStore.setClientYAML(e.detail.content)}
       extensions={[editorTheme(), lineStatusExtensions, indentGuide]}
       stateFieldUpdaters={[updateLineStatus]}
     />
