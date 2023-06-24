@@ -101,8 +101,6 @@
     createLineStatusSystem();
   $: updateLineStatus = createUpdater([...mappedErrors, ...mappedSyntaxErrors]);
 
-  let cursor;
-
   /** note: this codemirror plugin does actually utilize tanstack query, and the
    * instantiation of the underlying svelte component that defines the placeholder
    * must be instantiated in the component.
@@ -116,15 +114,7 @@
     <YAMLEditor
       content={yaml}
       on:update
-      on:cursor={(event) => {
-        cursor = event.detail;
-      }}
-      extensions={[
-        editorTheme(),
-        // placeholder,
-        lineStatusExtensions,
-        indentGuide,
-      ]}
+      extensions={[editorTheme(), lineStatusExtensions, indentGuide]}
       stateFieldUpdaters={[updateLineStatus]}
     />
   </div>
