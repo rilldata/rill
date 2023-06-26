@@ -193,7 +193,7 @@ function syncDimensions(
 
 const metricViewReducers = {
   syncFromUrl(name: string, urlState: string, metricsView: V1MetricsView) {
-    if (!urlState) return;
+    if (!urlState || !metricsView) return;
     // not all data for MetricsExplorerEntity will be filled out here.
     // Hence, it is a Partial<MetricsExplorerEntity>
     const partial = getDashboardStateFromUrl(urlState, metricsView);
