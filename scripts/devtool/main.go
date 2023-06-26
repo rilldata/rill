@@ -21,9 +21,11 @@ import (
 	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
-var red = color.New(color.FgHiRed)
-var green = color.New(color.FgHiGreen)
-var yellow = color.New(color.FgHiYellow)
+var (
+	red    = color.New(color.FgHiRed)
+	green  = color.New(color.FgHiGreen)
+	yellow = color.New(color.FgHiYellow)
+)
 
 var (
 	reset        = false
@@ -116,7 +118,7 @@ func main() {
 			panic("unable to start admin server")
 		}
 		go func(cmd *exec.Cmd) {
-			cmd.Wait()
+			_ = cmd.Wait()
 			// nolint:all //required
 			red.Println("ADMIN SERVER STOPPED")
 			wg.Done()
@@ -136,7 +138,7 @@ func main() {
 			panic("unable to start runtime server")
 		}
 		go func(cmd *exec.Cmd) {
-			cmd.Wait()
+			_ = cmd.Wait()
 			// nolint:all //required
 			red.Println("RUNTIME SERVER STOPPED")
 			wg.Done()
@@ -149,7 +151,7 @@ func main() {
 		wg.Add(1)
 		yellow.Println("INSTALLING UI DEPENDENCIES")
 		cmd = exec.Command("npm", "install", "-w", "web-admin")
-		cmd.Run()
+		_ = cmd.Run()
 
 		yellow.Println("STARTING UI")
 		cmd = exec.Command("npm", "run", "dev", "-w", "web-admin")
@@ -160,7 +162,7 @@ func main() {
 			panic("unable to start UI")
 		}
 		go func(cmd *exec.Cmd) {
-			cmd.Wait()
+			_ = cmd.Wait()
 			// nolint:all //required
 			red.Println("UI STOPPED")
 			wg.Done()
