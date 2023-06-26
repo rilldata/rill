@@ -15,7 +15,6 @@ const config: UserConfig = {
   server: {
     port: 3000,
     strictPort: true,
-    host: true,
   },
   plugins: [sveltekit()],
 };

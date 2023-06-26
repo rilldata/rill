@@ -39,7 +39,6 @@ type Config struct {
 	MetricsExporter        observability.Exporter `default:"prometheus" split_words:"true"`
 	TracesExporter         observability.Exporter `default:"" split_words:"true"`
 	ExternalURL            string                 `default:"http://localhost:8080" split_words:"true"`
-	IssuerURL              string                 `default:"http://localhost:8080" split_words:"true"`
 	FrontendURL            string                 `default:"http://localhost:3000" split_words:"true"`
 	SessionKeyPairs        []string               `split_words:"true"`
 	AllowedOrigins         []string               `default:"*" split_words:"true"`
@@ -112,7 +111,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			}()
 
 			// Init runtime JWT issuer
-			issuer, err := auth.NewIssuer(conf.IssuerURL, conf.SigningKeyID, []byte(conf.SigningJWKS))
+			issuer, err := auth.NewIssuer(conf.ExternalURL, conf.SigningKeyID, []byte(conf.SigningJWKS))
 			if err != nil {
 				logger.Fatal("error creating runtime jwt issuer", zap.Error(err))
 			}

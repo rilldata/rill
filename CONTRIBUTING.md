@@ -16,6 +16,8 @@ This is a full list of development dependencies:
 - [GraalVM](https://www.graalvm.org) and [Maven](https://maven.apache.org) for Java (we recommend installing both through [sdkman](https://sdkman.io))
 - [Buf](https://buf.build) (Protocol Buffers) (on macOS, install with `brew install bufbuild/buf/buf`)
 
+Run `sh scripts/devtool/dev.sh` from project root to run all services locally. Refer `scripts/devtool/README.md` for more details.
+
 ### Editor setup
 
 - Integrate `golangci-lint` ([instructions](https://golangci-lint.run/usage/integrations))
