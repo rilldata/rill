@@ -2,8 +2,8 @@ package admin
 
 import (
 	"context"
+	"github.com/rilldata/rill/admin/database"
 	"sync"
-
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/email"
 	"github.com/rilldata/rill/admin/provisioner"
