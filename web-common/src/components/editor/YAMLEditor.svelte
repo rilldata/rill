@@ -14,7 +14,6 @@
   export let view: EditorView;
 
   let container: HTMLElement;
-  export let stateFieldUpdaters: ((arg0: EditorView) => void)[] = [];
 
   onMount(() => {
     view = new EditorView({
@@ -29,22 +28,12 @@
           // syntax highlighting
           yamlEditor(),
           // this will catch certain events and dispatch them to the parent
-          bindEditorEventsToDispatcher(dispatch, stateFieldUpdaters),
+          bindEditorEventsToDispatcher(dispatch),
         ],
       }),
       parent: container,
     });
   });
-
-  /** Run all the state field updaters once view is ready.
-   * We should find a way to remove this code block.
-   */
-  $: if (view) {
-    if (view.updateState !== 2)
-      stateFieldUpdaters.forEach((updater) => {
-        updater(view);
-      });
-  }
 
   /** Listen for changes to the content. If it doesn't match the editor state,
    * update the editor state.

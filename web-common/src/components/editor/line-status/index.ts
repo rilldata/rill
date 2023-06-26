@@ -23,12 +23,10 @@ export function setLineStatuses(lineStatuses: LineStatus[]) {
 }
 
 /** creates a special gutter that enables usage of line statuses. */
-export function createLineStatusSystem() {
-  return {
-    extension: [
-      lineStatusesStateField,
-      createStatusLineGutter(),
-      createLineStatusHighlighter(),
-    ],
-  };
+export function lineStatus() {
+  return [
+    lineStatusesStateField,
+    createStatusLineGutter(),
+    createLineStatusHighlighter(),
+  ];
 }

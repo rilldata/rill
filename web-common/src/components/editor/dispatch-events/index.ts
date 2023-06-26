@@ -1,8 +1,7 @@
 import { EditorView } from "@codemirror/basic-setup";
 
 export function bindEditorEventsToDispatcher(
-  dispatch: (event: string, data?: unknown) => void,
-  stateFieldUpdaters: ((view: EditorView) => void)[]
+  dispatch: (event: string, data?: unknown) => void
 ) {
   return EditorView.updateListener.of((viewUpdate) => {
     const view = viewUpdate.view;
@@ -18,10 +17,7 @@ export function bindEditorEventsToDispatcher(
       dispatch("receive-focus");
     }
     if (viewUpdate.docChanged) {
-      dispatch("update", { content: state.doc.toString() });
-      stateFieldUpdaters.forEach((updater) => {
-        updater(view);
-      });
+      dispatch("update", { content: state.doc.toString(), view });
     }
   });
 }

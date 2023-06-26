@@ -29,9 +29,18 @@ import {
   keymap,
   rectangularSelection,
 } from "@codemirror/view";
+import { indentGuide } from "../indent-guide";
+import { lineStatus } from "../line-status";
 import { editorTheme } from "../theme";
 
 export const basicEditor = () => [
+  // core theme
+  editorTheme(),
+  // line status system
+  lineStatus(),
+  // indent guide
+  indentGuide(),
+
   highlightActiveLineGutter(),
   highlightSpecialChars(),
   history(),
@@ -45,7 +54,6 @@ export const basicEditor = () => [
   rectangularSelection(),
   highlightActiveLine(),
   highlightSelectionMatches(),
-  editorTheme(),
   keymap.of([
     ...closeBracketsKeymap,
     ...defaultKeymap,
