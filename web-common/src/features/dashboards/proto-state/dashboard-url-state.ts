@@ -43,15 +43,30 @@ export function useDashboardUrlState(
 
 /**
  * Code that looks at dashboard state and url state and decides which one to sync with.
+ * This depends on the fact that the same dashboard state results in the same proto and vice-versa.
+ *
+ * Case 1
+ * 1. The dashboard state changes due to user interactions.
+ * 2. Proto in the state is updated to match the new state.
+ * 3. `lastKnownProto` is now different from the proto in state.
+ * 4. This triggers a goto to the url with the correct proto.
+ * 5. After navigation `urlProto` changes. Since this will be equal to `lastKnownProto` there will be no more operations.
+ *
+ * Case 2
+ * 1. The url is changed by using the back button (or any other way).
+ * 2. `urlProto` changes to reflect the one in the new url.
+ * 3. `lastKnownProto` is now different to the `urlProto`.
+ * 4. This triggers a sync of state in the url to the dashboard store.
+ * 5. After updating the store proto in the state will be the same as `lastKnownProto`. No navigations happen.
  */
 export function useDashboardUrlSync(
   metricViewName: string,
   metaQuery: CreateQueryResult<V1MetricsView>
 ) {
   const dashboardUrlState = useDashboardUrlState(metricViewName);
-  let desiredProto: string;
+  let lastKnownProto: string;
   return dashboardUrlState.subscribe((state) => {
-    if (state.proto !== desiredProto) {
+    if (state.proto !== lastKnownProto) {
       // changed when filters etc are changed on the dashboard
       const pathName = get(page).url.pathname;
       if (state.proto === state.defaultProto) {
@@ -59,17 +74,15 @@ export function useDashboardUrlSync(
       } else {
         goto(`${pathName}?state=${encodeURIComponent(state.proto)}`);
       }
-      // set the desired proto to the one from state
-      desiredProto = state.proto;
-    } else if (state.urlProto !== desiredProto) {
+      lastKnownProto = state.proto;
+    } else if (state.urlProto !== lastKnownProto) {
       // changed when user updated the url manually
       metricsExplorerStore.syncFromUrl(
         metricViewName,
         state.urlProto,
         get(metaQuery).data
       );
-      // set desired proto to the one from url
-      desiredProto = state.urlProto;
+      lastKnownProto = state.urlProto;
     }
   });
 }
