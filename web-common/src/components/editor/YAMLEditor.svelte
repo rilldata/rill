@@ -1,34 +1,25 @@
 <script lang="ts">
+  import type { Extension } from "@codemirror/state";
   import { EditorState } from "@codemirror/state";
   import { EditorView } from "@codemirror/view";
-
   import { createEventDispatcher, onMount } from "svelte";
-
   import { bindEditorEventsToDispatcher } from "./dispatch-events";
   import { basicEditor } from "./languages/base";
   import { yamlEditor } from "./languages/yaml";
 
-  export let content: string;
-  export let extensions = [];
-
-  let container: HTMLElement;
-  /**
-   * @param {string} content
-   * @param {string} key
-   * @param {string} value
-   */
-  export let stateFieldUpdaters = [];
-
-  let latestContent = content;
-
   const dispatch = createEventDispatcher();
 
-  let view: EditorView;
+  export let content: string;
+  export let extensions: Extension[] = [];
+  export let view: EditorView;
+
+  let container: HTMLElement;
+  export let stateFieldUpdaters: ((arg0: EditorView) => void)[] = [];
 
   onMount(() => {
     view = new EditorView({
       state: EditorState.create({
-        doc: latestContent,
+        doc: content,
         extensions: [
           // any extensions passed as props
           ...extensions,
@@ -45,11 +36,10 @@
     });
   });
 
-  /** Run all the state field updaters once view is ready */
+  /** Run all the state field updaters once view is ready.
+   * We should find a way to remove this code block.
+   */
   $: if (view) {
-    /** view.updateState doesn't appear to be in the EditorView type, even though
-     * it clearly exists in this view object.
-     */
     if (view.updateState !== 2)
       stateFieldUpdaters.forEach((updater) => {
         updater(view);

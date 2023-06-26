@@ -35,7 +35,6 @@ export const basicEditor = () => [
   highlightActiveLineGutter(),
   highlightSpecialChars(),
   history(),
-
   drawSelection(),
   dropCursor(),
   EditorState.allowMultipleSelections.of(true),

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { EditorView } from "@codemirror/basic-setup";
+  import { setLineStatuses } from "@rilldata/web-common/components/editor/line-status";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
@@ -15,7 +17,9 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import MetricsWorkspaceHeader from "./MetricsWorkspaceHeader.svelte";
   import MetricsEditor from "./editor/MetricsEditor.svelte";
+  import { getSyntaxErrors, mapRuntimeErrorsToLines } from "./editor/errors";
   import MetricsInspector from "./inspector/MetricsInspector.svelte";
+
   // the runtime yaml string
   export let yaml: string;
   export let metricsDefName: string;
@@ -45,6 +49,7 @@
   $: switchToMetrics(metricsDefName);
 
   const metricMigrate = createRuntimeServicePutFileAndReconcile();
+
   async function callReconcileAndUpdateYaml(internalYamlString) {
     const filePath = getFilePathFromNameAndType(
       metricsDefName,
@@ -64,15 +69,44 @@
 
   /** keep track of the IMMEDIATE client-side YAML changes. */
   let intermediateYAML = yaml;
-  function updateYAML(event) {
+
+  function updateMetrics(event) {
     const { content } = event.detail;
     intermediateYAML = content;
     callReconcileAndUpdateYaml(content);
   }
+
+  /** handle errors */
+
+  $: path = Object.keys($fileArtifactsStore?.entities)?.find((key) => {
+    return key.endsWith(`${metricsDefName}.yaml`);
+  });
+
+  $: runtimeErrors = $fileArtifactsStore?.entities?.[path]?.errors;
+  $: lineBasedRuntimeErrors = mapRuntimeErrorsToLines(runtimeErrors, yaml);
+  $: clientSideSyntaxErrors = getSyntaxErrors(yaml);
+  $: lineErrors = [
+    ...clientSideSyntaxErrors,
+    ...(lineBasedRuntimeErrors || []),
+  ];
+  /** display the main error (the first in this array) at the bottom */
+  $: mainError = [...lineErrors, ...(runtimeErrors || [])]?.at(0);
+
+  let view: EditorView;
+
+  /** if the errors change, let's run this transaction. */
+  $: if (view) setLineStatuses(lineErrors)(view);
 </script>
 
 <WorkspaceContainer inspector={true} assetID={`${metricsDefName}-config`}>
   <MetricsWorkspaceHeader slot="header" {metricsDefName} {yaml} />
-  <MetricsEditor slot="body" on:update={updateYAML} {yaml} {metricsDefName} />
-  <MetricsInspector slot="inspector" {metricsDefName} yaml={intermediateYAML} />
+  <MetricsEditor
+    slot="body"
+    bind:view
+    on:update={updateMetrics}
+    {yaml}
+    {metricsDefName}
+    error={mainError}
+  />
+  <MetricsInspector slot="inspector" yaml={intermediateYAML} />
 </WorkspaceContainer>
