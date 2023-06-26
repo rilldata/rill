@@ -14,7 +14,7 @@ export class StateSyncManager {
 
   public handleStateChange(metricsExplorer: MetricsExplorerEntity) {
     const pageUrl = get(page).url;
-    let curUrlState = pageUrl.searchParams.get("state");
+    const curUrlState = pageUrl.searchParams.get("state");
 
     if (this.protoState === metricsExplorer.proto) return;
     this.protoState = metricsExplorer.proto;
