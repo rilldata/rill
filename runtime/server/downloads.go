@@ -55,12 +55,15 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	var q runtime.Query
+	var metricsViewName string
 	switch v := request.Request.(type) {
 	case *runtimev1.ExportRequest_MetricsViewToplistRequest:
 		v.MetricsViewToplistRequest.Limit = int64(request.Limit)
+		metricsViewName = v.MetricsViewToplistRequest.MetricsViewName
 		q, err = createToplistQuery(req.Context(), w, v.MetricsViewToplistRequest, request.Format)
 	case *runtimev1.ExportRequest_MetricsViewRowsRequest:
 		v.MetricsViewRowsRequest.Limit = request.Limit
+		metricsViewName = v.MetricsViewRowsRequest.MetricsViewName
 		q, err = createRowsQuery(req.Context(), w, v.MetricsViewRowsRequest, request.Format)
 	default:
 		http.Error(w, fmt.Sprintf("Unsupported request type: %s", reflect.TypeOf(v).Name()), http.StatusBadRequest)
@@ -80,8 +83,10 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	switch request.Format {
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
 		w.Header().Set("Content-Type", "text/csv")
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s.csv\"", metricsViewName))
 	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
 		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s.xlsx\"", metricsViewName))
 	default:
 		http.Error(w, fmt.Sprintf("Unsupported format %s", request.Format), http.StatusBadRequest)
 		return
