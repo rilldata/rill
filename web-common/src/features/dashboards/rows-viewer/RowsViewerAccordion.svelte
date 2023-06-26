@@ -102,7 +102,7 @@
     on:click={toggle}
     aria-label="Toggle rows viewer"
   >
-    <span class="font-bold">Source Data</span>
+    <span class="font-bold">Model Data</span>
     {label}
     {#if isOpen}
       <CaretUpIcon size="14px" />
