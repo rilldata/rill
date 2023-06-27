@@ -35,11 +35,13 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-var _minCliVersion = version.Must(version.NewVersion("0.20.0"))
-var _minCliVersionByMethod = map[string]*version.Version{
-	"/rill.admin.v1.AdminService/UpdateProject":      version.Must(version.NewVersion("0.28.0")),
-	"/rill.admin.v1.AdminService/UpdateOrganization": version.Must(version.NewVersion("0.28.0")),
-}
+var (
+	_minCliVersion         = version.Must(version.NewVersion("0.20.0"))
+	_minCliVersionByMethod = map[string]*version.Version{
+		"/rill.admin.v1.AdminService/UpdateProject":      version.Must(version.NewVersion("0.28.0")),
+		"/rill.admin.v1.AdminService/UpdateOrganization": version.Must(version.NewVersion("0.28.0")),
+	}
+)
 
 type Options struct {
 	HTTPPort               int
@@ -121,7 +123,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			grpc_auth.StreamServerInterceptor(checkUserAgent),
 			grpc_validator.StreamServerInterceptor(),
 			s.authenticator.StreamServerInterceptor(),
-			middleware.RequestStreamServerInterceptor(s.checkRateLimit),
+			grpc_auth.StreamServerInterceptor(s.checkRateLimit),
 		),
 		grpc.ChainUnaryInterceptor(
 			middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
@@ -131,7 +133,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			grpc_auth.UnaryServerInterceptor(checkUserAgent),
 			grpc_validator.UnaryServerInterceptor(),
 			s.authenticator.UnaryServerInterceptor(),
-			middleware.RequestUnaryServerInterceptor(s.checkRateLimit),
+			grpc_auth.UnaryServerInterceptor(s.checkRateLimit),
 		),
 	)
 
@@ -182,7 +184,7 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	s.authenticator.RegisterEndpoints(mux, s.limiter)
 
 	// Add Github-related endpoints (not gRPC handlers, just regular endpoints on /github/*)
-	s.registerGithubEndpoints(mux, s.limiter)
+	s.registerGithubEndpoints(mux)
 
 	// Add temporary internal endpoint for refreshing sources
 	mux.Handle("/internal/projects/trigger-refresh", otelhttp.WithRouteTag("/internal/projects/trigger-refresh", http.HandlerFunc(s.triggerRefreshSourcesInternal)))
@@ -340,20 +342,24 @@ func newURLRegistry(opts *Options) *externalURLs {
 	}
 }
 
-func (s *Server) checkRateLimit(md middleware.Metadata) error {
+func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
 	var limitKey string
-	if auth.GetClaims(md.Ctx).OwnerType() == auth.OwnerTypeAnon {
-		limitKey = ratelimit.AnonLimitKey(md.Method, md.Peer)
+	method, ok := grpc.Method(ctx)
+	if !ok {
+		return ctx, fmt.Errorf("server context does not have a method")
+	}
+	if auth.GetClaims(ctx).OwnerType() == auth.OwnerTypeAnon {
+		limitKey = ratelimit.AnonLimitKey(method, observability.GrpcPeer(ctx))
 	} else {
-		limitKey = ratelimit.AuthLimitKey(md.Method, auth.GetClaims(md.Ctx).OwnerID())
+		limitKey = ratelimit.AuthLimitKey(method, auth.GetClaims(ctx).OwnerID())
 	}
 
-	if err := s.limiter.Limit(md.Ctx, limitKey, ratelimit.Default); err != nil {
+	if err := s.limiter.Limit(ctx, limitKey, ratelimit.Default); err != nil {
 		if errors.As(err, &ratelimit.QuotaExceededError{}) {
-			return status.Errorf(codes.ResourceExhausted, err.Error())
+			return ctx, status.Errorf(codes.ResourceExhausted, err.Error())
 		}
-		return err
+		return ctx, err
 	}
 
-	return nil
+	return ctx, nil
 }

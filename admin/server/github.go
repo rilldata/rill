@@ -140,7 +140,7 @@ func (s *Server) GetGitCredentials(ctx context.Context, req *adminv1.GetGitCrede
 }
 
 // registerGithubEndpoints registers the non-gRPC endpoints for the Github integration.
-func (s *Server) registerGithubEndpoints(mux *http.ServeMux, limiter ratelimit.Limiter) {
+func (s *Server) registerGithubEndpoints(mux *http.ServeMux) {
 	// TODO: Add helper utils to clean this up
 	inner := http.NewServeMux()
 	inner.Handle("/github/webhook", otelhttp.WithRouteTag("/github/webhook", http.HandlerFunc(s.githubWebhook)))
@@ -591,10 +591,10 @@ func (s *Server) redirectLogin(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 }
 
-func (s *Server) checkGithubRateLimit(md middleware.Metadata) error {
-	if auth.GetClaims(md.Ctx).OwnerType() == auth.OwnerTypeAnon {
-		limitKey := ratelimit.AnonLimitKey(md.Method, md.Peer)
-		if err := s.limiter.Limit(md.Ctx, limitKey, ratelimit.Sensitive); err != nil {
+func (s *Server) checkGithubRateLimit(route string, req *http.Request) error {
+	if auth.GetClaims(req.Context()).OwnerType() == auth.OwnerTypeAnon {
+		limitKey := ratelimit.AnonLimitKey(route, observability.HTTPPeer(req))
+		if err := s.limiter.Limit(req.Context(), limitKey, ratelimit.Sensitive); err != nil {
 			if errors.As(err, &ratelimit.QuotaExceededError{}) {
 				return middleware.NewHTTPError(http.StatusTooManyRequests, err.Error())
 			}

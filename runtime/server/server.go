@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -107,7 +108,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			errorMappingStreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
 			auth.StreamServerInterceptor(s.aud),
-			middleware.RequestStreamServerInterceptor(s.checkRateLimit),
+			grpc_auth.StreamServerInterceptor(s.checkRateLimit),
 		),
 		grpc.ChainUnaryInterceptor(
 			middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
@@ -116,7 +117,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			errorMappingUnaryServerInterceptor(),
 			grpc_validator.UnaryServerInterceptor(),
 			auth.UnaryServerInterceptor(s.aud),
-			middleware.RequestUnaryServerInterceptor(s.checkRateLimit),
+			grpc_auth.UnaryServerInterceptor(s.checkRateLimit),
 		),
 	)
 
@@ -278,19 +279,23 @@ func mapGRPCError(err error) error {
 	return err
 }
 
-func (s *Server) checkRateLimit(md middleware.Metadata) error {
+func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
 	// Any request type might be limited separately as it is part of Metadata
 	// Any request type might be excluded from this limit check and limited later,
 	// e.g. in the corresponding request handler by calling s.limiter.Limit(ctx, "limitKey", redis_rate.PerMinute(100))
-	if auth.GetClaims(md.Ctx).Subject() == "" {
-		limitKey := ratelimit.AnonLimitKey(md.Method, md.Peer)
-		if err := s.limiter.Limit(md.Ctx, limitKey, ratelimit.Public); err != nil {
+	if auth.GetClaims(ctx).Subject() == "" {
+		method, ok := grpc.Method(ctx)
+		if !ok {
+			return ctx, fmt.Errorf("server context does not have a method")
+		}
+		limitKey := ratelimit.AnonLimitKey(method, observability.GrpcPeer(ctx))
+		if err := s.limiter.Limit(ctx, limitKey, ratelimit.Public); err != nil {
 			if errors.As(err, &ratelimit.QuotaExceededError{}) {
-				return status.Errorf(codes.ResourceExhausted, err.Error())
+				return ctx, status.Errorf(codes.ResourceExhausted, err.Error())
 			}
-			return err
+			return ctx, err
 		}
 	}
 
-	return nil
+	return ctx, nil
 }
