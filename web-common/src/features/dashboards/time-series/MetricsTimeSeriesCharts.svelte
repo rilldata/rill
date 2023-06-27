@@ -62,7 +62,7 @@
   let allTimeRange;
   $: if ($allTimeRangeQuery?.isSuccess) {
     allTimeRange = $allTimeRangeQuery.data;
-    name = $dashboardStore.selectedTimeRange.name;
+    name = $dashboardStore?.selectedTimeRange?.name;
   }
 
   $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
@@ -132,8 +132,8 @@
     $dashboardStore?.selectedTimeRange?.start
   ) {
     const { start: adjustedStart, end: adjustedEnd } = getAdjustedFetchTime(
-      $dashboardStore.selectedTimeRange?.start,
-      $dashboardStore.selectedTimeRange?.end,
+      $dashboardStore?.selectedTimeRange?.start,
+      $dashboardStore?.selectedTimeRange?.end,
       interval
     );
 
@@ -151,8 +151,8 @@
     if (displayComparison) {
       const { start: compAdjustedStart, end: compAdjustedEnd } =
         getAdjustedFetchTime(
-          $dashboardStore.selectedComparisonTimeRange?.start,
-          $dashboardStore.selectedComparisonTimeRange?.end,
+          $dashboardStore?.selectedComparisonTimeRange?.start,
+          $dashboardStore?.selectedComparisonTimeRange?.end,
           interval
         );
 
@@ -203,10 +203,10 @@
     $dashboardStore?.selectedTimeRange?.start
   ) {
     const adjustedChartValue = getAdjustedChartTime(
-      $dashboardStore.selectedTimeRange?.start,
-      $dashboardStore.selectedTimeRange?.end,
+      $dashboardStore?.selectedTimeRange?.start,
+      $dashboardStore?.selectedTimeRange?.end,
       interval,
-      $dashboardStore.selectedTimeRange?.name
+      $dashboardStore?.selectedTimeRange?.name
     );
 
     startValue = adjustedChartValue?.start;
