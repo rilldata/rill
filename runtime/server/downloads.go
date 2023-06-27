@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strings"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -56,14 +58,24 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 
 	var q runtime.Query
 	var metricsViewName string
+	var filter *runtimev1.MetricsViewFilter
+	timeRange := false
 	switch v := request.Request.(type) {
 	case *runtimev1.ExportRequest_MetricsViewToplistRequest:
 		v.MetricsViewToplistRequest.Limit = int64(request.Limit)
 		metricsViewName = v.MetricsViewToplistRequest.MetricsViewName
+		filter = v.MetricsViewToplistRequest.Filter
+		if v.MetricsViewToplistRequest.TimeStart != nil || v.MetricsViewToplistRequest.TimeEnd != nil {
+			timeRange = true
+		}
 		q, err = createToplistQuery(req.Context(), w, v.MetricsViewToplistRequest, request.Format)
 	case *runtimev1.ExportRequest_MetricsViewRowsRequest:
 		v.MetricsViewRowsRequest.Limit = request.Limit
 		metricsViewName = v.MetricsViewRowsRequest.MetricsViewName
+		filter = v.MetricsViewRowsRequest.Filter
+		if v.MetricsViewRowsRequest.TimeStart != nil || v.MetricsViewRowsRequest.TimeEnd != nil {
+			timeRange = true
+		}
 		q, err = createRowsQuery(req.Context(), w, v.MetricsViewRowsRequest, request.Format)
 	default:
 		http.Error(w, fmt.Sprintf("Unsupported request type: %s", reflect.TypeOf(v).Name()), http.StatusBadRequest)
@@ -80,13 +92,18 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	w.Header().Set("X-Content-Type-Options", "nosniff")
+	filteredString := ""
+	if (filter != nil && (len(filter.Exclude) > 0 || len(filter.Include) > 0)) || timeRange {
+		filteredString = "_filtered"
+	}
+	filename := fmt.Sprintf("MetricsView%s%s_%s", strings.ReplaceAll(metricsViewName, `"`, "_"), filteredString, time.Now().Format("20060102150405"))
 	switch request.Format {
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
 		w.Header().Set("Content-Type", "text/csv")
-		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s.csv\"", metricsViewName))
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s.csv\"", filename))
 	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
 		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s.xlsx\"", metricsViewName))
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s.xlsx\"", filename))
 	default:
 		http.Error(w, fmt.Sprintf("Unsupported format %s", request.Format), http.StatusBadRequest)
 		return
