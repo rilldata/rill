@@ -2,7 +2,6 @@ package admin
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -78,7 +77,7 @@ func (u *usedFlusher) flush(ctx context.Context) {
 
 		_, err := u.db.UpdateDeploymentUsedOn(ctx, deplIds)
 		if err != nil {
-			fmt.Printf("Error while flush update timestamp map into db, error: %v", err)
+			u.logger.Error("Error while flush update timestamp map into db", zap.Strings("deployment_ids", deplIds), zap.Error(err), observability.ZapCtx(ctx))
 		}
 
 		u.logger.Info(`Updated deployment status`, zap.Strings("Depl Ids", deplIds), observability.ZapCtx(ctx))
