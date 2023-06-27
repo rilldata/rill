@@ -18,7 +18,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.MetricsView, error) {
+func LookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.MetricsView, error) {
 	obj, err := rt.GetCatalogEntry(ctx, instanceID, name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())

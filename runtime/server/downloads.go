@@ -92,11 +92,18 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	w.Header().Set("X-Content-Type-Options", "nosniff")
+
+	mv, err := queries.LookupMetricsView(req.Context(), s.runtime, request.InstanceId, metricsViewName)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	filteredString := ""
 	if (filter != nil && (len(filter.Exclude) > 0 || len(filter.Include) > 0)) || timeRange {
 		filteredString = "_filtered"
 	}
-	filename := fmt.Sprintf("MetricsView%s%s_%s", strings.ReplaceAll(metricsViewName, `"`, "_"), filteredString, time.Now().Format("20060102150405"))
+	filename := fmt.Sprintf("%s%s_%s", strings.ReplaceAll(mv.Model, `"`, "_"), filteredString, time.Now().Format("20060102150405"))
 	switch request.Format {
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
 		w.Header().Set("Content-Type", "text/csv")
