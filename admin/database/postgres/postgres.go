@@ -367,10 +367,10 @@ func (c *connection) CountProjectsForOrganization(ctx context.Context, orgID str
 func (c *connection) FindExpiredDeployments(ctx context.Context) ([]*database.Deployment, error) {
 	var res []*database.Deployment
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-	SELECT d.* FROM deployments d 
-	JOIN projects p ON d.project_id = p.id
-	WHERE p.prod_ttl_seconds IS NOT NULL 
-		AND d.used_on + p.prod_ttl_seconds * interval '1 second' < now()`)
+		SELECT d.* FROM deployments d 
+		JOIN projects p ON d.project_id = p.id
+		WHERE p.prod_ttl_seconds IS NOT NULL AND d.used_on + p.prod_ttl_seconds * interval '1 second' < now()
+	`)
 	if err != nil {
 		return nil, parseErr("deployments", err)
 	}
