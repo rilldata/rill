@@ -148,16 +148,18 @@
   $: timeRangeName = $dashboardStore?.selectedTimeRange?.name;
 
   // Compose the comparison /toplist query
-  $: displayComparison = $dashboardStore?.showComparison;
+  $: displayComparison = timeRangeName && $dashboardStore?.showComparison;
 
-  $: comparisonTimeRange = getComparisonRange(
-    $dashboardStore?.selectedTimeRange?.start,
-    $dashboardStore?.selectedTimeRange?.end,
-    ($dashboardStore?.selectedComparisonTimeRange
-      ?.name as TimeComparisonOption) ||
-      (DEFAULT_TIME_RANGES[timeRangeName]
-        .defaultComparison as TimeComparisonOption)
-  );
+  $: comparisonTimeRange =
+    displayComparison &&
+    getComparisonRange(
+      $dashboardStore?.selectedTimeRange?.start,
+      $dashboardStore?.selectedTimeRange?.end,
+      ($dashboardStore?.selectedComparisonTimeRange
+        ?.name as TimeComparisonOption) ||
+        (DEFAULT_TIME_RANGES[timeRangeName]
+          .defaultComparison as TimeComparisonOption)
+    );
   $: comparisonTimeStart =
     isFinite(comparisonTimeRange?.start?.getTime()) &&
     comparisonTimeRange.start.toISOString();
