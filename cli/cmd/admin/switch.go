@@ -33,7 +33,7 @@ func SwitchCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			if backupToken != "" {
-				return fmt.Errorf("You are assuming as another user, Run `rill sudo unassume` to revert")
+				return fmt.Errorf("Can't switch environment when assuming another user. Run `rill sudo user unassume` and try again")
 			}
 
 			var url string
