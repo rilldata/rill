@@ -2101,6 +2101,8 @@ definitions:
   v1CustomQueryResponse:
     type: object
     properties:
+      meta:
+        $ref: '#/definitions/v1StructType'
       data:
         type: array
         items:

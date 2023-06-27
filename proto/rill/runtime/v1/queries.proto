@@ -646,5 +646,6 @@ message CustomQueryRequest {
 }
 
 message CustomQueryResponse {
-  repeated google.protobuf.Struct data = 1;
+  StructType meta = 1;
+  repeated google.protobuf.Struct data = 2;
 }

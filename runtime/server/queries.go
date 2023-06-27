@@ -2,7 +2,10 @@ package server
 
 import (
 	"context"
+	"fmt"
+	"time"
 
+	jsonvalue "github.com/Andrew-M-C/go.jsonvalue"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
@@ -70,19 +73,33 @@ func (s *Server) CustomQuery(ctx context.Context, req *runtimev1.CustomQueryRequ
 		return nil, err
 	}
 
-	res, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("select json_serialize_sql(?)",
-		Args:  []any{
-			req.Sql,
-		},
-		Priority: int(req.Priority),
-	})
+	transformedSQL, err := ensureLimits(ctx, olap, req.Sql)
+	if err != nil {
+		return nil, err
+	}
 
 	res, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    req.Sql,
-		Priority: int(req.Priority),
+		Query:            transformedSQL,
+		Priority:         int(req.Priority),
+		ExecutionTimeout: 2 * time.Minute,
 	})
+	if err != nil {
+		return nil, err
+	}
 
+	defer res.Close()
+
+	data, err := rowsToData(res)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &runtimev1.CustomQueryResponse{
+		Meta: res.Schema,
+		Data: data,
+	}
+
+	return resp, nil
 }
 
 func rowsToData(rows *drivers.Result) ([]*structpb.Struct, error) {
@@ -108,4 +125,158 @@ func rowsToData(rows *drivers.Result) ([]*structpb.Struct, error) {
 	}
 
 	return data, nil
+}
+
+func ensureLimits(ctx context.Context, olap drivers.OLAPStore, inputSQL string) (string, error) {
+	r, err := olap.Execute(ctx, &drivers.Statement{
+		Query: "select json_serialize_sql(?::VARCHAR)",
+		Args:  []any{inputSQL},
+	})
+	if err != nil {
+		return "", err
+	}
+
+	var serializedSQL []byte
+	if r.Next() {
+		err = r.Scan(&serializedSQL)
+		if err != nil {
+			r.Close()
+			return "", err
+		}
+	}
+
+	r.Close()
+
+	v, err := jsonvalue.Unmarshal(serializedSQL)
+	if err != nil {
+		return "", err
+	}
+
+	err = traverseAndUpdateModifiers(v)
+	if err != nil {
+		return "", err
+	}
+
+	transformedJSON := v.MustMarshalString()
+	r, err = olap.Execute(ctx, &drivers.Statement{
+		Query: "select json_deserialize_sql(json(?))",
+		Args:  []any{transformedJSON},
+	})
+	if err != nil {
+		return "", err
+	}
+
+	var sqlString string
+	if r.Next() {
+		err = r.Scan(&sqlString)
+		if err != nil {
+			r.Close()
+			return "", err
+		}
+	}
+
+	r.Close()
+
+	return sqlString, nil
+}
+
+func traverseAndUpdateModifiers(root *jsonvalue.V) error {
+	if root.IsArray() {
+		for _, v := range root.ForRangeArr() {
+			err := traverseAndUpdateModifiers(v)
+			if err != nil {
+				return err
+			}
+		}
+	} else if root.IsObject() {
+		for k, v := range root.ForRangeObj() {
+			if k == "modifiers" {
+				err := replaceOrUpdateLimitTo(v, 100)
+				if err != nil {
+					return err
+				}
+			} else {
+				err := traverseAndUpdateModifiers(v)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+/*
+LIMIT claused is serialized to the following JSON:
+
+"modifiers":[
+
+	{
+	   "type":"LIMIT_MODIFIER",
+	   "limit":{
+	      "class":"CONSTANT",
+	      "type":"VALUE_CONSTANT",
+	      "alias":"",
+	      "value":{
+	         "type":{
+	            "id":"INTEGER",
+	            "type_info":null
+	         },
+	         "is_null":false,
+	         "value":1
+	      }
+	   },
+	   "offset":null
+	},
+
+]
+*/
+func replaceOrUpdateLimitTo(root *jsonvalue.V, limit int) error {
+	children := root.ForRangeArr()
+	updated := false
+	if len(children) != 0 {
+		for _, v := range children {
+			if v.MustGet("type").String() == "LIMIT_MODIFIER" && v.MustGet("limit").MustGet("class").String() == "CONSTANT" {
+				v.MustGet("limit").MustGet("value").MustSetInt(limit).At("value")
+				updated = true
+			}
+		}
+	}
+
+	if !updated {
+		v, err := createLimit(limit)
+		if err != nil {
+			return err
+		}
+
+		_, err = root.Append(v).InTheEnd()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func createLimit(limit int) (*jsonvalue.V, error) {
+	v, err := jsonvalue.Unmarshal([]byte(fmt.Sprintf(`
+{
+	"type":"LIMIT_MODIFIER",
+	"limit":{
+	   "class":"CONSTANT",
+	   "type":"VALUE_CONSTANT",
+	   "alias":"",
+	   "value":{
+		  "type":{
+			 "id":"INTEGER",
+			 "type_info":null
+		  },
+		  "is_null":false,
+		  "value":%d
+	   }
+	},
+	"offset":null
+ }
+`, limit)))
+	return v, err
 }
