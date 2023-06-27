@@ -3530,7 +3530,12 @@ export class CustomQueryRequest extends Message<CustomQueryRequest> {
   instanceId = "";
 
   /**
-   * @generated from field: int32 priority = 4;
+   * @generated from field: string sql = 2;
+   */
+  sql = "";
+
+  /**
+   * @generated from field: int32 priority = 3;
    */
   priority = 0;
 
@@ -3543,7 +3548,8 @@ export class CustomQueryRequest extends Message<CustomQueryRequest> {
   static readonly typeName = "rill.runtime.v1.CustomQueryRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CustomQueryRequest {
@@ -3568,7 +3574,12 @@ export class CustomQueryRequest extends Message<CustomQueryRequest> {
  */
 export class CustomQueryResponse extends Message<CustomQueryResponse> {
   /**
-   * @generated from field: repeated google.protobuf.Struct data = 1;
+   * @generated from field: rill.runtime.v1.StructType meta = 1;
+   */
+  meta?: StructType;
+
+  /**
+   * @generated from field: repeated google.protobuf.Struct data = 2;
    */
   data: Struct[] = [];
 
@@ -3580,7 +3591,8 @@ export class CustomQueryResponse extends Message<CustomQueryResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.CustomQueryResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "data", kind: "message", T: Struct, repeated: true },
+    { no: 1, name: "meta", kind: "message", T: StructType },
+    { no: 2, name: "data", kind: "message", T: Struct, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CustomQueryResponse {

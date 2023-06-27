@@ -66,6 +66,7 @@ export type QueryServiceTableCardinalityParams = {
 };
 
 export type QueryServiceCustomQueryParams = {
+  sql?: string;
   priority?: number;
 };
 
@@ -897,6 +898,7 @@ export interface V1DeleteFileAndReconcileRequest {
 export type V1CustomQueryResponseDataItem = { [key: string]: any };
 
 export interface V1CustomQueryResponse {
+  meta?: V1StructType;
   data?: V1CustomQueryResponseDataItem[];
 }
 
