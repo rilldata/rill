@@ -214,11 +214,10 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	}
 
 	// Add prod TTL as 7 days if not a public project else infinite
-	prodTTL := int64(prodDeplTTL.Seconds())
-	var prodTTLPtr *int64
-	prodTTLPtr = &prodTTL
-	if req.Public {
-		prodTTLPtr = nil
+	var prodTTL *int64
+	if !req.Public {
+		tmp := int64(prodDeplTTL.Seconds())
+		prodTTL = &tmp
 	}
 
 	// Create the project
@@ -236,7 +235,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		GithubURL:            &req.GithubUrl,
 		GithubInstallationID: &installationID,
 		ProdVariables:        req.Variables,
-		ProdTTL:              prodTTLPtr,
+		ProdTTL:              prodTTL,
 	})
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -329,7 +328,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		}
 	}
 
-	prodTTL := valOrDefault(req.ProdTtlSeconds, *proj.ProdTTL)
+	prodTTLSeconds := valOrDefault(req.ProdTtlSeconds, *proj.ProdTTLSeconds)
 	opts := &database.UpdateProjectOptions{
 		Name:                 valOrDefault(req.NewName, proj.Name),
 		Description:          valOrDefault(req.Description, proj.Description),
@@ -340,7 +339,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
-		ProdTTL:              &prodTTL,
+		ProdTTLSeconds:       &prodTTLSeconds,
 		Region:               valOrDefault(req.Region, proj.Region),
 	}
 	proj, err = s.admin.UpdateProject(ctx, proj, opts)

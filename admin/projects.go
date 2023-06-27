@@ -94,7 +94,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		ProdVariables:        proj.ProdVariables,
 		ProdSlots:            proj.ProdSlots,
 		Region:               proj.Region,
-		ProdTTL:              proj.ProdTTL,
+		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		ProdDeploymentID:     &depl.ID,
 	})
 	if err != nil {
@@ -274,7 +274,7 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 		ProdVariables:        proj.ProdVariables,
 		ProdSlots:            proj.ProdSlots,
 		Region:               proj.Region,
-		ProdTTL:              proj.ProdTTL,
+		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		ProdDeploymentID:     &newDepl.ID,
 	})
 	if err != nil {

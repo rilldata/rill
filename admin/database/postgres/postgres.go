@@ -335,7 +335,7 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, prod_variables=$5, github_url=$6, github_installation_id=$7, prod_deployment_id=$8, region=$9, prod_slots=$10, prod_ttl_seconds=$11, updated_on=now()
 		WHERE id=$12 RETURNING *`,
-		opts.Name, opts.Description, opts.Public, opts.ProdBranch, database.Variables(opts.ProdVariables), opts.GithubURL, opts.GithubInstallationID, opts.ProdDeploymentID, opts.Region, opts.ProdSlots, opts.ProdTTL, id,
+		opts.Name, opts.Description, opts.Public, opts.ProdBranch, database.Variables(opts.ProdVariables), opts.GithubURL, opts.GithubInstallationID, opts.ProdDeploymentID, opts.Region, opts.ProdSlots, opts.ProdTTLSeconds, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
@@ -369,7 +369,8 @@ func (c *connection) FindExpiredDeployments(ctx context.Context) ([]*database.De
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 	SELECT d.* FROM deployments d 
 	JOIN projects p ON d.project_id = p.id
-	WHERE p.prod_ttl_seconds is not null AND d.used_on + p.prod_ttl_seconds * interval '1 second' < now()`)
+	WHERE p.prod_ttl_seconds IS NOT NULL 
+		AND d.used_on + p.prod_ttl_seconds * interval '1 second' < now()`)
 	if err != nil {
 		return nil, parseErr("deployments", err)
 	}
@@ -414,20 +415,6 @@ func (c *connection) InsertDeployment(ctx context.Context, opts *database.Insert
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
 		opts.ProjectID, opts.Slots, opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.Logs,
 	).StructScan(res)
-	if err != nil {
-		return nil, parseErr("deployment", err)
-	}
-	return res, nil
-}
-
-func (c *connection) UpdateDeployment(ctx context.Context, id string, opts *database.UpdateDeploymentOptions) (*database.Deployment, error) {
-	if err := database.Validate(opts); err != nil {
-		return nil, err
-	}
-
-	res := &database.Deployment{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET project_id=$1, slots=$2, branch=$3, runtime_host=$4, runtime_instance_id=$5, runtime_audience=$6, status=$7, logs=$8, updated_on=now() WHERE id=$3 RETURNING *",
-		opts.ProjectID, opts.Slots, opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.Logs, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
 	}

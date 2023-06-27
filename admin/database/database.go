@@ -85,7 +85,6 @@ type DB interface {
 	FindDeployment(ctx context.Context, id string) (*Deployment, error)
 	FindDeploymentByInstanceID(ctx context.Context, instanceID string) (*Deployment, error)
 	InsertDeployment(ctx context.Context, opts *InsertDeploymentOptions) (*Deployment, error)
-	UpdateDeployment(ctx context.Context, id string, opts *UpdateDeploymentOptions) (*Deployment, error)
 	DeleteDeployment(ctx context.Context, id string) error
 	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, logs string) (*Deployment, error)
 	UpdateDeploymentBranch(ctx context.Context, id, branch string) (*Deployment, error)
@@ -224,8 +223,8 @@ type Project struct {
 	ProdOLAPDriver       string    `db:"prod_olap_driver"`
 	ProdOLAPDSN          string    `db:"prod_olap_dsn"`
 	ProdSlots            int       `db:"prod_slots"`
+	ProdTTLSeconds       *int64    `db:"prod_ttl_seconds"`
 	ProdDeploymentID     *string   `db:"prod_deployment_id"`
-	ProdTTL              *int64    `db:"prod_ttl_seconds"`
 	CreatedOn            time.Time `db:"created_on"`
 	UpdatedOn            time.Time `db:"updated_on"`
 }
@@ -270,7 +269,7 @@ type UpdateProjectOptions struct {
 	ProdVariables        map[string]string
 	ProdDeploymentID     *string
 	ProdSlots            int
-	ProdTTL              *int64
+	ProdTTLSeconds       *int64
 	Region               string
 }
 
@@ -304,17 +303,6 @@ type Deployment struct {
 
 // InsertDeploymentOptions defines options for inserting a new Deployment.
 type InsertDeploymentOptions struct {
-	ProjectID         string
-	Slots             int
-	Branch            string `validate:"required"`
-	RuntimeHost       string `validate:"required"`
-	RuntimeInstanceID string `validate:"required"`
-	RuntimeAudience   string
-	Status            DeploymentStatus
-	Logs              string
-}
-
-type UpdateDeploymentOptions struct {
 	ProjectID         string
 	Slots             int
 	Branch            string `validate:"required"`

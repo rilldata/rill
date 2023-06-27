@@ -177,7 +177,7 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 	return nil
 }
 
-// HIBERNATE free deployments
+// HibernateDeployments tears down unused deployments
 func (s *Service) HibernateDeployments(ctx context.Context) error {
 	depls, err := s.DB.FindExpiredDeployments(ctx)
 	if err != nil {
@@ -187,19 +187,19 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 	for _, depl := range depls {
 		fmt.Println("expired deployments are: ", depl)
 		if depl.Status == database.DeploymentStatusReconciling && time.Since(depl.UpdatedOn) < 30*time.Minute {
-			fmt.Printf("skipping because it is already running\n")
+			s.logger.Info("skipping because it is already running", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
 			continue
 		}
 
 		proj, err := s.DB.FindProject(ctx, depl.ProjectID)
 		if err != nil {
-			s.logger.Error("skipping because error while find project", zap.String("projectId", proj.ID), zap.String("deplId", depl.ID), zap.Error(err))
+			s.logger.Error("skipping because error while find project", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.Error(err))
 			continue
 		}
 
 		err = s.teardownDeployment(ctx, proj, depl)
 		if err != nil {
-			s.logger.Error("skipping because error while hibernate deployment", zap.String("projectId", proj.ID), zap.String("deplId", depl.ID), zap.Error(err))
+			s.logger.Error("skipping because error while hibernate deployment", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.Error(err))
 			continue
 		}
 
@@ -214,7 +214,7 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 			ProdVariables:        proj.ProdVariables,
 			ProdSlots:            proj.ProdSlots,
 			Region:               proj.Region,
-			ProdTTL:              proj.ProdTTL,
+			ProdTTLSeconds:       proj.ProdTTLSeconds,
 			ProdDeploymentID:     nil,
 		})
 		if err != nil {
