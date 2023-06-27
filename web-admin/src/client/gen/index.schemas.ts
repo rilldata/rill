@@ -231,7 +231,7 @@ export interface V1SearchUsersResponse {
 }
 
 export interface V1SearchProjectNamesResponse {
-  projects?: string[];
+  names?: string[];
   nextPageToken?: string;
 }
 

@@ -1525,7 +1525,7 @@ definitions:
   v1SearchProjectNamesResponse:
     type: object
     properties:
-      projects:
+      names:
         type: array
         items:
           type: string

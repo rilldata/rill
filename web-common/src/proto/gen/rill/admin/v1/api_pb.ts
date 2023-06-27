@@ -762,9 +762,9 @@ export class SearchProjectNamesRequest extends Message<SearchProjectNamesRequest
  */
 export class SearchProjectNamesResponse extends Message<SearchProjectNamesResponse> {
   /**
-   * @generated from field: repeated string projects = 1;
+   * @generated from field: repeated string names = 1;
    */
-  projects: string[] = [];
+  names: string[] = [];
 
   /**
    * @generated from field: string next_page_token = 2;
@@ -779,7 +779,7 @@ export class SearchProjectNamesResponse extends Message<SearchProjectNamesRespon
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.SearchProjectNamesResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "projects", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 1, name: "names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

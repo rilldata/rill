@@ -32,12 +32,12 @@ func SearchCmd(cfg *config.Config) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if len(res.Projects) == 0 {
+			if len(res.Names) == 0 {
 				cmdutil.PrintlnWarn("No projects found")
 				return nil
 			}
 
-			cmdutil.TablePrinter(res.Projects)
+			cmdutil.TablePrinter(res.Names)
 			if res.NextPageToken != "" {
 				cmd.Println()
 				cmd.Printf("Next page token: %s\n", res.NextPageToken)
@@ -46,7 +46,7 @@ func SearchCmd(cfg *config.Config) *cobra.Command {
 			return nil
 		},
 	}
-	searchCmd.Flags().Uint32Var(&pageSize, "page-size", 50, "Number of users to return per page")
+	searchCmd.Flags().Uint32Var(&pageSize, "page-size", 50, "Number of projects to return per page")
 	searchCmd.Flags().StringVar(&pageToken, "page-token", "", "Pagination token")
 
 	return searchCmd

@@ -162,7 +162,7 @@ func (s *Server) SearchProjectNames(ctx context.Context, req *adminv1.SearchProj
 	}
 	pageSize := validPageSize(req.PageSize)
 
-	projects, err := s.admin.DB.FindProjectPathsByPattern(ctx, req.NamePattern, token.Val, pageSize)
+	projectNames, err := s.admin.DB.FindProjectPathsByPattern(ctx, req.NamePattern, token.Val, pageSize)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.NotFound, "projects not found")
@@ -171,12 +171,12 @@ func (s *Server) SearchProjectNames(ctx context.Context, req *adminv1.SearchProj
 	}
 
 	nextToken := ""
-	if len(projects) >= pageSize {
-		nextToken = marshalPageToken(projects[len(projects)-1])
+	if len(projectNames) >= pageSize {
+		nextToken = marshalPageToken(projectNames[len(projectNames)-1])
 	}
 
 	return &adminv1.SearchProjectNamesResponse{
-		Projects:      projects,
+		Names:         projectNames,
 		NextPageToken: nextToken,
 	}, nil
 }

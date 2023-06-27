@@ -357,7 +357,7 @@ message SearchProjectNamesRequest {
 }
 
 message SearchProjectNamesResponse {
-  repeated string projects = 1;
+  repeated string names = 1;
   string next_page_token = 2;
 }
 
