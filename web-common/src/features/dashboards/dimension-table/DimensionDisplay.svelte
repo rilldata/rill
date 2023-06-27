@@ -14,6 +14,9 @@
     useModelAllTimeRange,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
+  import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
+  import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import {
     createQueryServiceMetricsViewToplist,
     createQueryServiceMetricsViewTotals,
@@ -21,9 +24,6 @@
     MetricsViewFilterCond,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
-  import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
-  import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import {
@@ -191,11 +191,12 @@
     },
     {
       query: {
-        enabled:
+        enabled: Boolean(
           displayComparison &&
-          !!comparisonTimeStart &&
-          !!comparisonTimeEnd &&
-          !!comparisonFilterSet,
+            !!comparisonTimeStart &&
+            !!comparisonTimeEnd &&
+            !!comparisonFilterSet
+        ),
       },
     }
   );
