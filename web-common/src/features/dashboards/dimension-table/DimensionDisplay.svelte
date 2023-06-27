@@ -151,8 +151,8 @@
   $: displayComparison = $dashboardStore?.showComparison;
 
   $: comparisonTimeRange = getComparisonRange(
-    $dashboardStore.selectedTimeRange.start,
-    $dashboardStore.selectedTimeRange.end,
+    $dashboardStore?.selectedTimeRange?.start,
+    $dashboardStore?.selectedTimeRange?.end,
     ($dashboardStore?.selectedComparisonTimeRange
       ?.name as TimeComparisonOption) ||
       (DEFAULT_TIME_RANGES[timeRangeName]
