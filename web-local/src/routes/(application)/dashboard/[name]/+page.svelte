@@ -15,6 +15,7 @@
   import { error } from "@sveltejs/kit";
   import { CATALOG_ENTRY_NOT_FOUND } from "../../../../lib/errors/messages";
   import DashboardStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardStateProvider.svelte";
+  import BusinessModelProvider from "@rilldata/web-common/features/dashboards/business-model/BusinessModelProvider.svelte";
 
   $: metricViewName = $page.params.name;
   $: metricsExplorer = useDashboardStore(metricViewName);
@@ -66,8 +67,10 @@
     bgClass="bg-white"
     inspector={false}
   >
-    <DashboardStateProvider {metricViewName} slot="body">
+    <BusinessModelProvider metricsViewName={metricViewName} slot="body">
+      <!-- <DashboardStateProvider {metricViewName} slot="body"> -->
       <Dashboard {metricViewName} hasTitle />
-    </DashboardStateProvider>
+      <!-- </DashboardStateProvider> -->
+    </BusinessModelProvider>
   </WorkspaceContainer>
 {/if}
