@@ -12,8 +12,9 @@ import (
 // VersionCmd represents the version command
 func WhoamiCmd(cfg *config.Config) *cobra.Command {
 	whoamiCmd := &cobra.Command{
-		Use:   "whoami",
-		Short: "Show current user",
+		Use:               "whoami",
+		Short:             "Show current user",
+		PersistentPreRunE: cmdutil.CheckAuth(cfg),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -26,7 +27,8 @@ func WhoamiCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			fmt.Printf("  You Logged in as : %s\n", res.User.Email)
+			fmt.Printf("  Email : %s\n", res.User.Email)
+			fmt.Printf("  Name : %s\n", res.User.DisplayName)
 
 			return nil
 		},
