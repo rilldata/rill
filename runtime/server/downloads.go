@@ -28,7 +28,7 @@ func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*run
 		return nil, err
 	}
 
-	out := fmt.Sprintf("/v1/download?%s=%s", "request", base64.StdEncoding.EncodeToString(r))
+	out := fmt.Sprintf("/v1/download?%s=%s", "request", base64.URLEncoding.EncodeToString(r))
 
 	return &runtimev1.ExportResponse{
 		DownloadUrlPath: out,
@@ -36,7 +36,7 @@ func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*run
 }
 
 func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
-	marshalled, err := base64.StdEncoding.DecodeString(req.URL.Query().Get("request"))
+	marshalled, err := base64.URLEncoding.DecodeString(req.URL.Query().Get("request"))
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to parse request: %s", err), http.StatusBadRequest)
 		return
@@ -76,17 +76,22 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	switch request.Format {
+	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
+		w.Header().Set("Content-Type", "text/csv")
+	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
+		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	default:
+		http.Error(w, fmt.Sprintf("Unsupported format %s", request.Format), http.StatusBadRequest)
+		return
+	}
+
 	err = q.Export(req.Context(), s.runtime, request.InstanceId, 0, request.Format, w)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	if request.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV {
-		w.Header().Set("Content-Type", "text/csv")
-	}
-
-	w.WriteHeader(http.StatusOK)
 }
 
 func createToplistQuery(ctx context.Context, writer http.ResponseWriter, req *runtimev1.MetricsViewToplistRequest, format runtimev1.ExportFormat) (runtime.Query, error) {

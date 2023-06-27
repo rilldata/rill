@@ -87,7 +87,7 @@ func (q *ColumnTopK) Resolve(ctx context.Context, rt *runtime.Runtime, instanceI
 			return err
 		}
 
-		entry.Value, err = pbutil.ToValue(val)
+		entry.Value, err = pbutil.ToValue(val, safeFieldType(rows.Schema, 0))
 		if err != nil {
 			return err
 		}

@@ -750,12 +750,12 @@ func initBasicService(t *testing.T) (*catalog.Service, string) {
 		TimeDimension: "timestamp",
 		Dimensions: []*runtimev1.MetricsView_Dimension{
 			{
-				Name:  "publisher",
-				Label: "Publisher",
+				Column: "publisher",
+				Label:  "Publisher",
 			},
 			{
-				Name:  "domain",
-				Label: "Domain",
+				Column: "domain",
+				Label:  "Domain",
 			},
 		},
 		Measures: []*runtimev1.MetricsView_Measure{

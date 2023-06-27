@@ -30,12 +30,13 @@ smallest_time_grain: ""
 timeseries: ""
 measures: []
 dimensions:
-  - label: ""
-    property: ""
+  - name: dimension
+    label: ""
+    column: ""
     description: ""
 `);
     internalRepresentation.updateDimension(0, "label", "Publisher");
-    internalRepresentation.updateDimension(0, "property", "publisher");
+    internalRepresentation.updateDimension(0, "column", "publisher");
     expect(internalRepresentation.internalYAML)
       .toEqual(`# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
@@ -46,8 +47,9 @@ smallest_time_grain: ""
 timeseries: ""
 measures: []
 dimensions:
-  - label: Publisher
-    property: publisher
+  - name: dimension
+    label: Publisher
+    column: publisher
     description: ""
 `);
   });
@@ -252,6 +254,76 @@ measures:
           MetricsYAML + original
         );
         internalRepresentation.addNewMeasure();
+        expect(internalRepresentation.internalYAML).toEqual(
+          MetricsYAML + expected + "\n"
+        );
+      });
+    });
+  });
+
+  describe("Dimension Name backwards compatibility", () => {
+    const MetricsYAML = `title: "AdBids"
+model: ""
+default_time_range: ""
+smallest_time_grain: ""
+timeseries: ""
+measures: []
+dimensions:
+`;
+    [
+      [
+        "From an old project without dimension name and column keys",
+        `
+  - label: Publisher
+    property: publisher
+    description: ""
+  - label: Domain
+    property: domain
+    description: ""`,
+        `
+  - label: Publisher
+    description: ""
+    name: dimension
+    column: publisher
+  - label: Domain
+    description: ""
+    name: dimension_1
+    column: domain
+  - name: dimension_2
+    label: ""
+    column: ""
+    description: ""`,
+      ],
+      [
+        "From an old project with some dimension name and column keys",
+        `
+  - name: dimension_1
+    label: Publisher
+    property: publisher
+    description: ""
+  - label: Domain
+    column: domain
+    description: ""`,
+        `
+  - name: dimension_1
+    label: Publisher
+    description: ""
+    column: publisher
+  - label: Domain
+    column: domain
+    description: ""
+    name: dimension
+  - name: dimension_2
+    label: ""
+    column: ""
+    description: ""`,
+      ],
+    ].forEach(([title, original, expected]) => {
+      it(title, () => {
+        const internalRepresentation = createInternalRepresentation(
+          MetricsYAML + original
+        );
+        internalRepresentation.addNewDimension();
         expect(internalRepresentation.internalYAML).toEqual(
           MetricsYAML + expected + "\n"
         );

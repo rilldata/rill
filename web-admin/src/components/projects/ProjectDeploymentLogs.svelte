@@ -18,6 +18,7 @@
     try {
       return JSON.parse(logs).errors;
     } catch (e) {
+      if (logs) return [{ message: logs, filePath: "" }];
       return [];
     }
   }

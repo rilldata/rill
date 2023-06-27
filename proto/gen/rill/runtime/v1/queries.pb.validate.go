@@ -3035,6 +3035,8 @@ func (m *MetricsViewRowsRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for TimeGranularity
+
 	if all {
 		switch v := interface{}(m.GetFilter()).(type) {
 		case interface{ ValidateAll() error }:
@@ -7180,35 +7182,6 @@ func (m *ColumnTimeSeriesRequest) validate(all bool) error {
 		if err := v.Validate(); err != nil {
 			return ColumnTimeSeriesRequestValidationError{
 				field:  "TimeRange",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if all {
-		switch v := interface{}(m.GetFilters()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ColumnTimeSeriesRequestValidationError{
-					field:  "Filters",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, ColumnTimeSeriesRequestValidationError{
-					field:  "Filters",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetFilters()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return ColumnTimeSeriesRequestValidationError{
-				field:  "Filters",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
