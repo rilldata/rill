@@ -27,6 +27,15 @@ func SwitchCmd(cfg *config.Config) *cobra.Command {
 				env = args[0]
 			}
 
+			backupToken, err := dotrill.GetBackupToken()
+			if err != nil {
+				return err
+			}
+
+			if backupToken != "" {
+				return fmt.Errorf("Can't switch environment when assuming another user. Run `rill sudo user unassume` and try again")
+			}
+
 			var url string
 
 			switch env {
@@ -40,12 +49,12 @@ func SwitchCmd(cfg *config.Config) *cobra.Command {
 				return fmt.Errorf("invalid args provided, valid args are {stage|prod|dev}")
 			}
 
-			err := dotrill.SetDefaultAdminURL(url)
+			err = switchEnvTokens(env, cfg)
 			if err != nil {
 				return err
 			}
 
-			err = auth.Logout(cmd.Context(), cfg)
+			err = dotrill.SetDefaultAdminURL(url)
 			if err != nil {
 				return err
 			}
@@ -53,10 +62,56 @@ func SwitchCmd(cfg *config.Config) *cobra.Command {
 			cfg.AdminURL = url
 
 			cmdutil.PrintlnSuccess(fmt.Sprintf("Set default env to %q, url is %q", env, url))
+			err = auth.SelectOrgFlow(cmd.Context(), cfg)
+			if err != nil {
+				return err
+			}
 
 			return nil
 		},
 	}
 
 	return switchCmd
+}
+
+func switchEnvTokens(env string, cfg *config.Config) error {
+	token, err := dotrill.GetAccessToken()
+	if err != nil {
+		return err
+	}
+
+	switch cfg.AdminURL {
+	case prodAdminURL:
+		err := dotrill.SetEnvToken("prod", token)
+		if err != nil {
+			return err
+		}
+	case stagingAdminURL:
+		err := dotrill.SetEnvToken("stage", token)
+		if err != nil {
+			return err
+		}
+	case devAdminURL:
+		err := dotrill.SetEnvToken("dev", token)
+		if err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("invalid admin url")
+	}
+
+	newToken, err := dotrill.GetEnvToken(env)
+	if err != nil {
+		return err
+	}
+
+	err = dotrill.SetAccessToken(newToken)
+	if err != nil {
+		return err
+	}
+
+	// set the default token to the one we just got
+	cfg.AdminTokenDefault = newToken
+
+	return nil
 }
