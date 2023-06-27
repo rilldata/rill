@@ -926,30 +926,6 @@ paths:
             $ref: '#/definitions/v1SetSuperuserRequest'
       tags:
         - AdminService
-  /v1/superuser/projects/{organizationName}/{name}:
-    get:
-      summary: SudoGetProject returns information about a specific project for superuser
-      operationId: AdminService_SudoGetProject
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1SudoGetProjectResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: name
-          in: path
-          required: true
-          type: string
-      tags:
-        - AdminService
   /v1/superuser/projects/search:
     get:
       summary: SearchProjectNames returns project names matching the pattern
@@ -965,6 +941,15 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: namePattern
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
           in: query
           required: false
           type: string
@@ -1503,13 +1488,6 @@ definitions:
       updatedOn:
         type: string
         format: date-time
-  v1ProjectName:
-    type: object
-    properties:
-      orgName:
-        type: string
-      projectName:
-        type: string
   v1ProjectPermissions:
     type: object
     properties:
@@ -1550,8 +1528,9 @@ definitions:
       projects:
         type: array
         items:
-          type: object
-          $ref: '#/definitions/v1ProjectName'
+          type: string
+      nextPageToken:
+        type: string
   v1SearchUsersResponse:
     type: object
     properties:
@@ -1575,11 +1554,6 @@ definitions:
         type: boolean
   v1SetSuperuserResponse:
     type: object
-  v1SudoGetProjectResponse:
-    type: object
-    properties:
-      project:
-        $ref: '#/definitions/v1Project'
   v1SudoGetResourceResponse:
     type: object
     properties:

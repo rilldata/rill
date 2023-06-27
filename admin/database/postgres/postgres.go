@@ -210,11 +210,12 @@ func (c *connection) FindProjects(ctx context.Context, afterName string, limit i
 	return res, nil
 }
 
-func (c *connection) FindProjectNamesByPattern(ctx context.Context, namePattern string) ([]*database.ProjectNames, error) {
-	var res []*database.ProjectNames
-	wildcard := "%"
-	pattern := fmt.Sprintf("%s%s%s", wildcard, namePattern, wildcard)
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT o.name as org_name, p.name as project_name FROM projects p JOIN orgs o ON p.org_id = o.id WHERE lower(concat(o.name,'/',p.name)) like lower($1) ORDER BY lower(p.name)", pattern)
+func (c *connection) FindProjectPathsByPattern(ctx context.Context, namePattern, afterName string, limit int) ([]string, error) {
+	var res []string
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT concat(o.name,'/',p.name) as project_name FROM projects p JOIN orgs o ON p.org_id = o.id 
+	WHERE concat(o.name,'/',p.name) ilike $1 AND lower(concat(o.name,'/',p.name)) > lower($2)
+	ORDER BY lower(o.name), lower(p.name) 
+	LIMIT $3`, namePattern, afterName, limit)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}

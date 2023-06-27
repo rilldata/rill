@@ -156,7 +156,13 @@ func (s *Server) SearchProjectNames(ctx context.Context, req *adminv1.SearchProj
 		return nil, status.Error(codes.PermissionDenied, "only superusers can search projects")
 	}
 
-	projectNames, err := s.admin.DB.FindProjectNamesByPattern(ctx, req.NamePattern)
+	token, err := unmarshalPageToken(req.PageToken)
+	if err != nil {
+		return nil, err
+	}
+	pageSize := validPageSize(req.PageSize)
+
+	projects, err := s.admin.DB.FindProjectPathsByPattern(ctx, req.NamePattern, token.Val, pageSize)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.NotFound, "projects not found")
@@ -164,34 +170,15 @@ func (s *Server) SearchProjectNames(ctx context.Context, req *adminv1.SearchProj
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	dtos := make([]*adminv1.ProjectName, len(projectNames))
-	for i, p := range projectNames {
-		dtos[i] = s.projNamesToDTO(p)
+	nextToken := ""
+	if len(projects) >= pageSize {
+		nextToken = marshalPageToken(projects[len(projects)-1])
 	}
 
-	return &adminv1.SearchProjectNamesResponse{Projects: dtos}, nil
-}
-
-func (s *Server) SudoGetProject(ctx context.Context, req *adminv1.SudoGetProjectRequest) (*adminv1.SudoGetProjectResponse, error) {
-	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.OrganizationName),
-		attribute.String("args.project", req.Name),
-	)
-
-	claims := auth.GetClaims(ctx)
-	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "only superusers can get project")
-	}
-
-	res, err := s.GetProject(ctx, &adminv1.GetProjectRequest{
-		OrganizationName: req.OrganizationName,
-		Name:             req.Name,
-	})
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	return &adminv1.SudoGetProjectResponse{Project: res.Project}, nil
+	return &adminv1.SearchProjectNamesResponse{
+		Projects:      projects,
+		NextPageToken: nextToken,
+	}, nil
 }
 
 func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRequest) (*adminv1.CreateProjectResponse, error) {
@@ -744,13 +731,6 @@ func (s *Server) getAndCheckGithubInstallationID(ctx context.Context, githubURL,
 	}
 
 	return installationID, nil
-}
-
-func (s *Server) projNamesToDTO(p *database.ProjectNames) *adminv1.ProjectName {
-	return &adminv1.ProjectName{
-		OrgName:     p.OrgName,
-		ProjectName: p.ProjectName,
-	}
 }
 
 func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project {

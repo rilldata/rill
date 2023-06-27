@@ -8,6 +8,9 @@ import (
 )
 
 func SearchCmd(cfg *config.Config) *cobra.Command {
+	var pageSize uint32
+	var pageToken string
+
 	searchCmd := &cobra.Command{
 		Use:   "search",
 		Args:  cobra.ExactArgs(1),
@@ -23,37 +26,28 @@ func SearchCmd(cfg *config.Config) *cobra.Command {
 
 			res, err := client.SearchProjectNames(ctx, &adminv1.SearchProjectNamesRequest{
 				NamePattern: args[0],
+				PageSize:    pageSize,
+				PageToken:   pageToken,
 			})
 			if err != nil {
 				return err
 			}
+			if len(res.Projects) == 0 {
+				cmdutil.PrintlnWarn("No projects found")
+				return nil
+			}
 
-			cmdutil.TablePrinter(toTable(res.Projects))
+			cmdutil.TablePrinter(res.Projects)
+			if res.NextPageToken != "" {
+				cmd.Println()
+				cmd.Printf("Next page token: %s\n", res.NextPageToken)
+			}
+
 			return nil
 		},
 	}
+	searchCmd.Flags().Uint32Var(&pageSize, "page-size", 50, "Number of users to return per page")
+	searchCmd.Flags().StringVar(&pageToken, "page-token", "", "Pagination token")
 
 	return searchCmd
-}
-
-type projectName struct {
-	Organization string `header:"organization" json:"organization"`
-	ProjectName  string `header:"project name" json:"project_name"`
-}
-
-func toTable(projects []*adminv1.ProjectName) []*projectName {
-	projs := make([]*projectName, 0, len(projects))
-
-	for _, proj := range projects {
-		projs = append(projs, toRow(proj))
-	}
-
-	return projs
-}
-
-func toRow(o *adminv1.ProjectName) *projectName {
-	return &projectName{
-		Organization: o.OrgName,
-		ProjectName:  o.ProjectName,
-	}
 }

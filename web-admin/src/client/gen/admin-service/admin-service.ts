@@ -68,7 +68,6 @@ import type {
   V1ListSuperusersResponse,
   V1SetSuperuserResponse,
   V1SetSuperuserRequest,
-  V1SudoGetProjectResponse,
   V1SearchProjectNamesResponse,
   AdminServiceSearchProjectNamesParams,
   V1SudoUpdateOrganizationQuotasResponse,
@@ -2072,72 +2071,6 @@ export const createAdminServiceSetSuperuser = <
     TContext
   >(mutationFn, mutationOptions);
 };
-/**
- * @summary SudoGetProject returns information about a specific project for superuser
- */
-export const adminServiceSudoGetProject = (
-  organizationName: string,
-  name: string,
-  signal?: AbortSignal
-) => {
-  return httpClient<V1SudoGetProjectResponse>({
-    url: `/v1/superuser/projects/${organizationName}/${name}`,
-    method: "get",
-    signal,
-  });
-};
-
-export const getAdminServiceSudoGetProjectQueryKey = (
-  organizationName: string,
-  name: string
-) => [`/v1/superuser/projects/${organizationName}/${name}`] as const;
-
-export type AdminServiceSudoGetProjectQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceSudoGetProject>>
->;
-export type AdminServiceSudoGetProjectQueryError = RpcStatus;
-
-export const createAdminServiceSudoGetProject = <
-  TData = Awaited<ReturnType<typeof adminServiceSudoGetProject>>,
-  TError = RpcStatus
->(
-  organizationName: string,
-  name: string,
-  options?: {
-    query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof adminServiceSudoGetProject>>,
-      TError,
-      TData
-    >;
-  }
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ??
-    getAdminServiceSudoGetProjectQueryKey(organizationName, name);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceSudoGetProject>>
-  > = ({ signal }) =>
-    adminServiceSudoGetProject(organizationName, name, signal);
-
-  const query = createQuery<
-    Awaited<ReturnType<typeof adminServiceSudoGetProject>>,
-    TError,
-    TData
-  >({
-    queryKey,
-    queryFn,
-    enabled: !!(organizationName && name),
-    ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryKey;
-
-  return query;
-};
-
 /**
  * @summary SearchProjectNames returns project names matching the pattern
  */

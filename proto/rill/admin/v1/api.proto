@@ -57,11 +57,6 @@ service AdminService {
     option (google.api.http) = {get: "/v1/superuser/projects/search"};
   }
 
-  // SudoGetProject returns information about a specific project for superuser
-  rpc SudoGetProject(SudoGetProjectRequest) returns (SudoGetProjectResponse) {
-    option (google.api.http) = {get: "/v1/superuser/projects/{organization_name}/{name}"};
-  }
-
   // GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
   rpc GetProjectVariables(GetProjectVariablesRequest) returns (GetProjectVariablesResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{name}/variables"};
@@ -355,20 +350,15 @@ message GetProjectResponse {
   ProjectPermissions project_permissions = 4;
 }
 
-message SudoGetProjectRequest {
-  string organization_name = 1;
-  string name = 2;
-}
-
-message SudoGetProjectResponse {
-  Project project = 1;
-}
 message SearchProjectNamesRequest {
   string name_pattern = 1;
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
+  string page_token = 3;
 }
 
 message SearchProjectNamesResponse {
-  repeated ProjectName projects = 1;
+  repeated string projects = 1;
+  string next_page_token = 2;
 }
 
 message GetProjectVariablesRequest {
@@ -754,11 +744,6 @@ message Project {
   string frontend_url = 16;
   google.protobuf.Timestamp created_on = 14;
   google.protobuf.Timestamp updated_on = 15;
-}
-
-message ProjectName {
-  string org_name = 1;
-  string project_name = 2;
 }
 
 enum DeploymentStatus {

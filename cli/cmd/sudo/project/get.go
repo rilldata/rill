@@ -23,7 +23,7 @@ func GetCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 			defer client.Close()
-			res, err := client.SudoGetProject(ctx, &adminv1.SudoGetProjectRequest{
+			res, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
 				OrganizationName: args[0],
 				Name:             args[1],
 			})
