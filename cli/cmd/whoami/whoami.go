@@ -27,8 +27,8 @@ func WhoamiCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			fmt.Printf("  Email : %s\n", res.User.Email)
-			fmt.Printf("  Name : %s\n", res.User.DisplayName)
+			fmt.Printf("Email: %s\n", res.User.Email)
+			fmt.Printf("Name: %s\n", res.User.DisplayName)
 
 			return nil
 		},
