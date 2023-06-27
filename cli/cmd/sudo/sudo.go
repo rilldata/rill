@@ -1,6 +1,7 @@
 package sudo
 
 import (
+	"github.com/rilldata/rill/cli/cmd/sudo/quota"
 	"github.com/rilldata/rill/cli/cmd/sudo/superuser"
 	"github.com/rilldata/rill/cli/cmd/sudo/user"
 	"github.com/rilldata/rill/cli/cmd/sudo/whitelist"
@@ -17,6 +18,7 @@ func SudoCmd(cfg *config.Config) *cobra.Command {
 	sudoCmd.AddCommand(whitelist.WhitelistCmd(cfg))
 	sudoCmd.AddCommand(superuser.SuperuserCmd(cfg))
 	sudoCmd.AddCommand(user.UserCmd(cfg))
+	sudoCmd.AddCommand(quota.QuotaCmd(cfg))
 	sudoCmd.AddCommand(gitCloneCmd(cfg))
 	sudoCmd.AddCommand(lookupCmd(cfg))
 

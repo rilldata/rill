@@ -202,8 +202,13 @@ type InsertOrganizationOptions struct {
 
 // UpdateOrganizationOptions defines options for updating an existing org
 type UpdateOrganizationOptions struct {
-	Name        string `validate:"slug"`
-	Description string
+	Name                    string `validate:"slug"`
+	Description             string
+	QuotaProjects           int
+	QuotaDeployments        int
+	QuotaSlotsTotal         int
+	QuotaSlotsPerDeployment int
+	QuotaOutstandingInvites int
 }
 
 // Project represents one Git connection.
@@ -344,9 +349,10 @@ type InsertUserOptions struct {
 
 // UpdateUserOptions defines options for updating an existing user
 type UpdateUserOptions struct {
-	DisplayName    string
-	PhotoURL       string
-	GithubUsername string
+	DisplayName         string
+	PhotoURL            string
+	GithubUsername      string
+	QuotaSingleuserOrgs int
 }
 
 // Usergroup represents a group of org members
