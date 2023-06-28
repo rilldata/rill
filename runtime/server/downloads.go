@@ -100,6 +100,11 @@ func createToplistQuery(ctx context.Context, writer http.ResponseWriter, req *ru
 		return nil, err
 	}
 
+	err = validateMeasures(req.InlineMeasures, req.MeasureNames)
+	if err != nil {
+		return nil, err
+	}
+
 	q := &queries.MetricsViewToplist{
 		MetricsViewName: req.MetricsViewName,
 		DimensionName:   req.DimensionName,

@@ -38,6 +38,11 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 		return nil, err
 	}
 
+	err = validateMeasures(req.InlineMeasures, req.MeasureNames)
+	if err != nil {
+		return nil, err
+	}
+
 	q := &queries.MetricsViewToplist{
 		MetricsViewName: req.MetricsViewName,
 		DimensionName:   req.DimensionName,
@@ -90,6 +95,11 @@ func (s *Server) MetricsViewComparisonToplist(ctx context.Context, req *runtimev
 		return nil, err
 	}
 
+	err = validateMeasures(req.InlineMeasures, req.MeasureNames)
+	if err != nil {
+		return nil, err
+	}
+
 	q := &queries.MetricsViewComparisonToplist{
 		MetricsViewName:     req.MetricsViewName,
 		DimensionName:       req.DimensionName,
@@ -133,6 +143,11 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		return nil, err
 	}
 
+	err = validateMeasures(req.InlineMeasures, req.MeasureNames)
+	if err != nil {
+		return nil, err
+	}
+
 	q := &queries.MetricsViewTimeSeries{
 		MetricsViewName: req.MetricsViewName,
 		MeasureNames:    req.MeasureNames,
@@ -156,6 +171,11 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 	}
 
 	err := validateInlineMeasures(req.InlineMeasures)
+	if err != nil {
+		return nil, err
+	}
+
+	err = validateMeasures(req.InlineMeasures, req.MeasureNames)
 	if err != nil {
 		return nil, err
 	}
@@ -221,6 +241,13 @@ func validateInlineMeasures(ms []*runtimev1.InlineMeasure) error {
 		if !strings.EqualFold(im.Expression, "COUNT(*)") {
 			return fmt.Errorf("illegal inline measure expression: %q", im.Expression)
 		}
+	}
+	return nil
+}
+
+func validateMeasures(ms []*runtimev1.InlineMeasure, measures []string) error {
+	if len(ms)+len(measures) == 0 {
+		return fmt.Errorf("no measures specified")
 	}
 	return nil
 }
