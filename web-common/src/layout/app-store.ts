@@ -1,6 +1,6 @@
 import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
-import { Readable, derived, writable } from "svelte/store";
+import { derived, writable } from "svelte/store";
 import { page } from "$app/stores";
 import {
   MetricsEventScreenName,
@@ -73,6 +73,7 @@ export const appScreen = derived(page, ($page) => {
   return activeEntity;
 });
 
+// TODO: Do we still need this?
 // App store is being utilized for making previous entity inactive in the HTTP request queue
 const { update } = writable({
   activeEntity: undefined,
