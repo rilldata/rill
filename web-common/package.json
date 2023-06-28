@@ -7,7 +7,7 @@
     "generate:runtime-client": "orval",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
-    "test:watch": "npm run test -- --watch",
+    "test:watch": "vitest",
     "storybook": "STORYBOOK_MODE=true storybook dev -p 6006",
     "build-storybook": "storybook build"
   },
