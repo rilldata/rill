@@ -6,7 +6,7 @@
   import DialogFooter from "@rilldata/web-common/components/modal/dialog/DialogFooter.svelte";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
-  import { appScreen, appStore } from "@rilldata/web-common/layout/app-store";
+  import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
     ConnectorProperty,
@@ -139,7 +139,7 @@
               values.sourceName,
               EntityType.Table,
               $deleteSource,
-              $appStore.activeEntity,
+              $appScreen,
               $sourceNames.data,
               false
             );
