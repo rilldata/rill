@@ -56,11 +56,11 @@ func (n Noop) Limit(ctx context.Context, limitKey string, limit redis_rate.Limit
 	return nil
 }
 
-var Default = redis_rate.PerMinute(60)
+var Default = redis_rate.PerMinute(180)
 
-var Sensitive = redis_rate.PerMinute(10)
+var Sensitive = redis_rate.PerMinute(30)
 
-var Public = redis_rate.PerMinute(250)
+var Public = redis_rate.PerMinute(750)
 
 var Unlimited = redis_rate.PerSecond(math.MaxInt)
 
