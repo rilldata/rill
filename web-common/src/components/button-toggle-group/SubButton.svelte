@@ -9,7 +9,7 @@
   import TooltipContent from "../tooltip/TooltipContent.svelte";
 
   export let key: number | string;
-  export let tootips: {
+  export let tooltips: {
     selected?: string;
     unselected?: string;
     disabled?: string;
@@ -17,17 +17,16 @@
 
   const {
     registerSubButton,
-    toggleSubButton,
-    selectedKey,
-    firstKey,
-    lastKey,
+    subButtons,
+    selectedKeys,
     disabledKeys,
+    dispatch,
   }: ButtonGroupContext = getContext(buttonGroupContext);
 
   registerSubButton(key);
 
-  $: isDisabled = disabledKeys.includes(key);
-  $: isSelected = $selectedKey === key;
+  $: isDisabled = $disabledKeys.includes(key);
+  $: isSelected = $selectedKeys.includes(key);
 
   const baseStyles = `shrink flex flex-row items-center px-1 py-1
   transition-transform duration-100`;
@@ -44,23 +43,32 @@
 
   // This is needed to make sure that the left and right most child
   // elements don't break out of the border drawn by the parent element
-  $: isFirst = key === $firstKey;
-  $: isLast = key === $lastKey;
+  $: isFirst = $subButtons.at(0) === key;
+  $: isLast = $subButtons.at(-1) === key;
   $: roundings = `${isFirst ? "rounded-l" : ""} ${isLast ? "rounded-r" : ""} `;
 
   $: finalStyles = `${baseStyles} ${roundings} ${textStyle} ${bgStyle}`;
 
   $: tooltipText = isDisabled
-    ? tootips?.disabled
+    ? tooltips?.disabled
     : isSelected
-    ? tootips?.selected
-    : tootips?.unselected;
+    ? tooltips?.selected
+    : tooltips?.unselected;
 </script>
 
 <!-- Note: this wrapper div is needed for the styles `divide-x divide-gray-400` in the parent container to work correctly-->
 <div>
   <Tooltip distance={8} location={"bottom"} alignment={"center"}>
-    <button class={finalStyles} on:click={() => toggleSubButton(key)}>
+    <button
+      class={finalStyles}
+      on:click={() => {
+        console.log("inner subbutton clicked");
+        if (!isDisabled) {
+          console.log("inner subbutton clicked - enabled");
+          dispatch("subbutton-click", key);
+        }
+      }}
+    >
       <slot />
     </button>
     <div slot="tooltip-content">

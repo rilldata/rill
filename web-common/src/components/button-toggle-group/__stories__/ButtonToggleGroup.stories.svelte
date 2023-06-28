@@ -1,6 +1,8 @@
 <script lang="ts">
   import { Meta, Story } from "@storybook/addon-svelte-csf";
 
+  import { action } from "@storybook/addon-actions";
+
   import { ButtonToggleGroup, SubButton } from "../index";
   import Delta from "../../icons/Delta.svelte";
   import PieChart from "../../icons/PieChart.svelte";
@@ -16,44 +18,65 @@
     unselected: "Show percent change",
     disabled: "To show percent change, select a comparison period abovec",
   };
+
+  const deltaPieCombos = [[], ["delta"], ["pie"], ["delta", "pie"]];
 </script>
 
-<Meta title="Button toggle group stories" />
+<Meta
+  title="Button group stories"
+  argTypes={{
+    clickAction: { action: "subbutton-click" },
+  }}
+/>
 
-<Story name="Button toggle group variations (tables)">
-  {#each [[], [1], [2], [1, 2]] as disabledKeys}
-    disabledKeys: {JSON.stringify(disabledKeys)}
-    <table>
-      <tr>
-        <td />
-        <td>selectionRequired:<br />true</td>
-        <td>selectionRequired:<br />false</td>
-      </tr>
-      {#each [1, 2, undefined] as defaultKey}
-        <tr>
-          <td>defaultKey: {defaultKey}</td>
-          {#each [true, false] as selectionRequired}
-            <td>
-              <ButtonToggleGroup
-                {...{ disabledKeys, defaultKey, selectionRequired }}
-              >
-                <SubButton key={1} tootips={deltaTooltips}>
-                  <Delta />%
-                </SubButton>
-                <SubButton key={2} tootips={pieTooltips}>
-                  <PieChart />%
-                </SubButton>
-              </ButtonToggleGroup>
-            </td>
-          {/each}
-        </tr>
+<Story name="Button group, selected vs disabled (tabular)" let:args>
+  <p>
+    This story shows the different combinations of selected and disabled props.
+    Note that this component does not maintain internal state, so it is up to
+    the parent component to manage the state of each subbutton by passing in the
+    selected and disabled props, which is why the buttons don't maintain their
+    toggle state when you click on them.
+  </p>
+  <br />
+  <p>
+    The ButtonToggleGroup component will dispatch a "subbutton-click" event with
+    the key of the subbutton that was clicked. You can see this in the action
+    logger below. If the subbutton is disabled, the event will not be
+    dispatched.
+  </p>
+  <table>
+    <tr>
+      <td />
+      {#each deltaPieCombos as disabled}
+        <td>disabled:<br /> {JSON.stringify(disabled)}</td>
       {/each}
-    </table>
-    <br /> <br /> <br />
-  {/each}
+    </tr>
+    {#each deltaPieCombos as selected}
+      <tr>
+        <td>selected: {JSON.stringify(selected)}</td>
+        {#each deltaPieCombos as disabled}
+          <td>
+            <ButtonToggleGroup
+              {...{ selected, disabled, action }}
+              on:subbutton-click={(evt) => {
+                action("subbutton-click", evt)(evt.detail);
+              }}
+            >
+              <SubButton key={"delta"} tootips={deltaTooltips}>
+                <Delta />%
+              </SubButton>
+              <SubButton key={"pie"} tootips={pieTooltips}>
+                <PieChart />%
+              </SubButton>
+            </ButtonToggleGroup>
+          </td>
+        {/each}
+      </tr>
+    {/each}
+  </table>
 </Story>
 
-<Story name="Button toggle group, 2 sub-buttons, no selection required">
+<Story name="Button group, 2 sub-buttons">
   <ButtonToggleGroup>
     <SubButton key={1} tootips={deltaTooltips}>
       <Delta />%
@@ -64,7 +87,7 @@
   </ButtonToggleGroup>
 </Story>
 
-<Story name="Button toggle group, 4 sub-buttons, selection required">
+<Story name="Button group, 4 sub-buttons">
   <ButtonToggleGroup selectionRequired>
     <SubButton key={1}>
       <Delta />%

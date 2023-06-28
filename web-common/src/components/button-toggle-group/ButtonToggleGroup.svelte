@@ -3,10 +3,8 @@
 
   export type ButtonGroupContext = {
     registerSubButton?: (key: SubButtonKey) => void;
-    toggleSubButton?: (key: SubButtonKey) => void;
-    selectedKey?: Writable<SubButtonKey>;
-    firstKey?: Writable<SubButtonKey>;
-    lastKey?: Writable<SubButtonKey>;
+    subButtons?: Writable<SubButtonKey[]>;
+    selectedKeys?: Writable<SubButtonKey | null>;
     disabledKeys?: SubButtonKey[];
   };
   export const buttonGroupContext: ButtonGroupContext = {};
@@ -16,32 +14,22 @@
   import { setContext, onDestroy } from "svelte";
   import { writable, get, Writable } from "svelte/store";
   import { createEventDispatcher } from "svelte";
-
-  // If selectionRequired is true, then a sub button must be selected at all times.
-  // In this case the button group behaves like a radio button.
-  // If selectionRequired is false, It is possible to have no sub button selected.
-  // If additionally, defaultKey is undefined, then no sub button is selected by default.
-  export let selectionRequired = false;
-
-  export let defaultKey: number | string = undefined;
-  export let disabledKeys: (number | string)[] = [];
-
   const dispatch = createEventDispatcher();
 
-  const subButtons = [];
-  const selectedKey = writable(null);
+  export let selected: SubButtonKey[] = [];
+  export let disabled: SubButtonKey[] = [];
 
-  // if a default key is provided, then select it if it is not disabled
-  // this Must be run reactively in case the default key changes or
-  //  the set of disabled keys changes
-  $: if (defaultKey !== undefined && !disabledKeys.includes(defaultKey)) {
-    selectedKey.update(() => defaultKey);
-  } else {
-    selectedKey.update(() => null);
+  const subButtons: Writable<SubButtonKey[]> = writable([]);
+
+  const selectedKeys: Writable<SubButtonKey[]> = writable([]);
+  $: {
+    selectedKeys.set(selected);
   }
 
-  const firstKey = writable(null);
-  const lastKey = writable(null);
+  const disabledKeys: Writable<SubButtonKey[]> = writable([]);
+  $: {
+    disabledKeys.set(disabled);
+  }
 
   setContext(buttonGroupContext, {
     registerSubButton: (subButtonKey) => {
@@ -50,72 +38,40 @@
         typeof subButtonKey !== "string"
       ) {
         throw new Error(
-          `Subbutton key must be a number or string. Received ${typeof subButtonKey}.`
+          `Subbutton value must be a number or string. Received ${typeof subButtonKey}.`
         );
       }
-      if (subButtons.includes(subButtonKey)) {
+      if (get(subButtons).includes(subButtonKey)) {
         throw new Error(
-          `Subbutton with key ${subButtonKey} already registered. Subbutton keys must be unique.`
+          `Subbutton with value ${subButtonKey} already registered. Subbutton values must be unique.`
         );
       }
-      subButtons.push(subButtonKey);
-      // if firstKey current value is null, then set it to the subButtonKey
-      // being registered; otherwise, leave it as is
-      firstKey.update((current) => current || subButtonKey);
-      // always set lastKey to the subButtonKey being registered
-      lastKey.update(() => subButtonKey);
+      subButtons.set([...get(subButtons), subButtonKey]);
 
-      // if a selection is required,
-      // and either no default key is provided or the default key is disabled,
-      // and no sub button has yet been selected by the time this one is registered,
-      // then the first sub button that is not disabled will be selected.
-      // Note that if all sub buttons are disabled, then no sub button will be selected.
-      if (
-        selectionRequired &&
-        (defaultKey === undefined || disabledKeys.includes(defaultKey)) &&
-        get(selectedKey) === null &&
-        !disabledKeys.includes(subButtonKey)
-      ) {
-        selectedKey.update(() => subButtonKey);
-      }
-
+      // called *during* initialization of sub button,
+      // so applies to subbutton being registered
       onDestroy(() => {
-        const i = subButtons.indexOf(subButtonKey);
-        subButtons.splice(i, 1);
-        selectedKey.update((current) =>
-          current === subButtonKey
-            ? subButtons[i] || subButtons[subButtons.length - 1]
-            : current
+        const i = get(subButtons).indexOf(subButtonKey);
+        const newSubButtons = get(subButtons).slice();
+        newSubButtons.splice(i, 1);
+        subButtons.set(newSubButtons);
+
+        selectedKeys.update((current) =>
+          current.findIndex((key) => key === subButtonKey) === -1
+            ? current
+            : current.filter((key) => key !== subButtonKey)
         );
       });
     },
-
-    toggleSubButton: (subButton) => {
-      // return if the sub button is disabled
-      if (disabledKeys.includes(subButton)) return;
-
-      const lastSelection = get(selectedKey);
-      // if selection is required, then a sub button must always be selected
-      // so if the sub button being toggled is already selected, then do nothing
-      if (selectionRequired && lastSelection === subButton) return;
-
-      // toggle the sub button: if it is selected, then deselect it;
-      // otherwise, select it
-      if (lastSelection === subButton) {
-        selectedKey.set(null);
-        dispatch("deselect-subbutton", subButton);
-      } else {
-        dispatch("deselect-subbutton", lastSelection);
-
-        selectedKey.set(subButton);
-        dispatch("select-subbutton", subButton);
-      }
-    },
-
-    selectedKey,
-    firstKey,
-    lastKey,
+    subButtons,
+    selectedKeys,
     disabledKeys,
+    // Note: we pass the dispatch function here so that the subbutton
+    // the subbutton can dispatch events "from" the parent button group.
+    // Since the subbutton is slotted into the parent button group,
+    // the wrapper div in the parent button group does not recieve
+    // the event normally and cannot forward it.
+    dispatch,
   });
 </script>
 
