@@ -110,8 +110,8 @@
     {
       dimensionName: dimensionName,
       measureNames: selectedMeasureNames,
-      timeStart: timeStart,
-      timeEnd: timeEnd,
+      timeStart: hasTimeSeries ? timeStart : undefined,
+      timeEnd: hasTimeSeries ? timeEnd : undefined,
       filter: filterSet,
       limit: "250",
       offset: "0",
@@ -208,8 +208,8 @@
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      timeStart: timeStart,
-      timeEnd: timeEnd,
+      timeStart: hasTimeSeries ? timeStart : undefined,
+      timeEnd: hasTimeSeries ? timeEnd : undefined,
     },
     {
       query: {
