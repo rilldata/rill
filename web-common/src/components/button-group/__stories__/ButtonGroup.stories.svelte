@@ -113,7 +113,7 @@
 
 <style>
   td {
-    padding: 5px;
+    padding: 10px;
   }
   td:first-child {
     padding-right: 40px;
