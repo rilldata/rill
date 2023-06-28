@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*runtimev1.ExportResponse, error) {
@@ -57,25 +58,25 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	var q runtime.Query
-	var metricsViewName string
-	var filter *runtimev1.MetricsViewFilter
-	timeRange := false
+	var filename string
 	switch v := request.Request.(type) {
 	case *runtimev1.ExportRequest_MetricsViewToplistRequest:
 		v.MetricsViewToplistRequest.Limit = int64(request.Limit)
-		metricsViewName = v.MetricsViewToplistRequest.MetricsViewName
-		filter = v.MetricsViewToplistRequest.Filter
-		if v.MetricsViewToplistRequest.TimeStart != nil || v.MetricsViewToplistRequest.TimeEnd != nil {
-			timeRange = true
+		filename, err = exportFilename(req.Context(), s.runtime, request.InstanceId, v.MetricsViewToplistRequest)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to parse request: %s", err), http.StatusBadRequest)
+			return
 		}
+
 		q, err = createToplistQuery(req.Context(), w, v.MetricsViewToplistRequest, request.Format)
 	case *runtimev1.ExportRequest_MetricsViewRowsRequest:
 		v.MetricsViewRowsRequest.Limit = request.Limit
-		metricsViewName = v.MetricsViewRowsRequest.MetricsViewName
-		filter = v.MetricsViewRowsRequest.Filter
-		if v.MetricsViewRowsRequest.TimeStart != nil || v.MetricsViewRowsRequest.TimeEnd != nil {
-			timeRange = true
+		filename, err = exportFilename(req.Context(), s.runtime, request.InstanceId, v.MetricsViewRowsRequest)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to parse request: %s", err), http.StatusBadRequest)
+			return
 		}
+
 		q, err = createRowsQuery(req.Context(), w, v.MetricsViewRowsRequest, request.Format)
 	default:
 		http.Error(w, fmt.Sprintf("Unsupported request type: %s", reflect.TypeOf(v).Name()), http.StatusBadRequest)
@@ -92,18 +93,6 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	w.Header().Set("X-Content-Type-Options", "nosniff")
-
-	mv, err := queries.LookupMetricsView(req.Context(), s.runtime, request.InstanceId, metricsViewName)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	filteredString := ""
-	if (filter != nil && (len(filter.Exclude) > 0 || len(filter.Include) > 0)) || timeRange {
-		filteredString = "_filtered"
-	}
-	filename := fmt.Sprintf("%s%s_%s", strings.ReplaceAll(mv.Model, `"`, "_"), filteredString, time.Now().Format("20060102150405"))
 	switch request.Format {
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
 		w.Header().Set("Content-Type", "text/csv")
@@ -121,6 +110,34 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+func exportFilename(ctx context.Context, rt *runtime.Runtime, instanceID string, request any) (string, error) {
+	pointer := reflect.ValueOf(request)
+	elem := pointer.Elem()
+	field := elem.FieldByName("MetricsViewName")
+	metricsViewName := field.String()
+
+	filter := elem.FieldByName("Filter").Interface().(*runtimev1.MetricsViewFilter)
+	timeStart := elem.FieldByName("TimeStart").Interface().(*timestamppb.Timestamp)
+	timeEnd := elem.FieldByName("TimeStart").Interface().(*timestamppb.Timestamp)
+
+	timeRange := false
+	if timeStart != nil || timeEnd != nil {
+		timeRange = true
+	}
+
+	mv, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
+	if err != nil {
+		return "", err
+	}
+
+	filteredString := ""
+	if (filter != nil && (len(filter.Exclude) > 0 || len(filter.Include) > 0)) || timeRange {
+		filteredString = "_filtered"
+	}
+
+	return fmt.Sprintf("%s%s_%s", strings.ReplaceAll(mv.Model, `"`, "_"), filteredString, time.Now().Format("20060102150405")), nil
 }
 
 func createToplistQuery(ctx context.Context, writer http.ResponseWriter, req *runtimev1.MetricsViewToplistRequest, format runtimev1.ExportFormat) (runtime.Query, error) {
@@ -157,4 +174,17 @@ func createRowsQuery(ctx context.Context, writer http.ResponseWriter, req *runti
 	}
 
 	return q, nil
+}
+
+func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.MetricsView, error) {
+	obj, err := rt.GetCatalogEntry(ctx, instanceID, name)
+	if err != nil {
+		return nil, err
+	}
+
+	if obj.GetMetricsView() == nil {
+		return nil, err
+	}
+
+	return obj.GetMetricsView(), nil
 }
