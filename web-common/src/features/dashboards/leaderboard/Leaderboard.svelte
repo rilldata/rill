@@ -118,8 +118,8 @@
     {
       dimensionName: dimensionName,
       measureNames: [measure.name],
-      timeStart: timeStart,
-      timeEnd: timeEnd,
+      timeStart: hasTimeSeries ? timeStart : undefined,
+      timeEnd: hasTimeSeries ? timeEnd : undefined,
       filter: filterForDimension,
       limit: "250",
       offset: "0",

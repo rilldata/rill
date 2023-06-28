@@ -63,8 +63,8 @@
           expression: "count(*)",
         },
       ],
-      timeStart: timeStart,
-      timeEnd: timeEnd,
+      timeStart: hasTimeSeries ? timeStart : undefined,
+      timeEnd: hasTimeSeries ? timeEnd : undefined,
       filter: $dashboardStore?.filters,
     },
     {

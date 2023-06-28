@@ -42,8 +42,8 @@
     {
       limit: $limit,
       filter: $dashboardStore.filters,
-      timeStart: timeStart,
-      timeEnd: timeEnd,
+      timeStart: hasTimeSeries ? timeStart : undefined,
+      timeEnd: hasTimeSeries ? timeEnd : undefined,
     },
     {
       query: {
