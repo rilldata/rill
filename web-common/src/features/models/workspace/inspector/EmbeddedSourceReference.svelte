@@ -7,6 +7,13 @@
   import * as classes from "@rilldata/web-local/lib/util/component-classes";
   import { getContext } from "svelte";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
+  import { goto } from "$app/navigation";
+  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "@rilldata/web-common/metrics/service/MetricsTypes";
+  import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
 
   const queryHighlight = getContext("rill:app:query-highlight");
 
@@ -25,17 +32,31 @@
   function blur() {
     queryHighlight.set(undefined);
   }
+
+  function navigateToSource() {
+    goto(`/source/${entry.name}`);
+    behaviourEvent.fireNavigationEvent(
+      entry.name,
+      BehaviourEventMedium.Menu,
+      MetricsEventSpace.RightPanel,
+      MetricsEventScreenName.Model,
+      MetricsEventScreenName.Source
+    );
+  }
 </script>
 
 <WithModelResultTooltip {modelHasError}>
-  <a
-    href="/source/{entry.name}"
+  <div
     class=" w-full ui-copy-muted flex justify-between
    gap-x-4 {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-4 pr-4"
     on:focus={focus(reference)}
     on:mouseover={focus(reference)}
     on:mouseleave={blur}
     on:blur={blur}
+    on:keydown={(e) => {
+      if (e.key === "Enter") navigateToSource();
+    }}
+    on:click={navigateToSource}
     class:text-gray-500={modelHasError}
   >
     <EmbeddedSourceEntry connector={entry.source.connector} path={entry.path} />
@@ -45,7 +66,7 @@
         {`${formatCompactInteger(totalRows)} rows` || ""}
       {/if}
     </div>
-  </a>
+  </div>
 
   <svelte:fragment slot="tooltip-title">
     <div class="break-all">
