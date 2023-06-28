@@ -14,6 +14,9 @@
     useModelAllTimeRange,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
+  import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
+  import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import {
     createQueryServiceMetricsViewToplist,
     createQueryServiceMetricsViewTotals,
@@ -21,9 +24,6 @@
     MetricsViewFilterCond,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
-  import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
-  import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import {
@@ -148,16 +148,18 @@
   $: timeRangeName = $dashboardStore?.selectedTimeRange?.name;
 
   // Compose the comparison /toplist query
-  $: displayComparison = $dashboardStore?.showComparison;
+  $: displayComparison = timeRangeName && $dashboardStore?.showComparison;
 
-  $: comparisonTimeRange = getComparisonRange(
-    $dashboardStore?.selectedTimeRange?.start,
-    $dashboardStore?.selectedTimeRange?.end,
-    ($dashboardStore?.selectedComparisonTimeRange
-      ?.name as TimeComparisonOption) ||
-      (DEFAULT_TIME_RANGES[timeRangeName]
-        .defaultComparison as TimeComparisonOption)
-  );
+  $: comparisonTimeRange =
+    displayComparison &&
+    getComparisonRange(
+      $dashboardStore?.selectedTimeRange?.start,
+      $dashboardStore?.selectedTimeRange?.end,
+      ($dashboardStore?.selectedComparisonTimeRange
+        ?.name as TimeComparisonOption) ||
+        (DEFAULT_TIME_RANGES[timeRangeName]
+          .defaultComparison as TimeComparisonOption)
+    );
   $: comparisonTimeStart =
     isFinite(comparisonTimeRange?.start?.getTime()) &&
     comparisonTimeRange.start.toISOString();
@@ -189,11 +191,12 @@
     },
     {
       query: {
-        enabled:
+        enabled: Boolean(
           displayComparison &&
-          !!comparisonTimeStart &&
-          !!comparisonTimeEnd &&
-          !!comparisonFilterSet,
+            !!comparisonTimeStart &&
+            !!comparisonTimeEnd &&
+            !!comparisonFilterSet
+        ),
       },
     }
   );
