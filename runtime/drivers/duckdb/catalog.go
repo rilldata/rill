@@ -93,6 +93,8 @@ func (c *connection) CreateEntry(ctx context.Context, instanceID string, e *driv
 		return err
 	}
 
+	// adding a application side check instead of unique index bcz of duckdb limitations on indexes
+	// https://duckdb.org/docs/sql/indexes#over-eager-unique-constraint-checking
 	if present {
 		return fmt.Errorf("catalog entry with name %q already exists", e.Name)
 	}
