@@ -1,3 +1,4 @@
+import { createDebouncer } from "@rilldata/web-common/lib/create-debouncer";
 import { createLineNumberGutter, createStatusLineGutter } from "./gutter";
 import { createLineStatusHighlighter } from "./highlighter";
 import {
@@ -6,19 +7,21 @@ import {
   updateLineStatuses as updateLineStatusesEffect,
 } from "./state";
 
-export function setLineStatuses(lineStatuses: LineStatus[]) {
-  let debounceTimer: ReturnType<typeof setTimeout>;
+export function setLineStatuses(lineStatuses: LineStatus[], debounce = true) {
+  const debouncer = createDebouncer();
   return (view) => {
     const transaction = updateLineStatusesEffect.of({
       lineStatuses: lineStatuses,
     });
 
-    if (debounceTimer) clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      view.dispatch({
-        effects: [transaction],
-      });
-    }, 500);
+    debouncer(
+      () => {
+        view.dispatch({
+          effects: [transaction],
+        });
+      },
+      debounce ? 300 : 0
+    );
   };
 }
 

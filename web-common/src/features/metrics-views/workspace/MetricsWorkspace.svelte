@@ -84,6 +84,7 @@
   function updateMetrics(event) {
     const { content, viewUpdate } = event.detail;
     intermediateYAML = content;
+
     // check to see if this transaction has a debounce annotation.
     // This will be dispatched in change transactions with the debounceDocUpdateAnnotation
     // added to it.
@@ -111,6 +112,11 @@
       },
       debounceAnnotation !== undefined ? debounceAnnotation : 300
     );
+
+    // immediately set the line statuses to be empty if the content is empty.
+    if (!content?.length) {
+      setLineStatuses([], false)(view);
+    }
   }
 
   /** handle errors */
@@ -126,7 +132,7 @@
 
   let view: EditorView;
 
-  /** if the errors change, let's run this transaction. */
+  /** if the errors change, run the following transaction. */
   $: if (view) setLineStatuses(lineBasedRuntimeErrors)(view);
 </script>
 

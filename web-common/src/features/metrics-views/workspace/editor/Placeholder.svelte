@@ -93,13 +93,17 @@
       strict: false,
     });
 
-    /** optimistically update the editor */
+    /** optimistically update the editor. We will dispatch
+     * a debounce annotation here to tell the MetricsWorkspace
+     * not to debounce this update.
+     */
     view.dispatch({
       changes: {
         from: 0,
         to: view.state.doc.length,
         insert: yaml,
       },
+      annotations: debounceDocUpdateAnnotation.of(0),
     });
 
     /** invalidate and show results */
