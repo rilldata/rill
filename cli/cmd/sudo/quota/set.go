@@ -13,7 +13,7 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 	var org, email string
 	var singleUser, projects, deployments, slotsTotal, slotsPerDeployment, outstandingInvites uint32
 	setCmd := &cobra.Command{
-		Use:   "set [org|user]",
+		Use:   "set",
 		Args:  cobra.NoArgs,
 		Short: "Set quota for user or org",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -29,7 +29,7 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 					OrgName: org,
 				}
 
-				if cmd.Flags().Changed("quota-projects") {
+				if cmd.Flags().Changed("projects") {
 					req.Projects = &projects
 				}
 				if cmd.Flags().Changed("deployments") {
