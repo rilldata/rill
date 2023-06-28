@@ -12,8 +12,7 @@
 
 <Tooltip distance={8} suppress={message === undefined}>
   <div
-    class="grid justify-between pr-2 text-gray-500"
-    style:grid-template-columns="[icon] 24px [line-number] auto [code-fold] 8px"
+    class="grid justify-between text-gray-500"
     class:bg-red-50={level === "error" && !active}
     class:bg-red-100={level === "error" && active}
     class:text-red-600={level === "error" && !active}
@@ -41,11 +40,6 @@
         <InfoCircle />
       {/if}
     </div>
-    <div class="text-right" style:grid-column="line-number">
-      {line}
-    </div>
-    <!-- for code folding -->
-    <div />
   </div>
 
   <TooltipContent maxWidth="240px" slot="tooltip-content"

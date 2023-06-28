@@ -82,7 +82,6 @@
    * time.
    */
   function updateMetrics(event) {
-    console.log("here");
     const { content, viewUpdate } = event.detail;
     intermediateYAML = content;
     // check to see if this transaction has a debounce annotation.
@@ -93,11 +92,19 @@
         transaction.annotation(debounceDocUpdateAnnotation) !== undefined
     );
 
-    // get the annotation
+    // get the annotation.
     const debounceAnnotation = debounceTransaction?.annotation(
       debounceDocUpdateAnnotation
     );
-
+    // If there is no debounce annotation, we'll use the default debounce time.
+    // Otherwise, we'll use the debounce based on the annotation.
+    // This annotation comes from a CodeMirror editor update transaction.
+    // Most likely, if debounceAnnotation is not undefined, it's because
+    // the user took an action to explicitly update the editor contents
+    // that didn't look like regular text editing (in this case,
+    // probably Placeholder.svelte).
+    //
+    // We otherwise debounce to 300ms to prevent a lot of reconciliation thrashing.
     debounce(
       () => {
         callReconcileAndUpdateYaml(content);

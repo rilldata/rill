@@ -320,7 +320,9 @@ model: ""
 default_time_range: ""
 smallest_time_grain: ""
 timeseries: ""
-measures: []
+measures:
+  - label: "Total Records"
+    expression: "count(*)"
 dimensions: []
 `;
   const template = parseDocument(metricsTemplate);
@@ -365,5 +367,7 @@ export function addQuickMetricsToDashboardYAML(yaml: string, model: V1Model) {
   const dimensionNode = doc.createNode(diemensionSeq);
   doc.set("dimensions", dimensionNode);
 
-  return doc.toString({ collectionStyle: "block" });
+  return `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
+
+${doc.toString({ collectionStyle: "block" })}`;
 }

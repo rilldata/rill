@@ -1,4 +1,4 @@
-import { createStatusLineGutter } from "./gutter";
+import { createLineNumberGutter, createStatusLineGutter } from "./gutter";
 import { createLineStatusHighlighter } from "./highlighter";
 import {
   LineStatus,
@@ -25,8 +25,12 @@ export function setLineStatuses(lineStatuses: LineStatus[]) {
 /** creates a special gutter that enables usage of line statuses. */
 export function lineStatus() {
   return [
-    lineStatusesStateField,
     createStatusLineGutter(),
+    //lineNumbers(),
+    createLineNumberGutter(),
+    // gutter({ class: "cool-gutter" }),
+
+    lineStatusesStateField,
     createLineStatusHighlighter(),
   ];
 }
