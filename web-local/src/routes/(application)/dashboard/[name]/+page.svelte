@@ -68,9 +68,9 @@
     inspector={false}
   >
     <BusinessModelProvider metricsViewName={metricViewName} slot="body">
-      <!-- <DashboardStateProvider {metricViewName} slot="body"> -->
-      <Dashboard {metricViewName} hasTitle />
-      <!-- </DashboardStateProvider> -->
+      <DashboardStateProvider {metricViewName}>
+        <Dashboard {metricViewName} hasTitle />
+      </DashboardStateProvider>
     </BusinessModelProvider>
   </WorkspaceContainer>
 {/if}
