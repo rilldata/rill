@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { EditorView } from "@codemirror/basic-setup";
+  import { debounceDocUpdateAnnotation } from "@rilldata/web-common/components/editor/annotations";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
@@ -19,6 +21,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
 
   export let metricsName: string;
+  export let view: EditorView;
 
   $: models = useModelNames($runtime.instanceId);
 
@@ -56,7 +59,20 @@
       createOnly: true,
       strict: false,
     });
-
+    /**
+     * go ahead and optimistically update the editor view.
+     */
+    view.dispatch({
+      changes: {
+        from: 0,
+        to: view.state.doc.length,
+        insert: str,
+      },
+      // tell the editor that this is a transaction that should _not_ be
+      // debounced. This tells the binder to delay dispatching out of the editor component
+      // any reconciliation update.
+      annotations: debounceDocUpdateAnnotation.of(0),
+    });
     /** invalidate and show results */
     invalidateAfterReconcile(queryClient, $runtime.instanceId, response);
   }
@@ -75,6 +91,15 @@
       create: true,
       createOnly: true,
       strict: false,
+    });
+
+    /** optimistically update the editor */
+    view.dispatch({
+      changes: {
+        from: 0,
+        to: view.state.doc.length,
+        insert: yaml,
+      },
     });
 
     /** invalidate and show results */

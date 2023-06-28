@@ -1,10 +1,12 @@
 <script lang="ts">
   import type { EditorView } from "@codemirror/basic-setup";
+  import { debounceDocUpdateAnnotation } from "@rilldata/web-common/components/editor/annotations";
   import { setLineStatuses } from "@rilldata/web-common/components/editor/line-status";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { appStore } from "@rilldata/web-common/layout/app-store";
+  import { createDebouncer } from "@rilldata/web-common/lib/create-debouncer";
   import {
     V1PutFileAndReconcileResponse,
     createRuntimeServicePutFileAndReconcile,
@@ -17,7 +19,7 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import MetricsWorkspaceHeader from "./MetricsWorkspaceHeader.svelte";
   import MetricsEditor from "./editor/MetricsEditor.svelte";
-  import { getSyntaxErrors, mapRuntimeErrorsToLines } from "./editor/errors";
+  import { mapRuntimeErrorsToLines } from "./editor/errors";
   import MetricsInspector from "./inspector/MetricsInspector.svelte";
 
   // the runtime yaml string
@@ -69,11 +71,39 @@
 
   /** keep track of the IMMEDIATE client-side YAML changes. */
   let intermediateYAML = yaml;
+  // update the intermediate yaml if the source yaml itself changes.
+  $: intermediateYAML = yaml;
 
+  const debounce = createDebouncer();
+
+  /** update this configuration file.
+   * To do so, we'll track whether or not the view update has a transaction with
+   * a debounceDocUpdateAnnotation. If so, we will use this to update the actual debounce
+   * time.
+   */
   function updateMetrics(event) {
-    const { content } = event.detail;
+    console.log("here");
+    const { content, viewUpdate } = event.detail;
     intermediateYAML = content;
-    callReconcileAndUpdateYaml(content);
+    // check to see if this transaction has a debounce annotation.
+    // This will be dispatched in change transactions with the debounceDocUpdateAnnotation
+    // added to it.
+    const debounceTransaction = viewUpdate.transactions.find(
+      (transaction) =>
+        transaction.annotation(debounceDocUpdateAnnotation) !== undefined
+    );
+
+    // get the annotation
+    const debounceAnnotation = debounceTransaction?.annotation(
+      debounceDocUpdateAnnotation
+    );
+
+    debounce(
+      () => {
+        callReconcileAndUpdateYaml(content);
+      },
+      debounceAnnotation !== undefined ? debounceAnnotation : 300
+    );
   }
 
   /** handle errors */
@@ -84,18 +114,13 @@
 
   $: runtimeErrors = $fileArtifactsStore?.entities?.[path]?.errors;
   $: lineBasedRuntimeErrors = mapRuntimeErrorsToLines(runtimeErrors, yaml);
-  $: clientSideSyntaxErrors = getSyntaxErrors(yaml);
-  $: lineErrors = [
-    ...clientSideSyntaxErrors,
-    ...(lineBasedRuntimeErrors || []),
-  ];
   /** display the main error (the first in this array) at the bottom */
-  $: mainError = [...lineErrors, ...(runtimeErrors || [])]?.at(0);
+  $: mainError = [...lineBasedRuntimeErrors, ...(runtimeErrors || [])]?.at(0);
 
   let view: EditorView;
 
   /** if the errors change, let's run this transaction. */
-  $: if (view) setLineStatuses(lineErrors)(view);
+  $: if (view) setLineStatuses(lineBasedRuntimeErrors)(view);
 </script>
 
 <WorkspaceContainer inspector={true} assetID={`${metricsDefName}-config`}>
@@ -103,8 +128,8 @@
   <MetricsEditor
     slot="body"
     bind:view
-    on:update={updateMetrics}
     {yaml}
+    on:update={updateMetrics}
     {metricsDefName}
     error={mainError}
   />

@@ -37,7 +37,7 @@ export const lineStatusesStateField = StateField.define({
     for (const effect of tr.effects) {
       if (effect.is(updateLineStatuses)) {
         // Clear the existing errors and set the new errors
-        return effect.value.lineStatuses.slice();
+        return effect.value.lineStatuses;
       }
     }
 

@@ -30,10 +30,21 @@ class StatusGutterMarker extends GutterMarker {
 export const createStatusLineGutter = () =>
   gutter({
     lineMarker(view, line) {
-      const hasContents = view.state.doc.toString() !== "";
+      const visibleRanges = view.visibleRanges;
+      const lineStart = line.from;
+      const lineEnd = line.to;
+      if (
+        !visibleRanges.some(
+          (range) => range.from <= lineStart && range.to >= lineEnd
+        )
+      ) {
+        return null;
+      }
 
-      const lineStatuses = view.state
-        .field(lineStatusesStateField)
+      const hasContents = view.state.doc.toString() !== "";
+      const currentLineStatuses = view.state.field(lineStatusesStateField);
+      if (!currentLineStatuses) return;
+      const lineStatuses = currentLineStatuses
         .filter((line) => {
           return line.line !== null && line.line !== 0;
         })
@@ -44,6 +55,7 @@ export const createStatusLineGutter = () =>
             to: hasContents ? view?.state?.doc?.line(line.line)?.to : null,
           };
         });
+
       const matchFromAndTo = lineStatuses.find((lineStatus) => {
         return lineStatus.from === line.from && lineStatus.to === line.to;
       });
@@ -70,7 +82,11 @@ export const createStatusLineGutter = () =>
 
     lineMarkerChange(update) {
       return update.transactions.some((tr) => {
-        return tr.effects.some((effect) => effect.is(updateLineStatuses));
+        const hasUpdate = tr.effects.some((effect) =>
+          effect.is(updateLineStatuses)
+        );
+        console.log(hasUpdate, tr.effects);
+        return hasUpdate;
       });
     },
   });

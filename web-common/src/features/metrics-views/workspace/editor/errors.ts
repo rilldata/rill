@@ -38,6 +38,10 @@ export function runtimeErrorToLine(message: string, yaml: string) {
     const line = lines.findIndex((line) => line.startsWith("dimensions:"));
     return { line: line + 1, message, level: "error" };
   }
+  if (message.startsWith("yaml: line")) {
+    const line = parseInt(message.split("yaml: line ")[1].split(":")[0]);
+    return { line: line, message, level: "error" };
+  }
   return { line: null, message, level: "error" };
 }
 

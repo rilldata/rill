@@ -12,13 +12,13 @@ export function setLineStatuses(lineStatuses: LineStatus[]) {
     const transaction = updateLineStatusesEffect.of({
       lineStatuses: lineStatuses,
     });
-    // debounce this transaction to avoid unnecessary flickering updates.
+
     if (debounceTimer) clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => {
       view.dispatch({
         effects: [transaction],
       });
-    }, 100);
+    }, 500);
   };
 }
 

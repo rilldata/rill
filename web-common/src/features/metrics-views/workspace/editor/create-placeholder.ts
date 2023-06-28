@@ -77,8 +77,8 @@ export function createPlaceholderElement(metricsName: string) {
   });
   return {
     DOMElement,
-    set(metricsName) {
-      component.$set({ metricsName });
+    setEditorView(view: EditorView) {
+      component.$set({ metricsName, view });
     },
     on(event, callback) {
       component.$on(event, callback);

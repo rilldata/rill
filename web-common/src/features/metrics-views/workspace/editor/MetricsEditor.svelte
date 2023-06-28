@@ -15,24 +15,26 @@
   /** the main error to display on the bottom */
   export let error: LineStatus;
 
-  let cursor;
-
   /** note: this codemirror plugin does actually utilize tanstack query, and the
    * instantiation of the underlying svelte component that defines the placeholder
    * must be instantiated in the component.
    */
   const placeholderElement = createPlaceholderElement(metricsDefName);
+  $: if (view) {
+    placeholderElement.setEditorView(view);
+  }
+
   const placeholder = createPlaceholder(placeholderElement.DOMElement);
+
+  let editor: YAMLEditor;
 </script>
 
 <EditorContainer {error} hasContent={!!yaml?.length}>
   <YAMLEditor
+    bind:this={editor}
     content={yaml}
     bind:view
     on:update
-    on:cursor={(event) => {
-      cursor = event.detail;
-    }}
     extensions={[placeholder]}
   />
 </EditorContainer>

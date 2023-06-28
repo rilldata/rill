@@ -34,11 +34,8 @@ import { lineStatus } from "../line-status";
 import { editorTheme } from "../theme";
 
 export const basicEditor = () => [
-  // core theme
   editorTheme(),
-  // line status system
   lineStatus(),
-  // indent guide
   indentGuide(),
 
   highlightActiveLineGutter(),
