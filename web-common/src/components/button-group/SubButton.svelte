@@ -59,9 +59,7 @@
     <button
       class={finalStyles}
       on:click={() => {
-        console.log("inner subbutton clicked");
         if (!isDisabled) {
-          console.log("inner subbutton clicked - enabled");
           dispatch("subbutton-click", key);
         }
       }}

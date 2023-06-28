@@ -58,7 +58,7 @@
             <ButtonGroup
               {...{ selected, disabled }}
               on:subbutton-click={(evt) => {
-                action("subbutton-click", evt)(evt.detail);
+                action("subbutton-click")(evt.detail);
               }}
             >
               <SubButton key={"delta"} tooltips={deltaTooltips}>
@@ -78,7 +78,7 @@
 <Story name="Button group, 2 sub-buttons">
   <ButtonGroup
     on:subbutton-click={(evt) => {
-      action("subbutton-click", evt)(evt.detail);
+      action("subbutton-click")(evt.detail);
     }}
   >
     <SubButton key={1} tooltips={deltaTooltips}>
@@ -93,7 +93,7 @@
 <Story name="Button group, 4 sub-buttons">
   <ButtonGroup
     on:subbutton-click={(evt) => {
-      action("subbutton-click", evt)(evt.detail);
+      action("subbutton-click")(evt.detail);
     }}
   >
     <SubButton key={1}>

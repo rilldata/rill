@@ -4,8 +4,9 @@
   export type ButtonGroupContext = {
     registerSubButton?: (key: SubButtonKey) => void;
     subButtons?: Writable<SubButtonKey[]>;
-    selectedKeys?: Writable<SubButtonKey | null>;
-    disabledKeys?: SubButtonKey[];
+    selectedKeys?: Writable<SubButtonKey[]>;
+    disabledKeys?: Writable<SubButtonKey[]>;
+    dispatch?: (type: "subbutton-click", detail: number | string) => boolean;
   };
   export const buttonGroupContext: ButtonGroupContext = {};
 </script>
