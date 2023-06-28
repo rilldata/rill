@@ -29,7 +29,7 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 					OrgName: org,
 				}
 
-				if cmd.Flags().Changed("quota-projects") {
+				if cmd.Flags().Changed("projects") {
 					req.Projects = &projects
 				}
 				if cmd.Flags().Changed("deployments") {
