@@ -30,7 +30,8 @@ const (
 func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux, limiter ratelimit.Limiter) {
 	// checkLimit needs access to limiter
 	checkLimit := func(route string, req *http.Request) error {
-		if GetClaims(req.Context()).OwnerType() == OwnerTypeAnon {
+		claims := GetClaims(req.Context())
+		if claims == nil || claims.OwnerType() == OwnerTypeAnon {
 			limitKey := ratelimit.AnonLimitKey(route, observability.HTTPPeer(req))
 			if err := limiter.Limit(req.Context(), limitKey, ratelimit.Sensitive); err != nil {
 				if errors.As(err, &ratelimit.QuotaExceededError{}) {

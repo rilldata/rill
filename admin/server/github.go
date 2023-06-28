@@ -592,7 +592,8 @@ func (s *Server) redirectLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) checkGithubRateLimit(route string, req *http.Request) error {
-	if auth.GetClaims(req.Context()).OwnerType() == auth.OwnerTypeAnon {
+	claims := auth.GetClaims(req.Context())
+	if claims == nil || claims.OwnerType() == auth.OwnerTypeAnon {
 		limitKey := ratelimit.AnonLimitKey(route, observability.HTTPPeer(req))
 		if err := s.limiter.Limit(req.Context(), limitKey, ratelimit.Sensitive); err != nil {
 			if errors.As(err, &ratelimit.QuotaExceededError{}) {
