@@ -22,7 +22,6 @@
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
-    EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
@@ -120,7 +119,7 @@
       sourceModelName,
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
-      EntityTypeToScreenMap[previousActiveEntity],
+      previousActiveEntity,
       MetricsEventScreenName.Model
     );
   };
@@ -133,7 +132,7 @@
       dashboardName,
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
-      EntityTypeToScreenMap[previousActiveEntity],
+      previousActiveEntity,
       MetricsEventScreenName.MetricsDefinition
     );
   };

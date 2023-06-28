@@ -2,7 +2,10 @@ import type { EntityType } from "@rilldata/web-common/features/entity-management
 import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
 import { Readable, derived, writable } from "svelte/store";
 import { page } from "$app/stores";
-import { MetricsEventScreenName } from "../metrics/service/MetricsTypes";
+import {
+  MetricsEventScreenName,
+  ScreenToEntityMap,
+} from "../metrics/service/MetricsTypes";
 
 export interface ActiveEntity {
   type: EntityType;
@@ -63,7 +66,10 @@ export const appScreen = derived(page, ($page) => {
       activeEntity = { name: "", type: MetricsEventScreenName.Home };
   }
 
-  appStore.setActiveEntity(activeEntity.name, activeEntity.type);
+  appStore.setActiveEntity(
+    activeEntity.name,
+    ScreenToEntityMap[activeEntity.type]
+  );
   return activeEntity;
 });
 
@@ -90,6 +96,6 @@ const appStoreReducers = {
   },
 };
 
-const appStore: Readable<AppStore> & typeof appStoreReducers = {
+const appStore: typeof appStoreReducers = {
   ...appStoreReducers,
 };

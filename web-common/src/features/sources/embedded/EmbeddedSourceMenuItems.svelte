@@ -7,7 +7,6 @@
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
-    EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
@@ -50,7 +49,7 @@
         newModelName,
         BehaviourEventMedium.Menu,
         MetricsEventSpace.LeftPanel,
-        EntityTypeToScreenMap[previousActiveEntity],
+        previousActiveEntity,
         MetricsEventScreenName.Model
       );
     } catch (err) {

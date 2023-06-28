@@ -13,7 +13,6 @@
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
-    EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
@@ -93,7 +92,7 @@
             newDashboardName,
             BehaviourEventMedium.Menu,
             MetricsEventSpace.LeftPanel,
-            EntityTypeToScreenMap[previousActiveEntity],
+            previousActiveEntity,
             MetricsEventScreenName.Dashboard
           );
           return invalidateAfterReconcile(
