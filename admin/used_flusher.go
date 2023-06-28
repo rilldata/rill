@@ -19,6 +19,7 @@ type usedFlusher struct {
 	logger      *zap.Logger
 	ctx         context.Context
 	cancel      context.CancelFunc
+	flushWg     sync.WaitGroup
 }
 
 func (u *usedFlusher) Deployment(id string) {
@@ -29,6 +30,7 @@ func (u *usedFlusher) Deployment(id string) {
 }
 
 func (u *usedFlusher) Close() {
+	u.flushWg.Wait()
 	u.flush(context.Background())
 	u.cancel()
 }
@@ -63,7 +65,8 @@ func (u *usedFlusher) runBackground() {
 
 func (u *usedFlusher) flush(ctx context.Context) {
 	u.logger.Info(`flush deployments`, zap.Int("no of deployments", len(u.deployments)), observability.ZapCtx(u.ctx))
-
+	u.flushWg.Add(1)
+	defer u.flushWg.Done()
 	if len(u.deployments) > 0 {
 		u.lock.Lock()
 		deployments := u.deployments
