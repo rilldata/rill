@@ -16,7 +16,7 @@
   const deltaTooltips = {
     selected: "Hide percent change",
     unselected: "Show percent change",
-    disabled: "To show percent change, select a comparison period abovec",
+    disabled: "To show percent change, select a comparison period above",
   };
 
   const deltaPieCombos = [[], ["delta"], ["pie"], ["delta", "pie"]];
@@ -56,15 +56,15 @@
         {#each deltaPieCombos as disabled}
           <td>
             <ButtonGroup
-              {...{ selected, disabled, action }}
+              {...{ selected, disabled }}
               on:subbutton-click={(evt) => {
                 action("subbutton-click", evt)(evt.detail);
               }}
             >
-              <SubButton key={"delta"} tootips={deltaTooltips}>
+              <SubButton key={"delta"} tooltips={deltaTooltips}>
                 <Delta />%
               </SubButton>
-              <SubButton key={"pie"} tootips={pieTooltips}>
+              <SubButton key={"pie"} tooltips={pieTooltips}>
                 <PieChart />%
               </SubButton>
             </ButtonGroup>
@@ -76,18 +76,26 @@
 </Story>
 
 <Story name="Button group, 2 sub-buttons">
-  <ButtonGroup>
-    <SubButton key={1} tootips={deltaTooltips}>
+  <ButtonGroup
+    on:subbutton-click={(evt) => {
+      action("subbutton-click", evt)(evt.detail);
+    }}
+  >
+    <SubButton key={1} tooltips={deltaTooltips}>
       <Delta />%
     </SubButton>
-    <SubButton key={2} tootips={pieTooltips}>
+    <SubButton key={2} tooltips={pieTooltips}>
       <PieChart />%
     </SubButton>
   </ButtonGroup>
 </Story>
 
 <Story name="Button group, 4 sub-buttons">
-  <ButtonGroup selectionRequired>
+  <ButtonGroup
+    on:subbutton-click={(evt) => {
+      action("subbutton-click", evt)(evt.detail);
+    }}
+  >
     <SubButton key={1}>
       <Delta />%
     </SubButton>
