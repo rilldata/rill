@@ -3,7 +3,7 @@
 
   import { action } from "@storybook/addon-actions";
 
-  import { ButtonToggleGroup, SubButton } from "../index";
+  import { ButtonGroup, SubButton } from "../index";
   import Delta from "../../icons/Delta.svelte";
   import PieChart from "../../icons/PieChart.svelte";
 
@@ -39,10 +39,9 @@
   </p>
   <br />
   <p>
-    The ButtonToggleGroup component will dispatch a "subbutton-click" event with
-    the key of the subbutton that was clicked. You can see this in the action
-    logger below. If the subbutton is disabled, the event will not be
-    dispatched.
+    The ButtonGroup component will dispatch a "subbutton-click" event with the
+    key of the subbutton that was clicked. You can see this in the action logger
+    below. If the subbutton is disabled, the event will not be dispatched.
   </p>
   <table>
     <tr>
@@ -56,7 +55,7 @@
         <td>selected: {JSON.stringify(selected)}</td>
         {#each deltaPieCombos as disabled}
           <td>
-            <ButtonToggleGroup
+            <ButtonGroup
               {...{ selected, disabled, action }}
               on:subbutton-click={(evt) => {
                 action("subbutton-click", evt)(evt.detail);
@@ -68,7 +67,7 @@
               <SubButton key={"pie"} tootips={pieTooltips}>
                 <PieChart />%
               </SubButton>
-            </ButtonToggleGroup>
+            </ButtonGroup>
           </td>
         {/each}
       </tr>
@@ -77,18 +76,18 @@
 </Story>
 
 <Story name="Button group, 2 sub-buttons">
-  <ButtonToggleGroup>
+  <ButtonGroup>
     <SubButton key={1} tootips={deltaTooltips}>
       <Delta />%
     </SubButton>
     <SubButton key={2} tootips={pieTooltips}>
       <PieChart />%
     </SubButton>
-  </ButtonToggleGroup>
+  </ButtonGroup>
 </Story>
 
 <Story name="Button group, 4 sub-buttons">
-  <ButtonToggleGroup selectionRequired>
+  <ButtonGroup selectionRequired>
     <SubButton key={1}>
       <Delta />%
     </SubButton>
@@ -101,7 +100,7 @@
     <SubButton key={4}>
       <PieChart />%
     </SubButton>
-  </ButtonToggleGroup>
+  </ButtonGroup>
 </Story>
 
 <style>

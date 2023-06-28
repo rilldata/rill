@@ -1,9 +1,6 @@
 <script lang="ts">
   import { getContext } from "svelte";
-  import {
-    ButtonGroupContext,
-    buttonGroupContext,
-  } from "./ButtonToggleGroup.svelte";
+  import { ButtonGroupContext, buttonGroupContext } from "./ButtonGroup.svelte";
 
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
