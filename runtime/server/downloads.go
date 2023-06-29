@@ -14,7 +14,6 @@ import (
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*runtimev1.ExportResponse, error) {
@@ -61,29 +60,49 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	var filename string
 	switch v := request.Request.(type) {
 	case *runtimev1.ExportRequest_MetricsViewToplistRequest:
-		v.MetricsViewToplistRequest.Limit = int64(request.Limit)
-		filename, err = exportFilename(req.Context(), s.runtime, request.InstanceId, v.MetricsViewToplistRequest)
+		mvr := v.MetricsViewToplistRequest
+		mvr.Limit = int64(request.Limit)
+		mv, err := lookupMetricsView(req.Context(), s.runtime, request.InstanceId, mvr.MetricsViewName)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Failed to parse request: %s", err), http.StatusBadRequest)
+			http.Error(w, fmt.Sprintf("cannot lookup MetricsView: %s", err), http.StatusBadRequest)
 			return
 		}
+
+		filteredString := ""
+		if mvr.Filter != nil && (len(mvr.Filter.Exclude) > 0 || len(mvr.Filter.Include) > 0) || mvr.TimeStart != nil || mvr.TimeEnd != nil {
+			filteredString = "_filtered"
+		}
+
+		filename = fmt.Sprintf("%s%s_%s", strings.ReplaceAll(mv.Model, `"`, "_"), filteredString, time.Now().Format("20060102150405"))
 
 		q, err = createToplistQuery(req.Context(), w, v.MetricsViewToplistRequest, request.Format)
-	case *runtimev1.ExportRequest_MetricsViewRowsRequest:
-		v.MetricsViewRowsRequest.Limit = request.Limit
-		filename, err = exportFilename(req.Context(), s.runtime, request.InstanceId, v.MetricsViewRowsRequest)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Failed to parse request: %s", err), http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	case *runtimev1.ExportRequest_MetricsViewRowsRequest:
+		mvr := v.MetricsViewRowsRequest
+		mvr.Limit = request.Limit
+		mv, err := lookupMetricsView(req.Context(), s.runtime, request.InstanceId, mvr.MetricsViewName)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("cannot lookup MetricsView: %s", err), http.StatusBadRequest)
 			return
 		}
 
+		filteredString := ""
+		if mvr.Filter != nil && (len(mvr.Filter.Exclude) > 0 || len(mvr.Filter.Include) > 0) || mvr.TimeStart != nil || mvr.TimeEnd != nil {
+			filteredString = "_filtered"
+		}
+
+		filename = fmt.Sprintf("%s%s_%s", strings.ReplaceAll(mv.Model, `"`, "_"), filteredString, time.Now().Format("20060102150405"))
+
 		q, err = createRowsQuery(req.Context(), w, v.MetricsViewRowsRequest, request.Format)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	default:
 		http.Error(w, fmt.Sprintf("Unsupported request type: %s", reflect.TypeOf(v).Name()), http.StatusBadRequest)
-		return
-	}
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -110,34 +129,6 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-}
-
-func exportFilename(ctx context.Context, rt *runtime.Runtime, instanceID string, request any) (string, error) {
-	pointer := reflect.ValueOf(request)
-	elem := pointer.Elem()
-	field := elem.FieldByName("MetricsViewName")
-	metricsViewName := field.String()
-
-	filter := elem.FieldByName("Filter").Interface().(*runtimev1.MetricsViewFilter)
-	timeStart := elem.FieldByName("TimeStart").Interface().(*timestamppb.Timestamp)
-	timeEnd := elem.FieldByName("TimeStart").Interface().(*timestamppb.Timestamp)
-
-	timeRange := false
-	if timeStart != nil || timeEnd != nil {
-		timeRange = true
-	}
-
-	mv, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
-	if err != nil {
-		return "", err
-	}
-
-	filteredString := ""
-	if (filter != nil && (len(filter.Exclude) > 0 || len(filter.Include) > 0)) || timeRange {
-		filteredString = "_filtered"
-	}
-
-	return fmt.Sprintf("%s%s_%s", strings.ReplaceAll(mv.Model, `"`, "_"), filteredString, time.Now().Format("20060102150405")), nil
 }
 
 func createToplistQuery(ctx context.Context, writer http.ResponseWriter, req *runtimev1.MetricsViewToplistRequest, format runtimev1.ExportFormat) (runtime.Query, error) {
