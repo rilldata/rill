@@ -266,40 +266,46 @@
     columnNames.unshift(dimensionColumn);
     measureNames = allMeasures.map((m) => m.name);
 
-    columns = columnNames.map((columnName) => {
-      if (measureNames.includes(columnName)) {
-        // Handle all regular measures
-        const measure = allMeasures.find((m) => m.name === columnName);
-        return {
-          name: columnName,
-          type: "INT",
-          label: measure?.label || measure?.expression,
-          description: measure?.description,
-          total: referenceValues[measure.name] || 0,
-          enableResize: false,
-          format: measure?.format,
-        };
-      } else if (columnName === dimensionColumn) {
-        // Handle dimension column
-        return {
-          name: columnName,
-          type: "VARCHAR",
-          label: dimension?.label,
-          enableResize: true,
-        };
-      } else {
-        // Handle delta and delta_perc
-        const comparison = getComparisonProperties(columnName, selectedMeasure);
-        return {
-          name: columnName,
-          type: comparison.type,
-          label: comparison.label,
-          description: comparison.description,
-          enableResize: false,
-          format: comparison.format,
-        };
-      }
-    });
+    columns = columnNames
+      .map((columnName) => {
+        if (measureNames.includes(columnName)) {
+          // Handle all regular measures
+          const measure = allMeasures.find((m) => m.name === columnName);
+          return {
+            name: columnName,
+            type: "INT",
+            label: measure?.label || measure?.expression,
+            description: measure?.description,
+            total: referenceValues[measure.name] || 0,
+            enableResize: false,
+            format: measure?.format,
+          };
+        } else if (columnName === dimensionColumn) {
+          // Handle dimension column
+          return {
+            name: columnName,
+            type: "VARCHAR",
+            label: dimension?.label,
+            enableResize: true,
+          };
+        } else if (selectedMeasure) {
+          // Handle delta and delta_perc
+          const comparison = getComparisonProperties(
+            columnName,
+            selectedMeasure
+          );
+          return {
+            name: columnName,
+            type: comparison.type,
+            label: comparison.label,
+            description: comparison.description,
+            enableResize: false,
+            format: comparison.format,
+          };
+        }
+        return undefined;
+      })
+      .filter((column) => !!column);
   }
 
   function onSelectItem(event) {
