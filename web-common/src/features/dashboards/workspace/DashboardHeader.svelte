@@ -24,7 +24,7 @@
     V1ExportFormat,
     createQueryServiceExport,
   } from "@rilldata/web-common/runtime-client";
-  import exportMetrics from "./export-metrics";
+  import exportMetrics from "../rows-viewer/export-metrics";
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
@@ -84,47 +84,6 @@
       <!-- top right CTAs -->
 
       <PanelCTA side="right">
-        <Tooltip alignment="middle" distance={16} location="left">
-          <!-- attach floating element right here-->
-          <WithTogglableFloatingElement
-            alignment="end"
-            distance={8}
-            let:toggleFloatingElement
-            location="bottom"
-          >
-            <Button on:click={toggleFloatingElement} type="secondary">
-              <IconSpaceFixer pullLeft><CaretDownIcon /></IconSpaceFixer>
-
-              <ResponsiveButtonText>Export</ResponsiveButtonText>
-            </Button>
-            <Menu
-              dark
-              on:click-outside={toggleFloatingElement}
-              on:escape={toggleFloatingElement}
-              slot="floating-element"
-            >
-              <MenuItem
-                on:select={() => {
-                  toggleFloatingElement();
-                  handleExportMetrics("EXPORT_FORMAT_XLSX");
-                }}
-              >
-                Export as XLSX
-              </MenuItem>
-              <MenuItem
-                on:select={() => {
-                  toggleFloatingElement();
-                  handleExportMetrics("EXPORT_FORMAT_CSV");
-                }}
-              >
-                Export as CSV
-              </MenuItem>
-            </Menu>
-          </WithTogglableFloatingElement>
-          <TooltipContent slot="tooltip-content">
-            Export the filtered dashboard data as a file
-          </TooltipContent>
-        </Tooltip>
         {#if isEditableDashboard}
           <Tooltip distance={8}>
             <Button

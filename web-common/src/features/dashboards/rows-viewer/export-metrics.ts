@@ -32,5 +32,5 @@ export default async function exportMetrics({
   });
   const downloadUrl = `${get(runtime).host}${result.downloadUrlPath}`;
 
-  window.open(downloadUrl);
+  window.open(downloadUrl, "_self");
 }
