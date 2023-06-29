@@ -40,8 +40,9 @@
   <br />
   <p>
     The ButtonGroup component will dispatch a "subbutton-click" event with the
-    key of the subbutton that was clicked. You can see this in the action logger
-    below. If the subbutton is disabled, the event will not be dispatched.
+    value of the subbutton that was clicked. You can see this in the action
+    logger below. If the subbutton is disabled, the event will not be
+    dispatched.
   </p>
   <table>
     <tr>
@@ -61,10 +62,10 @@
                 action("subbutton-click")(evt.detail);
               }}
             >
-              <SubButton key={"delta"} tooltips={deltaTooltips}>
+              <SubButton value={"delta"} tooltips={deltaTooltips}>
                 <Delta />%
               </SubButton>
-              <SubButton key={"pie"} tooltips={pieTooltips}>
+              <SubButton value={"pie"} tooltips={pieTooltips}>
                 <PieChart />%
               </SubButton>
             </ButtonGroup>
@@ -81,10 +82,10 @@
       action("subbutton-click")(evt.detail);
     }}
   >
-    <SubButton key={1} tooltips={deltaTooltips}>
+    <SubButton value={1} tooltips={deltaTooltips}>
       <Delta />%
     </SubButton>
-    <SubButton key={2} tooltips={pieTooltips}>
+    <SubButton value={2} tooltips={pieTooltips}>
       <PieChart />%
     </SubButton>
   </ButtonGroup>
@@ -96,16 +97,16 @@
       action("subbutton-click")(evt.detail);
     }}
   >
-    <SubButton key={1}>
+    <SubButton value={1}>
       <Delta />%
     </SubButton>
-    <SubButton key={2}>
+    <SubButton value={2}>
       <PieChart />%
     </SubButton>
-    <SubButton key={3}>
+    <SubButton value={3}>
       <PieChart />%
     </SubButton>
-    <SubButton key={4}>
+    <SubButton value={4}>
       <PieChart />%
     </SubButton>
   </ButtonGroup>

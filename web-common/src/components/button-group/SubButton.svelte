@@ -5,7 +5,7 @@
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
 
-  export let key: number | string;
+  export let value: number | string;
   export let tooltips: {
     selected?: string;
     unselected?: string;
@@ -20,10 +20,10 @@
     dispatch,
   }: ButtonGroupContext = getContext(buttonGroupContext);
 
-  registerSubButton(key);
+  registerSubButton(value);
 
-  $: isDisabled = $disabledKeys.includes(key);
-  $: isSelected = $selectedKeys.includes(key);
+  $: isDisabled = $disabledKeys.includes(value);
+  $: isSelected = $selectedKeys.includes(value);
 
   const baseStyles = `shrink flex flex-row items-center px-1 py-1
   transition-transform duration-100`;
@@ -40,8 +40,8 @@
 
   // This is needed to make sure that the left and right most child
   // elements don't break out of the border drawn by the parent element
-  $: isFirst = $subButtons.at(0) === key;
-  $: isLast = $subButtons.at(-1) === key;
+  $: isFirst = $subButtons.at(0) === value;
+  $: isLast = $subButtons.at(-1) === value;
   $: roundings = `${isFirst ? "rounded-l" : ""} ${isLast ? "rounded-r" : ""} `;
 
   $: finalStyles = `${baseStyles} ${roundings} ${textStyle} ${bgStyle}`;
@@ -60,7 +60,7 @@
       class={finalStyles}
       on:click={() => {
         if (!isDisabled) {
-          dispatch("subbutton-click", key);
+          dispatch("subbutton-click", value);
         }
       }}
     >

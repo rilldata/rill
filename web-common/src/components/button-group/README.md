@@ -36,33 +36,5 @@ If the subbutton is disabled, then that will override the other two tooltip opti
 </ButtonToggleGroup>
 ```
 
-This implementation is based on a pattern recommended by Rich Harris here:
-https://stackoverflow.com/questions/56808584/iterate-over-slots-children-in-svelte-3
-
-https://svelte.dev/repl/8e68120858e5322272dc9136c4bb79cc?version=3.5.1
-
-Core API influenced by https://mui.com/material-ui/react-toggle-button/#standalone-toggle-button
-
-
----
-
-`<ButtonToggleGroup>` exposes the following props:
-
-
-
-`disabledKeys: (number | string)[] = [];` -- An array containing the keys of any sub buttons that are disabled.
-
-
-`<ButtonToggleGroup>` Dispatches the event "selected-subbutton" when a subbutton is pressed. This will return either the key of the selected button, or a `null` if all subbuttons are deselected as a result of the subbutton press.
-
-
-It is the responsibility of the containing component to handle both of these events and manage any state external to the component.
-
----
-
-Each `<SubButton>` must have a unique `valus` prop (`number | string`), Which will be used to determine which sub button is selected, as well as being used as the key that is returned by the events that the `<ButtonToggleGroup>` dispatches.
-
-
-
 
 
