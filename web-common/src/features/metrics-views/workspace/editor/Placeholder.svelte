@@ -115,6 +115,7 @@
   Auto-generate a <WithTogglableFloatingElement
     inline
     let:toggleFloatingElement
+    distance={8}
   >
     <button
       disabled={!$models?.data?.length}
@@ -123,6 +124,7 @@
       >metrics configuration from an existing model</button
     >,
     <Menu
+      dark
       slot="floating-element"
       on:click-outside={toggleFloatingElement}
       on:escape={toggleFloatingElement}

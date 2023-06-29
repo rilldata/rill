@@ -5,8 +5,6 @@ export interface UpdateDetails {
   viewUpdate: ViewUpdate;
 }
 
-export const DEFAULT_EDITOR_UPDATE_DEBOUNCE_MS = 300;
-
 export function bindEditorEventsToDispatcher(
   dispatch: (event: string, data?: unknown) => void
 ) {

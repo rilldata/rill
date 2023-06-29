@@ -137,7 +137,12 @@
 </script>
 
 <WorkspaceContainer inspector={true} assetID={`${metricsDefName}-config`}>
-  <MetricsWorkspaceHeader slot="header" {metricsDefName} {yaml} />
+  <MetricsWorkspaceHeader
+    slot="header"
+    {metricsDefName}
+    {yaml}
+    error={mainError}
+  />
   <MetricsEditor
     slot="body"
     bind:view
