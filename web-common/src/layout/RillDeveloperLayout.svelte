@@ -35,6 +35,10 @@
 
   onMount(async () => {
     const config = await runtimeServiceGetConfig();
+    initMetrics(config);
+    runtimeServiceToggleCaching({
+      enable: true,
+    });
 
     featureFlags.set({
       readOnly: config.readonly,
@@ -48,12 +52,6 @@
 
     const res = await getArtifactErrors(config.instance_id);
     fileArtifactsStore.setErrors(res.affectedPaths, res.errors);
-
-    initMetrics(config);
-
-    runtimeServiceToggleCaching({
-      enable: true,
-    });
   });
 
   syncFileSystemPeriodically(

@@ -22,7 +22,6 @@
     MetricsViewMeasure,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { isRangeInsideOther } from "../../../lib/time/ranges";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import { getFilterForComparsion } from "../dimension-table/dimension-table-utils";
@@ -75,6 +74,7 @@
   let dimension: MetricsViewDimension;
   $: dimension = $dimensionQuery?.data;
   $: displayName = dimension?.label || dimension?.name;
+  $: dimensionColumn = dimension?.column || dimension?.name;
 
   $: measureQuery = useMetaMeasure(
     $runtime.instanceId,
@@ -118,8 +118,8 @@
     {
       dimensionName: dimensionName,
       measureNames: [measure.name],
-      timeStart: timeStart,
-      timeEnd: timeEnd,
+      timeStart: hasTimeSeries ? timeStart : undefined,
+      timeEnd: hasTimeSeries ? timeEnd : undefined,
       filter: filterForDimension,
       limit: "250",
       offset: "0",
@@ -147,7 +147,7 @@
     values =
       $topListQuery?.data?.data.map((val) => ({
         value: val[measure?.name],
-        label: val[dimension?.name],
+        label: val[dimensionColumn],
       })) ?? [];
   }
 
@@ -173,14 +173,8 @@
     });
 
   // Compose the comparison /toplist query
-  $: displayComparison =
-    $dashboardStore?.showComparison && isComparisonRangeAvailable;
-  $: isComparisonRangeAvailable = isRangeInsideOther(
-    $allTimeRangeQuery?.data?.start,
-    $allTimeRangeQuery?.data?.end,
-    $dashboardStore?.selectedComparisonTimeRange?.start,
-    $dashboardStore?.selectedComparisonTimeRange?.end
-  );
+  $: displayComparison = $dashboardStore?.showComparison;
+
   // add all sliced and active values to the include filter.
   $: currentVisibleValues =
     $topListQuery?.data?.data
@@ -230,7 +224,7 @@
     comparisonValues =
       $comparisonTopListQuery?.data?.data?.map((val) => ({
         value: val[measure?.name],
-        label: val[dimension?.name],
+        label: val[dimensionColumn],
       })) ?? [];
   }
 

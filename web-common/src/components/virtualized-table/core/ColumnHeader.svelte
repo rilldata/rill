@@ -26,7 +26,7 @@
   export let position: HeaderPosition = "top";
   export let enableResize = true;
   export let isSelected = false;
-  export let bgClass = "surface";
+  export let bgClass = "";
 
   const config: VirtualizedTableConfig = getContext("config");
   const dispatch = createEventDispatcher();

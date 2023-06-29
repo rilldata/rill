@@ -27,14 +27,18 @@ export default class Custompicker extends Litepicker {
     this.updateValues();
 
     this.options.startEl.addEventListener("blur", (e) => {
-      const maybeStartDate = parseLocaleStringDate(e.target.value); // new Date(e.target.value);
+      const maybeStartDate = parseLocaleStringDate(e.target.value);
       if (!isNaN(maybeStartDate.valueOf())) {
         this.datePicked[0] = new DateTime(maybeStartDate);
         this.emitChanged();
         // Only render if the blur event was not caused by clicking on a day-item
         if (
           !e.relatedTarget ||
-          !e.relatedTarget.classList.contains("day-item")
+          !(
+            e.relatedTarget.classList.contains("day-item") ||
+            e.relatedTarget.classList.contains(style.buttonPreviousMonth) ||
+            e.relatedTarget.classList.contains(style.buttonNextMonth)
+          )
         ) {
           this.scrollToSpecificDate(this.datePicked[0]);
           this.render();
@@ -43,7 +47,7 @@ export default class Custompicker extends Litepicker {
     });
 
     this.options.endEl.addEventListener("blur", (e) => {
-      const maybeEndDate = parseLocaleStringDate(e.target.value); // new Date(e.target.value);
+      const maybeEndDate = parseLocaleStringDate(e.target.value);
       if (!isNaN(maybeEndDate.valueOf())) {
         this.datePicked[1] = new DateTime(maybeEndDate);
 
@@ -51,7 +55,11 @@ export default class Custompicker extends Litepicker {
         // Only render if the blur event was not caused by clicking on a day-item
         if (
           !e.relatedTarget ||
-          !e.relatedTarget.classList.contains("day-item")
+          !(
+            e.relatedTarget.classList.contains("day-item") ||
+            e.relatedTarget.classList.contains(style.buttonPreviousMonth) ||
+            e.relatedTarget.classList.contains(style.buttonNextMonth)
+          )
         ) {
           this.scrollToSpecificDate(this.datePicked[1]);
           this.render();
@@ -76,10 +84,10 @@ export default class Custompicker extends Litepicker {
     const [start, end] = this.datePicked;
     const startString = start
       .toJSDate()
-      .toLocaleDateString(window.navigator.language);
+      .toLocaleDateString(Intl.DateTimeFormat().resolvedOptions().locale);
     const endString = end
       .toJSDate()
-      .toLocaleDateString(window.navigator.language);
+      .toLocaleDateString(Intl.DateTimeFormat().resolvedOptions().locale);
 
     if (startEl instanceof HTMLInputElement) {
       startEl.value = startString;
@@ -307,6 +315,14 @@ export default class Custompicker extends Litepicker {
         }
       }
     }
+  }
+
+  // Override Litepicker method
+  gotoDate(date, idx = 0) {
+    const toDate = new DateTime(date);
+    toDate.setDate(1);
+    this.calendars[idx] = toDate.clone();
+    this.render();
   }
 
   onMouseLeave() {

@@ -14,6 +14,9 @@
     useModelAllTimeRange,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
+  import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
+  import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import {
     createQueryServiceMetricsViewToplist,
     createQueryServiceMetricsViewTotals,
@@ -21,12 +24,6 @@
     MetricsViewFilterCond,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { getTimeComparisonParametersForComponent } from "../../../lib/time/comparisons";
-  import { DEFAULT_TIME_RANGES } from "../../../lib/time/config";
-  import type {
-    TimeComparisonOption,
-    TimeRange,
-  } from "../../../lib/time/types";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import {
@@ -60,6 +57,7 @@
   );
   let dimension: MetricsViewDimension;
   $: dimension = $dimensionQuery?.data;
+  $: dimensionColumn = dimension?.column || dimension?.name;
 
   $: dashboardStore = useDashboardStore(metricViewName);
 
@@ -91,7 +89,9 @@
       : $dashboardStore?.filters.include.find((d) => d.name === dimension?.name)
           ?.in) ?? [];
 
-  $: allMeasures = $metaQuery.data?.measures;
+  $: allMeasures = $metaQuery.data?.measures.filter((m) =>
+    $dashboardStore?.visibleMeasureKeys.has(m.name)
+  );
 
   $: sortByColumn = $leaderboardMeasureQuery.data?.name;
   $: sortDirection = sortDirection || "desc";
@@ -110,15 +110,15 @@
     {
       dimensionName: dimensionName,
       measureNames: selectedMeasureNames,
-      timeStart: timeStart,
-      timeEnd: timeEnd,
+      timeStart: hasTimeSeries ? timeStart : undefined,
+      timeEnd: hasTimeSeries ? timeEnd : undefined,
       filter: filterSet,
       limit: "250",
       offset: "0",
       sort: [
         {
           name: sortByColumn,
-          ascending: sortDirection === "asc" ? true : false,
+          ascending: sortDirection === "asc",
         },
       ],
     },
@@ -148,19 +148,18 @@
   $: timeRangeName = $dashboardStore?.selectedTimeRange?.name;
 
   // Compose the comparison /toplist query
-  $: displayComparison =
-    $dashboardStore?.showComparison &&
-    comparisonTimeRange.isComparisonRangeAvailable;
-  $: comparisonTimeRange = getTimeComparisonParametersForComponent(
-    ($dashboardStore?.selectedComparisonTimeRange
-      ?.name as TimeComparisonOption) ||
-      (DEFAULT_TIME_RANGES[timeRangeName]
-        .defaultComparison as TimeComparisonOption),
-    ($allTimeRangeQuery?.data as TimeRange)?.start,
-    ($allTimeRangeQuery?.data as TimeRange)?.end,
-    $dashboardStore.selectedTimeRange.start,
-    $dashboardStore.selectedTimeRange.end
-  );
+  $: displayComparison = timeRangeName && $dashboardStore?.showComparison;
+
+  $: comparisonTimeRange =
+    displayComparison &&
+    getComparisonRange(
+      $dashboardStore?.selectedTimeRange?.start,
+      $dashboardStore?.selectedTimeRange?.end,
+      ($dashboardStore?.selectedComparisonTimeRange
+        ?.name as TimeComparisonOption) ||
+        (DEFAULT_TIME_RANGES[timeRangeName]
+          .defaultComparison as TimeComparisonOption)
+    );
   $: comparisonTimeStart =
     isFinite(comparisonTimeRange?.start?.getTime()) &&
     comparisonTimeRange.start.toISOString();
@@ -186,17 +185,18 @@
       sort: [
         {
           name: sortByColumn,
-          ascending: sortDirection === "asc" ? true : false,
+          ascending: sortDirection === "asc",
         },
       ],
     },
     {
       query: {
-        enabled:
+        enabled: Boolean(
           displayComparison &&
-          !!comparisonTimeStart &&
-          !!comparisonTimeEnd &&
-          !!comparisonFilterSet,
+            !!comparisonTimeStart &&
+            !!comparisonTimeEnd &&
+            !!comparisonFilterSet
+        ),
       },
     }
   );
@@ -208,8 +208,8 @@
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      timeStart: timeStart,
-      timeEnd: timeEnd,
+      timeStart: hasTimeSeries ? timeStart : undefined,
+      timeEnd: hasTimeSeries ? timeEnd : undefined,
     },
     {
       query: {
@@ -240,7 +240,11 @@
 
     let columnNames: Array<string> = columnsMeta
       .map((c) => c.name)
-      .filter((name) => name !== dimension?.name);
+      .filter(
+        (name) =>
+          name !== dimensionColumn &&
+          $dashboardStore.visibleMeasureKeys.has(name)
+      );
 
     const selectedMeasure = allMeasures.find((m) => m.name === sortByColumn);
     const sortByColumnIndex = columnNames.indexOf(sortByColumn);
@@ -259,7 +263,7 @@
     }
 
     // Make dimension the first column
-    columnNames.unshift(dimension?.name);
+    columnNames.unshift(dimensionColumn);
     measureNames = allMeasures.map((m) => m.name);
 
     columns = columnNames.map((columnName) => {
@@ -275,7 +279,7 @@
           enableResize: false,
           format: measure?.format,
         };
-      } else if (columnName === dimension?.name) {
+      } else if (columnName === dimensionColumn) {
         // Handle dimension column
         return {
           name: columnName,
@@ -299,7 +303,7 @@
   }
 
   function onSelectItem(event) {
-    const label = values[event.detail][dimension?.name];
+    const label = values[event.detail][dimensionColumn];
     cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.toggleFilter(metricViewName, dimension?.name, label);
   }
@@ -360,7 +364,7 @@
         <DimensionTable
           on:select-item={(event) => onSelectItem(event)}
           on:sort={(event) => onSortByColumn(event)}
-          dimensionName={dimension?.name}
+          dimensionName={dimensionColumn}
           {columns}
           {selectedValues}
           rows={values}

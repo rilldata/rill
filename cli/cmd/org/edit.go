@@ -52,22 +52,25 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			org := resp.Organization
+			req := &adminv1.UpdateOrganizationRequest{
+				Name: org.Name,
+			}
 
-			// Set the default values for edit flags with current values for org
-			cmd.Flag("description").DefValue = org.Description
+			promptFlagValues := cfg.Interactive
+			if cmd.Flags().Changed("description") {
+				promptFlagValues = false
+				req.Description = &description
+			}
 
-			if cfg.Interactive {
-				err = cmdutil.SetFlagsByInputPrompts(*cmd, "description")
+			if promptFlagValues {
+				description, err = cmdutil.InputPrompt("Enter the description", org.Description)
 				if err != nil {
 					return err
 				}
+				req.Description = &description
 			}
 
-			updatedOrg, err := client.UpdateOrganization(ctx, &adminv1.UpdateOrganizationRequest{
-				Id:          org.Id,
-				Name:        org.Name,
-				Description: description,
-			})
+			updatedOrg, err := client.UpdateOrganization(ctx, req)
 			if err != nil {
 				return err
 			}
