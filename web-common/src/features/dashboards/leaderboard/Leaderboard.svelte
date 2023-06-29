@@ -180,7 +180,7 @@
     $topListQuery?.data?.data
       ?.slice(0, slice)
       ?.concat(selectedValuesThatAreBelowTheFold)
-      ?.map((v) => v[dimensionName]) ?? [];
+      ?.map((v) => v[dimensionColumn]) ?? [];
   $: updatedFilters = getFilterForComparsion(
     filterForDimension,
     dimensionName,
