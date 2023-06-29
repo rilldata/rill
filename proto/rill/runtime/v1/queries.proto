@@ -147,6 +147,14 @@ service QueryService {
   rpc TableRows(TableRowsRequest) returns (TableRowsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/rows/tables/{table_name}"};
   }
+
+  // Batch request with different queries
+  rpc QueryBatch(QueryBatchRequest) returns (stream QueryBatchResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/query/batch",
+      body: "*"
+    };
+  }
 }
 
 // Request message for QueryService.Query
@@ -634,4 +642,82 @@ message TableRowsRequest {
 
 message TableRowsResponse {
   repeated google.protobuf.Struct data = 1;
+}
+
+enum QueryBatchType {
+  QUERY_BATCH_TYPE_UNSPECIFIED = 0;
+  QUERY_BATCH_TYPE_METRICS_VIEW_TOPLIST = 1;
+  QUERY_BATCH_TYPE_METRICS_VIEW_COMPARISON_TOPLIST = 2;
+  QUERY_BATCH_TYPE_METRICS_VIEW_TIMESERIES = 3;
+  QUERY_BATCH_TYPE_METRICS_VIEW_TOTALS = 4;
+  QUERY_BATCH_TYPE_METRICS_VIEW_ROWS = 5;
+  QUERY_BATCH_TYPE_COLUMN_ROLLUP_INTERVAL = 6;
+  QUERY_BATCH_TYPE_COLUMN_TOPK = 7;
+  QUERY_BATCH_TYPE_COLUMN_NULL_COUNT = 8;
+  QUERY_BATCH_TYPE_COLUMN_DESCRIPTIVE_STATISTICS = 9;
+  QUERY_BATCH_TYPE_COLUMN_TIME_GRAIN = 10;
+  QUERY_BATCH_TYPE_COLUMN_NUMERIC_HISTOGRAM = 11;
+  QUERY_BATCH_TYPE_COLUMN_RUG_HISTOGRAM = 12;
+  QUERY_BATCH_TYPE_COLUMN_TIME_RANGE = 13;
+  QUERY_BATCH_TYPE_COLUMN_CARDINALITY = 14;
+  QUERY_BATCH_TYPE_COLUMN_TIMESERIES = 15;
+  QUERY_BATCH_TYPE_TABLE_CARDINALITY = 16;
+  QUERY_BATCH_TYPE_TABLE_COLUMNS = 17;
+  QUERY_BATCH_TYPE_TABLE_ROWS = 18;
+}
+
+message QueryBatchSingleRequest {
+  int32 id = 1;
+  QueryBatchType type = 2;
+  oneof query {
+    MetricsViewToplistRequest metricsViewToplistRequest = 3;
+    MetricsViewComparisonToplistRequest metricsViewComparisonToplistRequest = 4;
+    MetricsViewTimeSeriesRequest metricsViewTimeSeriesRequest = 5;
+    MetricsViewTotalsRequest metricsViewTotalsRequest = 6;
+    MetricsViewRowsRequest metricsViewRowsRequest = 7;
+    ColumnRollupIntervalRequest columnRollupIntervalRequest = 8;
+    ColumnTopKRequest columnTopKRequest = 9;
+    ColumnNullCountRequest columnNullCountRequest = 10;
+    ColumnDescriptiveStatisticsRequest columnDescriptiveStatisticsRequest = 11;
+    ColumnTimeGrainRequest columnTimeGrainRequest = 12;
+    ColumnNumericHistogramRequest columnNumericHistogramRequest = 13;
+    ColumnRugHistogramRequest columnRugHistogramRequest = 14;
+    ColumnTimeRangeRequest columnTimeRangeRequest = 15;
+    ColumnCardinalityRequest columnCardinalityRequest = 16;
+    ColumnTimeSeriesRequest columnTimeSeriesRequest = 17;
+    TableCardinalityRequest tableCardinalityRequest = 18;
+    TableColumnsRequest tableColumnsRequest = 19;
+    TableRowsRequest tableRowsRequest = 20;
+  }
+}
+
+message QueryBatchRequest {
+  string instance_id = 1;
+  repeated QueryBatchSingleRequest queries = 2;
+}
+
+message QueryBatchResponse {
+  int32 id = 1;
+  QueryBatchType type = 2;
+  oneof query {
+    MetricsViewToplistResponse metricsViewToplistResponse = 3;
+    MetricsViewComparisonToplistResponse metricsViewComparisonToplistResponse = 4;
+    MetricsViewTimeSeriesResponse metricsViewTimeSeriesResponse = 5;
+    MetricsViewTotalsResponse metricsViewTotalsResponse = 6;
+    MetricsViewRowsResponse metricsViewRowsResponse = 7;
+    ColumnRollupIntervalResponse columnRollupIntervalResponse = 8;
+    ColumnTopKResponse columnTopKResponse = 9;
+    ColumnNullCountResponse columnNullCountResponse = 10;
+    ColumnDescriptiveStatisticsResponse columnDescriptiveStatisticsResponse = 11;
+    ColumnTimeGrainResponse columnTimeGrainResponse = 12;
+    ColumnNumericHistogramResponse columnNumericHistogramResponse = 13;
+    ColumnRugHistogramResponse columnRugHistogramResponse = 14;
+    ColumnTimeRangeResponse columnTimeRangeResponse = 15;
+    ColumnCardinalityResponse columnCardinalityResponse = 16;
+    ColumnTimeSeriesResponse columnTimeSeriesResponse = 17;
+    TableCardinalityResponse tableCardinalityResponse = 18;
+    TableColumnsResponse tableColumnsResponse = 19;
+    TableRowsResponse tableRowsResponse = 20;
+  }
+  string error = 21;
 }

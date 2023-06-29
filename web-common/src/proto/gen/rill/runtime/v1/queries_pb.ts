@@ -101,6 +101,128 @@ proto3.util.setEnumType(HistogramMethod, "rill.runtime.v1.HistogramMethod", [
 ]);
 
 /**
+ * @generated from enum rill.runtime.v1.QueryBatchType
+ */
+export enum QueryBatchType {
+  /**
+   * @generated from enum value: QUERY_BATCH_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: QUERY_BATCH_TYPE_METRICS_VIEW_TOPLIST = 1;
+   */
+  METRICS_VIEW_TOPLIST = 1,
+
+  /**
+   * @generated from enum value: QUERY_BATCH_TYPE_METRICS_VIEW_COMPARISON_TOPLIST = 2;
+   */
+  METRICS_VIEW_COMPARISON_TOPLIST = 2,
+
+  /**
+   * @generated from enum value: QUERY_BATCH_TYPE_METRICS_VIEW_TIMESERIES = 3;
+   */
+  METRICS_VIEW_TIMESERIES = 3,
+
+  /**
+   * @generated from enum value: QUERY_BATCH_TYPE_METRICS_VIEW_TOTALS = 4;
+   */
+  METRICS_VIEW_TOTALS = 4,
+
+  /**
+   * @generated from enum value: QUERY_BATCH_TYPE_METRICS_VIEW_ROWS = 5;
+   */
+  METRICS_VIEW_ROWS = 5,
+
+  /**
+   * @generated from enum value: QUERY_BATCH_TYPE_COLUMN_ROLLUP_INTERVAL = 6;
+   */
+  COLUMN_ROLLUP_INTERVAL = 6,
+
+  /**
+   * @generated from enum value: QUERY_BATCH_TYPE_COLUMN_TOPK = 7;
+   */
+  COLUMN_TOPK = 7,
+
+  /**
+   * @generated from enum value: QUERY_BATCH_TYPE_COLUMN_NULL_COUNT = 8;
+   */
+  COLUMN_NULL_COUNT = 8,
+
+  /**
+   * @generated from enum value: QUERY_BATCH_TYPE_COLUMN_DESCRIPTIVE_STATISTICS = 9;
+   */
+  COLUMN_DESCRIPTIVE_STATISTICS = 9,
+
+  /**
+   * @generated from enum value: QUERY_BATCH_TYPE_COLUMN_TIME_GRAIN = 10;
+   */
+  COLUMN_TIME_GRAIN = 10,
+
+  /**
+   * @generated from enum value: QUERY_BATCH_TYPE_COLUMN_NUMERIC_HISTOGRAM = 11;
+   */
+  COLUMN_NUMERIC_HISTOGRAM = 11,
+
+  /**
+   * @generated from enum value: QUERY_BATCH_TYPE_COLUMN_RUG_HISTOGRAM = 12;
+   */
+  COLUMN_RUG_HISTOGRAM = 12,
+
+  /**
+   * @generated from enum value: QUERY_BATCH_TYPE_COLUMN_TIME_RANGE = 13;
+   */
+  COLUMN_TIME_RANGE = 13,
+
+  /**
+   * @generated from enum value: QUERY_BATCH_TYPE_COLUMN_CARDINALITY = 14;
+   */
+  COLUMN_CARDINALITY = 14,
+
+  /**
+   * @generated from enum value: QUERY_BATCH_TYPE_COLUMN_TIMESERIES = 15;
+   */
+  COLUMN_TIMESERIES = 15,
+
+  /**
+   * @generated from enum value: QUERY_BATCH_TYPE_TABLE_CARDINALITY = 16;
+   */
+  TABLE_CARDINALITY = 16,
+
+  /**
+   * @generated from enum value: QUERY_BATCH_TYPE_TABLE_COLUMNS = 17;
+   */
+  TABLE_COLUMNS = 17,
+
+  /**
+   * @generated from enum value: QUERY_BATCH_TYPE_TABLE_ROWS = 18;
+   */
+  TABLE_ROWS = 18,
+}
+// Retrieve enum metadata with: proto3.getEnumType(QueryBatchType)
+proto3.util.setEnumType(QueryBatchType, "rill.runtime.v1.QueryBatchType", [
+  { no: 0, name: "QUERY_BATCH_TYPE_UNSPECIFIED" },
+  { no: 1, name: "QUERY_BATCH_TYPE_METRICS_VIEW_TOPLIST" },
+  { no: 2, name: "QUERY_BATCH_TYPE_METRICS_VIEW_COMPARISON_TOPLIST" },
+  { no: 3, name: "QUERY_BATCH_TYPE_METRICS_VIEW_TIMESERIES" },
+  { no: 4, name: "QUERY_BATCH_TYPE_METRICS_VIEW_TOTALS" },
+  { no: 5, name: "QUERY_BATCH_TYPE_METRICS_VIEW_ROWS" },
+  { no: 6, name: "QUERY_BATCH_TYPE_COLUMN_ROLLUP_INTERVAL" },
+  { no: 7, name: "QUERY_BATCH_TYPE_COLUMN_TOPK" },
+  { no: 8, name: "QUERY_BATCH_TYPE_COLUMN_NULL_COUNT" },
+  { no: 9, name: "QUERY_BATCH_TYPE_COLUMN_DESCRIPTIVE_STATISTICS" },
+  { no: 10, name: "QUERY_BATCH_TYPE_COLUMN_TIME_GRAIN" },
+  { no: 11, name: "QUERY_BATCH_TYPE_COLUMN_NUMERIC_HISTOGRAM" },
+  { no: 12, name: "QUERY_BATCH_TYPE_COLUMN_RUG_HISTOGRAM" },
+  { no: 13, name: "QUERY_BATCH_TYPE_COLUMN_TIME_RANGE" },
+  { no: 14, name: "QUERY_BATCH_TYPE_COLUMN_CARDINALITY" },
+  { no: 15, name: "QUERY_BATCH_TYPE_COLUMN_TIMESERIES" },
+  { no: 16, name: "QUERY_BATCH_TYPE_TABLE_CARDINALITY" },
+  { no: 17, name: "QUERY_BATCH_TYPE_TABLE_COLUMNS" },
+  { no: 18, name: "QUERY_BATCH_TYPE_TABLE_ROWS" },
+]);
+
+/**
  * Request message for QueryService.Query
  *
  * @generated from message rill.runtime.v1.QueryRequest
@@ -3523,6 +3645,403 @@ export class TableRowsResponse extends Message<TableRowsResponse> {
 
   static equals(a: TableRowsResponse | PlainMessage<TableRowsResponse> | undefined, b: TableRowsResponse | PlainMessage<TableRowsResponse> | undefined): boolean {
     return proto3.util.equals(TableRowsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.QueryBatchSingleRequest
+ */
+export class QueryBatchSingleRequest extends Message<QueryBatchSingleRequest> {
+  /**
+   * @generated from field: int32 id = 1;
+   */
+  id = 0;
+
+  /**
+   * @generated from field: rill.runtime.v1.QueryBatchType type = 2;
+   */
+  type = QueryBatchType.UNSPECIFIED;
+
+  /**
+   * @generated from oneof rill.runtime.v1.QueryBatchSingleRequest.query
+   */
+  query: {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewToplistRequest metricsViewToplistRequest = 3;
+     */
+    value: MetricsViewToplistRequest;
+    case: "metricsViewToplistRequest";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewComparisonToplistRequest metricsViewComparisonToplistRequest = 4;
+     */
+    value: MetricsViewComparisonToplistRequest;
+    case: "metricsViewComparisonToplistRequest";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewTimeSeriesRequest metricsViewTimeSeriesRequest = 5;
+     */
+    value: MetricsViewTimeSeriesRequest;
+    case: "metricsViewTimeSeriesRequest";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewTotalsRequest metricsViewTotalsRequest = 6;
+     */
+    value: MetricsViewTotalsRequest;
+    case: "metricsViewTotalsRequest";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewRowsRequest metricsViewRowsRequest = 7;
+     */
+    value: MetricsViewRowsRequest;
+    case: "metricsViewRowsRequest";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.ColumnRollupIntervalRequest columnRollupIntervalRequest = 8;
+     */
+    value: ColumnRollupIntervalRequest;
+    case: "columnRollupIntervalRequest";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.ColumnTopKRequest columnTopKRequest = 9;
+     */
+    value: ColumnTopKRequest;
+    case: "columnTopKRequest";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.ColumnNullCountRequest columnNullCountRequest = 10;
+     */
+    value: ColumnNullCountRequest;
+    case: "columnNullCountRequest";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.ColumnDescriptiveStatisticsRequest columnDescriptiveStatisticsRequest = 11;
+     */
+    value: ColumnDescriptiveStatisticsRequest;
+    case: "columnDescriptiveStatisticsRequest";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.ColumnTimeGrainRequest columnTimeGrainRequest = 12;
+     */
+    value: ColumnTimeGrainRequest;
+    case: "columnTimeGrainRequest";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.ColumnNumericHistogramRequest columnNumericHistogramRequest = 13;
+     */
+    value: ColumnNumericHistogramRequest;
+    case: "columnNumericHistogramRequest";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.ColumnRugHistogramRequest columnRugHistogramRequest = 14;
+     */
+    value: ColumnRugHistogramRequest;
+    case: "columnRugHistogramRequest";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.ColumnTimeRangeRequest columnTimeRangeRequest = 15;
+     */
+    value: ColumnTimeRangeRequest;
+    case: "columnTimeRangeRequest";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.ColumnCardinalityRequest columnCardinalityRequest = 16;
+     */
+    value: ColumnCardinalityRequest;
+    case: "columnCardinalityRequest";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.ColumnTimeSeriesRequest columnTimeSeriesRequest = 17;
+     */
+    value: ColumnTimeSeriesRequest;
+    case: "columnTimeSeriesRequest";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.TableCardinalityRequest tableCardinalityRequest = 18;
+     */
+    value: TableCardinalityRequest;
+    case: "tableCardinalityRequest";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.TableColumnsRequest tableColumnsRequest = 19;
+     */
+    value: TableColumnsRequest;
+    case: "tableColumnsRequest";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.TableRowsRequest tableRowsRequest = 20;
+     */
+    value: TableRowsRequest;
+    case: "tableRowsRequest";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  constructor(data?: PartialMessage<QueryBatchSingleRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.QueryBatchSingleRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "type", kind: "enum", T: proto3.getEnumType(QueryBatchType) },
+    { no: 3, name: "metricsViewToplistRequest", kind: "message", T: MetricsViewToplistRequest, oneof: "query" },
+    { no: 4, name: "metricsViewComparisonToplistRequest", kind: "message", T: MetricsViewComparisonToplistRequest, oneof: "query" },
+    { no: 5, name: "metricsViewTimeSeriesRequest", kind: "message", T: MetricsViewTimeSeriesRequest, oneof: "query" },
+    { no: 6, name: "metricsViewTotalsRequest", kind: "message", T: MetricsViewTotalsRequest, oneof: "query" },
+    { no: 7, name: "metricsViewRowsRequest", kind: "message", T: MetricsViewRowsRequest, oneof: "query" },
+    { no: 8, name: "columnRollupIntervalRequest", kind: "message", T: ColumnRollupIntervalRequest, oneof: "query" },
+    { no: 9, name: "columnTopKRequest", kind: "message", T: ColumnTopKRequest, oneof: "query" },
+    { no: 10, name: "columnNullCountRequest", kind: "message", T: ColumnNullCountRequest, oneof: "query" },
+    { no: 11, name: "columnDescriptiveStatisticsRequest", kind: "message", T: ColumnDescriptiveStatisticsRequest, oneof: "query" },
+    { no: 12, name: "columnTimeGrainRequest", kind: "message", T: ColumnTimeGrainRequest, oneof: "query" },
+    { no: 13, name: "columnNumericHistogramRequest", kind: "message", T: ColumnNumericHistogramRequest, oneof: "query" },
+    { no: 14, name: "columnRugHistogramRequest", kind: "message", T: ColumnRugHistogramRequest, oneof: "query" },
+    { no: 15, name: "columnTimeRangeRequest", kind: "message", T: ColumnTimeRangeRequest, oneof: "query" },
+    { no: 16, name: "columnCardinalityRequest", kind: "message", T: ColumnCardinalityRequest, oneof: "query" },
+    { no: 17, name: "columnTimeSeriesRequest", kind: "message", T: ColumnTimeSeriesRequest, oneof: "query" },
+    { no: 18, name: "tableCardinalityRequest", kind: "message", T: TableCardinalityRequest, oneof: "query" },
+    { no: 19, name: "tableColumnsRequest", kind: "message", T: TableColumnsRequest, oneof: "query" },
+    { no: 20, name: "tableRowsRequest", kind: "message", T: TableRowsRequest, oneof: "query" },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): QueryBatchSingleRequest {
+    return new QueryBatchSingleRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): QueryBatchSingleRequest {
+    return new QueryBatchSingleRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): QueryBatchSingleRequest {
+    return new QueryBatchSingleRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: QueryBatchSingleRequest | PlainMessage<QueryBatchSingleRequest> | undefined, b: QueryBatchSingleRequest | PlainMessage<QueryBatchSingleRequest> | undefined): boolean {
+    return proto3.util.equals(QueryBatchSingleRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.QueryBatchRequest
+ */
+export class QueryBatchRequest extends Message<QueryBatchRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.QueryBatchSingleRequest queries = 2;
+   */
+  queries: QueryBatchSingleRequest[] = [];
+
+  constructor(data?: PartialMessage<QueryBatchRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.QueryBatchRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "queries", kind: "message", T: QueryBatchSingleRequest, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): QueryBatchRequest {
+    return new QueryBatchRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): QueryBatchRequest {
+    return new QueryBatchRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): QueryBatchRequest {
+    return new QueryBatchRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: QueryBatchRequest | PlainMessage<QueryBatchRequest> | undefined, b: QueryBatchRequest | PlainMessage<QueryBatchRequest> | undefined): boolean {
+    return proto3.util.equals(QueryBatchRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.QueryBatchResponse
+ */
+export class QueryBatchResponse extends Message<QueryBatchResponse> {
+  /**
+   * @generated from field: int32 id = 1;
+   */
+  id = 0;
+
+  /**
+   * @generated from field: rill.runtime.v1.QueryBatchType type = 2;
+   */
+  type = QueryBatchType.UNSPECIFIED;
+
+  /**
+   * @generated from oneof rill.runtime.v1.QueryBatchResponse.query
+   */
+  query: {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewToplistResponse metricsViewToplistResponse = 3;
+     */
+    value: MetricsViewToplistResponse;
+    case: "metricsViewToplistResponse";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewComparisonToplistResponse metricsViewComparisonToplistResponse = 4;
+     */
+    value: MetricsViewComparisonToplistResponse;
+    case: "metricsViewComparisonToplistResponse";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewTimeSeriesResponse metricsViewTimeSeriesResponse = 5;
+     */
+    value: MetricsViewTimeSeriesResponse;
+    case: "metricsViewTimeSeriesResponse";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewTotalsResponse metricsViewTotalsResponse = 6;
+     */
+    value: MetricsViewTotalsResponse;
+    case: "metricsViewTotalsResponse";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewRowsResponse metricsViewRowsResponse = 7;
+     */
+    value: MetricsViewRowsResponse;
+    case: "metricsViewRowsResponse";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.ColumnRollupIntervalResponse columnRollupIntervalResponse = 8;
+     */
+    value: ColumnRollupIntervalResponse;
+    case: "columnRollupIntervalResponse";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.ColumnTopKResponse columnTopKResponse = 9;
+     */
+    value: ColumnTopKResponse;
+    case: "columnTopKResponse";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.ColumnNullCountResponse columnNullCountResponse = 10;
+     */
+    value: ColumnNullCountResponse;
+    case: "columnNullCountResponse";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.ColumnDescriptiveStatisticsResponse columnDescriptiveStatisticsResponse = 11;
+     */
+    value: ColumnDescriptiveStatisticsResponse;
+    case: "columnDescriptiveStatisticsResponse";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.ColumnTimeGrainResponse columnTimeGrainResponse = 12;
+     */
+    value: ColumnTimeGrainResponse;
+    case: "columnTimeGrainResponse";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.ColumnNumericHistogramResponse columnNumericHistogramResponse = 13;
+     */
+    value: ColumnNumericHistogramResponse;
+    case: "columnNumericHistogramResponse";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.ColumnRugHistogramResponse columnRugHistogramResponse = 14;
+     */
+    value: ColumnRugHistogramResponse;
+    case: "columnRugHistogramResponse";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.ColumnTimeRangeResponse columnTimeRangeResponse = 15;
+     */
+    value: ColumnTimeRangeResponse;
+    case: "columnTimeRangeResponse";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.ColumnCardinalityResponse columnCardinalityResponse = 16;
+     */
+    value: ColumnCardinalityResponse;
+    case: "columnCardinalityResponse";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.ColumnTimeSeriesResponse columnTimeSeriesResponse = 17;
+     */
+    value: ColumnTimeSeriesResponse;
+    case: "columnTimeSeriesResponse";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.TableCardinalityResponse tableCardinalityResponse = 18;
+     */
+    value: TableCardinalityResponse;
+    case: "tableCardinalityResponse";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.TableColumnsResponse tableColumnsResponse = 19;
+     */
+    value: TableColumnsResponse;
+    case: "tableColumnsResponse";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.TableRowsResponse tableRowsResponse = 20;
+     */
+    value: TableRowsResponse;
+    case: "tableRowsResponse";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  /**
+   * @generated from field: string error = 21;
+   */
+  error = "";
+
+  constructor(data?: PartialMessage<QueryBatchResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.QueryBatchResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "type", kind: "enum", T: proto3.getEnumType(QueryBatchType) },
+    { no: 3, name: "metricsViewToplistResponse", kind: "message", T: MetricsViewToplistResponse, oneof: "query" },
+    { no: 4, name: "metricsViewComparisonToplistResponse", kind: "message", T: MetricsViewComparisonToplistResponse, oneof: "query" },
+    { no: 5, name: "metricsViewTimeSeriesResponse", kind: "message", T: MetricsViewTimeSeriesResponse, oneof: "query" },
+    { no: 6, name: "metricsViewTotalsResponse", kind: "message", T: MetricsViewTotalsResponse, oneof: "query" },
+    { no: 7, name: "metricsViewRowsResponse", kind: "message", T: MetricsViewRowsResponse, oneof: "query" },
+    { no: 8, name: "columnRollupIntervalResponse", kind: "message", T: ColumnRollupIntervalResponse, oneof: "query" },
+    { no: 9, name: "columnTopKResponse", kind: "message", T: ColumnTopKResponse, oneof: "query" },
+    { no: 10, name: "columnNullCountResponse", kind: "message", T: ColumnNullCountResponse, oneof: "query" },
+    { no: 11, name: "columnDescriptiveStatisticsResponse", kind: "message", T: ColumnDescriptiveStatisticsResponse, oneof: "query" },
+    { no: 12, name: "columnTimeGrainResponse", kind: "message", T: ColumnTimeGrainResponse, oneof: "query" },
+    { no: 13, name: "columnNumericHistogramResponse", kind: "message", T: ColumnNumericHistogramResponse, oneof: "query" },
+    { no: 14, name: "columnRugHistogramResponse", kind: "message", T: ColumnRugHistogramResponse, oneof: "query" },
+    { no: 15, name: "columnTimeRangeResponse", kind: "message", T: ColumnTimeRangeResponse, oneof: "query" },
+    { no: 16, name: "columnCardinalityResponse", kind: "message", T: ColumnCardinalityResponse, oneof: "query" },
+    { no: 17, name: "columnTimeSeriesResponse", kind: "message", T: ColumnTimeSeriesResponse, oneof: "query" },
+    { no: 18, name: "tableCardinalityResponse", kind: "message", T: TableCardinalityResponse, oneof: "query" },
+    { no: 19, name: "tableColumnsResponse", kind: "message", T: TableColumnsResponse, oneof: "query" },
+    { no: 20, name: "tableRowsResponse", kind: "message", T: TableRowsResponse, oneof: "query" },
+    { no: 21, name: "error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): QueryBatchResponse {
+    return new QueryBatchResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): QueryBatchResponse {
+    return new QueryBatchResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): QueryBatchResponse {
+    return new QueryBatchResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: QueryBatchResponse | PlainMessage<QueryBatchResponse> | undefined, b: QueryBatchResponse | PlainMessage<QueryBatchResponse> | undefined): boolean {
+    return proto3.util.equals(QueryBatchResponse, a, b);
   }
 }
 
