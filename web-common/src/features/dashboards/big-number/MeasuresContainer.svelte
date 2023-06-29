@@ -133,8 +133,6 @@
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      timeStart: timeStart,
-      timeEnd: timeEnd,
       filter: $dashboardStore?.filters,
     },
     {

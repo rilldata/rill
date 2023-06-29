@@ -729,6 +729,29 @@ path: "data/AdBids.csv`))
 	testutils.AssertMigration(t, result, 1, 0, 0, 0, []string{AdBidsNewRepoPath})
 }
 
+func TestReconcileMaterialized(t *testing.T) {
+	s, _ := initBasicService(t)
+
+	testutils.CreateModel(t, s, "model1", "select 10", "/models/model1.sql")
+	testutils.CreateModel(t, s, "model2", "-- @materialize: true\n select * from model1", "/models/model2.sql")
+	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 0, 2, 0, 0, []string{"/models/model1.sql", "/models/model2.sql"})
+
+	testutils.CreateModel(t, s, "model1", "select 11", "/models/model1.sql")
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{ChangedPaths: []string{"/models/model1.sql"}})
+	require.NoError(t, err)
+	testutils.AssertMigration(t, result, 0, 0, 2, 0, []string{"/models/model1.sql", "/models/model2.sql"})
+
+	rows, err := s.Olap.Execute(context.Background(), &drivers.Statement{Query: "select * from model2"})
+	require.NoError(t, err)
+	require.True(t, rows.Next())
+	var val int
+	require.NoError(t, rows.Scan(&val))
+	require.NoError(t, rows.Close())
+	require.Equal(t, 11, val)
+}
+
 func initBasicService(t *testing.T) (*catalog.Service, string) {
 	s, dir := testutils.GetService(t)
 	testutils.CreateSource(t, s, "AdBids", AdBidsCsvPath, AdBidsRepoPath)

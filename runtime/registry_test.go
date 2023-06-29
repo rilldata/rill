@@ -214,6 +214,13 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 					Managed: true,
 				},
 			}))
+			require.ErrorContains(t, svc.Catalog.CreateEntry(ctx, "default", &drivers.CatalogEntry{
+				Name: "data",
+				Type: drivers.ObjectTypeModel,
+				Object: &runtimev1.Model{
+					Name: "data",
+				},
+			}), "catalog entry with name \"data\" already exists")
 
 			// delete instance
 			err = rt.DeleteInstance(ctx, tt.instanceID, tt.dropDB)
