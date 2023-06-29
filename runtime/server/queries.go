@@ -69,7 +69,7 @@ func rowsToData(rows *drivers.Result) ([]*structpb.Struct, error) {
 			return nil, err
 		}
 
-		rowStruct, err := pbutil.ToStruct(rowMap)
+		rowStruct, err := pbutil.ToStruct(rowMap, rows.Schema)
 		if err != nil {
 			return nil, err
 		}

@@ -155,7 +155,8 @@
       <span style:transform="translateY(1px)">
         {prettyFormatTimeRange(
           $dashboardStore?.selectedTimeRange?.start,
-          $dashboardStore?.selectedTimeRange?.end
+          $dashboardStore?.selectedTimeRange?.end,
+          $dashboardStore?.selectedTimeRange?.name
         )}
       </span>
     </div>
@@ -176,7 +177,7 @@
       name: TimeRangePreset.ALL_TIME,
       label: ALL_TIME.label,
       start: boundaryStart,
-      end: boundaryEnd,
+      end: new Date(boundaryEnd.getTime() + 1), // end is exclusive
     }}
     <MenuItem
       on:before-select={setIntermediateSelection(allTime.name)}

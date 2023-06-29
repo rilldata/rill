@@ -92,9 +92,14 @@ export enum TimeGrain {
   MONTH = 7,
 
   /**
-   * @generated from enum value: TIME_GRAIN_YEAR = 8;
+   * @generated from enum value: TIME_GRAIN_QUARTER = 8;
    */
-  YEAR = 8,
+  QUARTER = 8,
+
+  /**
+   * @generated from enum value: TIME_GRAIN_YEAR = 9;
+   */
+  YEAR = 9,
 }
 // Retrieve enum metadata with: proto3.getEnumType(TimeGrain)
 proto3.util.setEnumType(TimeGrain, "rill.runtime.v1.TimeGrain", [
@@ -106,7 +111,8 @@ proto3.util.setEnumType(TimeGrain, "rill.runtime.v1.TimeGrain", [
   { no: 5, name: "TIME_GRAIN_DAY" },
   { no: 6, name: "TIME_GRAIN_WEEK" },
   { no: 7, name: "TIME_GRAIN_MONTH" },
-  { no: 8, name: "TIME_GRAIN_YEAR" },
+  { no: 8, name: "TIME_GRAIN_QUARTER" },
+  { no: 9, name: "TIME_GRAIN_YEAR" },
 ]);
 
 /**
@@ -563,6 +569,11 @@ export class MetricsView_Dimension extends Message<MetricsView_Dimension> {
    */
   description = "";
 
+  /**
+   * @generated from field: string column = 4;
+   */
+  column = "";
+
   constructor(data?: PartialMessage<MetricsView_Dimension>) {
     super();
     proto3.util.initPartial(data, this);
@@ -574,6 +585,7 @@ export class MetricsView_Dimension extends Message<MetricsView_Dimension> {
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsView_Dimension {

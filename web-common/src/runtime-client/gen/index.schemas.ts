@@ -50,7 +50,6 @@ export type QueryServiceColumnTimeSeriesBody = {
   measures?: ColumnTimeSeriesRequestBasicMeasure[];
   timestampColumnName?: string;
   timeRange?: V1TimeSeriesTimeRange;
-  filters?: V1MetricsViewFilter;
   pixels?: number;
   sampleSize?: number;
   priority?: number;
@@ -141,6 +140,7 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
 export type QueryServiceMetricsViewRowsBody = {
   timeStart?: string;
   timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
   filter?: V1MetricsViewFilter;
   sort?: V1MetricsViewSort[];
   limit?: number;
@@ -225,8 +225,6 @@ export type RuntimeServiceListCatalogEntriesParams = {
   type?: RuntimeServiceListCatalogEntriesType;
 };
 
-export type RuntimeServiceEditInstanceBodyVariables = { [key: string]: string };
-
 /**
  * Request message for RuntimeService.EditInstance.
 See message Instance for field descriptions.
@@ -237,8 +235,18 @@ export type RuntimeServiceEditInstanceBody = {
   repoDriver?: string;
   repoDsn?: string;
   embedCatalog?: boolean;
-  variables?: RuntimeServiceEditInstanceBodyVariables;
   ingestionLimitBytes?: string;
+};
+
+export type RuntimeServiceEditInstanceVariablesBodyVariables = {
+  [key: string]: string;
+};
+
+/**
+ * Request message for RuntimeService.EditInstanceVariables.
+ */
+export type RuntimeServiceEditInstanceVariablesBody = {
+  variables?: RuntimeServiceEditInstanceVariablesBodyVariables;
 };
 
 export type RuntimeServiceDeleteInstanceBody = {
@@ -361,6 +369,7 @@ export const V1TimeGrain = {
   TIME_GRAIN_DAY: "TIME_GRAIN_DAY",
   TIME_GRAIN_WEEK: "TIME_GRAIN_WEEK",
   TIME_GRAIN_MONTH: "TIME_GRAIN_MONTH",
+  TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
 
@@ -436,6 +445,16 @@ export interface V1RenameFileResponse {
   [key: string]: any;
 }
 
+export interface V1RenameFileAndReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
+}
+
 export interface V1RenameFileAndReconcileRequest {
   instanceId?: string;
   fromPath?: string;
@@ -500,16 +519,6 @@ Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: ReconcileErrorCharLocation;
   endLocation?: ReconcileErrorCharLocation;
-}
-
-export interface V1RenameFileAndReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
 }
 
 export interface V1ReconcileResponse {
@@ -670,6 +679,7 @@ export interface V1MetricsViewRowsRequest {
   metricsViewName?: string;
   timeStart?: string;
   timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
   filter?: V1MetricsViewFilter;
   sort?: V1MetricsViewSort[];
   limit?: number;
@@ -748,12 +758,6 @@ export interface V1ListInstancesResponse {
 
 export interface V1ListFilesResponse {
   paths?: string[];
-}
-
-export interface V1Example {
-  name?: string;
-  title?: string;
-  description?: string;
 }
 
 export interface V1ListExamplesResponse {
@@ -857,7 +861,18 @@ export type V1ExportFormat =
 export const V1ExportFormat = {
   EXPORT_FORMAT_UNSPECIFIED: "EXPORT_FORMAT_UNSPECIFIED",
   EXPORT_FORMAT_CSV: "EXPORT_FORMAT_CSV",
+  EXPORT_FORMAT_XLSX: "EXPORT_FORMAT_XLSX",
 } as const;
+
+export interface V1Example {
+  name?: string;
+  title?: string;
+  description?: string;
+}
+
+export interface V1EditInstanceVariablesResponse {
+  instance?: V1Instance;
+}
 
 export interface V1EditInstanceResponse {
   instance?: V1Instance;
@@ -1092,6 +1107,7 @@ export interface MetricsViewDimension {
   name?: string;
   label?: string;
   description?: string;
+  column?: string;
 }
 
 export type ExtractPolicyStrategy =

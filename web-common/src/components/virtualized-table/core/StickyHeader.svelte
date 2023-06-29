@@ -12,7 +12,7 @@
   export let enableResize = true;
   export let borderRight = false;
 
-  export let bgClass = "surface";
+  export let bgClass = "";
 
   let positionClasses;
   let offsetTop = false;
@@ -33,14 +33,9 @@
       ? position === "left"
         ? ""
         : "border-b"
-      : "border-b border-b-4 border-r border-r-1");
+      : "border-b border-b-1 border-r border-r-1 border border-gray-200 border-t-0 border-l-0 bg-gray-100");
 
-  const borderClassesInnerDiv = isDimensionTable
-    ? ""
-    : "whitespace-nowrap border border-gray-200 border-t-0 border-l-0 bg-gray-100";
-
-  const paddingVerticalTop = config.columnHeaderHeight <= 28 ? "py-1" : "py-2";
-  const paddingVerticalLeft = config.rowHeight <= 28 ? "" : "py-2";
+  const borderClassesInnerDiv = isDimensionTable ? "" : "whitespace-nowrap";
 
   function focus() {
     dispatch("focus");
@@ -71,12 +66,9 @@
     text-ellipsis overflow-hidden
     {isDimensionTable ? (position === 'left' ? '' : 'px-1') : 'px-4'}
     {borderClassesInnerDiv}
-    {position === 'top' && `${paddingVerticalTop} text-left`}
-    {position === 'left' && paddingVerticalLeft}
+    {position === 'top' && `text-left`}
     {position === 'top-left' &&
-      `${paddingVerticalTop} ${
-        isDimensionTable ? 'font-normal' : 'text-center'
-      }`}
+      `${isDimensionTable ? 'font-normal' : 'text-center'}`}
     "
   >
     <slot />

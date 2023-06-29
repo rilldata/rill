@@ -27,7 +27,7 @@ export default class Custompicker extends Litepicker {
     this.updateValues();
 
     this.options.startEl.addEventListener("blur", (e) => {
-      const maybeStartDate = parseLocaleStringDate(e.target.value); // new Date(e.target.value);
+      const maybeStartDate = parseLocaleStringDate(e.target.value);
       if (!isNaN(maybeStartDate.valueOf())) {
         this.datePicked[0] = new DateTime(maybeStartDate);
         this.emitChanged();
@@ -47,7 +47,7 @@ export default class Custompicker extends Litepicker {
     });
 
     this.options.endEl.addEventListener("blur", (e) => {
-      const maybeEndDate = parseLocaleStringDate(e.target.value); // new Date(e.target.value);
+      const maybeEndDate = parseLocaleStringDate(e.target.value);
       if (!isNaN(maybeEndDate.valueOf())) {
         this.datePicked[1] = new DateTime(maybeEndDate);
 
@@ -84,10 +84,10 @@ export default class Custompicker extends Litepicker {
     const [start, end] = this.datePicked;
     const startString = start
       .toJSDate()
-      .toLocaleDateString(window.navigator.language);
+      .toLocaleDateString(Intl.DateTimeFormat().resolvedOptions().locale);
     const endString = end
       .toJSDate()
-      .toLocaleDateString(window.navigator.language);
+      .toLocaleDateString(Intl.DateTimeFormat().resolvedOptions().locale);
 
     if (startEl instanceof HTMLInputElement) {
       startEl.value = startString;

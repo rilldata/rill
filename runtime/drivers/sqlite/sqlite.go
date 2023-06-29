@@ -1,6 +1,8 @@
 package sqlite
 
 import (
+	"strings"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
 	"go.uber.org/zap"
@@ -16,6 +18,16 @@ func init() {
 type driver struct{}
 
 func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error) {
+	// The sqlite driver requires the DSN to contain "_time_format=sqlite" to support TIMESTAMP types in all timezones.
+	if !strings.Contains(dsn, "_time_format") {
+		if strings.Contains(dsn, "?") {
+			dsn += "&_time_format=sqlite"
+		} else {
+			dsn += "?_time_format=sqlite"
+		}
+	}
+
+	// Open DB handle
 	db, err := sqlx.Connect("sqlite", dsn)
 	if err != nil {
 		return nil, err

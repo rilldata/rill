@@ -129,6 +129,14 @@ export function getTimeComparisonParametersForComponent(
   currentStart,
   currentEnd
 ) {
+  if (boundStart === undefined || currentStart === undefined) {
+    return {
+      start: undefined,
+      end: undefined,
+      isComparisonRangeAvailable: false,
+    };
+  }
+
   const { start, end } = getComparisonRange(
     currentStart,
     currentEnd,

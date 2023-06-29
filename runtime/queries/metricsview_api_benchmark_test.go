@@ -30,7 +30,7 @@ func BenchmarkMetricsViewsToplist(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		q := &MetricsViewToplist{
 			MetricsViewName: "ad_bids_metrics",
-			DimensionName:   "domain",
+			DimensionName:   "dom",
 			MeasureNames:    []string{"measure_1"},
 			Sort: []*runtimev1.MetricsViewSort{
 				{

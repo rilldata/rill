@@ -1,0 +1,27 @@
+model: timeseries_model
+display_name: Time series
+description:
+
+timeseries: time
+smallest_time_grain: 
+
+dimensions:
+  - name: device
+    column: device
+  - name: publisher
+    column: publisher
+  - name: domain
+    column: domain
+  - name: latitude
+    column: latitude
+  - name: country
+    column: country
+measures:
+  - name: max_clicks
+    expression: "max(clicks)"
+  - name: count
+    expression: "count(*)"
+  - name: sum_imps
+    expression: "sum(imps)"
+  - name: sum_clicks
+    expression: "sum(clicks)"

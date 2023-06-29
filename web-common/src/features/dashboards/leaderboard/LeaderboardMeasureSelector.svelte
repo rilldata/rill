@@ -1,5 +1,7 @@
 <script lang="ts">
   import { SelectMenu } from "@rilldata/web-common/components/menu";
+  import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
+  import { createShowHideDimensionsStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import type { MetricsViewMeasure } from "@rilldata/web-common/runtime-client";
   import { crossfade, fly } from "svelte/transition";
@@ -65,29 +67,20 @@
   /** set the selection only if measures is not undefined */
   $: selection = measures ? activeLeaderboardMeasure : [];
 
-  // FIXME: this is pending the remaining state work for show/hide measures and dimensions
-  // $: availableDimensionLabels = selectBestDimensionStrings($metaQuery);
-  // $: availableDimensionKeys = selectDimensionKeys($metaQuery);
-  // $: visibleDimensionKeys = metricsExplorer?.visibleDimensionKeys;
-  // $: visibleDimensionsBitmask = availableDimensionKeys.map((k) =>
-  //   visibleDimensionKeys.has(k)
-  // );
+  $: showHideDimensions = createShowHideDimensionsStore(
+    metricViewName,
+    metaQuery
+  );
 
-  // const toggleDimensionVisibility = (e) => {
-  //   metricsExplorerStore.toggleDimensionVisibilityByKey(
-  //     metricViewName,
-  //     availableDimensionKeys[e.detail.index]
-  //   );
-  // };
-  // const setAllDimensionsNotVisible = () => {
-  //   metricsExplorerStore.hideAllDimensions(metricViewName);
-  // };
-  // const setAllDimensionsVisible = () => {
-  //   metricsExplorerStore.setMultipleDimensionsVisible(
-  //     metricViewName,
-  //     availableDimensionKeys
-  //   );
-  // };
+  const toggleDimensionVisibility = (e) => {
+    showHideDimensions.toggleVisibility(e.detail.name);
+  };
+  const setAllDimensionsNotVisible = () => {
+    showHideDimensions.setAllToNotVisible();
+  };
+  const setAllDimensionsVisible = () => {
+    showHideDimensions.setAllToVisible();
+  };
 </script>
 
 <div>
@@ -99,16 +92,15 @@
       in:send={{ key: "leaderboard-metric" }}
       style:max-width="450px"
     >
-      <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
-      <!-- <SeachableFilterButton
-        selectableItems={availableDimensionLabels}
-        selectedItems={visibleDimensionsBitmask}
+      <SeachableFilterButton
+        selectableItems={$showHideDimensions.selectableItems}
+        selectedItems={$showHideDimensions.selectedItems}
         on:item-clicked={toggleDimensionVisibility}
         on:deselect-all={setAllDimensionsNotVisible}
         on:select-all={setAllDimensionsVisible}
         label="Dimensions"
         tooltipText="Choose dimensions to display"
-      /> -->
+      />
 
       <div class="whitespace-nowrap">showing top values by</div>
 
