@@ -52,7 +52,7 @@ func testCatalog(t *testing.T, catalog drivers.CatalogStore) {
 
 	err = catalog.CreateEntry(ctx, instanceID, obj1)
 	require.Error(t, err)
-	require.True(t, strings.Contains(err.Error(), "duplicate key") ||
+	require.True(t, strings.Contains(err.Error(), "already exists") ||
 		strings.Contains(err.Error(), "Duplicate key") ||
 		strings.Contains(err.Error(), "UNIQUE constraint failed"))
 

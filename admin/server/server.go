@@ -34,11 +34,13 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-var _minCliVersion = version.Must(version.NewVersion("0.20.0"))
-var _minCliVersionByMethod = map[string]*version.Version{
-	"/rill.admin.v1.AdminService/UpdateProject":      version.Must(version.NewVersion("0.28.0")),
-	"/rill.admin.v1.AdminService/UpdateOrganization": version.Must(version.NewVersion("0.28.0")),
-}
+var (
+	_minCliVersion         = version.Must(version.NewVersion("0.20.0"))
+	_minCliVersionByMethod = map[string]*version.Version{
+		"/rill.admin.v1.AdminService/UpdateProject":      version.Must(version.NewVersion("0.28.0")),
+		"/rill.admin.v1.AdminService/UpdateOrganization": version.Must(version.NewVersion("0.28.0")),
+	}
+)
 
 type Options struct {
 	HTTPPort               int

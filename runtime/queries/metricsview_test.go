@@ -214,6 +214,74 @@ func Test_writeXLSX_emptystring(t *testing.T) {
 	require.Equal(t, "", v)
 }
 
+func Test_writeXLSX_size(t *testing.T) {
+	meta := []*runtimev1.MetricsViewColumn{
+		{
+			Name: "col",
+		},
+	}
+	fields := make(map[string]*structpb.Value)
+	fields["col"] = structpb.NewNumberValue(1)
+	data := []*structpb.Struct{
+		{
+			Fields: fields,
+		},
+		{
+			Fields: fields,
+		},
+	}
+
+	var buf bytes.Buffer
+
+	err := writeXLSX(meta, data, &buf)
+	require.NoError(t, err)
+
+	file, err := excelize.OpenReader(&buf)
+	require.NoError(t, err)
+
+	/*
+		should be
+		|   ||A   |B  |
+		|===||====|===|
+		|1  ||col |   |
+		|2  ||1   |   |
+		|3  ||1   |   |
+		|4  ||    |   |
+	*/
+
+	v, err := file.GetCellValue("Sheet1", "A1")
+	require.NoError(t, err)
+	require.Equal(t, "col", v)
+
+	v, err = file.GetCellValue("Sheet1", "B1")
+	require.NoError(t, err)
+	require.Equal(t, "", v)
+
+	v, err = file.GetCellValue("Sheet1", "A2")
+	require.NoError(t, err)
+	require.Equal(t, "1", v)
+
+	v, err = file.GetCellValue("Sheet1", "B2")
+	require.NoError(t, err)
+	require.Equal(t, "", v)
+
+	v, err = file.GetCellValue("Sheet1", "A3")
+	require.NoError(t, err)
+	require.Equal(t, "1", v)
+
+	v, err = file.GetCellValue("Sheet1", "B3")
+	require.NoError(t, err)
+	require.Equal(t, "", v)
+
+	v, err = file.GetCellValue("Sheet1", "A4")
+	require.NoError(t, err)
+	require.Equal(t, "", v)
+
+	v, err = file.GetCellValue("Sheet1", "B4")
+	require.NoError(t, err)
+	require.Equal(t, "", v)
+}
+
 func Test_writeXLSX_number(t *testing.T) {
 	meta := []*runtimev1.MetricsViewColumn{
 		{

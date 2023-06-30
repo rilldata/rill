@@ -926,6 +926,48 @@ paths:
             $ref: '#/definitions/v1SetSuperuserRequest'
       tags:
         - AdminService
+  /v1/superuser/quotas/organization:
+    patch:
+      summary: SudoUpdateOrganizationQuotas update the quotas available for orgs
+      operationId: AdminService_SudoUpdateOrganizationQuotas
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoUpdateOrganizationQuotasResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoUpdateOrganizationQuotasRequest'
+      tags:
+        - AdminService
+  /v1/superuser/quotas/user:
+    patch:
+      summary: SudoUpdateUserQuotas update the quotas for users
+      operationId: AdminService_SudoUpdateUserQuotas
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoUpdateUserQuotasResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoUpdateUserQuotasRequest'
+      tags:
+        - AdminService
   /v1/superuser/resource:
     get:
       summary: SudoGetResource returns details about a resource by ID lookup
@@ -998,6 +1040,26 @@ paths:
             $ref: '#/definitions/v1IssueRepresentativeAuthTokenRequest'
       tags:
         - AdminService
+  /v1/users:
+    get:
+      summary: GetUser returns user by email
+      operationId: AdminService_GetUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: email
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
   /v1/users/current:
     get:
       summary: GetCurrentUser returns the currently authenticated user (if any)
@@ -1015,7 +1077,7 @@ paths:
         - AdminService
   /v1/users/search:
     get:
-      summary: GetUsersByEmail returns user by email
+      summary: GetUsersByEmail returns users by email
       operationId: AdminService_SearchUsers
       responses:
         "200":
@@ -1182,6 +1244,11 @@ definitions:
         type: object
         additionalProperties:
           type: string
+  v1GetUserResponse:
+    type: object
+    properties:
+      user:
+        $ref: '#/definitions/v1User'
   v1IssueRepresentativeAuthTokenRequest:
     type: object
     properties:
@@ -1300,6 +1367,8 @@ definitions:
         title: Globally unique
       description:
         type: string
+      quotas:
+        $ref: '#/definitions/v1OrganizationQuotas'
       createdOn:
         type: string
         format: date-time
@@ -1323,6 +1392,24 @@ definitions:
         type: boolean
       manageOrgMembers:
         type: boolean
+  v1OrganizationQuotas:
+    type: object
+    properties:
+      projects:
+        type: integer
+        format: int64
+      deployments:
+        type: integer
+        format: int64
+      slotsTotal:
+        type: integer
+        format: int64
+      slotsPerDeployment:
+        type: integer
+        format: int64
+      outstandingInvites:
+        type: integer
+        format: int64
   v1PingResponse:
     type: object
     properties:
@@ -1443,6 +1530,48 @@ definitions:
       instance:
         $ref: '#/definitions/v1Deployment'
     title: SudoGetResourceResponse
+  v1SudoUpdateOrganizationQuotasRequest:
+    type: object
+    properties:
+      orgName:
+        type: string
+      projects:
+        type: integer
+        format: int64
+      deployments:
+        type: integer
+        format: int64
+      slotsTotal:
+        type: integer
+        format: int64
+      slotsPerDeployment:
+        type: integer
+        format: int64
+      outstandingInvites:
+        type: integer
+        format: int64
+    title: SudoUpdateOrganizationQuotasRequest
+  v1SudoUpdateOrganizationQuotasResponse:
+    type: object
+    properties:
+      organization:
+        $ref: '#/definitions/v1Organization'
+    title: SudoUpdateOrganizationQuotasResponse
+  v1SudoUpdateUserQuotasRequest:
+    type: object
+    properties:
+      email:
+        type: string
+      singleuserOrgs:
+        type: integer
+        format: int64
+    title: SudoUpdateUserQuotasRequest
+  v1SudoUpdateUserQuotasResponse:
+    type: object
+    properties:
+      user:
+        $ref: '#/definitions/v1User'
+    title: SudoUpdateUserQuotasResponse
   v1TriggerReconcileResponse:
     type: object
   v1TriggerRedeployResponse:
@@ -1477,6 +1606,8 @@ definitions:
         type: string
       photoUrl:
         type: string
+      quotas:
+        $ref: '#/definitions/v1UserQuotas'
       createdOn:
         type: string
         format: date-time
@@ -1492,6 +1623,12 @@ definitions:
         type: string
       invitedBy:
         type: string
+  v1UserQuotas:
+    type: object
+    properties:
+      singleuserOrgs:
+        type: integer
+        format: int64
   v1WhitelistedDomain:
     type: object
     properties:

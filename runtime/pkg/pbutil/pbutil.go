@@ -8,28 +8,31 @@ import (
 	"unicode/utf8"
 
 	"github.com/marcboeker/go-duckdb"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // ToValue converts any value to a google.protobuf.Value. It's similar to
 // structpb.NewValue, but adds support for a few extra primitive types.
-func ToValue(v any) (*structpb.Value, error) {
+func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 	switch v := v.(type) {
 	// In addition to the extra supported types, we also override handling for
 	// maps and lists since we need to use valToPB on nested fields.
 	case map[string]any:
-		v2, err := ToStruct(v)
+		var t2 *runtimev1.StructType
+		if t != nil {
+			t2 = t.StructType
+		}
+		v2, err := ToStruct(v, t2)
 		if err != nil {
 			return nil, err
 		}
-
 		return structpb.NewStructValue(v2), nil
 	case []any:
-		v2, err := ToListValue(v)
+		v2, err := ToListValue(v, t)
 		if err != nil {
 			return nil, err
 		}
-
 		return structpb.NewListValue(v2), nil
 	// Handle types not handled by structpb.NewValue
 	case int8:
@@ -41,6 +44,10 @@ func ToValue(v any) (*structpb.Value, error) {
 	case uint16:
 		return structpb.NewNumberValue(float64(v)), nil
 	case time.Time:
+		if t != nil && t.Code == runtimev1.Type_CODE_DATE {
+			s := v.Format(time.DateOnly)
+			return structpb.NewStringValue(s), nil
+		}
 		s := v.Format(time.RFC3339Nano)
 		return structpb.NewStringValue(s), nil
 	case float32:
@@ -71,21 +78,23 @@ func ToValue(v any) (*structpb.Value, error) {
 		v2, _ := new(big.Rat).SetFrac(v.Value, denom).Float64()
 		return structpb.NewNumberValue(v2), nil
 	case duckdb.Map:
-		return ToValue(map[any]any(v))
+		return ToValue(map[any]any(v), t)
 	case map[any]any:
-		v2, err := ToStructCoerceKeys(v)
+		var t2 *runtimev1.MapType
+		if t != nil {
+			t2 = t.MapType
+		}
+		v2, err := ToStructCoerceKeys(v, t2)
 		if err != nil {
 			return nil, err
 		}
-
 		return structpb.NewStructValue(v2), nil
 	case duckdb.Interval:
 		m := map[string]any{"months": v.Months, "days": v.Days, "micros": v.Micros}
-		v2, err := ToStruct(m)
+		v2, err := ToStruct(m, nil)
 		if err != nil {
 			return nil, err
 		}
-
 		return structpb.NewStructValue(v2), nil
 	default:
 		// Default handling for basic types (ints, string, etc.)
@@ -95,32 +104,48 @@ func ToValue(v any) (*structpb.Value, error) {
 
 // ToStruct converts a map to a google.protobuf.Struct. It's similar to
 // structpb.NewStruct(), but it recurses on valToPB instead of structpb.NewValue
-// to add support for more types.
-func ToStruct(v map[string]any) (*structpb.Struct, error) {
+// to add support for more types. Providing t as a type hint is optional.
+func ToStruct(v map[string]any, t *runtimev1.StructType) (*structpb.Struct, error) {
 	x := &structpb.Struct{Fields: make(map[string]*structpb.Value, len(v))}
-	for k, v := range v {
-		if !utf8.ValidString(k) {
-			return nil, fmt.Errorf("invalid UTF-8 in string: %q", k)
+	if t == nil {
+		for k, v := range v {
+			if !utf8.ValidString(k) {
+				return nil, fmt.Errorf("invalid UTF-8 in string: %q", k)
+			}
+			var err error
+			x.Fields[k], err = ToValue(v, nil)
+			if err != nil {
+				return nil, err
+			}
 		}
-		var err error
-		x.Fields[k], err = ToValue(v)
-		if err != nil {
-			return nil, err
+	} else {
+		for _, f := range t.Fields {
+			var err error
+			x.Fields[f.Name], err = ToValue(v[f.Name], f.Type)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	return x, nil
 }
 
 // ToStructCoerceKeys converts a map with non-string keys to a google.protobuf.Struct.
-// It attempts to coerce the keys to JSON strings.
-func ToStructCoerceKeys(v map[any]any) (*structpb.Struct, error) {
+// It attempts to coerce the keys to JSON strings. Providing t as a type hint is optional.
+func ToStructCoerceKeys(v map[any]any, t *runtimev1.MapType) (*structpb.Struct, error) {
+	var keyType, valType *runtimev1.Type
+	if t != nil {
+		keyType = t.KeyType
+		valType = t.ValueType
+	}
+
 	x := &structpb.Struct{Fields: make(map[string]*structpb.Value, len(v))}
 	for k1, v := range v {
 		k2, ok := k1.(string)
 		if !ok {
 			// Encode k1 using ToValue (to correctly coerce time, big numbers, etc.) and then to JSON.
 			// This yields more idiomatic/consistent strings than using fmt.Sprintf("%v", k1).
-			val, err := ToValue(k1)
+			val, err := ToValue(k1, keyType)
 			if err != nil {
 				return nil, err
 			}
@@ -135,7 +160,7 @@ func ToStructCoerceKeys(v map[any]any) (*structpb.Struct, error) {
 		}
 
 		var err error
-		x.Fields[k2], err = ToValue(v)
+		x.Fields[k2], err = ToValue(v, valType)
 		if err != nil {
 			return nil, err
 		}
@@ -156,12 +181,16 @@ func trimQuotes(s string) string {
 
 // ToListValue converts a map to a google.protobuf.List. It's similar to
 // structpb.NewList(), but it recurses on valToPB instead of structpb.NewList
-// to add support for more types.
-func ToListValue(v []interface{}) (*structpb.ListValue, error) {
+// to add support for more types. Providing t as a type hint is optional.
+func ToListValue(v []interface{}, t *runtimev1.Type) (*structpb.ListValue, error) {
+	var elemType *runtimev1.Type
+	if t != nil {
+		elemType = t.ArrayElementType
+	}
 	x := &structpb.ListValue{Values: make([]*structpb.Value, len(v))}
 	for i, v := range v {
 		var err error
-		x.Values[i], err = ToValue(v)
+		x.Values[i], err = ToValue(v, elemType)
 		if err != nil {
 			return nil, err
 		}

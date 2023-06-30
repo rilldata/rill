@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
+	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -155,6 +156,17 @@ func (q *MetricsViewTimeSeries) resolveDruid(ctx context.Context, olap drivers.O
 	}
 	defer rows.Close()
 
+	// Omit the time value from the result schema
+	schema := rows.Schema
+	if schema != nil {
+		for i, f := range schema.Fields {
+			if f.Name == tsAlias {
+				schema.Fields = slices.Delete(schema.Fields, i, i+1)
+				break
+			}
+		}
+	}
+
 	var data []*runtimev1.TimeSeriesValue
 	for rows.Next() {
 		rowMap := make(map[string]any)
@@ -170,9 +182,9 @@ func (q *MetricsViewTimeSeries) resolveDruid(ctx context.Context, olap drivers.O
 		default:
 			panic(fmt.Sprintf("unexpected type for timestamp column: %T", v))
 		}
-
 		delete(rowMap, tsAlias)
-		records, err := pbutil.ToStruct(rowMap)
+
+		records, err := pbutil.ToStruct(rowMap, schema)
 		if err != nil {
 			return err
 		}

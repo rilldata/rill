@@ -226,7 +226,11 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{organization}/whitelisted"};
   }
 
-   // GetUsersByEmail returns user by email
+  // GetUser returns user by email
+  rpc GetUser(GetUserRequest) returns (GetUserResponse) {
+    option (google.api.http) = {get: "/v1/users"};
+  }
+   // GetUsersByEmail returns users by email
   rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse) {
     option (google.api.http) = {get: "/v1/users/search"};
   }
@@ -247,6 +251,22 @@ service AdminService {
    // SudoGetResource returns details about a resource by ID lookup
   rpc SudoGetResource(SudoGetResourceRequest) returns (SudoGetResourceResponse) {
     option (google.api.http) = {get: "/v1/superuser/resource"};
+  }
+
+  // SudoUpdateUserQuotas update the quotas for users
+  rpc SudoUpdateUserQuotas(SudoUpdateUserQuotasRequest) returns (SudoUpdateUserQuotasResponse) {
+    option (google.api.http) = {
+      patch: "/v1/superuser/quotas/user",
+      body: "*"
+    };
+  }
+
+  // SudoUpdateOrganizationQuotas update the quotas available for orgs
+  rpc SudoUpdateOrganizationQuotas(SudoUpdateOrganizationQuotasRequest) returns (SudoUpdateOrganizationQuotasResponse) {
+    option (google.api.http) = {
+      patch: "/v1/superuser/quotas/organization",
+      body: "*"
+    };
   }
 
 }
@@ -494,6 +514,32 @@ message SudoGetResourceResponse {
   }
 }
 
+// SudoUpdateOrganizationQuotasRequest
+message SudoUpdateOrganizationQuotasRequest {
+  string org_name = 1;
+  optional uint32 projects = 2;
+  optional uint32 deployments = 3;
+  optional uint32 slots_total = 4;
+  optional uint32 slots_per_deployment = 5;
+  optional uint32 outstanding_invites = 6;
+}
+
+// SudoUpdateOrganizationQuotasResponse
+message SudoUpdateOrganizationQuotasResponse {
+  Organization organization = 1;
+}
+
+// SudoUpdateUserQuotasRequest
+message SudoUpdateUserQuotasRequest {
+  string email = 1;
+  optional uint32 singleuser_orgs = 2;
+}
+
+// SudoUpdateUserQuotasResponse
+message SudoUpdateUserQuotasResponse {
+  User user = 1;
+}
+
 message ListProjectMembersRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
@@ -549,6 +595,14 @@ message SetProjectMemberRoleResponse {}
 message GetCurrentUserRequest {}
 
 message GetCurrentUserResponse {
+  User user = 1;
+}
+
+message GetUserRequest {
+  string email = 1 [(validate.rules).string.email = true];
+}
+
+message GetUserResponse {
   User user = 1;
 }
 
@@ -630,16 +684,30 @@ message User {
   string email = 2;
   string display_name = 3;
   string photo_url = 4;
-  google.protobuf.Timestamp created_on = 5;
-  google.protobuf.Timestamp updated_on = 6;
+  UserQuotas quotas = 5;
+  google.protobuf.Timestamp created_on = 6;
+  google.protobuf.Timestamp updated_on = 7;
 }
 
 message Organization {
   string id = 1;
   string name = 2; // Globally unique
   string description = 3;
-  google.protobuf.Timestamp created_on = 4;
-  google.protobuf.Timestamp updated_on = 5;
+  OrganizationQuotas quotas = 4;
+  google.protobuf.Timestamp created_on = 5;
+  google.protobuf.Timestamp updated_on = 6;
+}
+
+message UserQuotas {
+  uint32 singleuser_orgs = 1;
+}
+
+message OrganizationQuotas {
+  uint32 projects = 1;
+  uint32 deployments = 2;
+  uint32 slots_total = 3;
+  uint32 slots_per_deployment = 4;
+  uint32 outstanding_invites = 5;
 }
 
 message Project {
