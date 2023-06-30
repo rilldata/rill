@@ -59,7 +59,7 @@ func main() {
 
 	versionString = strings.TrimPrefix(string(nodeVersion), "v")
 	major, _ = parseVersion(versionString)
-	if major >= 18 {
+	if major < 18 {
 		panic("require Node.js version greater than 18")
 	}
 
