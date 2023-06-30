@@ -561,7 +561,7 @@ message ColumnTimeSeriesRequest {
   repeated BasicMeasure measures = 3 [(validate.rules).repeated.min_items = 1];
   string timestamp_column_name = 4 [(validate.rules).string.min_len = 1];
   TimeSeriesTimeRange time_range = 5;
-  int32 pixels = 7 [(validate.rules).int32.gt = 0];
+  int32 pixels = 7 [(validate.rules).int32.gte = 0];
   int32 sample_size = 8 [(validate.rules).int32.gte = 0];
   int32 priority = 9;
   message BasicMeasure {
