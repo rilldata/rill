@@ -335,6 +335,7 @@
       $comparisonTopListQuery?.data,
       values,
       dimensionName,
+      dimensionColumn,
       leaderboardMeasureName
     );
   }
