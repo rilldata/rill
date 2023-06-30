@@ -42,7 +42,7 @@
     <svelte:fragment slot="tooltip-content">Export model data</svelte:fragment>
   </IconButton>
   <Menu
-    dark
+    minWidth=""
     on:click-outside={toggleFloatingElement}
     on:escape={toggleFloatingElement}
     slot="floating-element"
