@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.uber.org/zap"
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -27,6 +28,7 @@ const (
 func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux) {
 	// TODO: Add helper utils to clean this up
 	inner := http.NewServeMux()
+	inner.Handle("/auth/signup", otelhttp.WithRouteTag("/auth/signup", http.HandlerFunc(a.authLogin)))
 	inner.Handle("/auth/login", otelhttp.WithRouteTag("/auth/login", http.HandlerFunc(a.authLogin)))
 	inner.Handle("/auth/callback", otelhttp.WithRouteTag("/auth/callback", http.HandlerFunc(a.authLoginCallback)))
 	inner.Handle("/auth/with-token", otelhttp.WithRouteTag("/auth/with-token", http.HandlerFunc(a.authWithToken)))
@@ -70,7 +72,14 @@ func (a *Authenticator) authLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Redirect to auth provider
-	http.Redirect(w, r, a.oauth2.AuthCodeURL(state), http.StatusTemporaryRedirect)
+	redirectURL := a.oauth2.AuthCodeURL(state)
+	if r.URL.Path == "/auth/signup" {
+		// Set custom parameters using AuthCodeOption
+		customOption := oauth2.SetAuthURLParam("screen_hint", "signup")
+		redirectURL = a.oauth2.AuthCodeURL(state, customOption)
+	}
+
+	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 }
 
 // authLoginCallback is called after the user has successfully authenticated with the auth provider.

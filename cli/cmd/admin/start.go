@@ -134,7 +134,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			if err != nil {
 				logger.Fatal("error creating email sender", zap.Error(err))
 			}
-			emailClient := email.New(sender, conf.FrontendURL)
+			emailClient := email.New(sender, conf.FrontendURL, conf.ExternalURL)
 
 			// Init github client
 			gh, err := admin.NewGithub(conf.GithubAppID, conf.GithubAppPrivateKey)
