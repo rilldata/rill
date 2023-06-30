@@ -148,7 +148,12 @@
   $: timeRangeName = $dashboardStore?.selectedTimeRange?.name;
 
   // Compose the comparison /toplist query
-  $: displayComparison = timeRangeName && $dashboardStore?.showComparison;
+  $: displayComparison =
+    timeRangeName &&
+    $dashboardStore?.showComparison &&
+    // wait for the start time to be available
+    // TODO: Move to better handling of undefined store values
+    $dashboardStore?.selectedTimeRange?.start;
 
   $: comparisonTimeRange =
     displayComparison &&
