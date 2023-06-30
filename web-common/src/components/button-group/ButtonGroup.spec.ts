@@ -11,7 +11,7 @@ describe("ButtonGroup", () => {
     });
 
     [1, 2, 3].forEach(async (i) => {
-      let button = screen.getByRole("button", { name: `button-${i}` });
+      const button = screen.getByRole("button", { name: `button-${i}` });
       expect(button).toBeInstanceOf(HTMLButtonElement);
     });
 
@@ -29,7 +29,7 @@ describe("ButtonGroup", () => {
     component.$on("subbutton-click", onClick);
 
     [1, 2, 3].forEach(async (i) => {
-      let button = screen.getByRole("button", { name: `button-${i}` });
+      const button = screen.getByRole("button", { name: `button-${i}` });
       await fireEvent.click(button);
       expect(onClick).toBeCalledWith(expect.objectContaining({ detail: i }));
     });
@@ -49,7 +49,7 @@ describe("ButtonGroup", () => {
     component.$on("subbutton-click", onClick);
 
     [1, 2, 3].forEach(async (i) => {
-      let button = screen.getByRole("button", { name: `button-${i}` });
+      const button = screen.getByRole("button", { name: `button-${i}` });
       await fireEvent.click(button);
     });
 
@@ -69,9 +69,9 @@ describe("ButtonGroup", () => {
       [2, "unselected tt"],
       [3, "disabled tt"],
     ].forEach(async ([i, tt]) => {
-      let button = screen.getByRole("button", { name: `button-${i}` });
+      const button = screen.getByRole("button", { name: `button-${i}` });
       await fireEvent.mouseEnter(button.parentElement);
-      let toolTip = await waitFor(() => screen.getByText(tt));
+      const toolTip = await waitFor(() => screen.getByText(tt));
       expect(toolTip).toBeTruthy();
       await fireEvent.mouseLeave(button.parentElement);
     });
@@ -106,21 +106,20 @@ describe("ButtonGroup - adding buttons", () => {
 
   it("added buttons found", async () => {
     component.$set({ values: [1, 2, 3, 4] });
-
-    let button = await screen.findByRole("button", { name: `button-${4}` });
+    const button = await screen.findByRole("button", { name: `button-${4}` });
     expect(button).toBeInstanceOf(HTMLButtonElement);
   });
 
   it("added buttons clickable if not disabled", async () => {
     component.$set({ values: [1, 2, 3, 4] });
-    let button = await screen.findByRole("button", { name: `button-${4}` });
+    const button = await screen.findByRole("button", { name: `button-${4}` });
     await fireEvent.click(button);
     expect(onClick).toBeCalledWith(expect.objectContaining({ detail: 4 }));
   });
 
   it("added buttons not clickable if disabled", async () => {
     component.$set({ values: [1, 2, 3, 4], disabled: [4] });
-    let button = await screen.findByRole("button", { name: `button-${4}` });
+    const button = await screen.findByRole("button", { name: `button-${4}` });
     await fireEvent.click(button);
     expect(onClick).toBeCalledTimes(0);
   });
@@ -129,7 +128,7 @@ describe("ButtonGroup - adding buttons", () => {
     // window.scrollTo = vi.fn();
     component.$set({ values: [1, 2, 3, 4] });
 
-    let button = await screen.findByRole("button", { name: `button-${4}` });
+    const button = await screen.findByRole("button", { name: `button-${4}` });
 
     // mock console.error to avoid irrelevant errors about
     // `scrollTo` not being implemented in jsdom
