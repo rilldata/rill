@@ -31,6 +31,7 @@
   on:close={() => (exportMenuOpen = false)}
 >
   <IconButton
+    ariaLabel="Export model data"
     on:click={(evt) => {
       evt.stopPropagation();
       toggleFloatingElement();
