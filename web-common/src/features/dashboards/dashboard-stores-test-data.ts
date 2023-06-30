@@ -133,7 +133,7 @@ export function createAdBidsMirrorInStore(metrics: V1MetricsView) {
   // actual url is not relevant here
   metricsExplorerStore.syncFromUrl(
     AD_BIDS_MIRROR_NAME,
-    new URL(`http://localhost/dashboard?state=${proto}`),
+    proto,
     metrics ?? { measures: [], dimensions: [] }
   );
 }

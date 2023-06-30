@@ -70,7 +70,7 @@ export function getProtoFromDashboardState(
   }
 
   const message = new DashboardState(state);
-  return encodeURIComponent(protoToBase64(message.toBinary()));
+  return protoToBase64(message.toBinary());
 }
 
 function protoToBase64(proto: Uint8Array) {
