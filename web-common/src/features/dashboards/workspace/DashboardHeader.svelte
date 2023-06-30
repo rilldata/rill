@@ -1,9 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import {
-    Button,
-    IconSpaceFixer,
-  } from "@rilldata/web-common/components/button";
+  import { Button } from "@rilldata/web-common/components/button";
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -25,10 +22,6 @@
     createQueryServiceExport,
   } from "@rilldata/web-common/runtime-client";
   import exportMetrics from "../rows-viewer/export-metrics";
-  import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
-  import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
 
   export let metricViewName: string;
   export let hasTitle: boolean;
