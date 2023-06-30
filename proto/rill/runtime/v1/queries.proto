@@ -207,8 +207,8 @@ message MetricsViewToplistRequest {
   repeated InlineMeasure inline_measures = 12;
   google.protobuf.Timestamp time_start = 5;
   google.protobuf.Timestamp time_end = 6;
-  int64 limit = 7 [(validate.rules).int32.gte = 0];
-  int64 offset = 8 [(validate.rules).int32.gte = 0];
+  int64 limit = 7 [(validate.rules).int64.gte = 0];
+  int64 offset = 8 [(validate.rules).int64.gte = 0];
   repeated MetricsViewSort sort = 9;
   MetricsViewFilter filter = 10;
   int32 priority = 11;
@@ -231,8 +231,8 @@ message MetricsViewComparisonToplistRequest {
   TimeRange comparison_time_range = 7;
   repeated MetricsViewComparisonSort sort = 8;
   MetricsViewFilter filter = 9;
-  int64 limit = 10 [(validate.rules).int32.gte = 0];
-  int64 offset = 11 [(validate.rules).int32.gte = 0];
+  int64 limit = 10 [(validate.rules).int64.gte = 0];
+  int64 offset = 11 [(validate.rules).int64.gte = 0];
   int32 priority = 12;
 }
 
@@ -320,7 +320,7 @@ message MetricsViewRowsRequest {
   MetricsViewFilter filter = 5;
   repeated MetricsViewSort sort = 6;
   int32 limit = 7 [(validate.rules).int32.gte = 0];
-  int64 offset = 8 [(validate.rules).int32.gte = 0];
+  int64 offset = 8 [(validate.rules).int64.gte = 0];
   int32 priority = 9;
 }
 
