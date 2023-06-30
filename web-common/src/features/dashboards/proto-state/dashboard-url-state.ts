@@ -68,12 +68,8 @@ export function useDashboardUrlSync(
   return dashboardUrlState.subscribe((state) => {
     if (state.proto !== lastKnownProto) {
       // changed when filters etc are changed on the dashboard
-      const pathName = get(page).url.pathname;
-      if (state.proto === state.defaultProto) {
-        goto(`${pathName}`);
-      } else {
-        goto(`${pathName}?state=${encodeURIComponent(state.proto)}`);
-      }
+      gotoNewDashboardUrl(get(page).url, state.proto, state.defaultProto);
+
       lastKnownProto = state.proto;
     } else if (state.urlProto !== lastKnownProto) {
       // changed when user updated the url manually
@@ -85,6 +81,22 @@ export function useDashboardUrlSync(
       lastKnownProto = state.urlProto;
     }
   });
+}
+
+function gotoNewDashboardUrl(url: URL, newState: string, defaultState: string) {
+  // this store the actual state. for default state it will be empty
+  let newStateInUrl = "";
+  // changed when filters etc are changed on the dashboard
+  let newPath = url.pathname;
+  if (newState !== defaultState) {
+    newStateInUrl = encodeURIComponent(newState);
+    newPath = `${newPath}?state=${newStateInUrl}`;
+  }
+
+  const currentStateInUrl = url.searchParams.get("state") ?? "";
+
+  if (newStateInUrl === currentStateInUrl) return;
+  goto(newPath);
 }
 
 // TODO: if these are necessary anywhere else move them to a separate file
