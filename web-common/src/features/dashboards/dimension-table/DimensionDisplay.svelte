@@ -14,6 +14,9 @@
     useModelAllTimeRange,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
+  import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
+  import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import {
     createQueryServiceMetricsViewToplist,
     createQueryServiceMetricsViewTotals,
@@ -21,9 +24,6 @@
     MetricsViewFilterCond,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
-  import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
-  import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import {
@@ -110,8 +110,8 @@
     {
       dimensionName: dimensionName,
       measureNames: selectedMeasureNames,
-      timeStart: timeStart,
-      timeEnd: timeEnd,
+      timeStart: hasTimeSeries ? timeStart : undefined,
+      timeEnd: hasTimeSeries ? timeEnd : undefined,
       filter: filterSet,
       limit: "250",
       offset: "0",
@@ -148,16 +148,18 @@
   $: timeRangeName = $dashboardStore?.selectedTimeRange?.name;
 
   // Compose the comparison /toplist query
-  $: displayComparison = $dashboardStore?.showComparison;
+  $: displayComparison = timeRangeName && $dashboardStore?.showComparison;
 
-  $: comparisonTimeRange = getComparisonRange(
-    $dashboardStore.selectedTimeRange.start,
-    $dashboardStore.selectedTimeRange.end,
-    ($dashboardStore?.selectedComparisonTimeRange
-      ?.name as TimeComparisonOption) ||
-      (DEFAULT_TIME_RANGES[timeRangeName]
-        .defaultComparison as TimeComparisonOption)
-  );
+  $: comparisonTimeRange =
+    displayComparison &&
+    getComparisonRange(
+      $dashboardStore?.selectedTimeRange?.start,
+      $dashboardStore?.selectedTimeRange?.end,
+      ($dashboardStore?.selectedComparisonTimeRange
+        ?.name as TimeComparisonOption) ||
+        (DEFAULT_TIME_RANGES[timeRangeName]
+          .defaultComparison as TimeComparisonOption)
+    );
   $: comparisonTimeStart =
     isFinite(comparisonTimeRange?.start?.getTime()) &&
     comparisonTimeRange.start.toISOString();
@@ -189,11 +191,12 @@
     },
     {
       query: {
-        enabled:
+        enabled: Boolean(
           displayComparison &&
-          !!comparisonTimeStart &&
-          !!comparisonTimeEnd &&
-          !!comparisonFilterSet,
+            !!comparisonTimeStart &&
+            !!comparisonTimeEnd &&
+            !!comparisonFilterSet
+        ),
       },
     }
   );
@@ -205,8 +208,8 @@
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      timeStart: timeStart,
-      timeEnd: timeEnd,
+      timeStart: hasTimeSeries ? timeStart : undefined,
+      timeEnd: hasTimeSeries ? timeEnd : undefined,
     },
     {
       query: {
@@ -263,40 +266,46 @@
     columnNames.unshift(dimensionColumn);
     measureNames = allMeasures.map((m) => m.name);
 
-    columns = columnNames.map((columnName) => {
-      if (measureNames.includes(columnName)) {
-        // Handle all regular measures
-        const measure = allMeasures.find((m) => m.name === columnName);
-        return {
-          name: columnName,
-          type: "INT",
-          label: measure?.label || measure?.expression,
-          description: measure?.description,
-          total: referenceValues[measure.name] || 0,
-          enableResize: false,
-          format: measure?.format,
-        };
-      } else if (columnName === dimensionColumn) {
-        // Handle dimension column
-        return {
-          name: columnName,
-          type: "VARCHAR",
-          label: dimension?.label,
-          enableResize: true,
-        };
-      } else {
-        // Handle delta and delta_perc
-        const comparison = getComparisonProperties(columnName, selectedMeasure);
-        return {
-          name: columnName,
-          type: comparison.type,
-          label: comparison.label,
-          description: comparison.description,
-          enableResize: false,
-          format: comparison.format,
-        };
-      }
-    });
+    columns = columnNames
+      .map((columnName) => {
+        if (measureNames.includes(columnName)) {
+          // Handle all regular measures
+          const measure = allMeasures.find((m) => m.name === columnName);
+          return {
+            name: columnName,
+            type: "INT",
+            label: measure?.label || measure?.expression,
+            description: measure?.description,
+            total: referenceValues[measure.name] || 0,
+            enableResize: false,
+            format: measure?.format,
+          };
+        } else if (columnName === dimensionColumn) {
+          // Handle dimension column
+          return {
+            name: columnName,
+            type: "VARCHAR",
+            label: dimension?.label,
+            enableResize: true,
+          };
+        } else if (selectedMeasure) {
+          // Handle delta and delta_perc
+          const comparison = getComparisonProperties(
+            columnName,
+            selectedMeasure
+          );
+          return {
+            name: columnName,
+            type: comparison.type,
+            label: comparison.label,
+            description: comparison.description,
+            enableResize: false,
+            format: comparison.format,
+          };
+        }
+        return undefined;
+      })
+      .filter((column) => !!column);
   }
 
   function onSelectItem(event) {

@@ -63,8 +63,8 @@
           expression: "count(*)",
         },
       ],
-      timeStart: timeStart,
-      timeEnd: timeEnd,
+      timeStart: hasTimeSeries ? timeStart : undefined,
+      timeEnd: hasTimeSeries ? timeEnd : undefined,
       filter: $dashboardStore?.filters,
     },
     {
@@ -102,13 +102,13 @@
     on:click={toggle}
     aria-label="Toggle rows viewer"
   >
+    {#if isOpen}
+      <CaretDownIcon size="14px" />
+    {:else}
+      <CaretUpIcon size="14px" />
+    {/if}
     <span class="font-bold">Model Data</span>
     {label}
-    {#if isOpen}
-      <CaretUpIcon size="14px" />
-    {:else}
-      <CaretDownIcon size="14px" />
-    {/if}
   </button>
   {#if isOpen}
     <RowsViewer {metricViewName} />
