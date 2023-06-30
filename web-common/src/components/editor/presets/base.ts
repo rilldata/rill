@@ -33,7 +33,7 @@ import { indentGuide } from "../indent-guide";
 import { lineStatus } from "../line-status";
 import { editorTheme } from "../theme";
 
-export const basicEditor = () => [
+export const base = () => [
   editorTheme(),
   lineStatus(),
   indentGuide(),

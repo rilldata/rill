@@ -4,8 +4,8 @@
   import { EditorView } from "@codemirror/view";
   import { createEventDispatcher, onMount } from "svelte";
   import { bindEditorEventsToDispatcher } from "./dispatch-events";
-  import { basicEditor } from "./languages/base";
-  import { yamlEditor } from "./languages/yaml";
+  import { base } from "./presets/base";
+  import { yaml } from "./presets/yaml";
 
   const dispatch = createEventDispatcher();
 
@@ -23,10 +23,10 @@
           // any extensions passed as props
           ...extensions,
           // establish a basic editor
-          basicEditor(),
+          base(),
           // establish the yaml editor, which currently only has
           // syntax highlighting
-          yamlEditor(),
+          yaml(),
           // this will catch certain events and dispatch them to the parent
           bindEditorEventsToDispatcher(dispatch),
         ],
