@@ -97,7 +97,7 @@ To check if you already have the AWS CLI installed and authenticated, open a ter
 ```bash
 aws iam get-user --no-cli-pager
 ```
-> Note: The above command works with AWS CLI version 2
+> Note: The above command works with AWS CLI version 2 and above
 
 If it prints information about your user, there is nothing more to do. Rill will be able to connect to any data in S3 that you have access to.
 
