@@ -17,11 +17,6 @@
   import Filters from "../filters/Filters.svelte";
   import { useMetaQuery } from "../selectors";
   import TimeControls from "../time-controls/TimeControls.svelte";
-  import {
-    V1ExportFormat,
-    createQueryServiceExport,
-  } from "@rilldata/web-common/runtime-client";
-  import exportMetrics from "../rows-viewer/export-metrics";
 
   export let metricViewName: string;
   export let hasTitle: boolean;
@@ -36,16 +31,6 @@
       MetricsEventScreenName.Dashboard,
       MetricsEventScreenName.MetricsDefinition
     );
-  };
-
-  const exportDash = createQueryServiceExport();
-
-  const handleExportMetrics = async (format: V1ExportFormat) => {
-    exportMetrics({
-      metricViewName,
-      query: exportDash,
-      format,
-    });
   };
 
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
