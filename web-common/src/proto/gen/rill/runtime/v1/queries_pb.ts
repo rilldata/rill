@@ -1106,6 +1106,11 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
   timeEnd?: Timestamp;
 
   /**
+   * @generated from field: rill.runtime.v1.TimeGrain time_granularity = 10;
+   */
+  timeGranularity = TimeGrain.UNSPECIFIED;
+
+  /**
    * @generated from field: rill.runtime.v1.MetricsViewFilter filter = 5;
    */
   filter?: MetricsViewFilter;
@@ -1142,6 +1147,7 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "time_start", kind: "message", T: Timestamp },
     { no: 4, name: "time_end", kind: "message", T: Timestamp },
+    { no: 10, name: "time_granularity", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 5, name: "filter", kind: "message", T: MetricsViewFilter },
     { no: 6, name: "sort", kind: "message", T: MetricsViewSort, repeated: true },
     { no: 7, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },

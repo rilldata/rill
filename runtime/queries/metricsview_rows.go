@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -17,6 +18,7 @@ type MetricsViewRows struct {
 	MetricsViewName string                       `json:"metrics_view_name,omitempty"`
 	TimeStart       *timestamppb.Timestamp       `json:"time_start,omitempty"`
 	TimeEnd         *timestamppb.Timestamp       `json:"time_end,omitempty"`
+	TimeGranularity runtimev1.TimeGrain          `json:"time_granularity,omitempty"`
 	Filter          *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
 	Sort            []*runtimev1.MetricsViewSort `json:"sort,omitempty"`
 	Limit           int32                        `json:"limit,omitempty"`
@@ -74,7 +76,12 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
-	ql, args, err := q.buildMetricsRowsSQL(mv, olap.Dialect())
+	timeRollupColumnName, err := q.resolveTimeRollupColumnName(ctx, rt, instanceID, priority, mv)
+	if err != nil {
+		return err
+	}
+
+	ql, args, err := q.buildMetricsRowsSQL(mv, olap.Dialect(), timeRollupColumnName)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -110,7 +117,54 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 	return nil
 }
 
-func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect) (string, []any, error) {
+// resolveTimeRollupColumnName infers a column name for time rollup values.
+// The rollup column name takes the format "{time dimension name}__{granularity}[optional number]".
+// The optional number is appended in case of collision with an existing column name.
+// It returns an empty string for cases where no time rollup should be calculated (such as when q.TimeGranularity is not set).
+func (q *MetricsViewRows) resolveTimeRollupColumnName(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, mv *runtimev1.MetricsView) (string, error) {
+	// Skip if no time info is available
+	if mv.TimeDimension == "" || q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+		return "", nil
+	}
+
+	entry, err := rt.GetCatalogEntry(ctx, instanceID, mv.Model)
+	if err != nil {
+		return "", err
+	}
+	model := entry.GetModel()
+	if model == nil {
+		return "", fmt.Errorf("model %q not found for metrics view %q", mv.Model, mv.Name)
+	}
+
+	// Create name stem
+	stem := fmt.Sprintf("%s__%s", mv.TimeDimension, strings.ToLower(convertToDateTruncSpecifier(q.TimeGranularity)))
+
+	// Try new candidate names until we find an available one (capping the search at 10 names)
+	for i := 0; i < 10; i++ {
+		candidate := stem
+		if i != 0 {
+			candidate += strconv.Itoa(i)
+		}
+
+		// Do a case-insensitive search for the candidate name
+		found := false
+		for _, col := range model.Schema.Fields {
+			if strings.EqualFold(candidate, col.Name) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return candidate, nil
+		}
+	}
+
+	// Very unlikely case where no available candidate name was found.
+	// By returning the empty string, the downstream logic will skip computing the rollup.
+	return "", nil
+}
+
+func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect, timeRollupColumnName string) (string, []any, error) {
 	whereClause := "1=1"
 	args := []any{}
 	if mv.TimeDimension != "" {
@@ -153,7 +207,21 @@ func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsView, dialect
 		q.Limit = 100
 	}
 
-	sql := fmt.Sprintf("SELECT * FROM %q WHERE %s %s LIMIT %d OFFSET %d",
+	selectColumns := []string{"*"}
+
+	if timeRollupColumnName != "" {
+		if mv.TimeDimension == "" || q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+			panic("timeRollupColumnName is set, but time dimension info is missing")
+		}
+
+		rollup := fmt.Sprintf("date_trunc('%s', %s) AS %s", convertToDateTruncSpecifier(q.TimeGranularity), safeName(mv.TimeDimension), safeName(timeRollupColumnName))
+
+		// Prepend the rollup column
+		selectColumns = append([]string{rollup}, selectColumns...)
+	}
+
+	sql := fmt.Sprintf("SELECT %s FROM %q WHERE %s %s LIMIT %d OFFSET %d",
+		strings.Join(selectColumns, ","),
 		mv.Model,
 		whereClause,
 		orderClause,

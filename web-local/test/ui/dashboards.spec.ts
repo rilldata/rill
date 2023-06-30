@@ -103,7 +103,7 @@ describe("dashboards", () => {
 
     // Check the row viewer accordion is visible
     await playwrightExpect(
-      page.getByText("Source Data 100k of 100k rows")
+      page.getByText("Model Data 100k of 100k rows")
     ).toBeVisible();
 
     // Change the metric trend granularity
@@ -119,7 +119,7 @@ describe("dashboards", () => {
 
     // Check the row viewer accordion is updated
     await playwrightExpect(
-      page.getByText("Source Data 272 of 100k rows")
+      page.getByText("Model Data 272 of 100k rows")
     ).toBeVisible();
 
     // Check row viewer is collapsed by looking for the cell value "7029", which should be in the table

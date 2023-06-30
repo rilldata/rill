@@ -25,7 +25,7 @@ func TestToStructCoerceKeys(t *testing.T) {
 		expected, err := structpb.NewStruct(tt.Expected)
 		require.NoError(t, err)
 
-		actual, err := ToStructCoerceKeys(tt.Input)
+		actual, err := ToStructCoerceKeys(tt.Input, nil)
 		require.NoError(t, err)
 
 		require.True(t, proto.Equal(expected, actual))

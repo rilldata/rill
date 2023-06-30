@@ -79,10 +79,11 @@ export function getFilterForComparsion(
 export function getFilterForComparisonTable(
   filterForDimension,
   dimensionName,
+  dimensionColumn,
   values
 ) {
   if (!values || !values.length) return filterForDimension;
-  const filterValues = values.map((v) => v[dimensionName]);
+  const filterValues = values.map((v) => v[dimensionColumn]);
   return getFilterForComparsion(
     filterForDimension,
     dimensionName,
