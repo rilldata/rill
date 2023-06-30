@@ -203,7 +203,7 @@ message MetricsViewToplistRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
   string dimension_name = 3 [(validate.rules).string.min_len = 1];
-  repeated string measure_names = 4;
+  repeated string measure_names = 4 [(validate.rules).repeated.min_items = 1];
   repeated InlineMeasure inline_measures = 12;
   google.protobuf.Timestamp time_start = 5;
   google.protobuf.Timestamp time_end = 6;
@@ -225,7 +225,7 @@ message MetricsViewComparisonToplistRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
   string dimension_name = 3 [(validate.rules).string.min_len = 1];
-  repeated string measure_names = 4;
+  repeated string measure_names = 4 [(validate.rules).repeated.min_items = 1];
   repeated InlineMeasure inline_measures = 5;
   TimeRange base_time_range = 6;
   TimeRange comparison_time_range = 7;
@@ -277,7 +277,7 @@ message MetricsViewComparisonValue {
 message MetricsViewTimeSeriesRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
-  repeated string measure_names = 3;
+  repeated string measure_names = 3 [(validate.rules).repeated.min_items = 1];
   repeated InlineMeasure inline_measures = 9;
   google.protobuf.Timestamp time_start = 4;
   google.protobuf.Timestamp time_end = 5;
@@ -296,7 +296,7 @@ message MetricsViewTimeSeriesResponse {
 message MetricsViewTotalsRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
-  repeated string measure_names = 3;
+  repeated string measure_names = 3 [(validate.rules).repeated.min_items = 1];
   repeated InlineMeasure inline_measures = 9;
   google.protobuf.Timestamp time_start = 4;
   google.protobuf.Timestamp time_end = 5;
@@ -332,7 +332,7 @@ message MetricsViewRowsResponse {
 
 // Sort clause for metrics view requests
 message MetricsViewSort {
-  string name = 1;
+  string name = 1 [(validate.rules).string.min_len = 1];
   bool ascending = 2;
 }
 
