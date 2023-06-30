@@ -169,6 +169,7 @@
   $: comparisonFilterSet = getFilterForComparisonTable(
     filterForDimension,
     dimensionName,
+    dimensionColumn,
     $topListQuery?.data?.data
   );
   $: comparisonTopListQuery = createQueryServiceMetricsViewToplist(
