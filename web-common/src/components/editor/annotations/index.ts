@@ -1,7 +1,9 @@
 import { Annotation } from "@codemirror/state";
-/** use this annotation to denote that the runtime has updated the content
- * of an editor buffer.
+
+/** CodeMirror annotation that provides a number (ms) that the doc update
+ * itself should be debounced. This is used in situations where an immediate
+ * reconciliation is necessary, for instance an action to update a YAML file
+ * through a non-editing user action (such as "template in this file").
  */
-export const outsideContentUpdateAnnotation = Annotation.define<string>();
 
 export const debounceDocUpdateAnnotation = Annotation.define<number>();

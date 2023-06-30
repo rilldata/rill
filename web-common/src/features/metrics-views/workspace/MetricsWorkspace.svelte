@@ -115,7 +115,7 @@
 
     // immediately set the line statuses to be empty if the content is empty.
     if (!content?.length) {
-      setLineStatuses([], false)(view);
+      setLineStatuses([], view);
     }
   }
 
@@ -132,8 +132,10 @@
 
   let view: EditorView;
 
-  /** if the errors change, run the following transaction. */
-  $: if (view) setLineStatuses(lineBasedRuntimeErrors)(view);
+  /** If the errors change, run the following transaction.
+   * Given that we are debouncing the core edit,
+   */
+  $: if (view) setLineStatuses(lineBasedRuntimeErrors, view);
 </script>
 
 <WorkspaceContainer inspector={true} assetID={`${metricsDefName}-config`}>

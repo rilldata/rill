@@ -78,10 +78,9 @@ export const createLineNumberGutter = () =>
       const visibleRanges = view.visibleRanges;
       const lineStart = line.from;
       const lineEnd = line.to;
-
       // render only line numbers in the viewport.
       if (
-        (lineStart === 0 && lineEnd === 0) ||
+        //(lineStart === 0 && lineEnd === 0) ||
         !visibleRanges.some(
           (range) => range.from <= lineStart && range.to >= lineEnd
         )

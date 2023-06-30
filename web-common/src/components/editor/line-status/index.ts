@@ -1,4 +1,4 @@
-import { createDebouncer } from "@rilldata/web-common/lib/create-debouncer";
+import type { EditorView } from "@codemirror/basic-setup";
 import { createLineNumberGutter, createStatusLineGutter } from "./gutter";
 import { createLineStatusHighlighter } from "./highlighter";
 import {
@@ -7,22 +7,14 @@ import {
   updateLineStatuses as updateLineStatusesEffect,
 } from "./state";
 
-export function setLineStatuses(lineStatuses: LineStatus[], debounce = true) {
-  const debouncer = createDebouncer();
-  return (view) => {
-    const transaction = updateLineStatusesEffect.of({
-      lineStatuses: lineStatuses,
-    });
+export function setLineStatuses(lineStatuses: LineStatus[], view: EditorView) {
+  const transaction = updateLineStatusesEffect.of({
+    lineStatuses: lineStatuses,
+  });
 
-    debouncer(
-      () => {
-        view.dispatch({
-          effects: [transaction],
-        });
-      },
-      debounce ? 300 : 0
-    );
-  };
+  view.dispatch({
+    effects: [transaction],
+  });
 }
 
 /** creates a special gutter that enables usage of line statuses. */
