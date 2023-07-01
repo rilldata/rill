@@ -18,14 +18,13 @@ export function setLineStatuses(lineStatuses: LineStatus[], view: EditorView) {
   });
 }
 
-/** creates a special gutter that enables usage of line statuses. */
+/** creates a special gutter that enables usage of line statuses.
+ * Provides a lien status gutter
+ */
 export function lineStatus() {
   return [
     createStatusLineGutter(),
-    //lineNumbers(),
     createLineNumberGutter(),
-    // gutter({ class: "cool-gutter" }),
-
     lineStatusesStateField,
     createLineStatusHighlighter(),
   ];

@@ -34,6 +34,7 @@ function errorLinesDecoration(view) {
   return builder.finish();
 }
 
+/** creates a line background highlighter based on the line status. */
 export function createLineStatusHighlighter() {
   return ViewPlugin.fromClass(
     class {
