@@ -9,6 +9,7 @@ import * as yamlMode from "@codemirror/legacy-modes/mode/yaml";
 // a robust way to actually parse the yaml, however, so we can't do much here
 // unless we provide our own AST through another library.
 
+/** the YAML extension primarily adds the legacy yaml syntax highlighter. */
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 export const yaml = () => [StreamLanguage.define(yamlMode.yaml)];

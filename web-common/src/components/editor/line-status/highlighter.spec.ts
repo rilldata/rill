@@ -27,7 +27,7 @@ function getLines(container: HTMLElement) {
   ) as NodeListOf<HTMLElement>;
 }
 
-describe("Line Status Gutter Extension (CodeMirror)", () => {
+describe("Line Status BG Highlighter Extension (CodeMirror)", () => {
   let container: HTMLElement;
   let view: EditorView;
   beforeEach(() => {

@@ -5,12 +5,13 @@ export interface UpdateDetails {
   viewUpdate: ViewUpdate;
 }
 
+/** Provides a way to bubble up different CodeMirror events (primarily docChanged)
+ * to the parent component via a Svelte dispatcher.
+ */
 export function bindEditorEventsToDispatcher(
   dispatch: (event: string, data?: unknown) => void
 ) {
   return EditorView.updateListener.of((viewUpdate: ViewUpdate) => {
-    const state = viewUpdate.state;
-
     if (viewUpdate.focusChanged && viewUpdate.view.hasFocus) {
       dispatch("receive-focus");
     }
@@ -19,7 +20,7 @@ export function bindEditorEventsToDispatcher(
        * The viewUpdate can be used to look at transactions at the parent component level.
        */
       dispatch("update", {
-        content: state.doc.toString(),
+        content: viewUpdate.view.state.doc.toString(),
         viewUpdate,
       } as UpdateDetails);
     }

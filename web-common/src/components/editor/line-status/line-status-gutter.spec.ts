@@ -89,7 +89,6 @@ describe("Line Status Gutter Extension (CodeMirror)", () => {
     setLineStatuses([{ line: 100, level: "error" }], view);
 
     const lineStatuses = getLineStatusElements(container);
-    console.log(lineStatuses);
     const initialSpacer = lineStatuses[0];
     // the spacer should be hidden
     expect(initialSpacer.style.visibility).toBe("hidden");
