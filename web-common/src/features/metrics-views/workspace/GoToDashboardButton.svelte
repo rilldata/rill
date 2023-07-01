@@ -14,17 +14,11 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import { getContext } from "svelte";
-  import type { Writable } from "svelte/store";
   import { getModelOutOfPossiblyMalformedYAML } from "../utils";
 
   export let yaml;
   export let metricsDefName;
   export let error: LineStatus;
-
-  let metricsConfigErrorStore = getContext(
-    "rill:metrics-config:errors"
-  ) as Writable<any>;
 
   let buttonDisabled = true;
   let buttonStatus;
