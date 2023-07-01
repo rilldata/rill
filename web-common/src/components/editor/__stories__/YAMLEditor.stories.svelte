@@ -28,8 +28,6 @@ values:
         },
       ];
 
-    view.dispatch({ selection: { anchor: 23, head: 23 } });
-
     setLineStatuses(errors, view);
   }
 </script>

@@ -6,7 +6,7 @@ import { StateEffect, StateField } from "@codemirror/state";
 
 export interface LineStatus {
   line: number;
-  message: string;
+  message?: string;
   level: string;
 }
 

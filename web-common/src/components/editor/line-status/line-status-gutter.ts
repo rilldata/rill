@@ -4,6 +4,8 @@ import type { SvelteComponent } from "svelte";
 import { lineStatusesStateField, updateLineStatuses } from "./state";
 import StatusGutterMarkerComponent from "./StatusGutterMarker.svelte";
 
+export const LINE_STATUS_GUTTER_CLASS = "cm-line-status-gutter";
+
 class StatusGutterMarker extends GutterMarker {
   element: HTMLElement;
   component: SvelteComponent;
@@ -34,7 +36,9 @@ class StatusGutterMarker extends GutterMarker {
 
 export const createStatusLineGutter = () =>
   gutter({
+    class: LINE_STATUS_GUTTER_CLASS,
     markers: (view) => {
+      const totalLines = view.state.doc.lines;
       // Create a RangeSetBuilder to store the GutterMarkers
       const builder = new RangeSetBuilder<GutterMarker>();
 
@@ -44,18 +48,18 @@ export const createStatusLineGutter = () =>
       // get the line statuses.
       const lineStatuses = view.state
         .field(lineStatusesStateField)
-        .filter((ls) => ls.line !== null && ls.line !== 0);
+        // remove any line statuses that are greater than the total lines
+        .filter((ls) => ls?.line && ls.line !== null && ls.line <= totalLines);
 
       if (!lineStatuses?.length || isEmpty) return builder.finish();
 
       const activeLine = view.state.doc.lineAt(
         view.state.selection.main.head
       ).number;
-      // Iterate through each line status
+      // Iterate through each remaining line status
       for (const { line, level, message } of lineStatuses) {
-        // Create a GutterMarker for the line
         const from = view.state.doc.line(line).from;
-
+        // Create a GutterMarker for the line
         const marker = new StatusGutterMarker(
           line,
           level,
@@ -68,6 +72,8 @@ export const createStatusLineGutter = () =>
       return builder.finish();
     },
 
+    // note: unlike the line number gutter, this spacer does not need to be
+    // updated when the document changes
     initialSpacer: (view) =>
       new StatusGutterMarker(
         view.state.doc.lines,

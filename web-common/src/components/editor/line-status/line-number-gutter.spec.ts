@@ -26,7 +26,7 @@ function getLineNumberElements(container: HTMLElement) {
   ) as NodeListOf<HTMLElement>;
 }
 
-describe("line status system", () => {
+describe("Line Number Gutter Extension (CodeMirror)", () => {
   let container: HTMLElement;
   beforeEach(() => {
     container = document.createElement("div");
