@@ -30,7 +30,7 @@
   let editor: YAMLEditor;
 </script>
 
-<EditorContainer {error} hasContent={!!yaml?.length}>
+<EditorContainer error={!!yaml?.length ? error : undefined}>
   <YAMLEditor
     bind:this={editor}
     content={yaml}

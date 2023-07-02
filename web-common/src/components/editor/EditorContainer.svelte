@@ -11,7 +11,6 @@ It will show an error message if passed in.
   import type { LineStatus } from "./line-status/state";
 
   export let error: LineStatus | V1ReconcileError = undefined;
-  export let hasContent = false;
   export let height = "calc(100vh - var(--header-height))";
 </script>
 
@@ -19,13 +18,13 @@ It will show an error message if passed in.
   <div class="grow flex bg-white overflow-y-auto">
     <div
       class="border-white w-full overflow-y-auto"
-      class:border-b-hidden={error && hasContent}
-      class:border-red-500={error && hasContent}
+      class:border-b-hidden={error}
+      class:border-red-500={error}
     >
       <slot />
     </div>
   </div>
-  {#if error && hasContent}
+  {#if error}
     <div
       transition:slide|local={{ duration: LIST_SLIDE_DURATION }}
       class="ui-editor-text-error ui-editor-bg-error border border-red-500 border-l-4 px-2 py-5"
