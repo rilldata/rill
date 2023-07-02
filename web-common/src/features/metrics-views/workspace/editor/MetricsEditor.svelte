@@ -3,6 +3,7 @@
   import EditorContainer from "@rilldata/web-common/components/editor/EditorContainer.svelte";
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
   import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
+  import type { V1ReconcileError } from "@rilldata/web-common/runtime-client";
   import {
     createPlaceholder,
     createPlaceholderElement,
@@ -13,7 +14,7 @@
   export let view: EditorView;
 
   /** the main error to display on the bottom */
-  export let error: LineStatus;
+  export let error: LineStatus | V1ReconcileError;
 
   /** note: this codemirror plugin does actually utilize tanstack query, and the
    * instantiation of the underlying svelte component that defines the placeholder

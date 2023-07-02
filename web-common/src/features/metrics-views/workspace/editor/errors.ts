@@ -1,3 +1,4 @@
+import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
 import { parseDocument } from "yaml";
 
 /** a temporary set of enums that shoul be emitted by orval's codegen */
@@ -13,7 +14,7 @@ export enum ConfigErrors {
   InvalidTimeGrainForSmallest = "invalid time grain",
 }
 
-export function runtimeErrorToLine(message: string, yaml: string) {
+export function runtimeErrorToLine(message: string, yaml: string): LineStatus {
   const lines = yaml.split("\n");
   if (message === ConfigErrors.SouceNotSelected) {
     /** if this is undefined, then the field isn't here either. */
@@ -45,7 +46,7 @@ export function runtimeErrorToLine(message: string, yaml: string) {
   return { line: null, message, level: "error" };
 }
 
-export function mapRuntimeErrorsToLines(errors, yaml: string) {
+export function mapRuntimeErrorsToLines(errors, yaml: string): LineStatus[] {
   if (!errors) return [];
   return errors
     .map((error) => {

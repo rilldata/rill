@@ -7,7 +7,10 @@
   import { isDuplicateName } from "@rilldata/web-common/features/entity-management/name-utils";
   import { useAllNames } from "@rilldata/web-common/features/entity-management/selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { createRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
+  import {
+    V1ReconcileError,
+    createRuntimeServiceRenameFileAndReconcile,
+  } from "@rilldata/web-common/runtime-client";
   import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { WorkspaceHeader } from "../../../layout/workspace";
@@ -16,7 +19,7 @@
 
   export let metricsDefName;
   export let yaml: string;
-  export let error: LineStatus;
+  export let error: LineStatus | V1ReconcileError;
 
   $: runtimeInstanceId = $runtime.instanceId;
   $: allNamesQuery = useAllNames(runtimeInstanceId);

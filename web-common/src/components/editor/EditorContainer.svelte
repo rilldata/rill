@@ -5,19 +5,17 @@ It will show an error message if passed in.
 
 <script lang="ts">
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
+  import type { V1ReconcileError } from "@rilldata/web-common/runtime-client";
   import { slide } from "svelte/transition";
   import CancelCircle from "../icons/CancelCircle.svelte";
   import type { LineStatus } from "./line-status/state";
 
-  export let error: LineStatus = undefined;
+  export let error: LineStatus | V1ReconcileError = undefined;
   export let hasContent = false;
   export let height = "calc(100vh - var(--header-height))";
 </script>
 
-<div
-  class="editor pane flex flex-col w-full h-full content-stretch"
-  style:height
->
+<div class="flex flex-col w-full h-full content-stretch" style:height>
   <div class="grow flex bg-white overflow-y-auto">
     <div
       class="border-white w-full overflow-y-auto"
