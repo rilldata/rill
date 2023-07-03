@@ -16,8 +16,8 @@
   import { derived, writable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { runtime } from "../../../../runtime-client/runtime-store";
+  import EmbeddedSourceReference from "../../../sources/embedded/EmbeddedSourceReference.svelte";
   import { getTableReferences } from "../../utils/get-table-references";
-  import EmbeddedSourceReference from "./EmbeddedSourceReference.svelte";
   import { getMatchingReferencesAndEntries } from "./utils";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
 
