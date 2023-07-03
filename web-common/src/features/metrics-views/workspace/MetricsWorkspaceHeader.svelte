@@ -1,16 +1,12 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import { renameFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
   import { isDuplicateName } from "@rilldata/web-common/features/entity-management/name-utils";
   import { useAllNames } from "@rilldata/web-common/features/entity-management/selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import {
-    V1ReconcileError,
-    createRuntimeServiceRenameFileAndReconcile,
-  } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { WorkspaceHeader } from "../../../layout/workspace";
@@ -18,13 +14,13 @@
   import GoToDashboardButton from "./GoToDashboardButton.svelte";
 
   export let metricsDefName;
-  export let yaml: string;
-  export let error: LineStatus | V1ReconcileError;
 
   $: runtimeInstanceId = $runtime.instanceId;
   $: allNamesQuery = useAllNames(runtimeInstanceId);
   const queryClient = useQueryClient();
   const renameMetricsDef = createRuntimeServiceRenameFileAndReconcile();
+
+  /** collect the runtime errors to  */
 
   const onChangeCallback = async (e) => {
     if (!e.target.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
@@ -68,5 +64,5 @@
   appRunning={$appQueryStatusStore}
 >
   <MetricsIcon slot="icon" />
-  <GoToDashboardButton {metricsDefName} {yaml} {error} slot="cta" />
+  <GoToDashboardButton {metricsDefName} slot="cta" />
 </WorkspaceHeader>

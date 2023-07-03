@@ -14,11 +14,9 @@ export const editorTheme = () =>
       backgroundColor: "#FEF2F2",
       // this appears to be the best option for interaction with selections.
       mixBlendMode: "hue",
+      color: "var(--ui-editor-error-foreground)",
     },
-    ".cm-line-error .ͼc, .cm-line-error .ͼe, ": {
-      // this is tailwind text-red-900
-      color: "#7F1D1D",
-    },
+
     ".cm-line-level.cm-activeLine": {
       backgroundColor: "hsl(1,90%,80%)",
     },
