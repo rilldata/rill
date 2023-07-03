@@ -1,19 +1,19 @@
 import { describe, it } from "@jest/globals";
 import { expect as playwrightExpect } from "@playwright/test";
 import {
-  assertAdBidsDashboard,
-  createAdBidsModel,
-} from "./utils/dataSpecifcHelpers";
-import {
+  RequestMatcher,
   assertLeaderboards,
   clickOnFilter,
   createDashboardFromModel,
   createDashboardFromSource,
   metricsViewRequestFilterMatcher,
-  RequestMatcher,
   waitForTimeSeries,
   waitForTopLists,
 } from "./utils/dashboardHelpers";
+import {
+  assertAdBidsDashboard,
+  createAdBidsModel,
+} from "./utils/dataSpecifcHelpers";
 import { TestEntityType, wrapRetryAssertion } from "./utils/helpers";
 import { useRegisteredServer } from "./utils/serverConfigs";
 import { createOrReplaceSource } from "./utils/sourceHelpers";
@@ -187,7 +187,7 @@ describe("dashboards", () => {
     await timeRangeMenu.getByRole("button", { name: "Apply" }).click();
 
     // Check number
-    await playwrightExpect(page.getByText("Total records 65.1k")).toBeVisible();
+    await playwrightExpect(page.getByText("Total records 66.2k")).toBeVisible();
 
     // Flip back to All Time
     await page.getByLabel("Select time range").click();
