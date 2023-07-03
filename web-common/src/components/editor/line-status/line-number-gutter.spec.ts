@@ -1,7 +1,7 @@
 import { EditorState, EditorView } from "@codemirror/basic-setup";
 import { beforeEach, describe, expect, it } from "vitest";
 import { lineStatus } from ".";
-import { LINE_NUMBER_GUTTER_CLASS } from "./gutter";
+import { LINE_NUMBER_GUTTER_CLASS } from "./line-number-gutter";
 
 const doc = `name: test dashboard
 measures:
