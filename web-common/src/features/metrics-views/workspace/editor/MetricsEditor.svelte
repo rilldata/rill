@@ -11,7 +11,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
-  import { debounceDocUpdateAnnotation } from "@rilldata/web-common/components/editor/annotations";
+  import { skipDebounceAnnotation } from "@rilldata/web-common/components/editor/annotations";
   import { setLineStatuses } from "@rilldata/web-common/components/editor/line-status";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
@@ -86,32 +86,21 @@
     // added to it.
     const debounceTransaction = viewUpdate.transactions.find(
       (transaction) =>
-        transaction.annotation(debounceDocUpdateAnnotation) !== undefined
+        transaction.annotation(skipDebounceAnnotation) !== undefined
     );
 
     // get the annotation.
     const debounceAnnotation = debounceTransaction?.annotation(
-      debounceDocUpdateAnnotation
+      skipDebounceAnnotation
     );
-    // If there is no debounce annotation, we'll use the default debounce time.
-    // Otherwise, we'll use the debounce based on the annotation.
-    // This annotation comes from a CodeMirror editor update transaction.
-    // Most likely, if debounceAnnotation is not undefined, it's because
-    // the user took an action to explicitly update the editor contents
-    // that didn't look like regular text editing (in this case,
-    // probably Placeholder.svelte).
-    //
-    // We otherwise debounce to 200ms to prevent a lot of reconciliation thrashing.
-    debounce(
-      () => {
-        callReconcileAndUpdateYaml(content);
-      },
-      immediateReconcileFromContentDeletion
-        ? 0
-        : debounceAnnotation !== undefined
-        ? debounceAnnotation
-        : 200
-    );
+    // We will skip the debounce if the user deletes all the content or there is a skipDebounceAnnotation.
+    // See Placeholder.svelte for usage of this annotation.
+    // We otherwise debounce to 200ms to prevent unneeded reconciliation thrashing.
+    const debounceMS =
+      immediateReconcileFromContentDeletion || debounceAnnotation ? 0 : 200;
+    debounce(() => {
+      callReconcileAndUpdateYaml(content);
+    }, debounceMS);
 
     // immediately set the line statuses to be empty if the content is empty.
     if (!content?.length) {
