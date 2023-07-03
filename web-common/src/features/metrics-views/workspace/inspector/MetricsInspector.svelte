@@ -2,8 +2,10 @@
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import ModelInspectorHeader from "@rilldata/web-common/features/models/workspace/inspector/ModelInspectorHeader.svelte";
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
+  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import {
     createRuntimeServiceGetCatalogEntry,
     createRuntimeServiceGetFile,
@@ -14,6 +16,9 @@
   import { getModelOutOfPossiblyMalformedYAML } from "../../utils";
 
   export let metricsDefName: string;
+
+  let showColumns = true;
+  let showModelInformation = true;
 
   $: fileQuery = createRuntimeServiceGetFile(
     $runtime.instanceId,
@@ -49,11 +54,34 @@
 
   // refresh entry value only if the data has changed
   $: entry = $getModel?.data?.entry || entry;
-  let showColumns = true;
+
+  const { observedNode, listenToNodeResize } =
+    createResizeListenerActionFactory();
 </script>
 
 <div>
   {#if modelName && !$modelQuery?.isError && isValidModel}
+    {#key modelName}
+      <div class="pt-1 pb-2" use:listenToNodeResize>
+        <div class="pl-4 pr-4">
+          <CollapsibleSectionTitle
+            tooltipText="model summary"
+            bind:active={showModelInformation}
+          >
+            Model summary
+          </CollapsibleSectionTitle>
+        </div>
+        {#if showModelInformation}
+          <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+            <ModelInspectorHeader
+              {modelName}
+              containerWidth={$observedNode?.clientWidth}
+            />
+            <hr class:opacity-0={!showColumns} class="transition-opacity" />
+          </div>
+        {/if}
+      </div>
+    {/key}
     <div class="model-profile pb-4 pt-2">
       {#if entry && entry?.model?.sql?.trim()?.length}
         <div class="pl-4 pr-4">
