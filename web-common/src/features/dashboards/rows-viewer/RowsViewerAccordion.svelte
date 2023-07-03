@@ -7,6 +7,9 @@
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import { useDashboardStore } from "../dashboard-stores";
   import { useModelHasTimeSeries } from "../selectors";
+  import ExportModelDataButton from "./ExportModelDataButton.svelte";
+  import { featureFlags } from "../../feature-flags";
+
   export let metricViewName: string;
   let isOpen = false;
   const toggle = () => {
@@ -94,6 +97,8 @@
       )} of ${formatCompactInteger($totalsQuery.data.data.count)} rows`;
     }
   }
+
+  $: isLocal = $featureFlags.readOnly === false;
 </script>
 
 <div>
@@ -109,6 +114,9 @@
     {/if}
     <span class="font-bold">Model Data</span>
     {label}
+    <div class="ml-auto">
+      {#if isLocal}<ExportModelDataButton {metricViewName} />{/if}
+    </div>
   </button>
   {#if isOpen}
     <RowsViewer {metricViewName} />
