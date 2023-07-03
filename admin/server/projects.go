@@ -100,7 +100,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		permissions.ReadProd = true
 	}
 
-	if !permissions.ReadProject {
+	if !permissions.ReadProject && !claims.Superuser(ctx) {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
@@ -143,6 +143,38 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		ProdDeployment:     deploymentToDTO(depl),
 		Jwt:                jwt,
 		ProjectPermissions: permissions,
+	}, nil
+}
+
+func (s *Server) SearchProjectNames(ctx context.Context, req *adminv1.SearchProjectNamesRequest) (*adminv1.SearchProjectNamesResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.pattern", req.NamePattern),
+	)
+
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can search projects")
+	}
+
+	token, err := unmarshalPageToken(req.PageToken)
+	if err != nil {
+		return nil, err
+	}
+	pageSize := validPageSize(req.PageSize)
+
+	projectNames, err := s.admin.DB.FindProjectPathsByPattern(ctx, req.NamePattern, token.Val, pageSize)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	nextToken := ""
+	if len(projectNames) >= pageSize {
+		nextToken = marshalPageToken(projectNames[len(projectNames)-1])
+	}
+
+	return &adminv1.SearchProjectNamesResponse{
+		Names:         projectNames,
+		NextPageToken: nextToken,
 	}, nil
 }
 

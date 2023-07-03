@@ -241,7 +241,13 @@ export function parseLocaleStringDate(str: string, timeZone?: string) {
   let localDate = parse(str, format, new Date());
 
   // if date is still invalid, try parsing with default Date string parsing.
-  if (isNaN(localDate.valueOf())) localDate = new Date(`${str}`);
+  if (isNaN(localDate.valueOf())) {
+    // If the string is an ISO date with no time component, add time component so that it will be interpretted in user's timezone.
+    // Otherwise, browsers treat it as 00:00:00 in UTC, which can cause the wrong date to be rendered for a user's timezone
+    const isoDateTest = /^\d{4}-\d{2}-\d{2}$/;
+    if (isoDateTest.test(str)) str = str + "T00:00:00.000";
+    localDate = new Date(`${str}`);
+  }
   if (!timeZone) return localDate;
   return new Date(localDate.toDateString() + " " + timeZone);
 }
