@@ -28,7 +28,7 @@ const (
 func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux) {
 	// TODO: Add helper utils to clean this up
 	inner := http.NewServeMux()
-	inner.Handle("/auth/signup", otelhttp.WithRouteTag("/auth/signup", http.HandlerFunc(a.authLogin)))
+	inner.Handle("/auth/signup", otelhttp.WithRouteTag("/auth/signup", http.HandlerFunc(a.authSignup)))
 	inner.Handle("/auth/login", otelhttp.WithRouteTag("/auth/login", http.HandlerFunc(a.authLogin)))
 	inner.Handle("/auth/callback", otelhttp.WithRouteTag("/auth/callback", http.HandlerFunc(a.authLoginCallback)))
 	inner.Handle("/auth/with-token", otelhttp.WithRouteTag("/auth/with-token", http.HandlerFunc(a.authWithToken)))
@@ -40,10 +40,20 @@ func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux) {
 	mux.Handle("/auth/", observability.Middleware("admin", a.logger, inner))
 }
 
-// authLogin starts an OAuth and OIDC flow that redirects the user for authentication with the auth provider.
+// authSignup redirects the users to signup page after starting the 0Auth and OIDC flow
+func (a *Authenticator) authSignup(w http.ResponseWriter, r *http.Request) {
+	a.authStart(w, r, true)
+}
+
+// authLogin redirects the users to login page after starting the 0Auth and OIDC flow
+func (a *Authenticator) authLogin(w http.ResponseWriter, r *http.Request) {
+	a.authStart(w, r, false)
+}
+
+// authStart starts an OAuth and OIDC flow that redirects the user for authentication with the auth provider.
 // After auth, the user is redirected back to authLoginCallback, which in turn will redirect the user to "/".
 // You can override the redirect destination by passing a `?redirect=URI` query to this endpoint.
-func (a *Authenticator) authLogin(w http.ResponseWriter, r *http.Request) {
+func (a *Authenticator) authStart(w http.ResponseWriter, r *http.Request, signup bool) {
 	// Generate random state for CSRF
 	b := make([]byte, 32)
 	_, err := rand.Read(b)
@@ -73,8 +83,8 @@ func (a *Authenticator) authLogin(w http.ResponseWriter, r *http.Request) {
 
 	// Redirect to auth provider
 	redirectURL := a.oauth2.AuthCodeURL(state)
-	if r.URL.Path == "/auth/signup" {
-		// Set custom parameters using AuthCodeOption
+	if signup {
+		// Set custom parameters for signup using AuthCodeOption
 		customOption := oauth2.SetAuthURLParam("screen_hint", "signup")
 		redirectURL = a.oauth2.AuthCodeURL(state, customOption)
 	}
