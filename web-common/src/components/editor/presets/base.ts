@@ -29,13 +29,26 @@ import {
   keymap,
   rectangularSelection,
 } from "@codemirror/view";
+import { indentGuide } from "../indent-guide";
+import { lineStatus } from "../line-status";
 import { editorTheme } from "../theme";
 
-export const basicEditor = () => [
+/** the base extension adds
+ * - a theme
+ * - the line status extension
+ * - the indent guide extension
+ * - a bunch of useful code mirror extensions
+ *
+ * This is the extension you should use for most editors.
+ */
+export const base = () => [
+  editorTheme(),
+  lineStatus(),
+  indentGuide(),
+
   highlightActiveLineGutter(),
   highlightSpecialChars(),
   history(),
-
   drawSelection(),
   dropCursor(),
   EditorState.allowMultipleSelections.of(true),
@@ -46,7 +59,6 @@ export const basicEditor = () => [
   rectangularSelection(),
   highlightActiveLine(),
   highlightSelectionMatches(),
-  editorTheme(),
   keymap.of([
     ...closeBracketsKeymap,
     ...defaultKeymap,

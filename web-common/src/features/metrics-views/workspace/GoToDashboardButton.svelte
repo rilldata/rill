@@ -1,7 +1,11 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { Button } from "@rilldata/web-common/components/button";
-  import ExploreIcon from "@rilldata/web-common/components/icons/Explore.svelte";
+  import {
+    Button,
+    IconSpaceFixer,
+  } from "@rilldata/web-common/components/button";
+  import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
+  import Forward from "@rilldata/web-common/components/icons/Forward.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
@@ -10,16 +14,11 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import { getContext } from "svelte";
-  import type { Writable } from "svelte/store";
   import { getModelOutOfPossiblyMalformedYAML } from "../utils";
 
   export let yaml;
   export let metricsDefName;
-
-  let metricsConfigErrorStore = getContext(
-    "rill:metrics-config:errors"
-  ) as Writable<any>;
+  export let error: LineStatus;
 
   let buttonDisabled = true;
   let buttonStatus;
@@ -36,21 +35,19 @@
     );
   };
 
+  const TOOLTIP_CTA = "Fix this error to enable your dashboard.";
   $: possibleModel = getModelOutOfPossiblyMalformedYAML(yaml);
-  $: if (possibleModel === null) {
+  $: if (!yaml?.length) {
+    buttonDisabled = true;
+    buttonStatus = ["WHAT.", TOOLTIP_CTA];
+  } else if (error) {
+    buttonDisabled = true;
+    buttonStatus = [error.message, TOOLTIP_CTA];
+  } else if (possibleModel === null) {
     buttonDisabled = true;
     buttonStatus = ["Select a model before exploring metrics"];
-  } else if (!possibleModel) {
-    // FIXME: get these decision rules right {
-    buttonDisabled = true;
-    buttonStatus = ["Add measures and dimensions before exploring metrics"];
-  } else if (Object.values($metricsConfigErrorStore).some((error) => error)) {
-    buttonDisabled = true;
-    buttonStatus = Object.values($metricsConfigErrorStore).filter(
-      (error) => error
-    );
   } else {
-    buttonStatus = ["Explore the metrics dashboard"];
+    buttonStatus = ["Explore your metrics dashboard"];
     buttonDisabled = false;
   }
 </script>
@@ -63,7 +60,9 @@
     on:click={() => viewDashboard()}
     type="primary"
   >
-    Go to Dashboard <ExploreIcon size="16px" />
+    <IconSpaceFixer pullLeft>
+      <Forward /></IconSpaceFixer
+    > Go to Dashboard
   </Button>
   <TooltipContent slot="tooltip-content">
     {#each buttonStatus as status}

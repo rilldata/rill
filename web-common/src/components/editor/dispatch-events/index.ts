@@ -1,27 +1,28 @@
 import { EditorView } from "@codemirror/basic-setup";
+import type { ViewUpdate } from "@codemirror/view";
+export interface UpdateDetails {
+  content: string;
+  viewUpdate: ViewUpdate;
+}
 
+/** Provides a way to bubble up different CodeMirror events (primarily docChanged)
+ * to the parent component via a Svelte dispatcher.
+ */
 export function bindEditorEventsToDispatcher(
-  dispatch: (event: string, data?: unknown) => void,
-  stateFieldUpdaters: ((view: EditorView) => void)[]
+  dispatch: (event: string, data?: unknown) => void
 ) {
-  return EditorView.updateListener.of((viewUpdate) => {
-    const view = viewUpdate.view;
-    const state = viewUpdate.state;
-    const cursor = state.selection.main.head;
-    const line = state.doc.lineAt(cursor);
-    // dispatch current cursor location
-    dispatch("cursor", {
-      line: line.number,
-      column: cursor - line.from,
-    });
+  return EditorView.updateListener.of((viewUpdate: ViewUpdate) => {
     if (viewUpdate.focusChanged && viewUpdate.view.hasFocus) {
       dispatch("receive-focus");
     }
     if (viewUpdate.docChanged) {
-      dispatch("update", { content: state.doc.toString() });
-      stateFieldUpdaters.forEach((updater) => {
-        updater(view);
-      });
+      /** we will pass in the content directly as well as the viewUpdate more broadly.
+       * The viewUpdate can be used to look at transactions at the parent component level.
+       */
+      dispatch("update", {
+        content: viewUpdate.view.state.doc.toString(),
+        viewUpdate,
+      } as UpdateDetails);
     }
   });
 }

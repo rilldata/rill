@@ -1,31 +1,47 @@
-import { createStatusLineGutter } from "./gutter";
+import type { EditorView } from "@codemirror/basic-setup";
 import { createLineStatusHighlighter } from "./highlighter";
-import { lineStatusesStateField, updateLineStatuses } from "./state";
+import { createLineNumberGutter } from "./line-number-gutter";
+import { createStatusLineGutter } from "./line-status-gutter";
+import {
+  LineStatus,
+  lineStatusesStateField,
+  updateLineStatuses as updateLineStatusesEffect,
+} from "./state";
 
-/** creates a special gutter that enables usage of line statuses. */
-export function createLineStatusSystem() {
-  let debounceTimer: ReturnType<typeof setTimeout>;
-  return {
-    /** closes the line status state over a function that dispatches a transaction.
-     */
-    createUpdater(lineStatuses) {
-      return (view) => {
-        const transaction = updateLineStatuses.of({
-          lineStatuses: lineStatuses,
-        });
-        // debounce this transaction to avoid unnecessary flickering updates.
-        if (debounceTimer) clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-          view.dispatch({
-            effects: [transaction],
-          });
-        }, 100);
-      };
-    },
-    extension: [
-      lineStatusesStateField,
-      createStatusLineGutter(),
-      createLineStatusHighlighter(),
-    ],
-  };
+/** convenience function for quickly updating line statuses elsewhere in components.
+ * It assumes access to the CodeMirror editor view, which our editor components should expose as a
+ * bindable prop and which tends to be accessible from edit events dispatched via
+ * the dispatch-events extension in the editor component directory.
+ */
+export function setLineStatuses(lineStatuses: LineStatus[], view: EditorView) {
+  const transaction = updateLineStatusesEffect.of({
+    lineStatuses: lineStatuses,
+  });
+
+  view.dispatch({
+    effects: [transaction],
+  });
+}
+
+/** Creates a special gutter that enables usage of line statuses.
+ * Utilize this in an editor component to enable line statuses,
+ * and set the line statuses via the setLineStatuses function.
+ *
+ * It's comprised of
+ * - a state field for tracking line statuses
+ * - a gutter for displaying line statuses
+ * - a custom gutter for displaying line numbers that also changes color
+ * depending on the line status
+ * - a line bg highlighter that also changes color depending on the line status
+ *
+ * The lineStatusesStateField is the field that triggers updates in the other
+ * extensions in this set.
+ */
+export function lineStatus() {
+  return [
+    lineStatusesStateField,
+    createStatusLineGutter(),
+    createLineNumberGutter(),
+    createLineStatusHighlighter(),
+  ];
 }

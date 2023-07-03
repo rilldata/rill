@@ -6,7 +6,7 @@ import { StateEffect, StateField } from "@codemirror/state";
 
 export interface LineStatus {
   line: number;
-  message: string;
+  message?: string;
   level: string;
 }
 
@@ -37,7 +37,7 @@ export const lineStatusesStateField = StateField.define({
     for (const effect of tr.effects) {
       if (effect.is(updateLineStatuses)) {
         // Clear the existing errors and set the new errors
-        return effect.value.lineStatuses.slice();
+        return effect.value.lineStatuses;
       }
     }
 

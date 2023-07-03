@@ -14,6 +14,7 @@ import {
 } from "../grains";
 import {
   getDurationMultiple,
+  getEndOfPeriod,
   getOffset,
   getStartOfPeriod,
   getTimeWidth,
@@ -287,7 +288,8 @@ export function getAdjustedFetchTime(
   endTime: Date,
   interval: V1TimeGrain
 ) {
-  if (!startTime || !endTime) return { start: startTime, end: endTime };
+  if (!startTime || !endTime)
+    return { start: startTime?.toISOString(), end: endTime?.toISOString() };
   const offsetedStartTime = getOffset(
     startTime,
     TIME_GRAIN[interval].duration,
@@ -321,7 +323,8 @@ export function getAdjustedFetchTime(
 export function getAdjustedChartTime(
   start: Date,
   end: Date,
-  interval: V1TimeGrain
+  interval: V1TimeGrain,
+  timePreset: TimeRangeType
 ) {
   if (!start || !end)
     return {
@@ -332,6 +335,12 @@ export function getAdjustedChartTime(
   const grainDuration = TIME_GRAIN[interval].duration;
 
   let adjustedEnd = new Date(end);
+
+  if (timePreset === TimeRangePreset.ALL_TIME) {
+    // No offset has been applied to All time range so far
+    // Adjust end according to the interval
+    adjustedEnd = getEndOfPeriod(adjustedEnd, grainDuration);
+  }
 
   const offsetDuration = getDurationMultiple(grainDuration, 0.45);
   adjustedEnd = getOffset(adjustedEnd, offsetDuration, TimeOffsetType.SUBTRACT);

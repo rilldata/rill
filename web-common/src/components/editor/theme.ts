@@ -21,8 +21,8 @@ export const editorTheme = () =>
     },
     ".cm-line-level.cm-activeLine": {
       backgroundColor: "hsl(1,90%,80%)",
-      color: "blue",
     },
+
     ".cm-line.cm-line-error.cm-activeLine": {
       // tailwind bg-red-200
       backgroundColor: "#FEE2E2",
@@ -32,6 +32,7 @@ export const editorTheme = () =>
         backgroundColor: "hsla(214, 95%, 70%, 25%)",
         backgroundBlendMode: "hue",
       },
+
     // the color of the selectionMatch background
     ".cm-selectionMatch": {
       backgroundBlendMode: "multiply",
@@ -50,6 +51,11 @@ export const editorTheme = () =>
       paddingRight: "10px",
       minWidth: "32px",
       backgroundColor: "white",
+    },
+    ".cm-gutterElement.cm-activeLineGutter": {
+      // backgroundColor: "hsla(214, 95%, 70%, 25%)",
+      // backgroundBlendMode: "hue",
+      backgroundColor: "#f3f9ff",
     },
     ".cm-tooltip": {
       border: "none",

@@ -251,6 +251,7 @@ TableCells – the cell contents.
           noPin={true}
           selectedColumn={sortByColumn}
           columns={measureColumns}
+          fallbackBGClass="bg-white"
           on:click-column={handleColumnHeaderClick}
         />
 

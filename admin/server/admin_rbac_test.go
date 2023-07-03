@@ -36,7 +36,7 @@ func TestAdmin_RBAC(t *testing.T) {
 
 	sender, err := email.NewConsoleSender(logger, "rill-test@rilldata.io", "")
 	require.NoError(t, err)
-	emailClient := email.New(sender, "")
+	emailClient := email.New(sender, "", "")
 
 	github := &mockGithub{}
 

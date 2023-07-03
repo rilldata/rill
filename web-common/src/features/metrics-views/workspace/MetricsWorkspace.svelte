@@ -1,8 +1,12 @@
 <script lang="ts">
+  import type { EditorView } from "@codemirror/basic-setup";
+  import { debounceDocUpdateAnnotation } from "@rilldata/web-common/components/editor/annotations";
+  import { setLineStatuses } from "@rilldata/web-common/components/editor/line-status";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { appStore } from "@rilldata/web-common/layout/app-store";
+  import { createDebouncer } from "@rilldata/web-common/lib/create-debouncer";
   import {
     V1PutFileAndReconcileResponse,
     createRuntimeServicePutFileAndReconcile,
@@ -15,7 +19,9 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import MetricsWorkspaceHeader from "./MetricsWorkspaceHeader.svelte";
   import MetricsEditor from "./editor/MetricsEditor.svelte";
+  import { mapRuntimeErrorsToLines } from "./editor/errors";
   import MetricsInspector from "./inspector/MetricsInspector.svelte";
+
   // the runtime yaml string
   export let yaml: string;
   export let metricsDefName: string;
@@ -45,6 +51,7 @@
   $: switchToMetrics(metricsDefName);
 
   const metricMigrate = createRuntimeServicePutFileAndReconcile();
+
   async function callReconcileAndUpdateYaml(internalYamlString) {
     const filePath = getFilePathFromNameAndType(
       metricsDefName,
@@ -64,15 +71,87 @@
 
   /** keep track of the IMMEDIATE client-side YAML changes. */
   let intermediateYAML = yaml;
-  function updateYAML(event) {
-    const { content } = event.detail;
+  // update the intermediate yaml if the source yaml itself changes.
+  $: intermediateYAML = yaml;
+
+  const debounce = createDebouncer();
+
+  /** update this configuration file.
+   * To do so, we'll track whether or not the view update has a transaction with
+   * a debounceDocUpdateAnnotation. If so, we will use this to update the actual debounce
+   * time.
+   */
+  function updateMetrics(event) {
+    const { content, viewUpdate } = event.detail;
     intermediateYAML = content;
-    callReconcileAndUpdateYaml(content);
+
+    // check to see if this transaction has a debounce annotation.
+    // This will be dispatched in change transactions with the debounceDocUpdateAnnotation
+    // added to it.
+    const debounceTransaction = viewUpdate.transactions.find(
+      (transaction) =>
+        transaction.annotation(debounceDocUpdateAnnotation) !== undefined
+    );
+
+    // get the annotation.
+    const debounceAnnotation = debounceTransaction?.annotation(
+      debounceDocUpdateAnnotation
+    );
+    // If there is no debounce annotation, we'll use the default debounce time.
+    // Otherwise, we'll use the debounce based on the annotation.
+    // This annotation comes from a CodeMirror editor update transaction.
+    // Most likely, if debounceAnnotation is not undefined, it's because
+    // the user took an action to explicitly update the editor contents
+    // that didn't look like regular text editing (in this case,
+    // probably Placeholder.svelte).
+    //
+    // We otherwise debounce to 300ms to prevent a lot of reconciliation thrashing.
+    debounce(
+      () => {
+        callReconcileAndUpdateYaml(content);
+      },
+      debounceAnnotation !== undefined ? debounceAnnotation : 300
+    );
+
+    // immediately set the line statuses to be empty if the content is empty.
+    if (!content?.length) {
+      setLineStatuses([], view);
+    }
   }
+
+  /** handle errors */
+
+  $: path = Object.keys($fileArtifactsStore?.entities)?.find((key) => {
+    return key.endsWith(`${metricsDefName}.yaml`);
+  });
+
+  $: runtimeErrors = $fileArtifactsStore?.entities?.[path]?.errors;
+  $: lineBasedRuntimeErrors = mapRuntimeErrorsToLines(runtimeErrors, yaml);
+  /** display the main error (the first in this array) at the bottom */
+  $: mainError = [...lineBasedRuntimeErrors, ...(runtimeErrors || [])]?.at(0);
+
+  let view: EditorView;
+
+  /** If the errors change, run the following transaction.
+   * Given that we are debouncing the core edit,
+   */
+  $: if (view) setLineStatuses(lineBasedRuntimeErrors, view);
 </script>
 
 <WorkspaceContainer inspector={true} assetID={`${metricsDefName}-config`}>
-  <MetricsWorkspaceHeader slot="header" {metricsDefName} {yaml} />
-  <MetricsEditor slot="body" on:update={updateYAML} {yaml} {metricsDefName} />
-  <MetricsInspector slot="inspector" {metricsDefName} yaml={intermediateYAML} />
+  <MetricsWorkspaceHeader
+    slot="header"
+    {metricsDefName}
+    {yaml}
+    error={mainError}
+  />
+  <MetricsEditor
+    slot="body"
+    bind:view
+    {yaml}
+    on:update={updateMetrics}
+    {metricsDefName}
+    error={mainError}
+  />
+  <MetricsInspector slot="inspector" yaml={intermediateYAML} />
 </WorkspaceContainer>
