@@ -201,14 +201,14 @@ enum ExportFormat {
 // Request message for QueryService.MetricsViewToplist
 message MetricsViewToplistRequest {
   string instance_id = 1;
-  string metrics_view_name = 2;
-  string dimension_name = 3;
-  repeated string measure_names = 4;
+  string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
+  string dimension_name = 3 [(validate.rules).string.min_len = 1];
+  repeated string measure_names = 4 [(validate.rules).repeated.min_items = 1];
   repeated InlineMeasure inline_measures = 12;
   google.protobuf.Timestamp time_start = 5;
   google.protobuf.Timestamp time_end = 6;
-  int64 limit = 7;
-  int64 offset = 8;
+  int64 limit = 7 [(validate.rules).int64.gte = 0];
+  int64 offset = 8 [(validate.rules).int64.gte = 0];
   repeated MetricsViewSort sort = 9;
   MetricsViewFilter filter = 10;
   int32 priority = 11;
@@ -223,16 +223,16 @@ message MetricsViewToplistResponse {
 // Request message for QueryService.MetricsViewComparisonToplist
 message MetricsViewComparisonToplistRequest {
   string instance_id = 1;
-  string metrics_view_name = 2;
-  string dimension_name = 3;
-  repeated string measure_names = 4;
+  string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
+  string dimension_name = 3 [(validate.rules).string.min_len = 1];
+  repeated string measure_names = 4 [(validate.rules).repeated.min_items = 1];
   repeated InlineMeasure inline_measures = 5;
   TimeRange base_time_range = 6;
   TimeRange comparison_time_range = 7;
   repeated MetricsViewComparisonSort sort = 8;
   MetricsViewFilter filter = 9;
-  int64 limit = 10;
-  int64 offset = 11;
+  int64 limit = 10 [(validate.rules).int64.gte = 0];
+  int64 offset = 11 [(validate.rules).int64.gte = 0];
   int32 priority = 12;
 }
 
@@ -255,7 +255,7 @@ enum MetricsViewComparisonSortType {
 }
 
 message MetricsViewComparisonSort {
-  string measure_name = 1;
+  string measure_name = 1 [(validate.rules).string.min_len = 1];
   bool ascending = 2;
   MetricsViewComparisonSortType type = 3;
 }
@@ -276,8 +276,8 @@ message MetricsViewComparisonValue {
 // Request message for QueryService.MetricsViewTimeSeries
 message MetricsViewTimeSeriesRequest {
   string instance_id = 1;
-  string metrics_view_name = 2;
-  repeated string measure_names = 3;
+  string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
+  repeated string measure_names = 3 [(validate.rules).repeated.min_items = 1];
   repeated InlineMeasure inline_measures = 9;
   google.protobuf.Timestamp time_start = 4;
   google.protobuf.Timestamp time_end = 5;
@@ -295,8 +295,8 @@ message MetricsViewTimeSeriesResponse {
 // Request message for QueryService.MetricsViewTotals
 message MetricsViewTotalsRequest {
   string instance_id = 1;
-  string metrics_view_name = 2;
-  repeated string measure_names = 3;
+  string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
+  repeated string measure_names = 3 [(validate.rules).repeated.min_items = 1];
   repeated InlineMeasure inline_measures = 9;
   google.protobuf.Timestamp time_start = 4;
   google.protobuf.Timestamp time_end = 5;
@@ -313,14 +313,14 @@ message MetricsViewTotalsResponse {
 // Request message for QueryService.MetricsViewRows
 message MetricsViewRowsRequest {
   string instance_id = 1;
-  string metrics_view_name = 2;
+  string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
   google.protobuf.Timestamp time_start = 3;
   google.protobuf.Timestamp time_end = 4;
   TimeGrain time_granularity = 10;
   MetricsViewFilter filter = 5;
   repeated MetricsViewSort sort = 6;
-  int32 limit = 7;
-  int64 offset = 8;
+  int32 limit = 7 [(validate.rules).int32.gte = 0];
+  int64 offset = 8 [(validate.rules).int64.gte = 0];
   int32 priority = 9;
 }
 
@@ -332,7 +332,7 @@ message MetricsViewRowsResponse {
 
 // Sort clause for metrics view requests
 message MetricsViewSort {
-  string name = 1;
+  string name = 1 [(validate.rules).string.min_len = 1];
   bool ascending = 2;
 }
 
@@ -356,8 +356,8 @@ message MetricsViewColumn {
 
 // InlineMeasure is a measure to inject in a metrics view query that is not defined in the underlying MetricsView
 message InlineMeasure {
-  string name = 1;
-  string expression = 2;
+  string name = 1 [(validate.rules).string.min_len = 1];
+  string expression = 2 [(validate.rules).string.min_len = 1];
 }
 
 // **********
@@ -366,8 +366,8 @@ message InlineMeasure {
 
 message ColumnRollupIntervalRequest {
   string instance_id = 1;
-  string table_name = 2;
-  string column_name = 3;
+  string table_name = 2 [(validate.rules).string.min_len = 1];
+  string column_name = 3 [(validate.rules).string.min_len = 1];
   int32 priority = 4;
 }
 
@@ -380,8 +380,8 @@ message ColumnRollupIntervalResponse {
 // Request for QueryService.ColumnTopK. Returns the top K values for a given column using agg function for table table_name.
 message ColumnTopKRequest {
   string instance_id = 1;
-  string table_name = 2;
-  string column_name = 3;
+  string table_name = 2 [(validate.rules).string.min_len = 1];
+  string column_name = 3 [(validate.rules).string.min_len = 1];
   string agg = 4; // default is count(*)
   int32 k = 5; // default is 50
   int32 priority = 6;
@@ -410,8 +410,8 @@ message TopK {
 // Request for QueryService.ColumnNullCount. Returns the null count for a given column for table table_name
 message ColumnNullCountRequest {
   string instance_id = 1;
-  string table_name = 2;
-  string column_name = 3;
+  string table_name = 2 [(validate.rules).string.min_len = 1];
+  string column_name = 3 [(validate.rules).string.min_len = 1];
   int32 priority = 4;
 }
 
@@ -423,8 +423,8 @@ message ColumnNullCountResponse {
 // Request for QueryService.GetColumnDescriptiveStatisticsRequest. Returns the stats for a given column for table table_name
 message ColumnDescriptiveStatisticsRequest {
   string instance_id = 1;
-  string table_name = 2;
-  string column_name = 3;
+  string table_name = 2 [(validate.rules).string.min_len = 1];
+  string column_name = 3 [(validate.rules).string.min_len = 1];
   int32 priority = 4;
 }
 
@@ -478,8 +478,8 @@ message NumericOutliers {
 // Request for QueryService.ColumnTimeGrainRequest
 message ColumnTimeGrainRequest {
   string instance_id = 1;
-  string table_name = 2;
-  string column_name = 3;
+  string table_name = 2 [(validate.rules).string.min_len = 1];
+  string column_name = 3 [(validate.rules).string.min_len = 1];
   int32 priority = 4;
 }
 
@@ -491,8 +491,8 @@ message ColumnTimeGrainResponse {
 // Request for QueryService.ColumnNumericHistogram. Returns the histogram for a given column for table table_name
 message ColumnNumericHistogramRequest {
   string instance_id = 1;
-  string table_name = 2;
-  string column_name = 3;
+  string table_name = 2 [(validate.rules).string.min_len = 1];
+  string column_name = 3 [(validate.rules).string.min_len = 1];
   HistogramMethod histogram_method = 4;
   int32 priority = 5;
 }
@@ -511,8 +511,8 @@ enum HistogramMethod {
 // Request for QueryService.ColumnRugHistogram
 message ColumnRugHistogramRequest {
   string instance_id = 1;
-  string table_name = 2;
-  string column_name = 3;
+  string table_name = 2 [(validate.rules).string.min_len = 1];
+  string column_name = 3 [(validate.rules).string.min_len = 1];
   int32 priority = 4;
 }
 
@@ -523,8 +523,8 @@ message ColumnRugHistogramResponse {
 // Request for QueryService.ColumnTimeRange
 message ColumnTimeRangeRequest {
   string instance_id = 1;
-  string table_name = 2;
-  string column_name = 3;
+  string table_name = 2 [(validate.rules).string.min_len = 1];
+  string column_name = 3 [(validate.rules).string.min_len = 1];
   int32 priority = 4;
 }
 
@@ -546,8 +546,8 @@ message TimeRangeSummary {
 // Request for QueryService.ColumnCardinality. Returns the cardinality for a given column for table table_name
 message ColumnCardinalityRequest {
   string instance_id = 1;
-  string table_name = 2;
-  string column_name = 3;
+  string table_name = 2 [(validate.rules).string.min_len = 1];
+  string column_name = 3 [(validate.rules).string.min_len = 1];
   int32 priority = 4;
 }
 
@@ -557,17 +557,17 @@ message ColumnCardinalityResponse {
 
 message ColumnTimeSeriesRequest {
   string instance_id = 1;
-  string table_name = 2;
-  repeated BasicMeasure measures = 3;
-  string timestamp_column_name = 4;
+  string table_name = 2 [(validate.rules).string.min_len = 1];
+  repeated BasicMeasure measures = 3 [(validate.rules).repeated.min_items = 1];
+  string timestamp_column_name = 4 [(validate.rules).string.min_len = 1];
   TimeSeriesTimeRange time_range = 5;
-  int32 pixels = 7;
-  int32 sample_size = 8;
+  int32 pixels = 7 [(validate.rules).int32.gte = 0];
+  int32 sample_size = 8 [(validate.rules).int32.gte = 0];
   int32 priority = 9;
   message BasicMeasure {
     string id = 1;
     // mandatory user defined metadata
-    string expression = 2;
+    string expression = 2 [(validate.rules).string.min_len = 1];
     // optional user defined metadata
     string sql_name = 3;
   }
@@ -601,7 +601,7 @@ message TimeSeriesValue {
 
 message TableCardinalityRequest {
   string instance_id = 1;
-  string table_name = 2;
+  string table_name = 2 [(validate.rules).string.min_len = 1];
   int32 priority = 3;
 }
 
@@ -611,7 +611,7 @@ message TableCardinalityResponse {
 
 message TableColumnsRequest {
   string instance_id = 1;
-  string table_name = 2;
+  string table_name = 2 [(validate.rules).string.min_len = 1];
   int32 priority = 3;
 }
 
@@ -627,8 +627,8 @@ message ProfileColumn {
 
 message TableRowsRequest {
   string instance_id = 1;
-  string table_name = 2;
-  int32 limit = 3;
+  string table_name = 2 [(validate.rules).string.min_len = 1];
+  int32 limit = 3 [(validate.rules).int32.gte = 0];
   int32 priority = 4;
 }
 
