@@ -8,6 +8,11 @@ import {
   getRuntimeServiceListCatalogEntriesQueryKey,
   getRuntimeServiceListFilesQueryKey,
 } from "@rilldata/web-common/runtime-client";
+import {
+  isColumnProfilingQuery,
+  isProfilingQuery,
+  isTopLevelProfilingQuery,
+} from "@rilldata/web-common/runtime-client/query-matcher";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 
@@ -98,22 +103,6 @@ export function invalidationForMetricsViewData(query, metricsViewName: string) {
   );
 }
 
-const ProfilingQueryExtractor =
-  /v1\/instances\/[a-zA-Z0-9-]+\/queries\/([a-zA-Z0-9-]+)\/tables\/(.+?)"/;
-export function isProfilingQuery(
-  queryHash: string,
-  name: string,
-  ignoreProfileColumns = false
-) {
-  const queryExtractorMatch = ProfilingQueryExtractor.exec(queryHash);
-  if (!queryExtractorMatch) return false;
-  // TODO: move the query matching to a separate module and reuse in http queue
-  const [, type, table] = queryExtractorMatch;
-  return (
-    table === name && (!ignoreProfileColumns || type !== "columns-profile")
-  );
-}
-
 export const invalidateMetricsViewData = (
   queryClient: QueryClient,
   metricsViewName: string,
@@ -143,25 +132,19 @@ export async function invalidateProfilingQueries(
   failed: boolean
 ) {
   queryClient.removeQueries({
-    predicate: (query) => isProfilingQuery(query.queryHash, name),
+    predicate: (query) => isProfilingQuery(query, name),
     type: "inactive",
   });
   // do not re-fetch for failed entities.
   if (failed) return Promise.resolve();
 
-  await queryClient.invalidateQueries({
-    predicate: (query) => {
-      // TODO: move the query matching to a separate module and reuse in http queue
-      const queryExtractorMatch = ProfilingQueryExtractor.exec(query.queryHash);
-      if (!queryExtractorMatch) return false;
-      const [, type, table] = queryExtractorMatch;
-      return table === name && type === "columns-profile";
-    },
+  queryClient.removeQueries({
+    predicate: (query) => isColumnProfilingQuery(query, name),
     type: "active",
   });
 
-  return queryClient.invalidateQueries({
-    predicate: (query) => isProfilingQuery(query.queryHash, name, true),
+  await queryClient.invalidateQueries({
+    predicate: (query) => isTopLevelProfilingQuery(query, name),
     type: "active",
   });
 }
@@ -191,9 +174,7 @@ export const removeEntityQueries = async (
   } else {
     // remove profiling queries
     return queryClient.removeQueries({
-      predicate: (query) => {
-        return isProfilingQuery(query.queryHash, name);
-      },
+      predicate: (query) => isProfilingQuery(query, name),
     });
   }
 };
