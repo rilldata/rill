@@ -78,6 +78,8 @@
    */
   function updateMetrics(event) {
     const { content, viewUpdate } = event.detail;
+    // immediately reconcile if the user deletes all the content.
+    let immediateReconcileFromContentDeletion = !content?.length;
 
     // check to see if this transaction has a debounce annotation.
     // This will be dispatched in change transactions with the debounceDocUpdateAnnotation
@@ -99,12 +101,16 @@
     // that didn't look like regular text editing (in this case,
     // probably Placeholder.svelte).
     //
-    // We otherwise debounce to 300ms to prevent a lot of reconciliation thrashing.
+    // We otherwise debounce to 200ms to prevent a lot of reconciliation thrashing.
     debounce(
       () => {
         callReconcileAndUpdateYaml(content);
       },
-      debounceAnnotation !== undefined ? debounceAnnotation : 300
+      immediateReconcileFromContentDeletion
+        ? 0
+        : debounceAnnotation !== undefined
+        ? debounceAnnotation
+        : 200
     );
 
     // immediately set the line statuses to be empty if the content is empty.
