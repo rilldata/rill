@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { EditorView } from "@codemirror/basic-setup";
-  import EditorContainer from "@rilldata/web-common/components/editor/EditorContainer.svelte";
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
   import { setLineStatuses } from "../../../components/editor/line-status";
   import { mapRuntimeErrorsToLines } from "../../metrics-views/workspace/editor/errors";
@@ -36,11 +35,13 @@
   $: if (view) setLineStatuses(lineBasedRuntimeErrors, view);
 </script>
 
-<EditorContainer error={yaml?.length ? mainError : undefined}>
-  <YAMLEditor
-    bind:this={editor}
-    bind:view
-    content={yaml}
-    on:update={(e) => $sourceStore.setClientYAML(e.detail.content)}
-  />
-</EditorContainer>
+<div class="editor flex flex-col border border-gray-200 rounded">
+  <div class="grow flex bg-white overflow-y-auto rounded">
+    <YAMLEditor
+      bind:this={editor}
+      bind:view
+      content={yaml}
+      on:update={(e) => $sourceStore.setClientYAML(e.detail.content)}
+    />
+  </div>
+</div>
