@@ -164,9 +164,6 @@ func (s *Server) SearchProjectNames(ctx context.Context, req *adminv1.SearchProj
 
 	projectNames, err := s.admin.DB.FindProjectPathsByPattern(ctx, req.NamePattern, token.Val, pageSize)
 	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "projects not found")
-		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
