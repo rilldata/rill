@@ -14,7 +14,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
 import type { QueryObserverResult } from "@tanstack/query-core";
-import { derived, get, Readable, writable } from "svelte/store";
+import { derived, Readable, writable } from "svelte/store";
 
 export function isFetching(...queries) {
   return queries.some((query) => query?.isFetching);
