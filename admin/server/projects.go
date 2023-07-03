@@ -148,7 +148,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 
 func (s *Server) SearchProjectNames(ctx context.Context, req *adminv1.SearchProjectNamesRequest) (*adminv1.SearchProjectNamesResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.NamePattern),
+		attribute.String("args.pattern", req.NamePattern),
 	)
 
 	claims := auth.GetClaims(ctx)
