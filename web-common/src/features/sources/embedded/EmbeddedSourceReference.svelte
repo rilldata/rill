@@ -6,9 +6,13 @@
   import type { V1CatalogEntry } from "@rilldata/web-common/runtime-client";
   import * as classes from "@rilldata/web-local/lib/util/component-classes";
   import { getContext } from "svelte";
+  import type { Writable } from "svelte/store";
+  import type { QueryHighlightState } from "../../models/query-highlight-store";
   import WithModelResultTooltip from "../../models/workspace/inspector/WithModelResultTooltip.svelte";
 
-  const queryHighlight = getContext("rill:app:query-highlight");
+  const queryHighlight: Writable<QueryHighlightState> = getContext(
+    "rill:app:query-highlight"
+  );
 
   export let modelHasError = false;
   export let reference;
