@@ -1,34 +1,42 @@
 <script lang="ts">
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
+  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import {
     createRuntimeServiceGetCatalogEntry,
+    createRuntimeServiceGetFile,
     createRuntimeServiceListCatalogEntries,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { slide } from "svelte/transition";
   import { getModelOutOfPossiblyMalformedYAML } from "../../utils";
 
-  export let yaml: string;
+  export let metricsDefName: string;
+
+  $: fileQuery = createRuntimeServiceGetFile(
+    $runtime.instanceId,
+    getFilePathFromNameAndType(metricsDefName, EntityType.MetricsDefinition)
+  );
+  $: yaml = $fileQuery.data?.blob || "";
 
   // get file.
   $: modelName = getModelOutOfPossiblyMalformedYAML(yaml)?.replace(/"/g, "");
 
   // check to see if this model name exists.
-  //$: modelExists = $fileArtifactsStore.has(modelName);
   $: modelQuery = createRuntimeServiceGetCatalogEntry(
     $runtime.instanceId,
     modelName
   );
 
-  $: models = createRuntimeServiceListCatalogEntries($runtime.instanceId, {
+  $: allModels = createRuntimeServiceListCatalogEntries($runtime.instanceId, {
     type: "OBJECT_TYPE_MODEL",
   });
 
   let isValidModel = false;
-  $: if ($models?.data?.entries) {
-    isValidModel = $models?.data.entries.some(
+  $: if ($allModels?.data?.entries) {
+    isValidModel = $allModels?.data.entries.some(
       (model) => model.name === modelName
     );
   }

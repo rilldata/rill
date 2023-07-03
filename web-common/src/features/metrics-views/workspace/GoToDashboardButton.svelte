@@ -4,7 +4,6 @@
     Button,
     IconSpaceFixer,
   } from "@rilldata/web-common/components/button";
-  import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
   import Forward from "@rilldata/web-common/components/icons/Forward.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -14,11 +13,21 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import { getModelOutOfPossiblyMalformedYAML } from "../utils";
+  import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
+  import { fileArtifactsStore } from "../../entity-management/file-artifacts-store";
+  import { EntityType } from "../../entity-management/types";
+  import { getMetricsDefErrors } from "../utils";
 
-  export let yaml;
   export let metricsDefName;
-  export let error: LineStatus;
+
+  $: fileQuery = createRuntimeServiceGetFile(
+    $runtime.instanceId,
+    getFilePathFromNameAndType(metricsDefName, EntityType.MetricsDefinition)
+  );
+  $: yaml = $fileQuery?.data?.blob;
+  $: errors = getMetricsDefErrors($fileArtifactsStore, metricsDefName);
 
   let buttonDisabled = true;
   let buttonStatus;
@@ -36,17 +45,20 @@
   };
 
   const TOOLTIP_CTA = "Fix this error to enable your dashboard.";
-  $: possibleModel = getModelOutOfPossiblyMalformedYAML(yaml);
-  $: if (!yaml?.length) {
+  // no content
+  $: if (!Boolean(yaml?.length)) {
     buttonDisabled = true;
-    buttonStatus = ["WHAT.", TOOLTIP_CTA];
-  } else if (error) {
+    buttonStatus = [
+      "Your metrics definition is empty. Get started by trying one of the options in the editor.",
+    ];
+  }
+  // content & errors
+  else if (errors?.length) {
     buttonDisabled = true;
-    buttonStatus = [error.message, TOOLTIP_CTA];
-  } else if (possibleModel === null) {
-    buttonDisabled = true;
-    buttonStatus = ["Select a model before exploring metrics"];
-  } else {
+    buttonStatus = [errors[0].message, TOOLTIP_CTA];
+  }
+  // preview is available
+  else {
     buttonStatus = ["Explore your metrics dashboard"];
     buttonDisabled = false;
   }
