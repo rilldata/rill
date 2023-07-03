@@ -121,7 +121,7 @@
   $: if (view) setLineStatuses(lineBasedRuntimeErrors, view);
 </script>
 
-<EditorContainer error={Boolean(yaml?.length) ? mainError : undefined}>
+<EditorContainer error={yaml?.length ? mainError : undefined}>
   <YAMLEditor
     bind:this={editor}
     content={yaml}

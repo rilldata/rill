@@ -46,7 +46,7 @@
 
   const TOOLTIP_CTA = "Fix this error to enable your dashboard.";
   // no content
-  $: if (!Boolean(yaml?.length)) {
+  $: if (!yaml?.length) {
     buttonDisabled = true;
     buttonStatus = [
       "Your metrics definition is empty. Get started by trying one of the options in the editor.",
