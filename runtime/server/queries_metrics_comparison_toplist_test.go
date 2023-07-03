@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -13,7 +14,7 @@ import (
 func getMetricsTestServer(t *testing.T, projectName string) (*Server, string) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, projectName)
 
-	server, err := NewServer(context.Background(), &Options{}, rt, nil)
+	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop())
 	require.NoError(t, err)
 
 	return server, instanceID

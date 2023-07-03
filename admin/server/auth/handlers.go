@@ -3,13 +3,16 @@ package auth
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
@@ -25,18 +28,32 @@ const (
 // RegisterEndpoints adds HTTP endpoints for auth.
 // The mux must be served on the ExternalURL of the Authenticator since the logic in these handlers relies on knowing the full external URIs.
 // Note that these are not gRPC handlers, just regular HTTP endpoints that we mount on the gRPC-gateway mux.
-func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux) {
+func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux, limiter ratelimit.Limiter) {
+	// checkLimit needs access to limiter
+	checkLimit := func(route string, req *http.Request) error {
+		claims := GetClaims(req.Context())
+		if claims == nil || claims.OwnerType() == OwnerTypeAnon {
+			limitKey := ratelimit.AnonLimitKey(route, observability.HTTPPeer(req))
+			if err := limiter.Limit(req.Context(), limitKey, ratelimit.Sensitive); err != nil {
+				if errors.As(err, &ratelimit.QuotaExceededError{}) {
+					return middleware.NewHTTPError(http.StatusTooManyRequests, err.Error())
+				}
+				return err
+			}
+		}
+		return nil
+	}
 	// TODO: Add helper utils to clean this up
 	inner := http.NewServeMux()
-	inner.Handle("/auth/signup", otelhttp.WithRouteTag("/auth/signup", http.HandlerFunc(a.authSignup)))
-	inner.Handle("/auth/login", otelhttp.WithRouteTag("/auth/login", http.HandlerFunc(a.authLogin)))
-	inner.Handle("/auth/callback", otelhttp.WithRouteTag("/auth/callback", http.HandlerFunc(a.authLoginCallback)))
-	inner.Handle("/auth/with-token", otelhttp.WithRouteTag("/auth/with-token", http.HandlerFunc(a.authWithToken)))
-	inner.Handle("/auth/logout", otelhttp.WithRouteTag("/auth/logout", http.HandlerFunc(a.authLogout)))
-	inner.Handle("/auth/logout/callback", otelhttp.WithRouteTag("/auth/logout/callback", http.HandlerFunc(a.authLogoutCallback)))
-	inner.Handle("/auth/oauth/device_authorization", otelhttp.WithRouteTag("/auth/oauth/device_authorization", http.HandlerFunc(a.handleDeviceCodeRequest)))
-	inner.Handle("/auth/oauth/device", otelhttp.WithRouteTag("/auth/oauth/device", a.HTTPMiddleware(http.HandlerFunc(a.handleUserCodeConfirmation)))) // NOTE: Uses auth middleware
-	inner.Handle("/auth/oauth/token", otelhttp.WithRouteTag("/auth/oauth/token", http.HandlerFunc(a.getAccessToken)))
+	inner.Handle("/auth/signup", otelhttp.WithRouteTag("/auth/signup", middleware.RequestHTTPHandler("/auth/signup", checkLimit, http.HandlerFunc(a.authSignup))))
+	inner.Handle("/auth/login", otelhttp.WithRouteTag("/auth/login", middleware.RequestHTTPHandler("/auth/login", checkLimit, http.HandlerFunc(a.authLogin))))
+	inner.Handle("/auth/callback", otelhttp.WithRouteTag("/auth/callback", middleware.RequestHTTPHandler("/auth/callback", checkLimit, http.HandlerFunc(a.authLoginCallback))))
+	inner.Handle("/auth/with-token", otelhttp.WithRouteTag("/auth/with-token", middleware.RequestHTTPHandler("/auth/with-token", checkLimit, http.HandlerFunc(a.authWithToken))))
+	inner.Handle("/auth/logout", otelhttp.WithRouteTag("/auth/logout", middleware.RequestHTTPHandler("/auth/logout", checkLimit, http.HandlerFunc(a.authLogout))))
+	inner.Handle("/auth/logout/callback", otelhttp.WithRouteTag("/auth/logout/callback", middleware.RequestHTTPHandler("/auth/logout/callback", checkLimit, http.HandlerFunc(a.authLogoutCallback))))
+	inner.Handle("/auth/oauth/device_authorization", otelhttp.WithRouteTag("/auth/oauth/device_authorization", middleware.RequestHTTPHandler("/auth/oauth/device_authorization", checkLimit, http.HandlerFunc(a.handleDeviceCodeRequest))))
+	inner.Handle("/auth/oauth/device", otelhttp.WithRouteTag("/auth/oauth/device", a.HTTPMiddleware(middleware.RequestHTTPHandler("/auth/oauth/device", checkLimit, http.HandlerFunc(a.handleUserCodeConfirmation))))) // NOTE: Uses auth middleware
+	inner.Handle("/auth/oauth/token", otelhttp.WithRouteTag("/auth/oauth/token", middleware.RequestHTTPHandler("/auth/oauth/token", checkLimit, http.HandlerFunc(a.getAccessToken))))
 	mux.Handle("/auth/", observability.Middleware("admin", a.logger, inner))
 }
 
