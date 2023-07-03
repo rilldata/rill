@@ -45,6 +45,9 @@
       endEl,
     });
 
+    // suppress svelte-check error:
+    // `Error: Property 'ui' is protected and only accessible within class 'LPCore' and its subclasses.`
+    // @ts-ignore
     picker.ui.addEventListener("click", (evt) => {
       evt.preventDefault();
       evt.stopPropagation();

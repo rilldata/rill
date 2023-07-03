@@ -80,7 +80,10 @@
       <LeaderboardDisplay {metricViewName} />
     {/if}
   </svelte:fragment>
+
   <svelte:fragment slot="rows">
-    <RowsViewerAccordion {metricViewName} />
+    {#if !$featureFlags.readOnly}
+      <RowsViewerAccordion {metricViewName} />
+    {/if}
   </svelte:fragment>
 </DashboardContainer>

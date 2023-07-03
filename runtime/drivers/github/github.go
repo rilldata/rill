@@ -184,7 +184,12 @@ func (c *connection) pullUnsafe(ctx context.Context) error {
 		return err
 	}
 
-	err = wt.Pull(&git.PullOptions{RemoteURL: cloneURL})
+	err = wt.Pull(&git.PullOptions{
+		RemoteURL:     cloneURL,
+		ReferenceName: plumbing.NewBranchReferenceName(c.dsn.Branch),
+		SingleBranch:  true,
+		Force:         true,
+	})
 	if errors.Is(err, git.NoErrAlreadyUpToDate) {
 		return nil
 	} else if err != nil {
@@ -260,6 +265,10 @@ func (c *connection) cloneURL(ctx context.Context) (string, error) {
 type retryErrClassifier struct{}
 
 func (retryErrClassifier) Classify(err error) retrier.Action {
+	if err == nil {
+		return retrier.Succeed
+	}
+
 	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 		return retrier.Fail
 	}
