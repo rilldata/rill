@@ -42,20 +42,15 @@ func (m *modelMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo
 	newModel := newCatalogObj.GetModel()
 	oldMaterializeType := getMaterializeType(oldModel.Materialize)
 	newMaterializeType := getMaterializeType(newModel.Materialize)
-	// check if sql and materialize type are same and if so, do nothing
-	// this includes the cases where materialize is changed from true to inferred or false to unspecified and vice versa
-	if oldModel.Sql == newModel.Sql && oldMaterializeType == newMaterializeType {
-		return nil
+	// if materialize type changed, drop the old type before creating the new
+	// (since "CREATE OR REPLACE" doesn't handle changes from VIEW to TABLE or vice versa)
+	if oldMaterializeType != newMaterializeType {
+		err := m.Delete(ctx, olap, oldCatalogObj)
+		if err != nil {
+			return err
+		}
 	}
-	// if sql is changed and materialize type is the same then just update the sql
-	if oldModel.Sql != newModel.Sql && oldMaterializeType == newMaterializeType {
-		return m.Create(ctx, olap, repo, opts, newCatalogObj)
-	}
-	// else drop the old type and create new materialized type using new sql
-	err := m.Delete(ctx, olap, oldCatalogObj)
-	if err != nil {
-		return err
-	}
+	// re-create to ensure column checks and/or re-materialization in case underlying source changed
 	return m.Create(ctx, olap, repo, opts, newCatalogObj)
 }
 

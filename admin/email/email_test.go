@@ -26,7 +26,7 @@ func (m *mockSender) Send(toEmail, toName, subject, body string) error {
 
 func TestOrganizationInvite(t *testing.T) {
 	mock := &mockSender{}
-	client := New(mock, "https://example.com")
+	client := New(mock, "https://example.com", "")
 
 	opts := &OrganizationInvite{
 		ToEmail:       uuid.New().String(),

@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.uber.org/zap"
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -44,29 +45,32 @@ func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux, limiter ratelimit.
 	}
 	// TODO: Add helper utils to clean this up
 	inner := http.NewServeMux()
-	inner.Handle("/auth/login", otelhttp.WithRouteTag("/auth/login",
-		middleware.RequestHTTPHandler("/auth/login", checkLimit, http.HandlerFunc(a.authLogin))))
-	inner.Handle("/auth/callback", otelhttp.WithRouteTag("/auth/callback",
-		middleware.RequestHTTPHandler("/auth/callback", checkLimit, http.HandlerFunc(a.authLoginCallback))))
-	inner.Handle("/auth/with-token", otelhttp.WithRouteTag("/auth/with-token",
-		middleware.RequestHTTPHandler("/auth/with-token", checkLimit, http.HandlerFunc(a.authWithToken))))
-	inner.Handle("/auth/logout", otelhttp.WithRouteTag("/auth/logout",
-		middleware.RequestHTTPHandler("/auth/logout", checkLimit, http.HandlerFunc(a.authLogout))))
-	inner.Handle("/auth/logout/callback", otelhttp.WithRouteTag("/auth/logout/callback",
-		middleware.RequestHTTPHandler("/auth/logout/callback", checkLimit, http.HandlerFunc(a.authLogoutCallback))))
-	inner.Handle("/auth/oauth/device_authorization", otelhttp.WithRouteTag("/auth/oauth/device_authorization",
-		middleware.RequestHTTPHandler("/auth/oauth/device_authorization", checkLimit, http.HandlerFunc(a.handleDeviceCodeRequest))))
-	inner.Handle("/auth/oauth/device", otelhttp.WithRouteTag("/auth/oauth/device",
-		a.HTTPMiddleware(middleware.RequestHTTPHandler("/auth/oauth/device", checkLimit, http.HandlerFunc(a.handleUserCodeConfirmation))))) // NOTE: Uses auth middleware
-	inner.Handle("/auth/oauth/token", otelhttp.WithRouteTag("/auth/oauth/token",
-		middleware.RequestHTTPHandler("/auth/oauth/token", checkLimit, http.HandlerFunc(a.getAccessToken))))
+	inner.Handle("/auth/signup", otelhttp.WithRouteTag("/auth/signup", middleware.RequestHTTPHandler("/auth/signup", checkLimit, http.HandlerFunc(a.authSignup))))
+	inner.Handle("/auth/login", otelhttp.WithRouteTag("/auth/login", middleware.RequestHTTPHandler("/auth/login", checkLimit, http.HandlerFunc(a.authLogin))))
+	inner.Handle("/auth/callback", otelhttp.WithRouteTag("/auth/callback", middleware.RequestHTTPHandler("/auth/callback", checkLimit, http.HandlerFunc(a.authLoginCallback))))
+	inner.Handle("/auth/with-token", otelhttp.WithRouteTag("/auth/with-token", middleware.RequestHTTPHandler("/auth/with-token", checkLimit, http.HandlerFunc(a.authWithToken))))
+	inner.Handle("/auth/logout", otelhttp.WithRouteTag("/auth/logout", middleware.RequestHTTPHandler("/auth/logout", checkLimit, http.HandlerFunc(a.authLogout))))
+	inner.Handle("/auth/logout/callback", otelhttp.WithRouteTag("/auth/logout/callback", middleware.RequestHTTPHandler("/auth/logout/callback", checkLimit, http.HandlerFunc(a.authLogoutCallback))))
+	inner.Handle("/auth/oauth/device_authorization", otelhttp.WithRouteTag("/auth/oauth/device_authorization", middleware.RequestHTTPHandler("/auth/oauth/device_authorization", checkLimit, http.HandlerFunc(a.handleDeviceCodeRequest))))
+	inner.Handle("/auth/oauth/device", otelhttp.WithRouteTag("/auth/oauth/device", a.HTTPMiddleware(middleware.RequestHTTPHandler("/auth/oauth/device", checkLimit, http.HandlerFunc(a.handleUserCodeConfirmation))))) // NOTE: Uses auth middleware
+	inner.Handle("/auth/oauth/token", otelhttp.WithRouteTag("/auth/oauth/token", middleware.RequestHTTPHandler("/auth/oauth/token", checkLimit, http.HandlerFunc(a.getAccessToken))))
 	mux.Handle("/auth/", observability.Middleware("admin", a.logger, inner))
 }
 
-// authLogin starts an OAuth and OIDC flow that redirects the user for authentication with the auth provider.
+// authSignup redirects the users to signup page after starting the 0Auth and OIDC flow
+func (a *Authenticator) authSignup(w http.ResponseWriter, r *http.Request) {
+	a.authStart(w, r, true)
+}
+
+// authLogin redirects the users to login page after starting the 0Auth and OIDC flow
+func (a *Authenticator) authLogin(w http.ResponseWriter, r *http.Request) {
+	a.authStart(w, r, false)
+}
+
+// authStart starts an OAuth and OIDC flow that redirects the user for authentication with the auth provider.
 // After auth, the user is redirected back to authLoginCallback, which in turn will redirect the user to "/".
 // You can override the redirect destination by passing a `?redirect=URI` query to this endpoint.
-func (a *Authenticator) authLogin(w http.ResponseWriter, r *http.Request) {
+func (a *Authenticator) authStart(w http.ResponseWriter, r *http.Request, signup bool) {
 	// Generate random state for CSRF
 	b := make([]byte, 32)
 	_, err := rand.Read(b)
@@ -95,7 +99,14 @@ func (a *Authenticator) authLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Redirect to auth provider
-	http.Redirect(w, r, a.oauth2.AuthCodeURL(state), http.StatusTemporaryRedirect)
+	redirectURL := a.oauth2.AuthCodeURL(state)
+	if signup {
+		// Set custom parameters for signup using AuthCodeOption
+		customOption := oauth2.SetAuthURLParam("screen_hint", "signup")
+		redirectURL = a.oauth2.AuthCodeURL(state, customOption)
+	}
+
+	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 }
 
 // authLoginCallback is called after the user has successfully authenticated with the auth provider.
