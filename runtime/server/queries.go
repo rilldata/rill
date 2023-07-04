@@ -119,7 +119,7 @@ func ensureLimits(ctx context.Context, olap drivers.OLAPStore, inputSQL string, 
 		return "", err
 	}
 
-	err = traverseAndUpdateModifiers(v, limit)
+	err = transformStatments(v, limit)
 	if err != nil {
 		return "", err
 	}
@@ -147,27 +147,11 @@ func ensureLimits(ctx context.Context, olap drivers.OLAPStore, inputSQL string, 
 	return sqlString, nil
 }
 
-func traverseAndUpdateModifiers(root *jsonvalue.V, limit int) error {
-	if root.IsArray() {
-		for _, v := range root.ForRangeArr() {
-			err := traverseAndUpdateModifiers(v, limit)
-			if err != nil {
-				return err
-			}
-		}
-	} else if root.IsObject() {
-		for k, v := range root.ForRangeObj() {
-			if k == "modifiers" {
-				err := replaceOrUpdateLimitTo(v, limit)
-				if err != nil {
-					return err
-				}
-			} else {
-				err := traverseAndUpdateModifiers(v, limit)
-				if err != nil {
-					return err
-				}
-			}
+func transformStatments(root *jsonvalue.V, limit int) error {
+	for _, v := range root.MustGet("statements").ForRangeArr() {
+		err := replaceOrUpdateLimitTo(v.MustGet("node").MustGet("modifiers"), limit)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
