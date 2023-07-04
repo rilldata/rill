@@ -131,7 +131,9 @@ func (c *connection) ingestMotherduckData(ctx context.Context, source *connector
 
 		res.Next()
 		var localDB string
-		res.Scan(&localDB)
+		if err := res.Scan(&localDB); err != nil {
+			return c.checkErr(err)
+		}
 
 		// get token
 		token := env.Variables["TOKEN"]
@@ -174,7 +176,7 @@ func (c *connection) ingestMotherduckData(ctx context.Context, source *connector
 			defer func(ctx context.Context) { // revert back to localdb
 				err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %q;", localDB), Priority: 1})
 				if err != nil {
-					c.checkErr(err)
+					err = c.checkErr(err)
 					c.logger.Error("failed to switch to local database", zap.Error(err))
 				}
 			}(ensuredCtx)
