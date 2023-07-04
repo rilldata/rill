@@ -48,11 +48,9 @@
   import { useModelNames } from "../../models/selectors";
   import { useCreateDashboardFromSource } from "../createDashboard";
   import { createModelFromSource } from "../createModel";
-  import { refreshAndReconcile, refreshSource } from "../refreshSource";
+  import { refreshSource } from "../refreshSource";
 
   export let sourceName: string;
-  export let path: string;
-  export let embedded = false;
 
   const queryClient = useQueryClient();
 
@@ -91,7 +89,7 @@
       runtimeInstanceId,
       $modelNames.data,
       sourceName,
-      embedded ? `"${path}"` : sourceName,
+      sourceName,
       $createModelMutation
     );
     behaviourEvent.fireNavigationEvent(
@@ -179,30 +177,19 @@
 
   const onRefreshClick = async (tableName: string) => {
     try {
-      if (embedded) {
-        await refreshAndReconcile(
-          tableName,
-          runtimeInstanceId,
-          $refreshSourceMutation,
-          queryClient,
-          source.properties.path,
-          path
-        );
-      } else {
-        await refreshSource(
-          connector,
-          tableName,
-          runtimeInstanceId,
-          $refreshSourceMutation,
-          $createSource,
-          queryClient,
-          source?.connector === "s3" ||
-            source?.connector === "gcs" ||
-            source?.connector === "https"
-            ? source?.properties?.path
-            : sourceName
-        );
-      }
+      await refreshSource(
+        connector,
+        tableName,
+        runtimeInstanceId,
+        $refreshSourceMutation,
+        $createSource,
+        queryClient,
+        source?.connector === "s3" ||
+          source?.connector === "gcs" ||
+          source?.connector === "https"
+          ? source?.properties?.path
+          : sourceName
+      );
       // invalidate the "refreshed_on" time
       const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
         runtimeInstanceId,
@@ -229,9 +216,8 @@
 
 <div class="grid items-center" style:grid-template-columns="auto max-content">
   <WorkspaceHeader
-    {...{ titleInput: embedded ? path : sourceName, onChangeCallback }}
+    {...{ titleInput: sourceName, onChangeCallback }}
     appRunning={$appQueryStatusStore}
-    editable={!embedded}
     let:width
     width={headerWidth}
   >
@@ -293,25 +279,23 @@
             Model this source with SQL
           </TooltipContent>
         </Tooltip>
-        {#if !embedded}
-          <Tooltip alignment="right" distance={16} location="bottom">
-            <Button
-              on:click={() => handleCreateDashboardFromSource(sourceName)}
-              type="primary"
+        <Tooltip alignment="right" distance={16} location="bottom">
+          <Button
+            on:click={() => handleCreateDashboardFromSource(sourceName)}
+            type="primary"
+          >
+            <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}
+              ><Add /></IconSpaceFixer
             >
-              <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}
-                ><Add /></IconSpaceFixer
-              >
 
-              <ResponsiveButtonText collapse={isHeaderWidthSmall}>
-                Create Dashboard
-              </ResponsiveButtonText>
-            </Button>
-            <TooltipContent slot="tooltip-content">
-              Create a dashboard for this source
-            </TooltipContent>
-          </Tooltip>
-        {/if}
+            <ResponsiveButtonText collapse={isHeaderWidthSmall}>
+              Create Dashboard
+            </ResponsiveButtonText>
+          </Button>
+          <TooltipContent slot="tooltip-content">
+            Create a dashboard for this source
+          </TooltipContent>
+        </Tooltip>
       </PanelCTA>
     </svelte:fragment>
   </WorkspaceHeader>

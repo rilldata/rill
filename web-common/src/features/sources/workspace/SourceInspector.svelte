@@ -6,7 +6,6 @@
   } from "@rilldata/web-common/components/column-profile/queries";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
   import {
     formatBigNumberPercentage,
@@ -24,7 +23,6 @@
   import { GridCell, LeftRightGrid } from "../../../components/grid";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import ReferenceModels from "./ReferenceModels.svelte";
 
   export let sourceName: string;
 
@@ -36,10 +34,6 @@
   );
   let sourceCatalog: V1CatalogEntry;
   $: sourceCatalog = $getSource?.data?.entry;
-  $: if (sourceCatalog?.embedded) {
-    // TODO: add this for non embedded items as well
-    fileArtifactsStore.setName(sourceCatalog.path, sourceCatalog.name);
-  }
 
   let showColumns = true;
 
@@ -166,11 +160,6 @@
     </div>
 
     <hr />
-
-    {#if sourceCatalog?.embedded}
-      <ReferenceModels {sourceCatalog} />
-      <hr />
-    {/if}
 
     <div class="pb-4 pt-4">
       <div class=" pl-4 pr-4">
