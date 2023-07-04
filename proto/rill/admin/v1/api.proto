@@ -52,6 +52,11 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{name}"};
   }
 
+  // SearchProjectNames returns project names matching the pattern
+  rpc SearchProjectNames(SearchProjectNamesRequest) returns (SearchProjectNamesResponse) {
+    option (google.api.http) = {get: "/v1/superuser/projects/search"};
+  }
+
   // GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
   rpc GetProjectVariables(GetProjectVariablesRequest) returns (GetProjectVariablesResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{name}/variables"};
@@ -343,6 +348,17 @@ message GetProjectResponse {
   Deployment prod_deployment = 2;
   string jwt = 3;
   ProjectPermissions project_permissions = 4;
+}
+
+message SearchProjectNamesRequest {
+  string name_pattern = 1;
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
+  string page_token = 3;
+}
+
+message SearchProjectNamesResponse {
+  repeated string names = 1;
+  string next_page_token = 2;
 }
 
 message GetProjectVariablesRequest {

@@ -167,6 +167,18 @@ func GetVersionUpdatedAt() (string, error) {
 	return Get(StateFilename, VersionUpdatedAtKey)
 }
 
+// SetEnvToken backup the token for given env
+func SetEnvToken(env, token string) error {
+	key := fmt.Sprintf("tokens.%s", env)
+	return Set(CredentialsFilename, key, token)
+}
+
+// GetEnvToken loads the token for given env
+func GetEnvToken(env string) (string, error) {
+	key := fmt.Sprintf("tokens.%s", env)
+	return Get(CredentialsFilename, key)
+}
+
 // AnalyticsInfo returns analytics info.
 // It loads a persistent install ID from ~/.rill/state.yaml (setting one if not found).
 // It gets analytics enabled/disabled info from ~/.rill/config.yaml (key "analytics_enabled").
