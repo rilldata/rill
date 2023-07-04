@@ -31,8 +31,13 @@ func (s *Server) Query(ctx context.Context, req *runtimev1.QueryRequest) (*runti
 		return nil, err
 	}
 
+	transformedSQL, err := ensureLimits(ctx, olap, req.Sql, limit)
+	if err != nil {
+		return nil, err
+	}
+
 	res, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    req.Sql,
+		Query:    transformedSQL,
 		Args:     args,
 		DryRun:   req.DryRun,
 		Priority: int(req.Priority),
@@ -73,7 +78,8 @@ func (s *Server) CustomQuery(ctx context.Context, req *runtimev1.CustomQueryRequ
 		return nil, err
 	}
 
-	transformedSQL, err := ensureLimits(ctx, olap, req.Sql)
+	limit := 10000
+	transformedSQL, err := ensureLimits(ctx, olap, req.Sql, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +133,7 @@ func rowsToData(rows *drivers.Result) ([]*structpb.Struct, error) {
 	return data, nil
 }
 
-func ensureLimits(ctx context.Context, olap drivers.OLAPStore, inputSQL string) (string, error) {
+func ensureLimits(ctx context.Context, olap drivers.OLAPStore, inputSQL string, limit int) (string, error) {
 	r, err := olap.Execute(ctx, &drivers.Statement{
 		Query: "select json_serialize_sql(?::VARCHAR)",
 		Args:  []any{inputSQL},
@@ -152,7 +158,7 @@ func ensureLimits(ctx context.Context, olap drivers.OLAPStore, inputSQL string) 
 		return "", err
 	}
 
-	err = traverseAndUpdateModifiers(v)
+	err = traverseAndUpdateModifiers(v, limit)
 	if err != nil {
 		return "", err
 	}
@@ -180,10 +186,10 @@ func ensureLimits(ctx context.Context, olap drivers.OLAPStore, inputSQL string) 
 	return sqlString, nil
 }
 
-func traverseAndUpdateModifiers(root *jsonvalue.V) error {
+func traverseAndUpdateModifiers(root *jsonvalue.V, limit int) error {
 	if root.IsArray() {
 		for _, v := range root.ForRangeArr() {
-			err := traverseAndUpdateModifiers(v)
+			err := traverseAndUpdateModifiers(v, limit)
 			if err != nil {
 				return err
 			}
@@ -191,12 +197,12 @@ func traverseAndUpdateModifiers(root *jsonvalue.V) error {
 	} else if root.IsObject() {
 		for k, v := range root.ForRangeObj() {
 			if k == "modifiers" {
-				err := replaceOrUpdateLimitTo(v, 100)
+				err := replaceOrUpdateLimitTo(v, limit)
 				if err != nil {
 					return err
 				}
 			} else {
-				err := traverseAndUpdateModifiers(v)
+				err := traverseAndUpdateModifiers(v, limit)
 				if err != nil {
 					return err
 				}
