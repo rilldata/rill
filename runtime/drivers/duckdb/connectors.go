@@ -48,6 +48,9 @@ func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *co
 	if source.Connector == "local_file" {
 		return c.ingestLocalFiles(ctx, env, source)
 	}
+	if source.Connector == "motherduck" {
+		return c.ingestMotherduckData(ctx, source, env)
+	}
 
 	iterator, err := connectors.ConsumeAsIterator(ctx, env, source, c.logger)
 	if err != nil {
@@ -116,6 +119,84 @@ func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *co
 		appendToTable = true
 	}
 	return summary, nil
+}
+
+func (c *connection) ingestMotherduckData(ctx context.Context, source *connectors.Source, env *connectors.Env) (*drivers.IngestionSummary, error) {
+	err := c.WithConnection(ctx, 1, func(ctx, ensuredCtx context.Context) error {
+		res, err := c.Execute(ctx, &drivers.Statement{Query: "SELECT current_database();"})
+		if err != nil {
+			return c.checkErr(err)
+		}
+		defer res.Close()
+
+		res.Next()
+		var localDB string
+		res.Scan(&localDB)
+
+		// get token
+		token := env.Variables["TOKEN"]
+		if token == "" && env.AllowHostAccess {
+			token = os.Getenv("motherduck_token")
+		}
+		// load motherduck extension; connect to motherduck service
+		err = c.Exec(ctx, &drivers.Statement{Query: "LOAD 'motherduck';", Priority: 1})
+		if err != nil {
+			return fmt.Errorf("failed to load motherduck extension %w", err)
+		}
+
+		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("PRAGMA MD_CONNECT('token=%s');", token), Priority: 1})
+		if err != nil {
+			return fmt.Errorf("failed to load motherduck extension %w", err)
+		}
+
+		// get list of all motherduck databases
+		res, err = c.Execute(ctx, &drivers.Statement{Query: "SELECT name FROM md_databases();", Priority: 1})
+		if err != nil {
+			return c.checkErr(err)
+		}
+		defer res.Close()
+
+		names := make([]string, 0)
+		for res.Next() {
+			var name string
+			if res.Scan(&name) != nil {
+				return c.checkErr(err)
+			}
+
+			names = append(names, name)
+		}
+		if len(names) == 1 { // single motherduck db, use db to allow user to run query without specifying db name
+			err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %q;", names[0]), Priority: 1})
+			if err != nil {
+				return c.checkErr(err)
+			}
+
+			defer func(ctx context.Context) { // revert back to localdb
+				err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %q;", localDB), Priority: 1})
+				if err != nil {
+					c.checkErr(err)
+					c.logger.Error("failed to switch to local database", zap.Error(err))
+				}
+			}(ensuredCtx)
+		}
+
+		qryProp, ok := source.Properties["query"]
+		if !ok {
+			return fmt.Errorf("query field is mandatory for `Motherduck` source")
+		}
+
+		userQuery := strings.TrimSpace(qryProp.(string))
+		userQuery, _ = strings.CutSuffix(userQuery, ";") // trim trailing semi colon
+		query := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s AS (%s);", localDB, source.Name, userQuery)
+		err = c.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
+		return c.checkErr(err)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO :: add support for bytes ingested using db file size difference between after/before ingestion
+	return &drivers.IngestionSummary{BytesIngested: 0}, nil
 }
 
 // local files
