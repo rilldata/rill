@@ -65,6 +65,7 @@ type DB interface {
 	DeleteOrganizationWhitelistedDomain(ctx context.Context, id string) error
 
 	FindProjects(ctx context.Context, afterName string, limit int) ([]*Project, error)
+	FindProjectPathsByPattern(ctx context.Context, namePattern, afterName string, limit int) ([]string, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
 	FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user

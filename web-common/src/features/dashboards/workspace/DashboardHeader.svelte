@@ -13,8 +13,6 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  //  import { getContext } from "svelte";
-  //  import type { Tweened } from "svelte/motion";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Filters from "../filters/Filters.svelte";
   import { useMetaQuery } from "../selectors";
@@ -22,10 +20,6 @@
 
   export let metricViewName: string;
   export let hasTitle: boolean;
-
-  //  const navigationVisibilityTween = getContext(
-  //    "rill:app:navigation-visibility-tween"
-  //  ) as Tweened<number>;
 
   const viewMetrics = (metricViewName: string) => {
     goto(`/dashboard/${metricViewName}/edit`);
@@ -66,8 +60,9 @@
         </div>
       </h1>
       <!-- top right CTAs -->
-      {#if isEditableDashboard}
-        <PanelCTA side="right">
+
+      <PanelCTA side="right">
+        {#if isEditableDashboard}
           <Tooltip distance={8}>
             <Button
               on:click={() => viewMetrics(metricViewName)}
@@ -85,8 +80,8 @@
               Deploy this dashboard to Rill Cloud
             </TooltipContent>
           </Tooltip>
-        </PanelCTA>
-      {/if}
+        {/if}
+      </PanelCTA>
     </div>
   {/if}
   <!-- bottom row -->
