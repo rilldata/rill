@@ -7,7 +7,6 @@
   import * as classes from "@rilldata/web-local/lib/util/component-classes";
   import { getContext } from "svelte";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
-  import { goto } from "$app/navigation";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import {
     MetricsEventScreenName,
@@ -33,8 +32,7 @@
     queryHighlight.set(undefined);
   }
 
-  function navigateToSource() {
-    goto(`/source/${entry.name}`);
+  function emitNavigationToSourceTelemetry() {
     behaviourEvent.fireNavigationEvent(
       entry.name,
       BehaviourEventMedium.Menu,
@@ -46,17 +44,15 @@
 </script>
 
 <WithModelResultTooltip {modelHasError}>
-  <div
+  <a
+    href="/source/{entry.name}"
     class=" w-full ui-copy-muted flex justify-between
    gap-x-4 {classes.QUERY_REFERENCE_TRIGGER} p-1 pl-4 pr-4"
     on:focus={focus(reference)}
     on:mouseover={focus(reference)}
     on:mouseleave={blur}
     on:blur={blur}
-    on:keydown={(e) => {
-      if (e.key === "Enter") navigateToSource();
-    }}
-    on:click={navigateToSource}
+    on:click={emitNavigationToSourceTelemetry}
     class:text-gray-500={modelHasError}
   >
     <EmbeddedSourceEntry connector={entry.source.connector} path={entry.path} />
@@ -66,7 +62,7 @@
         {`${formatCompactInteger(totalRows)} rows` || ""}
       {/if}
     </div>
-  </div>
+  </a>
 
   <svelte:fragment slot="tooltip-title">
     <div class="break-all">
