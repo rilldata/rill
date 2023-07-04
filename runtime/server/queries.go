@@ -174,7 +174,7 @@ func traverseAndUpdateModifiers(root *jsonvalue.V, limit int) error {
 }
 
 /*
-LIMIT claused is serialized to the following JSON:
+"LIMIT 1" clause is serialized to the following JSON:
 
 "modifiers":[
 
@@ -197,21 +197,51 @@ LIMIT claused is serialized to the following JSON:
 	},
 
 ]
+
+"LIMIT ?" clause serialization is:
+
+	{
+	   "type":"LIMIT_MODIFIER",
+	   "limit":{
+	      "class":"PARAMETER",
+	      "type":"VALUE_PARAMETER",
+	      "alias":"",
+	      "parameter_nr":2
+	   },
+	   "offset":null
+	}
 */
 func replaceOrUpdateLimitTo(root *jsonvalue.V, limit int) error {
 	children := root.ForRangeArr()
 	updated := false
 	if len(children) != 0 {
 		for _, v := range children {
-			if v.MustGet("type").String() == "LIMIT_MODIFIER" && v.MustGet("limit").MustGet("class").String() == "CONSTANT" {
-				v.MustGet("limit").MustGet("value").MustSetInt(limit).At("value")
-				updated = true
+			if v.MustGet("type").String() == "LIMIT_MODIFIER" {
+				modifierType := v.MustGet("limit").MustGet("class").String()
+				switch modifierType {
+				case "CONSTANT":
+					v.MustGet("limit").MustGet("value").MustSetInt(limit).At("value")
+					updated = true
+				case "PARAMETER":
+					err := v.Delete("limit")
+					if err != nil {
+						return err
+					}
+
+					limitObject, err := createConstantLimit(limit)
+					if err != nil {
+						return err
+					}
+
+					v.MustSet(limitObject).At("limit")
+					updated = true
+				}
 			}
 		}
 	}
 
 	if !updated {
-		v, err := createLimit(limit)
+		v, err := createLimitModifier(limit)
 		if err != nil {
 			return err
 		}
@@ -225,7 +255,26 @@ func replaceOrUpdateLimitTo(root *jsonvalue.V, limit int) error {
 	return nil
 }
 
-func createLimit(limit int) (*jsonvalue.V, error) {
+func createConstantLimit(limit int) (*jsonvalue.V, error) {
+	v, err := jsonvalue.Unmarshal([]byte(fmt.Sprintf(`
+	{
+	   "class":"CONSTANT",
+	   "type":"VALUE_CONSTANT",
+	   "alias":"",
+	   "value":{
+		  "type":{
+			 "id":"INTEGER",
+			 "type_info":null
+		  },
+		  "is_null":false,
+		  "value":%d
+	   }
+	}
+`, limit)))
+	return v, err
+}
+
+func createLimitModifier(limit int) (*jsonvalue.V, error) {
 	v, err := jsonvalue.Unmarshal([]byte(fmt.Sprintf(`
 {
 	"type":"LIMIT_MODIFIER",
