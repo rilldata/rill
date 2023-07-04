@@ -3934,6 +3934,10 @@ func (m *TriggerRedeployRequest) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for Organization
+
+	// no validation rules for Project
+
 	// no validation rules for DeploymentId
 
 	if len(errors) > 0 {

@@ -267,7 +267,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		GithubURL:            &req.GithubUrl,
 		GithubInstallationID: &installationID,
 		ProdVariables:        req.Variables,
-		ProdTTL:              prodTTL,
+		ProdTTLSeconds:       prodTTL,
 	})
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -365,10 +365,10 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		Name:                 valOrDefault(req.NewName, proj.Name),
 		Description:          valOrDefault(req.Description, proj.Description),
 		Public:               valOrDefault(req.Public, proj.Public),
-		ProdBranch:           valOrDefault(req.ProdBranch, proj.ProdBranch),
-		ProdVariables:        proj.ProdVariables,
 		GithubURL:            githubURL,
 		GithubInstallationID: proj.GithubInstallationID,
+		ProdBranch:           valOrDefault(req.ProdBranch, proj.ProdBranch),
+		ProdVariables:        proj.ProdVariables,
 		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
 		ProdTTLSeconds:       &prodTTLSeconds,

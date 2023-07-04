@@ -24,13 +24,20 @@
   }
 </script>
 
-{#if $proj.isSuccess && errors}
+{#if $proj.isSuccess}
   <ul class="w-full">
-    {#if !hasReadAccess}
+    {#if $proj.data && !$proj.data.prodDeployment}
+      <li class="px-12 py-2 font-semibold text-gray-800 border-b">
+        This project does not currently have a deployment (it may have been hibernated)
+      </li>
+      <li class="px-12 py-1 font-mono text-gray-800 border-b border-gray-200">
+        To re-deploy the project, open a terminal and run: rill project reconcile --project {$proj.data.project.name}
+      </li>
+    {:else if !hasReadAccess}
       <li class="px-12 py-2 font-semibold text-gray-500 border-b">
         You don't have permission to view project logs
       </li>
-    {:else if errors.length === 0}
+    {:else if !errors || errors.length === 0}
       <li class="px-12 py-2 font-semibold text-gray-500 border-b">
         No logs present
       </li>

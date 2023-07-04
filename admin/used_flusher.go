@@ -10,38 +10,28 @@ import (
 	"go.uber.org/zap"
 )
 
-const flushDuration = 20 * time.Second
+const (
+	flushInterval = 30 * time.Second
+	flushTimeout  = 15 * time.Second
+)
 
 type usedFlusher struct {
-	deployments map[string]bool
-	lock        sync.Mutex
 	db          database.DB
 	logger      *zap.Logger
+	mu          sync.Mutex
+	deployments map[string]bool
 	ctx         context.Context
 	cancel      context.CancelFunc
 	flushWg     sync.WaitGroup
-}
-
-func (u *usedFlusher) Deployment(id string) {
-	u.lock.Lock()
-	defer u.lock.Unlock()
-
-	u.deployments[id] = true
-}
-
-func (u *usedFlusher) Close() {
-	u.flushWg.Wait()
-	u.flush(context.Background())
-	u.cancel()
 }
 
 func newUsedFlusher(logger *zap.Logger, db database.DB) *usedFlusher {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	used := &usedFlusher{
-		deployments: make(map[string]bool),
 		db:          db,
 		logger:      logger,
+		deployments: make(map[string]bool),
 		ctx:         ctx,
 		cancel:      cancel,
 	}
@@ -50,12 +40,25 @@ func newUsedFlusher(logger *zap.Logger, db database.DB) *usedFlusher {
 	return used
 }
 
+func (u *usedFlusher) Deployment(id string) {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+
+	u.deployments[id] = true
+}
+
+func (u *usedFlusher) Close() {
+	u.cancel()
+	u.flush()
+	u.flushWg.Wait()
+}
+
 func (u *usedFlusher) runBackground() {
-	ticker := time.NewTicker(flushDuration)
+	ticker := time.NewTicker(flushInterval)
 	for {
 		select {
 		case <-ticker.C:
-			u.flush(u.ctx)
+			u.flush()
 		case <-u.ctx.Done():
 			ticker.Stop()
 			return
@@ -63,26 +66,31 @@ func (u *usedFlusher) runBackground() {
 	}
 }
 
-func (u *usedFlusher) flush(ctx context.Context) {
-	u.logger.Info(`flush deployments`, zap.Int("no of deployments", len(u.deployments)), observability.ZapCtx(u.ctx))
+func (u *usedFlusher) flush() {
 	u.flushWg.Add(1)
 	defer u.flushWg.Done()
-	if len(u.deployments) > 0 {
-		u.lock.Lock()
-		deployments := u.deployments
-		u.deployments = make(map[string]bool)
-		u.lock.Unlock()
 
-		deplIds := make([]string, 0, len(deployments))
+	u.mu.Lock()
+	deployments := u.deployments
+	u.deployments = make(map[string]bool)
+	u.mu.Unlock()
+
+	if len(deployments) > 0 {
+		u.logger.Info("flushing used_on to db", zap.Int("deployments", len(deployments)))
+
+		ctx, cancel := context.WithTimeout(context.Background(), flushTimeout)
+		defer cancel()
+
+		ids := make([]string, 0, len(deployments))
 		for k := range deployments {
-			deplIds = append(deplIds, k)
+			ids = append(ids, k)
 		}
 
-		_, err := u.db.UpdateDeploymentUsedOn(ctx, deplIds)
+		err := u.db.UpdateDeploymentUsedOn(ctx, ids)
 		if err != nil {
-			u.logger.Error("Error while flush update timestamp map into db", zap.Strings("deployment_ids", deplIds), zap.Error(err), observability.ZapCtx(ctx))
+			u.logger.Error("flushing used_on failed", zap.Error(err), zap.Strings("deployment_ids", ids), observability.ZapCtx(ctx))
 		}
 
-		u.logger.Info(`Updated deployment status`, zap.Strings("Depl Ids", deplIds), observability.ZapCtx(ctx))
+		u.logger.Info("flushed used_on to db", zap.Int("deployments", len(deployments)))
 	}
 }

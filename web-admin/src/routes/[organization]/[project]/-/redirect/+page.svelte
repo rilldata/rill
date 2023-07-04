@@ -15,7 +15,7 @@
 
   // Avoid a race condition: make sure the runtime store has been updated (with the host, instanceID, and jwt).
   $: isRuntimeStoreReady =
-    $proj?.data &&
+    $proj?.data?.prodDeployment &&
     $proj.data.prodDeployment.runtimeInstanceId === $runtime.instanceId;
 
   let dashboardsQuery;

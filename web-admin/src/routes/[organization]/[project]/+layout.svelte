@@ -11,6 +11,11 @@
         // Proactively refetch the JWT because it's only valid for 1 hour
         refetchInterval: 1000 * 60 * 30, // 30 minutes
         select: (data) => {
+          // There may not be a prodDeployment if the project was hibernated
+          if (!data.prodDeployment) {
+            return;
+          }
+
           return {
             // Hack: in development, the runtime host is actually on port 8081
             host: data.prodDeployment.runtimeHost.replace(

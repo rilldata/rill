@@ -325,7 +325,7 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		INSERT INTO projects (org_id, name, description, public, region, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, prod_variables, github_url, github_installation_id, prod_ttl_seconds)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
-		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.Region, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, database.Variables(opts.ProdVariables), opts.GithubURL, opts.GithubInstallationID, opts.ProdTTL,
+		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.Region, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, database.Variables(opts.ProdVariables), opts.GithubURL, opts.GithubInstallationID, opts.ProdTTLSeconds,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
@@ -447,13 +447,12 @@ func (c *connection) UpdateDeploymentStatus(ctx context.Context, id string, stat
 	return res, nil
 }
 
-func (c *connection) UpdateDeploymentUsedOn(ctx context.Context, ids []string) (*database.Deployment, error) {
-	res := &database.Deployment{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET used_on=now() WHERE id = any($1) RETURNING *", ids).StructScan(res)
+func (c *connection) UpdateDeploymentUsedOn(ctx context.Context, ids []string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE deployments SET used_on=now() WHERE id = any($1)", ids)
 	if err != nil {
-		return nil, parseErr("deployment", err)
+		return parseErr("deployment", err)
 	}
-	return res, nil
+	return nil
 }
 
 func (c *connection) UpdateDeploymentBranch(ctx context.Context, id, branch string) (*database.Deployment, error) {

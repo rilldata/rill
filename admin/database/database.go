@@ -89,7 +89,7 @@ type DB interface {
 	DeleteDeployment(ctx context.Context, id string) error
 	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, logs string) (*Deployment, error)
 	UpdateDeploymentBranch(ctx context.Context, id, branch string) (*Deployment, error)
-	UpdateDeploymentUsedOn(ctx context.Context, ids []string) (*Deployment, error)
+	UpdateDeploymentUsedOn(ctx context.Context, ids []string) error
 	CountDeploymentsForOrganization(ctx context.Context, orgID string) (*DeploymentsCount, error)
 
 	ResolveRuntimeSlotsUsed(ctx context.Context) ([]*RuntimeSlotsUsed, error)
@@ -261,7 +261,7 @@ type InsertProjectOptions struct {
 	ProdOLAPDriver       string
 	ProdOLAPDSN          string
 	ProdSlots            int
-	ProdTTL              *int64
+	ProdTTLSeconds       *int64
 }
 
 // UpdateProjectOptions defines options for updating a Project.

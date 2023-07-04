@@ -1455,6 +1455,19 @@ export class TriggerRefreshSourcesResponse extends Message<TriggerRefreshSources
  */
 export class TriggerRedeployRequest extends Message<TriggerRedeployRequest> {
   /**
+   * It's sufficient to pass org/project name OR deployment_id.
+   * (To enable rehydrating hibernated projects.)
+   *
+   * @generated from field: string organization = 2;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: string project = 3;
+   */
+  project = "";
+
+  /**
    * @generated from field: string deployment_id = 1;
    */
   deploymentId = "";
@@ -1467,6 +1480,8 @@ export class TriggerRedeployRequest extends Message<TriggerRedeployRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.TriggerRedeployRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 2, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 1, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

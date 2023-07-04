@@ -47,13 +47,9 @@ func ReconcileCmd(cfg *config.Config) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if resp.ProdDeployment == nil {
-				cmdutil.PrintlnWarn("Project does not have a production deployment")
-				return nil
-			}
 
-			if reset {
-				_, err = client.TriggerRedeploy(ctx, &adminv1.TriggerRedeployRequest{DeploymentId: resp.ProdDeployment.Id})
+			if reset || resp.ProdDeployment == nil {
+				_, err = client.TriggerRedeploy(ctx, &adminv1.TriggerRedeployRequest{Organization: cfg.Org, Project: project})
 				if err != nil {
 					return err
 				}

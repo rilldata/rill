@@ -185,21 +185,20 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 	}
 
 	for _, depl := range depls {
-		fmt.Println("expired deployments are: ", depl)
 		if depl.Status == database.DeploymentStatusReconciling && time.Since(depl.UpdatedOn) < 30*time.Minute {
-			s.logger.Info("skipping because it is already running", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
+			s.logger.Info("hibernate: skipping deployment because it is reconciling", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
 			continue
 		}
 
 		proj, err := s.DB.FindProject(ctx, depl.ProjectID)
 		if err != nil {
-			s.logger.Error("skipping because error while find project", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.Error(err))
+			s.logger.Error("hibernate: find project error", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
 			continue
 		}
 
 		err = s.teardownDeployment(ctx, proj, depl)
 		if err != nil {
-			s.logger.Error("skipping because error while hibernate deployment", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.Error(err))
+			s.logger.Error("hibernate: teardown deployment error", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
 			continue
 		}
 
