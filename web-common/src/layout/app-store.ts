@@ -61,6 +61,12 @@ export const appScreen = derived(page, ($page) => {
         type: MetricsEventScreenName.Splash,
       };
       break;
+    case "/[organization]/[project]/[dashboard]":
+      activeEntity = {
+        name: $page?.params?.dashboard,
+        type: MetricsEventScreenName.Dashboard,
+      };
+      break;
     default:
       // Return home as default
       activeEntity = { name: "", type: MetricsEventScreenName.Home };
