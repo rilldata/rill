@@ -3,6 +3,12 @@
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import EmbeddedSourceEntry from "@rilldata/web-common/features/sources/embedded/EmbeddedSourceEntry.svelte";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
+  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
+  import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import type { V1CatalogEntry } from "@rilldata/web-common/runtime-client";
   import * as classes from "@rilldata/web-local/lib/util/component-classes";
   import { getContext } from "svelte";
@@ -29,6 +35,16 @@
   function blur() {
     queryHighlight.set(undefined);
   }
+
+  function emitNavigationToSourceTelemetry() {
+    behaviourEvent.fireNavigationEvent(
+      entry.name,
+      BehaviourEventMedium.Menu,
+      MetricsEventSpace.RightPanel,
+      MetricsEventScreenName.Model,
+      MetricsEventScreenName.Source
+    );
+  }
 </script>
 
 <WithModelResultTooltip {modelHasError}>
@@ -40,6 +56,7 @@
     on:mouseover={focus(reference)}
     on:mouseleave={blur}
     on:blur={blur}
+    on:click={emitNavigationToSourceTelemetry}
     class:text-gray-500={modelHasError}
   >
     <EmbeddedSourceEntry connector={entry.source.connector} path={entry.path} />
