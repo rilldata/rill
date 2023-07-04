@@ -34,6 +34,7 @@ export type QueryServiceQueryBody = {
   args?: unknown[];
   priority?: number;
   dryRun?: boolean;
+  limit?: number;
 };
 
 /**
@@ -61,11 +62,6 @@ export type QueryServiceColumnTimeRangeParams = {
 };
 
 export type QueryServiceTableCardinalityParams = {
-  priority?: number;
-};
-
-export type QueryServiceCustomQueryParams = {
-  sql?: string;
   priority?: number;
 };
 
@@ -450,6 +446,16 @@ export interface V1RenameFileResponse {
   [key: string]: any;
 }
 
+export interface V1RenameFileAndReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
+}
+
 export interface V1RenameFileAndReconcileRequest {
   instanceId?: string;
   fromPath?: string;
@@ -514,16 +520,6 @@ Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: ReconcileErrorCharLocation;
   endLocation?: ReconcileErrorCharLocation;
-}
-
-export interface V1RenameFileAndReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
 }
 
 export interface V1ReconcileResponse {
@@ -652,6 +648,18 @@ export interface V1MetricsViewSort {
   ascending?: boolean;
 }
 
+export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
+
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
+}
+
+export interface V1MetricsViewFilter {
+  include?: MetricsViewFilterCond[];
+  exclude?: MetricsViewFilterCond[];
+}
+
 export interface V1MetricsViewToplistRequest {
   instanceId?: string;
   metricsViewName?: string;
@@ -665,13 +673,6 @@ export interface V1MetricsViewToplistRequest {
   sort?: V1MetricsViewSort[];
   filter?: V1MetricsViewFilter;
   priority?: number;
-}
-
-export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
-
-export interface V1MetricsViewFilter {
-  include?: MetricsViewFilterCond[];
-  exclude?: MetricsViewFilterCond[];
 }
 
 export interface V1MetricsViewRowsRequest {
@@ -731,11 +732,6 @@ export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
   nullable?: boolean;
-}
-
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
 }
 
 export interface V1MetricsView {
@@ -907,13 +903,6 @@ export interface V1DeleteFileAndReconcileRequest {
   /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
   dry?: boolean;
   strict?: boolean;
-}
-
-export type V1CustomQueryResponseDataItem = { [key: string]: any };
-
-export interface V1CustomQueryResponse {
-  meta?: V1StructType;
-  data?: V1CustomQueryResponseDataItem[];
 }
 
 export interface V1CreateInstanceResponse {

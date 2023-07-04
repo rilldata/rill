@@ -1238,34 +1238,6 @@ paths:
           format: int32
       tags:
         - QueryService
-  /v1/instances/{instanceId}/queries/sql:
-    post:
-      operationId: QueryService_CustomQuery
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1CustomQueryResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: sql
-          in: query
-          required: false
-          type: string
-        - name: priority
-          in: query
-          required: false
-          type: integer
-          format: int32
-      tags:
-        - QueryService
   /v1/instances/{instanceId}/queries/table-cardinality/tables/{tableName}:
     get:
       summary: TableCardinality returns row count
@@ -1460,6 +1432,9 @@ paths:
               dryRun:
                 type: boolean
                 title: If true, will only validate the query, not execute it
+              limit:
+                type: integer
+                format: int32
             title: Request message for QueryService.Query
       tags:
         - QueryService
@@ -2126,15 +2101,6 @@ definitions:
       instance:
         $ref: '#/definitions/v1Instance'
     title: Response message for RuntimeService.CreateInstance
-  v1CustomQueryResponse:
-    type: object
-    properties:
-      meta:
-        $ref: '#/definitions/v1StructType'
-      data:
-        type: array
-        items:
-          type: object
   v1DeleteFileAndReconcileRequest:
     type: object
     properties:

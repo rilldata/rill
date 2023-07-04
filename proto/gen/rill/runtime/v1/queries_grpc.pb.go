@@ -39,7 +39,6 @@ const (
 	QueryService_TableCardinality_FullMethodName             = "/rill.runtime.v1.QueryService/TableCardinality"
 	QueryService_TableColumns_FullMethodName                 = "/rill.runtime.v1.QueryService/TableColumns"
 	QueryService_TableRows_FullMethodName                    = "/rill.runtime.v1.QueryService/TableRows"
-	QueryService_CustomQuery_FullMethodName                  = "/rill.runtime.v1.QueryService/CustomQuery"
 )
 
 // QueryServiceClient is the client API for QueryService service.
@@ -89,7 +88,6 @@ type QueryServiceClient interface {
 	TableColumns(ctx context.Context, in *TableColumnsRequest, opts ...grpc.CallOption) (*TableColumnsResponse, error)
 	// TableRows returns table rows
 	TableRows(ctx context.Context, in *TableRowsRequest, opts ...grpc.CallOption) (*TableRowsResponse, error)
-	CustomQuery(ctx context.Context, in *CustomQueryRequest, opts ...grpc.CallOption) (*CustomQueryResponse, error)
 }
 
 type queryServiceClient struct {
@@ -280,15 +278,6 @@ func (c *queryServiceClient) TableRows(ctx context.Context, in *TableRowsRequest
 	return out, nil
 }
 
-func (c *queryServiceClient) CustomQuery(ctx context.Context, in *CustomQueryRequest, opts ...grpc.CallOption) (*CustomQueryResponse, error) {
-	out := new(CustomQueryResponse)
-	err := c.cc.Invoke(ctx, QueryService_CustomQuery_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // QueryServiceServer is the server API for QueryService service.
 // All implementations must embed UnimplementedQueryServiceServer
 // for forward compatibility
@@ -336,7 +325,6 @@ type QueryServiceServer interface {
 	TableColumns(context.Context, *TableColumnsRequest) (*TableColumnsResponse, error)
 	// TableRows returns table rows
 	TableRows(context.Context, *TableRowsRequest) (*TableRowsResponse, error)
-	CustomQuery(context.Context, *CustomQueryRequest) (*CustomQueryResponse, error)
 	mustEmbedUnimplementedQueryServiceServer()
 }
 
@@ -403,9 +391,6 @@ func (UnimplementedQueryServiceServer) TableColumns(context.Context, *TableColum
 }
 func (UnimplementedQueryServiceServer) TableRows(context.Context, *TableRowsRequest) (*TableRowsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TableRows not implemented")
-}
-func (UnimplementedQueryServiceServer) CustomQuery(context.Context, *CustomQueryRequest) (*CustomQueryResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CustomQuery not implemented")
 }
 func (UnimplementedQueryServiceServer) mustEmbedUnimplementedQueryServiceServer() {}
 
@@ -780,24 +765,6 @@ func _QueryService_TableRows_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
-func _QueryService_CustomQuery_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CustomQueryRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(QueryServiceServer).CustomQuery(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: QueryService_CustomQuery_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServiceServer).CustomQuery(ctx, req.(*CustomQueryRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // QueryService_ServiceDesc is the grpc.ServiceDesc for QueryService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -884,10 +851,6 @@ var QueryService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "TableRows",
 			Handler:    _QueryService_TableRows_Handler,
-		},
-		{
-			MethodName: "CustomQuery",
-			Handler:    _QueryService_CustomQuery_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -45,8 +45,6 @@ import type {
   QueryServiceColumnRugHistogramParams,
   V1ColumnTimeGrainResponse,
   QueryServiceColumnTimeGrainParams,
-  V1CustomQueryResponse,
-  QueryServiceCustomQueryParams,
   V1TableCardinalityResponse,
   QueryServiceTableCardinalityParams,
   V1ColumnTimeRangeResponse,
@@ -1186,52 +1184,6 @@ export const createQueryServiceColumnTimeGrain = <
   return query;
 };
 
-export const queryServiceCustomQuery = (
-  instanceId: string,
-  params?: QueryServiceCustomQueryParams
-) => {
-  return httpClient<V1CustomQueryResponse>({
-    url: `/v1/instances/${instanceId}/queries/sql`,
-    method: "post",
-    params,
-  });
-};
-
-export type QueryServiceCustomQueryMutationResult = NonNullable<
-  Awaited<ReturnType<typeof queryServiceCustomQuery>>
->;
-
-export type QueryServiceCustomQueryMutationError = RpcStatus;
-
-export const createQueryServiceCustomQuery = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof queryServiceCustomQuery>>,
-    TError,
-    { instanceId: string; params?: QueryServiceCustomQueryParams },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof queryServiceCustomQuery>>,
-    { instanceId: string; params?: QueryServiceCustomQueryParams }
-  > = (props) => {
-    const { instanceId, params } = props ?? {};
-
-    return queryServiceCustomQuery(instanceId, params);
-  };
-
-  return createMutation<
-    Awaited<ReturnType<typeof queryServiceCustomQuery>>,
-    TError,
-    { instanceId: string; params?: QueryServiceCustomQueryParams },
-    TContext
-  >(mutationFn, mutationOptions);
-};
 /**
  * @summary TableCardinality returns row count
  */

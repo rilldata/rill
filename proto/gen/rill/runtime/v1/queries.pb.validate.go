@@ -108,6 +108,17 @@ func (m *QueryRequest) validate(all bool) error {
 
 	// no validation rules for DryRun
 
+	if val := m.GetLimit(); val < 0 || val > 10000 {
+		err := QueryRequestValidationError{
+			field:  "Limit",
+			reason: "value must be inside range [0, 10000]",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if len(errors) > 0 {
 		return QueryRequestMultiError(errors)
 	}
@@ -374,10 +385,10 @@ func (m *ExportRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
-	if m.GetLimit() > 10000 {
+	if val := m.GetLimit(); val < 0 || val > 10000 {
 		err := ExportRequestValidationError{
 			field:  "Limit",
-			reason: "value must be less than or equal to 10000",
+			reason: "value must be inside range [0, 10000]",
 		}
 		if !all {
 			return err
@@ -8713,279 +8724,6 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = TableRowsResponseValidationError{}
-
-// Validate checks the field values on CustomQueryRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *CustomQueryRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on CustomQueryRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// CustomQueryRequestMultiError, or nil if none found.
-func (m *CustomQueryRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *CustomQueryRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for InstanceId
-
-	// no validation rules for Sql
-
-	// no validation rules for Priority
-
-	if len(errors) > 0 {
-		return CustomQueryRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// CustomQueryRequestMultiError is an error wrapping multiple validation errors
-// returned by CustomQueryRequest.ValidateAll() if the designated constraints
-// aren't met.
-type CustomQueryRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m CustomQueryRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m CustomQueryRequestMultiError) AllErrors() []error { return m }
-
-// CustomQueryRequestValidationError is the validation error returned by
-// CustomQueryRequest.Validate if the designated constraints aren't met.
-type CustomQueryRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e CustomQueryRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e CustomQueryRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e CustomQueryRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e CustomQueryRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e CustomQueryRequestValidationError) ErrorName() string {
-	return "CustomQueryRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e CustomQueryRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sCustomQueryRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = CustomQueryRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = CustomQueryRequestValidationError{}
-
-// Validate checks the field values on CustomQueryResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *CustomQueryResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on CustomQueryResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// CustomQueryResponseMultiError, or nil if none found.
-func (m *CustomQueryResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *CustomQueryResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if all {
-		switch v := interface{}(m.GetMeta()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, CustomQueryResponseValidationError{
-					field:  "Meta",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, CustomQueryResponseValidationError{
-					field:  "Meta",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetMeta()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return CustomQueryResponseValidationError{
-				field:  "Meta",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	for idx, item := range m.GetData() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, CustomQueryResponseValidationError{
-						field:  fmt.Sprintf("Data[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, CustomQueryResponseValidationError{
-						field:  fmt.Sprintf("Data[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return CustomQueryResponseValidationError{
-					field:  fmt.Sprintf("Data[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
-	if len(errors) > 0 {
-		return CustomQueryResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// CustomQueryResponseMultiError is an error wrapping multiple validation
-// errors returned by CustomQueryResponse.ValidateAll() if the designated
-// constraints aren't met.
-type CustomQueryResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m CustomQueryResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m CustomQueryResponseMultiError) AllErrors() []error { return m }
-
-// CustomQueryResponseValidationError is the validation error returned by
-// CustomQueryResponse.Validate if the designated constraints aren't met.
-type CustomQueryResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e CustomQueryResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e CustomQueryResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e CustomQueryResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e CustomQueryResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e CustomQueryResponseValidationError) ErrorName() string {
-	return "CustomQueryResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e CustomQueryResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sCustomQueryResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = CustomQueryResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = CustomQueryResponseValidationError{}
 
 // Validate checks the field values on MetricsViewFilter_Cond with the rules
 // defined in the proto definition for this message. If any rules are

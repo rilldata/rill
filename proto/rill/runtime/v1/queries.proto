@@ -147,10 +147,6 @@ service QueryService {
   rpc TableRows(TableRowsRequest) returns (TableRowsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/rows/tables/{table_name}"};
   }
-
-  rpc CustomQuery(CustomQueryRequest) returns (CustomQueryResponse) {
-    option (google.api.http) = {post: "/v1/instances/{instance_id}/queries/sql"};
-  }
 }
 
 // Request message for QueryService.Query
@@ -165,6 +161,7 @@ message QueryRequest {
   int32 priority = 4;
   // If true, will only validate the query, not execute it
   bool dry_run = 5;
+  int32 limit = 6 [(validate.rules).int32 = {lte: 10000, gte: 0}];
 }
 
 // Response message for QueryService.Query
@@ -178,7 +175,7 @@ message QueryResponse {
 // Request message for QueryService.Export
 message ExportRequest {
   string instance_id = 1;
-  int32 limit = 2 [(validate.rules).int32.lte = 10000];
+  int32 limit = 2 [(validate.rules).int32 = {lte: 10000, gte: 0}];
   ExportFormat format = 3;
   oneof request {
     MetricsViewToplistRequest metrics_view_toplist_request = 4;
@@ -640,13 +637,3 @@ message TableRowsResponse {
   repeated google.protobuf.Struct data = 1;
 }
 
-message CustomQueryRequest {
-  string instance_id = 1;
-  string sql = 2;
-  int32 priority = 3;
-}
-
-message CustomQueryResponse {
-  StructType meta = 1;
-  repeated google.protobuf.Struct data = 2;
-}
