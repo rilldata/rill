@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -331,6 +332,32 @@ func (s *Service) triggerReconcile(ctx context.Context, depl *database.Deploymen
 
 // TriggerRefreshSource triggers refresh of a deployment's sources. If the sources slice is nil, it will refresh all sources.f
 func (s *Service) TriggerRefreshSources(ctx context.Context, depl *database.Deployment, sources []string) error {
+	// check if provided sources are exists in catalog
+	if len(sources) > 0 {
+		rt, err := s.openRuntimeClientForDeployment(depl)
+		if err != nil {
+			return s.endReconcile(ctx, depl, nil, err)
+		}
+		defer rt.Close()
+
+		// Get paths of sources
+		res, err := rt.ListCatalogEntries(ctx, &runtimev1.ListCatalogEntriesRequest{InstanceId: depl.RuntimeInstanceID, Type: runtimev1.ObjectType_OBJECT_TYPE_SOURCE})
+		if err != nil {
+			return s.endReconcile(ctx, depl, nil, err)
+		}
+
+		catalogSources := []string{}
+		for _, entry := range res.Entries {
+			catalogSources = append(catalogSources, entry.Name)
+		}
+
+		for _, source := range sources {
+			if !slices.Contains(catalogSources, source) {
+				return fmt.Errorf("source %q is not found", source)
+			}
+		}
+	}
+
 	// Run reconcile in the background (since it's sync)
 	s.reconcileWg.Add(1)
 	go func() {
