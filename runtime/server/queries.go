@@ -31,11 +31,17 @@ func (s *Server) Query(ctx context.Context, req *runtimev1.QueryRequest) (*runti
 		return nil, err
 	}
 
+	transformedSQL, err := ensureLimits(ctx, olap, req.Sql, int(req.Limit))
+	if err != nil {
+		return nil, err
+	}
+
 	res, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    req.Sql,
-		Args:     args,
-		DryRun:   req.DryRun,
-		Priority: int(req.Priority),
+		Query:            transformedSQL,
+		Args:             args,
+		DryRun:           req.DryRun,
+		Priority:         int(req.Priority),
+		ExecutionTimeout: 2 * time.Minute,
 	})
 	if err != nil {
 		// TODO: Parse error to determine error code
@@ -56,46 +62,6 @@ func (s *Server) Query(ctx context.Context, req *runtimev1.QueryRequest) (*runti
 	}
 
 	resp := &runtimev1.QueryResponse{
-		Meta: res.Schema,
-		Data: data,
-	}
-
-	return resp, nil
-}
-
-func (s *Server) CustomQuery(ctx context.Context, req *runtimev1.CustomQueryRequest) (*runtimev1.CustomQueryResponse, error) {
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadOLAP) {
-		return nil, ErrForbidden
-	}
-
-	olap, err := s.runtime.OLAP(ctx, req.InstanceId)
-	if err != nil {
-		return nil, err
-	}
-
-	limit := 10000
-	transformedSQL, err := ensureLimits(ctx, olap, req.Sql, limit)
-	if err != nil {
-		return nil, err
-	}
-
-	res, err := olap.Execute(ctx, &drivers.Statement{
-		Query:            transformedSQL,
-		Priority:         int(req.Priority),
-		ExecutionTimeout: 2 * time.Minute,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	defer res.Close()
-
-	data, err := rowsToData(res)
-	if err != nil {
-		return nil, err
-	}
-
-	resp := &runtimev1.CustomQueryResponse{
 		Meta: res.Schema,
 		Data: data,
 	}
