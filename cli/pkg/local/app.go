@@ -22,6 +22,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	runtimeserver "github.com/rilldata/rill/runtime/server"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -252,7 +253,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		AllowedOrigins:  []string{"*"},
 		ServePrometheus: true,
 	}
-	runtimeServer, err := runtimeserver.NewServer(ctx, opts, a.Runtime, serverLogger)
+	runtimeServer, err := runtimeserver.NewServer(ctx, opts, a.Runtime, serverLogger, ratelimit.NewNoop())
 	if err != nil {
 		return err
 	}

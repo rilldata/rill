@@ -926,6 +926,35 @@ paths:
             $ref: '#/definitions/v1SetSuperuserRequest'
       tags:
         - AdminService
+  /v1/superuser/projects/search:
+    get:
+      summary: SearchProjectNames returns project names matching the pattern
+      operationId: AdminService_SearchProjectNames
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SearchProjectNamesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: namePattern
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
   /v1/superuser/quotas/organization:
     patch:
       summary: SudoUpdateOrganizationQuotas update the quotas available for orgs
@@ -1492,6 +1521,15 @@ definitions:
     type: object
     properties:
       tokenId:
+        type: string
+  v1SearchProjectNamesResponse:
+    type: object
+    properties:
+      names:
+        type: array
+        items:
+          type: string
+      nextPageToken:
         type: string
   v1SearchUsersResponse:
     type: object

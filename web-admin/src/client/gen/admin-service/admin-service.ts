@@ -68,6 +68,8 @@ import type {
   V1ListSuperusersResponse,
   V1SetSuperuserResponse,
   V1SetSuperuserRequest,
+  V1SearchProjectNamesResponse,
+  AdminServiceSearchProjectNamesParams,
   V1SudoUpdateOrganizationQuotasResponse,
   V1SudoUpdateOrganizationQuotasRequest,
   V1SudoUpdateUserQuotasResponse,
@@ -2069,6 +2071,66 @@ export const createAdminServiceSetSuperuser = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary SearchProjectNames returns project names matching the pattern
+ */
+export const adminServiceSearchProjectNames = (
+  params?: AdminServiceSearchProjectNamesParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1SearchProjectNamesResponse>({
+    url: `/v1/superuser/projects/search`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceSearchProjectNamesQueryKey = (
+  params?: AdminServiceSearchProjectNamesParams
+) => [`/v1/superuser/projects/search`, ...(params ? [params] : [])] as const;
+
+export type AdminServiceSearchProjectNamesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSearchProjectNames>>
+>;
+export type AdminServiceSearchProjectNamesQueryError = RpcStatus;
+
+export const createAdminServiceSearchProjectNames = <
+  TData = Awaited<ReturnType<typeof adminServiceSearchProjectNames>>,
+  TError = RpcStatus
+>(
+  params?: AdminServiceSearchProjectNamesParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceSearchProjectNames>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminServiceSearchProjectNamesQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceSearchProjectNames>>
+  > = ({ signal }) => adminServiceSearchProjectNames(params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceSearchProjectNames>>,
+    TError,
+    TData
+  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 /**
  * @summary SudoUpdateOrganizationQuotas update the quotas available for orgs
  */

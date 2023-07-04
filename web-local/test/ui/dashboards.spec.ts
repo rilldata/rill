@@ -139,6 +139,28 @@ describe("dashboards", () => {
       page.getByRole("button", { name: "7029" })
     ).not.toBeVisible();
 
+    // Download the data as CSV
+    // Start waiting for download before clicking. Note no await.
+    const downloadCSVPromise = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Export model data" }).click();
+    await page.getByText("Export as CSV").click();
+    const downloadCSV = await downloadCSVPromise;
+    await downloadCSV.path();
+    const csvRegex = /^AdBids_model_filtered_.*\.csv$/;
+    playwrightExpect(csvRegex.test(downloadCSV.suggestedFilename())).toBe(true);
+
+    // Download the data as XLSX
+    // Start waiting for download before clicking. Note no await.
+    const downloadXLSXPromise = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Export model data" }).click();
+    await page.getByText("Export as XLSX").click();
+    const downloadXLSX = await downloadXLSXPromise;
+    await downloadXLSX.path();
+    const xlsxRegex = /^AdBids_model_filtered_.*\.xlsx$/;
+    playwrightExpect(xlsxRegex.test(downloadXLSX.suggestedFilename())).toBe(
+      true
+    );
+
     // Turn off comparison
     await page
       .getByRole("button", { name: "Comparing to last period" })

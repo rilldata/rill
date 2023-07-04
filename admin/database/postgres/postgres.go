@@ -210,6 +210,18 @@ func (c *connection) FindProjects(ctx context.Context, afterName string, limit i
 	return res, nil
 }
 
+func (c *connection) FindProjectPathsByPattern(ctx context.Context, namePattern, afterName string, limit int) ([]string, error) {
+	var res []string
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT concat(o.name,'/',p.name) as project_name FROM projects p JOIN orgs o ON p.org_id = o.id 
+	WHERE concat(o.name,'/',p.name) ilike $1 AND concat(o.name,'/',p.name) > $2
+	ORDER BY project_name 
+	LIMIT $3`, namePattern, afterName, limit)
+	if err != nil {
+		return nil, parseErr("projects", err)
+	}
+	return res, nil
+}
+
 func (c *connection) FindProjectsForUser(ctx context.Context, userID string) ([]*database.Project, error) {
 	var res []*database.Project
 	err := c.getDB(ctx).SelectContext(ctx, &res, `

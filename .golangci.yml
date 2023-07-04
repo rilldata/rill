@@ -188,7 +188,6 @@ linters-settings:
       - name: redefines-builtin-id
 
 issues:
-  fix: true
   exclude-rules:
     - path: _test\.go # disable some linters for test files
       linters:

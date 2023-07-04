@@ -23,6 +23,7 @@
   const dispatch = createEventDispatcher();
   $: {
     if (active) dispatch("open");
+    if (!active) dispatch("close");
   }
 
   let parent;
