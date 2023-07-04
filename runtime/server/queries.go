@@ -31,13 +31,8 @@ func (s *Server) Query(ctx context.Context, req *runtimev1.QueryRequest) (*runti
 		return nil, err
 	}
 
-	transformedSQL, err := ensureLimits(ctx, olap, req.Sql, limit)
-	if err != nil {
-		return nil, err
-	}
-
 	res, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    transformedSQL,
+		Query:    req.Sql,
 		Args:     args,
 		DryRun:   req.DryRun,
 		Priority: int(req.Priority),

@@ -19,7 +19,7 @@ func TestServer_InsertLimit_SELECT(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	transformedSQL, err := ensureLimits(context.Background(), olap, "SELECT col1 FROM (SELECT col1 FROM tbl1) AS sub1 INNER JOIN (SELECT col1 FROM tbl1) AS sub2 ON (sub1.col1 = sub2.col1)")
+	transformedSQL, err := ensureLimits(context.Background(), olap, "SELECT col1 FROM (SELECT col1 FROM tbl1) AS sub1 INNER JOIN (SELECT col1 FROM tbl1) AS sub2 ON (sub1.col1 = sub2.col1)", 100)
 	require.NoError(t, err)
 	require.Equal(t, "SELECT col1 FROM (SELECT col1 FROM tbl1 LIMIT 100) AS sub1 INNER JOIN (SELECT col1 FROM tbl1 LIMIT 100) AS sub2 ON ((sub1.col1 = sub2.col1)) LIMIT 100", transformedSQL)
 }
@@ -32,7 +32,7 @@ func TestServer_UpdateLimit_SELECT(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	transformedSQL, err := ensureLimits(context.Background(), olap, "SELECT col1 FROM (SELECT col1 FROM tbl1 LIMIT 2000) AS sub1 INNER JOIN (SELECT col1 FROM tbl1 LIMIT 2000) AS sub2 ON ((sub1.col1 = sub2.col1)) LIMIT 2000")
+	transformedSQL, err := ensureLimits(context.Background(), olap, "SELECT col1 FROM (SELECT col1 FROM tbl1 LIMIT 2000) AS sub1 INNER JOIN (SELECT col1 FROM tbl1 LIMIT 2000) AS sub2 ON ((sub1.col1 = sub2.col1)) LIMIT 2000", 100)
 	require.NoError(t, err)
 	require.Equal(t, "SELECT col1 FROM (SELECT col1 FROM tbl1 LIMIT 100) AS sub1 INNER JOIN (SELECT col1 FROM tbl1 LIMIT 100) AS sub2 ON ((sub1.col1 = sub2.col1)) LIMIT 100", transformedSQL)
 }
@@ -45,7 +45,7 @@ func TestServer_InsertLimit_WITH(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	transformedSQL, err := ensureLimits(context.Background(), olap, "WITH tbl2 AS (SELECT col1 FROM tbl1), tbl3 AS (SELECT col1 FROM tbl1) SELECT col1 FROM tbl2 UNION ALL SELECT col1 FROM tbl3")
+	transformedSQL, err := ensureLimits(context.Background(), olap, "WITH tbl2 AS (SELECT col1 FROM tbl1), tbl3 AS (SELECT col1 FROM tbl1) SELECT col1 FROM tbl2 UNION ALL SELECT col1 FROM tbl3", 100)
 	require.NoError(t, err)
 	require.Equal(t, "WITH tbl2 AS (SELECT col1 FROM tbl1 LIMIT 100), tbl3 AS (SELECT col1 FROM tbl1 LIMIT 100)(SELECT col1 FROM tbl2 LIMIT 100) UNION ALL (SELECT col1 FROM tbl3 LIMIT 100) LIMIT 100", transformedSQL)
 }
@@ -58,7 +58,7 @@ func TestServer_UpdateLimit_WITH(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	transformedSQL, err := ensureLimits(context.Background(), olap, "WITH tbl2 AS (SELECT col1 FROM tbl1 LIMIT 2000), tbl3 AS (SELECT col1 FROM tbl1 LIMIT 2000)(SELECT col1 FROM tbl2 LIMIT 2000) UNION ALL (SELECT col1 FROM tbl3 LIMIT 2000) LIMIT 2000")
+	transformedSQL, err := ensureLimits(context.Background(), olap, "WITH tbl2 AS (SELECT col1 FROM tbl1 LIMIT 2000), tbl3 AS (SELECT col1 FROM tbl1 LIMIT 2000)(SELECT col1 FROM tbl2 LIMIT 2000) UNION ALL (SELECT col1 FROM tbl3 LIMIT 2000) LIMIT 2000", 100)
 	require.NoError(t, err)
 	require.Equal(t, "WITH tbl2 AS (SELECT col1 FROM tbl1 LIMIT 100), tbl3 AS (SELECT col1 FROM tbl1 LIMIT 100)(SELECT col1 FROM tbl2 LIMIT 100) UNION ALL (SELECT col1 FROM tbl3 LIMIT 100) LIMIT 100", transformedSQL)
 }
@@ -71,7 +71,7 @@ func TestServer_InsertLimit_SELECT_WHERE(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	transformedSQL, err := ensureLimits(context.Background(), olap, "SELECT col1 FROM tbl1 WHERE col1 = 1 ORDER BY 1")
+	transformedSQL, err := ensureLimits(context.Background(), olap, "SELECT col1 FROM tbl1 WHERE col1 = 1 ORDER BY 1", 100)
 	require.NoError(t, err)
 	require.Equal(t, "SELECT col1 FROM tbl1 WHERE (col1 = 1) ORDER BY 1 LIMIT 100", transformedSQL)
 }
@@ -84,7 +84,7 @@ func TestServer_UpdateLimit_SELECT_WHERE(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	transformedSQL, err := ensureLimits(context.Background(), olap, "SELECT col1 FROM tbl1 WHERE (col1 = 1) ORDER BY 1 LIMIT 2000")
+	transformedSQL, err := ensureLimits(context.Background(), olap, "SELECT col1 FROM tbl1 WHERE (col1 = 1) ORDER BY 1 LIMIT 2000", 100)
 	require.NoError(t, err)
 	require.Equal(t, "SELECT col1 FROM tbl1 WHERE (col1 = 1) ORDER BY 1 LIMIT 100", transformedSQL)
 }
