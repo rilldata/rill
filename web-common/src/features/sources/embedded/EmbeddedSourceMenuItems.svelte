@@ -2,12 +2,11 @@
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import { MenuItem } from "@rilldata/web-common/components/menu";
-  import { appStore } from "@rilldata/web-common/layout/app-store";
+  import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
-    EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
@@ -36,7 +35,7 @@
 
   const handleCreateModel = async () => {
     try {
-      const previousActiveEntity = $appStore.activeEntity?.type;
+      const previousActiveEntity = $appScreen?.type;
       const newModelName = await createModelFromSource(
         queryClient,
         runtimeInstanceId,
@@ -50,7 +49,7 @@
         newModelName,
         BehaviourEventMedium.Menu,
         MetricsEventSpace.LeftPanel,
-        EntityTypeToScreenMap[previousActiveEntity],
+        previousActiveEntity,
         MetricsEventScreenName.Model
       );
     } catch (err) {
