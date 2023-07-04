@@ -20,7 +20,10 @@ export function useProjectDeploymentStatus(orgName: string, projName: string) {
     query: {
       select: (data) => {
         // There may not be a prodDeployment if the project was hibernated
-        return data?.prodDeployment?.status || V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED;
+        return (
+          data?.prodDeployment?.status ||
+          V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED
+        );
       },
       refetchInterval: (data) => {
         switch (data) {

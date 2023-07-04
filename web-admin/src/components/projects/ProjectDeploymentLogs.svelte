@@ -28,10 +28,12 @@
   <ul class="w-full">
     {#if $proj.data && !$proj.data.prodDeployment}
       <li class="px-12 py-2 font-semibold text-gray-800 border-b">
-        This project does not currently have a deployment (it may have been hibernated)
+        This project does not currently have a deployment (it may have been
+        hibernated)
       </li>
       <li class="px-12 py-1 font-mono text-gray-800 border-b border-gray-200">
-        To re-deploy the project, open a terminal and run: rill project reconcile --project {$proj.data.project.name}
+        To re-deploy the project, open a terminal and run: rill project
+        reconcile --project {$proj.data.project.name}
       </li>
     {:else if !hasReadAccess}
       <li class="px-12 py-2 font-semibold text-gray-500 border-b">
