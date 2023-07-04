@@ -79,7 +79,6 @@ export const appScreen = derived(page, ($page) => {
   return activeEntity;
 });
 
-// TODO: Do we still need this?
 // App store is being utilized for making previous entity inactive in the HTTP request queue
 const { update } = writable({
   activeEntity: undefined,
