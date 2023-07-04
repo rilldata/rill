@@ -2,7 +2,6 @@
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { appStore } from "@rilldata/web-common/layout/app-store";
   import {
     createRuntimeServiceGetCatalogEntry,
     createRuntimeServicePutFileAndReconcile,
@@ -51,14 +50,6 @@
   const { listenToNodeResize } = createResizeListenerActionFactory();
 
   $: instanceId = $runtime.instanceId;
-
-  const switchToMetrics = async (metricsDefName: string) => {
-    if (!metricsDefName) return;
-
-    appStore.setActiveEntity(metricsDefName, EntityType.MetricsDefinition);
-  };
-
-  $: switchToMetrics(metricsDefName);
 
   const metricMigrate = createRuntimeServicePutFileAndReconcile();
   async function callReconcileAndUpdateYaml(internalYamlString) {

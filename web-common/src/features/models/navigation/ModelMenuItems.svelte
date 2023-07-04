@@ -8,12 +8,11 @@
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { appStore } from "@rilldata/web-common/layout/app-store";
+  import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
-    EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
@@ -88,12 +87,12 @@
         onSuccess: (resp: V1ReconcileResponse) => {
           fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
           goto(`/dashboard/${newDashboardName}`);
-          const previousActiveEntity = $appStore?.activeEntity?.type;
+          const previousActiveEntity = $appScreen?.type;
           behaviourEvent.fireNavigationEvent(
             newDashboardName,
             BehaviourEventMedium.Menu,
             MetricsEventSpace.LeftPanel,
-            EntityTypeToScreenMap[previousActiveEntity],
+            previousActiveEntity,
             MetricsEventScreenName.Dashboard
           );
           return invalidateAfterReconcile(
@@ -120,7 +119,7 @@
       modelName,
       EntityType.Model,
       $deleteModel,
-      $appStore.activeEntity,
+      $appScreen,
       $modelNames.data
     );
     toggleMenu();

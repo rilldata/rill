@@ -13,13 +13,11 @@ import {
 } from "@rilldata/web-common/runtime-client";
 
 export function getDashboardStateFromUrl(
-  url: URL,
+  urlState: string,
   metricsView: V1MetricsView
 ): Partial<MetricsExplorerEntity> {
-  const state = url.searchParams.get("state");
-  if (!state) return undefined;
   return getDashboardStateFromProto(
-    base64ToProto(decodeURIComponent(state)),
+    base64ToProto(decodeURIComponent(urlState)),
     metricsView
   );
 }

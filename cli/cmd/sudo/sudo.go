@@ -1,6 +1,7 @@
 package sudo
 
 import (
+	"github.com/rilldata/rill/cli/cmd/sudo/project"
 	"github.com/rilldata/rill/cli/cmd/sudo/quota"
 	"github.com/rilldata/rill/cli/cmd/sudo/superuser"
 	"github.com/rilldata/rill/cli/cmd/sudo/user"
@@ -21,6 +22,7 @@ func SudoCmd(cfg *config.Config) *cobra.Command {
 	sudoCmd.AddCommand(quota.QuotaCmd(cfg))
 	sudoCmd.AddCommand(gitCloneCmd(cfg))
 	sudoCmd.AddCommand(lookupCmd(cfg))
+	sudoCmd.AddCommand(project.ProjectCmd(cfg))
 
 	return sudoCmd
 }

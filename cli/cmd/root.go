@@ -18,6 +18,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/sudo"
 	"github.com/rilldata/rill/cli/cmd/user"
 	versioncmd "github.com/rilldata/rill/cli/cmd/version"
+	"github.com/rilldata/rill/cli/cmd/whoami"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
@@ -130,6 +131,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(verifyInstallCmd(cfg))
 	rootCmd.AddCommand(versioncmd.VersionCmd())
+	rootCmd.AddCommand(whoami.WhoamiCmd(cfg))
 
 	// Add sub-commands for admin
 	// (This allows us to add persistent flags that apply only to the admin-related commands.)
