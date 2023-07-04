@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
@@ -12,7 +13,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
-	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -336,24 +336,26 @@ func (s *Service) TriggerRefreshSources(ctx context.Context, depl *database.Depl
 	if len(sources) > 0 {
 		rt, err := s.openRuntimeClientForDeployment(depl)
 		if err != nil {
-			return s.endReconcile(ctx, depl, nil, err)
+			return err
 		}
 		defer rt.Close()
 
 		// Get paths of sources
 		res, err := rt.ListCatalogEntries(ctx, &runtimev1.ListCatalogEntriesRequest{InstanceId: depl.RuntimeInstanceID, Type: runtimev1.ObjectType_OBJECT_TYPE_SOURCE})
 		if err != nil {
-			return s.endReconcile(ctx, depl, nil, err)
-		}
-
-		catalogSources := []string{}
-		for _, entry := range res.Entries {
-			catalogSources = append(catalogSources, entry.Name)
+			return err
 		}
 
 		for _, source := range sources {
-			if !slices.Contains(catalogSources, source) {
-				return fmt.Errorf("source %q is not found", source)
+			found := false
+			for _, entry := range res.Entries {
+				if strings.EqualFold(source, entry.Name) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return fmt.Errorf("source %q not found", source)
 			}
 		}
 	}
