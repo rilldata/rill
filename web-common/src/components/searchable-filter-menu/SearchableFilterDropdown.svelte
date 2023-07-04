@@ -51,9 +51,11 @@
   $: numSelectedNotShown =
     numSelected - (menuItems?.filter((item) => item.selected)?.length || 0);
 
-  $: allToggleText = numSelected === 0 ? "Select all" : "Deselect all";
+  $: allToggleText =
+    numSelected === selectableItems?.length ? "Deselect all" : "Select all";
 
-  $: allToggleEvt = numSelected === 0 ? "select-all" : "deselect-all";
+  $: allToggleEvt =
+    numSelected === selectableItems?.length ? "deselect-all" : "select-all";
   $: dispatchAllToggleEvt = () => {
     dispatch(allToggleEvt);
   };
