@@ -89,6 +89,19 @@ func TestServer_UpdateLimit_SELECT_WHERE(t *testing.T) {
 	require.Equal(t, "SELECT col1 FROM tbl1 WHERE (col1 = 1) ORDER BY 1 LIMIT 100", transformedSQL)
 }
 
+func TestServer_UpdateLimit_UNION(t *testing.T) {
+	t.Parallel()
+	olap := prepareOLAPStore(t)
+	err := olap.Exec(context.Background(), &drivers.Statement{
+		Query: "CREATE TABLE tbl1 (col1 int)",
+	})
+	require.NoError(t, err)
+
+	transformedSQL, err := ensureLimits(context.Background(), olap, "SELECT col1 FROM tbl1 UNION ALL SELECT col1 FROM tbl1", 100)
+	require.NoError(t, err)
+	require.Equal(t, "(SELECT col1 FROM tbl1 LIMIT 100) UNION ALL (SELECT col1 FROM tbl1 LIMIT 100) LIMIT 100", transformedSQL)
+}
+
 func prepareOLAPStore(t *testing.T) drivers.OLAPStore {
 	conn, err := duckdb.Driver{}.Open("?access_mode=read_write&rill_pool_size=4", zap.NewNop())
 	require.NoError(t, err)
