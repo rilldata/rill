@@ -139,7 +139,7 @@ func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedepl
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.ProjectPermissions(ctx, proj.OrganizationID, depl.ProjectID).ManageProd {
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProd {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
 	}
 

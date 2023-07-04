@@ -39,4 +39,6 @@
   >
     <slot />
   </RuntimeProvider>
+{:else}
+  <slot />
 {/if}

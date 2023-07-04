@@ -184,6 +184,12 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 		return err
 	}
 
+	if len(depls) == 0 {
+		return nil
+	}
+
+	s.logger.Info("hibernate: starting", zap.Int("deployments", len(depls)))
+
 	for _, depl := range depls {
 		if depl.Status == database.DeploymentStatusReconciling && time.Since(depl.UpdatedOn) < 30*time.Minute {
 			s.logger.Info("hibernate: skipping deployment because it is reconciling", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
@@ -195,6 +201,8 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 			s.logger.Error("hibernate: find project error", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
 			continue
 		}
+
+		s.logger.Info("hibernate: deleting deployment", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID))
 
 		err = s.teardownDeployment(ctx, proj, depl)
 		if err != nil {
@@ -220,6 +228,8 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 			return err
 		}
 	}
+
+	s.logger.Info("hibernate: completed", zap.Int("deployments", len(depls)))
 
 	return nil
 }
