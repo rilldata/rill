@@ -1432,6 +1432,9 @@ paths:
               dryRun:
                 type: boolean
                 title: If true, will only validate the query, not execute it
+              limit:
+                type: integer
+                format: int32
             title: Request message for QueryService.Query
       tags:
         - QueryService
@@ -3034,11 +3037,11 @@ definitions:
   v1QueryBatchResponse:
     type: object
     properties:
-      id:
+      key:
         type: integer
         format: int32
-      type:
-        $ref: '#/definitions/v1QueryBatchType'
+      error:
+        type: string
       metricsViewToplistResponse:
         $ref: '#/definitions/v1MetricsViewToplistResponse'
       metricsViewComparisonToplistResponse:
@@ -3075,16 +3078,13 @@ definitions:
         $ref: '#/definitions/v1TableColumnsResponse'
       tableRowsResponse:
         $ref: '#/definitions/v1TableRowsResponse'
-      error:
-        type: string
   v1QueryBatchSingleRequest:
     type: object
     properties:
-      id:
+      key:
         type: integer
         format: int32
-      type:
-        $ref: '#/definitions/v1QueryBatchType'
+        description: Since response could out of order `key` is used to co-relate a specific response to request.
       metricsViewToplistRequest:
         $ref: '#/definitions/v1MetricsViewToplistRequest'
       metricsViewComparisonToplistRequest:
@@ -3121,29 +3121,6 @@ definitions:
         $ref: '#/definitions/v1TableColumnsRequest'
       tableRowsRequest:
         $ref: '#/definitions/v1TableRowsRequest'
-  v1QueryBatchType:
-    type: string
-    enum:
-      - QUERY_BATCH_TYPE_UNSPECIFIED
-      - QUERY_BATCH_TYPE_METRICS_VIEW_TOPLIST
-      - QUERY_BATCH_TYPE_METRICS_VIEW_COMPARISON_TOPLIST
-      - QUERY_BATCH_TYPE_METRICS_VIEW_TIMESERIES
-      - QUERY_BATCH_TYPE_METRICS_VIEW_TOTALS
-      - QUERY_BATCH_TYPE_METRICS_VIEW_ROWS
-      - QUERY_BATCH_TYPE_COLUMN_ROLLUP_INTERVAL
-      - QUERY_BATCH_TYPE_COLUMN_TOPK
-      - QUERY_BATCH_TYPE_COLUMN_NULL_COUNT
-      - QUERY_BATCH_TYPE_COLUMN_DESCRIPTIVE_STATISTICS
-      - QUERY_BATCH_TYPE_COLUMN_TIME_GRAIN
-      - QUERY_BATCH_TYPE_COLUMN_NUMERIC_HISTOGRAM
-      - QUERY_BATCH_TYPE_COLUMN_RUG_HISTOGRAM
-      - QUERY_BATCH_TYPE_COLUMN_TIME_RANGE
-      - QUERY_BATCH_TYPE_COLUMN_CARDINALITY
-      - QUERY_BATCH_TYPE_COLUMN_TIMESERIES
-      - QUERY_BATCH_TYPE_TABLE_CARDINALITY
-      - QUERY_BATCH_TYPE_TABLE_COLUMNS
-      - QUERY_BATCH_TYPE_TABLE_ROWS
-    default: QUERY_BATCH_TYPE_UNSPECIFIED
   v1QueryResponse:
     type: object
     properties:

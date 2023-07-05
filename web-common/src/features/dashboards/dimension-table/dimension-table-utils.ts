@@ -79,10 +79,11 @@ export function getFilterForComparsion(
 export function getFilterForComparisonTable(
   filterForDimension,
   dimensionName,
+  dimensionColumn,
   values
 ) {
   if (!values || !values.length) return filterForDimension;
-  const filterValues = values.map((v) => v[dimensionName]);
+  const filterValues = values.map((v) => v[dimensionColumn]);
   return getFilterForComparsion(
     filterForDimension,
     dimensionName,
@@ -96,16 +97,17 @@ export function computeComparisonValues(
   comparisonData: V1MetricsViewToplistResponse,
   values: V1MetricsViewToplistResponseDataItem[],
   dimensionName: string,
+  dimensionColumn: string,
   measureName: string
 ) {
   if (comparisonData?.meta?.length !== 2) return values;
 
   const dimensionToValueMap = new Map(
-    comparisonData?.data?.map((obj) => [obj[dimensionName], obj[measureName]])
+    comparisonData?.data?.map((obj) => [obj[dimensionColumn], obj[measureName]])
   );
 
   for (const value of values) {
-    const prevValue = dimensionToValueMap.get(value[dimensionName]);
+    const prevValue = dimensionToValueMap.get(value[dimensionColumn]);
 
     if (prevValue === undefined) {
       value[measureName + "_delta"] = null;

@@ -56,7 +56,7 @@ func LoggingUnaryServerInterceptor(logger *zap.Logger) grpc.UnaryServerIntercept
 
 		fields := []zap.Field{
 			zap.String("protocol", "grpc"),
-			zap.String("peer.address", grpcPeer(ctx)),
+			zap.String("peer.address", GrpcPeer(ctx)),
 			zap.String("grpc.component", "server"),
 			zap.String("grpc.method_type", "unary"),
 			zap.String("grpc.method", info.FullMethod),
@@ -112,7 +112,7 @@ func LoggingStreamServerInterceptor(logger *zap.Logger) grpc.StreamServerInterce
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
 		fields := []zap.Field{
 			zap.String("protocol", "grpc"),
-			zap.String("peer.address", grpcPeer(ss.Context())),
+			zap.String("peer.address", GrpcPeer(ss.Context())),
 			zap.String("grpc.component", "server"),
 			zap.String("grpc.method_type", "server_stream"),
 			zap.String("grpc.method", info.FullMethod),
@@ -176,8 +176,8 @@ func grpcCodeToLevel(code codes.Code) zapcore.Level {
 	}
 }
 
-// grpcPeer returns the client address, using the "real" IP passed by the load balancer if available.
-func grpcPeer(ctx context.Context) string {
+// GrpcPeer returns the client address, using the "real" IP passed by the load balancer if available.
+func GrpcPeer(ctx context.Context) string {
 	var addr string
 
 	md, ok := metadata.FromIncomingContext(ctx)
@@ -207,7 +207,7 @@ func LoggingMiddleware(logger *zap.Logger, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fields := []zap.Field{
 			zap.String("protocol", r.Proto),
-			zap.String("peer.address", httpPeer(r)),
+			zap.String("peer.address", HTTPPeer(r)),
 			zap.String("http.method", r.Method),
 			zap.String("http.path", r.URL.EscapedPath()),
 			zap.String("http.user_agent", r.UserAgent()),
@@ -258,8 +258,8 @@ func LoggingMiddleware(logger *zap.Logger, next http.Handler) http.Handler {
 	})
 }
 
-// httpPeer returns the client address, using the "real" IP passed by the load balancer if available.
-func httpPeer(r *http.Request) string {
+// HTTPPeer returns the client address, using the "real" IP passed by the load balancer if available.
+func HTTPPeer(r *http.Request) string {
 	addr := r.Header.Get("x-forwarded-for")
 	if addr == "" {
 		addr = r.RemoteAddr
