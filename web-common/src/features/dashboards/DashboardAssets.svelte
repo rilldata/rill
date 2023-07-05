@@ -18,10 +18,9 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { SourceModelValidationStatus } from "@rilldata/web-common/features/metrics-views/errors.js";
-  import { appStore } from "@rilldata/web-common/layout/app-store";
+  import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
-    EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
@@ -112,13 +111,13 @@
     );
     const sourceModelName = dashboardData.jsonRepresentation.model;
 
-    const previousActiveEntity = $appStore?.activeEntity?.type;
+    const previousActiveEntity = $appScreen?.type;
     goto(`/model/${sourceModelName}`);
     behaviourEvent.fireNavigationEvent(
       sourceModelName,
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
-      EntityTypeToScreenMap[previousActiveEntity],
+      previousActiveEntity,
       MetricsEventScreenName.Model
     );
   };
@@ -126,12 +125,12 @@
   const editMetrics = (dashboardName: string) => {
     goto(`/dashboard/${dashboardName}/edit`);
 
-    const previousActiveEntity = $appStore?.activeEntity?.type;
+    const previousActiveEntity = $appScreen?.type;
     behaviourEvent.fireNavigationEvent(
       dashboardName,
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
-      EntityTypeToScreenMap[previousActiveEntity],
+      previousActiveEntity,
       MetricsEventScreenName.MetricsDefinition
     );
   };
@@ -149,13 +148,13 @@
       dashboardName,
       EntityType.MetricsDefinition,
       $deleteDashboard,
-      $appStore.activeEntity,
+      $appScreen,
       $dashboardNames.data
     );
 
     // redirect to model when metric is deleted
     const sourceModelName = dashboardData.jsonRepresentation.model;
-    if ($appStore.activeEntity.name === dashboardName) {
+    if ($appScreen?.name === dashboardName) {
       if (sourceModelName) {
         goto(`/model/${sourceModelName}`);
 

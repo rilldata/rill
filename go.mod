@@ -5,6 +5,7 @@ go 1.20
 require (
 	cloud.google.com/go/storage v1.30.1
 	github.com/AlecAivazis/survey/v2 v2.3.6
+	github.com/Andrew-M-C/go.jsonvalue v1.3.4
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/MicahParks/keyfunc v1.9.0
 	github.com/NYTimes/gziphandler v1.1.1

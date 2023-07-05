@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { appStore } from "@rilldata/web-common/layout/app-store";
   import { setContext } from "svelte";
   import { writable } from "svelte/store";
   import { WorkspaceContainer } from "../../../layout/workspace";
@@ -10,7 +8,6 @@
 
   // the runtime yaml string
   export let metricsDefName: string;
-  export let nonStandardError: string = undefined;
 
   // this store is used to store errors that are not related to the reconciliation/runtime
   // used to prevent the user from going to the dashboard.
@@ -23,14 +20,6 @@
     timeColumn: null,
   });
   setContext("rill:metrics-config:errors", configurationErrorStore);
-
-  const switchToMetrics = async (metricsDefName: string) => {
-    if (!metricsDefName) return;
-
-    appStore.setActiveEntity(metricsDefName, EntityType.MetricsDefinition);
-  };
-
-  $: switchToMetrics(metricsDefName);
 </script>
 
 <WorkspaceContainer inspector={true} assetID={`${metricsDefName}-config`}>

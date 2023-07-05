@@ -43,6 +43,10 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 	return summary, err
 }
 
+func (c *connection) EstimateSize() (int64, bool) {
+	return 0, false
+}
+
 func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) (*drivers.IngestionSummary, error) {
 	// Driver-specific overrides
 	if source.Connector == "local_file" {

@@ -43,6 +43,19 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 	return summary, err
 }
 
+func (c *connection) EstimateSize() (int64, bool) {
+	var paths []string
+	path := c.config.DBFilePath
+	if path == "" {
+		return 0, true
+	}
+
+	// Add .wal file path (e.g final size will be sum of *.db and *.db.wal)
+	dbWalPath := fmt.Sprintf("%s.wal", path)
+	paths = append(paths, path, dbWalPath)
+	return fileSize(paths), true
+}
+
 func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) (*drivers.IngestionSummary, error) {
 	// Driver-specific overrides
 	if source.Connector == "local_file" {

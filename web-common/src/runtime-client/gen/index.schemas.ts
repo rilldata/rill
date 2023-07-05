@@ -34,6 +34,7 @@ export type QueryServiceQueryBody = {
   args?: unknown[];
   priority?: number;
   dryRun?: boolean;
+  limit?: number;
 };
 
 /**

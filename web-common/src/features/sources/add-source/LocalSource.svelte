@@ -7,7 +7,7 @@
     uploadTableFiles,
   } from "@rilldata/web-common/features/sources/add-source/file-upload";
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
-  import { appScreen, appStore } from "@rilldata/web-common/layout/app-store";
+  import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
@@ -63,7 +63,7 @@
       tableName,
       EntityType.Table,
       $deleteSource,
-      $appStore.activeEntity,
+      $appScreen,
       $sourceNames.data,
       false
     );

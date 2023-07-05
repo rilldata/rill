@@ -1432,6 +1432,9 @@ paths:
               dryRun:
                 type: boolean
                 title: If true, will only validate the query, not execute it
+              limit:
+                type: integer
+                format: int32
             title: Request message for QueryService.Query
       tags:
         - QueryService
