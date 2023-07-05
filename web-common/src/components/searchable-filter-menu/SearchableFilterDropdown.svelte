@@ -48,6 +48,8 @@
 
   $: numSelected = selectedItems?.filter((s) => s)?.length || 0;
 
+  $: singleSelection = numSelected === 1;
+
   $: numSelectedNotShown =
     numSelected - (menuItems?.filter((item) => item.selected)?.length || 0);
 
@@ -82,12 +84,16 @@
         animateSelect={false}
         focusOnMount={false}
         on:select={() => {
+          if (singleSelection && selected) return;
           dispatch("item-clicked", { index, name });
         }}
       >
         <svelte:fragment slot="icon">
           {#if selected}
-            <Check size="20px" color="#15141A" />
+            <Check
+              size="20px"
+              color={singleSelection ? "#9CA3AF" : "#15141A"}
+            />
           {:else}
             <Spacer size="20px" />
           {/if}

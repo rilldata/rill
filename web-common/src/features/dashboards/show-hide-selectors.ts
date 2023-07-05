@@ -80,7 +80,10 @@ function createShowHideStore<Item>(
 
   derivedStore.setAllToNotVisible = () => {
     updateMetricsExplorerByName(metricsViewName, (metricsExplorer) => {
-      metricsExplorer[visibleFieldInStore].clear();
+      // Remove all except for the first one
+      metricsExplorer[visibleFieldInStore] = new Set(
+        get(derivedStore).availableKeys.slice(0, 1)
+      );
       metricsExplorer[allVisibleFieldInStore] = false;
     });
   };
