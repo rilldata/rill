@@ -200,7 +200,7 @@ func (c *connection) ingestMotherduckData(ctx context.Context, source *connector
 
 		userQuery := strings.TrimSpace(qryProp.(string))
 		userQuery, _ = strings.CutSuffix(userQuery, ";") // trim trailing semi colon
-		query := fmt.Sprintf("CREATE OR REPLACE TABLE %q.%q AS (%s);", localDB, source.Name, userQuery)
+		query := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s AS (%s);", safeName(localDB), safeName(source.Name), userQuery)
 		return c.Exec(ctx, &drivers.Statement{Query: query})
 	})
 	if err != nil {
