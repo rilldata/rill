@@ -14,11 +14,13 @@
   import { skipDebounceAnnotation } from "@rilldata/web-common/components/editor/annotations";
   import { setLineStatuses } from "@rilldata/web-common/components/editor/line-status";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import {
+    fileArtifactsStore,
+    getCatalogItemErrors,
+  } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { createDebouncer } from "@rilldata/web-common/lib/create-debouncer";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { getMetricsDefErrors } from "../../utils";
   import { createPlaceholder } from "./create-placeholder";
   import { mapRuntimeErrorsToLines } from "./errors";
 
@@ -102,7 +104,10 @@
     }
   }
 
-  $: runtimeErrors = getMetricsDefErrors($fileArtifactsStore, metricsDefName);
+  $: runtimeErrors = getCatalogItemErrors(
+    $fileArtifactsStore,
+    `${metricsDefName}.yaml`
+  );
 
   $: lineBasedRuntimeErrors = mapRuntimeErrorsToLines(runtimeErrors, yaml);
   /** display the main error (the first in this array) at the bottom */

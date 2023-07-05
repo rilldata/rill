@@ -16,9 +16,11 @@
   import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
-  import { fileArtifactsStore } from "../../entity-management/file-artifacts-store";
+  import {
+    fileArtifactsStore,
+    getCatalogItemErrors,
+  } from "../../entity-management/file-artifacts-store";
   import { EntityType } from "../../entity-management/types";
-  import { getMetricsDefErrors } from "../utils";
 
   export let metricsDefName;
 
@@ -27,7 +29,10 @@
     getFilePathFromNameAndType(metricsDefName, EntityType.MetricsDefinition)
   );
   $: yaml = $fileQuery?.data?.blob;
-  $: errors = getMetricsDefErrors($fileArtifactsStore, metricsDefName);
+  $: errors = getCatalogItemErrors(
+    $fileArtifactsStore,
+    `${metricsDefName}.yaml`
+  );
 
   let buttonDisabled = true;
   let buttonStatus;
