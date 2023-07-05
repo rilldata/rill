@@ -16,7 +16,7 @@
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import {
     fileArtifactsStore,
-    getCatalogItemErrors,
+    getFileArtifactReconciliationErrors,
   } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { createDebouncer } from "@rilldata/web-common/lib/create-debouncer";
@@ -104,7 +104,7 @@
     }
   }
 
-  $: runtimeErrors = getCatalogItemErrors(
+  $: runtimeErrors = getFileArtifactReconciliationErrors(
     $fileArtifactsStore,
     `${metricsDefName}.yaml`
   );

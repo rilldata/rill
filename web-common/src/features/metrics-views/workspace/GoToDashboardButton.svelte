@@ -18,7 +18,7 @@
   import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
   import {
     fileArtifactsStore,
-    getCatalogItemErrors,
+    getFileArtifactReconciliationErrors,
   } from "../../entity-management/file-artifacts-store";
   import { EntityType } from "../../entity-management/types";
 
@@ -29,7 +29,7 @@
     getFilePathFromNameAndType(metricsDefName, EntityType.MetricsDefinition)
   );
   $: yaml = $fileQuery?.data?.blob;
-  $: errors = getCatalogItemErrors(
+  $: errors = getFileArtifactReconciliationErrors(
     $fileArtifactsStore,
     `${metricsDefName}.yaml`
   );

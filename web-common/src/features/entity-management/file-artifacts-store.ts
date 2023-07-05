@@ -120,7 +120,7 @@ function correctFilePath(filePath: string) {
   return filePath;
 }
 
-export function getCatalogItemErrors(
+export function getFileArtifactReconciliationErrors(
   fileState: FileArtifactsState,
   fileName: string
 ): V1ReconcileError[] {
