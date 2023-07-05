@@ -14,6 +14,10 @@ import (
 func (s *Server) ListConnectors(ctx context.Context, req *runtimev1.ListConnectorsRequest) (*runtimev1.ListConnectorsResponse, error) {
 	var pbs []*runtimev1.Connector
 	for name, connector := range connectors.Connectors {
+		// TODO :: remove this once application team adds support for motherduck tab
+		if name == "motherduck" {
+			continue
+		}
 		// Build protobufs for properties
 		propPBs := make([]*runtimev1.Connector_Property, len(connector.Spec().Properties))
 		for j, propSchema := range connector.Spec().Properties {
