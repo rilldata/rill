@@ -1,4 +1,4 @@
-import { writable, get, Writable, Readable, derived } from "svelte/store";
+import { writable, Writable, Readable, derived } from "svelte/store";
 import { getContext } from "svelte";
 import type { QueryClient } from "@tanstack/svelte-query";
 import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
