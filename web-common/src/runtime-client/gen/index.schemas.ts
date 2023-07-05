@@ -183,6 +183,15 @@ export type QueryServiceColumnCardinalityParams = {
   priority?: number;
 };
 
+export type RuntimeServiceWatchFiles200 = {
+  result?: V1WatchFilesResponse;
+  error?: RpcStatus;
+};
+
+export type RuntimeServiceWatchFilesParams = {
+  replay?: boolean;
+};
+
 export type RuntimeServiceUnpackExampleBody = {
   name?: string;
   force?: boolean;
@@ -272,6 +281,11 @@ export type ConnectorServiceGCSListObjectsParams = {
   endOffset?: string;
   delimiter?: string;
 };
+
+export interface V1WatchFilesResponse {
+  event?: V1FileEvent;
+  path?: string;
+}
 
 export interface V1UnpackExampleResponse {
   [key: string]: any;
@@ -850,6 +864,19 @@ export interface V1GCSGetCredentialsInfoResponse {
   exist?: boolean;
   projectId?: string;
 }
+
+/**
+ * FileEvent describes a file change.
+ */
+export type V1FileEvent = (typeof V1FileEvent)[keyof typeof V1FileEvent];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1FileEvent = {
+  FILE_EVENT_UNSPECIFIED: "FILE_EVENT_UNSPECIFIED",
+  FILE_EVENT_WRITE: "FILE_EVENT_WRITE",
+  FILE_EVENT_DELETE: "FILE_EVENT_DELETE",
+  FILE_EVENT_RENAME: "FILE_EVENT_RENAME",
+} as const;
 
 export interface V1ExportResponse {
   downloadUrlPath?: string;

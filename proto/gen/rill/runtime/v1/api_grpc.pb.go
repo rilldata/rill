@@ -44,6 +44,7 @@ const (
 	RuntimeService_RenameFileAndReconcile_FullMethodName = "/rill.runtime.v1.RuntimeService/RenameFileAndReconcile"
 	RuntimeService_RefreshAndReconcile_FullMethodName    = "/rill.runtime.v1.RuntimeService/RefreshAndReconcile"
 	RuntimeService_ListConnectors_FullMethodName         = "/rill.runtime.v1.RuntimeService/ListConnectors"
+	RuntimeService_WatchFiles_FullMethodName             = "/rill.runtime.v1.RuntimeService/WatchFiles"
 )
 
 // RuntimeServiceClient is the client API for RuntimeService service.
@@ -108,6 +109,8 @@ type RuntimeServiceClient interface {
 	// ListConnectors returns a description of all the connectors implemented in the runtime,
 	// including their schema and validation rules
 	ListConnectors(ctx context.Context, in *ListConnectorsRequest, opts ...grpc.CallOption) (*ListConnectorsResponse, error)
+	// WatchFiles streams repo file update events. It is not supported on all backends.
+	WatchFiles(ctx context.Context, in *WatchFilesRequest, opts ...grpc.CallOption) (RuntimeService_WatchFilesClient, error)
 }
 
 type runtimeServiceClient struct {
@@ -343,6 +346,38 @@ func (c *runtimeServiceClient) ListConnectors(ctx context.Context, in *ListConne
 	return out, nil
 }
 
+func (c *runtimeServiceClient) WatchFiles(ctx context.Context, in *WatchFilesRequest, opts ...grpc.CallOption) (RuntimeService_WatchFilesClient, error) {
+	stream, err := c.cc.NewStream(ctx, &RuntimeService_ServiceDesc.Streams[0], RuntimeService_WatchFiles_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &runtimeServiceWatchFilesClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type RuntimeService_WatchFilesClient interface {
+	Recv() (*WatchFilesResponse, error)
+	grpc.ClientStream
+}
+
+type runtimeServiceWatchFilesClient struct {
+	grpc.ClientStream
+}
+
+func (x *runtimeServiceWatchFilesClient) Recv() (*WatchFilesResponse, error) {
+	m := new(WatchFilesResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // RuntimeServiceServer is the server API for RuntimeService service.
 // All implementations must embed UnimplementedRuntimeServiceServer
 // for forward compatibility
@@ -405,6 +440,8 @@ type RuntimeServiceServer interface {
 	// ListConnectors returns a description of all the connectors implemented in the runtime,
 	// including their schema and validation rules
 	ListConnectors(context.Context, *ListConnectorsRequest) (*ListConnectorsResponse, error)
+	// WatchFiles streams repo file update events. It is not supported on all backends.
+	WatchFiles(*WatchFilesRequest, RuntimeService_WatchFilesServer) error
 	mustEmbedUnimplementedRuntimeServiceServer()
 }
 
@@ -486,6 +523,9 @@ func (UnimplementedRuntimeServiceServer) RefreshAndReconcile(context.Context, *R
 }
 func (UnimplementedRuntimeServiceServer) ListConnectors(context.Context, *ListConnectorsRequest) (*ListConnectorsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListConnectors not implemented")
+}
+func (UnimplementedRuntimeServiceServer) WatchFiles(*WatchFilesRequest, RuntimeService_WatchFilesServer) error {
+	return status.Errorf(codes.Unimplemented, "method WatchFiles not implemented")
 }
 func (UnimplementedRuntimeServiceServer) mustEmbedUnimplementedRuntimeServiceServer() {}
 
@@ -950,6 +990,27 @@ func _RuntimeService_ListConnectors_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_WatchFiles_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(WatchFilesRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(RuntimeServiceServer).WatchFiles(m, &runtimeServiceWatchFilesServer{stream})
+}
+
+type RuntimeService_WatchFilesServer interface {
+	Send(*WatchFilesResponse) error
+	grpc.ServerStream
+}
+
+type runtimeServiceWatchFilesServer struct {
+	grpc.ServerStream
+}
+
+func (x *runtimeServiceWatchFilesServer) Send(m *WatchFilesResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // RuntimeService_ServiceDesc is the grpc.ServiceDesc for RuntimeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1058,6 +1119,12 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_ListConnectors_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "WatchFiles",
+			Handler:       _RuntimeService_WatchFiles_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "rill/runtime/v1/api.proto",
 }
