@@ -1468,11 +1468,14 @@ paths:
           schema:
             type: object
             properties:
+              priority:
+                type: integer
+                format: int32
               queries:
                 type: array
                 items:
                   type: object
-                  $ref: '#/definitions/v1QueryBatchSingleRequest'
+                  $ref: '#/definitions/v1QueryBatchEntry'
       tags:
         - QueryService
   /v1/instances/{instanceId}/reconcile:
@@ -3034,6 +3037,49 @@ definitions:
         type: string
         title: 'TODO: Redundant, should be removed (but frontend currently uses it)'
     title: Response message for RuntimeService.PutFile
+  v1QueryBatchEntry:
+    type: object
+    properties:
+      key:
+        type: integer
+        format: int32
+        description: Since response could out of order `key` is used to co-relate a specific response to request.
+      metricsViewToplistRequest:
+        $ref: '#/definitions/v1MetricsViewToplistRequest'
+      metricsViewComparisonToplistRequest:
+        $ref: '#/definitions/v1MetricsViewComparisonToplistRequest'
+      metricsViewTimeSeriesRequest:
+        $ref: '#/definitions/v1MetricsViewTimeSeriesRequest'
+      metricsViewTotalsRequest:
+        $ref: '#/definitions/v1MetricsViewTotalsRequest'
+      metricsViewRowsRequest:
+        $ref: '#/definitions/v1MetricsViewRowsRequest'
+      columnRollupIntervalRequest:
+        $ref: '#/definitions/v1ColumnRollupIntervalRequest'
+      columnTopKRequest:
+        $ref: '#/definitions/v1ColumnTopKRequest'
+      columnNullCountRequest:
+        $ref: '#/definitions/v1ColumnNullCountRequest'
+      columnDescriptiveStatisticsRequest:
+        $ref: '#/definitions/v1ColumnDescriptiveStatisticsRequest'
+      columnTimeGrainRequest:
+        $ref: '#/definitions/v1ColumnTimeGrainRequest'
+      columnNumericHistogramRequest:
+        $ref: '#/definitions/v1ColumnNumericHistogramRequest'
+      columnRugHistogramRequest:
+        $ref: '#/definitions/v1ColumnRugHistogramRequest'
+      columnTimeRangeRequest:
+        $ref: '#/definitions/v1ColumnTimeRangeRequest'
+      columnCardinalityRequest:
+        $ref: '#/definitions/v1ColumnCardinalityRequest'
+      columnTimeSeriesRequest:
+        $ref: '#/definitions/v1ColumnTimeSeriesRequest'
+      tableCardinalityRequest:
+        $ref: '#/definitions/v1TableCardinalityRequest'
+      tableColumnsRequest:
+        $ref: '#/definitions/v1TableColumnsRequest'
+      tableRowsRequest:
+        $ref: '#/definitions/v1TableRowsRequest'
   v1QueryBatchResponse:
     type: object
     properties:
@@ -3078,49 +3124,6 @@ definitions:
         $ref: '#/definitions/v1TableColumnsResponse'
       tableRowsResponse:
         $ref: '#/definitions/v1TableRowsResponse'
-  v1QueryBatchSingleRequest:
-    type: object
-    properties:
-      key:
-        type: integer
-        format: int32
-        description: Since response could out of order `key` is used to co-relate a specific response to request.
-      metricsViewToplistRequest:
-        $ref: '#/definitions/v1MetricsViewToplistRequest'
-      metricsViewComparisonToplistRequest:
-        $ref: '#/definitions/v1MetricsViewComparisonToplistRequest'
-      metricsViewTimeSeriesRequest:
-        $ref: '#/definitions/v1MetricsViewTimeSeriesRequest'
-      metricsViewTotalsRequest:
-        $ref: '#/definitions/v1MetricsViewTotalsRequest'
-      metricsViewRowsRequest:
-        $ref: '#/definitions/v1MetricsViewRowsRequest'
-      columnRollupIntervalRequest:
-        $ref: '#/definitions/v1ColumnRollupIntervalRequest'
-      columnTopKRequest:
-        $ref: '#/definitions/v1ColumnTopKRequest'
-      columnNullCountRequest:
-        $ref: '#/definitions/v1ColumnNullCountRequest'
-      columnDescriptiveStatisticsRequest:
-        $ref: '#/definitions/v1ColumnDescriptiveStatisticsRequest'
-      columnTimeGrainRequest:
-        $ref: '#/definitions/v1ColumnTimeGrainRequest'
-      columnNumericHistogramRequest:
-        $ref: '#/definitions/v1ColumnNumericHistogramRequest'
-      columnRugHistogramRequest:
-        $ref: '#/definitions/v1ColumnRugHistogramRequest'
-      columnTimeRangeRequest:
-        $ref: '#/definitions/v1ColumnTimeRangeRequest'
-      columnCardinalityRequest:
-        $ref: '#/definitions/v1ColumnCardinalityRequest'
-      columnTimeSeriesRequest:
-        $ref: '#/definitions/v1ColumnTimeSeriesRequest'
-      tableCardinalityRequest:
-        $ref: '#/definitions/v1TableCardinalityRequest'
-      tableColumnsRequest:
-        $ref: '#/definitions/v1TableColumnsRequest'
-      tableRowsRequest:
-        $ref: '#/definitions/v1TableRowsRequest'
   v1QueryResponse:
     type: object
     properties:

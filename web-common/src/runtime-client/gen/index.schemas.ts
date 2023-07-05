@@ -35,7 +35,8 @@ export type QueryServiceQueryBatch200 = {
 };
 
 export type QueryServiceQueryBatchBody = {
-  queries?: V1QueryBatchSingleRequest[];
+  priority?: number;
+  queries?: V1QueryBatchEntry[];
 };
 
 export type QueryServiceQueryBody = {
@@ -567,29 +568,6 @@ export interface V1QueryResponse {
   data?: V1QueryResponseDataItem[];
 }
 
-export interface V1QueryBatchSingleRequest {
-  /** Since response could out of order `key` is used to co-relate a specific response to request. */
-  key?: number;
-  metricsViewToplistRequest?: V1MetricsViewToplistRequest;
-  metricsViewComparisonToplistRequest?: V1MetricsViewComparisonToplistRequest;
-  metricsViewTimeSeriesRequest?: V1MetricsViewTimeSeriesRequest;
-  metricsViewTotalsRequest?: V1MetricsViewTotalsRequest;
-  metricsViewRowsRequest?: V1MetricsViewRowsRequest;
-  columnRollupIntervalRequest?: V1ColumnRollupIntervalRequest;
-  columnTopKRequest?: V1ColumnTopKRequest;
-  columnNullCountRequest?: V1ColumnNullCountRequest;
-  columnDescriptiveStatisticsRequest?: V1ColumnDescriptiveStatisticsRequest;
-  columnTimeGrainRequest?: V1ColumnTimeGrainRequest;
-  columnNumericHistogramRequest?: V1ColumnNumericHistogramRequest;
-  columnRugHistogramRequest?: V1ColumnRugHistogramRequest;
-  columnTimeRangeRequest?: V1ColumnTimeRangeRequest;
-  columnCardinalityRequest?: V1ColumnCardinalityRequest;
-  columnTimeSeriesRequest?: V1ColumnTimeSeriesRequest;
-  tableCardinalityRequest?: V1TableCardinalityRequest;
-  tableColumnsRequest?: V1TableColumnsRequest;
-  tableRowsRequest?: V1TableRowsRequest;
-}
-
 export interface V1QueryBatchResponse {
   key?: number;
   error?: string;
@@ -611,6 +589,29 @@ export interface V1QueryBatchResponse {
   tableCardinalityResponse?: V1TableCardinalityResponse;
   tableColumnsResponse?: V1TableColumnsResponse;
   tableRowsResponse?: V1TableRowsResponse;
+}
+
+export interface V1QueryBatchEntry {
+  /** Since response could out of order `key` is used to co-relate a specific response to request. */
+  key?: number;
+  metricsViewToplistRequest?: V1MetricsViewToplistRequest;
+  metricsViewComparisonToplistRequest?: V1MetricsViewComparisonToplistRequest;
+  metricsViewTimeSeriesRequest?: V1MetricsViewTimeSeriesRequest;
+  metricsViewTotalsRequest?: V1MetricsViewTotalsRequest;
+  metricsViewRowsRequest?: V1MetricsViewRowsRequest;
+  columnRollupIntervalRequest?: V1ColumnRollupIntervalRequest;
+  columnTopKRequest?: V1ColumnTopKRequest;
+  columnNullCountRequest?: V1ColumnNullCountRequest;
+  columnDescriptiveStatisticsRequest?: V1ColumnDescriptiveStatisticsRequest;
+  columnTimeGrainRequest?: V1ColumnTimeGrainRequest;
+  columnNumericHistogramRequest?: V1ColumnNumericHistogramRequest;
+  columnRugHistogramRequest?: V1ColumnRugHistogramRequest;
+  columnTimeRangeRequest?: V1ColumnTimeRangeRequest;
+  columnCardinalityRequest?: V1ColumnCardinalityRequest;
+  columnTimeSeriesRequest?: V1ColumnTimeSeriesRequest;
+  tableCardinalityRequest?: V1TableCardinalityRequest;
+  tableColumnsRequest?: V1TableColumnsRequest;
+  tableRowsRequest?: V1TableRowsRequest;
 }
 
 export interface V1PutFileResponse {
