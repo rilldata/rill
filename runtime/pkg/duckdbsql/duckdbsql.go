@@ -6,12 +6,59 @@ import (
 	"database/sql/driver"
 	"sync"
 
+	jsonvalue "github.com/Andrew-M-C/go.jsonvalue"
 	"github.com/marcboeker/go-duckdb"
 )
 
+type AST struct {
+	ast         *jsonvalue.V
+	selectNodes []*selectNode
+	fromNodes   []*fromNode
+	columns     []*columnNode
+}
+
+type selectNode struct {
+	ast *jsonvalue.V
+}
+
+type columnNode struct {
+	ast *jsonvalue.V
+	ref *ColumnRef
+}
+
+type fromNode struct {
+	ast *jsonvalue.V
+	ref *TableRef
+}
+
+func Parse(sql string) (*AST, error) {
+	// TODO: optimise and parse into []byte
+	serializedSQL, err := queryString("select json_serialize_sql(?::VARCHAR)", sql)
+	if err != nil {
+		return nil, err
+	}
+
+	v, err := jsonvalue.Unmarshal(serializedSQL)
+	if err != nil {
+		return nil, err
+	}
+	ast := &AST{
+		ast:         v,
+		selectNodes: make([]*selectNode, 0),
+		fromNodes:   make([]*fromNode, 0),
+		columns:     make([]*columnNode, 0),
+	}
+
+	ast.traverse()
+
+	return ast, nil
+}
+
 // Format normalizes a DuckDB SQL statement
-func Format(sql string) (string, error) {
-	return queryString("SELECT json_deserialize_sql(json_serialize_sql(?::VARCHAR))", sql)
+func (a *AST) Format() (string, error) {
+	// TODO: cleanup
+	res, err := queryString("SELECT json_deserialize_sql(?::JSON)", a.ast)
+	return string(res), err
 }
 
 // Sanitize strips comments and normalizes a DuckDB SQL statement
@@ -32,11 +79,6 @@ type TableRef struct {
 	Properties map[string]any
 }
 
-// ExtractTableRefs extracts table references from a DuckDB SQL query
-func ExtractTableRefs(sql string) ([]*TableRef, error) {
-	panic("not implemented")
-}
-
 // RewriteTableRefs replaces table references in a DuckDB SQL query
 func RewriteTableRefs(sql string, fn func(table *TableRef) (*TableRef, bool)) (string, error) {
 	panic("not implemented")
@@ -50,6 +92,7 @@ type Annotation struct {
 
 // ExtractAnnotations extracts annotations from comments prefixed with '@', and optionally a value after a ':'.
 // Examples: "-- @materialize" and "-- @materialize: true".
+// TODO: duckdb's parser doesnt return comments. We need our own parser.
 func ExtractAnnotations() ([]*Annotation, error) {
 	panic("not implemented")
 }
@@ -69,29 +112,30 @@ func ExtractColumnRefs(sql string) ([]*ColumnRef, error) {
 }
 
 // queryString runs a DuckDB query and returns the result as a scalar string
-func queryString(qry string, args ...any) (string, error) {
+func queryString(qry string, args ...any) ([]byte, error) {
 	rows, err := query(qry, args...)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	var res string
+	var res []byte
 	if rows.Next() {
 		err := rows.Scan(&res)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 	}
 
 	err = rows.Close()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	return res, nil
 }
 
 // Use a global in-memory DuckDB connection for invoking DuckDB's json_serialize_sql and json_deserialize_sql
+// TODO: Why not get driver connection?
 var (
 	db     *databasesql.DB
 	dbOnce sync.Once
