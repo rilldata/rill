@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { EditorView } from "@codemirror/basic-setup";
+  import type { EditorView } from "@codemirror/view";
   import { skipDebounceAnnotation } from "@rilldata/web-common/components/editor/annotations";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";

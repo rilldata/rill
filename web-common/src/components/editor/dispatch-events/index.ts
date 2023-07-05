@@ -1,5 +1,5 @@
-import { EditorView } from "@codemirror/basic-setup";
 import type { ViewUpdate } from "@codemirror/view";
+import { EditorView } from "@codemirror/view";
 export interface UpdateDetails {
   content: string;
   viewUpdate: ViewUpdate;

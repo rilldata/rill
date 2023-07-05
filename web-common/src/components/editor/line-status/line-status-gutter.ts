@@ -1,4 +1,4 @@
-import { RangeSetBuilder } from "@codemirror/rangeset";
+import { RangeSetBuilder } from "@codemirror/state";
 import { gutter, GutterMarker } from "@codemirror/view";
 import type { SvelteComponent } from "svelte";
 import { lineStatusesStateField, updateLineStatuses } from "./state";

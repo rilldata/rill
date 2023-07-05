@@ -1,7 +1,7 @@
 <script lang="ts">
   import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
 
-  import type { EditorView } from "@codemirror/basic-setup";
+  import type { EditorView } from "@codemirror/view";
   import EditorContainer from "@rilldata/web-common/components/editor/EditorContainer.svelte";
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
   import {

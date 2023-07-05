@@ -1,7 +1,7 @@
-import type { EditorView } from "@codemirror/basic-setup";
 import {
   Decoration,
   DecorationSet,
+  EditorView,
   ViewPlugin,
   WidgetType,
 } from "@codemirror/view";

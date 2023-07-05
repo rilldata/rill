@@ -1,4 +1,5 @@
-import { EditorState, EditorView } from "@codemirror/basic-setup";
+import { EditorState } from "@codemirror/state";
+import { EditorView } from "@codemirror/view";
 import { beforeEach, describe, expect, it } from "vitest";
 import { lineStatus, setLineStatuses } from ".";
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { EditorView } from "@codemirror/basic-setup";
+  import { EditorView } from "@codemirror/view";
   import { Meta, Story, Template } from "@storybook/addon-svelte-csf";
   import Button from "../../button/Button.svelte";
   import YAMLEditor from "../YAMLEditor.svelte";
