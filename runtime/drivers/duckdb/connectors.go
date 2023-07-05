@@ -125,14 +125,14 @@ func (c *connection) ingestMotherduckData(ctx context.Context, source *connector
 	err := c.WithConnection(ctx, 1, func(ctx, ensuredCtx context.Context) error {
 		res, err := c.Execute(ctx, &drivers.Statement{Query: "SELECT current_database();"})
 		if err != nil {
-			return c.checkErr(err)
+			return err
 		}
 		defer res.Close()
 
 		res.Next()
 		var localDB string
 		if err := res.Scan(&localDB); err != nil {
-			return c.checkErr(err)
+			return err
 		}
 
 		// get token
@@ -141,20 +141,20 @@ func (c *connection) ingestMotherduckData(ctx context.Context, source *connector
 			token = os.Getenv("motherduck_token")
 		}
 		// load motherduck extension; connect to motherduck service
-		err = c.Exec(ctx, &drivers.Statement{Query: "LOAD 'motherduck';", Priority: 1})
+		err = c.Exec(ctx, &drivers.Statement{Query: "INSTALL 'motherduck'; LOAD 'motherduck';"})
 		if err != nil {
 			return fmt.Errorf("failed to load motherduck extension %w", err)
 		}
 
-		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("PRAGMA MD_CONNECT('token=%s');", token), Priority: 1})
+		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("PRAGMA MD_CONNECT('token=%s');", token)})
 		if err != nil {
-			return fmt.Errorf("failed to load motherduck extension %w", err)
+			return fmt.Errorf("failed to connect to motherduck %w", err)
 		}
 
 		// get list of all motherduck databases
-		res, err = c.Execute(ctx, &drivers.Statement{Query: "SELECT name FROM md_databases();", Priority: 1})
+		res, err = c.Execute(ctx, &drivers.Statement{Query: "SELECT name FROM md_databases();"})
 		if err != nil {
-			return c.checkErr(err)
+			return err
 		}
 		defer res.Close()
 
@@ -162,7 +162,7 @@ func (c *connection) ingestMotherduckData(ctx context.Context, source *connector
 		for res.Next() {
 			var name string
 			if res.Scan(&name) != nil {
-				return c.checkErr(err)
+				return err
 			}
 
 			names = append(names, name)
@@ -170,13 +170,12 @@ func (c *connection) ingestMotherduckData(ctx context.Context, source *connector
 		if len(names) == 1 { // single motherduck db, use db to allow user to run query without specifying db name
 			err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %q;", names[0]), Priority: 1})
 			if err != nil {
-				return c.checkErr(err)
+				return err
 			}
 
 			defer func(ctx context.Context) { // revert back to localdb
 				err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %q;", localDB), Priority: 1})
 				if err != nil {
-					err = c.checkErr(err)
 					c.logger.Error("failed to switch to local database", zap.Error(err))
 				}
 			}(ensuredCtx)
@@ -184,14 +183,13 @@ func (c *connection) ingestMotherduckData(ctx context.Context, source *connector
 
 		qryProp, ok := source.Properties["query"]
 		if !ok {
-			return fmt.Errorf("query field is mandatory for `Motherduck` source")
+			return fmt.Errorf("property \"query\" is mandatory for connector \"motherduck\"")
 		}
 
 		userQuery := strings.TrimSpace(qryProp.(string))
 		userQuery, _ = strings.CutSuffix(userQuery, ";") // trim trailing semi colon
-		query := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s AS (%s);", localDB, source.Name, userQuery)
-		err = c.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
-		return c.checkErr(err)
+		query := fmt.Sprintf("CREATE OR REPLACE TABLE %q.%q AS (%s);", localDB, source.Name, userQuery)
+		return c.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
 	})
 	if err != nil {
 		return nil, err
