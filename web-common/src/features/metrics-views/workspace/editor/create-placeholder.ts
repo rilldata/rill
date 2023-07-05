@@ -1,4 +1,3 @@
-import type { Extension } from "@codemirror/state";
 import {
   Decoration,
   DecorationSet,
@@ -33,20 +32,18 @@ class PlaceholderWidget extends WidgetType {
   }
 }
 
-/// Extension that enables a placeholder—a piece of example content
-/// to show when the editor is empty.
-export function createPlaceholder(
-  content: string | HTMLElement,
-  showOnEmpty = true
-): Extension {
-  return ViewPlugin.fromClass(
+/* Extension that enables a simple placeholder for the metrics editor. **/
+export function createPlaceholder(metricsViewName: string, showOnEmpty = true) {
+  const component = createPlaceholderElement(metricsViewName);
+  const elem = component.DOMElement;
+  const extension = ViewPlugin.fromClass(
     class {
       placeholder: DecorationSet;
 
       constructor(readonly view: EditorView) {
         this.placeholder = Decoration.set([
           Decoration.widget({
-            widget: new PlaceholderWidget(content),
+            widget: new PlaceholderWidget(elem),
             side: 1,
           }).range(0),
         ]);
@@ -64,8 +61,12 @@ export function createPlaceholder(
     },
     { decorations: (v) => v.decorations }
   );
+  return { component, extension };
 }
 
+/** creates a set of callbacks that enables updating the placeholder,
+ * which itself is a svelte component.
+ */
 export function createPlaceholderElement(metricsName: string) {
   const DOMElement = document.createElement("span");
   // create placeholder text and attach it to the DOM element.

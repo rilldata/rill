@@ -19,10 +19,7 @@
   import { createDebouncer } from "@rilldata/web-common/lib/create-debouncer";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { getMetricsDefErrors } from "../../utils";
-  import {
-    createPlaceholder,
-    createPlaceholderElement,
-  } from "./create-placeholder";
+  import { createPlaceholder } from "./create-placeholder";
   import { mapRuntimeErrorsToLines } from "./errors";
 
   export let metricsDefName: string;
@@ -39,16 +36,13 @@
   );
   $: yaml = $fileQuery.data?.blob || "";
 
-  /** note: this codemirror plugin does actually utilize tanstack query, and the
-   * instantiation of the underlying svelte component that defines the placeholder
-   * must be instantiated in the component.
-   */
-  const placeholderElement = createPlaceholderElement(metricsDefName);
+  const placeholderElements = createPlaceholder(metricsDefName);
+
+  const placeholderElement = placeholderElements.component;
   $: if (view) {
     placeholderElement.setEditorView(view);
   }
-
-  const placeholder = createPlaceholder(placeholderElement.DOMElement);
+  const placeholder = placeholderElements.extension;
 
   $: instanceId = $runtime.instanceId;
 
