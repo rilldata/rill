@@ -382,13 +382,6 @@ describe("dashboards", () => {
     
         `;
     await updateMetricsInput(page, deleteOnlyMeasureDoc);
-    // Delete the only measure
-    // const measuresTable = await page.getByRole("table", { name: "Measures" });
-    // const firstRow = await measuresTable.getByRole("row").nth(1);
-    // await firstRow.hover();
-    // await firstRow.getByRole("button", { name: "More" }).click();
-    // await page.getByRole("menuitem", { name: "Delete row" }).click();
-
     // Check warning message appears, Go to Dashboard is disabled
     await playwrightExpect(
       page.getByText("at least one measure should be present")
