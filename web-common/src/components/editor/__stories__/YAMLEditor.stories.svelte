@@ -12,8 +12,6 @@ values:
     expression: sum(revenue) / count(*)
   `;
 
-  let view: EditorView;
-
   let errors = [];
   function toggleError() {
     if (errors.length) errors = [];
