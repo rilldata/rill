@@ -148,33 +148,45 @@ func (c *connection) ingestMotherduckData(ctx context.Context, source *connector
 
 		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("PRAGMA MD_CONNECT('token=%s');", token)})
 		if err != nil {
-			return fmt.Errorf("failed to connect to motherduck %w", err)
+			if !strings.Contains(err.Error(), "already connected") {
+				return fmt.Errorf("failed to connect to motherduck %w", err)
+			}
 		}
-
-		// get list of all motherduck databases
-		res, err = c.Execute(ctx, &drivers.Statement{Query: "SELECT name FROM md_databases();"})
-		if err != nil {
-			return err
-		}
-		defer res.Close()
 
 		names := make([]string, 0)
-		for res.Next() {
-			var name string
-			if res.Scan(&name) != nil {
+
+		var db string
+		if dbProp, ok := source.Properties["db"]; ok {
+			db = dbProp.(string)
+		} else {
+			// get list of all motherduck databases
+			res, err = c.Execute(ctx, &drivers.Statement{Query: "SELECT name FROM md_databases();"})
+			if err != nil {
 				return err
 			}
+			defer res.Close()
 
-			names = append(names, name)
+			for res.Next() {
+				var name string
+				if res.Scan(&name) != nil {
+					return err
+				}
+				names = append(names, name)
+			}
+			// single motherduck db, use db to allow user to run query without specifying db name
+			if len(names) == 1 {
+				db = names[0]
+			}
 		}
-		if len(names) == 1 { // single motherduck db, use db to allow user to run query without specifying db name
-			err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %q;", names[0]), Priority: 1})
+
+		if db != "" {
+			err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %s;", safeName(db))})
 			if err != nil {
 				return err
 			}
 
 			defer func(ctx context.Context) { // revert back to localdb
-				err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %q;", localDB), Priority: 1})
+				err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %s;", safeName(localDB))})
 				if err != nil {
 					c.logger.Error("failed to switch to local database", zap.Error(err))
 				}
@@ -189,7 +201,7 @@ func (c *connection) ingestMotherduckData(ctx context.Context, source *connector
 		userQuery := strings.TrimSpace(qryProp.(string))
 		userQuery, _ = strings.CutSuffix(userQuery, ";") // trim trailing semi colon
 		query := fmt.Sprintf("CREATE OR REPLACE TABLE %q.%q AS (%s);", localDB, source.Name, userQuery)
-		return c.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
+		return c.Exec(ctx, &drivers.Statement{Query: query})
 	})
 	if err != nil {
 		return nil, err
@@ -569,4 +581,19 @@ func fileSize(paths []string) int64 {
 		}
 	}
 	return size
+}
+
+func quoteName(name string) string {
+	return fmt.Sprintf("\"%s\"", name)
+}
+
+func escapeDoubleQuotes(column string) string {
+	return strings.ReplaceAll(column, "\"", "\"\"")
+}
+
+func safeName(name string) string {
+	if name == "" {
+		return name
+	}
+	return quoteName(escapeDoubleQuotes(name))
 }
