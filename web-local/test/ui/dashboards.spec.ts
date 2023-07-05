@@ -23,7 +23,7 @@ import { waitForEntity } from "./utils/waitHelpers";
 describe("dashboards", () => {
   const testBrowser = useRegisteredServer("dashboards");
 
-  it.skip("Autogenerate dashboard from source", async () => {
+  it("Autogenerate dashboard from source", async () => {
     const { page } = testBrowser;
 
     await createOrReplaceSource(page, "AdBids.csv", "AdBids");
@@ -37,7 +37,7 @@ describe("dashboards", () => {
     await assertAdBidsDashboard(page);
   });
 
-  it.skip("Autogenerate dashboard from model", async () => {
+  it("Autogenerate dashboard from model", async () => {
     const { page } = testBrowser;
 
     await createAdBidsModel(page);

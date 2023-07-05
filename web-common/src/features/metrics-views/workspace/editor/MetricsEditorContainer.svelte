@@ -4,11 +4,11 @@ It will show an error message if passed in.
 -->
 
 <script lang="ts">
+  import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
+  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import type { V1ReconcileError } from "@rilldata/web-common/runtime-client";
   import { slide } from "svelte/transition";
-  import CancelCircle from "../icons/CancelCircle.svelte";
-  import type { LineStatus } from "./line-status/state";
 
   export let error: LineStatus | V1ReconcileError = undefined;
   export let height = "calc(100vh - var(--header-height))";

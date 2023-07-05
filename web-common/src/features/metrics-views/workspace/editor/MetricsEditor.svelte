@@ -2,7 +2,6 @@
   import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
 
   import type { EditorView } from "@codemirror/view";
-  import EditorContainer from "@rilldata/web-common/components/editor/EditorContainer.svelte";
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
   import {
     createRuntimeServiceGetFile,
@@ -10,6 +9,7 @@
     V1PutFileAndReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import MetricsEditorContainer from "./MetricsEditorContainer.svelte";
 
   import { skipDebounceAnnotation } from "@rilldata/web-common/components/editor/annotations";
   import { setLineStatuses } from "@rilldata/web-common/components/editor/line-status";
@@ -115,7 +115,7 @@
   $: if (view) setLineStatuses(lineBasedRuntimeErrors, view);
 </script>
 
-<EditorContainer error={yaml?.length ? mainError : undefined}>
+<MetricsEditorContainer error={yaml?.length ? mainError : undefined}>
   <YAMLEditor
     bind:this={editor}
     content={yaml}
@@ -123,4 +123,4 @@
     on:update={updateMetrics}
     extensions={[placeholder]}
   />
-</EditorContainer>
+</MetricsEditorContainer>
