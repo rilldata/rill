@@ -161,6 +161,7 @@ message QueryRequest {
   int32 priority = 4;
   // If true, will only validate the query, not execute it
   bool dry_run = 5;
+  int32 limit = 6 [(validate.rules).int32 = {lte: 10000, gte: 0}];
 }
 
 // Response message for QueryService.Query
@@ -174,7 +175,7 @@ message QueryResponse {
 // Request message for QueryService.Export
 message ExportRequest {
   string instance_id = 1;
-  int32 limit = 2 [(validate.rules).int32.lte = 10000];
+  int32 limit = 2 [(validate.rules).int32 = {lte: 10000, gte: 0}];
   ExportFormat format = 3;
   oneof request {
     MetricsViewToplistRequest metrics_view_toplist_request = 4;
@@ -635,3 +636,4 @@ message TableRowsRequest {
 message TableRowsResponse {
   repeated google.protobuf.Struct data = 1;
 }
+

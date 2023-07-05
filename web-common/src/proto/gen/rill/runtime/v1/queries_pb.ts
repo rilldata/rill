@@ -141,6 +141,11 @@ export class QueryRequest extends Message<QueryRequest> {
    */
   dryRun = false;
 
+  /**
+   * @generated from field: int32 limit = 6;
+   */
+  limit = 0;
+
   constructor(data?: PartialMessage<QueryRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -154,6 +159,7 @@ export class QueryRequest extends Message<QueryRequest> {
     { no: 3, name: "args", kind: "message", T: Value, repeated: true },
     { no: 4, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 5, name: "dry_run", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): QueryRequest {

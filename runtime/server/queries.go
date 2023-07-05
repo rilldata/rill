@@ -2,7 +2,10 @@ package server
 
 import (
 	"context"
+	"fmt"
+	"time"
 
+	jsonvalue "github.com/Andrew-M-C/go.jsonvalue"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
@@ -28,11 +31,17 @@ func (s *Server) Query(ctx context.Context, req *runtimev1.QueryRequest) (*runti
 		return nil, err
 	}
 
+	transformedSQL, err := ensureLimits(ctx, olap, req.Sql, int(req.Limit))
+	if err != nil {
+		return nil, err
+	}
+
 	res, err := olap.Execute(ctx, &drivers.Statement{
-		Query:    req.Sql,
-		Args:     args,
-		DryRun:   req.DryRun,
-		Priority: int(req.Priority),
+		Query:            transformedSQL,
+		Args:             args,
+		DryRun:           req.DryRun,
+		Priority:         int(req.Priority),
+		ExecutionTimeout: 2 * time.Minute,
 	})
 	if err != nil {
 		// TODO: Parse error to determine error code
@@ -83,4 +92,191 @@ func rowsToData(rows *drivers.Result) ([]*structpb.Struct, error) {
 	}
 
 	return data, nil
+}
+
+func ensureLimits(ctx context.Context, olap drivers.OLAPStore, inputSQL string, limit int) (string, error) {
+	r, err := olap.Execute(ctx, &drivers.Statement{
+		Query: "select json_serialize_sql(?::VARCHAR)",
+		Args:  []any{inputSQL},
+	})
+	if err != nil {
+		return "", err
+	}
+
+	var serializedSQL []byte
+	if r.Next() {
+		err = r.Scan(&serializedSQL)
+		if err != nil {
+			r.Close()
+			return "", err
+		}
+	}
+
+	r.Close()
+
+	v, err := jsonvalue.Unmarshal(serializedSQL)
+	if err != nil {
+		return "", err
+	}
+
+	err = transformStatments(v, limit)
+	if err != nil {
+		return "", err
+	}
+
+	transformedJSON := v.MustMarshalString()
+	r, err = olap.Execute(ctx, &drivers.Statement{
+		Query: "select json_deserialize_sql(json(?))",
+		Args:  []any{transformedJSON},
+	})
+	if err != nil {
+		return "", err
+	}
+
+	var sqlString string
+	if r.Next() {
+		err = r.Scan(&sqlString)
+		if err != nil {
+			r.Close()
+			return "", err
+		}
+	}
+
+	r.Close()
+
+	return sqlString, nil
+}
+
+func transformStatments(root *jsonvalue.V, limit int) error {
+	for _, v := range root.MustGet("statements").ForRangeArr() {
+		err := replaceOrUpdateLimitTo(v.MustGet("node").MustGet("modifiers"), limit)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+/*
+"LIMIT 1" clause is serialized to the following JSON:
+
+"modifiers":[
+
+	{
+	   "type":"LIMIT_MODIFIER",
+	   "limit":{
+	      "class":"CONSTANT",
+	      "type":"VALUE_CONSTANT",
+	      "alias":"",
+	      "value":{
+	         "type":{
+	            "id":"INTEGER",
+	            "type_info":null
+	         },
+	         "is_null":false,
+	         "value":1
+	      }
+	   },
+	   "offset":null
+	},
+
+]
+
+"LIMIT ?" clause serialization is:
+
+	{
+	   "type":"LIMIT_MODIFIER",
+	   "limit":{
+	      "class":"PARAMETER",
+	      "type":"VALUE_PARAMETER",
+	      "alias":"",
+	      "parameter_nr":2
+	   },
+	   "offset":null
+	}
+*/
+func replaceOrUpdateLimitTo(root *jsonvalue.V, limit int) error {
+	children := root.ForRangeArr()
+	updated := false
+	if len(children) != 0 {
+		for _, v := range children {
+			if v.MustGet("type").String() == "LIMIT_MODIFIER" {
+				modifierType := v.MustGet("limit").MustGet("class").String()
+				switch modifierType {
+				case "CONSTANT":
+					v.MustGet("limit").MustGet("value").MustSetInt(limit).At("value")
+					updated = true
+				case "PARAMETER":
+					err := v.Delete("limit")
+					if err != nil {
+						return err
+					}
+
+					limitObject, err := createConstantLimit(limit)
+					if err != nil {
+						return err
+					}
+
+					v.MustSet(limitObject).At("limit")
+					updated = true
+				}
+			}
+		}
+	}
+
+	if !updated {
+		v, err := createLimitModifier(limit)
+		if err != nil {
+			return err
+		}
+
+		_, err = root.Append(v).InTheEnd()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func createConstantLimit(limit int) (*jsonvalue.V, error) {
+	v, err := jsonvalue.Unmarshal([]byte(fmt.Sprintf(`
+	{
+	   "class":"CONSTANT",
+	   "type":"VALUE_CONSTANT",
+	   "alias":"",
+	   "value":{
+		  "type":{
+			 "id":"INTEGER",
+			 "type_info":null
+		  },
+		  "is_null":false,
+		  "value":%d
+	   }
+	}
+`, limit)))
+	return v, err
+}
+
+func createLimitModifier(limit int) (*jsonvalue.V, error) {
+	v, err := jsonvalue.Unmarshal([]byte(fmt.Sprintf(`
+{
+	"type":"LIMIT_MODIFIER",
+	"limit":{
+	   "class":"CONSTANT",
+	   "type":"VALUE_CONSTANT",
+	   "alias":"",
+	   "value":{
+		  "type":{
+			 "id":"INTEGER",
+			 "type_info":null
+		  },
+		  "is_null":false,
+		  "value":%d
+	   }
+	},
+	"offset":null
+ }
+`, limit)))
+	return v, err
 }
