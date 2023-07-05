@@ -7,7 +7,11 @@ The main feature-set component for dashboard filters
     ChipContainer,
     RemovableListChip,
   } from "@rilldata/web-common/components/chip";
-  import { defaultChipColors } from "@rilldata/web-common/components/chip/chip-types";
+  import {
+    defaultChipColors,
+    excludeChipColors,
+    includeHiddenChipColors,
+  } from "@rilldata/web-common/components/chip/chip-types";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import FilterRemove from "@rilldata/web-common/components/icons/FilterRemove.svelte";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
@@ -48,6 +52,8 @@ The main feature-set component for dashboard filters
   $: includeValues = metricsExplorer?.filters.include;
   let excludeValues: Array<MetricsViewFilterCond>;
   $: excludeValues = metricsExplorer?.filters.exclude;
+
+  $: visibleDimensionKeys = metricsExplorer?.visibleDimensionKeys;
 
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
   let dimensions: Array<MetricsViewDimension>;
@@ -143,7 +149,7 @@ The main feature-set component for dashboard filters
 
   /** prune the values and prepare for templating */
   let currentDimensionFilters = [];
-  $: if (includeValues && excludeValues && dimensions) {
+  $: if (includeValues && excludeValues && dimensions && visibleDimensionKeys) {
     const dimensionIdMap = getMapFromArray(
       dimensions,
       (dimension) => dimension.name
@@ -154,6 +160,7 @@ The main feature-set component for dashboard filters
         label: getDisplayName(dimensionIdMap.get(dimensionValues.name)),
         selectedValues: dimensionValues.in,
         filterType: "include",
+        isHidden: !visibleDimensionKeys.has(dimensionValues.name),
       })
     );
     const currentDimensionExcludeFilters = excludeValues.map(
@@ -162,6 +169,7 @@ The main feature-set component for dashboard filters
         label: getDisplayName(dimensionIdMap.get(dimensionValues.name)),
         selectedValues: dimensionValues.in,
         filterType: "exclude",
+        isHidden: !visibleDimensionKeys.has(dimensionValues.name),
       })
     );
     currentDimensionFilters = [
@@ -170,6 +178,13 @@ The main feature-set component for dashboard filters
     ];
     // sort based on name to make sure toggling include/exclude is not jarring
     currentDimensionFilters.sort((a, b) => (a.name > b.name ? 1 : -1));
+  }
+
+  function getColorForChip(isHidden, isInclude) {
+    if (isInclude) {
+      return isHidden ? includeHiddenChipColors : defaultChipColors;
+    }
+    return excludeChipColors;
   }
 
   function toggleDimensionValue(event, item) {
@@ -181,14 +196,6 @@ The main feature-set component for dashboard filters
     cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.toggleFilterMode(metricViewName, dimensionName);
   }
-
-  const excludeChipColors = {
-    bgBaseClass: "bg-gray-100 dark:bg-gray-700",
-    bgHoverClass: "bg-gray-200 dark:bg-gray-600",
-    textClass: "ui-copy",
-    bgActiveClass: "bg-gray-200 dark:bg-gray-600",
-    outlineClass: "outline-gray-400 dark:outline-gray-500",
-  };
 </script>
 
 <section
@@ -207,7 +214,7 @@ The main feature-set component for dashboard filters
   </div>
   {#if currentDimensionFilters?.length}
     <ChipContainer>
-      {#each currentDimensionFilters as { name, label, selectedValues, filterType } (name)}
+      {#each currentDimensionFilters as { name, label, selectedValues, filterType, isHidden } (name)}
         {@const isInclude = filterType === "include"}
         <div animate:flip={{ duration: 200 }}>
           <RemovableListChip
@@ -218,16 +225,21 @@ The main feature-set component for dashboard filters
             on:search={(event) => {
               setActiveDimension(name, event.detail);
             }}
-            typeLabel="dimension"
+            typeLabel={isHidden ? "hidden dimension" : "dimension"}
             name={isInclude ? label : `Exclude ${label}`}
             excludeMode={isInclude ? false : true}
-            colors={isInclude ? defaultChipColors : excludeChipColors}
+            colors={getColorForChip(isHidden, isInclude)}
             label="View filter"
             {selectedValues}
             {searchedValues}
+            {isHidden}
           >
             <svelte:fragment slot="body-tooltip-content">
-              Click to edit the the filters in this dimension
+              {#if isHidden}
+                To show, use the dimension selector below.
+              {:else}
+                Click to edit the the filters in this dimension
+              {/if}
             </svelte:fragment>
           </RemovableListChip>
         </div>
