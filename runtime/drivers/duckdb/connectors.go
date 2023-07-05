@@ -45,15 +45,14 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 
 func (c *connection) EstimateSize() (int64, bool) {
 	var paths []string
-	path := c.config.DSN
-	if c.config.DSN == "" {
-		return 0, false
+	path := c.config.DBFilePath
+	if path == "" {
+		return 0, true
 	}
 
 	// Add .wal file path (e.g final size will be sum of *.db and *.db.wal)
 	dbWalPath := fmt.Sprintf("%s.wal", path)
 	paths = append(paths, path, dbWalPath)
-	c.logger.Info("duckdb file paths", zap.Strings("paths", paths), zap.Int64("size", fileSize(paths)))
 	return fileSize(paths), true
 }
 
