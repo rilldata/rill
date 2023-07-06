@@ -189,27 +189,13 @@ func (s *Server) GCSGetCredentialsInfo(ctx context.Context, req *runtimev1.GCSGe
 }
 
 func (s *Server) MotherduckListTables(ctx context.Context, req *runtimev1.MotherduckListTablesRequest) (*runtimev1.MotherduckListTablesResponse, error) {
-	conn, err := drivers.Open("duckdb", "", s.logger)
+	conn, err := drivers.Open("duckdb", "md:", s.logger)
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close()
 
 	olap, _ := conn.OLAPStore()
-	err = olap.Exec(ctx, &drivers.Statement{Query: "INSTALL MOTHERDUCK; LOAD MOTHERDUCK;"})
-	if err != nil {
-		return nil, err
-	}
-
-	var token string
-	if s.runtime.AllowHostAccess() {
-		token = os.Getenv("motherduck_token")
-	}
-	err = olap.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("PRAGMA MD_CONNECT('token=%s');", token)})
-	if err != nil {
-		return nil, err
-	}
-
 	tables, err := olap.InformationSchema().All(ctx)
 	if err != nil {
 		return nil, err
