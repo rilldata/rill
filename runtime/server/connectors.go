@@ -9,6 +9,7 @@ import (
 	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/connectors/gcs"
 	"github.com/rilldata/rill/runtime/connectors/s3"
+	"github.com/rilldata/rill/runtime/drivers"
 )
 
 // ListConnectors implements RuntimeService.
@@ -184,5 +185,44 @@ func (s *Server) GCSGetCredentialsInfo(ctx context.Context, req *runtimev1.GCSGe
 	return &runtimev1.GCSGetCredentialsInfoResponse{
 		ProjectId: projectID,
 		Exist:     exist,
+	}, nil
+}
+
+func (s *Server) MotherduckListTables(ctx context.Context, req *runtimev1.MotherduckListTablesRequest) (*runtimev1.MotherduckListTablesResponse, error) {
+	conn, err := drivers.Open("duckdb", "", s.logger)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	olap, _ := conn.OLAPStore()
+	err = olap.Exec(ctx, &drivers.Statement{Query: "INSTALL MOTHERDUCK; LOAD MOTHERDUCK;"})
+	if err != nil {
+		return nil, err
+	}
+
+	var token string
+	if s.runtime.AllowHostAccess() {
+		token = os.Getenv("motherduck_token")
+	}
+	err = olap.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("PRAGMA MD_CONNECT('token=%s');", token)})
+	if err != nil {
+		return nil, err
+	}
+
+	tables, err := olap.InformationSchema().All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]*runtimev1.TableInfo, len(tables))
+	for i, table := range tables {
+		res[i] = &runtimev1.TableInfo{
+			Database: table.Database,
+			Name:     table.Name,
+		}
+	}
+	return &runtimev1.MotherduckListTablesResponse{
+		Tables: res,
 	}, nil
 }
