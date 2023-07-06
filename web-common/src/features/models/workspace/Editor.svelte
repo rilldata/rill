@@ -14,10 +14,10 @@
     insertNewline,
   } from "@codemirror/commands";
   import {
-    SQLDialect,
     keywordCompletionSource,
     schemaCompletionSource,
     sql,
+    SQLDialect,
   } from "@codemirror/lang-sql";
   import {
     bracketMatching,
@@ -38,9 +38,9 @@
   import {
     Decoration,
     DecorationSet,
-    EditorView,
     drawSelection,
     dropCursor,
+    EditorView,
     highlightActiveLine,
     highlightActiveLineGutter,
     highlightSpecialChars,
@@ -51,9 +51,9 @@
   import { Debounce } from "@rilldata/web-common/features/models/utils/Debounce";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import {
-    V1Model,
     createRuntimeServiceGetCatalogEntry,
     createRuntimeServiceListCatalogEntries,
+    V1Model,
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher, onMount } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -196,7 +196,7 @@
 
   const DuckDBSQL: SQLDialect = SQLDialect.define({
     keywords:
-      "select from where group by all having order limit sample unnest with window qualify values filter exclude replace like ilike glob as case when then end in cast left join on not desc asc sum union",
+      "select from where group by all having order limit sample unnest with window qualify values filter exclude replace like ilike glob as case when then else end in cast left join on not desc asc sum union",
   });
 
   function makeAutocompleteConfig(

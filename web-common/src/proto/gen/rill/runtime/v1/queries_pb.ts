@@ -9,6 +9,34 @@ import { StructType } from "./schema_pb.js";
 import { TimeGrain } from "./catalog_pb.js";
 
 /**
+ * ExportFormat is a file format for a data export
+ *
+ * @generated from enum rill.runtime.v1.ExportFormat
+ */
+export enum ExportFormat {
+  /**
+   * @generated from enum value: EXPORT_FORMAT_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: EXPORT_FORMAT_CSV = 1;
+   */
+  CSV = 1,
+
+  /**
+   * @generated from enum value: EXPORT_FORMAT_XLSX = 2;
+   */
+  XLSX = 2,
+}
+// Retrieve enum metadata with: proto3.getEnumType(ExportFormat)
+proto3.util.setEnumType(ExportFormat, "rill.runtime.v1.ExportFormat", [
+  { no: 0, name: "EXPORT_FORMAT_UNSPECIFIED" },
+  { no: 1, name: "EXPORT_FORMAT_CSV" },
+  { no: 2, name: "EXPORT_FORMAT_XLSX" },
+]);
+
+/**
  * @generated from enum rill.runtime.v1.MetricsViewComparisonSortType
  */
 export enum MetricsViewComparisonSortType {
@@ -113,6 +141,11 @@ export class QueryRequest extends Message<QueryRequest> {
    */
   dryRun = false;
 
+  /**
+   * @generated from field: int32 limit = 6;
+   */
+  limit = 0;
+
   constructor(data?: PartialMessage<QueryRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -126,6 +159,7 @@ export class QueryRequest extends Message<QueryRequest> {
     { no: 3, name: "args", kind: "message", T: Value, repeated: true },
     { no: 4, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 5, name: "dry_run", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): QueryRequest {
@@ -191,6 +225,115 @@ export class QueryResponse extends Message<QueryResponse> {
 
   static equals(a: QueryResponse | PlainMessage<QueryResponse> | undefined, b: QueryResponse | PlainMessage<QueryResponse> | undefined): boolean {
     return proto3.util.equals(QueryResponse, a, b);
+  }
+}
+
+/**
+ * Request message for QueryService.Export
+ *
+ * @generated from message rill.runtime.v1.ExportRequest
+ */
+export class ExportRequest extends Message<ExportRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: int32 limit = 2;
+   */
+  limit = 0;
+
+  /**
+   * @generated from field: rill.runtime.v1.ExportFormat format = 3;
+   */
+  format = ExportFormat.UNSPECIFIED;
+
+  /**
+   * @generated from oneof rill.runtime.v1.ExportRequest.request
+   */
+  request: {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewToplistRequest metrics_view_toplist_request = 4;
+     */
+    value: MetricsViewToplistRequest;
+    case: "metricsViewToplistRequest";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewRowsRequest metrics_view_rows_request = 5;
+     */
+    value: MetricsViewRowsRequest;
+    case: "metricsViewRowsRequest";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  constructor(data?: PartialMessage<ExportRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ExportRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 3, name: "format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
+    { no: 4, name: "metrics_view_toplist_request", kind: "message", T: MetricsViewToplistRequest, oneof: "request" },
+    { no: 5, name: "metrics_view_rows_request", kind: "message", T: MetricsViewRowsRequest, oneof: "request" },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExportRequest {
+    return new ExportRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ExportRequest {
+    return new ExportRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ExportRequest {
+    return new ExportRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ExportRequest | PlainMessage<ExportRequest> | undefined, b: ExportRequest | PlainMessage<ExportRequest> | undefined): boolean {
+    return proto3.util.equals(ExportRequest, a, b);
+  }
+}
+
+/**
+ * Response message for QueryService.Export
+ *
+ * @generated from message rill.runtime.v1.ExportResponse
+ */
+export class ExportResponse extends Message<ExportResponse> {
+  /**
+   * @generated from field: string download_url_path = 1;
+   */
+  downloadUrlPath = "";
+
+  constructor(data?: PartialMessage<ExportResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ExportResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "download_url_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExportResponse {
+    return new ExportResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ExportResponse {
+    return new ExportResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ExportResponse {
+    return new ExportResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ExportResponse | PlainMessage<ExportResponse> | undefined, b: ExportResponse | PlainMessage<ExportResponse> | undefined): boolean {
+    return proto3.util.equals(ExportResponse, a, b);
   }
 }
 
@@ -969,6 +1112,11 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
   timeEnd?: Timestamp;
 
   /**
+   * @generated from field: rill.runtime.v1.TimeGrain time_granularity = 10;
+   */
+  timeGranularity = TimeGrain.UNSPECIFIED;
+
+  /**
    * @generated from field: rill.runtime.v1.MetricsViewFilter filter = 5;
    */
   filter?: MetricsViewFilter;
@@ -1005,6 +1153,7 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "time_start", kind: "message", T: Timestamp },
     { no: 4, name: "time_end", kind: "message", T: Timestamp },
+    { no: 10, name: "time_granularity", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 5, name: "filter", kind: "message", T: MetricsViewFilter },
     { no: 6, name: "sort", kind: "message", T: MetricsViewSort, repeated: true },
     { no: 7, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
@@ -2784,11 +2933,6 @@ export class ColumnTimeSeriesRequest extends Message<ColumnTimeSeriesRequest> {
   timeRange?: TimeSeriesTimeRange;
 
   /**
-   * @generated from field: rill.runtime.v1.MetricsViewFilter filters = 6;
-   */
-  filters?: MetricsViewFilter;
-
-  /**
    * @generated from field: int32 pixels = 7;
    */
   pixels = 0;
@@ -2816,7 +2960,6 @@ export class ColumnTimeSeriesRequest extends Message<ColumnTimeSeriesRequest> {
     { no: 3, name: "measures", kind: "message", T: ColumnTimeSeriesRequest_BasicMeasure, repeated: true },
     { no: 4, name: "timestamp_column_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "time_range", kind: "message", T: TimeSeriesTimeRange },
-    { no: 6, name: "filters", kind: "message", T: MetricsViewFilter },
     { no: 7, name: "pixels", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 8, name: "sample_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 9, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },

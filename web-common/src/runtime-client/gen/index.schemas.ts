@@ -34,6 +34,7 @@ export type QueryServiceQueryBody = {
   args?: unknown[];
   priority?: number;
   dryRun?: boolean;
+  limit?: number;
 };
 
 /**
@@ -50,7 +51,6 @@ export type QueryServiceColumnTimeSeriesBody = {
   measures?: ColumnTimeSeriesRequestBasicMeasure[];
   timestampColumnName?: string;
   timeRange?: V1TimeSeriesTimeRange;
-  filters?: V1MetricsViewFilter;
   pixels?: number;
   sampleSize?: number;
   priority?: number;
@@ -141,6 +141,7 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
 export type QueryServiceMetricsViewRowsBody = {
   timeStart?: string;
   timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
   filter?: V1MetricsViewFilter;
   sort?: V1MetricsViewSort[];
   limit?: number;
@@ -159,6 +160,13 @@ export type QueryServiceMetricsViewComparisonToplistBody = {
   limit?: string;
   offset?: string;
   priority?: number;
+};
+
+export type QueryServiceExportBody = {
+  limit?: number;
+  format?: V1ExportFormat;
+  metricsViewToplistRequest?: V1MetricsViewToplistRequest;
+  metricsViewRowsRequest?: V1MetricsViewRowsRequest;
 };
 
 export type QueryServiceColumnDescriptiveStatisticsParams = {
@@ -218,8 +226,6 @@ export type RuntimeServiceListCatalogEntriesParams = {
   type?: RuntimeServiceListCatalogEntriesType;
 };
 
-export type RuntimeServiceEditInstanceBodyVariables = { [key: string]: string };
-
 /**
  * Request message for RuntimeService.EditInstance.
 See message Instance for field descriptions.
@@ -230,8 +236,18 @@ export type RuntimeServiceEditInstanceBody = {
   repoDriver?: string;
   repoDsn?: string;
   embedCatalog?: boolean;
-  variables?: RuntimeServiceEditInstanceBodyVariables;
   ingestionLimitBytes?: string;
+};
+
+export type RuntimeServiceEditInstanceVariablesBodyVariables = {
+  [key: string]: string;
+};
+
+/**
+ * Request message for RuntimeService.EditInstanceVariables.
+ */
+export type RuntimeServiceEditInstanceVariablesBody = {
+  variables?: RuntimeServiceEditInstanceVariablesBodyVariables;
 };
 
 export type RuntimeServiceDeleteInstanceBody = {
@@ -354,6 +370,7 @@ export const V1TimeGrain = {
   TIME_GRAIN_DAY: "TIME_GRAIN_DAY",
   TIME_GRAIN_WEEK: "TIME_GRAIN_WEEK",
   TIME_GRAIN_MONTH: "TIME_GRAIN_MONTH",
+  TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
 
@@ -633,9 +650,42 @@ export interface V1MetricsViewSort {
 
 export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
 
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
+}
+
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
+}
+
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  filter?: V1MetricsViewFilter;
+  priority?: number;
+}
+
+export interface V1MetricsViewRowsRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  timeStart?: string;
+  timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
+  filter?: V1MetricsViewFilter;
+  sort?: V1MetricsViewSort[];
+  limit?: number;
+  offset?: string;
+  priority?: number;
 }
 
 export interface V1MetricsViewComparisonValue {
@@ -682,11 +732,6 @@ export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
   nullable?: boolean;
-}
-
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
 }
 
 export interface V1MetricsView {
@@ -806,10 +851,28 @@ export interface V1GCSGetCredentialsInfoResponse {
   projectId?: string;
 }
 
+export interface V1ExportResponse {
+  downloadUrlPath?: string;
+}
+
+export type V1ExportFormat =
+  (typeof V1ExportFormat)[keyof typeof V1ExportFormat];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ExportFormat = {
+  EXPORT_FORMAT_UNSPECIFIED: "EXPORT_FORMAT_UNSPECIFIED",
+  EXPORT_FORMAT_CSV: "EXPORT_FORMAT_CSV",
+  EXPORT_FORMAT_XLSX: "EXPORT_FORMAT_XLSX",
+} as const;
+
 export interface V1Example {
   name?: string;
   title?: string;
   description?: string;
+}
+
+export interface V1EditInstanceVariablesResponse {
+  instance?: V1Instance;
 }
 
 export interface V1EditInstanceResponse {
@@ -1046,6 +1109,7 @@ export interface MetricsViewDimension {
   name?: string;
   label?: string;
   description?: string;
+  column?: string;
 }
 
 export type ExtractPolicyStrategy =

@@ -8,10 +8,12 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
+	"github.com/redis/go-redis/v9"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -26,6 +28,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/drivers/github"
+	_ "github.com/rilldata/rill/runtime/drivers/motherduck"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 )
@@ -51,6 +54,8 @@ type Config struct {
 	// AllowHostAccess controls whether instance can use host credentials and
 	// local_file sources can access directory outside repo
 	AllowHostAccess bool `default:"false" split_words:"true"`
+	// Redis server address host:port
+	RedisURL string `default:"" split_words:"true"`
 }
 
 // StartCmd starts a stand-alone runtime server. It only allows configuration using environment variables.
@@ -118,6 +123,17 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			// Create ctx that cancels on termination signals
 			ctx := graceful.WithCancelOnTerminate(context.Background())
 
+			var limiter ratelimit.Limiter
+			if conf.RedisURL == "" {
+				limiter = ratelimit.NewNoop()
+			} else {
+				opts, err := redis.ParseURL(conf.RedisURL)
+				if err != nil {
+					logger.Fatal("failed to parse redis url", zap.Error(err))
+				}
+				limiter = ratelimit.NewRedis(redis.NewClient(opts))
+			}
+
 			// Init server
 			srvOpts := &server.Options{
 				HTTPPort:        conf.HTTPPort,
@@ -128,7 +144,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				AuthIssuerURL:   conf.AuthIssuerURL,
 				AuthAudienceURL: conf.AuthAudienceURL,
 			}
-			s, err := server.NewServer(ctx, srvOpts, rt, logger)
+			s, err := server.NewServer(ctx, srvOpts, rt, logger, limiter)
 			if err != nil {
 				logger.Fatal("error: could not create server", zap.Error(err))
 			}

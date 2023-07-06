@@ -25,6 +25,8 @@ func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 		return nil, err
 	}
 
+	db.SetMaxOpenConns(40)
+
 	conn := &connection{db: db}
 	return conn, nil
 }
@@ -70,4 +72,8 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 // MigrationStatus implements drivers.Connection.
 func (c *connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
+}
+
+func (c *connection) EstimateSize() (int64, bool) {
+	return 0, false
 }

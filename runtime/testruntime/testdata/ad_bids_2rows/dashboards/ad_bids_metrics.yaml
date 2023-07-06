@@ -18,6 +18,8 @@ dimensions:
     property: numeric_dim
   - label: Device
     property: device
+  - label: Ad Words
+    property: ad words
 
 measures:
   - label: "Number of bids"

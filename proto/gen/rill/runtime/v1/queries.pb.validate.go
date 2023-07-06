@@ -108,6 +108,17 @@ func (m *QueryRequest) validate(all bool) error {
 
 	// no validation rules for DryRun
 
+	if val := m.GetLimit(); val < 0 || val > 10000 {
+		err := QueryRequestValidationError{
+			field:  "Limit",
+			reason: "value must be inside range [0, 10000]",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if len(errors) > 0 {
 		return QueryRequestMultiError(errors)
 	}
@@ -350,6 +361,310 @@ var _ interface {
 	ErrorName() string
 } = QueryResponseValidationError{}
 
+// Validate checks the field values on ExportRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ExportRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ExportRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ExportRequestMultiError, or
+// nil if none found.
+func (m *ExportRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ExportRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	if val := m.GetLimit(); val < 0 || val > 10000 {
+		err := ExportRequestValidationError{
+			field:  "Limit",
+			reason: "value must be inside range [0, 10000]",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Format
+
+	switch v := m.Request.(type) {
+	case *ExportRequest_MetricsViewToplistRequest:
+		if v == nil {
+			err := ExportRequestValidationError{
+				field:  "Request",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetMetricsViewToplistRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ExportRequestValidationError{
+						field:  "MetricsViewToplistRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ExportRequestValidationError{
+						field:  "MetricsViewToplistRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetMetricsViewToplistRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ExportRequestValidationError{
+					field:  "MetricsViewToplistRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *ExportRequest_MetricsViewRowsRequest:
+		if v == nil {
+			err := ExportRequestValidationError{
+				field:  "Request",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetMetricsViewRowsRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ExportRequestValidationError{
+						field:  "MetricsViewRowsRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ExportRequestValidationError{
+						field:  "MetricsViewRowsRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetMetricsViewRowsRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ExportRequestValidationError{
+					field:  "MetricsViewRowsRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	default:
+		_ = v // ensures v is used
+	}
+
+	if len(errors) > 0 {
+		return ExportRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ExportRequestMultiError is an error wrapping multiple validation errors
+// returned by ExportRequest.ValidateAll() if the designated constraints
+// aren't met.
+type ExportRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ExportRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ExportRequestMultiError) AllErrors() []error { return m }
+
+// ExportRequestValidationError is the validation error returned by
+// ExportRequest.Validate if the designated constraints aren't met.
+type ExportRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ExportRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ExportRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ExportRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ExportRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ExportRequestValidationError) ErrorName() string { return "ExportRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ExportRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sExportRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ExportRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ExportRequestValidationError{}
+
+// Validate checks the field values on ExportResponse with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ExportResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ExportResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ExportResponseMultiError,
+// or nil if none found.
+func (m *ExportResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ExportResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for DownloadUrlPath
+
+	if len(errors) > 0 {
+		return ExportResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ExportResponseMultiError is an error wrapping multiple validation errors
+// returned by ExportResponse.ValidateAll() if the designated constraints
+// aren't met.
+type ExportResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ExportResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ExportResponseMultiError) AllErrors() []error { return m }
+
+// ExportResponseValidationError is the validation error returned by
+// ExportResponse.Validate if the designated constraints aren't met.
+type ExportResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ExportResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ExportResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ExportResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ExportResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ExportResponseValidationError) ErrorName() string { return "ExportResponseValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ExportResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sExportResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ExportResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ExportResponseValidationError{}
+
 // Validate checks the field values on MetricsViewToplistRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -374,9 +689,38 @@ func (m *MetricsViewToplistRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
-	// no validation rules for MetricsViewName
+	if utf8.RuneCountInString(m.GetMetricsViewName()) < 1 {
+		err := MetricsViewToplistRequestValidationError{
+			field:  "MetricsViewName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for DimensionName
+	if utf8.RuneCountInString(m.GetDimensionName()) < 1 {
+		err := MetricsViewToplistRequestValidationError{
+			field:  "DimensionName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(m.GetMeasureNames()) < 1 {
+		err := MetricsViewToplistRequestValidationError{
+			field:  "MeasureNames",
+			reason: "value must contain at least 1 item(s)",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	for idx, item := range m.GetInlineMeasures() {
 		_, _ = idx, item
@@ -470,9 +814,27 @@ func (m *MetricsViewToplistRequest) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for Limit
+	if m.GetLimit() < 0 {
+		err := MetricsViewToplistRequestValidationError{
+			field:  "Limit",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Offset
+	if m.GetOffset() < 0 {
+		err := MetricsViewToplistRequestValidationError{
+			field:  "Offset",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	for idx, item := range m.GetSort() {
 		_, _ = idx, item
@@ -814,9 +1176,38 @@ func (m *MetricsViewComparisonToplistRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
-	// no validation rules for MetricsViewName
+	if utf8.RuneCountInString(m.GetMetricsViewName()) < 1 {
+		err := MetricsViewComparisonToplistRequestValidationError{
+			field:  "MetricsViewName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for DimensionName
+	if utf8.RuneCountInString(m.GetDimensionName()) < 1 {
+		err := MetricsViewComparisonToplistRequestValidationError{
+			field:  "DimensionName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(m.GetMeasureNames()) < 1 {
+		err := MetricsViewComparisonToplistRequestValidationError{
+			field:  "MeasureNames",
+			reason: "value must contain at least 1 item(s)",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	for idx, item := range m.GetInlineMeasures() {
 		_, _ = idx, item
@@ -973,9 +1364,27 @@ func (m *MetricsViewComparisonToplistRequest) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for Limit
+	if m.GetLimit() < 0 {
+		err := MetricsViewComparisonToplistRequestValidationError{
+			field:  "Limit",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Offset
+	if m.GetOffset() < 0 {
+		err := MetricsViewComparisonToplistRequestValidationError{
+			field:  "Offset",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Priority
 
@@ -1379,7 +1788,16 @@ func (m *MetricsViewComparisonSort) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for MeasureName
+	if utf8.RuneCountInString(m.GetMeasureName()) < 1 {
+		err := MetricsViewComparisonSortValidationError{
+			field:  "MeasureName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Ascending
 
@@ -1874,7 +2292,27 @@ func (m *MetricsViewTimeSeriesRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
-	// no validation rules for MetricsViewName
+	if utf8.RuneCountInString(m.GetMetricsViewName()) < 1 {
+		err := MetricsViewTimeSeriesRequestValidationError{
+			field:  "MetricsViewName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(m.GetMeasureNames()) < 1 {
+		err := MetricsViewTimeSeriesRequestValidationError{
+			field:  "MeasureNames",
+			reason: "value must contain at least 1 item(s)",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	for idx, item := range m.GetInlineMeasures() {
 		_, _ = idx, item
@@ -2277,7 +2715,27 @@ func (m *MetricsViewTotalsRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
-	// no validation rules for MetricsViewName
+	if utf8.RuneCountInString(m.GetMetricsViewName()) < 1 {
+		err := MetricsViewTotalsRequestValidationError{
+			field:  "MetricsViewName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(m.GetMeasureNames()) < 1 {
+		err := MetricsViewTotalsRequestValidationError{
+			field:  "MeasureNames",
+			reason: "value must contain at least 1 item(s)",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	for idx, item := range m.GetInlineMeasures() {
 		_, _ = idx, item
@@ -2671,7 +3129,16 @@ func (m *MetricsViewRowsRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
-	// no validation rules for MetricsViewName
+	if utf8.RuneCountInString(m.GetMetricsViewName()) < 1 {
+		err := MetricsViewRowsRequestValidationError{
+			field:  "MetricsViewName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if all {
 		switch v := interface{}(m.GetTimeStart()).(type) {
@@ -2730,6 +3197,8 @@ func (m *MetricsViewRowsRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for TimeGranularity
 
 	if all {
 		switch v := interface{}(m.GetFilter()).(type) {
@@ -2794,9 +3263,27 @@ func (m *MetricsViewRowsRequest) validate(all bool) error {
 
 	}
 
-	// no validation rules for Limit
+	if m.GetLimit() < 0 {
+		err := MetricsViewRowsRequestValidationError{
+			field:  "Limit",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Offset
+	if m.GetOffset() < 0 {
+		err := MetricsViewRowsRequestValidationError{
+			field:  "Offset",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Priority
 
@@ -3072,7 +3559,16 @@ func (m *MetricsViewSort) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Name
+	if utf8.RuneCountInString(m.GetName()) < 1 {
+		err := MetricsViewSortValidationError{
+			field:  "Name",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Ascending
 
@@ -3454,9 +3950,27 @@ func (m *InlineMeasure) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Name
+	if utf8.RuneCountInString(m.GetName()) < 1 {
+		err := InlineMeasureValidationError{
+			field:  "Name",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Expression
+	if utf8.RuneCountInString(m.GetExpression()) < 1 {
+		err := InlineMeasureValidationError{
+			field:  "Expression",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return InlineMeasureMultiError(errors)
@@ -3560,9 +4074,27 @@ func (m *ColumnRollupIntervalRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
-	// no validation rules for TableName
+	if utf8.RuneCountInString(m.GetTableName()) < 1 {
+		err := ColumnRollupIntervalRequestValidationError{
+			field:  "TableName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for ColumnName
+	if utf8.RuneCountInString(m.GetColumnName()) < 1 {
+		err := ColumnRollupIntervalRequestValidationError{
+			field:  "ColumnName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Priority
 
@@ -3834,9 +4366,27 @@ func (m *ColumnTopKRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
-	// no validation rules for TableName
+	if utf8.RuneCountInString(m.GetTableName()) < 1 {
+		err := ColumnTopKRequestValidationError{
+			field:  "TableName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for ColumnName
+	if utf8.RuneCountInString(m.GetColumnName()) < 1 {
+		err := ColumnTopKRequestValidationError{
+			field:  "ColumnName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Agg
 
@@ -4371,9 +4921,27 @@ func (m *ColumnNullCountRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
-	// no validation rules for TableName
+	if utf8.RuneCountInString(m.GetTableName()) < 1 {
+		err := ColumnNullCountRequestValidationError{
+			field:  "TableName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for ColumnName
+	if utf8.RuneCountInString(m.GetColumnName()) < 1 {
+		err := ColumnNullCountRequestValidationError{
+			field:  "ColumnName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Priority
 
@@ -4586,9 +5154,27 @@ func (m *ColumnDescriptiveStatisticsRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
-	// no validation rules for TableName
+	if utf8.RuneCountInString(m.GetTableName()) < 1 {
+		err := ColumnDescriptiveStatisticsRequestValidationError{
+			field:  "TableName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for ColumnName
+	if utf8.RuneCountInString(m.GetColumnName()) < 1 {
+		err := ColumnDescriptiveStatisticsRequestValidationError{
+			field:  "ColumnName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Priority
 
@@ -5446,9 +6032,27 @@ func (m *ColumnTimeGrainRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
-	// no validation rules for TableName
+	if utf8.RuneCountInString(m.GetTableName()) < 1 {
+		err := ColumnTimeGrainRequestValidationError{
+			field:  "TableName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for ColumnName
+	if utf8.RuneCountInString(m.GetColumnName()) < 1 {
+		err := ColumnTimeGrainRequestValidationError{
+			field:  "ColumnName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Priority
 
@@ -5660,9 +6264,27 @@ func (m *ColumnNumericHistogramRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
-	// no validation rules for TableName
+	if utf8.RuneCountInString(m.GetTableName()) < 1 {
+		err := ColumnNumericHistogramRequestValidationError{
+			field:  "TableName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for ColumnName
+	if utf8.RuneCountInString(m.GetColumnName()) < 1 {
+		err := ColumnNumericHistogramRequestValidationError{
+			field:  "ColumnName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for HistogramMethod
 
@@ -5905,9 +6527,27 @@ func (m *ColumnRugHistogramRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
-	// no validation rules for TableName
+	if utf8.RuneCountInString(m.GetTableName()) < 1 {
+		err := ColumnRugHistogramRequestValidationError{
+			field:  "TableName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for ColumnName
+	if utf8.RuneCountInString(m.GetColumnName()) < 1 {
+		err := ColumnRugHistogramRequestValidationError{
+			field:  "ColumnName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Priority
 
@@ -6146,9 +6786,27 @@ func (m *ColumnTimeRangeRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
-	// no validation rules for TableName
+	if utf8.RuneCountInString(m.GetTableName()) < 1 {
+		err := ColumnTimeRangeRequestValidationError{
+			field:  "TableName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for ColumnName
+	if utf8.RuneCountInString(m.GetColumnName()) < 1 {
+		err := ColumnTimeRangeRequestValidationError{
+			field:  "ColumnName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Priority
 
@@ -6574,9 +7232,27 @@ func (m *ColumnCardinalityRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
-	// no validation rules for TableName
+	if utf8.RuneCountInString(m.GetTableName()) < 1 {
+		err := ColumnCardinalityRequestValidationError{
+			field:  "TableName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for ColumnName
+	if utf8.RuneCountInString(m.GetColumnName()) < 1 {
+		err := ColumnCardinalityRequestValidationError{
+			field:  "ColumnName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Priority
 
@@ -6815,7 +7491,27 @@ func (m *ColumnTimeSeriesRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
-	// no validation rules for TableName
+	if utf8.RuneCountInString(m.GetTableName()) < 1 {
+		err := ColumnTimeSeriesRequestValidationError{
+			field:  "TableName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(m.GetMeasures()) < 1 {
+		err := ColumnTimeSeriesRequestValidationError{
+			field:  "Measures",
+			reason: "value must contain at least 1 item(s)",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	for idx, item := range m.GetMeasures() {
 		_, _ = idx, item
@@ -6851,7 +7547,16 @@ func (m *ColumnTimeSeriesRequest) validate(all bool) error {
 
 	}
 
-	// no validation rules for TimestampColumnName
+	if utf8.RuneCountInString(m.GetTimestampColumnName()) < 1 {
+		err := ColumnTimeSeriesRequestValidationError{
+			field:  "TimestampColumnName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if all {
 		switch v := interface{}(m.GetTimeRange()).(type) {
@@ -6882,38 +7587,27 @@ func (m *ColumnTimeSeriesRequest) validate(all bool) error {
 		}
 	}
 
-	if all {
-		switch v := interface{}(m.GetFilters()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ColumnTimeSeriesRequestValidationError{
-					field:  "Filters",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, ColumnTimeSeriesRequestValidationError{
-					field:  "Filters",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
+	if m.GetPixels() < 0 {
+		err := ColumnTimeSeriesRequestValidationError{
+			field:  "Pixels",
+			reason: "value must be greater than or equal to 0",
 		}
-	} else if v, ok := interface{}(m.GetFilters()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return ColumnTimeSeriesRequestValidationError{
-				field:  "Filters",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
+		if !all {
+			return err
 		}
+		errors = append(errors, err)
 	}
 
-	// no validation rules for Pixels
-
-	// no validation rules for SampleSize
+	if m.GetSampleSize() < 0 {
+		err := ColumnTimeSeriesRequestValidationError{
+			field:  "SampleSize",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Priority
 
@@ -7655,7 +8349,16 @@ func (m *TableCardinalityRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
-	// no validation rules for TableName
+	if utf8.RuneCountInString(m.GetTableName()) < 1 {
+		err := TableCardinalityRequestValidationError{
+			field:  "TableName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Priority
 
@@ -7867,7 +8570,16 @@ func (m *TableColumnsRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
-	// no validation rules for TableName
+	if utf8.RuneCountInString(m.GetTableName()) < 1 {
+		err := TableColumnsRequestValidationError{
+			field:  "TableName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Priority
 
@@ -8217,9 +8929,27 @@ func (m *TableRowsRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
-	// no validation rules for TableName
+	if utf8.RuneCountInString(m.GetTableName()) < 1 {
+		err := TableRowsRequestValidationError{
+			field:  "TableName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Limit
+	if m.GetLimit() < 0 {
+		err := TableRowsRequestValidationError{
+			field:  "Limit",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Priority
 
@@ -9062,7 +9792,16 @@ func (m *ColumnTimeSeriesRequest_BasicMeasure) validate(all bool) error {
 
 	// no validation rules for Id
 
-	// no validation rules for Expression
+	if utf8.RuneCountInString(m.GetExpression()) < 1 {
+		err := ColumnTimeSeriesRequest_BasicMeasureValidationError{
+			field:  "Expression",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for SqlName
 

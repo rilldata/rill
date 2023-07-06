@@ -57,8 +57,12 @@ export function useTestServer(port: number, dir: string) {
   });
 
   afterEach(async () => {
+    const processExit = new Promise((resolve) => {
+      childProcess.on("exit", resolve);
+    });
     if (childProcess.pid) treeKill(childProcess.pid);
     await asyncWaitUntil(async () => !(await isPortOpen(port)));
+    await processExit;
   });
 }
 

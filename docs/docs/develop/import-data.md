@@ -7,7 +7,7 @@ sidebar_position: 10
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
-Rill supports several connectors for importing data: local files, download from an S3 or GCS bucket, or download using HTTP(S). Rill can ingest `.csv`, `.tsv`, and `.parquet` files, which may be compressed (`.gz`). You can only import a single data file as a source at a time.
+Rill supports several connectors for importing data: local files, download from an S3 or GCS bucket, or download using HTTP(S). Rill can ingest `.csv`, `.tsv`, and `.parquet` files, which may be compressed (`.gz`). To import data from multiple files, you can use a glob pattern to specify the files you want to include. To learn more about the syntax and details of glob patterns, please refer to the documentation on [glob-patterns](glob-patterns).
 
 ## Adding a local file
 
@@ -21,17 +21,8 @@ To import a file using the UI, click "+" by Sources in the left hand navigation 
 FROM "/path/to/data.csv"
 ```
 
-### Using the CLI
-
-You can also add a local file directly using the Rill CLI. To do so, `cd` into your Rill project and run:
-```
-rill source add /path/to/file.csv
-```
-
-We recommend only using the CLI to import data when the Rill web app is *not* running. 
-
 ### Using code
-When you add a source using the UI or CLI, a code definition will automatically be created as a `.yaml` file in your Rill project in the `sources` directory. However, you can also create sources more directly by creating the artifact.
+When you add a source using the UI, a code definition will automatically be created as a `.yaml` file in your Rill project in the `sources` directory. However, you can also create sources more directly by creating the artifact.
 
 In your Rill project directory, create a `source_name.yaml` file in the `sources` directory with the following contents:
 
@@ -106,6 +97,8 @@ To check if you already have the AWS CLI installed and authenticated, open a ter
 ```bash
 aws iam get-user --no-cli-pager
 ```
+> Note: The above command works with AWS CLI version 2 and above
+
 If it prints information about your user, there is nothing more to do. Rill will be able to connect to any data in S3 that you have access to.
 
 If you do not have the AWS CLI installed and authenticated, follow these steps:

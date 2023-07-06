@@ -155,6 +155,7 @@ linters-settings:
   gosec:
     excludes:
       - G112
+      - G203
       - G306
   revive:
     ignore-generated-header: false
@@ -187,7 +188,6 @@ linters-settings:
       - name: redefines-builtin-id
 
 issues:
-  fix: true
   exclude-rules:
     - path: _test\.go # disable some linters for test files
       linters:

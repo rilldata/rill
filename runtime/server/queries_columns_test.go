@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"testing"
 	"time"
 
@@ -218,6 +219,24 @@ func TestServer_GetNumericHistogram_FD(t *testing.T) {
 	require.Equal(t, 3.0, res.NumericSummary.GetNumericHistogramBins().Bins[0].Count)
 }
 
+func TestServer_GetNumericHistogram_FD_all_nulls(t *testing.T) {
+	t.Parallel()
+	server, instanceId := getColumnTestServerWithModel(t, "select null::DECIMAL as val", 1)
+
+	res, err := server.ColumnNumericHistogram(
+		testCtx(),
+		&runtimev1.ColumnNumericHistogramRequest{
+			InstanceId:      instanceId,
+			TableName:       "test",
+			ColumnName:      "val",
+			HistogramMethod: runtimev1.HistogramMethod_HISTOGRAM_METHOD_FD,
+		},
+	)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.Nil(t, res.NumericSummary.GetNumericHistogramBins().Bins)
+}
+
 func TestServer_GetNumericHistogram_Diagnostic(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getColumnTestServer(t)
@@ -253,6 +272,23 @@ func TestServer_GetNumericHistogram_Diagnostic(t *testing.T) {
 	require.Equal(t, 1.0, bins[2].Count)
 
 	require.Equal(t, 0.0, bins[3].Count)
+}
+
+func TestServer_GetNumericHistogram_Diagnostic_all_nulls(t *testing.T) {
+	t.Parallel()
+	server, instanceId := getColumnTestServerWithModel(t, "SELECT null::DECIMAL as val", 1)
+
+	res, err := server.ColumnNumericHistogram(
+		testCtx(),
+		&runtimev1.ColumnNumericHistogramRequest{
+			InstanceId:      instanceId,
+			TableName:       "test",
+			ColumnName:      "val",
+			HistogramMethod: runtimev1.HistogramMethod_HISTOGRAM_METHOD_DIAGNOSTIC,
+		})
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.Nil(t, res.GetNumericSummary().GetNumericHistogramBins().Bins)
 }
 
 func TestServer_Model_Nulls(t *testing.T) {
@@ -543,7 +579,7 @@ func getColumnTestServerWithEmptyModel(t *testing.T) (*Server, string) {
 func getColumnTestServerWithModel(t *testing.T, sql string, expectation int) (*Server, string) {
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", sql)
 
-	server, err := NewServer(context.Background(), &Options{}, rt, nil)
+	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop())
 	require.NoError(t, err)
 
 	olap, err := rt.OLAP(testCtx(), instanceID)

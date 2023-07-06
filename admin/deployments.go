@@ -71,6 +71,15 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		ingestionLimit = alloc.StorageBytes
 
 		olapDSN = fmt.Sprintf("%s.db?rill_pool_size=%d&threads=%d&max_memory=%dGB", path.Join(alloc.DataDir, instanceID), alloc.CPU, alloc.CPU, alloc.MemoryGB)
+	} else if olapDriver == "motherduck" {
+		if opts.ProdSlots == 0 {
+			return nil, fmt.Errorf("slot count can't be 0 for driver 'duckdb'")
+		}
+
+		embedCatalog = true
+		ingestionLimit = alloc.StorageBytes
+
+		olapDSN = fmt.Sprintf("md:%s?rill_pool_size=%d&threads=%d&max_memory=%dGB", instanceID, alloc.CPU, alloc.CPU, alloc.MemoryGB)
 	}
 
 	// Open a runtime client
@@ -109,7 +118,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	if err != nil {
 		_, err2 := rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
 			InstanceId: instanceID,
-			DropDb:     olapDriver == "duckdb", // Only drop DB if it's DuckDB
+			DropDb:     olapDriver == "duckdb" || olapDriver == "motherduck", // Only drop DB if it's DuckDB/motherduck
 		})
 		return nil, multierr.Combine(err, err2)
 	}
@@ -123,7 +132,6 @@ type updateDeploymentOptions struct {
 	Subpath              string
 	Branch               string
 	Variables            map[string]string
-	Reconcile            bool
 }
 
 func (s *Service) updateDeployment(ctx context.Context, depl *database.Deployment, opts *updateDeploymentOptions) error {
@@ -142,21 +150,10 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 	}
 	defer rt.Close()
 
-	res, err := rt.GetInstance(ctx, &runtimev1.GetInstanceRequest{InstanceId: depl.RuntimeInstanceID})
-	if err != nil {
-		return err
-	}
-	inst := res.Instance
-
 	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
-		InstanceId:          inst.InstanceId,
-		OlapDriver:          inst.OlapDriver,
-		OlapDsn:             inst.OlapDsn,
-		RepoDriver:          repoDriver,
-		RepoDsn:             repoDSN,
-		EmbedCatalog:        inst.EmbedCatalog,
-		Variables:           opts.Variables,
-		IngestionLimitBytes: inst.IngestionLimitBytes,
+		InstanceId: depl.RuntimeInstanceID,
+		RepoDriver: &repoDriver,
+		RepoDsn:    &repoDSN,
 	})
 	if err != nil {
 		return err
@@ -173,14 +170,25 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 		depl.UpdatedOn = newDepl.UpdatedOn
 	}
 
-	if opts.Reconcile {
-		if err := s.triggerReconcile(ctx, depl); err != nil {
-			s.logger.Error("failed to trigger reconcile", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
-			return err
-		}
+	if err := s.triggerReconcile(ctx, depl); err != nil {
+		s.logger.Error("failed to trigger reconcile", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
+		return err
 	}
-
 	return nil
+}
+
+func (s *Service) updateDeplVariables(ctx context.Context, depl *database.Deployment, variables map[string]string) error {
+	rt, err := s.openRuntimeClientForDeployment(depl)
+	if err != nil {
+		return err
+	}
+	defer rt.Close()
+
+	_, err = rt.EditInstanceVariables(ctx, &runtimev1.EditInstanceVariablesRequest{
+		InstanceId: depl.RuntimeInstanceID,
+		Variables:  variables,
+	})
+	return err
 }
 
 func (s *Service) teardownDeployment(ctx context.Context, proj *database.Project, depl *database.Deployment) error {
@@ -200,7 +208,7 @@ func (s *Service) teardownDeployment(ctx context.Context, proj *database.Project
 	// Delete the instance
 	_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
 		InstanceId: depl.RuntimeInstanceID,
-		DropDb:     proj.ProdOLAPDriver == "duckdb", // Only drop DB if it's DuckDB
+		DropDb:     proj.ProdOLAPDriver == "duckdb" || proj.ProdOLAPDriver == "motherduck", // Only drop DB if it's DuckDB/motherduck
 	})
 	if err != nil {
 		return err

@@ -15,7 +15,7 @@
 
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
   async function startWithEmptyProject() {
-    behaviourEvent.fireSplashEvent(
+    behaviourEvent?.fireSplashEvent(
       BehaviourEventAction.ProjectEmpty,
       BehaviourEventMedium.Card,
       MetricsEventSpace.Workspace

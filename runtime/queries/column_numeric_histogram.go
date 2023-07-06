@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"io"
 	"math"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -67,10 +68,14 @@ func (q *ColumnNumericHistogram) Resolve(ctx context.Context, rt *runtime.Runtim
 	return nil
 }
 
+func (q *ColumnNumericHistogram) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.ExportFormat, w io.Writer) error {
+	return ErrExportNotSupported
+}
+
 func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap drivers.OLAPStore, instanceID string, priority int) (float64, error) {
 	sanitizedColumnName := safeName(q.ColumnName)
 	querySQL := fmt.Sprintf(
-		"SELECT approx_quantile(%s, 0.75)-approx_quantile(%s, 0.25) AS iqr, approx_count_distinct(%s) AS count, max(%s) - min(%s) AS range FROM %s",
+		"SELECT (approx_quantile(%s, 0.75)-approx_quantile(%s, 0.25))::DOUBLE AS iqr, approx_count_distinct(%s) AS count, (max(%s) - min(%s))::DOUBLE AS range FROM %s",
 		sanitizedColumnName,
 		sanitizedColumnName,
 		sanitizedColumnName,
@@ -135,6 +140,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 	if err != nil {
 		return err
 	}
+
 	if bucketSize == 0 {
 		return nil
 	}
@@ -207,6 +213,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 	if err != nil {
 		return err
 	}
+
 	defer histogramRows.Close()
 
 	histogramBins := make([]*runtimev1.NumericHistogramBins_Bin, 0)
@@ -262,7 +269,7 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 		return err
 	}
 
-	var min, max, rng float64
+	var min, max, rng sql.NullFloat64
 	if minMaxRow.Next() {
 		err = minMaxRow.Scan(&min, &max, &rng)
 		if err != nil {
@@ -272,12 +279,16 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 	}
 
 	minMaxRow.Close()
+	if !min.Valid || !max.Valid || !rng.Valid {
+		return nil
+	}
 
 	ticks := 40.0
-	if rng < ticks {
-		ticks = rng
+	if rng.Float64 < ticks {
+		ticks = rng.Float64
 	}
-	startTick, endTick, gap := NiceAndStep(min, max, ticks)
+
+	startTick, endTick, gap := NiceAndStep(min.Float64, max.Float64, ticks)
 	bucketCount := int(math.Ceil((endTick - startTick) / gap))
 	if gap == 1 {
 		bucketCount++

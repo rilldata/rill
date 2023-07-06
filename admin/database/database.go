@@ -65,6 +65,7 @@ type DB interface {
 	DeleteOrganizationWhitelistedDomain(ctx context.Context, id string) error
 
 	FindProjects(ctx context.Context, afterName string, limit int) ([]*Project, error)
+	FindProjectPathsByPattern(ctx context.Context, namePattern, afterName string, limit int) ([]string, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
 	FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user
@@ -77,10 +78,12 @@ type DB interface {
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
+	UpdateProjectVariables(ctx context.Context, id string, variables map[string]string) (*Project, error)
 	CountProjectsForOrganization(ctx context.Context, orgID string) (int, error)
 
 	FindDeploymentsForProject(ctx context.Context, projectID string) ([]*Deployment, error)
 	FindDeployment(ctx context.Context, id string) (*Deployment, error)
+	FindDeploymentByInstanceID(ctx context.Context, instanceID string) (*Deployment, error)
 	InsertDeployment(ctx context.Context, opts *InsertDeploymentOptions) (*Deployment, error)
 	DeleteDeployment(ctx context.Context, id string) error
 	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, logs string) (*Deployment, error)
@@ -198,8 +201,13 @@ type InsertOrganizationOptions struct {
 
 // UpdateOrganizationOptions defines options for updating an existing org
 type UpdateOrganizationOptions struct {
-	Name        string `validate:"slug"`
-	Description string
+	Name                    string `validate:"slug"`
+	Description             string
+	QuotaProjects           int
+	QuotaDeployments        int
+	QuotaSlotsTotal         int
+	QuotaSlotsPerDeployment int
+	QuotaOutstandingInvites int
 }
 
 // Project represents one Git connection.
@@ -336,9 +344,10 @@ type InsertUserOptions struct {
 
 // UpdateUserOptions defines options for updating an existing user
 type UpdateUserOptions struct {
-	DisplayName    string
-	PhotoURL       string
-	GithubUsername string
+	DisplayName         string
+	PhotoURL            string
+	GithubUsername      string
+	QuotaSingleuserOrgs int
 }
 
 // Usergroup represents a group of org members

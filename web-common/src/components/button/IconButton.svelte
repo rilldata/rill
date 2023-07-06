@@ -7,6 +7,7 @@
   export let compact = false;
   export let bgDark = false;
   export let active = false;
+  export let disableTooltip = false;
 
   export let tooltipDistance = 8;
   export let tooltipLocation = "bottom";
@@ -36,7 +37,7 @@
     <slot />
   </button>
   <div slot="tooltip-content">
-    {#if $$slots["tooltip-content"]}
+    {#if $$slots["tooltip-content"] && !disableTooltip}
       <TooltipContent>
         <slot name="tooltip-content" />
       </TooltipContent>

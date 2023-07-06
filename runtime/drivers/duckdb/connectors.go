@@ -43,6 +43,19 @@ func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *co
 	return summary, err
 }
 
+func (c *connection) EstimateSize() (int64, bool) {
+	var paths []string
+	path := c.config.DBFilePath
+	if path == "" {
+		return 0, true
+	}
+
+	// Add .wal file path (e.g final size will be sum of *.db and *.db.wal)
+	dbWalPath := fmt.Sprintf("%s.wal", path)
+	paths = append(paths, path, dbWalPath)
+	return fileSize(paths), true
+}
+
 func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) (*drivers.IngestionSummary, error) {
 	// Driver-specific overrides
 	if source.Connector == "local_file" {
@@ -63,17 +76,23 @@ func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *co
 		format = fmt.Sprintf(".%s", format)
 	}
 
+	allowSchemaRelaxation, err := schemaRelaxationProperty(source.Properties)
+	if err != nil {
+		return nil, err
+	}
+
 	var ingestionProps map[string]any
 	if duckDBProps, ok := source.Properties["duckdb"].(map[string]any); ok {
 		ingestionProps = duckDBProps
 	} else {
 		ingestionProps = map[string]any{}
 	}
-
-	a, err := newAppender(c, source, ingestionProps)
-	if err != nil {
-		return nil, err
+	if _, ok := ingestionProps["union_by_name"]; !ok && allowSchemaRelaxation {
+		// set union_by_name to unify the schema of the files
+		ingestionProps["union_by_name"] = true
 	}
+
+	a := newAppender(c, source, ingestionProps, allowSchemaRelaxation)
 
 	for iterator.HasNext() {
 		files, err := iterator.NextBatch(_iteratorBatch)
@@ -100,7 +119,7 @@ func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *co
 
 			query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", source.Name, from)
 			if err := c.Exec(ctx, &drivers.Statement{Query: query, Priority: 1}); err != nil {
-				return nil, err
+				return nil, c.checkErr(err)
 			}
 		}
 
@@ -155,7 +174,7 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %q AS (SELECT * FROM %s)", source.Name, from)
 	err = c.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1})
 	if err != nil {
-		return nil, err
+		return nil, c.checkErr(err)
 	}
 
 	bytesIngested := fileSize(localPaths)
@@ -165,44 +184,42 @@ func (c *connection) ingestLocalFiles(ctx context.Context, env *connectors.Env, 
 func (c *connection) scanSchemaFromQuery(ctx context.Context, qry string) (map[string]string, error) {
 	result, err := c.Execute(ctx, &drivers.Statement{Query: qry, Priority: 1})
 	if err != nil {
-		return nil, err
+		return nil, c.checkErr(err)
 	}
 	defer result.Close()
 
 	schema := make(map[string]string)
-	for i := 0; result.Next(); i++ {
+	for result.Next() {
 		var s duckDBTableSchemaResult
 		if err := result.StructScan(&s); err != nil {
-			return nil, err
+			return nil, c.checkErr(err)
 		}
 		schema[s.ColumnName] = s.ColumnType
 	}
+
+	if err := result.Err(); err != nil {
+		return nil, c.checkErr(err)
+	}
+
 	return schema, nil
 }
 
 type appender struct {
 	*connection
-	source             *connectors.Source
-	ingestionProps     map[string]any
-	allowColAddition   bool
-	allowColRelaxation bool
-	tableSchema        map[string]string
+	source                *connectors.Source
+	ingestionProps        map[string]any
+	allowSchemaRelaxation bool
+	tableSchema           map[string]string
 }
 
-func newAppender(c *connection, source *connectors.Source, ingestionProps map[string]any) (*appender, error) {
-	// parse required properties from source.Properties
-	allowColAddition, allowColRelaxation, err := schemaRelaxationProperties(source.Properties)
-	if err != nil {
-		return nil, err
-	}
+func newAppender(c *connection, source *connectors.Source, ingestionProps map[string]any, allowSchemaRelaxation bool) *appender {
 	return &appender{
-		connection:         c,
-		source:             source,
-		ingestionProps:     ingestionProps,
-		allowColAddition:   allowColAddition,
-		allowColRelaxation: allowColRelaxation,
-		tableSchema:        nil,
-	}, nil
+		connection:            c,
+		source:                source,
+		ingestionProps:        ingestionProps,
+		allowSchemaRelaxation: allowSchemaRelaxation,
+		tableSchema:           nil,
+	}
 }
 
 func (a *appender) appendData(ctx context.Context, files []string, format string) error {
@@ -212,15 +229,15 @@ func (a *appender) appendData(ctx context.Context, files []string, format string
 	}
 
 	var query string
-	if a.allowColRelaxation {
+	if a.allowSchemaRelaxation {
 		query = fmt.Sprintf("INSERT INTO %q BY NAME (SELECT * FROM %s);", a.source.Name, from)
 	} else {
 		query = fmt.Sprintf("INSERT INTO %q (SELECT * FROM %s);", a.source.Name, from)
 	}
 	a.logger.Debug("generated query", zap.String("query", query), observability.ZapCtx(ctx))
 	err = a.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
-	if err == nil || !containsAny(err.Error(), []string{"binder error", "conversion error"}) {
-		return err
+	if err == nil || !a.allowSchemaRelaxation || !containsAny(err.Error(), []string{"binder error", "conversion error"}) {
+		return a.connection.checkErr(err)
 	}
 
 	// error is of type binder error (more or less columns than current table schema)
@@ -232,7 +249,8 @@ func (a *appender) appendData(ctx context.Context, files []string, format string
 
 	query = fmt.Sprintf("INSERT INTO %q BY NAME (SELECT * FROM %s);", a.source.Name, from)
 	a.logger.Debug("generated query", zap.String("query", query), observability.ZapCtx(ctx))
-	return a.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
+	err = a.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
+	return a.connection.checkErr(err)
 }
 
 // updateSchema updates the schema of the table in case new file adds a new column or
@@ -270,7 +288,7 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 		}
 	}
 
-	if !a.allowColRelaxation {
+	if !a.allowSchemaRelaxation {
 		if len(srcSchema) < len(unionSchema) {
 			fileNames := strings.Join(names(fileNames), ",")
 			columns := strings.Join(missingMapKeys(a.tableSchema, srcSchema), ",")
@@ -280,21 +298,21 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 		if len(colTypeChanged) != 0 {
 			fileNames := strings.Join(names(fileNames), ",")
 			columns := strings.Join(keys(colTypeChanged), ",")
-			return fmt.Errorf("new files %q change datatypes of some columns %q and column relaxation not allowed", fileNames, columns)
+			return fmt.Errorf("new files %q change datatypes of some columns %q and schema relaxation not allowed", fileNames, columns)
 		}
 	}
 
-	if len(newCols) != 0 && !a.allowColAddition {
+	if len(newCols) != 0 && !a.allowSchemaRelaxation {
 		fileNames := strings.Join(names(fileNames), ",")
 		columns := strings.Join(missingMapKeys(srcSchema, a.tableSchema), ",")
-		return fmt.Errorf("new files %q have new columns %q and column addition not allowed", fileNames, columns)
+		return fmt.Errorf("new files %q have new columns %q and schema relaxation not allowed", fileNames, columns)
 	}
 
 	for colName, colType := range newCols {
 		a.tableSchema[colName] = colType
 		qry := fmt.Sprintf("ALTER TABLE %q ADD COLUMN %q %s", a.source.Name, colName, colType)
 		if err := a.Exec(ctx, &drivers.Statement{Query: qry}); err != nil {
-			return err
+			return a.connection.checkErr(err)
 		}
 	}
 
@@ -302,7 +320,7 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 		a.tableSchema[colName] = colType
 		qry := fmt.Sprintf("ALTER TABLE %q ALTER COLUMN %q SET DATA TYPE %s", a.source.Name, colName, colType)
 		if err := a.Exec(ctx, &drivers.Statement{Query: qry}); err != nil {
-			return err
+			return a.connection.checkErr(err)
 		}
 	}
 
@@ -350,10 +368,6 @@ func generateReadCsvStatement(paths []string, properties map[string]any) (string
 	if _, sampleSizeDefined := ingestionProps["sample_size"]; !sampleSizeDefined {
 		ingestionProps["sample_size"] = 200000
 	}
-	// set union_by_name to unify the schema of the files
-	if _, defined := ingestionProps["union_by_name"]; !defined {
-		ingestionProps["union_by_name"] = true
-	}
 	// auto_detect (enables auto-detection of parameters) is true by default, it takes care of params/schema
 	return fmt.Sprintf("read_csv_auto(%s)", convertToStatementParamsStr(paths, ingestionProps)), nil
 }
@@ -363,10 +377,6 @@ func generateReadParquetStatement(paths []string, properties map[string]any) (st
 	// set hive_partitioning to true by default
 	if _, hivePartitioningDefined := ingestionProps["hive_partitioning"]; !hivePartitioningDefined {
 		ingestionProps["hive_partitioning"] = true
-	}
-	// set union_by_name to unify the schema of the files
-	if _, defined := ingestionProps["union_by_name"]; !defined {
-		ingestionProps["union_by_name"] = true
 	}
 	return fmt.Sprintf("read_parquet(%s)", convertToStatementParamsStr(paths, ingestionProps)), nil
 }
@@ -385,10 +395,6 @@ func generateReadJSONStatement(paths []string, properties map[string]any) (strin
 	// set format to auto by default
 	if _, formatDefined := ingestionProps["format"]; !formatDefined {
 		ingestionProps["format"] = "auto"
-	}
-	// set union_by_name to unify the schema of the files
-	if _, defined := ingestionProps["union_by_name"]; !defined {
-		ingestionProps["union_by_name"] = true
 	}
 	return fmt.Sprintf("read_json(%s)", convertToStatementParamsStr(paths, ingestionProps)), nil
 }
@@ -412,30 +418,24 @@ type duckDBTableSchemaResult struct {
 	Extra      *string `db:"extra"`
 }
 
-func schemaRelaxationProperties(prop map[string]interface{}) (allowAddition, allowRelaxation bool, err error) {
-	allowAddition, additionDefined := prop["allow_field_addition"].(bool)
-	allowRelaxation, relaxationDefined := prop["allow_field_relaxation"].(bool)
-
+func schemaRelaxationProperty(prop map[string]interface{}) (bool, error) {
+	allowSchemaRelaxation, defined := prop["allow_schema_relaxation"].(bool)
 	val, ok := prop["union_by_name"].(bool)
-	if ok && !val && allowAddition {
+	if ok && !val && allowSchemaRelaxation {
 		// if union_by_name is set as false addition can't be done
-		return false, false, fmt.Errorf("if `union_by_name` is set `allow_field_addition` must be disabled")
+		return false, fmt.Errorf("if `union_by_name` is set `allow_schema_relaxation` must be disabled")
 	}
 
-	if hasKey(prop, "columns", "types", "dtypes") && allowRelaxation {
-		return false, false, fmt.Errorf("if any of `columns`,`types`,`dtypes` is set `allow_field_relaxation` must be disabled")
+	if hasKey(prop, "columns", "types", "dtypes") && allowSchemaRelaxation {
+		return false, fmt.Errorf("if any of `columns`,`types`,`dtypes` is set `allow_schema_relaxation` must be disabled")
 	}
 
 	// set default values
-	if !additionDefined {
-		allowAddition = true
+	if !defined {
+		allowSchemaRelaxation = true
 	}
 
-	if !relaxationDefined {
-		allowRelaxation = true
-	}
-
-	return allowAddition, allowRelaxation, nil
+	return allowSchemaRelaxation, nil
 }
 
 // utility functions

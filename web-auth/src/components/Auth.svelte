@@ -36,6 +36,10 @@
       decodeURIComponent(escape(window.atob(configParams)))
     );
 
+    if (config?.extraParams?.screen_hint === "signup") {
+      isLoginPage = false;
+    }
+
     if (cloudClientIDsArr.includes(config?.clientID)) {
       isRillCloud = true;
     }
