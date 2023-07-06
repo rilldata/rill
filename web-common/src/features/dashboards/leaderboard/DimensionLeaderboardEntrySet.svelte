@@ -106,16 +106,6 @@ see more button
     };
   }
 
-  // function getFormatterValueForPercDiff(comparisonValue, value) {
-  //   if (comparisonValue === 0) return PERC_DIFF.PREV_VALUE_ZERO;
-  //   if (!comparisonValue) return PERC_DIFF.PREV_VALUE_NO_DATA;
-  //   if (value === null || value === undefined)
-  //     return PERC_DIFF.CURRENT_VALUE_NO_DATA;
-
-  //   const percDiff = (value - comparisonValue) / comparisonValue;
-  //   return formatMeasurePercentageDifference(percDiff);
-  // }
-
   function getFormatterValueForPercDiff(numerator, denominator) {
     if (denominator === 0) return PERC_DIFF.PREV_VALUE_ZERO;
     if (!denominator) return PERC_DIFF.PREV_VALUE_NO_DATA;

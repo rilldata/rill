@@ -26,26 +26,15 @@
     : showPercentOfTotal
     ? "pie"
     : null;
-
-  // $: {
-  //   // hovered = true || hovered;
-  //   // optionsMenuActive = true || optionsMenuActive;
-  // }
 </script>
 
 <div class="flex flex-row items-center">
-  <div
-    class="grid place-items-center overflow-visible"
-    style:height="22px"
-    style:width="22px"
-  >
+  <div class="grid place-items-center" style:height="22px" style:width="22px">
     {#if isFetching}
       <Spinner size="16px" status={EntityStatus.Running} />
     {:else if hovered || optionsMenuActive}
-      <div
-        style="position:relative; height:100%; width:100%; overflow: visible;"
-      >
-        <div style="position: absolute; left:-1px; z-index: 100; ">
+      <div style="position:relative; height:100%; width:100%; ">
+        <div style="position: absolute; ">
           <LeaderboardOptionsMenu
             bind:optionsMenuActive
             on:toggle-filter-mode
