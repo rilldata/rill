@@ -150,6 +150,12 @@ function syncMeasures(
         metricsExplorer.visibleMeasureKeys.delete(measureKey);
       }
     }
+    // If there are no visible measures, make the first measure visible
+    if (metricsExplorer.visibleMeasureKeys.size === 0) {
+      metricsExplorer.visibleMeasureKeys = new Set([
+        metricsView.measures[0].name,
+      ]);
+    }
   }
 }
 
