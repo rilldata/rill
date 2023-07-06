@@ -56,7 +56,7 @@
 
   /** this should be a single element */
   // reset selections based on the active leaderboard measure
-  let activeLeaderboardMeasure;
+  let activeLeaderboardMeasure: ReturnType<typeof formatForSelector>;
   $: activeLeaderboardMeasure =
     measures?.length &&
     metricsExplorer?.leaderboardMeasureName &&
@@ -96,7 +96,13 @@
     showHideDimensions.setAllToVisible();
   };
 
-  $: disabledButtons = [...[!hasTimeSeries && "delta"]];
+  let disabledButtons: ("delta" | "pie")[] = [];
+  $: {
+    disabledButtons = [];
+    if (!hasTimeSeries) disabledButtons.push("delta");
+    if (activeLeaderboardMeasure?.validPercentOfTotal !== true)
+      disabledButtons.push("pie");
+  }
 
   let selectedButton: "delta" | "pie" | null = null;
   // NOTE: time comparison takes precedence over percent of total
