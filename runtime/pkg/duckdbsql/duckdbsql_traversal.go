@@ -4,6 +4,8 @@ import (
 	jsonvalue "github.com/Andrew-M-C/go.jsonvalue"
 )
 
+// TODO: handle parameters in values
+
 func (a *AST) traverse() {
 	if a.ast.MustGet("error").Bool() {
 		return

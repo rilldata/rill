@@ -83,8 +83,15 @@ func (a *AST) RewriteTableRefs(fn func(table *TableRef) (*TableRef, bool)) error
 }
 
 // RewriteLimit rewrites a DuckDB SQL statement to limit the result size
-func RewriteLimit(sql string, limit, offset int) (string, error) {
-	panic("not implemented")
+func (a *AST) RewriteLimit(limit, offset int) error {
+	for _, node := range a.selectNodes {
+		err := node.rewriteLimit(limit, offset)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // TableRef has information extracted about a DuckDB table or table function reference

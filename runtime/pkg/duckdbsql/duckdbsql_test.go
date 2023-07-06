@@ -14,7 +14,7 @@ import (
 //}
 
 // Comments are not parsed
-func TestExtractTableRefs(t *testing.T) {
+func TestParse(t *testing.T) {
 	sqlVariations := []struct {
 		title     string
 		sql       string
@@ -71,11 +71,11 @@ select 1`,
 	}
 }
 
-func TestReplaceTableRefs(t *testing.T) {
+func TestAST_RewriteTableRefs(t *testing.T) {
 	sqlVariations := []struct {
 		title       string
 		sql         string
-		replacedSql string
+		expectedSql string
 	}{
 		{
 			"no replace",
@@ -115,7 +115,102 @@ select * from
 
 			actualSql, err := ast.Format()
 			require.NoError(t, err)
-			require.EqualValues(t, tt.replacedSql, actualSql)
+			require.EqualValues(t, tt.expectedSql, actualSql)
+		})
+	}
+}
+
+func TestAST_RewriteLimit(t *testing.T) {
+	sqlVariations := []struct {
+		title       string
+		sql         string
+		limit       int
+		offset      int
+		expectedSql string
+	}{
+		{
+			"InsertLimit_SELECT",
+			`SELECT col1 FROM (SELECT col1 FROM tbl1) AS sub1 INNER JOIN (SELECT col1 FROM tbl1) AS sub2 ON (sub1.col1 = sub2.col1)`,
+			100,
+			0,
+			`SELECT col1 FROM (SELECT col1 FROM tbl1) AS sub1 INNER JOIN (SELECT col1 FROM tbl1) AS sub2 ON ((sub1.col1 = sub2.col1)) LIMIT 100`,
+		},
+		{
+			"UpdateLimit_SELECT",
+			`SELECT col1 FROM (SELECT col1 FROM tbl1 LIMIT 2000) AS sub1 INNER JOIN (SELECT col1 FROM tbl1 LIMIT 2000) AS sub2 ON ((sub1.col1 = sub2.col1)) LIMIT 2000`,
+			100,
+			0,
+			`SELECT col1 FROM (SELECT col1 FROM tbl1 LIMIT 2000) AS sub1 INNER JOIN (SELECT col1 FROM tbl1 LIMIT 2000) AS sub2 ON ((sub1.col1 = sub2.col1)) LIMIT 100`,
+		},
+		{
+			"InsertLimit_WITH",
+			`WITH tbl2 AS (SELECT col1 FROM tbl1), tbl3 AS (SELECT col1 FROM tbl1) SELECT col1 FROM tbl2 UNION ALL SELECT col1 FROM tbl3`,
+			100,
+			0,
+			`WITH tbl2 AS (SELECT col1 FROM tbl1), tbl3 AS (SELECT col1 FROM tbl1)(SELECT col1 FROM tbl2) UNION ALL (SELECT col1 FROM tbl3) LIMIT 100`,
+		},
+		{
+			"UpdateLimit_WITH",
+			`WITH tbl2 AS (SELECT col1 FROM tbl1 LIMIT 2000), tbl3 AS (SELECT col1 FROM tbl1 LIMIT 2000)(SELECT col1 FROM tbl2 LIMIT 2000) UNION ALL (SELECT col1 FROM tbl3 LIMIT 2000) LIMIT 2000`,
+			100,
+			0,
+			`WITH tbl2 AS (SELECT col1 FROM tbl1 LIMIT 2000), tbl3 AS (SELECT col1 FROM tbl1 LIMIT 2000)(SELECT col1 FROM tbl2 LIMIT 2000) UNION ALL (SELECT col1 FROM tbl3 LIMIT 2000) LIMIT 100`,
+		},
+		{
+			"InsertLimit_SELECT_WHERE",
+			`SELECT col1 FROM tbl1 WHERE col1 = 1 ORDER BY 1`,
+			100,
+			0,
+			`SELECT col1 FROM tbl1 WHERE (col1 = 1) ORDER BY 1 LIMIT 100`,
+		},
+		{
+			"UpdateLimit_SELECT_WHERE",
+			`SELECT col1 FROM tbl1 WHERE (col1 = 1) ORDER BY 1 LIMIT 2000`,
+			100,
+			0,
+			`SELECT col1 FROM tbl1 WHERE (col1 = 1) ORDER BY 1 LIMIT 100`,
+		},
+		{
+			"UpdateLimit_args_?",
+			`SELECT col1 FROM tbl1 WHERE col1 = ? ORDER BY 1 LIMIT 2000`,
+			100,
+			0,
+			`SELECT col1 FROM tbl1 WHERE (col1 = $1) ORDER BY 1 LIMIT 100`,
+		},
+		{
+			"UpdateLimit_args_$",
+			`SELECT col1 FROM tbl1 WHERE col1 = $1 ORDER BY 1 LIMIT 2000`,
+			100,
+			0,
+			`SELECT col1 FROM tbl1 WHERE (col1 = $1) ORDER BY 1 LIMIT 100`,
+		},
+		{
+			"UpdateLimit_LIMIT_args",
+			`SELECT col1 FROM tbl1 WHERE col1 = 1 ORDER BY 1 LIMIT ?`,
+			100,
+			0,
+			`SELECT col1 FROM tbl1 WHERE (col1 = 1) ORDER BY 1 LIMIT 100`,
+		},
+		{
+			"UpdateLimit_UNION",
+			`SELECT col1 FROM tbl1 UNION ALL SELECT col1 FROM tbl1`,
+			100,
+			0,
+			`(SELECT col1 FROM tbl1) UNION ALL (SELECT col1 FROM tbl1) LIMIT 100`,
+		},
+	}
+
+	for _, tt := range sqlVariations {
+		t.Run(tt.title, func(t *testing.T) {
+			ast, err := Parse(tt.sql)
+			require.NoError(t, err)
+
+			err = ast.RewriteLimit(tt.limit, tt.offset)
+			require.NoError(t, err)
+
+			actualSql, err := ast.Format()
+			require.NoError(t, err)
+			require.EqualValues(t, tt.expectedSql, actualSql)
 		})
 	}
 }
