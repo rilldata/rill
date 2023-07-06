@@ -130,8 +130,6 @@ export function computeComparisonValues(
   return values;
 }
 
-/** Takes previous and current data to construct comparison data
- * with fields named measure_x_delta and measure_x_delta_perc */
 export function computePercentOfTotal(
   values: V1MetricsViewToplistResponseDataItem[],
   total: number,
