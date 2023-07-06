@@ -15,6 +15,10 @@ The main feature-set component for dashboard filters
     useMetaQuery,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import {
+    useModelHasTimeSeries as useModelTimeSeries2,
+    useMetaQuery as useMetaQuery2,
+  } from "../selectors/index";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import type {
     MetricsViewDimension,
@@ -31,8 +35,13 @@ The main feature-set component for dashboard filters
     metricsExplorerStore,
   } from "../dashboard-stores";
   import { getDisplayName } from "./getDisplayName";
+  import { getBusinessModel } from "../business-model/business-model";
 
   export let metricViewName;
+
+  const businessModel = getBusinessModel();
+  const { dashboardStore } = businessModel;
+  const metricTimeSeries = useModelTimeSeries2(businessModel);
 
   const queryClient = useQueryClient();
 
@@ -42,14 +51,14 @@ The main feature-set component for dashboard filters
   const MIN_CONTAINER_HEIGHT = "34px";
 
   let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  $: metricsExplorer = $dashboardStore;
 
   let includeValues: Array<MetricsViewFilterCond>;
   $: includeValues = metricsExplorer?.filters.include;
   let excludeValues: Array<MetricsViewFilterCond>;
   $: excludeValues = metricsExplorer?.filters.exclude;
 
-  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
+  const metaQuery = useMetaQuery2(businessModel);
   let dimensions: Array<MetricsViewDimension>;
   $: dimensions = $metaQuery.data?.dimensions;
 
@@ -72,15 +81,12 @@ The main feature-set component for dashboard filters
   let searchedValues = [];
   let activeDimensionName;
 
-  $: metricTimeSeries = useModelHasTimeSeries(
-    $runtime.instanceId,
-    metricViewName
-  );
   $: hasTimeSeries = $metricTimeSeries.data;
 
   $: addNull = "null".includes(searchText);
 
   $: if (activeDimensionName) {
+    console.log({ activeDimensionName });
     if (searchText == "") {
       searchedValues = [];
     } else {
@@ -119,6 +125,11 @@ The main feature-set component for dashboard filters
         topListParams
       );
     }
+  }
+
+  $: {
+    console.log($topListQuery);
+    // console.log($topListQuery.data);
   }
 
   function setActiveDimension(name, value) {

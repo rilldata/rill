@@ -4,9 +4,13 @@
  * rill/runtime/v1/schema.proto
  * OpenAPI spec version: version not set
  */
-import { createQuery, createMutation } from "@tanstack/svelte-query";
+import {
+  // createQuery,
+  createMutation,
+} from "@tanstack/svelte-query";
+import { createQuery, CreateQueryOptions } from "./createQuery";
 import type {
-  CreateQueryOptions,
+  // CreateQueryOptions,
   CreateMutationOptions,
   QueryFunction,
   MutationFunction,

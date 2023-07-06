@@ -125,6 +125,7 @@
   $: numColumns = 3;
 
   $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricViewName);
+
   $: hasTimeSeries = $metricTimeSeries.data;
   $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
   $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
