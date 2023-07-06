@@ -27,8 +27,10 @@ type columnNode struct {
 }
 
 type fromNode struct {
-	ast *jsonvalue.V
-	ref *TableRef
+	ast      *jsonvalue.V
+	parent   *jsonvalue.V
+	childKey string
+	ref      *TableRef
 }
 
 func Parse(sql string) (*AST, error) {
@@ -56,14 +58,28 @@ func Parse(sql string) (*AST, error) {
 
 // Format normalizes a DuckDB SQL statement
 func (a *AST) Format() (string, error) {
-	// TODO: cleanup
-	res, err := queryString("SELECT json_deserialize_sql(?::JSON)", a.ast)
+	// TODO: cleanup this code
+	res, err := queryString("SELECT json_deserialize_sql(?::JSON)", a.ast.MustMarshalString())
 	return string(res), err
 }
 
-// Sanitize strips comments and normalizes a DuckDB SQL statement
-func Sanitize(sql string) (string, error) {
-	panic("not implemented")
+// RewriteTableRefs replaces table references in a DuckDB SQL query
+func (a *AST) RewriteTableRefs(fn func(table *TableRef) (*TableRef, bool)) error {
+	for _, node := range a.fromNodes {
+		newRef, shouldReplace := fn(node.ref)
+		if !shouldReplace {
+			continue
+		}
+
+		if node.ref.Name == "" && newRef.Name != "" {
+			err := node.rewriteToBaseTable(newRef.Name)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 // RewriteLimit rewrites a DuckDB SQL statement to limit the result size
@@ -77,11 +93,6 @@ type TableRef struct {
 	Function   string
 	Path       string
 	Properties map[string]any
-}
-
-// RewriteTableRefs replaces table references in a DuckDB SQL query
-func RewriteTableRefs(sql string, fn func(table *TableRef) (*TableRef, bool)) (string, error) {
-	panic("not implemented")
 }
 
 // Annotation is key-value annotation extracted from a DuckDB SQL comment
