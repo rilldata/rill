@@ -138,7 +138,7 @@ export function computePercentOfTotal(
   measureName: string
 ) {
   for (const value of values) {
-    if (total === 0) {
+    if (total === 0 || total === null || total === undefined) {
       value[measureName + "_percent_of_total"] =
         PERC_DIFF.CURRENT_VALUE_NO_DATA;
     } else {

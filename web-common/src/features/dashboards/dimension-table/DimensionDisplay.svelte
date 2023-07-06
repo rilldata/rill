@@ -357,22 +357,14 @@
   }
 
   $: validPercentOfTotal = $leaderboardMeasureQuery?.data?.validPercentOfTotal;
-  // $: console.log(validPercentOfTotal);
-
-  //   let referenceValue: number;
-  // $: if (activeMeasure?.name && $totalsQuery?.data?.data) {
-  //   referenceValue = $totalsQuery.data.data?.[activeMeasure.name];
-  // }
 
   $: if (validPercentOfTotal && values.length && sortByColumn) {
-    const referenceValue = $totalsQuery.data.data?.[sortByColumn];
-    console.log({ referenceValue });
+    const referenceValue = $totalsQuery.data?.data?.[sortByColumn];
     values = computePercentOfTotal(
       values,
       referenceValue,
       leaderboardMeasureName
     );
-    console.log({ values });
   }
 
   $: if (values) {
