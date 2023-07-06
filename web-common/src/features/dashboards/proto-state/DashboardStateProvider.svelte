@@ -8,7 +8,7 @@
 
   $: metricsViewQuery = useMetaQuery($runtime.instanceId, metricViewName);
   let unsubscribe;
-  $: {
+  $: if ($metricsViewQuery?.data) {
     // unsubscribe any previous subscription. this can happen when metricViewName changes and hence the metricsViewQuery
     if (unsubscribe) unsubscribe();
     unsubscribe = useDashboardUrlSync(metricViewName, metricsViewQuery);

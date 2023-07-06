@@ -117,3 +117,7 @@ If you do not have the AWS CLI installed and authenticated, follow these steps:
     ```
 
 You have now configured AWS access from your local environment. Rill will detect and use your credentials next time you try to ingest a source.
+
+### Configure credentials for MotherDuck service
+
+When developing a project locally, you need to set `motherduck_token` in your enviornment variables. Refer to motherduck [docs](https://motherduck.com/docs/authenticating-to-motherduck#saving-the-service-token-as-an-environment-variable) for more infromation on authenticating with token.

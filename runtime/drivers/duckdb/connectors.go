@@ -153,6 +153,9 @@ func (c *connection) ingestMotherduckData(ctx context.Context, source *connector
 		if token == "" && env.AllowHostAccess {
 			token = os.Getenv("motherduck_token")
 		}
+		if token == "" {
+			return fmt.Errorf("no motherduck token found. Refer to this documentation for instructions: https://docs.rilldata.com/deploy/credentials/motherduck")
+		}
 		// load motherduck extension; connect to motherduck service
 		err = c.Exec(ctx, &drivers.Statement{Query: "INSTALL 'motherduck'; LOAD 'motherduck';"})
 		if err != nil {

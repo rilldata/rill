@@ -95,6 +95,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		ProdVariables:        proj.ProdVariables,
 		ProdSlots:            proj.ProdSlots,
 		Region:               proj.Region,
+		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		ProdDeploymentID:     &depl.ID,
 	})
 	if err != nil {
@@ -176,7 +177,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 
 		if oldDepl != nil {
 			if err := s.teardownDeployment(context.Background(), proj, oldDepl); err != nil {
-				s.logger.Error("could not delete old deploymnet", zap.Error(err), observability.ZapCtx(ctx))
+				s.logger.Error("could not delete old deployment", zap.Error(err), observability.ZapCtx(ctx))
 			}
 		}
 
@@ -272,19 +273,22 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdBranch:           proj.ProdBranch,
 		ProdVariables:        proj.ProdVariables,
-		ProdSlots:            proj.ProdSlots,
-		Region:               proj.Region,
 		ProdDeploymentID:     &newDepl.ID,
+		ProdSlots:            proj.ProdSlots,
+		ProdTTLSeconds:       proj.ProdTTLSeconds,
+		Region:               proj.Region,
 	})
 	if err != nil {
 		err2 := s.teardownDeployment(ctx, proj, newDepl)
 		return multierr.Combine(err, err2)
 	}
 
-	// Delete old prod deployment
-	err = s.teardownDeployment(ctx, proj, prevDepl)
-	if err != nil {
-		s.logger.Error("trigger redeploy: could not teardown old deployment", zap.String("deployment_id", prevDepl.ID), zap.Error(err), observability.ZapCtx(ctx))
+	// Delete old prod deployment if exists
+	if prevDepl != nil {
+		err = s.teardownDeployment(ctx, proj, prevDepl)
+		if err != nil {
+			s.logger.Error("trigger redeploy: could not teardown old deployment", zap.String("deployment_id", prevDepl.ID), zap.Error(err), observability.ZapCtx(ctx))
+		}
 	}
 
 	// Trigger reconcile on new deployment

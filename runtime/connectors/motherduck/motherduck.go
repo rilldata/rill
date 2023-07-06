@@ -13,16 +13,16 @@ func init() {
 }
 
 var spec = connectors.Spec{
-	DisplayName: "Motherduck",
-	Description: "Import data from Motherduck.",
+	DisplayName: "MotherDuck",
+	Description: "Import data from MotherDuck.",
 	Properties: []connectors.PropertySchema{
 		{
 			Key:         "query",
 			Type:        connectors.StringPropertyType,
 			Required:    true,
 			DisplayName: "Query",
-			Description: "Query to extract data from Motherduck.",
-			Placeholder: "select * from my_db.my_table;", // todo :: check this
+			Description: "Query to extract data from MotherDuck.",
+			Placeholder: "select * from my_db.my_table;",
 		},
 	},
 	ConnectorVariables: []connectors.VariableSchema{

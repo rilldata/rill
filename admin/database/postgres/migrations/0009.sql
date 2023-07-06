@@ -1,0 +1,2 @@
+ALTER TABLE deployments ADD COLUMN used_on TIMESTAMPTZ DEFAULT now() NOT NULL;
+ALTER TABLE projects ADD COLUMN prod_ttl_seconds BIGINT;

@@ -110,7 +110,7 @@ service AdminService {
   // TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
   rpc TriggerRedeploy(TriggerRedeployRequest) returns (TriggerRedeployResponse) {
     option (google.api.http) = {
-      post: "/v1/deployments/{deployment_id}/redeploy",
+      post: "/v1/projects/-/redeploy",
       body: "*"
     };
   }
@@ -406,6 +406,7 @@ message UpdateProjectRequest {
   optional int64 prod_slots = 7;
   optional string region = 8;
   optional string new_name = 9;
+  optional int64 prod_ttl_seconds = 10;
 }
 
 message UpdateProjectResponse {
@@ -436,6 +437,10 @@ message TriggerRefreshSourcesRequest {
 message TriggerRefreshSourcesResponse {}
 
 message TriggerRedeployRequest {
+  // It's sufficient to pass org/project name OR deployment_id.
+  // (To enable rehydrating hibernated projects.)
+  string organization = 2;
+  string project = 3;
   string deployment_id = 1;
 }
 
@@ -742,6 +747,7 @@ message Project {
   int64 prod_slots = 12;
   string prod_deployment_id = 13;
   string frontend_url = 16;
+  int64 prod_ttl_seconds = 18;
   google.protobuf.Timestamp created_on = 14;
   google.protobuf.Timestamp updated_on = 15;
 }

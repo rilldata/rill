@@ -17,6 +17,11 @@ export interface DashboardListItem {
 export async function getDashboardsForProject(
   projectData: V1GetProjectResponse
 ): Promise<DashboardListItem[]> {
+  // There may not be a prodDeployment if the project was hibernated
+  if (!projectData.prodDeployment) {
+    return [];
+  }
+
   // Hack: in development, the runtime host is actually on port 8081
   const runtimeHost = projectData.prodDeployment.runtimeHost.replace(
     "localhost:9091",

@@ -3051,6 +3051,10 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 		// no validation rules for NewName
 	}
 
+	if m.ProdTtlSeconds != nil {
+		// no validation rules for ProdTtlSeconds
+	}
+
 	if len(errors) > 0 {
 		return UpdateProjectRequestMultiError(errors)
 	}
@@ -3929,6 +3933,10 @@ func (m *TriggerRedeployRequest) validate(all bool) error {
 	}
 
 	var errors []error
+
+	// no validation rules for Organization
+
+	// no validation rules for Project
 
 	// no validation rules for DeploymentId
 
@@ -11738,6 +11746,8 @@ func (m *Project) validate(all bool) error {
 	// no validation rules for ProdDeploymentId
 
 	// no validation rules for FrontendUrl
+
+	// no validation rules for ProdTtlSeconds
 
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
