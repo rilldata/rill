@@ -15,7 +15,9 @@ import (
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/oauth2"
@@ -142,11 +144,16 @@ func (s *Server) registerGithubEndpoints(mux *http.ServeMux) {
 	// TODO: Add helper utils to clean this up
 	inner := http.NewServeMux()
 	inner.Handle("/github/webhook", otelhttp.WithRouteTag("/github/webhook", http.HandlerFunc(s.githubWebhook)))
-	inner.Handle("/github/connect", otelhttp.WithRouteTag("/github/connect", s.authenticator.HTTPMiddleware(http.HandlerFunc(s.githubConnect))))
-	inner.Handle("/github/connect/callback", otelhttp.WithRouteTag("/github/connect/callback", s.authenticator.HTTPMiddleware(http.HandlerFunc(s.githubConnectCallback))))
-	inner.Handle("/github/auth/login", otelhttp.WithRouteTag("github/auth/login", s.authenticator.HTTPMiddleware(http.HandlerFunc(s.githubAuthLogin))))
-	inner.Handle("/github/auth/callback", otelhttp.WithRouteTag("github/auth/callback", s.authenticator.HTTPMiddleware(http.HandlerFunc(s.githubAuthCallback))))
-	inner.Handle("/github/post-auth-redirect", otelhttp.WithRouteTag("github/post-auth-redirect", s.authenticator.HTTPMiddleware(http.HandlerFunc(s.githubRepoStatus))))
+	inner.Handle("/github/connect", otelhttp.WithRouteTag("/github/connect", s.authenticator.HTTPMiddleware(
+		middleware.RequestHTTPHandler("/github/connect", s.checkGithubRateLimit, http.HandlerFunc(s.githubConnect)))))
+	inner.Handle("/github/connect/callback", otelhttp.WithRouteTag("/github/connect/callback", s.authenticator.HTTPMiddleware(
+		middleware.RequestHTTPHandler("/github/connect/callback", s.checkGithubRateLimit, http.HandlerFunc(s.githubConnectCallback)))))
+	inner.Handle("/github/auth/login", otelhttp.WithRouteTag("github/auth/login", s.authenticator.HTTPMiddleware(
+		middleware.RequestHTTPHandler("github/auth/login", s.checkGithubRateLimit, http.HandlerFunc(s.githubAuthLogin)))))
+	inner.Handle("/github/auth/callback", otelhttp.WithRouteTag("github/auth/callback", s.authenticator.HTTPMiddleware(
+		middleware.RequestHTTPHandler("github/auth/callback", s.checkGithubRateLimit, http.HandlerFunc(s.githubAuthCallback)))))
+	inner.Handle("/github/post-auth-redirect", otelhttp.WithRouteTag("github/post-auth-redirect", s.authenticator.HTTPMiddleware(
+		middleware.RequestHTTPHandler("github/post-auth-redirect", s.checkGithubRateLimit, http.HandlerFunc(s.githubRepoStatus)))))
 	mux.Handle("/github/", observability.Middleware("admin", s.logger, inner))
 }
 
@@ -584,4 +591,18 @@ func (s *Server) redirectLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+}
+
+func (s *Server) checkGithubRateLimit(route string, req *http.Request) error {
+	claims := auth.GetClaims(req.Context())
+	if claims == nil || claims.OwnerType() == auth.OwnerTypeAnon {
+		limitKey := ratelimit.AnonLimitKey(route, observability.HTTPPeer(req))
+		if err := s.limiter.Limit(req.Context(), limitKey, ratelimit.Sensitive); err != nil {
+			if errors.As(err, &ratelimit.QuotaExceededError{}) {
+				return middleware.NewHTTPError(http.StatusTooManyRequests, err.Error())
+			}
+			return err
+		}
+	}
+	return nil
 }

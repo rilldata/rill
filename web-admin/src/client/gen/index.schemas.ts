@@ -22,6 +22,12 @@ export type AdminServiceSudoGetResourceParams = {
   instanceId?: string;
 };
 
+export type AdminServiceSearchProjectNamesParams = {
+  namePattern?: string;
+  pageSize?: number;
+  pageToken?: string;
+};
+
 export type AdminServiceUpdateProjectVariablesBodyVariables = {
   [key: string]: string;
 };
@@ -221,6 +227,11 @@ export interface V1SetOrganizationMemberRoleResponse {
 
 export interface V1SearchUsersResponse {
   users?: V1User[];
+  nextPageToken?: string;
+}
+
+export interface V1SearchProjectNamesResponse {
+  names?: string[];
   nextPageToken?: string;
 }
 

@@ -14,10 +14,11 @@ var templatesFS embed.FS
 type Client struct {
 	sender      Sender
 	frontendURL string
+	externalURL string
 	templates   *template.Template
 }
 
-func New(sender Sender, frontendURL string) *Client {
+func New(sender Sender, frontendURL, externalURL string) *Client {
 	_, err := url.Parse(frontendURL)
 	if err != nil {
 		panic(fmt.Errorf("invalid frontendURL: %w", err))
@@ -26,6 +27,7 @@ func New(sender Sender, frontendURL string) *Client {
 	return &Client{
 		sender:      sender,
 		frontendURL: frontendURL,
+		externalURL: externalURL,
 		templates:   template.Must(template.New("").ParseFS(templatesFS, "templates/gen/*.html")),
 	}
 }
@@ -63,6 +65,11 @@ func (c *Client) SendOrganizationInvite(opts *OrganizationInvite) error {
 		opts.InvitedByName = "Rill"
 	}
 
+	// Create link URL as "{{ admin URL }}/auth/signup?redirect={{ org frontend URL }}"
+	queryParams := url.Values{}
+	queryParams.Add("redirect", mustJoinURLPath(c.frontendURL, opts.OrgName))
+	finalURL := mustJoinURLPath(c.externalURL, "/auth/signup") + "?" + queryParams.Encode()
+
 	return c.SendCallToAction(&CallToAction{
 		ToEmail:    opts.ToEmail,
 		ToName:     opts.ToName,
@@ -70,7 +77,7 @@ func (c *Client) SendOrganizationInvite(opts *OrganizationInvite) error {
 		Title:      "Accept your invitation to Rill",
 		Body:       template.HTML(fmt.Sprintf("%s has invited you to join <b>%s</b> as a %s for their Rill account. Get started interacting with fast, exploratory dashboards by clicking the button below to sign in and accept your invitation.", opts.InvitedByName, opts.OrgName, opts.RoleName)),
 		ButtonText: "Accept invitation",
-		ButtonLink: mustJoinURLPath(c.frontendURL, opts.OrgName),
+		ButtonLink: finalURL,
 	})
 }
 
@@ -112,6 +119,11 @@ func (c *Client) SendProjectInvite(opts *ProjectInvite) error {
 		opts.InvitedByName = "Rill"
 	}
 
+	// Create link URL as "{{ admin URL }}/auth/signup?redirect={{ project frontend URL }}"
+	queryParams := url.Values{}
+	queryParams.Add("redirect", mustJoinURLPath(c.frontendURL, opts.OrgName, opts.ProjectName))
+	finalURL := mustJoinURLPath(c.externalURL, "/auth/signup") + "?" + queryParams.Encode()
+
 	return c.SendCallToAction(&CallToAction{
 		ToEmail:    opts.ToEmail,
 		ToName:     opts.ToName,
@@ -119,7 +131,7 @@ func (c *Client) SendProjectInvite(opts *ProjectInvite) error {
 		Title:      fmt.Sprintf("You have been invited to the %s/%s project", opts.OrgName, opts.ProjectName),
 		Body:       template.HTML(fmt.Sprintf("%s has invited you to collaborate as a %s for the <b>%s/%s</b> project. Click the button below to accept your invitation. ", opts.InvitedByName, opts.RoleName, opts.OrgName, opts.ProjectName)),
 		ButtonText: "Accept invitation",
-		ButtonLink: mustJoinURLPath(c.frontendURL, opts.OrgName, opts.ProjectName),
+		ButtonLink: finalURL,
 	})
 }
 
