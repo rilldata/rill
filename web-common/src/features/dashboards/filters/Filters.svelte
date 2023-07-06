@@ -10,40 +10,27 @@ The main feature-set component for dashboard filters
   import { defaultChipColors } from "@rilldata/web-common/components/chip/chip-types";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import FilterRemove from "@rilldata/web-common/components/icons/FilterRemove.svelte";
-  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
-  import {
-    useMetaQuery,
-    useModelHasTimeSeries,
-  } from "@rilldata/web-common/features/dashboards/selectors";
-  import {
-    useModelHasTimeSeries as useModelTimeSeries2,
-    useMetaQuery as useMetaQuery2,
-  } from "../selectors/index";
+  import { useMetaQuery, getFilterSearchList } from "../selectors/index";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import type {
     MetricsViewDimension,
     MetricsViewFilterCond,
     V1MetricsViewFilter,
   } from "@rilldata/web-common/runtime-client";
-  import { createQueryServiceMetricsViewToplist } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
-  import { runtime } from "../../../runtime-client/runtime-store";
-  import {
-    MetricsExplorerEntity,
-    metricsExplorerStore,
-  } from "../dashboard-stores";
+  import type { MetricsExplorerEntity } from "../dashboard-stores";
   import { getDisplayName } from "./getDisplayName";
   import { getBusinessModel } from "../business-model/business-model";
-
-  export let metricViewName;
+  import {
+    clearAllFilters,
+    clearFilterForDimension,
+    toggleDimensionValue,
+    toggleFilterMode,
+  } from "../actions";
 
   const businessModel = getBusinessModel();
   const { dashboardStore } = businessModel;
-  const metricTimeSeries = useModelTimeSeries2(businessModel);
-
-  const queryClient = useQueryClient();
 
   /** the height of a row of chips */
   const ROW_HEIGHT = "26px";
@@ -58,18 +45,9 @@ The main feature-set component for dashboard filters
   let excludeValues: Array<MetricsViewFilterCond>;
   $: excludeValues = metricsExplorer?.filters.exclude;
 
-  const metaQuery = useMetaQuery2(businessModel);
+  const metaQuery = useMetaQuery(businessModel);
   let dimensions: Array<MetricsViewDimension>;
   $: dimensions = $metaQuery.data?.dimensions;
-
-  function clearFilterForDimension(dimensionId, include: boolean) {
-    cancelDashboardQueries(queryClient, metricViewName);
-    metricsExplorerStore.clearFilterForDimension(
-      metricViewName,
-      dimensionId,
-      include
-    );
-  }
 
   function isFiltered(filters: V1MetricsViewFilter): boolean {
     if (!filters) return false;
@@ -81,55 +59,14 @@ The main feature-set component for dashboard filters
   let searchedValues = [];
   let activeDimensionName;
 
-  $: hasTimeSeries = $metricTimeSeries.data;
-
-  $: addNull = "null".includes(searchText);
-
-  $: if (activeDimensionName) {
-    console.log({ activeDimensionName });
-    if (searchText == "") {
-      searchedValues = [];
-    } else {
-      let topListParams = {
-        dimensionName: activeDimensionName,
-        limit: "15",
-        offset: "0",
-        sort: [],
-        filter: {
-          include: [
-            {
-              name: activeDimensionName,
-              in: addNull ? [null] : [],
-              like: [`%${searchText}%`],
-            },
-          ],
-          exclude: [],
-        },
-      };
-
-      if (hasTimeSeries) {
-        topListParams = {
-          ...topListParams,
-          ...{
-            timeStart: metricsExplorer?.selectedTimeRange?.start,
-            timeEnd: metricsExplorer?.selectedTimeRange?.end,
-          },
-        };
-      }
-
-      // Use topList API to fetch the dimension names
-      // We prune the measure values and use the dimension labels for the filter
-      topListQuery = createQueryServiceMetricsViewToplist(
-        $runtime.instanceId,
-        metricViewName,
-        topListParams
-      );
-    }
-  }
-
   $: {
-    console.log($topListQuery);
-    // console.log($topListQuery.data);
+    if (activeDimensionName) {
+      topListQuery = getFilterSearchList(businessModel, {
+        dimension: activeDimensionName,
+        searchText,
+        addNull: "null".includes(searchText),
+      });
+    }
   }
 
   function setActiveDimension(name, value) {
@@ -137,24 +74,18 @@ The main feature-set component for dashboard filters
     searchText = value;
   }
 
-  $: if (!$topListQuery?.isFetching && searchText != "") {
-    const topListData = $topListQuery?.data?.data ?? [];
-    searchedValues =
-      topListData.map((datum) => datum[activeDimensionName]) ?? [];
+  $: {
+    if (!$topListQuery?.isFetching && searchText != "") {
+      const topListData = $topListQuery?.data?.data ?? [];
+      searchedValues = topListData.map((datum) => datum[activeDimensionName]);
+    } else searchedValues = [];
   }
 
-  $: hasFilters = isFiltered(metricsExplorer?.filters);
-
-  function clearAllFilters() {
-    if (hasFilters) {
-      cancelDashboardQueries(queryClient, metricViewName);
-      metricsExplorerStore.clearFilters(metricViewName);
-    }
-  }
+  $: hasFilters = isFiltered(metricsExplorer.filters);
 
   /** prune the values and prepare for templating */
   let currentDimensionFilters = [];
-  $: if (includeValues && excludeValues && dimensions) {
+  $: {
     const dimensionIdMap = getMapFromArray(
       dimensions,
       (dimension) => dimension.name
@@ -183,16 +114,6 @@ The main feature-set component for dashboard filters
     currentDimensionFilters.sort((a, b) => (a.name > b.name ? 1 : -1));
   }
 
-  function toggleDimensionValue(event, item) {
-    cancelDashboardQueries(queryClient, metricViewName);
-    metricsExplorerStore.toggleFilter(metricViewName, item.name, event.detail);
-  }
-
-  function toggleFilterMode(dimensionName) {
-    cancelDashboardQueries(queryClient, metricViewName);
-    metricsExplorerStore.toggleFilterMode(metricViewName, dimensionName);
-  }
-
   const excludeChipColors = {
     bgBaseClass: "bg-gray-100 dark:bg-gray-700",
     bgHoverClass: "bg-gray-200 dark:bg-gray-600",
@@ -216,16 +137,21 @@ The main feature-set component for dashboard filters
   >
     <Filter size="16px" />
   </div>
-  {#if currentDimensionFilters?.length}
+  {#if currentDimensionFilters.length > 0}
     <ChipContainer>
       {#each currentDimensionFilters as { name, label, selectedValues, filterType } (name)}
         {@const isInclude = filterType === "include"}
         <div animate:flip={{ duration: 200 }}>
           <RemovableListChip
-            on:toggle={() => toggleFilterMode(name)}
+            on:toggle={() => toggleFilterMode(businessModel, name)}
             on:remove={() =>
-              clearFilterForDimension(name, isInclude ? true : false)}
-            on:apply={(event) => toggleDimensionValue(event, { name })}
+              clearFilterForDimension(
+                businessModel,
+                name,
+                isInclude ? true : false
+              )}
+            on:apply={(event) =>
+              toggleDimensionValue(businessModel, event, { name })}
             on:search={(event) => {
               setActiveDimension(name, event.detail);
             }}
@@ -253,7 +179,7 @@ The main feature-set component for dashboard filters
             textClass="ui-copy-disabled-faint hover:text-gray-500 dark:text-gray-500"
             bgActiveClass="bg-gray-200 dark:bg-gray-600"
             outlineClass="outline-gray-400"
-            on:click={clearAllFilters}
+            on:click={() => clearAllFilters(businessModel)}
           >
             <span slot="icon" class="ui-copy-disabled-faint">
               <FilterRemove size="16px" />
