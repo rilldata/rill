@@ -24,14 +24,6 @@ var spec = connectors.Spec{
 			Description: "Query to extract data from Motherduck.",
 			Placeholder: "select * from my_db.my_table;", // todo :: check this
 		},
-		{
-			Key:         "db",
-			Type:        connectors.StringPropertyType,
-			Required:    false,
-			DisplayName: "Query",
-			Description: "Query to extract data from Motherduck.",
-			Placeholder: "select * from my_db.my_table;", // todo :: check this
-		},
 	},
 	ConnectorVariables: []connectors.VariableSchema{
 		{
