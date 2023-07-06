@@ -36,6 +36,8 @@ type Source struct {
 	DuckDBProps           map[string]any `yaml:"duckdb,omitempty" mapstructure:"duckdb,omitempty"`
 	Headers               map[string]any `yaml:"headers,omitempty" mapstructure:"headers,omitempty"`
 	AllowSchemaRelaxation *bool          `yaml:"ingest.allow_schema_relaxation,omitempty" mapstructure:"allow_schema_relaxation,omitempty"`
+	Query                 string         `yaml:"query,omitempty" mapstructure:"query,omitempty"`
+	DB                    string         `yaml:"db,omitempty" mapstructure:"db,omitempty"`
 }
 
 type ExtractPolicy struct {
@@ -145,7 +147,7 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 	props := map[string]interface{}{}
 	if source.Type == "local_file" {
 		props["path"] = source.Path
-	} else {
+	} else if source.URI != "" {
 		props["path"] = source.URI
 	}
 	if source.Region != "" {
@@ -202,6 +204,14 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 
 	if source.AllowSchemaRelaxation != nil {
 		props["allow_schema_relaxation"] = *source.AllowSchemaRelaxation
+	}
+
+	if source.Query != "" {
+		props["query"] = source.Query
+	}
+
+	if source.DB != "" {
+		props["db"] = source.DB
 	}
 
 	propsPB, err := structpb.NewStruct(props)
