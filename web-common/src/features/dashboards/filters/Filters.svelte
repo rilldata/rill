@@ -41,13 +41,13 @@ The main feature-set component for dashboard filters
   $: metricsExplorer = $dashboardStore;
 
   let includeValues: Array<MetricsViewFilterCond>;
-  $: includeValues = metricsExplorer?.filters.include;
+  $: includeValues = metricsExplorer.filters.include;
   let excludeValues: Array<MetricsViewFilterCond>;
-  $: excludeValues = metricsExplorer?.filters.exclude;
+  $: excludeValues = metricsExplorer.filters.exclude;
 
   const metaQuery = useMetaQuery(businessModel);
   let dimensions: Array<MetricsViewDimension>;
-  $: dimensions = $metaQuery.data?.dimensions;
+  $: dimensions = $metaQuery.data?.dimensions ?? [];
 
   function isFiltered(filters: V1MetricsViewFilter): boolean {
     if (!filters) return false;
@@ -189,7 +189,7 @@ The main feature-set component for dashboard filters
         </div>
       {/if}
     </ChipContainer>
-  {:else if currentDimensionFilters?.length === 0}
+  {:else if currentDimensionFilters.length === 0}
     <div
       in:fly|local={{ duration: 200, x: 8 }}
       class="ui-copy-disabled grid items-center"
