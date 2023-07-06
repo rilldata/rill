@@ -196,3 +196,21 @@ export function formatMeasurePercentageDifference(
 
   return factory[method](value);
 }
+
+export function formatPercentOfTotal(value, total) {
+  return new PerRangeFormatter([], {
+    strategy: "perRange",
+    rangeSpecs: [
+      {
+        minMag: -2,
+        supMag: 3,
+        maxDigitsRight: 0,
+        baseMagnitude: 0,
+        padWithInsignificantZeros: false,
+        useTrailingDot: false,
+      },
+    ],
+    defaultMaxDigitsRight: 0,
+    numberKind: NumberKind.PERCENT,
+  }).stringFormat(value / total);
+}

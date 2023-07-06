@@ -173,7 +173,8 @@
     });
 
   // Compose the comparison /toplist query
-  $: displayComparison = $dashboardStore?.showComparison;
+  $: showTimeComparison = $dashboardStore?.showComparison;
+  $: showPercentOfTotal = $dashboardStore?.showPercentOfTotal;
 
   // add all sliced and active values to the include filter.
   $: currentVisibleValues =
@@ -211,7 +212,7 @@
     {
       query: {
         enabled: Boolean(
-          displayComparison &&
+          showTimeComparison &&
             !!comparisonTimeStart &&
             !!comparisonTimeEnd &&
             !!updatedFilters
@@ -254,7 +255,8 @@
           loading={$topListQuery?.isFetching}
           values={values.slice(0, slice)}
           {comparisonValues}
-          showComparison={displayComparison}
+          {showTimeComparison}
+          {showPercentOfTotal}
           {activeValues}
           {filterExcludeMode}
           {atLeastOneActive}
@@ -270,7 +272,8 @@
             loading={$topListQuery?.isFetching}
             values={selectedValuesThatAreBelowTheFold}
             {comparisonValues}
-            showComparison={displayComparison}
+            {showTimeComparison}
+            {showPercentOfTotal}
             {activeValues}
             {filterExcludeMode}
             {atLeastOneActive}
