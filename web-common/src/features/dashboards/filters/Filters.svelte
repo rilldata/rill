@@ -57,7 +57,7 @@ The main feature-set component for dashboard filters
   let topListQuery;
   let searchText = "";
   let searchedValues = [];
-  let activeDimensionName;
+  let activeDimensionName: string;
 
   $: {
     if (activeDimensionName) {
