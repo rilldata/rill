@@ -13,7 +13,7 @@ It is probably not the most up to date code; but it works very well in practice.
   interface Point {
     x: number;
     y: number;
-    label: string;
+    label?: string;
     key: string;
     valueColorClass?: string;
     valueStyleClass?: string;
@@ -34,6 +34,11 @@ It is probably not the most up to date code; but it works very well in practice.
   export let elementHeight = 12;
   export let yBuffer = 4;
   export let showLabels = true;
+
+  /** FIXME: rename showLabels to mean something liek "show all labels".
+   * This prop only shows the text label.
+   */
+  export let showPointLabels = true;
 
   // plot the middle and push out from there
 
@@ -190,38 +195,44 @@ It is probably not the most up to date code; but it works very well in practice.
                     {formatValue(location.y)}
                   {/if}
                 </tspan>
-                <tspan
-                  dy=".35em"
-                  y={y.label}
-                  x={xText - (location?.yOverride ? labelWidth : 0)}
-                  class="mc-mouseover-label {location?.yOverride
-                    ? location?.yOverrideStyleClass
-                    : location?.labelStyleClass || ''} {(!location?.yOverride &&
-                    location?.labelColorClass) ||
-                    ''}"
-                >
-                  {#if location?.yOverride}
-                    {location.yOverrideLabel}
-                  {:else}
-                    {location.label}
-                  {/if}
-                </tspan>
+                {#if showPointLabels}
+                  <tspan
+                    dy=".35em"
+                    y={y.label}
+                    x={xText - (location?.yOverride ? labelWidth : 0)}
+                    class="mc-mouseover-label {location?.yOverride
+                      ? location?.yOverrideStyleClass
+                      : location?.labelStyleClass ||
+                        ''} {(!location?.yOverride &&
+                      location?.labelColorClass) ||
+                      ''}"
+                  >
+                    {#if location?.yOverride}
+                      {location.yOverrideLabel}
+                    {:else}
+                      {location.label}
+                    {/if}
+                  </tspan>
+                {/if}
               {:else}
-                <tspan
-                  dy=".35em"
-                  y={y.label}
-                  x={xText - labelWidth}
-                  class="mc-mouseover-label {location?.labelStyleClass ||
-                    ''} {(!location?.yOverride && location?.labelColorClass) ||
-                    ''}"
-                  text-anchor="end"
-                >
-                  {#if location?.yOverride}
-                    {location.yOverrideLabel}
-                  {:else}
-                    {location.label}
-                  {/if}
-                </tspan>
+                {#if showPointLabels}
+                  <tspan
+                    dy=".35em"
+                    y={y.label}
+                    x={xText - labelWidth}
+                    class="mc-mouseover-label {location?.labelStyleClass ||
+                      ''} {(!location?.yOverride &&
+                      location?.labelColorClass) ||
+                      ''}"
+                    text-anchor="end"
+                  >
+                    {#if location?.yOverride}
+                      {location.yOverrideLabel}
+                    {:else}
+                      {location.label}
+                    {/if}
+                  </tspan>
+                {/if}
                 <tspan
                   dy=".35em"
                   class="widths {location?.valueStyleClass ||
