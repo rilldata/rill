@@ -14,6 +14,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { slide } from "svelte/transition";
   import { getModelOutOfPossiblyMalformedYAML } from "../../utils";
+  import Measures from "./Measures.svelte";
 
   export let metricsDefName: string;
 
@@ -82,6 +83,9 @@
         {/if}
       </div>
     {/key}
+    <div class="pb-4 pt-2">
+      <Measures {metricsDefName} />
+    </div>
     <div class="model-profile pb-4 pt-2">
       {#if entry && entry?.model?.sql?.trim()?.length}
         <div class="pl-4 pr-4">
