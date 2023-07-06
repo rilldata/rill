@@ -16,7 +16,7 @@
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import { NicelyFormattedTypes } from "../humanize-numbers";
   import Leaderboard from "./Leaderboard.svelte";
-  import LeaderboardMeasureSelector from "./LeaderboardMeasureSelector.svelte";
+  import LeaderboardControls from "./LeaderboardControls.svelte";
 
   export let metricViewName: string;
 
@@ -128,7 +128,7 @@
   <div
     class="grid grid-auto-cols justify-between grid-flow-col items-center pl-1 pb-3"
   >
-    <LeaderboardMeasureSelector {metricViewName} />
+    <LeaderboardControls {metricViewName} />
   </div>
   {#if $dashboardStore}
     <VirtualizedGrid {columns} height="100%" items={dimensionsShown} let:item>
