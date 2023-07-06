@@ -1096,6 +1096,7 @@ export interface MetricsViewMeasure {
   expression?: string;
   description?: string;
   format?: string;
+  validPercentOfTotal?: boolean;
 }
 
 export interface MetricsViewFilterCond {
