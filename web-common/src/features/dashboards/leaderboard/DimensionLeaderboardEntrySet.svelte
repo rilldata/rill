@@ -24,7 +24,6 @@ see more button
   import { PERC_DIFF } from "../../../components/data-types/type-utils";
   import {
     formatMeasurePercentageDifference,
-    formatPercentOfTotal,
     humanizeDataType,
   } from "../humanize-numbers";
   import DimensionLeaderboardEntry from "./DimensionLeaderboardEntry.svelte";
@@ -81,9 +80,12 @@ see more button
         : undefined;
 
     const percentChangeFormatted = showTimeComparison
-      ? getFormatterValueForPercDiff(comparisonValue, v.value)
+      ? getFormatterValueForPercDiff(
+          v.value && comparisonValue ? v.value - comparisonValue : null,
+          comparisonValue
+        )
       : showPercentOfTotal
-      ? formatPercentOfTotal(v.value, referenceValue)
+      ? getFormatterValueForPercDiff(v.value, referenceValue)
       : undefined;
 
     return {
@@ -104,13 +106,23 @@ see more button
     };
   }
 
-  function getFormatterValueForPercDiff(comparisonValue, value) {
-    if (comparisonValue === 0) return PERC_DIFF.PREV_VALUE_ZERO;
-    if (!comparisonValue) return PERC_DIFF.PREV_VALUE_NO_DATA;
-    if (value === null || value === undefined)
+  // function getFormatterValueForPercDiff(comparisonValue, value) {
+  //   if (comparisonValue === 0) return PERC_DIFF.PREV_VALUE_ZERO;
+  //   if (!comparisonValue) return PERC_DIFF.PREV_VALUE_NO_DATA;
+  //   if (value === null || value === undefined)
+  //     return PERC_DIFF.CURRENT_VALUE_NO_DATA;
+
+  //   const percDiff = (value - comparisonValue) / comparisonValue;
+  //   return formatMeasurePercentageDifference(percDiff);
+  // }
+
+  function getFormatterValueForPercDiff(numerator, denominator) {
+    if (denominator === 0) return PERC_DIFF.PREV_VALUE_ZERO;
+    if (!denominator) return PERC_DIFF.PREV_VALUE_NO_DATA;
+    if (numerator === null || numerator === undefined)
       return PERC_DIFF.CURRENT_VALUE_NO_DATA;
 
-    const percDiff = (value - comparisonValue) / comparisonValue;
+    const percDiff = numerator / denominator;
     return formatMeasurePercentageDifference(percDiff);
   }
 
@@ -166,10 +178,8 @@ see more button
         <FormattedDataType type="INTEGER" value={formattedValue || value} />
       </div>
       <span slot="context">
-        {#if showTimeComparison}
+        {#if showTimeComparison || showPercentOfTotal}
           <PercentageChange value={percentChangeFormatted} />
-        {:else if showPercentOfTotal}
-          {percentChangeFormatted}
         {/if}
       </span>
       <svelte:fragment slot="tooltip">

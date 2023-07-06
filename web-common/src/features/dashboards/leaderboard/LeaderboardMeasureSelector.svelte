@@ -33,6 +33,17 @@
   );
   $: hasTimeSeries = $hasTimeSeriesQuery?.data;
 
+  $: {
+    console.log(
+      "hasTimeSeries",
+      hasTimeSeries,
+      "selectedTimeRange",
+      metricsExplorer.selectedTimeRange,
+      "selectedComparisonTimeRange",
+      metricsExplorer.selectedComparisonTimeRange
+    );
+  }
+
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
@@ -99,7 +110,11 @@
   let disabledButtons: ("delta" | "pie")[] = [];
   $: {
     disabledButtons = [];
-    if (!hasTimeSeries) disabledButtons.push("delta");
+    if (
+      !hasTimeSeries ||
+      metricsExplorer.selectedComparisonTimeRange === undefined
+    )
+      disabledButtons.push("delta");
     if (activeLeaderboardMeasure?.validPercentOfTotal !== true)
       disabledButtons.push("pie");
   }
@@ -113,7 +128,6 @@
     : null;
 
   const handleContextValueButtonGroupClick = (evt) => {
-    // console.log("handleContextValueButtonGroupClick", evt.detail);
     const value = evt.detail;
     if (value === "delta" && selectedButton == "delta") {
       metricsExplorerStore.displayComparison(metricViewName, false);

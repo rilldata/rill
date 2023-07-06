@@ -239,6 +239,8 @@
     on:mouseleave={() => (hovered = false)}
   >
     <LeaderboardHeader
+      {showTimeComparison}
+      {showPercentOfTotal}
       isFetching={$topListQuery.isFetching}
       {displayName}
       on:toggle-filter-mode={toggleFilterMode}

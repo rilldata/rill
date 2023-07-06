@@ -196,28 +196,3 @@ export function formatMeasurePercentageDifference(
 
   return factory[method](value);
 }
-
-export function formatPercentOfTotal(value, total) {
-  if (Math.round((100 * value) / total) == 0 && value !== 0) {
-    return "<1%";
-  } else if (value === 0) {
-    return "0%";
-  }
-
-  return new PerRangeFormatter([], {
-    strategy: "perRange",
-    rangeSpecs: [
-      {
-        minMag: -Infinity,
-        supMag: Infinity,
-        maxDigitsRight: 0,
-        maxDigitsLeft: 3,
-        baseMagnitude: 0,
-        padWithInsignificantZeros: false,
-        useTrailingDot: false,
-      },
-    ],
-    defaultMaxDigitsRight: 0,
-    numberKind: NumberKind.PERCENT,
-  }).stringFormat(value / total);
-}
