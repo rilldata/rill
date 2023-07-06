@@ -22,6 +22,7 @@
     createQueryServiceMetricsViewTotals,
     MetricsViewDimension,
     MetricsViewFilterCond,
+    MetricsViewMeasure,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -356,7 +357,9 @@
     );
   }
 
-  $: validPercentOfTotal = $leaderboardMeasureQuery?.data?.validPercentOfTotal;
+  $: validPercentOfTotal = (
+    $leaderboardMeasureQuery?.data as MetricsViewMeasure
+  )?.validPercentOfTotal;
 
   $: if (validPercentOfTotal && values.length && sortByColumn) {
     const referenceValue = $totalsQuery.data?.data?.[sortByColumn];
