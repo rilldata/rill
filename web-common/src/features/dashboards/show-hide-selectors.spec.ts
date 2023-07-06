@@ -87,8 +87,12 @@ describe("Show/Hide Selectors", () => {
       // toggle all to not visible
       showHideMeasure.setAllToNotVisible();
       // assert visibility is persisted in AdBids and after mirroring using the url proto state
-      assertVisiblePartsWithMirroring(get(mock).data, [], undefined);
-      expect(get(showHideMeasure).selectedItems).toEqual([false, false]);
+      assertVisiblePartsWithMirroring(
+        get(mock).data,
+        [AD_BIDS_IMPRESSIONS_MEASURE],
+        undefined
+      );
+      expect(get(showHideMeasure).selectedItems).toEqual([true, false]);
 
       // toggle all back to visible
       showHideMeasure.setAllToVisible();
@@ -244,8 +248,10 @@ describe("Show/Hide Selectors", () => {
       // toggle all to not visible
       showHideDimensions.setAllToNotVisible();
       // assert visibility is persisted in AdBids and after mirroring using the url proto state
-      assertVisiblePartsWithMirroring(get(mock).data, undefined, []);
-      expect(get(showHideDimensions).selectedItems).toEqual([false, false]);
+      assertVisiblePartsWithMirroring(get(mock).data, undefined, [
+        AD_BIDS_PUBLISHER_DIMENSION,
+      ]);
+      expect(get(showHideDimensions).selectedItems).toEqual([true, false]);
 
       // toggle all back to visible
       showHideDimensions.setAllToVisible();
