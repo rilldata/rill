@@ -16,7 +16,6 @@
   import DashboardContainer from "./DashboardContainer.svelte";
   import DashboardHeader from "./DashboardHeader.svelte";
   import RowsViewerAccordion from "../rows-viewer/RowsViewerAccordion.svelte";
-  import TestConsumer from "../business-model/TestConsumer.svelte";
 
   export let metricViewName: string;
   export let hasTitle: boolean;
@@ -55,7 +54,6 @@
   $: hasTimeSeries = $metricTimeSeries.data;
 </script>
 
-<TestConsumer />
 <DashboardContainer bind:exploreContainerWidth {leftMargin}>
   <DashboardHeader {hasTitle} {metricViewName} slot="header" />
 
