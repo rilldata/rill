@@ -5,7 +5,6 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import LeaderboardListItem from "@rilldata/web-common/features/dashboards/leaderboard/LeaderboardListItem.svelte";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import {
     copyToClipboard,
@@ -21,6 +20,7 @@
   import { format } from "d3-format";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
+  import TopKListItem from "./TopKListItem.svelte";
 
   export let colorClass = "bg-blue-200";
 
@@ -74,7 +74,7 @@
       {@const percentage = negligiblePercentage
         ? "<.01%"
         : formatPercentage(item.count / totalRows)}
-      <LeaderboardListItem
+      <TopKListItem
         compact
         value={item.count / totalRows}
         color={colorClass}
@@ -155,7 +155,7 @@
             </TooltipContent>
           </Tooltip>
         </svelte:fragment>
-      </LeaderboardListItem>
+      </TopKListItem>
     {/each}
   </div>
 {/if}
