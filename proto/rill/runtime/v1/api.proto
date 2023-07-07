@@ -66,6 +66,11 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/files"};
   }
 
+  // WatchFiles streams repo file update events. It is not supported on all backends.
+  rpc WatchFiles(WatchFilesRequest) returns (stream WatchFilesResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/files/watch"};
+  }
+
   // GetFile returns the contents of a specific file in a repo.
   rpc GetFile(GetFileRequest) returns (GetFileResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/files/-/{path=**}"};
@@ -189,11 +194,6 @@ service RuntimeService {
   // including their schema and validation rules
   rpc ListConnectors(ListConnectorsRequest) returns (ListConnectorsResponse) {
     option (google.api.http) = {get: "/v1/connectors/meta"};
-  }
-
-  // WatchFiles streams repo file update events. It is not supported on all backends.
-  rpc WatchFiles(WatchFilesRequest) returns (stream WatchFilesResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/files/watch"};
   }
 }
 
@@ -368,6 +368,18 @@ message ListFilesRequest {
 // Response message for RuntimeService.ListFiles
 message ListFilesResponse {
   repeated string paths = 1;
+}
+
+// Request message for RuntimeService.WatchFiles
+message WatchFilesRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  bool replay = 2;
+}
+
+// Response message for RuntimeService.WatchFiles
+message WatchFilesResponse {
+  FileEvent event = 1;
+  string path = 2;
 }
 
 // Request message for RuntimeService.GetFile
@@ -757,16 +769,4 @@ enum FileEvent {
   FILE_EVENT_WRITE = 1;
   FILE_EVENT_DELETE = 2;
   FILE_EVENT_RENAME = 3;
-}
-
-// Request message for RuntimeService.WatchFiles
-message WatchFilesRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  bool replay = 2;
-}
-
-// Response message for RuntimeService.WatchFiles
-message WatchFilesResponse {
-  FileEvent event = 1;
-  string path = 2;
 }
