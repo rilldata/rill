@@ -1,7 +1,4 @@
 <script lang="ts">
-  import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
-  import Check from "@rilldata/web-common/components/icons/Check.svelte";
-  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import { createEventDispatcher } from "svelte";
   import { fly, slide } from "svelte/transition";
   import BarAndLabel from "../../../components/BarAndLabel.svelte";
@@ -16,12 +13,12 @@
   import LeaderboardEntryTooltip from "./LeaderboardEntryTooltip.svelte";
 
   import PercentageChange from "../../../components/data-types/PercentageChange.svelte";
+  import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
 
   export let measureValue: number;
   // export let color = "bg-blue-200 dark:bg-blue-600";
   export let isActive = false;
   export let excluded = false;
-  export let showIcon = true;
   export let showContext = false;
 
   export let loading = false;
@@ -91,17 +88,7 @@
     on:mouseover={onHover}
     transition:slide|local={{ duration: 200 }}
   >
-    {#if showIcon}
-      <div style:width="22px" style:height class="grid place-items-center">
-        {#if isActive && !excluded}
-          <Check size="20px" />
-        {:else if isActive && excluded}
-          <Cancel size="20px" />
-        {:else}
-          <Spacer />
-        {/if}
-      </div>
-    {/if}
+    <LeaderboardItemFilterIcon {isActive} {excluded} />
     <BarAndLabel
       {color}
       justify={false}
