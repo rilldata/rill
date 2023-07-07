@@ -151,10 +151,25 @@ function syncMeasures(
       }
     }
     // If there are no visible measures, make the first measure visible
-    if (metricsExplorer.visibleMeasureKeys.size === 0) {
+    if (
+      metricsView.measures.length &&
+      metricsExplorer.visibleMeasureKeys.size === 0
+    ) {
       metricsExplorer.visibleMeasureKeys = new Set([
         metricsView.measures[0].name,
       ]);
+    }
+
+    // check if current leaderboard measure is visible,
+    // if not set it to first visible measure
+    if (
+      metricsExplorer.visibleMeasureKeys.size &&
+      !metricsExplorer.visibleMeasureKeys.has(
+        metricsExplorer.leaderboardMeasureName
+      )
+    ) {
+      const [firstVisibleMeasure] = metricsExplorer.visibleMeasureKeys;
+      metricsExplorer.leaderboardMeasureName = firstVisibleMeasure;
     }
   }
 }
