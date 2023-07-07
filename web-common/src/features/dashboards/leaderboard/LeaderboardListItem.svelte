@@ -8,14 +8,13 @@
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
 
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   import { notifications } from "@rilldata/web-common/components/notifications";
 
   import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
   import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
 
-  import LeaderboardEntryTooltip from "./LeaderboardEntryTooltip.svelte";
+  import LeaderboardTooltipContent from "./LeaderboardTooltipContent.svelte";
 
   import PercentageChange from "../../../components/data-types/PercentageChange.svelte";
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
@@ -174,14 +173,13 @@
     <LongBarZigZag />
   {/if}
 
-  <TooltipContent slot="tooltip-content">
-    <LeaderboardEntryTooltip
-      {label}
-      {atLeastOneActive}
-      {excluded}
-      {filterExcludeMode}
-    />
-  </TooltipContent>
+  <LeaderboardTooltipContent
+    slot="tooltip-content"
+    {label}
+    {atLeastOneActive}
+    {excluded}
+    {filterExcludeMode}
+  />
 </Tooltip>
 
 <style>
