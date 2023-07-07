@@ -10,6 +10,11 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
+  import { notifications } from "@rilldata/web-common/components/notifications";
+
+  import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
+  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
+
   import LeaderboardEntryTooltip from "./LeaderboardEntryTooltip.svelte";
 
   import PercentageChange from "../../../components/data-types/PercentageChange.svelte";
@@ -83,17 +88,37 @@
     comparisonValue !== undefined && comparisonValue !== null
       ? humanizeDataType(comparisonValue, formatPreset)
       : undefined;
+
+  const { shiftClickAction } = createShiftClickAction();
+  async function shiftClickHandler(label) {
+    await navigator.clipboard.writeText(label);
+    let truncatedLabel = label?.toString();
+    if (truncatedLabel?.length > TOOLTIP_STRING_LIMIT) {
+      truncatedLabel = `${truncatedLabel.slice(0, TOOLTIP_STRING_LIMIT)}...`;
+    }
+    notifications.send({
+      message: `copied dimension value "${truncatedLabel}" to clipboard`,
+    });
+  }
 </script>
 
 <Tooltip location="right">
   <button
-    class="block flex flex-row w-full text-left transition-color"
+    class="flex flex-row w-full text-left transition-color"
     on:blur={onLeave}
     on:click
     on:focus={onHover}
     on:mouseleave={onLeave}
     on:mouseover={onHover}
     transition:slide|local={{ duration: 200 }}
+    use:shiftClickAction
+    on:shift-click={() => shiftClickHandler(label)}
+    on:click={() => {
+      dispatch("select-item", {
+        label,
+      });
+    }}
+    on:keydown
   >
     <LeaderboardItemFilterIcon {isActive} {excluded} />
     <BarAndLabel

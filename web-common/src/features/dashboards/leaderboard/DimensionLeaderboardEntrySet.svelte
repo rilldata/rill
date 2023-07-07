@@ -8,12 +8,6 @@ divider
 see more button
 -->
 <script lang="ts">
-  import { notifications } from "@rilldata/web-common/components/notifications";
-
-  import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
-  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
-
-  import { createEventDispatcher } from "svelte";
   import { PERC_DIFF } from "../../../components/data-types/type-utils";
   import {
     formatMeasurePercentageDifference,
@@ -35,9 +29,6 @@ see more button
   export let loading = false;
   export let formatPreset;
 
-  const { shiftClickAction } = createShiftClickAction();
-
-  const dispatch = createEventDispatcher();
   let renderValues = [];
 
   $: showComparison = showTimeComparison || showPercentOfTotal;
@@ -87,47 +78,26 @@ see more button
     const percDiff = numerator / denominator;
     return formatMeasurePercentageDifference(percDiff);
   }
-
-  async function shiftClickHandler(label) {
-    await navigator.clipboard.writeText(label);
-    let truncatedLabel = label?.toString();
-    if (truncatedLabel?.length > TOOLTIP_STRING_LIMIT) {
-      truncatedLabel = `${truncatedLabel.slice(0, TOOLTIP_STRING_LIMIT)}...`;
-    }
-    notifications.send({
-      message: `copied dimension value "${truncatedLabel}" to clipboard`,
-    });
-  }
 </script>
 
 {#each renderValues as { label, value, active, excluded, percentChangeFormatted, formattedValue, comparisonValue } (label)}
-  <!-- FIXME: this wrapper div is almost certainly not required. All of this functionality should be able to be handled in DimensionLeaderboardEntry -->
-  <div
-    use:shiftClickAction
-    on:click={() => {
-      dispatch("select-item", {
-        label,
-      });
-    }}
+  <LeaderboardListItem
+    measureValue={value}
+    showContext={showComparison}
+    isActive={active}
+    {excluded}
+    {atLeastOneActive}
+    {loading}
+    {label}
+    {formattedValue}
+    {comparisonValue}
+    {percentChangeFormatted}
+    {filterExcludeMode}
+    {isSummableMeasure}
+    {referenceValue}
+    {formatPreset}
+    on:click
     on:keydown
-    on:shift-click={() => shiftClickHandler(label)}
-  >
-    <LeaderboardListItem
-      measureValue={value}
-      showContext={showComparison}
-      isActive={active}
-      {excluded}
-      on:click
-      {atLeastOneActive}
-      {loading}
-      {label}
-      {formattedValue}
-      {comparisonValue}
-      {percentChangeFormatted}
-      {filterExcludeMode}
-      {isSummableMeasure}
-      {referenceValue}
-      {formatPreset}
-    />
-  </div>
+    on:select-item
+  />
 {/each}
