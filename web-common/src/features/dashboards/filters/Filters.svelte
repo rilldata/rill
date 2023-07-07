@@ -14,12 +14,10 @@ The main feature-set component for dashboard filters
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import type {
     MetricsViewDimension,
-    MetricsViewFilterCond,
     V1MetricsViewFilter,
   } from "@rilldata/web-common/runtime-client";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
-  import type { MetricsExplorerEntity } from "../dashboard-stores";
   import { getDisplayName } from "./getDisplayName";
   import { getBusinessModel } from "../business-model/business-model";
   import {
@@ -37,17 +35,7 @@ The main feature-set component for dashboard filters
   /** the minimum container height */
   const MIN_CONTAINER_HEIGHT = "34px";
 
-  let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $dashboardStore;
-
-  let includeValues: Array<MetricsViewFilterCond>;
-  $: includeValues = metricsExplorer.filters.include;
-  let excludeValues: Array<MetricsViewFilterCond>;
-  $: excludeValues = metricsExplorer.filters.exclude;
-
   const metaQuery = useMetaQuery(businessModel);
-  let dimensions: Array<MetricsViewDimension>;
-  $: dimensions = $metaQuery.data?.dimensions ?? [];
 
   function isFiltered(filters: V1MetricsViewFilter): boolean {
     if (!filters) return false;
@@ -81,16 +69,18 @@ The main feature-set component for dashboard filters
     } else searchedValues = [];
   }
 
-  $: hasFilters = isFiltered(metricsExplorer.filters);
+  $: hasFilters = isFiltered($dashboardStore.filters);
 
   /** prune the values and prepare for templating */
   let currentDimensionFilters = [];
   $: {
+    const dimensions: Array<MetricsViewDimension> =
+      $metaQuery.data?.dimensions ?? [];
     const dimensionIdMap = getMapFromArray(
       dimensions,
       (dimension) => dimension.name
     );
-    const currentDimensionIncludeFilters = includeValues.map(
+    const currentDimensionIncludeFilters = $dashboardStore.filters.include.map(
       (dimensionValues) => ({
         name: dimensionValues.name,
         label: getDisplayName(dimensionIdMap.get(dimensionValues.name)),
@@ -98,7 +88,7 @@ The main feature-set component for dashboard filters
         filterType: "include",
       })
     );
-    const currentDimensionExcludeFilters = excludeValues.map(
+    const currentDimensionExcludeFilters = $dashboardStore.filters.exclude.map(
       (dimensionValues) => ({
         name: dimensionValues.name,
         label: getDisplayName(dimensionIdMap.get(dimensionValues.name)),
