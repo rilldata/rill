@@ -7,12 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-//func TestFormat(t *testing.T) {
-//	res, err := Format("select    10+20 from  read_csv( 'data.csv')")
-//	require.NoError(t, err)
-//	require.Equal(t, "SELECT (10 + 20) FROM read_csv('data.csv')", res)
-//}
-
 // Comments are not parsed
 func TestParse(t *testing.T) {
 	sqlVariations := []struct {
@@ -52,6 +46,40 @@ select 1`,
 				},
 				{
 					Name: "AdImp",
+				},
+			},
+		},
+		{
+			"simple CTEs",
+			`with tbl2 as (select col1 from tbl1), tbl3 as (select col1 from tbl1) select col1 from tbl2 join tbl3 on tbl2.id = tbl3.id`,
+			[]*TableRef{
+				{
+					Name: "tbl1",
+				},
+				{
+					Name:       "tbl2",
+					LocalAlias: true,
+				},
+				{
+					Name:       "tbl3",
+					LocalAlias: true,
+				},
+			},
+		},
+		{
+			"CTEs with union",
+			`with tbl2 as (select col1 from tbl1), tbl3 as (select col1 from tbl1) select col1 from tbl2 union all select col1 from tbl3`,
+			[]*TableRef{
+				{
+					Name: "tbl1",
+				},
+				{
+					Name:       "tbl2",
+					LocalAlias: true,
+				},
+				{
+					Name:       "tbl3",
+					LocalAlias: true,
 				},
 			},
 		},
@@ -95,6 +123,26 @@ select * from
 	AdImpressions i on b.id=i.id
 `,
 			`SELECT * FROM AdBids AS b INNER JOIN AdImpressions AS i ON ((b.id = i.id))`,
+		},
+		{
+			"replace with CTEs",
+			`
+with
+  tbl2 as (select col1 from read_csv( 'AdBids.csv', delim='|', columns={'timestamp':'TIMESTAMP'})),
+  tbl3 as (select col1 from read_csv( 'AdImpressions.csv', delim='|', columns={'timestamp':'TIMESTAMP'}))
+select col1 from tbl2 join tbl3 on tbl2.id = tbl3.id
+`,
+			`WITH tbl2 AS (SELECT col1 FROM AdBids), tbl3 AS (SELECT col1 FROM AdImpressions)SELECT col1 FROM tbl2 INNER JOIN tbl3 ON ((tbl2.id = tbl3.id))`,
+		},
+		{
+			"replace with CTEs and unions",
+			`
+with
+  tbl2 as (select col1 from read_csv( 'AdBids_May.csv', delim='|', columns={'timestamp':'TIMESTAMP'})),
+  tbl3 as (select col1 from read_csv( 'AdBids_June.csv', delim='|', columns={'timestamp':'TIMESTAMP'}))
+select col1 from tbl2 union all select col1 from tbl3 union all select col1 from read_csv( 'AdBids_July.csv', delim='|', columns={'timestamp':'TIMESTAMP'})
+`,
+			`WITH tbl2 AS (SELECT col1 FROM AdBids_May), tbl3 AS (SELECT col1 FROM AdBids_June)((SELECT col1 FROM tbl2) UNION ALL (SELECT col1 FROM tbl3)) UNION ALL (SELECT col1 FROM AdBids_July)`,
 		},
 	}
 

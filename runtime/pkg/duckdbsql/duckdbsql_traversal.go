@@ -1,38 +1,54 @@
 package duckdbsql
 
-import (
-	jsonvalue "github.com/Andrew-M-C/go.jsonvalue"
-)
-
 // TODO: handle parameters in values
 
 func (a *AST) traverse() {
-	if a.ast.MustGet("error").Bool() {
+	if toBoolean(a.ast, astKeyError) {
+		return
+	}
+
+	statements := toNodeArray(a.ast, astKeyStatements)
+	if len(statements) == 0 {
 		return
 	}
 
 	// TODO: validation
 	// TODO: CTEs and SET operations
-	a.traverseSelectNode(a.ast.MustGet("statements").ForRangeArr()[0].MustGet("node"))
-	a.traverseSelectList(a.ast.MustGet("statements").ForRangeArr()[0].MustGet("node").MustGet("select_list"))
-}
-
-func (a *AST) traverseSelectNode(node *jsonvalue.V) {
-	sn := &selectNode{
-		ast: node,
+	for _, statement := range statements {
+		a.traverseSelectQueryStatement(toNode(statement, astKeyNode), true)
 	}
-	a.selectNodes = append(a.selectNodes, sn)
-
-	a.traverseFromTable(node, "from_table")
 }
 
-func (a *AST) traverseSelectList(node *jsonvalue.V) {
-	for _, col := range node.ForRangeArr() {
+func (a *AST) traverseSelectQueryStatement(node astNode, isRoot bool) {
+	if isRoot {
+		sn := &selectNode{
+			ast: node,
+		}
+		a.rootNodes = append(a.rootNodes, sn)
+	}
+
+	switch toString(node, astKeyType) {
+	case "SELECT_NODE":
+		if isRoot {
+			a.traverseSelectList(toNodeArray(node, astKeySelectColumnList))
+		}
+		a.traverseCTEMap(toNode(node, astKeyCTE))
+		a.traverseFromTable(node, astKeyFromTable)
+
+	case "SET_OPERATION_NODE":
+		a.traverseCTEMap(toNode(node, astKeyCTE))
+		a.traverseSelectQueryStatement(toNode(node, astKeyLeft), false)
+		a.traverseSelectQueryStatement(toNode(node, astKeyRight), false)
+	}
+}
+
+func (a *AST) traverseSelectList(colNodes []astNode) {
+	for _, col := range colNodes {
 		a.traverseColumnNode(col)
 	}
 }
 
-func (a *AST) traverseColumnNode(node *jsonvalue.V) {
+func (a *AST) traverseColumnNode(node astNode) {
 	cn := &columnNode{
 		ast: node,
 		ref: &ColumnRef{},
@@ -42,9 +58,9 @@ func (a *AST) traverseColumnNode(node *jsonvalue.V) {
 	// TODO
 }
 
-func (a *AST) traverseFromTable(parent *jsonvalue.V, childKey string) {
-	node := parent.MustGet(childKey)
-	switch node.MustGet("type").String() {
+func (a *AST) traverseFromTable(parent astNode, childKey string) {
+	node := toNode(parent, childKey)
+	switch toString(node, astKeyType) {
 	case "JOIN":
 		a.traverseFromTable(node, "left")
 		a.traverseFromTable(node, "right")
@@ -57,24 +73,39 @@ func (a *AST) traverseFromTable(parent *jsonvalue.V, childKey string) {
 	}
 }
 
-func (a *AST) traverseBaseTable(parent *jsonvalue.V, childKey string) {
-	node := parent.MustGet(childKey)
+func (a *AST) traverseCTEMap(node astNode) {
+	mapEntries := toNodeArray(node, astKeyMap)
+	for _, mapEntry := range mapEntries {
+		a.aliases[toString(mapEntry, astKeyKey)] = true
+		a.traverseSelectQueryStatement(toNode(toNode(toNode(mapEntry, astKeyValue), astKeyQuery), astKeyNode), false)
+	}
+}
+
+func (a *AST) traverseBaseTable(parent astNode, childKey string) {
+	node := toNode(parent, childKey)
+	name := toString(node, astKeyTableName)
+	if a.added[name] {
+		return
+	}
 	fn := &fromNode{
 		ast:      node,
 		parent:   parent,
 		childKey: childKey,
 		ref: &TableRef{
-			Name: node.MustGet("table_name").String(),
+			Name:       name,
+			LocalAlias: a.aliases[name],
 		},
 	}
 	a.fromNodes = append(a.fromNodes, fn)
+	a.added[name] = true
+	// TODO: add to local alias
 }
 
-func (a *AST) traverseTableFunction(parent *jsonvalue.V, childKey string) {
-	node := parent.MustGet(childKey)
-	functionNode := node.MustGet("function")
-	functionName := functionNode.MustGet("function_name").String()
-	arguments := functionNode.MustGet("children").ForRangeArr()
+func (a *AST) traverseTableFunction(parent astNode, childKey string) {
+	node := toNode(parent, childKey)
+	functionNode := toNode(node, astKeyFunction)
+	functionName := toString(functionNode, astKeyFunctionName)
+	arguments := toNodeArray(functionNode, astKeyChildren)
 
 	fn := &fromNode{
 		ast:      node,
@@ -86,66 +117,71 @@ func (a *AST) traverseTableFunction(parent *jsonvalue.V, childKey string) {
 		},
 	}
 	a.fromNodes = append(a.fromNodes, fn)
+	// TODO: add to local alias
 
 	switch functionName {
 	case "read_csv_auto", "read_csv", "read_parquet", "read_json_auto", "read_json":
-		fn.ref.Path = arguments[0].MustGet("value").MustGet("value").String()
+		fn.ref.Path = toString(toNode(arguments[0], astKeyValue), astKeyValue)
 	default:
 		// only read_... are supported for now
 		return
 	}
 
 	for _, argument := range arguments[1:] {
-		if argument.MustGet("type").String() != "COMPARE_EQUAL" {
+		if toString(argument, astKeyType) != "COMPARE_EQUAL" {
 			continue
 		}
 
-		left := argument.MustGet("left")
-		if left.MustGet("type").String() != "COLUMN_REF" {
+		left := toNode(argument, astKeyLeft)
+		if toString(left, astKeyType) != "COLUMN_REF" {
 			continue
 		}
+		columnNames := toArray(left, astKeyColumnNames)
+		if len(columnNames) == 0 {
+			return
+		}
 
-		right := argument.MustGet("right")
-		switch right.MustGet("type").String() {
+		right := toNode(argument, astKeyRight)
+		switch toString(right, astKeyType) {
 		case "VALUE_CONSTANT":
-			fn.ref.Properties[left.MustGet("column_names").ForRangeArr()[0].String()] = constantValueToGoValue(right.MustGet("value"))
+			fn.ref.Properties[columnNames[0].(string)] = constantValueToGoValue(toNode(right, astKeyValue))
 		case "FUNCTION":
-			if right.MustGet("function_name").String() == "struct_pack" {
-				fn.ref.Properties[left.MustGet("column_names").ForRangeArr()[0].String()] = structValueToGoValue(right)
+			if toString(right, astKeyFunctionName) == "struct_pack" {
+				fn.ref.Properties[columnNames[0].(string)] = structValueToGoValue(right)
 			}
 		}
 	}
 }
 
-func structValueToGoValue(v *jsonvalue.V) map[string]any {
+func structValueToGoValue(v astNode) map[string]any {
 	structVal := map[string]any{}
 
-	for _, child := range v.MustGet("children").ForRangeArr() {
-		structVal[child.MustGet("alias").String()] = constantValueToGoValue(child.MustGet("value"))
+	for _, child := range toNodeArray(v, astKeyChildren) {
+		structVal[toString(child, astKeyAlias)] = constantValueToGoValue(toNode(child, astKeyValue))
 	}
 
 	return structVal
 }
 
-func constantValueToGoValue(v *jsonvalue.V) any {
-	val := v.MustGet("value")
-	switch v.MustGet("type").MustGet("id").String() {
+func constantValueToGoValue(v astNode) any {
+	val := v[astKeyValue]
+	switch toString(toNode(v, astKeyType), astKeyID) {
 	case "BOOLEAN":
-		return val.Bool()
+		return val.(bool)
 	case "TINYINT", "SMALLINT", "INTEGER":
-		return val.Int32()
+		return val.(int32)
 	case "BIGINT":
-		return val.Int64()
+		return val.(int64)
 	case "UTINYINT", "USMALLINT", "UINTEGER":
-		return val.Uint32()
+		return val.(uint32)
 	case "UBIGINT":
-		return val.Uint64()
+		return val.(uint64)
 	case "FLOAT":
-		return val.Float32()
+		return val.(float32)
 	case "DOUBLE":
-		return val.Float64()
+		return val.(float64)
 	case "VARCHAR":
-		return val.String()
+		return val.(string)
 		// TODO: others
 	}
 	return nil

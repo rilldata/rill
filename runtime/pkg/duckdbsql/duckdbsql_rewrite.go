@@ -1,9 +1,8 @@
 package duckdbsql
 
 import (
+	"encoding/json"
 	"fmt"
-
-	jsonvalue "github.com/Andrew-M-C/go.jsonvalue"
 )
 
 func (fn *fromNode) rewriteToBaseTable(name string) error {
@@ -11,36 +10,32 @@ func (fn *fromNode) rewriteToBaseTable(name string) error {
 	if err != nil {
 		return err
 	}
-
-	fn.parent.MustSet(baseTable).At(fn.childKey)
+	fn.parent[fn.childKey] = baseTable
 	return nil
 }
 
 func (sn *selectNode) rewriteLimit(limit, offset int) error {
-	modifiersNode := sn.ast.MustGet("modifiers")
+	modifiersNode := toNodeArray(sn.ast, astKeyModifiers)
 	updated := false
-	for _, v := range modifiersNode.ForRangeArr() {
-		if v.MustGet("type").String() != "LIMIT_MODIFIER" {
+	for _, v := range modifiersNode {
+		if toString(v, astKeyType) != "LIMIT_MODIFIER" {
 			continue
 		}
 
-		modifierType := v.MustGet("limit").MustGet("class").String()
+		modifierType := toString(toNode(v, astKeyLimit), astKeyClass)
 		switch modifierType {
 		case "CONSTANT":
-			v.MustGet("limit").MustGet("value").MustSetInt(limit).At("value")
+			toNode(toNode(v, astKeyLimit), astKeyValue)[astKeyValue] = limit
 			updated = true
 		case "PARAMETER":
-			err := v.Delete("limit")
-			if err != nil {
-				return err
-			}
+			delete(v, astKeyLimit)
 
 			limitObject, err := createConstantLimit(limit)
 			if err != nil {
 				return err
 			}
 
-			v.MustSet(limitObject).At("limit")
+			v[astKeyLimit] = limitObject
 			updated = true
 		}
 	}
@@ -51,18 +46,16 @@ func (sn *selectNode) rewriteLimit(limit, offset int) error {
 			return err
 		}
 
-		_, err = modifiersNode.Append(v).InTheEnd()
-		if err != nil {
-			return err
-		}
+		sn.ast[astKeyModifiers] = append(sn.ast[astKeyModifiers].([]interface{}), v)
 	}
 
 	return nil
 }
 
-func createBaseTable(name string, ast *jsonvalue.V) (*jsonvalue.V, error) {
+func createBaseTable(name string, ast astNode) (astNode, error) {
 	// TODO: validation and fill in other fields from ast
-	v, err := jsonvalue.Unmarshal([]byte(fmt.Sprintf(`{
+	var n astNode
+	err := json.Unmarshal([]byte(fmt.Sprintf(`{
 	 "type": "BASE_TABLE",
 	 "alias": "%s",
 	 "sample": null,
@@ -70,19 +63,20 @@ func createBaseTable(name string, ast *jsonvalue.V) (*jsonvalue.V, error) {
 	 "table_name": "%s",
 	 "column_name_alias": [],
 	 "catalog_name": ""
-	}`, ast.MustGet("alias").String(), name)))
+	}`, toString(ast, astKeyAlias), name)), &n)
 	if err != nil {
 		return nil, err
 	}
 
-	v.MustSet(ast.MustGet("sample")).At("sample")
-	v.MustSet(ast.MustGet("column_name_alias")).At("column_name_alias")
-	return v, nil
+	n[astKeySample] = ast[astKeySample]
+	n[astKeyColumnNameAlias] = ast[astKeyColumnNameAlias]
+	return n, nil
 }
 
 // TODO: offsets
-func createConstantLimit(limit int) (*jsonvalue.V, error) {
-	return jsonvalue.Unmarshal([]byte(fmt.Sprintf(`
+func createConstantLimit(limit int) (astNode, error) {
+	var n astNode
+	err := json.Unmarshal([]byte(fmt.Sprintf(`
 	{
 	   "class":"CONSTANT",
 	   "type":"VALUE_CONSTANT",
@@ -96,11 +90,13 @@ func createConstantLimit(limit int) (*jsonvalue.V, error) {
 		  "value":%d
 	   }
 	}
-`, limit)))
+`, limit)), &n)
+	return n, err
 }
 
-func createLimitModifier(limit int) (*jsonvalue.V, error) {
-	return jsonvalue.Unmarshal([]byte(fmt.Sprintf(`
+func createLimitModifier(limit int) (astNode, error) {
+	var n astNode
+	err := json.Unmarshal([]byte(fmt.Sprintf(`
 {
 	"type":"LIMIT_MODIFIER",
 	"limit":{
@@ -118,5 +114,6 @@ func createLimitModifier(limit int) (*jsonvalue.V, error) {
 	},
 	"offset":null
  }
-`, limit)))
+`, limit)), &n)
+	return n, err
 }

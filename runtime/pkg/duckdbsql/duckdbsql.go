@@ -4,51 +4,61 @@ import (
 	"context"
 	databasesql "database/sql"
 	"database/sql/driver"
+	"encoding/json"
+	"fmt"
 	"sync"
 
-	jsonvalue "github.com/Andrew-M-C/go.jsonvalue"
 	"github.com/marcboeker/go-duckdb"
 )
 
+// TODO: use json instead of jsonvalue
+
 type AST struct {
-	ast         *jsonvalue.V
-	selectNodes []*selectNode
-	fromNodes   []*fromNode
-	columns     []*columnNode
+	ast       astNode
+	rootNodes []*selectNode
+	aliases   map[string]bool
+	added     map[string]bool
+	fromNodes []*fromNode
+	columns   []*columnNode
 }
 
 type selectNode struct {
-	ast *jsonvalue.V
+	ast astNode
 }
 
 type columnNode struct {
-	ast *jsonvalue.V
+	ast astNode
 	ref *ColumnRef
 }
 
 type fromNode struct {
-	ast      *jsonvalue.V
-	parent   *jsonvalue.V
+	ast      astNode
+	parent   astNode
 	childKey string
 	ref      *TableRef
 }
 
 func Parse(sql string) (*AST, error) {
 	// TODO: optimise and parse into []byte
-	serializedSQL, err := queryString("select json_serialize_sql(?::VARCHAR)", sql)
+	sqlAst, err := queryString("select json_serialize_sql(?::VARCHAR)", sql)
 	if err != nil {
 		return nil, err
 	}
 
-	v, err := jsonvalue.Unmarshal(serializedSQL)
+	fmt.Println(string(sqlAst))
+	nativeAst := astNode{}
+	err = json.Unmarshal(sqlAst, &nativeAst)
 	if err != nil {
 		return nil, err
 	}
+
 	ast := &AST{
-		ast:         v,
-		selectNodes: make([]*selectNode, 0),
-		fromNodes:   make([]*fromNode, 0),
-		columns:     make([]*columnNode, 0),
+		ast:       nativeAst,
+		rootNodes: make([]*selectNode, 0),
+		aliases:   map[string]bool{},
+		added:     map[string]bool{},
+		fromNodes: make([]*fromNode, 0),
+		columns:   make([]*columnNode, 0),
 	}
 
 	ast.traverse()
@@ -59,7 +69,11 @@ func Parse(sql string) (*AST, error) {
 // Format normalizes a DuckDB SQL statement
 func (a *AST) Format() (string, error) {
 	// TODO: cleanup this code
-	res, err := queryString("SELECT json_deserialize_sql(?::JSON)", a.ast.MustMarshalString())
+	sql, err := json.Marshal(a.ast)
+	if err != nil {
+		return "", err
+	}
+	res, err := queryString("SELECT json_deserialize_sql(?::JSON)", string(sql))
 	return string(res), err
 }
 
@@ -84,11 +98,14 @@ func (a *AST) RewriteTableRefs(fn func(table *TableRef) (*TableRef, bool)) error
 
 // RewriteLimit rewrites a DuckDB SQL statement to limit the result size
 func (a *AST) RewriteLimit(limit, offset int) error {
-	for _, node := range a.selectNodes {
-		err := node.rewriteLimit(limit, offset)
-		if err != nil {
-			return err
-		}
+	if len(a.rootNodes) == 0 {
+		return nil
+	}
+
+	// We only need to add limit to the top level query
+	err := a.rootNodes[0].rewriteLimit(limit, offset)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -100,6 +117,7 @@ type TableRef struct {
 	Function   string
 	Path       string
 	Properties map[string]any
+	LocalAlias bool
 }
 
 // Annotation is key-value annotation extracted from a DuckDB SQL comment
