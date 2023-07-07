@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
+	"github.com/rilldata/rill/runtime/pkg/usage"
 	"github.com/rilldata/rill/runtime/server"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -56,6 +57,18 @@ type Config struct {
 	AllowHostAccess bool `default:"false" split_words:"true"`
 	// Redis server address host:port
 	RedisURL string `default:"" split_words:"true"`
+	// Usage sink type: noop, console, kafka, gcs
+	UsageSinkType string `default:"console" split_words:"true"`
+	// Usage sink period in millis
+	UsageSinkPeriod int `default:"1000" split_words:"true"`
+	// Max queue size of a usage client
+	UsageMaxQueueSize int `default:"1000" split_words:"true"`
+	// Kafka brokers of a usage sink
+	UsageKafkaBrokers string `default:"" split_words:"true"`
+	// Kafka topic of a usage sink
+	UsageKafkaTopic string `default:"" split_words:"true"`
+	// GCS bucket of a usage sink
+	UsageGCSBucket string `default:"" split_words:"true"`
 }
 
 // StartCmd starts a stand-alone runtime server. It only allows configuration using environment variables.
@@ -133,6 +146,30 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				}
 				limiter = ratelimit.NewRedis(redis.NewClient(opts))
 			}
+
+			var usageSink usage.Sink
+			switch conf.UsageSinkType {
+			case "noop":
+				usageSink = usage.NewNoopSink()
+			case "kafka":
+				usageSink, err = usage.NewKafkaSink(conf.UsageKafkaBrokers, conf.UsageKafkaTopic, logger)
+				if err != nil {
+					logger.Fatal("failed to create a kafka sink", zap.Error(err))
+				}
+			case "gcs":
+				usageSink, err = usage.NewGCSSink(conf.UsageGCSBucket, logger)
+				if err != nil {
+					logger.Fatal("failed to create a gcs sink", zap.Error(err))
+				}
+			default:
+				logger.Fatal(fmt.Sprintf("unknown usage sink type: %s", conf.UsageSinkType))
+			}
+			c := usage.Conf{
+				Sink:       usageSink,
+				SinkPeriod: time.Duration(conf.UsageSinkPeriod) * time.Millisecond,
+				QueueSize:  conf.UsageMaxQueueSize,
+			}
+			usage.SetClient(usage.NewClient(c))
 
 			// Init server
 			srvOpts := &server.Options{

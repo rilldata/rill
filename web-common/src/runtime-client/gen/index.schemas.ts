@@ -86,7 +86,7 @@ export type QueryServiceColumnRollupIntervalBody = {
 };
 
 export type QueryServiceColumnNumericHistogramHistogramMethod =
-  (typeof QueryServiceColumnNumericHistogramHistogramMethod)[keyof typeof QueryServiceColumnNumericHistogramHistogramMethod];
+  typeof QueryServiceColumnNumericHistogramHistogramMethod[keyof typeof QueryServiceColumnNumericHistogramHistogramMethod];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const QueryServiceColumnNumericHistogramHistogramMethod = {
@@ -211,7 +211,7 @@ export type RuntimeServiceListFilesParams = {
 };
 
 export type RuntimeServiceListCatalogEntriesType =
-  (typeof RuntimeServiceListCatalogEntriesType)[keyof typeof RuntimeServiceListCatalogEntriesType];
+  typeof RuntimeServiceListCatalogEntriesType[keyof typeof RuntimeServiceListCatalogEntriesType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const RuntimeServiceListCatalogEntriesType = {
@@ -281,7 +281,7 @@ export interface V1UnpackEmptyResponse {
   [key: string]: any;
 }
 
-export type V1TypeCode = (typeof V1TypeCode)[keyof typeof V1TypeCode];
+export type V1TypeCode = typeof V1TypeCode[keyof typeof V1TypeCode];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1TypeCode = {
@@ -358,7 +358,7 @@ export interface V1TimeRange {
   end?: string;
 }
 
-export type V1TimeGrain = (typeof V1TimeGrain)[keyof typeof V1TimeGrain];
+export type V1TimeGrain = typeof V1TimeGrain[keyof typeof V1TimeGrain];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1TimeGrain = {
@@ -493,7 +493,7 @@ export interface V1RefreshAndReconcileRequest {
  - CODE_SOURCE_PERMISSION_DENIED: Error returned when unauthorised to access remote sources
  */
 export type V1ReconcileErrorCode =
-  (typeof V1ReconcileErrorCode)[keyof typeof V1ReconcileErrorCode];
+  typeof V1ReconcileErrorCode[keyof typeof V1ReconcileErrorCode];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1ReconcileErrorCode = {
@@ -577,7 +577,7 @@ export interface V1PingResponse {
   time?: string;
 }
 
-export type V1ObjectType = (typeof V1ObjectType)[keyof typeof V1ObjectType];
+export type V1ObjectType = typeof V1ObjectType[keyof typeof V1ObjectType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1ObjectType = {
@@ -701,7 +701,7 @@ export interface V1MetricsViewComparisonToplistResponse {
 }
 
 export type V1MetricsViewComparisonSortType =
-  (typeof V1MetricsViewComparisonSortType)[keyof typeof V1MetricsViewComparisonSortType];
+  typeof V1MetricsViewComparisonSortType[keyof typeof V1MetricsViewComparisonSortType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1MetricsViewComparisonSortType = {
@@ -807,7 +807,7 @@ export interface V1InlineMeasure {
 }
 
 export type V1HistogramMethod =
-  (typeof V1HistogramMethod)[keyof typeof V1HistogramMethod];
+  typeof V1HistogramMethod[keyof typeof V1HistogramMethod];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1HistogramMethod = {
@@ -855,8 +855,7 @@ export interface V1ExportResponse {
   downloadUrlPath?: string;
 }
 
-export type V1ExportFormat =
-  (typeof V1ExportFormat)[keyof typeof V1ExportFormat];
+export type V1ExportFormat = typeof V1ExportFormat[keyof typeof V1ExportFormat];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1ExportFormat = {
@@ -924,6 +923,8 @@ export interface V1CreateInstanceRequest {
   embedCatalog?: boolean;
   variables?: V1CreateInstanceRequestVariables;
   ingestionLimitBytes?: string;
+  organizationId?: string;
+  projectId?: string;
 }
 
 /**
@@ -1026,7 +1027,7 @@ export interface RpcStatus {
  - NULL_VALUE: Null value.
  */
 export type ProtobufNullValue =
-  (typeof ProtobufNullValue)[keyof typeof ProtobufNullValue];
+  typeof ProtobufNullValue[keyof typeof ProtobufNullValue];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ProtobufNullValue = {
@@ -1082,7 +1083,7 @@ export interface NumericHistogramBinsBin {
   count?: number;
 }
 
-export type ModelDialect = (typeof ModelDialect)[keyof typeof ModelDialect];
+export type ModelDialect = typeof ModelDialect[keyof typeof ModelDialect];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ModelDialect = {
@@ -1112,7 +1113,7 @@ export interface MetricsViewDimension {
 }
 
 export type ExtractPolicyStrategy =
-  (typeof ExtractPolicyStrategy)[keyof typeof ExtractPolicyStrategy];
+  typeof ExtractPolicyStrategy[keyof typeof ExtractPolicyStrategy];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ExtractPolicyStrategy = {
@@ -1122,7 +1123,7 @@ export const ExtractPolicyStrategy = {
 } as const;
 
 export type ConnectorPropertyType =
-  (typeof ConnectorPropertyType)[keyof typeof ConnectorPropertyType];
+  typeof ConnectorPropertyType[keyof typeof ConnectorPropertyType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ConnectorPropertyType = {

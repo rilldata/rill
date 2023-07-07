@@ -68,6 +68,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 	// Provision prod deployment.
 	// Start using original context again since transaction in txCtx is done.
 	depl, err := s.createDeployment(ctx, &createDeploymentOptions{
+		OrganizationID:       proj.OrganizationID,
 		ProjectID:            proj.ID,
 		Region:               proj.Region,
 		GithubURL:            proj.GithubURL,
@@ -153,6 +154,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 		}
 
 		depl, err := s.createDeployment(ctx, &createDeploymentOptions{
+			OrganizationID:       proj.OrganizationID,
 			ProjectID:            proj.ID,
 			Subpath:              proj.Subpath,
 			ProdOLAPDriver:       proj.ProdOLAPDriver,
@@ -248,6 +250,7 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, proj *database.Pro
 func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, prevDepl *database.Deployment) error {
 	// Provision new deployment
 	newDepl, err := s.createDeployment(ctx, &createDeploymentOptions{
+		OrganizationID:       proj.OrganizationID,
 		ProjectID:            proj.ID,
 		Region:               proj.Region,
 		GithubURL:            proj.GithubURL,

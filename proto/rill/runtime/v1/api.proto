@@ -297,6 +297,12 @@ message CreateInstanceRequest {
   bool embed_catalog = 6;
   map<string, string> variables = 7;
   int64 ingestion_limit_bytes = 8;
+  string organization_id = 9 [(validate.rules).string = {
+    ignore_empty: true
+  }];
+  string project_id = 10 [(validate.rules).string = {
+    ignore_empty: true
+  }];
 }
 
 // Response message for RuntimeService.CreateInstance

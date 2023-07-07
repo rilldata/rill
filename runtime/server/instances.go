@@ -76,6 +76,8 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		EmbedCatalog:        req.EmbedCatalog,
 		Variables:           req.Variables,
 		IngestionLimitBytes: req.IngestionLimitBytes,
+		OrganizationID:      req.OrganizationId,
+		ProjectID:           req.ProjectId,
 	}
 
 	err := s.runtime.CreateInstance(ctx, inst)
@@ -116,6 +118,8 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		EmbedCatalog:        valOrDefault(req.EmbedCatalog, oldInst.EmbedCatalog),
 		Variables:           oldInst.Variables,
 		IngestionLimitBytes: valOrDefault(req.IngestionLimitBytes, oldInst.IngestionLimitBytes),
+		OrganizationID:      oldInst.OrganizationID,
+		ProjectID:           oldInst.ProjectID,
 	}
 
 	err = s.runtime.EditInstance(ctx, inst)
@@ -149,6 +153,8 @@ func (s *Server) EditInstanceVariables(ctx context.Context, req *runtimev1.EditI
 		EmbedCatalog:        oldInst.EmbedCatalog,
 		IngestionLimitBytes: oldInst.IngestionLimitBytes,
 		Variables:           req.Variables,
+		OrganizationID:      oldInst.OrganizationID,
+		ProjectID:           oldInst.ProjectID,
 	}
 
 	err = s.runtime.EditInstance(ctx, inst)

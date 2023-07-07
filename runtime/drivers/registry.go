@@ -42,6 +42,12 @@ type Instance struct {
 	// IngestionLimitBytes is total data allowed to ingest across all sources
 	// 0 means there is no limit
 	IngestionLimitBytes int64 `db:"ingestion_limit_bytes"`
+	// Organization ID of the Instance
+	// TODO update sql queries
+	OrganizationID string
+	// Project ID of the Instance
+	// TODO update sql queries
+	ProjectID string
 }
 
 // ResolveVariables returns the final resolved variables

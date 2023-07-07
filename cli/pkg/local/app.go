@@ -23,6 +23,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
+	"github.com/rilldata/rill/runtime/pkg/usage"
 	runtimeserver "github.com/rilldata/rill/runtime/server"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -41,9 +42,11 @@ const (
 
 // Default instance config on local.
 const (
-	DefaultInstanceID = "default"
-	DefaultOLAPDriver = "duckdb"
-	DefaultOLAPDSN    = "stage.db"
+	DefaultInstanceID     = "default"
+	DefaultProjectID      = "defaultProject"
+	DefaultOrganizationID = "defaultOrganization"
+	DefaultOLAPDriver     = "duckdb"
+	DefaultOLAPDSN        = "stage.db"
 )
 
 // App encapsulates the logic associated with configuring and running the UI and the runtime in a local environment.
@@ -110,13 +113,15 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 
 	// Create instance with its repo set to the project directory
 	inst := &drivers.Instance{
-		ID:           DefaultInstanceID,
-		OLAPDriver:   olapDriver,
-		OLAPDSN:      olapDSN,
-		RepoDriver:   "file",
-		RepoDSN:      projectPath,
-		EmbedCatalog: olapDriver == "duckdb",
-		Variables:    parsedVariables,
+		ID:             DefaultInstanceID,
+		ProjectID:      DefaultProjectID,
+		OrganizationID: DefaultOrganizationID,
+		OLAPDriver:     olapDriver,
+		OLAPDSN:        olapDSN,
+		RepoDriver:     "file",
+		RepoDSN:        projectPath,
+		EmbedCatalog:   olapDriver == "duckdb",
+		Variables:      parsedVariables,
 	}
 	err = rt.CreateInstance(ctx, inst)
 	if err != nil {
@@ -257,6 +262,13 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	if err != nil {
 		return err
 	}
+
+	c := usage.Conf{
+		Sink:       usage.NewConsoleSink(serverLogger.Named("console")),
+		SinkPeriod: time.Duration(100) * time.Millisecond,
+		QueueSize:  1000,
+	}
+	usage.SetClient(usage.NewClient(c))
 
 	// Start the gRPC server
 	group.Go(func() error {

@@ -108,6 +108,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			errorMappingStreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
 			auth.StreamServerInterceptor(s.aud),
+			middleware.UsageStreamServerInterceptor(),
 			grpc_auth.StreamServerInterceptor(s.checkRateLimit),
 		),
 		grpc.ChainUnaryInterceptor(
@@ -117,6 +118,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			errorMappingUnaryServerInterceptor(),
 			grpc_validator.UnaryServerInterceptor(),
 			auth.UnaryServerInterceptor(s.aud),
+			middleware.UsageUnaryServerInterceptor(),
 			grpc_auth.UnaryServerInterceptor(s.checkRateLimit),
 		),
 	)
