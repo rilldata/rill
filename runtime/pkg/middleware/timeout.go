@@ -2,8 +2,6 @@ package middleware
 
 import (
 	"context"
-	"fmt"
-	"strings"
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
