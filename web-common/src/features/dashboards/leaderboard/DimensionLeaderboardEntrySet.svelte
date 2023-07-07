@@ -19,7 +19,7 @@ see more button
     formatMeasurePercentageDifference,
     humanizeDataType,
   } from "../humanize-numbers";
-  import DimensionLeaderboardEntry from "./DimensionLeaderboardEntry.svelte";
+  import LeaderboardListItem from "./LeaderboardListItem.svelte";
 
   export let values;
   export let comparisonValues;
@@ -134,20 +134,21 @@ see more button
     on:keydown
     on:shift-click={() => shiftClickHandler(label)}
   >
-    <DimensionLeaderboardEntry
+    <LeaderboardListItem
       measureValue={value}
       showContext={showComparison}
-      {loading}
-      {isSummableMeasure}
-      {referenceValue}
-      {atLeastOneActive}
-      {active}
+      isActive={active}
       {excluded}
+      on:click
+      {atLeastOneActive}
+      {loading}
       {label}
       {previousValueString}
       {formattedValue}
-      {filterExcludeMode}
       {percentChangeFormatted}
+      {filterExcludeMode}
+      {isSummableMeasure}
+      {referenceValue}
     />
   </div>
 {/each}
