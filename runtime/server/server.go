@@ -243,9 +243,15 @@ func timeoutSelector(service, method string) time.Duration {
 	if service == "rill.runtime.v1.RuntimeService" && (strings.Contains(method, "Trigger") || strings.Contains(method, "Reconcile")) {
 		return time.Minute * 30
 	}
+
 	if service == "rill.runtime.v1.QueryService" {
 		return time.Minute * 5
 	}
+
+	if method == WatchFilesMethod {
+		return 0
+	}
+
 	return time.Second * 30
 }
 

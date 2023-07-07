@@ -24,12 +24,16 @@ func TimeoutStreamServerInterceptor(fn func(service, method string) time.Duratio
 
 		duration := fn(service, method)
 
-		ctx, cancel := context.WithTimeout(ss.Context(), duration)
-		defer cancel()
+		if duration != 0 {
+			ctx, cancel := context.WithTimeout(ss.Context(), duration)
+			defer cancel()
 
-		wss := grpc_middleware.WrapServerStream(ss)
-		wss.WrappedContext = ctx
-		return handler(srv, wss)
+			wss := grpc_middleware.WrapServerStream(ss)
+			wss.WrappedContext = ctx
+			return handler(srv, wss)
+		}
+
+		return handler(srv, ss)
 	}
 }
 
