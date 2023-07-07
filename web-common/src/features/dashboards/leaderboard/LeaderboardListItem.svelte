@@ -14,9 +14,10 @@
 
   import PercentageChange from "../../../components/data-types/PercentageChange.svelte";
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
+  import { humanizeDataType } from "../humanize-numbers";
 
   export let measureValue: number;
-  // export let color = "bg-blue-200 dark:bg-blue-600";
+
   export let isActive = false;
   export let excluded = false;
   export let showContext = false;
@@ -24,10 +25,13 @@
   export let loading = false;
   export let atLeastOneActive = false;
   export let label: string | number;
-  export let previousValueString: string;
+
   export let formattedValue: string;
   export let percentChangeFormatted;
   export let filterExcludeMode;
+
+  export let formatPreset;
+  export let comparisonValue: number;
 
   /** if this value is a summable measure, we'll show the bar. Otherwise, don't. */
   export let isSummableMeasure;
@@ -39,13 +43,13 @@
 
   const dispatch = createEventDispatcher();
 
-  let hovered = false;
+  let showPreviousTimeValue = false;
   const onHover = () => {
-    hovered = true;
+    showPreviousTimeValue = true;
     dispatch("focus");
   };
   const onLeave = () => {
-    hovered = false;
+    showPreviousTimeValue = false;
     dispatch("blur");
   };
   /** used for overly-large bar values */
@@ -74,6 +78,11 @@
     : isActive
     ? "ui-measure-bar-included-selected"
     : "ui-measure-bar-included";
+
+  const previousValueString: string | undefined =
+    comparisonValue !== undefined && comparisonValue !== null
+      ? humanizeDataType(comparisonValue, formatPreset)
+      : undefined;
 </script>
 
 <Tooltip location="right">
@@ -114,7 +123,7 @@
             class:ui-copy-strong={!excluded && isActive}
             in:fly={{ duration: 200, y: 4 }}
           >
-            {#if previousValueString}
+            {#if showPreviousTimeValue}
               <span
                 class="inline-block opacity-50"
                 transition:slideRight={{ duration: LIST_SLIDE_DURATION }}

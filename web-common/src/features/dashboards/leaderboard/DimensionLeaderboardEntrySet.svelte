@@ -59,18 +59,6 @@ see more button
       ? (filterExcludeMode && active) || (!filterExcludeMode && !active)
       : false;
 
-    // FIXME: `showComparisonForThisValue` should not be the responsibility
-    // of this component; the handling of the on:mouseenter/on:mouseleave
-    // events should be done in each individual DimensionLeaderboardEntry
-    const showComparisonForThisValue = comparisonLabelToReveal === v.label;
-
-    const previousValueString: string | undefined =
-      showComparisonForThisValue &&
-      comparisonValue !== undefined &&
-      comparisonValue !== null
-        ? humanizeDataType(comparisonValue, formatPreset)
-        : undefined;
-
     const percentChangeFormatted = showTimeComparison
       ? getFormatterValueForPercDiff(
           v.value && comparisonValue ? v.value - comparisonValue : null,
@@ -86,17 +74,9 @@ see more button
       excluded,
       comparisonValue,
       formattedValue: humanizeDataType(v.value, formatPreset),
-      previousValueString,
       percentChangeFormatted,
     };
   });
-
-  let comparisonLabelToReveal = undefined;
-  function revealComparisonNumber(value) {
-    return () => {
-      if (showTimeComparison) comparisonLabelToReveal = value;
-    };
-  }
 
   function getFormatterValueForPercDiff(numerator, denominator) {
     if (denominator === 0) return PERC_DIFF.PREV_VALUE_ZERO;
@@ -120,7 +100,7 @@ see more button
   }
 </script>
 
-{#each renderValues as { label, value, active, excluded, percentChangeFormatted, formattedValue, previousValueString } (label)}
+{#each renderValues as { label, value, active, excluded, percentChangeFormatted, formattedValue, comparisonValue } (label)}
   <!-- FIXME: this wrapper div is almost certainly not required. All of this functionality should be able to be handled in DimensionLeaderboardEntry -->
   <div
     use:shiftClickAction
@@ -129,8 +109,6 @@ see more button
         label,
       });
     }}
-    on:mouseenter={revealComparisonNumber(label)}
-    on:mouseleave={revealComparisonNumber(undefined)}
     on:keydown
     on:shift-click={() => shiftClickHandler(label)}
   >
@@ -143,12 +121,13 @@ see more button
       {atLeastOneActive}
       {loading}
       {label}
-      {previousValueString}
       {formattedValue}
+      {comparisonValue}
       {percentChangeFormatted}
       {filterExcludeMode}
       {isSummableMeasure}
       {referenceValue}
+      {formatPreset}
     />
   </div>
 {/each}
