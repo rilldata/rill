@@ -294,16 +294,15 @@
             no available values
           </div>
         {/if}
-
         {#if values.length > slice}
           <Tooltip location="right">
-            <LeaderboardListItem
-              value={0}
-              color="=ui-label"
+            <button
               on:click={() => selectDimension(dimensionName)}
+              class="block flex-row w-full text-left transition-color ui-copy-muted"
+              style:padding-left="30px"
             >
-              <div class="ui-copy-muted" slot="title">(Expand Table)</div>
-            </LeaderboardListItem>
+              (Expand Table)
+            </button>
             <TooltipContent slot="tooltip-content"
               >Expand dimension to see more values</TooltipContent
             >
