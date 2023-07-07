@@ -9,15 +9,22 @@ sidebar_position: 100
 
 ## How to configure credentials in Rill
 
-How you configure access to Motherduck depends on whether you are developing a project locally using `rill start` or are setting up a deployment using `rill deploy`.
+How you configure access to MotherDuck depends on whether you are developing a project locally using `rill start` or are setting up a deployment using `rill deploy`.
 
 ### Configure credentials for local development
 
-When developing a project locally, you need to set `motherduck_token` in your enviornment variables. Refer to motherduck [docs](https://motherduck.com/docs/authenticating-to-motherduck#saving-the-service-token-as-an-environment-variable) for more infromation on authenticating with token.
+When developing a project locally, you need to set `motherduck_token` in your enviornment variables. 
+An example of using this syntax in terminal:
+```
+export motherduck_token='<token>'
+```
+You can also add this line to your bash profile.
+
+Refer to MotherDuck [docs](https://motherduck.com/docs/authenticating-to-motherduck/#using-the-service-token-to-connect) for more information on authenticating with token.
 
 ### Configure credentials for deployments on Rill Cloud
 
-Once a project having a motherduck source has been deployed using `rill deploy`, Rill requires you to explicitly provide the motherduck token using following command:
+Once a project having a MotherDuck source has been deployed using `rill deploy`, Rill requires you to explicitly provide the motherduck token using following command:
 ```
 rill env configure
 ```
