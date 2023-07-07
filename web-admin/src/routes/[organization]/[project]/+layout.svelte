@@ -1,29 +1,20 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
-  import { createAdminServiceGetProject } from "../../../client";
+  import { useProjectRuntime } from "../../../components/projects/selectors";
 
-  $: projRuntime = createAdminServiceGetProject(
+  $: projRuntime = useProjectRuntime(
     $page.params.organization,
-    $page.params.project,
-    {
-      query: {
-        // Proactively refetch the JWT because it's only valid for 1 hour
-        refetchInterval: 1000 * 60 * 30, // 30 minutes
-        select: (data) => {
-          return {
-            // Hack: in development, the runtime host is actually on port 8081
-            host: data.prodDeployment.runtimeHost.replace(
-              "localhost:9091",
-              "localhost:8081"
-            ),
-            instanceId: data.prodDeployment.runtimeInstanceId,
-            jwt: data?.jwt,
-          };
-        },
-      },
-    }
+    $page.params.project
   );
+
+  $: isRuntimeHibernating = $projRuntime.isSuccess && !$projRuntime.data;
+
+  $: if (isRuntimeHibernating) {
+    // Redirect any nested routes (notably dashboards) to the project page
+    goto(`/${$page.params.organization}/${$page.params.project}`);
+  }
 </script>
 
 {#if $projRuntime.data}
@@ -34,4 +25,6 @@
   >
     <slot />
   </RuntimeProvider>
+{:else}
+  <slot />
 {/if}

@@ -115,11 +115,12 @@ region: us-east-2
 					},
 					Measures: []*runtimev1.MetricsView_Measure{
 						{
-							Name:        "measure_0",
-							Label:       "Mea0_L",
-							Expression:  "count(c0)",
-							Description: "Mea0_D",
-							Format:      "humanise",
+							Name:                "measure_0",
+							Label:               "Mea0_L",
+							Expression:          "count(c0)",
+							Description:         "Mea0_D",
+							Format:              "humanise",
+							ValidPercentOfTotal: true,
 						},
 						{
 							Name:        "avg_measure",
@@ -154,6 +155,7 @@ measures:
       expression: count(c0)
       description: Mea0_D
       format_preset: humanise
+      valid_percent_of_total: true
     - label: Mea1_L
       name: avg_measure
       expression: avg(c1)
