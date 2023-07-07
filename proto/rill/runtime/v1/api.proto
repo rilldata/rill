@@ -226,8 +226,7 @@ message Instance {
   string olap_driver = 2 [(validate.rules).string = {
     in: [
       "duckdb",
-      "druid",
-      "motherduck"
+      "druid"
     ]
   }];
   // DSN for connection to OLAP
@@ -286,8 +285,7 @@ message CreateInstanceRequest {
   string olap_driver = 2 [(validate.rules).string = {
     in: [
       "duckdb",
-      "druid",
-      "motherduck"
+      "druid"
     ]
   }];
   string olap_dsn = 3;
@@ -325,8 +323,7 @@ message EditInstanceRequest {
   optional string olap_driver = 2 [(validate.rules).string = {
     in: [
       "duckdb",
-      "druid",
-      "motherduck"
+      "druid"
     ]
   }];
   optional string olap_dsn = 3;

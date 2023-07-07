@@ -52,10 +52,12 @@ func (s *Service) FindEntries(ctx context.Context, typ drivers.ObjectType) ([]*d
 	if err != nil {
 		return nil, err
 	}
-	s.Meta.lock.RLock()
-	defer s.Meta.lock.RUnlock()
-	for _, entry := range entries {
-		s.Meta.fillDAGInEntry(entry)
+	if s.Meta.lock.TryRLock() {
+		defer s.Meta.lock.RUnlock()
+
+		for _, entry := range entries {
+			s.Meta.fillDAGInEntry(entry)
+		}
 	}
 	return entries, nil
 }
@@ -65,9 +67,11 @@ func (s *Service) FindEntry(ctx context.Context, name string) (*drivers.CatalogE
 	if err != nil {
 		return nil, err
 	}
-	s.Meta.lock.RLock()
-	defer s.Meta.lock.RUnlock()
-	s.Meta.fillDAGInEntry(entry)
+	if s.Meta.lock.TryRLock() {
+		defer s.Meta.lock.RUnlock()
+
+		s.Meta.fillDAGInEntry(entry)
+	}
 	return entry, nil
 }
 

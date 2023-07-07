@@ -61,6 +61,9 @@ func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *co
 	if source.Connector == "local_file" {
 		return c.ingestLocalFiles(ctx, env, source)
 	}
+	if source.Connector == "motherduck" {
+		return c.ingestMotherduckData(ctx, source, env)
+	}
 
 	iterator, err := connectors.ConsumeAsIterator(ctx, env, source, c.logger)
 	if err != nil {
@@ -129,6 +132,96 @@ func (c *connection) ingest(ctx context.Context, env *connectors.Env, source *co
 		appendToTable = true
 	}
 	return summary, nil
+}
+
+func (c *connection) ingestMotherduckData(ctx context.Context, source *connectors.Source, env *connectors.Env) (*drivers.IngestionSummary, error) {
+	err := c.WithConnection(ctx, 1, func(ctx, ensuredCtx context.Context) error {
+		res, err := c.Execute(ctx, &drivers.Statement{Query: "SELECT current_database();"})
+		if err != nil {
+			return err
+		}
+		defer res.Close()
+
+		res.Next()
+		var localDB string
+		if err := res.Scan(&localDB); err != nil {
+			return err
+		}
+
+		// get token
+		token := env.Variables["TOKEN"]
+		if token == "" && env.AllowHostAccess {
+			token = os.Getenv("motherduck_token")
+		}
+		// load motherduck extension; connect to motherduck service
+		err = c.Exec(ctx, &drivers.Statement{Query: "INSTALL 'motherduck'; LOAD 'motherduck';"})
+		if err != nil {
+			return fmt.Errorf("failed to load motherduck extension %w", err)
+		}
+
+		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("PRAGMA MD_CONNECT('token=%s');", token)})
+		if err != nil {
+			if !strings.Contains(err.Error(), "already connected") {
+				return fmt.Errorf("failed to connect to motherduck %w", err)
+			}
+		}
+
+		names := make([]string, 0)
+
+		var db string
+		if dbProp, ok := source.Properties["db"]; ok {
+			db = dbProp.(string)
+		} else {
+			// get list of all motherduck databases
+			res, err = c.Execute(ctx, &drivers.Statement{Query: "SELECT name FROM md_databases();"})
+			if err != nil {
+				return err
+			}
+			defer res.Close()
+
+			for res.Next() {
+				var name string
+				if res.Scan(&name) != nil {
+					return err
+				}
+				names = append(names, name)
+			}
+			// single motherduck db, use db to allow user to run query without specifying db name
+			if len(names) == 1 {
+				db = names[0]
+			}
+		}
+
+		if db != "" {
+			err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %s;", safeName(db))})
+			if err != nil {
+				return err
+			}
+
+			defer func(ctx context.Context) { // revert back to localdb
+				err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %s;", safeName(localDB))})
+				if err != nil {
+					c.logger.Error("failed to switch to local database", zap.Error(err))
+				}
+			}(ensuredCtx)
+		}
+
+		qryProp, ok := source.Properties["query"]
+		if !ok {
+			return fmt.Errorf("property \"query\" is mandatory for connector \"motherduck\"")
+		}
+
+		userQuery := strings.TrimSpace(qryProp.(string))
+		userQuery, _ = strings.CutSuffix(userQuery, ";") // trim trailing semi colon
+		query := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s AS (%s);", safeName(localDB), safeName(source.Name), userQuery)
+		return c.Exec(ctx, &drivers.Statement{Query: query})
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO :: add support for bytes ingested using db file size difference between after/before ingestion
+	return &drivers.IngestionSummary{BytesIngested: 0}, nil
 }
 
 // local files
@@ -501,4 +594,19 @@ func fileSize(paths []string) int64 {
 		}
 	}
 	return size
+}
+
+func quoteName(name string) string {
+	return fmt.Sprintf("\"%s\"", name)
+}
+
+func escapeDoubleQuotes(column string) string {
+	return strings.ReplaceAll(column, "\"", "\"\"")
+}
+
+func safeName(name string) string {
+	if name == "" {
+		return name
+	}
+	return quoteName(escapeDoubleQuotes(name))
 }

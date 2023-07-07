@@ -394,6 +394,11 @@ export interface V1TableRowsResponse {
   data?: V1TableRowsResponseDataItem[];
 }
 
+export interface V1TableInfo {
+  database?: string;
+  name?: string;
+}
+
 export interface V1TableColumnsResponse {
   profileColumns?: V1ProfileColumn[];
 }
@@ -460,16 +465,6 @@ export interface V1RenameFileResponse {
   [key: string]: any;
 }
 
-export interface V1RenameFileAndReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-}
-
 export interface V1RenameFileAndReconcileRequest {
   instanceId?: string;
   fromPath?: string;
@@ -534,6 +529,16 @@ Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: ReconcileErrorCharLocation;
   endLocation?: ReconcileErrorCharLocation;
+}
+
+export interface V1RenameFileAndReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
 }
 
 export interface V1ReconcileResponse {
@@ -628,6 +633,10 @@ export interface V1NumericSummary {
   numericHistogramBins?: V1NumericHistogramBins;
   numericStatistics?: V1NumericStatistics;
   numericOutliers?: V1NumericOutliers;
+}
+
+export interface V1MotherduckListTablesResponse {
+  tables?: V1TableInfo[];
 }
 
 export interface V1Model {
@@ -1123,6 +1132,7 @@ export interface MetricsViewMeasure {
   expression?: string;
   description?: string;
   format?: string;
+  validPercentOfTotal?: boolean;
 }
 
 export interface MetricsViewFilterCond {
