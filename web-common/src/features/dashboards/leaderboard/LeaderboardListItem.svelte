@@ -74,8 +74,6 @@
     : isActive
     ? "ui-measure-bar-included-selected"
     : "ui-measure-bar-included";
-
-  $: console.log("color", color, "renderedBarValue", renderedBarValue);
 </script>
 
 <Tooltip location="right">
@@ -99,17 +97,14 @@
     >
       <div class="grid leaderboard-entry items-center gap-x-3" style:height>
         <div
+          class:ui-copy={!atLeastOneActive && !loading}
+          class:ui-copy-strong={!excluded && isActive}
+          class:ui-copy-disabled={excluded}
           class="justify-self-start text-left w-full text-ellipsis overflow-hidden whitespace-nowrap"
         >
-          <div
-            class:ui-copy={!atLeastOneActive && !loading}
-            class:ui-copy-strong={!excluded && isActive}
-            class:ui-copy-disabled={excluded}
-            class="w-full text-ellipsis overflow-hidden whitespace-nowrap"
-          >
-            <FormattedDataType value={label} />
-          </div>
+          <FormattedDataType value={label} />
         </div>
+
         <div
           class="justify-self-end overflow-hidden ui-copy-number flex gap-x-4 items-baseline"
         >
