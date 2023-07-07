@@ -18,6 +18,7 @@ import type {
   V1GCSListBucketsResponse,
   ConnectorServiceGCSListBucketsParams,
   V1GCSGetCredentialsInfoResponse,
+  V1MotherduckListTablesResponse,
   V1S3GetBucketMetadataResponse,
   V1S3ListObjectsResponse,
   ConnectorServiceS3ListObjectsParams,
@@ -194,6 +195,58 @@ export const createConnectorServiceGCSGetCredentialsInfo = <
 
   const query = createQuery<
     Awaited<ReturnType<typeof connectorServiceGCSGetCredentialsInfo>>,
+    TError,
+    TData
+  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary MotherduckListTables list all tables across all databases on motherduck
+ */
+export const connectorServiceMotherduckListTables = (signal?: AbortSignal) => {
+  return httpClient<V1MotherduckListTablesResponse>({
+    url: `/v1/md/tables`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getConnectorServiceMotherduckListTablesQueryKey = () =>
+  [`/v1/md/tables`] as const;
+
+export type ConnectorServiceMotherduckListTablesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof connectorServiceMotherduckListTables>>
+>;
+export type ConnectorServiceMotherduckListTablesQueryError = RpcStatus;
+
+export const createConnectorServiceMotherduckListTables = <
+  TData = Awaited<ReturnType<typeof connectorServiceMotherduckListTables>>,
+  TError = RpcStatus
+>(options?: {
+  query?: CreateQueryOptions<
+    Awaited<ReturnType<typeof connectorServiceMotherduckListTables>>,
+    TError,
+    TData
+  >;
+}): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getConnectorServiceMotherduckListTablesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof connectorServiceMotherduckListTables>>
+  > = ({ signal }) => connectorServiceMotherduckListTables(signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof connectorServiceMotherduckListTables>>,
     TError,
     TData
   >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<

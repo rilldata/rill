@@ -742,3 +742,114 @@ export class GCSGetCredentialsInfoResponse extends Message<GCSGetCredentialsInfo
   }
 }
 
+/**
+ * @generated from message rill.runtime.v1.MotherduckListTablesRequest
+ */
+export class MotherduckListTablesRequest extends Message<MotherduckListTablesRequest> {
+  constructor(data?: PartialMessage<MotherduckListTablesRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MotherduckListTablesRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MotherduckListTablesRequest {
+    return new MotherduckListTablesRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MotherduckListTablesRequest {
+    return new MotherduckListTablesRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MotherduckListTablesRequest {
+    return new MotherduckListTablesRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MotherduckListTablesRequest | PlainMessage<MotherduckListTablesRequest> | undefined, b: MotherduckListTablesRequest | PlainMessage<MotherduckListTablesRequest> | undefined): boolean {
+    return proto3.util.equals(MotherduckListTablesRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MotherduckListTablesResponse
+ */
+export class MotherduckListTablesResponse extends Message<MotherduckListTablesResponse> {
+  /**
+   * @generated from field: repeated rill.runtime.v1.TableInfo tables = 1;
+   */
+  tables: TableInfo[] = [];
+
+  constructor(data?: PartialMessage<MotherduckListTablesResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MotherduckListTablesResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "tables", kind: "message", T: TableInfo, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MotherduckListTablesResponse {
+    return new MotherduckListTablesResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MotherduckListTablesResponse {
+    return new MotherduckListTablesResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MotherduckListTablesResponse {
+    return new MotherduckListTablesResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MotherduckListTablesResponse | PlainMessage<MotherduckListTablesResponse> | undefined, b: MotherduckListTablesResponse | PlainMessage<MotherduckListTablesResponse> | undefined): boolean {
+    return proto3.util.equals(MotherduckListTablesResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.TableInfo
+ */
+export class TableInfo extends Message<TableInfo> {
+  /**
+   * @generated from field: string database = 1;
+   */
+  database = "";
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name = "";
+
+  constructor(data?: PartialMessage<TableInfo>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.TableInfo";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "database", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TableInfo {
+    return new TableInfo().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TableInfo {
+    return new TableInfo().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TableInfo {
+    return new TableInfo().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: TableInfo | PlainMessage<TableInfo> | undefined, b: TableInfo | PlainMessage<TableInfo> | undefined): boolean {
+    return proto3.util.equals(TableInfo, a, b);
+  }
+}
+

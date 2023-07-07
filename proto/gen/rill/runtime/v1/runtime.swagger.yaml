@@ -1515,6 +1515,21 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/md/tables:
+    get:
+      summary: MotherduckListTables list all tables across all databases on motherduck
+      operationId: ConnectorService_MotherduckListTables
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MotherduckListTablesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - ConnectorService
   /v1/ping:
     get:
       summary: Ping returns information about the runtime
@@ -2613,6 +2628,14 @@ definitions:
         type: boolean
         title: To materialize model or not
     title: Model is the internal representation of a model definition
+  v1MotherduckListTablesResponse:
+    type: object
+    properties:
+      tables:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1TableInfo'
   v1NumericHistogramBins:
     type: object
     properties:
@@ -3024,6 +3047,13 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1ProfileColumn'
+  v1TableInfo:
+    type: object
+    properties:
+      database:
+        type: string
+      name:
+        type: string
   v1TableRowsResponse:
     type: object
     properties:
