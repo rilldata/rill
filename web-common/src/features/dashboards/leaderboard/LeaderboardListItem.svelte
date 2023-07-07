@@ -20,6 +20,7 @@
   import PercentageChange from "../../../components/data-types/PercentageChange.svelte";
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
   import { humanizeDataType } from "../humanize-numbers";
+  import LongBarZigZag from "./LongBarZigZag.svelte";
 
   export let measureValue: number;
 
@@ -57,14 +58,6 @@
     showPreviousTimeValue = false;
     dispatch("blur");
   };
-  /** used for overly-large bar values */
-  let zigZag =
-    "M" +
-    Array.from({ length: 7 })
-      .map((_, i) => {
-        return `${15 - 4 * (i % 2)} ${1.7 * (i * 2)}`;
-      })
-      .join(" L");
 
   $: height = compact ? "18px" : "22px";
 
@@ -178,22 +171,7 @@
   </button>
   <!-- if the value is greater than 100%, we should add this little serration -->
   {#if renderedBarValue > 1.001}
-    <div
-      style="position: relative"
-      transition:fly|local={{ duration: 200, x: 20 }}
-    >
-      <svg
-        style="
-    position:absolute;
-    right: 0px;
-    transform: translateY(-{height});
-  "
-        width="15"
-        height="22"
-      >
-        <path d={zigZag} fill="white" />
-      </svg>
-    </div>
+    <LongBarZigZag />
   {/if}
 
   <TooltipContent slot="tooltip-content">

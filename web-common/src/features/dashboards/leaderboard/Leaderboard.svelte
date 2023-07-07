@@ -29,7 +29,6 @@
   import DimensionLeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import LeaderboardList from "./LeaderboardList.svelte";
-  import LeaderboardListItem from "./LeaderboardListItem.svelte";
 
   export let metricViewName: string;
   export let dimensionName: string;
