@@ -47,15 +47,11 @@ The main feature-set component for dashboard filters
   let searchedValues = [];
   let activeDimensionName: string;
 
-  $: {
-    if (activeDimensionName) {
-      topListQuery = getFilterSearchList(businessModel, {
-        dimension: activeDimensionName,
-        searchText,
-        addNull: "null".includes(searchText),
-      });
-    }
-  }
+  $: topListQuery = getFilterSearchList(businessModel, {
+    dimension: activeDimensionName,
+    searchText,
+    addNull: "null".includes(searchText),
+  });
 
   function setActiveDimension(name, value) {
     activeDimensionName = name;

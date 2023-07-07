@@ -4,7 +4,7 @@ import {
   type V1MetricsView,
 } from "@rilldata/web-common/runtime-client";
 import type { BusinessModel } from "../business-model/business-model";
-import { derived, writable } from "svelte/store";
+import { derived } from "svelte/store";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 
 export const useMetaQuery = <T = V1MetricsView>(
@@ -44,7 +44,7 @@ export const getFilterSearchList = (
     addNull,
     searchText,
   }: {
-    dimension: string;
+    dimension?: string;
     addNull: boolean;
     searchText: string;
   }
@@ -87,6 +87,7 @@ export const getFilterSearchList = (
         {
           query: {
             queryClient: ctx.queryClient,
+            enabled: !!dimension,
           },
         }
       ).subscribe(set);
