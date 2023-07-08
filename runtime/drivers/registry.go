@@ -43,10 +43,8 @@ type Instance struct {
 	// 0 means there is no limit
 	IngestionLimitBytes int64 `db:"ingestion_limit_bytes"`
 	// Organization ID of the Instance
-	// TODO update sql queries
 	OrganizationID string
 	// Project ID of the Instance
-	// TODO update sql queries
 	ProjectID string
 }
 

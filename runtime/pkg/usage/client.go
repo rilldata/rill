@@ -35,7 +35,6 @@ func String(name, value string) *Dim {
 }
 
 func NewClient(conf Conf) *Client {
-	// TODO use default values if the corresponding are not set
 	client := &Client{
 		sinkPeriod: conf.SinkPeriod,
 		snk:        conf.Sink,
