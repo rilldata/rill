@@ -63,7 +63,7 @@ func (s *GCSSink) Sink(events []Event) {
 		if !ok {
 			tmpFile, err := os.CreateTemp("", "events")
 			if err != nil {
-				// Handle error
+				s.logger.Debug(fmt.Sprintf("could not create a temp file for event: %v", event), zap.Error(err))
 				return
 			}
 			tmpFiles[key] = tmpFile
