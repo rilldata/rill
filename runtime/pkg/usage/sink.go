@@ -86,5 +86,18 @@ func (s *FileSink) Close() error {
 }
 
 func convertEventToBytes(event Event) ([]byte, error) {
-	return json.Marshal(event)
+	// Create a map to hold the flattened event structure.
+	flattened := make(map[string]interface{})
+
+	// Add the non-dims fields.
+	flattened["Time"] = event.Time
+	flattened["Name"] = event.Name
+	flattened["Value"] = event.Value
+
+	// Iterate over the dims slice and add each dim to the map.
+	for _, dim := range event.Dims {
+		flattened[dim.Name] = dim.Value
+	}
+
+	return json.Marshal(flattened)
 }

@@ -264,7 +264,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	}
 
 	c := usage.Conf{
-		Sink:       usage.NewConsoleSink(serverLogger.Named("console")),
+		Sink:       usage.NewNoopSink(),
 		SinkPeriod: time.Duration(100) * time.Millisecond,
 		QueueSize:  1000,
 	}
