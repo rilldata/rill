@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// Sink is used by a usage Client to sink accumulated events.
 type Sink interface {
 	Sink(events []Event)
 	Close() error

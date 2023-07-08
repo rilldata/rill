@@ -14,6 +14,12 @@ import (
 	"go.uber.org/zap"
 )
 
+// GCSSink sinks events to a GCS bucket.
+// Events are partitioned by organization_id and project_id:
+// 1. If both are defined then the full path is bucketName/organization_id/project_id/fileName
+// 2. If only organization_id is defined then the full path is bucketName/organization_id/fileName
+// 3. Otherwise, the full path is bucketName/fileName
+// fileName is unique on each sink call
 type GCSSink struct {
 	bucket string
 	client *storage.Client

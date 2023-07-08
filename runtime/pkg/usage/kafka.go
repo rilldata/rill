@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// KafkaSink sinks events to a Kafka cluster.
 type KafkaSink struct {
 	producer *kafka.Producer
 	topic    string
