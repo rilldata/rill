@@ -34,12 +34,6 @@ const (
 	RuntimeService_ListExamples_FullMethodName           = "/rill.runtime.v1.RuntimeService/ListExamples"
 	RuntimeService_UnpackExample_FullMethodName          = "/rill.runtime.v1.RuntimeService/UnpackExample"
 	RuntimeService_UnpackEmpty_FullMethodName            = "/rill.runtime.v1.RuntimeService/UnpackEmpty"
-	RuntimeService_GetLogs_FullMethodName                = "/rill.runtime.v1.RuntimeService/GetLogs"
-	RuntimeService_WatchLogs_FullMethodName              = "/rill.runtime.v1.RuntimeService/WatchLogs"
-	RuntimeService_ListResources_FullMethodName          = "/rill.runtime.v1.RuntimeService/ListResources"
-	RuntimeService_WatchResources_FullMethodName         = "/rill.runtime.v1.RuntimeService/WatchResources"
-	RuntimeService_GetResource_FullMethodName            = "/rill.runtime.v1.RuntimeService/GetResource"
-	RuntimeService_CreateTrigger_FullMethodName          = "/rill.runtime.v1.RuntimeService/CreateTrigger"
 	RuntimeService_ListCatalogEntries_FullMethodName     = "/rill.runtime.v1.RuntimeService/ListCatalogEntries"
 	RuntimeService_GetCatalogEntry_FullMethodName        = "/rill.runtime.v1.RuntimeService/GetCatalogEntry"
 	RuntimeService_TriggerRefresh_FullMethodName         = "/rill.runtime.v1.RuntimeService/TriggerRefresh"
@@ -87,19 +81,6 @@ type RuntimeServiceClient interface {
 	UnpackExample(ctx context.Context, in *UnpackExampleRequest, opts ...grpc.CallOption) (*UnpackExampleResponse, error)
 	// UnpackEmpty unpacks an empty project
 	UnpackEmpty(ctx context.Context, in *UnpackEmptyRequest, opts ...grpc.CallOption) (*UnpackEmptyResponse, error)
-	// GetLogs returns recent logs from a controller
-	GetLogs(ctx context.Context, in *GetLogsRequest, opts ...grpc.CallOption) (*GetLogsResponse, error)
-	// WatchLogs streams new logs emitted from a controller
-	WatchLogs(ctx context.Context, in *WatchLogsRequest, opts ...grpc.CallOption) (RuntimeService_WatchLogsClient, error)
-	// ListResources lists the resources stored in the catalog
-	ListResources(ctx context.Context, in *ListResourcesRequest, opts ...grpc.CallOption) (*ListResourcesResponse, error)
-	// WatchResources streams updates to catalog resources (including creation and deletion events)
-	WatchResources(ctx context.Context, in *WatchResourcesRequest, opts ...grpc.CallOption) (RuntimeService_WatchResourcesClient, error)
-	// GetResource looks up a specific catalog resource
-	GetResource(ctx context.Context, in *GetResourceRequest, opts ...grpc.CallOption) (*GetResourceResponse, error)
-	// CreateTrigger creates a trigger in the catalog.
-	// Triggers are ephemeral resources that will be cleaned up by the controller.
-	CreateTrigger(ctx context.Context, in *CreateTriggerRequest, opts ...grpc.CallOption) (*CreateTriggerResponse, error)
 	// ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
 	ListCatalogEntries(ctx context.Context, in *ListCatalogEntriesRequest, opts ...grpc.CallOption) (*ListCatalogEntriesResponse, error)
 	// GetCatalogEntry returns information about a specific entry in the catalog
@@ -272,106 +253,6 @@ func (c *runtimeServiceClient) UnpackEmpty(ctx context.Context, in *UnpackEmptyR
 	return out, nil
 }
 
-func (c *runtimeServiceClient) GetLogs(ctx context.Context, in *GetLogsRequest, opts ...grpc.CallOption) (*GetLogsResponse, error) {
-	out := new(GetLogsResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_GetLogs_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *runtimeServiceClient) WatchLogs(ctx context.Context, in *WatchLogsRequest, opts ...grpc.CallOption) (RuntimeService_WatchLogsClient, error) {
-	stream, err := c.cc.NewStream(ctx, &RuntimeService_ServiceDesc.Streams[0], RuntimeService_WatchLogs_FullMethodName, opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &runtimeServiceWatchLogsClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type RuntimeService_WatchLogsClient interface {
-	Recv() (*WatchLogsResponse, error)
-	grpc.ClientStream
-}
-
-type runtimeServiceWatchLogsClient struct {
-	grpc.ClientStream
-}
-
-func (x *runtimeServiceWatchLogsClient) Recv() (*WatchLogsResponse, error) {
-	m := new(WatchLogsResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func (c *runtimeServiceClient) ListResources(ctx context.Context, in *ListResourcesRequest, opts ...grpc.CallOption) (*ListResourcesResponse, error) {
-	out := new(ListResourcesResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_ListResources_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *runtimeServiceClient) WatchResources(ctx context.Context, in *WatchResourcesRequest, opts ...grpc.CallOption) (RuntimeService_WatchResourcesClient, error) {
-	stream, err := c.cc.NewStream(ctx, &RuntimeService_ServiceDesc.Streams[1], RuntimeService_WatchResources_FullMethodName, opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &runtimeServiceWatchResourcesClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type RuntimeService_WatchResourcesClient interface {
-	Recv() (*WatchResourcesResponse, error)
-	grpc.ClientStream
-}
-
-type runtimeServiceWatchResourcesClient struct {
-	grpc.ClientStream
-}
-
-func (x *runtimeServiceWatchResourcesClient) Recv() (*WatchResourcesResponse, error) {
-	m := new(WatchResourcesResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func (c *runtimeServiceClient) GetResource(ctx context.Context, in *GetResourceRequest, opts ...grpc.CallOption) (*GetResourceResponse, error) {
-	out := new(GetResourceResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_GetResource_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *runtimeServiceClient) CreateTrigger(ctx context.Context, in *CreateTriggerRequest, opts ...grpc.CallOption) (*CreateTriggerResponse, error) {
-	out := new(CreateTriggerResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_CreateTrigger_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *runtimeServiceClient) ListCatalogEntries(ctx context.Context, in *ListCatalogEntriesRequest, opts ...grpc.CallOption) (*ListCatalogEntriesResponse, error) {
 	out := new(ListCatalogEntriesResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_ListCatalogEntries_FullMethodName, in, out, opts...)
@@ -497,19 +378,6 @@ type RuntimeServiceServer interface {
 	UnpackExample(context.Context, *UnpackExampleRequest) (*UnpackExampleResponse, error)
 	// UnpackEmpty unpacks an empty project
 	UnpackEmpty(context.Context, *UnpackEmptyRequest) (*UnpackEmptyResponse, error)
-	// GetLogs returns recent logs from a controller
-	GetLogs(context.Context, *GetLogsRequest) (*GetLogsResponse, error)
-	// WatchLogs streams new logs emitted from a controller
-	WatchLogs(*WatchLogsRequest, RuntimeService_WatchLogsServer) error
-	// ListResources lists the resources stored in the catalog
-	ListResources(context.Context, *ListResourcesRequest) (*ListResourcesResponse, error)
-	// WatchResources streams updates to catalog resources (including creation and deletion events)
-	WatchResources(*WatchResourcesRequest, RuntimeService_WatchResourcesServer) error
-	// GetResource looks up a specific catalog resource
-	GetResource(context.Context, *GetResourceRequest) (*GetResourceResponse, error)
-	// CreateTrigger creates a trigger in the catalog.
-	// Triggers are ephemeral resources that will be cleaned up by the controller.
-	CreateTrigger(context.Context, *CreateTriggerRequest) (*CreateTriggerResponse, error)
 	// ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
 	ListCatalogEntries(context.Context, *ListCatalogEntriesRequest) (*ListCatalogEntriesResponse, error)
 	// GetCatalogEntry returns information about a specific entry in the catalog
@@ -588,24 +456,6 @@ func (UnimplementedRuntimeServiceServer) UnpackExample(context.Context, *UnpackE
 }
 func (UnimplementedRuntimeServiceServer) UnpackEmpty(context.Context, *UnpackEmptyRequest) (*UnpackEmptyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UnpackEmpty not implemented")
-}
-func (UnimplementedRuntimeServiceServer) GetLogs(context.Context, *GetLogsRequest) (*GetLogsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetLogs not implemented")
-}
-func (UnimplementedRuntimeServiceServer) WatchLogs(*WatchLogsRequest, RuntimeService_WatchLogsServer) error {
-	return status.Errorf(codes.Unimplemented, "method WatchLogs not implemented")
-}
-func (UnimplementedRuntimeServiceServer) ListResources(context.Context, *ListResourcesRequest) (*ListResourcesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListResources not implemented")
-}
-func (UnimplementedRuntimeServiceServer) WatchResources(*WatchResourcesRequest, RuntimeService_WatchResourcesServer) error {
-	return status.Errorf(codes.Unimplemented, "method WatchResources not implemented")
-}
-func (UnimplementedRuntimeServiceServer) GetResource(context.Context, *GetResourceRequest) (*GetResourceResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetResource not implemented")
-}
-func (UnimplementedRuntimeServiceServer) CreateTrigger(context.Context, *CreateTriggerRequest) (*CreateTriggerResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateTrigger not implemented")
 }
 func (UnimplementedRuntimeServiceServer) ListCatalogEntries(context.Context, *ListCatalogEntriesRequest) (*ListCatalogEntriesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListCatalogEntries not implemented")
@@ -920,120 +770,6 @@ func _RuntimeService_UnpackEmpty_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RuntimeService_GetLogs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetLogsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).GetLogs(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RuntimeService_GetLogs_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).GetLogs(ctx, req.(*GetLogsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RuntimeService_WatchLogs_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(WatchLogsRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(RuntimeServiceServer).WatchLogs(m, &runtimeServiceWatchLogsServer{stream})
-}
-
-type RuntimeService_WatchLogsServer interface {
-	Send(*WatchLogsResponse) error
-	grpc.ServerStream
-}
-
-type runtimeServiceWatchLogsServer struct {
-	grpc.ServerStream
-}
-
-func (x *runtimeServiceWatchLogsServer) Send(m *WatchLogsResponse) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func _RuntimeService_ListResources_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListResourcesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).ListResources(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RuntimeService_ListResources_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).ListResources(ctx, req.(*ListResourcesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RuntimeService_WatchResources_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(WatchResourcesRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(RuntimeServiceServer).WatchResources(m, &runtimeServiceWatchResourcesServer{stream})
-}
-
-type RuntimeService_WatchResourcesServer interface {
-	Send(*WatchResourcesResponse) error
-	grpc.ServerStream
-}
-
-type runtimeServiceWatchResourcesServer struct {
-	grpc.ServerStream
-}
-
-func (x *runtimeServiceWatchResourcesServer) Send(m *WatchResourcesResponse) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func _RuntimeService_GetResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetResourceRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).GetResource(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RuntimeService_GetResource_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).GetResource(ctx, req.(*GetResourceRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RuntimeService_CreateTrigger_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateTriggerRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).CreateTrigger(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RuntimeService_CreateTrigger_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).CreateTrigger(ctx, req.(*CreateTriggerRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _RuntimeService_ListCatalogEntries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListCatalogEntriesRequest)
 	if err := dec(in); err != nil {
@@ -1282,22 +1018,6 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_UnpackEmpty_Handler,
 		},
 		{
-			MethodName: "GetLogs",
-			Handler:    _RuntimeService_GetLogs_Handler,
-		},
-		{
-			MethodName: "ListResources",
-			Handler:    _RuntimeService_ListResources_Handler,
-		},
-		{
-			MethodName: "GetResource",
-			Handler:    _RuntimeService_GetResource_Handler,
-		},
-		{
-			MethodName: "CreateTrigger",
-			Handler:    _RuntimeService_CreateTrigger_Handler,
-		},
-		{
 			MethodName: "ListCatalogEntries",
 			Handler:    _RuntimeService_ListCatalogEntries_Handler,
 		},
@@ -1338,17 +1058,6 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_ListConnectors_Handler,
 		},
 	},
-	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "WatchLogs",
-			Handler:       _RuntimeService_WatchLogs_Handler,
-			ServerStreams: true,
-		},
-		{
-			StreamName:    "WatchResources",
-			Handler:       _RuntimeService_WatchResources_Handler,
-			ServerStreams: true,
-		},
-	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "rill/runtime/v1/api.proto",
 }
