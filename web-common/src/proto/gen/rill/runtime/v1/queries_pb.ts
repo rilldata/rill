@@ -1127,9 +1127,9 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
   sort: MetricsViewSort[] = [];
 
   /**
-   * @generated from field: int64 limit = 7;
+   * @generated from field: int32 limit = 7;
    */
-  limit = protoInt64.zero;
+  limit = 0;
 
   /**
    * @generated from field: int64 offset = 8;
@@ -1156,7 +1156,7 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
     { no: 10, name: "time_granularity", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 5, name: "filter", kind: "message", T: MetricsViewFilter },
     { no: 6, name: "sort", kind: "message", T: MetricsViewSort, repeated: true },
-    { no: 7, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 7, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 8, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 9, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);

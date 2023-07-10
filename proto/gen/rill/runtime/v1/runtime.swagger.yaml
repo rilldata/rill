@@ -843,8 +843,8 @@ paths:
                   type: object
                   $ref: '#/definitions/v1MetricsViewSort'
               limit:
-                type: string
-                format: int64
+                type: integer
+                format: int32
               offset:
                 type: string
                 format: int64
@@ -2500,8 +2500,8 @@ definitions:
           type: object
           $ref: '#/definitions/v1MetricsViewSort'
       limit:
-        type: string
-        format: int64
+        type: integer
+        format: int32
       offset:
         type: string
         format: int64

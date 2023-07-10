@@ -320,7 +320,7 @@ message MetricsViewRowsRequest {
   TimeGrain time_granularity = 10;
   MetricsViewFilter filter = 5;
   repeated MetricsViewSort sort = 6;
-  int64 limit = 7 [(validate.rules).int64.gte = 0];
+  int32 limit = 7 [(validate.rules).int32.gte = 0];
   int64 offset = 8 [(validate.rules).int64.gte = 0];
   int32 priority = 9;
 }
