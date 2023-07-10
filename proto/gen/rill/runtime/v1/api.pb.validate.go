@@ -300,7 +300,7 @@ func (m *Instance) validate(all bool) error {
 	if _, ok := _Instance_OlapDriver_InLookup[m.GetOlapDriver()]; !ok {
 		err := InstanceValidationError{
 			field:  "OlapDriver",
-			reason: "value must be in list [duckdb druid motherduck]",
+			reason: "value must be in list [duckdb druid]",
 		}
 		if !all {
 			return err
@@ -411,9 +411,8 @@ var _ interface {
 var _Instance_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 var _Instance_OlapDriver_InLookup = map[string]struct{}{
-	"duckdb":     {},
-	"druid":      {},
-	"motherduck": {},
+	"duckdb": {},
+	"druid":  {},
 }
 
 var _Instance_RepoDriver_InLookup = map[string]struct{}{
@@ -952,7 +951,7 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 	if _, ok := _CreateInstanceRequest_OlapDriver_InLookup[m.GetOlapDriver()]; !ok {
 		err := CreateInstanceRequestValidationError{
 			field:  "OlapDriver",
-			reason: "value must be in list [duckdb druid motherduck]",
+			reason: "value must be in list [duckdb druid]",
 		}
 		if !all {
 			return err
@@ -1064,9 +1063,8 @@ var _ interface {
 var _CreateInstanceRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 var _CreateInstanceRequest_OlapDriver_InLookup = map[string]struct{}{
-	"duckdb":     {},
-	"druid":      {},
-	"motherduck": {},
+	"duckdb": {},
+	"druid":  {},
 }
 
 var _CreateInstanceRequest_RepoDriver_InLookup = map[string]struct{}{
@@ -1463,7 +1461,7 @@ func (m *EditInstanceRequest) validate(all bool) error {
 		if _, ok := _EditInstanceRequest_OlapDriver_InLookup[m.GetOlapDriver()]; !ok {
 			err := EditInstanceRequestValidationError{
 				field:  "OlapDriver",
-				reason: "value must be in list [duckdb druid motherduck]",
+				reason: "value must be in list [duckdb druid]",
 			}
 			if !all {
 				return err
@@ -1587,9 +1585,8 @@ var _ interface {
 var _EditInstanceRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
 var _EditInstanceRequest_OlapDriver_InLookup = map[string]struct{}{
-	"duckdb":     {},
-	"druid":      {},
-	"motherduck": {},
+	"duckdb": {},
+	"druid":  {},
 }
 
 var _EditInstanceRequest_RepoDriver_InLookup = map[string]struct{}{
