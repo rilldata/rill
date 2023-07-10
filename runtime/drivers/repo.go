@@ -3,6 +3,7 @@ package drivers
 import (
 	"context"
 	"errors"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"io"
 	"time"
 )
@@ -20,6 +21,14 @@ type RepoStore interface {
 	Rename(ctx context.Context, instID string, fromPath string, toPath string) error
 	Delete(ctx context.Context, instID string, path string) error
 	Sync(ctx context.Context, instID string) error
+	Watch(ctx context.Context, replay bool, callback WatchCallback) error
+}
+
+type WatchCallback func(event WatchEvent) error
+
+type WatchEvent struct {
+	Type runtimev1.FileEvent
+	Path string
 }
 
 type RepoObjectStat struct {

@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
+	"github.com/fsnotify/fsnotify"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
@@ -134,4 +136,100 @@ func (c *connection) Delete(ctx context.Context, instID, filePath string) error 
 
 func (c *connection) Sync(ctx context.Context, instID string) error {
 	return nil
+}
+
+func (c *connection) Watch(ctx context.Context, replay bool, callback drivers.WatchCallback) error {
+	if c.Driver() != "file" {
+		return fmt.Errorf("%s repository is not supported", c.Driver())
+	}
+
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		return err
+	}
+	defer watcher.Close()
+
+	fsRoot := os.DirFS(c.Root())
+
+	var dirs []string
+	var files []string
+
+	err = doublestar.GlobWalk(fsRoot, "**", func(p string, d fs.DirEntry) error {
+		if d.IsDir() {
+			dirs = append(dirs, p)
+		} else {
+			files = append(files, p)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	if replay {
+		for _, f := range files {
+			err = callback(drivers.WatchEvent{
+				Path: f,
+				Type: runtimev1.FileEvent_FILE_EVENT_WRITE,
+			})
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	for _, path := range dirs {
+		relativePath := filepath.Join(c.Root(), path)
+		fi, err := os.Stat(relativePath)
+		if err != nil {
+			return err
+		}
+
+		if fi.IsDir() {
+			err := watcher.Add(relativePath)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	for {
+		select {
+		case event, ok := <-watcher.Events:
+			if !ok {
+				return nil
+			}
+
+			e := drivers.WatchEvent{
+				Path: event.Name,
+			}
+			switch event.Op {
+			case fsnotify.Write:
+				e.Type = runtimev1.FileEvent_FILE_EVENT_WRITE
+			case fsnotify.Remove:
+				e.Type = runtimev1.FileEvent_FILE_EVENT_DELETE
+			case fsnotify.Rename:
+				e.Type = runtimev1.FileEvent_FILE_EVENT_RENAME
+			default:
+				e.Type = runtimev1.FileEvent_FILE_EVENT_UNSPECIFIED
+			}
+			err = callback(e)
+			if err != nil {
+				return err
+			}
+
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return nil
+			}
+			return err
+		case _, ok := <-ctx.Done():
+			if !ok {
+				return nil
+			}
+
+			return ctx.Err()
+		}
+	}
 }
