@@ -45,7 +45,7 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 		InlineMeasures:  req.InlineMeasures,
 		TimeStart:       req.TimeStart,
 		TimeEnd:         req.TimeEnd,
-		Limit:           req.Limit,
+		Limit:           &req.Limit,
 		Offset:          req.Offset,
 		Sort:            req.Sort,
 		Filter:          req.Filter,
@@ -201,7 +201,7 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 		TimeGranularity: req.TimeGranularity,
 		Filter:          req.Filter,
 		Sort:            req.Sort,
-		Limit:           req.Limit,
+		Limit:           &req.Limit,
 		Offset:          req.Offset,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))

@@ -727,8 +727,8 @@ paths:
             type: object
             properties:
               limit:
-                type: integer
-                format: int32
+                type: string
+                format: int64
               format:
                 $ref: '#/definitions/v1ExportFormat'
               metricsViewToplistRequest:
@@ -843,8 +843,8 @@ paths:
                   type: object
                   $ref: '#/definitions/v1MetricsViewSort'
               limit:
-                type: integer
-                format: int32
+                type: string
+                format: int64
               offset:
                 type: string
                 format: int64
@@ -2500,8 +2500,8 @@ definitions:
           type: object
           $ref: '#/definitions/v1MetricsViewSort'
       limit:
-        type: integer
-        format: int32
+        type: string
+        format: int64
       offset:
         type: string
         format: int64

@@ -144,7 +144,7 @@ export type QueryServiceMetricsViewRowsBody = {
   timeGranularity?: V1TimeGrain;
   filter?: V1MetricsViewFilter;
   sort?: V1MetricsViewSort[];
-  limit?: number;
+  limit?: string;
   offset?: string;
   priority?: number;
 };
@@ -163,7 +163,7 @@ export type QueryServiceMetricsViewComparisonToplistBody = {
 };
 
 export type QueryServiceExportBody = {
-  limit?: number;
+  limit?: string;
   format?: V1ExportFormat;
   metricsViewToplistRequest?: V1MetricsViewToplistRequest;
   metricsViewRowsRequest?: V1MetricsViewRowsRequest;
@@ -692,7 +692,7 @@ export interface V1MetricsViewRowsRequest {
   timeGranularity?: V1TimeGrain;
   filter?: V1MetricsViewFilter;
   sort?: V1MetricsViewSort[];
-  limit?: number;
+  limit?: string;
   offset?: string;
   priority?: number;
 }

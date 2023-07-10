@@ -240,9 +240,9 @@ export class ExportRequest extends Message<ExportRequest> {
   instanceId = "";
 
   /**
-   * @generated from field: int32 limit = 2;
+   * @generated from field: optional int64 limit = 2;
    */
-  limit = 0;
+  limit?: bigint;
 
   /**
    * @generated from field: rill.runtime.v1.ExportFormat format = 3;
@@ -275,7 +275,7 @@ export class ExportRequest extends Message<ExportRequest> {
   static readonly typeName = "rill.runtime.v1.ExportRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 3, name: "format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 4, name: "metrics_view_toplist_request", kind: "message", T: MetricsViewToplistRequest, oneof: "request" },
     { no: 5, name: "metrics_view_rows_request", kind: "message", T: MetricsViewRowsRequest, oneof: "request" },
@@ -1127,9 +1127,9 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
   sort: MetricsViewSort[] = [];
 
   /**
-   * @generated from field: int32 limit = 7;
+   * @generated from field: int64 limit = 7;
    */
-  limit = 0;
+  limit = protoInt64.zero;
 
   /**
    * @generated from field: int64 offset = 8;
@@ -1156,7 +1156,7 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
     { no: 10, name: "time_granularity", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 5, name: "filter", kind: "message", T: MetricsViewFilter },
     { no: 6, name: "sort", kind: "message", T: MetricsViewSort, repeated: true },
-    { no: 7, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 7, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 8, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 9, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
