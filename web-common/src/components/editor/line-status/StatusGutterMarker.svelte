@@ -6,7 +6,6 @@
   import WarningIcon from "../../icons/WarningIcon.svelte";
   export let level: "error" | "warning" | "info" = undefined;
   export let message: string = undefined;
-  export let line: number;
   export let active = false;
 </script>
 

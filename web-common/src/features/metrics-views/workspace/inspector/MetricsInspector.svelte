@@ -46,14 +46,10 @@
     );
   }
 
-  $: getModel = createRuntimeServiceGetCatalogEntry(
-    $runtime?.instanceId,
-    modelName
-  );
   let entry;
 
   // refresh entry value only if the data has changed
-  $: entry = $getModel?.data?.entry || entry;
+  $: entry = $modelQuery?.data?.entry || entry;
 
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
@@ -95,11 +91,7 @@
 
         {#if showColumns}
           <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-            <ColumnProfile
-              key={entry?.model?.sql}
-              objectName={entry?.model?.name}
-              indentLevel={0}
-            />
+            <ColumnProfile objectName={entry?.model?.name} indentLevel={0} />
           </div>
         {/if}
       {/if}

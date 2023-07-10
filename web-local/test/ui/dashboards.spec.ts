@@ -268,9 +268,6 @@ describe("dashboards", () => {
 
     // Get the dashboard name field and change it
 
-    // await page.getByLabel("Display name").fill("AdBids_model_dashboard_rename");
-    // await page.getByLabel("Display name").blur();
-
     const changeDisplayNameDoc = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
     title: "AdBids_model_dashboard_rename"
@@ -341,15 +338,6 @@ describe("dashboards", () => {
     
         `;
     await updateMetricsInput(page, addBackTimestampColumnDoc);
-
-    // await page.getByRole("button", { name: "Select a time column" }).click();
-    // await page.getByRole("menuitem", { name: "timestamp" }).click();
-
-    // Change smallest grain
-    // await page
-    //   .getByRole("button", { name: "Change smallest time grain" })
-    //   .click();
-    // await page.getByRole("menuitem", { name: "week" }).click();
 
     // Go to dashboard
     await page.getByRole("button", { name: "Go to Dashboard" }).click();

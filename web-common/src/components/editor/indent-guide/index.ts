@@ -12,8 +12,6 @@ class IndentGuideWidget extends WidgetType {
     const element = document.createElement("span");
     element.style.display = "inline-block";
     element.style.position = "absolute";
-    element.style.width = "1px";
-    element.style.height = "17px";
     new IndentGuide({ target: element });
     return element;
   }

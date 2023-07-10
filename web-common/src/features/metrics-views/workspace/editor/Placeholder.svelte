@@ -21,7 +21,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
 
   export let metricsName: string;
-  export let view: EditorView;
+  export let view: EditorView = undefined;
 
   $: models = useModelNames($runtime.instanceId);
 

@@ -52,7 +52,6 @@
     $fileArtifactsStore,
     `${metricsDefName}.yaml`
   );
-
   $: lineBasedRuntimeErrors = mapRuntimeErrorsToLines(runtimeErrors, yaml);
   /** display the main error (the first in this array) at the bottom */
   $: mainError = [...lineBasedRuntimeErrors, ...(runtimeErrors || [])]?.at(0);
