@@ -7,15 +7,15 @@
     V1Connector,
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
-  import LocalSource from "./LocalSource.svelte";
-  import RemoteSource from "./RemoteSource.svelte";
+  import { appScreen } from "../../../layout/app-store";
   import { behaviourEvent } from "../../../metrics/initMetrics";
   import {
     BehaviourEventAction,
     BehaviourEventMedium,
   } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
-  import { appScreen } from "../../../layout/app-store";
+  import LocalSource from "./LocalSource.svelte";
+  import RemoteSource from "./RemoteSource.svelte";
 
   const dispatch = createEventDispatcher();
 
