@@ -3,9 +3,10 @@ package drivers
 import (
 	"context"
 	"errors"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"io"
 	"time"
+
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
 // RepoStore is implemented by drivers capable of storing code artifacts.
