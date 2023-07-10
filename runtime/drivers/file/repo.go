@@ -170,13 +170,18 @@ func (c *connection) Watch(ctx context.Context, replay bool, callback drivers.Wa
 	if replay {
 		for _, f := range files {
 			err = callback(drivers.WatchEvent{
-				Path: f,
+				Path: filepath.Join("/", f),
 				Type: runtimev1.FileEvent_FILE_EVENT_WRITE,
 			})
 			if err != nil {
 				return err
 			}
 		}
+	}
+
+	err = watcher.Add(c.Root())
+	if err != nil {
+		return err
 	}
 
 	for _, path := range dirs {
