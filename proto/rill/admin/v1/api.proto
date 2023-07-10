@@ -702,6 +702,10 @@ message UserQuotas {
   uint32 singleuser_orgs = 1;
 }
 
+message UserPreferences {
+  string timezone = 1;
+}
+
 message OrganizationQuotas {
   uint32 projects = 1;
   uint32 deployments = 2;

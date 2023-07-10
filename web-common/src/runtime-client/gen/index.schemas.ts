@@ -18,6 +18,43 @@ export type ConnectorServiceS3ListObjectsParams = {
   delimiter?: string;
 };
 
+export type RuntimeServiceCreateTriggerBody = {
+  pullTriggerSpec?: V1PullTriggerSpec;
+  refreshTriggerSpec?: V1RefreshTriggerSpec;
+};
+
+export type RuntimeServiceWatchResources200 = {
+  result?: V1WatchResourcesResponse;
+  error?: RpcStatus;
+};
+
+export type RuntimeServiceWatchResourcesParams = {
+  "refFilter.kind"?: string;
+  "refFilter.name"?: string;
+  "prefixFilter.kind"?: string;
+  "prefixFilter.name"?: string;
+  /**
+   * This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
+   */
+  annotationsFilter?: string;
+};
+
+export type RuntimeServiceListResourcesParams = {
+  "refFilter.kind"?: string;
+  "refFilter.name"?: string;
+  "prefixFilter.kind"?: string;
+  "prefixFilter.name"?: string;
+  /**
+   * This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
+   */
+  annotationsFilter?: string;
+};
+
+export type RuntimeServiceGetResourceParams = {
+  "name.kind"?: string;
+  "name.name"?: string;
+};
+
 export type RuntimeServiceReconcileBody = {
   /** Changed paths provides a way to "hint" what files have changed in the repo, enabling
 reconciliation to execute faster by not scanning all code artifacts for changes. */
@@ -182,6 +219,19 @@ export type QueryServiceColumnCardinalityParams = {
   priority?: number;
 };
 
+export type RuntimeServiceWatchLogs200 = {
+  result?: V1WatchLogsResponse;
+  error?: RpcStatus;
+};
+
+export type RuntimeServiceWatchLogsParams = {
+  replay?: boolean;
+};
+
+export type RuntimeServiceGetLogsParams = {
+  ascending?: boolean;
+};
+
 export type RuntimeServiceUnpackExampleBody = {
   name?: string;
   force?: boolean;
@@ -272,6 +322,22 @@ export type ConnectorServiceGCSListObjectsParams = {
   delimiter?: string;
 };
 
+export interface V1WatchResourcesResponse {
+  resource?: V1Resource;
+  event?: V1ResourceEvent;
+}
+
+export interface V1WatchLogsResponse {
+  logs?: V1Log[];
+}
+
+export interface V1ValidationError {
+  message?: string;
+  propertyPath?: string[];
+  startLoc?: Runtimev1CharLocation;
+  endLoc?: Runtimev1CharLocation;
+}
+
 export interface V1UnpackExampleResponse {
   [key: string]: any;
 }
@@ -334,12 +400,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -373,6 +433,23 @@ export const V1TimeGrain = {
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
+export interface V1TableSpec {
+  connector?: string;
+  schema?: string;
+  name?: string;
+}
+
+export interface V1TableV2 {
+  spec?: V1TableSpec;
+  state?: V1TableState;
+}
+
 export type V1TableRowsResponseDataItem = { [key: string]: any };
 
 export interface V1TableRowsResponse {
@@ -391,6 +468,10 @@ export interface V1StructType {
   fields?: StructTypeField[];
 }
 
+export interface V1TableState {
+  schema?: V1StructType;
+}
+
 /**
  * Table represents a table in the OLAP database. These include pre-existing tables discovered by periodically
 scanning the database's information schema when the instance is created with exposed=true. Pre-existing tables
@@ -404,6 +485,28 @@ scanning the database's information schema. */
   managed?: boolean;
 }
 
+export interface V1SourceState {
+  tableName?: string;
+  stageTableName?: string;
+  validationError?: V1ValidationError;
+  executionError?: V1ExecutionError;
+}
+
+export type V1SourceSpecProperties = { [key: string]: any };
+
+export interface V1SourceSpec {
+  sourceConnector?: string;
+  sinkConnector?: string;
+  properties?: V1SourceSpecProperties;
+  refreshSchedule?: V1Schedule;
+  timeoutSeconds?: number;
+}
+
+export interface V1SourceV2 {
+  spec?: V1SourceSpec;
+  state?: V1SourceState;
+}
+
 export type V1SourceProperties = { [key: string]: any };
 
 export interface V1Source {
@@ -413,6 +516,11 @@ export interface V1Source {
   schema?: V1StructType;
   policy?: SourceExtractPolicy;
   timeoutSeconds?: number;
+}
+
+export interface V1Schedule {
+  cron?: string;
+  tickerSeconds?: number;
 }
 
 export interface V1S3Object {
@@ -441,6 +549,39 @@ export interface V1S3GetBucketMetadataResponse {
   region?: string;
 }
 
+export interface V1ResourceName {
+  kind?: string;
+  name?: string;
+}
+
+export type V1ResourceMetaAnnotations = { [key: string]: string };
+
+export interface V1ResourceMeta {
+  name?: V1ResourceName;
+  refs?: V1ResourceName[];
+  annotations?: V1ResourceMetaAnnotations;
+  specVersion?: string;
+  stateVersion?: string;
+  deleted?: boolean;
+  reconcileError?: string;
+  createdOn?: string;
+  specUpdatedOn?: string;
+  stateUpdatedOn?: string;
+  deletedOn?: string;
+}
+
+export type V1ResourceEvent =
+  (typeof V1ResourceEvent)[keyof typeof V1ResourceEvent];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ResourceEvent = {
+  RESOURCE_EVENT_UNSPECIFIED: "RESOURCE_EVENT_UNSPECIFIED",
+  RESOURCE_EVENT_ADDED: "RESOURCE_EVENT_ADDED",
+  RESOURCE_EVENT_UPDATED_SPEC: "RESOURCE_EVENT_UPDATED_SPEC",
+  RESOURCE_EVENT_UPDATED_STATE: "RESOURCE_EVENT_UPDATED_STATE",
+  RESOURCE_EVENT_DELETED: "RESOURCE_EVENT_DELETED",
+} as const;
+
 export interface V1RenameFileResponse {
   [key: string]: any;
 }
@@ -464,6 +605,32 @@ export interface V1RenameFileAndReconcileRequest {
   strict?: boolean;
 }
 
+export interface V1RefreshTriggerState {
+  [key: string]: any;
+}
+
+export interface V1RefreshTriggerSpec {
+  onlyNames?: string;
+  reset?: boolean;
+}
+
+export interface V1RefreshTrigger {
+  spec?: V1RefreshTriggerSpec;
+  state?: V1RefreshTriggerState;
+}
+
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  table?: V1TableV2;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+}
+
 export interface V1RefreshAndReconcileResponse {
   /** Errors encountered during reconciliation. If strict = false, any path in
 affected_paths without an error can be assumed to have been reconciled succesfully. */
@@ -480,6 +647,16 @@ export interface V1RefreshAndReconcileRequest {
   /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
   dry?: boolean;
   strict?: boolean;
+}
+
+export interface V1ReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
 }
 
 /**
@@ -505,6 +682,11 @@ export const V1ReconcileErrorCode = {
   CODE_SOURCE_PERMISSION_DENIED: "CODE_SOURCE_PERMISSION_DENIED",
 } as const;
 
+export interface V1ReconcileErrorCharLocation {
+  line?: number;
+  column?: number;
+}
+
 /**
  * ReconcileError represents an error encountered while running Reconcile.
  */
@@ -517,18 +699,8 @@ It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
 It only applies to structured code artifacts (i.e. YAML).
 Only applicable if file_path is set. */
   propertyPath?: string[];
-  startLocation?: ReconcileErrorCharLocation;
-  endLocation?: ReconcileErrorCharLocation;
-}
-
-export interface V1ReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
+  startLocation?: V1ReconcileErrorCharLocation;
+  endLocation?: V1ReconcileErrorCharLocation;
 }
 
 export type V1QueryResponseDataItem = { [key: string]: any };
@@ -565,6 +737,46 @@ It should only be set when create = true. */
   strict?: boolean;
 }
 
+export interface V1PullTriggerState {
+  [key: string]: any;
+}
+
+export interface V1PullTriggerSpec {
+  onlyPaths?: string[];
+  refreshSources?: boolean;
+}
+
+export interface V1PullTrigger {
+  spec?: V1PullTriggerSpec;
+  state?: V1PullTriggerState;
+}
+
+export interface V1ProjectParserState {
+  parseErrors?: V1ParseError[];
+  currentCommitSha?: string;
+  changedPaths?: string[];
+}
+
+export interface V1ProjectParserSpec {
+  /** compiler identifies the project file parser to use. */
+  compiler?: string;
+  watch?: boolean;
+  refreshOnPull?: boolean;
+  /** atomic makes the project parser attempt to stage all changes before committing them. */
+  atomic?: boolean;
+  /** materialize_model_default sets a default for whether or not to materialize a model, if not explicitly set in the model. */
+  materializeModelDefault?: boolean;
+  materializeModelDelaySeconds?: number;
+  /** bool simulate_streaming_ingestion = 8;
+ bool sync_existing_tables = 9; */
+  retainDeletedModelSeconds?: number;
+}
+
+export interface V1ProjectParser {
+  spec?: V1ProjectParserSpec;
+  state?: V1ProjectParserState;
+}
+
 export interface V1ProfileColumn {
   name?: string;
   type?: string;
@@ -574,6 +786,13 @@ export interface V1ProfileColumn {
 export interface V1PingResponse {
   version?: string;
   time?: string;
+}
+
+export interface V1ParseError {
+  message?: string;
+  filePath?: string;
+  startLoc?: Runtimev1CharLocation;
+  endLoc?: Runtimev1CharLocation;
 }
 
 export type V1ObjectType = (typeof V1ObjectType)[keyof typeof V1ObjectType];
@@ -615,6 +834,28 @@ export interface V1NumericSummary {
   numericOutliers?: V1NumericOutliers;
 }
 
+export interface V1ModelState {
+  tableName?: string;
+  stageTableName?: string;
+  validationError?: V1ValidationError;
+  executionError?: V1ExecutionError;
+  dependencyError?: V1DependencyError;
+}
+
+export interface V1ModelSpec {
+  connector?: string;
+  sql?: string;
+  deriveMetricsView?: boolean;
+  refreshSchedule?: V1Schedule;
+  timeoutSeconds?: number;
+  materialize?: boolean;
+}
+
+export interface V1ModelV2 {
+  spec?: V1ModelSpec;
+  state?: V1ModelState;
+}
+
 export interface V1Model {
   name?: string;
   sql?: string;
@@ -623,23 +864,51 @@ export interface V1Model {
   materialize?: boolean;
 }
 
+export interface V1MetricsViewV2 {
+  spec?: V1MetricsViewSpec;
+  state?: V1MetricsViewState;
+}
+
 export type V1MetricsViewTotalsResponseData = { [key: string]: any };
 
-export interface V1MetricsViewTotalsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewTotalsResponseData;
-}
-
 export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
-
-export interface V1MetricsViewToplistResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewToplistResponseDataItem[];
-}
 
 export interface V1MetricsViewTimeSeriesResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1TimeSeriesValue[];
+}
+
+export interface V1MetricsViewState {
+  validationError?: V1ValidationError;
+  dependencyError?: V1DependencyError;
+}
+
+export interface V1MetricsViewSpecMeasure {
+  name?: string;
+  expression?: string;
+  label?: string;
+  description?: string;
+  format?: string;
+  validPercentOfTotal?: boolean;
+}
+
+export interface V1MetricsViewSpecDimension {
+  name?: string;
+  column?: string;
+  label?: string;
+  description?: string;
+}
+
+export interface V1MetricsViewSpec {
+  title?: string;
+  description?: string;
+  model?: string;
+  timeDimension?: string;
+  dimensions?: V1MetricsViewSpecDimension[];
+  measures?: V1MetricsViewSpecMeasure[];
+  smallestTimeGrain?: V1TimeGrain;
+  /** Default time range for the dashboard. It should be a valid ISO 8601 duration string. */
+  defaultTimeRange?: string;
 }
 
 export interface V1MetricsViewSort {
@@ -652,6 +921,14 @@ export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
 export interface V1MetricsViewRowsResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1MetricsViewRowsResponseDataItem[];
+}
+
+export interface V1MetricsViewMeasure {
+  name?: string;
+  label?: string;
+  expression?: string;
+  description?: string;
+  format?: string;
 }
 
 export interface V1MetricsViewFilter {
@@ -687,16 +964,19 @@ export interface V1MetricsViewRowsRequest {
   priority?: number;
 }
 
+export interface V1MetricsViewDimension {
+  name?: string;
+  label?: string;
+  description?: string;
+  column?: string;
+}
+
 export interface V1MetricsViewComparisonValue {
   measureName?: string;
   baseValue?: unknown;
   comparisonValue?: unknown;
   deltaAbs?: unknown;
   deltaRel?: unknown;
-}
-
-export interface V1MetricsViewComparisonToplistResponse {
-  rows?: V1MetricsViewComparisonRow[];
 }
 
 export type V1MetricsViewComparisonSortType =
@@ -727,18 +1007,32 @@ export interface V1MetricsViewComparisonRow {
   measureValues?: V1MetricsViewComparisonValue[];
 }
 
+export interface V1MetricsViewComparisonToplistResponse {
+  rows?: V1MetricsViewComparisonRow[];
+}
+
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
   nullable?: boolean;
 }
 
+export interface V1MetricsViewTotalsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewTotalsResponseData;
+}
+
+export interface V1MetricsViewToplistResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewToplistResponseDataItem[];
+}
+
 export interface V1MetricsView {
   name?: string;
   model?: string;
   timeDimension?: string;
-  dimensions?: MetricsViewDimension[];
-  measures?: MetricsViewMeasure[];
+  dimensions?: V1MetricsViewDimension[];
+  measures?: V1MetricsViewMeasure[];
   label?: string;
   description?: string;
   smallestTimeGrain?: V1TimeGrain;
@@ -751,9 +1045,28 @@ export interface V1MapType {
   valueType?: Runtimev1Type;
 }
 
-export interface V1ListInstancesResponse {
-  instances?: V1Instance[];
-  nextPageToken?: string;
+export type V1LogLevel = (typeof V1LogLevel)[keyof typeof V1LogLevel];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1LogLevel = {
+  LOG_LEVEL_UNSPECIFIED: "LOG_LEVEL_UNSPECIFIED",
+  LOG_LEVEL_DEBUG: "LOG_LEVEL_DEBUG",
+  LOG_LEVEL_INFO: "LOG_LEVEL_INFO",
+  LOG_LEVEL_WARN: "LOG_LEVEL_WARN",
+  LOG_LEVEL_ERROR: "LOG_LEVEL_ERROR",
+} as const;
+
+export type V1LogPayload = { [key: string]: any };
+
+export interface V1Log {
+  level?: V1LogLevel;
+  time?: string;
+  message?: string;
+  payload?: V1LogPayload;
+}
+
+export interface V1ListResourcesResponse {
+  resources?: V1Resource[];
 }
 
 export interface V1ListFilesResponse {
@@ -800,6 +1113,11 @@ of in the runtime's metadata store. Currently only supported for the duckdb driv
   ingestionLimitBytes?: string;
 }
 
+export interface V1ListInstancesResponse {
+  instances?: V1Instance[];
+  nextPageToken?: string;
+}
+
 export interface V1InlineMeasure {
   name?: string;
   expression?: string;
@@ -814,6 +1132,14 @@ export const V1HistogramMethod = {
   HISTOGRAM_METHOD_FD: "HISTOGRAM_METHOD_FD",
   HISTOGRAM_METHOD_DIAGNOSTIC: "HISTOGRAM_METHOD_DIAGNOSTIC",
 } as const;
+
+export interface V1GetResourceResponse {
+  resource?: V1Resource;
+}
+
+export interface V1GetLogsResponse {
+  logs?: V1Log[];
+}
 
 export interface V1GetInstanceResponse {
   instance?: V1Instance;
@@ -864,6 +1190,15 @@ export const V1ExportFormat = {
   EXPORT_FORMAT_XLSX: "EXPORT_FORMAT_XLSX",
 } as const;
 
+export interface V1ExecutionError {
+  message?: string;
+  startLoc?: Runtimev1CharLocation;
+  endLoc?: Runtimev1CharLocation;
+}
+
+/**
+ * Example contains metadata about an example project that is available for unpacking.
+ */
 export interface V1Example {
   name?: string;
   title?: string;
@@ -876,6 +1211,11 @@ export interface V1EditInstanceVariablesResponse {
 
 export interface V1EditInstanceResponse {
   instance?: V1Instance;
+}
+
+export interface V1DependencyError {
+  message?: string;
+  dependency?: string;
 }
 
 export interface V1DeleteInstanceResponse {
@@ -902,6 +1242,10 @@ export interface V1DeleteFileAndReconcileRequest {
   /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
   dry?: boolean;
   strict?: boolean;
+}
+
+export interface V1CreateTriggerResponse {
+  [key: string]: any;
 }
 
 export interface V1CreateInstanceResponse {
@@ -934,10 +1278,6 @@ export interface V1Connector {
   displayName?: string;
   description?: string;
   properties?: ConnectorProperty[];
-}
-
-export interface V1ColumnTopKResponse {
-  categoricalSummary?: V1CategoricalSummary;
 }
 
 export interface V1ColumnTimeSeriesResponse {
@@ -982,6 +1322,10 @@ export interface V1CategoricalSummary {
   cardinality?: number;
 }
 
+export interface V1ColumnTopKResponse {
+  categoricalSummary?: V1CategoricalSummary;
+}
+
 export interface V1ColumnCardinalityResponse {
   categoricalSummary?: V1CategoricalSummary;
 }
@@ -1002,12 +1346,47 @@ export interface V1CatalogEntry {
   refreshedOn?: string;
 }
 
+export interface V1BucketPlannerState {
+  region?: string;
+}
+
+export interface V1BucketPlannerSpec {
+  extractPolicy?: V1BucketExtractPolicy;
+}
+
+export interface V1BucketPlanner {
+  spec?: V1BucketPlannerSpec;
+  state?: V1BucketPlannerState;
+}
+
+export type V1BucketExtractPolicyStrategy =
+  (typeof V1BucketExtractPolicyStrategy)[keyof typeof V1BucketExtractPolicyStrategy];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1BucketExtractPolicyStrategy = {
+  STRATEGY_UNSPECIFIED: "STRATEGY_UNSPECIFIED",
+  STRATEGY_HEAD: "STRATEGY_HEAD",
+  STRATEGY_TAIL: "STRATEGY_TAIL",
+} as const;
+
+export interface V1BucketExtractPolicy {
+  rowsStrategy?: V1BucketExtractPolicyStrategy;
+  rowsLimitBytes?: string;
+  filesStrategy?: V1BucketExtractPolicyStrategy;
+  filesLimit?: string;
+}
+
 export interface Runtimev1Type {
   code?: V1TypeCode;
   nullable?: boolean;
   arrayElementType?: Runtimev1Type;
   structType?: V1StructType;
   mapType?: V1MapType;
+}
+
+export interface Runtimev1CharLocation {
+  line?: number;
+  column?: number;
 }
 
 export interface RpcStatus {
@@ -1053,16 +1432,21 @@ export interface StructTypeField {
   type?: Runtimev1Type;
 }
 
-export interface SourceExtractPolicy {
-  rowsStrategy?: ExtractPolicyStrategy;
-  rowsLimitBytes?: string;
-  filesStrategy?: ExtractPolicyStrategy;
-  filesLimit?: string;
-}
+export type SourceExtractPolicyStrategy =
+  (typeof SourceExtractPolicyStrategy)[keyof typeof SourceExtractPolicyStrategy];
 
-export interface ReconcileErrorCharLocation {
-  line?: number;
-  column?: number;
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SourceExtractPolicyStrategy = {
+  STRATEGY_UNSPECIFIED: "STRATEGY_UNSPECIFIED",
+  STRATEGY_HEAD: "STRATEGY_HEAD",
+  STRATEGY_TAIL: "STRATEGY_TAIL",
+} as const;
+
+export interface SourceExtractPolicy {
+  rowsStrategy?: SourceExtractPolicyStrategy;
+  rowsLimitBytes?: string;
+  filesStrategy?: SourceExtractPolicyStrategy;
+  filesLimit?: string;
 }
 
 export interface NumericOutliersOutlier {
@@ -1089,36 +1473,11 @@ export const ModelDialect = {
   DIALECT_DUCKDB: "DIALECT_DUCKDB",
 } as const;
 
-export interface MetricsViewMeasure {
-  name?: string;
-  label?: string;
-  expression?: string;
-  description?: string;
-  format?: string;
-}
-
 export interface MetricsViewFilterCond {
   name?: string;
   in?: unknown[];
   like?: string[];
 }
-
-export interface MetricsViewDimension {
-  name?: string;
-  label?: string;
-  description?: string;
-  column?: string;
-}
-
-export type ExtractPolicyStrategy =
-  (typeof ExtractPolicyStrategy)[keyof typeof ExtractPolicyStrategy];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const ExtractPolicyStrategy = {
-  STRATEGY_UNSPECIFIED: "STRATEGY_UNSPECIFIED",
-  STRATEGY_HEAD: "STRATEGY_HEAD",
-  STRATEGY_TAIL: "STRATEGY_TAIL",
-} as const;
 
 export type ConnectorPropertyType =
   (typeof ConnectorPropertyType)[keyof typeof ConnectorPropertyType];

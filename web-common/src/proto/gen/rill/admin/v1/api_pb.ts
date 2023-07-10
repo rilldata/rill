@@ -3834,6 +3834,43 @@ export class UserQuotas extends Message<UserQuotas> {
 }
 
 /**
+ * @generated from message rill.admin.v1.UserPreferences
+ */
+export class UserPreferences extends Message<UserPreferences> {
+  /**
+   * @generated from field: string timezone = 1;
+   */
+  timezone = "";
+
+  constructor(data?: PartialMessage<UserPreferences>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.UserPreferences";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "timezone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UserPreferences {
+    return new UserPreferences().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UserPreferences {
+    return new UserPreferences().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UserPreferences {
+    return new UserPreferences().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UserPreferences | PlainMessage<UserPreferences> | undefined, b: UserPreferences | PlainMessage<UserPreferences> | undefined): boolean {
+    return proto3.util.equals(UserPreferences, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.OrganizationQuotas
  */
 export class OrganizationQuotas extends Message<OrganizationQuotas> {

@@ -2,7 +2,7 @@ syntax = "proto3";
 package rill.ui.v1;
 
 import "google/protobuf/timestamp.proto";
-import "rill/runtime/v1/catalog.proto";
+import "rill/runtime/v1/time_grain.proto";
 import "rill/runtime/v1/queries.proto";
 
 // DashboardState represents the dashboard as seen by the user

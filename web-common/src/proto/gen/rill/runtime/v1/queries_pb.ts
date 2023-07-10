@@ -6,7 +6,7 @@
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3, protoInt64, Struct, Timestamp, Value } from "@bufbuild/protobuf";
 import { StructType } from "./schema_pb.js";
-import { TimeGrain } from "./catalog_pb.js";
+import { TimeGrain } from "./time_grain_pb.js";
 
 /**
  * ExportFormat is a file format for a data export
