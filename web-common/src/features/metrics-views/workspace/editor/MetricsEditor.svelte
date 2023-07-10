@@ -66,12 +66,6 @@
   /** display the main error (the first in this array) at the bottom */
   $: mainError = [...lineBasedRuntimeErrors, ...(runtimeErrors || [])]?.at(0);
 
-  $: console.log(
-    $catalogQuery?.status,
-    $fileQuery?.status,
-    lineBasedRuntimeErrors
-  );
-
   let view: EditorView;
   /** If the errors change, run the following transaction. */
   $: if (view && !$catalogQuery?.isFetching && $catalogQuery?.isError)
