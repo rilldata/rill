@@ -1,7 +1,10 @@
 <script lang="ts">
   import type { EditorView } from "@codemirror/view";
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
-  import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
+  import {
+    createRuntimeServiceGetCatalogEntry,
+    createRuntimeServiceGetFile,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import MetricsEditorContainer from "./MetricsEditorContainer.svelte";
 
@@ -47,18 +50,32 @@
     $runtime.instanceId,
     getFilePathFromNameAndType(metricsDefName, EntityType.MetricsDefinition)
   );
+
+  $: catalogQuery = createRuntimeServiceGetCatalogEntry(
+    $runtime.instanceId,
+    metricsDefName
+  );
+
   $: yaml = $fileQuery.data?.blob || "";
   $: runtimeErrors = getFileArtifactReconciliationErrors(
     $fileArtifactsStore,
     `${metricsDefName}.yaml`
   );
+
   $: lineBasedRuntimeErrors = mapRuntimeErrorsToLines(runtimeErrors, yaml);
   /** display the main error (the first in this array) at the bottom */
   $: mainError = [...lineBasedRuntimeErrors, ...(runtimeErrors || [])]?.at(0);
-  let view: EditorView;
 
+  $: console.log(
+    $catalogQuery?.status,
+    $fileQuery?.status,
+    lineBasedRuntimeErrors
+  );
+
+  let view: EditorView;
   /** If the errors change, run the following transaction. */
-  $: if (view) setLineStatuses(lineBasedRuntimeErrors, view);
+  $: if (view && !$catalogQuery?.isFetching && $catalogQuery?.isError)
+    setLineStatuses(lineBasedRuntimeErrors, view);
 </script>
 
 <MetricsEditorContainer error={yaml?.length ? mainError : undefined}>
