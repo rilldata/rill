@@ -7,11 +7,11 @@
   import { Menu, MenuItem } from "../../menu";
   import { Search } from "../../search";
   import Footer from "./Footer.svelte";
-  import { Writable } from "svelte/store";
+  import type { Writable } from "svelte/store";
 
   export let excludeStore: Writable<boolean>;
   export let selectedValues: string[];
-  export let searchedValues: string[] = [];
+  export let searchedValues: string[] | null = [];
 
   let searchText = "";
 
@@ -32,9 +32,9 @@
   let candidateValues = [...selectedValues];
   let valuesToDisplay = [...candidateValues];
 
-  $: if (searchText) {
+  $: if (searchText && searchedValues !== null) {
     valuesToDisplay = [...searchedValues];
-  } else valuesToDisplay = [...candidateValues];
+  } else if (!searchText) valuesToDisplay = [...candidateValues];
 
   $: numSelectedNotInSearch = selectedValues.filter(
     (v) => !valuesToDisplay.includes(v)
