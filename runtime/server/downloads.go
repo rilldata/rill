@@ -106,7 +106,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		Format: request.Format,
 		PreWriteHook: func(filename string) error {
 			// Add timestamp to filename
-			filename += time.Now().Format("20060102150405")
+			filename += "_" + time.Now().Format("20060102150405")
 
 			// Write HTTP headers
 			w.Header().Set("X-Content-Type-Options", "nosniff")
