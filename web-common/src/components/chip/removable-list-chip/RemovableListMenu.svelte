@@ -63,7 +63,7 @@
 >
   <!-- the min-height is set to have about 3 entries in it -->
 
-  <Search bind:value={searchText} on:input={onSearch} />
+  <Search bind:value={searchText} on:input={onSearch} label="Search list" />
 
   <!-- apply a wrapped flex element to ensure proper bottom spacing between body and footer -->
   <div class="flex flex-col flex-1 overflow-auto w-full pb-1">
