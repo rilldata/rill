@@ -15,24 +15,23 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
+  import { appScreen } from "../../../layout/app-store";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import NavigationEntry from "../../../layout/navigation/NavigationEntry.svelte";
   import NavigationHeader from "../../../layout/navigation/NavigationHeader.svelte";
-  import { runtime } from "../../../runtime-client/runtime-store";
-  import AddAssetButton from "../../entity-management/AddAssetButton.svelte";
-  import { useModelNames } from "../../models/selectors";
-  import AddSourceModal from "../add-source/AddSourceModal.svelte";
-  import { createModelFromSource } from "../createModel";
-  import EmbeddedSourceNav from "./EmbeddedSourceNav.svelte";
-  import SourceMenuItems from "./SourceMenuItems.svelte";
-  import SourceTooltip from "./SourceTooltip.svelte";
   import { behaviourEvent } from "../../../metrics/initMetrics";
   import {
     BehaviourEventAction,
     BehaviourEventMedium,
   } from "../../../metrics/service/BehaviourEventTypes";
-  import { appScreen } from "../../../layout/app-store";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
+  import { runtime } from "../../../runtime-client/runtime-store";
+  import AddAssetButton from "../../entity-management/AddAssetButton.svelte";
+  import { useModelNames } from "../../models/selectors";
+  import AddSourceModal from "../add-source/AddSourceModal.svelte";
+  import { createModelFromSource } from "../createModel";
+  import SourceMenuItems from "./SourceMenuItems.svelte";
+  import SourceTooltip from "./SourceTooltip.svelte";
 
   $: sourceNames = useSourceNames($runtime.instanceId);
   $: modelNames = useModelNames($runtime.instanceId);
@@ -124,7 +123,6 @@
         </div>
       {/each}
     {/if}
-    <EmbeddedSourceNav />
     <AddAssetButton
       id="add-table"
       label="Add source"

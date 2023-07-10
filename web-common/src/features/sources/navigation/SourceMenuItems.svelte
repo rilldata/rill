@@ -14,12 +14,11 @@
     useSourceFromYaml,
     useSourceNames,
   } from "@rilldata/web-common/features/sources/selectors";
-  import { appStore } from "@rilldata/web-common/layout/app-store";
+  import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
-    EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
@@ -86,7 +85,7 @@
       tableName,
       EntityType.Table,
       $deleteSource,
-      $appStore.activeEntity,
+      $appScreen,
       $sourceNames.data
     );
     toggleMenu();
@@ -94,7 +93,7 @@
 
   const handleCreateModel = async () => {
     try {
-      const previousActiveEntity = $appStore.activeEntity?.type;
+      const previousActiveEntity = $appScreen?.type;
       const newModelName = await createModelFromSource(
         queryClient,
         runtimeInstanceId,
@@ -108,7 +107,7 @@
         newModelName,
         BehaviourEventMedium.Menu,
         MetricsEventSpace.LeftPanel,
-        EntityTypeToScreenMap[previousActiveEntity],
+        previousActiveEntity,
         MetricsEventScreenName.Model
       );
     } catch (err) {
@@ -138,12 +137,12 @@
         onSuccess: async (resp: V1ReconcileResponse) => {
           fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
           goto(`/dashboard/${newDashboardName}`);
-          const previousActiveEntity = $appStore?.activeEntity?.type;
+          const previousActiveEntity = $appScreen?.type;
           behaviourEvent.fireNavigationEvent(
             newDashboardName,
             BehaviourEventMedium.Menu,
             MetricsEventSpace.LeftPanel,
-            EntityTypeToScreenMap[previousActiveEntity],
+            previousActiveEntity,
             MetricsEventScreenName.Dashboard
           );
           return invalidateAfterReconcile(queryClient, runtimeInstanceId, resp);

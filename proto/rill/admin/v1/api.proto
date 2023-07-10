@@ -52,6 +52,11 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{name}"};
   }
 
+  // SearchProjectNames returns project names matching the pattern
+  rpc SearchProjectNames(SearchProjectNamesRequest) returns (SearchProjectNamesResponse) {
+    option (google.api.http) = {get: "/v1/superuser/projects/search"};
+  }
+
   // GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
   rpc GetProjectVariables(GetProjectVariablesRequest) returns (GetProjectVariablesResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{name}/variables"};
@@ -105,7 +110,7 @@ service AdminService {
   // TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
   rpc TriggerRedeploy(TriggerRedeployRequest) returns (TriggerRedeployResponse) {
     option (google.api.http) = {
-      post: "/v1/deployments/{deployment_id}/redeploy",
+      post: "/v1/projects/-/redeploy",
       body: "*"
     };
   }
@@ -345,6 +350,17 @@ message GetProjectResponse {
   ProjectPermissions project_permissions = 4;
 }
 
+message SearchProjectNamesRequest {
+  string name_pattern = 1;
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
+  string page_token = 3;
+}
+
+message SearchProjectNamesResponse {
+  repeated string names = 1;
+  string next_page_token = 2;
+}
+
 message GetProjectVariablesRequest {
   string organization_name = 1;
   string name = 2;
@@ -390,6 +406,7 @@ message UpdateProjectRequest {
   optional int64 prod_slots = 7;
   optional string region = 8;
   optional string new_name = 9;
+  optional int64 prod_ttl_seconds = 10;
 }
 
 message UpdateProjectResponse {
@@ -420,6 +437,10 @@ message TriggerRefreshSourcesRequest {
 message TriggerRefreshSourcesResponse {}
 
 message TriggerRedeployRequest {
+  // It's sufficient to pass org/project name OR deployment_id.
+  // (To enable rehydrating hibernated projects.)
+  string organization = 2;
+  string project = 3;
   string deployment_id = 1;
 }
 
@@ -730,6 +751,7 @@ message Project {
   int64 prod_slots = 12;
   string prod_deployment_id = 13;
   string frontend_url = 16;
+  int64 prod_ttl_seconds = 18;
   google.protobuf.Timestamp created_on = 14;
   google.protobuf.Timestamp updated_on = 15;
 }

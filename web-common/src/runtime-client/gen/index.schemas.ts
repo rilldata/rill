@@ -71,6 +71,7 @@ export type QueryServiceQueryBody = {
   args?: unknown[];
   priority?: number;
   dryRun?: boolean;
+  limit?: number;
 };
 
 /**
@@ -456,6 +457,11 @@ export interface V1TableRowsResponse {
   data?: V1TableRowsResponseDataItem[];
 }
 
+export interface V1TableInfo {
+  database?: string;
+  name?: string;
+}
+
 export interface V1TableColumnsResponse {
   profileColumns?: V1ProfileColumn[];
 }
@@ -631,16 +637,6 @@ export interface V1Resource {
   bucketPlanner?: V1BucketPlanner;
 }
 
-export interface V1RefreshAndReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-}
-
 export interface V1RefreshAndReconcileRequest {
   instanceId?: string;
   path?: string;
@@ -701,6 +697,16 @@ Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: V1ReconcileErrorCharLocation;
   endLocation?: V1ReconcileErrorCharLocation;
+}
+
+export interface V1RefreshAndReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
 }
 
 export type V1QueryResponseDataItem = { [key: string]: any };
@@ -834,6 +840,10 @@ export interface V1NumericSummary {
   numericOutliers?: V1NumericOutliers;
 }
 
+export interface V1MotherduckListTablesResponse {
+  tables?: V1TableInfo[];
+}
+
 export interface V1ModelState {
   tableName?: string;
   stageTableName?: string;
@@ -929,6 +939,7 @@ export interface V1MetricsViewMeasure {
   expression?: string;
   description?: string;
   format?: string;
+  validPercentOfTotal?: boolean;
 }
 
 export interface V1MetricsViewFilter {

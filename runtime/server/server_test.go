@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"testing"
 
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -12,7 +13,7 @@ import (
 func getTestServer(t *testing.T) (*Server, string) {
 	rt, instanceID := testruntime.NewInstance(t)
 
-	server, err := NewServer(context.Background(), &Options{}, rt, nil)
+	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop())
 	require.NoError(t, err)
 
 	return server, instanceID

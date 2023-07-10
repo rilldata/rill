@@ -4,9 +4,7 @@
     useMetaQuery,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { appStore } from "@rilldata/web-common/layout/app-store";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
@@ -21,14 +19,6 @@
   export let hasTitle: boolean;
 
   export let leftMargin = undefined;
-
-  const switchToMetrics = async (metricViewName: string) => {
-    if (!metricViewName) return;
-
-    appStore.setActiveEntity(metricViewName, EntityType.MetricsExplorer);
-  };
-
-  $: switchToMetrics(metricViewName);
 
   $: metricsViewQuery = useMetaQuery($runtime.instanceId, metricViewName);
 
