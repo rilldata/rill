@@ -1,12 +1,13 @@
 <script lang="ts">
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
+  import { createTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import RowsViewer from "./RowsViewer.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import { useDashboardStore } from "../dashboard-stores";
-  import { useModelHasTimeSeries } from "../selectors";
+  import { useMetaQuery, useModelHasTimeSeries } from "../selectors";
   import ExportModelDataButton from "./ExportModelDataButton.svelte";
   import { featureFlags } from "../../feature-flags";
 
@@ -39,6 +40,12 @@
   );
 
   $: dashboardStore = useDashboardStore(metricViewName);
+  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
+  $: timeControlsStore = createTimeControlStore(
+    $runtime.instanceId,
+    metricViewName,
+    $metaQuery?.data
+  );
 
   $: metricTimeSeries = useModelHasTimeSeries(
     $runtime.instanceId,
@@ -46,14 +53,14 @@
   );
   $: hasTimeSeries = $metricTimeSeries.data;
 
-  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
-  let timeEnd;
-  $: {
-    let maybeEnd = $dashboardStore?.selectedTimeRange?.end;
-    if (maybeEnd) {
-      timeEnd = new Date(maybeEnd.valueOf() + 1).toISOString();
-    }
-  }
+  // $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
+  // let timeEnd;
+  // $: {
+  //   let maybeEnd = $dashboardStore?.selectedTimeRange?.end;
+  //   if (maybeEnd) {
+  //     timeEnd = new Date(maybeEnd.valueOf() + 1).toISOString();
+  //   }
+  // }
 
   $: filteredTotalsQuery = createQueryServiceMetricsViewTotals(
     $runtime.instanceId,
@@ -66,8 +73,8 @@
           expression: "count(*)",
         },
       ],
-      timeStart: hasTimeSeries ? timeStart : undefined,
-      timeEnd: hasTimeSeries ? timeEnd : undefined,
+      timeStart: $timeControlsStore.timeStart,
+      timeEnd: timeControlsStore.timeEnd,
       filter: $dashboardStore?.filters,
     },
     {
@@ -76,14 +83,12 @@
           "dashboardFilteredRowsCt",
           metricViewName,
           {
-            timeStart,
-            timeEnd,
+            timeStart: $timeControlsStore.timeStart,
+            timeEnd: $timeControlsStore.timeEnd,
             filter: $dashboardStore?.filters,
           },
         ],
-        enabled:
-          (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
-          !!$dashboardStore?.filters,
+        enabled: timeControlsStore.hasTime && !!$dashboardStore?.filters,
       },
     }
   );
@@ -103,9 +108,9 @@
 
 <div>
   <button
+    aria-label="Toggle rows viewer"
     class="w-full bg-gray-100 h-7 text-left px-2 border-t border-t-gray-200 text-xs text-gray-800 flex items-center gap-1"
     on:click={toggle}
-    aria-label="Toggle rows viewer"
   >
     {#if isOpen}
       <CaretDownIcon size="14px" />

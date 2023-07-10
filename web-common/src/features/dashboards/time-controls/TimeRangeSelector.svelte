@@ -3,6 +3,8 @@
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
+  import { createTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     ALL_TIME,
     DEFAULT_TIME_RANGES,
@@ -19,6 +21,7 @@
     TimeRangeOption,
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
   import { Menu, MenuItem } from "../../../components/menu";
@@ -38,6 +41,13 @@
   const dispatch = createEventDispatcher();
 
   $: dashboardStore = useDashboardStore(metricViewName);
+
+  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
+  $: timeControlsStore = createTimeControlStore(
+    $runtime.instanceId,
+    metricViewName,
+    $metaQuery?.data
+  );
 
   let isCustomRangeOpen = false;
   let isCalendarRecentlyClosed = false;
@@ -114,7 +124,7 @@
     }, 300);
   }
 
-  $: currentSelection = $dashboardStore?.selectedTimeRange?.name;
+  $: currentSelection = $timeControlsStore?.selectedTimeRange?.name;
   $: intermediateSelection = currentSelection;
 
   const handleMenuOpen = () => {
@@ -132,10 +142,10 @@
   on:open={handleMenuOpen}
 >
   <button
-    class:bg-gray-200={active}
-    class="px-3 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600 items-baseline"
-    on:click={toggleFloatingElement}
     aria-label="Select time range"
+    class="px-3 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600 items-baseline"
+    class:bg-gray-200={active}
+    on:click={toggleFloatingElement}
   >
     <div class="flex flew-row gap-x-3">
       <div class="font-bold flex flex-row items-center gap-x-3">
@@ -145,7 +155,7 @@
           {#if intermediateSelection === TimeRangePreset.CUSTOM}
             Custom range
           {:else if currentSelection in DEFAULT_TIME_RANGES}
-            {DEFAULT_TIME_RANGES[$dashboardStore?.selectedTimeRange?.name]
+            {DEFAULT_TIME_RANGES[$timeControlsStore?.selectedTimeRange?.name]
               .label}
           {:else}
             Select a time range
@@ -154,9 +164,9 @@
       </div>
       <span style:transform="translateY(1px)">
         {prettyFormatTimeRange(
-          $dashboardStore?.selectedTimeRange?.start,
-          $dashboardStore?.selectedTimeRange?.end,
-          $dashboardStore?.selectedTimeRange?.name
+          $timeControlsStore?.selectedTimeRange?.start,
+          $timeControlsStore?.selectedTimeRange?.end,
+          $timeControlsStore?.selectedTimeRange?.name
         )}
       </span>
     </div>
@@ -167,11 +177,11 @@
     </IconSpaceFixer>
   </button>
   <Menu
+    label="Time range selector"
+    maxWidth="300px"
     on:click-outside={() => onClickOutside(toggleFloatingElement)}
     on:escape={toggleFloatingElement}
     slot="floating-element"
-    label="Time range selector"
-    maxWidth="300px"
   >
     {@const allTime = {
       name: TimeRangePreset.ALL_TIME,

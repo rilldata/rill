@@ -14,6 +14,7 @@
     useModelAllTimeRange,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
+  import { createTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import {
@@ -42,9 +43,18 @@
 
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
+
+  $: timeControlsStore = createTimeControlStore(
+    $runtime.instanceId,
+    metricViewName,
+    $metaQuery?.data
+  );
+
   $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
   $: showComparison = $dashboardStore?.showComparison;
-  $: interval = $dashboardStore?.selectedTimeRange?.interval;
+  $: interval =
+    $timeControlsStore.selectedTimeRange?.interval ??
+    $timeControlsStore.minTimeGrain;
 
   $: allTimeRangeQuery = useModelAllTimeRange(
     $runtime.instanceId,
@@ -57,28 +67,21 @@
     }
   );
 
-  // get the time range name, which is the preset.
-  let name;
-  let allTimeRange;
-  $: if ($allTimeRangeQuery?.isSuccess) {
-    allTimeRange = $allTimeRangeQuery.data;
-    name = $dashboardStore?.selectedTimeRange?.name;
-  }
-
-  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
-  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
   $: totalsQuery = createQueryServiceMetricsViewTotals(
-    instanceId,
+    $runtime.instanceId,
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      timeStart: timeStart,
-      timeEnd: timeEnd,
+      timeStart: $timeControlsStore.timeStart,
+      timeEnd: $timeControlsStore.timeEnd,
       filter: $dashboardStore?.filters,
     },
     {
       query: {
-        enabled: !!timeStart && !!timeEnd && !!$dashboardStore?.filters,
+        enabled:
+          selectedMeasureNames?.length > 0 &&
+          $timeControlsStore.hasTime &&
+          !!$dashboardStore?.filters,
       },
     }
   );
@@ -86,25 +89,21 @@
   /** Generate the big number comparison query */
   $: displayComparison = showComparison;
 
-  $: comparisonTimeStart =
-    $dashboardStore?.selectedComparisonTimeRange?.start?.toISOString();
-  $: comparisonTimeEnd =
-    $dashboardStore?.selectedComparisonTimeRange?.end?.toISOString();
   $: totalsComparisonQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      timeStart: comparisonTimeStart,
-      timeEnd: comparisonTimeEnd,
+      timeStart: $timeControlsStore.comparisonTimeStart,
+      timeEnd: $timeControlsStore.comparisonTimeEnd,
       filter: $dashboardStore?.filters,
     },
     {
       query: {
         enabled: Boolean(
           displayComparison &&
-            !!comparisonTimeStart &&
-            !!comparisonTimeEnd &&
+            !!$timeControlsStore.comparisonTimeStart &&
+            !!$timeControlsStore.comparisonTimeEnd &&
             !!$dashboardStore?.filters
         ),
       },
@@ -129,11 +128,11 @@
     metaQuery &&
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching &&
-    $dashboardStore?.selectedTimeRange?.start
+    $timeControlsStore.hasTime
   ) {
     const { start: adjustedStart, end: adjustedEnd } = getAdjustedFetchTime(
-      $dashboardStore?.selectedTimeRange?.start,
-      $dashboardStore?.selectedTimeRange?.end,
+      $timeControlsStore.selectedTimeRange?.start,
+      $timeControlsStore.selectedTimeRange?.end,
       interval
     );
 
@@ -151,8 +150,8 @@
     if (displayComparison) {
       const { start: compAdjustedStart, end: compAdjustedEnd } =
         getAdjustedFetchTime(
-          $dashboardStore?.selectedComparisonTimeRange?.start,
-          $dashboardStore?.selectedComparisonTimeRange?.end,
+          $timeControlsStore.selectedComparisonTimeRange?.start,
+          $timeControlsStore.selectedComparisonTimeRange?.end,
           interval
         );
 
@@ -198,15 +197,12 @@
   let endValue: Date;
 
   // FIXME: move this logic to a function + write tests.
-  $: if (
-    $dashboardStore?.selectedTimeRange &&
-    $dashboardStore?.selectedTimeRange?.start
-  ) {
+  $: if ($timeControlsStore.hasTime) {
     const adjustedChartValue = getAdjustedChartTime(
-      $dashboardStore?.selectedTimeRange?.start,
-      $dashboardStore?.selectedTimeRange?.end,
+      $timeControlsStore.selectedTimeRange?.start,
+      $timeControlsStore.selectedTimeRange?.end,
       interval,
-      $dashboardStore?.selectedTimeRange?.name
+      $timeControlsStore.selectedTimeRange?.name
     );
 
     startValue = adjustedChartValue?.start;
@@ -272,7 +268,7 @@
       <MeasureBigNumber
         value={bigNum}
         {showComparison}
-        comparisonOption={$dashboardStore?.selectedComparisonTimeRange?.name}
+        comparisonOption={$timeControlsStore?.selectedComparisonTimeRange?.name}
         {comparisonValue}
         {comparisonPercChange}
         description={measure?.description ||

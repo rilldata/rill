@@ -15,6 +15,7 @@ The main feature-set component for dashboard filters
     useMetaQuery,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { createTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import type {
     MetricsViewDimension,
@@ -52,6 +53,12 @@ The main feature-set component for dashboard filters
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
   let dimensions: Array<MetricsViewDimension>;
   $: dimensions = $metaQuery.data?.dimensions;
+
+  $: timeControlsStore = createTimeControlStore(
+    $runtime.instanceId,
+    metricViewName,
+    $metaQuery?.data
+  );
 
   function clearFilterForDimension(dimensionId, include: boolean) {
     cancelDashboardQueries(queryClient, metricViewName);
@@ -105,8 +112,8 @@ The main feature-set component for dashboard filters
         topListParams = {
           ...topListParams,
           ...{
-            timeStart: metricsExplorer?.selectedTimeRange?.start,
-            timeEnd: metricsExplorer?.selectedTimeRange?.end,
+            timeStart: $timeControlsStore?.selectedTimeRange?.start,
+            timeEnd: $timeControlsStore?.selectedTimeRange?.end,
           },
         };
       }
@@ -197,11 +204,11 @@ The main feature-set component for dashboard filters
   style:min-height={MIN_CONTAINER_HEIGHT}
 >
   <div
+    class="grid items-center place-items-center"
+    class:ui-copy-icon={hasFilters}
+    class:ui-copy-icon-inactive={!hasFilters}
     style:height={ROW_HEIGHT}
     style:width={ROW_HEIGHT}
-    class="grid items-center place-items-center"
-    class:ui-copy-icon-inactive={!hasFilters}
-    class:ui-copy-icon={hasFilters}
   >
     <Filter size="16px" />
   </div>

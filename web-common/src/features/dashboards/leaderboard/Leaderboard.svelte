@@ -13,9 +13,8 @@
     useMetaDimension,
     useMetaMeasure,
     useMetaQuery,
-    useModelAllTimeRange,
-    useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { createTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     createQueryServiceMetricsViewToplist,
     MetricsViewDimension,
@@ -48,17 +47,6 @@
 
   $: dashboardStore = useDashboardStore(metricViewName);
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
-
-  $: allTimeRangeQuery = useModelAllTimeRange(
-    $runtime.instanceId,
-    $metaQuery.data.model,
-    $metaQuery.data.timeDimension,
-    {
-      query: {
-        enabled: !!$metaQuery.data.timeDimension,
-      },
-    }
-  );
 
   let filterExcludeMode: boolean;
   $: filterExcludeMode =
@@ -95,11 +83,11 @@
       ?.in ?? [];
   $: atLeastOneActive = !!activeValues?.length;
 
-  $: metricTimeSeries = useModelHasTimeSeries(
+  $: timeControlsStore = createTimeControlStore(
     $runtime.instanceId,
-    metricViewName
+    metricViewName,
+    $metaQuery?.data
   );
-  $: hasTimeSeries = $metricTimeSeries.data;
 
   function toggleFilterMode() {
     cancelDashboardQueries(queryClient, metricViewName);
@@ -110,16 +98,14 @@
     metricsExplorerStore.setMetricDimensionName(metricViewName, dimensionName);
   }
 
-  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
-  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
   $: topListQuery = createQueryServiceMetricsViewToplist(
     $runtime.instanceId,
     metricViewName,
     {
       dimensionName: dimensionName,
       measureNames: [measure.name],
-      timeStart: hasTimeSeries ? timeStart : undefined,
-      timeEnd: hasTimeSeries ? timeEnd : undefined,
+      timeStart: $timeControlsStore.timeStart,
+      timeEnd: $timeControlsStore.timeEnd,
       filter: filterForDimension,
       limit: "250",
       offset: "0",
@@ -132,9 +118,7 @@
     },
     {
       query: {
-        enabled:
-          (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
-          !!filterForDimension,
+        enabled: $timeControlsStore.hasTime && !!filterForDimension,
       },
     }
   );
@@ -186,18 +170,14 @@
     dimensionName,
     currentVisibleValues
   );
-  $: comparisonTimeStart =
-    $dashboardStore?.selectedComparisonTimeRange?.start?.toISOString();
-  $: comparisonTimeEnd =
-    $dashboardStore?.selectedComparisonTimeRange?.end?.toISOString();
   $: comparisonTopListQuery = createQueryServiceMetricsViewToplist(
     $runtime.instanceId,
     metricViewName,
     {
       dimensionName: dimensionName,
       measureNames: [measure.name],
-      timeStart: comparisonTimeStart,
-      timeEnd: comparisonTimeEnd,
+      timeStart: $timeControlsStore.comparisonTimeStart,
+      timeEnd: $timeControlsStore.comparisonTimeEnd,
       filter: updatedFilters,
       limit: currentVisibleValues.length.toString(),
       offset: "0",
@@ -212,8 +192,8 @@
       query: {
         enabled: Boolean(
           displayComparison &&
-            !!comparisonTimeStart &&
-            !!comparisonTimeEnd &&
+            !!$timeControlsStore.comparisonTimeStart &&
+            !!$timeControlsStore.comparisonTimeEnd &&
             !!updatedFilters
         ),
       },

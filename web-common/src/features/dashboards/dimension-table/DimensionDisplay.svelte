@@ -14,6 +14,7 @@
     useModelAllTimeRange,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { createTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
   import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
   import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
@@ -60,6 +61,12 @@
   $: dimensionColumn = dimension?.column || dimension?.name;
 
   $: dashboardStore = useDashboardStore(metricViewName);
+
+  $: timeControlsStore = createTimeControlStore(
+    $runtime.instanceId,
+    metricViewName,
+    $metaQuery?.data
+  );
 
   $: leaderboardMeasureName = $dashboardStore?.leaderboardMeasureName;
   $: leaderboardMeasureQuery = useMetaMeasure(
@@ -110,8 +117,8 @@
     {
       dimensionName: dimensionName,
       measureNames: selectedMeasureNames,
-      timeStart: hasTimeSeries ? timeStart : undefined,
-      timeEnd: hasTimeSeries ? timeEnd : undefined,
+      timeStart: $timeControlsStore.timeStart,
+      timeEnd: $timeControlsStore.timeEnd,
       filter: filterSet,
       limit: "250",
       offset: "0",
@@ -125,21 +132,10 @@
     {
       query: {
         enabled:
-          (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
+          $timeControlsStore.hasTime &&
           !!filterSet &&
           !!sortByColumn &&
           !!sortDirection,
-      },
-    }
-  );
-
-  $: allTimeRangeQuery = useModelAllTimeRange(
-    $runtime.instanceId,
-    $metaQuery.data.model,
-    $metaQuery.data.timeDimension,
-    {
-      query: {
-        enabled: !!$metaQuery.data.timeDimension,
       },
     }
   );
@@ -149,18 +145,14 @@
 
   // Compose the comparison /toplist query
   $: displayComparison =
-    timeRangeName &&
-    $dashboardStore?.showComparison &&
-    // wait for the start time to be available
-    // TODO: Move to better handling of undefined store values
-    $dashboardStore?.selectedTimeRange?.start;
+    $dashboardStore?.showComparison && $timeControlsStore.hasTime;
 
   $: comparisonTimeRange =
     displayComparison &&
     getComparisonRange(
-      $dashboardStore?.selectedTimeRange?.start,
-      $dashboardStore?.selectedTimeRange?.end,
-      ($dashboardStore?.selectedComparisonTimeRange
+      $timeControlsStore?.selectedTimeRange?.start,
+      $timeControlsStore?.selectedTimeRange?.end,
+      ($timeControlsStore?.selectedComparisonTimeRange
         ?.name as TimeComparisonOption) ||
         (DEFAULT_TIME_RANGES[timeRangeName]
           .defaultComparison as TimeComparisonOption)
@@ -207,19 +199,17 @@
     }
   );
 
-  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
-  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      timeStart: hasTimeSeries ? timeStart : undefined,
-      timeEnd: hasTimeSeries ? timeEnd : undefined,
+      timeStart: $timeControlsStore.timeStart,
+      timeEnd: $timeControlsStore.timeEnd,
     },
     {
       query: {
-        enabled: hasTimeSeries ? !!timeStart && !!timeEnd : true,
+        enabled: $timeControlsStore.hasTime,
       },
     }
   );

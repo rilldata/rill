@@ -6,6 +6,7 @@
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideDimensionsStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
+  import { createTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     createQueryServiceMetricsViewTotals,
     MetricsViewDimension,
@@ -38,28 +39,26 @@
       (measure) => measure.name === $dashboardStore?.leaderboardMeasureName
     );
 
-  $: metricTimeSeries = useModelHasTimeSeries(
+  $: timeControlsStore = createTimeControlStore(
     $runtime.instanceId,
-    metricViewName
+    metricViewName,
+    $metaQuery?.data
   );
-  $: hasTimeSeries = $metricTimeSeries.data;
 
-  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
-  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     $runtime.instanceId,
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      timeStart: hasTimeSeries ? timeStart : undefined,
-      timeEnd: hasTimeSeries ? timeEnd : undefined,
+      timeStart: $timeControlsStore.timeStart,
+      timeEnd: $timeControlsStore.timeEnd,
       filter: $dashboardStore?.filters,
     },
     {
       query: {
         enabled:
           selectedMeasureNames?.length > 0 &&
-          (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
+          $timeControlsStore.hasTime &&
           !!$dashboardStore?.filters,
       },
     }

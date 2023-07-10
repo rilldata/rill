@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { createTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useMetaQuery, useModelHasTimeSeries } from "../selectors";
   import {
@@ -16,6 +17,12 @@
   const FALLBACK_SAMPLE_SIZE = 1000;
 
   $: dashboardStore = useDashboardStore(metricViewName);
+  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
+  $: timeControlsStore = createTimeControlStore(
+    $runtime.instanceId,
+    metricViewName,
+    $metaQuery?.data
+  );
 
   $: modelName = useMetaQuery<string>(
     $runtime.instanceId,
@@ -25,15 +32,6 @@
 
   $: name = $modelName?.data as string | undefined;
 
-  $: metricTimeSeries = useModelHasTimeSeries(
-    $runtime.instanceId,
-    metricViewName
-  );
-  $: hasTimeSeries = $metricTimeSeries.data;
-
-  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
-  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
-
   let limit = writable(SAMPLE_SIZE);
 
   $: tableQuery = createQueryServiceMetricsViewRows(
@@ -42,14 +40,12 @@
     {
       limit: $limit,
       filter: $dashboardStore.filters,
-      timeStart: hasTimeSeries ? timeStart : undefined,
-      timeEnd: hasTimeSeries ? timeEnd : undefined,
+      timeStart: $timeControlsStore.timeStart,
+      timeEnd: $timeControlsStore.timeEnd,
     },
     {
       query: {
-        enabled:
-          (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
-          !!$dashboardStore?.filters,
+        enabled: $timeControlsStore.hasTime && !!$dashboardStore?.filters,
       },
     }
   );
