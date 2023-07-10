@@ -32,6 +32,7 @@
   let candidateValues = [...selectedValues];
   let valuesToDisplay = [...candidateValues];
 
+  // If searchedValues === null, search has not finished yet. So continue rendering the previous list
   $: if (searchText && searchedValues !== null) {
     valuesToDisplay = [...searchedValues];
   } else if (!searchText) valuesToDisplay = [...candidateValues];
