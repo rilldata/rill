@@ -31,7 +31,6 @@ type QueryResult struct {
 
 type ExportOptions struct {
 	Format       runtimev1.ExportFormat
-	RowLimit     *int
 	Priority     int
 	PreWriteHook func(filename string) error
 }
