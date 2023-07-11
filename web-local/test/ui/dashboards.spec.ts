@@ -1,19 +1,20 @@
 import { describe, it } from "@jest/globals";
 import { expect as playwrightExpect } from "@playwright/test";
 import {
-  assertAdBidsDashboard,
-  createAdBidsModel,
-} from "./utils/dataSpecifcHelpers";
-import {
+  RequestMatcher,
   assertLeaderboards,
   clickOnFilter,
   createDashboardFromModel,
   createDashboardFromSource,
   metricsViewRequestFilterMatcher,
-  RequestMatcher,
+  updateMetricsInput,
   waitForTimeSeries,
   waitForTopLists,
 } from "./utils/dashboardHelpers";
+import {
+  assertAdBidsDashboard,
+  createAdBidsModel,
+} from "./utils/dataSpecifcHelpers";
 import { TestEntityType, wrapRetryAssertion } from "./utils/helpers";
 import { useRegisteredServer } from "./utils/serverConfigs";
 import { createOrReplaceSource } from "./utils/sourceHelpers";
@@ -113,7 +114,6 @@ describe("dashboards", () => {
     // Change the time range
     await page.getByLabel("Select time range").click();
     await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
-
     // Check that the total records are 272 and have comparisons
     await playwrightExpect(page.getByText("272 -23 -7%")).toBeVisible();
 
@@ -203,6 +203,7 @@ describe("dashboards", () => {
     const timeRangeMenu = page.getByRole("menu", {
       name: "Time range selector",
     });
+
     await timeRangeMenu.getByRole("menuitem", { name: "Custom range" }).click();
     await timeRangeMenu.getByLabel("Start date").fill("2022-02-01");
     await timeRangeMenu.getByLabel("Start date").blur();
@@ -266,11 +267,34 @@ describe("dashboards", () => {
     await page.getByRole("button", { name: "Edit Metrics" }).click();
 
     // Get the dashboard name field and change it
-    await page.getByLabel("Display name").fill("AdBids_model_dashboard_rename");
-    await page.getByLabel("Display name").blur();
+
+    const changeDisplayNameDoc = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
+
+    title: "AdBids_model_dashboard_rename"
+    model: "AdBids_model"
+    default_time_range: ""
+    smallest_time_grain: ""
+    measures:
+      - label: Total records
+        expression: count(*)
+        name: total_records
+        description: Total number of records present
+        format_preset: humanize
+    dimensions:
+      - name: publisher
+        label: Publisher
+        column: publisher
+        description: ""
+      - name: domain
+        label: Domain
+        column: domain
+        description: ""
+    
+        `;
+    await updateMetricsInput(page, changeDisplayNameDoc);
 
     // Remove timestamp column
-    await page.getByLabel("Remove timestamp column").click();
+    // await page.getByLabel("Remove timestamp column").click();
 
     await page.getByRole("button", { name: "Go to Dashboard" }).click();
 
@@ -288,14 +312,32 @@ describe("dashboards", () => {
     await page.getByRole("button", { name: "Edit Metrics" }).click();
 
     // Add timestamp column back
-    await page.getByRole("button", { name: "Select a time column" }).click();
-    await page.getByRole("menuitem", { name: "timestamp" }).click();
 
-    // Change smallest grain
-    await page
-      .getByRole("button", { name: "Change smallest time grain" })
-      .click();
-    await page.getByRole("menuitem", { name: "week" }).click();
+    const addBackTimestampColumnDoc = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
+
+    title: "AdBids_model_dashboard_rename"
+    model: "AdBids_model"
+    default_time_range: ""
+    smallest_time_grain: "week"
+    timeseries: "timestamp"
+    measures:
+      - label: Total records
+        expression: count(*)
+        name: total_records
+        description: Total number of records present
+        format_preset: humanize
+    dimensions:
+      - name: publisher
+        label: Publisher
+        column: publisher
+        description: ""
+      - name: domain
+        label: Domain
+        column: domain
+        description: ""
+    
+        `;
+    await updateMetricsInput(page, addBackTimestampColumnDoc);
 
     // Go to dashboard
     await page.getByRole("button", { name: "Go to Dashboard" }).click();
@@ -308,13 +350,26 @@ describe("dashboards", () => {
     // Open Edit Metrics
     await page.getByRole("button", { name: "Edit Metrics" }).click();
 
-    // Delete the only measure
-    const measuresTable = await page.getByRole("table", { name: "Measures" });
-    const firstRow = await measuresTable.getByRole("row").nth(1);
-    await firstRow.hover();
-    await firstRow.getByRole("button", { name: "More" }).click();
-    await page.getByRole("menuitem", { name: "Delete row" }).click();
+    const deleteOnlyMeasureDoc = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
+    title: "AdBids_model_dashboard_rename"
+    model: "AdBids_model"
+    default_time_range: ""
+    smallest_time_grain: "week"
+    timeseries: "timestamp"
+    measures: []
+    dimensions:
+      - name: publisher
+        label: Publisher
+        column: publisher
+        description: ""
+      - name: domain
+        label: Domain
+        column: domain
+        description: ""
+    
+        `;
+    await updateMetricsInput(page, deleteOnlyMeasureDoc);
     // Check warning message appears, Go to Dashboard is disabled
     await playwrightExpect(
       page.getByText("at least one measure should be present")
@@ -324,96 +379,64 @@ describe("dashboards", () => {
       page.getByRole("button", { name: "Go to dashboard" })
     ).toBeDisabled();
 
-    // Add total rows measure back
-    await page.getByRole("button", { name: "Add measure" }).click();
+    // Add back the total rows measure for
+    const docWithIncompleteMeasure = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-    await measuresTable
-      .getByRole("row")
-      .nth(1)
-      .getByRole("textbox", { name: "Measure label" })
-      .fill("Total rows");
+    title: "AdBids_model_dashboard_rename"
+    model: "AdBids_model"
+    default_time_range: ""
+    smallest_time_grain: "week"
+    timeseries: "timestamp"
+    measures:
+      - label: Avg Bid Price
+    dimensions:
+      - name: publisher
+        label: Publisher
+        column: publisher
+        description: ""
+      - name: domain
+        label: Domain
+        column: domain
+        description: ""
+    
+        `;
 
-    await measuresTable
-      .getByRole("row")
-      .nth(1)
-      .getByRole("textbox", { name: "Measure expression" })
-      .fill("count(*)");
-
-    // Check Quick Metrics button visible
-    await playwrightExpect(page.getByText("Quick Metrics")).toBeVisible();
-
-    // Add Avg Bid Price metric, first without a definition
-    await page.getByRole("button", { name: "Add measure" }).click();
-    await measuresTable
-      .getByRole("row")
-      .nth(2)
-      .getByRole("textbox", { name: "Measure label" })
-      .fill("Avg Bid Price");
-
-    // Click Go to Dashboard and get redirected back to metrics config
-    await page.getByRole("button", { name: "Go to dashboard" }).click();
-    await playwrightExpect(measuresTable).toBeVisible();
-
-    // Add a definition and pick a format
-    await measuresTable
-      .getByRole("row")
-      .nth(2)
-      .getByRole("textbox", { name: "Measure expression" })
-      .fill("avg(bid_price)");
-
-    await measuresTable
-      .getByRole("row")
-      .nth(2)
-      .getByLabel("Measure number formatting")
-      .selectOption("Currency (USD)");
-
-    // Remove all dimensions
-    const dimensionsTable = await page.getByRole("table", {
-      name: "Dimensions",
-    });
-    await dimensionsTable.getByRole("row").nth(1).hover();
-    await dimensionsTable
-      .getByRole("row")
-      .nth(1)
-      .getByRole("button", { name: "More" })
-      .click();
-    await page.getByRole("menuitem", { name: "Delete row" }).click();
-    await dimensionsTable.getByRole("row").nth(1).hover();
-    await dimensionsTable
-      .getByRole("row")
-      .nth(1)
-      .getByRole("button", { name: "More" })
-      .click();
-    await page.getByRole("menuitem", { name: "Delete row" }).click();
-
-    // Check that Go to Dashboard is disabled
+    await updateMetricsInput(page, docWithIncompleteMeasure);
     await playwrightExpect(
       page.getByRole("button", { name: "Go to dashboard" })
     ).toBeDisabled();
 
-    // Add Published, Domain back to dashboard
-    await page.getByRole("button", { name: "Add dimension" }).click();
-    const firstDimensionsRow = dimensionsTable.getByRole("row").nth(1);
-    await firstDimensionsRow
-      .getByRole("textbox", { name: "Dimension label" })
-      .fill("Publisher");
-    await firstDimensionsRow
-      .getByLabel("Dimension column")
-      .selectOption("publisher");
+    const docWithCompleteMeasure = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-    await page.getByRole("button", { name: "Add dimension" }).click();
+    title: "AdBids_model_dashboard_rename"
+    model: "AdBids_model"
+    default_time_range: ""
+    smallest_time_grain: "week"
+    timeseries: "timestamp"
+    measures:
+      - label: Total rows
+        expression: count(*)
+        name: total_rows
+        description: Total number of records present
+      - label: Avg Bid Price
+        expression: avg(bid_price)
+        name: avg_bid_price
+        format_preset: currency_usd
+    dimensions:
+      - name: publisher
+        label: Publisher
+        column: publisher
+        description: ""
+      - name: domain
+        label: Domain Name
+        column: domain
+        description: ""
+        `;
 
-    const secondDimensionsRow = dimensionsTable.getByRole("row").nth(2);
-    await secondDimensionsRow
-      .getByRole("textbox", { name: "Dimension label" })
-      .fill("Domain Name");
-    await secondDimensionsRow
-      .getByLabel("Dimension column")
-      .selectOption("domain");
-    await secondDimensionsRow
-      .getByLabel("Dimension column")
-      .getByText("domain")
-      .isVisible();
+    await updateMetricsInput(page, docWithCompleteMeasure);
+    await playwrightExpect(
+      page.getByRole("button", { name: "Go to dashboard" })
+    ).toBeEnabled();
 
     // Go to dashboard
     await page.getByRole("button", { name: "Go to dashboard" }).click();
@@ -465,6 +488,18 @@ describe("dashboards", () => {
       page.getByLabel("View filter").getByText("Publisher Microsoft")
     ).toBeVisible();
 
+    // go back to the leaderboards.
+    await page.getByText("All dimensions").click();
+    // clear all filters
+    await page.getByText("Clear filters").click();
+
+    await page.getByRole("button", { name: "Edit metrics" }).click();
+
+    /** walk through empty metrics def  */
+    await runThroughEmptyMetricsFlows(page);
+
+    // go back to the dashboard
+
     // TODO
     //    Check that details table can exclude
     //    Add search criteria
@@ -477,3 +512,74 @@ describe("dashboards", () => {
     //    await page.getByRole("button", { name: "Total records" }).click();
   });
 });
+
+/**
+ * This flow assumes you start on a metrics page, and ends on the metrics page.
+ * It will (1) delete any content
+ * (2) add a skeleton YAML file
+ * (3) scaffold in a metrics def from a model
+ * (4) verify that the scaffolding works by looking at the dashboard.
+ */
+async function runThroughEmptyMetricsFlows(page) {
+  await updateMetricsInput(page, "");
+
+  // the inspector should be empty.
+  await playwrightExpect(
+    await page.getByText("Let's get started.")
+  ).toBeVisible();
+
+  // skeleton should result in an empty skeleton YAML file
+  await page.getByText("start with a skeleton").click();
+
+  // check to see that the placeholder is gone by looking for the button
+  // that was once there.
+  await wrapRetryAssertion(async () => {
+    await playwrightExpect(
+      await page.getByText("start with a skeleton")
+    ).toBeHidden();
+  });
+
+  // the  button should be disabled.
+  await playwrightExpect(
+    await page.getByRole("button", { name: "Go to dashboard" })
+  ).toBeDisabled();
+
+  // the inspector should be empty.
+  await playwrightExpect(
+    await page.getByText("Model not defined.")
+  ).toBeVisible();
+
+  // now let's scaffold things in
+  await updateMetricsInput(page, "");
+
+  await wrapRetryAssertion(async () => {
+    await playwrightExpect(
+      await page.getByText("metrics configuration from an existing model")
+    ).toBeVisible();
+  });
+
+  // select the first menu item.
+  await page.getByText("metrics configuration from an existing model").click();
+  await page.getByRole("menuitem").getByText("AdBids_model").click();
+
+  // let's check the inspector.
+  await playwrightExpect(await page.getByText("Model summary")).toBeVisible();
+  await playwrightExpect(await page.getByText("Model columns")).toBeVisible();
+
+  // go to teh dashboard and make sure the metrics and dimensions are there.
+
+  await page.getByRole("button", { name: "Go to dashboard" }).click();
+
+  // check to see metrics make sense.
+  await playwrightExpect(
+    await page.getByText("Total Records 100.0k")
+  ).toBeVisible();
+
+  // double-check that leaderboards make sense.
+  await playwrightExpect(
+    await page.getByRole("button", { name: "google.com 15.1k" })
+  ).toBeVisible();
+
+  // go back to the metrics page.
+  await page.getByRole("button", { name: "Edit metrics" }).click();
+}
