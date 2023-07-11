@@ -1,17 +1,17 @@
 <script lang="ts">
   import { setContext } from "svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { createBusinessModel, DEFAULT_STORE_KEY } from "./business-model";
+  import { createStateManagers, DEFAULT_STORE_KEY } from "./state-managers";
 
   export let metricsViewName: string;
 
   const queryClient = useQueryClient();
-  const businessModel = createBusinessModel({ queryClient, metricsViewName });
-  setContext(DEFAULT_STORE_KEY, businessModel);
+  const stateManagers = createStateManagers({ queryClient, metricsViewName });
+  setContext(DEFAULT_STORE_KEY, stateManagers);
 
   $: {
     // update metrics view name
-    businessModel.setMetricsViewName(metricsViewName);
+    stateManagers.setMetricsViewName(metricsViewName);
   }
 </script>
 

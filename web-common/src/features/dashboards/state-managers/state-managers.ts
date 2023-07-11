@@ -10,7 +10,7 @@ import {
 } from "../dashboard-stores";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
-type BusinessModel = {
+type StateManagers = {
   runtime: Writable<Runtime>;
   metricsViewName: Writable<string>;
   metricsStore: Readable<MetricsExplorerStoreType>;
@@ -19,19 +19,19 @@ type BusinessModel = {
   setMetricsViewName: (s: string) => void;
 };
 
-export const DEFAULT_STORE_KEY = Symbol("business-model");
+export const DEFAULT_STORE_KEY = Symbol("state-managers");
 
-export function getBusinessModel(): BusinessModel {
+export function getStateManagers(): StateManagers {
   return getContext(DEFAULT_STORE_KEY);
 }
 
-export function createBusinessModel({
+export function createStateManagers({
   queryClient,
   metricsViewName,
 }: {
   queryClient: QueryClient;
   metricsViewName: string;
-}): BusinessModel {
+}): StateManagers {
   const metricsViewNameStore = writable(metricsViewName);
   const dashboardStore = derived([metricsViewNameStore], ([name], set) => {
     const store = useDashboardStore(name);
@@ -46,5 +46,5 @@ export function createBusinessModel({
     setMetricsViewName: (name) => {
       metricsViewNameStore.set(name);
     },
-  } as BusinessModel;
+  } as StateManagers;
 }
