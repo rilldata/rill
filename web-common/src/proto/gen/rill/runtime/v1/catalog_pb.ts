@@ -512,6 +512,13 @@ export class MetricsView extends Message<MetricsView> {
    */
   defaultTimeRange = "";
 
+  /**
+   * Available time zones list preferred time zones using IANA location identifiers.
+   *
+   * @generated from field: repeated string available_time_zones = 11;
+   */
+  availableTimeZones: string[] = [];
+
   constructor(data?: PartialMessage<MetricsView>) {
     super();
     proto3.util.initPartial(data, this);
@@ -529,6 +536,7 @@ export class MetricsView extends Message<MetricsView> {
     { no: 8, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 10, name: "default_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "available_time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsView {
