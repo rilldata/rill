@@ -100,22 +100,22 @@ func (c *Connection) Close() error {
 }
 
 // Registry implements drivers.Connection.
-func (c *Connection) RegistryStore() (drivers.RegistryStore, bool) {
+func (c *Connection) AsRegistryStore() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
 // Catalog implements drivers.Connection.
-func (c *Connection) CatalogStore() (drivers.CatalogStore, bool) {
+func (c *Connection) AsCatalogStore() (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // Repo implements drivers.Connection.
-func (c *Connection) RepoStore() (drivers.RepoStore, bool) {
+func (c *Connection) AsRepoStore() (drivers.RepoStore, bool) {
 	return nil, false
 }
 
 // OLAP implements drivers.Connection.
-func (c *Connection) OLAPStore() (drivers.OLAPStore, bool) {
+func (c *Connection) AsOLAPStore() (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
@@ -141,11 +141,6 @@ func (c *Connection) AsTransporter(from, to drivers.Connection) (drivers.Transpo
 
 func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
-}
-
-// AsConnector implements drivers.Connection.
-func (c *Connection) AsConnector() (drivers.Connector, bool) {
-	return c, true
 }
 
 // DownloadFiles returns a file iterator over objects stored in gcs.

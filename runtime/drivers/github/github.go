@@ -110,22 +110,22 @@ func (c *connection) Config() map[string]any {
 }
 
 // Registry implements drivers.Connection.
-func (c *connection) RegistryStore() (drivers.RegistryStore, bool) {
+func (c *connection) AsRegistryStore() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
 // Catalog implements drivers.Connection.
-func (c *connection) CatalogStore() (drivers.CatalogStore, bool) {
+func (c *connection) AsCatalogStore() (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // Repo implements drivers.Connection.
-func (c *connection) RepoStore() (drivers.RepoStore, bool) {
+func (c *connection) AsRepoStore() (drivers.RepoStore, bool) {
 	return c, true
 }
 
 // OLAP implements drivers.Connection.
-func (c *connection) OLAPStore() (drivers.OLAPStore, bool) {
+func (c *connection) AsOLAPStore() (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
@@ -146,11 +146,6 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 
 // AsTransporter implements drivers.Connection.
 func (c *connection) AsTransporter(from, to drivers.Connection) (drivers.Transporter, bool) {
-	return nil, false
-}
-
-// AsConnector implements drivers.Connection.
-func (c *connection) AsConnector() (drivers.Connector, bool) {
 	return nil, false
 }
 

@@ -168,7 +168,7 @@ measures:
 	dir := t.TempDir()
 	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
 	require.NoError(t, err)
-	repoStore, _ := fileStore.RepoStore()
+	repoStore, _ := fileStore.AsRepoStore()
 	ctx := context.Background()
 
 	for _, tt := range catalogs {
@@ -211,7 +211,7 @@ duckdb:
 	dir := t.TempDir()
 	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
 	require.NoError(t, err)
-	repoStore, _ := fileStore.RepoStore()
+	repoStore, _ := fileStore.AsRepoStore()
 	ctx := context.Background()
 
 	err = artifacts.Write(ctx, repoStore, "test", catalog)
@@ -266,7 +266,7 @@ duckdb:
 	dir := t.TempDir()
 	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
 	require.NoError(t, err)
-	repoStore, _ := fileStore.RepoStore()
+	repoStore, _ := fileStore.AsRepoStore()
 	ctx := context.Background()
 
 	err = artifacts.Write(ctx, repoStore, "test", catalog)
@@ -301,7 +301,7 @@ func TestMetricsLabelBackwardsCompatibility(t *testing.T) {
 	dir := t.TempDir()
 	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
 	require.NoError(t, err)
-	repoStore, _ := fileStore.RepoStore()
+	repoStore, _ := fileStore.AsRepoStore()
 	ctx := context.Background()
 
 	require.NoError(t, repoStore.Put(ctx, "test", "dashboards/MetricsView.yaml", bytes.NewReader([]byte(`display_name: dashboard name
@@ -336,7 +336,7 @@ func TestDimensionAndMeasureNameAutoFill(t *testing.T) {
 	dir := t.TempDir()
 	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
 	require.NoError(t, err)
-	repoStore, _ := fileStore.RepoStore()
+	repoStore, _ := fileStore.AsRepoStore()
 	ctx := context.Background()
 
 	require.NoError(t, repoStore.Put(ctx, "test", "dashboards/MetricsView.yaml", bytes.NewReader([]byte(`display_name: dashboard name
@@ -415,7 +415,7 @@ func TestDimensionColumnBackwardsCompatibility(t *testing.T) {
 	dir := t.TempDir()
 	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
 	require.NoError(t, err)
-	repoStore, _ := fileStore.RepoStore()
+	repoStore, _ := fileStore.AsRepoStore()
 	ctx := context.Background()
 
 	require.NoError(t, repoStore.Put(ctx, "test", "dashboards/MetricsView.yaml", bytes.NewReader([]byte(`display_name: dashboard name
@@ -489,7 +489,7 @@ func TestReadFailure(t *testing.T) {
 	dir := t.TempDir()
 	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
 	require.NoError(t, err)
-	repoStore, _ := fileStore.RepoStore()
+	repoStore, _ := fileStore.AsRepoStore()
 	ctx := context.Background()
 
 	err = os.MkdirAll(path.Join(dir, "sources"), os.ModePerm)
@@ -693,7 +693,7 @@ func repoStore(t *testing.T) drivers.RepoStore {
 	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
 	require.NoError(t, err)
 
-	repoStore, ok := fileStore.RepoStore()
+	repoStore, ok := fileStore.AsRepoStore()
 	require.True(t, ok)
 
 	return repoStore
@@ -712,7 +712,7 @@ func registryStore(t *testing.T) drivers.RegistryStore {
 	store, err := drivers.Open("sqlite", map[string]any{"dsn": ":memory:"}, zap.NewNop())
 	require.NoError(t, err)
 	store.Migrate(ctx)
-	registry, _ := store.RegistryStore()
+	registry, _ := store.AsRegistryStore()
 
 	env := map[string]string{"delimitter": "|", "region": "us-east-2", "limit": "limit 10"}
 	err = registry.CreateInstance(ctx, &drivers.Instance{ID: "test", Variables: env})

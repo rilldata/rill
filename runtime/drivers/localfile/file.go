@@ -32,6 +32,7 @@ func init() {
 	drivers.Register("local_file", driver{})
 }
 
+// TODO :: may be merge localfile and file ?
 type driver struct{}
 
 func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connection, error) {
@@ -67,22 +68,22 @@ func (c *connection) Config() map[string]any {
 }
 
 // Registry implements drivers.Connection.
-func (c *connection) RegistryStore() (drivers.RegistryStore, bool) {
+func (c *connection) AsRegistryStore() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
 // Catalog implements drivers.Connection.
-func (c *connection) CatalogStore() (drivers.CatalogStore, bool) {
+func (c *connection) AsCatalogStore() (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // Repo implements drivers.Connection.
-func (c *connection) RepoStore() (drivers.RepoStore, bool) {
+func (c *connection) AsRepoStore() (drivers.RepoStore, bool) {
 	return nil, false
 }
 
 // OLAP implements drivers.Connection.
-func (c *connection) OLAPStore() (drivers.OLAPStore, bool) {
+func (c *connection) AsOLAPStore() (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
@@ -112,7 +113,7 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 }
 
 // FilePaths implements drivers.FileStore
-func (c *connection) FilePaths(ctx context.Context, src *drivers.FilesSource) ([]string, error) {
+func (c *connection) FilePaths(ctx context.Context, src *drivers.FileSource) ([]string, error) {
 	conf, err := parseConfig(src.Properties)
 	if err != nil {
 		return nil, err
@@ -160,9 +161,4 @@ func (c *connection) resolveLocalPath(path string) (string, error) {
 		return "", fmt.Errorf("file connector cannot ingest source: path is outside repo root")
 	}
 	return finalPath, nil
-}
-
-// AsConnector implements drivers.Connection.
-func (c *connection) AsConnector() (drivers.Connector, bool) {
-	return c, true
 }

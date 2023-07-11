@@ -81,11 +81,11 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 	ctx := context.Background()
 	conn, err := duckdb.Driver{}.Open(map[string]any{"dsn": "?access_mode=read_write"}, zap.NewNop())
 	require.NoError(t, err)
-	olap, _ := conn.OLAPStore()
+	olap, _ := conn.AsOLAPStore()
 
 	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathRel}, zap.NewNop())
 	require.NoError(t, err)
-	repo, _ := fileStore.RepoStore()
+	repo, _ := fileStore.AsRepoStore()
 
 	m := migrator.Migrators[drivers.ObjectTypeSource]
 	opts := migrator.Options{InstanceEnv: map[string]string{"allow_host_access": "true"}, IngestStorageLimitInBytes: 1024 * 1024 * 1024}
@@ -143,11 +143,11 @@ func TestConnectorWithoutRootAccess(t *testing.T) {
 	ctx := context.Background()
 	conn, err := duckdb.Driver{}.Open(map[string]any{"dsn": "?access_mode=read_write"}, zap.NewNop())
 	require.NoError(t, err)
-	olap, _ := conn.OLAPStore()
+	olap, _ := conn.AsOLAPStore()
 
 	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathRel}, zap.NewNop())
 	require.NoError(t, err)
-	repo, _ := fileStore.RepoStore()
+	repo, _ := fileStore.AsRepoStore()
 
 	m := migrator.Migrators[drivers.ObjectTypeSource]
 	opts := migrator.Options{InstanceEnv: map[string]string{"allow_host_access": "false"}, IngestStorageLimitInBytes: 1024 * 1024 * 1024}
@@ -195,12 +195,12 @@ func TestCSVDelimiter(t *testing.T) {
 	conn, err := duckdb.Driver{}.Open(map[string]any{"dsn": "?access_mode=read_write"}, zap.NewNop())
 	require.NoError(t, err)
 	defer conn.Close()
-	olap, _ := conn.OLAPStore()
+	olap, _ := conn.AsOLAPStore()
 
 	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathAbs}, zap.NewNop())
 	require.NoError(t, err)
 	defer fileStore.Close()
-	repo, _ := fileStore.RepoStore()
+	repo, _ := fileStore.AsRepoStore()
 
 	m := migrator.Migrators[drivers.ObjectTypeSource]
 	opts := migrator.Options{InstanceEnv: map[string]string{"allow_host_access": "false"}, IngestStorageLimitInBytes: 1024 * 1024 * 1024}
@@ -237,7 +237,7 @@ func TestFileFormatAndDelimiter(t *testing.T) {
 	conn, err := duckdb.Driver{}.Open(map[string]any{"dsn": "?access_mode=read_write"}, zap.NewNop())
 	require.NoError(t, err)
 	defer conn.Close()
-	olap, _ := conn.OLAPStore()
+	olap, _ := conn.AsOLAPStore()
 
 	testdataPathAbs, err := filepath.Abs("../../../../../web-local/test/data")
 	require.NoError(t, err)
@@ -561,7 +561,7 @@ func createFilePath(t *testing.T, dirPath string, fileName string) string {
 func runOLAPStore(t *testing.T) drivers.OLAPStore {
 	conn, err := duckdb.Driver{}.Open(map[string]any{"dsn": "?access_mode=read_write"}, zap.NewNop())
 	require.NoError(t, err)
-	olap, canServe := conn.OLAPStore()
+	olap, canServe := conn.AsOLAPStore()
 	require.True(t, canServe)
 	return olap
 }
@@ -569,6 +569,6 @@ func runOLAPStore(t *testing.T) drivers.OLAPStore {
 func runRepoStore(t *testing.T, testdataPathAbs string) drivers.RepoStore {
 	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathAbs}, zap.NewNop())
 	require.NoError(t, err)
-	repo, _ := fileStore.RepoStore()
+	repo, _ := fileStore.AsRepoStore()
 	return repo
 }

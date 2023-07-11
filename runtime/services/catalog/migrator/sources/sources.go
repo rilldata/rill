@@ -194,24 +194,23 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 	catalogObj *drivers.CatalogEntry, name string, logger *zap.Logger,
 ) error {
 	apiSource := catalogObj.GetSource()
-
 	if name == "" {
 		name = apiSource.Name
 	}
 
 	logger = logger.With(zap.String("source", name))
 	variables := convertLower(opts.InstanceEnv)
-	connector, err := drivers.Open(apiSource.Connector, connectorVariables(apiSource, variables, repo.Root()), logger)
+	srcConnector, err := drivers.Open(apiSource.Connector, connectorVariables(apiSource, variables, repo.Root()), logger)
 	if err != nil {
 		return fmt.Errorf("failed to open driver %w", err)
 	}
 
 	olapConnection := olap.(drivers.Connection)
-	t, ok := olapConnection.AsTransporter(connector, olapConnection)
+	t, ok := olapConnection.AsTransporter(srcConnector, olapConnection)
 	if !ok {
-		t, ok = connector.AsTransporter(connector, olapConnection)
+		t, ok = srcConnector.AsTransporter(srcConnector, olapConnection)
 		if !ok {
-			return fmt.Errorf("data transfer not possible from %q to %q", connector.Driver(), olapConnection.Driver())
+			return fmt.Errorf("data transfer not possible from %q to %q", srcConnector.Driver(), olapConnection.Driver())
 		}
 	}
 
@@ -240,7 +239,7 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 		case <-done:
 			return
 		case <-ticker.C:
-			olap, _ := olapConnection.OLAPStore()
+			olap, _ := olapConnection.AsOLAPStore()
 			if size, ok := olap.EstimateSize(); ok && size > ingestionLimit {
 				limitExceeded = true
 				cancel()
@@ -292,11 +291,11 @@ func source(connector string, src *runtimev1.Source) (drivers.Source, error) {
 			Properties:    props,
 		}, nil
 	case "http":
-		return &drivers.FilesSource{
+		return &drivers.FileSource{
 			Properties: props,
 		}, nil
 	case "local_file":
-		return &drivers.FilesSource{
+		return &drivers.FileSource{
 			Properties: props,
 		}, nil
 	case "motherduck":
@@ -329,6 +328,8 @@ func sink(connector, tableName string) drivers.Sink {
 	}
 }
 
+// TODO :: may be pass all envs ?
+// It is slightly confusing right now that what gets passed to driver.Open vs source property
 func connectorVariables(src *runtimev1.Source, env map[string]string, repoRoot string) map[string]any {
 	connector := src.Connector
 	vars := map[string]any{

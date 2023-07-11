@@ -36,7 +36,7 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) er
 
 	// Check that it's a driver that supports embedded catalogs
 	if inst.EmbedCatalog {
-		_, ok := olap.CatalogStore()
+		_, ok := olap.AsCatalogStore()
 		if !ok {
 			return errors.New("driver does not support embedded catalogs")
 		}
@@ -146,7 +146,7 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 		if err != nil {
 			return err
 		}
-		_, ok := olapConn.CatalogStore()
+		_, ok := olapConn.AsCatalogStore()
 		if !ok {
 			return errors.New("driver does not support embedded catalogs")
 		}
@@ -200,7 +200,7 @@ func (r *Runtime) checkRepoConnection(inst *drivers.Instance) (drivers.Connectio
 	if err != nil {
 		return nil, nil, err
 	}
-	repoStore, ok := repo.RepoStore()
+	repoStore, ok := repo.AsRepoStore()
 	if !ok {
 		return nil, nil, fmt.Errorf("not a valid repo driver: '%s'", inst.RepoDriver)
 	}
@@ -213,7 +213,7 @@ func (r *Runtime) checkOlapConnection(inst *drivers.Instance) (drivers.Connectio
 	if err != nil {
 		return nil, nil, err
 	}
-	olapStore, ok := olap.OLAPStore()
+	olapStore, ok := olap.AsOLAPStore()
 	if !ok {
 		return nil, nil, fmt.Errorf("not a valid OLAP driver: '%s'", inst.OLAPDriver)
 	}

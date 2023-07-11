@@ -96,21 +96,21 @@ type Connection interface {
 	// Close closes the connection
 	Close() error
 
-	// RegistryStore returns a RegistryStore if the driver can serve as such, otherwise returns false.
+	// AsRegistryStore returns a AsRegistryStore if the driver can serve as such, otherwise returns false.
 	// The registry is responsible for tracking instances and repos.
-	RegistryStore() (RegistryStore, bool)
+	AsRegistryStore() (RegistryStore, bool)
 
-	// CatalogStore returns a CatalogStore if the driver can serve as such, otherwise returns false.
+	// AsCatalogStore returns a AsCatalogStore if the driver can serve as such, otherwise returns false.
 	// A catalog is used to store state about migrated/deployed objects (such as sources and metrics views).
-	CatalogStore() (CatalogStore, bool)
+	AsCatalogStore() (CatalogStore, bool)
 
-	// RepoStore returns a RepoStore if the driver can serve as such, otherwise returns false.
+	// AsRepoStore returns a AsRepoStore if the driver can serve as such, otherwise returns false.
 	// A repo stores file artifacts (either in a folder or virtualized in a database).
-	RepoStore() (RepoStore, bool)
+	AsRepoStore() (RepoStore, bool)
 
-	// OLAPStore returns an OLAPStore if the driver can serve as such, otherwise returns false.
+	// AsOLAPStore returns an AsOLAPStore if the driver can serve as such, otherwise returns false.
 	// OLAP stores are where we actually store, transform, and query users' data.
-	OLAPStore() (OLAPStore, bool)
+	AsOLAPStore() (OLAPStore, bool)
 
 	// AsObjectStore returns an ObjectStore if the driver can serve as such, otherwise returns false.
 	AsObjectStore() (ObjectStore, bool)
@@ -124,9 +124,6 @@ type Connection interface {
 	// a) myDuckDB.AsTransporter(myGCS, myDuckDB)
 	// b) myBeam.AsTransporter(myGCS, myS3) // In the future
 	AsTransporter(from Connection, to Connection) (Transporter, bool)
-
-	// AsConnector returns a Connector if a driver can server as such, otherwise returns false.
-	AsConnector() (Connector, bool)
 }
 
 type ObjectStore interface {
@@ -136,7 +133,7 @@ type ObjectStore interface {
 
 type FileStore interface {
 	// FilePaths returns local paths where files are stored
-	FilePaths(ctx context.Context, src *FilesSource) ([]string, error)
+	FilePaths(ctx context.Context, src *FileSource) ([]string, error)
 }
 
 // FileIterator provides ways to iteratively downloade files from external sources
@@ -165,7 +162,7 @@ type Transporter interface {
 type Source interface {
 	BucketSource() (*BucketSource, bool)
 	DatabaseSource() (*DatabaseSource, bool)
-	FilesSource() (*FilesSource, bool)
+	FilesSource() (*FileSource, bool)
 }
 
 // A Sink is expected to only return ok=true for one of the sink types.
@@ -178,7 +175,7 @@ type Sink interface {
 type BucketSource struct {
 	Paths         []string // May be globs
 	ExtractPolicy *runtimev1.Source_ExtractPolicy
-	Properties    map[string]any // TODO :: this should also be part of connection open
+	Properties    map[string]any // TODO :: this should also be part of connection open ?
 }
 
 var _ Source = &BucketSource{}
@@ -191,7 +188,7 @@ func (b *BucketSource) DatabaseSource() (*DatabaseSource, bool) {
 	return nil, false
 }
 
-func (b *BucketSource) FilesSource() (*FilesSource, bool) {
+func (b *BucketSource) FilesSource() (*FileSource, bool) {
 	return nil, false
 }
 
@@ -229,7 +226,7 @@ func (d *DatabaseSource) DatabaseSource() (*DatabaseSource, bool) {
 	return d, true
 }
 
-func (d *DatabaseSource) FilesSource() (*FilesSource, bool) {
+func (d *DatabaseSource) FilesSource() (*FileSource, bool) {
 	return nil, false
 }
 
@@ -248,22 +245,22 @@ func (d *DatabaseSink) DatabaseSink() (*DatabaseSink, bool) {
 	return d, true
 }
 
-type FilesSource struct {
+type FileSource struct {
 	Name       string
 	Properties map[string]any
 }
 
-var _ Source = &FilesSource{}
+var _ Source = &FileSource{}
 
-func (f *FilesSource) BucketSource() (*BucketSource, bool) {
+func (f *FileSource) BucketSource() (*BucketSource, bool) {
 	return nil, false
 }
 
-func (f *FilesSource) DatabaseSource() (*DatabaseSource, bool) {
+func (f *FileSource) DatabaseSource() (*DatabaseSource, bool) {
 	return nil, false
 }
 
-func (f *FilesSource) FilesSource() (*FilesSource, bool) {
+func (f *FileSource) FilesSource() (*FileSource, bool) {
 	return f, true
 }
 

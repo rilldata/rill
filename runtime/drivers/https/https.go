@@ -68,22 +68,22 @@ func (c *connection) Close() error {
 }
 
 // Registry implements drivers.Connection.
-func (c *connection) RegistryStore() (drivers.RegistryStore, bool) {
+func (c *connection) AsRegistryStore() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
 // Catalog implements drivers.Connection.
-func (c *connection) CatalogStore() (drivers.CatalogStore, bool) {
+func (c *connection) AsCatalogStore() (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // Repo implements drivers.Connection.
-func (c *connection) RepoStore() (drivers.RepoStore, bool) {
+func (c *connection) AsRepoStore() (drivers.RepoStore, bool) {
 	return nil, false
 }
 
 // OLAP implements drivers.Connection.
-func (c *connection) OLAPStore() (drivers.OLAPStore, bool) {
+func (c *connection) AsOLAPStore() (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
@@ -111,13 +111,8 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 	return c, true
 }
 
-// AsConnector implements drivers.Connection.
-func (c *connection) AsConnector() (drivers.Connector, bool) {
-	return c, true
-}
-
 // FilePaths implements drivers.FileStore
-func (c *connection) FilePaths(ctx context.Context, src *drivers.FilesSource) ([]string, error) {
+func (c *connection) FilePaths(ctx context.Context, src *drivers.FileSource) ([]string, error) {
 	conf, err := parseConfig(src.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)

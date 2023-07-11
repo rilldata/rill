@@ -40,7 +40,7 @@ func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 	}
 
 	// Check the metastore is a registry
-	_, ok := metastore.RegistryStore()
+	_, ok := metastore.AsRegistryStore()
 	if !ok {
 		return nil, fmt.Errorf("server metastore must be a valid registry")
 	}

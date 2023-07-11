@@ -11,7 +11,6 @@ import (
 	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
-
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/duckdb/transporter"
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
@@ -138,23 +137,23 @@ func (c *connection) Close() error {
 	return c.db.Close()
 }
 
-// RegistryStore Registry implements drivers.Connection.
-func (c *connection) RegistryStore() (drivers.RegistryStore, bool) {
+// AsRegistryStore Registry implements drivers.Connection.
+func (c *connection) AsRegistryStore() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
-// CatalogStore Catalog implements drivers.Connection.
-func (c *connection) CatalogStore() (drivers.CatalogStore, bool) {
+// AsCatalogStore Catalog implements drivers.Connection.
+func (c *connection) AsCatalogStore() (drivers.CatalogStore, bool) {
 	return c, true
 }
 
-// RepoStore Repo implements drivers.Connection.
-func (c *connection) RepoStore() (drivers.RepoStore, bool) {
+// AsRepoStore Repo implements drivers.Connection.
+func (c *connection) AsRepoStore() (drivers.RepoStore, bool) {
 	return nil, false
 }
 
-// OLAPStore OLAP implements drivers.Connection.
-func (c *connection) OLAPStore() (drivers.OLAPStore, bool) {
+// AsOLAPStore OLAP implements drivers.Connection.
+func (c *connection) AsOLAPStore() (drivers.OLAPStore, bool) {
 	return c, true
 }
 
@@ -163,14 +162,9 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
 }
 
-// AsConnector implements drivers.Connection.
-func (c *connection) AsConnector() (drivers.Connector, bool) {
-	return nil, false
-}
-
 // AsTransporter implements drivers.Connection.
 func (c *connection) AsTransporter(from, to drivers.Connection) (drivers.Transporter, bool) {
-	olap, _ := to.OLAPStore()
+	olap, _ := to.AsOLAPStore()
 	if c == to {
 		if from.Driver() == "motherduck" {
 			return transporter.NewMotherduckToDuckDB(from, olap, c.logger), true

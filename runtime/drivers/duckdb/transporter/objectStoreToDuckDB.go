@@ -115,7 +115,8 @@ type appender struct {
 }
 
 func newAppender(to drivers.OLAPStore, sink *drivers.DatabaseSink, ingestionProps map[string]any,
-	allowSchemaRelaxation bool, logger *zap.Logger) *appender {
+	allowSchemaRelaxation bool, logger *zap.Logger,
+) *appender {
 	return &appender{
 		to:                    to,
 		sink:                  sink,

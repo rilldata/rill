@@ -229,7 +229,7 @@ func (s *Server) MotherduckListTables(ctx context.Context, req *runtimev1.Mother
 	}
 	defer conn.Close()
 
-	olap, _ := conn.OLAPStore()
+	olap, _ := conn.AsOLAPStore()
 	tables, err := olap.InformationSchema().All(ctx)
 	if err != nil {
 		return nil, err

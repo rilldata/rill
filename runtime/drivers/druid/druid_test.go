@@ -108,7 +108,7 @@ func TestDruid(t *testing.T) {
 	conn, err := driver{}.Open(map[string]any{"dsn": avaticaURL}, zap.NewNop())
 	require.NoError(t, err)
 
-	olap, ok := conn.OLAPStore()
+	olap, ok := conn.AsOLAPStore()
 	require.True(t, ok)
 
 	t.Run("count", func(t *testing.T) { testCount(t, olap) })
