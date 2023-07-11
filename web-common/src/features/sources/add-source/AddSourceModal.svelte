@@ -21,7 +21,7 @@
 
   let selectedConnector: V1Connector;
 
-  const TAB_ORDER = ["gcs", "s3", "https", "local_file"];
+  const TAB_ORDER = ["gcs", "s3", "https", "local_file", "motherduck"];
 
   const connectors = createRuntimeServiceListConnectors({
     query: {
@@ -60,11 +60,11 @@
 
 <Dialog
   compact
-  useContentForMinSize
   {disabled}
   on:cancel={() => onDialogClose()}
   showCancel
   size="md"
+  useContentForMinSize
   yFixed
 >
   <div slot="title">
@@ -83,7 +83,7 @@
     </TabGroup>
   </div>
   <div class="flex-grow overflow-y-auto">
-    {#if selectedConnector?.name === "gcs" || selectedConnector?.name === "s3" || selectedConnector?.name === "https"}
+    {#if selectedConnector?.name === "gcs" || selectedConnector?.name === "s3" || selectedConnector?.name === "https" || selectedConnector?.name === "motherduck"}
       {#key selectedConnector}
         <RemoteSource connector={selectedConnector} on:close />
       {/key}

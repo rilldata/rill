@@ -11,7 +11,9 @@ import (
 	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
+
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/duckdb/transporter"
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
@@ -23,7 +25,13 @@ func init() {
 
 type Driver struct{}
 
-func (d Driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error) {
+func (d Driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connection, error) {
+	dsnConfig, ok := config["dsn"]
+	if !ok {
+		return nil, fmt.Errorf("require dsn to open duckdb connection")
+	}
+
+	dsn := dsnConfig.(string)
 	cfg, err := newConfig(dsn)
 	if err != nil {
 		return nil, err
@@ -36,11 +44,12 @@ func (d Driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 	}
 
 	c := &connection{
-		config:  cfg,
-		logger:  logger,
-		metaSem: semaphore.NewWeighted(1),
-		olapSem: priorityqueue.NewSemaphore(olapSemSize),
-		dbCond:  sync.NewCond(&sync.Mutex{}),
+		config:       cfg,
+		logger:       logger,
+		metaSem:      semaphore.NewWeighted(1),
+		olapSem:      priorityqueue.NewSemaphore(olapSemSize),
+		dbCond:       sync.NewCond(&sync.Mutex{}),
+		driverConfig: config,
 	}
 
 	// Open the DB
@@ -63,7 +72,13 @@ func (d Driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 	return c, nil
 }
 
-func (d Driver) Drop(dsn string, logger *zap.Logger) error {
+func (d Driver) Drop(config map[string]any, logger *zap.Logger) error {
+	dsnConfig, ok := config["dsn"]
+	if !ok {
+		return fmt.Errorf("require dsn to drop duckdb connection")
+	}
+
+	dsn := dsnConfig.(string)
 	cfg, err := newConfig(dsn)
 	if err != nil {
 		return err
@@ -82,9 +97,10 @@ func (d Driver) Drop(dsn string, logger *zap.Logger) error {
 }
 
 type connection struct {
-	db     *sqlx.DB
-	config *config
-	logger *zap.Logger
+	db           *sqlx.DB
+	driverConfig map[string]any
+	config       *config
+	logger       *zap.Logger
 	// This driver may issue both OLAP and "meta" queries (like catalog info) against DuckDB.
 	// Meta queries are usually fast, but OLAP queries may take a long time. To enable predictable parallel performance,
 	// we gate queries with semaphores that limits the number of concurrent queries of each type.
@@ -101,6 +117,16 @@ type connection struct {
 	dbCond      *sync.Cond
 	dbReopen    bool
 	dbErr       error
+}
+
+// Driver implements drivers.Connection.
+func (c *connection) Driver() string {
+	return "duckdb"
+}
+
+// Config used to open the Connection
+func (c *connection) Config() map[string]any {
+	return c.driverConfig
 }
 
 // Close implements drivers.Connection.
@@ -126,6 +152,37 @@ func (c *connection) RepoStore() (drivers.RepoStore, bool) {
 // OLAPStore OLAP implements drivers.Connection.
 func (c *connection) OLAPStore() (drivers.OLAPStore, bool) {
 	return c, true
+}
+
+// AsObjectStore implements drivers.Connection.
+func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
+	return nil, false
+}
+
+// AsConnector implements drivers.Connection.
+func (c *connection) AsConnector() (drivers.Connector, bool) {
+	return nil, false
+}
+
+// AsTransporter implements drivers.Connection.
+func (c *connection) AsTransporter(from drivers.Connection, to drivers.Connection) (drivers.Transporter, bool) {
+	olap, _ := to.OLAPStore()
+	if c == to {
+		if from.Driver() == "motherduck" {
+			return transporter.NewMotherduckToDuckDB(olap, from, c.logger), true
+		}
+		if store, ok := from.AsObjectStore(); ok { // objectstore to duckdb transfer
+			return transporter.NewObjectStoreToDuckDB(olap, store, c.logger), true
+		}
+		if store, ok := from.AsFileStore(); ok {
+			return transporter.NewFileStoreToDuckDB(olap, store, c.logger), true
+		}
+	}
+	return nil, false
+}
+
+func (c *connection) AsFileStore() (drivers.FileStore, bool) {
+	return nil, false
 }
 
 // reopenDB opens the DuckDB handle anew. If c.db is already set, it closes the existing handle first.

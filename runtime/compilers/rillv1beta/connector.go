@@ -17,7 +17,7 @@ import (
 
 // TODO :: return this to build support for all kind of variables
 type Variables struct {
-	ProjectVariables []connectors.VariableSchema
+	ProjectVariables []drivers.VariableSchema
 	Connectors       []*Connector
 }
 
@@ -25,7 +25,7 @@ type Connector struct {
 	Name            string
 	Type            string
 	Sources         []*connectors.Source
-	Spec            connectors.Spec
+	Spec            drivers.Spec
 	AnonymousAccess bool
 }
 
@@ -64,14 +64,13 @@ func ExtractConnectors(ctx context.Context, projectPath string) ([]*Connector, e
 	// keeping a map to dedup connectors
 	connectorMap := make(map[key][]*connectors.Source)
 	for _, src := range allSources {
-		connector, ok := connectors.Connectors[src.Connector]
+		connector, ok := drivers.Connectors[src.Connector]
 		if !ok {
 			return nil, fmt.Errorf("no source connector defined for type %q", src.Connector)
 		}
-
 		// ignoring error since failure to resolve this should not break the deployment flow
 		// this can fail under cases such as full or host/bucket of URI is a variable
-		access, _ := connector.HasAnonymousAccess(ctx, &connectors.Env{}, src)
+		access, _ := connector.HasAnonymousAccess(ctx, map[string]any{})
 		c := key{Name: src.Connector, Type: src.Connector, AnonymousAccess: access}
 		srcs, ok := connectorMap[c]
 		if !ok {
@@ -83,7 +82,7 @@ func ExtractConnectors(ctx context.Context, projectPath string) ([]*Connector, e
 
 	result := make([]*Connector, 0)
 	for k, v := range connectorMap {
-		connector := connectors.Connectors[k.Type]
+		connector := drivers.Connectors[k.Type]
 		result = append(result, &Connector{
 			Name:            k.Name,
 			Type:            k.Type,

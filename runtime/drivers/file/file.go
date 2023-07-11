@@ -17,8 +17,13 @@ func init() {
 
 type driver struct{}
 
-func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error) {
-	path, err := fileutil.ExpandHome(dsn)
+func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connection, error) {
+	dsnConfig, ok := config["dsn"]
+	if !ok {
+		return nil, fmt.Errorf("require dsn to open file connection")
+	}
+
+	path, err := fileutil.ExpandHome(dsnConfig.(string))
 	if err != nil {
 		return nil, err
 	}
@@ -28,20 +33,29 @@ func (d driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 		return nil, err
 	}
 
-	c := &connection{root: absPath}
+	c := &connection{
+		root:   absPath,
+		config: config,
+	}
 	if err := c.checkRoot(); err != nil {
 		return nil, err
 	}
 	return c, nil
 }
 
-func (d driver) Drop(dsn string, logger *zap.Logger) error {
+func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
 	return drivers.ErrDropNotSupported
 }
 
 type connection struct {
 	// root should be absolute path
-	root string
+	root   string
+	config map[string]any
+}
+
+// Config implements drivers.Connection.
+func (c *connection) Config() map[string]any {
+	return c.config
 }
 
 // Close implements drivers.Connection.
@@ -77,6 +91,25 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 // MigrationStatus implements drivers.Connection.
 func (c *connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
+}
+
+// AsObjectStore implements drivers.Connection.
+func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
+	return nil, false
+}
+
+// AsTransporter implements drivers.Connection.
+func (c *connection) AsTransporter(from drivers.Connection, to drivers.Connection) (drivers.Transporter, bool) {
+	return nil, false
+}
+
+func (c *connection) AsFileStore() (drivers.FileStore, bool) {
+	return nil, false
+}
+
+// AsConnector implements drivers.Connection.
+func (c *connection) AsConnector() (drivers.Connector, bool) {
+	return nil, false
 }
 
 // checkPath checks that the connection's root is a valid directory.

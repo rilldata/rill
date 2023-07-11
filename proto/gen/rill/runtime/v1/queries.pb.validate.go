@@ -108,6 +108,17 @@ func (m *QueryRequest) validate(all bool) error {
 
 	// no validation rules for DryRun
 
+	if val := m.GetLimit(); val < 0 || val > 10000 {
+		err := QueryRequestValidationError{
+			field:  "Limit",
+			reason: "value must be inside range [0, 10000]",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if len(errors) > 0 {
 		return QueryRequestMultiError(errors)
 	}
@@ -374,10 +385,10 @@ func (m *ExportRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
-	if m.GetLimit() > 10000 {
+	if val := m.GetLimit(); val < 0 || val > 10000 {
 		err := ExportRequestValidationError{
 			field:  "Limit",
-			reason: "value must be less than or equal to 10000",
+			reason: "value must be inside range [0, 10000]",
 		}
 		if !all {
 			return err
@@ -693,17 +704,6 @@ func (m *MetricsViewToplistRequest) validate(all bool) error {
 		err := MetricsViewToplistRequestValidationError{
 			field:  "DimensionName",
 			reason: "value length must be at least 1 runes",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if len(m.GetMeasureNames()) < 1 {
-		err := MetricsViewToplistRequestValidationError{
-			field:  "MeasureNames",
-			reason: "value must contain at least 1 item(s)",
 		}
 		if !all {
 			return err
@@ -1180,17 +1180,6 @@ func (m *MetricsViewComparisonToplistRequest) validate(all bool) error {
 		err := MetricsViewComparisonToplistRequestValidationError{
 			field:  "DimensionName",
 			reason: "value length must be at least 1 runes",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if len(m.GetMeasureNames()) < 1 {
-		err := MetricsViewComparisonToplistRequestValidationError{
-			field:  "MeasureNames",
-			reason: "value must contain at least 1 item(s)",
 		}
 		if !all {
 			return err

@@ -115,11 +115,12 @@ region: us-east-2
 					},
 					Measures: []*runtimev1.MetricsView_Measure{
 						{
-							Name:        "measure_0",
-							Label:       "Mea0_L",
-							Expression:  "count(c0)",
-							Description: "Mea0_D",
-							Format:      "humanise",
+							Name:                "measure_0",
+							Label:               "Mea0_L",
+							Expression:          "count(c0)",
+							Description:         "Mea0_D",
+							Format:              "humanise",
+							ValidPercentOfTotal: true,
 						},
 						{
 							Name:        "avg_measure",
@@ -154,6 +155,7 @@ measures:
       expression: count(c0)
       description: Mea0_D
       format_preset: humanise
+      valid_percent_of_total: true
     - label: Mea1_L
       name: avg_measure
       expression: avg(c1)
@@ -164,7 +166,7 @@ measures:
 	}
 
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", dir, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
 	require.NoError(t, err)
 	repoStore, _ := fileStore.RepoStore()
 	ctx := context.Background()
@@ -207,7 +209,7 @@ duckdb:
     delim: '''|'''
 `
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", dir, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
 	require.NoError(t, err)
 	repoStore, _ := fileStore.RepoStore()
 	ctx := context.Background()
@@ -262,7 +264,7 @@ duckdb:
     hive_partitioning: true
 `
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", dir, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
 	require.NoError(t, err)
 	repoStore, _ := fileStore.RepoStore()
 	ctx := context.Background()
@@ -297,7 +299,7 @@ duckdb:
 
 func TestMetricsLabelBackwardsCompatibility(t *testing.T) {
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", dir, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
 	require.NoError(t, err)
 	repoStore, _ := fileStore.RepoStore()
 	ctx := context.Background()
@@ -332,7 +334,7 @@ measures: []
 
 func TestDimensionAndMeasureNameAutoFill(t *testing.T) {
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", dir, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
 	require.NoError(t, err)
 	repoStore, _ := fileStore.RepoStore()
 	ctx := context.Background()
@@ -411,7 +413,7 @@ measures:
 
 func TestDimensionColumnBackwardsCompatibility(t *testing.T) {
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", dir, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
 	require.NoError(t, err)
 	repoStore, _ := fileStore.RepoStore()
 	ctx := context.Background()
@@ -485,7 +487,7 @@ func TestReadFailure(t *testing.T) {
 	}
 
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", dir, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
 	require.NoError(t, err)
 	repoStore, _ := fileStore.RepoStore()
 	ctx := context.Background()
@@ -633,7 +635,7 @@ region: {{.env.region}}
 
 func repoStore(t *testing.T) drivers.RepoStore {
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", dir, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
 	require.NoError(t, err)
 
 	repoStore, ok := fileStore.RepoStore()
@@ -652,7 +654,7 @@ func toProtoStruct(obj map[string]any) *structpb.Struct {
 
 func registryStore(t *testing.T) drivers.RegistryStore {
 	ctx := context.Background()
-	store, err := drivers.Open("sqlite", ":memory:", zap.NewNop())
+	store, err := drivers.Open("sqlite", map[string]any{"dsn": ":memory:"}, zap.NewNop())
 	require.NoError(t, err)
 	store.Migrate(ctx)
 	registry, _ := store.RegistryStore()

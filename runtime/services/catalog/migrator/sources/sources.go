@@ -5,12 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
+	"go.uber.org/zap"
 )
+
+const _defaultIngestTimeout = 60 * time.Minute
 
 func init() {
 	migrator.Register(drivers.ObjectTypeSource, &sourceMigrator{})
@@ -24,8 +28,9 @@ func (m *sourceMigrator) Create(
 	repo drivers.RepoStore,
 	opts migrator.Options,
 	catalogObj *drivers.CatalogEntry,
+	logger *zap.Logger,
 ) error {
-	return ingestSource(ctx, olap, repo, opts, catalogObj, "")
+	return ingestSource(ctx, olap, repo, opts, catalogObj, "", logger)
 }
 
 func (m *sourceMigrator) Update(ctx context.Context,
@@ -33,12 +38,13 @@ func (m *sourceMigrator) Update(ctx context.Context,
 	repo drivers.RepoStore,
 	opts migrator.Options,
 	oldCatalogObj, newCatalogObj *drivers.CatalogEntry,
+	logger *zap.Logger,
 ) error {
 	apiSource := newCatalogObj.GetSource()
 
 	tempName := fmt.Sprintf("__rill_temp_%s", apiSource.Name)
 
-	err := ingestSource(ctx, olap, repo, opts, newCatalogObj, tempName)
+	err := ingestSource(ctx, olap, repo, opts, newCatalogObj, tempName, logger)
 	if err != nil {
 		// cleanup of temp table. can exist and still error out in incremental ingestion
 		_ = olap.Exec(ctx, &drivers.Statement{
@@ -184,13 +190,8 @@ func convertUpper(in map[string]string) map[string]string {
 	return m
 }
 
-func ingestSource(
-	ctx context.Context,
-	olap drivers.OLAPStore,
-	repo drivers.RepoStore,
-	opts migrator.Options,
-	catalogObj *drivers.CatalogEntry,
-	name string,
+func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts migrator.Options,
+	catalogObj *drivers.CatalogEntry, name string, logger *zap.Logger,
 ) error {
 	apiSource := catalogObj.GetSource()
 
@@ -198,28 +199,123 @@ func ingestSource(
 		name = apiSource.Name
 	}
 
-	source := &connectors.Source{
-		Name:          name,
-		Connector:     apiSource.Connector,
-		Properties:    apiSource.Properties.AsMap(),
-		ExtractPolicy: apiSource.GetPolicy(),
-		Timeout:       apiSource.GetTimeoutSeconds(),
-	}
+	// variables := convertUpper(opts.InstanceEnv)
+	// env := &connectors.Env{
+	// 	RepoDriver:          repo.Driver(),
+	// 	RepoRoot:            repo.Root(),
+	// 	Variables:           variables,
+	// 	AllowHostAccess:     strings.EqualFold(variables["ALLOW_HOST_ACCESS"], "true"),
+	// 	StorageLimitInBytes: opts.IngestStorageLimitInBytes,
+	// }
 
+	logger = logger.With(zap.String("source", name))
 	variables := convertUpper(opts.InstanceEnv)
-	env := &connectors.Env{
-		RepoDriver:          repo.Driver(),
-		RepoRoot:            repo.Root(),
-		Variables:           variables,
-		AllowHostAccess:     strings.EqualFold(variables["ALLOW_HOST_ACCESS"], "true"),
-		StorageLimitInBytes: opts.IngestStorageLimitInBytes,
+	connector, err := drivers.Open(apiSource.Connector, connectorVariables(apiSource.Connector, variables), logger)
+	if err != nil {
+		return fmt.Errorf("failed to open driver %w", err)
 	}
 
-	ingestionSummary, err := olap.Ingest(ctx, env, source)
+	olapConnection := olap.(drivers.Connection)
+	t, ok := olapConnection.AsTransporter(connector, olapConnection)
+	if !ok {
+		t, ok = connector.AsTransporter(connector, olapConnection)
+		if !ok {
+			return fmt.Errorf("data transfer not possible from %q to %q", connector.Driver(), olapConnection.Driver())
+		}
+	}
+
+	src := source(apiSource.Connector, apiSource)
+	sink := sink(olapConnection.Driver(), name)
+
+	timeout := _defaultIngestTimeout
+	if apiSource.GetTimeoutSeconds() > 0 {
+		timeout = time.Duration(apiSource.GetTimeoutSeconds()) * time.Second
+	}
+
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	p := &progress{}
+	err = t.Transfer(ctxWithTimeout, src, sink, drivers.NewTransferOpts(drivers.WithLimitInBytes(opts.IngestStorageLimitInBytes)), p)
 	if err != nil {
 		return err
 	}
 
-	catalogObj.BytesIngested = ingestionSummary.BytesIngested
+	catalogObj.BytesIngested = p.size
 	return nil
+}
+
+type progress struct {
+	size int64
+	unit drivers.ProgressUnit
+}
+
+func (p *progress) Target(val int64, unit drivers.ProgressUnit) {
+	p.unit = unit
+}
+
+func (p *progress) Observe(val int64, unit drivers.ProgressUnit) {
+	p.size += val
+}
+
+func source(connector string, src *runtimev1.Source) drivers.Source {
+	props := src.Properties.AsMap()
+	switch connector {
+	case "s3":
+		return &drivers.BucketSource{
+			Paths: []string{
+				props["uri"].(string),
+			},
+			ExtractPolicy: src.Policy,
+			Properties:    props,
+		}
+	case "gcs":
+		return &drivers.BucketSource{
+			Paths: []string{
+				props["uri"].(string),
+			},
+			ExtractPolicy: src.Policy,
+			Properties:    props,
+		}
+	case "http":
+		return &drivers.FilesSource{
+			Properties: props,
+		}
+	case "local_file":
+		return &drivers.BucketSource{
+			Properties: props,
+		}
+	default:
+		return nil
+	}
+}
+
+func sink(connector string, tableName string) drivers.Sink {
+	switch connector {
+	case "duckdb":
+		return &drivers.DatabaseSink{
+			Table: tableName,
+		}
+	default:
+		return nil
+	}
+}
+
+func connectorVariables(connector string, env map[string]string) map[string]any {
+	vars := map[string]any{
+		"ALLOW_HOST_ACCESS": env["ALLOW_HOST_ACCESS"],
+	}
+	switch connector {
+	case "s3":
+		vars["AWS_ACCESS_KEY_ID"] = env["AWS_ACCESS_KEY_ID"]
+		vars["AWS_SECRET_ACCESS_KEY"] = env["AWS_SECRET_ACCESS_KEY"]
+		vars["AWS_SESSION_TOKEN"] = env["AWS_SESSION_TOKEN"]
+	case "gcs":
+		vars["GOOGLE_APPLICATION_CREDENTIALS"] = env["GOOGLE_APPLICATION_CREDENTIALS"]
+		vars["ALLOW_HOST_ACCESS"] = env["ALLOW_HOST_ACCESS"]
+	case "motherduck":
+		vars["TOKEN"] = env["TOKEN"]
+		vars["dsn"] = ""
+	}
+	return vars
 }

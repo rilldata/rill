@@ -102,7 +102,7 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 			r.logger.Error("delete instance: error getting connection", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 		}
 
-		err = drivers.Drop(inst.OLAPDriver, inst.OLAPDSN, r.logger)
+		err = drivers.Drop(inst.OLAPDriver, map[string]any{"dsn": inst.OLAPDSN}, r.logger)
 		if err != nil {
 			r.logger.Error("could not drop database", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 		}
@@ -196,7 +196,7 @@ func (r *Runtime) evictCaches(ctx context.Context, inst *drivers.Instance) {
 }
 
 func (r *Runtime) checkRepoConnection(inst *drivers.Instance) (drivers.Connection, drivers.RepoStore, error) {
-	repo, err := drivers.Open(inst.RepoDriver, inst.RepoDSN, r.logger)
+	repo, err := drivers.Open(inst.RepoDriver, map[string]any{"dsn": inst.RepoDSN}, r.logger)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -209,7 +209,7 @@ func (r *Runtime) checkRepoConnection(inst *drivers.Instance) (drivers.Connectio
 }
 
 func (r *Runtime) checkOlapConnection(inst *drivers.Instance) (drivers.Connection, drivers.OLAPStore, error) {
-	olap, err := drivers.Open(inst.OLAPDriver, inst.OLAPDSN, r.logger)
+	olap, err := drivers.Open(inst.OLAPDriver, map[string]any{"dsn": inst.OLAPDSN}, r.logger)
 	if err != nil {
 		return nil, nil, err
 	}

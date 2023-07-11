@@ -181,7 +181,7 @@ func CopyFileToData(t *testing.T, dir, source, name string) {
 func GetService(t *testing.T) (*catalog.Service, string) {
 	dir := t.TempDir()
 
-	duckdbStore, err := drivers.Open("duckdb", filepath.Join(dir, "stage.db"), zap.NewNop())
+	duckdbStore, err := drivers.Open("duckdb", map[string]any{"dsn": filepath.Join(dir, "stage.db")}, zap.NewNop())
 	require.NoError(t, err)
 	err = duckdbStore.Migrate(context.Background())
 	require.NoError(t, err)
@@ -190,7 +190,7 @@ func GetService(t *testing.T) (*catalog.Service, string) {
 	catalogObject, ok := duckdbStore.CatalogStore()
 	require.True(t, ok)
 
-	fileStore, err := drivers.Open("file", dir, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
 	require.NoError(t, err)
 	repo, ok := fileStore.RepoStore()
 	require.True(t, ok)
@@ -202,7 +202,7 @@ func GetService(t *testing.T) (*catalog.Service, string) {
 }
 
 func registryStore(t *testing.T) drivers.RegistryStore {
-	store, err := drivers.Open("sqlite", ":memory:", zap.NewNop())
+	store, err := drivers.Open("sqlite", map[string]any{"dsn": ":memory:"}, zap.NewNop())
 	require.NoError(t, err)
 	err = store.Migrate(context.Background())
 	require.NoError(t, err)

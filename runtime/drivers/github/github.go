@@ -41,7 +41,13 @@ func init() {
 
 type driver struct{}
 
-func (d driver) Open(dsnStr string, logger *zap.Logger) (drivers.Connection, error) {
+func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connection, error) {
+	dsnConfig, ok := config["dsn"]
+	if !ok {
+		return nil, fmt.Errorf("require dsn to open github connection")
+	}
+
+	dsnStr := dsnConfig.(string)
 	var dsn DSN
 	err := json.Unmarshal([]byte(dsnStr), &dsn)
 	if err != nil {
@@ -65,7 +71,7 @@ func (d driver) Open(dsnStr string, logger *zap.Logger) (drivers.Connection, err
 
 	// NOTE :: project isn't cloned yet
 	return &connection{
-		dsnStr:       dsnStr,
+		config:       config,
 		dsn:          dsn,
 		tempdir:      tempdir,
 		projectdir:   projectDir,
@@ -73,12 +79,12 @@ func (d driver) Open(dsnStr string, logger *zap.Logger) (drivers.Connection, err
 	}, nil
 }
 
-func (d driver) Drop(dsn string, logger *zap.Logger) error {
+func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
 	return drivers.ErrDropNotSupported
 }
 
 type connection struct {
-	dsnStr              string
+	config              map[string]any
 	dsn                 DSN
 	tempdir             string // tempdir path should be absolute
 	projectdir          string
@@ -96,6 +102,11 @@ func (c *connection) Close() error {
 	}
 
 	return nil
+}
+
+// Config implements drivers.Connection.
+func (c *connection) Config() map[string]any {
+	return c.config
 }
 
 // Registry implements drivers.Connection.
@@ -126,6 +137,21 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 // MigrationStatus implements drivers.Connection.
 func (c *connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
+}
+
+// AsObjectStore implements drivers.Connection.
+func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
+	return nil, false
+}
+
+// AsTransporter implements drivers.Connection.
+func (c *connection) AsTransporter(from drivers.Connection, to drivers.Connection) (drivers.Transporter, bool) {
+	return nil, false
+}
+
+// AsConnector implements drivers.Connection.
+func (c *connection) AsConnector() (drivers.Connector, bool) {
+	return nil, false
 }
 
 // cloneOrPull clones or pulls the repo with an exponential backoff retry on retryable errors.
@@ -259,6 +285,10 @@ func (c *connection) cloneURL(ctx context.Context) (string, error) {
 
 	// Done
 	return cloneURL, nil
+}
+
+func (c *connection) AsFileStore() (drivers.FileStore, bool) {
+	return nil, false
 }
 
 // retryErrClassifier classifies Github request errors as retryable or not.

@@ -3,30 +3,36 @@ package server
 import (
 	"context"
 	"fmt"
+	"os"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/connectors"
-	"github.com/rilldata/rill/runtime/connectors/gcs"
-	"github.com/rilldata/rill/runtime/connectors/s3"
+	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/gcs"
+	"github.com/rilldata/rill/runtime/drivers/s3"
 )
 
 // ListConnectors implements RuntimeService.
 func (s *Server) ListConnectors(ctx context.Context, req *runtimev1.ListConnectorsRequest) (*runtimev1.ListConnectorsResponse, error) {
 	var pbs []*runtimev1.Connector
-	for name, connector := range connectors.Connectors {
+	for name, connector := range drivers.Connectors {
+		if name == "motherduck" { // hide motherduck connector if token not set
+			if _, ok := os.LookupEnv("motherduck_token"); !ok {
+				continue
+			}
+		}
 		// Build protobufs for properties
 		propPBs := make([]*runtimev1.Connector_Property, len(connector.Spec().Properties))
 		for j, propSchema := range connector.Spec().Properties {
 			// Get type
 			var t runtimev1.Connector_Property_Type
 			switch propSchema.Type {
-			case connectors.StringPropertyType:
+			case drivers.StringPropertyType:
 				t = runtimev1.Connector_Property_TYPE_STRING
-			case connectors.NumberPropertyType:
+			case drivers.NumberPropertyType:
 				t = runtimev1.Connector_Property_TYPE_NUMBER
-			case connectors.BooleanPropertyType:
+			case drivers.BooleanPropertyType:
 				t = runtimev1.Connector_Property_TYPE_BOOLEAN
-			case connectors.InformationalPropertyType:
+			case drivers.InformationalPropertyType:
 				t = runtimev1.Connector_Property_TYPE_INFORMATIONAL
 			default:
 				panic(fmt.Errorf("property type '%v' not handled", propSchema.Type))
@@ -58,13 +64,18 @@ func (s *Server) ListConnectors(ctx context.Context, req *runtimev1.ListConnecto
 }
 
 func (s *Server) S3ListBuckets(ctx context.Context, req *runtimev1.S3ListBucketsRequest) (*runtimev1.S3ListBucketsResponse, error) {
-	connector, ok := connectors.Connectors["s3"]
+	conn, err := drivers.Open("s3", map[string]any{"allow_host_access": s.runtime.AllowHostAccess()}, s.logger)
+	if err != nil {
+		return nil, fmt.Errorf("can't open connection to s3 %w", err)
+	}
+	defer conn.Close()
+
+	s3Conn, ok := conn.(*s3.Connection)
 	if !ok {
-		panic("s3 connector not found")
+		panic("s3 connector is not an object store")
 	}
 
-	s3Conn := connector.(s3.Connector)
-	buckets, err := s3Conn.ListBuckets(ctx, &connectors.Env{AllowHostAccess: s.runtime.AllowHostAccess()})
+	buckets, err := s3Conn.ListBuckets(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -75,13 +86,18 @@ func (s *Server) S3ListBuckets(ctx context.Context, req *runtimev1.S3ListBuckets
 }
 
 func (s *Server) S3ListObjects(ctx context.Context, req *runtimev1.S3ListObjectsRequest) (*runtimev1.S3ListObjectsResponse, error) {
-	connector, ok := connectors.Connectors["s3"]
+	conn, err := drivers.Open("s3", map[string]any{"allow_host_access": s.runtime.AllowHostAccess()}, s.logger)
+	if err != nil {
+		return nil, fmt.Errorf("can't open connection to s3 %w", err)
+	}
+	defer conn.Close()
+
+	s3Conn, ok := conn.(*s3.Connection)
 	if !ok {
-		panic("s3 connector not found")
+		panic("s3 connector is not an object store")
 	}
 
-	s3Conn := connector.(s3.Connector)
-	objects, nextToken, err := s3Conn.ListObjects(ctx, req, &connectors.Env{AllowHostAccess: s.runtime.AllowHostAccess()})
+	objects, nextToken, err := s3Conn.ListObjects(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -93,13 +109,18 @@ func (s *Server) S3ListObjects(ctx context.Context, req *runtimev1.S3ListObjects
 }
 
 func (s *Server) S3GetBucketMetadata(ctx context.Context, req *runtimev1.S3GetBucketMetadataRequest) (*runtimev1.S3GetBucketMetadataResponse, error) {
-	connector, ok := connectors.Connectors["s3"]
+	conn, err := drivers.Open("s3", map[string]any{"allow_host_access": s.runtime.AllowHostAccess()}, s.logger)
+	if err != nil {
+		return nil, fmt.Errorf("can't open connection to s3 %w", err)
+	}
+	defer conn.Close()
+
+	s3Conn, ok := conn.(*s3.Connection)
 	if !ok {
-		panic("s3 connector not found")
+		panic("s3 connector is not an object store")
 	}
 
-	s3Conn := connector.(s3.Connector)
-	region, err := s3Conn.GetBucketMetadata(ctx, req, &connectors.Env{AllowHostAccess: s.runtime.AllowHostAccess()})
+	region, err := s3Conn.GetBucketMetadata(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -110,13 +131,18 @@ func (s *Server) S3GetBucketMetadata(ctx context.Context, req *runtimev1.S3GetBu
 }
 
 func (s *Server) S3GetCredentialsInfo(ctx context.Context, req *runtimev1.S3GetCredentialsInfoRequest) (*runtimev1.S3GetCredentialsInfoResponse, error) {
-	connector, ok := connectors.Connectors["s3"]
+	conn, err := drivers.Open("s3", map[string]any{"allow_host_access": s.runtime.AllowHostAccess()}, s.logger)
+	if err != nil {
+		return nil, fmt.Errorf("can't open connection to s3 %w", err)
+	}
+	defer conn.Close()
+
+	s3Conn, ok := conn.(*s3.Connection)
 	if !ok {
-		panic("s3 connector not found")
+		panic("s3 connector is not an object store")
 	}
 
-	s3Conn := connector.(s3.Connector)
-	provider, exist, err := s3Conn.GetCredentialsInfo(ctx, &connectors.Env{AllowHostAccess: s.runtime.AllowHostAccess()})
+	provider, exist, err := s3Conn.GetCredentialsInfo(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -128,13 +154,18 @@ func (s *Server) S3GetCredentialsInfo(ctx context.Context, req *runtimev1.S3GetC
 }
 
 func (s *Server) GCSListBuckets(ctx context.Context, req *runtimev1.GCSListBucketsRequest) (*runtimev1.GCSListBucketsResponse, error) {
-	connector, ok := connectors.Connectors["gcs"]
+	conn, err := drivers.Open("gcs", map[string]any{"allow_host_access": s.runtime.AllowHostAccess()}, s.logger)
+	if err != nil {
+		return nil, fmt.Errorf("can't open connection to s3 %w", err)
+	}
+	defer conn.Close()
+
+	gcsConn, ok := conn.(*gcs.Connection)
 	if !ok {
 		panic("gcs connector not found")
 	}
 
-	gcsConn := connector.(gcs.Connector)
-	buckets, next, err := gcsConn.ListBuckets(ctx, req, &connectors.Env{AllowHostAccess: s.runtime.AllowHostAccess()})
+	buckets, next, err := gcsConn.ListBuckets(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -146,13 +177,18 @@ func (s *Server) GCSListBuckets(ctx context.Context, req *runtimev1.GCSListBucke
 }
 
 func (s *Server) GCSListObjects(ctx context.Context, req *runtimev1.GCSListObjectsRequest) (*runtimev1.GCSListObjectsResponse, error) {
-	connector, ok := connectors.Connectors["gcs"]
+	conn, err := drivers.Open("gcs", map[string]any{"allow_host_access": s.runtime.AllowHostAccess()}, s.logger)
+	if err != nil {
+		return nil, fmt.Errorf("can't open connection to s3 %w", err)
+	}
+	defer conn.Close()
+
+	gcsConn, ok := conn.(*gcs.Connection)
 	if !ok {
 		panic("gcs connector not found")
 	}
 
-	gcsConn := connector.(gcs.Connector)
-	objects, nextToken, err := gcsConn.ListObjects(ctx, req, &connectors.Env{AllowHostAccess: s.runtime.AllowHostAccess()})
+	objects, nextToken, err := gcsConn.ListObjects(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -164,13 +200,18 @@ func (s *Server) GCSListObjects(ctx context.Context, req *runtimev1.GCSListObjec
 }
 
 func (s *Server) GCSGetCredentialsInfo(ctx context.Context, req *runtimev1.GCSGetCredentialsInfoRequest) (*runtimev1.GCSGetCredentialsInfoResponse, error) {
-	connector, ok := connectors.Connectors["gcs"]
+	conn, err := drivers.Open("gcs", map[string]any{"allow_host_access": s.runtime.AllowHostAccess()}, s.logger)
+	if err != nil {
+		return nil, fmt.Errorf("can't open connection to s3 %w", err)
+	}
+	defer conn.Close()
+
+	gcsConn, ok := conn.(*gcs.Connection)
 	if !ok {
 		panic("gcs connector not found")
 	}
 
-	gcsConn := connector.(gcs.Connector)
-	projectID, exist, err := gcsConn.GetCredentialsInfo(ctx, &connectors.Env{AllowHostAccess: s.runtime.AllowHostAccess()})
+	projectID, exist, err := gcsConn.GetCredentialsInfo(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -178,5 +219,30 @@ func (s *Server) GCSGetCredentialsInfo(ctx context.Context, req *runtimev1.GCSGe
 	return &runtimev1.GCSGetCredentialsInfoResponse{
 		ProjectId: projectID,
 		Exist:     exist,
+	}, nil
+}
+
+func (s *Server) MotherduckListTables(ctx context.Context, req *runtimev1.MotherduckListTablesRequest) (*runtimev1.MotherduckListTablesResponse, error) {
+	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "md:"}, s.logger)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	olap, _ := conn.OLAPStore()
+	tables, err := olap.InformationSchema().All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]*runtimev1.TableInfo, len(tables))
+	for i, table := range tables {
+		res[i] = &runtimev1.TableInfo{
+			Database: table.Database,
+			Name:     table.Name,
+		}
+	}
+	return &runtimev1.MotherduckListTablesResponse{
+		Tables: res,
 	}, nil
 }
