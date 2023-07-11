@@ -16,6 +16,7 @@ import (
 	// Load database drivers for testing.
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
+	_ "github.com/rilldata/rill/runtime/drivers/localfile"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 )
 

@@ -104,7 +104,7 @@ func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsTransporter implements drivers.Connection.
-func (c *Connection) AsTransporter(from drivers.Connection, to drivers.Connection) (drivers.Transporter, bool) {
+func (c *Connection) AsTransporter(from, to drivers.Connection) (drivers.Transporter, bool) {
 	return nil, false
 }
 
@@ -154,9 +154,9 @@ func parseConfig(props map[string]any) (*config, error) {
 // DownloadFiles returns a file iterator over objects stored in s3.
 //
 // The credentials are read from following configs
-//   - AWS_ACCESS_KEY_ID
-//   - AWS_SECRET_ACCESS_KEY
-//   - AWS_SESSION_TOKEN
+//   - aws_access_key_id
+//   - aws_secret_access_key
+//   - aws_session_token
 //
 // Additionally in case ALLOW_HOST_CREDENTIALS is true it looks for credentials stored on host machine as well
 func (c *Connection) DownloadFiles(ctx context.Context, src *drivers.BucketSource) (drivers.FileIterator, error) {
@@ -213,7 +213,6 @@ func (c *Connection) DownloadFiles(ctx context.Context, src *drivers.BucketSourc
 	}
 
 	return it, err
-
 }
 
 func (c *Connection) openBucket(ctx context.Context, conf *config, bucket string, creds *credentials.Credentials) (*blob.Bucket, error) {
@@ -253,7 +252,7 @@ func (c *Connection) getAwsSessionConfig(ctx context.Context, conf *config, buck
 	}
 
 	sharedConfigState := session.SharedConfigDisable
-	if val, ok := c.config["ALLOW_HOST_ACCESS"]; ok && val.(bool) {
+	if val, ok := c.config["allow_host_access"]; ok && val.(bool) {
 		sharedConfigState = session.SharedConfigEnable // Tells to look for default region set with `aws configure`
 	}
 	// Create a session that tries to infer the region from the environment
@@ -289,15 +288,15 @@ func (c *Connection) getCredentials() (*credentials.Credentials, error) {
 	providers := make([]credentials.Provider, 0)
 
 	staticProvider := &credentials.StaticProvider{}
-	staticProvider.AccessKeyID = c.config["AWS_ACCESS_KEY_ID"].(string)
-	staticProvider.SecretAccessKey = c.config["AWS_SECRET_ACCESS_KEY"].(string)
-	staticProvider.SessionToken = c.config["AWS_SESSION_TOKEN"].(string)
+	staticProvider.AccessKeyID = c.config["aws_access_key_id"].(string)
+	staticProvider.SecretAccessKey = c.config["aws_secret_access_key"].(string)
+	staticProvider.SessionToken = c.config["aws_session_token"].(string)
 	staticProvider.ProviderName = credentials.StaticProviderName
 	// in case user doesn't set access key id and secret access key the credentials retreival will fail
 	// the credential lookup will proceed to next provider in chain
 	providers = append(providers, staticProvider)
 
-	if val, ok := c.config["ALLOW_HOST_ACCESS"]; ok && val.(bool) {
+	if val, ok := c.config["allow_host_access"]; ok && val.(bool) {
 		// allowed to access host credentials so we add them in chain
 		// The chain used here is a duplicate of defaults.CredProviders(), but without the remote credentials lookup (since they resolve too slowly).
 		providers = append(providers, &credentials.EnvProvider{}, &credentials.SharedCredentialsProvider{Filename: "", Profile: ""})

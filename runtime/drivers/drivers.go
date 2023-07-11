@@ -5,16 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"go.uber.org/zap"
 )
 
-const (
-	_iteratorBatch        = 8
-	_defaultIngestTimeout = 60 * time.Minute
-)
+const _iteratorBatch = 8
 
 var ErrIngestionLimitExceeded = fmt.Errorf("connectors: source ingestion exceeds limit")
 
@@ -228,6 +224,7 @@ var _ Source = &DatabaseSource{}
 func (d *DatabaseSource) BucketSource() (*BucketSource, bool) {
 	return nil, false
 }
+
 func (d *DatabaseSource) DatabaseSource() (*DatabaseSource, bool) {
 	return d, true
 }
@@ -275,7 +272,7 @@ type TransferOpts struct {
 	LimitInBytes  int64
 }
 
-func NewTransferOpts(opts ...transferOption) *TransferOpts {
+func NewTransferOpts(opts ...TransferOption) *TransferOpts {
 	t := &TransferOpts{
 		IteratorBatch: _iteratorBatch,
 		LimitInBytes:  math.MaxInt64,
@@ -287,15 +284,15 @@ func NewTransferOpts(opts ...transferOption) *TransferOpts {
 	return t
 }
 
-type transferOption func(*TransferOpts)
+type TransferOption func(*TransferOpts)
 
-func WithIteratorBatch(b int) transferOption {
+func WithIteratorBatch(b int) TransferOption {
 	return func(t *TransferOpts) {
 		t.IteratorBatch = b
 	}
 }
 
-func WithLimitInBytes(limit int64) transferOption {
+func WithLimitInBytes(limit int64) TransferOption {
 	return func(t *TransferOpts) {
 		t.LimitInBytes = limit
 	}
@@ -306,6 +303,13 @@ type Progress interface {
 	Target(val int64, unit ProgressUnit)
 	Observe(val int64, unit ProgressUnit)
 }
+
+type NoOpProgress struct{}
+
+func (n NoOpProgress) Target(val int64, unit ProgressUnit)  {}
+func (n NoOpProgress) Observe(val int64, unit ProgressUnit) {}
+
+var _ Progress = NoOpProgress{}
 
 type ProgressUnit int
 

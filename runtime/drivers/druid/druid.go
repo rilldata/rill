@@ -101,7 +101,7 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsTransporter implements drivers.Connection.
-func (c *connection) AsTransporter(from drivers.Connection, to drivers.Connection) (drivers.Transporter, bool) {
+func (c *connection) AsTransporter(from, to drivers.Connection) (drivers.Transporter, bool) {
 	return nil, false
 }
 

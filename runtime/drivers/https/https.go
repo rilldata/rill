@@ -64,7 +64,6 @@ func (c *connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
-	// TODO:: anshul :: fix
 	return nil
 }
 
@@ -104,7 +103,7 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsTransporter implements drivers.Connection.
-func (c *connection) AsTransporter(from drivers.Connection, to drivers.Connection) (drivers.Transporter, bool) {
+func (c *connection) AsTransporter(from, to drivers.Connection) (drivers.Transporter, bool) {
 	return nil, false
 }
 
@@ -117,6 +116,7 @@ func (c *connection) AsConnector() (drivers.Connector, bool) {
 	return c, true
 }
 
+// FilePaths implements drivers.FileStore
 func (c *connection) FilePaths(ctx context.Context, src *drivers.FilesSource) ([]string, error) {
 	conf, err := parseConfig(src.Properties)
 	if err != nil {
@@ -160,12 +160,6 @@ func (c *connection) FilePaths(ctx context.Context, src *drivers.FilesSource) ([
 		Duration:  time.Since(start),
 		Size:      size,
 	})
-
-	// if info, err := os.Stat(file); err == nil { // ignoring error since only possible error is path error
-	// 	// if info.Size() > env.StorageLimitInBytes {
-	// 	// 	return nil, connectors.ErrIngestionLimitExceeded
-	// 	// }
-	// }
 
 	return []string{file}, nil
 }

@@ -7,10 +7,7 @@ import (
 	"go.uber.org/zap"
 
 	"context"
-<<<<<<< HEAD
 
-=======
->>>>>>> origin/main
 	"github.com/rilldata/rill/runtime/drivers/duckdb"
 	"github.com/stretchr/testify/require"
 )

@@ -18,7 +18,7 @@ type motherduckToDuckDB struct {
 
 var _ drivers.Transporter = &motherduckToDuckDB{}
 
-func NewMotherduckToDuckDB(to drivers.OLAPStore, from drivers.Connection, logger *zap.Logger) drivers.Transporter {
+func NewMotherduckToDuckDB(from drivers.Connection, to drivers.OLAPStore, logger *zap.Logger) drivers.Transporter {
 	return &motherduckToDuckDB{
 		to:     to,
 		from:   from,
@@ -26,6 +26,7 @@ func NewMotherduckToDuckDB(to drivers.OLAPStore, from drivers.Connection, logger
 	}
 }
 
+// TODO :: should it run count from user_query to set target in progress ?
 func (t *motherduckToDuckDB) Transfer(ctx context.Context, source drivers.Source, sink drivers.Sink, opts *drivers.TransferOpts, p drivers.Progress) error {
 	src, _ := source.DatabaseSource()
 	fSink, _ := sink.DatabaseSink()
@@ -45,8 +46,8 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, source drivers.Source
 		}
 
 		// get token
-		token := config["TOKEN"]
-		if token == "" && config["ALLOW_HOST_ACCESS"].(bool) {
+		token := config["token"]
+		if token == "" && config["allow_host_access"].(bool) {
 			token = os.Getenv("motherduck_token")
 		}
 		// load motherduck extension; connect to motherduck service

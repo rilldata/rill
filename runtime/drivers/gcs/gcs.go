@@ -76,7 +76,7 @@ func parseConfig(props map[string]any) (*config, error) {
 }
 
 type Connection struct {
-	// config holds GOOGLE_APPLICATION_CREDENTIALS and ALLOW_HOST_ACCESS
+	// config holds google_application_credentials and allow_host_access
 	config map[string]any
 	logger *zap.Logger
 }
@@ -135,7 +135,7 @@ func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsTransporter implements drivers.Connection.
-func (c *Connection) AsTransporter(from drivers.Connection, to drivers.Connection) (drivers.Transporter, bool) {
+func (c *Connection) AsTransporter(from, to drivers.Connection) (drivers.Transporter, bool) {
 	return nil, false
 }
 
@@ -211,12 +211,16 @@ func (c *Connection) createClient(ctx context.Context) (*gcp.HTTPClient, error) 
 }
 
 func (c *Connection) resolvedCredentials(ctx context.Context) (*google.Credentials, error) {
-	if secretJSON := c.config["GOOGLE_APPLICATION_CREDENTIALS"].(string); secretJSON != "" {
-		// GOOGLE_APPLICATION_CREDENTIALS is set, use credentials from json string provided by user
+	if secretJSON := c.config["google_application_credentials"].(string); secretJSON != "" {
+		// google_application_credentials is set, use credentials from json string provided by user
 		return google.CredentialsFromJSON(ctx, []byte(secretJSON), "https://www.googleapis.com/auth/cloud-platform")
 	}
-	// GOOGLE_APPLICATION_CREDENTIALS is not set
-	if c.config["ALLOW_HOST_ACCESS"].(bool) {
+	// google_application_credentials is not set
+	allowHostAccess := false
+	if val, ok := c.config["allow_host_access"]; ok {
+		allowHostAccess = val.(bool)
+	}
+	if allowHostAccess {
 		// use host credentials
 		creds, err := gcp.DefaultCredentials(ctx)
 		if err != nil {

@@ -15,7 +15,7 @@ type fileStoreToDuckDB struct {
 	logger *zap.Logger
 }
 
-func NewFileStoreToDuckDB(to drivers.OLAPStore, from drivers.FileStore, logger *zap.Logger) drivers.Transporter {
+func NewFileStoreToDuckDB(from drivers.FileStore, to drivers.OLAPStore, logger *zap.Logger) drivers.Transporter {
 	return &fileStoreToDuckDB{
 		to:     to,
 		from:   from,
@@ -45,16 +45,15 @@ func (t *fileStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source,
 	}
 	p.Target(size, drivers.ProgressUnitByte)
 
-	config := t.from.(drivers.Connection).Config()
-	format := config["format"].(string)
-	if format != "" {
-		format = fmt.Sprintf(".%s", format)
+	var format string
+	if val, ok := src.Properties["format"]; ok {
+		format = fmt.Sprintf(".%s", val.(string))
 	} else {
 		format = fileutil.FullExt(localPaths[0])
 	}
 
 	var ingestionProps map[string]any
-	if duckDBProps, ok := config["duckdb"].(map[string]any); ok {
+	if duckDBProps, ok := src.Properties["duckdb"].(map[string]any); ok {
 		ingestionProps = duckDBProps
 	} else {
 		ingestionProps = map[string]any{}

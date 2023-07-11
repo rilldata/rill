@@ -20,7 +20,7 @@ type objectStoreToDuckDB struct {
 
 var _ drivers.Transporter = &objectStoreToDuckDB{}
 
-func NewObjectStoreToDuckDB(to drivers.OLAPStore, from drivers.ObjectStore, logger *zap.Logger) drivers.Transporter {
+func NewObjectStoreToDuckDB(from drivers.ObjectStore, to drivers.OLAPStore, logger *zap.Logger) drivers.Transporter {
 	return &objectStoreToDuckDB{
 		to:     to,
 		from:   from,
@@ -65,7 +65,7 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, source drivers.Sourc
 		ingestionProps["union_by_name"] = true
 	}
 
-	a := newAppender(t.to, dbSink, ingestionProps, allowSchemaRelaxation)
+	a := newAppender(t.to, dbSink, ingestionProps, allowSchemaRelaxation, t.logger)
 
 	for iterator.HasNext() {
 		files, err := iterator.NextBatch(opts.IteratorBatch)
@@ -114,12 +114,14 @@ type appender struct {
 	logger                *zap.Logger
 }
 
-func newAppender(to drivers.OLAPStore, sink *drivers.DatabaseSink, ingestionProps map[string]any, allowSchemaRelaxation bool) *appender {
+func newAppender(to drivers.OLAPStore, sink *drivers.DatabaseSink, ingestionProps map[string]any,
+	allowSchemaRelaxation bool, logger *zap.Logger) *appender {
 	return &appender{
 		to:                    to,
 		sink:                  sink,
 		ingestionProps:        ingestionProps,
 		allowSchemaRelaxation: allowSchemaRelaxation,
+		logger:                logger,
 		tableSchema:           nil,
 	}
 }
@@ -149,7 +151,7 @@ func (a *appender) appendData(ctx context.Context, files []string, format string
 		return fmt.Errorf("failed to update schema %w", err)
 	}
 
-	query = fmt.Sprintf("INSERT INTO %q BY NAME (SELECT * FROM %s);", a.tableSchema, from)
+	query = fmt.Sprintf("INSERT INTO %q BY NAME (SELECT * FROM %s);", a.sink.Table, from)
 	a.logger.Debug("generated query", zap.String("query", query), observability.ZapCtx(ctx))
 	return a.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
 }

@@ -21,6 +21,7 @@ import (
 
 func init() {
 	drivers.Register("duckdb", Driver{})
+	drivers.Register("motherduck", Driver{})
 }
 
 type Driver struct{}
@@ -121,6 +122,9 @@ type connection struct {
 
 // Driver implements drivers.Connection.
 func (c *connection) Driver() string {
+	if val, ok := c.driverConfig["driver"]; ok {
+		return val.(string)
+	}
 	return "duckdb"
 }
 
@@ -165,17 +169,17 @@ func (c *connection) AsConnector() (drivers.Connector, bool) {
 }
 
 // AsTransporter implements drivers.Connection.
-func (c *connection) AsTransporter(from drivers.Connection, to drivers.Connection) (drivers.Transporter, bool) {
+func (c *connection) AsTransporter(from, to drivers.Connection) (drivers.Transporter, bool) {
 	olap, _ := to.OLAPStore()
 	if c == to {
 		if from.Driver() == "motherduck" {
-			return transporter.NewMotherduckToDuckDB(olap, from, c.logger), true
+			return transporter.NewMotherduckToDuckDB(from, olap, c.logger), true
 		}
 		if store, ok := from.AsObjectStore(); ok { // objectstore to duckdb transfer
-			return transporter.NewObjectStoreToDuckDB(olap, store, c.logger), true
+			return transporter.NewObjectStoreToDuckDB(store, olap, c.logger), true
 		}
 		if store, ok := from.AsFileStore(); ok {
-			return transporter.NewFileStoreToDuckDB(olap, store, c.logger), true
+			return transporter.NewFileStoreToDuckDB(store, olap, c.logger), true
 		}
 	}
 	return nil, false

@@ -182,10 +182,10 @@ func (m *sourceMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStor
 	return true, nil
 }
 
-func convertUpper(in map[string]string) map[string]string {
+func convertLower(in map[string]string) map[string]string {
 	m := make(map[string]string, len(in))
 	for key, value := range in {
-		m[strings.ToUpper(key)] = value
+		m[strings.ToLower(key)] = value
 	}
 	return m
 }
@@ -199,18 +199,9 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 		name = apiSource.Name
 	}
 
-	// variables := convertUpper(opts.InstanceEnv)
-	// env := &connectors.Env{
-	// 	RepoDriver:          repo.Driver(),
-	// 	RepoRoot:            repo.Root(),
-	// 	Variables:           variables,
-	// 	AllowHostAccess:     strings.EqualFold(variables["ALLOW_HOST_ACCESS"], "true"),
-	// 	StorageLimitInBytes: opts.IngestStorageLimitInBytes,
-	// }
-
 	logger = logger.With(zap.String("source", name))
-	variables := convertUpper(opts.InstanceEnv)
-	connector, err := drivers.Open(apiSource.Connector, connectorVariables(apiSource.Connector, variables), logger)
+	variables := convertLower(opts.InstanceEnv)
+	connector, err := drivers.Open(apiSource.Connector, connectorVariables(apiSource, variables, repo.Root()), logger)
 	if err != nil {
 		return fmt.Errorf("failed to open driver %w", err)
 	}
@@ -224,7 +215,11 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 		}
 	}
 
-	src := source(apiSource.Connector, apiSource)
+	src, err := source(apiSource.Connector, apiSource)
+	if err != nil {
+		return err
+	}
+
 	sink := sink(olapConnection.Driver(), name)
 
 	timeout := _defaultIngestTimeout
@@ -235,19 +230,38 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
+	ingestionLimit := opts.IngestStorageLimitInBytes
 	p := &progress{}
-	err = t.Transfer(ctxWithTimeout, src, sink, drivers.NewTransferOpts(drivers.WithLimitInBytes(opts.IngestStorageLimitInBytes)), p)
+	done := make(chan bool, 1)
+	ticker := time.NewTicker(5 * time.Second)
+	limitExceeded := false
+	go func() {
+		select {
+		case <-done:
+			return
+		case <-ticker.C:
+			olap, _ := olapConnection.OLAPStore()
+			if size, ok := olap.EstimateSize(); ok && size > ingestionLimit {
+				limitExceeded = true
+				cancel()
+			}
+		}
+	}()
+	err = t.Transfer(ctxWithTimeout, src, sink, drivers.NewTransferOpts(drivers.WithLimitInBytes(ingestionLimit)), p)
+	done <- true
+	if limitExceeded {
+		return drivers.ErrIngestionLimitExceeded
+	}
 	if err != nil {
 		return err
 	}
 
-	catalogObj.BytesIngested = p.size
 	return nil
 }
 
 type progress struct {
-	size int64
-	unit drivers.ProgressUnit
+	catalogObj drivers.CatalogEntry
+	unit       drivers.ProgressUnit
 }
 
 func (p *progress) Target(val int64, unit drivers.ProgressUnit) {
@@ -255,42 +269,56 @@ func (p *progress) Target(val int64, unit drivers.ProgressUnit) {
 }
 
 func (p *progress) Observe(val int64, unit drivers.ProgressUnit) {
-	p.size += val
+	p.catalogObj.BytesIngested += val
 }
 
-func source(connector string, src *runtimev1.Source) drivers.Source {
+func source(connector string, src *runtimev1.Source) (drivers.Source, error) {
 	props := src.Properties.AsMap()
 	switch connector {
 	case "s3":
 		return &drivers.BucketSource{
-			Paths: []string{
-				props["uri"].(string),
-			},
+			// Paths: []string{
+			// 	props["uri"].(string),
+			// },
 			ExtractPolicy: src.Policy,
 			Properties:    props,
-		}
+		}, nil
 	case "gcs":
 		return &drivers.BucketSource{
-			Paths: []string{
-				props["uri"].(string),
-			},
+			// Paths: []string{
+			// 	props["uri"].(string),
+			// },
 			ExtractPolicy: src.Policy,
 			Properties:    props,
-		}
+		}, nil
 	case "http":
 		return &drivers.FilesSource{
 			Properties: props,
-		}
+		}, nil
 	case "local_file":
-		return &drivers.BucketSource{
+		return &drivers.FilesSource{
 			Properties: props,
+		}, nil
+	case "motherduck":
+		query, ok := props["query"]
+		if !ok {
+			return nil, fmt.Errorf("property \"query\" is mandatory for connector \"motherduck\"")
 		}
+		var db string
+		if val, ok := props["db"]; ok {
+			db = val.(string)
+		}
+
+		return &drivers.DatabaseSource{
+			Query:    query.(string),
+			Database: db,
+		}, nil
 	default:
-		return nil
+		return nil, nil
 	}
 }
 
-func sink(connector string, tableName string) drivers.Sink {
+func sink(connector, tableName string) drivers.Sink {
 	switch connector {
 	case "duckdb":
 		return &drivers.DatabaseSink{
@@ -301,21 +329,24 @@ func sink(connector string, tableName string) drivers.Sink {
 	}
 }
 
-func connectorVariables(connector string, env map[string]string) map[string]any {
+func connectorVariables(src *runtimev1.Source, env map[string]string, repoRoot string) map[string]any {
+	connector := src.Connector
 	vars := map[string]any{
-		"ALLOW_HOST_ACCESS": env["ALLOW_HOST_ACCESS"],
+		"allow_host_access": strings.EqualFold(env["allow_host_access"], "true"),
 	}
 	switch connector {
 	case "s3":
-		vars["AWS_ACCESS_KEY_ID"] = env["AWS_ACCESS_KEY_ID"]
-		vars["AWS_SECRET_ACCESS_KEY"] = env["AWS_SECRET_ACCESS_KEY"]
-		vars["AWS_SESSION_TOKEN"] = env["AWS_SESSION_TOKEN"]
+		vars["aws_access_key_id"] = env["aws_access_key_id"]
+		vars["aws_secret_access_key"] = env["aws_secret_access_key"]
+		vars["aws_session_token"] = env["aws_session_token"]
 	case "gcs":
-		vars["GOOGLE_APPLICATION_CREDENTIALS"] = env["GOOGLE_APPLICATION_CREDENTIALS"]
-		vars["ALLOW_HOST_ACCESS"] = env["ALLOW_HOST_ACCESS"]
+		vars["google_application_credentials"] = env["google_application_credentials"]
 	case "motherduck":
-		vars["TOKEN"] = env["TOKEN"]
+		vars["token"] = env["token"]
+		vars["driver"] = "motherduck"
 		vars["dsn"] = ""
+	case "local_file":
+		vars["repo_root"] = repoRoot
 	}
 	return vars
 }
