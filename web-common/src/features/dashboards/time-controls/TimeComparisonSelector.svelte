@@ -41,8 +41,6 @@ This component needs to do the following:
 
   $: comparisonOption = selectedComparison?.name;
 
-  $: console.log(selectedComparison, comparisonOption);
-
   /** compile the comparison options */
   let options: {
     name: TimeComparisonOption;

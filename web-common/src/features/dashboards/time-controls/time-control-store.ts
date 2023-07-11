@@ -1,6 +1,5 @@
 import {
   MetricsExplorerEntity,
-  metricsExplorerStore,
   useDashboardStore,
 } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import {
@@ -46,6 +45,8 @@ export type TimeControlState = {
   selectedTimeRange?: DashboardTimeControls;
   timeStart?: string;
   timeEnd?: string;
+
+  showComparison?: boolean;
   selectedComparisonTimeRange?: DashboardTimeControls;
   comparisonTimeStart?: string;
   comparisonTimeEnd?: string;
@@ -130,6 +131,9 @@ export function createTimeControlStore(
         timeStart: timeRange.start.toISOString(),
         timeEnd: timeRange.end.toISOString(),
 
+        showComparison: Boolean(
+          metricsExplorer.showComparison && selectedComparisonTimeRange?.start
+        ),
         selectedComparisonTimeRange,
         comparisonTimeStart: selectedComparisonTimeRange?.start.toISOString(),
         comparisonTimeEnd: selectedComparisonTimeRange?.end.toISOString(),
@@ -213,6 +217,8 @@ function getComparisonTimeRange(
   timeRange: DashboardTimeControls,
   comparisonTimeRange: DashboardTimeControls
 ) {
+  if (!comparisonTimeRange) return undefined;
+
   let selectedComparisonTimeRange: DashboardTimeControls;
   if (!comparisonTimeRange?.name) {
     const comparisonOption = DEFAULT_TIME_RANGES[timeRange.name]

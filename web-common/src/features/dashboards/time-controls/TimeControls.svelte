@@ -5,16 +5,9 @@
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { createTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { getAvailableComparisonsForTimeRange } from "@rilldata/web-common/lib/time/comparisons";
   import {
-    getAvailableComparisonsForTimeRange,
-    getComparisonRange,
-    getTimeComparisonParametersForComponent,
-  } from "@rilldata/web-common/lib/time/comparisons";
-  import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
-  import {
-    checkValidTimeGrain,
     getDefaultTimeGrain,
-    findValidTimeGrain,
     getAllowedTimeGrains,
   } from "@rilldata/web-common/lib/time/grains";
   import {
@@ -24,10 +17,7 @@
     TimeRange,
     TimeRangeType,
   } from "@rilldata/web-common/lib/time/types";
-  import {
-    V1TimeGrain,
-    createRuntimeServiceGetCatalogEntry,
-  } from "@rilldata/web-common/runtime-client";
+  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
@@ -58,6 +48,7 @@
     $metaQuery?.data
   );
   $: allTimeRange = $timeControlsStore.allTimeRange;
+  $: minTimeGrain = $timeControlsStore.minTimeGrain;
 
   // we get the timeGrainOptions so that we can assess whether or not the
   // activeTimeGrain is valid whenever the baseTimeRange changes
@@ -119,7 +110,10 @@
   ) {
     cancelDashboardQueries(queryClient, metricViewName);
 
-    metricsExplorerStore.setSelectedTimeRange(metricViewName, timeRange);
+    metricsExplorerStore.setSelectedTimeRange(metricViewName, {
+      ...timeRange,
+      interval: timeGrain,
+    });
     metricsExplorerStore.setSelectedComparisonRange(
       metricViewName,
       comparisonTimeRange
@@ -167,7 +161,7 @@
       currentEnd={$timeControlsStore.selectedTimeRange.end}
       boundaryStart={allTimeRange.start}
       boundaryEnd={allTimeRange.end}
-      showComparison={$dashboardStore?.showComparison}
+      showComparison={$timeControlsStore?.showComparison}
       selectedComparison={$timeControlsStore?.selectedComparisonTimeRange}
       comparisonOptions={availableComparisons}
     />

@@ -4,7 +4,6 @@
     useMetaQuery,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
-  import { createTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
@@ -43,13 +42,6 @@
     metricViewName
   );
   $: hasTimeSeries = $metricTimeSeries.data;
-
-  $: timeControlsStore = createTimeControlStore(
-    $runtime.instanceId,
-    metricViewName,
-    $metricsViewQuery?.data
-  );
-  $: console.log($timeControlsStore);
 </script>
 
 <DashboardContainer bind:exploreContainerWidth {leftMargin}>
