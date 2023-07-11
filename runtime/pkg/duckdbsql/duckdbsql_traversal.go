@@ -1,15 +1,19 @@
 package duckdbsql
 
+import (
+	"errors"
+)
+
 // TODO: handle parameters in values
 
-func (a *AST) traverse() {
+func (a *AST) traverse() error {
 	if toBoolean(a.ast, astKeyError) {
-		return
+		return errors.New(toString(a.ast, astKeyErrorMessage))
 	}
 
 	statements := toNodeArray(a.ast, astKeyStatements)
 	if len(statements) == 0 {
-		return
+		return errors.New("no statement found")
 	}
 
 	// TODO: validation
@@ -17,6 +21,8 @@ func (a *AST) traverse() {
 	for _, statement := range statements {
 		a.traverseSelectQueryStatement(toNode(statement, astKeyNode), true)
 	}
+
+	return nil
 }
 
 func (a *AST) traverseSelectQueryStatement(node astNode, isRoot bool) {
@@ -30,6 +36,8 @@ func (a *AST) traverseSelectQueryStatement(node astNode, isRoot bool) {
 	switch toString(node, astKeyType) {
 	case "SELECT_NODE":
 		if isRoot {
+			// only get the select list from the root select.
+			// if there is a star, get the actual columns from TableColumns query
 			a.traverseSelectList(toNodeArray(node, astKeySelectColumnList))
 		}
 		a.traverseCTEMap(toNode(node, astKeyCTE))
@@ -37,8 +45,8 @@ func (a *AST) traverseSelectQueryStatement(node astNode, isRoot bool) {
 
 	case "SET_OPERATION_NODE":
 		a.traverseCTEMap(toNode(node, astKeyCTE))
-		a.traverseSelectQueryStatement(toNode(node, astKeyLeft), false)
-		a.traverseSelectQueryStatement(toNode(node, astKeyRight), false)
+		a.traverseSelectQueryStatement(toNode(node, astKeyLeft), isRoot)
+		a.traverseSelectQueryStatement(toNode(node, astKeyRight), isRoot)
 	}
 }
 
@@ -49,13 +57,47 @@ func (a *AST) traverseSelectList(colNodes []astNode) {
 }
 
 func (a *AST) traverseColumnNode(node astNode) {
-	cn := &columnNode{
-		ast: node,
-		ref: &ColumnRef{},
-	}
-	a.columns = append(a.columns, cn)
+	switch toString(node, astKeyType) {
+	case "COLUMN_REF":
+		a.newColumnNode(node, &ColumnRef{
+			Name: getColumnName(node),
+		})
 
-	// TODO
+	case "STAR":
+		a.newColumnNode(node, &ColumnRef{
+			RelationName: toString(node, astKetRelationName),
+			IsStar:       true,
+		})
+
+	case "FUNCTION":
+		funcName := toString(node, astKeyFunctionName)
+		if funcName == "exclude" {
+			a.traverseExcludeColumnNode(node)
+		} else {
+			a.traverseExpressionColumnNode(node)
+		}
+	}
+}
+
+func (a *AST) traverseExcludeColumnNode(node astNode) {
+	for _, child := range toNodeArray(node, astKeyChildren) {
+		if toString(child, astKeyType) != "COLUMN_REF" {
+			continue
+		}
+
+		a.newColumnNode(node, &ColumnRef{
+			Name:      getColumnName(child),
+			IsExclude: true,
+		})
+	}
+}
+
+func (a *AST) traverseExpressionColumnNode(node astNode) {
+	a.newColumnNode(node, &ColumnRef{
+		Name: toString(node, astKeyAlias),
+	})
+
+	// TODO: fill in expr and isAggr
 }
 
 func (a *AST) traverseFromTable(parent astNode, childKey string) {
@@ -64,6 +106,9 @@ func (a *AST) traverseFromTable(parent astNode, childKey string) {
 	case "JOIN":
 		a.traverseFromTable(node, "left")
 		a.traverseFromTable(node, "right")
+
+	case "SUBQUERY":
+		a.traverseSelectQueryStatement(toNode(toNode(node, astKeySubQuery), astKeyNode), false)
 
 	case "BASE_TABLE":
 		a.traverseBaseTable(parent, childKey)
@@ -87,16 +132,10 @@ func (a *AST) traverseBaseTable(parent astNode, childKey string) {
 	if a.added[name] {
 		return
 	}
-	fn := &fromNode{
-		ast:      node,
-		parent:   parent,
-		childKey: childKey,
-		ref: &TableRef{
-			Name:       name,
-			LocalAlias: a.aliases[name],
-		},
-	}
-	a.fromNodes = append(a.fromNodes, fn)
+	a.newFromNode(node, parent, childKey, &TableRef{
+		Name:       name,
+		LocalAlias: a.aliases[name],
+	})
 	a.added[name] = true
 	// TODO: add to local alias
 }
@@ -107,21 +146,16 @@ func (a *AST) traverseTableFunction(parent astNode, childKey string) {
 	functionName := toString(functionNode, astKeyFunctionName)
 	arguments := toNodeArray(functionNode, astKeyChildren)
 
-	fn := &fromNode{
-		ast:      node,
-		parent:   parent,
-		childKey: childKey,
-		ref: &TableRef{
-			Function:   functionName,
-			Properties: map[string]any{},
-		},
+	ref := &TableRef{
+		Function:   functionName,
+		Properties: map[string]any{},
 	}
-	a.fromNodes = append(a.fromNodes, fn)
+	a.newFromNode(node, parent, childKey, ref)
 	// TODO: add to local alias
 
 	switch functionName {
 	case "read_csv_auto", "read_csv", "read_parquet", "read_json_auto", "read_json":
-		fn.ref.Path = toString(toNode(arguments[0], astKeyValue), astKeyValue)
+		ref.Path = toString(toNode(arguments[0], astKeyValue), astKeyValue)
 	default:
 		// only read_... are supported for now
 		return
@@ -144,10 +178,10 @@ func (a *AST) traverseTableFunction(parent astNode, childKey string) {
 		right := toNode(argument, astKeyRight)
 		switch toString(right, astKeyType) {
 		case "VALUE_CONSTANT":
-			fn.ref.Properties[columnNames[0].(string)] = constantValueToGoValue(toNode(right, astKeyValue))
+			ref.Properties[columnNames[0].(string)] = constantValueToGoValue(toNode(right, astKeyValue))
 		case "FUNCTION":
 			if toString(right, astKeyFunctionName) == "struct_pack" {
-				fn.ref.Properties[columnNames[0].(string)] = structValueToGoValue(right)
+				ref.Properties[columnNames[0].(string)] = structValueToGoValue(right)
 			}
 		}
 	}

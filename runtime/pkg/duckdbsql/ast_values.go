@@ -1,9 +1,13 @@
 package duckdbsql
 
+import "strings"
+
+// TODO: figure out a way to cast map[string]interface{} returned by json unmarshal to map[astNodeKey]interface{} and replace string in key to astNodeKey
 type astNode map[string]interface{}
 
 const (
 	astKeyError            string = "error"
+	astKeyErrorMessage     string = "error_message"
 	astKeyStatements       string = "statements"
 	astKeyNode             string = "node"
 	astKeyType             string = "type"
@@ -28,6 +32,8 @@ const (
 	astKeyCTE              string = "cte_map"
 	astKeyMap              string = "map"
 	astKeyQuery            string = "query"
+	astKeySubQuery         string = "subquery"
+	astKetRelationName     string = "relation_name"
 )
 
 func toBoolean(a astNode, k string) bool {
@@ -89,4 +95,21 @@ func toNodeArray(a astNode, k string) []astNode {
 		nodeArr[i] = e.(map[string]interface{})
 	}
 	return nodeArr
+}
+
+func toTypedArray[E interface{}](a astNode, k string) []E {
+	arr := toArray(a, k)
+	typedArr := make([]E, len(arr))
+	for i, e := range arr {
+		typedArr[i] = e.(E)
+	}
+	return typedArr
+}
+
+func getColumnName(node astNode) string {
+	alias := toString(node, astKeyAlias)
+	if alias != "" {
+		return alias
+	}
+	return strings.Join(toTypedArray[string](node, astKeyColumnNames), ".")
 }

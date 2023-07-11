@@ -8,7 +8,7 @@ import (
 )
 
 // Comments are not parsed
-func TestParse(t *testing.T) {
+func TestParse_TableRefs(t *testing.T) {
 	sqlVariations := []struct {
 		title     string
 		sql       string
@@ -41,46 +41,34 @@ select 1`,
 			"join",
 			`select * from AdBid a join AdImp i on a.id=i.id where a='1' group by b limit 2`,
 			[]*TableRef{
-				{
-					Name: "AdBid",
-				},
-				{
-					Name: "AdImp",
-				},
+				{Name: "AdBid"},
+				{Name: "AdImp"},
+			},
+		},
+		{
+			"join with sub query",
+			`select * from AdBid a join (select * from AdImp where city='Bengaluru') i on a.id=i.id where a='1' group by b limit 2`,
+			[]*TableRef{
+				{Name: "AdBid"},
+				{Name: "AdImp"},
 			},
 		},
 		{
 			"simple CTEs",
 			`with tbl2 as (select col1 from tbl1), tbl3 as (select col1 from tbl1) select col1 from tbl2 join tbl3 on tbl2.id = tbl3.id`,
 			[]*TableRef{
-				{
-					Name: "tbl1",
-				},
-				{
-					Name:       "tbl2",
-					LocalAlias: true,
-				},
-				{
-					Name:       "tbl3",
-					LocalAlias: true,
-				},
+				{Name: "tbl1"},
+				{Name: "tbl2", LocalAlias: true},
+				{Name: "tbl3", LocalAlias: true},
 			},
 		},
 		{
 			"CTEs with union",
 			`with tbl2 as (select col1 from tbl1), tbl3 as (select col1 from tbl1) select col1 from tbl2 union all select col1 from tbl3`,
 			[]*TableRef{
-				{
-					Name: "tbl1",
-				},
-				{
-					Name:       "tbl2",
-					LocalAlias: true,
-				},
-				{
-					Name:       "tbl3",
-					LocalAlias: true,
-				},
+				{Name: "tbl1"},
+				{Name: "tbl2", LocalAlias: true},
+				{Name: "tbl3", LocalAlias: true},
 			},
 		},
 	}
@@ -95,6 +83,83 @@ select 1`,
 				actualTableRefs = append(actualTableRefs, node.ref)
 			}
 			require.EqualValues(t, tt.tableRefs, actualTableRefs)
+		})
+	}
+}
+
+func TestParse_ColumnRefs(t *testing.T) {
+	sqlVariations := []struct {
+		title      string
+		sql        string
+		columnRefs []*ColumnRef
+	}{
+		{
+			"select with exclude column",
+			`select *, exclude(id), count(*), avg(bid_price) as bid_price from AdBids`,
+			[]*ColumnRef{
+				{IsStar: true},
+				{Name: "id", IsExclude: true},
+				{},
+				{Name: "bid_price"},
+			},
+		},
+		{
+			"joins with exclude column",
+			`
+select b.*, i.city, i.country as i_cnt, exclude(i.id), count(*), avg(b.bid_price) as bid_price from
+  AdBids b join (select * from AdImpressions i1 where i1.city='Bengaluru') i on b.id = i.id
+`,
+			[]*ColumnRef{
+				{IsStar: true, RelationName: "b"},
+				{Name: "i.city"},
+				{Name: "i_cnt"},
+				{Name: "i.id", IsExclude: true},
+				{},
+				{Name: "bid_price"},
+			},
+		},
+		{
+			"CTEs with join and exclude column",
+			`
+with
+  b as (select col1 from read_csv( 'AdBids.csv', delim='|', columns={'timestamp':'TIMESTAMP'})),
+  i as (select col1 from read_csv( 'AdImpressions.csv', delim='|', columns={'timestamp':'TIMESTAMP'}))
+select b.*, i.city, exclude(i.id), count(*), avg(b.bid_price) as bid_price from b join i on b.id = i.id
+`,
+			[]*ColumnRef{
+				{IsStar: true, RelationName: "b"},
+				{Name: "i.city"},
+				{Name: "i.id", IsExclude: true},
+				{},
+				{Name: "bid_price"},
+			},
+		},
+		{
+			"CTEs and unions with join and exclude column",
+			`
+with
+  b as (select col1 from read_csv( 'AdBids.csv', delim='|', columns={'timestamp':'TIMESTAMP'})),
+  i as (select col1 from read_csv( 'AdImpressions.csv', delim='|', columns={'timestamp':'TIMESTAMP'}))
+(select b.*, exclude(i.id) as bid_price from b join i on b.id = i.id) union all
+(select i.city from b join i on b.id = i.id) union all
+(select count(*), avg(b.bid_price) as bid_price from b join i on b.id = i.id)
+`,
+			[]*ColumnRef{
+				{IsStar: true, RelationName: "b"},
+				{Name: "i.id", IsExclude: true},
+				{Name: "i.city"},
+				{},
+				{Name: "bid_price"},
+			},
+		},
+	}
+
+	for _, tt := range sqlVariations {
+		t.Run(tt.title, func(t *testing.T) {
+			ast, err := Parse(tt.sql)
+			require.NoError(t, err)
+
+			require.EqualValues(t, tt.columnRefs, ast.ExtractColumnRefs())
 		})
 	}
 }
@@ -123,6 +188,15 @@ select * from
 	AdImpressions i on b.id=i.id
 `,
 			`SELECT * FROM AdBids AS b INNER JOIN AdImpressions AS i ON ((b.id = i.id))`,
+		},
+		{
+			"join with sub query",
+			`
+select * from
+  read_csv( 'AdBids.csv', delim='|', columns={'timestamp':'TIMESTAMP'}) a join
+  (select * from read_csv( 'AdImpressions.csv', delim='|', columns={'timestamp':'TIMESTAMP'}) i1 where i1.city='Bengaluru') i on a.id=i.id
+where a='1' group by b limit 2`,
+			`SELECT * FROM AdBids AS a INNER JOIN (SELECT * FROM AdImpressions AS i1 WHERE (i1.city = 'Bengaluru')) AS i ON ((a.id = i.id)) WHERE (a = '1') GROUP BY b LIMIT 2`,
 		},
 		{
 			"replace with CTEs",

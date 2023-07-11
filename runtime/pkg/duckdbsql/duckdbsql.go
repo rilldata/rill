@@ -11,8 +11,6 @@ import (
 	"github.com/marcboeker/go-duckdb"
 )
 
-// TODO: use json instead of jsonvalue
-
 type AST struct {
 	ast       astNode
 	rootNodes []*selectNode
@@ -39,7 +37,6 @@ type fromNode struct {
 }
 
 func Parse(sql string) (*AST, error) {
-	// TODO: optimise and parse into []byte
 	sqlAst, err := queryString("select json_serialize_sql(?::VARCHAR)", sql)
 	if err != nil {
 		return nil, err
@@ -61,14 +58,15 @@ func Parse(sql string) (*AST, error) {
 		columns:   make([]*columnNode, 0),
 	}
 
-	ast.traverse()
-
+	err = ast.traverse()
+	if err != nil {
+		return nil, err
+	}
 	return ast, nil
 }
 
 // Format normalizes a DuckDB SQL statement
 func (a *AST) Format() (string, error) {
-	// TODO: cleanup this code
 	sql, err := json.Marshal(a.ast)
 	if err != nil {
 		return "", err
@@ -111,6 +109,33 @@ func (a *AST) RewriteLimit(limit, offset int) error {
 	return nil
 }
 
+// ExtractColumnRefs extracts column references from the outermost SELECT of a DuckDB SQL statement
+func (a *AST) ExtractColumnRefs() []*ColumnRef {
+	columnRefs := make([]*ColumnRef, 0)
+	for _, node := range a.columns {
+		columnRefs = append(columnRefs, node.ref)
+	}
+	return columnRefs
+}
+
+func (a *AST) newFromNode(node, parent astNode, childKey string, ref *TableRef) {
+	fn := &fromNode{
+		ast:      node,
+		parent:   parent,
+		childKey: childKey,
+		ref:      ref,
+	}
+	a.fromNodes = append(a.fromNodes, fn)
+}
+
+func (a *AST) newColumnNode(node astNode, ref *ColumnRef) {
+	cn := &columnNode{
+		ast: node,
+		ref: ref,
+	}
+	a.columns = append(a.columns, cn)
+}
+
 // TableRef has information extracted about a DuckDB table or table function reference
 type TableRef struct {
 	Name       string
@@ -135,16 +160,12 @@ func ExtractAnnotations() ([]*Annotation, error) {
 
 // ColumnRef has information about a column in the select list of a DuckDB SQL statement
 type ColumnRef struct {
-	Name      string
-	Expr      string
-	IsAggr    bool
-	IsStar    bool
-	IsExclude bool
-}
-
-// ExtractColumnRefs extracts column references from the outermost SELECT of a DuckDB SQL statement
-func ExtractColumnRefs(sql string) ([]*ColumnRef, error) {
-	panic("not implemented")
+	Name         string
+	RelationName string
+	Expr         string
+	IsAggr       bool
+	IsStar       bool
+	IsExclude    bool
 }
 
 // queryString runs a DuckDB query and returns the result as a scalar string
