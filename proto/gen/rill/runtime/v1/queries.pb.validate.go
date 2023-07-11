@@ -2246,6 +2246,166 @@ var _ interface {
 	ErrorName() string
 } = MetricsViewComparisonValueValidationError{}
 
+// Validate checks the field values on TimeZoneAdjustment with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *TimeZoneAdjustment) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on TimeZoneAdjustment with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// TimeZoneAdjustmentMultiError, or nil if none found.
+func (m *TimeZoneAdjustment) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *TimeZoneAdjustment) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	switch v := m.Adjustment.(type) {
+	case *TimeZoneAdjustment_Offset:
+		if v == nil {
+			err := TimeZoneAdjustmentValidationError{
+				field:  "Adjustment",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for Offset
+	case *TimeZoneAdjustment_Origin:
+		if v == nil {
+			err := TimeZoneAdjustmentValidationError{
+				field:  "Adjustment",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetOrigin()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, TimeZoneAdjustmentValidationError{
+						field:  "Origin",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, TimeZoneAdjustmentValidationError{
+						field:  "Origin",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetOrigin()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return TimeZoneAdjustmentValidationError{
+					field:  "Origin",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	default:
+		_ = v // ensures v is used
+	}
+
+	if len(errors) > 0 {
+		return TimeZoneAdjustmentMultiError(errors)
+	}
+
+	return nil
+}
+
+// TimeZoneAdjustmentMultiError is an error wrapping multiple validation errors
+// returned by TimeZoneAdjustment.ValidateAll() if the designated constraints
+// aren't met.
+type TimeZoneAdjustmentMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m TimeZoneAdjustmentMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m TimeZoneAdjustmentMultiError) AllErrors() []error { return m }
+
+// TimeZoneAdjustmentValidationError is the validation error returned by
+// TimeZoneAdjustment.Validate if the designated constraints aren't met.
+type TimeZoneAdjustmentValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e TimeZoneAdjustmentValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e TimeZoneAdjustmentValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e TimeZoneAdjustmentValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e TimeZoneAdjustmentValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e TimeZoneAdjustmentValidationError) ErrorName() string {
+	return "TimeZoneAdjustmentValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e TimeZoneAdjustmentValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sTimeZoneAdjustment.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = TimeZoneAdjustmentValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = TimeZoneAdjustmentValidationError{}
+
 // Validate checks the field values on MetricsViewTimeSeriesRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -2409,6 +2569,35 @@ func (m *MetricsViewTimeSeriesRequest) validate(all bool) error {
 		if err := v.Validate(); err != nil {
 			return MetricsViewTimeSeriesRequestValidationError{
 				field:  "Filter",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetTimeZoneAdjustment()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewTimeSeriesRequestValidationError{
+					field:  "TimeZoneAdjustment",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewTimeSeriesRequestValidationError{
+					field:  "TimeZoneAdjustment",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTimeZoneAdjustment()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewTimeSeriesRequestValidationError{
+				field:  "TimeZoneAdjustment",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}

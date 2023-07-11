@@ -903,6 +903,8 @@ paths:
                 $ref: '#/definitions/v1TimeGrain'
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
+              timeZoneAdjustment:
+                $ref: '#/definitions/v1TimeZoneAdjustment'
               priority:
                 type: integer
                 format: int32
@@ -3138,6 +3140,15 @@ definitions:
         format: double
       records:
         type: object
+  v1TimeZoneAdjustment:
+    type: object
+    properties:
+      offset:
+        type: integer
+        format: int32
+      origin:
+        type: string
+        format: date-time
   v1TopK:
     type: object
     properties:

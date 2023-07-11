@@ -135,6 +135,7 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
   filter?: V1MetricsViewFilter;
+  timeZoneAdjustment?: V1TimeZoneAdjustment;
   priority?: number;
 };
 
@@ -325,6 +326,11 @@ export interface V1TriggerRefreshResponse {
 
 export interface V1TopK {
   entries?: TopKEntry[];
+}
+
+export interface V1TimeZoneAdjustment {
+  offset?: number;
+  origin?: string;
 }
 
 export type V1TimeSeriesValueRecords = { [key: string]: any };
