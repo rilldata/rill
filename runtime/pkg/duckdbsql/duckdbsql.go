@@ -50,7 +50,7 @@ type Annotation struct {
 
 // ExtractAnnotations extracts annotations from comments prefixed with '@', and optionally a value after a ':'.
 // Examples: "-- @materialize" and "-- @materialize: true".
-func ExtractAnnotations() ([]*Annotation, error) {
+func ExtractAnnotations(sql string) ([]*Annotation, error) {
 	panic("not implemented")
 }
 

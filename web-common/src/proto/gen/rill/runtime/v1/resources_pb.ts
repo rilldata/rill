@@ -795,6 +795,11 @@ export class ModelSpec extends Message<ModelSpec> {
    */
   materialize?: boolean;
 
+  /**
+   * @generated from field: bool uses_templating = 8;
+   */
+  usesTemplating = false;
+
   constructor(data?: PartialMessage<ModelSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -809,6 +814,7 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 4, name: "refresh_schedule", kind: "message", T: Schedule },
     { no: 6, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 7, name: "materialize", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 8, name: "uses_templating", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelSpec {
@@ -992,6 +998,13 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    */
   defaultTimeRange = "";
 
+  /**
+   * Available time zones list preferred time zones using IANA location identifiers.
+   *
+   * @generated from field: repeated string available_time_zones = 9;
+   */
+  availableTimeZones: string[] = [];
+
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1008,6 +1021,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 6, name: "measures", kind: "message", T: MetricsViewSpec_Measure, repeated: true },
     { no: 7, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 8, name: "default_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "available_time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {

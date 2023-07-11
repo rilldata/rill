@@ -117,6 +117,7 @@ message ModelSpec {
   Schedule refresh_schedule = 4;
   uint32 timeout_seconds = 6;
   optional bool materialize = 7;
+  bool uses_templating = 8;
 }
 
 message ModelState {
@@ -165,6 +166,8 @@ message MetricsViewSpec {
   TimeGrain smallest_time_grain = 7;
   // Default time range for the dashboard. It should be a valid ISO 8601 duration string.
   string default_time_range = 8;
+  // Available time zones list preferred time zones using IANA location identifiers.
+  repeated string available_time_zones = 9;
 }
 
 message MetricsViewState {

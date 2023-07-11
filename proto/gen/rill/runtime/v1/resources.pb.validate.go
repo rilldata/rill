@@ -2388,6 +2388,8 @@ func (m *ModelSpec) validate(all bool) error {
 
 	// no validation rules for TimeoutSeconds
 
+	// no validation rules for UsesTemplating
+
 	if m.Materialize != nil {
 		// no validation rules for Materialize
 	}
