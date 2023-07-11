@@ -1,5 +1,6 @@
 import {
   MetricsExplorerEntity,
+  metricsExplorerStore,
   useDashboardStore,
 } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import {
@@ -89,6 +90,9 @@ export function createTimeControlStore(
           isFetching: timeRangeResponse.isRefetching,
           hasTime: !hasTimeSeries,
         } as TimeControlState;
+      }
+      if (!metricsExplorer.defaultsSelected) {
+        metricsExplorerStore.allDefaultsSelected(metricsViewName);
       }
       const allTimeRange = {
         name: TimeRangePreset.ALL_TIME,

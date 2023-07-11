@@ -11,13 +11,9 @@
     useMetaDimension,
     useMetaMeasure,
     useMetaQuery,
-    useModelAllTimeRange,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { createTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
-  import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
-  import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import {
     createQueryServiceMetricsViewToplist,
     createQueryServiceMetricsViewTotals,
@@ -141,28 +137,12 @@
   );
 
   // the timeRangeName is the key to a selected time range's associated presets.
-  $: timeRangeName = $dashboardStore?.selectedTimeRange?.name;
+  $: timeRangeName = $timeControlsStore?.selectedTimeRange?.name;
 
   // Compose the comparison /toplist query
   $: displayComparison =
     $dashboardStore?.showComparison && $timeControlsStore.hasTime;
 
-  $: comparisonTimeRange =
-    displayComparison &&
-    getComparisonRange(
-      $timeControlsStore?.selectedTimeRange?.start,
-      $timeControlsStore?.selectedTimeRange?.end,
-      ($timeControlsStore?.selectedComparisonTimeRange
-        ?.name as TimeComparisonOption) ||
-        (DEFAULT_TIME_RANGES[timeRangeName]
-          .defaultComparison as TimeComparisonOption)
-    );
-  $: comparisonTimeStart =
-    isFinite(comparisonTimeRange?.start?.getTime()) &&
-    comparisonTimeRange.start.toISOString();
-  $: comparisonTimeEnd =
-    isFinite(comparisonTimeRange?.end?.getTime()) &&
-    comparisonTimeRange.end.toISOString();
   $: comparisonFilterSet = getFilterForComparisonTable(
     filterForDimension,
     dimensionName,
@@ -175,8 +155,8 @@
     {
       dimensionName: dimensionName,
       measureNames: [sortByColumn],
-      timeStart: comparisonTimeStart,
-      timeEnd: comparisonTimeEnd,
+      timeStart: $timeControlsStore.comparisonTimeStart,
+      timeEnd: $timeControlsStore.comparisonTimeEnd,
       filter: comparisonFilterSet,
       limit: "250",
       offset: "0",
@@ -190,10 +170,7 @@
     {
       query: {
         enabled: Boolean(
-          displayComparison &&
-            !!comparisonTimeStart &&
-            !!comparisonTimeEnd &&
-            !!comparisonFilterSet
+          $timeControlsStore.showComparison && !!comparisonFilterSet
         ),
       },
     }

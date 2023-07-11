@@ -190,12 +190,7 @@
     },
     {
       query: {
-        enabled: Boolean(
-          displayComparison &&
-            !!$timeControlsStore.comparisonTimeStart &&
-            !!$timeControlsStore.comparisonTimeEnd &&
-            !!updatedFilters
-        ),
+        enabled: Boolean($timeControlsStore.showComparison && !!updatedFilters),
       },
     }
   );

@@ -4,6 +4,7 @@
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
+  import { createTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
@@ -41,6 +42,11 @@
 
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
+  $: timeControlsStore = createTimeControlStore(
+    $runtime.instanceId,
+    metricViewName,
+    $metaQuery?.data
+  );
 
   $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
 
@@ -124,10 +130,6 @@
 
   $: numColumns = 3;
 
-  $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricViewName);
-  $: hasTimeSeries = $metricTimeSeries.data;
-  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
-  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     metricViewName,
@@ -139,7 +141,7 @@
       query: {
         enabled:
           selectedMeasureNames?.length > 0 &&
-          (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
+          $timeControlsStore.hasTime &&
           !!$dashboardStore?.filters,
       },
     }
