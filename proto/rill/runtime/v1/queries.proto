@@ -161,7 +161,10 @@ message QueryRequest {
   int32 priority = 4;
   // If true, will only validate the query, not execute it
   bool dry_run = 5;
-  int32 limit = 6 [(validate.rules).int32 = {lte: 10000, gte: 0}];
+  int32 limit = 6 [(validate.rules).int32 = {
+    lte: 10000,
+    gte: 0
+  }];
 }
 
 // Response message for QueryService.Query
@@ -175,7 +178,10 @@ message QueryResponse {
 // Request message for QueryService.Export
 message ExportRequest {
   string instance_id = 1;
-  int32 limit = 2 [(validate.rules).int32 = {lte: 10000, gte: 0}];
+  int32 limit = 2 [(validate.rules).int32 = {
+    lte: 10000,
+    gte: 0
+  }];
   ExportFormat format = 3;
   oneof request {
     MetricsViewToplistRequest metrics_view_toplist_request = 4;
@@ -274,6 +280,13 @@ message MetricsViewComparisonValue {
   google.protobuf.Value delta_rel = 5;
 }
 
+message TimeZoneAdjustment {
+  oneof adjustment {
+    int32 offset = 1;
+    google.protobuf.Timestamp origin = 2;
+  }
+}
+
 // Request message for QueryService.MetricsViewTimeSeries
 message MetricsViewTimeSeriesRequest {
   string instance_id = 1;
@@ -284,6 +297,7 @@ message MetricsViewTimeSeriesRequest {
   google.protobuf.Timestamp time_end = 5;
   TimeGrain time_granularity = 6;
   MetricsViewFilter filter = 7;
+  TimeZoneAdjustment time_zone_adjustment = 10;
   int32 priority = 8;
 }
 
@@ -636,4 +650,3 @@ message TableRowsRequest {
 message TableRowsResponse {
   repeated google.protobuf.Struct data = 1;
 }
-
