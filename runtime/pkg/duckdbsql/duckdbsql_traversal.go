@@ -2,6 +2,7 @@ package duckdbsql
 
 import (
 	"errors"
+	"regexp"
 )
 
 // TODO: handle parameters in values
@@ -92,12 +93,29 @@ func (a *AST) traverseExcludeColumnNode(node astNode) {
 	}
 }
 
+var selectExpressionIsolation = regexp.MustCompile(`^SELECT (.*?)(?: AS .*)? FROM Dummy$`)
+
 func (a *AST) traverseExpressionColumnNode(node astNode) {
+	exprStatement, err := createExpressionStatement(node)
+	if err != nil {
+		return
+	}
+
+	exprSQL, err := queryString("SELECT json_deserialize_sql(?::JSON)", exprStatement)
+	if err != nil {
+		return
+	}
+
+	subMatches := selectExpressionIsolation.FindStringSubmatch(string(exprSQL))
+	if len(subMatches) == 0 {
+		return
+	}
+
 	a.newColumnNode(node, &ColumnRef{
 		Name: toString(node, astKeyAlias),
+		Expr: subMatches[1],
 	})
-
-	// TODO: fill in expr and isAggr
+	// TODO: fill in isAggr
 }
 
 func (a *AST) traverseFromTable(parent astNode, childKey string) {

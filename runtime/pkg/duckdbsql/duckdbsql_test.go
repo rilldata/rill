@@ -99,8 +99,8 @@ func TestParse_ColumnRefs(t *testing.T) {
 			[]*ColumnRef{
 				{IsStar: true},
 				{Name: "id", IsExclude: true},
-				{},
-				{Name: "bid_price"},
+				{Expr: "count_star()"},
+				{Name: "bid_price", Expr: "avg(bid_price)"},
 			},
 		},
 		{
@@ -114,8 +114,8 @@ select b.*, i.city, i.country as i_cnt, exclude(i.id), count(*), avg(b.bid_price
 				{Name: "i.city"},
 				{Name: "i_cnt"},
 				{Name: "i.id", IsExclude: true},
-				{},
-				{Name: "bid_price"},
+				{Expr: "count_star()"},
+				{Name: "bid_price", Expr: "avg(b.bid_price)"},
 			},
 		},
 		{
@@ -130,8 +130,8 @@ select b.*, i.city, exclude(i.id), count(*), avg(b.bid_price) as bid_price from 
 				{IsStar: true, RelationName: "b"},
 				{Name: "i.city"},
 				{Name: "i.id", IsExclude: true},
-				{},
-				{Name: "bid_price"},
+				{Expr: "count_star()"},
+				{Name: "bid_price", Expr: "avg(b.bid_price)"},
 			},
 		},
 		{
@@ -148,8 +148,8 @@ with
 				{IsStar: true, RelationName: "b"},
 				{Name: "i.id", IsExclude: true},
 				{Name: "i.city"},
-				{},
-				{Name: "bid_price"},
+				{Expr: "count_star()"},
+				{Name: "bid_price", Expr: "avg(b.bid_price)"},
 			},
 		},
 	}

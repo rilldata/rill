@@ -5,7 +5,6 @@ import (
 	databasesql "database/sql"
 	"database/sql/driver"
 	"encoding/json"
-	"fmt"
 	"regexp"
 	"sync"
 
@@ -44,7 +43,6 @@ func Parse(sql string) (*AST, error) {
 		return nil, err
 	}
 
-	fmt.Println(string(sqlAst))
 	nativeAst := astNode{}
 	err = json.Unmarshal(sqlAst, &nativeAst)
 	if err != nil {

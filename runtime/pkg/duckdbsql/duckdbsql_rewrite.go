@@ -117,3 +117,42 @@ func createLimitModifier(limit int) (astNode, error) {
 `, limit)), &n)
 	return n, err
 }
+
+// Creates a blank statement from an expression
+func createExpressionStatement(exprNode astNode) (string, error) {
+	jsonNode, err := json.Marshal(exprNode)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(`
+{
+  "error": false,
+  "statements": [{
+    "node": {
+      "type": "SELECT_NODE",
+      "modifiers": [],
+      "cte_map": {
+        "map": []
+      },
+      "select_list": [%s],
+      "from_table": {
+        "type": "BASE_TABLE",
+        "alias": "",
+        "sample": null,
+        "schema_name": "",
+        "table_name": "Dummy",
+        "column_name_alias": [],
+        "catalog_name": ""
+      },
+      "where_clause": null,
+      "group_expressions": [],
+      "group_sets": [],
+      "aggregate_handling": "STANDARD_HANDLING",
+      "having": null,
+      "sample": null,
+      "qualify": null
+    }
+  }],
+}
+`, jsonNode), nil
+}
