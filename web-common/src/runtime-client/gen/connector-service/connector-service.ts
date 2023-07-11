@@ -18,6 +18,7 @@ import type {
   V1GCSListBucketsResponse,
   ConnectorServiceGCSListBucketsParams,
   V1GCSGetCredentialsInfoResponse,
+  V1MotherduckListTablesResponse,
   V1S3GetBucketMetadataResponse,
   V1S3ListObjectsResponse,
   ConnectorServiceS3ListObjectsParams,
@@ -262,6 +263,77 @@ export const createConnectorServiceGCSGetCredentialsInfo = <
 }): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions =
     getConnectorServiceGCSGetCredentialsInfoQueryOptions(options);
+
+  const query = createQuery(queryOptions) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+};
+
+/**
+ * @summary MotherduckListTables list all tables across all databases on motherduck
+ */
+export const connectorServiceMotherduckListTables = (signal?: AbortSignal) => {
+  return httpClient<V1MotherduckListTablesResponse>({
+    url: `/v1/md/tables`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getConnectorServiceMotherduckListTablesQueryKey = () =>
+  [`/v1/md/tables`] as const;
+
+export const getConnectorServiceMotherduckListTablesQueryOptions = <
+  TData = Awaited<ReturnType<typeof connectorServiceMotherduckListTables>>,
+  TError = RpcStatus
+>(options?: {
+  query?: CreateQueryOptions<
+    Awaited<ReturnType<typeof connectorServiceMotherduckListTables>>,
+    TError,
+    TData
+  >;
+}): CreateQueryOptions<
+  Awaited<ReturnType<typeof connectorServiceMotherduckListTables>>,
+  TError,
+  TData
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getConnectorServiceMotherduckListTablesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof connectorServiceMotherduckListTables>>
+  > = ({ signal }) => connectorServiceMotherduckListTables(signal);
+
+  return { queryKey, queryFn, ...queryOptions };
+};
+
+export type ConnectorServiceMotherduckListTablesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof connectorServiceMotherduckListTables>>
+>;
+export type ConnectorServiceMotherduckListTablesQueryError = RpcStatus;
+
+/**
+ * @summary MotherduckListTables list all tables across all databases on motherduck
+ */
+export const createConnectorServiceMotherduckListTables = <
+  TData = Awaited<ReturnType<typeof connectorServiceMotherduckListTables>>,
+  TError = RpcStatus
+>(options?: {
+  query?: CreateQueryOptions<
+    Awaited<ReturnType<typeof connectorServiceMotherduckListTables>>,
+    TError,
+    TData
+  >;
+}): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const queryOptions =
+    getConnectorServiceMotherduckListTablesQueryOptions(options);
 
   const query = createQuery(queryOptions) as CreateQueryResult<
     TData,

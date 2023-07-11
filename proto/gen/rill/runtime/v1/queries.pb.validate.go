@@ -711,17 +711,6 @@ func (m *MetricsViewToplistRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if len(m.GetMeasureNames()) < 1 {
-		err := MetricsViewToplistRequestValidationError{
-			field:  "MeasureNames",
-			reason: "value must contain at least 1 item(s)",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
 	for idx, item := range m.GetInlineMeasures() {
 		_, _ = idx, item
 
@@ -1191,17 +1180,6 @@ func (m *MetricsViewComparisonToplistRequest) validate(all bool) error {
 		err := MetricsViewComparisonToplistRequestValidationError{
 			field:  "DimensionName",
 			reason: "value length must be at least 1 runes",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if len(m.GetMeasureNames()) < 1 {
-		err := MetricsViewComparisonToplistRequestValidationError{
-			field:  "MeasureNames",
-			reason: "value must contain at least 1 item(s)",
 		}
 		if !all {
 			return err

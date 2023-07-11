@@ -18,7 +18,6 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { SourceModelValidationStatus } from "@rilldata/web-common/features/metrics-views/errors.js";
-  import { initBlankDashboardYAML } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
@@ -87,12 +86,11 @@
       newDashboardName,
       EntityType.MetricsDefinition
     );
-    const yaml = initBlankDashboardYAML(newDashboardName);
     const resp = await $createDashboard.mutateAsync({
       data: {
         instanceId,
         path: filePath,
-        blob: yaml,
+        blob: "",
         create: true,
         createOnly: true,
         strict: false,

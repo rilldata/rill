@@ -16,8 +16,7 @@ import type {
 import type {
   V1TriggerReconcileResponse,
   RpcStatus,
-  AdminServiceTriggerReconcileBodyBody,
-  V1TriggerRedeployResponse,
+  AdminServiceTriggerReconcileBody,
   V1TriggerRefreshSourcesResponse,
   AdminServiceTriggerRefreshSourcesBody,
   V1GetGithubRepoStatusResponse,
@@ -65,6 +64,8 @@ import type {
   V1UpdateProjectVariablesResponse,
   AdminServiceUpdateProjectVariablesBody,
   V1PingResponse,
+  V1TriggerRedeployResponse,
+  V1TriggerRedeployRequest,
   V1ListSuperusersResponse,
   V1SetSuperuserResponse,
   V1SetSuperuserRequest,
@@ -92,13 +93,13 @@ import { httpClient } from "../../http-client";
  */
 export const adminServiceTriggerReconcile = (
   deploymentId: string,
-  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody
+  adminServiceTriggerReconcileBody: AdminServiceTriggerReconcileBody
 ) => {
   return httpClient<V1TriggerReconcileResponse>({
     url: `/v1/deployments/${deploymentId}/reconcile`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceTriggerReconcileBodyBody,
+    data: adminServiceTriggerReconcileBody,
   });
 };
 
@@ -109,20 +110,20 @@ export const getAdminServiceTriggerReconcileMutationOptions = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceTriggerReconcile>>,
     TError,
-    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+    { deploymentId: string; data: AdminServiceTriggerReconcileBody },
     TContext
   >;
 }): CreateMutationOptions<
   Awaited<ReturnType<typeof adminServiceTriggerReconcile>>,
   TError,
-  { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+  { deploymentId: string; data: AdminServiceTriggerReconcileBody },
   TContext
 > => {
   const { mutation: mutationOptions } = options ?? {};
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminServiceTriggerReconcile>>,
-    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody }
+    { deploymentId: string; data: AdminServiceTriggerReconcileBody }
   > = (props) => {
     const { deploymentId, data } = props ?? {};
 
@@ -136,7 +137,7 @@ export type AdminServiceTriggerReconcileMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceTriggerReconcile>>
 >;
 export type AdminServiceTriggerReconcileMutationBody =
-  AdminServiceTriggerReconcileBodyBody;
+  AdminServiceTriggerReconcileBody;
 export type AdminServiceTriggerReconcileMutationError = RpcStatus;
 
 /**
@@ -149,83 +150,12 @@ export const createAdminServiceTriggerReconcile = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceTriggerReconcile>>,
     TError,
-    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+    { deploymentId: string; data: AdminServiceTriggerReconcileBody },
     TContext
   >;
 }) => {
   const mutationOptions =
     getAdminServiceTriggerReconcileMutationOptions(options);
-
-  return createMutation(mutationOptions);
-};
-/**
- * @summary TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
- */
-export const adminServiceTriggerRedeploy = (
-  deploymentId: string,
-  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody
-) => {
-  return httpClient<V1TriggerRedeployResponse>({
-    url: `/v1/deployments/${deploymentId}/redeploy`,
-    method: "post",
-    headers: { "Content-Type": "application/json" },
-    data: adminServiceTriggerReconcileBodyBody,
-  });
-};
-
-export const getAdminServiceTriggerRedeployMutationOptions = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceTriggerRedeploy>>,
-    TError,
-    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
-    TContext
-  >;
-}): CreateMutationOptions<
-  Awaited<ReturnType<typeof adminServiceTriggerRedeploy>>,
-  TError,
-  { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
-  TContext
-> => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceTriggerRedeploy>>,
-    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody }
-  > = (props) => {
-    const { deploymentId, data } = props ?? {};
-
-    return adminServiceTriggerRedeploy(deploymentId, data);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type AdminServiceTriggerRedeployMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceTriggerRedeploy>>
->;
-export type AdminServiceTriggerRedeployMutationBody =
-  AdminServiceTriggerReconcileBodyBody;
-export type AdminServiceTriggerRedeployMutationError = RpcStatus;
-
-/**
- * @summary TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
- */
-export const createAdminServiceTriggerRedeploy = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceTriggerRedeploy>>,
-    TError,
-    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
-    TContext
-  >;
-}) => {
-  const mutationOptions =
-    getAdminServiceTriggerRedeployMutationOptions(options);
 
   return createMutation(mutationOptions);
 };
@@ -2704,6 +2634,75 @@ export const createAdminServicePing = <
   return query;
 };
 
+/**
+ * @summary TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
+ */
+export const adminServiceTriggerRedeploy = (
+  v1TriggerRedeployRequest: V1TriggerRedeployRequest
+) => {
+  return httpClient<V1TriggerRedeployResponse>({
+    url: `/v1/projects/-/redeploy`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: v1TriggerRedeployRequest,
+  });
+};
+
+export const getAdminServiceTriggerRedeployMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceTriggerRedeploy>>,
+    TError,
+    { data: V1TriggerRedeployRequest },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceTriggerRedeploy>>,
+  TError,
+  { data: V1TriggerRedeployRequest },
+  TContext
+> => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceTriggerRedeploy>>,
+    { data: V1TriggerRedeployRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceTriggerRedeploy(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceTriggerRedeployMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceTriggerRedeploy>>
+>;
+export type AdminServiceTriggerRedeployMutationBody = V1TriggerRedeployRequest;
+export type AdminServiceTriggerRedeployMutationError = RpcStatus;
+
+/**
+ * @summary TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
+ */
+export const createAdminServiceTriggerRedeploy = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceTriggerRedeploy>>,
+    TError,
+    { data: V1TriggerRedeployRequest },
+    TContext
+  >;
+}) => {
+  const mutationOptions =
+    getAdminServiceTriggerRedeployMutationOptions(options);
+
+  return createMutation(mutationOptions);
+};
 /**
  * @summary ListSuperusers lists all the superusers
  */

@@ -34,31 +34,6 @@ paths:
             type: object
       tags:
         - AdminService
-  /v1/deployments/{deploymentId}/redeploy:
-    post:
-      summary: TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
-      operationId: AdminService_TriggerRedeploy
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1TriggerRedeployResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: deploymentId
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-      tags:
-        - AdminService
   /v1/deployments/{deploymentId}/refresh:
     post:
       summary: TriggerRefreshSources refresh the source for production deployment
@@ -817,6 +792,9 @@ paths:
                 type: string
               newName:
                 type: string
+              prodTtlSeconds:
+                type: string
+                format: int64
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects/{name}/variables:
@@ -889,6 +867,27 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
+      tags:
+        - AdminService
+  /v1/projects/-/redeploy:
+    post:
+      summary: TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
+      operationId: AdminService_TriggerRedeploy
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1TriggerRedeployResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1TriggerRedeployRequest'
       tags:
         - AdminService
   /v1/superuser/members:
@@ -1482,6 +1481,9 @@ definitions:
         type: string
       frontendUrl:
         type: string
+      prodTtlSeconds:
+        type: string
+        format: int64
       createdOn:
         type: string
         format: date-time
@@ -1612,6 +1614,18 @@ definitions:
     title: SudoUpdateUserQuotasResponse
   v1TriggerReconcileResponse:
     type: object
+  v1TriggerRedeployRequest:
+    type: object
+    properties:
+      organization:
+        type: string
+        title: |-
+          It's sufficient to pass org/project name OR deployment_id.
+          (To enable rehydrating hibernated projects.)
+      project:
+        type: string
+      deploymentId:
+        type: string
   v1TriggerRedeployResponse:
     type: object
   v1TriggerRefreshSourcesResponse:

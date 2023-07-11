@@ -1555,6 +1555,21 @@ paths:
           type: string
       tags:
         - RuntimeService
+  /v1/md/tables:
+    get:
+      summary: MotherduckListTables list all tables across all databases on motherduck
+      operationId: ConnectorService_MotherduckListTables
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MotherduckListTablesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - ConnectorService
   /v1/ping:
     get:
       summary: Ping returns information about the runtime
@@ -1833,6 +1848,8 @@ definitions:
         type: string
       format:
         type: string
+      validPercentOfTotal:
+        type: boolean
     title: Measures are aggregated computed values
   ModelDialect:
     type: string
@@ -2580,6 +2597,11 @@ definitions:
       defaultTimeRange:
         type: string
         description: Default time range for the dashboard. It should be a valid ISO 8601 duration string.
+      availableTimeZones:
+        type: array
+        items:
+          type: string
+        description: Available time zones list preferred time zones using IANA location identifiers.
     title: Metrics view is the internal representation of a metrics view definition
   v1MetricsViewColumn:
     type: object
@@ -2898,6 +2920,14 @@ definitions:
         type: boolean
         title: To materialize model or not
     title: Model is the internal representation of a model definition
+  v1MotherduckListTablesResponse:
+    type: object
+    properties:
+      tables:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1TableInfo'
   v1NumericHistogramBins:
     type: object
     properties:
@@ -3416,6 +3446,13 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1ProfileColumn'
+  v1TableInfo:
+    type: object
+    properties:
+      database:
+        type: string
+      name:
+        type: string
   v1TableRowsRequest:
     type: object
     properties:
