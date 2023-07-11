@@ -1,15 +1,29 @@
 import { expect } from "@jest/globals";
+import { expect as playwrightExpect } from "@playwright/test";
 import type {
   MetricsViewFilterCond,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
 import type { Page, Response } from "playwright";
-import { expect as playwrightExpect } from "@playwright/test";
 import { clickMenuButton, openEntityMenu } from "./helpers";
 
 export async function createDashboardFromSource(page: Page, source: string) {
   await openEntityMenu(page, source);
   await clickMenuButton(page, "Autogenerate Dashboard");
+}
+
+/** this subroutine enables us to easily edit the metrics config YAML file through
+ * the metrics config workspace.
+ */
+export async function updateMetricsInput(page: Page, content: string) {
+  await page.locator(".cm-line").first().click();
+  if (process.platform === "darwin") {
+    await page.keyboard.press("Meta+A");
+  } else {
+    await page.keyboard.press("Control+A");
+  }
+  await page.keyboard.press("Delete");
+  await page.keyboard.insertText(content);
 }
 
 export async function createDashboardFromModel(page: Page, model: string) {

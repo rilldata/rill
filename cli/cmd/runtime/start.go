@@ -20,7 +20,8 @@ import (
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
 
-	// Load infra drivers for runtime
+	// Load infra drivers and connectors for runtime
+	_ "github.com/rilldata/rill/runtime/connectors/motherduck"
 	_ "github.com/rilldata/rill/runtime/drivers/druid"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb/motherduck"
