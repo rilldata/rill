@@ -11,15 +11,15 @@ func init() {
 }
 
 var spec = drivers.Spec{
-	DisplayName: "Motherduck",
-	Description: "Import data from Motherduck.",
+	DisplayName: "MotherDuck",
+	Description: "Import data from MotherDuck.",
 	Properties: []drivers.PropertySchema{
 		{
 			Key:         "query",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
 			DisplayName: "Query",
-			Description: "Query to extract data from Motherduck.",
+			Description: "Query to extract data from MotherDuck.",
 			Placeholder: "select * from my_db.my_table;",
 		},
 	},

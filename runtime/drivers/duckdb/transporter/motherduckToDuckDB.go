@@ -50,6 +50,10 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, source drivers.Source
 		if token == "" && config["allow_host_access"].(bool) {
 			token = os.Getenv("motherduck_token")
 		}
+		if token == "" {
+			return fmt.Errorf("no motheruduck token found. Refer docs on how to set motherduck token")
+		}
+
 		// load motherduck extension; connect to motherduck service
 		err = t.to.Exec(ctx, &drivers.Statement{Query: "INSTALL 'motherduck'; LOAD 'motherduck';"})
 		if err != nil {

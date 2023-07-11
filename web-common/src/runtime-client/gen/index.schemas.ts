@@ -754,6 +754,8 @@ export interface V1MetricsView {
   smallestTimeGrain?: V1TimeGrain;
   /** Default time range for the dashboard. It should be a valid ISO 8601 duration string. */
   defaultTimeRange?: string;
+  /** Available time zones list preferred time zones using IANA location identifiers. */
+  availableTimeZones?: string[];
 }
 
 export interface V1MapType {
