@@ -49,6 +49,7 @@ export type AdminServiceUpdateProjectBody = {
   prodSlots?: string;
   region?: string;
   newName?: string;
+  prodTtlSeconds?: string;
 };
 
 export type AdminServiceCreateProjectBodyVariables = { [key: string]: string };
@@ -119,6 +120,8 @@ export type AdminServiceTriggerRefreshSourcesBody = {
   sources?: string[];
 };
 
+export type AdminServiceTriggerReconcileBody = { [key: string]: any };
+
 export type AdminServiceAddOrganizationMemberBodyBody = {
   email?: string;
   role?: string;
@@ -127,8 +130,6 @@ export type AdminServiceAddOrganizationMemberBodyBody = {
 export type AdminServiceSetOrganizationMemberRoleBodyBody = {
   role?: string;
 };
-
-export type AdminServiceTriggerReconcileBodyBody = { [key: string]: any };
 
 export interface V1WhitelistedDomain {
   domain?: string;
@@ -189,6 +190,12 @@ export interface V1TriggerRefreshSourcesResponse {
 
 export interface V1TriggerRedeployResponse {
   [key: string]: any;
+}
+
+export interface V1TriggerRedeployRequest {
+  organization?: string;
+  project?: string;
+  deploymentId?: string;
 }
 
 export interface V1TriggerReconcileResponse {
@@ -301,6 +308,7 @@ export interface V1Project {
   prodSlots?: string;
   prodDeploymentId?: string;
   frontendUrl?: string;
+  prodTtlSeconds?: string;
   createdOn?: string;
   updatedOn?: string;
 }
