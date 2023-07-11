@@ -16,10 +16,14 @@ func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, stream runtimev1.R
 	}
 
 	return repo.Watch(stream.Context(), req.Replay, func(event drivers.WatchEvent) error {
-		err := stream.Send(&runtimev1.WatchFilesResponse{
-			Event: event.Type,
-			Path:  event.Path,
-		})
-		return err
+		if !event.Dir {
+			err := stream.Send(&runtimev1.WatchFilesResponse{
+				Event: event.Type,
+				Path:  event.Path,
+			})
+
+			return err
+		}
+		return nil
 	})
 }

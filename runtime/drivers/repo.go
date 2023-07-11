@@ -30,6 +30,7 @@ type WatchCallback func(event WatchEvent) error
 type WatchEvent struct {
 	Type runtimev1.FileEvent
 	Path string
+	Dir  bool
 }
 
 type RepoObjectStat struct {

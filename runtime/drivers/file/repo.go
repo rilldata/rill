@@ -179,23 +179,11 @@ func (c *connection) Watch(ctx context.Context, replay bool, callback drivers.Wa
 		}
 	}
 
-	err = watcher.Add(c.Root())
-	if err != nil {
-		return err
-	}
-
 	for _, path := range dirs {
 		relativePath := filepath.Join(c.Root(), path)
-		fi, err := os.Stat(relativePath)
+		err := watcher.Add(relativePath)
 		if err != nil {
 			return err
-		}
-
-		if fi.IsDir() {
-			err := watcher.Add(relativePath)
-			if err != nil {
-				return err
-			}
 		}
 	}
 
@@ -206,17 +194,34 @@ func (c *connection) Watch(ctx context.Context, replay bool, callback drivers.Wa
 				return nil
 			}
 
-			e := drivers.WatchEvent{
-				Path: event.Name,
+			relativeName, err := filepath.Rel(c.Root(), event.Name)
+			if err != nil {
+				return err
 			}
-			switch event.Op {
-			case fsnotify.Write:
+
+			e := drivers.WatchEvent{
+				Path: filepath.Join("/", relativeName),
+			}
+			if event.Op&fsnotify.Create != 0 {
 				e.Type = runtimev1.FileEvent_FILE_EVENT_WRITE
-			case fsnotify.Remove:
+				fi, err := os.Stat(event.Name)
+				if err != nil {
+					return err
+				} else if fi.IsDir() {
+					err := watcher.Add(event.Name)
+					if err != nil {
+						return err
+					}
+
+					e.Dir = true
+				}
+			} else if event.Op&fsnotify.Write != 0 {
+				e.Type = runtimev1.FileEvent_FILE_EVENT_WRITE
+			} else if event.Op&fsnotify.Remove != 0 {
 				e.Type = runtimev1.FileEvent_FILE_EVENT_DELETE
-			case fsnotify.Rename:
+			} else if event.Op&fsnotify.Rename != 0 {
 				e.Type = runtimev1.FileEvent_FILE_EVENT_RENAME
-			default:
+			} else {
 				e.Type = runtimev1.FileEvent_FILE_EVENT_UNSPECIFIED
 			}
 			err = callback(e)
