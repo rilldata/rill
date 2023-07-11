@@ -140,8 +140,7 @@
   $: timeRangeName = $timeControlsStore?.selectedTimeRange?.name;
 
   // Compose the comparison /toplist query
-  $: displayComparison =
-    $dashboardStore?.showComparison && $timeControlsStore.hasTime;
+  $: displayComparison = $timeControlsStore.showComparison;
 
   $: comparisonFilterSet = getFilterForComparisonTable(
     filterForDimension,

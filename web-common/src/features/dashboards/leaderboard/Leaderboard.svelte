@@ -157,7 +157,7 @@
     });
 
   // Compose the comparison /toplist query
-  $: displayComparison = $dashboardStore?.showComparison;
+  $: displayComparison = $timeControlsStore.showComparison;
 
   // add all sliced and active values to the include filter.
   $: currentVisibleValues =

@@ -86,12 +86,19 @@ export function createTimeControlStore(
     ],
     ([timeRangeResponse, metricsExplorer]) => {
       if (!timeRangeResponse || !timeRangeResponse.isSuccess) {
+        if (!hasTimeSeries && !metricsExplorer.defaultsSelected) {
+          // TODO: refactor this when everything is moved to new architecture
+          metricsExplorerStore.allDefaultsSelected(metricsViewName);
+        }
+
         return {
           isFetching: timeRangeResponse.isRefetching,
           hasTime: !hasTimeSeries,
         } as TimeControlState;
       }
+
       if (!metricsExplorer.defaultsSelected) {
+        // TODO: refactor this when everything is moved to new architecture
         metricsExplorerStore.allDefaultsSelected(metricsViewName);
       }
       const allTimeRange = {
