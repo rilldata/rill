@@ -71,6 +71,9 @@ The main feature-set component for dashboard filters
   let searchText = "";
   let searchedValues: string[] | null = null;
   let activeDimensionName;
+  $: activeColumn =
+    dimensions.find((d) => d.name === activeDimensionName)?.column ??
+    activeDimensionName;
 
   $: metricTimeSeries = useModelHasTimeSeries(
     $runtime.instanceId,
@@ -128,9 +131,6 @@ The main feature-set component for dashboard filters
 
   $: if (!$topListQuery?.isFetching && searchText != "") {
     const topListData = $topListQuery?.data?.data ?? [];
-    const activeColumn =
-      dimensions.find((d) => d.name === activeDimensionName)?.column ??
-      activeDimensionName;
     searchedValues = topListData.map((datum) => datum[activeColumn]) ?? [];
   }
 
