@@ -336,3 +336,52 @@ func TestAST_RewriteLimit(t *testing.T) {
 		})
 	}
 }
+
+func TestAST_ExtractAnnotations(t *testing.T) {
+	sqlVariations := []struct {
+		title       string
+		sql         string
+		annotations []*Annotation
+	}{
+		{
+			"comments at the top",
+			`
+-- some random comment
+-- @materialise
+-- @materialise  :	true  
+-- @materialise  :	tr ue  
+-- some other comment
+select * from AdBids
+`,
+			[]*Annotation{
+				{Key: "materialise"},
+				{Key: "materialise", Value: "true"},
+				{Key: "materialise", Value: "tr ue"},
+			},
+		},
+		{
+			"comments in the middle",
+			`
+select
+-- @measure: avg
+a,
+-- @dimension
+b
+from AdBids
+`,
+			[]*Annotation{
+				{Key: "measure", Value: "avg"},
+				{Key: "dimension"},
+			},
+		},
+	}
+
+	for _, tt := range sqlVariations {
+		t.Run(tt.title, func(t *testing.T) {
+			ast, err := Parse(tt.sql)
+			require.NoError(t, err)
+
+			require.EqualValues(t, tt.annotations, ast.ExtractAnnotations())
+		})
+	}
+}

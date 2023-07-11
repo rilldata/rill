@@ -6,12 +6,14 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sync"
 
 	"github.com/marcboeker/go-duckdb"
 )
 
 type AST struct {
+	sql       string
 	ast       astNode
 	rootNodes []*selectNode
 	aliases   map[string]bool
@@ -50,6 +52,7 @@ func Parse(sql string) (*AST, error) {
 	}
 
 	ast := &AST{
+		sql:       sql,
 		ast:       nativeAst,
 		rootNodes: make([]*selectNode, 0),
 		aliases:   map[string]bool{},
@@ -118,6 +121,25 @@ func (a *AST) ExtractColumnRefs() []*ColumnRef {
 	return columnRefs
 }
 
+var annotationsRegex = regexp.MustCompile(`(?m)^--[ \t]*@([a-zA-Z_\-.]*)[ \t]*(?::[ \t]*(.*?))?\s*$`)
+
+// ExtractAnnotations extracts annotations from comments prefixed with '@', and optionally a value after a ':'.
+// Examples: "-- @materialize" and "-- @materialize: true".
+func (a *AST) ExtractAnnotations() []*Annotation {
+	annotations := make([]*Annotation, 0)
+	subMatches := annotationsRegex.FindAllStringSubmatch(a.sql, -1)
+	for _, subMatch := range subMatches {
+		an := &Annotation{
+			Key: subMatch[1],
+		}
+		if len(subMatch) > 2 {
+			an.Value = subMatch[2]
+		}
+		annotations = append(annotations, an)
+	}
+	return annotations
+}
+
 func (a *AST) newFromNode(node, parent astNode, childKey string, ref *TableRef) {
 	fn := &fromNode{
 		ast:      node,
@@ -149,13 +171,6 @@ type TableRef struct {
 type Annotation struct {
 	Key   string
 	Value string
-}
-
-// ExtractAnnotations extracts annotations from comments prefixed with '@', and optionally a value after a ':'.
-// Examples: "-- @materialize" and "-- @materialize: true".
-// TODO: duckdb's parser doesnt return comments. We need our own parser.
-func ExtractAnnotations() ([]*Annotation, error) {
-	panic("not implemented")
 }
 
 // ColumnRef has information about a column in the select list of a DuckDB SQL statement
