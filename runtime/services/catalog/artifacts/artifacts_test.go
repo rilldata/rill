@@ -81,11 +81,11 @@ region: us-east-2
 				Type: drivers.ObjectTypeModel,
 				Object: &runtimev1.Model{
 					Name:    "Model",
-					Sql:     "select * from A",
+					Sql:     "SELECT * FROM A",
 					Dialect: runtimev1.Model_DIALECT_DUCKDB,
 				},
 			},
-			"select * from A",
+			"SELECT * FROM A",
 		},
 		{
 			"MetricsView",
@@ -602,7 +602,7 @@ region: {{.env.region}}
 				Type: drivers.ObjectTypeModel,
 				Object: &runtimev1.Model{
 					Name:    "Model",
-					Sql:     "select * from FOO limit 10",
+					Sql:     "SELECT * FROM FOO LIMIT 10",
 					Dialect: runtimev1.Model_DIALECT_DUCKDB,
 				},
 			},
@@ -627,6 +627,70 @@ region: {{.env.region}}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Read() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func TestRead_SourceSql(t *testing.T) {
+	variations := []struct {
+		name     string
+		sql      string
+		filePath string
+		expected *drivers.CatalogEntry
+	}{
+		{
+			"simple csv",
+			`-- @type: source
+select * from read_csv('~/path/to/file.csv')`,
+			"sources/file.sql",
+			&drivers.CatalogEntry{
+				Name: "file",
+				Path: "sources/file.sql",
+				Type: drivers.ObjectTypeSource,
+				Object: &runtimev1.Source{
+					Name:      "file",
+					Connector: "local_file",
+					Properties: toProtoStruct(map[string]any{
+						"path": "~/path/to/file.csv",
+					}),
+				},
+			},
+		},
+		{
+			"csv with args",
+			`-- @type: source
+select * from read_csv('~/path/to/file.csv', delim='|', columns={'A':'Date'})`,
+			"sources/file.sql",
+			&drivers.CatalogEntry{
+				Name: "file",
+				Path: "sources/file.sql",
+				Type: drivers.ObjectTypeSource,
+				Object: &runtimev1.Source{
+					Name:      "file",
+					Connector: "local_file",
+					Properties: toProtoStruct(map[string]any{
+						"path": "~/path/to/file.csv",
+						"duckdb": map[string]any{
+							"delim": "|",
+							"columns": map[string]any{
+								"A": "Date",
+							},
+						},
+					}),
+				},
+			},
+		},
+	}
+
+	repoStore := repoStore(t)
+	registryStore := registryStore(t)
+	for _, tt := range variations {
+		t.Run(tt.name, func(t *testing.T) {
+			require.NoError(t, repoStore.Put(context.Background(), "test", tt.filePath, bytes.NewReader([]byte(tt.sql))))
+			readCatalog, err := artifacts.Read(context.Background(), repoStore, registryStore, "test", tt.filePath)
+
+			require.NoError(t, err)
+			require.Equal(t, tt.expected, readCatalog)
 		})
 	}
 }

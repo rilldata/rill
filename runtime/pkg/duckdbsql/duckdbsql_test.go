@@ -341,22 +341,22 @@ func TestAST_ExtractAnnotations(t *testing.T) {
 	sqlVariations := []struct {
 		title       string
 		sql         string
-		annotations []*Annotation
+		annotations map[string]*Annotation
 	}{
 		{
 			"comments at the top",
 			`
 -- some random comment
--- @materialise
--- @materialise  :	true  
--- @materialise  :	tr ue  
+-- @materialise_v1
+-- @materialise_v2  :	true  
+-- @materialise_v3  :	tr ue  
 -- some other comment
 select * from AdBids
 `,
-			[]*Annotation{
-				{Key: "materialise"},
-				{Key: "materialise", Value: "true"},
-				{Key: "materialise", Value: "tr ue"},
+			map[string]*Annotation{
+				"materialise_v1": {Key: "materialise_v1"},
+				"materialise_v2": {Key: "materialise_v2", Value: "true"},
+				"materialise_v3": {Key: "materialise_v3", Value: "tr ue"},
 			},
 		},
 		{
@@ -364,14 +364,16 @@ select * from AdBids
 			`
 select
 -- @measure: avg
+-- @measure.format: usd
 a,
 -- @dimension
 b
 from AdBids
 `,
-			[]*Annotation{
-				{Key: "measure", Value: "avg"},
-				{Key: "dimension"},
+			map[string]*Annotation{
+				"measure":        {Key: "measure", Value: "avg"},
+				"measure.format": {Key: "measure.format", Value: "usd"},
+				"dimension":      {Key: "dimension"},
 			},
 		},
 	}

@@ -78,6 +78,13 @@ func (a *AST) Format() (string, error) {
 	return string(res), err
 }
 
+func (a *AST) GetTableRef() (*TableRef, bool) {
+	if len(a.fromNodes) == 1 {
+		return a.fromNodes[0].ref, true
+	}
+	return nil, false
+}
+
 // RewriteTableRefs replaces table references in a DuckDB SQL query
 func (a *AST) RewriteTableRefs(fn func(table *TableRef) (*TableRef, bool)) error {
 	for _, node := range a.fromNodes {
@@ -121,12 +128,12 @@ func (a *AST) ExtractColumnRefs() []*ColumnRef {
 	return columnRefs
 }
 
-var annotationsRegex = regexp.MustCompile(`(?m)^--[ \t]*@([a-zA-Z_\-.]*)[ \t]*(?::[ \t]*(.*?))?\s*$`)
+var annotationsRegex = regexp.MustCompile(`(?m)^--[ \t]*@([a-zA-Z0-9_\-.]*)[ \t]*(?::[ \t]*(.*?))?\s*$`)
 
 // ExtractAnnotations extracts annotations from comments prefixed with '@', and optionally a value after a ':'.
 // Examples: "-- @materialize" and "-- @materialize: true".
-func (a *AST) ExtractAnnotations() []*Annotation {
-	annotations := make([]*Annotation, 0)
+func (a *AST) ExtractAnnotations() map[string]*Annotation {
+	annotations := map[string]*Annotation{}
 	subMatches := annotationsRegex.FindAllStringSubmatch(a.sql, -1)
 	for _, subMatch := range subMatches {
 		an := &Annotation{
@@ -135,7 +142,7 @@ func (a *AST) ExtractAnnotations() []*Annotation {
 		if len(subMatch) > 2 {
 			an.Value = subMatch[2]
 		}
-		annotations = append(annotations, an)
+		annotations[an.Key] = an
 	}
 	return annotations
 }
