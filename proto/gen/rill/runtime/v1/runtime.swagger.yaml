@@ -2407,6 +2407,11 @@ definitions:
       defaultTimeRange:
         type: string
         description: Default time range for the dashboard. It should be a valid ISO 8601 duration string.
+      availableTimeZones:
+        type: array
+        items:
+          type: string
+        description: Available time zones list preferred time zones using IANA location identifiers.
     title: Metrics view is the internal representation of a metrics view definition
   v1MetricsViewColumn:
     type: object
