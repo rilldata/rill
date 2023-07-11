@@ -114,6 +114,51 @@ func (s *Server) GetCurrentUser(ctx context.Context, req *adminv1.GetCurrentUser
 
 	return &adminv1.GetCurrentUserResponse{
 		User: userToPB(u),
+		Preferences: &adminv1.UserPreferences{
+			Timezone: &u.PreferenceTimezone,
+		},
+	}, nil
+}
+
+func (s *Server) UpdateUserPreferences(ctx context.Context, req *adminv1.UpdateUserPreferencesRequest) (*adminv1.UpdateUserPreferencesResponse, error) {
+	// Return an empty result if not authenticated.
+	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() == auth.OwnerTypeAnon {
+		return &adminv1.UpdateUserPreferencesResponse{}, nil
+	}
+
+	// Error if authenticated as anything other than a user
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, fmt.Errorf("not authenticated as a user")
+	}
+
+	observability.AddRequestAttributes(ctx, attribute.String("user_id", claims.OwnerID()))
+	if req.Preferences.Timezone != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("preferences_timezone", *req.Preferences.Timezone))
+	}
+
+	// Owner is a user
+	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+	if err != nil {
+		return nil, err
+	}
+
+	// Update user quota here
+	updatedUser, err := s.admin.DB.UpdateUser(ctx, user.ID, &database.UpdateUserOptions{
+		DisplayName:         user.DisplayName,
+		PhotoURL:            user.PhotoURL,
+		GithubUsername:      user.GithubUsername,
+		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
+		PreferenceTimezone:  valOrDefault(req.Preferences.Timezone, user.PreferenceTimezone),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.UpdateUserPreferencesResponse{
+		Preferences: &adminv1.UserPreferences{
+			Timezone: &updatedUser.PreferenceTimezone,
+		},
 	}, nil
 }
 
@@ -260,6 +305,7 @@ func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpda
 		PhotoURL:            user.PhotoURL,
 		GithubUsername:      user.GithubUsername,
 		QuotaSingleuserOrgs: int(valOrDefault(req.SingleuserOrgs, uint32(user.QuotaSingleuserOrgs))),
+		PreferenceTimezone:  user.PreferenceTimezone,
 	})
 	if err != nil {
 		return nil, err
