@@ -87,7 +87,7 @@ func (q *ColumnTopK) Resolve(ctx context.Context, rt *runtime.Runtime, instanceI
 			return err
 		}
 
-		entry.Value, err = pbutil.ToValue(val)
+		entry.Value, err = pbutil.ToValue(val, safeFieldType(rows.Schema, 0))
 		if err != nil {
 			return err
 		}
@@ -105,6 +105,6 @@ func (q *ColumnTopK) Resolve(ctx context.Context, rt *runtime.Runtime, instanceI
 	return nil
 }
 
-func (q *ColumnTopK) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.ExportFormat, w io.Writer) error {
+func (q *ColumnTopK) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
 	return ErrExportNotSupported
 }

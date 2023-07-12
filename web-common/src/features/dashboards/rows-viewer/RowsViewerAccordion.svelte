@@ -7,6 +7,9 @@
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import { useDashboardStore } from "../dashboard-stores";
   import { useModelHasTimeSeries } from "../selectors";
+  import ExportModelDataButton from "./ExportModelDataButton.svelte";
+  import { featureFlags } from "../../feature-flags";
+
   export let metricViewName: string;
   let isOpen = false;
   const toggle = () => {
@@ -63,8 +66,8 @@
           expression: "count(*)",
         },
       ],
-      timeStart: timeStart,
-      timeEnd: timeEnd,
+      timeStart: hasTimeSeries ? timeStart : undefined,
+      timeEnd: hasTimeSeries ? timeEnd : undefined,
       filter: $dashboardStore?.filters,
     },
     {
@@ -94,6 +97,8 @@
       )} of ${formatCompactInteger($totalsQuery.data.data.count)} rows`;
     }
   }
+
+  $: isLocal = $featureFlags.readOnly === false;
 </script>
 
 <div>
@@ -102,13 +107,16 @@
     on:click={toggle}
     aria-label="Toggle rows viewer"
   >
-    <span class="font-bold">Source Data</span>
-    {label}
     {#if isOpen}
-      <CaretUpIcon size="14px" />
-    {:else}
       <CaretDownIcon size="14px" />
+    {:else}
+      <CaretUpIcon size="14px" />
     {/if}
+    <span class="font-bold">Model Data</span>
+    {label}
+    <div class="ml-auto">
+      {#if isLocal}<ExportModelDataButton {metricViewName} />{/if}
+    </div>
   </button>
   {#if isOpen}
     <RowsViewer {metricViewName} />

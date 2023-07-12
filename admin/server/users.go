@@ -224,14 +224,61 @@ func (s *Server) SudoGetResource(ctx context.Context, req *adminv1.SudoGetResour
 	return res, nil
 }
 
+func (s *Server) GetUser(ctx context.Context, req *adminv1.GetUserRequest) (*adminv1.GetUserResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can get user")
+	}
+
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.GetUserResponse{User: userToPB(user)}, nil
+}
+
+func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpdateUserQuotasRequest) (*adminv1.SudoUpdateUserQuotasResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.email", req.Email))
+	if req.SingleuserOrgs != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int("args.singleuser_orgs", int(*req.SingleuserOrgs)))
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can manage quotas")
+	}
+
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update user quota here
+	updatedUser, err := s.admin.DB.UpdateUser(ctx, user.ID, &database.UpdateUserOptions{
+		DisplayName:         user.DisplayName,
+		PhotoURL:            user.PhotoURL,
+		GithubUsername:      user.GithubUsername,
+		QuotaSingleuserOrgs: int(valOrDefault(req.SingleuserOrgs, uint32(user.QuotaSingleuserOrgs))),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.SudoUpdateUserQuotasResponse{User: userToPB(updatedUser)}, nil
+}
+
 func userToPB(u *database.User) *adminv1.User {
 	return &adminv1.User{
 		Id:          u.ID,
 		Email:       u.Email,
 		DisplayName: u.DisplayName,
 		PhotoUrl:    u.PhotoURL,
-		CreatedOn:   timestamppb.New(u.CreatedOn),
-		UpdatedOn:   timestamppb.New(u.UpdatedOn),
+		Quotas: &adminv1.UserQuotas{
+			SingleuserOrgs: uint32(u.QuotaSingleuserOrgs),
+		},
+		CreatedOn: timestamppb.New(u.CreatedOn),
+		UpdatedOn: timestamppb.New(u.UpdatedOn),
 	}
 }
 

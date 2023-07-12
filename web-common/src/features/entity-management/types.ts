@@ -1,11 +1,8 @@
-// TODO: Refactor to include Home, Splash and remove stale types
 export enum EntityType {
   Table = "Table",
   Model = "Model",
   Application = "Application",
   MetricsDefinition = "MetricsDefinition",
-  MeasureDefinition = "MeasureDefinition",
-  DimensionDefinition = "DimensionDefinition",
   MetricsExplorer = "MetricsExplorer",
 }
 

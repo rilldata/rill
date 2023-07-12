@@ -45,7 +45,7 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 		InlineMeasures:  req.InlineMeasures,
 		TimeStart:       req.TimeStart,
 		TimeEnd:         req.TimeEnd,
-		Limit:           req.Limit,
+		Limit:           &req.Limit,
 		Offset:          req.Offset,
 		Sort:            req.Sort,
 		Filter:          req.Filter,
@@ -182,6 +182,7 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 		attribute.String("args.metric_view", req.MetricsViewName),
 		attribute.String("args.time_start", safeTimeStr(req.TimeStart)),
 		attribute.String("args.time_end", safeTimeStr(req.TimeEnd)),
+		attribute.String("args.time_granularity", req.TimeGranularity.String()),
 		attribute.Int("args.filter_count", filterCount(req.Filter)),
 		attribute.StringSlice("args.sort.names", marshalMetricsViewSort(req.Sort)),
 		attribute.Int("args.limit", int(req.Limit)),
@@ -193,13 +194,16 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 		return nil, ErrForbidden
 	}
 
+	limit := int64(req.Limit)
+
 	q := &queries.MetricsViewRows{
 		MetricsViewName: req.MetricsViewName,
 		TimeStart:       req.TimeStart,
 		TimeEnd:         req.TimeEnd,
+		TimeGranularity: req.TimeGranularity,
 		Filter:          req.Filter,
 		Sort:            req.Sort,
-		Limit:           req.Limit,
+		Limit:           &limit,
 		Offset:          req.Offset,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))

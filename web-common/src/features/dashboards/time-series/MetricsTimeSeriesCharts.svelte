@@ -17,15 +17,15 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import {
+    getAdjustedChartTime,
+    getAdjustedFetchTime,
+  } from "@rilldata/web-common/lib/time/ranges";
+  import {
     createQueryServiceMetricsViewTimeSeries,
     createQueryServiceMetricsViewTotals,
     V1MetricsViewTimeSeriesResponse,
   } from "@rilldata/web-common/runtime-client";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
-  import {
-    getAdjustedChartTime,
-    getAdjustedFetchTime,
-  } from "@rilldata/web-common/lib/time/ranges";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
@@ -62,7 +62,7 @@
   let allTimeRange;
   $: if ($allTimeRangeQuery?.isSuccess) {
     allTimeRange = $allTimeRangeQuery.data;
-    name = $dashboardStore.selectedTimeRange.name;
+    name = $dashboardStore?.selectedTimeRange?.name;
   }
 
   $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
@@ -132,8 +132,8 @@
     $dashboardStore?.selectedTimeRange?.start
   ) {
     const { start: adjustedStart, end: adjustedEnd } = getAdjustedFetchTime(
-      $dashboardStore.selectedTimeRange?.start,
-      $dashboardStore.selectedTimeRange?.end,
+      $dashboardStore?.selectedTimeRange?.start,
+      $dashboardStore?.selectedTimeRange?.end,
       interval
     );
 
@@ -151,8 +151,8 @@
     if (displayComparison) {
       const { start: compAdjustedStart, end: compAdjustedEnd } =
         getAdjustedFetchTime(
-          $dashboardStore.selectedComparisonTimeRange?.start,
-          $dashboardStore.selectedComparisonTimeRange?.end,
+          $dashboardStore?.selectedComparisonTimeRange?.start,
+          $dashboardStore?.selectedComparisonTimeRange?.end,
           interval
         );
 
@@ -203,9 +203,10 @@
     $dashboardStore?.selectedTimeRange?.start
   ) {
     const adjustedChartValue = getAdjustedChartTime(
-      $dashboardStore.selectedTimeRange?.start,
-      $dashboardStore.selectedTimeRange?.end,
-      interval
+      $dashboardStore?.selectedTimeRange?.start,
+      $dashboardStore?.selectedTimeRange?.end,
+      interval,
+      $dashboardStore?.selectedTimeRange?.name
     );
 
     startValue = adjustedChartValue?.start;
@@ -254,11 +255,11 @@
     {/if}
   </div>
   <!-- bignumbers and line charts -->
-  {#if $metaQuery.data?.measures && $totalsQuery?.isSuccess}
+  {#if $metaQuery.data?.measures}
     <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
     {#each $metaQuery.data?.measures.filter((_, i) => $showHideMeasures.selectedItems[i]) as measure, index (measure.name)}
       <!-- FIXME: I can't select the big number by the measure id. -->
-      {@const bigNum = $totalsQuery?.data.data?.[measure.name]}
+      {@const bigNum = $totalsQuery?.data?.data?.[measure.name]}
       {@const showComparison = displayComparison}
       {@const comparisonValue = totalsComparisons?.[measure.name]}
       {@const comparisonPercChange =

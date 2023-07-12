@@ -29,6 +29,12 @@ type QueryResult struct {
 	Bytes int64
 }
 
+type ExportOptions struct {
+	Format       runtimev1.ExportFormat
+	Priority     int
+	PreWriteHook func(filename string) error
+}
+
 type Query interface {
 	// Key should return a cache key that uniquely identifies the query
 	Key() string
@@ -42,7 +48,8 @@ type Query interface {
 	// Resolve should execute the query against the instance's infra.
 	// Error can be nil along with a nil result in general, i.e. when a model contains no rows aggregation results can be nil.
 	Resolve(ctx context.Context, rt *Runtime, instanceID string, priority int) error
-	Export(ctx context.Context, rt *Runtime, instanceID string, priority int, format runtimev1.ExportFormat, w io.Writer) error
+	// Export resolves the query and serializes the result to the writer.
+	Export(ctx context.Context, rt *Runtime, instanceID string, w io.Writer, opts *ExportOptions) error
 }
 
 func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, priority int) error {

@@ -141,6 +141,11 @@ export class QueryRequest extends Message<QueryRequest> {
    */
   dryRun = false;
 
+  /**
+   * @generated from field: int32 limit = 6;
+   */
+  limit = 0;
+
   constructor(data?: PartialMessage<QueryRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -154,6 +159,7 @@ export class QueryRequest extends Message<QueryRequest> {
     { no: 3, name: "args", kind: "message", T: Value, repeated: true },
     { no: 4, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 5, name: "dry_run", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): QueryRequest {
@@ -234,9 +240,9 @@ export class ExportRequest extends Message<ExportRequest> {
   instanceId = "";
 
   /**
-   * @generated from field: int32 limit = 2;
+   * @generated from field: optional int64 limit = 2;
    */
-  limit = 0;
+  limit?: bigint;
 
   /**
    * @generated from field: rill.runtime.v1.ExportFormat format = 3;
@@ -269,7 +275,7 @@ export class ExportRequest extends Message<ExportRequest> {
   static readonly typeName = "rill.runtime.v1.ExportRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 3, name: "format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 4, name: "metrics_view_toplist_request", kind: "message", T: MetricsViewToplistRequest, oneof: "request" },
     { no: 5, name: "metrics_view_rows_request", kind: "message", T: MetricsViewRowsRequest, oneof: "request" },
@@ -1106,6 +1112,11 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
   timeEnd?: Timestamp;
 
   /**
+   * @generated from field: rill.runtime.v1.TimeGrain time_granularity = 10;
+   */
+  timeGranularity = TimeGrain.UNSPECIFIED;
+
+  /**
    * @generated from field: rill.runtime.v1.MetricsViewFilter filter = 5;
    */
   filter?: MetricsViewFilter;
@@ -1142,6 +1153,7 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "time_start", kind: "message", T: Timestamp },
     { no: 4, name: "time_end", kind: "message", T: Timestamp },
+    { no: 10, name: "time_granularity", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 5, name: "filter", kind: "message", T: MetricsViewFilter },
     { no: 6, name: "sort", kind: "message", T: MetricsViewSort, repeated: true },
     { no: 7, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },

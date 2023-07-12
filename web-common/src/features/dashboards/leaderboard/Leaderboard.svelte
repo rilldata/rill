@@ -118,8 +118,8 @@
     {
       dimensionName: dimensionName,
       measureNames: [measure.name],
-      timeStart: timeStart,
-      timeEnd: timeEnd,
+      timeStart: hasTimeSeries ? timeStart : undefined,
+      timeEnd: hasTimeSeries ? timeEnd : undefined,
       filter: filterForDimension,
       limit: "250",
       offset: "0",
@@ -180,7 +180,7 @@
     $topListQuery?.data?.data
       ?.slice(0, slice)
       ?.concat(selectedValuesThatAreBelowTheFold)
-      ?.map((v) => v[dimensionName]) ?? [];
+      ?.map((v) => v[dimensionColumn]) ?? [];
   $: updatedFilters = getFilterForComparsion(
     filterForDimension,
     dimensionName,

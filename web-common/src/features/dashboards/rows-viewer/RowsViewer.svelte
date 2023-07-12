@@ -31,8 +31,8 @@
   );
   $: hasTimeSeries = $metricTimeSeries.data;
 
-  $: timeStart = $dashboardStore.selectedTimeRange?.start?.toISOString();
-  $: timeEnd = $dashboardStore.selectedTimeRange?.end?.toISOString();
+  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
+  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
 
   let limit = writable(SAMPLE_SIZE);
 
@@ -42,8 +42,8 @@
     {
       limit: $limit,
       filter: $dashboardStore.filters,
-      timeStart: timeStart,
-      timeEnd: timeEnd,
+      timeStart: hasTimeSeries ? timeStart : undefined,
+      timeEnd: hasTimeSeries ? timeEnd : undefined,
     },
     {
       query: {

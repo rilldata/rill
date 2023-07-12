@@ -10,12 +10,22 @@ export type AdminServiceSearchUsersParams = {
   pageToken?: string;
 };
 
+export type AdminServiceGetUserParams = {
+  email?: string;
+};
+
 export type AdminServiceSudoGetResourceParams = {
   userId?: string;
   orgId?: string;
   projectId?: string;
   deploymentId?: string;
   instanceId?: string;
+};
+
+export type AdminServiceSearchProjectNamesParams = {
+  namePattern?: string;
+  pageSize?: number;
+  pageToken?: string;
 };
 
 export type AdminServiceUpdateProjectVariablesBodyVariables = {
@@ -34,6 +44,7 @@ export type AdminServiceUpdateProjectBody = {
   prodSlots?: string;
   region?: string;
   newName?: string;
+  prodTtlSeconds?: string;
 };
 
 export type AdminServiceCreateProjectBodyVariables = { [key: string]: string };
@@ -104,6 +115,8 @@ export type AdminServiceTriggerRefreshSourcesBody = {
   sources?: string[];
 };
 
+export type AdminServiceTriggerReconcileBody = { [key: string]: any };
+
 export type AdminServiceAddOrganizationMemberBodyBody = {
   email?: string;
   role?: string;
@@ -113,11 +126,13 @@ export type AdminServiceSetOrganizationMemberRoleBodyBody = {
   role?: string;
 };
 
-export type AdminServiceTriggerReconcileBodyBody = { [key: string]: any };
-
 export interface V1WhitelistedDomain {
   domain?: string;
   role?: string;
+}
+
+export interface V1UserQuotas {
+  singleuserOrgs?: number;
 }
 
 export interface V1UserInvite {
@@ -131,6 +146,7 @@ export interface V1User {
   email?: string;
   displayName?: string;
   photoUrl?: string;
+  quotas?: V1UserQuotas;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -159,8 +175,36 @@ export interface V1TriggerRedeployResponse {
   [key: string]: any;
 }
 
+export interface V1TriggerRedeployRequest {
+  organization?: string;
+  project?: string;
+  deploymentId?: string;
+}
+
 export interface V1TriggerReconcileResponse {
   [key: string]: any;
+}
+
+export interface V1SudoUpdateUserQuotasResponse {
+  user?: V1User;
+}
+
+export interface V1SudoUpdateUserQuotasRequest {
+  email?: string;
+  singleuserOrgs?: number;
+}
+
+export interface V1SudoUpdateOrganizationQuotasResponse {
+  organization?: V1Organization;
+}
+
+export interface V1SudoUpdateOrganizationQuotasRequest {
+  orgName?: string;
+  projects?: number;
+  deployments?: number;
+  slotsTotal?: number;
+  slotsPerDeployment?: number;
+  outstandingInvites?: number;
 }
 
 export interface V1SudoGetResourceResponse {
@@ -190,6 +234,11 @@ export interface V1SetOrganizationMemberRoleResponse {
 
 export interface V1SearchUsersResponse {
   users?: V1User[];
+  nextPageToken?: string;
+}
+
+export interface V1SearchProjectNamesResponse {
+  names?: string[];
   nextPageToken?: string;
 }
 
@@ -238,6 +287,7 @@ export interface V1Project {
   prodSlots?: string;
   prodDeploymentId?: string;
   frontendUrl?: string;
+  prodTtlSeconds?: string;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -245,6 +295,14 @@ export interface V1Project {
 export interface V1PingResponse {
   version?: string;
   time?: string;
+}
+
+export interface V1OrganizationQuotas {
+  projects?: number;
+  deployments?: number;
+  slotsTotal?: number;
+  slotsPerDeployment?: number;
+  outstandingInvites?: number;
 }
 
 export interface V1OrganizationPermissions {
@@ -261,6 +319,7 @@ export interface V1Organization {
   id?: string;
   name?: string;
   description?: string;
+  quotas?: V1OrganizationQuotas;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -323,6 +382,10 @@ export interface V1IssueRepresentativeAuthTokenResponse {
 export interface V1IssueRepresentativeAuthTokenRequest {
   email?: string;
   ttlMinutes?: string;
+}
+
+export interface V1GetUserResponse {
+  user?: V1User;
 }
 
 export type V1GetProjectVariablesResponseVariables = { [key: string]: string };

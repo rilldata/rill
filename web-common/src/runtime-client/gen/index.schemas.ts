@@ -34,6 +34,7 @@ export type QueryServiceQueryBody = {
   args?: unknown[];
   priority?: number;
   dryRun?: boolean;
+  limit?: number;
 };
 
 /**
@@ -140,6 +141,7 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
 export type QueryServiceMetricsViewRowsBody = {
   timeStart?: string;
   timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
   filter?: V1MetricsViewFilter;
   sort?: V1MetricsViewSort[];
   limit?: number;
@@ -161,7 +163,7 @@ export type QueryServiceMetricsViewComparisonToplistBody = {
 };
 
 export type QueryServiceExportBody = {
-  limit?: number;
+  limit?: string;
   format?: V1ExportFormat;
   metricsViewToplistRequest?: V1MetricsViewToplistRequest;
   metricsViewRowsRequest?: V1MetricsViewRowsRequest;
@@ -378,6 +380,11 @@ export interface V1TableRowsResponse {
   data?: V1TableRowsResponseDataItem[];
 }
 
+export interface V1TableInfo {
+  database?: string;
+  name?: string;
+}
+
 export interface V1TableColumnsResponse {
   profileColumns?: V1ProfileColumn[];
 }
@@ -444,16 +451,6 @@ export interface V1RenameFileResponse {
   [key: string]: any;
 }
 
-export interface V1RenameFileAndReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-}
-
 export interface V1RenameFileAndReconcileRequest {
   instanceId?: string;
   fromPath?: string;
@@ -518,6 +515,16 @@ Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: ReconcileErrorCharLocation;
   endLocation?: ReconcileErrorCharLocation;
+}
+
+export interface V1RenameFileAndReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
 }
 
 export interface V1ReconcileResponse {
@@ -614,6 +621,10 @@ export interface V1NumericSummary {
   numericOutliers?: V1NumericOutliers;
 }
 
+export interface V1MotherduckListTablesResponse {
+  tables?: V1TableInfo[];
+}
+
 export interface V1Model {
   name?: string;
   sql?: string;
@@ -678,6 +689,7 @@ export interface V1MetricsViewRowsRequest {
   metricsViewName?: string;
   timeStart?: string;
   timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
   filter?: V1MetricsViewFilter;
   sort?: V1MetricsViewSort[];
   limit?: number;
@@ -742,6 +754,8 @@ export interface V1MetricsView {
   smallestTimeGrain?: V1TimeGrain;
   /** Default time range for the dashboard. It should be a valid ISO 8601 duration string. */
   defaultTimeRange?: string;
+  /** Available time zones list preferred time zones using IANA location identifiers. */
+  availableTimeZones?: string[];
 }
 
 export interface V1MapType {
@@ -1093,6 +1107,7 @@ export interface MetricsViewMeasure {
   expression?: string;
   description?: string;
   format?: string;
+  validPercentOfTotal?: boolean;
 }
 
 export interface MetricsViewFilterCond {

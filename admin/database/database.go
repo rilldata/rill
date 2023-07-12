@@ -65,6 +65,7 @@ type DB interface {
 	DeleteOrganizationWhitelistedDomain(ctx context.Context, id string) error
 
 	FindProjects(ctx context.Context, afterName string, limit int) ([]*Project, error)
+	FindProjectPathsByPattern(ctx context.Context, namePattern, afterName string, limit int) ([]string, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
 	FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user
@@ -80,6 +81,7 @@ type DB interface {
 	UpdateProjectVariables(ctx context.Context, id string, variables map[string]string) (*Project, error)
 	CountProjectsForOrganization(ctx context.Context, orgID string) (int, error)
 
+	FindExpiredDeployments(ctx context.Context) ([]*Deployment, error)
 	FindDeploymentsForProject(ctx context.Context, projectID string) ([]*Deployment, error)
 	FindDeployment(ctx context.Context, id string) (*Deployment, error)
 	FindDeploymentByInstanceID(ctx context.Context, instanceID string) (*Deployment, error)
@@ -87,6 +89,7 @@ type DB interface {
 	DeleteDeployment(ctx context.Context, id string) error
 	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, logs string) (*Deployment, error)
 	UpdateDeploymentBranch(ctx context.Context, id, branch string) (*Deployment, error)
+	UpdateDeploymentUsedOn(ctx context.Context, ids []string) error
 	CountDeploymentsForOrganization(ctx context.Context, orgID string) (*DeploymentsCount, error)
 
 	ResolveRuntimeSlotsUsed(ctx context.Context) ([]*RuntimeSlotsUsed, error)
@@ -200,8 +203,13 @@ type InsertOrganizationOptions struct {
 
 // UpdateOrganizationOptions defines options for updating an existing org
 type UpdateOrganizationOptions struct {
-	Name        string `validate:"slug"`
-	Description string
+	Name                    string `validate:"slug"`
+	Description             string
+	QuotaProjects           int
+	QuotaDeployments        int
+	QuotaSlotsTotal         int
+	QuotaSlotsPerDeployment int
+	QuotaOutstandingInvites int
 }
 
 // Project represents one Git connection.
@@ -221,6 +229,7 @@ type Project struct {
 	ProdOLAPDriver       string    `db:"prod_olap_driver"`
 	ProdOLAPDSN          string    `db:"prod_olap_dsn"`
 	ProdSlots            int       `db:"prod_slots"`
+	ProdTTLSeconds       *int64    `db:"prod_ttl_seconds"`
 	ProdDeploymentID     *string   `db:"prod_deployment_id"`
 	CreatedOn            time.Time `db:"created_on"`
 	UpdatedOn            time.Time `db:"updated_on"`
@@ -252,6 +261,7 @@ type InsertProjectOptions struct {
 	ProdOLAPDriver       string
 	ProdOLAPDSN          string
 	ProdSlots            int
+	ProdTTLSeconds       *int64
 }
 
 // UpdateProjectOptions defines options for updating a Project.
@@ -265,6 +275,7 @@ type UpdateProjectOptions struct {
 	ProdVariables        map[string]string
 	ProdDeploymentID     *string
 	ProdSlots            int
+	ProdTTLSeconds       *int64
 	Region               string
 }
 
@@ -293,6 +304,7 @@ type Deployment struct {
 	Logs              string           `db:"logs"`
 	CreatedOn         time.Time        `db:"created_on"`
 	UpdatedOn         time.Time        `db:"updated_on"`
+	UsedOn            time.Time        `db:"used_on"`
 }
 
 // InsertDeploymentOptions defines options for inserting a new Deployment.
@@ -338,9 +350,10 @@ type InsertUserOptions struct {
 
 // UpdateUserOptions defines options for updating an existing user
 type UpdateUserOptions struct {
-	DisplayName    string
-	PhotoURL       string
-	GithubUsername string
+	DisplayName         string
+	PhotoURL            string
+	GithubUsername      string
+	QuotaSingleuserOrgs int
 }
 
 // Usergroup represents a group of org members

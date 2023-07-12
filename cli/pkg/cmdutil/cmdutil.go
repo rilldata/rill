@@ -413,15 +413,8 @@ func SetFlagsByInputPrompts(cmd cobra.Command, flags ...string) error {
 	var val string
 	cmd.Flags().VisitAll(func(f *pflag.Flag) {
 		if !f.Changed && slices.Contains(flags, f.Name) {
-			if f.Value.Type() == "string" {
-				val, err = InputPrompt(fmt.Sprintf("Enter the %s", f.Usage), f.DefValue)
-				if err != nil {
-					fmt.Println("error while input prompt, error:", err)
-					return
-				}
-			}
-
-			if f.Value.Type() == "bool" {
+			switch f.Value.Type() {
+			case "bool":
 				var public bool
 				defVal, err := strconv.ParseBool(f.DefValue)
 				if err != nil {
@@ -439,6 +432,12 @@ func SetFlagsByInputPrompts(cmd cobra.Command, flags ...string) error {
 				}
 
 				val = fmt.Sprintf("%t", public)
+			default:
+				val, err = InputPrompt(fmt.Sprintf("Enter the %s", f.Usage), f.DefValue)
+				if err != nil {
+					fmt.Println("error while input prompt, error:", err)
+					return
+				}
 			}
 
 			err = f.Value.Set(val)
