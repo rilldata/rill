@@ -26,6 +26,7 @@ func init() {
 
 func (r *artifact) DeSerialise(ctx context.Context, filePath, blob string, materializeDefault bool) (*drivers.CatalogEntry, error) {
 	name := fileutil.Stem(filePath)
+	// extract materialize option before sanitizing query as it will remove that comment
 	materialize := parseMaterializationInfo(blob)
 	if materialize == MaterializeInvalid {
 		return nil, errors.New("invalid materialize type")
