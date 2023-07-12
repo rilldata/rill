@@ -853,8 +853,14 @@ func (p *Parser) parseSourceOrModelSQL(ctx context.Context, path, data string, c
 	// Extract info using DuckDB inference. DuckDB inference also supports rewriting embedded sources.
 	embeddedSources := make(map[ResourceName]*runtimev1.SourceSpec)
 	if runDuckDBInference {
+		// Parse the SQL
+		ast, err := duckdbsql.Parse(data)
+		if err != nil {
+			return fmt.Errorf("failed to parse DuckDB SQL: %w", err)
+		}
+
 		// Extract annotations into cfg
-		annotations, err := duckdbsql.ExtractAnnotations(data)
+		annotations := ast.ExtractAnnotations()
 		if err != nil {
 			return fmt.Errorf("error extracting annotations: %w", err)
 		}
@@ -863,7 +869,7 @@ func (p *Parser) parseSourceOrModelSQL(ctx context.Context, path, data string, c
 		}
 
 		// Scan SQL for table references. Track references in refs and rewrite table functions into embedded sources.
-		sql, err := duckdbsql.RewriteTableRefs(data, func(t *duckdbsql.TableRef) (*duckdbsql.TableRef, bool) {
+		err = ast.RewriteTableRefs(func(t *duckdbsql.TableRef) (*duckdbsql.TableRef, bool) {
 			// If embedded sources is enabled, parse it and add it to embeddedSources.
 			if !cfg.DisableDuckDBSourceRewriting {
 				name, spec, ok := parseEmbeddedSource(t, cfg.Connector)
@@ -888,6 +894,10 @@ func (p *Parser) parseSourceOrModelSQL(ctx context.Context, path, data string, c
 		}
 
 		// Update data to the rewritten SQL
+		sql, err := ast.Format()
+		if err != nil {
+			return fmt.Errorf("failed to format DuckDB SQL: %w", err)
+		}
 		data = sql
 	}
 
