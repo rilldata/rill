@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/c2h5oh/datasize"
 	"github.com/jinzhu/copier"
@@ -13,6 +14,9 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"google.golang.org/protobuf/types/known/structpb"
+
+	// Load IANA time zone data
+	_ "time/tzdata"
 )
 
 /**
@@ -51,15 +55,16 @@ type ExtractConfig struct {
 }
 
 type MetricsView struct {
-	Label             string `yaml:"title"`
-	DisplayName       string `yaml:"display_name,omitempty"` // for backwards compatibility
-	Description       string
-	Model             string
-	TimeDimension     string `yaml:"timeseries"`
-	SmallestTimeGrain string `yaml:"smallest_time_grain"`
-	DefaultTimeRange  string `yaml:"default_time_range"`
-	Dimensions        []*Dimension
-	Measures          []*Measure
+	Label              string `yaml:"title"`
+	DisplayName        string `yaml:"display_name,omitempty"` // for backwards compatibility
+	Description        string
+	Model              string
+	TimeDimension      string   `yaml:"timeseries"`
+	SmallestTimeGrain  string   `yaml:"smallest_time_grain"`
+	DefaultTimeRange   string   `yaml:"default_time_range"`
+	AvailableTimeZones []string `yaml:"available_time_zones,omitempty"`
+	Dimensions         []*Dimension
+	Measures           []*Measure
 }
 
 type Measure struct {
@@ -351,6 +356,14 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 			return nil, fmt.Errorf("invalid default_time_range: %w", err)
 		}
 		apiMetrics.DefaultTimeRange = metrics.DefaultTimeRange
+	}
+
+	// validate time zone locations
+	for _, tz := range metrics.AvailableTimeZones {
+		_, err := time.LoadLocation(tz)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	err := copier.Copy(apiMetrics, metrics)

@@ -240,9 +240,9 @@ export class ExportRequest extends Message<ExportRequest> {
   instanceId = "";
 
   /**
-   * @generated from field: int32 limit = 2;
+   * @generated from field: optional int64 limit = 2;
    */
-  limit = 0;
+  limit?: bigint;
 
   /**
    * @generated from field: rill.runtime.v1.ExportFormat format = 3;
@@ -275,7 +275,7 @@ export class ExportRequest extends Message<ExportRequest> {
   static readonly typeName = "rill.runtime.v1.ExportRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 3, name: "format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 4, name: "metrics_view_toplist_request", kind: "message", T: MetricsViewToplistRequest, oneof: "request" },
     { no: 5, name: "metrics_view_rows_request", kind: "message", T: MetricsViewRowsRequest, oneof: "request" },

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/stretchr/testify/require"
 	"github.com/xuri/excelize/v2"
@@ -51,7 +52,9 @@ func TestServer_MetricsViewRows_export(t *testing.T) {
 
 	var buf bytes.Buffer
 
-	err := q.Export(ctx, server.runtime, instanceId, 0, runtimev1.ExportFormat_EXPORT_FORMAT_XLSX, &buf)
+	err := q.Export(ctx, server.runtime, instanceId, &buf, &runtime.ExportOptions{
+		Format: runtimev1.ExportFormat_EXPORT_FORMAT_XLSX,
+	})
 	require.NoError(t, err)
 
 	file, err := excelize.OpenReader(&buf)

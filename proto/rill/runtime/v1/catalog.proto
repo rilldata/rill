@@ -114,6 +114,8 @@ message MetricsView {
   TimeGrain smallest_time_grain = 9;
   // Default time range for the dashboard. It should be a valid ISO 8601 duration string.
   string default_time_range = 10;
+  // Available time zones list preferred time zones using IANA location identifiers.
+  repeated string available_time_zones = 11;
 }
 
 enum TimeGrain {

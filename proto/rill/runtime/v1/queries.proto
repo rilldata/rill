@@ -175,7 +175,7 @@ message QueryResponse {
 // Request message for QueryService.Export
 message ExportRequest {
   string instance_id = 1;
-  int32 limit = 2 [(validate.rules).int32 = {lte: 10000, gte: 0}];
+  optional int64 limit = 2;
   ExportFormat format = 3;
   oneof request {
     MetricsViewToplistRequest metrics_view_toplist_request = 4;

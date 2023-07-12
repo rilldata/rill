@@ -385,17 +385,6 @@ func (m *ExportRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
-	if val := m.GetLimit(); val < 0 || val > 10000 {
-		err := ExportRequestValidationError{
-			field:  "Limit",
-			reason: "value must be inside range [0, 10000]",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
 	// no validation rules for Format
 
 	switch v := m.Request.(type) {
@@ -483,6 +472,10 @@ func (m *ExportRequest) validate(all bool) error {
 
 	default:
 		_ = v // ensures v is used
+	}
+
+	if m.Limit != nil {
+		// no validation rules for Limit
 	}
 
 	if len(errors) > 0 {
