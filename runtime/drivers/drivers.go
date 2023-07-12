@@ -204,9 +204,8 @@ type Sink interface {
 }
 
 type BucketSource struct {
-	Paths         []string // May be globs
 	ExtractPolicy *runtimev1.Source_ExtractPolicy
-	Properties    map[string]any // TODO :: this should also be part of connection open ?
+	Properties    map[string]any
 }
 
 var _ Source = &BucketSource{}

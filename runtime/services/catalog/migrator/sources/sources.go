@@ -268,17 +268,11 @@ func source(connector string, src *runtimev1.Source) (drivers.Source, error) {
 	switch connector {
 	case "s3":
 		return &drivers.BucketSource{
-			// Paths: []string{
-			// 	props["uri"].(string),
-			// },
 			ExtractPolicy: src.Policy,
 			Properties:    props,
 		}, nil
 	case "gcs":
 		return &drivers.BucketSource{
-			// Paths: []string{
-			// 	props["uri"].(string),
-			// },
 			ExtractPolicy: src.Policy,
 			Properties:    props,
 		}, nil
