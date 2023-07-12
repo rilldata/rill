@@ -727,8 +727,8 @@ paths:
             type: object
             properties:
               limit:
-                type: integer
-                format: int32
+                type: string
+                format: int64
               format:
                 $ref: '#/definitions/v1ExportFormat'
               metricsViewToplistRequest:

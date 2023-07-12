@@ -173,7 +173,7 @@ export type QueryServiceMetricsViewComparisonToplistBody = {
 };
 
 export type QueryServiceExportBody = {
-  limit?: number;
+  limit?: string;
   format?: V1ExportFormat;
   metricsViewToplistRequest?: V1MetricsViewToplistRequest;
   metricsViewRowsRequest?: V1MetricsViewRowsRequest;
