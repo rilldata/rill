@@ -142,7 +142,7 @@ The main feature-set component for dashboard filters
                 isInclude ? true : false
               )}
             on:apply={(event) =>
-              toggleDimensionValue(StateManagers, event, { name })}
+              toggleDimensionValue(StateManagers, name, event.detail)}
             on:search={(event) => {
               setActiveDimension(name, event.detail);
             }}
