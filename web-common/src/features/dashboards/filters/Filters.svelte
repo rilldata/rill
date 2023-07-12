@@ -36,6 +36,8 @@ The main feature-set component for dashboard filters
   const MIN_CONTAINER_HEIGHT = "34px";
 
   const metaQuery = useMetaQuery(StateManagers);
+  let dimensions: Array<MetricsViewDimension>;
+  $: dimensions = $metaQuery.data?.dimensions;
 
   function isFiltered(filters: V1MetricsViewFilter): boolean {
     if (!filters) return false;
@@ -44,8 +46,11 @@ The main feature-set component for dashboard filters
 
   let topListQuery;
   let searchText = "";
-  let searchedValues = [];
-  let activeDimensionName: string;
+  let searchedValues: string[] | null = null;
+  let activeDimensionName;
+  $: activeColumn =
+    dimensions.find((d) => d.name === activeDimensionName)?.column ??
+    activeDimensionName;
 
   $: topListQuery = getFilterSearchList(StateManagers, {
     dimension: activeDimensionName,
@@ -61,7 +66,7 @@ The main feature-set component for dashboard filters
   $: {
     if (!$topListQuery?.isFetching && searchText != "") {
       const topListData = $topListQuery?.data?.data ?? [];
-      searchedValues = topListData.map((datum) => datum[activeDimensionName]);
+      searchedValues = topListData.map((datum) => datum[activeColumn]) ?? [];
     } else searchedValues = [];
   }
 
@@ -70,8 +75,6 @@ The main feature-set component for dashboard filters
   /** prune the values and prepare for templating */
   let currentDimensionFilters = [];
   $: {
-    const dimensions: Array<MetricsViewDimension> =
-      $metaQuery.data?.dimensions ?? [];
     const dimensionIdMap = getMapFromArray(
       dimensions,
       (dimension) => dimension.name
