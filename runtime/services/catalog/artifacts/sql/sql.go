@@ -8,11 +8,8 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
-	"github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 /**
@@ -29,17 +26,7 @@ func init() {
 
 func (r *artifact) DeSerialise(ctx context.Context, filePath, blob string, materializeDefault bool) (*drivers.CatalogEntry, error) {
 	name := fileutil.Stem(filePath)
-	// TODO: prototype sql sources. revert before merge
-
-	ast, err := duckdbsql.Parse(blob)
-	if err != nil {
-		return nil, err
-	}
-
-	annotations := ast.ExtractAnnotations()
-
-	// extract materialize option before sanitizing query as it will remove that comment
-	materialize := parseMaterializationInfo(annotations["materialize"])
+	materialize := parseMaterializationInfo(blob)
 	if materialize == MaterializeInvalid {
 		return nil, errors.New("invalid materialize type")
 	}
@@ -50,68 +37,18 @@ func (r *artifact) DeSerialise(ctx context.Context, filePath, blob string, mater
 			materialize = MaterializeFalse
 		}
 	}
-
-	catalogType := drivers.ObjectTypeModel
-	catalogTypeAnnotation, hasType := annotations["type"]
-	if hasType {
-		switch catalogTypeAnnotation.Value {
-		case "source":
-			catalogType = drivers.ObjectTypeSource
-		}
-	}
-
-	switch catalogType {
-	case drivers.ObjectTypeModel:
-		sanitizedSQL, err := ast.Format()
-		if err != nil {
-			return nil, err
-		}
-		return &drivers.CatalogEntry{
-			Type: drivers.ObjectTypeModel,
-			Object: &runtimev1.Model{
-				Name:        name,
-				Sql:         sanitizedSQL,
-				Dialect:     runtimev1.Model_DIALECT_DUCKDB,
-				Materialize: materialize.Materialize(),
-			},
-			Name: name,
-			Path: filePath,
-		}, nil
-
-	case drivers.ObjectTypeSource:
-		tableRef, hasRef := ast.GetTableRef()
-		if !hasRef {
-			return nil, ErrNotSupported
-		}
-
-		source, ok := sources.ParseEmbeddedSource(tableRef.Path)
-		if !ok {
-			return nil, ErrNotSupported
-		}
-		source.Name = name
-
-		duckdbV, err := structpb.NewStruct(map[string]interface{}{})
-		if err != nil {
-			return nil, err
-		}
-		source.Properties.Fields["duckdb"] = structpb.NewStructValue(duckdbV)
-		for p, v := range tableRef.Properties {
-			pv, err := structpb.NewValue(v)
-			if err != nil {
-				return nil, err
-			}
-			duckdbV.Fields[p] = pv
-		}
-
-		return &drivers.CatalogEntry{
-			Name:   name,
-			Path:   filePath,
-			Type:   drivers.ObjectTypeSource,
-			Object: source,
-		}, nil
-	}
-
-	return nil, ErrNotSupported
+	sanitizedSQL := sanitizeQuery(blob)
+	return &drivers.CatalogEntry{
+		Type: drivers.ObjectTypeModel,
+		Object: &runtimev1.Model{
+			Name:        name,
+			Sql:         sanitizedSQL,
+			Dialect:     runtimev1.Model_DIALECT_DUCKDB,
+			Materialize: materialize.Materialize(),
+		},
+		Name: name,
+		Path: filePath,
+	}, nil
 }
 
 func (r *artifact) Serialise(ctx context.Context, catalogObject *drivers.CatalogEntry) (string, error) {
@@ -170,11 +107,12 @@ func (m MaterializationInfo) Materialize() bool {
 	}
 }
 
-func parseMaterializationInfo(materializeAnnotation *duckdbsql.Annotation) MaterializationInfo {
-	if materializeAnnotation == nil {
+func parseMaterializationInfo(query string) MaterializationInfo {
+	matched := MaterializedRegex.FindStringSubmatch(query)
+	if len(matched) == 0 {
 		return MaterializeUnspecified
 	}
-	switch strings.ToLower(materializeAnnotation.Value) {
+	switch strings.ToLower(matched[1]) {
 	case "true":
 		return MaterializeTrue
 	case "false":

@@ -76,14 +76,7 @@ func (a *AST) Format() (string, error) {
 	return string(res), err
 }
 
-func (a *AST) GetTableRef() (*TableRef, bool) {
-	if len(a.fromNodes) == 1 {
-		return a.fromNodes[0].ref, true
-	}
-	return nil, false
-}
-
-// RewriteTableRefs replaces table references in a DuckDB SQL query
+// RewriteTableRefs replaces table references in a DuckDB SQL query. Only replacing with a base table reference is supported right now.
 func (a *AST) RewriteTableRefs(fn func(table *TableRef) (*TableRef, bool)) error {
 	for _, node := range a.fromNodes {
 		newRef, shouldReplace := fn(node.ref)
@@ -91,7 +84,8 @@ func (a *AST) RewriteTableRefs(fn func(table *TableRef) (*TableRef, bool)) error
 			continue
 		}
 
-		if node.ref.Name == "" && newRef.Name != "" {
+		// only rewriting to a base table is supported as of now.
+		if newRef.Name != "" {
 			err := node.rewriteToBaseTable(newRef.Name)
 			if err != nil {
 				return err
@@ -212,7 +206,6 @@ func queryString(qry string, args ...any) ([]byte, error) {
 }
 
 // Use a global in-memory DuckDB connection for invoking DuckDB's json_serialize_sql and json_deserialize_sql
-// TODO: Why not get driver connection?
 var (
 	db     *databasesql.DB
 	dbOnce sync.Once

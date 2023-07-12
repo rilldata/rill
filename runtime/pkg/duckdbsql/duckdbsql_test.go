@@ -164,7 +164,7 @@ with
 	}
 }
 
-func TestAST_RewriteTableRefs(t *testing.T) {
+func TestAST_RewriteFunctionTableRefs(t *testing.T) {
 	sqlVariations := []struct {
 		title       string
 		sql         string
@@ -232,6 +232,72 @@ select col1 from tbl2 union all select col1 from tbl3 union all select col1 from
 
 				return &TableRef{
 					Name: fileutil.Stem(table.Path),
+				}, true
+			})
+
+			actualSql, err := ast.Format()
+			require.NoError(t, err)
+			require.EqualValues(t, tt.expectedSql, actualSql)
+		})
+	}
+}
+
+func TestAST_RewriteBaseTableRefs(t *testing.T) {
+	sqlVariations := []struct {
+		title       string
+		sql         string
+		replace     []string
+		expectedSql string
+	}{
+		{
+			"simple table reference",
+			`select * from AdBid a join "s3://data/AdImp.csv" i on a.id=i.id where a='1' group by b limit 2`,
+			[]string{"AB", "AI"},
+			`SELECT * FROM AB AS a INNER JOIN AI AS i ON ((a.id = i.id)) WHERE (a = '1') GROUP BY b LIMIT 2`,
+		},
+		{
+			"table references with sub queries",
+			`
+select * from
+  AdBid a join (select * from "s3://data/AdImp.csv" i1 where i1.city='Bengaluru') i on a.id=i.id
+  where a='1' group by b limit 2`,
+			[]string{"AB", "AI"},
+			`SELECT * FROM AB AS a INNER JOIN (SELECT * FROM AI AS i1 WHERE (i1.city = 'Bengaluru')) AS i ON ((a.id = i.id)) WHERE (a = '1') GROUP BY b LIMIT 2`,
+		},
+		{
+			"table references with CTEs",
+			`
+with
+  tbl2 as (select col1 from AdBid a),
+  tbl3 as (select col1 from "s3://data/AdImp.csv" i)
+select col1 from tbl2 join tbl3 on tbl2.id = tbl3.id
+`,
+			[]string{"AB", "AI", "tbl2", "tbl3"},
+			`WITH tbl2 AS (SELECT col1 FROM AI AS a), tbl3 AS (SELECT col1 FROM AB AS i)SELECT col1 FROM tbl2 INNER JOIN tbl3 ON ((tbl2.id = tbl3.id))`,
+		},
+		{
+			"table references with CTEs and unions",
+			`
+with
+  tbl2 as (select col1 from AdBid_May a),
+  tbl3 as (select col1 from "s3://data/AdBid_June.csv" i)
+select col1 from tbl2 union all select col1 from tbl3 union all select col1 from "s3://data/AdBid_July.csv"
+`,
+			[]string{"A_M", "A_J", "tbl2", "tbl3", "A_Jl"},
+			`WITH tbl2 AS (SELECT col1 FROM A_J AS a), tbl3 AS (SELECT col1 FROM A_M AS i)((SELECT col1 FROM tbl2) UNION ALL (SELECT col1 FROM tbl3)) UNION ALL (SELECT col1 FROM A_Jl)`,
+		},
+	}
+
+	for _, tt := range sqlVariations {
+		t.Run(tt.title, func(t *testing.T) {
+			ast, err := Parse(tt.sql)
+			require.NoError(t, err)
+
+			i := -1
+			err = ast.RewriteTableRefs(func(table *TableRef) (*TableRef, bool) {
+				i = i + 1
+				return &TableRef{
+					Name: tt.replace[i],
 				}, true
 			})
 
