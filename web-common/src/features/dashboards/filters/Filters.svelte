@@ -63,11 +63,9 @@ The main feature-set component for dashboard filters
     searchText = value;
   }
 
-  $: {
-    if (!$topListQuery?.isFetching && searchText != "") {
-      const topListData = $topListQuery?.data?.data ?? [];
-      searchedValues = topListData.map((datum) => datum[activeColumn]) ?? [];
-    } else searchedValues = [];
+  $: if (!$topListQuery?.isFetching && searchText != "") {
+    const topListData = $topListQuery?.data?.data ?? [];
+    searchedValues = topListData.map((datum) => datum[activeColumn]) ?? [];
   }
 
   $: hasFilters = isFiltered($dashboardStore.filters);

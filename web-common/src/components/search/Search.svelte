@@ -8,6 +8,8 @@
   export let ref = null;
   /* Input value being searched */
   export let value;
+  /* Aria label for input */
+  export let label = "Search";
 
   function handleKeyDown(event) {
     if (event.code == "Enter") {
@@ -17,7 +19,8 @@
   }
 
   onMount(() => {
-    if (autofocus) window.requestAnimationFrame(() => ref.focus());
+    // Keep ref optional here. If component is unmounted before this animation frame runs, ref will be null and throw a TypeError
+    if (autofocus) window.requestAnimationFrame(() => ref?.focus());
   });
 </script>
 
@@ -37,6 +40,7 @@
       bind:value
       on:input
       on:keydown={handleKeyDown}
+      aria-label={label}
     />
   </div>
 </form>
