@@ -19,7 +19,7 @@ The main feature-set component for dashboard filters
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import { getDisplayName } from "./getDisplayName";
-  import { getBusinessModel } from "../business-model/business-model";
+  import { getStateManagers } from "../state-managers/state-managers";
   import {
     clearAllFilters,
     clearFilterForDimension,
@@ -27,15 +27,15 @@ The main feature-set component for dashboard filters
     toggleFilterMode,
   } from "../actions";
 
-  const businessModel = getBusinessModel();
-  const { dashboardStore } = businessModel;
+  const StateManagers = getStateManagers();
+  const { dashboardStore } = StateManagers;
 
   /** the height of a row of chips */
   const ROW_HEIGHT = "26px";
   /** the minimum container height */
   const MIN_CONTAINER_HEIGHT = "34px";
 
-  const metaQuery = useMetaQuery(businessModel);
+  const metaQuery = useMetaQuery(StateManagers);
 
   function isFiltered(filters: V1MetricsViewFilter): boolean {
     if (!filters) return false;
@@ -47,7 +47,7 @@ The main feature-set component for dashboard filters
   let searchedValues = [];
   let activeDimensionName: string;
 
-  $: topListQuery = getFilterSearchList(businessModel, {
+  $: topListQuery = getFilterSearchList(StateManagers, {
     dimension: activeDimensionName,
     searchText,
     addNull: "null".includes(searchText),
@@ -129,15 +129,15 @@ The main feature-set component for dashboard filters
         {@const isInclude = filterType === "include"}
         <div animate:flip={{ duration: 200 }}>
           <RemovableListChip
-            on:toggle={() => toggleFilterMode(businessModel, name)}
+            on:toggle={() => toggleFilterMode(StateManagers, name)}
             on:remove={() =>
               clearFilterForDimension(
-                businessModel,
+                StateManagers,
                 name,
                 isInclude ? true : false
               )}
             on:apply={(event) =>
-              toggleDimensionValue(businessModel, event, { name })}
+              toggleDimensionValue(StateManagers, event, { name })}
             on:search={(event) => {
               setActiveDimension(name, event.detail);
             }}
@@ -165,7 +165,7 @@ The main feature-set component for dashboard filters
             textClass="ui-copy-disabled-faint hover:text-gray-500 dark:text-gray-500"
             bgActiveClass="bg-gray-200 dark:bg-gray-600"
             outlineClass="outline-gray-400"
-            on:click={() => clearAllFilters(businessModel)}
+            on:click={() => clearAllFilters(StateManagers)}
           >
             <span slot="icon" class="ui-copy-disabled-faint">
               <FilterRemove size="16px" />

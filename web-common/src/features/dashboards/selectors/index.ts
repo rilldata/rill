@@ -3,12 +3,12 @@ import {
   createRuntimeServiceGetCatalogEntry,
   type V1MetricsView,
 } from "@rilldata/web-common/runtime-client";
-import type { BusinessModel } from "../business-model/business-model";
+import type { StateManagers } from "../state-managers/state-managers";
 import { derived } from "svelte/store";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 
 export const useMetaQuery = <T = V1MetricsView>(
-  ctx: BusinessModel,
+  ctx: StateManagers,
   selector?: (meta: V1MetricsView) => T
 ) => {
   return derived(
@@ -31,14 +31,14 @@ export const useMetaQuery = <T = V1MetricsView>(
   );
 };
 
-export const useModelHasTimeSeries = (ctx: BusinessModel) =>
+export const useModelHasTimeSeries = (ctx: StateManagers) =>
   useMetaQuery(
     ctx,
     (meta) => !!meta?.timeDimension
   ) as CreateQueryResult<boolean>;
 
 export const getFilterSearchList = (
-  ctx: BusinessModel,
+  ctx: StateManagers,
   {
     dimension,
     addNull,
