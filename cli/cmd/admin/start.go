@@ -229,7 +229,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			// Run tasks
 			err = group.Wait()
 			if err != nil {
-				logger.Error("crashed", zap.Error(err))
+				logger.Fatal("crashed", zap.Error(err))
 				return
 			}
 

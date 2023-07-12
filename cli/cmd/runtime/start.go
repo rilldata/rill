@@ -157,7 +157,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			group.Go(func() error { return s.ServeHTTP(cctx, nil) })
 			err = group.Wait()
 			if err != nil {
-				logger.Error("server crashed", zap.Error(err))
+				logger.Fatal("server crashed", zap.Error(err))
 				return
 			}
 
