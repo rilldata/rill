@@ -147,6 +147,14 @@ service QueryService {
   rpc TableRows(TableRowsRequest) returns (TableRowsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/rows/tables/{table_name}"};
   }
+
+  // Batch request with different queries
+  rpc QueryBatch(QueryBatchRequest) returns (stream QueryBatchResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/query/batch",
+      body: "*"
+    };
+  }
 }
 
 // Request message for QueryService.Query
@@ -637,3 +645,57 @@ message TableRowsResponse {
   repeated google.protobuf.Struct data = 1;
 }
 
+message QueryBatchEntry {
+  // Since response could out of order `key` is used to co-relate a specific response to request.
+  int32 key = 1;
+  oneof query {
+    MetricsViewToplistRequest metrics_view_toplist_request = 2;
+    MetricsViewComparisonToplistRequest metrics_view_comparison_toplist_request = 3;
+    MetricsViewTimeSeriesRequest metrics_view_time_series_request = 4;
+    MetricsViewTotalsRequest metrics_view_totals_request = 5;
+    MetricsViewRowsRequest metrics_view_rows_request = 6;
+    ColumnRollupIntervalRequest column_rollup_interval_request = 7;
+    ColumnTopKRequest column_top_k_request = 8;
+    ColumnNullCountRequest column_null_count_request = 9;
+    ColumnDescriptiveStatisticsRequest column_descriptive_statistics_request = 10;
+    ColumnTimeGrainRequest column_time_grain_request = 11;
+    ColumnNumericHistogramRequest column_numeric_histogram_request = 12;
+    ColumnRugHistogramRequest column_rug_histogram_request = 13;
+    ColumnTimeRangeRequest column_time_range_request = 14;
+    ColumnCardinalityRequest column_cardinality_request = 15;
+    ColumnTimeSeriesRequest column_time_series_request = 16;
+    TableCardinalityRequest table_cardinality_request = 17;
+    TableColumnsRequest table_columns_request = 18;
+    TableRowsRequest table_rows_request = 19;
+  }
+}
+
+message QueryBatchRequest {
+  string instance_id = 1;
+  repeated QueryBatchEntry queries = 3;
+}
+
+message QueryBatchResponse {
+  int32 key = 1;
+  string error = 2;
+  oneof result {
+    MetricsViewToplistResponse metrics_view_toplist_response = 3;
+    MetricsViewComparisonToplistResponse metrics_view_comparison_toplist_response = 4;
+    MetricsViewTimeSeriesResponse metrics_view_time_series_response = 5;
+    MetricsViewTotalsResponse metrics_view_totals_response = 6;
+    MetricsViewRowsResponse metrics_view_rows_response = 7;
+    ColumnRollupIntervalResponse column_rollup_interval_response = 8;
+    ColumnTopKResponse column_top_k_response = 9;
+    ColumnNullCountResponse column_null_count_response = 10;
+    ColumnDescriptiveStatisticsResponse column_descriptive_statistics_response = 11;
+    ColumnTimeGrainResponse column_time_grain_response = 12;
+    ColumnNumericHistogramResponse column_numeric_histogram_response = 13;
+    ColumnRugHistogramResponse column_rug_histogram_response = 14;
+    ColumnTimeRangeResponse column_time_range_response = 15;
+    ColumnCardinalityResponse column_cardinality_response = 16;
+    ColumnTimeSeriesResponse column_time_series_response = 17;
+    TableCardinalityResponse table_cardinality_response = 18;
+    TableColumnsResponse table_columns_response = 19;
+    TableRowsResponse table_rows_response = 20;
+  }
+}
