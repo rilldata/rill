@@ -13,26 +13,23 @@ import (
 
 func TestAnalyzeConnectors(t *testing.T) {
 	ctx := context.Background()
-	repo := makeRepo(t,
-		`rill.yaml`,
-		`
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: `
 connectors:
 - name: my-s3
   type: s3
-		`,
+`,
 		// S3 source, with a custom name in rill.yaml
-		`sources/foo.yaml`,
-		`
+		`sources/foo.yaml`: `
 connector: my-s3
 uri: s3://path/to/foo
-		`,
+`,
 		// GCS source, not configured with a custom name in rill.yaml
-		`sources/bar.yaml`,
-		`
+		`sources/bar.yaml`: `
 connector: gcs
 uri: gs://path/to/bar
-		`,
-	)
+`,
+	})
 
 	p, err := Parse(ctx, repo, "", nil)
 	require.NoError(t, err)

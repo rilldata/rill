@@ -32,7 +32,16 @@ func TestAnalyze(t *testing.T) {
 			},
 		},
 		{
-			name:     "ref",
+			name:     "configure",
+			template: `{{ configure "a" "b" }}SELECT * FROM foo`,
+			want: &TemplateMetadata{
+				Config:                   map[string]any{"a": "b"},
+				UsesTemplating:           true,
+				ResolvedWithPlaceholders: `SELECT * FROM foo`,
+			},
+		},
+		{
+			name:     "complex",
 			template: `{{ configure "a: b\nc: d" }}{{ configure "e" "f" }}{{ dependency "bar" }} SELECT * FROM {{ ref "model" "foo" }} WHERE hello='{{ .env.world }}' AND world='{{ (lookup "baz").spec.baz.spaz }}'`,
 			want: &TemplateMetadata{
 				Refs:                     []ResourceName{{Name: "bar"}, {Kind: ResourceKindModel, Name: "foo"}, {Name: "baz"}},
@@ -53,8 +62,9 @@ func TestAnalyze(t *testing.T) {
 				if tc.want.Config == nil {
 					tc.want.Config = map[string]any{}
 				}
-				require.Equal(t, tc.want.Config, got.Config)
 				require.ElementsMatch(t, tc.want.Refs, got.Refs)
+				require.Equal(t, tc.want.Config, got.Config)
+				require.Equal(t, tc.want.UsesTemplating, got.UsesTemplating)
 				require.Equal(t, tc.want.ResolvedWithPlaceholders, strings.TrimSpace(got.ResolvedWithPlaceholders))
 			}
 		})

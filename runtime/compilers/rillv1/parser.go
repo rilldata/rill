@@ -15,7 +15,7 @@ import (
 // Built-in parser limits
 var (
 	maxFiles    = 10000
-	maxFileSize = 2 ^ 13 // 8kb
+	maxFileSize = 8192 // 8kb
 )
 
 // ErrInvalidProject indicates a project without a rill.yaml file

@@ -139,7 +139,7 @@ type sourceYAML struct {
 	genericYAML `yaml:",inline"`
 	Connector   string         `yaml:"connector"` // Source connector. Sink connector not currently supported.
 	Type        string         `yaml:"type"`      // Backwards compatibility
-	Timeout     *string        `yaml:"timeout"`
+	Timeout     string         `yaml:"timeout"`
 	Refresh     *scheduleYAML  `yaml:"refresh"`
 	Properties  map[string]any `yaml:",inline"`
 }
@@ -164,9 +164,12 @@ func (p *Parser) parseSourceYAML(ctx context.Context, path, data string) error {
 		tmp.Connector = tmp.Type
 	}
 
-	timeout, err := parseDuration(tmp.Timeout)
-	if err != nil {
-		return err
+	var timeout time.Duration
+	if tmp.Timeout != "" {
+		timeout, err = parseDuration(tmp.Timeout)
+		if err != nil {
+			return err
+		}
 	}
 
 	schedule, err := parseScheduleYAML(tmp.Refresh)
@@ -193,7 +196,7 @@ type modelYAML struct {
 	genericYAML `yaml:",inline"`
 	Connector   string        `yaml:"connector"`
 	Materialize *bool         `yaml:"materialize"`
-	Timeout     *string       `yaml:"timeout"`
+	Timeout     string        `yaml:"timeout"`
 	Refresh     *scheduleYAML `yaml:"refresh"`
 }
 
@@ -211,9 +214,12 @@ func (p *Parser) parseModelYAML(ctx context.Context, path, data string) error {
 		return err
 	}
 
-	timeout, err := parseDuration(tmp.Timeout)
-	if err != nil {
-		return err
+	var timeout time.Duration
+	if tmp.Timeout != "" {
+		timeout, err = parseDuration(tmp.Timeout)
+		if err != nil {
+			return err
+		}
 	}
 
 	schedule, err := parseScheduleYAML(tmp.Refresh)
@@ -299,7 +305,9 @@ func (p *Parser) parseMetricsViewYAML(ctx context.Context, path, data string) er
 		}
 	}
 
-	r := p.upsertResource(ResourceKindModel, tmp.Name, path, refs...)
+	refs = append(refs, ResourceName{Name: tmp.Model})
+
+	r := p.upsertResource(ResourceKindMetricsView, tmp.Name, path, refs...)
 	spec := r.MetricsViewSpec
 
 	spec.Title = tmp.Title
@@ -385,7 +393,7 @@ func (p *Parser) parseMigrationYAML(ctx context.Context, path, data string) erro
 	r := p.upsertResource(ResourceKindMigration, tmp.Name, path, refs...)
 	r.MigrationSpec.Connector = tmp.Connector
 	r.MigrationSpec.Version = uint32(tmp.Version)
-	r.MigrationSpec.Sql = tmp.SQL
+	r.MigrationSpec.Sql = strings.TrimSpace(tmp.SQL)
 
 	return nil
 }
@@ -477,9 +485,6 @@ func parseScheduleYAML(raw *scheduleYAML) (*runtimev1.Schedule, error) {
 // parseDuration parses a value into a time duration.
 // If no unit is specified, it assumes the value is in seconds.
 func parseDuration(v any) (time.Duration, error) {
-	if v == nil {
-		return 0, nil
-	}
 	switch v := v.(type) {
 	case int:
 		return time.Duration(v) * time.Second, nil

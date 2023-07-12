@@ -270,7 +270,7 @@ func (p *Parser) parseSourceOrModelSQL(ctx context.Context, path, data string, c
 
 	// Override the model
 	r := p.upsertResource(ResourceKindModel, cfg.Name, path, cfg.Refs...)
-	r.ModelSpec.Sql = data
+	r.ModelSpec.Sql = strings.TrimSpace(data)
 	r.ModelSpec.UsesTemplating = cfg.UsesTemplating
 	if timeoutSeconds > 0 {
 		r.ModelSpec.TimeoutSeconds = uint32(timeoutSeconds)
@@ -313,7 +313,7 @@ func (p *Parser) parseMigrationSQL(ctx context.Context, path, data string, cfg s
 	}
 
 	r := p.upsertResource(ResourceKindMigration, cfg.Name, path, cfg.Refs...)
-	r.MigrationSpec.Sql = data
+	r.MigrationSpec.Sql = strings.TrimSpace(data)
 	if cfg.Connector != "" {
 		r.MigrationSpec.Connector = cfg.Connector
 	}

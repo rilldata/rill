@@ -142,11 +142,14 @@ func AnalyzeTemplate(tmpl string) (*TemplateMetadata, error) {
 		return nil, err
 	}
 
+	// Check if there is any templating
+	noTemplating := len(t.Root.Nodes) == 0 || len(t.Root.Nodes) == 1 && t.Root.Nodes[0].Type() == parse.NodeText
+
 	// Done
 	return &TemplateMetadata{
 		Refs:                     maps.Keys(refs),
 		Config:                   config,
-		UsesTemplating:           t.Root.NodeType == parse.NodeText,
+		UsesTemplating:           !noTemplating,
 		ResolvedWithPlaceholders: res.String(),
 	}, nil
 }
