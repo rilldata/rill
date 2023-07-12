@@ -11,7 +11,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/connectors"
@@ -249,18 +248,11 @@ func (p *Parser) parseSourceOrModelSQL(ctx context.Context, path, data string, c
 	// Parse timeout from config
 	var timeoutSeconds int
 	if v1, ok := cfg.Annotations["timeout"]; ok {
-		switch v2 := v1.(type) {
-		case int:
-			timeoutSeconds = v2
-		case string:
-			d, err := time.ParseDuration(v2)
-			if err != nil {
-				return fmt.Errorf("invalid timeout value %q: %w", v2, err)
-			}
-			timeoutSeconds = int(d.Seconds())
-		default:
-			return fmt.Errorf("invalid timeout value <%v>", v1)
+		d, err := parseDuration(v1)
+		if err != nil {
+			return err
 		}
+		timeoutSeconds = int(d.Seconds())
 	}
 
 	// Add the embedded sources

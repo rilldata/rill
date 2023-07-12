@@ -12,9 +12,11 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-// Limits
-var maxFiles = 10000
-var maxFileSize = 2 ^ 13 // 8kb
+// Built-in parser limits
+var (
+	maxFiles    = 10000
+	maxFileSize = 2 ^ 13 // 8kb
+)
 
 // ErrInvalidProject indicates a project without a rill.yaml file
 var ErrInvalidProject = errors.New("parser: not a valid project (rill.yaml not found)")
@@ -62,6 +64,8 @@ const (
 	ResourceKindMigration
 )
 
+// ParseResourceKind maps a string to a ResourceKind.
+// Note: The empty string is considered a valid kind (unspecified).
 func ParseResourceKind(kind string) (ResourceKind, error) {
 	switch strings.ToLower(strings.TrimSpace(kind)) {
 	case "":

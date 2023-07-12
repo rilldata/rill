@@ -3,7 +3,6 @@ package rill.runtime.v1;
 
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
-import "rill/runtime/v1/schema.proto";
 import "rill/runtime/v1/time_grain.proto";
 
 message Resource {
@@ -11,13 +10,12 @@ message Resource {
   oneof resource {
     // Well-known types only, for now. If required, we can add support for a google.protobuf.Any later.
     ProjectParser project_parser = 2;
-    TableV2 table = 3;
-    SourceV2 source = 4;
-    ModelV2 model = 5;
-    MetricsViewV2 metrics_view = 6;
-    PullTrigger pull_trigger = 7;
-    RefreshTrigger refresh_trigger = 8;
-    BucketPlanner bucket_planner = 9;
+    SourceV2 source = 3;
+    ModelV2 model = 4;
+    MetricsViewV2 metrics_view = 5;
+    PullTrigger pull_trigger = 6;
+    RefreshTrigger refresh_trigger = 7;
+    BucketPlanner bucket_planner = 8;
   }
 }
 
@@ -46,43 +44,23 @@ message ProjectParser {
 }
 
 message ProjectParserSpec {
-  // compiler identifies the project file parser to use.
+  // compiler identifies the project parser to use
   string compiler = 1;
-  // watch makes the project parser watch for file changes and automatically trigger reconciles. (requires repo driver to support watching.)
+  // watch makes the project parser watch for and incrementally parse changed files
   bool watch = 2;
-  // refresh_on_pull TODO
-  bool refresh_on_pull = 3;
-  // atomic makes the project parser attempt to stage all changes before committing them.
-  bool atomic = 4;
-  // materialize_model_default sets a default for whether or not to materialize a model, if not explicitly set in the model.
-  bool materialize_model_default = 5;
-  // materialize_model_delay_seconds TODO
-  uint32 materialize_model_delay_seconds = 6;
-  // retain_deleted_model_seconds TODO
-  uint32 retain_deleted_model_seconds = 7;
-  // bool simulate_streaming_ingestion = 8;
-  // bool sync_existing_tables = 9;
+  // atomic makes the project parser stage all changes before committing them
+  bool atomic = 3;
+  // materialize_model_default sets a default for whether or not to materialize a model, if not explicitly set in the model
+  bool materialize_model_default = 4;
+  // materialize_model_delay_seconds makes the project parser delay materialization of updated models
+  uint32 materialize_model_delay_seconds = 5;
+  // bool simulate_streaming_ingestion = 6;
 }
 
 message ProjectParserState {
   repeated ParseError parse_errors = 1;
   string current_commit_sha = 2;
   repeated string changed_paths = 3;
-}
-
-message TableV2 {
-  TableSpec spec = 1;
-  TableState state = 2;
-}
-
-message TableSpec {
-  string connector = 1;
-  string schema = 2;
-  string name = 3;
-}
-
-message TableState {
-  StructType schema = 1;
 }
 
 message SourceV2 {
@@ -152,7 +130,7 @@ message MetricsViewSpec {
   }
   // User friendly label for the dashboard
   string title = 1;
-  // Brief description of the dashboard
+  // Description of the dashboard
   string description = 2;
   // Name of the source or model that the metrics view is based on
   string model = 3;
@@ -166,7 +144,7 @@ message MetricsViewSpec {
   TimeGrain smallest_time_grain = 7;
   // Default time range for the dashboard. It should be a valid ISO 8601 duration string.
   string default_time_range = 8;
-  // Available time zones list preferred time zones using IANA location identifiers.
+  // Available time zones list preferred time zones using IANA location identifiers
   repeated string available_time_zones = 9;
 }
 
@@ -209,11 +187,10 @@ message RefreshTrigger {
 
 message RefreshTriggerSpec {
   string only_names = 1;
-  bool reset = 2; // Reingest, don't do incremental
+  bool reset_increments = 2;
 }
 
 message RefreshTriggerState {}
-
 
 message BucketPlanner {
   BucketPlannerSpec spec = 1;
@@ -234,35 +211,25 @@ message BucketExtractPolicy {
     STRATEGY_HEAD = 1;
     STRATEGY_TAIL = 2;
   }
-  // strategy for selecting rows in a file
   Strategy rows_strategy = 1;
-  // could in future add: uint64 rows_limit = n;
-  // limit on data fetched in bytes
   uint64 rows_limit_bytes = 2;
-  // strategy for selecting files
   Strategy files_strategy = 3;
-  // limit on number of files
   uint64 files_limit = 4;
 }
 
 message Schedule {
   string cron = 1;
   uint32 ticker_seconds = 2;
-  // uint32 throttle_seconds = 3;
 }
 
 message ParseError {
   string message = 1;
   string file_path = 2;
-  CharLocation start_loc = 3;
-  CharLocation end_loc = 4;
 }
 
 message ValidationError {
   string message = 1;
   repeated string property_path = 2;
-  CharLocation start_loc = 3;
-  CharLocation end_loc = 4;
 }
 
 message DependencyError {
@@ -272,12 +239,4 @@ message DependencyError {
 
 message ExecutionError {
   string message = 1;
-  CharLocation start_loc = 3;
-  CharLocation end_loc = 4;
-}
-
-// CharLocation is a line and column in a code file
-message CharLocation {
-  uint32 line = 1;
-  uint32 column = 2;
 }

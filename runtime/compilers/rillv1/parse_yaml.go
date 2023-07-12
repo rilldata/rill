@@ -3,12 +3,14 @@ package rillv1
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/robfig/cron/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 )
@@ -137,7 +139,8 @@ type sourceYAML struct {
 	genericYAML `yaml:",inline"`
 	Connector   string         `yaml:"connector"` // Source connector. Sink connector not currently supported.
 	Type        string         `yaml:"type"`      // Backwards compatibility
-	Timeout     int32          `yaml:"timeout"`
+	Timeout     *string        `yaml:"timeout"`
+	Refresh     *scheduleYAML  `yaml:"refresh"`
 	Properties  map[string]any `yaml:",inline"`
 }
 
@@ -161,6 +164,16 @@ func (p *Parser) parseSourceYAML(ctx context.Context, path, data string) error {
 		tmp.Connector = tmp.Type
 	}
 
+	timeout, err := parseDuration(tmp.Timeout)
+	if err != nil {
+		return err
+	}
+
+	schedule, err := parseScheduleYAML(tmp.Refresh)
+	if err != nil {
+		return err
+	}
+
 	props, err := structpb.NewStruct(tmp.Properties)
 	if err != nil {
 		return fmt.Errorf("encountered invalid property type: %w", err)
@@ -169,7 +182,8 @@ func (p *Parser) parseSourceYAML(ctx context.Context, path, data string) error {
 	r := p.upsertResource(ResourceKindSource, tmp.Name, path, refs...)
 	r.SourceSpec.SourceConnector = tmp.Connector
 	r.SourceSpec.Properties = props
-	r.SourceSpec.TimeoutSeconds = uint32(tmp.Timeout)
+	r.SourceSpec.TimeoutSeconds = uint32(timeout.Seconds())
+	r.SourceSpec.RefreshSchedule = schedule
 
 	return nil
 }
@@ -177,8 +191,10 @@ func (p *Parser) parseSourceYAML(ctx context.Context, path, data string) error {
 // modelYAML is the raw structure of a Model resource defined in YAML
 type modelYAML struct {
 	genericYAML `yaml:",inline"`
-	Connector   string `yaml:"connector"`
-	Materialize *bool  `yaml:"materialize"`
+	Connector   string        `yaml:"connector"`
+	Materialize *bool         `yaml:"materialize"`
+	Timeout     *string       `yaml:"timeout"`
+	Refresh     *scheduleYAML `yaml:"refresh"`
 }
 
 // parseModelYAML parses a model YAML file and adds the resulting resource to p.Resources.
@@ -195,9 +211,21 @@ func (p *Parser) parseModelYAML(ctx context.Context, path, data string) error {
 		return err
 	}
 
+	timeout, err := parseDuration(tmp.Timeout)
+	if err != nil {
+		return err
+	}
+
+	schedule, err := parseScheduleYAML(tmp.Refresh)
+	if err != nil {
+		return err
+	}
+
 	r := p.upsertResource(ResourceKindModel, tmp.Name, path, refs...)
 	r.ModelSpec.Connector = tmp.Connector
 	r.ModelSpec.Materialize = tmp.Materialize
+	r.ModelSpec.TimeoutSeconds = uint32(timeout.Seconds())
+	r.ModelSpec.RefreshSchedule = schedule
 
 	return nil
 }
@@ -412,6 +440,64 @@ func parseYAMLRefs(refs []*yaml.Node) ([]ResourceName, error) {
 		return nil, fmt.Errorf("invalid refs: %v", ref)
 	}
 	return res, nil
+}
+
+// scheduleYAML is the raw structure of a refresh schedule clause defined in YAML.
+// This does not represent a stand-alone YAML file, just a partial used in other structs.
+type scheduleYAML struct {
+	Cron   string `yaml:"cron"`
+	Ticker string `yaml:"ticker"`
+}
+
+func parseScheduleYAML(raw *scheduleYAML) (*runtimev1.Schedule, error) {
+	if raw == nil || (raw.Cron == "" && raw.Ticker == "") {
+		return nil, nil
+	}
+
+	s := &runtimev1.Schedule{}
+	if raw.Cron != "" {
+		_, err := cron.ParseStandard(raw.Cron)
+		if err != nil {
+			return nil, fmt.Errorf("invalid cron schedule: %w", err)
+		}
+		s.Cron = raw.Cron
+	}
+
+	if raw.Ticker != "" {
+		d, err := parseDuration(raw.Ticker)
+		if err != nil {
+			return nil, fmt.Errorf("invalid ticker: %w", err)
+		}
+		s.TickerSeconds = uint32(d.Seconds())
+	}
+
+	return s, nil
+}
+
+// parseDuration parses a value into a time duration.
+// If no unit is specified, it assumes the value is in seconds.
+func parseDuration(v any) (time.Duration, error) {
+	if v == nil {
+		return 0, nil
+	}
+	switch v := v.(type) {
+	case int:
+		return time.Duration(v) * time.Second, nil
+	case string:
+		// Try parsing as an int first
+		res, err := strconv.Atoi(v)
+		if err == nil {
+			return time.Duration(res) * time.Second, nil
+		}
+		// Try parsing with a unit
+		d, err := time.ParseDuration(v)
+		if err != nil {
+			return 0, fmt.Errorf("invalid time duration value %v: %w", v, err)
+		}
+		return d, nil
+	default:
+		return 0, fmt.Errorf("invalid time duration value <%v>", v)
+	}
 }
 
 // parseTimeGrain parses a YAML time grain string
