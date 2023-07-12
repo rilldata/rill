@@ -6,13 +6,14 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
-	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -21,8 +22,13 @@ func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*run
 		return nil, ErrForbidden
 	}
 
-	if req.Limit <= 0 {
-		req.Limit = 10000
+	if s.opts.DownloadRowLimit != nil {
+		if req.Limit == nil {
+			req.Limit = s.opts.DownloadRowLimit
+		}
+		if *req.Limit > *s.opts.DownloadRowLimit {
+			return nil, status.Errorf(codes.InvalidArgument, "limit must be less than or equal to %d", *s.opts.DownloadRowLimit)
+		}
 	}
 
 	r, err := proto.Marshal(req)
@@ -51,131 +57,74 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if request.Limit > 10000 {
-		http.Error(w, "limit must be less than or equal to 10000", http.StatusBadRequest)
-		return
-	}
-
-	var q runtime.Query
-	var filename string
-	switch v := request.Request.(type) {
-	case *runtimev1.ExportRequest_MetricsViewToplistRequest:
-		mvr := v.MetricsViewToplistRequest
-		mvr.Limit = int64(request.Limit)
-		mv, err := lookupMetricsView(req.Context(), s.runtime, request.InstanceId, mvr.MetricsViewName)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("cannot lookup MetricsView: %s", err), http.StatusBadRequest)
-			return
-		}
-
-		filteredString := ""
-		if mvr.Filter != nil && (len(mvr.Filter.Exclude) > 0 || len(mvr.Filter.Include) > 0) || mvr.TimeStart != nil || mvr.TimeEnd != nil {
-			filteredString = "_filtered"
-		}
-
-		filename = fmt.Sprintf("%s%s_%s", strings.ReplaceAll(mv.Model, `"`, "_"), filteredString, time.Now().Format("20060102150405"))
-
-		q, err = createToplistQuery(req.Context(), w, v.MetricsViewToplistRequest, request.Format)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	case *runtimev1.ExportRequest_MetricsViewRowsRequest:
-		mvr := v.MetricsViewRowsRequest
-		mvr.Limit = request.Limit
-		mv, err := lookupMetricsView(req.Context(), s.runtime, request.InstanceId, mvr.MetricsViewName)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("cannot lookup MetricsView: %s", err), http.StatusBadRequest)
-			return
-		}
-
-		filteredString := ""
-		if mvr.Filter != nil && (len(mvr.Filter.Exclude) > 0 || len(mvr.Filter.Include) > 0) || mvr.TimeStart != nil || mvr.TimeEnd != nil {
-			filteredString = "_filtered"
-		}
-
-		filename = fmt.Sprintf("%s%s_%s", strings.ReplaceAll(mv.Model, `"`, "_"), filteredString, time.Now().Format("20060102150405"))
-
-		q, err = createRowsQuery(req.Context(), w, v.MetricsViewRowsRequest, request.Format)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	default:
-		http.Error(w, fmt.Sprintf("Unsupported request type: %s", reflect.TypeOf(v).Name()), http.StatusBadRequest)
-		return
-	}
-
 	if !auth.GetClaims(req.Context()).CanInstance(request.InstanceId, auth.ReadMetrics) {
 		http.Error(w, "action not allowed", http.StatusUnauthorized)
 		return
 	}
 
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-	switch request.Format {
-	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		w.Header().Set("Content-Type", "text/csv")
-		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s.csv\"", filename))
-	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s.xlsx\"", filename))
-	default:
-		http.Error(w, fmt.Sprintf("Unsupported format %s", request.Format), http.StatusBadRequest)
+	if s.opts.DownloadRowLimit != nil && (request.Limit == nil || *request.Limit > *s.opts.DownloadRowLimit) {
+		http.Error(w, fmt.Sprintf("limit must be less than or equal to %d", *s.opts.DownloadRowLimit), http.StatusBadRequest)
 		return
 	}
 
-	err = q.Export(req.Context(), s.runtime, request.InstanceId, 0, request.Format, w)
+	var q runtime.Query
+	switch v := request.Request.(type) {
+	case *runtimev1.ExportRequest_MetricsViewToplistRequest:
+		r := v.MetricsViewToplistRequest
+		err := validateInlineMeasures(r.InlineMeasures)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		q = &queries.MetricsViewToplist{
+			MetricsViewName: r.MetricsViewName,
+			DimensionName:   r.DimensionName,
+			MeasureNames:    r.MeasureNames,
+			InlineMeasures:  r.InlineMeasures,
+			TimeStart:       r.TimeStart,
+			TimeEnd:         r.TimeEnd,
+			Sort:            r.Sort,
+			Filter:          r.Filter,
+			Limit:           request.Limit,
+		}
+	case *runtimev1.ExportRequest_MetricsViewRowsRequest:
+		r := v.MetricsViewRowsRequest
+		q = &queries.MetricsViewRows{
+			MetricsViewName: r.MetricsViewName,
+			TimeStart:       r.TimeStart,
+			TimeEnd:         r.TimeEnd,
+			Filter:          r.Filter,
+			Sort:            r.Sort,
+			Limit:           request.Limit,
+		}
+	default:
+		http.Error(w, fmt.Sprintf("unsupported request type: %s", reflect.TypeOf(v).Name()), http.StatusBadRequest)
+		return
+	}
+
+	err = q.Export(req.Context(), s.runtime, request.InstanceId, w, &runtime.ExportOptions{
+		Format: request.Format,
+		PreWriteHook: func(filename string) error {
+			// Add timestamp to filename
+			filename += "_" + time.Now().Format("20060102150405")
+
+			// Write HTTP headers
+			w.Header().Set("X-Content-Type-Options", "nosniff")
+			switch request.Format {
+			case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
+				w.Header().Set("Content-Type", "text/csv")
+				w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s.csv\"", filename))
+			case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
+				w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+				w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s.xlsx\"", filename))
+			default:
+				return fmt.Errorf("unsupported format %q", request.Format.String())
+			}
+			return nil
+		},
+	})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-}
-
-func createToplistQuery(ctx context.Context, writer http.ResponseWriter, req *runtimev1.MetricsViewToplistRequest, format runtimev1.ExportFormat) (runtime.Query, error) {
-	err := validateInlineMeasures(req.InlineMeasures)
-	if err != nil {
-		return nil, err
-	}
-
-	q := &queries.MetricsViewToplist{
-		MetricsViewName: req.MetricsViewName,
-		DimensionName:   req.DimensionName,
-		MeasureNames:    req.MeasureNames,
-		InlineMeasures:  req.InlineMeasures,
-		TimeStart:       req.TimeStart,
-		TimeEnd:         req.TimeEnd,
-		Limit:           req.Limit,
-		Offset:          req.Offset,
-		Sort:            req.Sort,
-		Filter:          req.Filter,
-	}
-
-	return q, nil
-}
-
-func createRowsQuery(ctx context.Context, writer http.ResponseWriter, req *runtimev1.MetricsViewRowsRequest, format runtimev1.ExportFormat) (runtime.Query, error) {
-	q := &queries.MetricsViewRows{
-		MetricsViewName: req.MetricsViewName,
-		TimeStart:       req.TimeStart,
-		TimeEnd:         req.TimeEnd,
-		Filter:          req.Filter,
-		Sort:            req.Sort,
-		Limit:           req.Limit,
-		Offset:          req.Offset,
-	}
-
-	return q, nil
-}
-
-func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.MetricsView, error) {
-	obj, err := rt.GetCatalogEntry(ctx, instanceID, name)
-	if err != nil {
-		return nil, err
-	}
-
-	if obj.GetMetricsView() == nil {
-		return nil, err
-	}
-
-	return obj.GetMetricsView(), nil
 }

@@ -9,6 +9,7 @@
     "coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "storybook": "STORYBOOK_MODE=true storybook dev -p 6006",
+    "storybook:smoketest": "STORYBOOK_MODE=true storybook dev --smoke-test",
     "build-storybook": "storybook build"
   },
   "devDependencies": {
