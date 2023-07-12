@@ -12,10 +12,7 @@ The main feature-set component for dashboard filters
   import FilterRemove from "@rilldata/web-common/components/icons/FilterRemove.svelte";
   import { useMetaQuery, getFilterSearchList } from "../selectors/index";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
-  import type {
-    MetricsViewDimension,
-    V1MetricsViewFilter,
-  } from "@rilldata/web-common/runtime-client";
+  import type { V1MetricsViewFilter } from "@rilldata/web-common/runtime-client";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import { getDisplayName } from "./getDisplayName";
