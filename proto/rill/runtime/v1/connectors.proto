@@ -40,6 +40,11 @@ service ConnectorService {
   rpc GCSGetCredentialsInfo(GCSGetCredentialsInfoRequest) returns (GCSGetCredentialsInfoResponse) {
     option (google.api.http) = {get: "/v1/gcs/credentials_info"};
   }
+
+  // MotherduckListTables list all tables across all databases on motherduck
+  rpc MotherduckListTables(MotherduckListTablesRequest) returns (MotherduckListTablesResponse) {
+    option (google.api.http) = {get: "/v1/md/tables"};
+  }
 }
 
 message S3Object {
@@ -126,4 +131,15 @@ message GCSGetCredentialsInfoRequest {}
 message GCSGetCredentialsInfoResponse {
   bool exist = 1;
   string project_id = 2;
+}
+
+message MotherduckListTablesRequest {}
+
+message MotherduckListTablesResponse {
+  repeated TableInfo tables = 1;
+}
+
+message TableInfo {
+  string database = 1;
+  string name = 2;
 }
