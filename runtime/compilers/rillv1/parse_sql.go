@@ -194,6 +194,11 @@ func (p *Parser) parseSourceOrModelSQL(ctx context.Context, path, data string, c
 
 		// Scan SQL for table references. Track references in refs and rewrite table functions into embedded sources.
 		err = ast.RewriteTableRefs(func(t *duckdbsql.TableRef) (*duckdbsql.TableRef, bool) {
+			// Don't rewrite aliases
+			if t.LocalAlias {
+				return nil, false
+			}
+
 			// If embedded sources is enabled, parse it and add it to embeddedSources.
 			if !cfg.DisableDuckDBSourceRewriting {
 				name, spec, ok := parseEmbeddedSource(t, cfg.Connector)
@@ -207,7 +212,6 @@ func (p *Parser) parseSourceOrModelSQL(ctx context.Context, path, data string, c
 			}
 
 			// Not an embedded source. Add it to cfg.Refs if it's a regular table reference.
-			// TODO: Should we have a better way of ensuring that t.Name is not an alias?
 			if t.Name != "" && t.Function == "" && t.Path == "" {
 				cfg.Refs = append(cfg.Refs, ResourceName{Name: t.Name})
 			}
@@ -331,12 +335,20 @@ func (p *Parser) parseMigrationSQL(ctx context.Context, path, data string, cfg s
 // parseEmbeddedSource parses a table reference extracted from a DuckDB SQL query to a source spec.
 // The returned name is derived from a hash of the source spec. It will be stable for any other table reference with equivalent path and properties.
 func parseEmbeddedSource(t *duckdbsql.TableRef, sinkConnector string) (ResourceName, *runtimev1.SourceSpec, bool) {
-	if t.Path == "" {
+	// The name can also potentially be a path
+	path := t.Path
+	if path == "" {
+		path = t.Name
+	}
+
+	uri, err := url.Parse(path)
+	if err != nil {
 		return ResourceName{}, nil, false
 	}
 
-	uri, err := url.Parse(t.Path)
-	if err != nil {
+	// Applying some heuristics to determine if it's a path or just a table name.
+	// If not a function and no protocol is in the path, we'll assume it's just a table name.
+	if t.Function == "" && uri.Scheme == "" {
 		return ResourceName{}, nil, false
 	}
 

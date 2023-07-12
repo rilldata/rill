@@ -12,6 +12,10 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+// Limits
+var maxFiles = 10000
+var maxFileSize = 2 ^ 13 // 8kb
+
 // ErrInvalidProject indicates a project without a rill.yaml file
 var ErrInvalidProject = errors.New("parser: not a valid project (rill.yaml not found)")
 
@@ -273,6 +277,11 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 // enabling parsePaths to upsert changes, enabling multiple files to provide data for one resource
 // (like "my-model.sql" and "my-model.yaml").
 func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
+	// Check limits
+	if len(paths) > maxFiles {
+		return fmt.Errorf("project exceeds file limit of %d", maxFiles)
+	}
+
 	// Reset insertedResources on each parse (only used to construct Diff in Reparse)
 	p.insertedResources = nil
 
@@ -300,6 +309,15 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 		if err != nil {
 			// TODO: Handle dirty parses where files disappear during parsing
 			return err
+		}
+
+		// Check size
+		if len(data) > maxFileSize {
+			p.Errors = append(p.Errors, &runtimev1.ParseError{
+				Message:  fmt.Sprintf("size %d bytes exceeds max size of %d bytes", len(data), maxFileSize),
+				FilePath: path,
+			})
+			continue
 		}
 
 		// Handle rill.yaml separately (if parsing of rill.yaml fails, we exit early instead of adding a ParseError)
