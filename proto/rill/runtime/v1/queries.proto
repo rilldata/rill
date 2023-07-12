@@ -337,6 +337,7 @@ message MetricsViewRowsRequest {
   int32 limit = 7 [(validate.rules).int32.gte = 0];
   int64 offset = 8 [(validate.rules).int64.gte = 0];
   int32 priority = 9;
+  TimeZoneAdjustment time_zone_adjustment = 11;
 }
 
 // Response message for QueryService.MetricsViewRows
