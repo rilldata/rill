@@ -148,6 +148,7 @@ export type QueryServiceMetricsViewRowsBody = {
   limit?: number;
   offset?: string;
   priority?: number;
+  timeZoneAdjustment?: V1TimeZoneAdjustment;
 };
 
 export type QueryServiceMetricsViewComparisonToplistBody = {
@@ -701,6 +702,7 @@ export interface V1MetricsViewRowsRequest {
   limit?: number;
   offset?: string;
   priority?: number;
+  timeZoneAdjustment?: V1TimeZoneAdjustment;
 }
 
 export interface V1MetricsViewComparisonValue {

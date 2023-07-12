@@ -851,6 +851,8 @@ paths:
               priority:
                 type: integer
                 format: int32
+              timeZoneAdjustment:
+                $ref: '#/definitions/v1TimeZoneAdjustment'
             title: Request message for QueryService.MetricsViewRows
       tags:
         - QueryService
@@ -2515,6 +2517,8 @@ definitions:
       priority:
         type: integer
         format: int32
+      timeZoneAdjustment:
+        $ref: '#/definitions/v1TimeZoneAdjustment'
     title: Request message for QueryService.MetricsViewRows
   v1MetricsViewRowsResponse:
     type: object

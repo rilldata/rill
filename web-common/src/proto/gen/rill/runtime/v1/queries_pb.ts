@@ -1197,6 +1197,11 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
    */
   priority = 0;
 
+  /**
+   * @generated from field: rill.runtime.v1.TimeZoneAdjustment time_zone_adjustment = 11;
+   */
+  timeZoneAdjustment?: TimeZoneAdjustment;
+
   constructor(data?: PartialMessage<MetricsViewRowsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1215,6 +1220,7 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
     { no: 7, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 8, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 9, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 11, name: "time_zone_adjustment", kind: "message", T: TimeZoneAdjustment },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewRowsRequest {
