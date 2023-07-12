@@ -15,14 +15,15 @@ import (
 )
 
 type MetricsViewRows struct {
-	MetricsViewName string                       `json:"metrics_view_name,omitempty"`
-	TimeStart       *timestamppb.Timestamp       `json:"time_start,omitempty"`
-	TimeEnd         *timestamppb.Timestamp       `json:"time_end,omitempty"`
-	TimeGranularity runtimev1.TimeGrain          `json:"time_granularity,omitempty"`
-	Filter          *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
-	Sort            []*runtimev1.MetricsViewSort `json:"sort,omitempty"`
-	Limit           int32                        `json:"limit,omitempty"`
-	Offset          int64                        `json:"offset,omitempty"`
+	MetricsViewName    string                        `json:"metrics_view_name,omitempty"`
+	TimeStart          *timestamppb.Timestamp        `json:"time_start,omitempty"`
+	TimeEnd            *timestamppb.Timestamp        `json:"time_end,omitempty"`
+	TimeGranularity    runtimev1.TimeGrain           `json:"time_granularity,omitempty"`
+	Filter             *runtimev1.MetricsViewFilter  `json:"filter,omitempty"`
+	Sort               []*runtimev1.MetricsViewSort  `json:"sort,omitempty"`
+	Limit              int32                         `json:"limit,omitempty"`
+	Offset             int64                         `json:"offset,omitempty"`
+	TimeZoneAdjustment *runtimev1.TimeZoneAdjustment `json:"time_zone_adjustment"`
 
 	Result *runtimev1.MetricsViewRowsResponse `json:"-"`
 }
@@ -214,7 +215,7 @@ func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsView, dialect
 			panic("timeRollupColumnName is set, but time dimension info is missing")
 		}
 
-		rollup := fmt.Sprintf("date_trunc('%s', %s) AS %s", convertToDateTruncSpecifier(q.TimeGranularity), safeName(mv.TimeDimension), safeName(timeRollupColumnName))
+		rollup := fmt.Sprintf("time_bucket(INTERVAL '%s', %s::TIMESTAMP) AS %s", convertToTimeBucketSpecifier(q.TimeGranularity), safeName(mv.TimeDimension), safeName(timeRollupColumnName))
 
 		// Prepend the rollup column
 		selectColumns = append([]string{rollup}, selectColumns...)

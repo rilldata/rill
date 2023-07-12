@@ -36,6 +36,7 @@ type ColumnTimeseries struct {
 	TimeRange           *runtimev1.TimeSeriesTimeRange                    `json:"time_range"`
 	Pixels              int32                                             `json:"pixels"`
 	SampleSize          int32                                             `json:"sample_size"`
+	TimeZoneAdjustment  *runtimev1.TimeZoneAdjustment                     `json:"time_zone_adjustment,omitempty"`
 	Result              *ColumnTimeseriesResult                           `json:"-"`
 
 	// MetricsView-related fields. These can be removed when MetricsViewTimeSeries is refactored to a standalone implementation.
@@ -103,24 +104,30 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		}
 
 		measures := normaliseMeasures(q.Measures, q.Pixels != 0)
-		dateTruncSpecifier := convertToDateTruncSpecifier(timeRange.Interval)
+		timeBucketSpecifier := convertToTimeBucketSpecifier(timeRange.Interval)
 		tsAlias := tempName("_ts_")
 		temporaryTableName := tempName("_timeseries_")
+
+		timezone := "UTC"
+		if q.TimeZoneAdjustment != nil && q.TimeZoneAdjustment.GetTimeZone() != "" {
+			timezone = q.TimeZoneAdjustment.GetTimeZone()
+		}
 		querySQL := `CREATE TEMPORARY TABLE ` + temporaryTableName + ` AS (
 			-- generate a time series column that has the intended range
 			WITH template as (
 			SELECT
-				range as ` + tsAlias + `
+				timezone('` + timezone + `',range) as ` + tsAlias + `
 			FROM
 				range(
-				date_trunc('` + dateTruncSpecifier + `', TIMESTAMP '` + timeRange.Start.AsTime().Format(IsoFormat) + `'),
-				date_trunc('` + dateTruncSpecifier + `', TIMESTAMP '` + timeRange.End.AsTime().Format(IsoFormat) + `'),
-				INTERVAL '1 ` + dateTruncSpecifier + `')
+				time_bucket(INTERVAL '` + timeBucketSpecifier + `', TIMESTAMP '` + timeRange.Start.AsTime().Format(IsoFormat) + `'),
+				time_bucket(INTERVAL '` + timeBucketSpecifier + `', TIMESTAMP '` + timeRange.End.AsTime().Format(IsoFormat) + `'),
+				INTERVAL '` + timeBucketSpecifier + `')
+			GROUP BY ` + tsAlias + `
 			),
 			-- transform the original data, and optionally sample it.
 			series AS (
 			SELECT
-				date_trunc('` + dateTruncSpecifier + `', ` + safeName(q.TimestampColumnName) + `) as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
+				timezone('` + timezone + `', time_bucket(INTERVAL '` + timeBucketSpecifier + `', ` + safeName(q.TimestampColumnName) + `::TIMESTAMP)) as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
 			FROM ` + safeName(q.TableName) + ` ` + filter + `
 			GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
 			)

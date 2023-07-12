@@ -155,13 +155,14 @@ func createToplistQuery(ctx context.Context, writer http.ResponseWriter, req *ru
 
 func createRowsQuery(ctx context.Context, writer http.ResponseWriter, req *runtimev1.MetricsViewRowsRequest, format runtimev1.ExportFormat) (runtime.Query, error) {
 	q := &queries.MetricsViewRows{
-		MetricsViewName: req.MetricsViewName,
-		TimeStart:       req.TimeStart,
-		TimeEnd:         req.TimeEnd,
-		Filter:          req.Filter,
-		Sort:            req.Sort,
-		Limit:           req.Limit,
-		Offset:          req.Offset,
+		MetricsViewName:    req.MetricsViewName,
+		TimeStart:          req.TimeStart,
+		TimeEnd:            req.TimeEnd,
+		Filter:             req.Filter,
+		Sort:               req.Sort,
+		Limit:              req.Limit,
+		Offset:             req.Offset,
+		TimeZoneAdjustment: req.TimeZoneAdjustment,
 	}
 
 	return q, nil

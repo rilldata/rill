@@ -17,16 +17,17 @@ import (
 )
 
 type MetricsViewTimeSeries struct {
-	MetricsViewName string                       `json:"metrics_view_name,omitempty"`
-	MeasureNames    []string                     `json:"measure_names,omitempty"`
-	InlineMeasures  []*runtimev1.InlineMeasure   `json:"inline_measures,omitempty"`
-	TimeStart       *timestamppb.Timestamp       `json:"time_start,omitempty"`
-	TimeEnd         *timestamppb.Timestamp       `json:"time_end,omitempty"`
-	Limit           int64                        `json:"limit,omitempty"`
-	Offset          int64                        `json:"offset,omitempty"`
-	Sort            []*runtimev1.MetricsViewSort `json:"sort,omitempty"`
-	Filter          *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
-	TimeGranularity runtimev1.TimeGrain          `json:"time_granularity,omitempty"`
+	MetricsViewName    string                        `json:"metrics_view_name,omitempty"`
+	MeasureNames       []string                      `json:"measure_names,omitempty"`
+	InlineMeasures     []*runtimev1.InlineMeasure    `json:"inline_measures,omitempty"`
+	TimeStart          *timestamppb.Timestamp        `json:"time_start,omitempty"`
+	TimeEnd            *timestamppb.Timestamp        `json:"time_end,omitempty"`
+	Limit              int64                         `json:"limit,omitempty"`
+	Offset             int64                         `json:"offset,omitempty"`
+	Sort               []*runtimev1.MetricsViewSort  `json:"sort,omitempty"`
+	Filter             *runtimev1.MetricsViewFilter  `json:"filter,omitempty"`
+	TimeGranularity    runtimev1.TimeGrain           `json:"time_granularity,omitempty"`
+	TimeZoneAdjustment *runtimev1.TimeZoneAdjustment `json:"time_zone_adjustment,omitempty"`
 
 	Result *runtimev1.MetricsViewTimeSeriesResponse `json:"-"`
 }
@@ -109,9 +110,10 @@ func (q *MetricsViewTimeSeries) resolveDuckDB(ctx context.Context, rt *runtime.R
 			End:      q.TimeEnd,
 			Interval: q.TimeGranularity,
 		},
-		Measures:          measures,
-		MetricsView:       mv,
-		MetricsViewFilter: q.Filter,
+		Measures:           measures,
+		MetricsView:        mv,
+		MetricsViewFilter:  q.Filter,
+		TimeZoneAdjustment: q.TimeZoneAdjustment,
 	}
 	err = rt.Query(ctx, instanceID, tsq, priority)
 	if err != nil {
@@ -240,8 +242,13 @@ func (q *MetricsViewTimeSeries) buildDruidMetricsTimeseriesSQL(mv *runtimev1.Met
 	tsAlias := tempName("_ts_")
 	tsSpecifier := convertToDateTruncSpecifier(q.TimeGranularity)
 
+	timezone := "UTC"
+	if q.TimeZoneAdjustment != nil && q.TimeZoneAdjustment.GetTimeZone() != "" {
+		timezone = q.TimeZoneAdjustment.GetTimeZone()
+	}
 	sql := fmt.Sprintf(
-		`SELECT date_trunc('%s', %s) AS %s, %s FROM %q WHERE %s GROUP BY 1 ORDER BY 1`,
+		`SELECT timezone('%s', time_bucket('%s', %s)) AS %s, %s FROM %q WHERE %s GROUP BY 1 ORDER BY 1`,
+		timezone,
 		tsSpecifier,
 		safeName(mv.TimeDimension),
 		tsAlias,

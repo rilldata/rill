@@ -134,13 +134,14 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 	}
 
 	q := &queries.MetricsViewTimeSeries{
-		MetricsViewName: req.MetricsViewName,
-		MeasureNames:    req.MeasureNames,
-		InlineMeasures:  req.InlineMeasures,
-		TimeStart:       req.TimeStart,
-		TimeEnd:         req.TimeEnd,
-		TimeGranularity: req.TimeGranularity,
-		Filter:          req.Filter,
+		MetricsViewName:    req.MetricsViewName,
+		MeasureNames:       req.MeasureNames,
+		InlineMeasures:     req.InlineMeasures,
+		TimeStart:          req.TimeStart,
+		TimeEnd:            req.TimeEnd,
+		TimeGranularity:    req.TimeGranularity,
+		Filter:             req.Filter,
+		TimeZoneAdjustment: req.TimeZoneAdjustment,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -195,14 +196,15 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 	}
 
 	q := &queries.MetricsViewRows{
-		MetricsViewName: req.MetricsViewName,
-		TimeStart:       req.TimeStart,
-		TimeEnd:         req.TimeEnd,
-		TimeGranularity: req.TimeGranularity,
-		Filter:          req.Filter,
-		Sort:            req.Sort,
-		Limit:           req.Limit,
-		Offset:          req.Offset,
+		MetricsViewName:    req.MetricsViewName,
+		TimeStart:          req.TimeStart,
+		TimeEnd:            req.TimeEnd,
+		TimeGranularity:    req.TimeGranularity,
+		Filter:             req.Filter,
+		Sort:               req.Sort,
+		Limit:              req.Limit,
+		Offset:             req.Offset,
+		TimeZoneAdjustment: req.TimeZoneAdjustment,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
