@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import { Callout } from "@rilldata/web-common/components/callout";
-  import { humanReadableErrorMessage } from "@rilldata/web-common/features/sources/add-source/errors.js";
+  import { humanReadableErrorMessage } from "@rilldata/web-common/features/sources/modal/errors.js";
   import { refreshSource } from "@rilldata/web-common/features/sources/refreshSource";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {

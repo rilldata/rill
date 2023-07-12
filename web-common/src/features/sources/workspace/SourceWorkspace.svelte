@@ -1,6 +1,6 @@
 <script lang="ts">
   import { WorkspaceContainer } from "../../../layout/workspace";
-  import SourceInspector from "./SourceInspector.svelte";
+  import SourceInspector from "../inspector/SourceInspector.svelte";
   import SourceWorkspaceBody from "./SourceWorkspaceBody.svelte";
   import SourceWorkspaceHeader from "./SourceWorkspaceHeader.svelte";
 

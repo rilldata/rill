@@ -28,8 +28,8 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import AddAssetButton from "../../entity-management/AddAssetButton.svelte";
   import { useModelNames } from "../../models/selectors";
-  import AddSourceModal from "../add-source/AddSourceModal.svelte";
   import { createModelFromSource } from "../createModel";
+  import AddSourceModal from "../modal/AddSourceModal.svelte";
   import SourceMenuItems from "./SourceMenuItems.svelte";
   import SourceTooltip from "./SourceTooltip.svelte";
 

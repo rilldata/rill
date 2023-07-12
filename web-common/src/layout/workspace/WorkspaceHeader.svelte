@@ -1,9 +1,5 @@
 <script lang="ts">
-  import type { LayoutElement } from "@rilldata/web-local/lib/types";
-  import { getContext } from "svelte";
-  import type { Tweened } from "svelte/motion";
-  import type { Writable } from "svelte/store";
-
+  import { page } from "$app/stores";
   import { IconButton } from "@rilldata/web-common/components/button";
   import HideRightSidebar from "@rilldata/web-common/components/icons/HideRightSidebar.svelte";
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
@@ -11,6 +7,11 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
+  import type { LayoutElement } from "@rilldata/web-local/lib/types";
+  import { getContext } from "svelte";
+  import type { Tweened } from "svelte/motion";
+  import type { Writable } from "svelte/store";
+  import SourceNotSavedIndicator from "../../features/sources/editor/SourceNotSavedIndicator.svelte";
   import WorkspaceHeaderStatusSpinner from "./WorkspaceHeaderStatusSpinner.svelte";
 
   export let onChangeCallback;
@@ -101,6 +102,10 @@
             <div class="flex items-center gap-x-2">Edit</div>
           </TooltipContent>
         </Tooltip>
+
+        {#if $page.url.pathname.startsWith("/source")}
+          <SourceNotSavedIndicator sourceName={titleInput} />
+        {/if}
       </h1>
     {/if}
   </div>

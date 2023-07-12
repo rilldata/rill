@@ -1,8 +1,14 @@
 <script lang="ts">
   import { ConnectedPreviewTable } from "@rilldata/web-common/components/preview-table";
-  import { createRuntimeServiceGetCatalogEntry } from "../../../runtime-client";
+  import {
+    createRuntimeServiceGetCatalogEntry,
+    createRuntimeServiceGetFile,
+  } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import SourceWorkspaceErrorStates from "./SourceWorkspaceErrorStates.svelte";
+  import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
+  import { EntityType } from "../../entity-management/types";
+  import SourceEditor from "../editor/SourceEditor.svelte";
+  import ErrorPane from "../errors/ErrorPane.svelte";
 
   export let sourceName: string;
 
@@ -11,6 +17,21 @@
     sourceName
   );
   $: isValidSource = $getSource?.data?.entry;
+
+  $: fileQuery = createRuntimeServiceGetFile(
+    $runtime.instanceId,
+    getFilePathFromNameAndType(sourceName, EntityType.Table),
+    {
+      query: {
+        // this will ensure that any changes done outside our app is pulled in.
+        refetchOnWindowFocus: true,
+      },
+    }
+  );
+
+  $: yaml = $fileQuery.data?.blob || "";
+
+  let error;
 </script>
 
 <div
@@ -18,7 +39,15 @@
   style:grid-template-rows="max-content auto"
   style:height="100vh"
 >
-  {#if isValidSource}
+  <div class="p-4">
+    <SourceEditor
+      {yaml}
+      {sourceName}
+      on:update
+      on:error={(evt) => (error = evt.detail)}
+    />
+  </div>
+  {#if !error}
     <div
       style:overflow="auto"
       style:height="calc(100vh - var(--header-height) - 2rem)"
@@ -29,6 +58,6 @@
       {/key}
     </div>
   {:else}
-    <SourceWorkspaceErrorStates {sourceName} />
+    <ErrorPane {error} />
   {/if}
 </div>
