@@ -40,5 +40,5 @@
 </svelte:head>
 
 {#if $fileQuery.data}
-  <SourceWorkspace {sourceName} embedded={false} />
+  <SourceWorkspace {sourceName} />
 {/if}

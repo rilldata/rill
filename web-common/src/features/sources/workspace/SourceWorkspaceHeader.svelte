@@ -28,11 +28,9 @@
   import { getRouteFromName } from "../../entity-management/entity-mappers";
   import { isDuplicateName } from "../../entity-management/name-utils";
   import { useAllNames } from "../../entity-management/selectors";
-  import { refreshAndReconcile, refreshSource } from "../refreshSource";
+  import { refreshSource } from "../refreshSource";
 
   export let sourceName: string;
-  export let path: string;
-  export let embedded = false;
 
   const queryClient = useQueryClient();
 
@@ -98,30 +96,19 @@
 
   const onRefreshClick = async (tableName: string) => {
     try {
-      if (embedded) {
-        await refreshAndReconcile(
-          tableName,
-          runtimeInstanceId,
-          $refreshSourceMutation,
-          queryClient,
-          source.properties.path,
-          path
-        );
-      } else {
-        await refreshSource(
-          connector,
-          tableName,
-          runtimeInstanceId,
-          $refreshSourceMutation,
-          $createSource,
-          queryClient,
-          source?.connector === "s3" ||
-            source?.connector === "gcs" ||
-            source?.connector === "https"
-            ? source?.properties?.path
-            : sourceName
-        );
-      }
+      await refreshSource(
+        connector,
+        tableName,
+        runtimeInstanceId,
+        $refreshSourceMutation,
+        $createSource,
+        queryClient,
+        source?.connector === "s3" ||
+          source?.connector === "gcs" ||
+          source?.connector === "https"
+          ? source?.properties?.path
+          : sourceName
+      );
       // invalidate the "refreshed_on" time
       const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
         runtimeInstanceId,
@@ -148,9 +135,8 @@
 
 <div class="grid items-center" style:grid-template-columns="auto max-content">
   <WorkspaceHeader
-    {...{ titleInput: embedded ? path : sourceName, onChangeCallback }}
+    {...{ titleInput: sourceName, onChangeCallback }}
     appRunning={$appQueryStatusStore}
-    editable={!embedded}
     let:width
     width={headerWidth}
   >
@@ -175,17 +161,15 @@
     </svelte:fragment>
     <svelte:fragment slot="cta">
       <PanelCTA side="right">
-        {#if !embedded}
-          <Button on:click={() => onRefreshClick(sourceName)} type="primary">
-            <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}>
-              <RefreshIcon size="14px" />
-            </IconSpaceFixer>
+        <Button on:click={() => onRefreshClick(sourceName)} type="primary">
+          <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}>
+            <RefreshIcon size="14px" />
+          </IconSpaceFixer>
 
-            <ResponsiveButtonText collapse={isHeaderWidthSmall}>
-              Refresh
-            </ResponsiveButtonText>
-          </Button>
-        {/if}
+          <ResponsiveButtonText collapse={isHeaderWidthSmall}>
+            Refresh
+          </ResponsiveButtonText>
+        </Button>
       </PanelCTA>
     </svelte:fragment>
   </WorkspaceHeader>

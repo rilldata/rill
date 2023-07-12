@@ -17,6 +17,13 @@ export const editorTheme = () =>
       color: "var(--ui-editor-error-foreground)",
     },
 
+    // hovered line error styling on selections need this
+    ".cm-selectionLayer .cm-selectionBackground": {
+      // This is unfortunate but it does not seem possible to otherwise select
+      // the right element when the selection is focused.
+      backgroundColor: "hsla(214, 95%, 70%, 25%) !important",
+    },
+
     ".cm-line-level.cm-activeLine": {
       backgroundColor: "hsl(1,90%,80%)",
     },
@@ -105,4 +112,10 @@ export const editorTheme = () =>
     ".ͼm": {
       color: "hsl(215, 25%, 27%)",
     },
+
+    // make sure all the above colors are plain red when there is an error.
+    ".cm-line-error .ͼc, .cm-line-error .ͼ5, .cm-line-error .ͼb, .cm-line-error .ͼd, .cm-line-error .ͼe, .cm-line-error .ͼm":
+      {
+        color: "var(--ui-editor-error-foreground)",
+      },
   });

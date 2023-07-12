@@ -39,6 +39,7 @@ const (
 	QueryService_TableCardinality_FullMethodName             = "/rill.runtime.v1.QueryService/TableCardinality"
 	QueryService_TableColumns_FullMethodName                 = "/rill.runtime.v1.QueryService/TableColumns"
 	QueryService_TableRows_FullMethodName                    = "/rill.runtime.v1.QueryService/TableRows"
+	QueryService_QueryBatch_FullMethodName                   = "/rill.runtime.v1.QueryService/QueryBatch"
 )
 
 // QueryServiceClient is the client API for QueryService service.
@@ -88,6 +89,8 @@ type QueryServiceClient interface {
 	TableColumns(ctx context.Context, in *TableColumnsRequest, opts ...grpc.CallOption) (*TableColumnsResponse, error)
 	// TableRows returns table rows
 	TableRows(ctx context.Context, in *TableRowsRequest, opts ...grpc.CallOption) (*TableRowsResponse, error)
+	// Batch request with different queries
+	QueryBatch(ctx context.Context, in *QueryBatchRequest, opts ...grpc.CallOption) (QueryService_QueryBatchClient, error)
 }
 
 type queryServiceClient struct {
@@ -278,6 +281,38 @@ func (c *queryServiceClient) TableRows(ctx context.Context, in *TableRowsRequest
 	return out, nil
 }
 
+func (c *queryServiceClient) QueryBatch(ctx context.Context, in *QueryBatchRequest, opts ...grpc.CallOption) (QueryService_QueryBatchClient, error) {
+	stream, err := c.cc.NewStream(ctx, &QueryService_ServiceDesc.Streams[0], QueryService_QueryBatch_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &queryServiceQueryBatchClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type QueryService_QueryBatchClient interface {
+	Recv() (*QueryBatchResponse, error)
+	grpc.ClientStream
+}
+
+type queryServiceQueryBatchClient struct {
+	grpc.ClientStream
+}
+
+func (x *queryServiceQueryBatchClient) Recv() (*QueryBatchResponse, error) {
+	m := new(QueryBatchResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // QueryServiceServer is the server API for QueryService service.
 // All implementations must embed UnimplementedQueryServiceServer
 // for forward compatibility
@@ -325,6 +360,8 @@ type QueryServiceServer interface {
 	TableColumns(context.Context, *TableColumnsRequest) (*TableColumnsResponse, error)
 	// TableRows returns table rows
 	TableRows(context.Context, *TableRowsRequest) (*TableRowsResponse, error)
+	// Batch request with different queries
+	QueryBatch(*QueryBatchRequest, QueryService_QueryBatchServer) error
 	mustEmbedUnimplementedQueryServiceServer()
 }
 
@@ -391,6 +428,9 @@ func (UnimplementedQueryServiceServer) TableColumns(context.Context, *TableColum
 }
 func (UnimplementedQueryServiceServer) TableRows(context.Context, *TableRowsRequest) (*TableRowsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TableRows not implemented")
+}
+func (UnimplementedQueryServiceServer) QueryBatch(*QueryBatchRequest, QueryService_QueryBatchServer) error {
+	return status.Errorf(codes.Unimplemented, "method QueryBatch not implemented")
 }
 func (UnimplementedQueryServiceServer) mustEmbedUnimplementedQueryServiceServer() {}
 
@@ -765,6 +805,27 @@ func _QueryService_TableRows_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _QueryService_QueryBatch_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(QueryBatchRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(QueryServiceServer).QueryBatch(m, &queryServiceQueryBatchServer{stream})
+}
+
+type QueryService_QueryBatchServer interface {
+	Send(*QueryBatchResponse) error
+	grpc.ServerStream
+}
+
+type queryServiceQueryBatchServer struct {
+	grpc.ServerStream
+}
+
+func (x *queryServiceQueryBatchServer) Send(m *QueryBatchResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // QueryService_ServiceDesc is the grpc.ServiceDesc for QueryService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -853,6 +914,12 @@ var QueryService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _QueryService_TableRows_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "QueryBatch",
+			Handler:       _QueryService_QueryBatch_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "rill/runtime/v1/queries.proto",
 }

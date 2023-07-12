@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { EditorView } from "@codemirror/basic-setup";
-  import { debounceDocUpdateAnnotation } from "@rilldata/web-common/components/editor/annotations";
+  import type { EditorView } from "@codemirror/view";
+  import { skipDebounceAnnotation } from "@rilldata/web-common/components/editor/annotations";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
@@ -11,17 +11,17 @@
   } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
   import { useModelNames } from "@rilldata/web-common/features/models/selectors";
   import {
-    V1GetCatalogEntryResponse,
     getRuntimeServiceGetCatalogEntryQueryKey,
     runtimeServiceGetCatalogEntry,
     runtimeServicePutFileAndReconcile,
+    V1GetCatalogEntryResponse,
   } from "@rilldata/web-common/runtime-client";
   import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
 
   export let metricsName: string;
-  export let view: EditorView;
+  export let view: EditorView = undefined;
 
   $: models = useModelNames($runtime.instanceId);
 
@@ -71,7 +71,7 @@
       // tell the editor that this is a transaction that should _not_ be
       // debounced. This tells the binder to delay dispatching out of the editor component
       // any reconciliation update.
-      annotations: debounceDocUpdateAnnotation.of(0),
+      annotations: skipDebounceAnnotation.of(true),
     });
     /** invalidate and show results */
     invalidateAfterReconcile(queryClient, $runtime.instanceId, response);
@@ -103,7 +103,7 @@
         to: view.state.doc.length,
         insert: yaml,
       },
-      annotations: debounceDocUpdateAnnotation.of(0),
+      annotations: skipDebounceAnnotation.of(true),
     });
 
     /** invalidate and show results */

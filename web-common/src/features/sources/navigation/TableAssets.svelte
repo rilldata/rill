@@ -30,7 +30,6 @@
   import { useModelNames } from "../../models/selectors";
   import { createModelFromSource } from "../createModel";
   import AddSourceModal from "../modal/AddSourceModal.svelte";
-  import EmbeddedSourceNav from "./EmbeddedSourceNav.svelte";
   import SourceMenuItems from "./SourceMenuItems.svelte";
   import SourceTooltip from "./SourceTooltip.svelte";
 
@@ -124,7 +123,6 @@
         </div>
       {/each}
     {/if}
-    <EmbeddedSourceNav />
     <AddAssetButton
       id="add-table"
       label="Add source"

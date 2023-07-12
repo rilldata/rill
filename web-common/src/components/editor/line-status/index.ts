@@ -1,4 +1,4 @@
-import type { EditorView } from "@codemirror/basic-setup";
+import type { EditorView } from "@codemirror/view";
 import { createLineStatusHighlighter } from "./highlighter";
 import { createLineNumberGutter } from "./line-number-gutter";
 import { createStatusLineGutter } from "./line-status-gutter";
