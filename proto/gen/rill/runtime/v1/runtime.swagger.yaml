@@ -1350,6 +1350,8 @@ paths:
               priority:
                 type: integer
                 format: int32
+              timeZoneAdjustment:
+                $ref: '#/definitions/v1TimeZoneAdjustment'
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/topk/tables/{tableName}:

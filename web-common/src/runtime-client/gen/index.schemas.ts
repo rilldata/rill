@@ -54,6 +54,7 @@ export type QueryServiceColumnTimeSeriesBody = {
   pixels?: number;
   sampleSize?: number;
   priority?: number;
+  timeZoneAdjustment?: V1TimeZoneAdjustment;
 };
 
 export type QueryServiceColumnTimeRangeParams = {
