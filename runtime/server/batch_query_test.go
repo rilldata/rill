@@ -104,32 +104,32 @@ func TestServer_QueryBatch_MetricsViewQueries(t *testing.T) {
 
 		switch response.Key {
 		case 0:
-			require.IsType(t, &runtimev1.QueryBatchResponse_MetricsViewToplistResponse{}, response.Query)
+			require.IsType(t, &runtimev1.QueryBatchResponse_MetricsViewToplistResponse{}, response.Result)
 			tr := response.GetMetricsViewToplistResponse()
 			require.Equal(t, 2, len(tr.Data))
 			require.Equal(t, 2, len(tr.Data[0].Fields))
 			require.Equal(t, 2, len(tr.Data[1].Fields))
 
 		case 1:
-			require.IsType(t, &runtimev1.QueryBatchResponse_MetricsViewComparisonToplistResponse{}, response.Query)
+			require.IsType(t, &runtimev1.QueryBatchResponse_MetricsViewComparisonToplistResponse{}, response.Result)
 			tr := response.GetMetricsViewComparisonToplistResponse()
 			rows := tr.Rows
 			require.NoError(t, err)
 			require.Equal(t, 1, len(rows))
 
 		case 2:
-			require.IsType(t, &runtimev1.QueryBatchResponse_MetricsViewTimeSeriesResponse{}, response.Query)
+			require.IsType(t, &runtimev1.QueryBatchResponse_MetricsViewTimeSeriesResponse{}, response.Result)
 			tr := response.GetMetricsViewTimeSeriesResponse()
 			require.Equal(t, 2, len(tr.Data))
 			require.Equal(t, 2, len(tr.Data[0].Records.Fields))
 
 		case 3:
-			require.IsType(t, &runtimev1.QueryBatchResponse_MetricsViewTotalsResponse{}, response.Query)
+			require.IsType(t, &runtimev1.QueryBatchResponse_MetricsViewTotalsResponse{}, response.Result)
 			tr := response.GetMetricsViewTotalsResponse()
 			require.Equal(t, 1, len(tr.Data.Fields))
 
 		case 4:
-			require.IsType(t, &runtimev1.QueryBatchResponse_MetricsViewRowsResponse{}, response.Query)
+			require.IsType(t, &runtimev1.QueryBatchResponse_MetricsViewRowsResponse{}, response.Result)
 			tr := response.GetMetricsViewRowsResponse()
 			require.Equal(t, 2, len(tr.Data))
 		}
@@ -258,55 +258,55 @@ func TestServer_QueryBatch_ColumnQueries(t *testing.T) {
 
 		switch response.Key {
 		case 0:
-			require.IsType(t, &runtimev1.QueryBatchResponse_ColumnRollupIntervalResponse{}, response.Query)
+			require.IsType(t, &runtimev1.QueryBatchResponse_ColumnRollupIntervalResponse{}, response.Result)
 			tr := response.GetColumnRollupIntervalResponse()
 			require.Equal(t, 1, tr.Start.AsTime().Day())
 			require.Equal(t, 2, tr.End.AsTime().Day())
 
 		case 1:
-			require.IsType(t, &runtimev1.QueryBatchResponse_ColumnTopKResponse{}, response.Query)
+			require.IsType(t, &runtimev1.QueryBatchResponse_ColumnTopKResponse{}, response.Result)
 			tr := response.GetColumnTopKResponse()
 			require.Equal(t, 1, len(tr.CategoricalSummary.GetTopK().Entries))
 
 		case 2:
-			require.IsType(t, &runtimev1.QueryBatchResponse_ColumnNullCountResponse{}, response.Query)
+			require.IsType(t, &runtimev1.QueryBatchResponse_ColumnNullCountResponse{}, response.Result)
 			tr := response.GetColumnNullCountResponse()
 			require.Equal(t, 1.0, tr.Count)
 
 		case 3:
-			require.IsType(t, &runtimev1.QueryBatchResponse_ColumnDescriptiveStatisticsResponse{}, response.Query)
+			require.IsType(t, &runtimev1.QueryBatchResponse_ColumnDescriptiveStatisticsResponse{}, response.Result)
 			tr := response.GetColumnDescriptiveStatisticsResponse()
 			require.Equal(t, 1.0, tr.NumericSummary.GetNumericStatistics().Min)
 			require.Equal(t, 2.0, tr.NumericSummary.GetNumericStatistics().Max)
 
 		case 4:
-			require.IsType(t, &runtimev1.QueryBatchResponse_ColumnTimeGrainResponse{}, response.Query)
+			require.IsType(t, &runtimev1.QueryBatchResponse_ColumnTimeGrainResponse{}, response.Result)
 			tr := response.GetColumnTimeGrainResponse()
 			require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND, tr.TimeGrain)
 
 		case 5:
-			require.IsType(t, &runtimev1.QueryBatchResponse_ColumnNumericHistogramResponse{}, response.Query)
+			require.IsType(t, &runtimev1.QueryBatchResponse_ColumnNumericHistogramResponse{}, response.Result)
 			tr := response.GetColumnNumericHistogramResponse()
 			require.Equal(t, 2, len(tr.NumericSummary.GetNumericHistogramBins().Bins))
 
 		case 6:
-			require.IsType(t, &runtimev1.QueryBatchResponse_ColumnRugHistogramResponse{}, response.Query)
+			require.IsType(t, &runtimev1.QueryBatchResponse_ColumnRugHistogramResponse{}, response.Result)
 			tr := response.GetColumnRugHistogramResponse()
 			require.Equal(t, 2, len(tr.NumericSummary.GetNumericOutliers().Outliers))
 
 		case 7:
-			require.IsType(t, &runtimev1.QueryBatchResponse_ColumnTimeRangeResponse{}, response.Query)
+			require.IsType(t, &runtimev1.QueryBatchResponse_ColumnTimeRangeResponse{}, response.Result)
 			tr := response.GetColumnTimeRangeResponse()
 			require.Equal(t, 1, tr.TimeRangeSummary.Min.AsTime().Day())
 			require.Equal(t, 2, tr.TimeRangeSummary.Max.AsTime().Day())
 
 		case 8:
-			require.IsType(t, &runtimev1.QueryBatchResponse_ColumnCardinalityResponse{}, response.Query)
+			require.IsType(t, &runtimev1.QueryBatchResponse_ColumnCardinalityResponse{}, response.Result)
 			tr := response.GetColumnCardinalityResponse()
 			require.Equal(t, 2.0, tr.CategoricalSummary.GetCardinality())
 
 		case 9:
-			require.IsType(t, &runtimev1.QueryBatchResponse_ColumnTimeSeriesResponse{}, response.Query)
+			require.IsType(t, &runtimev1.QueryBatchResponse_ColumnTimeSeriesResponse{}, response.Result)
 			tr := response.GetColumnTimeSeriesResponse()
 			require.Equal(t, 2, len(tr.Rollup.Results))
 		}
@@ -364,17 +364,17 @@ func TestServer_QueryBatch_TableQueries(t *testing.T) {
 
 		switch response.Key {
 		case 0:
-			require.IsType(t, &runtimev1.QueryBatchResponse_TableCardinalityResponse{}, response.Query)
+			require.IsType(t, &runtimev1.QueryBatchResponse_TableCardinalityResponse{}, response.Result)
 			tr := response.GetTableCardinalityResponse()
 			require.Equal(t, int64(2), tr.Cardinality)
 
 		case 1:
-			require.IsType(t, &runtimev1.QueryBatchResponse_TableColumnsResponse{}, response.Query)
+			require.IsType(t, &runtimev1.QueryBatchResponse_TableColumnsResponse{}, response.Result)
 			tr := response.GetTableColumnsResponse()
 			require.Equal(t, 11, len(tr.ProfileColumns))
 
 		case 2:
-			require.IsType(t, &runtimev1.QueryBatchResponse_TableRowsResponse{}, response.Query)
+			require.IsType(t, &runtimev1.QueryBatchResponse_TableRowsResponse{}, response.Result)
 			tr := response.GetTableRowsResponse()
 			require.Equal(t, 2, len(tr.Data))
 		}
@@ -434,7 +434,7 @@ func TestServer_QueryBatch_SomeErrors(t *testing.T) {
 
 		switch response.Key {
 		case 0:
-			require.IsType(t, &runtimev1.QueryBatchResponse_MetricsViewTotalsResponse{}, response.Query)
+			require.IsType(t, &runtimev1.QueryBatchResponse_MetricsViewTotalsResponse{}, response.Result)
 			tr := response.GetMetricsViewTotalsResponse()
 			require.Equal(t, 1, len(tr.Data.Fields))
 
@@ -442,7 +442,7 @@ func TestServer_QueryBatch_SomeErrors(t *testing.T) {
 			require.Contains(t, response.Error, `Referenced column "pub" not found`)
 
 		case 2:
-			require.IsType(t, &runtimev1.QueryBatchResponse_TableRowsResponse{}, response.Query)
+			require.IsType(t, &runtimev1.QueryBatchResponse_TableRowsResponse{}, response.Result)
 			tr := response.GetTableRowsResponse()
 			require.Equal(t, 2, len(tr.Data))
 		}

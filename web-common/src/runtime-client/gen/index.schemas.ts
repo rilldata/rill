@@ -35,7 +35,6 @@ export type QueryServiceQueryBatch200 = {
 };
 
 export type QueryServiceQueryBatchBody = {
-  priority?: number;
   queries?: V1QueryBatchEntry[];
 };
 

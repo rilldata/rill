@@ -3712,11 +3712,6 @@ export class QueryBatchRequest extends Message<QueryBatchRequest> {
   instanceId = "";
 
   /**
-   * @generated from field: int32 priority = 2;
-   */
-  priority = 0;
-
-  /**
    * @generated from field: repeated rill.runtime.v1.QueryBatchEntry queries = 3;
    */
   queries: QueryBatchEntry[] = [];
@@ -3730,7 +3725,6 @@ export class QueryBatchRequest extends Message<QueryBatchRequest> {
   static readonly typeName = "rill.runtime.v1.QueryBatchRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 3, name: "queries", kind: "message", T: QueryBatchEntry, repeated: true },
   ]);
 
@@ -3766,9 +3760,9 @@ export class QueryBatchResponse extends Message<QueryBatchResponse> {
   error = "";
 
   /**
-   * @generated from oneof rill.runtime.v1.QueryBatchResponse.query
+   * @generated from oneof rill.runtime.v1.QueryBatchResponse.result
    */
-  query: {
+  result: {
     /**
      * @generated from field: rill.runtime.v1.MetricsViewToplistResponse metrics_view_toplist_response = 3;
      */
@@ -3888,24 +3882,24 @@ export class QueryBatchResponse extends Message<QueryBatchResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "key", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "metrics_view_toplist_response", kind: "message", T: MetricsViewToplistResponse, oneof: "query" },
-    { no: 4, name: "metrics_view_comparison_toplist_response", kind: "message", T: MetricsViewComparisonToplistResponse, oneof: "query" },
-    { no: 5, name: "metrics_view_time_series_response", kind: "message", T: MetricsViewTimeSeriesResponse, oneof: "query" },
-    { no: 6, name: "metrics_view_totals_response", kind: "message", T: MetricsViewTotalsResponse, oneof: "query" },
-    { no: 7, name: "metrics_view_rows_response", kind: "message", T: MetricsViewRowsResponse, oneof: "query" },
-    { no: 8, name: "column_rollup_interval_response", kind: "message", T: ColumnRollupIntervalResponse, oneof: "query" },
-    { no: 9, name: "column_top_k_response", kind: "message", T: ColumnTopKResponse, oneof: "query" },
-    { no: 10, name: "column_null_count_response", kind: "message", T: ColumnNullCountResponse, oneof: "query" },
-    { no: 11, name: "column_descriptive_statistics_response", kind: "message", T: ColumnDescriptiveStatisticsResponse, oneof: "query" },
-    { no: 12, name: "column_time_grain_response", kind: "message", T: ColumnTimeGrainResponse, oneof: "query" },
-    { no: 13, name: "column_numeric_histogram_response", kind: "message", T: ColumnNumericHistogramResponse, oneof: "query" },
-    { no: 14, name: "column_rug_histogram_response", kind: "message", T: ColumnRugHistogramResponse, oneof: "query" },
-    { no: 15, name: "column_time_range_response", kind: "message", T: ColumnTimeRangeResponse, oneof: "query" },
-    { no: 16, name: "column_cardinality_response", kind: "message", T: ColumnCardinalityResponse, oneof: "query" },
-    { no: 17, name: "column_time_series_response", kind: "message", T: ColumnTimeSeriesResponse, oneof: "query" },
-    { no: 18, name: "table_cardinality_response", kind: "message", T: TableCardinalityResponse, oneof: "query" },
-    { no: 19, name: "table_columns_response", kind: "message", T: TableColumnsResponse, oneof: "query" },
-    { no: 20, name: "table_rows_response", kind: "message", T: TableRowsResponse, oneof: "query" },
+    { no: 3, name: "metrics_view_toplist_response", kind: "message", T: MetricsViewToplistResponse, oneof: "result" },
+    { no: 4, name: "metrics_view_comparison_toplist_response", kind: "message", T: MetricsViewComparisonToplistResponse, oneof: "result" },
+    { no: 5, name: "metrics_view_time_series_response", kind: "message", T: MetricsViewTimeSeriesResponse, oneof: "result" },
+    { no: 6, name: "metrics_view_totals_response", kind: "message", T: MetricsViewTotalsResponse, oneof: "result" },
+    { no: 7, name: "metrics_view_rows_response", kind: "message", T: MetricsViewRowsResponse, oneof: "result" },
+    { no: 8, name: "column_rollup_interval_response", kind: "message", T: ColumnRollupIntervalResponse, oneof: "result" },
+    { no: 9, name: "column_top_k_response", kind: "message", T: ColumnTopKResponse, oneof: "result" },
+    { no: 10, name: "column_null_count_response", kind: "message", T: ColumnNullCountResponse, oneof: "result" },
+    { no: 11, name: "column_descriptive_statistics_response", kind: "message", T: ColumnDescriptiveStatisticsResponse, oneof: "result" },
+    { no: 12, name: "column_time_grain_response", kind: "message", T: ColumnTimeGrainResponse, oneof: "result" },
+    { no: 13, name: "column_numeric_histogram_response", kind: "message", T: ColumnNumericHistogramResponse, oneof: "result" },
+    { no: 14, name: "column_rug_histogram_response", kind: "message", T: ColumnRugHistogramResponse, oneof: "result" },
+    { no: 15, name: "column_time_range_response", kind: "message", T: ColumnTimeRangeResponse, oneof: "result" },
+    { no: 16, name: "column_cardinality_response", kind: "message", T: ColumnCardinalityResponse, oneof: "result" },
+    { no: 17, name: "column_time_series_response", kind: "message", T: ColumnTimeSeriesResponse, oneof: "result" },
+    { no: 18, name: "table_cardinality_response", kind: "message", T: TableCardinalityResponse, oneof: "result" },
+    { no: 19, name: "table_columns_response", kind: "message", T: TableColumnsResponse, oneof: "result" },
+    { no: 20, name: "table_rows_response", kind: "message", T: TableRowsResponse, oneof: "result" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): QueryBatchResponse {

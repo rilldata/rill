@@ -1468,9 +1468,6 @@ paths:
           schema:
             type: object
             properties:
-              priority:
-                type: integer
-                format: int32
               queries:
                 type: array
                 items:

@@ -10007,8 +10007,6 @@ func (m *QueryBatchRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
-	// no validation rules for Priority
-
 	for idx, item := range m.GetQueries() {
 		_, _ = idx, item
 
@@ -10149,11 +10147,11 @@ func (m *QueryBatchResponse) validate(all bool) error {
 
 	// no validation rules for Error
 
-	switch v := m.Query.(type) {
+	switch v := m.Result.(type) {
 	case *QueryBatchResponse_MetricsViewToplistResponse:
 		if v == nil {
 			err := QueryBatchResponseValidationError{
-				field:  "Query",
+				field:  "Result",
 				reason: "oneof value cannot be a typed-nil",
 			}
 			if !all {
@@ -10194,7 +10192,7 @@ func (m *QueryBatchResponse) validate(all bool) error {
 	case *QueryBatchResponse_MetricsViewComparisonToplistResponse:
 		if v == nil {
 			err := QueryBatchResponseValidationError{
-				field:  "Query",
+				field:  "Result",
 				reason: "oneof value cannot be a typed-nil",
 			}
 			if !all {
@@ -10235,7 +10233,7 @@ func (m *QueryBatchResponse) validate(all bool) error {
 	case *QueryBatchResponse_MetricsViewTimeSeriesResponse:
 		if v == nil {
 			err := QueryBatchResponseValidationError{
-				field:  "Query",
+				field:  "Result",
 				reason: "oneof value cannot be a typed-nil",
 			}
 			if !all {
@@ -10276,7 +10274,7 @@ func (m *QueryBatchResponse) validate(all bool) error {
 	case *QueryBatchResponse_MetricsViewTotalsResponse:
 		if v == nil {
 			err := QueryBatchResponseValidationError{
-				field:  "Query",
+				field:  "Result",
 				reason: "oneof value cannot be a typed-nil",
 			}
 			if !all {
@@ -10317,7 +10315,7 @@ func (m *QueryBatchResponse) validate(all bool) error {
 	case *QueryBatchResponse_MetricsViewRowsResponse:
 		if v == nil {
 			err := QueryBatchResponseValidationError{
-				field:  "Query",
+				field:  "Result",
 				reason: "oneof value cannot be a typed-nil",
 			}
 			if !all {
@@ -10358,7 +10356,7 @@ func (m *QueryBatchResponse) validate(all bool) error {
 	case *QueryBatchResponse_ColumnRollupIntervalResponse:
 		if v == nil {
 			err := QueryBatchResponseValidationError{
-				field:  "Query",
+				field:  "Result",
 				reason: "oneof value cannot be a typed-nil",
 			}
 			if !all {
@@ -10399,7 +10397,7 @@ func (m *QueryBatchResponse) validate(all bool) error {
 	case *QueryBatchResponse_ColumnTopKResponse:
 		if v == nil {
 			err := QueryBatchResponseValidationError{
-				field:  "Query",
+				field:  "Result",
 				reason: "oneof value cannot be a typed-nil",
 			}
 			if !all {
@@ -10440,7 +10438,7 @@ func (m *QueryBatchResponse) validate(all bool) error {
 	case *QueryBatchResponse_ColumnNullCountResponse:
 		if v == nil {
 			err := QueryBatchResponseValidationError{
-				field:  "Query",
+				field:  "Result",
 				reason: "oneof value cannot be a typed-nil",
 			}
 			if !all {
@@ -10481,7 +10479,7 @@ func (m *QueryBatchResponse) validate(all bool) error {
 	case *QueryBatchResponse_ColumnDescriptiveStatisticsResponse:
 		if v == nil {
 			err := QueryBatchResponseValidationError{
-				field:  "Query",
+				field:  "Result",
 				reason: "oneof value cannot be a typed-nil",
 			}
 			if !all {
@@ -10522,7 +10520,7 @@ func (m *QueryBatchResponse) validate(all bool) error {
 	case *QueryBatchResponse_ColumnTimeGrainResponse:
 		if v == nil {
 			err := QueryBatchResponseValidationError{
-				field:  "Query",
+				field:  "Result",
 				reason: "oneof value cannot be a typed-nil",
 			}
 			if !all {
@@ -10563,7 +10561,7 @@ func (m *QueryBatchResponse) validate(all bool) error {
 	case *QueryBatchResponse_ColumnNumericHistogramResponse:
 		if v == nil {
 			err := QueryBatchResponseValidationError{
-				field:  "Query",
+				field:  "Result",
 				reason: "oneof value cannot be a typed-nil",
 			}
 			if !all {
@@ -10604,7 +10602,7 @@ func (m *QueryBatchResponse) validate(all bool) error {
 	case *QueryBatchResponse_ColumnRugHistogramResponse:
 		if v == nil {
 			err := QueryBatchResponseValidationError{
-				field:  "Query",
+				field:  "Result",
 				reason: "oneof value cannot be a typed-nil",
 			}
 			if !all {
@@ -10645,7 +10643,7 @@ func (m *QueryBatchResponse) validate(all bool) error {
 	case *QueryBatchResponse_ColumnTimeRangeResponse:
 		if v == nil {
 			err := QueryBatchResponseValidationError{
-				field:  "Query",
+				field:  "Result",
 				reason: "oneof value cannot be a typed-nil",
 			}
 			if !all {
@@ -10686,7 +10684,7 @@ func (m *QueryBatchResponse) validate(all bool) error {
 	case *QueryBatchResponse_ColumnCardinalityResponse:
 		if v == nil {
 			err := QueryBatchResponseValidationError{
-				field:  "Query",
+				field:  "Result",
 				reason: "oneof value cannot be a typed-nil",
 			}
 			if !all {
@@ -10727,7 +10725,7 @@ func (m *QueryBatchResponse) validate(all bool) error {
 	case *QueryBatchResponse_ColumnTimeSeriesResponse:
 		if v == nil {
 			err := QueryBatchResponseValidationError{
-				field:  "Query",
+				field:  "Result",
 				reason: "oneof value cannot be a typed-nil",
 			}
 			if !all {
@@ -10768,7 +10766,7 @@ func (m *QueryBatchResponse) validate(all bool) error {
 	case *QueryBatchResponse_TableCardinalityResponse:
 		if v == nil {
 			err := QueryBatchResponseValidationError{
-				field:  "Query",
+				field:  "Result",
 				reason: "oneof value cannot be a typed-nil",
 			}
 			if !all {
@@ -10809,7 +10807,7 @@ func (m *QueryBatchResponse) validate(all bool) error {
 	case *QueryBatchResponse_TableColumnsResponse:
 		if v == nil {
 			err := QueryBatchResponseValidationError{
-				field:  "Query",
+				field:  "Result",
 				reason: "oneof value cannot be a typed-nil",
 			}
 			if !all {
@@ -10850,7 +10848,7 @@ func (m *QueryBatchResponse) validate(all bool) error {
 	case *QueryBatchResponse_TableRowsResponse:
 		if v == nil {
 			err := QueryBatchResponseValidationError{
-				field:  "Query",
+				field:  "Result",
 				reason: "oneof value cannot be a typed-nil",
 			}
 			if !all {

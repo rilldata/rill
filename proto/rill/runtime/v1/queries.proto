@@ -672,14 +672,13 @@ message QueryBatchEntry {
 
 message QueryBatchRequest {
   string instance_id = 1;
-  int32 priority = 2;
   repeated QueryBatchEntry queries = 3;
 }
 
 message QueryBatchResponse {
   int32 key = 1;
   string error = 2;
-  oneof query {
+  oneof result {
     MetricsViewToplistResponse metrics_view_toplist_response = 3;
     MetricsViewComparisonToplistResponse metrics_view_comparison_toplist_response = 4;
     MetricsViewTimeSeriesResponse metrics_view_time_series_response = 5;
