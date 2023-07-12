@@ -581,6 +581,7 @@ message ColumnTimeSeriesRequest {
   int32 pixels = 7 [(validate.rules).int32.gte = 0];
   int32 sample_size = 8 [(validate.rules).int32.gte = 0];
   int32 priority = 9;
+  TimeZoneAdjustment time_zone_adjustment = 10;
   message BasicMeasure {
     string id = 1;
     // mandatory user defined metadata
