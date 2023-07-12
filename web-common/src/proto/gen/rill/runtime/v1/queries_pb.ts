@@ -846,6 +846,12 @@ export class TimeZoneAdjustment extends Message<TimeZoneAdjustment> {
      */
     value: Timestamp;
     case: "origin";
+  } | {
+    /**
+     * @generated from field: string time_zone = 3;
+     */
+    value: string;
+    case: "timeZone";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<TimeZoneAdjustment>) {
@@ -858,6 +864,7 @@ export class TimeZoneAdjustment extends Message<TimeZoneAdjustment> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "offset", kind: "scalar", T: 5 /* ScalarType.INT32 */, oneof: "adjustment" },
     { no: 2, name: "origin", kind: "message", T: Timestamp, oneof: "adjustment" },
+    { no: 3, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "adjustment" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TimeZoneAdjustment {

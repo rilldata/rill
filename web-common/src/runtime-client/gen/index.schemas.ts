@@ -332,6 +332,7 @@ export interface V1TopK {
 export interface V1TimeZoneAdjustment {
   offset?: number;
   origin?: string;
+  timeZone?: string;
 }
 
 export type V1TimeSeriesValueRecords = { [key: string]: any };

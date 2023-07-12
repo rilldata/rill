@@ -2322,6 +2322,18 @@ func (m *TimeZoneAdjustment) validate(all bool) error {
 			}
 		}
 
+	case *TimeZoneAdjustment_TimeZone:
+		if v == nil {
+			err := TimeZoneAdjustmentValidationError{
+				field:  "Adjustment",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for TimeZone
 	default:
 		_ = v // ensures v is used
 	}

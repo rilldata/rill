@@ -3153,6 +3153,8 @@ definitions:
       origin:
         type: string
         format: date-time
+      timeZone:
+        type: string
   v1TopK:
     type: object
     properties:
