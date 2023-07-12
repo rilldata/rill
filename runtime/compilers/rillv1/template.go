@@ -253,7 +253,7 @@ func resourceNameFromArgs(parts ...string) (ResourceName, error) {
 	}
 
 	return ResourceName{
-		Kind: kind.String(),
+		Kind: kind,
 		Name: parts[1],
 	}, nil
 }

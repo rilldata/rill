@@ -35,7 +35,7 @@ func TestAnalyze(t *testing.T) {
 			name:     "ref",
 			template: `{{ configure "a: b\nc: d" }}{{ configure "e" "f" }}{{ dependency "bar" }} SELECT * FROM {{ ref "model" "foo" }} WHERE hello='{{ .env.world }}' AND world='{{ (lookup "baz").spec.baz.spaz }}'`,
 			want: &TemplateMetadata{
-				Refs:                     []ResourceName{{Name: "bar"}, {Kind: "Model", Name: "foo"}, {Name: "baz"}},
+				Refs:                     []ResourceName{{Name: "bar"}, {Kind: ResourceKindModel, Name: "foo"}, {Name: "baz"}},
 				Config:                   map[string]any{"a": "b", "c": "d", "e": "f"},
 				UsesTemplating:           true,
 				ResolvedWithPlaceholders: `SELECT * FROM <no value> WHERE hello='<no value>' AND world='<no value>'`,

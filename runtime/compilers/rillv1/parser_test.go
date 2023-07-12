@@ -59,7 +59,7 @@ func makeRepo(t *testing.T, pathsAndContents ...string) drivers.RepoStore {
 	require.True(t, ok)
 
 	for i := 0; i < len(pathsAndContents); i += 2 {
-		repo.Put(context.TODO(), "", pathsAndContents[i], strings.NewReader(strings.TrimSpace(pathsAndContents[i+1])))
+		repo.Put(context.Background(), "", pathsAndContents[i], strings.NewReader(strings.TrimSpace(pathsAndContents[i+1])))
 	}
 
 	return repo
