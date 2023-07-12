@@ -1,16 +1,20 @@
 import {
   createQueryServiceMetricsViewToplist,
   createRuntimeServiceGetCatalogEntry,
+  RpcStatus,
   type V1MetricsView,
 } from "@rilldata/web-common/runtime-client";
 import type { StateManagers } from "../state-managers/state-managers";
-import { derived } from "svelte/store";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
+import { derived, Readable } from "svelte/store";
+import type {
+  CreateQueryResult,
+  QueryObserverResult,
+} from "@tanstack/svelte-query";
 
 export const useMetaQuery = <T = V1MetricsView>(
   ctx: StateManagers,
   selector?: (meta: V1MetricsView) => T
-) => {
+): Readable<QueryObserverResult<T | V1MetricsView, RpcStatus>> => {
   return derived(
     [ctx.runtime, ctx.metricsViewName],
     ([runtime, metricViewName], set) => {
