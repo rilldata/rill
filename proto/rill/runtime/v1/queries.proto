@@ -284,6 +284,7 @@ message TimeZoneAdjustment {
   oneof adjustment {
     int32 offset = 1;
     google.protobuf.Timestamp origin = 2;
+    string time_zone = 3;
   }
 }
 
