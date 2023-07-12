@@ -2,6 +2,7 @@ import {
   createQueryServiceMetricsViewToplist,
   createRuntimeServiceGetCatalogEntry,
   RpcStatus,
+  V1MetricsViewToplistResponse,
   type V1MetricsView,
 } from "@rilldata/web-common/runtime-client";
 import type { StateManagers } from "../state-managers/state-managers";
@@ -52,7 +53,7 @@ export const getFilterSearchList = (
     addNull: boolean;
     searchText: string;
   }
-) => {
+): Readable<QueryObserverResult<V1MetricsViewToplistResponse, RpcStatus>> => {
   const hasTimeSeriesStore = useModelHasTimeSeries(ctx);
   return derived(
     [ctx.dashboardStore, hasTimeSeriesStore, ctx.metricsViewName, ctx.runtime],

@@ -36,15 +36,13 @@ The main feature-set component for dashboard filters
   const MIN_CONTAINER_HEIGHT = "34px";
 
   const metaQuery = useMetaQuery(StateManagers);
-  let dimensions: Array<MetricsViewDimension>;
-  $: dimensions = $metaQuery.data?.dimensions;
+  $: dimensions = $metaQuery.data?.dimensions ?? [];
 
   function isFiltered(filters: V1MetricsViewFilter): boolean {
     if (!filters) return false;
     return filters.include.length > 0 || filters.exclude.length > 0;
   }
 
-  let topListQuery;
   let searchText = "";
   let searchedValues: string[] | null = null;
   let activeDimensionName;
@@ -58,11 +56,6 @@ The main feature-set component for dashboard filters
     addNull: "null".includes(searchText),
   });
 
-  function setActiveDimension(name, value) {
-    activeDimensionName = name;
-    searchText = value;
-  }
-
   $: if (!$topListQuery?.isFetching && searchText != "") {
     const topListData = $topListQuery?.data?.data ?? [];
     searchedValues = topListData.map((datum) => datum[activeColumn]) ?? [];
@@ -71,7 +64,13 @@ The main feature-set component for dashboard filters
   $: hasFilters = isFiltered($dashboardStore.filters);
 
   /** prune the values and prepare for templating */
-  let currentDimensionFilters = [];
+  let currentDimensionFilters: {
+    name: string;
+    label: string;
+    selectedValues: any[];
+    filterType: string;
+  }[] = [];
+
   $: {
     const dimensionIdMap = getMapFromArray(
       dimensions,
@@ -99,6 +98,11 @@ The main feature-set component for dashboard filters
     ];
     // sort based on name to make sure toggling include/exclude is not jarring
     currentDimensionFilters.sort((a, b) => (a.name > b.name ? 1 : -1));
+  }
+
+  function setActiveDimension(name, value) {
+    activeDimensionName = name;
+    searchText = value;
   }
 
   const excludeChipColors = {
