@@ -143,6 +143,7 @@ func (c *connection) FilePaths(ctx context.Context, src *drivers.FileSource) ([]
 		return nil, fmt.Errorf("failed to fetch url %s: %s", conf.Path, resp.Status)
 	}
 
+	// TODO :: I don't like src.Name
 	file, size, err := fileutil.CopyToTempFile(resp.Body, src.Name, extension)
 	if err != nil {
 		return nil, err

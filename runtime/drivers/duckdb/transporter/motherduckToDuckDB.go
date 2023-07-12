@@ -28,8 +28,14 @@ func NewMotherduckToDuckDB(from drivers.Connection, to drivers.OLAPStore, logger
 
 // TODO :: should it run count from user_query to set target in progress ?
 func (t *motherduckToDuckDB) Transfer(ctx context.Context, source drivers.Source, sink drivers.Sink, opts *drivers.TransferOpts, p drivers.Progress) error {
-	src, _ := source.DatabaseSource()
-	fSink, _ := sink.DatabaseSink()
+	src, ok := source.DatabaseSource()
+	if !ok {
+		return fmt.Errorf("type of source should `drivers.DatabaseSource`")
+	}
+	fSink, ok := sink.DatabaseSink()
+	if !ok {
+		return fmt.Errorf("type of source should `drivers.DatabaseSink`")
+	}
 
 	config := t.from.Config()
 	err := t.to.WithConnection(ctx, 1, func(ctx, ensuredCtx context.Context) error {

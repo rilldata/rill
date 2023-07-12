@@ -108,6 +108,7 @@ func (c *Connection) AsTransporter(from, to drivers.Connection) (drivers.Transpo
 	return nil, false
 }
 
+// AsFileStore implements drivers.Connection.
 func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
@@ -153,7 +154,7 @@ func parseConfig(props map[string]any) (*config, error) {
 //   - aws_secret_access_key
 //   - aws_session_token
 //
-// Additionally in case ALLOW_HOST_CREDENTIALS is true it looks for credentials stored on host machine as well
+// Additionally in case allow_host_credentials is true it looks for credentials stored on host machine as well
 func (c *Connection) DownloadFiles(ctx context.Context, src *drivers.BucketSource) (drivers.FileIterator, error) {
 	conf, err := parseConfig(src.Properties)
 	if err != nil {
@@ -182,6 +183,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, src *drivers.BucketSourc
 
 	it, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
 	if err != nil {
+		// TODO :: fix this for single file access. for single file first call only happens during download
 		var failureErr awserr.RequestFailure
 		if !errors.As(err, &failureErr) {
 			return nil, err

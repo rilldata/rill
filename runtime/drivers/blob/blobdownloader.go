@@ -241,6 +241,7 @@ func (it *blobIterator) Size(unit drivers.ProgressUnit) (int64, bool) {
 			if obj.full {
 				size += obj.obj.Size
 			} else {
+				// TODO :: make it more accurate considering more data can be downloaded
 				size += int64(obj.extractOption.limitInBytes)
 			}
 		}

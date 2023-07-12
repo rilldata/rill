@@ -98,7 +98,9 @@ func (d Driver) Drop(config map[string]any, logger *zap.Logger) error {
 
 type connection struct {
 	db           *sqlx.DB
+	// driverConfig is input config passed during Open
 	driverConfig map[string]any
+	// config is parsed configs
 	config       *config
 	logger       *zap.Logger
 	// This driver may issue both OLAP and "meta" queries (like catalog info) against DuckDB.

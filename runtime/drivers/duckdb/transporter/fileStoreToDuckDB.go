@@ -26,10 +26,15 @@ func NewFileStoreToDuckDB(from drivers.FileStore, to drivers.OLAPStore, logger *
 var _ drivers.Transporter = &fileStoreToDuckDB{}
 
 func (t *fileStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, sink drivers.Sink, opts *drivers.TransferOpts, p drivers.Progress) error {
-	src, _ := source.FilesSource()
-	fSink, _ := sink.DatabaseSink()
+	src, ok := source.FileSource()
+	if !ok {
+		return fmt.Errorf("type of source should `drivers.FilesSource`")
+	}
+	fSink, ok := sink.DatabaseSink()
+	if !ok {
+		return fmt.Errorf("type of source should `drivers.DatabaseSink`")
+	}
 
-	// get all files in case glob passed
 	localPaths, err := t.from.FilePaths(ctx, src)
 	if err != nil {
 		return err

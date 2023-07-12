@@ -132,22 +132,22 @@ type ObjectStore interface {
 }
 
 type FileStore interface {
-	// FilePaths returns local paths where files are stored
+	// FilePaths returns local absolute paths where files are stored
 	FilePaths(ctx context.Context, src *FileSource) ([]string, error)
 }
 
-// FileIterator provides ways to iteratively downloade files from external sources
+// FileIterator provides ways to iteratively download files from external sources
 // Clients should call close once they are done with iterator to release any resources
 type FileIterator interface {
 	// Close do cleanup and release resources
 	Close() error
 	// NextBatch returns a list of file downloaded from external sources
-	// NextBatch cleanups file created in previous batch
+	// and cleanups file created in previous batch
 	NextBatch(limit int) ([]string, error)
 	// HasNext can be utlisied to check if iterator has more elements left
 	HasNext() bool
-	// Returns size in unit. The numbers may not be 100% accurate
-	// returns 0,false if not able to compute size in given unit
+	// Size returns size of data downloaded in unit.
+	// Returns 0,false if not able to compute size in given unit
 	Size(unit ProgressUnit) (int64, bool)
 }
 
@@ -157,12 +157,43 @@ type Transporter interface {
 	Transfer(ctx context.Context, source Source, sink Sink, t *TransferOpts, p Progress) error
 }
 
+type TransferOpts struct {
+	IteratorBatch int
+	LimitInBytes  int64
+}
+
+func NewTransferOpts(opts ...TransferOption) *TransferOpts {
+	t := &TransferOpts{
+		IteratorBatch: _iteratorBatch,
+		LimitInBytes:  math.MaxInt64,
+	}
+
+	for _, opt := range opts {
+		opt(t)
+	}
+	return t
+}
+
+type TransferOption func(*TransferOpts)
+
+func WithIteratorBatch(b int) TransferOption {
+	return func(t *TransferOpts) {
+		t.IteratorBatch = b
+	}
+}
+
+func WithLimitInBytes(limit int64) TransferOption {
+	return func(t *TransferOpts) {
+		t.LimitInBytes = limit
+	}
+}
+
 // A Source is expected to only return ok=true for one of the source types.
 // The caller will know which type based on the connector type.
 type Source interface {
 	BucketSource() (*BucketSource, bool)
 	DatabaseSource() (*DatabaseSource, bool)
-	FilesSource() (*FileSource, bool)
+	FileSource() (*FileSource, bool)
 }
 
 // A Sink is expected to only return ok=true for one of the sink types.
@@ -188,7 +219,7 @@ func (b *BucketSource) DatabaseSource() (*DatabaseSource, bool) {
 	return nil, false
 }
 
-func (b *BucketSource) FilesSource() (*FileSource, bool) {
+func (b *BucketSource) FileSource() (*FileSource, bool) {
 	return nil, false
 }
 
@@ -226,7 +257,7 @@ func (d *DatabaseSource) DatabaseSource() (*DatabaseSource, bool) {
 	return d, true
 }
 
-func (d *DatabaseSource) FilesSource() (*FileSource, bool) {
+func (d *DatabaseSource) FileSource() (*FileSource, bool) {
 	return nil, false
 }
 
@@ -260,44 +291,14 @@ func (f *FileSource) DatabaseSource() (*DatabaseSource, bool) {
 	return nil, false
 }
 
-func (f *FileSource) FilesSource() (*FileSource, bool) {
+func (f *FileSource) FileSource() (*FileSource, bool) {
 	return f, true
-}
-
-type TransferOpts struct {
-	IteratorBatch int
-	LimitInBytes  int64
-}
-
-func NewTransferOpts(opts ...TransferOption) *TransferOpts {
-	t := &TransferOpts{
-		IteratorBatch: _iteratorBatch,
-		LimitInBytes:  math.MaxInt64,
-	}
-
-	for _, opt := range opts {
-		opt(t)
-	}
-	return t
-}
-
-type TransferOption func(*TransferOpts)
-
-func WithIteratorBatch(b int) TransferOption {
-	return func(t *TransferOpts) {
-		t.IteratorBatch = b
-	}
-}
-
-func WithLimitInBytes(limit int64) TransferOption {
-	return func(t *TransferOpts) {
-		t.LimitInBytes = limit
-	}
 }
 
 // Progress is an interface for communicating progress info
 type Progress interface {
 	Target(val int64, unit ProgressUnit)
+	// Observe is used by caller to provide incremental updates
 	Observe(val int64, unit ProgressUnit)
 }
 

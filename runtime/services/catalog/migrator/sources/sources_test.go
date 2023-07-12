@@ -551,6 +551,111 @@ func TestJsonIngestionWithInvalidParam(t *testing.T) {
 	require.Error(t, err, "Invalid named parameter \"invalid_param\" for function read_json")
 }
 
+func TestPropertiesEquals(t *testing.T) {
+	s1 := &runtimev1.Source{
+		Name:       "s1",
+		Connector:  "local",
+		Properties: newStruct(t, map[string]any{"a": 100, "b": "hello world"}),
+	}
+
+	s2 := &runtimev1.Source{
+		Name:       "s2",
+		Connector:  "local",
+		Properties: newStruct(t, map[string]any{"a": 100, "b": "hello world"}),
+	}
+
+	s3 := &runtimev1.Source{
+		Name:       "s3",
+		Connector:  "local",
+		Properties: newStruct(t, map[string]any{"a": 101, "b": "hello world"}),
+	}
+
+	s4 := &runtimev1.Source{
+		Name:       "s4",
+		Connector:  "local",
+		Properties: newStruct(t, map[string]any{"a": 100, "c": "hello world"}),
+	}
+
+	s5 := &runtimev1.Source{
+		Name:      "s5",
+		Connector: "local",
+		Properties: newStruct(t, map[string]any{
+			"number": 0,
+			"string": "hello world",
+			"nestedMap": map[string]any{
+				"nestedMap": map[string]any{
+					"string": "value",
+					"number": 2,
+				},
+				"string": "value",
+				"number": 1,
+			},
+		}),
+	}
+
+	s6 := &runtimev1.Source{
+		Name:      "s6",
+		Connector: "local",
+		Properties: newStruct(t, map[string]any{
+			"number": 0,
+			"string": "hello world",
+			"nestedMap": map[string]any{
+				"number": 1,
+				"string": "value",
+				"nestedMap": map[string]any{
+					"number": 2,
+					"string": "value",
+				},
+			},
+		}),
+	}
+
+	s7 := &runtimev1.Source{
+		Name:      "s7",
+		Connector: "local",
+		Properties: newStruct(t, map[string]any{
+			"number": 0,
+			"string": "hello world",
+			"nestedMap": map[string]any{
+				"number": 1,
+				"string": "value",
+			},
+		}),
+	}
+
+	m := migrator.Migrators[drivers.ObjectTypeSource]
+	// s1 and s2 should be equal
+	ctx := context.Background()
+	require.True(t, m.IsEqual(ctx, &drivers.CatalogEntry{Object: s1}, &drivers.CatalogEntry{Object: s2}))
+	require.True(t, m.IsEqual(ctx, &drivers.CatalogEntry{Object: s2}, &drivers.CatalogEntry{Object: s1}))
+
+	// s1 should not equal s3 or s4
+	require.False(t, m.IsEqual(ctx, &drivers.CatalogEntry{Object: s1}, &drivers.CatalogEntry{Object: s3}))
+	require.False(t, m.IsEqual(ctx, &drivers.CatalogEntry{Object: s3}, &drivers.CatalogEntry{Object: s1}))
+	require.False(t, m.IsEqual(ctx, &drivers.CatalogEntry{Object: s1}, &drivers.CatalogEntry{Object: s4}))
+	require.False(t, m.IsEqual(ctx, &drivers.CatalogEntry{Object: s4}, &drivers.CatalogEntry{Object: s1}))
+
+	// s2 should not equal s3 or s4
+	require.False(t, m.IsEqual(ctx, &drivers.CatalogEntry{Object: s2}, &drivers.CatalogEntry{Object: s3}))
+	require.False(t, m.IsEqual(ctx, &drivers.CatalogEntry{Object: s3}, &drivers.CatalogEntry{Object: s2}))
+	require.False(t, m.IsEqual(ctx, &drivers.CatalogEntry{Object: s2}, &drivers.CatalogEntry{Object: s4}))
+	require.False(t, m.IsEqual(ctx, &drivers.CatalogEntry{Object: s4}, &drivers.CatalogEntry{Object: s2}))
+
+	// s5 and s6 should be equal
+	require.True(t, m.IsEqual(ctx, &drivers.CatalogEntry{Object: s5}, &drivers.CatalogEntry{Object: s6}))
+	require.True(t, m.IsEqual(ctx, &drivers.CatalogEntry{Object: s6}, &drivers.CatalogEntry{Object: s5}))
+
+	// s6 and s7 should not be equal
+	require.False(t, m.IsEqual(ctx, &drivers.CatalogEntry{Object: s7}, &drivers.CatalogEntry{Object: s6}))
+	require.False(t, m.IsEqual(ctx, &drivers.CatalogEntry{Object: s6}, &drivers.CatalogEntry{Object: s7}))
+}
+
+func newStruct(t *testing.T, m map[string]any) *structpb.Struct {
+	v, err := structpb.NewStruct(m)
+	require.NoError(t, err)
+	return v
+}
+
 func createFilePath(t *testing.T, dirPath string, fileName string) string {
 	testdataPathAbs, err := filepath.Abs(dirPath)
 	require.NoError(t, err)

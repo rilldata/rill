@@ -29,8 +29,15 @@ func NewObjectStoreToDuckDB(from drivers.ObjectStore, to drivers.OLAPStore, logg
 }
 
 func (t *objectStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, sink drivers.Sink, opts *drivers.TransferOpts, p drivers.Progress) error {
-	src, _ := source.BucketSource()
-	dbSink, _ := sink.DatabaseSink()
+	src, ok := source.BucketSource()
+	if !ok {
+		return fmt.Errorf("type of source should `drivers.BucketSource`")
+	}
+	dbSink, ok := sink.DatabaseSink()
+	if !ok {
+		return fmt.Errorf("type of source should `drivers.DatabaseSink`")
+	}
+
 	iterator, err := t.from.DownloadFiles(ctx, src)
 	if err != nil {
 		return err
@@ -44,9 +51,10 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, source drivers.Sourc
 
 	p.Target(size, drivers.ProgressUnitByte)
 	appendToTable := false
-	format, formatDefined := src.Properties["format"].(string)
+	var format string
+	val, formatDefined := src.Properties["format"]
 	if formatDefined {
-		format = fmt.Sprintf(".%s", format)
+		format = fmt.Sprintf(".%s", val.(string))
 	}
 
 	allowSchemaRelaxation, err := schemaRelaxationProperty(src.Properties)
@@ -98,7 +106,6 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, source drivers.Sourc
 
 		size := fileSize(files)
 		t.logger.Info("ingested files", zap.Strings("files", files), zap.Int64("bytes_ingested", size), zap.Duration("duration", time.Since(st)), observability.ZapCtx(ctx))
-		// TODO :: incremental or total
 		p.Observe(size, drivers.ProgressUnitByte)
 		appendToTable = true
 	}
@@ -242,14 +249,12 @@ func (a *appender) scanSchemaFromQuery(ctx context.Context, qry string) (map[str
 	for result.Next() {
 		var s duckDBTableSchemaResult
 		if err := result.StructScan(&s); err != nil {
-			// TODO :: handle duckdb error
 			return nil, err
 		}
 		schema[s.ColumnName] = s.ColumnType
 	}
 
 	if err := result.Err(); err != nil {
-		// TODO :: handle duckdb error
 		return nil, err
 	}
 

@@ -12,8 +12,8 @@ import (
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/telemetry"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
-	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
 )
@@ -146,7 +146,7 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 	}
 
 	// collect all sources
-	srcs := make([]*connectors.Source, 0)
+	srcs := make([]*runtimev1.Source, 0)
 	for _, c := range connectorList {
 		if !c.AnonymousAccess {
 			srcs = append(srcs, c.Sources...)
@@ -159,9 +159,10 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 	tel.Emit(telemetry.ActionDataAccessStart)
 	fmt.Printf("Finish deploying your project by providing access to the data store. Rill does not have access to the following data sources:\n\n")
 	for _, src := range srcs {
-		if _, ok := src.Properties["path"]; ok {
+		props := src.Properties.AsMap()
+		if _, ok := props["path"]; ok {
 			// print URL wherever applicable
-			fmt.Printf(" - %s\n", src.Properties["path"])
+			fmt.Printf(" - %s\n", props["path"])
 		} else {
 			fmt.Printf(" - %s\n", src.Name)
 		}

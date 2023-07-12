@@ -28,7 +28,7 @@ var spec = drivers.Spec{
 			Placeholder: "gs://bucket-name/path/to/file.csv",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
-			Hint:        "Note that glob patterns aren't yet supported",
+			Hint:        "Glob patterns are supported",
 		},
 		{
 			Key:         "gcp.credentials",

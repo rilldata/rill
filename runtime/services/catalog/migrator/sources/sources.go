@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
 	"go.uber.org/zap"
@@ -148,13 +148,7 @@ func (m *sourceMigrator) IsEqual(ctx context.Context, cat1, cat2 *drivers.Catalo
 	if !comparePolicy(cat1.GetSource().GetPolicy(), cat2.GetSource().GetPolicy()) {
 		return false
 	}
-	s1 := &connectors.Source{
-		Properties: cat1.GetSource().Properties.AsMap(),
-	}
-	s2 := &connectors.Source{
-		Properties: cat2.GetSource().Properties.AsMap(),
-	}
-	return s1.PropertiesEquals(s2)
+	return equal(cat1.GetSource().Properties.AsMap(), cat2.GetSource().Properties.AsMap())
 }
 
 func comparePolicy(p1, p2 *runtimev1.Source_ExtractPolicy) bool {
@@ -251,11 +245,7 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 	if limitExceeded {
 		return drivers.ErrIngestionLimitExceeded
 	}
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 type progress struct {
@@ -268,7 +258,9 @@ func (p *progress) Target(val int64, unit drivers.ProgressUnit) {
 }
 
 func (p *progress) Observe(val int64, unit drivers.ProgressUnit) {
-	p.catalogObj.BytesIngested += val
+	if unit == drivers.ProgressUnitByte {
+		p.catalogObj.BytesIngested += val
+	}
 }
 
 func source(connector string, src *runtimev1.Source) (drivers.Source, error) {
@@ -290,7 +282,7 @@ func source(connector string, src *runtimev1.Source) (drivers.Source, error) {
 			ExtractPolicy: src.Policy,
 			Properties:    props,
 		}, nil
-	case "http":
+	case "https":
 		return &drivers.FileSource{
 			Properties: props,
 		}, nil
@@ -350,4 +342,8 @@ func connectorVariables(src *runtimev1.Source, env map[string]string, repoRoot s
 		vars["repo_root"] = repoRoot
 	}
 	return vars
+}
+
+func equal(s, o map[string]any) bool {
+	return reflect.DeepEqual(s, o)
 }
