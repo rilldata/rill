@@ -97,12 +97,12 @@ func (d Driver) Drop(config map[string]any, logger *zap.Logger) error {
 }
 
 type connection struct {
-	db           *sqlx.DB
+	db *sqlx.DB
 	// driverConfig is input config passed during Open
 	driverConfig map[string]any
 	// config is parsed configs
-	config       *config
-	logger       *zap.Logger
+	config *config
+	logger *zap.Logger
 	// This driver may issue both OLAP and "meta" queries (like catalog info) against DuckDB.
 	// Meta queries are usually fast, but OLAP queries may take a long time. To enable predictable parallel performance,
 	// we gate queries with semaphores that limits the number of concurrent queries of each type.
