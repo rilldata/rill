@@ -51,6 +51,7 @@ export function createStateManagers({
     absenceCallback?: () => MetricsExplorerEntity
   ) => {
     const name = get(dashboardStore).name;
+    // TODO: Remove dependency on MetricsExplorerStore singleton and its exports
     updateMetricsExplorerByName(name, callback, absenceCallback);
   };
 
