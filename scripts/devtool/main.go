@@ -16,6 +16,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"go.uber.org/multierr"
 	"golang.org/x/sync/errgroup"
 
 	// Load postgres driver
@@ -75,29 +76,27 @@ func main() {
 		panic("require docker-compose")
 	}
 
-	// observability - otel,zipkin,prometheus
-	cmd = exec.CommandContext(ctx, "docker-compose", "-f", "scripts/observability/docker-compose.yaml", "up", "--no-recreate")
-	err = cmd.Start()
-	if err != nil {
-		panic("could not start observability services")
-	}
-
 	if reset {
 		cmd = exec.CommandContext(ctx, "docker-compose", "-f", "admin/docker-compose.yml", "down", "--volumes")
 		err = cmd.Run()
 		if err != nil {
 			panic("could not stop db")
 		}
-		yellow.Println("DELETED EXISTING POSTGRES")
+		yellow.Println("DELETED EXISTING VOLUMES")
 	}
 
-	// postgres
-	cmd = exec.CommandContext(ctx, "docker-compose", "-f", "admin/docker-compose.yml", "up", "--no-recreate")
-	yellow.Println("STARTING POSTGRES")
-	err = cmd.Start()
+	// postgres,redis,observability services
+	pgCmd := exec.CommandContext(ctx, "docker-compose", "-f", "admin/docker-compose.yml", "up", "--no-recreate")
+	yellow.Println("STARTING DOCKER SERVICES")
+	err = pgCmd.Start()
 	if err != nil {
 		panic("could not start db")
 	}
+	group.Go(func() error {
+		err := pgCmd.Wait()
+		red.Println("STOPPING DOCKER SERVICES")
+		return multierr.Append(err, context.Canceled)
+	})
 	waitDBUP(ctx)
 	waitRedis(ctx)
 
@@ -113,12 +112,8 @@ func main() {
 		}
 		group.Go(func() error {
 			err := admin.Wait()
-			if err != nil {
-				yellow.Println(err)
-			}
-			// nolint:all //required
 			red.Println("ADMIN SERVER STOPPED")
-			return err
+			return multierr.Append(err, context.Canceled)
 		})
 		waitAdmin(ctx)
 	}
@@ -135,12 +130,8 @@ func main() {
 		}
 		group.Go(func() error {
 			err := rt.Wait()
-			if err != nil {
-				yellow.Println(err)
-			}
-			// nolint:all //required
 			red.Println("RUNTIME SERVER STOPPED")
-			return err
+			return multierr.Append(err, context.Canceled)
 		})
 		waitRuntime(ctx)
 	}
@@ -167,9 +158,8 @@ func main() {
 			if err != nil {
 				yellow.Println(err)
 			}
-			// nolint:all //required
 			red.Println("UI STOPPED")
-			return err
+			return multierr.Append(err, context.Canceled)
 		})
 		// todo :: add health check ui
 	}
@@ -226,12 +216,19 @@ func waitRedis(ctx context.Context) {
 	if err != nil {
 		panic("failed to parse redis url " + err.Error())
 	}
-	c := redis.NewClient(opts)
-	defer c.Close()
-	res, err := c.Echo(ctx, "hello").Result()
-	if err != nil || res != "hello" {
-		panic("redis not started")
+	for i := 0; i < 10; i++ {
+		c := redis.NewClient(opts)
+		defer c.Close()
+		res, err := c.Echo(ctx, "hello").Result()
+		if errors.Is(err, context.Canceled) {
+			return
+		}
+		if err == nil && res == "hello" {
+			green.Println("REDIS STARTED")
+			return
+		}
 	}
+	red.Println("redis not started")
 }
 
 func waitRuntime(ctx context.Context) {
