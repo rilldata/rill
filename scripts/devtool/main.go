@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"net/http"
 	"os"
 	"os/exec"
 	"runtime"
@@ -193,16 +194,18 @@ func waitDBUP(ctx context.Context) {
 
 func waitAdmin(ctx context.Context) {
 	for i := 0; i < 10; i++ {
-		cmd := exec.CommandContext(ctx, "go", "run", "cli/main.go", "admin", "ping", "--url", "http://localhost:9090")
-		out, err := cmd.Output()
-		if errors.Is(err, context.Canceled) {
-			return
+		resp, err := http.Get("http://localhost:8080/v1/ping")
+		if err != nil {
+			if errors.Is(err, context.Canceled) {
+				return
+			}
+			time.Sleep(2 * time.Second)
+			continue
 		}
-		if strings.Contains(string(out), "Pong") {
+		if resp.StatusCode == http.StatusOK {
 			green.Println("ADMIN STARTED")
 			return
 		}
-		time.Sleep(2 * time.Second)
 	}
 	red.Println("Could not start admin server")
 }
