@@ -709,6 +709,98 @@ export class GetProjectResponse extends Message<GetProjectResponse> {
 }
 
 /**
+ * @generated from message rill.admin.v1.SearchProjectNamesRequest
+ */
+export class SearchProjectNamesRequest extends Message<SearchProjectNamesRequest> {
+  /**
+   * @generated from field: string name_pattern = 1;
+   */
+  namePattern = "";
+
+  /**
+   * @generated from field: uint32 page_size = 2;
+   */
+  pageSize = 0;
+
+  /**
+   * @generated from field: string page_token = 3;
+   */
+  pageToken = "";
+
+  constructor(data?: PartialMessage<SearchProjectNamesRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SearchProjectNamesRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name_pattern", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SearchProjectNamesRequest {
+    return new SearchProjectNamesRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SearchProjectNamesRequest {
+    return new SearchProjectNamesRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SearchProjectNamesRequest {
+    return new SearchProjectNamesRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SearchProjectNamesRequest | PlainMessage<SearchProjectNamesRequest> | undefined, b: SearchProjectNamesRequest | PlainMessage<SearchProjectNamesRequest> | undefined): boolean {
+    return proto3.util.equals(SearchProjectNamesRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SearchProjectNamesResponse
+ */
+export class SearchProjectNamesResponse extends Message<SearchProjectNamesResponse> {
+  /**
+   * @generated from field: repeated string names = 1;
+   */
+  names: string[] = [];
+
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken = "";
+
+  constructor(data?: PartialMessage<SearchProjectNamesResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SearchProjectNamesResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SearchProjectNamesResponse {
+    return new SearchProjectNamesResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SearchProjectNamesResponse {
+    return new SearchProjectNamesResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SearchProjectNamesResponse {
+    return new SearchProjectNamesResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SearchProjectNamesResponse | PlainMessage<SearchProjectNamesResponse> | undefined, b: SearchProjectNamesResponse | PlainMessage<SearchProjectNamesResponse> | undefined): boolean {
+    return proto3.util.equals(SearchProjectNamesResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.GetProjectVariablesRequest
  */
 export class GetProjectVariablesRequest extends Message<GetProjectVariablesRequest> {
@@ -1051,6 +1143,11 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
    */
   newName?: string;
 
+  /**
+   * @generated from field: optional int64 prod_ttl_seconds = 10;
+   */
+  prodTtlSeconds?: bigint;
+
   constructor(data?: PartialMessage<UpdateProjectRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1068,6 +1165,7 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 7, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 8, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 9, name: "new_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 10, name: "prod_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateProjectRequest {
@@ -1357,6 +1455,19 @@ export class TriggerRefreshSourcesResponse extends Message<TriggerRefreshSources
  */
 export class TriggerRedeployRequest extends Message<TriggerRedeployRequest> {
   /**
+   * It's sufficient to pass org/project name OR deployment_id.
+   * (To enable rehydrating hibernated projects.)
+   *
+   * @generated from field: string organization = 2;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: string project = 3;
+   */
+  project = "";
+
+  /**
    * @generated from field: string deployment_id = 1;
    */
   deploymentId = "";
@@ -1369,6 +1480,8 @@ export class TriggerRedeployRequest extends Message<TriggerRedeployRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.TriggerRedeployRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 2, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 1, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
@@ -3976,6 +4089,11 @@ export class Project extends Message<Project> {
   frontendUrl = "";
 
   /**
+   * @generated from field: int64 prod_ttl_seconds = 18;
+   */
+  prodTtlSeconds = protoInt64.zero;
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 14;
    */
   createdOn?: Timestamp;
@@ -4008,6 +4126,7 @@ export class Project extends Message<Project> {
     { no: 12, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 13, name: "prod_deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 18, name: "prod_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 14, name: "created_on", kind: "message", T: Timestamp },
     { no: 15, name: "updated_on", kind: "message", T: Timestamp },
   ]);

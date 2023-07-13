@@ -21,6 +21,7 @@ type Service struct {
 	DB             database.DB
 	Provisioner    *provisioner.StaticProvisioner
 	Email          *email.Client
+	Used           *usedFlusher
 	Github         Github
 	opts           *Options
 	logger         *zap.Logger
@@ -70,6 +71,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		Provisioner:    prov,
 		Email:          emailClient,
 		Github:         github,
+		Used:           newUsedFlusher(logger, db),
 		opts:           opts,
 		logger:         logger,
 		issuer:         issuer,
@@ -81,6 +83,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 func (s *Service) Close() error {
 	s.closeCtxCancel()
 	s.reconcileWg.Wait()
+	s.Used.Close()
 
 	return s.DB.Close()
 }

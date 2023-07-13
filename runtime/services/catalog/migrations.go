@@ -546,10 +546,15 @@ func (s *Service) updateCatalogObject(ctx context.Context, item *MigrationItem) 
 func (s *Service) wrapMigrator(catalogEntry *drivers.CatalogEntry, run func() error) error {
 	st := time.Now()
 	if catalogEntry.Type == drivers.ObjectTypeSource {
-		s.logger.Named("console").Info(fmt.Sprintf(
-			"Ingesting source %q from %q",
-			catalogEntry.Name, catalogEntry.GetSource().Properties.Fields["path"].GetStringValue(),
-		))
+		path := catalogEntry.GetSource().Properties.Fields["path"].GetStringValue()
+		if path == "" {
+			s.logger.Named("console").Info(fmt.Sprintf("Ingesting source %q", catalogEntry.Name))
+		} else {
+			s.logger.Named("console").Info(fmt.Sprintf(
+				"Ingesting source %q from %q",
+				catalogEntry.Name, catalogEntry.GetSource().Properties.Fields["path"].GetStringValue(),
+			))
+		}
 	}
 	err := run()
 	if catalogEntry.Type == drivers.ObjectTypeSource {

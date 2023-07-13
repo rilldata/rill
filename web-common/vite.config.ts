@@ -32,6 +32,11 @@ export default defineConfig(({ mode }) => {
       find: /^svelte$/,
       replacement: "/../node_modules/svelte/index.mjs",
     });
+
+    alias.push({
+      find: "$app/environment",
+      replacement: "/../web-common/.storybook/app-environment.mock.ts",
+    });
   }
 
   return {

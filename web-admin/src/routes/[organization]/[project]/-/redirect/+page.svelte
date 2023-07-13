@@ -15,7 +15,8 @@
 
   // Avoid a race condition: make sure the runtime store has been updated (with the host, instanceID, and jwt).
   $: isRuntimeStoreReady =
-    $proj?.data &&
+    $proj?.data?.prodDeployment &&
+    $runtime &&
     $proj.data.prodDeployment.runtimeInstanceId === $runtime.instanceId;
 
   let dashboardsQuery;
@@ -30,5 +31,10 @@
         `/${$page.params.organization}/${$page.params.project}/${$dashboardsQuery.data[0]}`
       );
     }
+  }
+
+  // If the project has loaded and doesn't have a deployment (likely hibernated), redirect to status page
+  $: if ($proj?.data && !$proj?.data.prodDeployment) {
+    goto(`/${$page.params.organization}/${$page.params.project}`);
   }
 </script>
