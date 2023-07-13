@@ -764,20 +764,6 @@ export interface V1MetricsViewToplistRequest {
 
 export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
 
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
-}
-
-export interface V1MetricsViewMeasure {
-  name?: string;
-  label?: string;
-  expression?: string;
-  description?: string;
-  format?: string;
-  validPercentOfTotal?: boolean;
-}
-
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
@@ -808,19 +794,16 @@ export interface V1MetricsViewRowsRequest {
   priority?: number;
 }
 
-export interface V1MetricsViewDimension {
-  name?: string;
-  label?: string;
-  description?: string;
-  column?: string;
-}
-
 export interface V1MetricsViewComparisonValue {
   measureName?: string;
   baseValue?: unknown;
   comparisonValue?: unknown;
   deltaAbs?: unknown;
   deltaRel?: unknown;
+}
+
+export interface V1MetricsViewComparisonToplistResponse {
+  rows?: V1MetricsViewComparisonRow[];
 }
 
 export type V1MetricsViewComparisonSortType =
@@ -846,28 +829,9 @@ export interface V1MetricsViewComparisonSort {
   type?: V1MetricsViewComparisonSortType;
 }
 
-export interface V1MetricsViewComparisonToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  baseTimeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  sort?: V1MetricsViewComparisonSort[];
-  filter?: V1MetricsViewFilter;
-  limit?: string;
-  offset?: string;
-  priority?: number;
-}
-
 export interface V1MetricsViewComparisonRow {
   dimensionValue?: unknown;
   measureValues?: V1MetricsViewComparisonValue[];
-}
-
-export interface V1MetricsViewComparisonToplistResponse {
-  rows?: V1MetricsViewComparisonRow[];
 }
 
 export interface V1MetricsViewColumn {
@@ -876,12 +840,17 @@ export interface V1MetricsViewColumn {
   nullable?: boolean;
 }
 
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
+}
+
 export interface V1MetricsView {
   name?: string;
   model?: string;
   timeDimension?: string;
-  dimensions?: V1MetricsViewDimension[];
-  measures?: V1MetricsViewMeasure[];
+  dimensions?: MetricsViewDimension[];
+  measures?: MetricsViewMeasure[];
   label?: string;
   description?: string;
   smallestTimeGrain?: V1TimeGrain;
@@ -948,6 +917,21 @@ of in the runtime's metadata store. Currently only supported for the duckdb driv
 export interface V1InlineMeasure {
   name?: string;
   expression?: string;
+}
+
+export interface V1MetricsViewComparisonToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  baseTimeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  sort?: V1MetricsViewComparisonSort[];
+  filter?: V1MetricsViewFilter;
+  limit?: string;
+  offset?: string;
+  priority?: number;
 }
 
 export type V1HistogramMethod =
@@ -1322,10 +1306,26 @@ export const ModelDialect = {
   DIALECT_DUCKDB: "DIALECT_DUCKDB",
 } as const;
 
+export interface MetricsViewMeasure {
+  name?: string;
+  label?: string;
+  expression?: string;
+  description?: string;
+  format?: string;
+  validPercentOfTotal?: boolean;
+}
+
 export interface MetricsViewFilterCond {
   name?: string;
   in?: unknown[];
   like?: string[];
+}
+
+export interface MetricsViewDimension {
+  name?: string;
+  label?: string;
+  description?: string;
+  column?: string;
 }
 
 export type ConnectorPropertyType =

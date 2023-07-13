@@ -1801,6 +1801,18 @@ definitions:
       - TYPE_INFORMATIONAL
     default: TYPE_UNSPECIFIED
     title: Type represents the field type
+  MetricsViewDimension:
+    type: object
+    properties:
+      name:
+        type: string
+      label:
+        type: string
+      description:
+        type: string
+      column:
+        type: string
+    title: Dimensions are columns to filter and group by
   MetricsViewFilterCond:
     type: object
     properties:
@@ -1813,6 +1825,22 @@ definitions:
         type: array
         items:
           type: string
+  MetricsViewMeasure:
+    type: object
+    properties:
+      name:
+        type: string
+      label:
+        type: string
+      expression:
+        type: string
+      description:
+        type: string
+      format:
+        type: string
+      validPercentOfTotal:
+        type: boolean
+    title: Measures are aggregated computed values
   ModelDialect:
     type: string
     enum:
@@ -2537,13 +2565,13 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1MetricsViewDimension'
+          $ref: '#/definitions/MetricsViewDimension'
         title: Dimensions in the metrics view
       measures:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1MetricsViewMeasure'
+          $ref: '#/definitions/MetricsViewMeasure'
         title: Measures in the metrics view
       label:
         type: string
@@ -2657,18 +2685,6 @@ definitions:
       comparisonValue: {}
       deltaAbs: {}
       deltaRel: {}
-  v1MetricsViewDimension:
-    type: object
-    properties:
-      name:
-        type: string
-      label:
-        type: string
-      description:
-        type: string
-      column:
-        type: string
-    title: Dimensions are columns to filter and group by
   v1MetricsViewFilter:
     type: object
     properties:
@@ -2683,22 +2699,6 @@ definitions:
           type: object
           $ref: '#/definitions/MetricsViewFilterCond'
     title: Filter clause for metrics view requests
-  v1MetricsViewMeasure:
-    type: object
-    properties:
-      name:
-        type: string
-      label:
-        type: string
-      expression:
-        type: string
-      description:
-        type: string
-      format:
-        type: string
-      validPercentOfTotal:
-        type: boolean
-    title: Measures are aggregated computed values
   v1MetricsViewRowsRequest:
     type: object
     properties:

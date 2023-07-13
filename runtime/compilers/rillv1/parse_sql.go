@@ -82,7 +82,7 @@ func (p *Parser) parseSQL(ctx context.Context, path, data string) error {
 	if yamlData != "" {
 		var tmp sqlConfigYAML
 		if err := yaml.Unmarshal([]byte(yamlData), &tmp); err != nil {
-			return fmt.Errorf("error parsing companion YAML file at %q: %w", yamlPath, err)
+			return fmt.Errorf("error parsing companion .yaml file at %q: %w", yamlPath, newYAMLError(err))
 		}
 
 		cfg.Connector = tmp.Connector
@@ -182,7 +182,7 @@ func (p *Parser) parseSourceOrModelSQL(ctx context.Context, path, data string, c
 		// Parse the SQL
 		ast, err := duckdbsql.Parse(data)
 		if err != nil {
-			return fmt.Errorf("failed to parse DuckDB SQL: %w", err)
+			return fmt.Errorf("failed to parse DuckDB SQL: %w", newDuckDBError(err))
 		}
 
 		// Extract annotations into cfg

@@ -340,9 +340,17 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 			err = p.parseSQL(ctx, path, data)
 		}
 		if err != nil {
+			// Parse character location from error
+			var loc *runtimev1.CharLocation
+			var locErr locationError
+			if errors.As(err, &locErr) {
+				loc = locErr.location
+			}
+
 			p.Errors = append(p.Errors, &runtimev1.ParseError{
-				Message:  err.Error(),
-				FilePath: path,
+				Message:       err.Error(),
+				FilePath:      path,
+				StartLocation: loc,
 			})
 		}
 	}

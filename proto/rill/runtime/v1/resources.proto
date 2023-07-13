@@ -113,14 +113,14 @@ message MetricsViewV2 {
 
 message MetricsViewSpec {
   // Dimensions are columns to filter and group by
-  message Dimension {
+  message DimensionV2 {
     string name = 1;
     string column = 2;
     string label = 3;
     string description = 4;
   }
   // Measures are aggregated computed values
-  message Measure {
+  message MeasureV2 {
     string name = 1;
     string expression = 2;
     string label = 3;
@@ -137,9 +137,9 @@ message MetricsViewSpec {
   // Name of the primary time dimension, used for rendering time series
   string time_dimension = 4;
   // Dimensions in the metrics view
-  repeated Dimension dimensions = 5;
+  repeated DimensionV2 dimensions = 5;
   // Measures in the metrics view
-  repeated Measure measures = 6;
+  repeated MeasureV2 measures = 6;
   // Smallest time grain to show in the dashboard
   TimeGrain smallest_time_grain = 7;
   // Default time range for the dashboard. It should be a valid ISO 8601 duration string.
@@ -225,6 +225,7 @@ message Schedule {
 message ParseError {
   string message = 1;
   string file_path = 2;
+  CharLocation start_location = 3;
 }
 
 message ValidationError {
@@ -239,4 +240,8 @@ message DependencyError {
 
 message ExecutionError {
   string message = 1;
+}
+
+message CharLocation {
+  uint32 line = 1;
 }

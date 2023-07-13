@@ -3,6 +3,7 @@ package rillv1
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -52,7 +53,7 @@ type rillYAML struct {
 func (p *Parser) parseRillYAML(ctx context.Context, data string) error {
 	tmp := &rillYAML{}
 	if err := yaml.Unmarshal([]byte(data), tmp); err != nil {
-		return fmt.Errorf("rill.yaml: %w", err)
+		return newYAMLError(err)
 	}
 
 	res := &RillYAML{
@@ -107,7 +108,7 @@ func (p *Parser) parseYAML(ctx context.Context, path, data string) error {
 	} else {
 		tmp := &genericYAML{}
 		if err := yaml.Unmarshal([]byte(data), tmp); err != nil {
-			return fmt.Errorf("YAML error: %w", err)
+			return newYAMLError(err)
 		}
 		if tmp.Kind == nil {
 			// If no Kind is specified, we assume the file is not a Rill resource
@@ -149,7 +150,7 @@ func (p *Parser) parseSourceYAML(ctx context.Context, path, data string) error {
 	// Parse the YAML and handle generic fields
 	tmp := &sourceYAML{}
 	if err := yaml.Unmarshal([]byte(data), tmp); err != nil {
-		return fmt.Errorf("YAML error: %w", err)
+		return newYAMLError(err)
 	}
 	if tmp.Name == "" {
 		tmp.Name = fileutil.Stem(path)
@@ -204,7 +205,7 @@ type modelYAML struct {
 func (p *Parser) parseModelYAML(ctx context.Context, path, data string) error {
 	tmp := &modelYAML{}
 	if err := yaml.Unmarshal([]byte(data), tmp); err != nil {
-		return fmt.Errorf("YAML error: %w", err)
+		return newYAMLError(err)
 	}
 	if tmp.Name == "" {
 		tmp.Name = fileutil.Stem(path)
@@ -271,7 +272,7 @@ func (p *Parser) parseMetricsViewYAML(ctx context.Context, path, data string) er
 	// Parse the YAML and handle generic fields
 	tmp := &metricsViewYAML{}
 	if err := yaml.Unmarshal([]byte(data), tmp); err != nil {
-		return fmt.Errorf("YAML error: %w", err)
+		return newYAMLError(err)
 	}
 	if tmp.Name == "" {
 		tmp.Name = fileutil.Stem(path)
@@ -337,7 +338,7 @@ func (p *Parser) parseMetricsViewYAML(ctx context.Context, path, data string) er
 			}
 		}
 
-		spec.Dimensions = append(spec.Dimensions, &runtimev1.MetricsViewSpec_Dimension{
+		spec.Dimensions = append(spec.Dimensions, &runtimev1.MetricsViewSpec_DimensionV2{
 			Name:        dim.Name,
 			Column:      dim.Column,
 			Label:       dim.Label,
@@ -355,7 +356,7 @@ func (p *Parser) parseMetricsViewYAML(ctx context.Context, path, data string) er
 			measure.Name = fmt.Sprintf("measure_%d", i)
 		}
 
-		spec.Measures = append(spec.Measures, &runtimev1.MetricsViewSpec_Measure{
+		spec.Measures = append(spec.Measures, &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:                measure.Name,
 			Expression:          measure.Expression,
 			Label:               measure.Label,
@@ -380,7 +381,7 @@ type migrationYAML struct {
 func (p *Parser) parseMigrationYAML(ctx context.Context, path, data string) error {
 	tmp := &migrationYAML{}
 	if err := yaml.Unmarshal([]byte(data), tmp); err != nil {
-		return fmt.Errorf("YAML error: %w", err)
+		return newYAMLError(err)
 	}
 	if tmp.Name == "" {
 		tmp.Name = fileutil.Stem(path)
@@ -530,5 +531,65 @@ func parseTimeGrain(s string) (runtimev1.TimeGrain, error) {
 		return runtimev1.TimeGrain_TIME_GRAIN_YEAR, nil
 	default:
 		return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, fmt.Errorf("invalid time grain %q", s)
+	}
+}
+
+// locationError wraps an error with source file character location information
+type locationError struct {
+	err      error
+	location *runtimev1.CharLocation
+}
+
+func (e locationError) Error() string {
+	return e.err.Error()
+}
+
+func (e locationError) Unwrap() error {
+	return e.err
+}
+
+// yamlErrLineRegexp matches the line number in a YAML error
+var yamlErrLineRegexp = regexp.MustCompile(`^yaml: line (\d+):`)
+
+// newYAMLError wraps a YAML error, extracting line number information if available
+func newYAMLError(err error) error {
+	res := yamlErrLineRegexp.FindStringSubmatch(err.Error())
+	if len(res) != 2 {
+		return err
+	}
+
+	line, err2 := strconv.Atoi(res[1])
+	if err2 != nil {
+		return err
+	}
+
+	return locationError{
+		err: err,
+		location: &runtimev1.CharLocation{
+			Line: uint32(line),
+		},
+	}
+}
+
+// duckDBErrLineRegexp matches the line number in a DuckDB parser error
+var duckDBErrLineRegexp = regexp.MustCompile(`\nLINE (\d+):`)
+
+// newDuckDBError wraps a DuckDB parser error, extracting line number information if available
+func newDuckDBError(err error) error {
+	res := duckDBErrLineRegexp.FindStringSubmatch(err.Error())
+	if len(res) != 2 {
+		return err
+	}
+
+	line, err2 := strconv.Atoi(res[1])
+	if err2 != nil {
+		return err
+	}
+
+	return locationError{
+		err: err,
+		location: &runtimev1.CharLocation{
+			Line: uint32(line),
+		},
 	}
 }

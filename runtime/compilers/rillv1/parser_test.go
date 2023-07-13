@@ -9,6 +9,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	_ "github.com/rilldata/rill/runtime/drivers/file"
@@ -50,8 +51,6 @@ env:
 }
 
 func TestComplete(t *testing.T) {
-	ctx := context.Background()
-	truth := true
 	files := map[string]string{
 		// rill.yaml
 		`rill.yaml`: ``,
@@ -104,9 +103,9 @@ sql: |
 SELECT * FROM {{ ref "m2" }}
 `,
 	}
-	repo := makeRepo(t, files)
 
-	expected := []*Resource{
+	truth := true
+	resources := []*Resource{
 		// init.sql
 		{
 			Name:  ResourceName{Kind: ResourceKindMigration, Name: "init"},
@@ -161,10 +160,10 @@ SELECT * FROM {{ ref "m2" }}
 			Paths: []string{"/dashboards/d1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Model: "m2",
-				Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
 					{Name: "a"},
 				},
-				Measures: []*runtimev1.MetricsViewSpec_Measure{
+				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
 					{Name: "b", Expression: "count(*)"},
 				},
 			},
@@ -191,10 +190,55 @@ SELECT * FROM {{ ref "m2" }}
 		},
 	}
 
+	ctx := context.Background()
+	repo := makeRepo(t, files)
 	p, err := Parse(ctx, repo, "", []string{""})
 	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
 
-	for _, want := range expected {
+func TestLocationError(t *testing.T) {
+	files := map[string]string{
+		// rill.yaml
+		`rill.yaml`: ``,
+		// source s1
+		`sources/s1.yaml`: `
+connector: s3
+path: hello
+  world: foo
+`,
+		// model m1
+		`/models/m1.sql`: `
+-- @materialize: true
+SELECT *
+
+FRO m1
+`,
+	}
+
+	errors := []*runtimev1.ParseError{
+		{
+			Message:       "",
+			FilePath:      "/sources/s1.yaml",
+			StartLocation: &runtimev1.CharLocation{Line: 4},
+		},
+		{
+			Message:       "",
+			FilePath:      "/models/m1.sql",
+			StartLocation: &runtimev1.CharLocation{Line: 5},
+		},
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, nil, errors)
+}
+
+func requireResourcesAndErrors(t *testing.T, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {
+	// Check resources
+	for _, want := range wantResources {
 		found := false
 		for _, got := range p.Resources {
 			if want.Name == got.Name {
@@ -210,6 +254,28 @@ SELECT * FROM {{ ref "m2" }}
 	}
 	if len(p.Resources) > 0 {
 		t.Errorf("unexpected resources: %v", p.Resources)
+	}
+
+	// Check errors
+	// NOTE: Assumes there's at most one parse error per file path
+	// NOTE: Matches error messages using Contains (exact match not required)
+	for _, want := range wantErrors {
+		found := false
+		for i, got := range p.Errors {
+			if want.FilePath == got.FilePath {
+				require.Contains(t, got.Message, want.Message, "for path %q", got.FilePath)
+				require.Equal(t, want.StartLocation, got.StartLocation, "for path %q", got.FilePath)
+				p.Errors = slices.Delete(p.Errors, i, i+1)
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("missing error for path %q", want.FilePath)
+		}
+	}
+	if len(p.Errors) > 0 {
+		t.Errorf("unexpected errors: %v", p.Errors)
 	}
 }
 
