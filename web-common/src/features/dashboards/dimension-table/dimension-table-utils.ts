@@ -10,6 +10,7 @@ import {
   NicelyFormattedTypes,
   formatMeasurePercentageDifference,
 } from "../humanize-numbers";
+import PercentOfTotal from "./PercentOfTotal.svelte";
 
 /** Returns an updated filter set for a given dimension on search */
 export function updateFilterOnSearch(
@@ -129,6 +130,24 @@ export function computeComparisonValues(
   return values;
 }
 
+export function computePercentOfTotal(
+  values: V1MetricsViewToplistResponseDataItem[],
+  total: number,
+  measureName: string
+) {
+  for (const value of values) {
+    if (total === 0 || total === null || total === undefined) {
+      value[measureName + "_percent_of_total"] =
+        PERC_DIFF.CURRENT_VALUE_NO_DATA;
+    } else {
+      value[measureName + "_percent_of_total"] =
+        formatMeasurePercentageDifference(value[measureName] / total);
+    }
+  }
+
+  return values;
+}
+
 export function getComparisonProperties(
   measureName: string,
   selectedMeasure: MetricsViewMeasure
@@ -146,6 +165,13 @@ export function getComparisonProperties(
       type: "RILL_CHANGE",
       format: selectedMeasure.format,
       description: "Change over comparison period",
+    };
+  } else if (measureName.includes("_percent_of_total")) {
+    return {
+      label: PercentOfTotal,
+      type: "RILL_PERCENTAGE_CHANGE",
+      format: NicelyFormattedTypes.PERCENTAGE,
+      description: "Percent of total",
     };
   }
 }
