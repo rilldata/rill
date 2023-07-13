@@ -218,8 +218,8 @@ func waitRedis(ctx context.Context) {
 	}
 	for i := 0; i < 10; i++ {
 		c := redis.NewClient(opts)
-		defer c.Close()
 		res, err := c.Echo(ctx, "hello").Result()
+		c.Close()
 		if errors.Is(err, context.Canceled) {
 			return
 		}
