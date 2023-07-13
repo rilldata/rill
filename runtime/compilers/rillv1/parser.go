@@ -316,7 +316,11 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 		// Load contents
 		data, err := p.Repo.Get(ctx, p.InstanceID, path)
 		if err != nil {
-			// TODO: Handle dirty parses where files disappear during parsing
+			if os.IsNotExist(err) {
+				// This is a dirty parse where a file disappeared during parsing.
+				// But due to the clear-and-rebuild behavior, we can safely continue parsing.
+				return nil
+			}
 			return err
 		}
 

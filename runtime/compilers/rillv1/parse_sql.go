@@ -379,7 +379,6 @@ func parseEmbeddedSource(t *duckdbsql.TableRef, sinkConnector string) (ResourceN
 	}
 
 	propsPB, err := structpb.NewStruct(props)
-
 	if err != nil {
 		return ResourceName{}, nil, false
 	}
