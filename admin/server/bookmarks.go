@@ -18,7 +18,7 @@ func (s *Server) ListBookmarks(ctx context.Context, req *adminv1.ListBookmarksRe
 	// Return an empty result if not authenticated.
 	claims := auth.GetClaims(ctx)
 	if claims.OwnerType() == auth.OwnerTypeAnon {
-		return &adminv1.ListBookmarksResponse{}, nil
+		return nil, fmt.Errorf("not a user")
 	}
 
 	// Error if authenticated as anything other than a user
@@ -46,7 +46,7 @@ func (s *Server) GetBookmark(ctx context.Context, req *adminv1.GetBookmarkReques
 	// Return an empty result if not authenticated.
 	claims := auth.GetClaims(ctx)
 	if claims.OwnerType() == auth.OwnerTypeAnon {
-		return &adminv1.GetBookmarkResponse{}, nil
+		return nil, fmt.Errorf("not a user")
 	}
 
 	// Error if authenticated as anything other than a user
@@ -59,8 +59,22 @@ func (s *Server) GetBookmark(ctx context.Context, req *adminv1.GetBookmarkReques
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	if bookmark.UserID != claims.OwnerID() {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to read bookmark")
+	proj, err := s.admin.DB.FindProject(ctx, bookmark.ProjectID)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "project not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if proj.Public {
+		permissions.ReadProject = true
+		permissions.ReadProd = true
+	}
+
+	if !permissions.ReadProject && !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
 	return &adminv1.GetBookmarkResponse{
@@ -73,7 +87,7 @@ func (s *Server) CreateBookmark(ctx context.Context, req *adminv1.CreateBookmark
 	// Return an empty result if not authenticated.
 	claims := auth.GetClaims(ctx)
 	if claims.OwnerType() == auth.OwnerTypeAnon {
-		return &adminv1.CreateBookmarkResponse{}, nil
+		return nil, fmt.Errorf("not a user")
 	}
 
 	// Error if authenticated as anything other than a user
@@ -120,7 +134,7 @@ func (s *Server) RemoveBookmark(ctx context.Context, req *adminv1.RemoveBookmark
 	// Return an empty result if not authenticated.
 	claims := auth.GetClaims(ctx)
 	if claims.OwnerType() == auth.OwnerTypeAnon {
-		return &adminv1.RemoveBookmarkResponse{}, nil
+		return nil, fmt.Errorf("not a user")
 	}
 
 	// Error if authenticated as anything other than a user
