@@ -13,17 +13,18 @@ import (
 
 func init() {
 	drivers.Register("file", driver{})
+	drivers.Register("local_file", driver{})
 }
 
 type driver struct{}
 
 func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connection, error) {
-	dsnConfig, ok := config["dsn"]
+	dsn, ok := config["dsn"].(string)
 	if !ok {
 		return nil, fmt.Errorf("require dsn to open file connection")
 	}
 
-	path, err := fileutil.ExpandHome(dsnConfig.(string))
+	path, err := fileutil.ExpandHome(dsn)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +65,7 @@ func (c *connection) Close() error {
 }
 
 // Registry implements drivers.Connection.
-func (c *connection) AsRegistryStore() (drivers.RegistryStore, bool) {
+func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
@@ -79,7 +80,7 @@ func (c *connection) AsRepoStore() (drivers.RepoStore, bool) {
 }
 
 // OLAP implements drivers.Connection.
-func (c *connection) AsOLAPStore() (drivers.OLAPStore, bool) {
+func (c *connection) AsOLAP() (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
@@ -105,7 +106,7 @@ func (c *connection) AsTransporter(from, to drivers.Connection) (drivers.Transpo
 
 // AsFileStore implements drivers.Connection.
 func (c *connection) AsFileStore() (drivers.FileStore, bool) {
-	return nil, false
+	return c, true
 }
 
 // checkPath checks that the connection's root is a valid directory.

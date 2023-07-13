@@ -51,8 +51,8 @@ func (t *fileStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source,
 	p.Target(size, drivers.ProgressUnitByte)
 
 	var format string
-	if val, ok := src.Properties["format"]; ok {
-		format = fmt.Sprintf(".%s", val.(string))
+	if val, ok := src.Properties["format"].(string); ok {
+		format = fmt.Sprintf(".%s", val)
 	} else {
 		format = fileutil.FullExt(localPaths[0])
 	}

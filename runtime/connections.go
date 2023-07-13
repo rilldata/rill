@@ -9,7 +9,7 @@ import (
 )
 
 func (r *Runtime) Registry() drivers.RegistryStore {
-	registry, ok := r.metastore.AsRegistryStore()
+	registry, ok := r.metastore.AsRegistry()
 	if !ok {
 		// Verified as registry in New, so this should never happen
 		panic("metastore is not a registry")
@@ -48,7 +48,7 @@ func (r *Runtime) OLAP(ctx context.Context, instanceID string) (drivers.OLAPStor
 		return nil, err
 	}
 
-	olap, ok := conn.AsOLAPStore()
+	olap, ok := conn.AsOLAP()
 	if !ok {
 		// Verified as OLAP when instance is created, so this should never happen
 		return nil, fmt.Errorf("connection for instance '%s' is not an olap", instanceID)

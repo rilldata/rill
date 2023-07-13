@@ -100,7 +100,7 @@ func (c *Connection) Close() error {
 }
 
 // Registry implements drivers.Connection.
-func (c *Connection) AsRegistryStore() (drivers.RegistryStore, bool) {
+func (c *Connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
@@ -115,7 +115,7 @@ func (c *Connection) AsRepoStore() (drivers.RepoStore, bool) {
 }
 
 // OLAP implements drivers.Connection.
-func (c *Connection) AsOLAPStore() (drivers.OLAPStore, bool) {
+func (c *Connection) AsOLAP() (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
@@ -212,8 +212,8 @@ func (c *Connection) resolvedCredentials(ctx context.Context) (*google.Credentia
 	}
 	// google_application_credentials is not set
 	allowHostAccess := false
-	if val, ok := c.config["allow_host_access"]; ok {
-		allowHostAccess = val.(bool)
+	if val, ok := c.config["allow_host_access"].(bool); ok {
+		allowHostAccess = val
 	}
 	if allowHostAccess {
 		// use host credentials

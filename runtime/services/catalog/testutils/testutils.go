@@ -19,8 +19,8 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	// import localfile driver to be able to do driver.Open
-	_ "github.com/rilldata/rill/runtime/drivers/localfile"
+	// import file driver to be able to do driver.Open
+	_ "github.com/rilldata/rill/runtime/drivers/file"
 )
 
 func CreateSource(t *testing.T, s *catalog.Service, name, file, sourcePath string) string {
@@ -188,7 +188,7 @@ func GetService(t *testing.T) (*catalog.Service, string) {
 	require.NoError(t, err)
 	err = duckdbStore.Migrate(context.Background())
 	require.NoError(t, err)
-	olap, ok := duckdbStore.AsOLAPStore()
+	olap, ok := duckdbStore.AsOLAP()
 	require.True(t, ok)
 	catalogObject, ok := duckdbStore.AsCatalogStore()
 	require.True(t, ok)
@@ -209,7 +209,7 @@ func registryStore(t *testing.T) drivers.RegistryStore {
 	require.NoError(t, err)
 	err = store.Migrate(context.Background())
 	require.NoError(t, err)
-	registry, _ := store.AsRegistryStore()
+	registry, _ := store.AsRegistry()
 
 	err = registry.CreateInstance(context.Background(), &drivers.Instance{ID: "test", Variables: map[string]string{"allow_host_access": "true"}})
 	require.NoError(t, err)

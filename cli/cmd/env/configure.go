@@ -174,7 +174,7 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 			// ignore asking for credentials if external source can be access anonymously
 			continue
 		}
-		connectorVariables := c.Spec.ConnectorVariables
+		connectorVariables := c.Spec.ConfigProperties
 		if len(connectorVariables) != 0 {
 			fmt.Printf("\nConnector %q requires credentials.\n", c.Type)
 			if c.Spec.ServiceAccountDocs != "" {
@@ -185,11 +185,12 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 		if c.Spec.Help != "" {
 			fmt.Println(c.Spec.Help)
 		}
-		for _, prop := range connectorVariables {
+		for i := range connectorVariables {
+			prop := connectorVariables[i]
 			question := &survey.Question{}
 			msg := fmt.Sprintf("connector.%s.%s", c.Name, prop.Key)
-			if prop.Help != "" {
-				msg = fmt.Sprintf(msg+" (%s)", prop.Help)
+			if prop.Hint != "" {
+				msg = fmt.Sprintf(msg+" (%s)", prop.Hint)
 			}
 
 			if prop.Secret {

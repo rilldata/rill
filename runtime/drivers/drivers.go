@@ -4,9 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
 
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"go.uber.org/zap"
 )
 
@@ -96,9 +94,9 @@ type Connection interface {
 	// Close closes the connection
 	Close() error
 
-	// AsRegistryStore returns a AsRegistryStore if the driver can serve as such, otherwise returns false.
+	// AsRegistry returns a AsRegistry if the driver can serve as such, otherwise returns false.
 	// The registry is responsible for tracking instances and repos.
-	AsRegistryStore() (RegistryStore, bool)
+	AsRegistry() (RegistryStore, bool)
 
 	// AsCatalogStore returns a AsCatalogStore if the driver can serve as such, otherwise returns false.
 	// A catalog is used to store state about migrated/deployed objects (such as sources and metrics views).
@@ -108,9 +106,9 @@ type Connection interface {
 	// A repo stores file artifacts (either in a folder or virtualized in a database).
 	AsRepoStore() (RepoStore, bool)
 
-	// AsOLAPStore returns an AsOLAPStore if the driver can serve as such, otherwise returns false.
+	// AsOLAP returns an AsOLAP if the driver can serve as such, otherwise returns false.
 	// OLAP stores are where we actually store, transform, and query users' data.
-	AsOLAPStore() (OLAPStore, bool)
+	AsOLAP() (OLAPStore, bool)
 
 	// AsObjectStore returns an ObjectStore if the driver can serve as such, otherwise returns false.
 	AsObjectStore() (ObjectStore, bool)
@@ -125,193 +123,3 @@ type Connection interface {
 	// b) myBeam.AsTransporter(myGCS, myS3) // In the future
 	AsTransporter(from Connection, to Connection) (Transporter, bool)
 }
-
-type ObjectStore interface {
-	// DownloadFiles provides an iterator for downloading and consuming files
-	DownloadFiles(ctx context.Context, src *BucketSource) (FileIterator, error)
-}
-
-type FileStore interface {
-	// FilePaths returns local absolute paths where files are stored
-	FilePaths(ctx context.Context, src *FileSource) ([]string, error)
-}
-
-// FileIterator provides ways to iteratively download files from external sources
-// Clients should call close once they are done with iterator to release any resources
-type FileIterator interface {
-	// Close do cleanup and release resources
-	Close() error
-	// NextBatch returns a list of file downloaded from external sources
-	// and cleanups file created in previous batch
-	NextBatch(limit int) ([]string, error)
-	// HasNext can be utlisied to check if iterator has more elements left
-	HasNext() bool
-	// Size returns size of data downloaded in unit.
-	// Returns 0,false if not able to compute size in given unit
-	Size(unit ProgressUnit) (int64, bool)
-}
-
-// Transporter implements logic for moving data between two connectors
-// (the actual connector objects are provided in AsTransporter)
-type Transporter interface {
-	Transfer(ctx context.Context, source Source, sink Sink, t *TransferOpts, p Progress) error
-}
-
-type TransferOpts struct {
-	IteratorBatch int
-	LimitInBytes  int64
-}
-
-func NewTransferOpts(opts ...TransferOption) *TransferOpts {
-	t := &TransferOpts{
-		IteratorBatch: _iteratorBatch,
-		LimitInBytes:  math.MaxInt64,
-	}
-
-	for _, opt := range opts {
-		opt(t)
-	}
-	return t
-}
-
-type TransferOption func(*TransferOpts)
-
-func WithIteratorBatch(b int) TransferOption {
-	return func(t *TransferOpts) {
-		t.IteratorBatch = b
-	}
-}
-
-func WithLimitInBytes(limit int64) TransferOption {
-	return func(t *TransferOpts) {
-		t.LimitInBytes = limit
-	}
-}
-
-// A Source is expected to only return ok=true for one of the source types.
-// The caller will know which type based on the connector type.
-type Source interface {
-	BucketSource() (*BucketSource, bool)
-	DatabaseSource() (*DatabaseSource, bool)
-	FileSource() (*FileSource, bool)
-}
-
-// A Sink is expected to only return ok=true for one of the sink types.
-// The caller will know which type based on the connector type.
-type Sink interface {
-	BucketSink() (*BucketSink, bool)
-	DatabaseSink() (*DatabaseSink, bool)
-}
-
-type BucketSource struct {
-	ExtractPolicy *runtimev1.Source_ExtractPolicy
-	Properties    map[string]any
-}
-
-var _ Source = &BucketSource{}
-
-func (b *BucketSource) BucketSource() (*BucketSource, bool) {
-	return b, true
-}
-
-func (b *BucketSource) DatabaseSource() (*DatabaseSource, bool) {
-	return nil, false
-}
-
-func (b *BucketSource) FileSource() (*FileSource, bool) {
-	return nil, false
-}
-
-type BucketSink struct {
-	Path string
-	// Format FileFormat
-	// NOTE: In future, may add file name and output partitioning config here
-}
-
-var _ Sink = &BucketSink{}
-
-func (b *BucketSink) BucketSink() (*BucketSink, bool) {
-	return b, true
-}
-
-func (b *BucketSink) DatabaseSink() (*DatabaseSink, bool) {
-	return nil, false
-}
-
-type DatabaseSource struct {
-	// Pass only Query OR Table
-	Query    string
-	Table    string
-	Database string
-	Limit    int
-}
-
-var _ Source = &DatabaseSource{}
-
-func (d *DatabaseSource) BucketSource() (*BucketSource, bool) {
-	return nil, false
-}
-
-func (d *DatabaseSource) DatabaseSource() (*DatabaseSource, bool) {
-	return d, true
-}
-
-func (d *DatabaseSource) FileSource() (*FileSource, bool) {
-	return nil, false
-}
-
-type DatabaseSink struct {
-	Table  string
-	Append bool
-}
-
-var _ Sink = &DatabaseSink{}
-
-func (d *DatabaseSink) BucketSink() (*BucketSink, bool) {
-	return nil, false
-}
-
-func (d *DatabaseSink) DatabaseSink() (*DatabaseSink, bool) {
-	return d, true
-}
-
-type FileSource struct {
-	Name       string
-	Properties map[string]any
-}
-
-var _ Source = &FileSource{}
-
-func (f *FileSource) BucketSource() (*BucketSource, bool) {
-	return nil, false
-}
-
-func (f *FileSource) DatabaseSource() (*DatabaseSource, bool) {
-	return nil, false
-}
-
-func (f *FileSource) FileSource() (*FileSource, bool) {
-	return f, true
-}
-
-// Progress is an interface for communicating progress info
-type Progress interface {
-	Target(val int64, unit ProgressUnit)
-	// Observe is used by caller to provide incremental updates
-	Observe(val int64, unit ProgressUnit)
-}
-
-type NoOpProgress struct{}
-
-func (n NoOpProgress) Target(val int64, unit ProgressUnit)  {}
-func (n NoOpProgress) Observe(val int64, unit ProgressUnit) {}
-
-var _ Progress = NoOpProgress{}
-
-type ProgressUnit int
-
-const (
-	ProgressUnitByte ProgressUnit = iota
-	ProgressUnitFile
-	ProgressUnitRecord
-)

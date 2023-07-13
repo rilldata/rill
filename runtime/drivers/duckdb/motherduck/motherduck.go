@@ -13,7 +13,7 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "MotherDuck",
 	Description: "Import data from MotherDuck.",
-	Properties: []drivers.PropertySchema{
+	SourceProperties: []drivers.PropertySchema{
 		{
 			Key:         "query",
 			Type:        drivers.StringPropertyType,
@@ -23,7 +23,7 @@ var spec = drivers.Spec{
 			Placeholder: "select * from my_db.my_table;",
 		},
 	},
-	ConnectorVariables: []drivers.VariableSchema{
+	ConfigProperties: []drivers.PropertySchema{
 		{
 			Key:    "token",
 			Secret: true,

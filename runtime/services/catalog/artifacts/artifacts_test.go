@@ -712,7 +712,7 @@ func registryStore(t *testing.T) drivers.RegistryStore {
 	store, err := drivers.Open("sqlite", map[string]any{"dsn": ":memory:"}, zap.NewNop())
 	require.NoError(t, err)
 	store.Migrate(ctx)
-	registry, _ := store.AsRegistryStore()
+	registry, _ := store.AsRegistry()
 
 	env := map[string]string{"delimitter": "|", "region": "us-east-2", "limit": "limit 10"}
 	err = registry.CreateInstance(ctx, &drivers.Instance{ID: "test", Variables: env})

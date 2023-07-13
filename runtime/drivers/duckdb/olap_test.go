@@ -15,7 +15,7 @@ import (
 
 func TestQuery(t *testing.T) {
 	conn := prepareConn(t)
-	olap, _ := conn.AsOLAPStore()
+	olap, _ := conn.AsOLAP()
 
 	rows, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM foo"})
 	require.NoError(t, err)
@@ -36,7 +36,7 @@ func TestPriorityQueue(t *testing.T) {
 	}
 
 	conn := prepareConn(t)
-	olap, _ := conn.AsOLAPStore()
+	olap, _ := conn.AsOLAP()
 	defer conn.Close()
 
 	n := 100
@@ -85,7 +85,7 @@ func TestCancel(t *testing.T) {
 	}
 
 	conn := prepareConn(t)
-	olap, _ := conn.AsOLAPStore()
+	olap, _ := conn.AsOLAP()
 	defer conn.Close()
 
 	n := 100
@@ -162,7 +162,7 @@ func TestClose(t *testing.T) {
 	}
 
 	conn := prepareConn(t)
-	olap, _ := conn.AsOLAPStore()
+	olap, _ := conn.AsOLAP()
 
 	n := 100
 	results := make(chan int, n)
@@ -206,7 +206,7 @@ func prepareConn(t *testing.T) drivers.Connection {
 	conn, err := Driver{}.Open(map[string]any{"dsn": "?access_mode=read_write&rill_pool_size=4"}, zap.NewNop())
 	require.NoError(t, err)
 
-	olap, ok := conn.AsOLAPStore()
+	olap, ok := conn.AsOLAP()
 	require.True(t, ok)
 
 	err = olap.Exec(context.Background(), &drivers.Statement{

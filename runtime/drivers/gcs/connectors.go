@@ -20,7 +20,7 @@ var spec = drivers.Spec{
 	DisplayName:        "Google Cloud Storage",
 	Description:        "Connect to Google Cloud Storage.",
 	ServiceAccountDocs: "https://docs.rilldata.com/deploy/credentials/gcs",
-	Properties: []drivers.PropertySchema{
+	SourceProperties: []drivers.PropertySchema{
 		{
 			Key:         "path",
 			DisplayName: "GS URI",
@@ -39,10 +39,10 @@ var spec = drivers.Spec{
 			Href:        "https://docs.rilldata.com/develop/import-data#configure-credentials-for-gcs",
 		},
 	},
-	ConnectorVariables: []drivers.VariableSchema{
+	ConfigProperties: []drivers.PropertySchema{
 		{
 			Key:  "google_application_credentials",
-			Help: "Enter path of file to load from.",
+			Hint: "Enter path of file to load from.",
 			ValidateFunc: func(any interface{}) error {
 				val := any.(string)
 				if val == "" {

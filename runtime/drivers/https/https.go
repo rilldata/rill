@@ -68,7 +68,7 @@ func (c *connection) Close() error {
 }
 
 // Registry implements drivers.Connection.
-func (c *connection) AsRegistryStore() (drivers.RegistryStore, bool) {
+func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
@@ -83,7 +83,7 @@ func (c *connection) AsRepoStore() (drivers.RepoStore, bool) {
 }
 
 // OLAP implements drivers.Connection.
-func (c *connection) AsOLAPStore() (drivers.OLAPStore, bool) {
+func (c *connection) AsOLAP() (drivers.OLAPStore, bool) {
 	return nil, false
 }
 

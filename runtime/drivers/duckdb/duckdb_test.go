@@ -20,7 +20,7 @@ func TestOpenDrop(t *testing.T) {
 	handle, err := Driver{}.Open(map[string]any{"dsn": dsn}, zap.NewNop())
 	require.NoError(t, err)
 
-	olap, ok := handle.AsOLAPStore()
+	olap, ok := handle.AsOLAP()
 	require.True(t, ok)
 
 	err = olap.Exec(context.Background(), &drivers.Statement{Query: "CREATE TABLE foo (bar INTEGER)"})
@@ -46,7 +46,7 @@ func TestFatalErr(t *testing.T) {
 	handle, err := Driver{}.Open(map[string]any{"dsn": dsn}, zap.NewNop())
 	require.NoError(t, err)
 
-	olap, ok := handle.AsOLAPStore()
+	olap, ok := handle.AsOLAP()
 	require.True(t, ok)
 
 	qry := `
@@ -109,7 +109,7 @@ func TestFatalErrConcurrent(t *testing.T) {
 	handle, err := Driver{}.Open(map[string]any{"dsn": dsn}, zap.NewNop())
 	require.NoError(t, err)
 
-	olap, ok := handle.AsOLAPStore()
+	olap, ok := handle.AsOLAP()
 	require.True(t, ok)
 
 	qry := `

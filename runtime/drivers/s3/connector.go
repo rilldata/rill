@@ -16,7 +16,7 @@ var spec = drivers.Spec{
 	DisplayName:        "Amazon S3",
 	Description:        "Connect to AWS S3 Storage.",
 	ServiceAccountDocs: "https://docs.rilldata.com/deploy/credentials/s3",
-	Properties: []drivers.PropertySchema{
+	SourceProperties: []drivers.PropertySchema{
 		{
 			Key:         "path",
 			DisplayName: "S3 URI",
@@ -44,7 +44,7 @@ var spec = drivers.Spec{
 			Href:        "https://docs.rilldata.com/develop/import-data#configure-credentials-for-s3",
 		},
 	},
-	ConnectorVariables: []drivers.VariableSchema{
+	ConfigProperties: []drivers.PropertySchema{
 		{
 			Key:    "aws_access_key_id",
 			Secret: true,
@@ -61,7 +61,7 @@ func (c *Connection) Spec() drivers.Spec {
 }
 
 func (c *Connection) HasAnonymousAccess(ctx context.Context, config map[string]any) (bool, error) {
-	conf, err := parseConfig(config)
+	conf, err := parseSourceProperties(config)
 	if err != nil {
 		return false, fmt.Errorf("failed to parse config: %w", err)
 	}

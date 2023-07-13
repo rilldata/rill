@@ -42,7 +42,7 @@ func TestAll(t *testing.T) {
 			require.Equal(t, desired, current)
 
 			// Run applicable sub-tests
-			if registry, ok := conn.AsRegistryStore(); ok {
+			if registry, ok := conn.AsRegistry(); ok {
 				t.Run("registry_"+driver, func(t *testing.T) { testRegistry(t, registry) })
 			}
 			if catalog, ok := conn.AsCatalogStore(); ok {
@@ -51,7 +51,7 @@ func TestAll(t *testing.T) {
 			if repo, ok := conn.AsRepoStore(); ok {
 				t.Run("repo_"+driver, func(t *testing.T) { testRepo(t, repo) })
 			}
-			if olap, ok := conn.AsOLAPStore(); ok {
+			if olap, ok := conn.AsOLAP(); ok {
 				t.Run("olap_"+driver, func(t *testing.T) { testOLAP(t, olap) })
 			}
 

@@ -21,12 +21,11 @@ type driver struct{}
 // Open connects to Druid using Avatica.
 // Note that the Druid connection string must have the form "http://host/druid/v2/sql/avatica-protobuf/".
 func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connection, error) {
-	dsnConfig, ok := config["dsn"]
+	dsn, ok := config["dsn"].(string)
 	if !ok {
 		return nil, fmt.Errorf("require dsn to open druid connection")
 	}
 
-	dsn := dsnConfig.(string)
 	db, err := sqlx.Open("avatica", dsn)
 	if err != nil {
 		return nil, err
@@ -66,7 +65,7 @@ func (c *connection) Close() error {
 }
 
 // Registry implements drivers.Connection.
-func (c *connection) AsRegistryStore() (drivers.RegistryStore, bool) {
+func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
@@ -81,7 +80,7 @@ func (c *connection) AsRepoStore() (drivers.RepoStore, bool) {
 }
 
 // OLAP implements drivers.Connection.
-func (c *connection) AsOLAPStore() (drivers.OLAPStore, bool) {
+func (c *connection) AsOLAP() (drivers.OLAPStore, bool) {
 	return c, true
 }
 

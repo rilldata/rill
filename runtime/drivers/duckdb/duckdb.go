@@ -26,12 +26,11 @@ func init() {
 type Driver struct{}
 
 func (d Driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connection, error) {
-	dsnConfig, ok := config["dsn"]
+	dsn, ok := config["dsn"].(string)
 	if !ok {
 		return nil, fmt.Errorf("require dsn to open duckdb connection")
 	}
 
-	dsn := dsnConfig.(string)
 	cfg, err := newConfig(dsn)
 	if err != nil {
 		return nil, err
@@ -73,12 +72,11 @@ func (d Driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connect
 }
 
 func (d Driver) Drop(config map[string]any, logger *zap.Logger) error {
-	dsnConfig, ok := config["dsn"]
+	dsn, ok := config["dsn"].(string)
 	if !ok {
 		return fmt.Errorf("require dsn to drop duckdb connection")
 	}
 
-	dsn := dsnConfig.(string)
 	cfg, err := newConfig(dsn)
 	if err != nil {
 		return err
@@ -123,8 +121,8 @@ type connection struct {
 
 // Driver implements drivers.Connection.
 func (c *connection) Driver() string {
-	if val, ok := c.driverConfig["driver"]; ok {
-		return val.(string)
+	if val, ok := c.driverConfig["driver"].(string); ok {
+		return val
 	}
 	return "duckdb"
 }
@@ -139,8 +137,8 @@ func (c *connection) Close() error {
 	return c.db.Close()
 }
 
-// AsRegistryStore Registry implements drivers.Connection.
-func (c *connection) AsRegistryStore() (drivers.RegistryStore, bool) {
+// AsRegistry Registry implements drivers.Connection.
+func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
@@ -154,8 +152,8 @@ func (c *connection) AsRepoStore() (drivers.RepoStore, bool) {
 	return nil, false
 }
 
-// AsOLAPStore OLAP implements drivers.Connection.
-func (c *connection) AsOLAPStore() (drivers.OLAPStore, bool) {
+// AsOLAP OLAP implements drivers.Connection.
+func (c *connection) AsOLAP() (drivers.OLAPStore, bool) {
 	return c, true
 }
 
@@ -166,7 +164,7 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 
 // AsTransporter implements drivers.Connection.
 func (c *connection) AsTransporter(from, to drivers.Connection) (drivers.Transporter, bool) {
-	olap, _ := to.AsOLAPStore()
+	olap, _ := to.AsOLAP()
 	if c == to {
 		if from.Driver() == "motherduck" {
 			return transporter.NewMotherduckToDuckDB(from, olap, c.logger), true

@@ -42,12 +42,11 @@ func init() {
 type driver struct{}
 
 func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connection, error) {
-	dsnConfig, ok := config["dsn"]
+	dsnStr, ok := config["dsn"].(string)
 	if !ok {
 		return nil, fmt.Errorf("require dsn to open github connection")
 	}
 
-	dsnStr := dsnConfig.(string)
 	var dsn DSN
 	err := json.Unmarshal([]byte(dsnStr), &dsn)
 	if err != nil {
@@ -110,7 +109,7 @@ func (c *connection) Config() map[string]any {
 }
 
 // Registry implements drivers.Connection.
-func (c *connection) AsRegistryStore() (drivers.RegistryStore, bool) {
+func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
@@ -125,7 +124,7 @@ func (c *connection) AsRepoStore() (drivers.RepoStore, bool) {
 }
 
 // OLAP implements drivers.Connection.
-func (c *connection) AsOLAPStore() (drivers.OLAPStore, bool) {
+func (c *connection) AsOLAP() (drivers.OLAPStore, bool) {
 	return nil, false
 }
 

@@ -213,7 +213,7 @@ func (r *Runtime) checkOlapConnection(inst *drivers.Instance) (drivers.Connectio
 	if err != nil {
 		return nil, nil, err
 	}
-	olapStore, ok := olap.AsOLAPStore()
+	olapStore, ok := olap.AsOLAP()
 	if !ok {
 		return nil, nil, fmt.Errorf("not a valid OLAP driver: '%s'", inst.OLAPDriver)
 	}

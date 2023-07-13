@@ -69,7 +69,7 @@ func (c *Connection) Close() error {
 }
 
 // Registry implements drivers.Connection.
-func (c *Connection) AsRegistryStore() (drivers.RegistryStore, bool) {
+func (c *Connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
@@ -84,7 +84,7 @@ func (c *Connection) AsRepoStore() (drivers.RepoStore, bool) {
 }
 
 // OLAP implements drivers.Connection.
-func (c *Connection) AsOLAPStore() (drivers.OLAPStore, bool) {
+func (c *Connection) AsOLAP() (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
@@ -124,7 +124,7 @@ type config struct {
 	url                   *globutil.URL
 }
 
-func parseConfig(props map[string]any) (*config, error) {
+func parseSourceProperties(props map[string]any) (*config, error) {
 	conf := &config{}
 	err := mapstructure.Decode(props, conf)
 	if err != nil {
@@ -156,7 +156,7 @@ func parseConfig(props map[string]any) (*config, error) {
 //
 // Additionally in case allow_host_credentials is true it looks for credentials stored on host machine as well
 func (c *Connection) DownloadFiles(ctx context.Context, src *drivers.BucketSource) (drivers.FileIterator, error) {
-	conf, err := parseConfig(src.Properties)
+	conf, err := parseSourceProperties(src.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
@@ -249,7 +249,7 @@ func (c *Connection) getAwsSessionConfig(ctx context.Context, conf *config, buck
 	}
 
 	sharedConfigState := session.SharedConfigDisable
-	if val, ok := c.config["allow_host_access"]; ok && val.(bool) {
+	if val, ok := c.config["allow_host_access"].(bool); ok && val {
 		sharedConfigState = session.SharedConfigEnable // Tells to look for default region set with `aws configure`
 	}
 	// Create a session that tries to infer the region from the environment
@@ -293,7 +293,7 @@ func (c *Connection) getCredentials() (*credentials.Credentials, error) {
 	// the credential lookup will proceed to next provider in chain
 	providers = append(providers, staticProvider)
 
-	if val, ok := c.config["allow_host_access"]; ok && val.(bool) {
+	if val, ok := c.config["allow_host_access"].(bool); ok && val {
 		// allowed to access host credentials so we add them in chain
 		// The chain used here is a duplicate of defaults.CredProviders(), but without the remote credentials lookup (since they resolve too slowly).
 		providers = append(providers, &credentials.EnvProvider{}, &credentials.SharedCredentialsProvider{Filename: "", Profile: ""})

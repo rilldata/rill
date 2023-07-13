@@ -52,9 +52,9 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, source drivers.Sourc
 	p.Target(size, drivers.ProgressUnitByte)
 	appendToTable := false
 	var format string
-	val, formatDefined := src.Properties["format"]
+	val, formatDefined := src.Properties["format"].(string)
 	if formatDefined {
-		format = fmt.Sprintf(".%s", val.(string))
+		format = fmt.Sprintf(".%s", val)
 	}
 
 	allowSchemaRelaxation, err := schemaRelaxationProperty(src.Properties)

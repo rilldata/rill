@@ -21,8 +21,10 @@ func (s *Server) ListConnectors(ctx context.Context, req *runtimev1.ListConnecto
 			}
 		}
 		// Build protobufs for properties
-		propPBs := make([]*runtimev1.Connector_Property, len(connector.Spec().Properties))
-		for j, propSchema := range connector.Spec().Properties {
+		srcProps := connector.Spec().SourceProperties
+		propPBs := make([]*runtimev1.Connector_Property, len(srcProps))
+		for j := range connector.Spec().SourceProperties {
+			propSchema := srcProps[j]
 			// Get type
 			var t runtimev1.Connector_Property_Type
 			switch propSchema.Type {
@@ -229,7 +231,7 @@ func (s *Server) MotherduckListTables(ctx context.Context, req *runtimev1.Mother
 	}
 	defer conn.Close()
 
-	olap, _ := conn.AsOLAPStore()
+	olap, _ := conn.AsOLAP()
 	tables, err := olap.InformationSchema().All(ctx)
 	if err != nil {
 		return nil, err

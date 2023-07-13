@@ -26,7 +26,7 @@ func (c *Connection) ListBuckets(ctx context.Context) ([]string, error) {
 	}
 
 	sharedConfigState := session.SharedConfigDisable
-	if val, ok := c.config["allow_host_access"]; ok && val.(bool) {
+	if val, ok := c.config["allow_host_access"].(bool); ok && val {
 		sharedConfigState = session.SharedConfigEnable // Tells to look for default region set with `aws configure`
 	}
 	// Create a session that tries to infer the region from the environment

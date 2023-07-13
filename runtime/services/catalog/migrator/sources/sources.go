@@ -198,6 +198,7 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 	if err != nil {
 		return fmt.Errorf("failed to open driver %w", err)
 	}
+	defer srcConnector.Close()
 
 	olapConnection := olap.(drivers.Connection)
 	t, ok := olapConnection.AsTransporter(srcConnector, olapConnection)
@@ -225,15 +226,14 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 
 	ingestionLimit := opts.IngestStorageLimitInBytes
 	p := &progress{}
-	done := make(chan bool, 1)
 	ticker := time.NewTicker(5 * time.Second)
 	limitExceeded := false
 	go func() {
 		select {
-		case <-done:
+		case <-ctxWithTimeout.Done():
 			return
 		case <-ticker.C:
-			olap, _ := olapConnection.AsOLAPStore()
+			olap, _ := olapConnection.AsOLAP()
 			if size, ok := olap.EstimateSize(); ok && size > ingestionLimit {
 				limitExceeded = true
 				cancel()
@@ -241,7 +241,6 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 		}
 	}()
 	err = t.Transfer(ctxWithTimeout, src, sink, drivers.NewTransferOpts(drivers.WithLimitInBytes(ingestionLimit)), p)
-	done <- true
 	if limitExceeded {
 		return drivers.ErrIngestionLimitExceeded
 	}
@@ -285,17 +284,17 @@ func source(connector string, src *runtimev1.Source) (drivers.Source, error) {
 			Properties: props,
 		}, nil
 	case "motherduck":
-		query, ok := props["query"]
+		query, ok := props["query"].(string)
 		if !ok {
 			return nil, fmt.Errorf("property \"query\" is mandatory for connector \"motherduck\"")
 		}
 		var db string
-		if val, ok := props["db"]; ok {
-			db = val.(string)
+		if val, ok := props["db"].(string); ok {
+			db = val
 		}
 
 		return &drivers.DatabaseSource{
-			Query:    query.(string),
+			Query:    query,
 			Database: db,
 		}, nil
 	default:
@@ -314,8 +313,6 @@ func sink(connector, tableName string) drivers.Sink {
 	}
 }
 
-// TODO :: may be pass all envs ?
-// It is slightly confusing right now that what gets passed to driver.Open vs source property
 func connectorVariables(src *runtimev1.Source, env map[string]string, repoRoot string) map[string]any {
 	connector := src.Connector
 	vars := map[string]any{
@@ -333,7 +330,7 @@ func connectorVariables(src *runtimev1.Source, env map[string]string, repoRoot s
 		vars["driver"] = "motherduck"
 		vars["dsn"] = ""
 	case "local_file":
-		vars["repo_root"] = repoRoot
+		vars["dsn"] = repoRoot
 	}
 	return vars
 }

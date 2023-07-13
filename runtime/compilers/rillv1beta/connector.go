@@ -17,7 +17,7 @@ import (
 
 // TODO :: return this to build support for all kind of variables
 type Variables struct {
-	ProjectVariables []drivers.VariableSchema
+	ProjectVariables []drivers.PropertySchema
 	Connectors       []*Connector
 }
 

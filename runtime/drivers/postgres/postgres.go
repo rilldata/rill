@@ -18,12 +18,11 @@ func init() {
 type driver struct{}
 
 func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connection, error) {
-	dsnConfig, ok := config["dsn"]
+	dsn, ok := config["dsn"].(string)
 	if !ok {
 		return nil, fmt.Errorf("require dsn to open sqlite connection")
 	}
 
-	dsn := dsnConfig.(string)
 	db, err := sqlx.Connect("pgx", dsn)
 	if err != nil {
 		return nil, err
@@ -59,7 +58,7 @@ func (c *connection) Close() error {
 }
 
 // Registry implements drivers.Connection.
-func (c *connection) AsRegistryStore() (drivers.RegistryStore, bool) {
+func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
@@ -74,7 +73,7 @@ func (c *connection) AsRepoStore() (drivers.RepoStore, bool) {
 }
 
 // OLAP implements drivers.Connection.
-func (c *connection) AsOLAPStore() (drivers.OLAPStore, bool) {
+func (c *connection) AsOLAP() (drivers.OLAPStore, bool) {
 	return nil, false
 }
 

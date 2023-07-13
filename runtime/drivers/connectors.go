@@ -29,8 +29,8 @@ type Spec struct {
 	DisplayName        string
 	Description        string
 	ServiceAccountDocs string
-	Properties         []PropertySchema
-	ConnectorVariables []VariableSchema
+	SourceProperties   []PropertySchema
+	ConfigProperties   []PropertySchema
 	Help               string
 }
 
@@ -42,14 +42,11 @@ type PropertySchema struct {
 	DisplayName string
 	Description string
 	Placeholder string
-	Hint        string
-	Href        string
-}
-
-type VariableSchema struct {
-	Key           string
+	// Default can be different from placeholder in the sense that placeholder should not be used as default value.
+	// If a default is set then it should also be used as a placeholder.
 	Default       string
-	Help          string
+	Hint          string
+	Href          string
 	Secret        bool
 	ValidateFunc  func(any interface{}) error
 	TransformFunc func(any interface{}) interface{}
