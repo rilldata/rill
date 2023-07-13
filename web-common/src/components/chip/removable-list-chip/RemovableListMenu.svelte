@@ -7,11 +7,11 @@
   import { Menu, MenuItem } from "../../menu";
   import { Search } from "../../search";
   import Footer from "./Footer.svelte";
-  import { Writable } from "svelte/store";
+  import type { Writable } from "svelte/store";
 
   export let excludeStore: Writable<boolean>;
   export let selectedValues: string[];
-  export let searchedValues: string[] = [];
+  export let searchedValues: string[] | null = [];
 
   let searchText = "";
 
@@ -32,9 +32,10 @@
   let candidateValues = [...selectedValues];
   let valuesToDisplay = [...candidateValues];
 
-  $: if (searchText) {
+  // If searchedValues === null, search has not finished yet. So continue rendering the previous list
+  $: if (searchText && searchedValues !== null) {
     valuesToDisplay = [...searchedValues];
-  } else valuesToDisplay = [...candidateValues];
+  } else if (!searchText) valuesToDisplay = [...candidateValues];
 
   $: numSelectedNotInSearch = selectedValues.filter(
     (v) => !valuesToDisplay.includes(v)
@@ -62,7 +63,7 @@
 >
   <!-- the min-height is set to have about 3 entries in it -->
 
-  <Search bind:value={searchText} on:input={onSearch} />
+  <Search bind:value={searchText} on:input={onSearch} label="Search list" />
 
   <!-- apply a wrapped flex element to ensure proper bottom spacing between body and footer -->
   <div class="flex flex-col flex-1 overflow-auto w-full pb-1">

@@ -1,5 +1,7 @@
 import { goto } from "$app/navigation";
+import { page } from "$app/stores";
 import type { AxiosError } from "axios";
+import { get } from "svelte/store";
 import type { RpcStatus } from "../../client";
 import { ADMIN_URL } from "../../client/http-client";
 import { ErrorStoreState, errorStore } from "./error-store";
@@ -8,6 +10,16 @@ export function globalErrorCallback(error: AxiosError): void {
   // If Unauthorized, redirect to login page
   if (error.response.status === 401) {
     goto(`${ADMIN_URL}/auth/login?redirect=${window.origin}`);
+    return;
+  }
+
+  // If on a Project page, and "repository not found", ignore the error and show the page
+  const isProjectPage = get(page).route.id === "/[organization]/[project]";
+  if (
+    isProjectPage &&
+    error.response.status === 400 &&
+    (error.response.data as RpcStatus).message === "repository not found"
+  ) {
     return;
   }
 

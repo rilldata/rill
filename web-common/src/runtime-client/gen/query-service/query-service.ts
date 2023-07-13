@@ -55,6 +55,8 @@ import type {
   QueryServiceColumnTopKBody,
   V1QueryResponse,
   QueryServiceQueryBody,
+  QueryServiceQueryBatch200,
+  QueryServiceQueryBatchBody,
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
 
@@ -2128,6 +2130,75 @@ export const createQueryServiceQuery = <
   >;
 }) => {
   const mutationOptions = getQueryServiceQueryMutationOptions(options);
+
+  return createMutation(mutationOptions);
+};
+/**
+ * @summary Batch request with different queries
+ */
+export const queryServiceQueryBatch = (
+  instanceId: string,
+  queryServiceQueryBatchBody: QueryServiceQueryBatchBody
+) => {
+  return httpClient<QueryServiceQueryBatch200>({
+    url: `/v1/instances/${instanceId}/query/batch`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceQueryBatchBody,
+  });
+};
+
+export const getQueryServiceQueryBatchMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof queryServiceQueryBatch>>,
+    TError,
+    { instanceId: string; data: QueryServiceQueryBatchBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof queryServiceQueryBatch>>,
+  TError,
+  { instanceId: string; data: QueryServiceQueryBatchBody },
+  TContext
+> => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof queryServiceQueryBatch>>,
+    { instanceId: string; data: QueryServiceQueryBatchBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return queryServiceQueryBatch(instanceId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type QueryServiceQueryBatchMutationResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceQueryBatch>>
+>;
+export type QueryServiceQueryBatchMutationBody = QueryServiceQueryBatchBody;
+export type QueryServiceQueryBatchMutationError = RpcStatus;
+
+/**
+ * @summary Batch request with different queries
+ */
+export const createQueryServiceQueryBatch = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof queryServiceQueryBatch>>,
+    TError,
+    { instanceId: string; data: QueryServiceQueryBatchBody },
+    TContext
+  >;
+}) => {
+  const mutationOptions = getQueryServiceQueryBatchMutationOptions(options);
 
   return createMutation(mutationOptions);
 };
