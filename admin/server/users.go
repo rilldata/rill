@@ -115,7 +115,7 @@ func (s *Server) GetCurrentUser(ctx context.Context, req *adminv1.GetCurrentUser
 	return &adminv1.GetCurrentUserResponse{
 		User: userToPB(u),
 		Preferences: &adminv1.UserPreferences{
-			Timezone: &u.PreferenceTimezone,
+			TimeZone: &u.PreferenceTimeZone,
 		},
 	}, nil
 }
@@ -133,8 +133,8 @@ func (s *Server) UpdateUserPreferences(ctx context.Context, req *adminv1.UpdateU
 	}
 
 	observability.AddRequestAttributes(ctx, attribute.String("user_id", claims.OwnerID()))
-	if req.Preferences.Timezone != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("preferences_timezone", *req.Preferences.Timezone))
+	if req.Preferences.TimeZone != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("preferences_time_zone", *req.Preferences.TimeZone))
 	}
 
 	// Owner is a user
@@ -149,7 +149,7 @@ func (s *Server) UpdateUserPreferences(ctx context.Context, req *adminv1.UpdateU
 		PhotoURL:            user.PhotoURL,
 		GithubUsername:      user.GithubUsername,
 		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
-		PreferenceTimezone:  valOrDefault(req.Preferences.Timezone, user.PreferenceTimezone),
+		PreferenceTimeZone:  valOrDefault(req.Preferences.TimeZone, user.PreferenceTimeZone),
 	})
 	if err != nil {
 		return nil, err
@@ -157,7 +157,7 @@ func (s *Server) UpdateUserPreferences(ctx context.Context, req *adminv1.UpdateU
 
 	return &adminv1.UpdateUserPreferencesResponse{
 		Preferences: &adminv1.UserPreferences{
-			Timezone: &updatedUser.PreferenceTimezone,
+			TimeZone: &updatedUser.PreferenceTimeZone,
 		},
 	}, nil
 }
@@ -305,7 +305,7 @@ func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpda
 		PhotoURL:            user.PhotoURL,
 		GithubUsername:      user.GithubUsername,
 		QuotaSingleuserOrgs: int(valOrDefault(req.SingleuserOrgs, uint32(user.QuotaSingleuserOrgs))),
-		PreferenceTimezone:  user.PreferenceTimezone,
+		PreferenceTimeZone:  user.PreferenceTimeZone,
 	})
 	if err != nil {
 		return nil, err

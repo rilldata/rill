@@ -25,18 +25,18 @@ func (s *Server) ListBookmarks(ctx context.Context, req *adminv1.ListBookmarksRe
 		return nil, fmt.Errorf("not authenticated as a user")
 	}
 
-	bookmarks, err := s.admin.DB.FindBookmarks(ctx, req.ProjectId, req.UserId)
+	bookmarks, err := s.admin.DB.FindBookmarks(ctx, req.ProjectId, claims.OwnerID())
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	dtos := make([]*adminv1.DashboardBookmark, len(bookmarks))
+	dtos := make([]*adminv1.Bookmark, len(bookmarks))
 	for i, bookmark := range bookmarks {
 		dtos[i] = bookmarkToPB(bookmark)
 	}
 
 	return &adminv1.ListBookmarksResponse{
-		DashboardBookmark: dtos,
+		Bookmarks: dtos,
 	}, nil
 }
 
@@ -59,7 +59,7 @@ func (s *Server) GetBookmark(ctx context.Context, req *adminv1.GetBookmarkReques
 	}
 
 	return &adminv1.GetBookmarkResponse{
-		DashboardBookmark: bookmarkToPB(bookmark),
+		Bookmark: bookmarkToPB(bookmark),
 	}, nil
 }
 
@@ -81,14 +81,14 @@ func (s *Server) CreateBookmark(ctx context.Context, req *adminv1.CreateBookmark
 		Data:          req.Data,
 		DashboardName: req.DashboardName,
 		ProjectID:     req.ProjectId,
-		UserID:        req.UserId,
+		UserID:        claims.OwnerID(),
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &adminv1.CreateBookmarkResponse{
-		DashboardBookmark: bookmarkToPB(bookmark),
+		Bookmark: bookmarkToPB(bookmark),
 	}, nil
 }
 
@@ -113,8 +113,8 @@ func (s *Server) RemoveBookmark(ctx context.Context, req *adminv1.RemoveBookmark
 	return &adminv1.RemoveBookmarkResponse{}, nil
 }
 
-func bookmarkToPB(u *database.Bookmark) *adminv1.DashboardBookmark {
-	return &adminv1.DashboardBookmark{
+func bookmarkToPB(u *database.Bookmark) *adminv1.Bookmark {
+	return &adminv1.Bookmark{
 		Id:            u.ID,
 		DisplayName:   u.DisplayName,
 		Data:          u.Data,

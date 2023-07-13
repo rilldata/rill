@@ -341,7 +341,7 @@ type User struct {
 	CreatedOn           time.Time `db:"created_on"`
 	UpdatedOn           time.Time `db:"updated_on"`
 	QuotaSingleuserOrgs int       `db:"quota_singleuser_orgs"`
-	PreferenceTimezone  string    `db:"preference_timezone"`
+	PreferenceTimeZone  string    `db:"preference_time_zone"`
 	Superuser           bool      `db:"superuser"`
 }
 
@@ -360,7 +360,7 @@ type UpdateUserOptions struct {
 	PhotoURL            string
 	GithubUsername      string
 	QuotaSingleuserOrgs int
-	PreferenceTimezone  string
+	PreferenceTimeZone  string
 }
 
 // Usergroup represents a group of org members
@@ -563,21 +563,21 @@ type InsertProjectInviteOptions struct {
 }
 
 type Bookmark struct {
-	ID            string    `json:"id"`
-	DisplayName   string    `json:"display_name"`
-	Data          []byte    `json:"data"`
-	DashboardName string    `json:"dashboard_name"`
-	ProjectID     string    `json:"project_id"`
-	UserID        string    `json:"user_id"`
-	CreatedOn     time.Time `json:"created_on"`
-	UpdatedOn     time.Time `json:"updated_on"`
+	ID            string
+	DisplayName   string    `db:"display_name"`
+	Data          []byte    `db:"data"`
+	DashboardName string    `db:"dashboard_name"`
+	ProjectID     string    `db:"project_id"`
+	UserID        string    `db:"user_id"`
+	CreatedOn     time.Time `db:"created_on"`
+	UpdatedOn     time.Time `db:"updated_on"`
 }
 
 // InsertBookmarksOptions defines options for inserting a new bookmark
 type InsertBookmarkOptions struct {
-	DisplayName   string
-	Data          []byte
-	DashboardName string
-	ProjectID     string
-	UserID        string
+	DisplayName   string `json:"display_name"`
+	Data          []byte `json:"data"`
+	DashboardName string `json:"dashboard_name"`
+	ProjectID     string `json:"project_id"`
+	UserID        string `json:"user_id"`
 }

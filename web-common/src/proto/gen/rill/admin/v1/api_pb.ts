@@ -3120,9 +3120,9 @@ export class GetUserResponse extends Message<GetUserResponse> {
  */
 export class UserPreferences extends Message<UserPreferences> {
   /**
-   * @generated from field: optional string timezone = 1;
+   * @generated from field: optional string time_zone = 1;
    */
-  timezone?: string;
+  timeZone?: string;
 
   constructor(data?: PartialMessage<UserPreferences>) {
     super();
@@ -3132,7 +3132,7 @@ export class UserPreferences extends Message<UserPreferences> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.UserPreferences";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "timezone", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 1, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UserPreferences {
@@ -3233,12 +3233,7 @@ export class UpdateUserPreferencesResponse extends Message<UpdateUserPreferences
  */
 export class ListBookmarksRequest extends Message<ListBookmarksRequest> {
   /**
-   * @generated from field: string user_id = 1;
-   */
-  userId = "";
-
-  /**
-   * @generated from field: string project_id = 2;
+   * @generated from field: string project_id = 1;
    */
   projectId = "";
 
@@ -3250,8 +3245,7 @@ export class ListBookmarksRequest extends Message<ListBookmarksRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.ListBookmarksRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListBookmarksRequest {
@@ -3276,9 +3270,9 @@ export class ListBookmarksRequest extends Message<ListBookmarksRequest> {
  */
 export class ListBookmarksResponse extends Message<ListBookmarksResponse> {
   /**
-   * @generated from field: repeated rill.admin.v1.DashboardBookmark dashboard_bookmark = 1;
+   * @generated from field: repeated rill.admin.v1.Bookmark bookmarks = 1;
    */
-  dashboardBookmark: DashboardBookmark[] = [];
+  bookmarks: Bookmark[] = [];
 
   constructor(data?: PartialMessage<ListBookmarksResponse>) {
     super();
@@ -3288,7 +3282,7 @@ export class ListBookmarksResponse extends Message<ListBookmarksResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.ListBookmarksResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "dashboard_bookmark", kind: "message", T: DashboardBookmark, repeated: true },
+    { no: 1, name: "bookmarks", kind: "message", T: Bookmark, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListBookmarksResponse {
@@ -3350,9 +3344,9 @@ export class GetBookmarkRequest extends Message<GetBookmarkRequest> {
  */
 export class GetBookmarkResponse extends Message<GetBookmarkResponse> {
   /**
-   * @generated from field: rill.admin.v1.DashboardBookmark dashboard_bookmark = 1;
+   * @generated from field: rill.admin.v1.Bookmark bookmark = 1;
    */
-  dashboardBookmark?: DashboardBookmark;
+  bookmark?: Bookmark;
 
   constructor(data?: PartialMessage<GetBookmarkResponse>) {
     super();
@@ -3362,7 +3356,7 @@ export class GetBookmarkResponse extends Message<GetBookmarkResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.GetBookmarkResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "dashboard_bookmark", kind: "message", T: DashboardBookmark },
+    { no: 1, name: "bookmark", kind: "message", T: Bookmark },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetBookmarkResponse {
@@ -3387,29 +3381,24 @@ export class GetBookmarkResponse extends Message<GetBookmarkResponse> {
  */
 export class CreateBookmarkRequest extends Message<CreateBookmarkRequest> {
   /**
-   * @generated from field: string project_id = 1;
-   */
-  projectId = "";
-
-  /**
-   * @generated from field: string user_id = 2;
-   */
-  userId = "";
-
-  /**
-   * @generated from field: string display_name = 3;
+   * @generated from field: string display_name = 1;
    */
   displayName = "";
 
   /**
-   * @generated from field: string dashboard_name = 4;
+   * @generated from field: bytes data = 2;
+   */
+  data = new Uint8Array(0);
+
+  /**
+   * @generated from field: string dashboard_name = 3;
    */
   dashboardName = "";
 
   /**
-   * @generated from field: bytes data = 5;
+   * @generated from field: string project_id = 4;
    */
-  data = new Uint8Array(0);
+  projectId = "";
 
   constructor(data?: PartialMessage<CreateBookmarkRequest>) {
     super();
@@ -3419,11 +3408,10 @@ export class CreateBookmarkRequest extends Message<CreateBookmarkRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.CreateBookmarkRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "dashboard_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+    { no: 1, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+    { no: 3, name: "dashboard_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateBookmarkRequest {
@@ -3448,9 +3436,9 @@ export class CreateBookmarkRequest extends Message<CreateBookmarkRequest> {
  */
 export class CreateBookmarkResponse extends Message<CreateBookmarkResponse> {
   /**
-   * @generated from field: rill.admin.v1.DashboardBookmark dashboard_bookmark = 1;
+   * @generated from field: rill.admin.v1.Bookmark bookmark = 1;
    */
-  dashboardBookmark?: DashboardBookmark;
+  bookmark?: Bookmark;
 
   constructor(data?: PartialMessage<CreateBookmarkResponse>) {
     super();
@@ -3460,7 +3448,7 @@ export class CreateBookmarkResponse extends Message<CreateBookmarkResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.CreateBookmarkResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "dashboard_bookmark", kind: "message", T: DashboardBookmark },
+    { no: 1, name: "bookmark", kind: "message", T: Bookmark },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateBookmarkResponse {
@@ -5004,9 +4992,9 @@ export class WhitelistedDomain extends Message<WhitelistedDomain> {
 }
 
 /**
- * @generated from message rill.admin.v1.DashboardBookmark
+ * @generated from message rill.admin.v1.Bookmark
  */
-export class DashboardBookmark extends Message<DashboardBookmark> {
+export class Bookmark extends Message<Bookmark> {
   /**
    * @generated from field: string id = 1;
    */
@@ -5047,13 +5035,13 @@ export class DashboardBookmark extends Message<DashboardBookmark> {
    */
   updatedOn?: Timestamp;
 
-  constructor(data?: PartialMessage<DashboardBookmark>) {
+  constructor(data?: PartialMessage<Bookmark>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.DashboardBookmark";
+  static readonly typeName = "rill.admin.v1.Bookmark";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -5065,20 +5053,20 @@ export class DashboardBookmark extends Message<DashboardBookmark> {
     { no: 8, name: "updated_on", kind: "message", T: Timestamp },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardBookmark {
-    return new DashboardBookmark().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Bookmark {
+    return new Bookmark().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DashboardBookmark {
-    return new DashboardBookmark().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Bookmark {
+    return new Bookmark().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DashboardBookmark {
-    return new DashboardBookmark().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Bookmark {
+    return new Bookmark().fromJsonString(jsonString, options);
   }
 
-  static equals(a: DashboardBookmark | PlainMessage<DashboardBookmark> | undefined, b: DashboardBookmark | PlainMessage<DashboardBookmark> | undefined): boolean {
-    return proto3.util.equals(DashboardBookmark, a, b);
+  static equals(a: Bookmark | PlainMessage<Bookmark> | undefined, b: Bookmark | PlainMessage<Bookmark> | undefined): boolean {
+    return proto3.util.equals(Bookmark, a, b);
   }
 }
 

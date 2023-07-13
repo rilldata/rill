@@ -11,7 +11,6 @@ export type AdminServiceSearchUsersParams = {
 };
 
 export type AdminServiceListBookmarksParams = {
-  userId?: string;
   projectId?: string;
 };
 
@@ -141,7 +140,7 @@ export interface V1UserQuotas {
 }
 
 export interface V1UserPreferences {
-  timezone?: string;
+  timeZone?: string;
 }
 
 export interface V1UserInvite {
@@ -393,7 +392,7 @@ export interface V1ListOrganizationInvitesResponse {
 }
 
 export interface V1ListBookmarksResponse {
-  dashboardBookmark?: V1DashboardBookmark[];
+  bookmarks?: V1Bookmark[];
 }
 
 export interface V1LeaveOrganizationResponse {
@@ -451,7 +450,7 @@ export interface V1GetCurrentUserResponse {
 }
 
 export interface V1GetBookmarkResponse {
-  dashboardBookmark?: V1DashboardBookmark;
+  bookmark?: V1Bookmark;
 }
 
 export type V1DeploymentStatus =
@@ -487,17 +486,6 @@ export interface V1DeleteOrganizationResponse {
   [key: string]: any;
 }
 
-export interface V1DashboardBookmark {
-  id?: string;
-  displayName?: string;
-  data?: string;
-  dashboardName?: string;
-  projectId?: string;
-  userId?: string;
-  createdOn?: string;
-  updatedOn?: string;
-}
-
 export interface V1CreateWhitelistedDomainResponse {
   [key: string]: any;
 }
@@ -515,16 +503,26 @@ export interface V1CreateOrganizationRequest {
   description?: string;
 }
 
-export interface V1CreateBookmarkResponse {
-  dashboardBookmark?: V1DashboardBookmark;
+export interface V1CreateBookmarkRequest {
+  displayName?: string;
+  data?: string;
+  dashboardName?: string;
+  projectId?: string;
 }
 
-export interface V1CreateBookmarkRequest {
+export interface V1Bookmark {
+  id?: string;
+  displayName?: string;
+  data?: string;
+  dashboardName?: string;
   projectId?: string;
   userId?: string;
-  displayName?: string;
-  dashboardName?: string;
-  data?: string;
+  createdOn?: string;
+  updatedOn?: string;
+}
+
+export interface V1CreateBookmarkResponse {
+  bookmark?: V1Bookmark;
 }
 
 export interface V1AddProjectMemberResponse {

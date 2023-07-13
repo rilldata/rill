@@ -661,7 +661,7 @@ message GetUserResponse {
 
 // Message containing user preferences
 message UserPreferences {
-  optional string timezone = 1;
+  optional string time_zone = 1;
 }
 
 // Updating user preferences for the current user
@@ -674,12 +674,11 @@ message UpdateUserPreferencesResponse {
 }
 
 message ListBookmarksRequest {
-    string user_id = 1;
-    string project_id = 2;
+    string project_id = 1;
 }
 
 message ListBookmarksResponse {
-    repeated DashboardBookmark dashboard_bookmark = 1;
+    repeated Bookmark bookmarks = 1;
 }
 
 message GetBookmarkRequest {
@@ -687,19 +686,18 @@ message GetBookmarkRequest {
 }
 
 message GetBookmarkResponse {
-    DashboardBookmark dashboard_bookmark = 1;
+    Bookmark bookmark = 1;
 }
 
 message CreateBookmarkRequest {
-  string project_id = 1;
-  string user_id = 2;
-  string display_name = 3;
-  string dashboard_name = 4;
-  bytes data = 5;
+  string display_name = 1;
+  bytes data = 2;
+  string dashboard_name = 3;
+  string project_id = 4;
 }
 
 message CreateBookmarkResponse {
-  DashboardBookmark dashboard_bookmark = 1;
+  Bookmark bookmark = 1;
 }
 
 message RemoveBookmarkRequest {
@@ -897,7 +895,7 @@ message WhitelistedDomain {
   string role = 2;
 }
 
-message DashboardBookmark {
+message Bookmark {
   string id = 1;
   string display_name = 2;
   bytes data = 3;

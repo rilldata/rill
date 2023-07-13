@@ -1102,10 +1102,6 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: userId
-          in: query
-          required: false
-          type: string
         - name: projectId
           in: query
           required: false
@@ -1266,45 +1262,7 @@ definitions:
     properties:
       pendingSignup:
         type: boolean
-  v1CreateBookmarkRequest:
-    type: object
-    properties:
-      projectId:
-        type: string
-      userId:
-        type: string
-      displayName:
-        type: string
-      dashboardName:
-        type: string
-      data:
-        type: string
-        format: byte
-  v1CreateBookmarkResponse:
-    type: object
-    properties:
-      dashboardBookmark:
-        $ref: '#/definitions/v1DashboardBookmark'
-  v1CreateOrganizationRequest:
-    type: object
-    properties:
-      name:
-        type: string
-      description:
-        type: string
-  v1CreateOrganizationResponse:
-    type: object
-    properties:
-      organization:
-        $ref: '#/definitions/v1Organization'
-  v1CreateProjectResponse:
-    type: object
-    properties:
-      project:
-        $ref: '#/definitions/v1Project'
-  v1CreateWhitelistedDomainResponse:
-    type: object
-  v1DashboardBookmark:
+  v1Bookmark:
     type: object
     properties:
       id:
@@ -1326,6 +1284,42 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+  v1CreateBookmarkRequest:
+    type: object
+    properties:
+      displayName:
+        type: string
+      data:
+        type: string
+        format: byte
+      dashboardName:
+        type: string
+      projectId:
+        type: string
+  v1CreateBookmarkResponse:
+    type: object
+    properties:
+      bookmark:
+        $ref: '#/definitions/v1Bookmark'
+  v1CreateOrganizationRequest:
+    type: object
+    properties:
+      name:
+        type: string
+      description:
+        type: string
+  v1CreateOrganizationResponse:
+    type: object
+    properties:
+      organization:
+        $ref: '#/definitions/v1Organization'
+  v1CreateProjectResponse:
+    type: object
+    properties:
+      project:
+        $ref: '#/definitions/v1Project'
+  v1CreateWhitelistedDomainResponse:
+    type: object
   v1DeleteOrganizationResponse:
     type: object
   v1DeleteProjectResponse:
@@ -1368,8 +1362,8 @@ definitions:
   v1GetBookmarkResponse:
     type: object
     properties:
-      dashboardBookmark:
-        $ref: '#/definitions/v1DashboardBookmark'
+      bookmark:
+        $ref: '#/definitions/v1Bookmark'
   v1GetCurrentUserResponse:
     type: object
     properties:
@@ -1447,11 +1441,11 @@ definitions:
   v1ListBookmarksResponse:
     type: object
     properties:
-      dashboardBookmark:
+      bookmarks:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1DashboardBookmark'
+          $ref: '#/definitions/v1Bookmark'
   v1ListOrganizationInvitesResponse:
     type: object
     properties:
@@ -1851,7 +1845,7 @@ definitions:
   v1UserPreferences:
     type: object
     properties:
-      timezone:
+      timeZone:
         type: string
     title: Message containing user preferences
   v1UserQuotas:

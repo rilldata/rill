@@ -9230,8 +9230,8 @@ func (m *UserPreferences) validate(all bool) error {
 
 	var errors []error
 
-	if m.Timezone != nil {
-		// no validation rules for Timezone
+	if m.TimeZone != nil {
+		// no validation rules for TimeZone
 	}
 
 	if len(errors) > 0 {
@@ -9598,8 +9598,6 @@ func (m *ListBookmarksRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for UserId
-
 	// no validation rules for ProjectId
 
 	if len(errors) > 0 {
@@ -9704,7 +9702,7 @@ func (m *ListBookmarksResponse) validate(all bool) error {
 
 	var errors []error
 
-	for idx, item := range m.GetDashboardBookmark() {
+	for idx, item := range m.GetBookmarks() {
 		_, _ = idx, item
 
 		if all {
@@ -9712,7 +9710,7 @@ func (m *ListBookmarksResponse) validate(all bool) error {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
 					errors = append(errors, ListBookmarksResponseValidationError{
-						field:  fmt.Sprintf("DashboardBookmark[%v]", idx),
+						field:  fmt.Sprintf("Bookmarks[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -9720,7 +9718,7 @@ func (m *ListBookmarksResponse) validate(all bool) error {
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
 					errors = append(errors, ListBookmarksResponseValidationError{
-						field:  fmt.Sprintf("DashboardBookmark[%v]", idx),
+						field:  fmt.Sprintf("Bookmarks[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -9729,7 +9727,7 @@ func (m *ListBookmarksResponse) validate(all bool) error {
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return ListBookmarksResponseValidationError{
-					field:  fmt.Sprintf("DashboardBookmark[%v]", idx),
+					field:  fmt.Sprintf("Bookmarks[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
@@ -9945,11 +9943,11 @@ func (m *GetBookmarkResponse) validate(all bool) error {
 	var errors []error
 
 	if all {
-		switch v := interface{}(m.GetDashboardBookmark()).(type) {
+		switch v := interface{}(m.GetBookmark()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, GetBookmarkResponseValidationError{
-					field:  "DashboardBookmark",
+					field:  "Bookmark",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -9957,16 +9955,16 @@ func (m *GetBookmarkResponse) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, GetBookmarkResponseValidationError{
-					field:  "DashboardBookmark",
+					field:  "Bookmark",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetDashboardBookmark()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetBookmark()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return GetBookmarkResponseValidationError{
-				field:  "DashboardBookmark",
+				field:  "Bookmark",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -10075,15 +10073,13 @@ func (m *CreateBookmarkRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for ProjectId
-
-	// no validation rules for UserId
-
 	// no validation rules for DisplayName
+
+	// no validation rules for Data
 
 	// no validation rules for DashboardName
 
-	// no validation rules for Data
+	// no validation rules for ProjectId
 
 	if len(errors) > 0 {
 		return CreateBookmarkRequestMultiError(errors)
@@ -10188,11 +10184,11 @@ func (m *CreateBookmarkResponse) validate(all bool) error {
 	var errors []error
 
 	if all {
-		switch v := interface{}(m.GetDashboardBookmark()).(type) {
+		switch v := interface{}(m.GetBookmark()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, CreateBookmarkResponseValidationError{
-					field:  "DashboardBookmark",
+					field:  "Bookmark",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -10200,16 +10196,16 @@ func (m *CreateBookmarkResponse) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, CreateBookmarkResponseValidationError{
-					field:  "DashboardBookmark",
+					field:  "Bookmark",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetDashboardBookmark()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetBookmark()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return CreateBookmarkResponseValidationError{
-				field:  "DashboardBookmark",
+				field:  "Bookmark",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -13993,22 +13989,22 @@ var _ interface {
 	ErrorName() string
 } = WhitelistedDomainValidationError{}
 
-// Validate checks the field values on DashboardBookmark with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *DashboardBookmark) Validate() error {
+// Validate checks the field values on Bookmark with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *Bookmark) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on DashboardBookmark with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// DashboardBookmarkMultiError, or nil if none found.
-func (m *DashboardBookmark) ValidateAll() error {
+// ValidateAll checks the field values on Bookmark with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in BookmarkMultiError, or nil
+// if none found.
+func (m *Bookmark) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *DashboardBookmark) validate(all bool) error {
+func (m *Bookmark) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -14031,7 +14027,7 @@ func (m *DashboardBookmark) validate(all bool) error {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, DashboardBookmarkValidationError{
+				errors = append(errors, BookmarkValidationError{
 					field:  "CreatedOn",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -14039,7 +14035,7 @@ func (m *DashboardBookmark) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, DashboardBookmarkValidationError{
+				errors = append(errors, BookmarkValidationError{
 					field:  "CreatedOn",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -14048,7 +14044,7 @@ func (m *DashboardBookmark) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetCreatedOn()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return DashboardBookmarkValidationError{
+			return BookmarkValidationError{
 				field:  "CreatedOn",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -14060,7 +14056,7 @@ func (m *DashboardBookmark) validate(all bool) error {
 		switch v := interface{}(m.GetUpdatedOn()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, DashboardBookmarkValidationError{
+				errors = append(errors, BookmarkValidationError{
 					field:  "UpdatedOn",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -14068,7 +14064,7 @@ func (m *DashboardBookmark) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, DashboardBookmarkValidationError{
+				errors = append(errors, BookmarkValidationError{
 					field:  "UpdatedOn",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -14077,7 +14073,7 @@ func (m *DashboardBookmark) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetUpdatedOn()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return DashboardBookmarkValidationError{
+			return BookmarkValidationError{
 				field:  "UpdatedOn",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -14086,19 +14082,18 @@ func (m *DashboardBookmark) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return DashboardBookmarkMultiError(errors)
+		return BookmarkMultiError(errors)
 	}
 
 	return nil
 }
 
-// DashboardBookmarkMultiError is an error wrapping multiple validation errors
-// returned by DashboardBookmark.ValidateAll() if the designated constraints
-// aren't met.
-type DashboardBookmarkMultiError []error
+// BookmarkMultiError is an error wrapping multiple validation errors returned
+// by Bookmark.ValidateAll() if the designated constraints aren't met.
+type BookmarkMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m DashboardBookmarkMultiError) Error() string {
+func (m BookmarkMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -14107,11 +14102,11 @@ func (m DashboardBookmarkMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m DashboardBookmarkMultiError) AllErrors() []error { return m }
+func (m BookmarkMultiError) AllErrors() []error { return m }
 
-// DashboardBookmarkValidationError is the validation error returned by
-// DashboardBookmark.Validate if the designated constraints aren't met.
-type DashboardBookmarkValidationError struct {
+// BookmarkValidationError is the validation error returned by
+// Bookmark.Validate if the designated constraints aren't met.
+type BookmarkValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -14119,24 +14114,22 @@ type DashboardBookmarkValidationError struct {
 }
 
 // Field function returns field value.
-func (e DashboardBookmarkValidationError) Field() string { return e.field }
+func (e BookmarkValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e DashboardBookmarkValidationError) Reason() string { return e.reason }
+func (e BookmarkValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e DashboardBookmarkValidationError) Cause() error { return e.cause }
+func (e BookmarkValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e DashboardBookmarkValidationError) Key() bool { return e.key }
+func (e BookmarkValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e DashboardBookmarkValidationError) ErrorName() string {
-	return "DashboardBookmarkValidationError"
-}
+func (e BookmarkValidationError) ErrorName() string { return "BookmarkValidationError" }
 
 // Error satisfies the builtin error interface
-func (e DashboardBookmarkValidationError) Error() string {
+func (e BookmarkValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -14148,14 +14141,14 @@ func (e DashboardBookmarkValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sDashboardBookmark.%s: %s%s",
+		"invalid %sBookmark.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = DashboardBookmarkValidationError{}
+var _ error = BookmarkValidationError{}
 
 var _ interface {
 	Field() string
@@ -14163,4 +14156,4 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = DashboardBookmarkValidationError{}
+} = BookmarkValidationError{}
