@@ -28,6 +28,8 @@ message DashboardState {
   optional bool all_measures_visible = 9;
   repeated string visible_dimensions = 10;
   optional bool all_dimensions_visible = 11;
+
+  optional bool show_percent_of_total = 12;
 }
 
 message DashboardTimeRange {
