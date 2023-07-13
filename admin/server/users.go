@@ -14,6 +14,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	// Load time zone data for time.ParseInLocation
+	_ "time/tzdata"
 )
 
 func (s *Server) ListSuperusers(ctx context.Context, req *adminv1.ListSuperusersRequest) (*adminv1.ListSuperusersResponse, error) {
@@ -132,8 +135,12 @@ func (s *Server) UpdateUserPreferences(ctx context.Context, req *adminv1.UpdateU
 		return nil, fmt.Errorf("not authenticated as a user")
 	}
 
-	observability.AddRequestAttributes(ctx, attribute.String("user_id", claims.OwnerID()))
 	if req.Preferences.TimeZone != nil {
+		_, err := time.LoadLocation(*req.Preferences.TimeZone)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid time zone: %s", *req.Preferences.TimeZone))
+		}
+
 		observability.AddRequestAttributes(ctx, attribute.String("preferences_time_zone", *req.Preferences.TimeZone))
 	}
 

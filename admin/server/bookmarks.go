@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/rilldata/rill/admin/database"
@@ -58,6 +59,10 @@ func (s *Server) GetBookmark(ctx context.Context, req *adminv1.GetBookmarkReques
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	if bookmark.UserID != claims.OwnerID() {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read bookmark")
+	}
+
 	return &adminv1.GetBookmarkResponse{
 		Bookmark: bookmarkToPB(bookmark),
 	}, nil
@@ -74,6 +79,24 @@ func (s *Server) CreateBookmark(ctx context.Context, req *adminv1.CreateBookmark
 	// Error if authenticated as anything other than a user
 	if claims.OwnerType() != auth.OwnerTypeUser {
 		return nil, fmt.Errorf("not authenticated as a user")
+	}
+
+	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "project not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if proj.Public {
+		permissions.ReadProject = true
+		permissions.ReadProd = true
+	}
+
+	if !permissions.ReadProject && !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
 	bookmark, err := s.admin.DB.InsertBookmark(ctx, &database.InsertBookmarkOptions{
@@ -105,7 +128,16 @@ func (s *Server) RemoveBookmark(ctx context.Context, req *adminv1.RemoveBookmark
 		return nil, fmt.Errorf("not authenticated as a user")
 	}
 
-	err := s.admin.DB.DeleteBookmark(ctx, req.BookmarkId)
+	bookmark, err := s.admin.DB.FindBookmark(ctx, req.BookmarkId)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if bookmark.UserID != claims.OwnerID() {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete bookmark")
+	}
+
+	err = s.admin.DB.DeleteBookmark(ctx, req.BookmarkId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
