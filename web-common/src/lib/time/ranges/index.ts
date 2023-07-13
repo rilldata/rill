@@ -30,13 +30,15 @@ import {
   TimeRangeType,
 } from "../types";
 import { removeTimezoneOffset } from "../../formatters";
+import { getDateMonthYearForTimezone } from "@rilldata/web-common/lib/time/timezone";
 
 // Loop through all presets to check if they can be a part of subset of given start and end date
 export function getChildTimeRanges(
   start: Date,
   end: Date,
   ranges: Record<string, TimeRangeMeta>,
-  minTimeGrain: V1TimeGrain
+  minTimeGrain: V1TimeGrain,
+  zone: string
 ): TimeRangeOption[] {
   const timeRanges: TimeRangeOption[] = [];
 
@@ -59,7 +61,8 @@ export function getChildTimeRanges(
       const timeRangeDates = relativePointInTimeToAbsolute(
         end,
         timeRange.start,
-        timeRange.end
+        timeRange.end,
+        zone
       );
 
       // check if time range is possible with given minTimeGrain
@@ -120,7 +123,8 @@ export function ISODurationToTimePreset(
 export function convertTimeRangePreset(
   timeRangePreset: TimeRangeType,
   start: Date,
-  end: Date
+  end: Date,
+  zone: string
 ): TimeRange {
   if (timeRangePreset === TimeRangePreset.ALL_TIME) {
     return {
@@ -133,7 +137,8 @@ export function convertTimeRangePreset(
   const timeRangeDates = relativePointInTimeToAbsolute(
     end,
     timeRange.start,
-    timeRange.end
+    timeRange.end,
+    zone
   );
 
   return {
@@ -151,7 +156,8 @@ export function convertTimeRangePreset(
 export const prettyFormatTimeRange = (
   start: Date,
   end: Date,
-  timePreset: TimeRangeType
+  timePreset: TimeRangeType,
+  timeZone: string
 ): string => {
   const isAllTime = timePreset === TimeRangePreset.ALL_TIME;
   const isCustom = timePreset === TimeRangePreset.CUSTOM;
@@ -167,15 +173,17 @@ export const prettyFormatTimeRange = (
     return "";
   }
 
-  const TIMEZONE = "UTC";
-  // const TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone; // the user's local timezone
+  const {
+    day: startDate,
+    month: startMonth,
+    year: startYear,
+  } = getDateMonthYearForTimezone(start, timeZone);
 
-  const startDate = start.getUTCDate(); // use start.getDate() for local timezone
-  const startMonth = start.getUTCMonth();
-  const startYear = start.getUTCFullYear();
-  let endDate = end.getUTCDate();
-  let endMonth = end.getUTCMonth();
-  let endYear = end.getUTCFullYear();
+  let {
+    day: endDate,
+    month: endMonth,
+    year: endYear,
+  } = getDateMonthYearForTimezone(end, timeZone);
 
   if (
     startDate === endDate &&
@@ -184,20 +192,20 @@ export const prettyFormatTimeRange = (
   ) {
     return `${start.toLocaleDateString(undefined, {
       month: "short",
-      timeZone: TIMEZONE,
+      timeZone,
     })} ${startDate}, ${startYear} (${start
       .toLocaleString(undefined, {
         hour12: true,
         hour: "numeric",
         minute: "numeric",
-        timeZone: TIMEZONE,
+        timeZone,
       })
       .replace(/\s/g, "")}-${end
       .toLocaleString(undefined, {
         hour12: true,
         hour: "numeric",
         minute: "numeric",
-        timeZone: TIMEZONE,
+        timeZone,
       })
       .replace(/\s/g, "")})`;
   }
@@ -210,26 +218,26 @@ export const prettyFormatTimeRange = (
       // For custom time ranges, we want to show just the date
       return `${start.toLocaleDateString(undefined, {
         month: "short",
-        timeZone: TIMEZONE,
+        timeZone,
       })} ${startDate}`;
     }
 
     return `${start.toLocaleDateString(undefined, {
       month: "short",
-      timeZone: TIMEZONE,
+      timeZone,
     })} ${startDate}-${endDate}, ${startYear} (${start
       .toLocaleString(undefined, {
         hour12: true,
         hour: "numeric",
         minute: "numeric",
-        timeZone: TIMEZONE,
+        timeZone,
       })
       .replace(/\s/g, "")}-${end
       .toLocaleString(undefined, {
         hour12: true,
         hour: "numeric",
         minute: "numeric",
-        timeZone: TIMEZONE,
+        timeZone,
       })
       .replace(/\s/g, "")})`;
   }
@@ -244,16 +252,22 @@ export const prettyFormatTimeRange = (
     inclusiveEndDate = new Date(
       end.getTime() - durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
     );
-    endDate = inclusiveEndDate.getUTCDate();
-    endMonth = inclusiveEndDate.getUTCMonth();
-    endYear = inclusiveEndDate.getUTCFullYear();
+
+    const inclusiveEndDateWithTimeZone = getDateMonthYearForTimezone(
+      inclusiveEndDate,
+      timeZone
+    );
+
+    endDate = inclusiveEndDateWithTimeZone.day;
+    endMonth = inclusiveEndDateWithTimeZone.month;
+    endYear = inclusiveEndDateWithTimeZone.year;
   }
 
   // month is the same
   if (startMonth === endMonth && startYear === endYear) {
     return `${start.toLocaleDateString(undefined, {
       month: "short",
-      timeZone: TIMEZONE,
+      timeZone,
     })} ${startDate}-${endDate}, ${startYear}`;
   }
 
@@ -262,11 +276,11 @@ export const prettyFormatTimeRange = (
     return `${start.toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
-      timeZone: TIMEZONE,
+      timeZone,
     })} - ${inclusiveEndDate.toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
-      timeZone: TIMEZONE,
+      timeZone,
     })}, ${startYear}`;
   }
   // year is different
@@ -274,7 +288,7 @@ export const prettyFormatTimeRange = (
     year: "numeric",
     month: "short",
     day: "numeric",
-    timeZone: TIMEZONE,
+    timeZone,
   };
   return `${start.toLocaleDateString(
     undefined,

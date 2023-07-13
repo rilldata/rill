@@ -22,6 +22,7 @@
   } from "@rilldata/web-common/lib/time/ranges";
   import {
     DashboardTimeControls,
+    Period,
     TimeComparisonOption,
     TimeGrain,
     TimeRange,
@@ -40,6 +41,9 @@
   import TimeComparisonSelector from "./TimeComparisonSelector.svelte";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeSelector from "./TimeRangeSelector.svelte";
+  import TimeZoneSelector from "@rilldata/web-common/features/dashboards/time-controls/TimeZoneSelector.svelte";
+  import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
+  import { getStartOfPeriod } from "@rilldata/web-common/lib/time/transforms";
 
   export let metricViewName: string;
 
@@ -103,10 +107,15 @@
   }
 
   function setDefaultTimeControls(allTimeRange: DashboardTimeControls) {
+    // Show users locale time zone by default
+    const userIANA = getLocalIANA();
+    metricsExplorerStore.setTimeZone(metricViewName, userIANA);
+
     baseTimeRange = convertTimeRangePreset(
       defaultTimeRange,
       allTimeRange.start,
-      allTimeRange.end
+      allTimeRange.end,
+      userIANA
     ) || { ...allTimeRange, end: new Date(allTimeRange.end.getTime() + 1) };
 
     const timeGrain = getDefaultTimeGrain(
@@ -138,7 +147,8 @@
         convertTimeRangePreset(
           $dashboardStore?.selectedTimeRange.name,
           allTimeRange.start,
-          allTimeRange.end
+          allTimeRange.end,
+          $dashboardStore?.selectedTimezone
         ) || allTimeRange;
     }
 
@@ -184,6 +194,10 @@
       timeGrain,
       $dashboardStore?.selectedComparisonTimeRange
     );
+  }
+
+  function onSelectTimeZone(timeZone: string) {
+    metricsExplorerStore.setTimeZone(metricViewName, timeZone);
   }
 
   function onSelectComparisonRange(
@@ -324,6 +338,11 @@
       selectedRange={$dashboardStore?.selectedTimeRange}
       on:select-time-range={(e) =>
         onSelectTimeRange(e.detail.name, e.detail.start, e.detail.end)}
+    />
+    <TimeZoneSelector
+      on:select-time-zone={(e) => onSelectTimeZone(e.detail.timeZone)}
+      {metricViewName}
+      now={allTimeRange?.end}
     />
     <TimeComparisonSelector
       on:select-comparison={(e) => {

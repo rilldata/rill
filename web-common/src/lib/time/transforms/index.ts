@@ -27,9 +27,15 @@ export function getPresentTime() {
 export function getStartOfPeriod(
   referenceTime: Date,
   period: Period,
-  zone = "utc"
+  zone = "Etc/UTC"
 ) {
   const date = DateTime.fromJSDate(referenceTime, { zone });
+  // console.log(
+  //   "start date",
+  //   referenceTime.toISOString(),
+  //   date.toJSDate().toISOString(),
+  //   date.startOf(TimeUnit[period]).toJSDate()
+  // );
   return date.startOf(TimeUnit[period]).toJSDate();
 }
 
@@ -37,7 +43,7 @@ export function getStartOfPeriod(
 export function getEndOfPeriod(
   referenceTime: Date,
   period: Period,
-  zone = "utc"
+  zone = "Etc/UTC"
 ) {
   const date = DateTime.fromJSDate(referenceTime, { zone });
   return date.endOf(TimeUnit[period]).toJSDate();
@@ -48,7 +54,7 @@ export function getOffset(
   referenceTime: Date,
   duration: string,
   direction: TimeOffsetType,
-  zone = "utc"
+  zone = "Etc/UTC"
 ) {
   const durationObj = Duration.fromISO(duration);
   return DateTime.fromJSDate(referenceTime, { zone })
@@ -68,7 +74,8 @@ export function getTimeWidth(start: Date, end: Date) {
  */
 export function transformDate(
   referenceTime: Date,
-  transformations: RelativeTimeTransformation[]
+  transformations: RelativeTimeTransformation[],
+  zone = "Etc/UTC"
 ) {
   let absoluteTime = referenceTime;
   for (const transformation of transformations) {
@@ -82,11 +89,15 @@ export function transformDate(
     } else if (
       transformation.truncationType === TimeTruncationType.START_OF_PERIOD
     ) {
-      absoluteTime = getStartOfPeriod(absoluteTime, transformation.period);
+      absoluteTime = getStartOfPeriod(
+        absoluteTime,
+        transformation.period,
+        zone
+      );
     } else if (
       transformation.truncationType === TimeTruncationType.END_OF_PERIOD
     ) {
-      absoluteTime = getEndOfPeriod(absoluteTime, transformation.period);
+      absoluteTime = getEndOfPeriod(absoluteTime, transformation.period, zone);
     }
   }
 
@@ -97,7 +108,8 @@ export function transformDate(
 export function relativePointInTimeToAbsolute(
   referenceTime: Date,
   start: string | RelativePointInTime,
-  end: string | RelativePointInTime
+  end: string | RelativePointInTime,
+  zone: string
 ) {
   let startDate: Date;
   let endDate: Date;
@@ -105,13 +117,13 @@ export function relativePointInTimeToAbsolute(
   else {
     if (start.reference === ReferencePoint.NOW)
       referenceTime = getPresentTime();
-    startDate = transformDate(referenceTime, start.transformation);
+    startDate = transformDate(referenceTime, start.transformation, zone);
   }
 
   if (typeof end === "string") endDate = new Date(end);
   else {
     if (end.reference === ReferencePoint.NOW) referenceTime = getPresentTime();
-    endDate = transformDate(referenceTime, end.transformation);
+    endDate = transformDate(referenceTime, end.transformation, zone);
   }
 
   return {
