@@ -1,27 +1,18 @@
 package drivers
 
 import (
-	"context"
 	"fmt"
 )
 
 // Connectors tracks all registered connector drivers.
-var Connectors = make(map[string]Connector)
+var Connectors = make(map[string]Driver)
 
-// RegisterConnector tracks a connector driver.
-func RegisterConnector(name string, connector Connector) {
+// RegisterAsConnector tracks a connector driver.
+func RegisterAsConnector(name string, driver Driver) {
 	if Connectors[name] != nil {
 		panic(fmt.Errorf("already registered connector with name '%s'", name))
 	}
-	Connectors[name] = connector
-}
-
-// Connector is a driver for ingesting data from an external system.
-type Connector interface {
-	Spec() Spec
-
-	// HasAnonymousAccess returns true if external system can be accessed without credentials
-	HasAnonymousAccess(ctx context.Context, props map[string]any) (bool, error)
+	Connectors[name] = driver
 }
 
 // Spec provides metadata about a connector and the properties it supports.

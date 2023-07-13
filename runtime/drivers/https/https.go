@@ -15,6 +15,22 @@ import (
 
 func init() {
 	drivers.Register("https", driver{})
+	drivers.RegisterAsConnector("https", driver{})
+}
+
+var spec = drivers.Spec{
+	DisplayName: "http(s)",
+	Description: "Connect to a remote file.",
+	SourceProperties: []drivers.PropertySchema{
+		{
+			Key:         "path",
+			DisplayName: "Path",
+			Description: "Path to the remote file.",
+			Placeholder: "https://example.com/file.csv",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+		},
+	},
 }
 
 type driver struct{}
@@ -31,13 +47,21 @@ func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
 	return drivers.ErrDropNotSupported
 }
 
-type config struct {
+func (d driver) Spec() drivers.Spec {
+	return spec
+}
+
+func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
+	return true, nil
+}
+
+type sourceProperties struct {
 	Path    string            `mapstructure:"path"`
 	Headers map[string]string `mapstructure:"headers"`
 }
 
-func parseConfig(props map[string]any) (*config, error) {
-	conf := &config{}
+func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
+	conf := &sourceProperties{}
 	err := mapstructure.Decode(props, conf)
 	if err != nil {
 		return nil, err
@@ -113,7 +137,7 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 
 // FilePaths implements drivers.FileStore
 func (c *connection) FilePaths(ctx context.Context, src *drivers.FileSource) ([]string, error) {
-	conf, err := parseConfig(src.Properties)
+	conf, err := parseSourceProperties(src.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}

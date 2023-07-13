@@ -82,6 +82,14 @@ func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
 	return drivers.ErrDropNotSupported
 }
 
+func (d driver) Spec() drivers.Spec {
+	return drivers.Spec{}
+}
+
+func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
 type connection struct {
 	config              map[string]any
 	dsn                 DSN

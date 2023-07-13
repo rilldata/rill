@@ -26,7 +26,7 @@ func (c *Connection) ListBuckets(ctx context.Context) ([]string, error) {
 	}
 
 	sharedConfigState := session.SharedConfigDisable
-	if val, ok := c.config["allow_host_access"].(bool); ok && val {
+	if c.config.AllowHostAccess {
 		sharedConfigState = session.SharedConfigEnable // Tells to look for default region set with `aws configure`
 	}
 	// Create a session that tries to infer the region from the environment
@@ -65,7 +65,7 @@ func (c *Connection) ListObjects(ctx context.Context, req *runtimev1.S3ListObjec
 		return nil, "", err
 	}
 
-	bucket, err := c.openBucket(ctx, &config{AWSRegion: req.Region}, req.Bucket, creds)
+	bucket, err := c.openBucket(ctx, &sourceProperties{AWSRegion: req.Region}, req.Bucket, creds)
 	if err != nil {
 		return nil, "", err
 	}
@@ -92,7 +92,7 @@ func (c *Connection) ListObjects(ctx context.Context, req *runtimev1.S3ListObjec
 		if (failureErr.StatusCode() == http.StatusForbidden || failureErr.StatusCode() == http.StatusBadRequest) && creds != credentials.AnonymousCredentials {
 			// try again with anonymous credentials
 			creds = credentials.AnonymousCredentials
-			bucketObj, bucketErr := c.openBucket(ctx, &config{AWSRegion: req.Region}, req.Bucket, creds)
+			bucketObj, bucketErr := c.openBucket(ctx, &sourceProperties{AWSRegion: req.Region}, req.Bucket, creds)
 			if bucketErr != nil {
 				return nil, "", fmt.Errorf("failed to open bucket %q, %w", req.Bucket, bucketErr)
 			}
@@ -121,7 +121,7 @@ func (c *Connection) GetBucketMetadata(ctx context.Context, req *runtimev1.S3Get
 		return "", err
 	}
 
-	sess, err := c.getAwsSessionConfig(ctx, &config{}, req.Bucket, creds)
+	sess, err := c.getAwsSessionConfig(ctx, &sourceProperties{}, req.Bucket, creds)
 	if err != nil {
 		return "", err
 	}

@@ -19,11 +19,36 @@ import (
 )
 
 func init() {
-	drivers.Register("duckdb", Driver{})
-	drivers.Register("motherduck", Driver{})
+	drivers.Register("duckdb", Driver{name: "duckdb"})
+	drivers.Register("motherduck", Driver{name: "motherduck"})
+	drivers.RegisterAsConnector("motherduck", Driver{name: "motherduck"})
 }
 
-type Driver struct{}
+// spec for duckdb as motherduck connector
+var spec = drivers.Spec{
+	DisplayName: "MotherDuck",
+	Description: "Import data from MotherDuck.",
+	SourceProperties: []drivers.PropertySchema{
+		{
+			Key:         "query",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "Query",
+			Description: "Query to extract data from MotherDuck.",
+			Placeholder: "select * from my_db.my_table;",
+		},
+	},
+	ConfigProperties: []drivers.PropertySchema{
+		{
+			Key:    "token",
+			Secret: true,
+		},
+	},
+}
+
+type Driver struct {
+	name string
+}
 
 func (d Driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connection, error) {
 	dsn, ok := config["dsn"].(string)
@@ -49,6 +74,7 @@ func (d Driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connect
 		olapSem:      priorityqueue.NewSemaphore(olapSemSize),
 		dbCond:       sync.NewCond(&sync.Mutex{}),
 		driverConfig: config,
+		driverName:   d.name,
 	}
 
 	// Open the DB
@@ -94,10 +120,19 @@ func (d Driver) Drop(config map[string]any, logger *zap.Logger) error {
 	return nil
 }
 
+func (d Driver) Spec() drivers.Spec {
+	return spec
+}
+
+func (d Driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
+	return false, nil
+}
+
 type connection struct {
 	db *sqlx.DB
 	// driverConfig is input config passed during Open
 	driverConfig map[string]any
+	driverName   string
 	// config is parsed configs
 	config *config
 	logger *zap.Logger
@@ -121,10 +156,7 @@ type connection struct {
 
 // Driver implements drivers.Connection.
 func (c *connection) Driver() string {
-	if val, ok := c.driverConfig["driver"].(string); ok {
-		return val
-	}
-	return "duckdb"
+	return c.driverName
 }
 
 // Config used to open the Connection

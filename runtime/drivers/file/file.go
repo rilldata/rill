@@ -6,17 +6,44 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"go.uber.org/zap"
 )
 
 func init() {
-	drivers.Register("file", driver{})
-	drivers.Register("local_file", driver{})
+	drivers.Register("file", driver{name: "file"})
+	drivers.Register("local_file", driver{name: "local_file"})
+	drivers.RegisterAsConnector("local_file", driver{name: "local_file"})
 }
 
-type driver struct{}
+var spec = drivers.Spec{
+	DisplayName: "Local file",
+	Description: "Import Locally Stored File.",
+	SourceProperties: []drivers.PropertySchema{
+		{
+			Key:         "path",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "Path",
+			Description: "Path or URL to file",
+			Placeholder: "/path/to/file",
+		},
+		{
+			Key:         "format",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Format",
+			Description: "Either CSV or Parquet. Inferred if not set.",
+			Placeholder: "csv",
+		},
+	},
+}
+
+type driver struct {
+	name string
+}
 
 func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connection, error) {
 	dsn, ok := config["dsn"].(string)
@@ -35,8 +62,9 @@ func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connect
 	}
 
 	c := &connection{
-		root:   absPath,
-		config: config,
+		root:         absPath,
+		driverConfig: config,
+		driverName:   d.name,
 	}
 	if err := c.checkRoot(); err != nil {
 		return nil, err
@@ -48,15 +76,49 @@ func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
 	return drivers.ErrDropNotSupported
 }
 
+func (d driver) Spec() drivers.Spec {
+	return spec
+}
+
+func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
+	return true, nil
+}
+
+type sourceProperties struct {
+	Path   string `mapstructure:"path"`
+	Format string `mapstructure:"format"`
+}
+
+func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
+	conf := &sourceProperties{}
+	err := mapstructure.Decode(props, &conf)
+	if err != nil {
+		return nil, err
+	}
+
+	return conf, nil
+}
+
 type connection struct {
 	// root should be absolute path
-	root   string
-	config map[string]any
+	root         string
+	driverConfig map[string]any
+	driverName   string
+}
+
+// Driver implements drivers.RepoStore.
+func (c *connection) Driver() string {
+	return c.driverName
+}
+
+// Root implements drivers.RepoStore.
+func (c *connection) Root() string {
+	return c.root
 }
 
 // Config implements drivers.Connection.
 func (c *connection) Config() map[string]any {
-	return c.config
+	return c.driverConfig
 }
 
 // Close implements drivers.Connection.

@@ -22,19 +22,78 @@ import (
 	"gocloud.dev/blob/s3blob"
 )
 
+var spec = drivers.Spec{
+	DisplayName:        "Amazon S3",
+	Description:        "Connect to AWS S3 Storage.",
+	ServiceAccountDocs: "https://docs.rilldata.com/deploy/credentials/s3",
+	SourceProperties: []drivers.PropertySchema{
+		{
+			Key:         "path",
+			DisplayName: "S3 URI",
+			Description: "Path to file on the disk.",
+			Placeholder: "s3://bucket-name/path/to/file.csv",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			Hint:        "Glob patterns are supported",
+		},
+		{
+			Key:         "region",
+			DisplayName: "AWS region",
+			Description: "AWS Region for the bucket.",
+			Placeholder: "us-east-1",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			Hint:        "Rill will use the default region in your local AWS config, unless set here.",
+		},
+		{
+			Key:         "aws.credentials",
+			DisplayName: "AWS credentials",
+			Description: "AWS credentials inferred from your local environment.",
+			Type:        drivers.InformationalPropertyType,
+			Hint:        "Set your local credentials: <code>aws configure</code> Click to learn more.",
+			Href:        "https://docs.rilldata.com/develop/import-data#configure-credentials-for-s3",
+		},
+	},
+	ConfigProperties: []drivers.PropertySchema{
+		{
+			Key:    "aws_access_key_id",
+			Secret: true,
+		},
+		{
+			Key:    "aws_secret_access_key",
+			Secret: true,
+		},
+	},
+}
+
 const defaultPageSize = 20
 
 func init() {
 	drivers.Register("s3", driver{})
+	drivers.RegisterAsConnector("s3", driver{})
 }
 
 type driver struct{}
 
+var _ drivers.Driver = driver{}
+
+type configProperties struct {
+	AccessKeyID     string `mapstructure:"aws_access_key_id"`
+	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
+	SessionToken    string `mapstructure:"aws_access_token"`
+	AllowHostAccess bool   `mapstructure:"allow_host_access"`
+}
+
 // Open implements drivers.Driver
-// TODO :: should it open connection here ? The bucket obj returned from go cdk doesn't make network call either till we make actual call
 func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connection, error) {
+	conf := &configProperties{}
+	err := mapstructure.Decode(config, conf)
+	if err != nil {
+		return nil, err
+	}
+
 	conn := &Connection{
-		config: config,
+		config: conf,
 		logger: logger,
 	}
 	return conn, nil
@@ -45,9 +104,38 @@ func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
 	return drivers.ErrDropNotSupported
 }
 
+func (d driver) Spec() drivers.Spec {
+	return spec
+}
+
+func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
+	b, ok := src.BucketSource()
+	if !ok {
+		return false, fmt.Errorf("require bucket source")
+	}
+	conf, err := parseSourceProperties(b.Properties)
+	if err != nil {
+		return false, fmt.Errorf("failed to parse config: %w", err)
+	}
+
+	c, err := d.Open(map[string]any{}, logger)
+	if err != nil {
+		return false, err
+	}
+
+	conn := c.(*Connection)
+	bucketObj, err := conn.openBucket(ctx, conf, conf.url.Host, credentials.AnonymousCredentials)
+	if err != nil {
+		return false, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, err)
+	}
+	defer bucketObj.Close()
+
+	return bucketObj.IsAccessible(ctx)
+}
+
 type Connection struct {
-	// config holds aws_access_key_id, aws_secret_access_key, aws_secret_access_key, allow_host_access
-	config map[string]any
+	// config is input configs passed to driver.Open
+	config *configProperties
 	logger *zap.Logger
 }
 
@@ -60,7 +148,9 @@ func (c *Connection) Driver() string {
 
 // Config implements drivers.Connection.
 func (c *Connection) Config() map[string]any {
-	return c.config
+	m := make(map[string]any, 0)
+	_ = mapstructure.Decode(c.config, m)
+	return m
 }
 
 // Close implements drivers.Connection.
@@ -113,7 +203,7 @@ func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
-type config struct {
+type sourceProperties struct {
 	Path                  string `mapstructure:"path"`
 	AWSRegion             string `mapstructure:"region"`
 	GlobMaxTotalSize      int64  `mapstructure:"glob.max_total_size"`
@@ -124,8 +214,8 @@ type config struct {
 	url                   *globutil.URL
 }
 
-func parseSourceProperties(props map[string]any) (*config, error) {
-	conf := &config{}
+func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
+	conf := &sourceProperties{}
 	err := mapstructure.Decode(props, conf)
 	if err != nil {
 		return nil, err
@@ -212,7 +302,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, src *drivers.BucketSourc
 	return it, err
 }
 
-func (c *Connection) openBucket(ctx context.Context, conf *config, bucket string, creds *credentials.Credentials) (*blob.Bucket, error) {
+func (c *Connection) openBucket(ctx context.Context, conf *sourceProperties, bucket string, creds *credentials.Credentials) (*blob.Bucket, error) {
 	sess, err := c.getAwsSessionConfig(ctx, conf, bucket, creds)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start session: %w", err)
@@ -221,7 +311,7 @@ func (c *Connection) openBucket(ctx context.Context, conf *config, bucket string
 	return s3blob.OpenBucket(ctx, sess, bucket, nil)
 }
 
-func (c *Connection) getAwsSessionConfig(ctx context.Context, conf *config, bucket string, creds *credentials.Credentials) (*session.Session, error) {
+func (c *Connection) getAwsSessionConfig(ctx context.Context, conf *sourceProperties, bucket string, creds *credentials.Credentials) (*session.Session, error) {
 	// If S3Endpoint is set, we assume we're targeting an S3 compatible API (but not AWS)
 	if len(conf.S3Endpoint) > 0 {
 		region := conf.AWSRegion
@@ -249,7 +339,7 @@ func (c *Connection) getAwsSessionConfig(ctx context.Context, conf *config, buck
 	}
 
 	sharedConfigState := session.SharedConfigDisable
-	if val, ok := c.config["allow_host_access"].(bool); ok && val {
+	if c.config.AllowHostAccess {
 		sharedConfigState = session.SharedConfigEnable // Tells to look for default region set with `aws configure`
 	}
 	// Create a session that tries to infer the region from the environment
@@ -285,15 +375,15 @@ func (c *Connection) getCredentials() (*credentials.Credentials, error) {
 	providers := make([]credentials.Provider, 0)
 
 	staticProvider := &credentials.StaticProvider{}
-	staticProvider.AccessKeyID = c.config["aws_access_key_id"].(string)
-	staticProvider.SecretAccessKey = c.config["aws_secret_access_key"].(string)
-	staticProvider.SessionToken = c.config["aws_session_token"].(string)
+	staticProvider.AccessKeyID = c.config.AccessKeyID
+	staticProvider.SecretAccessKey = c.config.SecretAccessKey
+	staticProvider.SessionToken = c.config.SessionToken
 	staticProvider.ProviderName = credentials.StaticProviderName
 	// in case user doesn't set access key id and secret access key the credentials retreival will fail
 	// the credential lookup will proceed to next provider in chain
 	providers = append(providers, staticProvider)
 
-	if val, ok := c.config["allow_host_access"].(bool); ok && val {
+	if c.config.AllowHostAccess {
 		// allowed to access host credentials so we add them in chain
 		// The chain used here is a duplicate of defaults.CredProviders(), but without the remote credentials lookup (since they resolve too slowly).
 		providers = append(providers, &credentials.EnvProvider{}, &credentials.SharedCredentialsProvider{Filename: "", Profile: ""})

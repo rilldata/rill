@@ -68,11 +68,16 @@ func Drop(driver string, config map[string]any, logger *zap.Logger) error {
 
 // Driver represents an underlying DB.
 type Driver interface {
+	Spec() Spec
+
 	// Open opens a new connection to an underlying store.
 	Open(config map[string]any, logger *zap.Logger) (Connection, error)
 
 	// Drop tears down a store. Drivers that do not support it return ErrDropNotSupported.
 	Drop(config map[string]any, logger *zap.Logger) error
+
+	// HasAnonymousSourceAccess returns true if external system can be accessed without credentials
+	HasAnonymousSourceAccess(ctx context.Context, src Source, logger *zap.Logger) (bool, error)
 }
 
 // Connection represents a connection to an underlying DB.
