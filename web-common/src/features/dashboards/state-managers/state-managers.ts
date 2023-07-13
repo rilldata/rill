@@ -10,7 +10,7 @@ import {
 } from "../dashboard-stores";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
-type StateManagers = {
+export type StateManagers = {
   runtime: Writable<Runtime>;
   metricsViewName: Writable<string>;
   metricsStore: Readable<MetricsExplorerStoreType>;
