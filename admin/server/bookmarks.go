@@ -74,7 +74,7 @@ func (s *Server) GetBookmark(ctx context.Context, req *adminv1.GetBookmarkReques
 	}
 
 	if !permissions.ReadProject && !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read the project")
 	}
 
 	return &adminv1.GetBookmarkResponse{
@@ -110,7 +110,7 @@ func (s *Server) CreateBookmark(ctx context.Context, req *adminv1.CreateBookmark
 	}
 
 	if !permissions.ReadProject && !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read the project")
 	}
 
 	bookmark, err := s.admin.DB.InsertBookmark(ctx, &database.InsertBookmarkOptions{
@@ -148,7 +148,7 @@ func (s *Server) RemoveBookmark(ctx context.Context, req *adminv1.RemoveBookmark
 	}
 
 	if bookmark.UserID != claims.OwnerID() {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete bookmark")
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete the bookmark")
 	}
 
 	err = s.admin.DB.DeleteBookmark(ctx, req.BookmarkId)
