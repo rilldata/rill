@@ -57,7 +57,7 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, source drivers.Source
 			token = os.Getenv("motherduck_token")
 		}
 		if token == "" {
-			return fmt.Errorf("no motheruduck token found. Refer docs on how to set motherduck token")
+			return fmt.Errorf("no motherduck token found. Refer to this documentation for instructions: https://docs.rilldata.com/deploy/credentials/motherduck")
 		}
 
 		// load motherduck extension; connect to motherduck service

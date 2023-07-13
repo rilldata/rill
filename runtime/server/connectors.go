@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"os"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -15,11 +14,6 @@ import (
 func (s *Server) ListConnectors(ctx context.Context, req *runtimev1.ListConnectorsRequest) (*runtimev1.ListConnectorsResponse, error) {
 	var pbs []*runtimev1.Connector
 	for name, connector := range drivers.Connectors {
-		if name == "motherduck" { // hide motherduck connector if token not set
-			if _, ok := os.LookupEnv("motherduck_token"); !ok {
-				continue
-			}
-		}
 		// Build protobufs for properties
 		srcProps := connector.Spec().SourceProperties
 		propPBs := make([]*runtimev1.Connector_Property, len(srcProps))

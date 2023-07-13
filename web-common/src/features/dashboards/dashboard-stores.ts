@@ -60,6 +60,10 @@ export interface MetricsExplorerEntity {
   selectedComparisonTimeRange?: DashboardTimeControls;
   // flag to show/hide comparison based on user preference
   showComparison?: boolean;
+
+  // flag to show/hide the percent of total column
+  showPercentOfTotal?: boolean;
+
   // user selected dimension
   selectedDimensionName?: string;
 
@@ -298,6 +302,18 @@ const metricViewReducers = {
   displayComparison(name: string, showComparison: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.showComparison = showComparison;
+      if (metricsExplorer.showPercentOfTotal === true && showComparison) {
+        metricsExplorer.showPercentOfTotal = false;
+      }
+    });
+  },
+
+  displayPercentOfTotal(name: string, showPct: boolean) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.showPercentOfTotal = showPct;
+      if (metricsExplorer.showComparison === true && showPct) {
+        metricsExplorer.showComparison = false;
+      }
     });
   },
 
