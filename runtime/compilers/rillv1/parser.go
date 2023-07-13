@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
@@ -124,6 +125,7 @@ type Parser struct {
 	// Internal state
 	resourcesForPath  map[string][]*Resource
 	insertedResources []*Resource
+	updatedResources  []*Resource
 }
 
 // ParseRillYAML parses only the project's rill.yaml (or rill.yml) file.
@@ -186,7 +188,7 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	// And delete all resources and parse errors related to those paths.
 	var parsePaths []string            // Paths we should pass to parsePaths
 	var deletedResources []*Resource   // Resources deleted in Phase 1 (some may be added back in Phase 2)
-	checkPaths := paths                // Paths we should visit in the loop
+	checkPaths := slices.Clone(paths)  // Paths we should visit in the loop
 	seenPaths := make(map[string]bool) // Paths already visited by the loop
 	for i := 0; i < len(checkPaths); i++ {
 		// Don't check the same path twice
@@ -244,13 +246,15 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 		}
 	}
 
+	log.Printf("HERE :%v", parsePaths)
+
 	// Phase 2: Parse (or reparse) the related paths, adding back resources
 	err := p.parsePaths(ctx, parsePaths)
 	if err != nil {
 		return nil, err
 	}
 
-	// Phase 3: Build the diff using p.insertedResources and deletedResources
+	// Phase 3: Build the diff using p.insertedResources, p.updatedResources and deletedResources
 	diff := &Diff{}
 	for _, resource := range p.insertedResources {
 		addedBack := false
@@ -265,6 +269,9 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 		} else {
 			diff.Added = append(diff.Added, resource.Name)
 		}
+	}
+	for _, resource := range p.updatedResources {
+		diff.Modified = append(diff.Modified, resource.Name)
 	}
 	for _, deleted := range deletedResources {
 		if p.Resources[deleted.Name.Normalized()] == nil {
@@ -286,8 +293,9 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 		return fmt.Errorf("project exceeds file limit of %d", maxFiles)
 	}
 
-	// Reset insertedResources on each parse (only used to construct Diff in Reparse)
+	// Reset insertedResources and updatedResources on each parse (only used to construct Diff in Reparse)
 	p.insertedResources = nil
+	p.updatedResources = nil
 
 	// Sort paths such that we parse YAML files before SQL files.
 	// This enables YAML parsers to assign properties to specs without checking for prior existence.
@@ -370,7 +378,20 @@ func (p *Parser) upsertResource(kind ResourceKind, name, path string, refs ...Re
 	// Create the resource if not already present (ensures the spec for its kind is never nil)
 	rn := ResourceName{Kind: kind, Name: name}
 	r, ok := p.Resources[rn.Normalized()]
-	if !ok {
+	if ok {
+		// Track in updatedResources, unless it's in insertedResources
+		found := false
+		for _, ir := range p.insertedResources {
+			if ir.Name.Normalized() == rn.Normalized() {
+				found = true
+				break
+			}
+		}
+		if !found {
+			p.updatedResources = append(p.updatedResources, r)
+		}
+	} else {
+		// Create new resource and track in insertedResources
 		r = &Resource{Name: rn}
 		p.Resources[rn.Normalized()] = r
 		p.insertedResources = append(p.insertedResources, r)

@@ -9,6 +9,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -236,14 +237,116 @@ FRO m1
 	requireResourcesAndErrors(t, p, nil, errors)
 }
 
+func TestReparse(t *testing.T) {
+	// Prepare
+	truth := true
+	ctx := context.Background()
+
+	// Create empty project
+	repo := makeRepo(t, map[string]string{`rill.yaml`: ``})
+	p, err := Parse(ctx, repo, "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, nil, nil)
+
+	// Add a source
+	putRepo(t, repo, map[string]string{
+		`sources/s1.yaml`: `
+connector: s3
+path: hello
+`,
+	})
+	s1 := &Resource{
+		Name:  ResourceName{Kind: ResourceKindSource, Name: "s1"},
+		Paths: []string{"/sources/s1.yaml"},
+		SourceSpec: &runtimev1.SourceSpec{
+			SourceConnector: "s3",
+			Properties:      must(structpb.NewStruct(map[string]any{"path": "hello"})),
+		},
+	}
+	diff, err := p.Reparse(ctx, s1.Paths)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{s1}, nil)
+	require.Equal(t, &Diff{
+		Added: []ResourceName{s1.Name},
+	}, diff)
+
+	// Add a model
+	putRepo(t, repo, map[string]string{
+		`models/m1.sql`: `
+SELECT * FROM foo
+`,
+	})
+	m1 := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+		Refs:  []ResourceName{{Name: "foo"}},
+		Paths: []string{"/models/m1.sql"},
+		ModelSpec: &runtimev1.ModelSpec{
+			Sql: "SELECT * FROM foo",
+		},
+	}
+	diff, err = p.Reparse(ctx, m1.Paths)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{s1, m1}, nil)
+	require.Equal(t, &Diff{
+		Added: []ResourceName{m1.Name},
+	}, diff)
+
+	// Annotate the model with a YAML file
+	putRepo(t, repo, map[string]string{
+		`models/m1.yaml`: `
+materialize: true
+`,
+	})
+	m1.Paths = []string{"/models/m1.sql", "/models/m1.yaml"}
+	m1.ModelSpec.Materialize = &truth
+	diff, err = p.Reparse(ctx, []string{"/models/m1.yaml"})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{s1, m1}, nil)
+	require.Equal(t, &Diff{
+		Modified: []ResourceName{m1.Name},
+	}, diff)
+
+	// Modify the model's SQL
+	putRepo(t, repo, map[string]string{
+		`models/m1.sql`: `
+SELECT * FROM bar
+`,
+	})
+	m1.Refs = []ResourceName{{Name: "bar"}}
+	m1.ModelSpec.Sql = "SELECT * FROM bar"
+	diff, err = p.Reparse(ctx, []string{"/models/m1.sql"})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{s1, m1}, nil)
+	require.Equal(t, &Diff{
+		Modified: []ResourceName{m1.Name},
+	}, diff)
+
+	// Delete the source
+	deleteRepo(t, repo, s1.Paths[0])
+	diff, err = p.Reparse(ctx, s1.Paths)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{m1}, nil)
+	require.Equal(t, &Diff{
+		Deleted: []ResourceName{s1.Name},
+	}, diff)
+}
+
 func requireResourcesAndErrors(t *testing.T, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {
 	// Check resources
+	gotResources := maps.Clone(p.Resources)
 	for _, want := range wantResources {
 		found := false
-		for _, got := range p.Resources {
+		for _, got := range gotResources {
 			if want.Name == got.Name {
-				require.Equal(t, want, got)
-				delete(p.Resources, got.Name)
+				require.Equal(t, want.Name, got.Name)
+				require.ElementsMatch(t, want.Refs, got.Refs)
+				require.ElementsMatch(t, want.Paths, got.Paths)
+				require.Equal(t, want.SourceSpec, got.SourceSpec)
+				require.Equal(t, want.ModelSpec, got.ModelSpec)
+				require.Equal(t, want.MetricsViewSpec, got.MetricsViewSpec)
+				require.Equal(t, want.MigrationSpec, got.MigrationSpec)
+
+				delete(gotResources, got.Name)
 				found = true
 				break
 			}
@@ -252,20 +355,21 @@ func requireResourcesAndErrors(t *testing.T, p *Parser, wantResources []*Resourc
 			t.Errorf("missing resource %v", want.Name)
 		}
 	}
-	if len(p.Resources) > 0 {
-		t.Errorf("unexpected resources: %v", p.Resources)
+	if len(gotResources) > 0 {
+		t.Errorf("unexpected resources: %v", gotResources)
 	}
 
 	// Check errors
 	// NOTE: Assumes there's at most one parse error per file path
 	// NOTE: Matches error messages using Contains (exact match not required)
+	gotErrors := slices.Clone(p.Errors)
 	for _, want := range wantErrors {
 		found := false
-		for i, got := range p.Errors {
+		for i, got := range gotErrors {
 			if want.FilePath == got.FilePath {
 				require.Contains(t, got.Message, want.Message, "for path %q", got.FilePath)
 				require.Equal(t, want.StartLocation, got.StartLocation, "for path %q", got.FilePath)
-				p.Errors = slices.Delete(p.Errors, i, i+1)
+				gotErrors = slices.Delete(gotErrors, i, i+1)
 				found = true
 				break
 			}
@@ -274,8 +378,8 @@ func requireResourcesAndErrors(t *testing.T, p *Parser, wantResources []*Resourc
 			t.Errorf("missing error for path %q", want.FilePath)
 		}
 	}
-	if len(p.Errors) > 0 {
-		t.Errorf("unexpected errors: %v", p.Errors)
+	if len(gotErrors) > 0 {
+		t.Errorf("unexpected errors: %v", gotErrors)
 	}
 }
 
@@ -287,11 +391,23 @@ func makeRepo(t *testing.T, files map[string]string) drivers.RepoStore {
 	repo, ok := handle.RepoStore()
 	require.True(t, ok)
 
-	for path, data := range files {
-		repo.Put(context.Background(), "", path, strings.NewReader(data))
-	}
+	putRepo(t, repo, files)
 
 	return repo
+}
+
+func putRepo(t *testing.T, repo drivers.RepoStore, files map[string]string) {
+	for path, data := range files {
+		err := repo.Put(context.Background(), "", path, strings.NewReader(data))
+		require.NoError(t, err)
+	}
+}
+
+func deleteRepo(t *testing.T, repo drivers.RepoStore, files ...string) {
+	for _, path := range files {
+		err := repo.Delete(context.Background(), "", path)
+		require.NoError(t, err)
+	}
 }
 
 func must[T any](v T, err error) T {
