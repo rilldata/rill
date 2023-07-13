@@ -4,10 +4,7 @@
   import { projectShareStore } from "@rilldata/web-common/features/dashboards/dashboard-stores.js";
   import DeployDashboardOverlay from "@rilldata/web-common/features/dashboards/workspace/DeployDashboardOverlay.svelte";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
-  import {
-    addReconcilingOverlay,
-    syncFileSystemPeriodically,
-  } from "@rilldata/web-common/features/entity-management/sync-file-system";
+  import { addReconcilingOverlay } from "@rilldata/web-common/features/entity-management/sync-file-system";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import DuplicateSource from "@rilldata/web-common/features/sources/add-source/DuplicateSource.svelte";
   import FileDrop from "@rilldata/web-common/features/sources/add-source/FileDrop.svelte";
@@ -15,18 +12,14 @@
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import { initMetrics } from "@rilldata/web-common/metrics/initMetrics";
   import type { ApplicationBuildMetadata } from "@rilldata/web-local/lib/application-state-stores/build-metadata";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext, onMount } from "svelte";
   import type { Writable } from "svelte/store";
   import { getArtifactErrors } from "../features/entity-management/getArtifactErrors";
   import PreparingImport from "../features/sources/add-source/PreparingImport.svelte";
   import WelcomePageRedirect from "../features/welcome/WelcomePageRedirect.svelte";
   import { runtimeServiceGetConfig } from "../runtime-client/manual-clients";
-  import { runtime } from "../runtime-client/runtime-store";
   import BasicLayout from "./BasicLayout.svelte";
   import { importOverlayVisible, overlay } from "./overlay-store";
-
-  const queryClient = useQueryClient();
 
   const appBuildMetaStore: Writable<ApplicationBuildMetadata> =
     getContext("rill:app:metadata");
@@ -48,13 +41,14 @@
     fileArtifactsStore.setErrors(res.affectedPaths, res.errors);
   });
 
-  syncFileSystemPeriodically(
-    queryClient,
-    runtime,
-    featureFlags,
-    page,
-    fileArtifactsStore
-  );
+  // Bidirectional sync is disabled for now
+  // syncFileSystemPeriodically(
+  //   queryClient,
+  //   runtime,
+  //   featureFlags,
+  //   page,
+  //   fileArtifactsStore
+  // );
   $: addReconcilingOverlay($page.url.pathname);
 
   let dbRunState = "disconnected";
