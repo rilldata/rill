@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
@@ -245,8 +244,6 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 			}
 		}
 	}
-
-	log.Printf("HERE :%v", parsePaths)
 
 	// Phase 2: Parse (or reparse) the related paths, adding back resources
 	err := p.parsePaths(ctx, parsePaths)

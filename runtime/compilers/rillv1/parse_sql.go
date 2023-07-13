@@ -281,8 +281,8 @@ func (p *Parser) parseSourceOrModelSQL(ctx context.Context, path, data string, c
 	if materialize != nil {
 		r.ModelSpec.Materialize = materialize
 	}
-	if r.ModelSpec.Materialize == nil && cfg.Kind == ResourceKindSource {
-		// If materialize was not set explicitly, always materialize sources
+	if r.ModelSpec.Materialize == nil && cfg.Kind == ResourceKindSource && len(embeddedSources) == 0 {
+		// If materialize was not set explicitly, always materialize sources without embedded sources
 		b := true
 		r.ModelSpec.Materialize = &b
 	}
@@ -333,6 +333,7 @@ func parseEmbeddedSource(t *duckdbsql.TableRef, sinkConnector string) (ResourceN
 		path = t.Name
 	}
 
+	// NOTE: Using url.Parse is a little hacky. The first path component will be parsed as the host (so don't rely on uri.Path!)
 	uri, err := url.Parse(path)
 	if err != nil {
 		return ResourceName{}, nil, false
@@ -369,13 +370,16 @@ func parseEmbeddedSource(t *duckdbsql.TableRef, sinkConnector string) (ResourceN
 	}
 
 	props := make(map[string]any)
-	t.Properties["format"] = format
-	t.Properties["path"] = uri.Path
+	props["path"] = path
+	if format != "" {
+		props["format"] = format
+	}
 	if t.Properties != nil {
 		props["duckdb"] = t.Properties
 	}
 
-	propsPB, err := structpb.NewStruct(t.Properties)
+	propsPB, err := structpb.NewStruct(props)
+
 	if err != nil {
 		return ResourceName{}, nil, false
 	}
