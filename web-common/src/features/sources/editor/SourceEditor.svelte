@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { EditorView } from "@codemirror/basic-setup";
+  import type { EditorView } from "@codemirror/view";
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
   import { setLineStatuses } from "../../../components/editor/line-status";
-  import { mapRuntimeErrorsToLines } from "../../metrics-views/workspace/editor/errors";
+  import { mapRuntimeErrorsToLines } from "../../metrics-views/errors";
   import { useSourceStore } from "../sources-store";
 
   export let yaml: string;
