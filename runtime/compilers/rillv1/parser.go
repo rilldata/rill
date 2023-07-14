@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -198,7 +200,9 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 		seenPaths[path] = true
 
 		// Skip files that aren't SQL or YAML
-		if !strings.HasSuffix(path, ".sql") && !strings.HasSuffix(path, ".yaml") && !strings.HasSuffix(path, ".yml") {
+		isSQL := strings.HasSuffix(path, ".sql")
+		isYAML := strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")
+		if !isSQL && !isYAML {
 			continue
 		}
 
@@ -213,6 +217,16 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 		// Check if path is rill.yaml and clear it (so we can re-parse it)
 		if path == "/rill.yaml" || path == "/rill.yml" {
 			p.RillYAML = nil
+		}
+
+		// Since .sql and .yaml files provide context for each other, if one was modified, we need to reparse both.
+		// For cases where a file was modified or deleted, the transitive check through resourcesForPath will already take of that.
+		// But this ensures the check also happens for cases where a companion file was added.
+		stem := pathStem(path)
+		if isSQL {
+			checkPaths = append(checkPaths, stem+".yaml", stem+".yml")
+		} else if isYAML {
+			checkPaths = append(checkPaths, stem+".sql")
 		}
 
 		// Remove all resources derived from this path, and add any related paths to the check list
@@ -294,32 +308,58 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 	p.insertedResources = nil
 	p.updatedResources = nil
 
-	// Sort paths such that we parse YAML files before SQL files.
-	// This enables YAML parsers to assign properties to specs without checking for prior existence.
-	// It also enables p.parseSQL to obtain context provided in a YAML file, e.g. to guide template and/or DuckDB SQL parsing.
-	slices.SortFunc(paths, func(a, b string) bool {
-		return strings.HasSuffix(b, ".sql")
-	})
-
-	// Parse and upsert each path
-	for _, path := range paths {
-		// Handle SQL and YAML files, skip any other file
-		var isSQL, isYAML bool
-		if strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") {
-			isYAML = true
-		} else if strings.HasSuffix(path, ".sql") {
-			isSQL = true
-		} else {
+	// Sort paths such that we align files with the same name but different extensions next to each other.
+	// Then iterate over the sorted paths, processing all paths with the same stem at once (stem = path without extension).
+	slices.Sort(paths)
+	for i := 0; i < len(paths); {
+		// Handle rill.yaml separately (if parsing of rill.yaml fails, we exit early instead of adding a ParseError)
+		path := paths[i]
+		if path == "/rill.yaml" || path == "/rill.yml" {
+			err := p.parseRillYAML(ctx, path)
+			if err != nil {
+				return err
+			}
+			i++
 			continue
 		}
 
+		// Identify the range of paths with the same stem as paths[i]
+		j := i + 1
+		pathStemI := pathStem(paths[i])
+		for j < len(paths) && pathStemI == pathStem(paths[j]) {
+			j++
+		}
+
+		// Parse the paths with the same stem
+		err := p.parseStemPaths(ctx, paths[i:j])
+		if err != nil {
+			return err
+		}
+
+		// Advance i to the next stem
+		i = j
+	}
+
+	// If we didn't encounter rill.yaml, that's a breaking error
+	if p.RillYAML == nil {
+		return ErrInvalidProject
+	}
+
+	return nil
+}
+
+// parseStem parses a set of paths with the same stem (path without extension).
+func (p *Parser) parseStemPaths(ctx context.Context, paths []string) error {
+	// Load YAML and SQL contents
+	var yaml, yamlPath, sql, sqlPath string
+	for _, path := range paths {
 		// Load contents
 		data, err := p.Repo.Get(ctx, p.InstanceID, path)
 		if err != nil {
 			if os.IsNotExist(err) {
 				// This is a dirty parse where a file disappeared during parsing.
 				// But due to the clear-and-rebuild behavior, we can safely continue parsing.
-				return nil
+				continue
 			}
 			return err
 		}
@@ -333,40 +373,66 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 			continue
 		}
 
-		// Handle rill.yaml separately (if parsing of rill.yaml fails, we exit early instead of adding a ParseError)
-		if path == "/rill.yaml" || path == "/rill.yml" {
-			err := p.parseRillYAML(ctx, data)
-			if err != nil {
-				return err
-			}
+		// Assign to correct variable
+		if strings.HasSuffix(path, ".sql") {
+			sql = data
+			sqlPath = path
 			continue
 		}
-
-		// Parse file, accumulating errors in p.Errors
-		if isYAML {
-			err = p.parseYAML(ctx, path, data)
-		} else if isSQL {
-			err = p.parseSQL(ctx, path, data)
-		}
-		if err != nil {
-			// Parse character location from error
-			var loc *runtimev1.CharLocation
-			var locErr locationError
-			if errors.As(err, &locErr) {
-				loc = locErr.location
+		if strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") {
+			if yaml != "" {
+				// Means there was both a .yaml and .yml file. We don't allow that!
+				p.Errors = append(p.Errors, &runtimev1.ParseError{
+					Message:  "skipping file because another YAML file has already been parsed for this path stem",
+					FilePath: path,
+				})
+				continue
 			}
+			yaml = data
+			yamlPath = path
+			continue
+		}
+		// The unhandled case should never happen, just being defensive
+	}
 
-			p.Errors = append(p.Errors, &runtimev1.ParseError{
-				Message:       err.Error(),
-				FilePath:      path,
-				StartLocation: loc,
-			})
+	// Parse the SQL/YAML file pair to a Stem.
+	stem, err := p.parseStem(ctx, paths, yamlPath, yaml, sqlPath, sql)
+	// Note: err handled after switch
+
+	// Multiplex Stem to different handlers
+	if err == nil {
+		switch stem.Kind {
+		case ResourceKindSource:
+			err = p.parseSource(ctx, stem)
+		case ResourceKindModel:
+			err = p.parseModel(ctx, stem)
+		case ResourceKindMetricsView:
+			err = p.parseMetricsView(ctx, stem)
+		case ResourceKindMigration:
+			err = p.parseMigration(ctx, stem)
+		default:
+			panic(fmt.Errorf("unexpected resource kind: %s", stem.Kind.String()))
 		}
 	}
 
-	// If we didn't encounter rill.yaml, that's a breaking error
-	if p.RillYAML == nil {
-		return ErrInvalidProject
+	// Spread error across the stem's paths
+	if err != nil {
+		var pathErr pathError
+		if errors.As(err, &pathErr) {
+			// If there's an error in either of the YAML or SQL files, we attach a "skipped" error to the other file as well.
+			for _, path := range paths {
+				if path == pathErr.path {
+					p.addParseError(path, err)
+				} else {
+					p.addParseError(path, fmt.Errorf("skipping file due to error in companion SQL/YAML file"))
+				}
+			}
+		} else {
+			// Not a path error – we add the error to all paths
+			for _, path := range paths {
+				p.addParseError(path, err)
+			}
+		}
 	}
 
 	return nil
@@ -375,7 +441,7 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 // upsertResource inserts or updates a resource in the parser's internal state.
 // Upserting is required since both a YAML and SQL file may contribute information to the same resource.
 // After calling upsertResource, the caller can modify the returned resource's spec, and should be cautious with overriding values that may have been set from another file.
-func (p *Parser) upsertResource(kind ResourceKind, name, path string, refs ...ResourceName) *Resource {
+func (p *Parser) upsertResource(kind ResourceKind, name string, paths []string, refs ...ResourceName) *Resource {
 	// Create the resource if not already present (ensures the spec for its kind is never nil)
 	rn := ResourceName{Kind: kind, Name: name}
 	r, ok := p.Resources[rn.Normalized()]
@@ -410,17 +476,19 @@ func (p *Parser) upsertResource(kind ResourceKind, name, path string, refs ...Re
 		}
 	}
 
-	// Index path if not already present
-	found := false
-	for _, p := range r.Paths {
-		if p == path {
-			found = true
-			break
+	// Index paths if not already present
+	for _, path := range paths {
+		found := false
+		for _, p := range r.Paths {
+			if p == path {
+				found = true
+				break
+			}
 		}
-	}
-	if !found {
-		r.Paths = append(r.Paths, path)
-		p.resourcesForPath[path] = append(p.resourcesForPath[path], r)
+		if !found {
+			r.Paths = append(r.Paths, path)
+			p.resourcesForPath[path] = append(p.resourcesForPath[path], r)
+		}
 	}
 
 	// Add refs that are not already present
@@ -438,4 +506,103 @@ func (p *Parser) upsertResource(kind ResourceKind, name, path string, refs ...Re
 	}
 
 	return r
+}
+
+// addParseError adds a parse error to the p.Errors
+func (p *Parser) addParseError(path string, err error) {
+	var loc *runtimev1.CharLocation
+	var locErr locationError
+	if errors.As(err, &locErr) {
+		loc = locErr.location
+	}
+
+	p.Errors = append(p.Errors, &runtimev1.ParseError{
+		Message:       err.Error(),
+		FilePath:      path,
+		StartLocation: loc,
+	})
+}
+
+// locationError wraps an error with source file character location information
+type locationError struct {
+	err      error
+	location *runtimev1.CharLocation
+}
+
+func (e locationError) Error() string {
+	return e.err.Error()
+}
+
+func (e locationError) Unwrap() error {
+	return e.err
+}
+
+// pathError wraps an error with source file path information
+type pathError struct {
+	err  error
+	path string
+}
+
+func (e pathError) Error() string {
+	return e.err.Error()
+}
+
+func (e pathError) Unwrap() error {
+	return e.err
+}
+
+// pathStem returns a slice of the path without the final file extension.
+// If the path does not contain a file extension, the entire path is returned.f
+func pathStem(path string) string {
+	i := strings.LastIndexByte(path, '.')
+	if i == -1 {
+		return path
+	}
+	return path[:i]
+}
+
+// yamlErrLineRegexp matches the line number in a YAML error
+var yamlErrLineRegexp = regexp.MustCompile(`^yaml: line (\d+):`)
+
+// newYAMLError wraps a YAML error, extracting line number information if available
+func newYAMLError(err error) error {
+	res := yamlErrLineRegexp.FindStringSubmatch(err.Error())
+	if len(res) != 2 {
+		return err
+	}
+
+	line, err2 := strconv.Atoi(res[1])
+	if err2 != nil {
+		return err
+	}
+
+	return locationError{
+		err: err,
+		location: &runtimev1.CharLocation{
+			Line: uint32(line),
+		},
+	}
+}
+
+// duckDBErrLineRegexp matches the line number in a DuckDB parser error
+var duckDBErrLineRegexp = regexp.MustCompile(`\nLINE (\d+):`)
+
+// newDuckDBError wraps a DuckDB parser error, extracting line number information if available
+func newDuckDBError(err error) error {
+	res := duckDBErrLineRegexp.FindStringSubmatch(err.Error())
+	if len(res) != 2 {
+		return err
+	}
+
+	line, err2 := strconv.Atoi(res[1])
+	if err2 != nil {
+		return err
+	}
+
+	return locationError{
+		err: err,
+		location: &runtimev1.CharLocation{
+			Line: uint32(line),
+		},
+	}
 }

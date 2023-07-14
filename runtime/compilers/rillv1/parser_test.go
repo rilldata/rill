@@ -127,13 +127,11 @@ SELECT * FROM {{ ref "m2" }}
 		},
 		// source s2
 		{
-			Name:  ResourceName{Kind: ResourceKindModel, Name: "s2"},
+			Name:  ResourceName{Kind: ResourceKindSource, Name: "s2"},
 			Paths: []string{"/sources/s2.sql"},
-			ModelSpec: &runtimev1.ModelSpec{
-				Connector:      "postgres",
-				Sql:            strings.TrimSpace(files["sources/s2.sql"]),
-				UsesTemplating: true,
-				Materialize:    &truth,
+			SourceSpec: &runtimev1.SourceSpec{
+				SourceConnector: "postgres",
+				Properties:      must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["sources/s2.sql"])})),
 			},
 		},
 		// model m1
@@ -219,12 +217,12 @@ FRO m1
 
 	errors := []*runtimev1.ParseError{
 		{
-			Message:       "",
+			Message:       " mapping values are not allowed in this context",
 			FilePath:      "/sources/s1.yaml",
 			StartLocation: &runtimev1.CharLocation{Line: 4},
 		},
 		{
-			Message:       "",
+			Message:       "syntax error at or near",
 			FilePath:      "/models/m1.sql",
 			StartLocation: &runtimev1.CharLocation{Line: 5},
 		},
@@ -404,12 +402,12 @@ func requireResourcesAndErrors(t *testing.T, p *Parser, wantResources []*Resourc
 		for _, got := range gotResources {
 			if want.Name == got.Name {
 				require.Equal(t, want.Name, got.Name)
-				require.ElementsMatch(t, want.Refs, got.Refs)
-				require.ElementsMatch(t, want.Paths, got.Paths)
-				require.Equal(t, want.SourceSpec, got.SourceSpec)
-				require.Equal(t, want.ModelSpec, got.ModelSpec)
-				require.Equal(t, want.MetricsViewSpec, got.MetricsViewSpec)
-				require.Equal(t, want.MigrationSpec, got.MigrationSpec)
+				require.ElementsMatch(t, want.Refs, got.Refs, "for resource %q", want.Name)
+				require.ElementsMatch(t, want.Paths, got.Paths, "for resource %q", want.Name)
+				require.Equal(t, want.SourceSpec, got.SourceSpec, "for resource %q", want.Name)
+				require.Equal(t, want.ModelSpec, got.ModelSpec, "for resource %q", want.Name)
+				require.Equal(t, want.MetricsViewSpec, got.MetricsViewSpec, "for resource %q", want.Name)
+				require.Equal(t, want.MigrationSpec, got.MigrationSpec, "for resource %q", want.Name)
 
 				delete(gotResources, got.Name)
 				found = true
