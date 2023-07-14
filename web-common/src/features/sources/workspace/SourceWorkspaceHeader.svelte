@@ -34,7 +34,7 @@
   import { useAllNames } from "../../entity-management/selectors";
   import { refreshSource } from "../refreshSource";
   import { saveAndRefresh } from "../saveAndRefresh";
-  import { useIsSourceNotSaved } from "../selectors";
+  import { useIsSourceUnsaved } from "../selectors";
   import { useSourceStore } from "../sources-store";
 
   export let sourceName: string;
@@ -144,16 +144,16 @@
   }
 
   // Include `$file.dataUpdatedAt` and `clientYAML` in the reactive statement to recompute
-  // the `isSourceNotSaved` value whenever they change
+  // the `isSourceUnsaved` value whenever they change
   const file = createRuntimeServiceGetFile(
     $runtime.instanceId,
     getFilePathFromNameAndType(sourceName, EntityType.Table)
   );
   const sourceStore = useSourceStore();
-  $: isSourceNotSaved =
+  $: isSourceUnsaved =
     $file.dataUpdatedAt &&
     $sourceStore.clientYAML &&
-    useIsSourceNotSaved($runtime.instanceId, sourceName);
+    useIsSourceUnsaved($runtime.instanceId, sourceName);
 </script>
 
 <div class="grid items-center" style:grid-template-columns="auto max-content">
@@ -184,7 +184,7 @@
     </svelte:fragment>
     <svelte:fragment slot="cta">
       <PanelCTA side="right">
-        {#if isSourceNotSaved}
+        {#if isSourceUnsaved}
           <Button
             on:click={() => onSaveAndRefreshClick(sourceName)}
             type="primary"

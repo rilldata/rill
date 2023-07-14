@@ -65,7 +65,7 @@ export function useEmbeddedSources(instanceId: string) {
   );
 }
 
-export function useIsSourceNotSaved(instanceId: string, sourceName: string) {
+export function useIsSourceUnsaved(instanceId: string, sourceName: string) {
   // Get serverYAML
   const file = createRuntimeServiceGetFile(
     instanceId,

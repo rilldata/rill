@@ -11,7 +11,7 @@
   import { getContext } from "svelte";
   import type { Tweened } from "svelte/motion";
   import type { Writable } from "svelte/store";
-  import SourceNotSavedIndicator from "../../features/sources/editor/SourceNotSavedIndicator.svelte";
+  import SourceUnsavedIndicator from "../../features/sources/editor/SourceUnsavedIndicator.svelte";
   import WorkspaceHeaderStatusSpinner from "./WorkspaceHeaderStatusSpinner.svelte";
 
   export let onChangeCallback;
@@ -104,7 +104,7 @@
         </Tooltip>
 
         {#if $page.url.pathname.startsWith("/source")}
-          <SourceNotSavedIndicator sourceName={titleInput} />
+          <SourceUnsavedIndicator sourceName={titleInput} />
         {/if}
       </h1>
     {/if}
