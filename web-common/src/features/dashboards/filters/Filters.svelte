@@ -47,11 +47,13 @@ The main feature-set component for dashboard filters
     dimensions.find((d) => d.name === activeDimensionName)?.column ??
     activeDimensionName;
 
-  $: topListQuery = getFilterSearchList(StateManagers, {
-    dimension: activeDimensionName,
-    searchText,
-    addNull: "null".includes(searchText),
-  });
+  let topListQuery: ReturnType<typeof getFilterSearchList> | undefined;
+  $: if (activeDimensionName)
+    topListQuery = getFilterSearchList(StateManagers, {
+      dimension: activeDimensionName,
+      searchText,
+      addNull: "null".includes(searchText),
+    });
 
   $: if (!$topListQuery?.isFetching && searchText != "") {
     const topListData = $topListQuery?.data?.data ?? [];
