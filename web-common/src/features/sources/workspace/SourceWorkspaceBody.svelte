@@ -6,6 +6,10 @@
   } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
+  import {
+    fileArtifactsStore,
+    getFileArtifactReconciliationErrors,
+  } from "../../entity-management/file-artifacts-store";
   import { EntityType } from "../../entity-management/types";
   import SourceEditor from "../editor/SourceEditor.svelte";
   import ErrorPane from "../errors/ErrorPane.svelte";
@@ -31,7 +35,10 @@
 
   $: yaml = $fileQuery.data?.blob || "";
 
-  let error;
+  $: runtimeErrors = getFileArtifactReconciliationErrors(
+    $fileArtifactsStore,
+    `${sourceName}.yaml`
+  );
 </script>
 
 <div
@@ -40,14 +47,9 @@
   style:height="100vh"
 >
   <div class="p-4">
-    <SourceEditor
-      {yaml}
-      {sourceName}
-      on:update
-      on:error={(evt) => (error = evt.detail)}
-    />
+    <SourceEditor {yaml} {sourceName} on:update />
   </div>
-  {#if !error}
+  {#if !runtimeErrors || runtimeErrors.length === 0}
     <div
       style:overflow="auto"
       style:height="calc(100vh - var(--header-height) - 2rem)"
@@ -58,6 +60,6 @@
       {/key}
     </div>
   {:else}
-    <ErrorPane {error} />
+    <ErrorPane error={runtimeErrors[0]} />
   {/if}
 </div>
