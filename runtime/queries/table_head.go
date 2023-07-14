@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -78,6 +77,6 @@ func (q *TableHead) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID
 	return nil
 }
 
-func (q *TableHead) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.ExportFormat, w io.Writer) error {
+func (q *TableHead) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
 	return ErrExportNotSupported
 }

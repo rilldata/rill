@@ -633,6 +633,61 @@ region: {{.env.region}}
 	}
 }
 
+func TestMetricsViewAvailableTimeZones(t *testing.T) {
+	repoStore := repoStore(t)
+	registryStore := registryStore(t)
+	tests := []struct {
+		name     string
+		filePath string
+		content  string
+		want     *drivers.CatalogEntry
+		wantErr  bool
+	}{
+		{
+			name:     "valid time zones",
+			filePath: "dashboards/dashboard.yaml",
+			content: `
+available_time_zones:
+- UTC
+- Europe/Copenhagen
+`,
+			want: &drivers.CatalogEntry{
+				Name: "dashboard",
+				Path: "dashboards/dashboard.yaml",
+				Type: drivers.ObjectTypeMetricsView,
+				Object: &runtimev1.MetricsView{
+					Name:               "dashboard",
+					AvailableTimeZones: []string{"UTC", "Europe/Copenhagen"},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:     "invalid time zones",
+			filePath: "dashboards/dashboard.yaml",
+			content: `
+available_time_zones:
+- foo
+`,
+			want:    nil,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.NoError(t, repoStore.Put(context.Background(), "test", tt.filePath, bytes.NewReader([]byte(tt.content))))
+			got, err := artifacts.Read(context.Background(), repoStore, registryStore, "test", tt.filePath)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Read() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Read() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func repoStore(t *testing.T) drivers.RepoStore {
 	dir := t.TempDir()
 	fileStore, err := drivers.Open("file", dir, zap.NewNop())

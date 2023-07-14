@@ -7,21 +7,41 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import Spinner from "../../entity-management/Spinner.svelte";
   import LeaderboardOptionsMenu from "../leaderboard/LeaderboardOptionsMenu.svelte";
+  import Delta from "@rilldata/web-common/components/icons/Delta.svelte";
+  import PieChart from "@rilldata/web-common/components/icons/PieChart.svelte";
 
   export let displayName: string;
   export let isFetching: boolean;
   export let dimensionDescription: string;
   export let hovered: boolean;
+  export let showTimeComparison: boolean;
+  export let showPercentOfTotal: boolean;
 
   export let filterExcludeMode: boolean;
 
   let optionsMenuActive = false;
+
+  $: iconShown = showTimeComparison
+    ? "delta"
+    : showPercentOfTotal
+    ? "pie"
+    : null;
 </script>
 
 <div class="flex flex-row items-center">
   <div class="grid place-items-center" style:height="22px" style:width="22px">
     {#if isFetching}
       <Spinner size="16px" status={EntityStatus.Running} />
+    {:else if hovered || optionsMenuActive}
+      <div style="position:relative; height:100%; width:100%; ">
+        <div style="position: absolute; ">
+          <LeaderboardOptionsMenu
+            bind:optionsMenuActive
+            on:toggle-filter-mode
+            {filterExcludeMode}
+          />
+        </div>
+      </div>
     {/if}
   </div>
 
@@ -72,13 +92,11 @@
         </TooltipContent>
       </Tooltip>
     </div>
-    <div>
-      {#if hovered || optionsMenuActive}
-        <LeaderboardOptionsMenu
-          bind:optionsMenuActive
-          on:toggle-filter-mode
-          {filterExcludeMode}
-        />
+    <div class="shrink flex flex-row items-center">
+      {#if iconShown === "delta"}
+        <Delta /> %
+      {:else if iconShown === "pie"}
+        <PieChart /> %
       {/if}
     </div>
   </button>
