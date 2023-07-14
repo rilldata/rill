@@ -8,7 +8,6 @@ import (
 
 	"context"
 
-	"github.com/rilldata/rill/runtime/drivers/duckdb"
 	"github.com/stretchr/testify/require"
 )
 
@@ -134,7 +133,7 @@ func TestServer_UpdateLimit_UNION(t *testing.T) {
 }
 
 func prepareOLAPStore(t *testing.T) drivers.OLAPStore {
-	conn, err := duckdb.Driver{}.Open(map[string]any{"dsn": "?access_mode=read_write&rill_pool_size=4"}, zap.NewNop())
+	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write&rill_pool_size=4"}, zap.NewNop())
 	require.NoError(t, err)
 	olap, ok := conn.AsOLAP()
 	require.True(t, ok)

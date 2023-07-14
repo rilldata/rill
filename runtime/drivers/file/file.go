@@ -106,16 +106,6 @@ type connection struct {
 	driverName   string
 }
 
-// Driver implements drivers.RepoStore.
-func (c *connection) Driver() string {
-	return c.driverName
-}
-
-// Root implements drivers.RepoStore.
-func (c *connection) Root() string {
-	return c.root
-}
-
 // Config implements drivers.Connection.
 func (c *connection) Config() map[string]any {
 	return c.driverConfig

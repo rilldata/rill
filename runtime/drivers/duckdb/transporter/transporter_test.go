@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/drivers/duckdb"
 	"github.com/rilldata/rill/runtime/drivers/duckdb/transporter"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -498,7 +497,7 @@ func TestIterativeJSONIngestionWithVariableSchema(t *testing.T) {
 }
 
 func runOLAPStore(t *testing.T) drivers.OLAPStore {
-	conn, err := duckdb.Driver{}.Open(map[string]any{"dsn": "?access_mode=read_write"}, zap.NewNop())
+	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, zap.NewNop())
 	require.NoError(t, err)
 	olap, canServe := conn.AsOLAP()
 	require.True(t, canServe)

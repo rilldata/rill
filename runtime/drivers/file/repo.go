@@ -17,6 +17,16 @@ import (
 
 var limit = 500
 
+// Driver implements drivers.RepoStore.
+func (c *connection) Driver() string {
+	return "file"
+}
+
+// Root implements drivers.RepoStore.
+func (c *connection) Root() string {
+	return c.root
+}
+
 // ListRecursive implements drivers.RepoStore.
 func (c *connection) ListRecursive(ctx context.Context, instID, glob string) ([]string, error) {
 	// Check that folder hasn't been moved

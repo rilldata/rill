@@ -327,7 +327,6 @@ func connectorVariables(src *runtimev1.Source, env map[string]string, repoRoot s
 		vars["google_application_credentials"] = env["google_application_credentials"]
 	case "motherduck":
 		vars["token"] = env["token"]
-		vars["driver"] = "motherduck"
 		vars["dsn"] = ""
 	case "local_file":
 		vars["dsn"] = repoRoot
