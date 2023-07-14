@@ -12,7 +12,6 @@
     getFilterForDimension,
     useMetaDimension,
     useMetaMeasure,
-    useMetaQuery,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { getTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
@@ -46,7 +45,6 @@
   const queryClient = useQueryClient();
 
   $: dashboardStore = useDashboardStore(metricViewName);
-  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
 
   let filterExcludeMode: boolean;
   $: filterExcludeMode =

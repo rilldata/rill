@@ -48,14 +48,13 @@
   );
   $: hasTimeSeries = $metricTimeSeries.data;
 
-  // $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
-  // let timeEnd;
-  // $: {
-  //   let maybeEnd = $dashboardStore?.selectedTimeRange?.end;
-  //   if (maybeEnd) {
-  //     timeEnd = new Date(maybeEnd.valueOf() + 1).toISOString();
-  //   }
-  // }
+  let timeEnd: string;
+  $: {
+    let maybeEnd = $timeControlsStore.selectedTimeRange?.end;
+    if (maybeEnd) {
+      timeEnd = new Date(maybeEnd.valueOf() + 1).toISOString();
+    }
+  }
 
   $: filteredTotalsQuery = createQueryServiceMetricsViewTotals(
     $runtime.instanceId,
@@ -69,7 +68,7 @@
         },
       ],
       timeStart: $timeControlsStore.timeStart,
-      timeEnd: $timeControlsStore.timeEnd,
+      timeEnd,
       filter: $dashboardStore?.filters,
     },
     {
@@ -79,7 +78,7 @@
           metricViewName,
           {
             timeStart: $timeControlsStore.timeStart,
-            timeEnd: $timeControlsStore.timeEnd,
+            timeEnd,
             filter: $dashboardStore?.filters,
           },
         ],
