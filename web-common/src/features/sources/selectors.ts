@@ -78,8 +78,7 @@ export function useIsSourceNotSaved(instanceId: string, sourceName: string) {
   const clientYAML = get(sourceStore).clientYAML;
 
   // Compute difference
-  // Note: if clientYAML is undefined, it means the source has not been touched
-  const isContentUnsaved = clientYAML && clientYAML !== serverYAML;
+  const isContentUnsaved = clientYAML !== serverYAML;
 
   return isContentUnsaved;
 }
