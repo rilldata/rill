@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	"github.com/rilldata/rill/runtime/drivers/duckdb/transporter"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
