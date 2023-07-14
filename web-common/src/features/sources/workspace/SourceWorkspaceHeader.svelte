@@ -12,6 +12,7 @@
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
     createRuntimeServiceGetCatalogEntry,
+    createRuntimeServiceGetFile,
     createRuntimeServicePutFileAndReconcile,
     createRuntimeServiceRefreshAndReconcile,
     createRuntimeServiceRenameFileAndReconcile,
@@ -25,10 +26,16 @@
   import { WorkspaceHeader } from "../../../layout/workspace";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { renameFileArtifact } from "../../entity-management/actions";
-  import { getRouteFromName } from "../../entity-management/entity-mappers";
+  import {
+    getFilePathFromNameAndType,
+    getRouteFromName,
+  } from "../../entity-management/entity-mappers";
   import { isDuplicateName } from "../../entity-management/name-utils";
   import { useAllNames } from "../../entity-management/selectors";
   import { refreshSource } from "../refreshSource";
+  import { saveAndRefresh } from "../saveAndRefresh";
+  import { useIsSourceNotSaved } from "../selectors";
+  import { useSourceStore } from "../sources-store";
 
   export let sourceName: string;
 
@@ -94,6 +101,10 @@
     }
   };
 
+  const onSaveAndRefreshClick = async (tableName: string) => {
+    saveAndRefresh(queryClient, tableName, $sourceStore.clientYAML);
+  };
+
   const onRefreshClick = async (tableName: string) => {
     try {
       await refreshSource(
@@ -131,6 +142,18 @@
       minute: "numeric",
     });
   }
+
+  // Include `$file.dataUpdatedAt` and `clientYAML` in the reactive statement to recompute
+  // the `isSourceNotSaved` value whenever they change
+  const file = createRuntimeServiceGetFile(
+    $runtime.instanceId,
+    getFilePathFromNameAndType(sourceName, EntityType.Table)
+  );
+  const sourceStore = useSourceStore();
+  $: isSourceNotSaved =
+    $file.dataUpdatedAt &&
+    $sourceStore.clientYAML &&
+    useIsSourceNotSaved($runtime.instanceId, sourceName);
 </script>
 
 <div class="grid items-center" style:grid-template-columns="auto max-content">
@@ -161,15 +184,28 @@
     </svelte:fragment>
     <svelte:fragment slot="cta">
       <PanelCTA side="right">
-        <Button on:click={() => onRefreshClick(sourceName)} type="primary">
-          <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}>
-            <RefreshIcon size="14px" />
-          </IconSpaceFixer>
-
-          <ResponsiveButtonText collapse={isHeaderWidthSmall}>
-            Refresh
-          </ResponsiveButtonText>
-        </Button>
+        {#if isSourceNotSaved}
+          <Button
+            on:click={() => onSaveAndRefreshClick(sourceName)}
+            type="primary"
+          >
+            <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}>
+              <RefreshIcon size="14px" />
+            </IconSpaceFixer>
+            <ResponsiveButtonText collapse={isHeaderWidthSmall}>
+              Save and refresh
+            </ResponsiveButtonText>
+          </Button>
+        {:else}
+          <Button on:click={() => onRefreshClick(sourceName)} type="primary">
+            <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}>
+              <RefreshIcon size="14px" />
+            </IconSpaceFixer>
+            <ResponsiveButtonText collapse={isHeaderWidthSmall}>
+              Refresh
+            </ResponsiveButtonText>
+          </Button>
+        {/if}
       </PanelCTA>
     </svelte:fragment>
   </WorkspaceHeader>
