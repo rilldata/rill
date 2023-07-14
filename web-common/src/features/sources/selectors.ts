@@ -74,7 +74,7 @@ export function useIsSourceNotSaved(instanceId: string, sourceName: string) {
   const serverYAML = get(file).data?.blob;
 
   // Get clientYAML
-  const sourceStore = useSourceStore(sourceName);
+  const sourceStore = useSourceStore();
   const clientYAML = get(sourceStore).clientYAML;
 
   // Compute difference

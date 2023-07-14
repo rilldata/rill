@@ -11,7 +11,7 @@
   let editor: YAMLEditor;
   let view: EditorView;
 
-  $: sourceStore = useSourceStore(sourceName);
+  const sourceStore = useSourceStore();
 
   // PLACEDHOLDER
   /** note: this codemirror plugin does actually utilize tanstack query, and the
@@ -41,7 +41,7 @@
       bind:this={editor}
       bind:view
       content={yaml}
-      on:update={(e) => $sourceStore.setClientYAML(e.detail.content)}
+      on:update={(e) => sourceStore.set({ clientYAML: e.detail.content })}
     />
   </div>
 </div>

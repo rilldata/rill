@@ -1,4 +1,5 @@
-import { derived, Readable, writable, Writable } from "svelte/store";
+import { writable, Writable } from "svelte/store";
+import { getContext } from "svelte";
 
 export enum DuplicateActions {
   None = "NONE",
@@ -13,42 +14,14 @@ export const duplicateSourceAction: Writable<DuplicateActions> = writable(
 
 export const duplicateSourceName: Writable<string> = writable(null);
 
-interface Source {
+export interface SourceStore {
   clientYAML: string;
-  setClientYAML: (yaml: string) => void;
 }
 
-interface SourcesStore {
-  [name: string]: Source;
+export function createSourceStore(yaml: string) {
+  return writable<SourceStore>({ clientYAML: yaml });
 }
 
-const sourcesStore = writable<SourcesStore>({});
-
-// TODO: clean up
-export function useSourceStore(name: string): Readable<Source> {
-  const source: Source = {
-    clientYAML: "",
-    setClientYAML(yaml: string) {
-      source.clientYAML = yaml;
-      sourcesStore.update((state) => ({
-        ...state,
-        [name]: {
-          ...state[name],
-          clientYAML: yaml,
-        },
-      }));
-    },
-  };
-
-  sourcesStore.update((state) => {
-    if (!state[name]) {
-      state[name] = source;
-    }
-    return state;
-  });
-
-  return derived(sourcesStore, ($sourcesStore: SourcesStore) => ({
-    ...$sourcesStore[name],
-    setClientYAML: source.setClientYAML,
-  }));
+export function useSourceStore(): Writable<SourceStore> {
+  return getContext("rill:app:source") as Writable<SourceStore>;
 }
