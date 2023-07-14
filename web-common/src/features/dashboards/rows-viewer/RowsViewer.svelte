@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { createTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { getTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useMetaQuery, useModelHasTimeSeries } from "../selectors";
+  import { useMetaQuery } from "../selectors";
   import {
     createQueryServiceMetricsViewRows,
     createQueryServiceTableColumns,
@@ -17,12 +17,7 @@
   const FALLBACK_SAMPLE_SIZE = 1000;
 
   $: dashboardStore = useDashboardStore(metricViewName);
-  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
-  $: timeControlsStore = createTimeControlStore(
-    $runtime.instanceId,
-    metricViewName,
-    $metaQuery?.data
-  );
+  const timeControlsStore = getTimeControlStore();
 
   $: modelName = useMetaQuery<string>(
     $runtime.instanceId,
@@ -45,7 +40,7 @@
     },
     {
       query: {
-        enabled: $timeControlsStore.hasTime && !!$dashboardStore?.filters,
+        enabled: $timeControlsStore.ready && !!$dashboardStore?.filters,
       },
     }
   );

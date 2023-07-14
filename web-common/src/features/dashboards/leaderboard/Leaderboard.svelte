@@ -14,7 +14,7 @@
     useMetaMeasure,
     useMetaQuery,
   } from "@rilldata/web-common/features/dashboards/selectors";
-  import { createTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { getTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     createQueryServiceMetricsViewToplist,
     MetricsViewDimension,
@@ -83,11 +83,7 @@
       ?.in ?? [];
   $: atLeastOneActive = !!activeValues?.length;
 
-  $: timeControlsStore = createTimeControlStore(
-    $runtime.instanceId,
-    metricViewName,
-    $metaQuery?.data
-  );
+  const timeControlsStore = getTimeControlStore();
 
   function toggleFilterMode() {
     cancelDashboardQueries(queryClient, metricViewName);
@@ -118,7 +114,7 @@
     },
     {
       query: {
-        enabled: $timeControlsStore.hasTime && !!filterForDimension,
+        enabled: $timeControlsStore.ready && !!filterForDimension,
       },
     }
   );

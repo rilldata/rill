@@ -1,12 +1,9 @@
 <script lang="ts">
   import VirtualizedGrid from "@rilldata/web-common/components/VirtualizedGrid.svelte";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
-  import {
-    useMetaQuery,
-    useModelHasTimeSeries,
-  } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideDimensionsStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
-  import { createTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { getTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     createQueryServiceMetricsViewTotals,
     MetricsViewDimension,
@@ -39,11 +36,7 @@
       (measure) => measure.name === $dashboardStore?.leaderboardMeasureName
     );
 
-  $: timeControlsStore = createTimeControlStore(
-    $runtime.instanceId,
-    metricViewName,
-    $metaQuery?.data
-  );
+  const timeControlsStore = getTimeControlStore();
 
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     $runtime.instanceId,
@@ -58,7 +51,7 @@
       query: {
         enabled:
           selectedMeasureNames?.length > 0 &&
-          $timeControlsStore.hasTime &&
+          $timeControlsStore.ready &&
           !!$dashboardStore?.filters,
       },
     }

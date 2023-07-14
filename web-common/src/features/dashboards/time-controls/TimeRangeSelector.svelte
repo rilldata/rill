@@ -3,8 +3,7 @@
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
-  import { createTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { getTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     ALL_TIME,
     DEFAULT_TIME_RANGES,
@@ -21,7 +20,6 @@
     TimeRangeOption,
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
   import { Menu, MenuItem } from "../../../components/menu";
@@ -42,12 +40,7 @@
 
   $: dashboardStore = useDashboardStore(metricViewName);
 
-  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
-  $: timeControlsStore = createTimeControlStore(
-    $runtime.instanceId,
-    metricViewName,
-    $metaQuery?.data
-  );
+  const timeControlsStore = getTimeControlStore();
 
   let isCustomRangeOpen = false;
   let isCalendarRecentlyClosed = false;

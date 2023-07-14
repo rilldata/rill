@@ -1,10 +1,7 @@
 <script lang="ts">
-  import {
-    useMetaQuery,
-    useModelHasTimeSeries,
-  } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
-  import { createTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { getTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
@@ -42,11 +39,7 @@
 
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
-  $: timeControlsStore = createTimeControlStore(
-    $runtime.instanceId,
-    metricViewName,
-    $metaQuery?.data
-  );
+  const timeControlsStore = getTimeControlStore();
 
   $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
 
@@ -141,7 +134,7 @@
       query: {
         enabled:
           selectedMeasureNames?.length > 0 &&
-          $timeControlsStore.hasTime &&
+          $timeControlsStore.ready &&
           !!$dashboardStore?.filters,
       },
     }

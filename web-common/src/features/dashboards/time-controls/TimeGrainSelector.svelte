@@ -2,12 +2,10 @@
   import IconSpaceFixer from "@rilldata/web-common/components/button/IconSpaceFixer.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import WithSelectMenu from "@rilldata/web-common/components/menu/wrappers/WithSelectMenu.svelte";
-  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
-  import { createTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { getTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
   import type { TimeGrain } from "@rilldata/web-common/lib/time/types";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createEventDispatcher } from "svelte";
   import type { V1TimeGrain } from "../../../runtime-client";
   import { useDashboardStore } from "../dashboard-stores";
@@ -18,12 +16,7 @@
 
   const dispatch = createEventDispatcher();
 
-  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
-  $: timeControlsStore = createTimeControlStore(
-    $runtime.instanceId,
-    metricViewName,
-    $metaQuery?.data
-  );
+  const timeControlsStore = getTimeControlStore();
 
   $: dashboardStore = useDashboardStore(metricViewName);
   $: activeTimeGrain = $timeControlsStore.selectedTimeRange?.interval;

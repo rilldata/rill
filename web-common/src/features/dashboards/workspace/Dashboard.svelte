@@ -4,6 +4,7 @@
     useMetaQuery,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { createTimeRangeSummary } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";

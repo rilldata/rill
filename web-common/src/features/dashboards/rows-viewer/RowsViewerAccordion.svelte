@@ -1,13 +1,13 @@
 <script lang="ts">
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
-  import { createTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { getTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import RowsViewer from "./RowsViewer.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import { useDashboardStore } from "../dashboard-stores";
-  import { useMetaQuery, useModelHasTimeSeries } from "../selectors";
+  import { useModelHasTimeSeries } from "../selectors";
   import ExportModelDataButton from "./ExportModelDataButton.svelte";
   import { featureFlags } from "../../feature-flags";
 
@@ -40,12 +40,7 @@
   );
 
   $: dashboardStore = useDashboardStore(metricViewName);
-  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
-  $: timeControlsStore = createTimeControlStore(
-    $runtime.instanceId,
-    metricViewName,
-    $metaQuery?.data
-  );
+  const timeControlsStore = getTimeControlStore();
 
   $: metricTimeSeries = useModelHasTimeSeries(
     $runtime.instanceId,
@@ -74,7 +69,7 @@
         },
       ],
       timeStart: $timeControlsStore.timeStart,
-      timeEnd: timeControlsStore.timeEnd,
+      timeEnd: $timeControlsStore.timeEnd,
       filter: $dashboardStore?.filters,
     },
     {
@@ -88,7 +83,7 @@
             filter: $dashboardStore?.filters,
           },
         ],
-        enabled: timeControlsStore.hasTime && !!$dashboardStore?.filters,
+        enabled: $timeControlsStore.ready && !!$dashboardStore?.filters,
       },
     }
   );

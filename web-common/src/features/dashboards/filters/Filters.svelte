@@ -15,7 +15,7 @@ The main feature-set component for dashboard filters
     useMetaQuery,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
-  import { createTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { getTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import type {
     MetricsViewDimension,
@@ -54,11 +54,7 @@ The main feature-set component for dashboard filters
   let dimensions: Array<MetricsViewDimension>;
   $: dimensions = $metaQuery.data?.dimensions;
 
-  $: timeControlsStore = createTimeControlStore(
-    $runtime.instanceId,
-    metricViewName,
-    $metaQuery?.data
-  );
+  const timeControlsStore = getTimeControlStore();
 
   function clearFilterForDimension(dimensionId, include: boolean) {
     cancelDashboardQueries(queryClient, metricViewName);

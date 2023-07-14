@@ -4,7 +4,7 @@
     useMetaQuery,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
-  import { createTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { getTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { getAvailableComparisonsForTimeRange } from "@rilldata/web-common/lib/time/comparisons";
   import {
     getDefaultTimeGrain,
@@ -42,11 +42,7 @@
   );
   $: hasTimeSeries = $hasTimeSeriesQuery?.data;
 
-  $: timeControlsStore = createTimeControlStore(
-    $runtime.instanceId,
-    metricViewName,
-    $metaQuery?.data
-  );
+  const timeControlsStore = getTimeControlStore();
   $: allTimeRange = $timeControlsStore.allTimeRange;
   $: minTimeGrain = $timeControlsStore.minTimeGrain;
 
@@ -54,8 +50,8 @@
   // activeTimeGrain is valid whenever the baseTimeRange changes
   let timeGrainOptions: TimeGrain[];
   $: timeGrainOptions = getAllowedTimeGrains(
-    new Date($timeControlsStore.startTime),
-    new Date($timeControlsStore.endTime)
+    new Date($timeControlsStore.timeStart),
+    new Date($timeControlsStore.timeEnd)
   );
 
   function onSelectTimeRange(name: TimeRangeType, start: Date, end: Date) {
@@ -122,7 +118,7 @@
 
   let availableComparisons;
 
-  $: if (allTimeRange?.start && $timeControlsStore.hasTime) {
+  $: if (allTimeRange?.start && $timeControlsStore.ready) {
     availableComparisons = getAvailableComparisonsForTimeRange(
       allTimeRange.start,
       allTimeRange.end,

@@ -13,7 +13,7 @@
     useMetaQuery,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
-  import { createTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { getTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     createQueryServiceMetricsViewToplist,
     createQueryServiceMetricsViewTotals,
@@ -58,11 +58,7 @@
 
   $: dashboardStore = useDashboardStore(metricViewName);
 
-  $: timeControlsStore = createTimeControlStore(
-    $runtime.instanceId,
-    metricViewName,
-    $metaQuery?.data
-  );
+  const timeControlsStore = getTimeControlStore();
 
   $: leaderboardMeasureName = $dashboardStore?.leaderboardMeasureName;
   $: leaderboardMeasureQuery = useMetaMeasure(
@@ -128,7 +124,7 @@
     {
       query: {
         enabled:
-          $timeControlsStore.hasTime &&
+          $timeControlsStore.ready &&
           !!filterSet &&
           !!sortByColumn &&
           !!sortDirection,
@@ -185,7 +181,7 @@
     },
     {
       query: {
-        enabled: $timeControlsStore.hasTime,
+        enabled: $timeControlsStore.ready,
       },
     }
   );

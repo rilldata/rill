@@ -15,6 +15,7 @@ import { get, writable } from "svelte/store";
 import { expect } from "vitest";
 
 export const AD_BIDS_NAME = "AdBids";
+export const AD_BIDS_SOURCE_NAME = "AdBids_Source";
 export const AD_BIDS_MIRROR_NAME = "AdBids_mirror";
 
 export const AD_BIDS_IMPRESSIONS_MEASURE = "impressions";
@@ -23,6 +24,7 @@ export const AD_BIDS_PUBLISHER_COUNT_MEASURE = "publisher_count";
 export const AD_BIDS_PUBLISHER_DIMENSION = "publisher";
 export const AD_BIDS_DOMAIN_DIMENSION = "domain";
 export const AD_BIDS_COUNTRY_DIMENSION = "country";
+export const AD_BIDS_TIMESTAMP_DIMENSION = "timestamp";
 
 export const AD_BIDS_INIT_MEASURES = [
   {
@@ -77,6 +79,13 @@ export const TestTimeConstants = {
   LAST_DAY: new Date(Date.now() - Hour * 24),
 };
 
+export const AD_BIDS_INIT: V1MetricsView = {
+  name: "AdBids",
+  model: "AdBids_Source",
+  measures: AD_BIDS_INIT_MEASURES,
+  dimensions: AD_BIDS_INIT_DIMENSIONS,
+  timeDimension: AD_BIDS_TIMESTAMP_DIMENSION,
+};
 export const AD_BIDS_WITH_DELETED_MEASURE = {
   name: "AdBids",
   measures: [
@@ -113,11 +122,7 @@ export function clearMetricsExplorerStore() {
 }
 
 export function createAdBidsInStore() {
-  metricsExplorerStore.sync(AD_BIDS_NAME, {
-    name: "AdBids",
-    measures: AD_BIDS_INIT_MEASURES,
-    dimensions: AD_BIDS_INIT_DIMENSIONS,
-  });
+  metricsExplorerStore.sync(AD_BIDS_NAME, AD_BIDS_INIT);
   // clear everything if already created
   metricsExplorerStore.clearFilters(AD_BIDS_NAME);
   metricsExplorerStore.setSelectedTimeRange(AD_BIDS_NAME, {
