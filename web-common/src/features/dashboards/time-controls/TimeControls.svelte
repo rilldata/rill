@@ -22,7 +22,6 @@
   } from "@rilldata/web-common/lib/time/ranges";
   import {
     DashboardTimeControls,
-    Period,
     TimeComparisonOption,
     TimeGrain,
     TimeRange,
@@ -43,7 +42,6 @@
   import TimeRangeSelector from "./TimeRangeSelector.svelte";
   import TimeZoneSelector from "@rilldata/web-common/features/dashboards/time-controls/TimeZoneSelector.svelte";
   import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
-  import { getStartOfPeriod } from "@rilldata/web-common/lib/time/transforms";
 
   export let metricViewName: string;
 

@@ -4,7 +4,10 @@
   import WithSelectMenu from "@rilldata/web-common/components/menu/wrappers/WithSelectMenu.svelte";
   import { createEventDispatcher } from "svelte";
   import { useDashboardStore } from "../dashboard-stores";
-  import { getLabelForIANA } from "@rilldata/web-common/lib/time/timezone";
+  import {
+    getAbbreviationForIANA,
+    getLabelForIANA,
+  } from "@rilldata/web-common/lib/time/timezone";
   import Globe from "@rilldata/web-common/components/icons/Globe.svelte";
 
   export let metricViewName: string;
@@ -60,7 +63,9 @@
     >
       <div class="flex items-center gap-x-2">
         <Globe />
-        <span class="font-bold">{getLabelForIANA(now, activeTimeZone)}</span>
+        <span class="font-bold"
+          >{getAbbreviationForIANA(now, activeTimeZone)}</span
+        >
       </div>
       <IconSpaceFixer pullRight>
         <div class="transition-transform" class:-rotate-180={active}>
