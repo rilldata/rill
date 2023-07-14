@@ -126,7 +126,7 @@
           class:ui-copy={!atLeastOneActive && !loading}
           class:ui-copy-strong={!excluded && isActive}
           class:ui-copy-disabled={excluded}
-          class="justify-self-start text-left w-full text-ellipsis overflow-hidden whitespace-nowrap"
+          class="leaderboard-label justify-self-start text-left w-full text-ellipsis overflow-hidden whitespace-nowrap"
         >
           <FormattedDataType value={label} />
         </div>
