@@ -23,5 +23,5 @@
 </script>
 
 {#if isSourceNotSaved}
-  <div>NOT SAVED</div>
+  <div class="w-1.5 h-1.5 bg-gray-300 rounded" />
 {/if}
