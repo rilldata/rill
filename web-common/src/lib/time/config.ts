@@ -456,20 +456,3 @@ export const TIME_COMPARISON = {
 };
 
 export const NO_COMPARISON_LABEL = "no comparison";
-
-// TODO: Change this later as per mocks
-export const IANAToLabelMap = {
-  "Etc/UTC": "UTC",
-  "America/Los_Angeles": "Pacific Time",
-  "America/Chicago": "Central Time",
-  "America/New_York": "Eastern Time",
-  "Asia/Kolkata": "India Standard Time",
-  "Asia/Jerusalem": "Israel Standard Time",
-  "Europe/Moscow": "Moscow Standard Time",
-  "Europe/Berlin": "Central European Time",
-  "Europe/Paris": "Central European Time",
-  "Europe/London": "Greenwich Mean Time",
-  "Australia/Sydney": "Australian Eastern Time",
-  "Asia/Shanghai": "China Standard Time",
-  "Asia/Tokyo": "Japan Standard Time",
-};

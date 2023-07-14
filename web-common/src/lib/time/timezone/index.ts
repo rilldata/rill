@@ -1,15 +1,17 @@
 import { DateTime } from "luxon";
+import { timeZoneNameToAbbreviationMap } from "@rilldata/web-common/lib/time/timezone/abbreviationMap";
 
 export function getLocalIANA(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
 
 export function getAbbreviationForIANA(now: Date, iana: string): string {
-  console.log(
-    "getAbbreviationForIANA",
-    iana,
-    DateTime.fromJSDate(now).setZone(iana).zone
-  );
+  const zoneName = DateTime.fromJSDate(now).setZone(iana).toFormat("ZZZZZ");
+
+  if (zoneName in timeZoneNameToAbbreviationMap)
+    return timeZoneNameToAbbreviationMap[zoneName];
+
+  // fallback to the offset
   return DateTime.fromJSDate(now).setZone(iana).toFormat("ZZZZ");
 }
 
