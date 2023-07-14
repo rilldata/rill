@@ -122,6 +122,7 @@
       value={renderedBarValue}
     >
       <div class="grid leaderboard-entry items-center gap-x-3" style:height>
+        <!-- NOTE: empty class leaderboard-label is used to locate this elt in e2e tests -->
         <div
           class:ui-copy={!atLeastOneActive && !loading}
           class:ui-copy-strong={!excluded && isActive}
