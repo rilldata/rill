@@ -1,0 +1,12 @@
+CREATE TABLE rill.catalog (
+	name TEXT NOT NULL,
+	type INTEGER NOT NULL,
+	object BLOB NOT NULL,
+	path TEXT NOT NULL,
+	created_on TIMESTAMPTZ NOT NULL,
+	updated_on TIMESTAMPTZ NOT NULL,
+	refreshed_on TIMESTAMPTZ NOT NULL,
+	embedded BOOL NOT NULL DEFAULT FALSE,
+	bytes_ingested BIGINT NOT NULL DEFAULT 0,
+	PRIMARY KEY (name)
+);

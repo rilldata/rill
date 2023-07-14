@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strings"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
@@ -95,7 +94,6 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		ProdVariables:        proj.ProdVariables,
 		ProdSlots:            proj.ProdSlots,
 		Region:               proj.Region,
-		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		ProdDeploymentID:     &depl.ID,
 	})
 	if err != nil {
@@ -177,7 +175,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 
 		if oldDepl != nil {
 			if err := s.teardownDeployment(context.Background(), proj, oldDepl); err != nil {
-				s.logger.Error("could not delete old deployment", zap.Error(err), observability.ZapCtx(ctx))
+				s.logger.Error("could not delete old deploymnet", zap.Error(err), observability.ZapCtx(ctx))
 			}
 		}
 
@@ -273,22 +271,19 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdBranch:           proj.ProdBranch,
 		ProdVariables:        proj.ProdVariables,
-		ProdDeploymentID:     &newDepl.ID,
 		ProdSlots:            proj.ProdSlots,
-		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		Region:               proj.Region,
+		ProdDeploymentID:     &newDepl.ID,
 	})
 	if err != nil {
 		err2 := s.teardownDeployment(ctx, proj, newDepl)
 		return multierr.Combine(err, err2)
 	}
 
-	// Delete old prod deployment if exists
-	if prevDepl != nil {
-		err = s.teardownDeployment(ctx, proj, prevDepl)
-		if err != nil {
-			s.logger.Error("trigger redeploy: could not teardown old deployment", zap.String("deployment_id", prevDepl.ID), zap.Error(err), observability.ZapCtx(ctx))
-		}
+	// Delete old prod deployment
+	err = s.teardownDeployment(ctx, proj, prevDepl)
+	if err != nil {
+		s.logger.Error("trigger redeploy: could not teardown old deployment", zap.String("deployment_id", prevDepl.ID), zap.Error(err), observability.ZapCtx(ctx))
 	}
 
 	// Trigger reconcile on new deployment
@@ -336,34 +331,6 @@ func (s *Service) triggerReconcile(ctx context.Context, depl *database.Deploymen
 
 // TriggerRefreshSource triggers refresh of a deployment's sources. If the sources slice is nil, it will refresh all sources.f
 func (s *Service) TriggerRefreshSources(ctx context.Context, depl *database.Deployment, sources []string) error {
-	// check if provided sources are exists in catalog
-	if len(sources) > 0 {
-		rt, err := s.openRuntimeClientForDeployment(depl)
-		if err != nil {
-			return err
-		}
-		defer rt.Close()
-
-		// Get paths of sources
-		res, err := rt.ListCatalogEntries(ctx, &runtimev1.ListCatalogEntriesRequest{InstanceId: depl.RuntimeInstanceID, Type: runtimev1.ObjectType_OBJECT_TYPE_SOURCE})
-		if err != nil {
-			return err
-		}
-
-		for _, source := range sources {
-			found := false
-			for _, entry := range res.Entries {
-				if strings.EqualFold(source, entry.Name) {
-					found = true
-					break
-				}
-			}
-			if !found {
-				return fmt.Errorf("source %q not found", source)
-			}
-		}
-	}
-
 	// Run reconcile in the background (since it's sync)
 	s.reconcileWg.Add(1)
 	go func() {

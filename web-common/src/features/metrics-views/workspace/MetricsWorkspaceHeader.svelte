@@ -11,9 +11,10 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { WorkspaceHeader } from "../../../layout/workspace";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import GoToDashboardButton from "./GoToDashboardButton.svelte";
+  import MetricsExploreMetricsButton from "./MetricsExploreMetricsButton.svelte";
 
   export let metricsDefName;
+  export let metricsInternalRep;
 
   $: runtimeInstanceId = $runtime.instanceId;
   $: allNamesQuery = useAllNames(runtimeInstanceId);
@@ -60,7 +61,12 @@
 <WorkspaceHeader
   {...{ titleInput, onChangeCallback }}
   appRunning={$appQueryStatusStore}
+  showInspectorToggle={false}
 >
   <MetricsIcon slot="icon" />
-  <GoToDashboardButton {metricsDefName} slot="cta" />
+  <MetricsExploreMetricsButton
+    {metricsDefName}
+    {metricsInternalRep}
+    slot="cta"
+  />
 </WorkspaceHeader>

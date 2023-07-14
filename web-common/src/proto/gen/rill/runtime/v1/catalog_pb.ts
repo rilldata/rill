@@ -512,13 +512,6 @@ export class MetricsView extends Message<MetricsView> {
    */
   defaultTimeRange = "";
 
-  /**
-   * Available time zones list preferred time zones using IANA location identifiers.
-   *
-   * @generated from field: repeated string available_time_zones = 11;
-   */
-  availableTimeZones: string[] = [];
-
   constructor(data?: PartialMessage<MetricsView>) {
     super();
     proto3.util.initPartial(data, this);
@@ -536,7 +529,6 @@ export class MetricsView extends Message<MetricsView> {
     { no: 8, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 10, name: "default_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 11, name: "available_time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsView {
@@ -644,11 +636,6 @@ export class MetricsView_Measure extends Message<MetricsView_Measure> {
    */
   format = "";
 
-  /**
-   * @generated from field: bool valid_percent_of_total = 6;
-   */
-  validPercentOfTotal = false;
-
   constructor(data?: PartialMessage<MetricsView_Measure>) {
     super();
     proto3.util.initPartial(data, this);
@@ -662,7 +649,6 @@ export class MetricsView_Measure extends Message<MetricsView_Measure> {
     { no: 3, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "format", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "valid_percent_of_total", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsView_Measure {

@@ -925,8 +925,6 @@ func (m *MetricsView_Measure) validate(all bool) error {
 
 	// no validation rules for Format
 
-	// no validation rules for ValidPercentOfTotal
-
 	if len(errors) > 0 {
 		return MetricsView_MeasureMultiError(errors)
 	}

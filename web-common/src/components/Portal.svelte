@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { browser } from "$app/environment";
   import { onDestroy, onMount } from "svelte";
 
   export let target: string = undefined;
@@ -9,21 +10,22 @@
   let targetEntity;
 
   onMount(() => {
-    portal = document.createElement("div");
-    portal.className = "portal";
-    if (!target) {
-      targetEntity = document.body;
-    } else {
-      targetEntity = document.querySelector(target);
+    if (browser) {
+      portal = document.createElement("div");
+      portal.className = "portal";
+      if (!target) {
+        targetEntity = document.body;
+      } else {
+        targetEntity = document.querySelector(target);
+      }
+      targetEntity.appendChild(portal);
+      portal.appendChild(ref);
     }
-    targetEntity.appendChild(portal);
-    portal.appendChild(ref);
-
     mounted = true;
   });
 
   onDestroy(() => {
-    if (portal) {
+    if (browser && portal) {
       portal.remove();
     }
   });

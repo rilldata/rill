@@ -32,6 +32,8 @@
       },
     }
   );
+  $: embedded = $catalogQuery.data?.entry?.embedded;
+  $: path = $catalogQuery.data?.entry?.source.properties.path;
 
   $: fileQuery = createRuntimeServiceGetFile(
     $runtime.instanceId,
@@ -52,9 +54,9 @@
 </script>
 
 <svelte:head>
-  <title>Rill Developer | {sourceName}</title>
+  <title>Rill Developer | {embedded ? path : sourceName}</title>
 </svelte:head>
 
 {#if $fileQuery.data && $catalogQuery.data}
-  <SourceWorkspace {sourceName} />
+  <SourceWorkspace {sourceName} {embedded} {path} />
 {/if}

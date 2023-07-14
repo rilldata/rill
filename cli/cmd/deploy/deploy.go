@@ -47,6 +47,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 		Short: "Deploy project to Rill Cloud",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+
 			warn := color.New(color.Bold).Add(color.FgYellow)
 			info := color.New(color.Bold).Add(color.FgWhite)
 			success := color.New(color.Bold).Add(color.FgGreen)
@@ -235,11 +236,8 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 					}
 				}
 
-				warn.Printf("Another project %q already deploys from %q.\n", projects[0], githubURL)
-				warn.Printf("- To force the existing project to rebuild, press 'n' and run `rill project reconcile --reset`\n")
-				warn.Printf("- To delete the existing project, press 'n' and run `rill project delete`\n")
-				warn.Printf("- To deploy the repository as a new project under another name, press 'y' or enter\n")
-				if !cmdutil.ConfirmPrompt("Do you want to continue?", "", true) {
+				warn.Printf("Another project %q already deploys from %q\n", projects[0], githubURL)
+				if !cmdutil.ConfirmPrompt("Do you want to continue", "", true) {
 					warn.Println("Aborted")
 					return nil
 				}

@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"path/filepath"
 	"testing"
 
@@ -15,7 +14,7 @@ import (
 func TestServer_PutFileAndReconcile(t *testing.T) {
 	ctx := testCtx()
 	rt, instanceID := testruntime.NewInstance(t)
-	srv, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop())
+	srv, err := NewServer(context.Background(), &Options{}, rt, nil)
 	require.NoError(t, err)
 
 	cat, err := rt.NewCatalogService(ctx, instanceID)

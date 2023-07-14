@@ -151,7 +151,6 @@ describe("computeComparisonValues", () => {
       comparisonResponse,
       values,
       "fruit",
-      "fruit",
       "measure_0"
     );
     expect(computedValues).toEqual(expectedData);

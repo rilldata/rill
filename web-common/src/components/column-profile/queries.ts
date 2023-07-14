@@ -146,11 +146,6 @@ export function getTimeSeriesAndSpark(
     // FIXME: convert pixel back to number once the API
     {
       timestampColumnName: columnName,
-      measures: [
-        {
-          expression: "count(*)",
-        },
-      ],
       pixels: 92,
       priority: getPriorityForColumn("timeseries", active),
     }

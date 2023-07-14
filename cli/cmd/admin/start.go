@@ -9,7 +9,6 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
-	"github.com/redis/go-redis/v9"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/email"
 	"github.com/rilldata/rill/admin/server"
@@ -17,7 +16,6 @@ import (
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -63,7 +61,6 @@ type Config struct {
 	EmailSenderEmail       string                 `split_words:"true"`
 	EmailSenderName        string                 `split_words:"true"`
 	EmailBCC               string                 `split_words:"true"`
-	RedisURL               string                 `default:"" split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -137,7 +134,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			if err != nil {
 				logger.Fatal("error creating email sender", zap.Error(err))
 			}
-			emailClient := email.New(sender, conf.FrontendURL, conf.ExternalURL)
+			emailClient := email.New(sender, conf.FrontendURL)
 
 			// Init github client
 			gh, err := admin.NewGithub(conf.GithubAppID, conf.GithubAppPrivateKey)
@@ -179,17 +176,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 
 			// Init and run server
 			if runServer {
-				var limiter ratelimit.Limiter
-				if conf.RedisURL == "" {
-					limiter = ratelimit.NewNoop()
-				} else {
-					opts, err := redis.ParseURL(conf.RedisURL)
-					if err != nil {
-						logger.Fatal("failed to parse redis url", zap.Error(err))
-					}
-					limiter = ratelimit.NewRedis(redis.NewClient(opts))
-				}
-				srv, err := server.New(logger, adm, issuer, limiter, &server.Options{
+				srv, err := server.New(logger, adm, issuer, &server.Options{
 					HTTPPort:               conf.HTTPPort,
 					GRPCPort:               conf.GRPCPort,
 					ExternalURL:            conf.ExternalURL,

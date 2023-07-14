@@ -20,8 +20,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const prodDeplTTL = 14 * 24 * time.Hour
-
 func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.ListProjectsForOrganizationRequest) (*adminv1.ListProjectsForOrganizationResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.OrganizationName),
@@ -102,7 +100,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		permissions.ReadProd = true
 	}
 
-	if !permissions.ReadProject && !claims.Superuser(ctx) {
+	if !permissions.ReadProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
@@ -140,45 +138,11 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
 	}
 
-	s.admin.Used.Deployment(depl.ID)
-
 	return &adminv1.GetProjectResponse{
 		Project:            s.projToDTO(proj, org.Name),
 		ProdDeployment:     deploymentToDTO(depl),
 		Jwt:                jwt,
 		ProjectPermissions: permissions,
-	}, nil
-}
-
-func (s *Server) SearchProjectNames(ctx context.Context, req *adminv1.SearchProjectNamesRequest) (*adminv1.SearchProjectNamesResponse, error) {
-	observability.AddRequestAttributes(ctx,
-		attribute.String("args.pattern", req.NamePattern),
-	)
-
-	claims := auth.GetClaims(ctx)
-	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "only superusers can search projects")
-	}
-
-	token, err := unmarshalPageToken(req.PageToken)
-	if err != nil {
-		return nil, err
-	}
-	pageSize := validPageSize(req.PageSize)
-
-	projectNames, err := s.admin.DB.FindProjectPathsByPattern(ctx, req.NamePattern, token.Val, pageSize)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	nextToken := ""
-	if len(projectNames) >= pageSize {
-		nextToken = marshalPageToken(projectNames[len(projectNames)-1])
-	}
-
-	return &adminv1.SearchProjectNamesResponse{
-		Names:         projectNames,
-		NextPageToken: nextToken,
 	}, nil
 }
 
@@ -245,13 +209,6 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, err
 	}
 
-	// Add prod TTL as 7 days if not a public project else infinite
-	var prodTTL *int64
-	if !req.Public {
-		tmp := int64(prodDeplTTL.Seconds())
-		prodTTL = &tmp
-	}
-
 	// Create the project
 	proj, err := s.admin.CreateProject(ctx, org, claims.OwnerID(), &database.InsertProjectOptions{
 		OrganizationID:       org.ID,
@@ -267,7 +224,6 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		GithubURL:            &req.GithubUrl,
 		GithubInstallationID: &installationID,
 		ProdVariables:        req.Variables,
-		ProdTTLSeconds:       prodTTL,
 	})
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -325,9 +281,6 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	if req.ProdSlots != nil {
 		observability.AddRequestAttributes(ctx, attribute.Int64("args.prod_slots", *req.ProdSlots))
 	}
-	if req.ProdTtlSeconds != nil {
-		observability.AddRequestAttributes(ctx, attribute.Int64("args.prod_ttl_seconds", *req.ProdTtlSeconds))
-	}
 	if req.NewName != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.new_name", *req.NewName))
 	}
@@ -360,18 +313,16 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		}
 	}
 
-	prodTTLSeconds := valOrDefault(req.ProdTtlSeconds, *proj.ProdTTLSeconds)
 	opts := &database.UpdateProjectOptions{
 		Name:                 valOrDefault(req.NewName, proj.Name),
 		Description:          valOrDefault(req.Description, proj.Description),
 		Public:               valOrDefault(req.Public, proj.Public),
-		GithubURL:            githubURL,
-		GithubInstallationID: proj.GithubInstallationID,
 		ProdBranch:           valOrDefault(req.ProdBranch, proj.ProdBranch),
 		ProdVariables:        proj.ProdVariables,
+		GithubURL:            githubURL,
+		GithubInstallationID: proj.GithubInstallationID,
 		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
-		ProdTTLSeconds:       &prodTTLSeconds,
 		Region:               valOrDefault(req.Region, proj.Region),
 	}
 	proj, err = s.admin.UpdateProject(ctx, proj, opts)

@@ -119,13 +119,3 @@ function correctFilePath(filePath: string) {
   }
   return filePath;
 }
-
-export function getFileArtifactReconciliationErrors(
-  fileState: FileArtifactsState,
-  fileName: string
-): V1ReconcileError[] {
-  const path = Object.keys(fileState?.entities)?.find((key) => {
-    return key.endsWith(fileName);
-  });
-  return fileState?.entities?.[path]?.errors;
-}

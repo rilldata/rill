@@ -6,6 +6,7 @@ import (
 	"io"
 	"reflect"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 )
@@ -82,6 +83,6 @@ func (q *TableCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 	return nil
 }
 
-func (q *TableCardinality) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
+func (q *TableCardinality) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.ExportFormat, w io.Writer) error {
 	return ErrExportNotSupported
 }

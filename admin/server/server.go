@@ -23,7 +23,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -69,12 +68,11 @@ type Server struct {
 	authenticator *auth.Authenticator
 	issuer        *runtimeauth.Issuer
 	urls          *externalURLs
-	limiter       ratelimit.Limiter
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
 
-func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, limiter ratelimit.Limiter, opts *Options) (*Server, error) {
+func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, opts *Options) (*Server, error) {
 	externalURL, err := url.Parse(opts.ExternalURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse external URL: %w", err)
@@ -108,7 +106,6 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 		authenticator: authenticator,
 		issuer:        issuer,
 		urls:          newURLRegistry(opts),
-		limiter:       limiter,
 	}, nil
 }
 
@@ -123,7 +120,6 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			grpc_auth.StreamServerInterceptor(checkUserAgent),
 			grpc_validator.StreamServerInterceptor(),
 			s.authenticator.StreamServerInterceptor(),
-			grpc_auth.StreamServerInterceptor(s.checkRateLimit),
 		),
 		grpc.ChainUnaryInterceptor(
 			middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
@@ -133,7 +129,6 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			grpc_auth.UnaryServerInterceptor(checkUserAgent),
 			grpc_validator.UnaryServerInterceptor(),
 			s.authenticator.UnaryServerInterceptor(),
-			grpc_auth.UnaryServerInterceptor(s.checkRateLimit),
 		),
 	)
 
@@ -181,7 +176,7 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	mux.Handle("/.well-known/jwks.json", s.issuer.WellKnownHandler())
 
 	// Add auth endpoints (not gRPC handlers, just regular endpoints on /auth/*)
-	s.authenticator.RegisterEndpoints(mux, s.limiter)
+	s.authenticator.RegisterEndpoints(mux)
 
 	// Add Github-related endpoints (not gRPC handlers, just regular endpoints on /github/*)
 	s.registerGithubEndpoints(mux)
@@ -340,26 +335,4 @@ func newURLRegistry(opts *Options) *externalURLs {
 		githubAuthRetry:       urlutil.MustJoinURL(opts.FrontendURL, "/-/github/connect/retry-auth"),
 		authLogin:             urlutil.MustJoinURL(opts.ExternalURL, "/auth/login"),
 	}
-}
-
-func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
-	var limitKey string
-	method, ok := grpc.Method(ctx)
-	if !ok {
-		return ctx, fmt.Errorf("server context does not have a method")
-	}
-	if auth.GetClaims(ctx).OwnerType() == auth.OwnerTypeAnon {
-		limitKey = ratelimit.AnonLimitKey(method, observability.GrpcPeer(ctx))
-	} else {
-		limitKey = ratelimit.AuthLimitKey(method, auth.GetClaims(ctx).OwnerID())
-	}
-
-	if err := s.limiter.Limit(ctx, limitKey, ratelimit.Default); err != nil {
-		if errors.As(err, &ratelimit.QuotaExceededError{}) {
-			return ctx, status.Errorf(codes.ResourceExhausted, err.Error())
-		}
-		return ctx, err
-	}
-
-	return ctx, nil
 }

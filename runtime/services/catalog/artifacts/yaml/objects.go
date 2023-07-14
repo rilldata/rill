@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/c2h5oh/datasize"
 	"github.com/jinzhu/copier"
@@ -14,9 +13,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"google.golang.org/protobuf/types/known/structpb"
-
-	// Load IANA time zone data
-	_ "time/tzdata"
 )
 
 /**
@@ -40,8 +36,6 @@ type Source struct {
 	DuckDBProps           map[string]any `yaml:"duckdb,omitempty" mapstructure:"duckdb,omitempty"`
 	Headers               map[string]any `yaml:"headers,omitempty" mapstructure:"headers,omitempty"`
 	AllowSchemaRelaxation *bool          `yaml:"ingest.allow_schema_relaxation,omitempty" mapstructure:"allow_schema_relaxation,omitempty"`
-	Query                 string         `yaml:"query,omitempty" mapstructure:"query,omitempty"`
-	DB                    string         `yaml:"db,omitempty" mapstructure:"db,omitempty"`
 }
 
 type ExtractPolicy struct {
@@ -55,26 +49,24 @@ type ExtractConfig struct {
 }
 
 type MetricsView struct {
-	Label              string `yaml:"title"`
-	DisplayName        string `yaml:"display_name,omitempty"` // for backwards compatibility
-	Description        string
-	Model              string
-	TimeDimension      string   `yaml:"timeseries"`
-	SmallestTimeGrain  string   `yaml:"smallest_time_grain"`
-	DefaultTimeRange   string   `yaml:"default_time_range"`
-	AvailableTimeZones []string `yaml:"available_time_zones,omitempty"`
-	Dimensions         []*Dimension
-	Measures           []*Measure
+	Label             string `yaml:"title"`
+	DisplayName       string `yaml:"display_name,omitempty"` // for backwards compatibility
+	Description       string
+	Model             string
+	TimeDimension     string `yaml:"timeseries"`
+	SmallestTimeGrain string `yaml:"smallest_time_grain"`
+	DefaultTimeRange  string `yaml:"default_time_range"`
+	Dimensions        []*Dimension
+	Measures          []*Measure
 }
 
 type Measure struct {
-	Label               string
-	Name                string
-	Expression          string
-	Description         string
-	Format              string `yaml:"format_preset"`
-	Ignore              bool   `yaml:"ignore,omitempty"`
-	ValidPercentOfTotal bool   `yaml:"valid_percent_of_total,omitempty"`
+	Label       string
+	Name        string
+	Expression  string
+	Description string
+	Format      string `yaml:"format_preset"`
+	Ignore      bool   `yaml:"ignore,omitempty"`
 }
 
 type Dimension struct {
@@ -152,7 +144,7 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 	props := map[string]interface{}{}
 	if source.Type == "local_file" {
 		props["path"] = source.Path
-	} else if source.URI != "" {
+	} else {
 		props["path"] = source.URI
 	}
 	if source.Region != "" {
@@ -209,14 +201,6 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 
 	if source.AllowSchemaRelaxation != nil {
 		props["allow_schema_relaxation"] = *source.AllowSchemaRelaxation
-	}
-
-	if source.Query != "" {
-		props["query"] = source.Query
-	}
-
-	if source.DB != "" {
-		props["db"] = source.DB
 	}
 
 	propsPB, err := structpb.NewStruct(props)
@@ -356,14 +340,6 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 			return nil, fmt.Errorf("invalid default_time_range: %w", err)
 		}
 		apiMetrics.DefaultTimeRange = metrics.DefaultTimeRange
-	}
-
-	// validate time zone locations
-	for _, tz := range metrics.AvailableTimeZones {
-		_, err := time.LoadLocation(tz)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	err := copier.Copy(apiMetrics, metrics)

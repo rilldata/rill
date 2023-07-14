@@ -38,13 +38,14 @@ export enum MetricsEventScreenName {
   Home = "home",
 }
 
-export const ScreenToEntityMap = {
-  [MetricsEventScreenName.Source]: EntityType.Table,
-  [MetricsEventScreenName.Model]: EntityType.Model,
-  [MetricsEventScreenName.Dashboard]: EntityType.MetricsDefinition,
-  [MetricsEventScreenName.MetricsDefinition]: EntityType.MetricsDefinition,
-  [MetricsEventScreenName.Home]: EntityType.Application,
-  [MetricsEventScreenName.Splash]: EntityType.Application,
+export const EntityTypeToScreenMap = {
+  [EntityType.Table]: MetricsEventScreenName.Source,
+  [EntityType.Model]: MetricsEventScreenName.Model,
+  [EntityType.Application]: MetricsEventScreenName.Source,
+  [EntityType.MetricsDefinition]: MetricsEventScreenName.MetricsDefinition,
+  [EntityType.MeasureDefinition]: MetricsEventScreenName.MetricsDefinition,
+  [EntityType.MetricsExplorer]: MetricsEventScreenName.Dashboard,
+  [EntityType.DimensionDefinition]: MetricsEventScreenName.Dashboard,
 };
 
 export interface ActiveEvent extends MetricsEvent {

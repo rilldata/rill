@@ -8,7 +8,6 @@
   import { useProjectDeploymentStatus } from "@rilldata/web-admin/components/projects/selectors";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
-  import InfoCircleFilled from "@rilldata/web-common/components/icons/InfoCircleFilled.svelte";
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -116,16 +115,12 @@
       wrapperClass: "bg-red-50 border-red-300",
     },
     [V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED]: {
-      icon: InfoCircleFilled,
-      iconProps: { className: "text-indigo-600 hover:text-indigo-500" },
-      text: "not deployed",
-      textClass: "text-indigo-600",
-      wrapperClass: "bg-indigo-50 border-indigo-300",
+      icon: Spacer,
     },
   };
 </script>
 
-{#if deploymentStatus}
+{#if deploymentStatus && deploymentStatus !== V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED}
   {#if iconOnly}
     <div class="pb-0.5">
       <svelte:component

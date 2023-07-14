@@ -13,7 +13,6 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 	var name, description, prodBranch, path, region string
 	var public bool
 	var slots int
-	var prodTTL int64
 
 	editCmd := &cobra.Command{
 		Use:   "edit [<project-name>]",
@@ -72,11 +71,6 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 				req.Public = &public
 			}
 
-			if cmd.Flags().Changed("prod-ttl-seconds") {
-				promptFlagValues = false
-				req.ProdTtlSeconds = &prodTTL
-			}
-
 			if promptFlagValues {
 				resp, err := client.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: cfg.Org, Name: name})
 				if err != nil {
@@ -120,7 +114,6 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 	editCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
 	editCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 	editCmd.Flags().IntVar(&slots, "prod-slots", 0, "Slots to allocate for production deployments (default: current slots)")
-	editCmd.Flags().Int64Var(&prodTTL, "prod-ttl-seconds", 0, "Prod deployment TTL in seconds")
 	editCmd.Flags().StringVar(&region, "region", "", "Deployment region (default: current region)")
 	if !cfg.IsDev() {
 		if err := editCmd.Flags().MarkHidden("prod-slots"); err != nil {

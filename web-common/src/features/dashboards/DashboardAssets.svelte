@@ -18,9 +18,11 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { SourceModelValidationStatus } from "@rilldata/web-common/features/metrics-views/errors.js";
-  import { appScreen } from "@rilldata/web-common/layout/app-store";
+  import { initBlankDashboardYAML } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
+  import { appStore } from "@rilldata/web-common/layout/app-store";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
+    EntityTypeToScreenMap,
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
@@ -86,11 +88,12 @@
       newDashboardName,
       EntityType.MetricsDefinition
     );
+    const yaml = initBlankDashboardYAML(newDashboardName);
     const resp = await $createDashboard.mutateAsync({
       data: {
         instanceId,
         path: filePath,
-        blob: "",
+        blob: yaml,
         create: true,
         createOnly: true,
         strict: false,
@@ -111,13 +114,13 @@
     );
     const sourceModelName = dashboardData.jsonRepresentation.model;
 
-    const previousActiveEntity = $appScreen?.type;
+    const previousActiveEntity = $appStore?.activeEntity?.type;
     goto(`/model/${sourceModelName}`);
     behaviourEvent.fireNavigationEvent(
       sourceModelName,
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
-      previousActiveEntity,
+      EntityTypeToScreenMap[previousActiveEntity],
       MetricsEventScreenName.Model
     );
   };
@@ -125,12 +128,12 @@
   const editMetrics = (dashboardName: string) => {
     goto(`/dashboard/${dashboardName}/edit`);
 
-    const previousActiveEntity = $appScreen?.type;
+    const previousActiveEntity = $appStore?.activeEntity?.type;
     behaviourEvent.fireNavigationEvent(
       dashboardName,
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
-      previousActiveEntity,
+      EntityTypeToScreenMap[previousActiveEntity],
       MetricsEventScreenName.MetricsDefinition
     );
   };
@@ -148,13 +151,13 @@
       dashboardName,
       EntityType.MetricsDefinition,
       $deleteDashboard,
-      $appScreen,
+      $appStore.activeEntity,
       $dashboardNames.data
     );
 
     // redirect to model when metric is deleted
     const sourceModelName = dashboardData.jsonRepresentation.model;
-    if ($appScreen?.name === dashboardName) {
+    if ($appStore.activeEntity.name === dashboardName) {
       if (sourceModelName) {
         goto(`/model/${sourceModelName}`);
 

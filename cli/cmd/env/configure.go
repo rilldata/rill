@@ -20,7 +20,7 @@ import (
 
 func ConfigureCmd(cfg *config.Config) *cobra.Command {
 	var projectPath, projectName, subPath string
-	var redeploy bool
+	var redploy bool
 
 	configureCommand := &cobra.Command{
 		Use:   "configure",
@@ -115,11 +115,16 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 			cmdutil.PrintlnSuccess("Updated project variables")
 
 			if !cmd.Flags().Changed("redeploy") {
-				redeploy = cmdutil.ConfirmPrompt("Do you want to redeploy project", "", redeploy)
+				redploy = cmdutil.ConfirmPrompt("Do you want to redeploy project", "", redploy)
 			}
 
-			if redeploy {
-				_, err = client.TriggerRedeploy(ctx, &adminv1.TriggerRedeployRequest{Organization: cfg.Org, Project: projectName})
+			if redploy {
+				project, err := client.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: cfg.Org, Name: projectName})
+				if err != nil {
+					return err
+				}
+
+				_, err = client.TriggerRedeploy(ctx, &adminv1.TriggerRedeployRequest{DeploymentId: project.ProdDeployment.Id})
 				if err != nil {
 					warn.Printf("Redeploy trigger failed. Trigger redeploy again with `rill project reconcile --reset=true` if required.\n")
 					return err
@@ -134,7 +139,7 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 	configureCommand.Flags().StringVar(&projectPath, "path", ".", "Project directory")
 	configureCommand.Flags().StringVar(&subPath, "subpath", "", "Project path to sub directory of a larger repository")
 	configureCommand.Flags().StringVar(&projectName, "project", "", "")
-	configureCommand.Flags().BoolVar(&redeploy, "redeploy", false, "Redeploy project")
+	configureCommand.Flags().BoolVar(&redploy, "redeploy", false, "Redeploy project")
 
 	return configureCommand
 }

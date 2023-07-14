@@ -7,21 +7,21 @@
     V1Connector,
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
-  import { appScreen } from "../../../layout/app-store";
+  import LocalSource from "./LocalSource.svelte";
+  import RemoteSource from "./RemoteSource.svelte";
   import { behaviourEvent } from "../../../metrics/initMetrics";
   import {
     BehaviourEventAction,
     BehaviourEventMedium,
   } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
-  import LocalSource from "./LocalSource.svelte";
-  import RemoteSource from "./RemoteSource.svelte";
+  import { appScreen } from "../../../layout/app-store";
 
   const dispatch = createEventDispatcher();
 
   let selectedConnector: V1Connector;
 
-  const TAB_ORDER = ["gcs", "s3", "https", "local_file", "motherduck"];
+  const TAB_ORDER = ["gcs", "s3", "https", "local_file"];
 
   const connectors = createRuntimeServiceListConnectors({
     query: {
@@ -60,11 +60,11 @@
 
 <Dialog
   compact
+  useContentForMinSize
   {disabled}
   on:cancel={() => onDialogClose()}
   showCancel
   size="md"
-  useContentForMinSize
   yFixed
 >
   <div slot="title">
@@ -83,7 +83,7 @@
     </TabGroup>
   </div>
   <div class="flex-grow overflow-y-auto">
-    {#if selectedConnector?.name === "gcs" || selectedConnector?.name === "s3" || selectedConnector?.name === "https" || selectedConnector?.name === "motherduck"}
+    {#if selectedConnector?.name === "gcs" || selectedConnector?.name === "s3" || selectedConnector?.name === "https"}
       {#key selectedConnector}
         <RemoteSource connector={selectedConnector} on:close />
       {/key}

@@ -20,7 +20,7 @@ type MetricsViewToplist struct {
 	InlineMeasures  []*runtimev1.InlineMeasure   `json:"inline_measures,omitempty"`
 	TimeStart       *timestamppb.Timestamp       `json:"time_start,omitempty"`
 	TimeEnd         *timestamppb.Timestamp       `json:"time_end,omitempty"`
-	Limit           *int64                       `json:"limit,omitempty"`
+	Limit           int64                        `json:"limit,omitempty"`
 	Offset          int64                        `json:"offset,omitempty"`
 	Sort            []*runtimev1.MetricsViewSort `json:"sort,omitempty"`
 	Filter          *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
@@ -97,36 +97,19 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	return nil
 }
 
-func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
-	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
+func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.ExportFormat, writer io.Writer) error {
+	err := q.Resolve(ctx, rt, instanceID, priority)
 	if err != nil {
 		return err
 	}
 
-	mv, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
-	if err != nil {
-		return err
-	}
-
-	filename := strings.ReplaceAll(mv.Model, `"`, `_`)
-	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
-		filename += "_filtered"
-	}
-
-	if opts.PreWriteHook != nil {
-		err = opts.PreWriteHook(filename)
-		if err != nil {
-			return err
-		}
-	}
-
-	switch opts.Format {
+	switch format {
 	case runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED:
 		return fmt.Errorf("unspecified format")
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		return writeCSV(q.Result.Meta, q.Result.Data, w)
+		return writeCSV(q.Result.Meta, q.Result.Data, writer)
 	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		return writeXLSX(q.Result.Meta, q.Result.Data, w)
+		return writeXLSX(q.Result.Meta, q.Result.Data, writer)
 	}
 
 	return nil
@@ -187,21 +170,17 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, d
 		orderClause = "ORDER BY " + strings.Join(sortingCriteria, ", ")
 	}
 
-	var limitClause string
-	if q.Limit != nil {
-		if *q.Limit == 0 {
-			*q.Limit = 100
-		}
-		limitClause = fmt.Sprintf("LIMIT %d", *q.Limit)
+	if q.Limit == 0 {
+		q.Limit = 100
 	}
 
-	sql := fmt.Sprintf("SELECT %s FROM %q WHERE %s GROUP BY %s %s %s OFFSET %d",
+	sql := fmt.Sprintf("SELECT %s FROM %q WHERE %s GROUP BY %s %s LIMIT %d OFFSET %d",
 		strings.Join(selectCols, ", "),
 		mv.Model,
 		whereClause,
 		colName,
 		orderClause,
-		limitClause,
+		q.Limit,
 		q.Offset,
 	)
 

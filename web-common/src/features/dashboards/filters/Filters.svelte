@@ -69,11 +69,8 @@ The main feature-set component for dashboard filters
 
   let topListQuery;
   let searchText = "";
-  let searchedValues: string[] | null = null;
+  let searchedValues = [];
   let activeDimensionName;
-  $: activeColumn =
-    dimensions.find((d) => d.name === activeDimensionName)?.column ??
-    activeDimensionName;
 
   $: metricTimeSeries = useModelHasTimeSeries(
     $runtime.instanceId,
@@ -85,7 +82,7 @@ The main feature-set component for dashboard filters
 
   $: if (activeDimensionName) {
     if (searchText == "") {
-      searchedValues = null;
+      searchedValues = [];
     } else {
       let topListParams = {
         dimensionName: activeDimensionName,
@@ -131,7 +128,8 @@ The main feature-set component for dashboard filters
 
   $: if (!$topListQuery?.isFetching && searchText != "") {
     const topListData = $topListQuery?.data?.data ?? [];
-    searchedValues = topListData.map((datum) => datum[activeColumn]) ?? [];
+    searchedValues =
+      topListData.map((datum) => datum[activeDimensionName]) ?? [];
   }
 
   $: hasFilters = isFiltered(metricsExplorer?.filters);
