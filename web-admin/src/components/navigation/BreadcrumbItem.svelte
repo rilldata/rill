@@ -28,6 +28,7 @@
           key: menuKey,
           main: label,
         }}
+        overflowFlipY={false}
         on:select={({ detail: { key } }) => onSelectMenuOption(key)}
         let:toggleMenu
       >
