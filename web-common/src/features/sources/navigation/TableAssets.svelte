@@ -3,14 +3,10 @@
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import {
-    useEmbeddedSources,
-    useSourceNames,
-  } from "@rilldata/web-common/features/sources/selectors";
+  import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
   import {
     createRuntimeServiceListCatalogEntries,
     createRuntimeServicePutFileAndReconcile,
-    V1CatalogEntry,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { flip } from "svelte/animate";
@@ -36,10 +32,6 @@
   $: sourceNames = useSourceNames($runtime.instanceId);
   $: modelNames = useModelNames($runtime.instanceId);
   const createModelMutation = createRuntimeServicePutFileAndReconcile();
-
-  $: sourceCatalogsQuery = useEmbeddedSources($runtime?.instanceId);
-  let embeddedSourceCatalogs: Array<V1CatalogEntry>;
-  $: embeddedSourceCatalogs = $sourceCatalogsQuery?.data ?? [];
 
   const queryClient = useQueryClient();
 
