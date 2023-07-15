@@ -1,5 +1,4 @@
 import { writable, Writable } from "svelte/store";
-import { getContext } from "svelte";
 
 export enum DuplicateActions {
   None = "NONE",
@@ -18,10 +17,10 @@ export interface SourceStore {
   clientYAML: string;
 }
 
-export function createSourceStore(yaml: string) {
-  return writable<SourceStore>({ clientYAML: yaml });
-}
+export const sourceStore: Writable<SourceStore> = writable({
+  clientYAML: "",
+});
 
 export function useSourceStore(): Writable<SourceStore> {
-  return getContext("rill:app:source") as Writable<SourceStore>;
+  return sourceStore;
 }

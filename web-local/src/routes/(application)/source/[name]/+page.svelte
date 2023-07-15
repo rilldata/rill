@@ -4,11 +4,11 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { SourceWorkspace } from "@rilldata/web-common/features/sources";
-  import { createSourceStore } from "@rilldata/web-common/features/sources/sources-store";
+  import { sourceStore } from "@rilldata/web-common/features/sources/sources-store";
   import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { error } from "@sveltejs/kit";
-  import { onMount, setContext } from "svelte";
+  import { onMount } from "svelte";
 
   $: sourceName = $page.params.name;
 
@@ -36,11 +36,8 @@
   );
 
   // Initialize the source store
-  let sourceStoreReady = false;
-  $: if ($fileQuery.isSuccess) {
-    const sourceStore = createSourceStore($fileQuery.data.blob);
-    setContext("rill:app:source", sourceStore);
-    sourceStoreReady = true;
+  $: if ($fileQuery.isSuccess && $fileQuery.data.blob) {
+    sourceStore.set({ clientYAML: $fileQuery.data.blob });
   }
 </script>
 
@@ -48,6 +45,6 @@
   <title>Rill Developer | {sourceName}</title>
 </svelte:head>
 
-{#if $fileQuery.data && sourceStoreReady}
+{#if $fileQuery.data}
   <SourceWorkspace {sourceName} />
 {/if}
