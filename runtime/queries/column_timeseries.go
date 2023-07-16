@@ -116,18 +116,17 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 			-- generate a time series column that has the intended range
 			WITH template as (
 			SELECT
-				timezone('` + timezone + `',range) as ` + tsAlias + `
+				range as ` + tsAlias + `
 			FROM
 				range(
-				time_bucket(INTERVAL '` + timeBucketSpecifier + `', TIMESTAMP '` + timeRange.Start.AsTime().Format(IsoFormat) + `'),
-				time_bucket(INTERVAL '` + timeBucketSpecifier + `', TIMESTAMP '` + timeRange.End.AsTime().Format(IsoFormat) + `'),
+				time_bucket(INTERVAL '` + timeBucketSpecifier + `', TIMESTAMPTZ '` + timeRange.Start.AsTime().Format(IsoFormat) + `', '` + timezone + `'),
+				time_bucket(INTERVAL '` + timeBucketSpecifier + `', TIMESTAMPTZ '` + timeRange.End.AsTime().Format(IsoFormat) + `', '` + timezone + `'),
 				INTERVAL '` + timeBucketSpecifier + `')
-			GROUP BY ` + tsAlias + `
 			),
 			-- transform the original data, and optionally sample it.
 			series AS (
 			SELECT
-				timezone('` + timezone + `', time_bucket(INTERVAL '` + timeBucketSpecifier + `', ` + safeName(q.TimestampColumnName) + `::TIMESTAMP)) as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
+				time_bucket(INTERVAL '` + timeBucketSpecifier + `', ` + safeName(q.TimestampColumnName) + `::TIMESTAMPTZ, '` + timezone + `') as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
 			FROM ` + safeName(q.TableName) + ` ` + filter + `
 			GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
 			)
