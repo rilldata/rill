@@ -215,7 +215,11 @@ func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsView, dialect
 			panic("timeRollupColumnName is set, but time dimension info is missing")
 		}
 
-		rollup := fmt.Sprintf("time_bucket(INTERVAL '%s', %s::TIMESTAMP) AS %s", convertToTimeBucketSpecifier(q.TimeGranularity), safeName(mv.TimeDimension), safeName(timeRollupColumnName))
+		timezone := "UTC"
+		if q.TimeZoneAdjustment != nil && q.TimeZoneAdjustment.GetTimeZone() != "" {
+			timezone = q.TimeZoneAdjustment.GetTimeZone()
+		}
+		rollup := fmt.Sprintf("time_bucket(INTERVAL '%s', %s::TIMESTAMPTZ, '%s') AS %s", convertToTimeBucketSpecifier(q.TimeGranularity), safeName(mv.TimeDimension), timezone, safeName(timeRollupColumnName))
 
 		// Prepend the rollup column
 		selectColumns = append([]string{rollup}, selectColumns...)
