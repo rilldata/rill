@@ -19,10 +19,15 @@ export function getOffsetForIANA(now: Date, iana: string): string {
   return DateTime.fromJSDate(now).setZone(iana).toFormat("ZZ");
 }
 
-export function getLabelForIANA(now: Date, iana: string): string {
+export function getLabelForIANA(now: Date, iana: string) {
   const abbreviation = getAbbreviationForIANA(now, iana);
   const offset = getOffsetForIANA(now, iana);
-  return `${abbreviation} ${offset} ${iana}`;
+
+  return {
+    abbreviation,
+    offset: `GMT ${offset}`,
+    iana,
+  };
 }
 
 export function getDateMonthYearForTimezone(date: Date, timezone: string) {

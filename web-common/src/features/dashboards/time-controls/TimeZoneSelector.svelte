@@ -1,77 +1,118 @@
 <script lang="ts">
-  import IconSpaceFixer from "@rilldata/web-common/components/button/IconSpaceFixer.svelte";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import WithSelectMenu from "@rilldata/web-common/components/menu/wrappers/WithSelectMenu.svelte";
   import { createEventDispatcher } from "svelte";
   import { useDashboardStore } from "../dashboard-stores";
   import {
     getAbbreviationForIANA,
     getLabelForIANA,
+    getLocalIANA,
   } from "@rilldata/web-common/lib/time/timezone";
   import Globe from "@rilldata/web-common/components/icons/Globe.svelte";
+  import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
+  import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import SelectorButton from "@rilldata/web-common/features/dashboards/time-controls/SelectorButton.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import {
+    Divider,
+    Menu,
+    MenuItem,
+  } from "@rilldata/web-common/components/menu";
 
   export let metricViewName: string;
+  // now indicates the latest reference point in the dashboard
   export let now: Date;
-
   export let timeZoneOptions = [
-    {
-      label: getLabelForIANA(now, "Etc/UTC"),
-      zoneIANA: "Etc/UTC",
-    },
-    { label: getLabelForIANA(now, "Asia/Kolkata"), zoneIANA: "Asia/Kolkata" },
-    {
-      label: getLabelForIANA(now, "America/Los_Angeles"),
-      zoneIANA: "America/Los_Angeles",
-    },
+    "Asia/Kolkata",
+    "America/Los_Angeles",
+    "America/New_York",
+    "Europe/London",
+    "Europe/Paris",
+    "Australia/Sydney",
   ];
 
   const dispatch = createEventDispatcher();
+  const userLocalIANA = getLocalIANA();
+  const UTCIana = "Etc/UTC";
 
   $: dashboardStore = useDashboardStore(metricViewName);
   $: activeTimeZone = $dashboardStore?.selectedTimezone;
 
-  $: timeZoneOptions = timeZoneOptions.map((option) => ({
-    ...option,
-    key: option.zoneIANA,
-    main: option.label,
-  }));
+  // Filter out user time zone and UTC
+  $: timeZoneOptions = timeZoneOptions.filter(
+    (tz) => tz !== userLocalIANA && tz !== UTCIana
+  );
+
+  // Add local and utc time zone to the top of the list
+  $: timeZoneOptions = [userLocalIANA, UTCIana, ...timeZoneOptions];
 
   const onTimeZoneSelect = (timeZone: string) => {
     dispatch("select-time-zone", { timeZone });
   };
 </script>
 
-{#if activeTimeZone && timeZoneOptions}
-  <WithSelectMenu
-    paddingTop={1}
-    paddingBottom={1}
-    minWidth="160px"
+{#if activeTimeZone}
+  <WithTogglableFloatingElement
+    alignment="start"
     distance={8}
-    options={timeZoneOptions}
-    selection={{
-      main: getLabelForIANA(now, activeTimeZone),
-      key: activeTimeZone,
-    }}
-    on:select={(event) => onTimeZoneSelect(event.detail.key)}
-    let:toggleMenu
+    let:toggleFloatingElement
     let:active
   >
-    <button
-      class:bg-gray-200={active}
-      class="px-3 py-2 rounded flex flex-row gap-x-2 items-center hover:bg-gray-200 hover:dark:bg-gray-600"
-      on:click={toggleMenu}
-    >
-      <div class="flex items-center gap-x-2">
-        <Globe />
-        <span class="font-bold"
-          >{getAbbreviationForIANA(now, activeTimeZone)}</span
-        >
-      </div>
-      <IconSpaceFixer pullRight>
-        <div class="transition-transform" class:-rotate-180={active}>
-          <CaretDownIcon size="14px" />
+    <Tooltip distance={8} suppress={active}>
+      <SelectorButton
+        {active}
+        on:click={() => {
+          toggleFloatingElement();
+        }}
+      >
+        <div class="flex items-center gap-x-2">
+          <Globe />
+          <span class="font-bold"
+            >{getAbbreviationForIANA(now, activeTimeZone)}</span
+          >
         </div>
-      </IconSpaceFixer>
-    </button>
-  </WithSelectMenu>
+      </SelectorButton>
+      <TooltipContent slot="tooltip-content" maxWidth="220px">
+        Select a time zone
+      </TooltipContent>
+    </Tooltip>
+    <Menu
+      slot="floating-element"
+      on:escape={toggleFloatingElement}
+      label="Timezone selector"
+      minWidth="320px"
+    >
+      {#each timeZoneOptions as option}
+        {@const label = getLabelForIANA(now, option)}
+        <MenuItem
+          icon
+          selected={activeTimeZone === option}
+          on:select={() => {
+            onTimeZoneSelect(option);
+            toggleFloatingElement();
+          }}
+        >
+          <svelte:fragment slot="icon">
+            {#if option === activeTimeZone}
+              <Check size="20px" color="#15141A" />
+            {:else}
+              <Spacer size="20px" />
+            {/if}
+          </svelte:fragment>
+          <span>
+            <span class="inline-block font-bold w-9">
+              {label.abbreviation}
+            </span>
+            <span class="inline-block italic w-20">
+              {label.offset}
+            </span>
+            {label.iana}
+          </span>
+        </MenuItem>
+        {#if option === UTCIana}
+          <Divider />
+        {/if}
+      {/each}
+    </Menu>
+  </WithTogglableFloatingElement>
 {/if}
