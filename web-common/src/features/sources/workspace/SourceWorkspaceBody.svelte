@@ -47,7 +47,7 @@
   style:height="100vh"
 >
   <div class="p-4">
-    <SourceEditor {yaml} {sourceName} on:update />
+    <SourceEditor {yaml} on:update />
   </div>
   {#if !runtimeErrors || runtimeErrors.length === 0}
     <div

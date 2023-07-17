@@ -6,7 +6,6 @@
   import { useSourceStore } from "../sources-store";
 
   export let yaml: string;
-  export let sourceName: string;
 
   let editor: YAMLEditor;
   let view: EditorView;
