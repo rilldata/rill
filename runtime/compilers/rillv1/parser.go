@@ -193,7 +193,7 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	seenPaths := make(map[string]bool) // Paths already visited by the loop
 	for i := 0; i < len(checkPaths); i++ {
 		// Don't check the same path twice
-		path := checkPaths[i]
+		path := normalizePath(checkPaths[i])
 		if seenPaths[path] {
 			continue
 		}
@@ -509,6 +509,25 @@ func (p *Parser) addParseError(path string, err error) {
 	})
 }
 
+// normalizePath normalizes a user-provided path to the format returned from ListRecursive.
+// TODO: Change this once ListRecursive returns paths without leading slash.
+func normalizePath(path string) string {
+	if path != "" && path[0] != '/' {
+		return "/" + path
+	}
+	return path
+}
+
+// pathStem returns a slice of the path without the final file extension.
+// If the path does not contain a file extension, the entire path is returned.f
+func pathStem(path string) string {
+	i := strings.LastIndexByte(path, '.')
+	if i == -1 {
+		return path
+	}
+	return path[:i]
+}
+
 // locationError wraps an error with source file character location information
 type locationError struct {
 	err      error
@@ -535,16 +554,6 @@ func (e pathError) Error() string {
 
 func (e pathError) Unwrap() error {
 	return e.err
-}
-
-// pathStem returns a slice of the path without the final file extension.
-// If the path does not contain a file extension, the entire path is returned.f
-func pathStem(path string) string {
-	i := strings.LastIndexByte(path, '.')
-	if i == -1 {
-		return path
-	}
-	return path[:i]
 }
 
 // yamlErrLineRegexp matches the line number in a YAML error

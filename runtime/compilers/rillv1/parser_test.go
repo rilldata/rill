@@ -2,6 +2,7 @@ package rillv1
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -319,14 +320,83 @@ SELECT * FROM bar
 		Modified: []ResourceName{m1.Name},
 	}, diff)
 
+	// Add a syntax error in the source
+	putRepo(t, repo, map[string]string{
+		`sources/s1.yaml`: `
+connector: s3
+path: hello
+  world: path
+`,
+	})
+	diff, err = p.Reparse(ctx, s1.Paths)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{m1}, []*runtimev1.ParseError{{
+		Message:       "mapping values are not allowed in this context", // note: approximate string match
+		FilePath:      "/sources/s1.yaml",
+		StartLocation: &runtimev1.CharLocation{Line: 4},
+	}})
+	require.Equal(t, &Diff{
+		Deleted: []ResourceName{s1.Name},
+	}, diff)
+
 	// Delete the source
 	deleteRepo(t, repo, s1.Paths[0])
 	diff, err = p.Reparse(ctx, s1.Paths)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{m1}, nil)
-	require.Equal(t, &Diff{
-		Deleted: []ResourceName{s1.Name},
-	}, diff)
+	require.Equal(t, &Diff{}, diff)
+}
+
+func BenchmarkReparse(b *testing.B) {
+	ctx := context.Background()
+	truth := true
+	files := map[string]string{
+		// rill.yaml
+		`rill.yaml`: ``,
+		// model m1
+		`models/m1.sql`: `
+SELECT 1
+`,
+		// model m2
+		`models/m2.sql`: `
+SELECT * FROM m1
+`,
+		`models/m2.yaml`: `
+materialize: true
+`,
+	}
+	resources := []*Resource{
+		// m1
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+			Paths: []string{"/models/m1.sql"},
+			ModelSpec: &runtimev1.ModelSpec{
+				Sql: strings.TrimSpace(files["models/m1.sql"]),
+			},
+		},
+		// m2
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "m2"},
+			Refs:  []ResourceName{{Name: "m1"}},
+			Paths: []string{"/models/m2.sql", "/models/m2.yaml"},
+			ModelSpec: &runtimev1.ModelSpec{
+				Sql:         strings.TrimSpace(files["models/m2.sql"]),
+				Materialize: &truth,
+			},
+		},
+	}
+	repo := makeRepo(b, files)
+	p, err := Parse(ctx, repo, "", []string{""})
+	require.NoError(b, err)
+	requireResourcesAndErrors(b, p, resources, nil)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		files[`models/m2.sql`] = fmt.Sprintf(`SELECT * FROM m1 LIMIT %d`, i)
+		_, err = p.Reparse(ctx, []string{`models/m2.sql`})
+		require.NoError(b, err)
+		require.Empty(b, p.Errors)
+	}
 }
 
 func TestEmbeddedSources(t *testing.T) {
@@ -394,7 +464,7 @@ SELECT * FROM m2
 	require.ElementsMatch(t, []ResourceName{m1.Name}, diff.Deleted)
 }
 
-func requireResourcesAndErrors(t *testing.T, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {
+func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {
 	// Check resources
 	gotResources := maps.Clone(p.Resources)
 	for _, want := range wantResources {
@@ -446,7 +516,7 @@ func requireResourcesAndErrors(t *testing.T, p *Parser, wantResources []*Resourc
 	}
 }
 
-func makeRepo(t *testing.T, files map[string]string) drivers.RepoStore {
+func makeRepo(t testing.TB, files map[string]string) drivers.RepoStore {
 	root := t.TempDir()
 	handle, err := drivers.Open("file", root, zap.NewNop())
 	require.NoError(t, err)
@@ -459,14 +529,14 @@ func makeRepo(t *testing.T, files map[string]string) drivers.RepoStore {
 	return repo
 }
 
-func putRepo(t *testing.T, repo drivers.RepoStore, files map[string]string) {
+func putRepo(t testing.TB, repo drivers.RepoStore, files map[string]string) {
 	for path, data := range files {
 		err := repo.Put(context.Background(), "", path, strings.NewReader(data))
 		require.NoError(t, err)
 	}
 }
 
-func deleteRepo(t *testing.T, repo drivers.RepoStore, files ...string) {
+func deleteRepo(t testing.TB, repo drivers.RepoStore, files ...string) {
 	for _, path := range files {
 		err := repo.Delete(context.Background(), "", path)
 		require.NoError(t, err)
