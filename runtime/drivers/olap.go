@@ -7,7 +7,6 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/connectors"
 )
 
 // ErrUnsupportedConnector is returned from Ingest for unsupported connectors.
@@ -24,7 +23,6 @@ type OLAPStore interface {
 	WithConnection(ctx context.Context, priority int, fn WithConnectionFunc) error
 	Exec(ctx context.Context, stmt *Statement) error
 	Execute(ctx context.Context, stmt *Statement) (*Result, error)
-	Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) (*IngestionSummary, error)
 	InformationSchema() InformationSchema
 	EstimateSize() (int64, bool)
 }

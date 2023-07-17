@@ -12,18 +12,50 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/duckdb/transporter"
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
 )
 
 func init() {
-	drivers.Register("duckdb", Driver{})
+	drivers.Register("duckdb", Driver{name: "duckdb"})
+	drivers.Register("motherduck", Driver{name: "motherduck"})
+	drivers.RegisterAsConnector("motherduck", Driver{name: "motherduck"})
 }
 
-type Driver struct{}
+// spec for duckdb as motherduck connector
+var spec = drivers.Spec{
+	DisplayName: "MotherDuck",
+	Description: "Import data from MotherDuck.",
+	SourceProperties: []drivers.PropertySchema{
+		{
+			Key:         "query",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "Query",
+			Description: "Query to extract data from MotherDuck.",
+			Placeholder: "select * from my_db.my_table;",
+		},
+	},
+	ConfigProperties: []drivers.PropertySchema{
+		{
+			Key:    "token",
+			Secret: true,
+		},
+	},
+}
 
-func (d Driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error) {
+type Driver struct {
+	name string
+}
+
+func (d Driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connection, error) {
+	dsn, ok := config["dsn"].(string)
+	if !ok {
+		return nil, fmt.Errorf("require dsn to open duckdb connection")
+	}
+
 	cfg, err := newConfig(dsn)
 	if err != nil {
 		return nil, err
@@ -36,11 +68,13 @@ func (d Driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 	}
 
 	c := &connection{
-		config:  cfg,
-		logger:  logger,
-		metaSem: semaphore.NewWeighted(1),
-		olapSem: priorityqueue.NewSemaphore(olapSemSize),
-		dbCond:  sync.NewCond(&sync.Mutex{}),
+		config:       cfg,
+		logger:       logger,
+		metaSem:      semaphore.NewWeighted(1),
+		olapSem:      priorityqueue.NewSemaphore(olapSemSize),
+		dbCond:       sync.NewCond(&sync.Mutex{}),
+		driverConfig: config,
+		driverName:   d.name,
 	}
 
 	// Open the DB
@@ -63,7 +97,12 @@ func (d Driver) Open(dsn string, logger *zap.Logger) (drivers.Connection, error)
 	return c, nil
 }
 
-func (d Driver) Drop(dsn string, logger *zap.Logger) error {
+func (d Driver) Drop(config map[string]any, logger *zap.Logger) error {
+	dsn, ok := config["dsn"].(string)
+	if !ok {
+		return fmt.Errorf("require dsn to drop duckdb connection")
+	}
+
 	cfg, err := newConfig(dsn)
 	if err != nil {
 		return err
@@ -81,8 +120,20 @@ func (d Driver) Drop(dsn string, logger *zap.Logger) error {
 	return nil
 }
 
+func (d Driver) Spec() drivers.Spec {
+	return spec
+}
+
+func (d Driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
+	return false, nil
+}
+
 type connection struct {
-	db     *sqlx.DB
+	db *sqlx.DB
+	// driverConfig is input config passed during Open
+	driverConfig map[string]any
+	driverName   string
+	// config is parsed configs
 	config *config
 	logger *zap.Logger
 	// This driver may issue both OLAP and "meta" queries (like catalog info) against DuckDB.
@@ -103,29 +154,65 @@ type connection struct {
 	dbErr       error
 }
 
+// Driver implements drivers.Connection.
+func (c *connection) Driver() string {
+	return c.driverName
+}
+
+// Config used to open the Connection
+func (c *connection) Config() map[string]any {
+	return c.driverConfig
+}
+
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
 	return c.db.Close()
 }
 
-// RegistryStore Registry implements drivers.Connection.
-func (c *connection) RegistryStore() (drivers.RegistryStore, bool) {
+// AsRegistry Registry implements drivers.Connection.
+func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
-// CatalogStore Catalog implements drivers.Connection.
-func (c *connection) CatalogStore() (drivers.CatalogStore, bool) {
+// AsCatalogStore Catalog implements drivers.Connection.
+func (c *connection) AsCatalogStore() (drivers.CatalogStore, bool) {
 	return c, true
 }
 
-// RepoStore Repo implements drivers.Connection.
-func (c *connection) RepoStore() (drivers.RepoStore, bool) {
+// AsRepoStore Repo implements drivers.Connection.
+func (c *connection) AsRepoStore() (drivers.RepoStore, bool) {
 	return nil, false
 }
 
-// OLAPStore OLAP implements drivers.Connection.
-func (c *connection) OLAPStore() (drivers.OLAPStore, bool) {
+// AsOLAP OLAP implements drivers.Connection.
+func (c *connection) AsOLAP() (drivers.OLAPStore, bool) {
 	return c, true
+}
+
+// AsObjectStore implements drivers.Connection.
+func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
+	return nil, false
+}
+
+// AsTransporter implements drivers.Connection.
+func (c *connection) AsTransporter(from, to drivers.Connection) (drivers.Transporter, bool) {
+	olap, _ := to.AsOLAP()
+	if c == to {
+		if from.Driver() == "motherduck" {
+			return transporter.NewMotherduckToDuckDB(from, olap, c.logger), true
+		}
+		if store, ok := from.AsObjectStore(); ok { // objectstore to duckdb transfer
+			return transporter.NewObjectStoreToDuckDB(store, olap, c.logger), true
+		}
+		if store, ok := from.AsFileStore(); ok {
+			return transporter.NewFileStoreToDuckDB(store, olap, c.logger), true
+		}
+	}
+	return nil, false
+}
+
+func (c *connection) AsFileStore() (drivers.FileStore, bool) {
+	return nil, false
 }
 
 // reopenDB opens the DuckDB handle anew. If c.db is already set, it closes the existing handle first.

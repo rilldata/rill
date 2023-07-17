@@ -31,7 +31,8 @@ see more button
 
   export let values;
   export let comparisonValues;
-  export let showComparison = false;
+  export let showTimeComparison = false;
+  export let showPercentOfTotal = false;
 
   export let activeValues: Array<unknown>;
   // false = include, true = exclude
@@ -47,10 +48,17 @@ see more button
   const dispatch = createEventDispatcher();
   let renderValues = [];
 
-  $: comparsionMap = new Map(comparisonValues?.map((v) => [v.label, v.value]));
+  $: showComparison = showTimeComparison || showPercentOfTotal;
+
+  $: comparisonMap = new Map(comparisonValues?.map((v) => [v.label, v.value]));
+
+  // FIXME: in no world should it be the responsibility of this component to
+  // merge `values` and `comparisonValues` and `activeValues`. This should be
+  // done somewhere upstream -- ideally, not in a component at all, but given
+  // the current architecture, it should at least happen in the parent component.
   $: renderValues = values.map((v) => {
     const active = activeValues.findIndex((value) => value === v.label) >= 0;
-    const comparisonValue = comparsionMap.get(v.label);
+    const comparisonValue = comparisonMap.get(v.label);
 
     // Super important special case: if there is not at least one "active" (selected) value,
     // we need to set *all* items to be included, because by default if a user has not
@@ -59,31 +67,69 @@ see more button
       ? (filterExcludeMode && active) || (!filterExcludeMode && !active)
       : false;
 
-    return { ...v, active, excluded, comparisonValue };
+    // FIXME: `showComparisonForThisValue` should not be the responsibility
+    // of this component; the handling of the on:mouseenter/on:mouseleave
+    // events should be done in each individual DimensionLeaderboardEntry
+    const showComparisonForThisValue = comparisonLabelToReveal === v.label;
+
+    const previousValueString: string | undefined =
+      showComparisonForThisValue &&
+      comparisonValue !== undefined &&
+      comparisonValue !== null
+        ? humanizeDataType(comparisonValue, formatPreset)
+        : undefined;
+
+    const percentChangeFormatted = showTimeComparison
+      ? getFormatterValueForPercDiff(
+          v.value && comparisonValue ? v.value - comparisonValue : null,
+          comparisonValue
+        )
+      : showPercentOfTotal
+      ? getFormatterValueForPercDiff(v.value, referenceValue)
+      : undefined;
+
+    return {
+      ...v,
+      active,
+      excluded,
+      comparisonValue,
+      formattedValue: humanizeDataType(v.value, formatPreset),
+      previousValueString,
+      percentChangeFormatted,
+    };
   });
 
   let comparisonLabelToReveal = undefined;
   function revealComparisonNumber(value) {
     return () => {
-      if (showComparison) comparisonLabelToReveal = value;
+      if (showTimeComparison) comparisonLabelToReveal = value;
     };
   }
 
-  function getFormatterValueForPercDiff(comparisonValue, value) {
-    if (comparisonValue === 0) return PERC_DIFF.PREV_VALUE_ZERO;
-    if (!comparisonValue) return PERC_DIFF.PREV_VALUE_NO_DATA;
-    if (value === null || value === undefined)
+  function getFormatterValueForPercDiff(numerator, denominator) {
+    if (denominator === 0) return PERC_DIFF.PREV_VALUE_ZERO;
+    if (!denominator) return PERC_DIFF.PREV_VALUE_NO_DATA;
+    if (numerator === null || numerator === undefined)
       return PERC_DIFF.CURRENT_VALUE_NO_DATA;
 
-    const percDiff = (value - comparisonValue) / comparisonValue;
+    const percDiff = numerator / denominator;
     return formatMeasurePercentageDifference(percDiff);
+  }
+
+  async function shiftClickHandler(label) {
+    await navigator.clipboard.writeText(label);
+    let truncatedLabel = label?.toString();
+    if (truncatedLabel?.length > TOOLTIP_STRING_LIMIT) {
+      truncatedLabel = `${truncatedLabel.slice(0, TOOLTIP_STRING_LIMIT)}...`;
+    }
+    notifications.send({
+      message: `copied dimension value "${truncatedLabel}" to clipboard`,
+    });
   }
 </script>
 
-{#each renderValues as { label, value, active, excluded, comparisonValue } (label)}
-  {@const formattedValue = humanizeDataType(value, formatPreset)}
-  {@const showComparisonForThisValue = comparisonLabelToReveal === label}
-
+{#each renderValues as { label, value, active, excluded, percentChangeFormatted, formattedValue, previousValueString } (label)}
+  <!-- FIXME: this wrapper div is almost certainly not required. All of this functionality should be able to be handled in DimensionLeaderboardEntry -->
   <div
     use:shiftClickAction
     on:click={() => {
@@ -94,16 +140,7 @@ see more button
     on:mouseenter={revealComparisonNumber(label)}
     on:mouseleave={revealComparisonNumber(undefined)}
     on:keydown
-    on:shift-click={async () => {
-      await navigator.clipboard.writeText(label);
-      let truncatedLabel = label?.toString();
-      if (truncatedLabel?.length > TOOLTIP_STRING_LIMIT) {
-        truncatedLabel = `${truncatedLabel.slice(0, TOOLTIP_STRING_LIMIT)}...`;
-      }
-      notifications.send({
-        message: `copied dimension value "${truncatedLabel}" to clipboard`,
-      });
-    }}
+    on:shift-click={() => shiftClickHandler(label)}
   >
     <DimensionLeaderboardEntry
       measureValue={value}
@@ -119,21 +156,21 @@ see more button
         <FormattedDataType value={label} />
       </svelte:fragment>
       <div slot="right" class="flex items-baseline gap-x-1">
-        {#if showComparisonForThisValue && comparisonValue !== undefined && comparisonValue !== null}
+        {#if previousValueString}
           <span
             class="inline-block opacity-50"
             transition:slideRight={{ duration: LIST_SLIDE_DURATION }}
           >
-            {humanizeDataType(comparisonValue, formatPreset)}
+            {previousValueString}
             →
           </span>
         {/if}
         <FormattedDataType type="INTEGER" value={formattedValue || value} />
       </div>
       <span slot="context">
-        <PercentageChange
-          value={getFormatterValueForPercDiff(comparisonValue, value)}
-        />
+        {#if showTimeComparison || showPercentOfTotal}
+          <PercentageChange value={percentChangeFormatted} />
+        {/if}
       </span>
       <svelte:fragment slot="tooltip">
         <TooltipTitle>

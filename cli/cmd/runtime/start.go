@@ -21,15 +21,14 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	// Load infra drivers and connectors for runtime
-	_ "github.com/rilldata/rill/runtime/connectors/gcs"
-	_ "github.com/rilldata/rill/runtime/connectors/https"
-	_ "github.com/rilldata/rill/runtime/connectors/motherduck"
-	_ "github.com/rilldata/rill/runtime/connectors/s3"
 	_ "github.com/rilldata/rill/runtime/drivers/druid"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
+	_ "github.com/rilldata/rill/runtime/drivers/gcs"
 	_ "github.com/rilldata/rill/runtime/drivers/github"
+	_ "github.com/rilldata/rill/runtime/drivers/https"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
+	_ "github.com/rilldata/rill/runtime/drivers/s3"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 )
 
@@ -48,6 +47,7 @@ type Config struct {
 	AuthEnable          bool                   `default:"false" split_words:"true"`
 	AuthIssuerURL       string                 `default:"" split_words:"true"`
 	AuthAudienceURL     string                 `default:"" split_words:"true"`
+	DownloadRowLimit    int64                  `default:"10000" split_words:"true"`
 	SafeSourceRefresh   bool                   `default:"false" split_words:"true"`
 	ConnectionCacheSize int                    `default:"100" split_words:"true"`
 	QueryCacheSizeBytes int64                  `default:"104857600" split_words:"true"` // 100MB by default
@@ -136,13 +136,14 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 
 			// Init server
 			srvOpts := &server.Options{
-				HTTPPort:        conf.HTTPPort,
-				GRPCPort:        conf.GRPCPort,
-				AllowedOrigins:  conf.AllowedOrigins,
-				ServePrometheus: conf.MetricsExporter == observability.PrometheusExporter,
-				AuthEnable:      conf.AuthEnable,
-				AuthIssuerURL:   conf.AuthIssuerURL,
-				AuthAudienceURL: conf.AuthAudienceURL,
+				HTTPPort:         conf.HTTPPort,
+				GRPCPort:         conf.GRPCPort,
+				AllowedOrigins:   conf.AllowedOrigins,
+				ServePrometheus:  conf.MetricsExporter == observability.PrometheusExporter,
+				AuthEnable:       conf.AuthEnable,
+				AuthIssuerURL:    conf.AuthIssuerURL,
+				AuthAudienceURL:  conf.AuthAudienceURL,
+				DownloadRowLimit: &conf.DownloadRowLimit,
 			}
 			s, err := server.NewServer(ctx, srvOpts, rt, logger, limiter)
 			if err != nil {

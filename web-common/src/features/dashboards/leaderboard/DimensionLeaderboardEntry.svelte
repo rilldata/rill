@@ -1,4 +1,7 @@
 <script lang="ts">
+  // FIXME: there is really no need for both this component and
+  // LeaderboardListItem to exist, they do the same job, and this
+  // component really just forwards slots and props to LeaderboardListItem.
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { fly } from "svelte/transition";

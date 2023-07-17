@@ -11,7 +11,7 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/bmatcuk/doublestar/v4"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/connectors"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
@@ -48,6 +48,8 @@ type blobIterator struct {
 	opts    *Options
 	logger  *zap.Logger
 }
+
+var _ drivers.FileIterator = &blobIterator{}
 
 type Options struct {
 	GlobMaxTotalSize      int64
@@ -89,9 +91,6 @@ func (opts *Options) validateLimits(size int64, matchCount int, fetched int64) e
 	if fetched > opts.GlobMaxObjectsListed {
 		return fmt.Errorf("glob pattern exceeds limits: listed more than %d files", opts.GlobMaxObjectsListed)
 	}
-	if size > opts.StorageLimitInBytes {
-		return connectors.ErrIngestionLimitExceeded
-	}
 	return nil
 }
 
@@ -99,7 +98,7 @@ func (opts *Options) validateLimits(size int64, matchCount int, fetched int64) e
 // the iterator keeps list of blob objects eagerly planned as per user's glob pattern and extract policies
 // clients should call close once done to release all resources like closing the bucket
 // the iterator takes responsibility of closing the bucket
-func NewIterator(ctx context.Context, bucket *blob.Bucket, opts Options, l *zap.Logger) (connectors.FileIterator, error) {
+func NewIterator(ctx context.Context, bucket *blob.Bucket, opts Options, l *zap.Logger) (drivers.FileIterator, error) {
 	opts.validate()
 
 	it := &blobIterator{
@@ -194,7 +193,7 @@ func (it *blobIterator) NextBatch(n int) ([]string, error) {
 
 				duration := time.Since(startTime)
 				it.logger.Info("download complete", zap.String("object", obj.obj.Key), zap.Duration("duration", duration), observability.ZapCtx(it.ctx))
-				connectors.RecordDownloadMetrics(grpCtx, &connectors.DownloadMetrics{
+				drivers.RecordDownloadMetrics(grpCtx, &drivers.DownloadMetrics{
 					Connector: "blob",
 					Ext:       ext,
 					Partial:   !downloadFull,
@@ -232,6 +231,26 @@ func (it *blobIterator) NextBatch(n int) ([]string, error) {
 	// creating a copy since we want to delete all these files on next batch/close
 	copy(result, it.localFiles)
 	return result, nil
+}
+
+func (it *blobIterator) Size(unit drivers.ProgressUnit) (int64, bool) {
+	switch unit {
+	case drivers.ProgressUnitByte:
+		var size int64
+		for _, obj := range it.objects {
+			if obj.full {
+				size += obj.obj.Size
+			} else {
+				// TODO :: make it more accurate considering more data can be downloaded
+				size += int64(obj.extractOption.limitInBytes)
+			}
+		}
+		return size, true
+	case drivers.ProgressUnitFile:
+		return int64(len(it.objects)), true
+	default:
+		return 0, false
+	}
 }
 
 // todo :: ideally planner should take ownership of the bucket and return an iterator with next returning objectWithPlan

@@ -8,7 +8,6 @@ import (
 
 	"cloud.google.com/go/storage"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/connectors"
 	"gocloud.dev/blob"
 	"gocloud.dev/blob/gcsblob"
 	"golang.org/x/oauth2/google"
@@ -17,8 +16,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (c Connector) ListBuckets(ctx context.Context, req *runtimev1.GCSListBucketsRequest, env *connectors.Env) ([]string, string, error) {
-	credentials, err := resolvedCredentials(ctx, env)
+func (c *Connection) ListBuckets(ctx context.Context, req *runtimev1.GCSListBucketsRequest) ([]string, string, error) {
+	credentials, err := c.resolvedCredentials(ctx)
 	if err != nil {
 		return nil, "", err
 	}
@@ -52,8 +51,8 @@ func (c Connector) ListBuckets(ctx context.Context, req *runtimev1.GCSListBucket
 	return names, next, nil
 }
 
-func (c Connector) ListObjects(ctx context.Context, req *runtimev1.GCSListObjectsRequest, env *connectors.Env) ([]*runtimev1.GCSObject, string, error) {
-	client, err := createClient(ctx, env)
+func (c *Connection) ListObjects(ctx context.Context, req *runtimev1.GCSListObjectsRequest) ([]*runtimev1.GCSObject, string, error) {
+	client, err := c.createClient(ctx)
 	if err != nil {
 		return nil, "", err
 	}
@@ -106,8 +105,8 @@ func (c Connector) ListObjects(ctx context.Context, req *runtimev1.GCSListObject
 	return gcsObjects, string(nextToken), nil
 }
 
-func (c Connector) GetCredentialsInfo(ctx context.Context, env *connectors.Env) (string, bool, error) {
-	creds, err := resolvedCredentials(ctx, env)
+func (c *Connection) GetCredentialsInfo(ctx context.Context) (string, bool, error) {
+	creds, err := c.resolvedCredentials(ctx)
 	if err != nil {
 		if errors.Is(err, errNoCredentials) {
 			return "", false, nil

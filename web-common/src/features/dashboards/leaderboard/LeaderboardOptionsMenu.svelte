@@ -20,13 +20,12 @@
   let:toggleFloatingElement
 >
   <IconButton
-    marginClasses="ml-3"
     on:click={(e) => {
       e.stopPropagation();
       toggleFloatingElement();
     }}
   >
-    <Tooltip location="right" distance={8} suppress={optionsMenuActive}>
+    <Tooltip location="left" distance={8} suppress={optionsMenuActive}>
       <MoreIcon />
       <TooltipContent slot="tooltip-content">Leaderboard options</TooltipContent
       >
