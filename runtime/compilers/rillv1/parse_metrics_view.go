@@ -13,7 +13,7 @@ import (
 
 // metricsViewYAML is the raw structure of a MetricsView resource defined in YAML
 type metricsViewYAML struct {
-	commonYAML         `yaml:",inline"` // Only to use KnownFields
+	commonYAML         `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
 	Title              string           `yaml:"title"`
 	DisplayName        string           `yaml:"display_name"` // Backwards compatibility
 	Description        string           `yaml:"description"`

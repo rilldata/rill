@@ -148,6 +148,15 @@ func (p *Parser) parseStem(ctx context.Context, paths []string, ymlPath, yml, sq
 		for k, v := range commentAnnotations {
 			res.SQLAnnotations[k] = v
 		}
+
+		// Expand dots in annotations. E.g. turn annotations["foo.bar"] into annotations["foo"]["bar"].
+		res.SQLAnnotations, err = expandAnnotations(res.SQLAnnotations, "")
+		if err != nil {
+			if sqlPath != "" {
+				return nil, pathError{path: sqlPath, err: err}
+			}
+			return nil, pathError{path: ymlPath, err: err}
+		}
 	}
 
 	// Some annotations in the SQL file can override the base config: kind, name, connector
@@ -283,4 +292,50 @@ func mapstructureUnmarshal(annotations map[string]any, dst any) error {
 		panic(err)
 	}
 	return decoder.Decode(annotations)
+}
+
+// expandAnnotations turns annotations with dots in their key into nested maps.
+// For example, annotations["foo.bar"] becomes annotations["foo"]["bar"].
+func expandAnnotations(annotations map[string]any, prefix string) (map[string]any, error) {
+	if len(annotations) == 0 {
+		return nil, nil
+	}
+	res := make(map[string]any)
+	for k, v := range annotations {
+		parts := strings.Split(k, ".")
+		if len(parts) < 2 {
+			res[k] = v
+			continue
+		}
+
+		m := res
+		for i := 0; i < len(parts)-1; i++ {
+			part := parts[i]
+
+			// Check if a map already exists for this part; if yes, assign to m
+			x, ok := m[part]
+			if ok {
+				m, ok = x.(map[string]any)
+				if !ok {
+					return nil, fmt.Errorf("invalid annotation %q: nesting incompatible with other keys", k)
+				}
+				continue
+			}
+
+			// Create a map for this part, then update m
+			tmp := make(map[string]any)
+			m[part] = tmp
+			m = tmp
+		}
+
+		// Check the last part of this key isn't an intermediate part of a previously expanded key
+		k2 := parts[len(parts)-1]
+		if _, ok := m[k2]; ok {
+			return nil, fmt.Errorf("invalid annotation2 %q: nesting incompatible with other keys", k)
+		}
+
+		// Assign the value to the last part
+		m[k2] = v
+	}
+	return res, nil
 }

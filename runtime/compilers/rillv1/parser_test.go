@@ -68,7 +68,8 @@ path: hello
 `,
 		// source s2
 		`sources/s2.sql`: `
-{{ configure "connector" "postgres" }}
+-- @connector: postgres
+-- @refresh.cron: 0 0 * * *
 SELECT 1
 `,
 		// model m1
@@ -133,6 +134,7 @@ SELECT * FROM {{ ref "m2" }}
 			SourceSpec: &runtimev1.SourceSpec{
 				SourceConnector: "postgres",
 				Properties:      must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["sources/s2.sql"])})),
+				RefreshSchedule: &runtimev1.Schedule{Cron: "0 0 * * *"},
 			},
 		},
 		// model m1
