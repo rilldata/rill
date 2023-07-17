@@ -11,7 +11,7 @@ import {
 import {
   isColumnProfilingQuery,
   isProfilingQuery,
-  isTopLevelProfilingQuery,
+  isTableProfilingQuery,
 } from "@rilldata/web-common/runtime-client/query-matcher";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
@@ -144,7 +144,7 @@ export async function invalidateProfilingQueries(
   });
 
   await queryClient.invalidateQueries({
-    predicate: (query) => isTopLevelProfilingQuery(query, name),
+    predicate: (query) => isTableProfilingQuery(query, name),
     type: "active",
   });
 }

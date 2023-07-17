@@ -21,7 +21,8 @@ export enum QueryRequestType {
   TableRows = "rows",
 }
 
-const TopLevelProfilingQuery: Partial<Record<QueryRequestType, boolean>> = {
+const TableProfilingQuery: Partial<Record<QueryRequestType, boolean>> = {
+  [QueryRequestType.TableCardinality]: true,
   [QueryRequestType.TableColumns]: true,
   [QueryRequestType.TableRows]: true,
 };
@@ -37,12 +38,12 @@ export function isProfilingQuery(query: Query, name: string): boolean {
   return table === name;
 }
 
-export function isTopLevelProfilingQuery(query: Query, name: string): boolean {
+export function isTableProfilingQuery(query: Query, name: string): boolean {
   const queryExtractorMatch = ProfilingQueryExtractor.exec(query.queryHash);
   if (!queryExtractorMatch) return false;
 
   const [, type, table] = queryExtractorMatch;
-  return table === name && type in TopLevelProfilingQuery;
+  return table === name && type in TableProfilingQuery;
 }
 
 export function isColumnProfilingQuery(query: Query, name: string) {
@@ -50,5 +51,5 @@ export function isColumnProfilingQuery(query: Query, name: string) {
   if (!queryExtractorMatch) return false;
 
   const [, type, table] = queryExtractorMatch;
-  return table === name && !(type in TopLevelProfilingQuery);
+  return table === name && !(type in TableProfilingQuery);
 }
