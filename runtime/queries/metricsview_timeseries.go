@@ -240,12 +240,17 @@ func (q *MetricsViewTimeSeries) buildDruidMetricsTimeseriesSQL(mv *runtimev1.Met
 	}
 
 	tsAlias := tempName("_ts_")
-	tsSpecifier := convertToDateTruncSpecifier(q.TimeGranularity)
+	tsSpecifier := convertToTimeFloorSpecifier(q.TimeGranularity)
 
+	timezone := "UTC"
+	if q.TimeZone != "" {
+		timezone = q.TimeZone
+	}
 	sql := fmt.Sprintf(
-		`SELECT date_trunc('%s', %s) AS %s, %s FROM %q WHERE %s GROUP BY 1 ORDER BY 1`,
-		tsSpecifier,
+		`SELECT time_floor(%s, '%s', null, '%s') AS %s, %s FROM %q WHERE %s GROUP BY 1 ORDER BY 1`,
 		safeName(mv.TimeDimension),
+		tsSpecifier,
+		timezone,
 		tsAlias,
 		strings.Join(selectCols, ", "),
 		mv.Model,
