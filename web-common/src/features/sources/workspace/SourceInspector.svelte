@@ -105,11 +105,9 @@
   );
 
   let summaries: Readable<Array<ColumnSummary>>;
-  $: summaries = getSummaries(
-    sourceName,
-    $runtime?.instanceId,
-    $profileColumns?.data?.profileColumns
-  );
+  $: if ($profileColumns?.data?.profileColumns) {
+    summaries = getSummaries(sourceName, $runtime?.instanceId, $profileColumns);
+  }
 
   let totalNulls = undefined;
 
