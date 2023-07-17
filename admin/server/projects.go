@@ -765,6 +765,7 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		Subpath:          p.Subpath,
 		GithubUrl:        safeStr(p.GithubURL),
 		ProdDeploymentId: safeStr(p.ProdDeploymentID),
+		ProdTtlSeconds:   *p.ProdTTLSeconds,
 		FrontendUrl:      frontendURL,
 		CreatedOn:        timestamppb.New(p.CreatedOn),
 		UpdatedOn:        timestamppb.New(p.UpdatedOn),
