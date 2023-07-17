@@ -23,8 +23,8 @@ import (
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/telemetry"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
-	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/codes"
@@ -482,7 +482,7 @@ func variablesFlow(ctx context.Context, projectPath, projectName string) {
 	}
 
 	// collect all sources
-	srcs := make([]*connectors.Source, 0)
+	srcs := make([]*runtimev1.Source, 0)
 	for _, c := range connectorList {
 		if !c.AnonymousAccess {
 			srcs = append(srcs, c.Sources...)
@@ -495,9 +495,10 @@ func variablesFlow(ctx context.Context, projectPath, projectName string) {
 	warn := color.New(color.Bold).Add(color.FgYellow)
 	warn.Printf("\nCould not ingest all sources. Rill requires credentials for the following sources:\n\n")
 	for _, src := range srcs {
-		if _, ok := src.Properties["path"]; ok {
+		props := src.Properties.AsMap()
+		if _, ok := props["path"]; ok {
 			// print URL wherever applicable
-			warn.Printf(" - %s\n", src.Properties["path"])
+			warn.Printf(" - %s\n", props["path"])
 		} else {
 			warn.Printf(" - %s\n", src.Name)
 		}

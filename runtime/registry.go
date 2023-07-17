@@ -36,7 +36,7 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) er
 
 	// Check that it's a driver that supports embedded catalogs
 	if inst.EmbedCatalog {
-		_, ok := olap.CatalogStore()
+		_, ok := olap.AsCatalogStore()
 		if !ok {
 			return errors.New("driver does not support embedded catalogs")
 		}
@@ -102,7 +102,7 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 			r.logger.Error("delete instance: error getting connection", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 		}
 
-		err = drivers.Drop(inst.OLAPDriver, inst.OLAPDSN, r.logger)
+		err = drivers.Drop(inst.OLAPDriver, map[string]any{"dsn": inst.OLAPDSN}, r.logger)
 		if err != nil {
 			r.logger.Error("could not drop database", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 		}
@@ -146,7 +146,7 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 		if err != nil {
 			return err
 		}
-		_, ok := olapConn.CatalogStore()
+		_, ok := olapConn.AsCatalogStore()
 		if !ok {
 			return errors.New("driver does not support embedded catalogs")
 		}
@@ -196,11 +196,11 @@ func (r *Runtime) evictCaches(ctx context.Context, inst *drivers.Instance) {
 }
 
 func (r *Runtime) checkRepoConnection(inst *drivers.Instance) (drivers.Connection, drivers.RepoStore, error) {
-	repo, err := drivers.Open(inst.RepoDriver, inst.RepoDSN, r.logger)
+	repo, err := drivers.Open(inst.RepoDriver, map[string]any{"dsn": inst.RepoDSN}, r.logger)
 	if err != nil {
 		return nil, nil, err
 	}
-	repoStore, ok := repo.RepoStore()
+	repoStore, ok := repo.AsRepoStore()
 	if !ok {
 		return nil, nil, fmt.Errorf("not a valid repo driver: '%s'", inst.RepoDriver)
 	}
@@ -209,11 +209,11 @@ func (r *Runtime) checkRepoConnection(inst *drivers.Instance) (drivers.Connectio
 }
 
 func (r *Runtime) checkOlapConnection(inst *drivers.Instance) (drivers.Connection, drivers.OLAPStore, error) {
-	olap, err := drivers.Open(inst.OLAPDriver, inst.OLAPDSN, r.logger)
+	olap, err := drivers.Open(inst.OLAPDriver, map[string]any{"dsn": inst.OLAPDSN}, r.logger)
 	if err != nil {
 		return nil, nil, err
 	}
-	olapStore, ok := olap.OLAPStore()
+	olapStore, ok := olap.AsOLAP()
 	if !ok {
 		return nil, nil, fmt.Errorf("not a valid OLAP driver: '%s'", inst.OLAPDriver)
 	}

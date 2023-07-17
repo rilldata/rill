@@ -9,7 +9,7 @@ import (
 )
 
 func (r *Runtime) Registry() drivers.RegistryStore {
-	registry, ok := r.metastore.RegistryStore()
+	registry, ok := r.metastore.AsRegistry()
 	if !ok {
 		// Verified as registry in New, so this should never happen
 		panic("metastore is not a registry")
@@ -28,7 +28,7 @@ func (r *Runtime) Repo(ctx context.Context, instanceID string) (drivers.RepoStor
 		return nil, err
 	}
 
-	repo, ok := conn.RepoStore()
+	repo, ok := conn.AsRepoStore()
 	if !ok {
 		// Verified as repo when instance is created, so this should never happen
 		return nil, fmt.Errorf("connection for instance '%s' is not a repo", instanceID)
@@ -48,7 +48,7 @@ func (r *Runtime) OLAP(ctx context.Context, instanceID string) (drivers.OLAPStor
 		return nil, err
 	}
 
-	olap, ok := conn.OLAPStore()
+	olap, ok := conn.AsOLAP()
 	if !ok {
 		// Verified as OLAP when instance is created, so this should never happen
 		return nil, fmt.Errorf("connection for instance '%s' is not an olap", instanceID)
@@ -69,7 +69,7 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 			return nil, err
 		}
 
-		store, ok := conn.CatalogStore()
+		store, ok := conn.AsCatalogStore()
 		if !ok {
 			// Verified as CatalogStore when instance is created, so this should never happen
 			return nil, fmt.Errorf("instance cannot embed catalog")
@@ -78,7 +78,7 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 		return store, nil
 	}
 
-	store, ok := r.metastore.CatalogStore()
+	store, ok := r.metastore.AsCatalogStore()
 	if !ok {
 		return nil, fmt.Errorf("metastore cannot serve as catalog")
 	}

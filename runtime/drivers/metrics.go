@@ -1,4 +1,4 @@
-package connectors
+package drivers
 
 import (
 	"context"

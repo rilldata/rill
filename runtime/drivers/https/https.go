@@ -1,10 +1,11 @@
-package file
+package https
 
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
+	"net/http"
+	"net/url"
+	"time"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -13,63 +14,33 @@ import (
 )
 
 func init() {
-	drivers.Register("file", driver{name: "file"})
-	drivers.Register("local_file", driver{name: "local_file"})
-	drivers.RegisterAsConnector("local_file", driver{name: "local_file"})
+	drivers.Register("https", driver{})
+	drivers.RegisterAsConnector("https", driver{})
 }
 
 var spec = drivers.Spec{
-	DisplayName: "Local file",
-	Description: "Import Locally Stored File.",
+	DisplayName: "http(s)",
+	Description: "Connect to a remote file.",
 	SourceProperties: []drivers.PropertySchema{
 		{
 			Key:         "path",
+			DisplayName: "Path",
+			Description: "Path to the remote file.",
+			Placeholder: "https://example.com/file.csv",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
-			DisplayName: "Path",
-			Description: "Path or URL to file",
-			Placeholder: "/path/to/file",
-		},
-		{
-			Key:         "format",
-			Type:        drivers.StringPropertyType,
-			Required:    false,
-			DisplayName: "Format",
-			Description: "Either CSV or Parquet. Inferred if not set.",
-			Placeholder: "csv",
 		},
 	},
 }
 
-type driver struct {
-	name string
-}
+type driver struct{}
 
 func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connection, error) {
-	dsn, ok := config["dsn"].(string)
-	if !ok {
-		return nil, fmt.Errorf("require dsn to open file connection")
+	conn := &connection{
+		config: config,
+		logger: logger,
 	}
-
-	path, err := fileutil.ExpandHome(dsn)
-	if err != nil {
-		return nil, err
-	}
-
-	absPath, err := filepath.Abs(path)
-	if err != nil {
-		return nil, err
-	}
-
-	c := &connection{
-		root:         absPath,
-		driverConfig: config,
-		driverName:   d.name,
-	}
-	if err := c.checkRoot(); err != nil {
-		return nil, err
-	}
-	return c, nil
+	return conn, nil
 }
 
 func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
@@ -85,8 +56,8 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source
 }
 
 type sourceProperties struct {
-	Path   string `mapstructure:"path"`
-	Format string `mapstructure:"format"`
+	Path    string            `mapstructure:"path"`
+	Headers map[string]string `mapstructure:"headers"`
 }
 
 func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
@@ -95,20 +66,24 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return conf, nil
 }
 
 type connection struct {
-	// root should be absolute path
-	root         string
-	driverConfig map[string]any
-	driverName   string
+	config map[string]any
+	logger *zap.Logger
+}
+
+var _ drivers.Connection = &connection{}
+
+// Driver implements drivers.Connection.
+func (c *connection) Driver() string {
+	return "https"
 }
 
 // Config implements drivers.Connection.
 func (c *connection) Config() map[string]any {
-	return c.driverConfig
+	return c.config
 }
 
 // Close implements drivers.Connection.
@@ -128,7 +103,7 @@ func (c *connection) AsCatalogStore() (drivers.CatalogStore, bool) {
 
 // Repo implements drivers.Connection.
 func (c *connection) AsRepoStore() (drivers.RepoStore, bool) {
-	return c, true
+	return nil, false
 }
 
 // OLAP implements drivers.Connection.
@@ -156,24 +131,64 @@ func (c *connection) AsTransporter(from, to drivers.Connection) (drivers.Transpo
 	return nil, false
 }
 
-// AsFileStore implements drivers.Connection.
 func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 	return c, true
 }
 
-// checkPath checks that the connection's root is a valid directory.
-func (c *connection) checkRoot() error {
-	info, err := os.Stat(c.root)
+// FilePaths implements drivers.FileStore
+func (c *connection) FilePaths(ctx context.Context, src *drivers.FileSource) ([]string, error) {
+	conf, err := parseSourceProperties(src.Properties)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return fmt.Errorf("repo: directory does not exist at '%s'", c.root)
-		}
-		return err
+		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	if !info.IsDir() {
-		return fmt.Errorf("repo: file is not a directory '%s'", c.root)
+	extension, err := urlExtension(conf.Path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse path %s, %w", conf.Path, err)
 	}
 
-	return nil
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, conf.Path, http.NoBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch url %s:  %w", conf.Path, err)
+	}
+
+	for k, v := range conf.Headers {
+		req.Header.Set(k, v)
+	}
+
+	start := time.Now()
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch url %s:  %w", conf.Path, err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("failed to fetch url %s: %s", conf.Path, resp.Status)
+	}
+
+	// TODO :: I don't like src.Name
+	file, size, err := fileutil.CopyToTempFile(resp.Body, src.Name, extension)
+	if err != nil {
+		return nil, err
+	}
+
+	// Collect metrics of download size and time
+	drivers.RecordDownloadMetrics(ctx, &drivers.DownloadMetrics{
+		Connector: "https",
+		Ext:       extension,
+		Duration:  time.Since(start),
+		Size:      size,
+	})
+
+	return []string{file}, nil
+}
+
+func urlExtension(path string) (string, error) {
+	u, err := url.Parse(path)
+	if err != nil {
+		return "", err
+	}
+
+	return fileutil.FullExt(u.Path), nil
 }
