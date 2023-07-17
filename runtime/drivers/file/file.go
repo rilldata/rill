@@ -91,7 +91,7 @@ type sourceProperties struct {
 
 func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 	conf := &sourceProperties{}
-	err := mapstructure.Decode(props, &conf)
+	err := mapstructure.Decode(props, conf)
 	if err != nil {
 		return nil, err
 	}
