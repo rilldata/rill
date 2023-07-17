@@ -452,11 +452,7 @@ func TestServer_Timeseries_timezone_dst_forward(t *testing.T) {
 			End:      parseTimeToProtoTimeStamps(t, "2023-03-26T04:00:00Z"),
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
 		},
-		TimeZoneAdjustment: &runtimev1.TimeZoneAdjustment{
-			Adjustment: &runtimev1.TimeZoneAdjustment_TimeZone{
-				TimeZone: "Europe/Copenhagen",
-			},
-		},
+		TimeZone: "Europe/Copenhagen",
 	})
 
 	require.NoError(t, err)
@@ -504,11 +500,7 @@ func TestServer_Timeseries_timezone_dst_backward(t *testing.T) {
 			End:      parseTimeToProtoTimeStamps(t, "2023-10-29T03:00:00Z"),
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
 		},
-		TimeZoneAdjustment: &runtimev1.TimeZoneAdjustment{
-			Adjustment: &runtimev1.TimeZoneAdjustment_TimeZone{
-				TimeZone: "Europe/Copenhagen",
-			},
-		},
+		TimeZone: "Europe/Copenhagen",
 	})
 
 	require.NoError(t, err)
@@ -536,11 +528,7 @@ func TestServer_Timeseries_timezone_kathmandu(t *testing.T) {
 			End:      parseTimeToProtoTimeStamps(t, "2023-10-29T03:15:00Z"),
 			Interval: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
 		},
-		TimeZoneAdjustment: &runtimev1.TimeZoneAdjustment{
-			Adjustment: &runtimev1.TimeZoneAdjustment_TimeZone{
-				TimeZone: "Asia/Kathmandu",
-			},
-		},
+		TimeZone: "Asia/Kathmandu",
 	})
 
 	require.NoError(t, err)

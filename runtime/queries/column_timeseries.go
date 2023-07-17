@@ -36,7 +36,7 @@ type ColumnTimeseries struct {
 	TimeRange           *runtimev1.TimeSeriesTimeRange                    `json:"time_range"`
 	Pixels              int32                                             `json:"pixels"`
 	SampleSize          int32                                             `json:"sample_size"`
-	TimeZoneAdjustment  *runtimev1.TimeZoneAdjustment                     `json:"time_zone_adjustment,omitempty"`
+	TimeZone            string                                            `json:"time_zone,omitempty"`
 	Result              *ColumnTimeseriesResult                           `json:"-"`
 
 	// MetricsView-related fields. These can be removed when MetricsViewTimeSeries is refactored to a standalone implementation.
@@ -109,8 +109,8 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		temporaryTableName := tempName("_timeseries_")
 
 		timezone := "UTC"
-		if q.TimeZoneAdjustment != nil && q.TimeZoneAdjustment.GetTimeZone() != "" {
-			timezone = q.TimeZoneAdjustment.GetTimeZone()
+		if q.TimeZone != "" {
+			timezone = q.TimeZone
 		}
 		querySQL := `CREATE TEMPORARY TABLE ` + temporaryTableName + ` AS (
 			-- generate a time series column that has the intended range

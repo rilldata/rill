@@ -23,6 +23,7 @@ type MetricsViewRows struct {
 	Sort            []*runtimev1.MetricsViewSort `json:"sort,omitempty"`
 	Limit           *int64                       `json:"limit,omitempty"`
 	Offset          int64                        `json:"offset,omitempty"`
+	TimeZone        string                       `json:"time_zone,omitempty"`
 
 	Result *runtimev1.MetricsViewRowsResponse `json:"-"`
 }
@@ -236,8 +237,8 @@ func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsView, dialect
 		}
 
 		timezone := "UTC"
-		if q.TimeZoneAdjustment != nil && q.TimeZoneAdjustment.GetTimeZone() != "" {
-			timezone = q.TimeZoneAdjustment.GetTimeZone()
+		if q.TimeZone != "" {
+			timezone = q.TimeZone
 		}
 		rollup := fmt.Sprintf("time_bucket(INTERVAL '%s', %s::TIMESTAMPTZ, '%s') AS %s", convertToTimeBucketSpecifier(q.TimeGranularity), safeName(mv.TimeDimension), timezone, safeName(timeRollupColumnName))
 

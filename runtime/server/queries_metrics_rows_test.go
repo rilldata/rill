@@ -56,11 +56,7 @@ func TestServer_MetricsViewRows_Granularity_Kathmandu(t *testing.T) {
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
 		TimeStart:       parseTimeToProtoTimeStamps(t, "2022-01-01T14:15:00Z"),
 		TimeEnd:         parseTimeToProtoTimeStamps(t, "2022-01-01T15:15:00Z"),
-		TimeZoneAdjustment: &runtimev1.TimeZoneAdjustment{
-			Adjustment: &runtimev1.TimeZoneAdjustment_TimeZone{
-				TimeZone: "Asia/Kathmandu",
-			},
-		},
+		TimeZone:        "Asia/Kathmandu",
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tr.Data))
