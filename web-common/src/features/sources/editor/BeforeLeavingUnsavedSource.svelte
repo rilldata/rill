@@ -52,7 +52,12 @@
 <slot />
 
 {#if intercepted}
-  <Dialog on:cancel={close} size="sm" useContentForMinSize>
+  <Dialog
+    on:cancel={close}
+    size="sm"
+    useContentForMinSize
+    focusTriggerOnClose={false}
+  >
     <svelte:fragment slot="title">Leave source without saving?</svelte:fragment>
     <div class="text-sm text-slate-500" slot="body">
       Navigating away will lose your changes.
