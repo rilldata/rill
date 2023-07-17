@@ -520,10 +520,10 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 
 func makeRepo(t testing.TB, files map[string]string) drivers.RepoStore {
 	root := t.TempDir()
-	handle, err := drivers.Open("file", root, zap.NewNop())
+	handle, err := drivers.Open("file", map[string]any{"dsn": root}, zap.NewNop())
 	require.NoError(t, err)
 
-	repo, ok := handle.RepoStore()
+	repo, ok := handle.AsRepoStore()
 	require.True(t, ok)
 
 	putRepo(t, repo, files)

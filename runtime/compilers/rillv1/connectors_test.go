@@ -6,9 +6,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/rilldata/rill/runtime/connectors"
-	_ "github.com/rilldata/rill/runtime/connectors/gcs"
-	_ "github.com/rilldata/rill/runtime/connectors/s3"
+	"github.com/rilldata/rill/runtime/drivers"
+	_ "github.com/rilldata/rill/runtime/drivers/gcs"
+	_ "github.com/rilldata/rill/runtime/drivers/s3"
 )
 
 func TestAnalyzeConnectors(t *testing.T) {
@@ -43,11 +43,11 @@ uri: gs://path/to/bar
 	require.Equal(t, "gcs", cs[0].Name)
 	require.Equal(t, "gcs", cs[0].Driver)
 	require.Equal(t, false, cs[0].AnonymousAccess)
-	require.Equal(t, connectors.Connectors["gcs"].Spec(), cs[0].Spec)
+	require.Equal(t, drivers.Connectors["gcs"].Spec(), cs[0].Spec)
 
 	require.Len(t, cs[1].Resources, 1)
 	require.Equal(t, "my-s3", cs[1].Name)
 	require.Equal(t, "s3", cs[1].Driver)
 	require.Equal(t, false, cs[1].AnonymousAccess)
-	require.Equal(t, connectors.Connectors["s3"].Spec(), cs[1].Spec)
+	require.Equal(t, drivers.Connectors["s3"].Spec(), cs[1].Spec)
 }

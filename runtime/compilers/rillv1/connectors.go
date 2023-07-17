@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rilldata/rill/runtime/connectors"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
+	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 )
 
@@ -12,7 +14,7 @@ import (
 type Connector struct {
 	Driver          string
 	Name            string
-	Spec            connectors.Spec
+	Spec            drivers.Spec
 	Resources       []*Resource
 	AnonymousAccess bool
 }
@@ -62,11 +64,7 @@ func (p *Parser) AnalyzeConnectors(ctx context.Context) ([]*Connector, error) {
 				break
 			}
 			// Poll for anon access
-			res, _ := connector.HasAnonymousAccess(ctx, &connectors.Env{}, &connectors.Source{
-				Name:       r.Name.Name,
-				Connector:  name,
-				Properties: r.SourceSpec.Properties.AsMap(),
-			})
+			res, _ := connector.HasAnonymousSourceAccess(ctx, driverSourceForAnonAccessCheck(driver, r.SourceSpec), zap.NewNop())
 			if !res {
 				anonAccess = false
 				break
@@ -92,7 +90,7 @@ func (p *Parser) AnalyzeConnectors(ctx context.Context) ([]*Connector, error) {
 }
 
 // connectorForName resolves a connector name to a connector driver
-func (p *Parser) connectorForName(name string) (string, connectors.Connector, error) {
+func (p *Parser) connectorForName(name string) (string, drivers.Driver, error) {
 	// Unless overridden in rill.yaml, the connector name is the driver name
 	driver := name
 	for _, c := range p.RillYAML.Connectors {
@@ -102,9 +100,35 @@ func (p *Parser) connectorForName(name string) (string, connectors.Connector, er
 		}
 	}
 
-	connector, ok := connectors.Connectors[driver]
+	connector, ok := drivers.Connectors[driver]
 	if !ok {
 		return "", nil, fmt.Errorf("unknown connector type %q", driver)
 	}
 	return driver, connector, nil
+}
+
+func driverSourceForAnonAccessCheck(connector string, src *runtimev1.SourceSpec) drivers.Source {
+	props := src.Properties.AsMap()
+	switch connector {
+	case "s3":
+		return &drivers.BucketSource{
+			Properties: props,
+		}
+	case "gcs":
+		return &drivers.BucketSource{
+			Properties: props,
+		}
+	case "https":
+		return &drivers.FileSource{
+			Properties: props,
+		}
+	case "local_file":
+		return &drivers.FileSource{
+			Properties: props,
+		}
+	case "motherduck":
+		return &drivers.DatabaseSource{}
+	default:
+		return nil
+	}
 }

@@ -12,7 +12,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/connectors"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
@@ -196,7 +196,7 @@ func parseEmbeddedSource(t *duckdbsql.TableRef, sinkConnector string) (ResourceN
 		uri.Scheme = "local_file"
 	}
 
-	_, ok := connectors.Connectors[uri.Scheme]
+	_, ok := drivers.Connectors[uri.Scheme]
 	if !ok {
 		return ResourceName{}, nil, false
 	}
