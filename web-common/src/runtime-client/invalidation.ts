@@ -8,6 +8,11 @@ import {
   getRuntimeServiceListCatalogEntriesQueryKey,
   getRuntimeServiceListFilesQueryKey,
 } from "@rilldata/web-common/runtime-client";
+import {
+  isColumnProfilingQuery,
+  isProfilingQuery,
+  isTableProfilingQuery,
+} from "@rilldata/web-common/runtime-client/query-matcher";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 
@@ -98,13 +103,6 @@ export function invalidationForMetricsViewData(query, metricsViewName: string) {
   );
 }
 
-export function isProfilingQuery(queryHash: string, name: string) {
-  const r = new RegExp(
-    `/v1/instances/[a-zA-Z0-9-]+/queries/[a-zA-Z0-9-]+/tables/${name}`
-  );
-  return r.test(queryHash);
-}
-
 export const invalidateMetricsViewData = (
   queryClient: QueryClient,
   metricsViewName: string,
@@ -128,20 +126,25 @@ export const invalidateMetricsViewData = (
   });
 };
 
-export function invalidateProfilingQueries(
+export async function invalidateProfilingQueries(
   queryClient: QueryClient,
   name: string,
   failed: boolean
 ) {
   queryClient.removeQueries({
-    predicate: (query) => isProfilingQuery(query.queryHash, name),
+    predicate: (query) => isProfilingQuery(query, name),
     type: "inactive",
   });
   // do not re-fetch for failed entities.
   if (failed) return Promise.resolve();
 
-  return queryClient.refetchQueries({
-    predicate: (query) => isProfilingQuery(query.queryHash, name),
+  queryClient.removeQueries({
+    predicate: (query) => isColumnProfilingQuery(query, name),
+    type: "active",
+  });
+
+  await queryClient.invalidateQueries({
+    predicate: (query) => isTableProfilingQuery(query, name),
     type: "active",
   });
 }
@@ -171,9 +174,7 @@ export const removeEntityQueries = async (
   } else {
     // remove profiling queries
     return queryClient.removeQueries({
-      predicate: (query) => {
-        return isProfilingQuery(query.queryHash, name);
-      },
+      predicate: (query) => isProfilingQuery(query, name),
     });
   }
 };

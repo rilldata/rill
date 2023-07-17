@@ -10,7 +10,6 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
-	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"github.com/rilldata/rill/runtime/pkg/dag"
@@ -331,7 +330,7 @@ func (s *Service) runMigrationItems(
 
 		if err != nil {
 			errCode := runtimev1.ReconcileError_CODE_OLAP
-			var connectorErr *connectors.PermissionDeniedError
+			var connectorErr *drivers.PermissionDeniedError
 			if errors.As(err, &connectorErr) {
 				errCode = runtimev1.ReconcileError_CODE_SOURCE_PERMISSION_DENIED
 			}
@@ -411,7 +410,7 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 
 	// create in olap
 	err = s.wrapMigrator(item.CatalogInFile, func() error {
-		return migrator.Create(ctx, s.Olap, s.Repo, opts, item.CatalogInFile)
+		return migrator.Create(ctx, s.Olap, s.Repo, opts, item.CatalogInFile, s.logger)
 	})
 	if err != nil {
 		return err
@@ -489,7 +488,7 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 				InstanceEnv:               inst.ResolveVariables(),
 				IngestStorageLimitInBytes: ingestionLimit,
 			}
-			return migrator.Update(ctx, s.Olap, s.Repo, opts, item.CatalogInStore, item.CatalogInFile)
+			return migrator.Update(ctx, s.Olap, s.Repo, opts, item.CatalogInStore, item.CatalogInFile, s.logger)
 		})
 		if err != nil {
 			return err

@@ -12,13 +12,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/connectors"
 	"gocloud.dev/blob"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (c Connector) ListBuckets(ctx context.Context, env *connectors.Env) ([]string, error) {
-	creds, err := getCredentials(env)
+func (c *Connection) ListBuckets(ctx context.Context) ([]string, error) {
+	creds, err := c.getCredentials()
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +26,7 @@ func (c Connector) ListBuckets(ctx context.Context, env *connectors.Env) ([]stri
 	}
 
 	sharedConfigState := session.SharedConfigDisable
-	if env.AllowHostAccess {
+	if c.config.AllowHostAccess {
 		sharedConfigState = session.SharedConfigEnable // Tells to look for default region set with `aws configure`
 	}
 	// Create a session that tries to infer the region from the environment
@@ -60,13 +59,13 @@ func (c Connector) ListBuckets(ctx context.Context, env *connectors.Env) ([]stri
 	return buckets, nil
 }
 
-func (c Connector) ListObjects(ctx context.Context, req *runtimev1.S3ListObjectsRequest, env *connectors.Env) ([]*runtimev1.S3Object, string, error) {
-	creds, err := getCredentials(env)
+func (c *Connection) ListObjects(ctx context.Context, req *runtimev1.S3ListObjectsRequest) ([]*runtimev1.S3Object, string, error) {
+	creds, err := c.getCredentials()
 	if err != nil {
 		return nil, "", err
 	}
 
-	bucket, err := openBucket(ctx, &Config{AWSRegion: req.Region}, req.Bucket, creds, env)
+	bucket, err := c.openBucket(ctx, &sourceProperties{AWSRegion: req.Region}, req.Bucket, creds)
 	if err != nil {
 		return nil, "", err
 	}
@@ -93,7 +92,7 @@ func (c Connector) ListObjects(ctx context.Context, req *runtimev1.S3ListObjects
 		if (failureErr.StatusCode() == http.StatusForbidden || failureErr.StatusCode() == http.StatusBadRequest) && creds != credentials.AnonymousCredentials {
 			// try again with anonymous credentials
 			creds = credentials.AnonymousCredentials
-			bucketObj, bucketErr := openBucket(ctx, &Config{AWSRegion: req.Region}, req.Bucket, creds, env)
+			bucketObj, bucketErr := c.openBucket(ctx, &sourceProperties{AWSRegion: req.Region}, req.Bucket, creds)
 			if bucketErr != nil {
 				return nil, "", fmt.Errorf("failed to open bucket %q, %w", req.Bucket, bucketErr)
 			}
@@ -116,13 +115,13 @@ func (c Connector) ListObjects(ctx context.Context, req *runtimev1.S3ListObjects
 	return s3Objects, string(nextToken), nil
 }
 
-func (c Connector) GetBucketMetadata(ctx context.Context, req *runtimev1.S3GetBucketMetadataRequest, env *connectors.Env) (string, error) {
-	creds, err := getCredentials(env)
+func (c *Connection) GetBucketMetadata(ctx context.Context, req *runtimev1.S3GetBucketMetadataRequest) (string, error) {
+	creds, err := c.getCredentials()
 	if err != nil {
 		return "", err
 	}
 
-	sess, err := getAwsSessionConfig(ctx, &Config{}, req.Bucket, creds, env)
+	sess, err := c.getAwsSessionConfig(ctx, &sourceProperties{}, req.Bucket, creds)
 	if err != nil {
 		return "", err
 	}
@@ -133,8 +132,8 @@ func (c Connector) GetBucketMetadata(ctx context.Context, req *runtimev1.S3GetBu
 	return "", fmt.Errorf("unable to get region")
 }
 
-func (c Connector) GetCredentialsInfo(ctx context.Context, env *connectors.Env) (provider string, exist bool, err error) {
-	creds, err := getCredentials(env)
+func (c *Connection) GetCredentialsInfo(ctx context.Context) (provider string, exist bool, err error) {
+	creds, err := c.getCredentials()
 	if creds == credentials.AnonymousCredentials {
 		return "", false, nil
 	}

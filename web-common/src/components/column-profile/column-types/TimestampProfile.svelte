@@ -25,6 +25,8 @@
   export let compact = false;
   export let hideNullPercentage = false;
 
+  export let enableProfiling = true;
+
   let timestampDetailHeight = 160;
 
   let active = false;
@@ -33,13 +35,15 @@
   $: nullPercentage = getNullPercentage(
     $runtime?.instanceId,
     objectName,
-    columnName
+    columnName,
+    enableProfiling
   );
 
   $: timeSeries = getTimeSeriesAndSpark(
     $runtime?.instanceId,
     objectName,
     columnName,
+    enableProfiling,
     active
   );
 
@@ -52,20 +56,20 @@
 </script>
 
 <ProfileContainer
-  isFetching={fetchingSummaries}
   {active}
   {compact}
   emphasize={active}
   {example}
   {hideNullPercentage}
   {hideRight}
+  isFetching={fetchingSummaries}
   {mode}
   on:select={toggleColumnProfile}
   on:shift-click={() =>
     copyToClipboard(columnName, `copied ${columnName} to clipboard`)}
   {type}
 >
-  <ColumnProfileIcon slot="icon" {type} isFetching={fetchingSummaries} />
+  <ColumnProfileIcon isFetching={fetchingSummaries} slot="icon" {type} />
   <div slot="left">{columnName}</div>
 
   <!-- wrap in div to get size of grid item -->
