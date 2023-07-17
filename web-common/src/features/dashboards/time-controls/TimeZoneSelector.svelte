@@ -73,7 +73,7 @@
         </div>
       </SelectorButton>
       <TooltipContent slot="tooltip-content" maxWidth="220px">
-        Select a time zone
+        Select a reference time zone for the dashboard
       </TooltipContent>
     </Tooltip>
     <Menu

@@ -106,14 +106,14 @@
 
   function setDefaultTimeControls(allTimeRange: DashboardTimeControls) {
     // Show users locale time zone by default
-    const userIANA = getLocalIANA();
-    metricsExplorerStore.setTimeZone(metricViewName, userIANA);
+    const userLocalIANA = getLocalIANA();
+    metricsExplorerStore.setTimeZone(metricViewName, userLocalIANA);
 
     baseTimeRange = convertTimeRangePreset(
       defaultTimeRange,
       allTimeRange.start,
       allTimeRange.end,
-      userIANA
+      userLocalIANA
     ) || { ...allTimeRange, end: new Date(allTimeRange.end.getTime() + 1) };
 
     const timeGrain = getDefaultTimeGrain(
