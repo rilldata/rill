@@ -46,9 +46,21 @@ import type {
   RuntimeServiceUnpackEmptyBody,
   V1UnpackExampleResponse,
   RuntimeServiceUnpackExampleBody,
+  V1GetLogsResponse,
+  RuntimeServiceGetLogsParams,
+  RuntimeServiceWatchLogs200,
+  RuntimeServiceWatchLogsParams,
   V1ReconcileResponse,
   RuntimeServiceReconcileBody,
+  V1GetResourceResponse,
+  RuntimeServiceGetResourceParams,
+  V1ListResourcesResponse,
+  RuntimeServiceListResourcesParams,
+  RuntimeServiceWatchResources200,
+  RuntimeServiceWatchResourcesParams,
   V1TriggerSyncResponse,
+  V1CreateTriggerResponse,
+  RuntimeServiceCreateTriggerBody,
   V1PingResponse,
   V1PutFileAndReconcileResponse,
   V1PutFileAndReconcileRequest,
@@ -1101,6 +1113,142 @@ export const createRuntimeServiceUnpackExample = <
   >(mutationFn, mutationOptions);
 };
 /**
+ * @summary GetLogs returns recent logs from a controller
+ */
+export const runtimeServiceGetLogs = (
+  instanceId: string,
+  params?: RuntimeServiceGetLogsParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1GetLogsResponse>({
+    url: `/v1/instances/${instanceId}/logs`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getRuntimeServiceGetLogsQueryKey = (
+  instanceId: string,
+  params?: RuntimeServiceGetLogsParams
+) => [`/v1/instances/${instanceId}/logs`, ...(params ? [params] : [])] as const;
+
+export type RuntimeServiceGetLogsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGetLogs>>
+>;
+export type RuntimeServiceGetLogsQueryError = RpcStatus;
+
+export const createRuntimeServiceGetLogs = <
+  TData = Awaited<ReturnType<typeof runtimeServiceGetLogs>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  params?: RuntimeServiceGetLogsParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceGetLogs>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceGetLogsQueryKey(instanceId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceGetLogs>>
+  > = ({ signal }) => runtimeServiceGetLogs(instanceId, params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof runtimeServiceGetLogs>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary WatchLogs streams new logs emitted from a controller
+ */
+export const runtimeServiceWatchLogs = (
+  instanceId: string,
+  params?: RuntimeServiceWatchLogsParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<RuntimeServiceWatchLogs200>({
+    url: `/v1/instances/${instanceId}/logs/watch`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getRuntimeServiceWatchLogsQueryKey = (
+  instanceId: string,
+  params?: RuntimeServiceWatchLogsParams
+) =>
+  [
+    `/v1/instances/${instanceId}/logs/watch`,
+    ...(params ? [params] : []),
+  ] as const;
+
+export type RuntimeServiceWatchLogsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceWatchLogs>>
+>;
+export type RuntimeServiceWatchLogsQueryError = RpcStatus;
+
+export const createRuntimeServiceWatchLogs = <
+  TData = Awaited<ReturnType<typeof runtimeServiceWatchLogs>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  params?: RuntimeServiceWatchLogsParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceWatchLogs>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceWatchLogsQueryKey(instanceId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceWatchLogs>>
+  > = ({ signal }) => runtimeServiceWatchLogs(instanceId, params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof runtimeServiceWatchLogs>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
  * @summary Reconcile applies a full set of artifacts from a repo to the catalog and infra.
 It attempts to infer a minimal number of migrations to apply to reconcile the current state with
 the desired state expressed in the artifacts. Any existing objects not described in the submitted
@@ -1154,6 +1302,216 @@ export const createRuntimeServiceReconcile = <
   >(mutationFn, mutationOptions);
 };
 /**
+ * @summary GetResource looks up a specific catalog resource
+ */
+export const runtimeServiceGetResource = (
+  instanceId: string,
+  params?: RuntimeServiceGetResourceParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1GetResourceResponse>({
+    url: `/v1/instances/${instanceId}/resource`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getRuntimeServiceGetResourceQueryKey = (
+  instanceId: string,
+  params?: RuntimeServiceGetResourceParams
+) =>
+  [
+    `/v1/instances/${instanceId}/resource`,
+    ...(params ? [params] : []),
+  ] as const;
+
+export type RuntimeServiceGetResourceQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceGetResource>>
+>;
+export type RuntimeServiceGetResourceQueryError = RpcStatus;
+
+export const createRuntimeServiceGetResource = <
+  TData = Awaited<ReturnType<typeof runtimeServiceGetResource>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  params?: RuntimeServiceGetResourceParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceGetResource>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceGetResourceQueryKey(instanceId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceGetResource>>
+  > = ({ signal }) => runtimeServiceGetResource(instanceId, params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof runtimeServiceGetResource>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary ListResources lists the resources stored in the catalog
+ */
+export const runtimeServiceListResources = (
+  instanceId: string,
+  params?: RuntimeServiceListResourcesParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1ListResourcesResponse>({
+    url: `/v1/instances/${instanceId}/resources`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getRuntimeServiceListResourcesQueryKey = (
+  instanceId: string,
+  params?: RuntimeServiceListResourcesParams
+) =>
+  [
+    `/v1/instances/${instanceId}/resources`,
+    ...(params ? [params] : []),
+  ] as const;
+
+export type RuntimeServiceListResourcesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceListResources>>
+>;
+export type RuntimeServiceListResourcesQueryError = RpcStatus;
+
+export const createRuntimeServiceListResources = <
+  TData = Awaited<ReturnType<typeof runtimeServiceListResources>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  params?: RuntimeServiceListResourcesParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceListResources>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceListResourcesQueryKey(instanceId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceListResources>>
+  > = ({ signal }) => runtimeServiceListResources(instanceId, params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof runtimeServiceListResources>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary WatchResources streams updates to catalog resources (including creation and deletion events)
+ */
+export const runtimeServiceWatchResources = (
+  instanceId: string,
+  params?: RuntimeServiceWatchResourcesParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<RuntimeServiceWatchResources200>({
+    url: `/v1/instances/${instanceId}/resources/-/watch`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getRuntimeServiceWatchResourcesQueryKey = (
+  instanceId: string,
+  params?: RuntimeServiceWatchResourcesParams
+) =>
+  [
+    `/v1/instances/${instanceId}/resources/-/watch`,
+    ...(params ? [params] : []),
+  ] as const;
+
+export type RuntimeServiceWatchResourcesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceWatchResources>>
+>;
+export type RuntimeServiceWatchResourcesQueryError = RpcStatus;
+
+export const createRuntimeServiceWatchResources = <
+  TData = Awaited<ReturnType<typeof runtimeServiceWatchResources>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  params?: RuntimeServiceWatchResourcesParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceWatchResources>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceWatchResourcesQueryKey(instanceId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceWatchResources>>
+  > = ({ signal }) => runtimeServiceWatchResources(instanceId, params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof runtimeServiceWatchResources>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
  * @summary TriggerSync syncronizes the instance's catalog with the underlying OLAP's information schema.
 If the instance has exposed=true, tables found in the information schema will be added to the catalog.
  */
@@ -1196,6 +1554,58 @@ export const createRuntimeServiceTriggerSync = <
     Awaited<ReturnType<typeof runtimeServiceTriggerSync>>,
     TError,
     { instanceId: string },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary CreateTrigger creates a trigger in the catalog.
+Triggers are ephemeral resources that will be cleaned up by the controller.
+ */
+export const runtimeServiceCreateTrigger = (
+  instanceId: string,
+  runtimeServiceCreateTriggerBody: RuntimeServiceCreateTriggerBody
+) => {
+  return httpClient<V1CreateTriggerResponse>({
+    url: `/v1/instances/${instanceId}/trigger`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: runtimeServiceCreateTriggerBody,
+  });
+};
+
+export type RuntimeServiceCreateTriggerMutationResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceCreateTrigger>>
+>;
+export type RuntimeServiceCreateTriggerMutationBody =
+  RuntimeServiceCreateTriggerBody;
+export type RuntimeServiceCreateTriggerMutationError = RpcStatus;
+
+export const createRuntimeServiceCreateTrigger = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof runtimeServiceCreateTrigger>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceCreateTriggerBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof runtimeServiceCreateTrigger>>,
+    { instanceId: string; data: RuntimeServiceCreateTriggerBody }
+  > = (props) => {
+    const { instanceId, data } = props ?? {};
+
+    return runtimeServiceCreateTrigger(instanceId, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof runtimeServiceCreateTrigger>>,
+    TError,
+    { instanceId: string; data: RuntimeServiceCreateTriggerBody },
     TContext
   >(mutationFn, mutationOptions);
 };
