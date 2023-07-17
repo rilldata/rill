@@ -30,7 +30,7 @@ func TestAll(t *testing.T) {
 	for _, withDriver := range matrix {
 		err := withDriver(t, func(driver string, dsn string) {
 			// Open
-			conn, err := drivers.Open(driver, dsn, zap.NewNop())
+			conn, err := drivers.Open(driver, map[string]any{"dsn": dsn}, zap.NewNop())
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 
@@ -42,16 +42,16 @@ func TestAll(t *testing.T) {
 			require.Equal(t, desired, current)
 
 			// Run applicable sub-tests
-			if registry, ok := conn.RegistryStore(); ok {
+			if registry, ok := conn.AsRegistry(); ok {
 				t.Run("registry_"+driver, func(t *testing.T) { testRegistry(t, registry) })
 			}
-			if catalog, ok := conn.CatalogStore(); ok {
+			if catalog, ok := conn.AsCatalogStore(); ok {
 				t.Run("catalog_"+driver, func(t *testing.T) { testCatalog(t, catalog) })
 			}
-			if repo, ok := conn.RepoStore(); ok {
+			if repo, ok := conn.AsRepoStore(); ok {
 				t.Run("repo_"+driver, func(t *testing.T) { testRepo(t, repo) })
 			}
-			if olap, ok := conn.OLAPStore(); ok {
+			if olap, ok := conn.AsOLAP(); ok {
 				t.Run("olap_"+driver, func(t *testing.T) { testOLAP(t, olap) })
 			}
 

@@ -79,6 +79,8 @@ export function getDashboardStateFromProto(
     entity.visibleDimensionKeys = new Set(dashboard.visibleDimensions);
   }
 
+  entity.showPercentOfTotal = Boolean(dashboard.showPercentOfTotal);
+
   return entity;
 }
 
