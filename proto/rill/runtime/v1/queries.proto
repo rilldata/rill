@@ -280,14 +280,6 @@ message MetricsViewComparisonValue {
   google.protobuf.Value delta_rel = 5;
 }
 
-message TimeZoneAdjustment {
-  oneof adjustment {
-    int32 offset = 1;
-    google.protobuf.Timestamp origin = 2;
-    string time_zone = 3;
-  }
-}
-
 // Request message for QueryService.MetricsViewTimeSeries
 message MetricsViewTimeSeriesRequest {
   string instance_id = 1;
@@ -298,7 +290,7 @@ message MetricsViewTimeSeriesRequest {
   google.protobuf.Timestamp time_end = 5;
   TimeGrain time_granularity = 6;
   MetricsViewFilter filter = 7;
-  TimeZoneAdjustment time_zone_adjustment = 10;
+  string time_zone = 10;
   int32 priority = 8;
 }
 
@@ -338,7 +330,7 @@ message MetricsViewRowsRequest {
   int32 limit = 7 [(validate.rules).int32.gte = 0];
   int64 offset = 8 [(validate.rules).int64.gte = 0];
   int32 priority = 9;
-  TimeZoneAdjustment time_zone_adjustment = 11;
+  string time_zone = 11;
 }
 
 // Response message for QueryService.MetricsViewRows
@@ -581,7 +573,7 @@ message ColumnTimeSeriesRequest {
   int32 pixels = 7 [(validate.rules).int32.gte = 0];
   int32 sample_size = 8 [(validate.rules).int32.gte = 0];
   int32 priority = 9;
-  TimeZoneAdjustment time_zone_adjustment = 10;
+  string time_zone = 10;
   message BasicMeasure {
     string id = 1;
     // mandatory user defined metadata
