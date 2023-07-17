@@ -26,6 +26,7 @@ const (
 	ConnectorService_GCSListBuckets_FullMethodName        = "/rill.runtime.v1.ConnectorService/GCSListBuckets"
 	ConnectorService_GCSListObjects_FullMethodName        = "/rill.runtime.v1.ConnectorService/GCSListObjects"
 	ConnectorService_GCSGetCredentialsInfo_FullMethodName = "/rill.runtime.v1.ConnectorService/GCSGetCredentialsInfo"
+	ConnectorService_MotherduckListTables_FullMethodName  = "/rill.runtime.v1.ConnectorService/MotherduckListTables"
 )
 
 // ConnectorServiceClient is the client API for ConnectorService service.
@@ -46,6 +47,8 @@ type ConnectorServiceClient interface {
 	GCSListObjects(ctx context.Context, in *GCSListObjectsRequest, opts ...grpc.CallOption) (*GCSListObjectsResponse, error)
 	// GCSGetCredentialsInfo returns metadata for the given bucket.
 	GCSGetCredentialsInfo(ctx context.Context, in *GCSGetCredentialsInfoRequest, opts ...grpc.CallOption) (*GCSGetCredentialsInfoResponse, error)
+	// MotherduckListTables list all tables across all databases on motherduck
+	MotherduckListTables(ctx context.Context, in *MotherduckListTablesRequest, opts ...grpc.CallOption) (*MotherduckListTablesResponse, error)
 }
 
 type connectorServiceClient struct {
@@ -119,6 +122,15 @@ func (c *connectorServiceClient) GCSGetCredentialsInfo(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *connectorServiceClient) MotherduckListTables(ctx context.Context, in *MotherduckListTablesRequest, opts ...grpc.CallOption) (*MotherduckListTablesResponse, error) {
+	out := new(MotherduckListTablesResponse)
+	err := c.cc.Invoke(ctx, ConnectorService_MotherduckListTables_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ConnectorServiceServer is the server API for ConnectorService service.
 // All implementations must embed UnimplementedConnectorServiceServer
 // for forward compatibility
@@ -137,6 +149,8 @@ type ConnectorServiceServer interface {
 	GCSListObjects(context.Context, *GCSListObjectsRequest) (*GCSListObjectsResponse, error)
 	// GCSGetCredentialsInfo returns metadata for the given bucket.
 	GCSGetCredentialsInfo(context.Context, *GCSGetCredentialsInfoRequest) (*GCSGetCredentialsInfoResponse, error)
+	// MotherduckListTables list all tables across all databases on motherduck
+	MotherduckListTables(context.Context, *MotherduckListTablesRequest) (*MotherduckListTablesResponse, error)
 	mustEmbedUnimplementedConnectorServiceServer()
 }
 
@@ -164,6 +178,9 @@ func (UnimplementedConnectorServiceServer) GCSListObjects(context.Context, *GCSL
 }
 func (UnimplementedConnectorServiceServer) GCSGetCredentialsInfo(context.Context, *GCSGetCredentialsInfoRequest) (*GCSGetCredentialsInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GCSGetCredentialsInfo not implemented")
+}
+func (UnimplementedConnectorServiceServer) MotherduckListTables(context.Context, *MotherduckListTablesRequest) (*MotherduckListTablesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MotherduckListTables not implemented")
 }
 func (UnimplementedConnectorServiceServer) mustEmbedUnimplementedConnectorServiceServer() {}
 
@@ -304,6 +321,24 @@ func _ConnectorService_GCSGetCredentialsInfo_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ConnectorService_MotherduckListTables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MotherduckListTablesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConnectorServiceServer).MotherduckListTables(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConnectorService_MotherduckListTables_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConnectorServiceServer).MotherduckListTables(ctx, req.(*MotherduckListTablesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ConnectorService_ServiceDesc is the grpc.ServiceDesc for ConnectorService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -338,6 +373,10 @@ var ConnectorService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GCSGetCredentialsInfo",
 			Handler:    _ConnectorService_GCSGetCredentialsInfo_Handler,
+		},
+		{
+			MethodName: "MotherduckListTables",
+			Handler:    _ConnectorService_MotherduckListTables_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

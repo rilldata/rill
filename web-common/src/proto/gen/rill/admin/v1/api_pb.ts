@@ -1143,6 +1143,11 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
    */
   newName?: string;
 
+  /**
+   * @generated from field: optional int64 prod_ttl_seconds = 10;
+   */
+  prodTtlSeconds?: bigint;
+
   constructor(data?: PartialMessage<UpdateProjectRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1160,6 +1165,7 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 7, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 8, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 9, name: "new_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 10, name: "prod_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateProjectRequest {
@@ -1449,6 +1455,19 @@ export class TriggerRefreshSourcesResponse extends Message<TriggerRefreshSources
  */
 export class TriggerRedeployRequest extends Message<TriggerRedeployRequest> {
   /**
+   * It's sufficient to pass org/project name OR deployment_id.
+   * (To enable rehydrating hibernated projects.)
+   *
+   * @generated from field: string organization = 2;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: string project = 3;
+   */
+  project = "";
+
+  /**
    * @generated from field: string deployment_id = 1;
    */
   deploymentId = "";
@@ -1461,6 +1480,8 @@ export class TriggerRedeployRequest extends Message<TriggerRedeployRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.TriggerRedeployRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 2, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 1, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
@@ -4068,6 +4089,11 @@ export class Project extends Message<Project> {
   frontendUrl = "";
 
   /**
+   * @generated from field: int64 prod_ttl_seconds = 18;
+   */
+  prodTtlSeconds = protoInt64.zero;
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 14;
    */
   createdOn?: Timestamp;
@@ -4100,6 +4126,7 @@ export class Project extends Message<Project> {
     { no: 12, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 13, name: "prod_deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 18, name: "prod_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 14, name: "created_on", kind: "message", T: Timestamp },
     { no: 15, name: "updated_on", kind: "message", T: Timestamp },
   ]);

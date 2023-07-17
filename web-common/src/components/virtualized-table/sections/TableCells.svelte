@@ -28,7 +28,10 @@
         : 0,
       rowSelected: selectedIndex.findIndex((tgt) => row?.index === tgt) >= 0,
       colSelected:
-        columnName === selectedColumn || columnName.includes("_delta"),
+        columnName === selectedColumn ||
+        columnName.includes("_delta") ||
+        columnName.includes("_delta_perc") ||
+        columnName.includes("_percent_of_total"),
     };
   };
 </script>

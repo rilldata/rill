@@ -71,15 +71,6 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		ingestionLimit = alloc.StorageBytes
 
 		olapDSN = fmt.Sprintf("%s.db?rill_pool_size=%d&threads=%d&max_memory=%dGB", path.Join(alloc.DataDir, instanceID), alloc.CPU, alloc.CPU, alloc.MemoryGB)
-	} else if olapDriver == "motherduck" {
-		if opts.ProdSlots == 0 {
-			return nil, fmt.Errorf("slot count can't be 0 for driver 'duckdb'")
-		}
-
-		embedCatalog = true
-		ingestionLimit = alloc.StorageBytes
-
-		olapDSN = fmt.Sprintf("md:%s?rill_pool_size=%d&threads=%d&max_memory=%dGB", instanceID, alloc.CPU, alloc.CPU, alloc.MemoryGB)
 	}
 
 	// Open a runtime client
@@ -118,7 +109,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	if err != nil {
 		_, err2 := rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
 			InstanceId: instanceID,
-			DropDb:     olapDriver == "duckdb" || olapDriver == "motherduck", // Only drop DB if it's DuckDB/motherduck
+			DropDb:     olapDriver == "duckdb", // Only drop DB if it's DuckDB
 		})
 		return nil, multierr.Combine(err, err2)
 	}
@@ -177,6 +168,63 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 	return nil
 }
 
+// HibernateDeployments tears down unused deployments
+func (s *Service) HibernateDeployments(ctx context.Context) error {
+	depls, err := s.DB.FindExpiredDeployments(ctx)
+	if err != nil {
+		return err
+	}
+
+	if len(depls) == 0 {
+		return nil
+	}
+
+	s.logger.Info("hibernate: starting", zap.Int("deployments", len(depls)))
+
+	for _, depl := range depls {
+		if depl.Status == database.DeploymentStatusReconciling && time.Since(depl.UpdatedOn) < 30*time.Minute {
+			s.logger.Info("hibernate: skipping deployment because it is reconciling", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
+			continue
+		}
+
+		proj, err := s.DB.FindProject(ctx, depl.ProjectID)
+		if err != nil {
+			s.logger.Error("hibernate: find project error", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
+			continue
+		}
+
+		s.logger.Info("hibernate: deleting deployment", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID))
+
+		err = s.teardownDeployment(ctx, proj, depl)
+		if err != nil {
+			s.logger.Error("hibernate: teardown deployment error", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
+			continue
+		}
+
+		// Update prod deployment on project
+		_, err = s.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+			Name:                 proj.Name,
+			Description:          proj.Description,
+			Public:               proj.Public,
+			GithubURL:            proj.GithubURL,
+			GithubInstallationID: proj.GithubInstallationID,
+			ProdBranch:           proj.ProdBranch,
+			ProdVariables:        proj.ProdVariables,
+			ProdSlots:            proj.ProdSlots,
+			Region:               proj.Region,
+			ProdTTLSeconds:       proj.ProdTTLSeconds,
+			ProdDeploymentID:     nil,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	s.logger.Info("hibernate: completed", zap.Int("deployments", len(depls)))
+
+	return nil
+}
+
 func (s *Service) updateDeplVariables(ctx context.Context, depl *database.Deployment, variables map[string]string) error {
 	rt, err := s.openRuntimeClientForDeployment(depl)
 	if err != nil {
@@ -208,7 +256,7 @@ func (s *Service) teardownDeployment(ctx context.Context, proj *database.Project
 	// Delete the instance
 	_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
 		InstanceId: depl.RuntimeInstanceID,
-		DropDb:     proj.ProdOLAPDriver == "duckdb" || proj.ProdOLAPDriver == "motherduck", // Only drop DB if it's DuckDB/motherduck
+		DropDb:     proj.ProdOLAPDriver == "duckdb", // Only drop DB if it's DuckDB
 	})
 	if err != nil {
 		return err

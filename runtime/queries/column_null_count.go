@@ -6,7 +6,6 @@ import (
 	"io"
 	"reflect"
 
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 )
@@ -85,6 +84,6 @@ func (q *ColumnNullCount) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	return nil
 }
 
-func (q *ColumnNullCount) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.ExportFormat, w io.Writer) error {
+func (q *ColumnNullCount) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
 	return ErrExportNotSupported
 }

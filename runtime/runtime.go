@@ -30,7 +30,7 @@ type Runtime struct {
 
 func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 	// Open metadata db connection
-	metastore, err := drivers.Open(opts.MetastoreDriver, opts.MetastoreDSN, logger)
+	metastore, err := drivers.Open(opts.MetastoreDriver, map[string]any{"dsn": opts.MetastoreDSN}, logger)
 	if err != nil {
 		return nil, fmt.Errorf("could not connect to metadata db: %w", err)
 	}
@@ -40,7 +40,7 @@ func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 	}
 
 	// Check the metastore is a registry
-	_, ok := metastore.RegistryStore()
+	_, ok := metastore.AsRegistry()
 	if !ok {
 		return nil, fmt.Errorf("server metastore must be a valid registry")
 	}
