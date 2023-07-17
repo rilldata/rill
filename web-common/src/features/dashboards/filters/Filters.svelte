@@ -85,7 +85,9 @@ The main feature-set component for dashboard filters
         label: getDisplayName(dimensionIdMap.get(dimensionValues.name)),
         selectedValues: dimensionValues.in,
         filterType: "include",
-        isHidden: !$dashboardStore?.visibleDimensionKeys.has(dimensionValues.name),
+        isHidden: !$dashboardStore?.visibleDimensionKeys.has(
+          dimensionValues.name
+        ),
       })
     );
     const currentDimensionExcludeFilters = $dashboardStore.filters.exclude.map(
@@ -94,7 +96,9 @@ The main feature-set component for dashboard filters
         label: getDisplayName(dimensionIdMap.get(dimensionValues.name)),
         selectedValues: dimensionValues.in,
         filterType: "exclude",
-        isHidden: !$dashboardStore?.visibleDimensionKeys.has(dimensionValues.name),
+        isHidden: !$dashboardStore?.visibleDimensionKeys.has(
+          dimensionValues.name
+        ),
       })
     );
     currentDimensionFilters = [
@@ -105,24 +109,16 @@ The main feature-set component for dashboard filters
     currentDimensionFilters.sort((a, b) => (a.name > b.name ? 1 : -1));
   }
 
+  function setActiveDimension(name, value) {
+    activeDimensionName = name;
+    searchText = value;
+  }
+
   function getColorForChip(isHidden, isInclude) {
     if (isInclude) {
       return isHidden ? includeHiddenChipColors : defaultChipColors;
     }
     return excludeChipColors;
-  }
-
-  function toggleDimensionValue(event, item) {
-    cancelDashboardQueries(queryClient, metricViewName);
-    metricsExplorerStore.toggleFilter(metricViewName, item.name, event.detail);
-  }
-
-  function toggleFilterMode(dimensionName) {
-    cancelDashboardQueries(queryClient, metricViewName);
-    metricsExplorerStore.toggleFilterMode(metricViewName, dimensionName);
-  function setActiveDimension(name, value) {
-    activeDimensionName = name;
-    searchText = value;
   }
 </script>
 
