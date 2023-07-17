@@ -115,7 +115,12 @@ This component needs to do the following:
     : NO_COMPARISON_LABEL;
 </script>
 
-<WithTogglableFloatingElement let:toggleFloatingElement let:active>
+<WithTogglableFloatingElement
+  distance={8}
+  alignment="start"
+  let:toggleFloatingElement
+  let:active
+>
   <Tooltip distance={8} suppress={active}>
     <SelectorButton
       {active}
