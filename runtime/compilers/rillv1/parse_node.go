@@ -19,6 +19,7 @@ type Node struct {
 	Refs              []ResourceName
 	Paths             []string
 	YAML              *yaml.Node
+	YAMLRaw           string
 	YAMLPath          string
 	Connector         string
 	SQL               string
@@ -76,6 +77,7 @@ func (p *Parser) parseStem(ctx context.Context, paths []string, ymlPath, yml, sq
 			return nil, pathError{path: ymlPath, err: newYAMLError(err)}
 		}
 		res.YAML = &node
+		res.YAMLRaw = yml
 		res.YAMLPath = ymlPath
 
 		err = node.Decode(&cfg)

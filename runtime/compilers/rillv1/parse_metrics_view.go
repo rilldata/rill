@@ -8,18 +8,20 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duration"
+	"gopkg.in/yaml.v3"
 )
 
 // metricsViewYAML is the raw structure of a MetricsView resource defined in YAML
 type metricsViewYAML struct {
-	Title              string   `yaml:"title"`
-	DisplayName        string   `yaml:"display_name"` // Backwards compatibility
-	Description        string   `yaml:"description"`
-	Model              string   `yaml:"model"`
-	TimeDimension      string   `yaml:"timeseries"`
-	SmallestTimeGrain  string   `yaml:"smallest_time_grain"`
-	DefaultTimeRange   string   `yaml:"default_time_range"`
-	AvailableTimeZones []string `yaml:"available_time_zones"`
+	commonYAML         `yaml:",inline"` // Only to use KnownFields
+	Title              string           `yaml:"title"`
+	DisplayName        string           `yaml:"display_name"` // Backwards compatibility
+	Description        string           `yaml:"description"`
+	Model              string           `yaml:"model"`
+	TimeDimension      string           `yaml:"timeseries"`
+	SmallestTimeGrain  string           `yaml:"smallest_time_grain"`
+	DefaultTimeRange   string           `yaml:"default_time_range"`
+	AvailableTimeZones []string         `yaml:"available_time_zones"`
 	Dimensions         []*struct {
 		Name        string
 		Label       string
@@ -37,14 +39,18 @@ type metricsViewYAML struct {
 		Ignore              bool   `yaml:"ignore"`
 		ValidPercentOfTotal bool   `yaml:"valid_percent_of_total"`
 	}
+	// ExtraProps map[string]any `yaml:",inline"`
 }
 
 // parseMetricsView parses a metrics view (dashboard) definition and adds the resulting resource to p.Resources.
 func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	// Parse YAML
 	tmp := &metricsViewYAML{}
-	if node.YAML != nil {
-		if err := node.YAML.Decode(tmp); err != nil {
+	if node.YAMLRaw != "" {
+		// Can't use node.YAML because we need to set KnownFields for metrics views
+		dec := yaml.NewDecoder(strings.NewReader(node.YAMLRaw))
+		dec.KnownFields(true)
+		if err := dec.Decode(tmp); err != nil {
 			return pathError{path: node.YAMLPath, err: newYAMLError(err)}
 		}
 	}
