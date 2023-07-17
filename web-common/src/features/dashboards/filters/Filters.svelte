@@ -72,6 +72,7 @@ The main feature-set component for dashboard filters
     label: string;
     selectedValues: any[];
     filterType: string;
+    isHidden: boolean;
   }[] = [];
 
   $: {
