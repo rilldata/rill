@@ -104,7 +104,14 @@ function createShowHideStore<Item>(
           fieldInMeta === "measures" &&
           metricsExplorer.leaderboardMeasureName === key
         ) {
-          const [firstVisible] = metricsExplorer[visibleFieldInStore];
+          /*
+           * To maintain the order of keys, filter out the
+           * non-visible ones from the available keys
+           */
+          const firstVisible = get(derivedStore).availableKeys.find((key) =>
+            metricsExplorer[visibleFieldInStore].has(key)
+          );
+
           metricsExplorer.leaderboardMeasureName = firstVisible;
         }
       } else {

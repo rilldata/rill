@@ -172,7 +172,9 @@ function syncMeasures(
         metricsExplorer.leaderboardMeasureName
       )
     ) {
-      const [firstVisibleMeasure] = metricsExplorer.visibleMeasureKeys;
+      const firstVisibleMeasure = metricsView.measures
+        .map((measure) => measure.name)
+        .find((key) => metricsExplorer.visibleMeasureKeys.has(key));
       metricsExplorer.leaderboardMeasureName = firstVisibleMeasure;
     }
   }
