@@ -3,6 +3,7 @@
   import { useIsSourceUnsaved } from "@rilldata/web-common/features/sources/selectors";
   import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { emitNavigationTelemetry } from "../../../layout/navigation/navigation-utils";
+  import { currentHref } from "../../../layout/navigation/stores";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
   import { EntityType } from "../../entity-management/types";
@@ -36,15 +37,20 @@
     goto(interceptedNavigation.url);
   };
 
+  function navigate(href: string) {
+    currentHref.set(href);
+    emitNavigationTelemetry(href);
+  }
+
   beforeNavigate((nav) => {
     const toHref = nav.to.url.href;
 
     if (!isSourceUnsaved) {
-      emitNavigationTelemetry(toHref);
+      navigate(toHref);
       return;
     }
     if (interceptedNavigation) {
-      emitNavigationTelemetry(toHref);
+      navigate(toHref);
       return;
     }
 
