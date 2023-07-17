@@ -25,7 +25,6 @@ type sourceYAML struct {
 func (p *Parser) parseSource(ctx context.Context, stem *Stem) error {
 	// If the source has SQL and hasn't specified a connector, we treat it as a model
 	if stem.SQL != "" && stem.Connector == "" {
-		stem.Kind = ResourceKindModel
 		return p.parseModel(ctx, stem)
 	}
 
@@ -73,7 +72,7 @@ func (p *Parser) parseSource(ctx context.Context, stem *Stem) error {
 
 	// Validate the source has a connector
 	if stem.Connector == "" {
-		return fmt.Errorf("source must specify a connector")
+		return fmt.Errorf("must specify a connector")
 	}
 
 	props, err := structpb.NewStruct(tmp.Properties)

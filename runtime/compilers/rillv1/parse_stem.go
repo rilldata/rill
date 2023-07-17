@@ -14,18 +14,17 @@ import (
 
 // Stem represents one path stem in the project. A stem contains data derived from a YAML and/or SQL file (e.g. "/path/to/file.yaml" for "/path/to/file.sql").
 type Stem struct {
-	Kind                  ResourceKind
-	Name                  string
-	Refs                  []ResourceName
-	Connector             string
-	Paths                 []string
-	YAML                  *yaml.Node
-	YAMLPath              string
-	SQL                   string
-	SQLPath               string
-	SQLAnnotations        map[string]any
-	SQLUsesTemplating     bool
-	SQLTemplatingDisabled bool
+	Kind              ResourceKind
+	Name              string
+	Refs              []ResourceName
+	Paths             []string
+	YAML              *yaml.Node
+	YAMLPath          string
+	Connector         string
+	SQL               string
+	SQLPath           string
+	SQLAnnotations    map[string]any
+	SQLUsesTemplating bool
 }
 
 // commonYAML parses YAML fields common to all YAML files.
@@ -38,7 +37,7 @@ type commonYAML struct {
 	Refs []*yaml.Node `yaml:"refs"`
 	// ParserConfig enables setting file-level parser config.
 	ParserConfig struct {
-		DisableTemplating bool `yaml:"disable_templating"`
+		Templating *bool `yaml:"templating"`
 	} `yaml:"parser"`
 	// Connector names the connector to use for this resource. It may not be used in all resources, but is included here since it provides context for the SQL field.
 	Connector string `yaml:"connector"`
@@ -70,13 +69,18 @@ func (p *Parser) parseStem(ctx context.Context, paths []string, ymlPath, yml, sq
 	}
 
 	// Handle YAML config
+	templatingEnabled := true
 	if cfg != nil {
 		// Copy basic properties
 		res.Name = cfg.Name
 		res.Connector = cfg.Connector
 		res.SQL = cfg.SQL
 		res.SQLPath = ymlPath
-		res.SQLTemplatingDisabled = cfg.ParserConfig.DisableTemplating
+
+		// Handle templating config
+		if cfg.ParserConfig.Templating != nil {
+			templatingEnabled = *cfg.ParserConfig.Templating
+		}
 
 		// Parse refs provided in YAML
 		var err error
@@ -105,7 +109,7 @@ func (p *Parser) parseStem(ctx context.Context, paths []string, ymlPath, yml, sq
 	}
 
 	// Parse SQL templating
-	if res.SQL != "" && !res.SQLTemplatingDisabled {
+	if templatingEnabled && res.SQL != "" {
 		meta, err := AnalyzeTemplate(res.SQL)
 		if err != nil {
 			if sqlPath != "" {
@@ -185,10 +189,11 @@ func (p *Parser) parseStem(ctx context.Context, paths []string, ymlPath, yml, sq
 		} else if strings.HasPrefix(paths[0], "/init.sql") {
 			res.Kind = ResourceKindMigration
 		} else {
-			if ymlPath != "" {
-				return nil, pathError{path: ymlPath, err: errors.New("resource kind not specified and could not be inferred from context")}
+			path := ymlPath
+			if path == "" {
+				path = sqlPath
 			}
-			return nil, pathError{path: sqlPath, err: errors.New("resource kind not specified and could not be inferred from context")}
+			return nil, pathError{path: path, err: errors.New("resource kind not specified and could not be inferred from context")}
 		}
 	}
 

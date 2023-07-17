@@ -25,8 +25,10 @@ type modelYAML struct {
 	Timeout      string        `yaml:"timeout" mapstructure:"timeout"`
 	Refresh      *scheduleYAML `yaml:"refresh" mapstructure:"refresh"`
 	ParserConfig struct {
-		DisableDuckDBInference       bool `yaml:"disable_duckdb_inference"`
-		DisableDuckDBSourceRewriting bool `yaml:"disable_duckdb_source_rewriting"`
+		DuckDB struct {
+			InferRefs      *bool `yaml:"infer_refs" mapstructure:"infer_refs"`
+			RewriteSources *bool `yaml:"rewrite_sources" mapstructure:"rewrite_sources"`
+		} `yaml:"duckdb" mapstructure:"duckdb"`
 	} `yaml:"parser"`
 }
 
@@ -61,23 +63,27 @@ func (p *Parser) parseModel(ctx context.Context, stem *Stem) error {
 		return err
 	}
 
-	// If the connector is a DuckDB connector, enable DuckDB SQL-based inference.
-	// Note: If the unspecified/default connector is DuckDB, duckDBConnectors will contain the empty string (see Parse).
+	// If the connector is a DuckDB connector, extract info using DuckDB SQL parsing. This also supports rewriting embedded sources.
 	// (If templating was used, we skip DuckDB inference because the DuckDB parser may not be able to parse the templated code.)
-	runDuckDBInference := false
-	if !stem.SQLUsesTemplating && !tmp.ParserConfig.DisableDuckDBInference {
-		for _, c := range p.DuckDBConnectors {
-			if c == stem.Connector {
-				runDuckDBInference = true
-				break
-			}
+	isDuckDB := false
+	for _, c := range p.DuckDBConnectors {
+		// Note: If the unspecified/default connector is DuckDB, duckDBConnectors will contain the empty string (see Parse).
+		if c == stem.Connector {
+			isDuckDB = true
+			break
 		}
 	}
-
-	// Extract info using DuckDB inference. DuckDB inference also supports rewriting embedded sources.
+	duckDBInferRefs := true
+	if tmp.ParserConfig.DuckDB.InferRefs != nil {
+		duckDBInferRefs = *tmp.ParserConfig.DuckDB.InferRefs
+	}
+	duckDBRewriteSources := true
+	if tmp.ParserConfig.DuckDB.RewriteSources != nil {
+		duckDBRewriteSources = *tmp.ParserConfig.DuckDB.RewriteSources
+	}
 	refs := stem.Refs
 	embeddedSources := make(map[ResourceName]*runtimev1.SourceSpec)
-	if stem.SQL != "" && runDuckDBInference {
+	if isDuckDB && !stem.SQLUsesTemplating && stem.SQL != "" && (duckDBInferRefs || duckDBRewriteSources) {
 		// Parse the SQL
 		ast, err := duckdbsql.Parse(stem.SQL)
 		if err != nil {
@@ -92,7 +98,7 @@ func (p *Parser) parseModel(ctx context.Context, stem *Stem) error {
 			}
 
 			// If embedded sources is enabled, parse it and add it to embeddedSources.
-			if !tmp.ParserConfig.DisableDuckDBSourceRewriting {
+			if duckDBRewriteSources {
 				name, spec, ok := parseEmbeddedSource(t, stem.Connector)
 				if ok {
 					if embeddedSources[name] == nil {
@@ -105,8 +111,10 @@ func (p *Parser) parseModel(ctx context.Context, stem *Stem) error {
 			}
 
 			// Not an embedded source. Add it to refs if it's a regular table reference.
-			if t.Name != "" && t.Function == "" && t.Path == "" {
-				refs = append(refs, ResourceName{Name: t.Name})
+			if duckDBInferRefs {
+				if t.Name != "" && t.Function == "" && t.Path == "" {
+					refs = append(refs, ResourceName{Name: t.Name})
+				}
 			}
 			return nil, false
 		})
@@ -126,8 +134,8 @@ func (p *Parser) parseModel(ctx context.Context, stem *Stem) error {
 	for name, spec := range embeddedSources {
 		r := p.upsertResource(ResourceKindSource, name.Name, stem.Paths)
 
-		// Since the same source may be referenced in multiple models with different TimeoutSeconds, we take the max of all the values.
-		if spec.TimeoutSeconds < r.SourceSpec.TimeoutSeconds {
+		// Since the same source may be referenced in multiple models with different TimeoutSeconds, coerce it to the lowest timeout of any referencing model.
+		if spec.TimeoutSeconds == 0 || spec.TimeoutSeconds > r.SourceSpec.TimeoutSeconds {
 			spec.TimeoutSeconds = r.SourceSpec.TimeoutSeconds
 		}
 
@@ -154,8 +162,8 @@ func (p *Parser) parseModel(ctx context.Context, stem *Stem) error {
 		r.ModelSpec.RefreshSchedule = schedule
 	}
 
-	if r.ModelSpec.Materialize == nil && stem.Kind == ResourceKindSource && len(embeddedSources) == 0 {
-		// If materialize was not set explicitly, always materialize SQL files without embedded sources of kind source
+	// parseSource calls parseModel for SQL sources without a connector. Materialize such models if they don't use embedded sources.
+	if stem.Kind == ResourceKindSource && r.ModelSpec.Materialize == nil && len(embeddedSources) == 0 {
 		b := true
 		r.ModelSpec.Materialize = &b
 	}
