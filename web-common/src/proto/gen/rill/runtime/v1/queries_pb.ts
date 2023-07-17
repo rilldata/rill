@@ -828,63 +828,6 @@ export class MetricsViewComparisonValue extends Message<MetricsViewComparisonVal
 }
 
 /**
- * @generated from message rill.runtime.v1.TimeZoneAdjustment
- */
-export class TimeZoneAdjustment extends Message<TimeZoneAdjustment> {
-  /**
-   * @generated from oneof rill.runtime.v1.TimeZoneAdjustment.adjustment
-   */
-  adjustment: {
-    /**
-     * @generated from field: int32 offset = 1;
-     */
-    value: number;
-    case: "offset";
-  } | {
-    /**
-     * @generated from field: google.protobuf.Timestamp origin = 2;
-     */
-    value: Timestamp;
-    case: "origin";
-  } | {
-    /**
-     * @generated from field: string time_zone = 3;
-     */
-    value: string;
-    case: "timeZone";
-  } | { case: undefined; value?: undefined } = { case: undefined };
-
-  constructor(data?: PartialMessage<TimeZoneAdjustment>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.TimeZoneAdjustment";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "offset", kind: "scalar", T: 5 /* ScalarType.INT32 */, oneof: "adjustment" },
-    { no: 2, name: "origin", kind: "message", T: Timestamp, oneof: "adjustment" },
-    { no: 3, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "adjustment" },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TimeZoneAdjustment {
-    return new TimeZoneAdjustment().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TimeZoneAdjustment {
-    return new TimeZoneAdjustment().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TimeZoneAdjustment {
-    return new TimeZoneAdjustment().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: TimeZoneAdjustment | PlainMessage<TimeZoneAdjustment> | undefined, b: TimeZoneAdjustment | PlainMessage<TimeZoneAdjustment> | undefined): boolean {
-    return proto3.util.equals(TimeZoneAdjustment, a, b);
-  }
-}
-
-/**
  * Request message for QueryService.MetricsViewTimeSeries
  *
  * @generated from message rill.runtime.v1.MetricsViewTimeSeriesRequest
@@ -931,9 +874,9 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
   filter?: MetricsViewFilter;
 
   /**
-   * @generated from field: rill.runtime.v1.TimeZoneAdjustment time_zone_adjustment = 10;
+   * @generated from field: string time_zone = 10;
    */
-  timeZoneAdjustment?: TimeZoneAdjustment;
+  timeZone = "";
 
   /**
    * @generated from field: int32 priority = 8;
@@ -956,7 +899,7 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
     { no: 5, name: "time_end", kind: "message", T: Timestamp },
     { no: 6, name: "time_granularity", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 7, name: "filter", kind: "message", T: MetricsViewFilter },
-    { no: 10, name: "time_zone_adjustment", kind: "message", T: TimeZoneAdjustment },
+    { no: 10, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
@@ -1205,9 +1148,9 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
   priority = 0;
 
   /**
-   * @generated from field: rill.runtime.v1.TimeZoneAdjustment time_zone_adjustment = 11;
+   * @generated from field: string time_zone = 11;
    */
-  timeZoneAdjustment?: TimeZoneAdjustment;
+  timeZone = "";
 
   constructor(data?: PartialMessage<MetricsViewRowsRequest>) {
     super();
@@ -1227,7 +1170,7 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
     { no: 7, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 8, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 9, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 11, name: "time_zone_adjustment", kind: "message", T: TimeZoneAdjustment },
+    { no: 11, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewRowsRequest {
@@ -3017,9 +2960,9 @@ export class ColumnTimeSeriesRequest extends Message<ColumnTimeSeriesRequest> {
   priority = 0;
 
   /**
-   * @generated from field: rill.runtime.v1.TimeZoneAdjustment time_zone_adjustment = 10;
+   * @generated from field: string time_zone = 10;
    */
-  timeZoneAdjustment?: TimeZoneAdjustment;
+  timeZone = "";
 
   constructor(data?: PartialMessage<ColumnTimeSeriesRequest>) {
     super();
@@ -3037,7 +2980,7 @@ export class ColumnTimeSeriesRequest extends Message<ColumnTimeSeriesRequest> {
     { no: 7, name: "pixels", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 8, name: "sample_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 9, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 10, name: "time_zone_adjustment", kind: "message", T: TimeZoneAdjustment },
+    { no: 10, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ColumnTimeSeriesRequest {
