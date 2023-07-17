@@ -40,12 +40,12 @@ type metricsViewYAML struct {
 }
 
 // parseMetricsView parses a metrics view (dashboard) definition and adds the resulting resource to p.Resources.
-func (p *Parser) parseMetricsView(ctx context.Context, stem *Stem) error {
+func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	// Parse YAML
 	tmp := &metricsViewYAML{}
-	if stem.YAML != nil {
-		if err := stem.YAML.Decode(tmp); err != nil {
-			return pathError{path: stem.YAMLPath, err: newYAMLError(err)}
+	if node.YAML != nil {
+		if err := node.YAML.Decode(tmp); err != nil {
+			return pathError{path: node.YAMLPath, err: newYAMLError(err)}
 		}
 	}
 
@@ -73,9 +73,9 @@ func (p *Parser) parseMetricsView(ctx context.Context, stem *Stem) error {
 		}
 	}
 
-	stem.Refs = append(stem.Refs, ResourceName{Name: tmp.Model})
+	node.Refs = append(node.Refs, ResourceName{Name: tmp.Model})
 
-	r := p.upsertResource(ResourceKindMetricsView, stem.Name, stem.Paths, stem.Refs...)
+	r := p.upsertResource(ResourceKindMetricsView, node.Name, node.Paths, node.Refs...)
 	spec := r.MetricsViewSpec
 
 	spec.Title = tmp.Title

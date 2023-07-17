@@ -22,32 +22,32 @@ type sourceYAML struct {
 }
 
 // parseSource parses a source definition and adds the resulting resource to p.Resources.
-func (p *Parser) parseSource(ctx context.Context, stem *Stem) error {
+func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 	// If the source has SQL and hasn't specified a connector, we treat it as a model
-	if stem.SQL != "" && stem.Connector == "" {
-		return p.parseModel(ctx, stem)
+	if node.SQL != "" && node.Connector == "" {
+		return p.parseModel(ctx, node)
 	}
 
 	// Parse YAML
 	tmp := &sourceYAML{}
-	if stem.YAML != nil {
-		if err := stem.YAML.Decode(tmp); err != nil {
-			return pathError{path: stem.YAMLPath, err: newYAMLError(err)}
+	if node.YAML != nil {
+		if err := node.YAML.Decode(tmp); err != nil {
+			return pathError{path: node.YAMLPath, err: newYAMLError(err)}
 		}
 	}
 
 	// Override YAML config with SQL annotations
-	err := mapstructureUnmarshal(stem.SQLAnnotations, tmp)
+	err := mapstructureUnmarshal(node.SQLAnnotations, tmp)
 	if err != nil {
-		return pathError{path: stem.SQLPath, err: fmt.Errorf("invalid SQL annotations: %w", err)}
+		return pathError{path: node.SQLPath, err: fmt.Errorf("invalid SQL annotations: %w", err)}
 	}
 
 	// Add SQL as a property
-	if stem.SQL != "" {
+	if node.SQL != "" {
 		if tmp.Properties == nil {
 			tmp.Properties = map[string]any{}
 		}
-		tmp.Properties["sql"] = strings.TrimSpace(stem.SQL)
+		tmp.Properties["sql"] = strings.TrimSpace(node.SQL)
 	}
 
 	// Parse timeout
@@ -66,12 +66,12 @@ func (p *Parser) parseSource(ctx context.Context, stem *Stem) error {
 	}
 
 	// Backward compatibility
-	if tmp.Type != "" && stem.Connector == "" {
-		stem.Connector = tmp.Type
+	if tmp.Type != "" && node.Connector == "" {
+		node.Connector = tmp.Type
 	}
 
 	// Validate the source has a connector
-	if stem.Connector == "" {
+	if node.Connector == "" {
 		return fmt.Errorf("must specify a connector")
 	}
 
@@ -81,10 +81,10 @@ func (p *Parser) parseSource(ctx context.Context, stem *Stem) error {
 	}
 
 	// Upsert source (in practice, this will always be an insert)
-	r := p.upsertResource(ResourceKindSource, stem.Name, stem.Paths, stem.Refs...)
+	r := p.upsertResource(ResourceKindSource, node.Name, node.Paths, node.Refs...)
 	r.SourceSpec.Properties = mergeStructPB(r.SourceSpec.Properties, props)
-	if stem.Connector != "" {
-		r.SourceSpec.SourceConnector = stem.Connector // Source connector. Sink connector not currently configurable.
+	if node.Connector != "" {
+		r.SourceSpec.SourceConnector = node.Connector // Source connector. Sink connector not currently configurable.
 	}
 	if timeout != 0 {
 		r.SourceSpec.TimeoutSeconds = uint32(timeout.Seconds())

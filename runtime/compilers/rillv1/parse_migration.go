@@ -12,28 +12,28 @@ type migrationYAML struct {
 }
 
 // parseMigration parses a migration definition and adds the resulting resource to p.Resources.
-func (p *Parser) parseMigration(ctx context.Context, stem *Stem) error {
+func (p *Parser) parseMigration(ctx context.Context, node *Node) error {
 	// Parse YAML
 	tmp := &migrationYAML{}
-	if stem.YAML != nil {
-		if err := stem.YAML.Decode(tmp); err != nil {
-			return pathError{path: stem.YAMLPath, err: newYAMLError(err)}
+	if node.YAML != nil {
+		if err := node.YAML.Decode(tmp); err != nil {
+			return pathError{path: node.YAMLPath, err: newYAMLError(err)}
 		}
 	}
 
 	// Override YAML config with SQL annotations
-	err := mapstructureUnmarshal(stem.SQLAnnotations, tmp)
+	err := mapstructureUnmarshal(node.SQLAnnotations, tmp)
 	if err != nil {
-		return pathError{path: stem.SQLPath, err: fmt.Errorf("invalid SQL annotations: %w", err)}
+		return pathError{path: node.SQLPath, err: fmt.Errorf("invalid SQL annotations: %w", err)}
 	}
 
 	// Upsert resource (in practice, this will always be an insert)
-	r := p.upsertResource(ResourceKindMigration, stem.Name, stem.Paths, stem.Refs...)
-	if stem.Connector != "" {
-		r.MigrationSpec.Connector = stem.Connector
+	r := p.upsertResource(ResourceKindMigration, node.Name, node.Paths, node.Refs...)
+	if node.Connector != "" {
+		r.MigrationSpec.Connector = node.Connector
 	}
-	if stem.SQL != "" {
-		r.MigrationSpec.Sql = strings.TrimSpace(stem.SQL)
+	if node.SQL != "" {
+		r.MigrationSpec.Sql = strings.TrimSpace(node.SQL)
 	}
 	if tmp.Version > 0 {
 		r.MigrationSpec.Version = uint32(tmp.Version)

@@ -12,8 +12,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Stem represents one path stem in the project. A stem contains data derived from a YAML and/or SQL file (e.g. "/path/to/file.yaml" for "/path/to/file.sql").
-type Stem struct {
+// Node represents one path stem in the project. It contains data derived from a YAML and/or SQL file (e.g. "/path/to/file.yaml" for "/path/to/file.sql").
+type Node struct {
 	Kind              ResourceKind
 	Name              string
 	Refs              []ResourceName
@@ -25,6 +25,22 @@ type Stem struct {
 	SQLPath           string
 	SQLAnnotations    map[string]any
 	SQLUsesTemplating bool
+}
+
+// parseNode multiplexes to the appropriate parse function based on the node kind.
+func (p *Parser) parseNode(ctx context.Context, node *Node) error {
+	switch node.Kind {
+	case ResourceKindSource:
+		return p.parseSource(ctx, node)
+	case ResourceKindModel:
+		return p.parseModel(ctx, node)
+	case ResourceKindMetricsView:
+		return p.parseMetricsView(ctx, node)
+	case ResourceKindMigration:
+		return p.parseMigration(ctx, node)
+	default:
+		panic(fmt.Errorf("unexpected resource kind: %s", node.Kind.String()))
+	}
 }
 
 // commonYAML parses YAML fields common to all YAML files.
@@ -47,9 +63,9 @@ type commonYAML struct {
 
 // parseStem parses a pair of YAML and SQL files with the same path stem (e.g. "/path/to/file.yaml" for "/path/to/file.sql").
 // Note that either of the YAML or SQL files may be empty (the paths arg will only contain non-nil paths).
-func (p *Parser) parseStem(ctx context.Context, paths []string, ymlPath, yml, sqlPath, sql string) (*Stem, error) {
-	// The rest of the function builds Stem from YAML and SQL info
-	res := &Stem{Paths: paths}
+func (p *Parser) parseStem(ctx context.Context, paths []string, ymlPath, yml, sqlPath, sql string) (*Node, error) {
+	// The rest of the function builds a Node from YAML and SQL info
+	res := &Node{Paths: paths}
 
 	// Parse YAML into commonYAML
 	var cfg *commonYAML

@@ -33,19 +33,19 @@ type modelYAML struct {
 }
 
 // parseModel parses a model definition and adds the resulting resource to p.Resources.
-func (p *Parser) parseModel(ctx context.Context, stem *Stem) error {
+func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	// Parse YAML
 	tmp := &modelYAML{}
-	if stem.YAML != nil {
-		if err := stem.YAML.Decode(tmp); err != nil {
-			return pathError{path: stem.YAMLPath, err: newYAMLError(err)}
+	if node.YAML != nil {
+		if err := node.YAML.Decode(tmp); err != nil {
+			return pathError{path: node.YAMLPath, err: newYAMLError(err)}
 		}
 	}
 
 	// Override YAML config with SQL annotations
-	err := mapstructureUnmarshal(stem.SQLAnnotations, tmp)
+	err := mapstructureUnmarshal(node.SQLAnnotations, tmp)
 	if err != nil {
-		return pathError{path: stem.SQLPath, err: fmt.Errorf("invalid SQL annotations: %w", err)}
+		return pathError{path: node.SQLPath, err: fmt.Errorf("invalid SQL annotations: %w", err)}
 	}
 
 	// Parse timeout
@@ -68,7 +68,7 @@ func (p *Parser) parseModel(ctx context.Context, stem *Stem) error {
 	isDuckDB := false
 	for _, c := range p.DuckDBConnectors {
 		// Note: If the unspecified/default connector is DuckDB, duckDBConnectors will contain the empty string (see Parse).
-		if c == stem.Connector {
+		if c == node.Connector {
 			isDuckDB = true
 			break
 		}
@@ -81,13 +81,13 @@ func (p *Parser) parseModel(ctx context.Context, stem *Stem) error {
 	if tmp.ParserConfig.DuckDB.RewriteSources != nil {
 		duckDBRewriteSources = *tmp.ParserConfig.DuckDB.RewriteSources
 	}
-	refs := stem.Refs
+	refs := node.Refs
 	embeddedSources := make(map[ResourceName]*runtimev1.SourceSpec)
-	if isDuckDB && !stem.SQLUsesTemplating && stem.SQL != "" && (duckDBInferRefs || duckDBRewriteSources) {
+	if isDuckDB && !node.SQLUsesTemplating && node.SQL != "" && (duckDBInferRefs || duckDBRewriteSources) {
 		// Parse the SQL
-		ast, err := duckdbsql.Parse(stem.SQL)
+		ast, err := duckdbsql.Parse(node.SQL)
 		if err != nil {
-			return pathError{path: stem.SQLPath, err: newDuckDBError(err)}
+			return pathError{path: node.SQLPath, err: newDuckDBError(err)}
 		}
 
 		// Scan SQL for table references. Track references in refs and rewrite table functions into embedded sources.
@@ -99,7 +99,7 @@ func (p *Parser) parseModel(ctx context.Context, stem *Stem) error {
 
 			// If embedded sources is enabled, parse it and add it to embeddedSources.
 			if duckDBRewriteSources {
-				name, spec, ok := parseEmbeddedSource(t, stem.Connector)
+				name, spec, ok := parseEmbeddedSource(t, node.Connector)
 				if ok {
 					if embeddedSources[name] == nil {
 						spec.TimeoutSeconds = uint32(timeout.Seconds())
@@ -119,20 +119,20 @@ func (p *Parser) parseModel(ctx context.Context, stem *Stem) error {
 			return nil, false
 		})
 		if err != nil {
-			return pathError{path: stem.SQLPath, err: fmt.Errorf("error rewriting table refs: %w", err)}
+			return pathError{path: node.SQLPath, err: fmt.Errorf("error rewriting table refs: %w", err)}
 		}
 
 		// Update data to the rewritten SQL
 		sql, err := ast.Format()
 		if err != nil {
-			return pathError{path: stem.SQLPath, err: fmt.Errorf("failed to format DuckDB SQL: %w", err)}
+			return pathError{path: node.SQLPath, err: fmt.Errorf("failed to format DuckDB SQL: %w", err)}
 		}
-		stem.SQL = sql
+		node.SQL = sql
 	}
 
 	// Add the embedded sources
 	for name, spec := range embeddedSources {
-		r := p.upsertResource(ResourceKindSource, name.Name, stem.Paths)
+		r := p.upsertResource(ResourceKindSource, name.Name, node.Paths)
 
 		// Since the same source may be referenced in multiple models with different TimeoutSeconds, coerce it to the lowest timeout of any referencing model.
 		if spec.TimeoutSeconds == 0 || spec.TimeoutSeconds > r.SourceSpec.TimeoutSeconds {
@@ -144,13 +144,13 @@ func (p *Parser) parseModel(ctx context.Context, stem *Stem) error {
 	}
 
 	// Upsert the model
-	r := p.upsertResource(ResourceKindModel, stem.Name, stem.Paths, refs...)
-	if stem.SQL != "" {
-		r.ModelSpec.Sql = strings.TrimSpace(stem.SQL)
-		r.ModelSpec.UsesTemplating = stem.SQLUsesTemplating
+	r := p.upsertResource(ResourceKindModel, node.Name, node.Paths, refs...)
+	if node.SQL != "" {
+		r.ModelSpec.Sql = strings.TrimSpace(node.SQL)
+		r.ModelSpec.UsesTemplating = node.SQLUsesTemplating
 	}
-	if stem.Connector != "" {
-		r.ModelSpec.Connector = stem.Connector
+	if node.Connector != "" {
+		r.ModelSpec.Connector = node.Connector
 	}
 	if tmp.Materialize != nil {
 		r.ModelSpec.Materialize = tmp.Materialize
@@ -163,7 +163,7 @@ func (p *Parser) parseModel(ctx context.Context, stem *Stem) error {
 	}
 
 	// parseSource calls parseModel for SQL sources without a connector. Materialize such models if they don't use embedded sources.
-	if stem.Kind == ResourceKindSource && r.ModelSpec.Materialize == nil && len(embeddedSources) == 0 {
+	if node.Kind == ResourceKindSource && r.ModelSpec.Materialize == nil && len(embeddedSources) == 0 {
 		b := true
 		r.ModelSpec.Materialize = &b
 	}

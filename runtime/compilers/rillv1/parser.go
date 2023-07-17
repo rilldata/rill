@@ -395,27 +395,13 @@ func (p *Parser) parseStemPaths(ctx context.Context, paths []string) error {
 		// The unhandled case should never happen, just being defensive
 	}
 
-	// Parse the SQL/YAML file pair to a Stem.
-	stem, err := p.parseStem(ctx, paths, yamlPath, yaml, sqlPath, sql)
-	// Note: err handled after switch
-
-	// Multiplex Stem to different handlers
+	// Parse the SQL/YAML file pair to a Node, then parse the Node to p.Resources.
+	node, err := p.parseStem(ctx, paths, yamlPath, yaml, sqlPath, sql)
 	if err == nil {
-		switch stem.Kind {
-		case ResourceKindSource:
-			err = p.parseSource(ctx, stem)
-		case ResourceKindModel:
-			err = p.parseModel(ctx, stem)
-		case ResourceKindMetricsView:
-			err = p.parseMetricsView(ctx, stem)
-		case ResourceKindMigration:
-			err = p.parseMigration(ctx, stem)
-		default:
-			panic(fmt.Errorf("unexpected resource kind: %s", stem.Kind.String()))
-		}
+		err = p.parseNode(ctx, node)
 	}
 
-	// Spread error across the stem's paths
+	// Spread error across the node's paths (YAML and/or SQL files)
 	if err != nil {
 		var pathErr pathError
 		if errors.As(err, &pathErr) {
