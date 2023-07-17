@@ -2,7 +2,6 @@
   import { page } from "$app/stores";
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
   import {
     createRuntimeServiceListCatalogEntries,
@@ -23,6 +22,7 @@
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
   import AddAssetButton from "../../entity-management/AddAssetButton.svelte";
+  import { EntityType } from "../../entity-management/types";
   import { useModelNames } from "../../models/selectors";
   import { createModelFromSource } from "../createModel";
   import AddSourceModal from "../modal/AddSourceModal.svelte";
@@ -87,10 +87,11 @@
           out:slide={{ duration: LIST_SLIDE_DURATION }}
         >
           <NavigationEntry
+            name={sourceName}
             href={`/source/${sourceName}`}
             open={$page.url.pathname === `/source/${sourceName}`}
+            immediatelyNavigate={false}
             on:command-click={() => queryHandler(sourceName)}
-            name={sourceName}
           >
             <svelte:fragment slot="more">
               <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
