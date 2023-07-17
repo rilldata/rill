@@ -69,6 +69,8 @@ export function getProtoFromDashboardState(
     state.visibleDimensions = [...metrics.visibleDimensionKeys];
   }
 
+  state.showPercentOfTotal = Boolean(metrics.showPercentOfTotal);
+
   const message = new DashboardState(state);
   return protoToBase64(message.toBinary());
 }

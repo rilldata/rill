@@ -7,11 +7,13 @@
   import { crossfade, fly } from "svelte/transition";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
+
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../dashboard-stores";
   import { useMetaQuery } from "../selectors";
+  import LeaderboardContextColumnToggle from "./LeaderboardContextColumnToggle.svelte";
 
   export let metricViewName;
 
@@ -42,7 +44,7 @@
 
   /** this should be a single element */
   // reset selections based on the active leaderboard measure
-  let activeLeaderboardMeasure;
+  let activeLeaderboardMeasure: ReturnType<typeof formatForSelector>;
   $: activeLeaderboardMeasure =
     measures?.length &&
     metricsExplorer?.leaderboardMeasureName &&
@@ -66,6 +68,9 @@
 
   /** set the selection only if measures is not undefined */
   $: selection = measures ? activeLeaderboardMeasure : [];
+
+  $: validPercentOfTotal =
+    activeLeaderboardMeasure?.validPercentOfTotal || false;
 
   $: showHideDimensions = createShowHideDimensionsStore(
     metricViewName,
@@ -115,6 +120,7 @@
       >
         <span class="font-bold truncate">{selection?.main}</span>
       </SelectMenu>
+      <LeaderboardContextColumnToggle {metricViewName} {validPercentOfTotal} />
     </div>
   {:else}
     <div

@@ -44,6 +44,11 @@
       ? format("0.1%")
       : () => "";
 
+  // We need this to get transition working properly.
+  // Since the topk query is in a reactive statement with `enable`, `topK` can be undefined.
+  // This leads to unexpected issues when paired with transition
+  $: topKCopy = topK ?? topKCopy;
+
   function ensureSpaces(str: string, n = 6) {
     return `${Array.from({ length: n - str.length })
       .fill("&nbsp;")
@@ -67,9 +72,9 @@
   /** handle LISTs and STRUCTs */
 </script>
 
-{#if topK && totalRows}
+{#if topKCopy && totalRows}
   <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-    {#each topK.slice(0, k) as item (item.value)}
+    {#each topKCopy.slice(0, k) as item (item.value)}
       {@const negligiblePercentage = item.count / totalRows < 0.0002}
       {@const percentage = negligiblePercentage
         ? "<.01%"

@@ -81,6 +81,11 @@ export class DashboardState extends Message<DashboardState> {
    */
   allDimensionsVisible?: boolean;
 
+  /**
+   * @generated from field: optional bool show_percent_of_total = 12;
+   */
+  showPercentOfTotal?: boolean;
+
   constructor(data?: PartialMessage<DashboardState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -100,6 +105,7 @@ export class DashboardState extends Message<DashboardState> {
     { no: 9, name: "all_measures_visible", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 10, name: "visible_dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "all_dimensions_visible", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 12, name: "show_percent_of_total", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardState {

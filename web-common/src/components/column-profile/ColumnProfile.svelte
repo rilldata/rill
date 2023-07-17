@@ -52,7 +52,7 @@
     nestedColumnProfileQuery = getSummaries(
       objectName,
       $runtime?.instanceId,
-      $profileColumns?.data?.profileColumns
+      $profileColumns
     );
   }
 
@@ -83,11 +83,11 @@
     <option value={sortByName}>sort by name</option>
   </select>
   <select
-    style:transform="translateX(4px)"
     bind:value={mode}
     class={NATIVE_SELECT}
     class:hidden={containerWidth < 325}
     style:font-size="11px"
+    style:transform="translateX(4px)"
   >
     <option value="summaries">show summary&nbsp;</option>
     <option value="example">show example</option>
@@ -113,6 +113,7 @@
         {hideRight}
         {hideNullPercentage}
         {compact}
+        enableProfiling={!$profileColumns?.isFetching}
       />
     {/each}
   {/if}
