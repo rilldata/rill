@@ -10,7 +10,7 @@ import {
 } from "./helpers";
 import { waitForEntity } from "./waitHelpers";
 
-const TestDataPath = path.join(__dirname, "../../data");
+export const TestDataPath = path.join(__dirname, "../../data");
 
 /**
  * Used to upload local file as a source
