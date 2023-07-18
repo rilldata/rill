@@ -57,7 +57,7 @@
     style:height="calc({innerHeight}px - {$outputPosition *
       $outputVisibilityTween}px - var(--header-height))"
   >
-    <SourceEditor {yaml} on:update />
+    <SourceEditor {yaml} />
   </div>
   <HorizontalSplitter />
   <div class="p-5" style:height="{$outputPosition}px">
