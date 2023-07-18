@@ -253,7 +253,6 @@
         <!-- place the leaderboard entries that are above the fold here -->
         <DimensionLeaderboardEntrySet
           {formatPreset}
-          loading={$topListQuery?.isFetching}
           values={values.slice(0, slice)}
           {comparisonValues}
           {showTimeComparison}
@@ -270,7 +269,6 @@
           <hr />
           <DimensionLeaderboardEntrySet
             {formatPreset}
-            loading={$topListQuery?.isFetching}
             values={selectedValuesThatAreBelowTheFold}
             {comparisonValues}
             {showTimeComparison}

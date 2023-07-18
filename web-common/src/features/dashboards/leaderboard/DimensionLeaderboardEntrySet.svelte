@@ -23,7 +23,6 @@ see more button
   export let isSummableMeasure: boolean;
   export let referenceValue;
   export let atLeastOneActive;
-  export let loading = false;
   export let formatPreset;
 
   let renderValues = [];
@@ -59,7 +58,6 @@ see more button
     {showContext}
     isActive={active}
     {atLeastOneActive}
-    {loading}
     {label}
     {comparisonValue}
     {filterExcludeMode}

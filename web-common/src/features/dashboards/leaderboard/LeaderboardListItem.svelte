@@ -27,7 +27,6 @@
   export let isActive = false;
   export let showContext: "time" | "percent" | false = false;
 
-  export let loading = false;
   export let atLeastOneActive = false;
   export let label: string | number;
 
@@ -145,7 +144,7 @@
       <div class="grid leaderboard-entry items-center gap-x-3" style:height>
         <!-- NOTE: empty class leaderboard-label is used to locate this elt in e2e tests -->
         <div
-          class:ui-copy={!atLeastOneActive && !loading}
+          class:ui-copy={!atLeastOneActive}
           class:ui-copy-strong={!excluded && isActive}
           class:ui-copy-disabled={excluded}
           class="leaderboard-label justify-self-start text-left w-full text-ellipsis overflow-hidden whitespace-nowrap"
