@@ -1801,13 +1801,6 @@ definitions:
       - TYPE_INFORMATIONAL
     default: TYPE_UNSPECIFIED
     title: Type represents the field type
-  ExtractPolicyStrategy:
-    type: string
-    enum:
-      - STRATEGY_UNSPECIFIED
-      - STRATEGY_HEAD
-      - STRATEGY_TAIL
-    default: STRATEGY_UNSPECIFIED
   MetricsViewDimension:
     type: object
     properties:
@@ -1890,21 +1883,11 @@ definitions:
       count:
         type: integer
         format: int32
-  ReconcileErrorCharLocation:
-    type: object
-    properties:
-      line:
-        type: integer
-        format: int64
-      column:
-        type: integer
-        format: int64
-    title: CharLocation is a line and column in a code artifact
   SourceExtractPolicy:
     type: object
     properties:
       rowsStrategy:
-        $ref: '#/definitions/ExtractPolicyStrategy'
+        $ref: '#/definitions/SourceExtractPolicyStrategy'
         title: strategy for selecting rows in a file
       rowsLimitBytes:
         type: string
@@ -1913,13 +1896,20 @@ definitions:
           could in future add: uint64 rows_limit = n;
           limit on data fetched in bytes
       filesStrategy:
-        $ref: '#/definitions/ExtractPolicyStrategy'
+        $ref: '#/definitions/SourceExtractPolicyStrategy'
         title: strategy for selecting files
       filesLimit:
         type: string
         format: uint64
         title: limit on number of files
     title: Extract policy for glob connectors
+  SourceExtractPolicyStrategy:
+    type: string
+    enum:
+      - STRATEGY_UNSPECIFIED
+      - STRATEGY_HEAD
+      - STRATEGY_TAIL
+    default: STRATEGY_UNSPECIFIED
   StructTypeField:
     type: object
     properties:
@@ -2369,6 +2359,7 @@ definitions:
         type: string
       description:
         type: string
+    description: Example contains metadata about an example project that is available for unpacking.
   v1ExportFormat:
     type: string
     enum:
@@ -3185,16 +3176,26 @@ definitions:
           It only applies to structured code artifacts (i.e. YAML).
           Only applicable if file_path is set.
       startLocation:
-        $ref: '#/definitions/ReconcileErrorCharLocation'
+        $ref: '#/definitions/v1ReconcileErrorCharLocation'
         description: |-
           Start location of the error in the code artifact (if any).
           Only applicable if file_path is set.
       endLocation:
-        $ref: '#/definitions/ReconcileErrorCharLocation'
+        $ref: '#/definitions/v1ReconcileErrorCharLocation'
         description: |-
           End location of the error in the code artifact (if any).
           Only applicable if file_path and start_location is set.
     description: ReconcileError represents an error encountered while running Reconcile.
+  v1ReconcileErrorCharLocation:
+    type: object
+    properties:
+      line:
+        type: integer
+        format: int64
+      column:
+        type: integer
+        format: int64
+    title: CharLocation is a line and column in a code artifact
   v1ReconcileErrorCode:
     type: string
     enum:

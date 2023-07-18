@@ -5,7 +5,6 @@ import (
 	databasesql "database/sql"
 	"database/sql/driver"
 	"encoding/json"
-	"regexp"
 	"sync"
 
 	"github.com/marcboeker/go-duckdb"
@@ -120,25 +119,6 @@ func (a *AST) ExtractColumnRefs() []*ColumnRef {
 	return columnRefs
 }
 
-var annotationsRegex = regexp.MustCompile(`(?m)^--[ \t]*@([a-zA-Z0-9_\-.]*)[ \t]*(?::[ \t]*(.*?))?\s*$`)
-
-// ExtractAnnotations extracts annotations from comments prefixed with '@', and optionally a value after a ':'.
-// Examples: "-- @materialize" and "-- @materialize: true".
-func (a *AST) ExtractAnnotations() map[string]*Annotation {
-	annotations := map[string]*Annotation{}
-	subMatches := annotationsRegex.FindAllStringSubmatch(a.sql, -1)
-	for _, subMatch := range subMatches {
-		an := &Annotation{
-			Key: subMatch[1],
-		}
-		if len(subMatch) > 2 {
-			an.Value = subMatch[2]
-		}
-		annotations[an.Key] = an
-	}
-	return annotations
-}
-
 func (a *AST) newFromNode(node, parent astNode, childKey string, ref *TableRef) {
 	fn := &fromNode{
 		ast:      node,
@@ -164,12 +144,6 @@ type TableRef struct {
 	Path       string
 	Properties map[string]any
 	LocalAlias bool
-}
-
-// Annotation is key-value annotation extracted from a DuckDB SQL comment
-type Annotation struct {
-	Key   string
-	Value string
 }
 
 // ColumnRef has information about a column in the select list of a DuckDB SQL statement
