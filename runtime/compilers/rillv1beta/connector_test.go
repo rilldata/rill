@@ -12,10 +12,10 @@ import (
 	"github.com/rilldata/rill/runtime/services/catalog/testutils"
 	"github.com/stretchr/testify/require"
 
-	_ "github.com/rilldata/rill/runtime/connectors/gcs"
-	_ "github.com/rilldata/rill/runtime/connectors/s3"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
+	_ "github.com/rilldata/rill/runtime/drivers/gcs"
+	_ "github.com/rilldata/rill/runtime/drivers/s3"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 )
 

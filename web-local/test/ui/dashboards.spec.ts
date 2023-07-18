@@ -41,7 +41,6 @@ describe("dashboards", () => {
     const { page } = testBrowser;
 
     await createAdBidsModel(page);
-    await createDashboardFromModel(page, "AdBids_model");
     await Promise.all([
       waitForEntity(
         page,
@@ -51,6 +50,7 @@ describe("dashboards", () => {
       ),
       waitForTimeSeries(page, "AdBids_model_dashboard"),
       waitForTopLists(page, "AdBids_model_dashboard", ["domain"]),
+      createDashboardFromModel(page, "AdBids_model"),
     ]);
     await assertAdBidsDashboard(page);
 

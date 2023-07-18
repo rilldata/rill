@@ -44,6 +44,7 @@ func GetCmd(cfg *config.Config) *cobra.Command {
 			fmt.Printf("Prod OLAP DSN: %s\n", project.ProdOlapDsn)
 			fmt.Printf("Prod slots: %d\n", project.ProdSlots)
 			fmt.Printf("Prod deployment ID: %s\n", project.ProdDeploymentId)
+			fmt.Printf("Prod hibernation TTL: %s\n", time.Duration(project.ProdTtlSeconds)*time.Second)
 
 			return nil
 		},

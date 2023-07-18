@@ -22,6 +22,7 @@ and the menu closes.
   export let paddingTop: number = undefined;
   export let paddingBottom: number = undefined;
   export let minWidth: string = undefined;
+  export let overflowFlipY = true;
 
   export let active = false;
 
@@ -81,6 +82,7 @@ and the menu closes.
   {location}
   {alignment}
   {distance}
+  {overflowFlipY}
   let:handleClose
   let:toggleFloatingElement
 >

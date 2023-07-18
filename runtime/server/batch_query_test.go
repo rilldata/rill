@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"sync"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -88,10 +89,7 @@ func TestServer_QueryBatch_MetricsViewQueries(t *testing.T) {
 		},
 	}
 
-	batchServer := &fakeBatchServer{
-		responses: make([]*runtimev1.QueryBatchResponse, 0),
-		ctx:       testCtx(),
-	}
+	batchServer := newFakeBatchServer()
 	err := server.QueryBatch(req, batchServer)
 	require.NoError(t, err)
 	require.Equal(t, len(req.Queries), len(batchServer.responses))
@@ -242,10 +240,7 @@ func TestServer_QueryBatch_ColumnQueries(t *testing.T) {
 		},
 	}
 
-	batchServer := &fakeBatchServer{
-		responses: make([]*runtimev1.QueryBatchResponse, 0),
-		ctx:       testCtx(),
-	}
+	batchServer := newFakeBatchServer()
 	err := server.QueryBatch(req, batchServer)
 	require.NoError(t, err)
 	require.Equal(t, len(req.Queries), len(batchServer.responses))
@@ -348,10 +343,7 @@ func TestServer_QueryBatch_TableQueries(t *testing.T) {
 		},
 	}
 
-	batchServer := &fakeBatchServer{
-		responses: make([]*runtimev1.QueryBatchResponse, 0),
-		ctx:       testCtx(),
-	}
+	batchServer := newFakeBatchServer()
 	err := server.QueryBatch(req, batchServer)
 	require.NoError(t, err)
 	require.Equal(t, len(req.Queries), len(batchServer.responses))
@@ -419,10 +411,7 @@ func TestServer_QueryBatch_SomeErrors(t *testing.T) {
 		},
 	}
 
-	batchServer := &fakeBatchServer{
-		responses: make([]*runtimev1.QueryBatchResponse, 0),
-		ctx:       testCtx(),
-	}
+	batchServer := newFakeBatchServer()
 	err := server.QueryBatch(req, batchServer)
 	require.NoError(t, err)
 	require.Equal(t, len(req.Queries), len(batchServer.responses))
@@ -453,9 +442,21 @@ type fakeBatchServer struct {
 	grpc.ServerStream
 	responses []*runtimev1.QueryBatchResponse
 	ctx       context.Context
+	lock      sync.Mutex
+}
+
+func newFakeBatchServer() *fakeBatchServer {
+	return &fakeBatchServer{
+		responses: make([]*runtimev1.QueryBatchResponse, 0),
+		ctx:       testCtx(),
+		lock:      sync.Mutex{},
+	}
 }
 
 func (s *fakeBatchServer) Send(m *runtimev1.QueryBatchResponse) error {
+	// needed since individual batches are run in parallel
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	s.responses = append(s.responses, m)
 	return nil
 }

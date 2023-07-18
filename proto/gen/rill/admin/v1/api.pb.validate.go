@@ -8808,6 +8808,35 @@ func (m *GetCurrentUserResponse) validate(all bool) error {
 		}
 	}
 
+	if all {
+		switch v := interface{}(m.GetPreferences()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetCurrentUserResponseValidationError{
+					field:  "Preferences",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetCurrentUserResponseValidationError{
+					field:  "Preferences",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetPreferences()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetCurrentUserResponseValidationError{
+				field:  "Preferences",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return GetCurrentUserResponseMultiError(errors)
 	}
@@ -9178,6 +9207,1296 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetUserResponseValidationError{}
+
+// Validate checks the field values on UserPreferences with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *UserPreferences) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UserPreferences with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UserPreferencesMultiError, or nil if none found.
+func (m *UserPreferences) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UserPreferences) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if m.TimeZone != nil {
+		// no validation rules for TimeZone
+	}
+
+	if len(errors) > 0 {
+		return UserPreferencesMultiError(errors)
+	}
+
+	return nil
+}
+
+// UserPreferencesMultiError is an error wrapping multiple validation errors
+// returned by UserPreferences.ValidateAll() if the designated constraints
+// aren't met.
+type UserPreferencesMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UserPreferencesMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UserPreferencesMultiError) AllErrors() []error { return m }
+
+// UserPreferencesValidationError is the validation error returned by
+// UserPreferences.Validate if the designated constraints aren't met.
+type UserPreferencesValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UserPreferencesValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UserPreferencesValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UserPreferencesValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UserPreferencesValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UserPreferencesValidationError) ErrorName() string { return "UserPreferencesValidationError" }
+
+// Error satisfies the builtin error interface
+func (e UserPreferencesValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUserPreferences.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UserPreferencesValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UserPreferencesValidationError{}
+
+// Validate checks the field values on UpdateUserPreferencesRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UpdateUserPreferencesRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UpdateUserPreferencesRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UpdateUserPreferencesRequestMultiError, or nil if none found.
+func (m *UpdateUserPreferencesRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UpdateUserPreferencesRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetPreferences()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, UpdateUserPreferencesRequestValidationError{
+					field:  "Preferences",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, UpdateUserPreferencesRequestValidationError{
+					field:  "Preferences",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetPreferences()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return UpdateUserPreferencesRequestValidationError{
+				field:  "Preferences",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return UpdateUserPreferencesRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// UpdateUserPreferencesRequestMultiError is an error wrapping multiple
+// validation errors returned by UpdateUserPreferencesRequest.ValidateAll() if
+// the designated constraints aren't met.
+type UpdateUserPreferencesRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UpdateUserPreferencesRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UpdateUserPreferencesRequestMultiError) AllErrors() []error { return m }
+
+// UpdateUserPreferencesRequestValidationError is the validation error returned
+// by UpdateUserPreferencesRequest.Validate if the designated constraints
+// aren't met.
+type UpdateUserPreferencesRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateUserPreferencesRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateUserPreferencesRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateUserPreferencesRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateUserPreferencesRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateUserPreferencesRequestValidationError) ErrorName() string {
+	return "UpdateUserPreferencesRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdateUserPreferencesRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateUserPreferencesRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateUserPreferencesRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateUserPreferencesRequestValidationError{}
+
+// Validate checks the field values on UpdateUserPreferencesResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UpdateUserPreferencesResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UpdateUserPreferencesResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// UpdateUserPreferencesResponseMultiError, or nil if none found.
+func (m *UpdateUserPreferencesResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UpdateUserPreferencesResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetPreferences()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, UpdateUserPreferencesResponseValidationError{
+					field:  "Preferences",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, UpdateUserPreferencesResponseValidationError{
+					field:  "Preferences",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetPreferences()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return UpdateUserPreferencesResponseValidationError{
+				field:  "Preferences",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return UpdateUserPreferencesResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// UpdateUserPreferencesResponseMultiError is an error wrapping multiple
+// validation errors returned by UpdateUserPreferencesResponse.ValidateAll()
+// if the designated constraints aren't met.
+type UpdateUserPreferencesResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UpdateUserPreferencesResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UpdateUserPreferencesResponseMultiError) AllErrors() []error { return m }
+
+// UpdateUserPreferencesResponseValidationError is the validation error
+// returned by UpdateUserPreferencesResponse.Validate if the designated
+// constraints aren't met.
+type UpdateUserPreferencesResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateUserPreferencesResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateUserPreferencesResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateUserPreferencesResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateUserPreferencesResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateUserPreferencesResponseValidationError) ErrorName() string {
+	return "UpdateUserPreferencesResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdateUserPreferencesResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateUserPreferencesResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateUserPreferencesResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateUserPreferencesResponseValidationError{}
+
+// Validate checks the field values on ListBookmarksRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListBookmarksRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListBookmarksRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListBookmarksRequestMultiError, or nil if none found.
+func (m *ListBookmarksRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListBookmarksRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ProjectId
+
+	if len(errors) > 0 {
+		return ListBookmarksRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListBookmarksRequestMultiError is an error wrapping multiple validation
+// errors returned by ListBookmarksRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ListBookmarksRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListBookmarksRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListBookmarksRequestMultiError) AllErrors() []error { return m }
+
+// ListBookmarksRequestValidationError is the validation error returned by
+// ListBookmarksRequest.Validate if the designated constraints aren't met.
+type ListBookmarksRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListBookmarksRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListBookmarksRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListBookmarksRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListBookmarksRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListBookmarksRequestValidationError) ErrorName() string {
+	return "ListBookmarksRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListBookmarksRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListBookmarksRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListBookmarksRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListBookmarksRequestValidationError{}
+
+// Validate checks the field values on ListBookmarksResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListBookmarksResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListBookmarksResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListBookmarksResponseMultiError, or nil if none found.
+func (m *ListBookmarksResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListBookmarksResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetBookmarks() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListBookmarksResponseValidationError{
+						field:  fmt.Sprintf("Bookmarks[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListBookmarksResponseValidationError{
+						field:  fmt.Sprintf("Bookmarks[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListBookmarksResponseValidationError{
+					field:  fmt.Sprintf("Bookmarks[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ListBookmarksResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListBookmarksResponseMultiError is an error wrapping multiple validation
+// errors returned by ListBookmarksResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ListBookmarksResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListBookmarksResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListBookmarksResponseMultiError) AllErrors() []error { return m }
+
+// ListBookmarksResponseValidationError is the validation error returned by
+// ListBookmarksResponse.Validate if the designated constraints aren't met.
+type ListBookmarksResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListBookmarksResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListBookmarksResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListBookmarksResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListBookmarksResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListBookmarksResponseValidationError) ErrorName() string {
+	return "ListBookmarksResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListBookmarksResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListBookmarksResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListBookmarksResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListBookmarksResponseValidationError{}
+
+// Validate checks the field values on GetBookmarkRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetBookmarkRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetBookmarkRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetBookmarkRequestMultiError, or nil if none found.
+func (m *GetBookmarkRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetBookmarkRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for BookmarkId
+
+	if len(errors) > 0 {
+		return GetBookmarkRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetBookmarkRequestMultiError is an error wrapping multiple validation errors
+// returned by GetBookmarkRequest.ValidateAll() if the designated constraints
+// aren't met.
+type GetBookmarkRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetBookmarkRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetBookmarkRequestMultiError) AllErrors() []error { return m }
+
+// GetBookmarkRequestValidationError is the validation error returned by
+// GetBookmarkRequest.Validate if the designated constraints aren't met.
+type GetBookmarkRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetBookmarkRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetBookmarkRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetBookmarkRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetBookmarkRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetBookmarkRequestValidationError) ErrorName() string {
+	return "GetBookmarkRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetBookmarkRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetBookmarkRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetBookmarkRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetBookmarkRequestValidationError{}
+
+// Validate checks the field values on GetBookmarkResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetBookmarkResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetBookmarkResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetBookmarkResponseMultiError, or nil if none found.
+func (m *GetBookmarkResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetBookmarkResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetBookmark()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetBookmarkResponseValidationError{
+					field:  "Bookmark",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetBookmarkResponseValidationError{
+					field:  "Bookmark",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetBookmark()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetBookmarkResponseValidationError{
+				field:  "Bookmark",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return GetBookmarkResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetBookmarkResponseMultiError is an error wrapping multiple validation
+// errors returned by GetBookmarkResponse.ValidateAll() if the designated
+// constraints aren't met.
+type GetBookmarkResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetBookmarkResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetBookmarkResponseMultiError) AllErrors() []error { return m }
+
+// GetBookmarkResponseValidationError is the validation error returned by
+// GetBookmarkResponse.Validate if the designated constraints aren't met.
+type GetBookmarkResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetBookmarkResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetBookmarkResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetBookmarkResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetBookmarkResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetBookmarkResponseValidationError) ErrorName() string {
+	return "GetBookmarkResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetBookmarkResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetBookmarkResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetBookmarkResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetBookmarkResponseValidationError{}
+
+// Validate checks the field values on CreateBookmarkRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CreateBookmarkRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CreateBookmarkRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CreateBookmarkRequestMultiError, or nil if none found.
+func (m *CreateBookmarkRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CreateBookmarkRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for DisplayName
+
+	// no validation rules for Data
+
+	// no validation rules for DashboardName
+
+	// no validation rules for ProjectId
+
+	if len(errors) > 0 {
+		return CreateBookmarkRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// CreateBookmarkRequestMultiError is an error wrapping multiple validation
+// errors returned by CreateBookmarkRequest.ValidateAll() if the designated
+// constraints aren't met.
+type CreateBookmarkRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CreateBookmarkRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CreateBookmarkRequestMultiError) AllErrors() []error { return m }
+
+// CreateBookmarkRequestValidationError is the validation error returned by
+// CreateBookmarkRequest.Validate if the designated constraints aren't met.
+type CreateBookmarkRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CreateBookmarkRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CreateBookmarkRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CreateBookmarkRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CreateBookmarkRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CreateBookmarkRequestValidationError) ErrorName() string {
+	return "CreateBookmarkRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CreateBookmarkRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCreateBookmarkRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CreateBookmarkRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CreateBookmarkRequestValidationError{}
+
+// Validate checks the field values on CreateBookmarkResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CreateBookmarkResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CreateBookmarkResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CreateBookmarkResponseMultiError, or nil if none found.
+func (m *CreateBookmarkResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CreateBookmarkResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetBookmark()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CreateBookmarkResponseValidationError{
+					field:  "Bookmark",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CreateBookmarkResponseValidationError{
+					field:  "Bookmark",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetBookmark()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CreateBookmarkResponseValidationError{
+				field:  "Bookmark",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return CreateBookmarkResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// CreateBookmarkResponseMultiError is an error wrapping multiple validation
+// errors returned by CreateBookmarkResponse.ValidateAll() if the designated
+// constraints aren't met.
+type CreateBookmarkResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CreateBookmarkResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CreateBookmarkResponseMultiError) AllErrors() []error { return m }
+
+// CreateBookmarkResponseValidationError is the validation error returned by
+// CreateBookmarkResponse.Validate if the designated constraints aren't met.
+type CreateBookmarkResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CreateBookmarkResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CreateBookmarkResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CreateBookmarkResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CreateBookmarkResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CreateBookmarkResponseValidationError) ErrorName() string {
+	return "CreateBookmarkResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CreateBookmarkResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCreateBookmarkResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CreateBookmarkResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CreateBookmarkResponseValidationError{}
+
+// Validate checks the field values on RemoveBookmarkRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RemoveBookmarkRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RemoveBookmarkRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// RemoveBookmarkRequestMultiError, or nil if none found.
+func (m *RemoveBookmarkRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RemoveBookmarkRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for BookmarkId
+
+	if len(errors) > 0 {
+		return RemoveBookmarkRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// RemoveBookmarkRequestMultiError is an error wrapping multiple validation
+// errors returned by RemoveBookmarkRequest.ValidateAll() if the designated
+// constraints aren't met.
+type RemoveBookmarkRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RemoveBookmarkRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RemoveBookmarkRequestMultiError) AllErrors() []error { return m }
+
+// RemoveBookmarkRequestValidationError is the validation error returned by
+// RemoveBookmarkRequest.Validate if the designated constraints aren't met.
+type RemoveBookmarkRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RemoveBookmarkRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RemoveBookmarkRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RemoveBookmarkRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RemoveBookmarkRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RemoveBookmarkRequestValidationError) ErrorName() string {
+	return "RemoveBookmarkRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RemoveBookmarkRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRemoveBookmarkRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RemoveBookmarkRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RemoveBookmarkRequestValidationError{}
+
+// Validate checks the field values on RemoveBookmarkResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RemoveBookmarkResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RemoveBookmarkResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// RemoveBookmarkResponseMultiError, or nil if none found.
+func (m *RemoveBookmarkResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RemoveBookmarkResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return RemoveBookmarkResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// RemoveBookmarkResponseMultiError is an error wrapping multiple validation
+// errors returned by RemoveBookmarkResponse.ValidateAll() if the designated
+// constraints aren't met.
+type RemoveBookmarkResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RemoveBookmarkResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RemoveBookmarkResponseMultiError) AllErrors() []error { return m }
+
+// RemoveBookmarkResponseValidationError is the validation error returned by
+// RemoveBookmarkResponse.Validate if the designated constraints aren't met.
+type RemoveBookmarkResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RemoveBookmarkResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RemoveBookmarkResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RemoveBookmarkResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RemoveBookmarkResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RemoveBookmarkResponseValidationError) ErrorName() string {
+	return "RemoveBookmarkResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RemoveBookmarkResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRemoveBookmarkResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RemoveBookmarkResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RemoveBookmarkResponseValidationError{}
 
 // Validate checks the field values on SearchUsersRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -12669,3 +13988,172 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = WhitelistedDomainValidationError{}
+
+// Validate checks the field values on Bookmark with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *Bookmark) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Bookmark with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in BookmarkMultiError, or nil
+// if none found.
+func (m *Bookmark) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Bookmark) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Id
+
+	// no validation rules for DisplayName
+
+	// no validation rules for Data
+
+	// no validation rules for DashboardName
+
+	// no validation rules for ProjectId
+
+	// no validation rules for UserId
+
+	if all {
+		switch v := interface{}(m.GetCreatedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, BookmarkValidationError{
+					field:  "CreatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, BookmarkValidationError{
+					field:  "CreatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetCreatedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return BookmarkValidationError{
+				field:  "CreatedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetUpdatedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, BookmarkValidationError{
+					field:  "UpdatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, BookmarkValidationError{
+					field:  "UpdatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetUpdatedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return BookmarkValidationError{
+				field:  "UpdatedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return BookmarkMultiError(errors)
+	}
+
+	return nil
+}
+
+// BookmarkMultiError is an error wrapping multiple validation errors returned
+// by Bookmark.ValidateAll() if the designated constraints aren't met.
+type BookmarkMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m BookmarkMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m BookmarkMultiError) AllErrors() []error { return m }
+
+// BookmarkValidationError is the validation error returned by
+// Bookmark.Validate if the designated constraints aren't met.
+type BookmarkValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e BookmarkValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e BookmarkValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e BookmarkValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e BookmarkValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e BookmarkValidationError) ErrorName() string { return "BookmarkValidationError" }
+
+// Error satisfies the builtin error interface
+func (e BookmarkValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sBookmark.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = BookmarkValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = BookmarkValidationError{}
