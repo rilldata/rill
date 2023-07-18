@@ -45,9 +45,7 @@
       <div
         class="justify-self-start text-left w-full text-ellipsis overflow-hidden whitespace-nowrap"
       >
-        <div>
-          <slot name="title" />
-        </div>
+        <slot name="title" />
       </div>
       <div
         class="justify-self-end overflow-hidden ui-copy-number flex gap-x-4 items-baseline"
