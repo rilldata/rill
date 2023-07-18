@@ -5,6 +5,7 @@
     getAbbreviationForIANA,
     getLabelForIANA,
     getLocalIANA,
+    getTimeZoneNameFromIANA,
   } from "@rilldata/web-common/lib/time/timezone";
   import Globe from "@rilldata/web-common/components/icons/Globe.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
@@ -66,7 +67,9 @@
         </div>
       </SelectorButton>
       <TooltipContent slot="tooltip-content" maxWidth="220px">
-        Select a reference time zone for the dashboard
+        Select a time zone for the dashboard.
+        <br />
+        Currently using {getTimeZoneNameFromIANA(now, activeTimeZone)}.
       </TooltipContent>
     </Tooltip>
     <Menu

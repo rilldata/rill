@@ -5,10 +5,13 @@ export function getLocalIANA(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
 
-export function getAbbreviationForIANA(now: Date, iana: string): string {
-  const zoneName = DateTime.fromJSDate(now).setZone(iana).toFormat("ZZZZZ");
+export function getTimeZoneNameFromIANA(now: Date, iana: string): string {
+  return DateTime.fromJSDate(now).setZone(iana).toFormat("ZZZZZ");
+}
 
-  console.log(iana, zoneName);
+export function getAbbreviationForIANA(now: Date, iana: string): string {
+  const zoneName = getTimeZoneNameFromIANA(now, iana);
+
   if (zoneName in timeZoneNameToAbbreviationMap)
     return timeZoneNameToAbbreviationMap[zoneName];
 
