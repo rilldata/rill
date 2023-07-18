@@ -34,7 +34,7 @@
   $: if (view) setLineStatuses(lineBasedRuntimeErrors, view);
 </script>
 
-<div class="editor flex flex-col border border-gray-200 rounded">
+<div class="editor flex flex-col border border-gray-200 rounded h-full">
   <div class="grow flex bg-white overflow-y-auto rounded">
     <YAMLEditor
       bind:this={editor}

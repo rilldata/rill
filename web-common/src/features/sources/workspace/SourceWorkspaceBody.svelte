@@ -1,5 +1,8 @@
 <script lang="ts">
   import { ConnectedPreviewTable } from "@rilldata/web-common/components/preview-table";
+  import { getContext } from "svelte";
+  import type { Writable } from "svelte/store";
+  import HorizontalSplitter from "../../../layout/workspace/HorizontalSplitter.svelte";
   import {
     createRuntimeServiceGetCatalogEntry,
     createRuntimeServiceGetFile,
@@ -39,27 +42,33 @@
     $fileArtifactsStore,
     `${sourceName}.yaml`
   );
+
+  const outputPosition = getContext(
+    "rill:app:output-height-tween"
+  ) as Writable<number>;
+  const outputVisibilityTween = getContext(
+    "rill:app:output-visibility-tween"
+  ) as Writable<number>;
 </script>
 
-<div
-  class="grid pb-3"
-  style:grid-template-rows="max-content auto"
-  style:height="100vh"
->
-  <div class="p-4">
+<div class="h-full pb-3">
+  <div
+    class="p-5"
+    style:height="calc({innerHeight}px - {$outputPosition *
+      $outputVisibilityTween}px - var(--header-height))"
+  >
     <SourceEditor {yaml} on:update />
   </div>
-  {#if !runtimeErrors || runtimeErrors.length === 0}
-    <div
-      style:overflow="auto"
-      style:height="calc(100vh - var(--header-height) - 2rem)"
-      class="m-4 border border-gray-300 rounded"
-    >
-      {#key sourceName}
-        <ConnectedPreviewTable objectName={sourceName} />
-      {/key}
+  <HorizontalSplitter />
+  <div class="p-5" style:height="{$outputPosition}px">
+    <div class="h-full border border-gray-300 rounded overflow-auto">
+      {#if !runtimeErrors || runtimeErrors.length === 0}
+        {#key sourceName}
+          <ConnectedPreviewTable objectName={sourceName} />
+        {/key}
+      {:else}
+        <ErrorPane error={runtimeErrors[0]} />
+      {/if}
     </div>
-  {:else}
-    <ErrorPane error={runtimeErrors[0]} />
-  {/if}
+  </div>
 </div>
