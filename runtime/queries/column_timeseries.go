@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strconv"
 	"time"
+	_ "time/tzdata"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -104,7 +105,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		}
 
 		measures := normaliseMeasures(q.Measures, q.Pixels != 0)
-		timeBucketSpecifier := convertToTimeBucketSpecifier(timeRange.Interval)
+		timeBucketSpecifier := convertToDuckDBTimeBucketSpecifier(timeRange.Interval)
 		tsAlias := tempName("_ts_")
 		temporaryTableName := tempName("_timeseries_")
 
@@ -113,6 +114,13 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 			timezone = q.TimeZone
 		}
 
+		_, err = time.LoadLocation(timezone)
+		if err != nil {
+			return err
+		}
+
+		args = append([]any{timeRange.Start.AsTime(), timezone, timeRange.End.AsTime(), timezone, timezone}, args...)
+
 		querySQL := `CREATE TEMPORARY TABLE ` + temporaryTableName + ` AS (
 			-- generate a time series column that has the intended range
 			WITH template as (
@@ -120,14 +128,14 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 				range as ` + tsAlias + `
 			FROM
 				range(
-				time_bucket(INTERVAL '` + timeBucketSpecifier + `', TIMESTAMPTZ '` + timeRange.Start.AsTime().Format(IsoFormat) + `', '` + timezone + `'),
-				time_bucket(INTERVAL '` + timeBucketSpecifier + `', TIMESTAMPTZ '` + timeRange.End.AsTime().Format(IsoFormat) + `', '` + timezone + `'),
+				time_bucket(INTERVAL '` + timeBucketSpecifier + `', ?::TIMESTAMPTZ, ?),
+				time_bucket(INTERVAL '` + timeBucketSpecifier + `', ?::TIMESTAMPTZ, ?),
 				INTERVAL '` + timeBucketSpecifier + `')
 			),
 			-- transform the original data, and optionally sample it.
 			series AS (
 			SELECT
-				time_bucket(INTERVAL '` + timeBucketSpecifier + `', ` + safeName(q.TimestampColumnName) + `::TIMESTAMPTZ, '` + timezone + `') as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
+				time_bucket(INTERVAL '` + timeBucketSpecifier + `', ` + safeName(q.TimestampColumnName) + `::TIMESTAMPTZ, ?) as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
 			FROM ` + safeName(q.TableName) + ` ` + filter + `
 			GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
 			)

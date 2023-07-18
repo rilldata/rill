@@ -54,7 +54,7 @@ func convertToDateTruncSpecifier(specifier runtimev1.TimeGrain) string {
 	panic(fmt.Errorf("unconvertable time grain specifier: %v", specifier))
 }
 
-func convertToTimeFloorSpecifier(specifier runtimev1.TimeGrain) string {
+func convertToDruidTimeFloorSpecifier(specifier runtimev1.TimeGrain) string {
 	switch specifier {
 	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
 		return "PT0.001S"
@@ -78,7 +78,7 @@ func convertToTimeFloorSpecifier(specifier runtimev1.TimeGrain) string {
 	panic(fmt.Errorf("unconvertable time grain specifier: %v", specifier))
 }
 
-func convertToTimeBucketSpecifier(specifier runtimev1.TimeGrain) string {
+func convertToDuckDBTimeBucketSpecifier(specifier runtimev1.TimeGrain) string {
 	switch specifier {
 	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
 		return "1 MILLISECOND"
