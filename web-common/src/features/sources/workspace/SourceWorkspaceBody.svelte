@@ -38,7 +38,7 @@
 
   $: yaml = $fileQuery.data?.blob || "";
 
-  $: runtimeErrors = getFileArtifactReconciliationErrors(
+  $: reconciliationErrors = getFileArtifactReconciliationErrors(
     $fileArtifactsStore,
     `${sourceName}.yaml`
   );
@@ -57,17 +57,17 @@
     style:height="calc({innerHeight}px - {$outputPosition *
       $outputVisibilityTween}px - var(--header-height))"
   >
-    <SourceEditor {yaml} />
+    <SourceEditor {sourceName} {yaml} />
   </div>
   <HorizontalSplitter />
   <div class="p-5" style:height="{$outputPosition}px">
     <div class="h-full border border-gray-300 rounded overflow-auto">
-      {#if !runtimeErrors || runtimeErrors.length === 0}
+      {#if !reconciliationErrors || reconciliationErrors.length === 0}
         {#key sourceName}
           <ConnectedPreviewTable objectName={sourceName} />
         {/key}
       {:else}
-        <ErrorPane error={runtimeErrors[0]} />
+        <ErrorPane error={reconciliationErrors[0]} />
       {/if}
     </div>
   </div>
