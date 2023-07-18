@@ -82,7 +82,6 @@
       <TopKListItem
         value={item.count / totalRows}
         color={colorClass}
-        showIcon={false}
         on:focus={handleFocus(item)}
         on:blur={handleBlur(item)}
       >
