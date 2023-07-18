@@ -26,10 +26,10 @@
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import { getFilterForComparsion } from "../dimension-table/dimension-table-utils";
   import type { NicelyFormattedTypes } from "../humanize-numbers";
-  import DimensionLeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import LeaderboardList from "./LeaderboardList.svelte";
   import { prepareLeaderboardItemData } from "./leaderboard-utils";
+  import LeaderboardListItem from "./LeaderboardListItem.svelte";
 
   export let metricViewName: string;
   export let dimensionName: string;
@@ -272,35 +272,39 @@
     {#if values}
       <LeaderboardList>
         <!-- place the leaderboard entries that are above the fold here -->
-        <DimensionLeaderboardEntrySet
-          renderValues={aboveTheFoldItems}
-          {formatPreset}
-          values={values.slice(0, slice)}
-          {comparisonValues}
-          {showContext}
-          {activeValues}
-          {filterExcludeMode}
-          {atLeastOneActive}
-          {referenceValue}
-          {isSummableMeasure}
-          on:select-item
-        />
+
+        {#each aboveTheFoldItems as itemData (itemData.label)}
+          <LeaderboardListItem
+            {itemData}
+            {showContext}
+            {atLeastOneActive}
+            {filterExcludeMode}
+            {isSummableMeasure}
+            {referenceValue}
+            {formatPreset}
+            on:click
+            on:keydown
+            on:select-item
+          />
+        {/each}
         <!-- place the selected values that are not above the fold here -->
         {#if selectedValuesThatAreBelowTheFold?.length}
           <hr />
-          <DimensionLeaderboardEntrySet
-            renderValues={belowTheFoldItems}
-            {formatPreset}
-            values={selectedValuesThatAreBelowTheFold}
-            {comparisonValues}
-            {showContext}
-            {activeValues}
-            {filterExcludeMode}
-            {atLeastOneActive}
-            {referenceValue}
-            {isSummableMeasure}
-            on:select-item
-          />
+          {#each belowTheFoldItems as itemData (itemData.label)}
+            <LeaderboardListItem
+              {itemData}
+              {showContext}
+              {atLeastOneActive}
+              {filterExcludeMode}
+              {isSummableMeasure}
+              {referenceValue}
+              {formatPreset}
+              on:click
+              on:keydown
+              on:select-item
+            />
+          {/each}
+
           <hr />
         {/if}
         {#if $topListQuery?.isError}
