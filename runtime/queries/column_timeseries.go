@@ -9,7 +9,6 @@ import (
 	"reflect"
 	"strconv"
 	"time"
-	_ "time/tzdata"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -18,6 +17,8 @@ import (
 	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	_ "time/tzdata"
 )
 
 const IsoFormat string = "2006-01-02T15:04:05.000Z"
