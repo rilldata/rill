@@ -8,15 +8,12 @@ divider
 see more button
 -->
 <script lang="ts">
-  import { PERC_DIFF } from "../../../components/data-types/type-utils";
-  import {
-    formatMeasurePercentageDifference,
-    humanizeDataType,
-  } from "../humanize-numbers";
   import LeaderboardListItem from "./LeaderboardListItem.svelte";
 
   export let values;
+  $: console.log("values", values);
   export let comparisonValues;
+  $: console.log("comparisonValues", comparisonValues);
   export let showTimeComparison = false;
   export let showPercentOfTotal = false;
 
@@ -31,7 +28,12 @@ see more button
 
   let renderValues = [];
 
-  $: showComparison = showTimeComparison || showPercentOfTotal;
+  let showContext: "time" | "percent" | false = false;
+  $: showContext = showTimeComparison
+    ? "time"
+    : showPercentOfTotal
+    ? "percent"
+    : false;
 
   $: comparisonMap = new Map(comparisonValues?.map((v) => [v.label, v.value]));
 
@@ -43,55 +45,23 @@ see more button
     const active = activeValues.findIndex((value) => value === v.label) >= 0;
     const comparisonValue = comparisonMap.get(v.label);
 
-    // Super important special case: if there is not at least one "active" (selected) value,
-    // we need to set *all* items to be included, because by default if a user has not
-    // selected any values, we assume they want all values included in all calculations.
-    const excluded = atLeastOneActive
-      ? (filterExcludeMode && active) || (!filterExcludeMode && !active)
-      : false;
-
-    const percentChangeFormatted = showTimeComparison
-      ? getFormatterValueForPercDiff(
-          v.value && comparisonValue ? v.value - comparisonValue : null,
-          comparisonValue
-        )
-      : showPercentOfTotal
-      ? getFormatterValueForPercDiff(v.value, referenceValue)
-      : undefined;
-
     return {
       ...v,
       active,
-      excluded,
       comparisonValue,
-      formattedValue: humanizeDataType(v.value, formatPreset),
-      percentChangeFormatted,
     };
   });
-
-  function getFormatterValueForPercDiff(numerator, denominator) {
-    if (denominator === 0) return PERC_DIFF.PREV_VALUE_ZERO;
-    if (!denominator) return PERC_DIFF.PREV_VALUE_NO_DATA;
-    if (numerator === null || numerator === undefined)
-      return PERC_DIFF.CURRENT_VALUE_NO_DATA;
-
-    const percDiff = numerator / denominator;
-    return formatMeasurePercentageDifference(percDiff);
-  }
 </script>
 
-{#each renderValues as { label, value, active, excluded, percentChangeFormatted, formattedValue, comparisonValue } (label)}
+{#each renderValues as { label, value, active, comparisonValue } (label)}
   <LeaderboardListItem
     measureValue={value}
-    showContext={showComparison}
+    {showContext}
     isActive={active}
-    {excluded}
     {atLeastOneActive}
     {loading}
     {label}
-    {formattedValue}
     {comparisonValue}
-    {percentChangeFormatted}
     {filterExcludeMode}
     {isSummableMeasure}
     {referenceValue}

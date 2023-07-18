@@ -20,12 +20,12 @@
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
   import { humanizeDataType } from "../humanize-numbers";
   import LongBarZigZag from "./LongBarZigZag.svelte";
+  import { getFormatterValueForPercDiff } from "./leaderboard-utils";
 
   export let measureValue: number;
 
   export let isActive = false;
-  export let excluded = false;
-  export let showContext = false;
+  export let showContext: "time" | "percent" | false = false;
 
   export let loading = false;
   export let atLeastOneActive = false;
@@ -46,15 +46,41 @@
   /** compact mode is used in e.g. profiles */
   export let compact = false;
 
+  $: formattedValue = humanizeDataType(measureValue, formatPreset);
+
+  $: percentChangeFormatted =
+    showContext === "time"
+      ? getFormatterValueForPercDiff(
+          measureValue && comparisonValue
+            ? measureValue - comparisonValue
+            : null,
+          comparisonValue
+        )
+      : showContext === "percent"
+      ? getFormatterValueForPercDiff(measureValue, referenceValue)
+      : undefined;
+
+  const previousValueString: string | undefined =
+    comparisonValue !== undefined && comparisonValue !== null
+      ? humanizeDataType(comparisonValue, formatPreset)
+      : undefined;
+  $: showPreviousTimeValue = hovered && previousValueString !== undefined;
+  // Super important special case: if there is not at least one "active" (selected) value,
+  // we need to set *all* items to be included, because by default if a user has not
+  // selected any values, we assume they want all values included in all calculations.
+  $: excluded = atLeastOneActive
+    ? (filterExcludeMode && isActive) || (!filterExcludeMode && !isActive)
+    : false;
+
   const dispatch = createEventDispatcher();
 
-  let showPreviousTimeValue = false;
+  let hovered = false;
   const onHover = () => {
-    showPreviousTimeValue = true;
+    hovered = true;
     dispatch("focus");
   };
   const onLeave = () => {
-    showPreviousTimeValue = false;
+    hovered = false;
     dispatch("blur");
   };
 
@@ -75,11 +101,6 @@
     : isActive
     ? "ui-measure-bar-included-selected"
     : "ui-measure-bar-included";
-
-  const previousValueString: string | undefined =
-    comparisonValue !== undefined && comparisonValue !== null
-      ? humanizeDataType(comparisonValue, formatPreset)
-      : undefined;
 
   const { shiftClickAction } = createShiftClickAction();
   async function shiftClickHandler(label) {
