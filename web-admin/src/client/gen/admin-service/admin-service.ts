@@ -82,7 +82,15 @@ import type {
   V1IssueRepresentativeAuthTokenRequest,
   V1GetUserResponse,
   AdminServiceGetUserParams,
+  V1ListBookmarksResponse,
+  AdminServiceListBookmarksParams,
+  V1CreateBookmarkResponse,
+  V1CreateBookmarkRequest,
+  V1GetBookmarkResponse,
+  V1RemoveBookmarkResponse,
   V1GetCurrentUserResponse,
+  V1UpdateUserPreferencesResponse,
+  V1UpdateUserPreferencesRequest,
   V1SearchUsersResponse,
   AdminServiceSearchUsersParams,
 } from "../index.schemas";
@@ -2447,6 +2455,304 @@ export const createAdminServiceGetUser = <
 };
 
 /**
+ * @summary ListBookmarks lists all the bookmarks for the user
+ */
+export const adminServiceListBookmarks = (
+  params?: AdminServiceListBookmarksParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1ListBookmarksResponse>({
+    url: `/v1/users/bookmarks`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceListBookmarksQueryKey = (
+  params?: AdminServiceListBookmarksParams
+) => [`/v1/users/bookmarks`, ...(params ? [params] : [])] as const;
+
+export const getAdminServiceListBookmarksQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceListBookmarks>>,
+  TError = RpcStatus
+>(
+  params?: AdminServiceListBookmarksParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceListBookmarks>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryOptions<
+  Awaited<ReturnType<typeof adminServiceListBookmarks>>,
+  TError,
+  TData
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminServiceListBookmarksQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListBookmarks>>
+  > = ({ signal }) => adminServiceListBookmarks(params, signal);
+
+  return { queryKey, queryFn, ...queryOptions };
+};
+
+export type AdminServiceListBookmarksQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListBookmarks>>
+>;
+export type AdminServiceListBookmarksQueryError = RpcStatus;
+
+/**
+ * @summary ListBookmarks lists all the bookmarks for the user
+ */
+export const createAdminServiceListBookmarks = <
+  TData = Awaited<ReturnType<typeof adminServiceListBookmarks>>,
+  TError = RpcStatus
+>(
+  params?: AdminServiceListBookmarksParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceListBookmarks>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const queryOptions = getAdminServiceListBookmarksQueryOptions(
+    params,
+    options
+  );
+
+  const query = createQuery(queryOptions) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+};
+
+/**
+ * @summary CreateBookmark creates a bookmark for the given user for the given project
+ */
+export const adminServiceCreateBookmark = (
+  v1CreateBookmarkRequest: V1CreateBookmarkRequest
+) => {
+  return httpClient<V1CreateBookmarkResponse>({
+    url: `/v1/users/bookmarks`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: v1CreateBookmarkRequest,
+  });
+};
+
+export const getAdminServiceCreateBookmarkMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCreateBookmark>>,
+    TError,
+    { data: V1CreateBookmarkRequest },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceCreateBookmark>>,
+  TError,
+  { data: V1CreateBookmarkRequest },
+  TContext
+> => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceCreateBookmark>>,
+    { data: V1CreateBookmarkRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceCreateBookmark(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceCreateBookmarkMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceCreateBookmark>>
+>;
+export type AdminServiceCreateBookmarkMutationBody = V1CreateBookmarkRequest;
+export type AdminServiceCreateBookmarkMutationError = RpcStatus;
+
+/**
+ * @summary CreateBookmark creates a bookmark for the given user for the given project
+ */
+export const createAdminServiceCreateBookmark = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCreateBookmark>>,
+    TError,
+    { data: V1CreateBookmarkRequest },
+    TContext
+  >;
+}) => {
+  const mutationOptions = getAdminServiceCreateBookmarkMutationOptions(options);
+
+  return createMutation(mutationOptions);
+};
+/**
+ * @summary GetBookmark returns the bookmark for the given user for the given project
+ */
+export const adminServiceGetBookmark = (
+  bookmarkId: string,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1GetBookmarkResponse>({
+    url: `/v1/users/bookmarks/${bookmarkId}`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceGetBookmarkQueryKey = (bookmarkId: string) =>
+  [`/v1/users/bookmarks/${bookmarkId}`] as const;
+
+export const getAdminServiceGetBookmarkQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetBookmark>>,
+  TError = RpcStatus
+>(
+  bookmarkId: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetBookmark>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryOptions<
+  Awaited<ReturnType<typeof adminServiceGetBookmark>>,
+  TError,
+  TData
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminServiceGetBookmarkQueryKey(bookmarkId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetBookmark>>
+  > = ({ signal }) => adminServiceGetBookmark(bookmarkId, signal);
+
+  return { queryKey, queryFn, enabled: !!bookmarkId, ...queryOptions };
+};
+
+export type AdminServiceGetBookmarkQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetBookmark>>
+>;
+export type AdminServiceGetBookmarkQueryError = RpcStatus;
+
+/**
+ * @summary GetBookmark returns the bookmark for the given user for the given project
+ */
+export const createAdminServiceGetBookmark = <
+  TData = Awaited<ReturnType<typeof adminServiceGetBookmark>>,
+  TError = RpcStatus
+>(
+  bookmarkId: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetBookmark>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const queryOptions = getAdminServiceGetBookmarkQueryOptions(
+    bookmarkId,
+    options
+  );
+
+  const query = createQuery(queryOptions) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+};
+
+/**
+ * @summary RemoveBookmark removes the bookmark for the given user for the given project
+ */
+export const adminServiceRemoveBookmark = (bookmarkId: string) => {
+  return httpClient<V1RemoveBookmarkResponse>({
+    url: `/v1/users/bookmarks/${bookmarkId}`,
+    method: "delete",
+  });
+};
+
+export const getAdminServiceRemoveBookmarkMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceRemoveBookmark>>,
+    TError,
+    { bookmarkId: string },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceRemoveBookmark>>,
+  TError,
+  { bookmarkId: string },
+  TContext
+> => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceRemoveBookmark>>,
+    { bookmarkId: string }
+  > = (props) => {
+    const { bookmarkId } = props ?? {};
+
+    return adminServiceRemoveBookmark(bookmarkId);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceRemoveBookmarkMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceRemoveBookmark>>
+>;
+
+export type AdminServiceRemoveBookmarkMutationError = RpcStatus;
+
+/**
+ * @summary RemoveBookmark removes the bookmark for the given user for the given project
+ */
+export const createAdminServiceRemoveBookmark = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceRemoveBookmark>>,
+    TError,
+    { bookmarkId: string },
+    TContext
+  >;
+}) => {
+  const mutationOptions = getAdminServiceRemoveBookmarkMutationOptions(options);
+
+  return createMutation(mutationOptions);
+};
+/**
  * @summary GetCurrentUser returns the currently authenticated user (if any)
  */
 export const adminServiceGetCurrentUser = (signal?: AbortSignal) => {
@@ -2498,6 +2804,76 @@ export const createAdminServiceGetCurrentUser = <
   return query;
 };
 
+/**
+ * @summary UpdateUserPreferences updates the preferences for the user
+ */
+export const adminServiceUpdateUserPreferences = (
+  v1UpdateUserPreferencesRequest: V1UpdateUserPreferencesRequest
+) => {
+  return httpClient<V1UpdateUserPreferencesResponse>({
+    url: `/v1/users/preferences`,
+    method: "put",
+    headers: { "Content-Type": "application/json" },
+    data: v1UpdateUserPreferencesRequest,
+  });
+};
+
+export const getAdminServiceUpdateUserPreferencesMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceUpdateUserPreferences>>,
+    TError,
+    { data: V1UpdateUserPreferencesRequest },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceUpdateUserPreferences>>,
+  TError,
+  { data: V1UpdateUserPreferencesRequest },
+  TContext
+> => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceUpdateUserPreferences>>,
+    { data: V1UpdateUserPreferencesRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceUpdateUserPreferences(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceUpdateUserPreferencesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceUpdateUserPreferences>>
+>;
+export type AdminServiceUpdateUserPreferencesMutationBody =
+  V1UpdateUserPreferencesRequest;
+export type AdminServiceUpdateUserPreferencesMutationError = RpcStatus;
+
+/**
+ * @summary UpdateUserPreferences updates the preferences for the user
+ */
+export const createAdminServiceUpdateUserPreferences = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceUpdateUserPreferences>>,
+    TError,
+    { data: V1UpdateUserPreferencesRequest },
+    TContext
+  >;
+}) => {
+  const mutationOptions =
+    getAdminServiceUpdateUserPreferencesMutationOptions(options);
+
+  return createMutation(mutationOptions);
+};
 /**
  * @summary GetUsersByEmail returns users by email
  */

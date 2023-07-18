@@ -261,6 +261,7 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 		PhotoURL:            user.PhotoURL,
 		GithubUsername:      githubUser.GetLogin(),
 		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
+		PreferenceTimeZone:  user.PreferenceTimeZone,
 	})
 	if err != nil {
 		s.logger.Error("failed to update user's github username")
@@ -439,6 +440,7 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request) {
 		PhotoURL:            user.PhotoURL,
 		GithubUsername:      gitUser.GetLogin(),
 		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
+		PreferenceTimeZone:  user.PreferenceTimeZone,
 	})
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to save user information %s", err.Error()), http.StatusInternalServerError)
