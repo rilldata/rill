@@ -27,7 +27,6 @@
   import { getFilterForComparsion } from "../dimension-table/dimension-table-utils";
   import type { NicelyFormattedTypes } from "../humanize-numbers";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
-  import LeaderboardList from "./LeaderboardList.svelte";
   import { prepareLeaderboardItemData } from "./leaderboard-utils";
   import LeaderboardListItem from "./LeaderboardListItem.svelte";
 
@@ -270,7 +269,7 @@
       on:click={() => selectDimension(dimensionName)}
     />
     {#if values}
-      <LeaderboardList>
+      <div class="rounded-b border-gray-200 surface text-gray-800">
         <!-- place the leaderboard entries that are above the fold here -->
         {#each aboveTheFoldItems as itemData (itemData.label)}
           <LeaderboardListItem
@@ -329,7 +328,7 @@
             >
           </Tooltip>
         {/if}
-      </LeaderboardList>
+      </div>
     {/if}
   </div>
 {/if}
