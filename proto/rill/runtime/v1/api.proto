@@ -112,7 +112,7 @@ service RuntimeService {
       body: "*"
     };
   }
-
+  
   // Catalog
 
   // ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
@@ -137,8 +137,6 @@ service RuntimeService {
   rpc TriggerSync(TriggerSyncRequest) returns (TriggerSyncResponse) {
     option (google.api.http) = {post: "/v1/instances/{instance_id}/sync"};
   }
-
-  // Reconciliation
 
   // Reconcile applies a full set of artifacts from a repo to the catalog and infra.
   // It attempts to infer a minimal number of migrations to apply to reconcile the current state with
@@ -228,13 +226,7 @@ message Instance {
   string olap_dsn = 3;
   // Driver for reading/editing code artifacts (options: file, metastore, github).
   // This enables virtualizing a file system in a cloud setting.
-  string repo_driver = 4 [(validate.rules).string = {
-    in: [
-      "file",
-      "metastore",
-      "github"
-    ]
-  }];
+  string repo_driver = 4 [(validate.rules).string = {in: ["file", "metastore", "github"]}];
   // DSN for connecting to repo
   string repo_dsn = 5;
   // If true, the runtime will store the instance's catalog in its OLAP store instead
@@ -284,13 +276,7 @@ message CreateInstanceRequest {
     ]
   }];
   string olap_dsn = 3;
-  string repo_driver = 4 [(validate.rules).string = {
-    in: [
-      "file",
-      "metastore",
-      "github"
-    ]
-  }];
+  string repo_driver = 4 [(validate.rules).string = {in: ["file", "metastore", "github"]}];
   string repo_dsn = 5;
   bool embed_catalog = 6;
   map<string, string> variables = 7;
@@ -402,6 +388,7 @@ message RenameFileRequest {
 // Response message for RuntimeService.RenameFile
 message RenameFileResponse {}
 
+// Example contains metadata about an example project that is available for unpacking.
 message Example {
   string name = 1;
   string title = 2;

@@ -482,16 +482,6 @@ export interface V1RenameFileResponse {
   [key: string]: any;
 }
 
-export interface V1RenameFileAndReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-}
-
 export interface V1RenameFileAndReconcileRequest {
   instanceId?: string;
   fromPath?: string;
@@ -499,6 +489,16 @@ export interface V1RenameFileAndReconcileRequest {
   /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
   dry?: boolean;
   strict?: boolean;
+}
+
+export interface V1RefreshAndReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
 }
 
 export interface V1RefreshAndReconcileRequest {
@@ -532,6 +532,11 @@ export const V1ReconcileErrorCode = {
   CODE_SOURCE_PERMISSION_DENIED: "CODE_SOURCE_PERMISSION_DENIED",
 } as const;
 
+export interface V1ReconcileErrorCharLocation {
+  line?: number;
+  column?: number;
+}
+
 /**
  * ReconcileError represents an error encountered while running Reconcile.
  */
@@ -544,11 +549,11 @@ It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
 It only applies to structured code artifacts (i.e. YAML).
 Only applicable if file_path is set. */
   propertyPath?: string[];
-  startLocation?: ReconcileErrorCharLocation;
-  endLocation?: ReconcileErrorCharLocation;
+  startLocation?: V1ReconcileErrorCharLocation;
+  endLocation?: V1ReconcileErrorCharLocation;
 }
 
-export interface V1RefreshAndReconcileResponse {
+export interface V1RenameFileAndReconcileResponse {
   /** Errors encountered during reconciliation. If strict = false, any path in
 affected_paths without an error can be assumed to have been reconciled succesfully. */
   errors?: V1ReconcileError[];
@@ -802,6 +807,10 @@ export interface V1MetricsViewComparisonValue {
   deltaRel?: unknown;
 }
 
+export interface V1MetricsViewComparisonToplistResponse {
+  rows?: V1MetricsViewComparisonRow[];
+}
+
 export type V1MetricsViewComparisonSortType =
   (typeof V1MetricsViewComparisonSortType)[keyof typeof V1MetricsViewComparisonSortType];
 
@@ -825,28 +834,9 @@ export interface V1MetricsViewComparisonSort {
   type?: V1MetricsViewComparisonSortType;
 }
 
-export interface V1MetricsViewComparisonToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  baseTimeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  sort?: V1MetricsViewComparisonSort[];
-  filter?: V1MetricsViewFilter;
-  limit?: string;
-  offset?: string;
-  priority?: number;
-}
-
 export interface V1MetricsViewComparisonRow {
   dimensionValue?: unknown;
   measureValues?: V1MetricsViewComparisonValue[];
-}
-
-export interface V1MetricsViewComparisonToplistResponse {
-  rows?: V1MetricsViewComparisonRow[];
 }
 
 export interface V1MetricsViewColumn {
@@ -934,6 +924,21 @@ export interface V1InlineMeasure {
   expression?: string;
 }
 
+export interface V1MetricsViewComparisonToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  baseTimeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  sort?: V1MetricsViewComparisonSort[];
+  filter?: V1MetricsViewFilter;
+  limit?: string;
+  offset?: string;
+  priority?: number;
+}
+
 export type V1HistogramMethod =
   (typeof V1HistogramMethod)[keyof typeof V1HistogramMethod];
 
@@ -993,6 +998,9 @@ export const V1ExportFormat = {
   EXPORT_FORMAT_XLSX: "EXPORT_FORMAT_XLSX",
 } as const;
 
+/**
+ * Example contains metadata about an example project that is available for unpacking.
+ */
 export interface V1Example {
   name?: string;
   title?: string;
@@ -1263,16 +1271,21 @@ export interface StructTypeField {
   type?: Runtimev1Type;
 }
 
-export interface SourceExtractPolicy {
-  rowsStrategy?: ExtractPolicyStrategy;
-  rowsLimitBytes?: string;
-  filesStrategy?: ExtractPolicyStrategy;
-  filesLimit?: string;
-}
+export type SourceExtractPolicyStrategy =
+  (typeof SourceExtractPolicyStrategy)[keyof typeof SourceExtractPolicyStrategy];
 
-export interface ReconcileErrorCharLocation {
-  line?: number;
-  column?: number;
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SourceExtractPolicyStrategy = {
+  STRATEGY_UNSPECIFIED: "STRATEGY_UNSPECIFIED",
+  STRATEGY_HEAD: "STRATEGY_HEAD",
+  STRATEGY_TAIL: "STRATEGY_TAIL",
+} as const;
+
+export interface SourceExtractPolicy {
+  rowsStrategy?: SourceExtractPolicyStrategy;
+  rowsLimitBytes?: string;
+  filesStrategy?: SourceExtractPolicyStrategy;
+  filesLimit?: string;
 }
 
 export interface NumericOutliersOutlier {
@@ -1320,16 +1333,6 @@ export interface MetricsViewDimension {
   description?: string;
   column?: string;
 }
-
-export type ExtractPolicyStrategy =
-  (typeof ExtractPolicyStrategy)[keyof typeof ExtractPolicyStrategy];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const ExtractPolicyStrategy = {
-  STRATEGY_UNSPECIFIED: "STRATEGY_UNSPECIFIED",
-  STRATEGY_HEAD: "STRATEGY_HEAD",
-  STRATEGY_TAIL: "STRATEGY_TAIL",
-} as const;
 
 export type ConnectorPropertyType =
   (typeof ConnectorPropertyType)[keyof typeof ConnectorPropertyType];

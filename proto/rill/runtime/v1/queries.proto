@@ -4,8 +4,8 @@ package rill.runtime.v1;
 import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
-import "rill/runtime/v1/catalog.proto";
 import "rill/runtime/v1/schema.proto";
+import "rill/runtime/v1/time_grain.proto";
 import "validate/validate.proto";
 
 service QueryService {
