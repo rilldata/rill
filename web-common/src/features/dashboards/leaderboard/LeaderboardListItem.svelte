@@ -63,7 +63,7 @@
       ? getFormatterValueForPercDiff(measureValue, referenceValue)
       : undefined;
 
-  const previousValueString: string | undefined =
+  $: previousValueString =
     comparisonValue !== undefined && comparisonValue !== null
       ? humanizeDataType(comparisonValue, formatPreset)
       : undefined;
@@ -81,6 +81,12 @@
   const onHover = () => {
     hovered = true;
     dispatch("focus");
+    console.log(
+      "hovered",
+      previousValueString,
+      "comparisonValue",
+      comparisonValue
+    );
   };
   const onLeave = () => {
     hovered = false;
