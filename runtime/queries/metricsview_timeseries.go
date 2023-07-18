@@ -27,6 +27,7 @@ type MetricsViewTimeSeries struct {
 	Sort            []*runtimev1.MetricsViewSort `json:"sort,omitempty"`
 	Filter          *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
 	TimeGranularity runtimev1.TimeGrain          `json:"time_granularity,omitempty"`
+	TimeZone        string                       `json:"time_zone,omitempty"`
 
 	Result *runtimev1.MetricsViewTimeSeriesResponse `json:"-"`
 }
@@ -112,6 +113,7 @@ func (q *MetricsViewTimeSeries) resolveDuckDB(ctx context.Context, rt *runtime.R
 		Measures:          measures,
 		MetricsView:       mv,
 		MetricsViewFilter: q.Filter,
+		TimeZone:          q.TimeZone,
 	}
 	err = rt.Query(ctx, instanceID, tsq, priority)
 	if err != nil {
@@ -238,12 +240,17 @@ func (q *MetricsViewTimeSeries) buildDruidMetricsTimeseriesSQL(mv *runtimev1.Met
 	}
 
 	tsAlias := tempName("_ts_")
-	tsSpecifier := convertToDateTruncSpecifier(q.TimeGranularity)
+	tsSpecifier := convertToDruidTimeFloorSpecifier(q.TimeGranularity)
 
+	timezone := "UTC"
+	if q.TimeZone != "" {
+		timezone = q.TimeZone
+	}
+	args = append([]any{timezone}, args)
 	sql := fmt.Sprintf(
-		`SELECT date_trunc('%s', %s) AS %s, %s FROM %q WHERE %s GROUP BY 1 ORDER BY 1`,
-		tsSpecifier,
+		`SELECT time_floor(%s, '%s', null, ?) AS %s, %s FROM %q WHERE %s GROUP BY 1 ORDER BY 1`,
 		safeName(mv.TimeDimension),
+		tsSpecifier,
 		tsAlias,
 		strings.Join(selectCols, ", "),
 		mv.Model,

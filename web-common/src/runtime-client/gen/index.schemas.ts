@@ -63,6 +63,7 @@ export type QueryServiceColumnTimeSeriesBody = {
   pixels?: number;
   sampleSize?: number;
   priority?: number;
+  timeZone?: string;
 };
 
 export type QueryServiceColumnTimeRangeParams = {
@@ -144,6 +145,7 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
   filter?: V1MetricsViewFilter;
+  timeZone?: string;
   priority?: number;
 };
 
@@ -156,6 +158,7 @@ export type QueryServiceMetricsViewRowsBody = {
   limit?: number;
   offset?: string;
   priority?: number;
+  timeZone?: string;
 };
 
 export type QueryServiceMetricsViewComparisonToplistBody = {
@@ -778,6 +781,7 @@ export interface V1MetricsViewTimeSeriesRequest {
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
   filter?: V1MetricsViewFilter;
+  timeZone?: string;
   priority?: number;
 }
 
@@ -792,6 +796,7 @@ export interface V1MetricsViewRowsRequest {
   limit?: number;
   offset?: string;
   priority?: number;
+  timeZone?: string;
 }
 
 export interface V1MetricsViewComparisonValue {
@@ -1097,6 +1102,7 @@ export interface V1ColumnTimeSeriesRequest {
   pixels?: number;
   sampleSize?: number;
   priority?: number;
+  timeZone?: string;
 }
 
 export interface V1ColumnTimeRangeResponse {
