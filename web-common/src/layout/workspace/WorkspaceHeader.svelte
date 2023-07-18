@@ -7,11 +7,11 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
-  import type { LayoutElement } from "@rilldata/web-local/lib/types";
   import { getContext } from "svelte";
   import type { Tweened } from "svelte/motion";
   import type { Writable } from "svelte/store";
   import SourceUnsavedIndicator from "../../features/sources/editor/SourceUnsavedIndicator.svelte";
+  import type { LayoutElement } from "./types";
   import WorkspaceHeaderStatusSpinner from "./WorkspaceHeaderStatusSpinner.svelte";
 
   export let onChangeCallback;
