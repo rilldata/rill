@@ -23,11 +23,15 @@
   // now indicates the latest reference point in the dashboard
   export let now: Date;
   export let timeZoneOptions = [
-    "Asia/Kolkata",
     "America/Los_Angeles",
+    "America/Chicago",
     "America/New_York",
     "Europe/London",
     "Europe/Paris",
+    "Asia/Jerusalem",
+    "Asia/Kolkata",
+    "Asia/Shanghai",
+    "Asia/Tokyo",
     "Australia/Sydney",
   ];
 
