@@ -272,7 +272,6 @@
     {#if values}
       <LeaderboardList>
         <!-- place the leaderboard entries that are above the fold here -->
-
         {#each aboveTheFoldItems as itemData (itemData.label)}
           <LeaderboardListItem
             {itemData}

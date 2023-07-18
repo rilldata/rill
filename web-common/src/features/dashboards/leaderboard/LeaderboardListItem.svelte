@@ -46,9 +46,6 @@
   /** for summable measures, this is the value we use to calculate the bar % to fill */
   export let referenceValue;
 
-  /** compact mode is used in e.g. profiles */
-  export let compact = false;
-
   $: formattedValue = humanizeDataType(measureValue, formatPreset);
 
   $: percentChangeFormatted =
@@ -81,19 +78,11 @@
   const onHover = () => {
     hovered = true;
     dispatch("focus");
-    console.log(
-      "hovered",
-      previousValueString,
-      "comparisonValue",
-      comparisonValue
-    );
   };
   const onLeave = () => {
     hovered = false;
     dispatch("blur");
   };
-
-  $: height = compact ? "18px" : "22px";
 
   let renderedBarValue = 0; // should be between 0 and 1.
   $: {
@@ -151,7 +140,10 @@
       tweenParameters={{ duration: 200 }}
       value={renderedBarValue}
     >
-      <div class="grid leaderboard-entry items-center gap-x-3" style:height>
+      <div
+        class="grid leaderboard-entry items-center gap-x-3"
+        style:height="22px"
+      >
         <!-- NOTE: empty class leaderboard-label is used to locate this elt in e2e tests -->
         <div
           class:ui-copy={!atLeastOneActive}
