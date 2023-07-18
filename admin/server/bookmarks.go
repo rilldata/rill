@@ -15,12 +15,7 @@ import (
 
 // Listbookmarks server returns the bookmarks for the user per project
 func (s *Server) ListBookmarks(ctx context.Context, req *adminv1.ListBookmarksRequest) (*adminv1.ListBookmarksResponse, error) {
-	// Return an empty result if not authenticated.
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() == auth.OwnerTypeAnon {
-		return nil, fmt.Errorf("not a user")
-	}
-
 	// Error if authenticated as anything other than a user
 	if claims.OwnerType() != auth.OwnerTypeUser {
 		return nil, fmt.Errorf("not authenticated as a user")
@@ -43,11 +38,7 @@ func (s *Server) ListBookmarks(ctx context.Context, req *adminv1.ListBookmarksRe
 
 // GetBookmark server returns the bookmark for the user per project
 func (s *Server) GetBookmark(ctx context.Context, req *adminv1.GetBookmarkRequest) (*adminv1.GetBookmarkResponse, error) {
-	// Return an empty result if not authenticated.
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() == auth.OwnerTypeAnon {
-		return nil, fmt.Errorf("not a user")
-	}
 
 	// Error if authenticated as anything other than a user
 	if claims.OwnerType() != auth.OwnerTypeUser {
@@ -84,11 +75,7 @@ func (s *Server) GetBookmark(ctx context.Context, req *adminv1.GetBookmarkReques
 
 // CreateBookmark server creates a bookmark for the user per project
 func (s *Server) CreateBookmark(ctx context.Context, req *adminv1.CreateBookmarkRequest) (*adminv1.CreateBookmarkResponse, error) {
-	// Return an empty result if not authenticated.
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() == auth.OwnerTypeAnon {
-		return nil, fmt.Errorf("not a user")
-	}
 
 	// Error if authenticated as anything other than a user
 	if claims.OwnerType() != auth.OwnerTypeUser {
@@ -131,11 +118,7 @@ func (s *Server) CreateBookmark(ctx context.Context, req *adminv1.CreateBookmark
 
 // RemoveBookmark server removes a bookmark for bookmark id
 func (s *Server) RemoveBookmark(ctx context.Context, req *adminv1.RemoveBookmarkRequest) (*adminv1.RemoveBookmarkResponse, error) {
-	// Return an empty result if not authenticated.
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() == auth.OwnerTypeAnon {
-		return nil, fmt.Errorf("not a user")
-	}
 
 	// Error if authenticated as anything other than a user
 	if claims.OwnerType() != auth.OwnerTypeUser {

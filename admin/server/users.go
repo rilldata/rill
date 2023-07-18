@@ -124,11 +124,7 @@ func (s *Server) GetCurrentUser(ctx context.Context, req *adminv1.GetCurrentUser
 }
 
 func (s *Server) UpdateUserPreferences(ctx context.Context, req *adminv1.UpdateUserPreferencesRequest) (*adminv1.UpdateUserPreferencesResponse, error) {
-	// Return an empty result if not authenticated.
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() == auth.OwnerTypeAnon {
-		return &adminv1.UpdateUserPreferencesResponse{}, nil
-	}
 
 	// Error if authenticated as anything other than a user
 	if claims.OwnerType() != auth.OwnerTypeUser {
