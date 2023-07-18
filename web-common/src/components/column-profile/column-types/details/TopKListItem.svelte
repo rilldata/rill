@@ -9,7 +9,6 @@
   export let showContext = false;
 
   /** compact mode is used in e.g. profiles */
-  export let compact = false;
 
   const dispatch = createEventDispatcher();
 
@@ -30,8 +29,6 @@
         return `${15 - 4 * (i % 2)} ${1.7 * (i * 2)}`;
       })
       .join(" L");
-
-  $: height = compact ? "18px" : "22px";
 </script>
 
 <button
@@ -51,7 +48,10 @@
     tweenParameters={{ duration: 200 }}
     {value}
   >
-    <div class="grid leaderboard-entry items-center gap-x-3" style:height>
+    <div
+      class="grid leaderboard-entry items-center gap-x-3"
+      style:height="18px"
+    >
       <div
         class="justify-self-start text-left w-full text-ellipsis overflow-hidden whitespace-nowrap"
       >
@@ -85,7 +85,7 @@
       style="
       position:absolute;
       right: 0px;
-      transform: translateY(-{height});
+      transform: translateY(-18px);
     "
       width="15"
       height="22"

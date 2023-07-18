@@ -80,7 +80,6 @@
         ? "<.01%"
         : formatPercentage(item.count / totalRows)}
       <TopKListItem
-        compact
         value={item.count / totalRows}
         color={colorClass}
         showIcon={false}
