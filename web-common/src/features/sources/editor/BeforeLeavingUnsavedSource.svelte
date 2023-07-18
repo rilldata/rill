@@ -35,6 +35,7 @@
 
   const handleConfirm = () => {
     goto(interceptedNavigation.url);
+    interceptedNavigation = null;
   };
 
   function navigate(href: string) {
