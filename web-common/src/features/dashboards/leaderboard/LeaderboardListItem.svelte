@@ -72,18 +72,6 @@
     ? (filterExcludeMode && selected) || (!filterExcludeMode && !selected)
     : false;
 
-  const dispatch = createEventDispatcher();
-
-  let hovered = false;
-  const onHover = () => {
-    hovered = true;
-    dispatch("focus");
-  };
-  const onLeave = () => {
-    hovered = false;
-    dispatch("blur");
-  };
-
   let renderedBarValue = 0; // should be between 0 and 1.
   $: {
     renderedBarValue = isSummableMeasure
@@ -111,13 +99,23 @@
       message: `copied dimension value "${truncatedLabel}" to clipboard`,
     });
   }
+  const dispatch = createEventDispatcher();
+
+  let hovered = false;
+  const onHover = () => {
+    hovered = true;
+    dispatch("focus");
+  };
+  const onLeave = () => {
+    hovered = false;
+    dispatch("blur");
+  };
 </script>
 
 <Tooltip location="right">
   <button
     class="flex flex-row w-full text-left transition-color"
     on:blur={onLeave}
-    on:click
     on:focus={onHover}
     on:mouseleave={onLeave}
     on:mouseover={onHover}
