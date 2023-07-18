@@ -11,12 +11,6 @@ export function getFormatterValueForPercDiff(numerator, denominator) {
   return formatMeasurePercentageDifference(percDiff);
 }
 
-/**
- * @typedef {Object} LeaderboardItemData
- * This is the data that is passed to each individual leaderboard item component.
- * Along with some shared data that is passed to all items in a leaderboard,
- * this should be enough to render the leaderboard.
- */
 export type LeaderboardItemData = {
   label: string | number;
   value: number;
