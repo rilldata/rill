@@ -18,22 +18,12 @@
     Menu,
     MenuItem,
   } from "@rilldata/web-common/components/menu";
+  import { DEFAULT_TIMEZONES } from "@rilldata/web-common/lib/time/config";
 
   export let metricViewName: string;
   // now indicates the latest reference point in the dashboard
   export let now: Date;
-  export let timeZoneOptions = [
-    "America/Los_Angeles",
-    "America/Chicago",
-    "America/New_York",
-    "Europe/London",
-    "Europe/Paris",
-    "Asia/Jerusalem",
-    "Asia/Kolkata",
-    "Asia/Shanghai",
-    "Asia/Tokyo",
-    "Australia/Sydney",
-  ];
+  export let timeZoneOptions = DEFAULT_TIMEZONES;
 
   const dispatch = createEventDispatcher();
   const userLocalIANA = getLocalIANA();
