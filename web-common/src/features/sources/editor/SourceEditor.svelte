@@ -2,15 +2,28 @@
   import type { EditorView } from "@codemirror/view";
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
   import { setLineStatuses } from "../../../components/editor/line-status";
-  import { mapRuntimeErrorsToLines } from "../../metrics-views/errors";
+  import {
+    fileArtifactsStore,
+    getFileArtifactReconciliationErrors,
+  } from "../../entity-management/file-artifacts-store";
+  import { mapReconciliationErrorsToLines } from "../../metrics-views/errors";
   import { useSourceStore } from "../sources-store";
 
+  export let sourceName: string;
   export let yaml: string;
 
   let editor: YAMLEditor;
   let view: EditorView;
 
   const sourceStore = useSourceStore();
+
+  function handleUpdate(e: CustomEvent<{ content: string }>) {
+    // Update the client-side store
+    sourceStore.set({ clientYAML: e.detail.content });
+
+    // Clear line errors (it's confusing when they're outdated)
+    setLineStatuses([], view);
+  }
 
   // PLACEDHOLDER
   /** note: this codemirror plugin does actually utilize tanstack query, and the
@@ -20,18 +33,20 @@
   // const placeholderElement = createPlaceholderElement(sourceName);
   // const placeholder = createPlaceholder(placeholderElement.DOMElement);
 
-  // ERRORS
-  // TODO: do the Source equivalent... if there's line-based errors
-  // $: runtimeErrors = getMetricsDefErrors($fileArtifactsStore, metricsDefName);
-  let runtimeErrors = [];
-  $: lineBasedRuntimeErrors = mapRuntimeErrorsToLines(runtimeErrors, yaml);
-  /** We display the mainError even if there are multiple errors elsewhere. */
-  /** display the main error (the first in this array) at the bottom */
-  $: mainError = [...lineBasedRuntimeErrors, ...(runtimeErrors || [])]?.at(0);
-  /** If the errors change, run the following transaction.
-   * Given that we are debouncing the core edit,
+  /**
+   * Handle errors.
    */
-  $: if (view) setLineStatuses(lineBasedRuntimeErrors, view);
+  $: {
+    const reconciliationErrors = getFileArtifactReconciliationErrors(
+      $fileArtifactsStore,
+      `${sourceName}.yaml`
+    );
+    const lineBasedReconciliationErrors = mapReconciliationErrorsToLines(
+      reconciliationErrors,
+      yaml
+    );
+    if (view) setLineStatuses(lineBasedReconciliationErrors, view);
+  }
 </script>
 
 <div class="editor flex flex-col border border-gray-200 rounded h-full">
@@ -40,7 +55,7 @@
       bind:this={editor}
       bind:view
       content={yaml}
-      on:update={(e) => sourceStore.set({ clientYAML: e.detail.content })}
+      on:update={handleUpdate}
     />
   </div>
 </div>
