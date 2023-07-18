@@ -30,6 +30,10 @@
     getFilePathFromNameAndType,
     getRouteFromName,
   } from "../../entity-management/entity-mappers";
+  import {
+    fileArtifactsStore,
+    getFileArtifactReconciliationErrors,
+  } from "../../entity-management/file-artifacts-store";
   import { isDuplicateName } from "../../entity-management/name-utils";
   import { useAllNames } from "../../entity-management/selectors";
   import { refreshSource } from "../refreshSource";
@@ -154,6 +158,11 @@
     $file.dataUpdatedAt &&
     $sourceStore.clientYAML &&
     useIsSourceUnsaved($runtime.instanceId, sourceName);
+
+  $: reconciliationErrors = getFileArtifactReconciliationErrors(
+    $fileArtifactsStore,
+    `${sourceName}.yaml`
+  );
 </script>
 
 <div class="grid items-center" style:grid-template-columns="auto max-content">
@@ -197,7 +206,11 @@
             </ResponsiveButtonText>
           </Button>
         {:else}
-          <Button on:click={() => onRefreshClick(sourceName)} type="primary">
+          <Button
+            on:click={() => onRefreshClick(sourceName)}
+            type="primary"
+            disabled={reconciliationErrors?.length > 0}
+          >
             <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}>
               <RefreshIcon size="14px" />
             </IconSpaceFixer>
