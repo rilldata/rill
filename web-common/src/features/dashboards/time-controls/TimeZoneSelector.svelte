@@ -18,12 +18,11 @@
     Menu,
     MenuItem,
   } from "@rilldata/web-common/components/menu";
-  import { DEFAULT_TIMEZONES } from "@rilldata/web-common/lib/time/config";
 
   export let metricViewName: string;
   // now indicates the latest reference point in the dashboard
   export let now: Date;
-  export let timeZoneOptions = DEFAULT_TIMEZONES;
+  export let availableTimeZones: string[];
 
   const dispatch = createEventDispatcher();
   const userLocalIANA = getLocalIANA();
@@ -33,12 +32,12 @@
   $: activeTimeZone = $dashboardStore?.selectedTimezone;
 
   // Filter out user time zone and UTC
-  $: timeZoneOptions = timeZoneOptions.filter(
+  $: availableTimeZones = availableTimeZones.filter(
     (tz) => tz !== userLocalIANA && tz !== UTCIana
   );
 
   // Add local and utc time zone to the top of the list
-  $: timeZoneOptions = [userLocalIANA, UTCIana, ...timeZoneOptions];
+  $: availableTimeZones = [userLocalIANA, UTCIana, ...availableTimeZones];
 
   const onTimeZoneSelect = (timeZone: string) => {
     dispatch("select-time-zone", { timeZone });
@@ -76,7 +75,7 @@
       label="Timezone selector"
       minWidth="320px"
     >
-      {#each timeZoneOptions as option}
+      {#each availableTimeZones as option}
         {@const label = getLabelForIANA(now, option)}
         <MenuItem
           icon

@@ -58,6 +58,7 @@ export const timeZoneNameToAbbreviationMap = {
   "Central Daylight Time": "CDT",
   "Cuba Daylight Time": "CDT",
   "Central European Summer Time": "CEST",
+  "Central European Standard Time": "CET",
   "Central European Time": "CET",
   "Chatham Island Daylight Time": "CHADT",
   "Chatham Island Standard Time": "CHAST",

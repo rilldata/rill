@@ -9,7 +9,10 @@
     getComparisonRange,
     getTimeComparisonParametersForComponent,
   } from "@rilldata/web-common/lib/time/comparisons";
-  import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
+  import {
+    DEFAULT_TIMEZONES,
+    DEFAULT_TIME_RANGES,
+  } from "@rilldata/web-common/lib/time/config";
   import {
     checkValidTimeGrain,
     getDefaultTimeGrain,
@@ -51,6 +54,7 @@
   let baseTimeRange: TimeRange;
   let defaultTimeRange: TimeRangeType;
   let minTimeGrain: V1TimeGrain;
+  let availableTimeZones: string[] = [];
 
   let metricsViewQuery;
   $: if ($runtime.instanceId) {
@@ -89,6 +93,13 @@
     minTimeGrain =
       $metricsViewQuery.data.entry.metricsView?.smallestTimeGrain ||
       V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
+
+    availableTimeZones =
+      $metricsViewQuery?.data?.entry?.metricsView?.availableTimeZones;
+
+    if (!availableTimeZones?.length) {
+      availableTimeZones = DEFAULT_TIMEZONES;
+    }
   }
   $: allTimeRange = $allTimeRangeQuery?.data as TimeRange;
   $: isDashboardDefined = $dashboardStore !== undefined;
@@ -340,6 +351,7 @@
     <TimeZoneSelector
       on:select-time-zone={(e) => onSelectTimeZone(e.detail.timeZone)}
       {metricViewName}
+      {availableTimeZones}
       now={allTimeRange?.end}
     />
     <TimeComparisonSelector

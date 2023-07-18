@@ -8,6 +8,7 @@ export function getLocalIANA(): string {
 export function getAbbreviationForIANA(now: Date, iana: string): string {
   const zoneName = DateTime.fromJSDate(now).setZone(iana).toFormat("ZZZZZ");
 
+  console.log(iana, zoneName);
   if (zoneName in timeZoneNameToAbbreviationMap)
     return timeZoneNameToAbbreviationMap[zoneName];
 
