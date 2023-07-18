@@ -39,8 +39,8 @@
     {value}
   >
     <div
-      class="grid leaderboard-entry items-center gap-x-3"
-      style:height="18px"
+      class="grid items-center gap-x-3"
+      style="grid-template-columns: auto max-content; height: 18px;"
     >
       <div
         class="justify-self-start text-left w-full text-ellipsis overflow-hidden whitespace-nowrap"
@@ -55,9 +55,3 @@
     </div>
   </BarAndLabel>
 </button>
-
-<style>
-  .leaderboard-entry {
-    grid-template-columns: auto max-content;
-  }
-</style>
