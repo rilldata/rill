@@ -29,6 +29,7 @@
   import DimensionLeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import LeaderboardList from "./LeaderboardList.svelte";
+  import { prepareLeaderboardItemData } from "./leaderboard-utils";
 
   export let metricViewName: string;
   export let dimensionName: string;
@@ -138,7 +139,7 @@
     }
   );
 
-  let values = [];
+  let values: { value: number; label: string | number }[] = [];
   let comparisonValues = [];
 
   /** replace data after fetched. */
@@ -174,6 +175,12 @@
   // Compose the comparison /toplist query
   $: showTimeComparison = $dashboardStore?.showComparison;
   $: showPercentOfTotal = $dashboardStore?.showPercentOfTotal;
+  let showContext: "time" | "percent" | false = false;
+  $: showContext = showTimeComparison
+    ? "time"
+    : showPercentOfTotal
+    ? "percent"
+    : false;
 
   // add all sliced and active values to the include filter.
   $: currentVisibleValues =
@@ -229,6 +236,20 @@
   }
 
   let hovered: boolean;
+
+  $: comparisonMap = new Map(comparisonValues?.map((v) => [v.label, v.value]));
+
+  $: aboveTheFoldItems = prepareLeaderboardItemData(
+    values.slice(0, slice),
+    activeValues,
+    comparisonMap
+  );
+
+  $: belowTheFoldItems = prepareLeaderboardItemData(
+    selectedValuesThatAreBelowTheFold,
+    activeValues,
+    comparisonMap
+  );
 </script>
 
 {#if topListQuery}
@@ -252,11 +273,11 @@
       <LeaderboardList>
         <!-- place the leaderboard entries that are above the fold here -->
         <DimensionLeaderboardEntrySet
+          renderValues={aboveTheFoldItems}
           {formatPreset}
           values={values.slice(0, slice)}
           {comparisonValues}
-          {showTimeComparison}
-          {showPercentOfTotal}
+          {showContext}
           {activeValues}
           {filterExcludeMode}
           {atLeastOneActive}
@@ -268,11 +289,11 @@
         {#if selectedValuesThatAreBelowTheFold?.length}
           <hr />
           <DimensionLeaderboardEntrySet
+            renderValues={belowTheFoldItems}
             {formatPreset}
             values={selectedValuesThatAreBelowTheFold}
             {comparisonValues}
-            {showTimeComparison}
-            {showPercentOfTotal}
+            {showContext}
             {activeValues}
             {filterExcludeMode}
             {atLeastOneActive}

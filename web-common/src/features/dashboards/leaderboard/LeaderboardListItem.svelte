@@ -20,22 +20,26 @@
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
   import { humanizeDataType } from "../humanize-numbers";
   import LongBarZigZag from "./LongBarZigZag.svelte";
-  import { getFormatterValueForPercDiff } from "./leaderboard-utils";
+  import {
+    LeaderboardItemData,
+    getFormatterValueForPercDiff,
+  } from "./leaderboard-utils";
 
-  export let measureValue: number;
+  export let itemData: LeaderboardItemData;
+  $: label = itemData.label;
+  $: measureValue = itemData.value;
+  $: selected = itemData.selected;
+  $: comparisonValue = itemData.comparisonValue;
 
-  export let isActive = false;
   export let showContext: "time" | "percent" | false = false;
 
   export let atLeastOneActive = false;
-  export let label: string | number;
 
   export let formattedValue: string;
   export let percentChangeFormatted;
   export let filterExcludeMode;
 
   export let formatPreset;
-  export let comparisonValue: number;
 
   /** if this value is a summable measure, we'll show the bar. Otherwise, don't. */
   export let isSummableMeasure;
@@ -68,7 +72,7 @@
   // we need to set *all* items to be included, because by default if a user has not
   // selected any values, we assume they want all values included in all calculations.
   $: excluded = atLeastOneActive
-    ? (filterExcludeMode && isActive) || (!filterExcludeMode && !isActive)
+    ? (filterExcludeMode && selected) || (!filterExcludeMode && !selected)
     : false;
 
   const dispatch = createEventDispatcher();
@@ -97,7 +101,7 @@
   }
   $: color = excluded
     ? "ui-measure-bar-excluded"
-    : isActive
+    : selected
     ? "ui-measure-bar-included-selected"
     : "ui-measure-bar-included";
 
@@ -132,7 +136,7 @@
     }}
     on:keydown
   >
-    <LeaderboardItemFilterIcon {isActive} {excluded} />
+    <LeaderboardItemFilterIcon {selected} {excluded} />
     <BarAndLabel
       {color}
       justify={false}
@@ -145,7 +149,7 @@
         <!-- NOTE: empty class leaderboard-label is used to locate this elt in e2e tests -->
         <div
           class:ui-copy={!atLeastOneActive}
-          class:ui-copy-strong={!excluded && isActive}
+          class:ui-copy-strong={!excluded && selected}
           class:ui-copy-disabled={excluded}
           class="leaderboard-label justify-self-start text-left w-full text-ellipsis overflow-hidden whitespace-nowrap"
         >
@@ -158,7 +162,7 @@
           <div
             class="flex items-baseline gap-x-1"
             class:ui-copy-disabled={excluded}
-            class:ui-copy-strong={!excluded && isActive}
+            class:ui-copy-strong={!excluded && selected}
             in:fly={{ duration: 200, y: 4 }}
           >
             {#if showPreviousTimeValue}
@@ -178,7 +182,7 @@
           {#if showContext}
             <div
               class:ui-copy-disabled={excluded}
-              class:ui-copy-strong={!excluded && isActive}
+              class:ui-copy-strong={!excluded && selected}
               class="text-xs text-gray-500 dark:text-gray-400"
               style:width="44px"
             >

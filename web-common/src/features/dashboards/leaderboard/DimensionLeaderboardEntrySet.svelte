@@ -10,14 +10,11 @@ see more button
 <script lang="ts">
   import LeaderboardListItem from "./LeaderboardListItem.svelte";
 
-  export let values;
-  $: console.log("values", values);
-  export let comparisonValues;
-  $: console.log("comparisonValues", comparisonValues);
-  export let showTimeComparison = false;
-  export let showPercentOfTotal = false;
+  // export let values;
+  // export let comparisonValues;
+  export let showContext: "time" | "percent" | false = false;
 
-  export let activeValues: Array<unknown>;
+  // export let activeValues: Array<unknown>;
   // false = include, true = exclude
   export let filterExcludeMode: boolean;
   export let isSummableMeasure: boolean;
@@ -25,41 +22,14 @@ see more button
   export let atLeastOneActive;
   export let formatPreset;
 
-  let renderValues = [];
-
-  let showContext: "time" | "percent" | false = false;
-  $: showContext = showTimeComparison
-    ? "time"
-    : showPercentOfTotal
-    ? "percent"
-    : false;
-
-  $: comparisonMap = new Map(comparisonValues?.map((v) => [v.label, v.value]));
-
-  // FIXME: in no world should it be the responsibility of this component to
-  // merge `values` and `comparisonValues` and `activeValues`. This should be
-  // done somewhere upstream -- ideally, not in a component at all, but given
-  // the current architecture, it should at least happen in the parent component.
-  $: renderValues = values.map((v) => {
-    const active = activeValues.findIndex((value) => value === v.label) >= 0;
-    const comparisonValue = comparisonMap.get(v.label);
-
-    return {
-      ...v,
-      active,
-      comparisonValue,
-    };
-  });
+  export let renderValues = [];
 </script>
 
-{#each renderValues as { label, value, active, comparisonValue } (label)}
+{#each renderValues as itemData (itemData.label)}
   <LeaderboardListItem
-    measureValue={value}
+    {itemData}
     {showContext}
-    isActive={active}
     {atLeastOneActive}
-    {label}
-    {comparisonValue}
     {filterExcludeMode}
     {isSummableMeasure}
     {referenceValue}
