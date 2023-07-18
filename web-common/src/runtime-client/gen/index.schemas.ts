@@ -908,6 +908,8 @@ export interface V1CreateInstanceResponse {
   instance?: V1Instance;
 }
 
+export type V1CreateInstanceRequestLabels = { [key: string]: string };
+
 export type V1CreateInstanceRequestVariables = { [key: string]: string };
 
 /**
@@ -923,8 +925,7 @@ export interface V1CreateInstanceRequest {
   embedCatalog?: boolean;
   variables?: V1CreateInstanceRequestVariables;
   ingestionLimitBytes?: string;
-  organizationId?: string;
-  projectId?: string;
+  labels?: V1CreateInstanceRequestLabels;
 }
 
 /**

@@ -1,4 +1,4 @@
-package usage
+package emitter
 
 import (
 	"sync/atomic"
@@ -7,10 +7,10 @@ import (
 
 var globalClient unsafe.Pointer
 
-func GetClient() *Client {
+func Get() *Client {
 	return (*Client)(atomic.LoadPointer(&globalClient))
 }
 
-func SetClient(client *Client) {
+func Set(client *Client) {
 	atomic.StorePointer(&globalClient, unsafe.Pointer(client))
 }

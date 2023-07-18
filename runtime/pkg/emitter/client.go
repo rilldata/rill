@@ -1,10 +1,11 @@
-package usage
+package emitter
 
 import (
 	"context"
 	"time"
 )
 
+// Client collects and periodically sinks Event-s.
 type Client struct {
 	sinkPeriod time.Duration
 	snk        Sink
@@ -34,7 +35,7 @@ func String(name, value string) *Dim {
 	return &Dim{Name: name, Value: value}
 }
 
-func NewClient(conf Conf) *Client {
+func New(conf Conf) *Client {
 	client := &Client{
 		sinkPeriod: conf.SinkPeriod,
 		snk:        conf.Sink,

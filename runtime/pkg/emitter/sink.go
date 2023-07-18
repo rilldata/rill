@@ -1,4 +1,4 @@
-package usage
+package emitter
 
 import (
 	"encoding/json"
@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Sink is used by a usage Client to sink accumulated events.
+// Sink is used by a Client to sink collected Event-s.
 type Sink interface {
 	Sink(events []Event)
 	Close() error
@@ -21,7 +21,7 @@ func NewNoopSink() *NoopSink {
 	return &NoopSink{}
 }
 
-func (n *NoopSink) Sink(events []Event) {}
+func (n *NoopSink) Sink(_ []Event) {}
 
 func (n *NoopSink) Close() error {
 	return nil

@@ -42,10 +42,8 @@ type Instance struct {
 	// IngestionLimitBytes is total data allowed to ingest across all sources
 	// 0 means there is no limit
 	IngestionLimitBytes int64 `db:"ingestion_limit_bytes"`
-	// Organization ID of the Instance
-	OrganizationID string
-	// Project ID of the Instance
-	ProjectID string
+	// Labels to enrich emitter events (like usage tracking)
+	Labels map[string]string
 }
 
 // ResolveVariables returns the final resolved variables

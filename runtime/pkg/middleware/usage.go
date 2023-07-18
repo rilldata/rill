@@ -5,7 +5,7 @@ import (
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	"github.com/rilldata/rill/runtime/pkg/usage"
+	"github.com/rilldata/rill/runtime/pkg/emitter"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"google.golang.org/grpc"
 )
@@ -22,14 +22,17 @@ func UsageStreamServerInterceptor() grpc.StreamServerInterceptor {
 			subject = "anonymous"
 		}
 
-		newCtx := usage.ContextWithUsageDims(ss.Context(), *usage.String("user_id", subject))
+		newCtx := emitter.ContextWithUsageDims(ss.Context(),
+			*emitter.String("user_id", subject),
+			*emitter.String("request_method", info.FullMethod),
+		)
 		wss := grpc_middleware.WrapServerStream(ss)
 		wss.WrappedContext = newCtx
 
 		start := time.Now()
 		defer func() {
 			// Emit usage metric
-			usage.GetClient().Emit(newCtx, "request/time", float64(time.Since(start).Milliseconds()))
+			emitter.Get().Emit(newCtx, "request/time", float64(time.Since(start).Milliseconds()))
 		}()
 
 		return handler(srv, wss)
@@ -48,12 +51,15 @@ func UsageUnaryServerInterceptor() grpc.UnaryServerInterceptor {
 			subject = "anonymous"
 		}
 
-		newCtx := usage.ContextWithUsageDims(ctx, *usage.String("user_id", subject))
+		newCtx := emitter.ContextWithUsageDims(ctx,
+			*emitter.String("user_id", subject),
+			*emitter.String("request_method", info.FullMethod),
+		)
 
 		start := time.Now()
 		defer func() {
 			// Emit usage metric
-			usage.GetClient().Emit(newCtx, "request/time", float64(time.Since(start).Milliseconds()))
+			emitter.Get().Emit(newCtx, "request/time", float64(time.Since(start).Milliseconds()))
 		}()
 
 		return handler(newCtx, req)

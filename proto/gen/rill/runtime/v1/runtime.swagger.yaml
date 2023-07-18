@@ -2092,10 +2092,10 @@ definitions:
       ingestionLimitBytes:
         type: string
         format: int64
-      organizationId:
-        type: string
-      projectId:
-        type: string
+      labels:
+        type: object
+        additionalProperties:
+          type: string
     description: |-
       Request message for RuntimeService.CreateInstance.
       See message Instance for field descriptions.

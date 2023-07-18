@@ -20,10 +20,10 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/emitter"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
-	"github.com/rilldata/rill/runtime/pkg/usage"
 	runtimeserver "github.com/rilldata/rill/runtime/server"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -113,15 +113,17 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 
 	// Create instance with its repo set to the project directory
 	inst := &drivers.Instance{
-		ID:             DefaultInstanceID,
-		ProjectID:      DefaultProjectID,
-		OrganizationID: DefaultOrganizationID,
-		OLAPDriver:     olapDriver,
-		OLAPDSN:        olapDSN,
-		RepoDriver:     "file",
-		RepoDSN:        projectPath,
-		EmbedCatalog:   olapDriver == "duckdb",
-		Variables:      parsedVariables,
+		ID: DefaultInstanceID,
+		Labels: map[string]string{
+			"organization_id": DefaultOrganizationID,
+			"project_id":      DefaultProjectID,
+		},
+		OLAPDriver:   olapDriver,
+		OLAPDSN:      olapDSN,
+		RepoDriver:   "file",
+		RepoDSN:      projectPath,
+		EmbedCatalog: olapDriver == "duckdb",
+		Variables:    parsedVariables,
 	}
 	err = rt.CreateInstance(ctx, inst)
 	if err != nil {
@@ -263,12 +265,11 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		return err
 	}
 
-	c := usage.Conf{
-		Sink:       usage.NewNoopSink(),
+	emitter.Set(emitter.New(emitter.Conf{
+		Sink:       emitter.NewNoopSink(),
 		SinkPeriod: time.Duration(100) * time.Millisecond,
 		QueueSize:  1000,
-	}
-	usage.SetClient(usage.NewClient(c))
+	}))
 
 	// Start the gRPC server
 	group.Go(func() error {

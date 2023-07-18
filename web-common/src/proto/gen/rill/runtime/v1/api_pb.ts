@@ -417,14 +417,9 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
   ingestionLimitBytes = protoInt64.zero;
 
   /**
-   * @generated from field: string organization_id = 9;
+   * @generated from field: map<string, string> labels = 9;
    */
-  organizationId = "";
-
-  /**
-   * @generated from field: string project_id = 10;
-   */
-  projectId = "";
+  labels: { [key: string]: string } = {};
 
   constructor(data?: PartialMessage<CreateInstanceRequest>) {
     super();
@@ -442,8 +437,7 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 8, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 9, name: "organization_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 10, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "labels", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateInstanceRequest {
