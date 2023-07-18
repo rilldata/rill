@@ -1,5 +1,6 @@
 import { describe, it } from "@jest/globals";
 import { expect as playwrightExpect } from "@playwright/test";
+import { updateCodeEditor } from "./utils/commonHelpers";
 import {
   RequestMatcher,
   assertLeaderboards,
@@ -7,7 +8,6 @@ import {
   createDashboardFromModel,
   createDashboardFromSource,
   metricsViewRequestFilterMatcher,
-  updateMetricsInput,
   waitForTimeSeries,
   waitForTopLists,
 } from "./utils/dashboardHelpers";
@@ -289,9 +289,9 @@ describe("dashboards", () => {
         label: Domain
         column: domain
         description: ""
-    
+
         `;
-    await updateMetricsInput(page, changeDisplayNameDoc);
+    await updateCodeEditor(page, changeDisplayNameDoc);
 
     // Remove timestamp column
     // await page.getByLabel("Remove timestamp column").click();
@@ -335,9 +335,9 @@ describe("dashboards", () => {
         label: Domain
         column: domain
         description: ""
-    
+
         `;
-    await updateMetricsInput(page, addBackTimestampColumnDoc);
+    await updateCodeEditor(page, addBackTimestampColumnDoc);
 
     // Go to dashboard
     await page.getByRole("button", { name: "Go to Dashboard" }).click();
@@ -367,9 +367,9 @@ describe("dashboards", () => {
         label: Domain
         column: domain
         description: ""
-    
+
         `;
-    await updateMetricsInput(page, deleteOnlyMeasureDoc);
+    await updateCodeEditor(page, deleteOnlyMeasureDoc);
     // Check warning message appears, Go to Dashboard is disabled
     await playwrightExpect(
       page.getByText("at least one measure should be present")
@@ -398,10 +398,10 @@ describe("dashboards", () => {
         label: Domain
         column: domain
         description: ""
-    
+
         `;
 
-    await updateMetricsInput(page, docWithIncompleteMeasure);
+    await updateCodeEditor(page, docWithIncompleteMeasure);
     await playwrightExpect(
       page.getByRole("button", { name: "Go to dashboard" })
     ).toBeDisabled();
@@ -433,7 +433,7 @@ describe("dashboards", () => {
         description: ""
         `;
 
-    await updateMetricsInput(page, docWithCompleteMeasure);
+    await updateCodeEditor(page, docWithCompleteMeasure);
     await playwrightExpect(
       page.getByRole("button", { name: "Go to dashboard" })
     ).toBeEnabled();
@@ -521,7 +521,7 @@ describe("dashboards", () => {
  * (4) verify that the scaffolding works by looking at the dashboard.
  */
 async function runThroughEmptyMetricsFlows(page) {
-  await updateMetricsInput(page, "");
+  await updateCodeEditor(page, "");
 
   // the inspector should be empty.
   await playwrightExpect(
@@ -550,7 +550,7 @@ async function runThroughEmptyMetricsFlows(page) {
   ).toBeVisible();
 
   // now let's scaffold things in
-  await updateMetricsInput(page, "");
+  await updateCodeEditor(page, "");
 
   await wrapRetryAssertion(async () => {
     await playwrightExpect(
