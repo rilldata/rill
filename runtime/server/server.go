@@ -240,7 +240,7 @@ func HTTPErrorHandler(ctx context.Context, mux *gateway.ServeMux, marshaler gate
 }
 
 func timeoutSelector(fullMethodName string) time.Duration {
-	if strings.HasPrefix(fullMethodName, "rill.runtime.v1.RuntimeService") && (strings.Contains(fullMethodName, "/Trigger") || strings.Contains(fullMethodName, "/Reconcile")) {
+	if strings.HasPrefix(fullMethodName, "/rill.runtime.v1.RuntimeService") && (strings.Contains(fullMethodName, "/Trigger") || strings.HasSuffix(fullMethodName, "Reconcile")) {
 		return time.Minute * 30
 	}
 

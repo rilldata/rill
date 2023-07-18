@@ -117,5 +117,5 @@ func (c *connection) Sync(ctx context.Context, instID string) error {
 }
 
 func (c *connection) Watch(ctx context.Context, replay bool, callback drivers.WatchCallback) error {
-	return fmt.Errorf("%s repository is not supported", c.Driver())
+	return fmt.Errorf("cannot watch %s repository is not supported", c.Driver())
 }

@@ -5,10 +5,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-const (
-	WatchFilesMethod = "WatchFiles"
-)
-
 func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, stream runtimev1.RuntimeService_WatchFilesServer) error {
 	repo, err := s.runtime.Repo(stream.Context(), req.InstanceId)
 	if err != nil {

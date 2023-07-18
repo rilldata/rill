@@ -139,10 +139,6 @@ func (c *connection) Sync(ctx context.Context, instID string) error {
 }
 
 func (c *connection) Watch(ctx context.Context, replay bool, callback drivers.WatchCallback) error {
-	if c.Driver() != "file" {
-		return fmt.Errorf("%s repository is not supported", c.Driver())
-	}
-
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return err
@@ -205,9 +201,8 @@ func (c *connection) Watch(ctx context.Context, replay bool, callback drivers.Wa
 			if event.Op&fsnotify.Create != 0 {
 				e.Type = runtimev1.FileEvent_FILE_EVENT_WRITE
 				fi, err := os.Stat(event.Name)
-				if err != nil {
-					return err
-				} else if fi.IsDir() {
+				// if err != nil the file is removed already
+				if err == nil && fi.IsDir() {
 					err := watcher.Add(event.Name)
 					if err != nil {
 						return err
