@@ -7,12 +7,13 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
+  import { dynamicTextInputWidth } from "@rilldata/web-common/lib/actions/dynamic-text-input-width";
   import { getContext } from "svelte";
   import type { Tweened } from "svelte/motion";
   import type { Writable } from "svelte/store";
   import SourceUnsavedIndicator from "../../features/sources/editor/SourceUnsavedIndicator.svelte";
-  import type { LayoutElement } from "./types";
   import WorkspaceHeaderStatusSpinner from "./WorkspaceHeaderStatusSpinner.svelte";
+  import type { LayoutElement } from "./types";
 
   export let onChangeCallback;
   export let titleInput;
@@ -95,7 +96,7 @@
               editingTitle = false;
             }}
             value={titleInput}
-            size={inputSize}
+            use:dynamicTextInputWidth
             on:change={onChangeCallback}
           />
           <TooltipContent slot="tooltip-content">

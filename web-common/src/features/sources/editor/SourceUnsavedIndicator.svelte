@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { cubicOut } from "svelte/easing";
+  import { scale } from "svelte/transition";
   import { createRuntimeServiceGetFile } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
@@ -23,5 +25,8 @@
 </script>
 
 {#if isSourceUnsaved}
-  <div class="w-1.5 h-1.5 bg-gray-300 rounded" />
+  <div
+    transition:scale={{ duration: 200, easing: cubicOut }}
+    class="w-1.5 h-1.5 bg-gray-300 rounded"
+  />
 {/if}
