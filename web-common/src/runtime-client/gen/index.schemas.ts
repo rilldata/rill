@@ -245,6 +245,15 @@ export type RuntimeServiceGetLogsParams = {
   ascending?: boolean;
 };
 
+export type RuntimeServiceWatchFiles200 = {
+  result?: V1WatchFilesResponse;
+  error?: RpcStatus;
+};
+
+export type RuntimeServiceWatchFilesParams = {
+  replay?: boolean;
+};
+
 export type RuntimeServiceUnpackExampleBody = {
   name?: string;
   force?: boolean;
@@ -342,6 +351,11 @@ export interface V1WatchResourcesResponse {
 
 export interface V1WatchLogsResponse {
   logs?: V1Log[];
+}
+
+export interface V1WatchFilesResponse {
+  event?: V1FileEvent;
+  path?: string;
 }
 
 export interface V1ValidationError {
@@ -896,6 +910,10 @@ export interface V1MotherduckListTablesResponse {
   tables?: V1TableInfo[];
 }
 
+export interface V1ExecutionError {
+  message?: string;
+}
+
 export interface V1ModelState {
   tableName?: string;
   stageTableName?: string;
@@ -1251,6 +1269,19 @@ export interface V1GCSGetCredentialsInfoResponse {
   projectId?: string;
 }
 
+/**
+ * FileEvent describes a file change.
+ */
+export type V1FileEvent = (typeof V1FileEvent)[keyof typeof V1FileEvent];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1FileEvent = {
+  FILE_EVENT_UNSPECIFIED: "FILE_EVENT_UNSPECIFIED",
+  FILE_EVENT_WRITE: "FILE_EVENT_WRITE",
+  FILE_EVENT_DELETE: "FILE_EVENT_DELETE",
+  FILE_EVENT_RENAME: "FILE_EVENT_RENAME",
+} as const;
+
 export interface V1ExportResponse {
   downloadUrlPath?: string;
 }
@@ -1264,10 +1295,6 @@ export const V1ExportFormat = {
   EXPORT_FORMAT_CSV: "EXPORT_FORMAT_CSV",
   EXPORT_FORMAT_XLSX: "EXPORT_FORMAT_XLSX",
 } as const;
-
-export interface V1ExecutionError {
-  message?: string;
-}
 
 /**
  * Example contains metadata about an example project that is available for unpacking.

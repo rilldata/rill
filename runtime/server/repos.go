@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -38,6 +39,35 @@ func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest)
 	}
 
 	return &runtimev1.ListFilesResponse{Paths: paths}, nil
+}
+
+// WatchFiles implements RuntimeService.
+func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, ss runtimev1.RuntimeService_WatchFilesServer) error {
+	observability.AddRequestAttributes(ss.Context(),
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.Bool("args.replay", req.Replay),
+	)
+
+	if !auth.GetClaims(ss.Context()).CanInstance(req.InstanceId, auth.ReadRepo) {
+		return ErrForbidden
+	}
+
+	repo, err := s.runtime.Repo(ss.Context(), req.InstanceId)
+	if err != nil {
+		return err
+	}
+
+	return repo.Watch(ss.Context(), req.Replay, func(event drivers.WatchEvent) error {
+		if !event.Dir {
+			err := ss.Send(&runtimev1.WatchFilesResponse{
+				Event: event.Type,
+				Path:  event.Path,
+			})
+
+			return err
+		}
+		return nil
+	})
 }
 
 // GetFile implements RuntimeService.

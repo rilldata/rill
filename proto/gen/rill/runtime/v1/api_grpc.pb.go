@@ -27,6 +27,7 @@ const (
 	RuntimeService_EditInstanceVariables_FullMethodName  = "/rill.runtime.v1.RuntimeService/EditInstanceVariables"
 	RuntimeService_DeleteInstance_FullMethodName         = "/rill.runtime.v1.RuntimeService/DeleteInstance"
 	RuntimeService_ListFiles_FullMethodName              = "/rill.runtime.v1.RuntimeService/ListFiles"
+	RuntimeService_WatchFiles_FullMethodName             = "/rill.runtime.v1.RuntimeService/WatchFiles"
 	RuntimeService_GetFile_FullMethodName                = "/rill.runtime.v1.RuntimeService/GetFile"
 	RuntimeService_PutFile_FullMethodName                = "/rill.runtime.v1.RuntimeService/PutFile"
 	RuntimeService_DeleteFile_FullMethodName             = "/rill.runtime.v1.RuntimeService/DeleteFile"
@@ -73,6 +74,8 @@ type RuntimeServiceClient interface {
 	// ListFiles lists all the files matching a glob in a repo.
 	// The files are sorted by their full path.
 	ListFiles(ctx context.Context, in *ListFilesRequest, opts ...grpc.CallOption) (*ListFilesResponse, error)
+	// WatchFiles streams repo file update events. It is not supported on all backends.
+	WatchFiles(ctx context.Context, in *WatchFilesRequest, opts ...grpc.CallOption) (RuntimeService_WatchFilesClient, error)
 	// GetFile returns the contents of a specific file in a repo.
 	GetFile(ctx context.Context, in *GetFileRequest, opts ...grpc.CallOption) (*GetFileResponse, error)
 	// PutFile creates or updates a file in a repo
@@ -209,6 +212,38 @@ func (c *runtimeServiceClient) ListFiles(ctx context.Context, in *ListFilesReque
 	return out, nil
 }
 
+func (c *runtimeServiceClient) WatchFiles(ctx context.Context, in *WatchFilesRequest, opts ...grpc.CallOption) (RuntimeService_WatchFilesClient, error) {
+	stream, err := c.cc.NewStream(ctx, &RuntimeService_ServiceDesc.Streams[0], RuntimeService_WatchFiles_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &runtimeServiceWatchFilesClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type RuntimeService_WatchFilesClient interface {
+	Recv() (*WatchFilesResponse, error)
+	grpc.ClientStream
+}
+
+type runtimeServiceWatchFilesClient struct {
+	grpc.ClientStream
+}
+
+func (x *runtimeServiceWatchFilesClient) Recv() (*WatchFilesResponse, error) {
+	m := new(WatchFilesResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 func (c *runtimeServiceClient) GetFile(ctx context.Context, in *GetFileRequest, opts ...grpc.CallOption) (*GetFileResponse, error) {
 	out := new(GetFileResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_GetFile_FullMethodName, in, out, opts...)
@@ -282,7 +317,7 @@ func (c *runtimeServiceClient) GetLogs(ctx context.Context, in *GetLogsRequest, 
 }
 
 func (c *runtimeServiceClient) WatchLogs(ctx context.Context, in *WatchLogsRequest, opts ...grpc.CallOption) (RuntimeService_WatchLogsClient, error) {
-	stream, err := c.cc.NewStream(ctx, &RuntimeService_ServiceDesc.Streams[0], RuntimeService_WatchLogs_FullMethodName, opts...)
+	stream, err := c.cc.NewStream(ctx, &RuntimeService_ServiceDesc.Streams[1], RuntimeService_WatchLogs_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -323,7 +358,7 @@ func (c *runtimeServiceClient) ListResources(ctx context.Context, in *ListResour
 }
 
 func (c *runtimeServiceClient) WatchResources(ctx context.Context, in *WatchResourcesRequest, opts ...grpc.CallOption) (RuntimeService_WatchResourcesClient, error) {
-	stream, err := c.cc.NewStream(ctx, &RuntimeService_ServiceDesc.Streams[1], RuntimeService_WatchResources_FullMethodName, opts...)
+	stream, err := c.cc.NewStream(ctx, &RuntimeService_ServiceDesc.Streams[2], RuntimeService_WatchResources_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -483,6 +518,8 @@ type RuntimeServiceServer interface {
 	// ListFiles lists all the files matching a glob in a repo.
 	// The files are sorted by their full path.
 	ListFiles(context.Context, *ListFilesRequest) (*ListFilesResponse, error)
+	// WatchFiles streams repo file update events. It is not supported on all backends.
+	WatchFiles(*WatchFilesRequest, RuntimeService_WatchFilesServer) error
 	// GetFile returns the contents of a specific file in a repo.
 	GetFile(context.Context, *GetFileRequest) (*GetFileResponse, error)
 	// PutFile creates or updates a file in a repo
@@ -567,6 +604,9 @@ func (UnimplementedRuntimeServiceServer) DeleteInstance(context.Context, *Delete
 }
 func (UnimplementedRuntimeServiceServer) ListFiles(context.Context, *ListFilesRequest) (*ListFilesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListFiles not implemented")
+}
+func (UnimplementedRuntimeServiceServer) WatchFiles(*WatchFilesRequest, RuntimeService_WatchFilesServer) error {
+	return status.Errorf(codes.Unimplemented, "method WatchFiles not implemented")
 }
 func (UnimplementedRuntimeServiceServer) GetFile(context.Context, *GetFileRequest) (*GetFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetFile not implemented")
@@ -792,6 +832,27 @@ func _RuntimeService_ListFiles_Handler(srv interface{}, ctx context.Context, dec
 		return srv.(RuntimeServiceServer).ListFiles(ctx, req.(*ListFilesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_WatchFiles_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(WatchFilesRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(RuntimeServiceServer).WatchFiles(m, &runtimeServiceWatchFilesServer{stream})
+}
+
+type RuntimeService_WatchFilesServer interface {
+	Send(*WatchFilesResponse) error
+	grpc.ServerStream
+}
+
+type runtimeServiceWatchFilesServer struct {
+	grpc.ServerStream
+}
+
+func (x *runtimeServiceWatchFilesServer) Send(m *WatchFilesResponse) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 func _RuntimeService_GetFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -1339,6 +1400,11 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "WatchFiles",
+			Handler:       _RuntimeService_WatchFiles_Handler,
+			ServerStreams: true,
+		},
 		{
 			StreamName:    "WatchLogs",
 			Handler:       _RuntimeService_WatchLogs_Handler,

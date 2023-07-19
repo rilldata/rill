@@ -2193,6 +2193,229 @@ var _ interface {
 	ErrorName() string
 } = ListFilesResponseValidationError{}
 
+// Validate checks the field values on WatchFilesRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *WatchFilesRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on WatchFilesRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// WatchFilesRequestMultiError, or nil if none found.
+func (m *WatchFilesRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *WatchFilesRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_WatchFilesRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := WatchFilesRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Replay
+
+	if len(errors) > 0 {
+		return WatchFilesRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// WatchFilesRequestMultiError is an error wrapping multiple validation errors
+// returned by WatchFilesRequest.ValidateAll() if the designated constraints
+// aren't met.
+type WatchFilesRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m WatchFilesRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m WatchFilesRequestMultiError) AllErrors() []error { return m }
+
+// WatchFilesRequestValidationError is the validation error returned by
+// WatchFilesRequest.Validate if the designated constraints aren't met.
+type WatchFilesRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e WatchFilesRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e WatchFilesRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e WatchFilesRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e WatchFilesRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e WatchFilesRequestValidationError) ErrorName() string {
+	return "WatchFilesRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e WatchFilesRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sWatchFilesRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = WatchFilesRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = WatchFilesRequestValidationError{}
+
+var _WatchFilesRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on WatchFilesResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *WatchFilesResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on WatchFilesResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// WatchFilesResponseMultiError, or nil if none found.
+func (m *WatchFilesResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *WatchFilesResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Event
+
+	// no validation rules for Path
+
+	if len(errors) > 0 {
+		return WatchFilesResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// WatchFilesResponseMultiError is an error wrapping multiple validation errors
+// returned by WatchFilesResponse.ValidateAll() if the designated constraints
+// aren't met.
+type WatchFilesResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m WatchFilesResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m WatchFilesResponseMultiError) AllErrors() []error { return m }
+
+// WatchFilesResponseValidationError is the validation error returned by
+// WatchFilesResponse.Validate if the designated constraints aren't met.
+type WatchFilesResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e WatchFilesResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e WatchFilesResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e WatchFilesResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e WatchFilesResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e WatchFilesResponseValidationError) ErrorName() string {
+	return "WatchFilesResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e WatchFilesResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sWatchFilesResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = WatchFilesResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = WatchFilesResponseValidationError{}
+
 // Validate checks the field values on GetFileRequest with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
