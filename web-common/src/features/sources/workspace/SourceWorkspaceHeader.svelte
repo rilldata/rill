@@ -10,6 +10,7 @@
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
+  import { slideRight } from "@rilldata/web-common/lib/transitions";
   import {
     V1CatalogEntry,
     V1Source,
@@ -204,32 +205,30 @@
         >
           Revert changes
         </Button>
-        {#if isSourceUnsaved}
-          <Button
-            on:click={() => onSaveAndRefreshClick(sourceName)}
-            type="primary"
-          >
-            <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}>
-              <RefreshIcon size="14px" />
-            </IconSpaceFixer>
-            <ResponsiveButtonText collapse={isHeaderWidthSmall}>
-              Save and refresh
-            </ResponsiveButtonText>
-          </Button>
-        {:else}
-          <Button
-            on:click={() => onRefreshClick(sourceName)}
-            type="primary"
-            disabled={reconciliationErrors?.length > 0}
-          >
-            <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}>
-              <RefreshIcon size="14px" />
-            </IconSpaceFixer>
-            <ResponsiveButtonText collapse={isHeaderWidthSmall}>
-              Refresh
-            </ResponsiveButtonText>
-          </Button>
-        {/if}
+        <!-- {#if isSourceUnsaved} -->
+        <Button
+          label={isSourceUnsaved ? "Save and refresh" : "Refresh"}
+          on:click={() =>
+            isSourceUnsaved
+              ? onSaveAndRefreshClick(sourceName)
+              : onRefreshClick(sourceName)}
+          type="primary"
+        >
+          <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}>
+            <RefreshIcon size="14px" />
+          </IconSpaceFixer>
+          <ResponsiveButtonText collapse={isHeaderWidthSmall}>
+            <div class="flex">
+              {#if isSourceUnsaved}<div
+                  class="pr-1"
+                  transition:slideRight={{ duration: 250 }}
+                >
+                  Save and
+                </div>{/if}
+              {#if !isSourceUnsaved}R{:else}r{/if}efresh
+            </div>
+          </ResponsiveButtonText>
+        </Button>
       </PanelCTA>
     </svelte:fragment>
   </WorkspaceHeader>
