@@ -16,7 +16,7 @@ import type {
 import type {
   V1TriggerReconcileResponse,
   RpcStatus,
-  AdminServiceTriggerReconcileBody,
+  AdminServiceTriggerReconcileBodyBody,
   V1TriggerRefreshSourcesResponse,
   AdminServiceTriggerRefreshSourcesBody,
   V1GetGithubRepoStatusResponse,
@@ -63,6 +63,11 @@ import type {
   V1GetProjectVariablesResponse,
   V1UpdateProjectVariablesResponse,
   AdminServiceUpdateProjectVariablesBody,
+  V1ListServicesResponse,
+  V1CreateServiceResponse,
+  AdminServiceCreateServiceBody,
+  V1DeleteServiceResponse,
+  V1UpdateServiceResponse,
   V1PingResponse,
   V1TriggerRedeployResponse,
   V1TriggerRedeployRequest,
@@ -93,13 +98,13 @@ import { httpClient } from "../../http-client";
  */
 export const adminServiceTriggerReconcile = (
   deploymentId: string,
-  adminServiceTriggerReconcileBody: AdminServiceTriggerReconcileBody
+  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody
 ) => {
   return httpClient<V1TriggerReconcileResponse>({
     url: `/v1/deployments/${deploymentId}/reconcile`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceTriggerReconcileBody,
+    data: adminServiceTriggerReconcileBodyBody,
   });
 };
 
@@ -110,20 +115,20 @@ export const getAdminServiceTriggerReconcileMutationOptions = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceTriggerReconcile>>,
     TError,
-    { deploymentId: string; data: AdminServiceTriggerReconcileBody },
+    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
     TContext
   >;
 }): CreateMutationOptions<
   Awaited<ReturnType<typeof adminServiceTriggerReconcile>>,
   TError,
-  { deploymentId: string; data: AdminServiceTriggerReconcileBody },
+  { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
   TContext
 > => {
   const { mutation: mutationOptions } = options ?? {};
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminServiceTriggerReconcile>>,
-    { deploymentId: string; data: AdminServiceTriggerReconcileBody }
+    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody }
   > = (props) => {
     const { deploymentId, data } = props ?? {};
 
@@ -137,7 +142,7 @@ export type AdminServiceTriggerReconcileMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceTriggerReconcile>>
 >;
 export type AdminServiceTriggerReconcileMutationBody =
-  AdminServiceTriggerReconcileBody;
+  AdminServiceTriggerReconcileBodyBody;
 export type AdminServiceTriggerReconcileMutationError = RpcStatus;
 
 /**
@@ -150,7 +155,7 @@ export const createAdminServiceTriggerReconcile = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceTriggerReconcile>>,
     TError,
-    { deploymentId: string; data: AdminServiceTriggerReconcileBody },
+    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
     TContext
   >;
 }) => {
@@ -2567,6 +2572,313 @@ export const createAdminServiceUpdateProjectVariables = <
 }) => {
   const mutationOptions =
     getAdminServiceUpdateProjectVariablesMutationOptions(options);
+
+  return createMutation(mutationOptions);
+};
+/**
+ * @summary ListService returns all the services per organization
+ */
+export const adminServiceListServices = (
+  organizationName: string,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1ListServicesResponse>({
+    url: `/v1/organizations/${organizationName}/services`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceListServicesQueryKey = (organizationName: string) =>
+  [`/v1/organizations/${organizationName}/services`] as const;
+
+export const getAdminServiceListServicesQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceListServices>>,
+  TError = RpcStatus
+>(
+  organizationName: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceListServices>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryOptions<
+  Awaited<ReturnType<typeof adminServiceListServices>>,
+  TError,
+  TData
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceListServicesQueryKey(organizationName);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListServices>>
+  > = ({ signal }) => adminServiceListServices(organizationName, signal);
+
+  return { queryKey, queryFn, enabled: !!organizationName, ...queryOptions };
+};
+
+export type AdminServiceListServicesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListServices>>
+>;
+export type AdminServiceListServicesQueryError = RpcStatus;
+
+/**
+ * @summary ListService returns all the services per organization
+ */
+export const createAdminServiceListServices = <
+  TData = Awaited<ReturnType<typeof adminServiceListServices>>,
+  TError = RpcStatus
+>(
+  organizationName: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceListServices>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const queryOptions = getAdminServiceListServicesQueryOptions(
+    organizationName,
+    options
+  );
+
+  const query = createQuery(queryOptions) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+};
+
+/**
+ * @summary CreateService creates a new service per organization
+ */
+export const adminServiceCreateService = (
+  organizationName: string,
+  adminServiceCreateServiceBody: AdminServiceCreateServiceBody
+) => {
+  return httpClient<V1CreateServiceResponse>({
+    url: `/v1/organizations/${organizationName}/services`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceCreateServiceBody,
+  });
+};
+
+export const getAdminServiceCreateServiceMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCreateService>>,
+    TError,
+    { organizationName: string; data: AdminServiceCreateServiceBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceCreateService>>,
+  TError,
+  { organizationName: string; data: AdminServiceCreateServiceBody },
+  TContext
+> => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceCreateService>>,
+    { organizationName: string; data: AdminServiceCreateServiceBody }
+  > = (props) => {
+    const { organizationName, data } = props ?? {};
+
+    return adminServiceCreateService(organizationName, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceCreateServiceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceCreateService>>
+>;
+export type AdminServiceCreateServiceMutationBody =
+  AdminServiceCreateServiceBody;
+export type AdminServiceCreateServiceMutationError = RpcStatus;
+
+/**
+ * @summary CreateService creates a new service per organization
+ */
+export const createAdminServiceCreateService = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCreateService>>,
+    TError,
+    { organizationName: string; data: AdminServiceCreateServiceBody },
+    TContext
+  >;
+}) => {
+  const mutationOptions = getAdminServiceCreateServiceMutationOptions(options);
+
+  return createMutation(mutationOptions);
+};
+/**
+ * @summary DeleteService deletes a service per organization
+ */
+export const adminServiceDeleteService = (
+  organizationName: string,
+  name: string
+) => {
+  return httpClient<V1DeleteServiceResponse>({
+    url: `/v1/organizations/${organizationName}/services/${name}`,
+    method: "delete",
+  });
+};
+
+export const getAdminServiceDeleteServiceMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceDeleteService>>,
+    TError,
+    { organizationName: string; name: string },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceDeleteService>>,
+  TError,
+  { organizationName: string; name: string },
+  TContext
+> => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceDeleteService>>,
+    { organizationName: string; name: string }
+  > = (props) => {
+    const { organizationName, name } = props ?? {};
+
+    return adminServiceDeleteService(organizationName, name);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceDeleteServiceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceDeleteService>>
+>;
+
+export type AdminServiceDeleteServiceMutationError = RpcStatus;
+
+/**
+ * @summary DeleteService deletes a service per organization
+ */
+export const createAdminServiceDeleteService = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceDeleteService>>,
+    TError,
+    { organizationName: string; name: string },
+    TContext
+  >;
+}) => {
+  const mutationOptions = getAdminServiceDeleteServiceMutationOptions(options);
+
+  return createMutation(mutationOptions);
+};
+/**
+ * @summary UpdateService updates a service per organization
+ */
+export const adminServiceUpdateService = (
+  organizationName: string,
+  name: string,
+  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody
+) => {
+  return httpClient<V1UpdateServiceResponse>({
+    url: `/v1/organizations/${organizationName}/services/${name}`,
+    method: "patch",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceTriggerReconcileBodyBody,
+  });
+};
+
+export const getAdminServiceUpdateServiceMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceUpdateService>>,
+    TError,
+    {
+      organizationName: string;
+      name: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceUpdateService>>,
+  TError,
+  {
+    organizationName: string;
+    name: string;
+    data: AdminServiceTriggerReconcileBodyBody;
+  },
+  TContext
+> => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceUpdateService>>,
+    {
+      organizationName: string;
+      name: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    }
+  > = (props) => {
+    const { organizationName, name, data } = props ?? {};
+
+    return adminServiceUpdateService(organizationName, name, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceUpdateServiceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceUpdateService>>
+>;
+export type AdminServiceUpdateServiceMutationBody =
+  AdminServiceTriggerReconcileBodyBody;
+export type AdminServiceUpdateServiceMutationError = RpcStatus;
+
+/**
+ * @summary UpdateService updates a service per organization
+ */
+export const createAdminServiceUpdateService = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceUpdateService>>,
+    TError,
+    {
+      organizationName: string;
+      name: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >;
+}) => {
+  const mutationOptions = getAdminServiceUpdateServiceMutationOptions(options);
 
   return createMutation(mutationOptions);
 };

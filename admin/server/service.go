@@ -14,12 +14,14 @@ import (
 // CreateService creates a new service account.
 func (s *Server) CreateService(ctx context.Context, req *adminv1.CreateServiceRequest) (*adminv1.CreateServiceResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.OrganizationName),
+		attribute.String("args.name", req.Name),
+		attribute.String("args.OrganizationName", req.OrganizationName),
 	)
 
 	// Check the request is made by an authenticated user
 	claims := auth.GetClaims(ctx)
 
+	// this is not required
 	if claims.OwnerType() != auth.OwnerTypeUser {
 		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
@@ -27,37 +29,56 @@ func (s *Server) CreateService(ctx context.Context, req *adminv1.CreateServiceRe
 	return &adminv1.CreateServiceResponse{Service: &adminv1.Service{}}, nil
 }
 
-// func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrganizationRequest) (*adminv1.CreateOrganizationResponse, error) {
-// 	observability.AddRequestAttributes(ctx,
-// 		attribute.String("args.org", req.Name),
-// 		attribute.String("args.description", req.Description),
-// 	)
+// ListServices lists all service accounts.
+func (s *Server) ListServices(ctx context.Context, req *adminv1.ListServicesRequest) (*adminv1.ListServicesResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.OrganizationName),
+		attribute.String("args.OrganizationName", req.OrganizationName),
+	)
 
-// 	// Check the request is made by an authenticated user
-// 	claims := auth.GetClaims(ctx)
-// 	if claims.OwnerType() != auth.OwnerTypeUser {
-// 		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
-// 	}
+	// Check the request is made by an authenticated user
+	claims := auth.GetClaims(ctx)
 
-// 	// check single user org limit for this user
-// 	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
-// 	if err != nil {
-// 		return nil, status.Error(codes.Internal, err.Error())
-// 	}
-// 	count, err := s.admin.DB.CountSingleuserOrganizationsForMemberUser(ctx, user.ID)
-// 	if err != nil {
-// 		return nil, status.Error(codes.Internal, err.Error())
-// 	}
-// 	if user.QuotaSingleuserOrgs >= 0 && count >= user.QuotaSingleuserOrgs {
-// 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: you can only create %d single-user orgs", user.QuotaSingleuserOrgs)
-// 	}
+	// this is not required
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+	}
 
-// 	org, err := s.admin.CreateOrganizationForUser(ctx, user.ID, req.Name, req.Description)
-// 	if err != nil {
-// 		return nil, status.Error(codes.InvalidArgument, err.Error())
-// 	}
+	return &adminv1.ListServicesResponse{}, nil
+}
 
-// 	return &adminv1.CreateOrganizationResponse{
-// 		Organization: organizationToDTO(org),
-// 	}, nil
-// }
+// UpdateService updates a service account.
+func (s *Server) UpdateService(ctx context.Context, req *adminv1.UpdateServiceRequest) (*adminv1.UpdateServiceResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.name", req.Name),
+		attribute.String("args.OrganizationName", req.OrganizationName),
+	)
+
+	// Check the request is made by an authenticated user
+	claims := auth.GetClaims(ctx)
+
+	// this is not required
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+	}
+
+	return &adminv1.UpdateServiceResponse{}, nil
+}
+
+// DeleteService deletes a service account.
+func (s *Server) DeleteService(ctx context.Context, req *adminv1.DeleteServiceRequest) (*adminv1.DeleteServiceResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.name", req.Name),
+		attribute.String("args.OrganizationName", req.OrganizationName),
+	)
+
+	// Check the request is made by an authenticated user
+	claims := auth.GetClaims(ctx)
+
+	// this is not required
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+	}
+
+	return &adminv1.DeleteServiceResponse{}, nil
+}
