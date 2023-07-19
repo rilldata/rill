@@ -40,12 +40,13 @@ func TestWatch_replay(t *testing.T) {
 	defer cancel()
 
 	go func() {
-		c.Watch(ctx, true, func(event drivers.WatchEvent) error {
-			events = append(events, event)
+		err := c.Watch(ctx, true, time.Millisecond, func(es []drivers.WatchEvent) error {
+			events = append(events, es...)
 			return nil
 		})
+		require.ErrorIs(t, err, ctx.Err())
 	}()
-	time.Sleep(3 * time.Second)
+	time.Sleep(500 * time.Millisecond)
 
 	require.Equal(t, runtimev1.FileEvent_FILE_EVENT_WRITE, events[0].Type)
 	require.Equal(t, "/file1", events[0].Path)
@@ -69,10 +70,9 @@ func TestWatch_create_remove(t *testing.T) {
 
 	allReceivedChannel := make(chan bool)
 	go func() {
-		err := c.Watch(ctx, true, func(event drivers.WatchEvent) error {
-			fmt.Printf("type %s path %s\n", event.Type.String(), event.Path)
-			events = append(events, event)
-			if len(events) == 5 {
+		err := c.Watch(ctx, true, time.Millisecond, func(es []drivers.WatchEvent) error {
+			events = append(events, es...)
+			if len(events) >= 5 {
 				allReceivedChannel <- true
 			}
 			return nil

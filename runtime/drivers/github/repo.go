@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"time"
 
 	doublestar "github.com/bmatcuk/doublestar/v4"
 	"github.com/go-git/go-git/v5"
@@ -141,6 +142,6 @@ func (c *connection) Sync(ctx context.Context, instID string) error {
 	return c.cloneOrPull(ctx, false)
 }
 
-func (c *connection) Watch(ctx context.Context, replay bool, callback drivers.WatchCallback) error {
+func (c *connection) Watch(ctx context.Context, replay bool, batchInterval time.Duration, callback drivers.WatchCallback) error {
 	return fmt.Errorf("cannot watch %s repository is not supported", c.Driver())
 }

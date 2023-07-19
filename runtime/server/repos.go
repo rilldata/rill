@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -16,6 +17,8 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+const watchBatchInterval = 250 * time.Millisecond
 
 // ListFiles implements RuntimeService.
 func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest) (*runtimev1.ListFilesResponse, error) {
@@ -57,14 +60,17 @@ func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, ss runtimev1.Runti
 		return err
 	}
 
-	return repo.Watch(ss.Context(), req.Replay, func(event drivers.WatchEvent) error {
-		if !event.Dir {
-			err := ss.Send(&runtimev1.WatchFilesResponse{
-				Event: event.Type,
-				Path:  event.Path,
-			})
-
-			return err
+	return repo.Watch(ss.Context(), req.Replay, watchBatchInterval, func(events []drivers.WatchEvent) error {
+		for _, event := range events {
+			if !event.Dir {
+				err := ss.Send(&runtimev1.WatchFilesResponse{
+					Event: event.Type,
+					Path:  event.Path,
+				})
+				if err != nil {
+					return err
+				}
+			}
 		}
 		return nil
 	})

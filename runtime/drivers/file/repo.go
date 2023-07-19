@@ -6,7 +6,6 @@ import (
 	"io"
 	"io/fs"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -42,7 +41,7 @@ func (c *connection) ListRecursive(ctx context.Context, instID, glob string) ([]
 	}
 
 	fsRoot := os.DirFS(c.root)
-	glob = path.Clean(path.Join("./", glob))
+	glob = filepath.Clean(filepath.Join("./", glob))
 
 	var paths []string
 	err := doublestar.GlobWalk(fsRoot, glob, func(p string, d fs.DirEntry) error {
@@ -120,9 +119,9 @@ func (c *connection) Put(ctx context.Context, instID, filePath string, reader io
 
 // Rename implements drivers.RepoStore.
 func (c *connection) Rename(ctx context.Context, instID, fromPath, toPath string) error {
-	toPath = path.Join(c.root, toPath)
+	toPath = filepath.Join(c.root, toPath)
 
-	fromPath = path.Join(c.root, fromPath)
+	fromPath = filepath.Join(c.root, fromPath)
 	if _, err := os.Stat(toPath); !strings.EqualFold(fromPath, toPath) && err == nil {
 		return drivers.ErrFileAlreadyExists
 	}
@@ -143,25 +142,26 @@ func (c *connection) Sync(ctx context.Context, instID string) error {
 	return nil
 }
 
-func (c *connection) Watch(ctx context.Context, replay bool, callback drivers.WatchCallback) error {
+func (c *connection) Watch(ctx context.Context, replay bool, batchInterval time.Duration, cb drivers.WatchCallback) error {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return err
 	}
 	defer watcher.Close()
 
-	fsRoot := os.DirFS(c.Root())
-
 	var dirs []string
-	var files []string
+	var replayEvents []drivers.WatchEvent
 
+	fsRoot := os.DirFS(c.root)
 	err = doublestar.GlobWalk(fsRoot, "**", func(p string, d fs.DirEntry) error {
 		if d.IsDir() {
 			dirs = append(dirs, p)
-		} else {
-			files = append(files, p)
+		} else if replay {
+			replayEvents = append(replayEvents, drivers.WatchEvent{
+				Path: filepath.Join("/", p),
+				Type: runtimev1.FileEvent_FILE_EVENT_WRITE,
+			})
 		}
-
 		return nil
 	})
 	if err != nil {
@@ -169,76 +169,83 @@ func (c *connection) Watch(ctx context.Context, replay bool, callback drivers.Wa
 	}
 
 	if replay {
-		for _, f := range files {
-			err = callback(drivers.WatchEvent{
-				Path: filepath.Join("/", f),
-				Type: runtimev1.FileEvent_FILE_EVENT_WRITE,
-			})
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	for _, path := range dirs {
-		relativePath := filepath.Join(c.Root(), path)
-		err := watcher.Add(relativePath)
+		err := cb(replayEvents)
 		if err != nil {
 			return err
 		}
 	}
 
+	for _, path := range dirs {
+		err := watcher.Add(filepath.Join(c.root, path))
+		if err != nil {
+			return err
+		}
+	}
+
+	// Batch events for a short time
+	var buffer []drivers.WatchEvent
+	timer := time.NewTimer(batchInterval)
+
 	for {
 		select {
-		case event, ok := <-watcher.Events:
+		case e, ok := <-watcher.Events:
 			if !ok {
 				return nil
 			}
 
-			relativeName, err := filepath.Rel(c.Root(), event.Name)
+			path, err := filepath.Rel(c.Root(), e.Name)
 			if err != nil {
 				return err
 			}
+			path = filepath.Join("/", path)
 
-			e := drivers.WatchEvent{
-				Path: filepath.Join("/", relativeName),
+			we := drivers.WatchEvent{Path: path}
+
+			if e.Has(fsnotify.Create) || e.Has(fsnotify.Write) {
+				we.Type = runtimev1.FileEvent_FILE_EVENT_WRITE
+			} else if e.Has(fsnotify.Remove) {
+				we.Type = runtimev1.FileEvent_FILE_EVENT_DELETE
+			} else if e.Has(fsnotify.Rename) {
+				// TODO: Can there be a rename that's not either a delete or a write?
+				we.Type = runtimev1.FileEvent_FILE_EVENT_RENAME
 			}
-			if event.Op&fsnotify.Create != 0 {
-				e.Type = runtimev1.FileEvent_FILE_EVENT_WRITE
-				fi, err := os.Stat(event.Name)
-				// if err != nil the file is removed already
-				if err == nil && fi.IsDir() {
-					err := watcher.Add(event.Name)
-					if err != nil {
-						return err
-					}
 
-					e.Dir = true
+			// Check if the file is a directory
+			if !e.Has(fsnotify.Remove) {
+				info, err := os.Stat(e.Name)
+				we.Dir = err == nil && info.IsDir()
+			}
+
+			// We need to add new directories to the watcher, but the watcher automatically handles renames and deletes
+			if e.Has(fsnotify.Create) && we.Dir {
+				err := watcher.Add(e.Name)
+				if err != nil {
+					return err
 				}
-			} else if event.Op&fsnotify.Write != 0 {
-				e.Type = runtimev1.FileEvent_FILE_EVENT_WRITE
-			} else if event.Op&fsnotify.Remove != 0 {
-				e.Type = runtimev1.FileEvent_FILE_EVENT_DELETE
-			} else if event.Op&fsnotify.Rename != 0 {
-				e.Type = runtimev1.FileEvent_FILE_EVENT_RENAME
-			} else {
-				e.Type = runtimev1.FileEvent_FILE_EVENT_UNSPECIFIED
-			}
-			err = callback(e)
-			if err != nil {
-				return err
 			}
 
+			buffer = append(buffer, we)
+
+			// Reset the timer when new events are added.
+			// So we only emit a batch when no new events have been observed for a duration of batchInterval.
+			if !timer.Stop() {
+				<-timer.C
+			}
+			timer.Reset(batchInterval)
 		case err, ok := <-watcher.Errors:
 			if !ok {
 				return nil
 			}
 			return err
-		case _, ok := <-ctx.Done():
-			if !ok {
-				return nil
+		case <-timer.C:
+			if len(buffer) > 0 {
+				err := cb(buffer)
+				if err != nil {
+					return err
+				}
+				buffer = nil
 			}
-
+		case <-ctx.Done():
 			return ctx.Err()
 		}
 	}
