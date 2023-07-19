@@ -6,7 +6,7 @@
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3, Timestamp } from "@bufbuild/protobuf";
 import { MetricsViewFilter } from "../../runtime/v1/queries_pb.js";
-import { TimeGrain } from "../../runtime/v1/catalog_pb.js";
+import { TimeGrain } from "../../runtime/v1/time_grain_pb.js";
 
 /**
  * DashboardState represents the dashboard as seen by the user

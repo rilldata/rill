@@ -166,9 +166,9 @@ measures:
 	}
 
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", dir, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
 	require.NoError(t, err)
-	repoStore, _ := fileStore.RepoStore()
+	repoStore, _ := fileStore.AsRepoStore()
 	ctx := context.Background()
 
 	for _, tt := range catalogs {
@@ -209,9 +209,9 @@ duckdb:
     delim: '''|'''
 `
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", dir, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
 	require.NoError(t, err)
-	repoStore, _ := fileStore.RepoStore()
+	repoStore, _ := fileStore.AsRepoStore()
 	ctx := context.Background()
 
 	err = artifacts.Write(ctx, repoStore, "test", catalog)
@@ -264,9 +264,9 @@ duckdb:
     hive_partitioning: true
 `
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", dir, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
 	require.NoError(t, err)
-	repoStore, _ := fileStore.RepoStore()
+	repoStore, _ := fileStore.AsRepoStore()
 	ctx := context.Background()
 
 	err = artifacts.Write(ctx, repoStore, "test", catalog)
@@ -299,9 +299,9 @@ duckdb:
 
 func TestMetricsLabelBackwardsCompatibility(t *testing.T) {
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", dir, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
 	require.NoError(t, err)
-	repoStore, _ := fileStore.RepoStore()
+	repoStore, _ := fileStore.AsRepoStore()
 	ctx := context.Background()
 
 	require.NoError(t, repoStore.Put(ctx, "test", "dashboards/MetricsView.yaml", bytes.NewReader([]byte(`display_name: dashboard name
@@ -334,9 +334,9 @@ measures: []
 
 func TestDimensionAndMeasureNameAutoFill(t *testing.T) {
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", dir, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
 	require.NoError(t, err)
-	repoStore, _ := fileStore.RepoStore()
+	repoStore, _ := fileStore.AsRepoStore()
 	ctx := context.Background()
 
 	require.NoError(t, repoStore.Put(ctx, "test", "dashboards/MetricsView.yaml", bytes.NewReader([]byte(`display_name: dashboard name
@@ -413,9 +413,9 @@ measures:
 
 func TestDimensionColumnBackwardsCompatibility(t *testing.T) {
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", dir, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
 	require.NoError(t, err)
-	repoStore, _ := fileStore.RepoStore()
+	repoStore, _ := fileStore.AsRepoStore()
 	ctx := context.Background()
 
 	require.NoError(t, repoStore.Put(ctx, "test", "dashboards/MetricsView.yaml", bytes.NewReader([]byte(`display_name: dashboard name
@@ -487,9 +487,9 @@ func TestReadFailure(t *testing.T) {
 	}
 
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", dir, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
 	require.NoError(t, err)
-	repoStore, _ := fileStore.RepoStore()
+	repoStore, _ := fileStore.AsRepoStore()
 	ctx := context.Background()
 
 	err = os.MkdirAll(path.Join(dir, "sources"), os.ModePerm)
@@ -690,10 +690,10 @@ available_time_zones:
 
 func repoStore(t *testing.T) drivers.RepoStore {
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", dir, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
 	require.NoError(t, err)
 
-	repoStore, ok := fileStore.RepoStore()
+	repoStore, ok := fileStore.AsRepoStore()
 	require.True(t, ok)
 
 	return repoStore
@@ -709,10 +709,10 @@ func toProtoStruct(obj map[string]any) *structpb.Struct {
 
 func registryStore(t *testing.T) drivers.RegistryStore {
 	ctx := context.Background()
-	store, err := drivers.Open("sqlite", ":memory:", zap.NewNop())
+	store, err := drivers.Open("sqlite", map[string]any{"dsn": ":memory:"}, zap.NewNop())
 	require.NoError(t, err)
 	store.Migrate(ctx)
-	registry, _ := store.RegistryStore()
+	registry, _ := store.AsRegistry()
 
 	env := map[string]string{"delimitter": "|", "region": "us-east-2", "limit": "limit 10"}
 	err = registry.CreateInstance(ctx, &drivers.Instance{ID: "test", Variables: env})

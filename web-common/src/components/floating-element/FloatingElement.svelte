@@ -23,6 +23,9 @@ display:contents. This is useful when nesting a floating element within a toolti
   export let distance = 0;
   // edge padding
   export let pad = 8;
+  // whether to flip the element's location (from bottom to top) or (from top to bottom)
+  // if it overflows the window
+  export let overflowFlipY = true;
 
   let top = 0;
   let left = 0;
@@ -37,7 +40,8 @@ display:contents. This is useful when nesting a floating element within a toolti
     scrollXValue,
     scrollYvalue,
     windowWidth,
-    windowHeight
+    windowHeight,
+    overflowFlipY: boolean
   ) {
     if (!(parentBoundingClientRect && elementBoundingClientRect)) return;
     const [leftPos, topPos] = placeElement({
@@ -51,6 +55,7 @@ display:contents. This is useful when nesting a floating element within a toolti
       x: scrollXValue,
       windowWidth,
       windowHeight,
+      overflowFlipY,
     });
     top = topPos;
     left = leftPos;
@@ -79,7 +84,8 @@ display:contents. This is useful when nesting a floating element within a toolti
         scrollX,
         scrollY,
         innerWidth,
-        innerHeight
+        innerHeight,
+        overflowFlipY
       );
   } else {
     setLocation(
@@ -90,7 +96,8 @@ display:contents. This is useful when nesting a floating element within a toolti
       scrollX,
       scrollY,
       innerWidth,
-      innerHeight
+      innerHeight,
+      overflowFlipY
     );
   }
   $: getFirstValidChildElement(target);
@@ -108,7 +115,8 @@ display:contents. This is useful when nesting a floating element within a toolti
           scrollX,
           scrollY,
           innerWidth,
-          innerHeight
+          innerHeight,
+          overflowFlipY
         );
       });
       if (firstParentElement) {

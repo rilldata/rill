@@ -1213,6 +1213,8 @@ export class RenameFileResponse extends Message<RenameFileResponse> {
 }
 
 /**
+ * Example contains metadata about an example project that is available for unpacking.
+ *
  * @generated from message rill.runtime.v1.Example
  */
 export class Example extends Message<Example> {

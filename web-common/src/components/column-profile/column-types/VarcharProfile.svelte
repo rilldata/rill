@@ -24,19 +24,33 @@
   export let hideNullPercentage = false;
   export let mode: "example" | "summaries" = "summaries";
 
+  export let enableProfiling = true;
+
   let active = false;
 
   let topKLimit = 15;
 
-  $: nulls = getNullPercentage($runtime?.instanceId, objectName, columnName);
+  $: nulls = getNullPercentage(
+    $runtime?.instanceId,
+    objectName,
+    columnName,
+    enableProfiling
+  );
 
   $: columnCardinality = getCountDistinct(
     $runtime?.instanceId,
     objectName,
-    columnName
+    columnName,
+    enableProfiling
   );
 
-  $: topK = getTopK($runtime?.instanceId, objectName, columnName, active);
+  $: topK = getTopK(
+    $runtime?.instanceId,
+    objectName,
+    columnName,
+    enableProfiling,
+    active
+  );
 
   function toggleColumnProfile() {
     active = !active;
@@ -47,19 +61,19 @@
 </script>
 
 <ProfileContainer
-  isFetching={fetchingSummaries}
   {active}
   emphasize={active}
   {example}
   {hideNullPercentage}
   {hideRight}
+  isFetching={fetchingSummaries}
   {mode}
   on:select={toggleColumnProfile}
   on:shift-click={() =>
     copyToClipboard(columnName, `copied ${columnName} to clipboard`)}
   {type}
 >
-  <ColumnProfileIcon slot="icon" {type} isFetching={fetchingSummaries} />
+  <ColumnProfileIcon isFetching={fetchingSummaries} slot="icon" {type} />
   <svelte:fragment slot="left">{columnName}</svelte:fragment>
 
   <ColumnCardinalitySpark
@@ -84,10 +98,10 @@
   >
     <div>
       <TopK
-        {type}
-        topK={$topK}
         k={topKLimit}
+        topK={$topK}
         totalRows={$columnCardinality?.totalRows}
+        {type}
       />
     </div>
   </div>

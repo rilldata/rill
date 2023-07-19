@@ -13,7 +13,7 @@ import {
 import {
   TimeGrain,
   TimeGrain as TimeGrainProto,
-} from "@rilldata/web-common/proto/gen/rill/runtime/v1/catalog_pb";
+} from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
 import {
   MetricsViewFilter,
   MetricsViewFilter_Cond,
