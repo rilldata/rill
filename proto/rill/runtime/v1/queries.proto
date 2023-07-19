@@ -169,7 +169,10 @@ message QueryRequest {
   int32 priority = 4;
   // If true, will only validate the query, not execute it
   bool dry_run = 5;
-  int32 limit = 6 [(validate.rules).int32 = {lte: 10000, gte: 0}];
+  int32 limit = 6 [(validate.rules).int32 = {
+    lte: 10000,
+    gte: 0
+  }];
 }
 
 // Response message for QueryService.Query
@@ -292,6 +295,7 @@ message MetricsViewTimeSeriesRequest {
   google.protobuf.Timestamp time_end = 5;
   TimeGrain time_granularity = 6;
   MetricsViewFilter filter = 7;
+  string time_zone = 10;
   int32 priority = 8;
 }
 
@@ -331,6 +335,7 @@ message MetricsViewRowsRequest {
   int32 limit = 7 [(validate.rules).int32.gte = 0];
   int64 offset = 8 [(validate.rules).int64.gte = 0];
   int32 priority = 9;
+  string time_zone = 11;
 }
 
 // Response message for QueryService.MetricsViewRows
@@ -573,6 +578,7 @@ message ColumnTimeSeriesRequest {
   int32 pixels = 7 [(validate.rules).int32.gte = 0];
   int32 sample_size = 8 [(validate.rules).int32.gte = 0];
   int32 priority = 9;
+  string time_zone = 10;
   message BasicMeasure {
     string id = 1;
     // mandatory user defined metadata

@@ -905,6 +905,8 @@ paths:
               priority:
                 type: integer
                 format: int32
+              timeZone:
+                type: string
             title: Request message for QueryService.MetricsViewRows
       tags:
         - QueryService
@@ -957,6 +959,8 @@ paths:
                 $ref: '#/definitions/v1TimeGrain'
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
+              timeZone:
+                type: string
               priority:
                 type: integer
                 format: int32
@@ -1400,6 +1404,8 @@ paths:
               priority:
                 type: integer
                 format: int32
+              timeZone:
+                type: string
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/topk/tables/{tableName}:
@@ -2486,6 +2492,8 @@ definitions:
       priority:
         type: integer
         format: int32
+      timeZone:
+        type: string
   v1ColumnTimeSeriesResponse:
     type: object
     properties:
@@ -3059,6 +3067,8 @@ definitions:
       priority:
         type: integer
         format: int32
+      timeZone:
+        type: string
     title: Request message for QueryService.MetricsViewRows
   v1MetricsViewRowsResponse:
     type: object
@@ -3152,6 +3162,8 @@ definitions:
         $ref: '#/definitions/v1TimeGrain'
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
+      timeZone:
+        type: string
       priority:
         type: integer
         format: int32

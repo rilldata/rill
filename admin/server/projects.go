@@ -765,6 +765,7 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		Subpath:          p.Subpath,
 		GithubUrl:        safeStr(p.GithubURL),
 		ProdDeploymentId: safeStr(p.ProdDeploymentID),
+		ProdTtlSeconds:   safeInt64(p.ProdTTLSeconds),
 		FrontendUrl:      frontendURL,
 		CreatedOn:        timestamppb.New(p.CreatedOn),
 		UpdatedOn:        timestamppb.New(p.UpdatedOn),
@@ -805,6 +806,13 @@ func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
 func safeStr(s *string) string {
 	if s == nil {
 		return ""
+	}
+	return *s
+}
+
+func safeInt64(s *int64) int64 {
+	if s == nil {
+		return 0
 	}
 	return *s
 }

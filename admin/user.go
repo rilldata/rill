@@ -26,6 +26,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 			PhotoURL:            photoURL,
 			GithubUsername:      user.GithubUsername,
 			QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
+			PreferenceTimeZone:  user.PreferenceTimeZone,
 		})
 	} else if !errors.Is(err, database.ErrNotFound) {
 		return nil, err

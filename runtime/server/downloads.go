@@ -96,6 +96,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			Filter:          r.Filter,
 			Sort:            r.Sort,
 			Limit:           request.Limit,
+			TimeZone:        r.TimeZone,
 		}
 	default:
 		http.Error(w, fmt.Sprintf("unsupported request type: %s", reflect.TypeOf(v).Name()), http.StatusBadRequest)
