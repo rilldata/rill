@@ -434,6 +434,8 @@ describe("dashboards", () => {
         `;
 
     await updateMetricsInput(page, docWithCompleteMeasure);
+    // FIXME: this timeout is a stopgap measure to prevent flakiness,
+    // but we should get to the bottom of why this test times out
     await playwrightExpect(
       page.getByRole("button", { name: "Go to dashboard" })
     ).toBeEnabled({ timeout: 60000 });
