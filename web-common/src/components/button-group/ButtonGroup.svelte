@@ -77,7 +77,7 @@
 </script>
 
 <div
-  class="flex flex-row w-fit rounded border border-gray-400 divide-x divide-gray-400"
+  class="flex flex-row w-fit rounded border border-gray-300 divide-x divide-gray-300"
 >
   <slot />
 </div>

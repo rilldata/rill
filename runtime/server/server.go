@@ -31,13 +31,14 @@ import (
 var ErrForbidden = status.Error(codes.Unauthenticated, "action not allowed")
 
 type Options struct {
-	HTTPPort        int
-	GRPCPort        int
-	AllowedOrigins  []string
-	ServePrometheus bool
-	AuthEnable      bool
-	AuthIssuerURL   string
-	AuthAudienceURL string
+	HTTPPort         int
+	GRPCPort         int
+	AllowedOrigins   []string
+	ServePrometheus  bool
+	AuthEnable       bool
+	AuthIssuerURL    string
+	AuthAudienceURL  string
+	DownloadRowLimit *int64
 }
 
 type Server struct {

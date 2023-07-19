@@ -49,6 +49,7 @@ export function placeElement({
   windowWidth = window.innerWidth,
   windowHeight = window.innerHeight,
   pad = 16 * 2,
+  overflowFlipY = true,
 }) {
   let left;
   let top;
@@ -65,13 +66,16 @@ export function placeElement({
 
   // Task 1: check if we need to reflect agains the location axis.
   if (location === "bottom") {
-    if (parentBottom + elementHeight + distance + pad > windowHeight + y) {
+    if (
+      overflowFlipY &&
+      parentBottom + elementHeight + distance + pad > windowHeight + y
+    ) {
       top = parentTop - elementHeight - distance;
     } else {
       top = parentBottom + distance;
     }
   } else if (location === "top") {
-    if (parentTop - elementHeight - distance - pad < y) {
+    if (overflowFlipY && parentTop - elementHeight - distance - pad < y) {
       top = parentBottom + distance;
     } else {
       top = parentTop - elementHeight - distance;

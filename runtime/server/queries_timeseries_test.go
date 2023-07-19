@@ -282,6 +282,58 @@ func TestServer_Timeseries_Spark_no_count(t *testing.T) {
 	require.Equal(t, 12, len(response.Rollup.Spark))
 }
 
+func getTimeseriesTestServerWithDSTForward(t *testing.T) (*Server, string) {
+	rt, instanceID := testruntime.NewInstanceWithModel(t, "timeseries", `
+		SELECT 1.0 AS clicks, TIMESTAMP '2023-03-25 23:00:00' AS time, 'android' AS device
+		UNION ALL
+		SELECT 1.0 AS clicks, TIMESTAMP '2023-03-26 00:00:00' AS time, 'iphone' AS device
+		UNION ALL
+		SELECT 1.0 AS clicks, TIMESTAMP '2023-03-26 01:00:00' AS time, 'iphone' AS device
+		UNION ALL
+		SELECT 1.0 AS clicks, TIMESTAMP '2023-03-26 02:00:00' AS time, 'iphone' AS device
+		UNION ALL
+		SELECT 1.0 AS clicks, TIMESTAMP '2023-03-26 03:00:00' AS time, 'iphone' AS device
+		UNION ALL
+		SELECT 1.0 AS clicks, TIMESTAMP '2023-03-26 04:00:00' AS time, 'iphone' AS device
+
+	`)
+
+	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop())
+	require.NoError(t, err)
+
+	return server, instanceID
+}
+
+func getTimeseriesTestServerWithDSTBackward(t *testing.T) (*Server, string) {
+	rt, instanceID := testruntime.NewInstanceWithModel(t, "timeseries", `
+		SELECT 1.0 AS clicks, TIMESTAMP '2023-10-29 00:00:00' AS time, 'iphone' AS device
+		UNION ALL
+		SELECT 1.0 AS clicks, TIMESTAMP '2023-10-29 01:00:00' AS time, 'iphone' AS device
+		UNION ALL
+		SELECT 1.0 AS clicks, TIMESTAMP '2023-10-29 02:00:00' AS time, 'iphone' AS device
+	`)
+
+	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop())
+	require.NoError(t, err)
+
+	return server, instanceID
+}
+
+func getTimeseriesTestServerWithKathmandu(t *testing.T) (*Server, string) {
+	rt, instanceID := testruntime.NewInstanceWithModel(t, "timeseries", `
+		SELECT 1.0 AS clicks, TIMESTAMP '2023-10-29 00:15:00' AS time, 'iphone' AS device
+		UNION ALL
+		SELECT 1.0 AS clicks, TIMESTAMP '2023-10-29 01:15:00' AS time, 'iphone' AS device
+		UNION ALL
+		SELECT 1.0 AS clicks, TIMESTAMP '2023-10-29 02:15:00' AS time, 'iphone' AS device
+	`)
+
+	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop())
+	require.NoError(t, err)
+
+	return server, instanceID
+}
+
 func getTimeseriesTestServer(t *testing.T) (*Server, string) {
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "timeseries", `
 		SELECT 1.0 AS clicks, 3 as imps, TIMESTAMP '2019-01-01 00:00:00' AS time, DATE '2019-01-01' as day, 'android' AS device, 'Google' AS publisher, 'google.com' AS domain, 25 as latitude, 'Canada' as country
@@ -363,4 +415,130 @@ func TestServer_EstimateRollupInterval_date(t *testing.T) {
 	require.Equal(t, parseTime(t, "2019-01-01T00:00:00.000Z"), r.Start.AsTime())
 	require.Equal(t, parseTime(t, "2019-01-02T00:00:00.000Z"), r.End.AsTime())
 	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_HOUR, r.Interval)
+}
+
+/*
+select
+
+	time_bucket(interval '1 hour', range, 'Europe/Copenhagen') bucket_in_utc,
+	bucket_in_utc at time zone 'Europe/Copenhagen' copenhagen_bucket,
+	range event_time
+
+from
+
+	range(timestamptz '2023-03-26 00:00:00', timestamptz '2023-03-26 05:00:00', interval '1 hour');
+
+┌──────────────────────────┬─────────────────────┬──────────────────────────┐
+│      bucket_in_utc       │  copenhagen_bucket  │        event_time        │
+│ timestamp with time zone │      timestamp      │ timestamp with time zone │
+├──────────────────────────┼─────────────────────┼──────────────────────────┤
+│ 2023-03-26 00:00:00+00   │ 2023-03-26 01:00:00 │ 2023-03-26 00:00:00+00   │
+│ 2023-03-26 01:00:00+00   │ 2023-03-26 03:00:00 │ 2023-03-26 01:00:00+00   │
+│ 2023-03-26 02:00:00+00   │ 2023-03-26 04:00:00 │ 2023-03-26 02:00:00+00   │
+│ 2023-03-26 03:00:00+00   │ 2023-03-26 05:00:00 │ 2023-03-26 03:00:00+00   │
+│ 2023-03-26 04:00:00+00   │ 2023-03-26 06:00:00 │ 2023-03-26 04:00:00+00   │
+└──────────────────────────┴─────────────────────┴──────────────────────────┘
+*/
+func TestServer_Timeseries_timezone_dst_forward(t *testing.T) {
+	t.Parallel()
+	server, instanceID := getTimeseriesTestServerWithDSTForward(t)
+
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
+		InstanceId:          instanceID,
+		TableName:           "timeseries",
+		TimestampColumnName: "time",
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Start:    parseTimeToProtoTimeStamps(t, "2023-03-26T00:00:00Z"),
+			End:      parseTimeToProtoTimeStamps(t, "2023-03-26T04:00:00Z"),
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
+		},
+		TimeZone: "Europe/Copenhagen",
+	})
+
+	require.NoError(t, err)
+	results := response.GetRollup().Results
+	require.Equal(t, 4, len(results))
+
+	require.Equal(t, "2023-03-26 00:00:00", results[0].Ts.AsTime().Format(time.DateTime))
+	require.Equal(t, 1.0, results[0].Records.Fields["count"].GetNumberValue())
+	require.Equal(t, "2023-03-26 01:00:00", results[1].Ts.AsTime().Format(time.DateTime))
+	require.Equal(t, 1.0, results[1].Records.Fields["count"].GetNumberValue())
+	require.Equal(t, "2023-03-26 02:00:00", results[2].Ts.AsTime().Format(time.DateTime))
+	require.Equal(t, 1.0, results[2].Records.Fields["count"].GetNumberValue())
+	require.Equal(t, "2023-03-26 03:00:00", results[3].Ts.AsTime().Format(time.DateTime))
+	require.Equal(t, 1.0, results[3].Records.Fields["count"].GetNumberValue())
+}
+
+/*
+	select
+		time_bucket(interval '1 hour', range, 'Europe/Copenhagen') bucket_in_utc,
+		bucket_in_utc at time zone 'Europe/Copenhagen' copenhagen_bucket,
+		range event_time
+	from
+		range(timestamptz '2023-10-29 00:00:00', timestamptz '2023-10-29 03:00:00', interval '1 hour');
+
+	┌──────────────────────────┬─────────────────────┬──────────────────────────┐
+	│      bucket_in_utc       │  copenhagen_bucket  │        event_time        │
+	│ timestamp with time zone │      timestamp      │ timestamp with time zone │
+	├──────────────────────────┼─────────────────────┼──────────────────────────┤
+	│ 2023-10-29 00:00:00+00   │ 2023-10-29 02:00:00 │ 2023-10-29 00:00:00+00   │
+	│ 2023-10-29 01:00:00+00   │ 2023-10-29 02:00:00 │ 2023-10-29 01:00:00+00   │
+	│ 2023-10-29 02:00:00+00   │ 2023-10-29 03:00:00 │ 2023-10-29 02:00:00+00   │
+	└──────────────────────────┴─────────────────────┴──────────────────────────┘
+*/
+
+func TestServer_Timeseries_timezone_dst_backward(t *testing.T) {
+	t.Parallel()
+	server, instanceID := getTimeseriesTestServerWithDSTBackward(t)
+
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
+		InstanceId:          instanceID,
+		TableName:           "timeseries",
+		TimestampColumnName: "time",
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Start:    parseTimeToProtoTimeStamps(t, "2023-10-29T00:00:00Z"),
+			End:      parseTimeToProtoTimeStamps(t, "2023-10-29T03:00:00Z"),
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
+		},
+		TimeZone: "Europe/Copenhagen",
+	})
+
+	require.NoError(t, err)
+	results := response.GetRollup().Results
+	require.Equal(t, 3, len(results))
+
+	require.Equal(t, "2023-10-29 00:00:00", results[0].Ts.AsTime().Format(time.DateTime))
+	require.Equal(t, 1.0, results[0].Records.Fields["count"].GetNumberValue())
+	require.Equal(t, "2023-10-29 01:00:00", results[1].Ts.AsTime().Format(time.DateTime))
+	require.Equal(t, 1.0, results[1].Records.Fields["count"].GetNumberValue())
+	require.Equal(t, "2023-10-29 02:00:00", results[2].Ts.AsTime().Format(time.DateTime))
+	require.Equal(t, 1.0, results[2].Records.Fields["count"].GetNumberValue())
+}
+
+func TestServer_Timeseries_timezone_kathmandu(t *testing.T) {
+	t.Parallel()
+	server, instanceID := getTimeseriesTestServerWithKathmandu(t)
+
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
+		InstanceId:          instanceID,
+		TableName:           "timeseries",
+		TimestampColumnName: "time",
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Start:    parseTimeToProtoTimeStamps(t, "2023-10-29T00:15:00Z"),
+			End:      parseTimeToProtoTimeStamps(t, "2023-10-29T03:15:00Z"),
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
+		},
+		TimeZone: "Asia/Kathmandu",
+	})
+
+	require.NoError(t, err)
+	results := response.GetRollup().Results
+	require.Equal(t, 3, len(results))
+
+	require.Equal(t, "2023-10-29 00:15:00", results[0].Ts.AsTime().Format(time.DateTime))
+	require.Equal(t, 1.0, results[0].Records.Fields["count"].GetNumberValue())
+	require.Equal(t, "2023-10-29 01:15:00", results[1].Ts.AsTime().Format(time.DateTime))
+	require.Equal(t, 1.0, results[1].Records.Fields["count"].GetNumberValue())
+	require.Equal(t, "2023-10-29 02:15:00", results[2].Ts.AsTime().Format(time.DateTime))
+	require.Equal(t, 1.0, results[2].Records.Fields["count"].GetNumberValue())
 }

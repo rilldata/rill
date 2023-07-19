@@ -25,10 +25,8 @@
     V1CatalogEntry,
     V1PutFileAndReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
-  import {
-    invalidateAfterReconcile,
-    isProfilingQuery,
-  } from "@rilldata/web-common/runtime-client/invalidation";
+  import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
+  import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
   import type { LayoutElement } from "@rilldata/web-local/lib/types";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext } from "svelte";
@@ -137,9 +135,7 @@
         // cancel all existing analytical queries currently running.
         await queryClient.cancelQueries({
           fetchStatus: "fetching",
-          predicate: (query) => {
-            return isProfilingQuery(query.queryHash, modelName);
-          },
+          predicate: (query) => isProfilingQuery(query, modelName),
         });
       }
 

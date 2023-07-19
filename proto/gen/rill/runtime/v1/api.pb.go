@@ -1788,6 +1788,7 @@ func (*RenameFileResponse) Descriptor() ([]byte, []int) {
 	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{26}
 }
 
+// Example contains metadata about an example project that is available for unpacking.
 type Example struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

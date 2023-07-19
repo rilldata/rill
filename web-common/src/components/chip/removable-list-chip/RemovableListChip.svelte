@@ -31,6 +31,7 @@ are details left to the consumer of the component; this component should remain 
   /** an optional type label that will appear in the tooltip */
   export let typeLabel: string;
   export let excludeMode;
+  export let isHidden = false;
   export let colors: ChipColors = defaultChipColors;
   export let label = undefined;
 
@@ -72,6 +73,7 @@ are details left to the consumer of the component; this component should remain 
       <!-- body -->
       <RemovableListBody
         slot="body"
+        {isHidden}
         label={name}
         values={selectedValues}
         show={1}

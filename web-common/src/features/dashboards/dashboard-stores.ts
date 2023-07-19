@@ -60,6 +60,10 @@ export interface MetricsExplorerEntity {
   selectedComparisonTimeRange?: DashboardTimeControls;
   // flag to show/hide comparison based on user preference
   showComparison?: boolean;
+
+  // flag to show/hide the percent of total column
+  showPercentOfTotal?: boolean;
+
   // user selected dimension
   selectedDimensionName?: string;
 
@@ -149,6 +153,29 @@ function syncMeasures(
       if (!measuresMap.has(measureKey)) {
         metricsExplorer.visibleMeasureKeys.delete(measureKey);
       }
+    }
+    // If there are no visible measures, make the first measure visible
+    if (
+      metricsView.measures.length &&
+      metricsExplorer.visibleMeasureKeys.size === 0
+    ) {
+      metricsExplorer.visibleMeasureKeys = new Set([
+        metricsView.measures[0].name,
+      ]);
+    }
+
+    // check if current leaderboard measure is visible,
+    // if not set it to first visible measure
+    if (
+      metricsExplorer.visibleMeasureKeys.size &&
+      !metricsExplorer.visibleMeasureKeys.has(
+        metricsExplorer.leaderboardMeasureName
+      )
+    ) {
+      const firstVisibleMeasure = metricsView.measures
+        .map((measure) => measure.name)
+        .find((key) => metricsExplorer.visibleMeasureKeys.has(key));
+      metricsExplorer.leaderboardMeasureName = firstVisibleMeasure;
     }
   }
 }
@@ -298,6 +325,18 @@ const metricViewReducers = {
   displayComparison(name: string, showComparison: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.showComparison = showComparison;
+      if (metricsExplorer.showPercentOfTotal === true && showComparison) {
+        metricsExplorer.showPercentOfTotal = false;
+      }
+    });
+  },
+
+  displayPercentOfTotal(name: string, showPct: boolean) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.showPercentOfTotal = showPct;
+      if (metricsExplorer.showComparison === true && showPct) {
+        metricsExplorer.showComparison = false;
+      }
     });
   },
 

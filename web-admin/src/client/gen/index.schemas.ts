@@ -10,6 +10,10 @@ export type AdminServiceSearchUsersParams = {
   pageToken?: string;
 };
 
+export type AdminServiceListBookmarksParams = {
+  projectId?: string;
+};
+
 export type AdminServiceGetUserParams = {
   email?: string;
 };
@@ -135,6 +139,10 @@ export interface V1UserQuotas {
   singleuserOrgs?: number;
 }
 
+export interface V1UserPreferences {
+  timeZone?: string;
+}
+
 export interface V1UserInvite {
   email?: string;
   role?: string;
@@ -149,6 +157,14 @@ export interface V1User {
   quotas?: V1UserQuotas;
   createdOn?: string;
   updatedOn?: string;
+}
+
+export interface V1UpdateUserPreferencesResponse {
+  preferences?: V1UserPreferences;
+}
+
+export interface V1UpdateUserPreferencesRequest {
+  preferences?: V1UserPreferences;
 }
 
 export type V1UpdateProjectVariablesResponseVariables = {
@@ -255,6 +271,10 @@ export interface V1RemoveProjectMemberResponse {
 }
 
 export interface V1RemoveOrganizationMemberResponse {
+  [key: string]: any;
+}
+
+export interface V1RemoveBookmarkResponse {
   [key: string]: any;
 }
 
@@ -371,6 +391,10 @@ export interface V1ListOrganizationInvitesResponse {
   nextPageToken?: string;
 }
 
+export interface V1ListBookmarksResponse {
+  bookmarks?: V1Bookmark[];
+}
+
 export interface V1LeaveOrganizationResponse {
   [key: string]: any;
 }
@@ -422,6 +446,11 @@ export interface V1GetGitCredentialsResponse {
 
 export interface V1GetCurrentUserResponse {
   user?: V1User;
+  preferences?: V1UserPreferences;
+}
+
+export interface V1GetBookmarkResponse {
+  bookmark?: V1Bookmark;
 }
 
 export type V1DeploymentStatus =
@@ -472,6 +501,28 @@ export interface V1CreateOrganizationResponse {
 export interface V1CreateOrganizationRequest {
   name?: string;
   description?: string;
+}
+
+export interface V1CreateBookmarkRequest {
+  displayName?: string;
+  data?: string;
+  dashboardName?: string;
+  projectId?: string;
+}
+
+export interface V1Bookmark {
+  id?: string;
+  displayName?: string;
+  data?: string;
+  dashboardName?: string;
+  projectId?: string;
+  userId?: string;
+  createdOn?: string;
+  updatedOn?: string;
+}
+
+export interface V1CreateBookmarkResponse {
+  bookmark?: V1Bookmark;
 }
 
 export interface V1AddProjectMemberResponse {

@@ -1,6 +1,6 @@
+import { fireEvent, render, waitFor } from "@testing-library/svelte";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import Litepicker from "./Litepicker.svelte";
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { render, waitFor, fireEvent } from "@testing-library/svelte";
 
 // TODO: jsdom isn't firing our focus event listener in `onOpenMount`
 
