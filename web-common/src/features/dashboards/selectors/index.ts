@@ -62,41 +62,33 @@ export const getFilterSearchList = (
       ctx.metricsViewName,
       ctx.runtime,
     ],
-    ([metricsExplorer, hasTimeSeries, metricViewName, runtime], set) => {
-      let topListParams = {
-        dimensionName: dimension,
-        measureNames: [metricsExplorer.leaderboardMeasureName],
-        limit: "15",
-        offset: "0",
-        sort: [],
-        filter: {
-          include: [
-            {
-              name: dimension,
-              in: addNull ? [null] : [],
-              like: [`%${searchText}%`],
-            },
-          ],
-          exclude: [],
-        },
-      };
-      if (hasTimeSeries) {
-        topListParams = {
-          ...topListParams,
-          ...{
-            timeStart: metricsExplorer?.selectedTimeRange?.start,
-            timeEnd: metricsExplorer?.selectedTimeRange?.end,
-          },
-        };
-      }
-
+    ([metricsExplorer, timeControls, metricViewName, runtime], set) => {
       return createQueryServiceMetricsViewToplist(
         runtime.instanceId,
         metricViewName,
-        topListParams,
+        {
+          dimensionName: dimension,
+          measureNames: [metricsExplorer.leaderboardMeasureName],
+          timeStart: timeControls.timeStart,
+          timeEnd: timeControls.timeEnd,
+          limit: "15",
+          offset: "0",
+          sort: [],
+          filter: {
+            include: [
+              {
+                name: dimension,
+                in: addNull ? [null] : [],
+                like: [`%${searchText}%`],
+              },
+            ],
+            exclude: [],
+          },
+        },
         {
           query: {
             queryClient: ctx.queryClient,
+            enabled: timeControls.ready,
           },
         }
       ).subscribe(set);
