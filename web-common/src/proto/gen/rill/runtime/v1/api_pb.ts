@@ -9,6 +9,34 @@ import { PullTriggerSpec, RefreshTriggerSpec, Resource, ResourceName } from "./r
 import { MetricsView, Model, ObjectType, Source, Table } from "./catalog_pb.js";
 
 /**
+ * FileEvent describes a file change.
+ *
+ * @generated from enum rill.runtime.v1.FileEvent
+ */
+export enum FileEvent {
+  /**
+   * @generated from enum value: FILE_EVENT_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: FILE_EVENT_WRITE = 1;
+   */
+  WRITE = 1,
+
+  /**
+   * @generated from enum value: FILE_EVENT_DELETE = 2;
+   */
+  DELETE = 2,
+}
+// Retrieve enum metadata with: proto3.getEnumType(FileEvent)
+proto3.util.setEnumType(FileEvent, "rill.runtime.v1.FileEvent", [
+  { no: 0, name: "FILE_EVENT_UNSPECIFIED" },
+  { no: 1, name: "FILE_EVENT_WRITE" },
+  { no: 2, name: "FILE_EVENT_DELETE" },
+]);
+
+/**
  * @generated from enum rill.runtime.v1.LogLevel
  */
 export enum LogLevel {
@@ -82,40 +110,6 @@ proto3.util.setEnumType(ResourceEvent, "rill.runtime.v1.ResourceEvent", [
   { no: 2, name: "RESOURCE_EVENT_UPDATED_SPEC" },
   { no: 3, name: "RESOURCE_EVENT_UPDATED_STATE" },
   { no: 4, name: "RESOURCE_EVENT_DELETED" },
-]);
-
-/**
- * FileEvent describes a file change.
- *
- * @generated from enum rill.runtime.v1.FileEvent
- */
-export enum FileEvent {
-  /**
-   * @generated from enum value: FILE_EVENT_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: FILE_EVENT_WRITE = 1;
-   */
-  WRITE = 1,
-
-  /**
-   * @generated from enum value: FILE_EVENT_DELETE = 2;
-   */
-  DELETE = 2,
-
-  /**
-   * @generated from enum value: FILE_EVENT_RENAME = 3;
-   */
-  RENAME = 3,
-}
-// Retrieve enum metadata with: proto3.getEnumType(FileEvent)
-proto3.util.setEnumType(FileEvent, "rill.runtime.v1.FileEvent", [
-  { no: 0, name: "FILE_EVENT_UNSPECIFIED" },
-  { no: 1, name: "FILE_EVENT_WRITE" },
-  { no: 2, name: "FILE_EVENT_DELETE" },
-  { no: 3, name: "FILE_EVENT_RENAME" },
 ]);
 
 /**

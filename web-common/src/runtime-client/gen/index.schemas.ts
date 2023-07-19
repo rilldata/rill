@@ -821,8 +821,7 @@ export interface V1PullTriggerState {
 }
 
 export interface V1PullTriggerSpec {
-  onlyPaths?: string[];
-  refreshSources?: boolean;
+  [key: string]: any;
 }
 
 export interface V1PullTrigger {
@@ -841,8 +840,8 @@ export interface V1ProjectParserSpec {
   watch?: boolean;
   atomic?: boolean;
   materializeModelDefault?: boolean;
-  /** bool simulate_streaming_ingestion = 6; */
   materializeModelDelaySeconds?: number;
+  duckdbConnectors?: string[];
 }
 
 export interface V1ProjectParser {
@@ -1279,7 +1278,6 @@ export const V1FileEvent = {
   FILE_EVENT_UNSPECIFIED: "FILE_EVENT_UNSPECIFIED",
   FILE_EVENT_WRITE: "FILE_EVENT_WRITE",
   FILE_EVENT_DELETE: "FILE_EVENT_DELETE",
-  FILE_EVENT_RENAME: "FILE_EVENT_RENAME",
 } as const;
 
 export interface V1ExportResponse {

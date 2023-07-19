@@ -60,7 +60,23 @@ func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, ss runtimev1.Runti
 		return err
 	}
 
-	return repo.Watch(ss.Context(), req.Replay, watchBatchInterval, func(events []drivers.WatchEvent) error {
+	if req.Replay {
+		paths, err := repo.ListRecursive(ss.Context(), req.InstanceId, "**")
+		if err != nil {
+			return err
+		}
+		for _, p := range paths {
+			err = ss.Send(&runtimev1.WatchFilesResponse{
+				Event: runtimev1.FileEvent_FILE_EVENT_WRITE,
+				Path:  p,
+			})
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return repo.Watch(ss.Context(), func(events []drivers.WatchEvent) error {
 		for _, event := range events {
 			if !event.Dir {
 				err := ss.Send(&runtimev1.WatchFilesResponse{

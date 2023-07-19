@@ -318,11 +318,16 @@ export class ProjectParserSpec extends Message<ProjectParserSpec> {
   /**
    * materialize_model_delay_seconds makes the project parser delay materialization of updated models
    *
-   * bool simulate_streaming_ingestion = 6;
-   *
    * @generated from field: uint32 materialize_model_delay_seconds = 5;
    */
   materializeModelDelaySeconds = 0;
+
+  /**
+   * bool simulate_streaming_ingestion = 6;
+   *
+   * @generated from field: repeated string duckdb_connectors = 7;
+   */
+  duckdbConnectors: string[] = [];
 
   constructor(data?: PartialMessage<ProjectParserSpec>) {
     super();
@@ -337,6 +342,7 @@ export class ProjectParserSpec extends Message<ProjectParserSpec> {
     { no: 3, name: "atomic", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "materialize_model_default", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 5, name: "materialize_model_delay_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 7, name: "duckdb_connectors", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectParserSpec {
@@ -1232,16 +1238,6 @@ export class PullTrigger extends Message<PullTrigger> {
  * @generated from message rill.runtime.v1.PullTriggerSpec
  */
 export class PullTriggerSpec extends Message<PullTriggerSpec> {
-  /**
-   * @generated from field: repeated string only_paths = 1;
-   */
-  onlyPaths: string[] = [];
-
-  /**
-   * @generated from field: bool refresh_sources = 2;
-   */
-  refreshSources = false;
-
   constructor(data?: PartialMessage<PullTriggerSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1250,8 +1246,6 @@ export class PullTriggerSpec extends Message<PullTriggerSpec> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.PullTriggerSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "only_paths", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 2, name: "refresh_sources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PullTriggerSpec {

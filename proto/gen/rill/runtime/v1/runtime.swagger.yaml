@@ -2705,7 +2705,6 @@ definitions:
       - FILE_EVENT_UNSPECIFIED
       - FILE_EVENT_WRITE
       - FILE_EVENT_DELETE
-      - FILE_EVENT_RENAME
     default: FILE_EVENT_UNSPECIFIED
     description: FileEvent describes a file change.
   v1GCSGetCredentialsInfoResponse:
@@ -3504,8 +3503,12 @@ definitions:
       materializeModelDelaySeconds:
         type: integer
         format: int64
-        description: bool simulate_streaming_ingestion = 6;
         title: materialize_model_delay_seconds makes the project parser delay materialization of updated models
+      duckdbConnectors:
+        type: array
+        items:
+          type: string
+        title: bool simulate_streaming_ingestion = 6;
   v1ProjectParserState:
     type: object
     properties:
@@ -3529,13 +3532,6 @@ definitions:
         $ref: '#/definitions/v1PullTriggerState'
   v1PullTriggerSpec:
     type: object
-    properties:
-      onlyPaths:
-        type: array
-        items:
-          type: string
-      refreshSources:
-        type: boolean
   v1PullTriggerState:
     type: object
   v1PutFileAndReconcileRequest:

@@ -3267,8 +3267,6 @@ func (m *PullTriggerSpec) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for RefreshSources
-
 	if len(errors) > 0 {
 		return PullTriggerSpecMultiError(errors)
 	}

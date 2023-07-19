@@ -11,8 +11,6 @@ import (
 	"time"
 
 	"github.com/bmatcuk/doublestar/v4"
-	"github.com/fsnotify/fsnotify"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
@@ -138,115 +136,34 @@ func (c *connection) Delete(ctx context.Context, instID, filePath string) error 
 	return os.Remove(filePath)
 }
 
+// Sync implements drivers.RepoStore.
 func (c *connection) Sync(ctx context.Context, instID string) error {
 	return nil
 }
 
-func (c *connection) Watch(ctx context.Context, replay bool, batchInterval time.Duration, cb drivers.WatchCallback) error {
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		return err
-	}
-	defer watcher.Close()
-
-	var dirs []string
-	var replayEvents []drivers.WatchEvent
-
-	fsRoot := os.DirFS(c.root)
-	err = doublestar.GlobWalk(fsRoot, "**", func(p string, d fs.DirEntry) error {
-		if d.IsDir() {
-			dirs = append(dirs, p)
-		} else if replay {
-			replayEvents = append(replayEvents, drivers.WatchEvent{
-				Path: filepath.Join("/", p),
-				Type: runtimev1.FileEvent_FILE_EVENT_WRITE,
-			})
-		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-
-	if replay {
-		err := cb(replayEvents)
+// Watch implements drivers.RepoStore.
+func (c *connection) Watch(ctx context.Context, cb drivers.WatchCallback) error {
+	c.watcherMu.Lock()
+	if c.watcher == nil {
+		w, err := newWatcher(c.root)
 		if err != nil {
+			c.watcherMu.Unlock()
 			return err
 		}
+		c.watcher = w
 	}
+	c.watcherCount++
+	c.watcherMu.Unlock()
 
-	for _, path := range dirs {
-		err := watcher.Add(filepath.Join(c.root, path))
-		if err != nil {
-			return err
+	defer func() {
+		c.watcherMu.Lock()
+		c.watcherCount--
+		if c.watcherCount == 0 {
+			c.watcher.close()
+			c.watcher = nil
 		}
-	}
+		c.watcherMu.Unlock()
+	}()
 
-	// Batch events for a short time
-	var buffer []drivers.WatchEvent
-	timer := time.NewTimer(batchInterval)
-
-	for {
-		select {
-		case e, ok := <-watcher.Events:
-			if !ok {
-				return nil
-			}
-
-			path, err := filepath.Rel(c.Root(), e.Name)
-			if err != nil {
-				return err
-			}
-			path = filepath.Join("/", path)
-
-			we := drivers.WatchEvent{Path: path}
-
-			if e.Has(fsnotify.Create) || e.Has(fsnotify.Write) {
-				we.Type = runtimev1.FileEvent_FILE_EVENT_WRITE
-			} else if e.Has(fsnotify.Remove) {
-				we.Type = runtimev1.FileEvent_FILE_EVENT_DELETE
-			} else if e.Has(fsnotify.Rename) {
-				// TODO: Can there be a rename that's not either a delete or a write?
-				we.Type = runtimev1.FileEvent_FILE_EVENT_RENAME
-			}
-
-			// Check if the file is a directory
-			if !e.Has(fsnotify.Remove) {
-				info, err := os.Stat(e.Name)
-				we.Dir = err == nil && info.IsDir()
-			}
-
-			// We need to add new directories to the watcher, but the watcher automatically handles renames and deletes
-			if e.Has(fsnotify.Create) && we.Dir {
-				err := watcher.Add(e.Name)
-				if err != nil {
-					return err
-				}
-			}
-
-			buffer = append(buffer, we)
-
-			// Reset the timer when new events are added.
-			// So we only emit a batch when no new events have been observed for a duration of batchInterval.
-			if !timer.Stop() {
-				<-timer.C
-			}
-			timer.Reset(batchInterval)
-		case err, ok := <-watcher.Errors:
-			if !ok {
-				return nil
-			}
-			return err
-		case <-timer.C:
-			if len(buffer) > 0 {
-				err := cb(buffer)
-				if err != nil {
-					return err
-				}
-				buffer = nil
-			}
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-	}
+	return c.watcher.subscribe(ctx, cb)
 }
