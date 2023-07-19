@@ -2,6 +2,7 @@ package duckdbsql
 
 import (
 	"errors"
+	"math"
 	"regexp"
 )
 
@@ -221,8 +222,13 @@ func valueToGoValue(v astNode) any {
 }
 
 func constantValueToGoValue(v astNode) any {
+	if toBoolean(v, astKeyIsNull) {
+		return nil
+	}
+
+	t := toNode(v, astKeyType)
 	val := v[astKeyValue]
-	switch toString(toNode(v, astKeyType), astKeyID) {
+	switch toString(t, astKeyID) {
 	case "BOOLEAN":
 		return val.(bool)
 	case "TINYINT", "SMALLINT", "INTEGER":
@@ -237,6 +243,12 @@ func constantValueToGoValue(v astNode) any {
 		return forceConvertToNum[float32](val)
 	case "DOUBLE":
 		return forceConvertToNum[float64](val)
+	case "DECIMAL":
+		ti := toNode(t, astKeyTypeInfo)
+		if ti == nil {
+			return 0.0
+		}
+		return forceConvertToNum[float64](val) / math.Pow(10, forceConvertToNum[float64](ti[astKeyScale]))
 	case "VARCHAR":
 		return val.(string)
 		// TODO: others

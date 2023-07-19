@@ -35,6 +35,9 @@ const (
 	astKeySubQuery         string = "subquery"
 	astKetRelationName     string = "relation_name"
 	astKeySchema           string = "schema"
+	astKeyIsNull           string = "is_null"
+	astKeyTypeInfo         string = "type_info"
+	astKeyScale            string = "scale"
 )
 
 func toBoolean(a astNode, k string) bool {

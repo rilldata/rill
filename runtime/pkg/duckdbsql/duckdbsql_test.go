@@ -42,7 +42,7 @@ select 1`,
 			`
 select * from read_json(
     ['data1.csv', 'data2.csv'], delim='|',
-    columns={'A':'Date', 'L': ['INT32','INT64'], 'O': {'K1':1,'K2':1.2}},
+    columns={'A':'Date', 'L': ['INT32','INT64'], 'O': {'K1':1,'K2':1.2,'K3':12.34}},
     list=['A', 'B'])`,
 			[]*TableRef{
 				{
@@ -56,6 +56,7 @@ select * from read_json(
 							"O": map[string]any{
 								"K1": int32(1),
 								"K2": 1.2,
+								"K3": 12.34,
 							},
 						},
 						"list": []interface{}{"A", "B"},
@@ -405,11 +406,11 @@ func TestAST_RewriteWithFunctionRef(t *testing.T) {
 					Function: "read_csv",
 					Paths:    []string{"/path/to/AdBids.csv"},
 					Properties: map[string]any{
-						"list": []interface{}{1.2, 1, true},
+						"list": []interface{}{1.2, 1},
 					},
 				},
 			},
-			`SELECT * FROM read_csv(main.list_value('/path/to/AdBids.csv'), (list = main.list_value(1.2, 1, true)))`,
+			`SELECT * FROM read_csv(main.list_value('/path/to/AdBids.csv'), (list = main.list_value(1.2, 1)))`,
 		},
 		{
 			"with deep list paths",

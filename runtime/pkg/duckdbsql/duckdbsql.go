@@ -5,7 +5,6 @@ import (
 	databasesql "database/sql"
 	"database/sql/driver"
 	"encoding/json"
-	"fmt"
 	"sync"
 
 	"github.com/marcboeker/go-duckdb"
@@ -43,7 +42,6 @@ func Parse(sql string) (*AST, error) {
 		return nil, err
 	}
 
-	fmt.Println(string(sqlAst))
 	nativeAst := astNode{}
 	err = json.Unmarshal(sqlAst, &nativeAst)
 	if err != nil {
@@ -91,9 +89,16 @@ func (a *AST) RewriteTableRefs(fn func(table *TableRef) (*TableRef, bool)) error
 				return err
 			}
 		} else if newRef.Function != "" {
-			err := node.rewriteToReadTableFunction(newRef.Function, newRef.Paths, newRef.Properties)
-			if err != nil {
-				return err
+			switch newRef.Function {
+			case "read_csv_auto", "read_csv",
+				"read_parquet",
+				"read_json", "read_json_auto", "read_json_objects", "read_json_objects_auto",
+				"read_ndjson_objects", "read_ndjson", "read_ndjson_auto":
+				err := node.rewriteToReadTableFunction(newRef.Function, newRef.Paths, newRef.Properties)
+				if err != nil {
+					return err
+				}
+				// non read_ functions are not supported right now
 			}
 		}
 	}
