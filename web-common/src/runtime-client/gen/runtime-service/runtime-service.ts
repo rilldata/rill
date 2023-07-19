@@ -46,6 +46,8 @@ import type {
   RuntimeServiceUnpackEmptyBody,
   V1UnpackExampleResponse,
   RuntimeServiceUnpackExampleBody,
+  RuntimeServiceWatchFiles200,
+  RuntimeServiceWatchFilesParams,
   V1ReconcileResponse,
   RuntimeServiceReconcileBody,
   V1TriggerSyncResponse,
@@ -1100,6 +1102,76 @@ export const createRuntimeServiceUnpackExample = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary WatchFiles streams repo file update events. It is not supported on all backends.
+ */
+export const runtimeServiceWatchFiles = (
+  instanceId: string,
+  params?: RuntimeServiceWatchFilesParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<RuntimeServiceWatchFiles200>({
+    url: `/v1/instances/${instanceId}/files/watch`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getRuntimeServiceWatchFilesQueryKey = (
+  instanceId: string,
+  params?: RuntimeServiceWatchFilesParams
+) =>
+  [
+    `/v1/instances/${instanceId}/files/watch`,
+    ...(params ? [params] : []),
+  ] as const;
+
+export type RuntimeServiceWatchFilesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceWatchFiles>>
+>;
+export type RuntimeServiceWatchFilesQueryError = RpcStatus;
+
+export const createRuntimeServiceWatchFiles = <
+  TData = Awaited<ReturnType<typeof runtimeServiceWatchFiles>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  params?: RuntimeServiceWatchFilesParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceWatchFiles>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceWatchFilesQueryKey(instanceId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceWatchFiles>>
+  > = ({ signal }) => runtimeServiceWatchFiles(instanceId, params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof runtimeServiceWatchFiles>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 /**
  * @summary Reconcile applies a full set of artifacts from a repo to the catalog and infra.
 It attempts to infer a minimal number of migrations to apply to reconcile the current state with

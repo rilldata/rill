@@ -607,6 +607,36 @@ paths:
             title: Request message for RuntimeService.UnpackExample
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/files/watch:
+    get:
+      summary: WatchFiles streams repo file update events. It is not supported on all backends.
+      operationId: RuntimeService_WatchFiles
+      responses:
+        "200":
+          description: A successful response.(streaming responses)
+          schema:
+            type: object
+            properties:
+              result:
+                $ref: '#/definitions/v1WatchFilesResponse'
+              error:
+                $ref: '#/definitions/rpcStatus'
+            title: Stream result of v1WatchFilesResponse
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: replay
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
     get:
       summary: Get cardinality for a column
@@ -2382,6 +2412,15 @@ definitions:
       downloadUrlPath:
         type: string
     title: Response message for QueryService.Export
+  v1FileEvent:
+    type: string
+    enum:
+      - FILE_EVENT_UNSPECIFIED
+      - FILE_EVENT_WRITE
+      - FILE_EVENT_DELETE
+      - FILE_EVENT_RENAME
+    default: FILE_EVENT_UNSPECIFIED
+    description: FileEvent describes a file change.
   v1GCSGetCredentialsInfoResponse:
     type: object
     properties:
@@ -3618,3 +3657,11 @@ definitions:
   v1UnpackExampleResponse:
     type: object
     title: Response message for RuntimeService.UnpackExample
+  v1WatchFilesResponse:
+    type: object
+    properties:
+      event:
+        $ref: '#/definitions/v1FileEvent'
+      path:
+        type: string
+    title: Response message for RuntimeService.WatchFiles
