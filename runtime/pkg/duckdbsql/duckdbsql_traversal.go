@@ -168,16 +168,21 @@ func (a *AST) traverseTableFunction(parent astNode, childKey string) {
 		Function:   functionName,
 		Properties: map[string]any{},
 	}
-	a.newFromNode(node, parent, childKey, ref)
 	// TODO: add to local alias
 
 	switch functionName {
-	case "read_csv_auto", "read_csv", "read_parquet", "read_json_auto", "read_json":
-		ref.Path = toString(toNode(arguments[0], astKeyValue), astKeyValue)
+	case "read_csv_auto", "read_csv",
+		"read_parquet",
+		"read_json", "read_json_auto", "read_json_objects", "read_json_objects_auto",
+		"read_ndjson_objects", "read_ndjson", "read_ndjson_auto":
+		ref.Paths = getListOfValues[string](arguments[0])
 	default:
 		// only read_... are supported for now
 		return
 	}
+
+	// adding the node here will make sure other types of table functions are ignored
+	a.newFromNode(node, parent, childKey, ref)
 
 	for _, argument := range arguments[1:] {
 		if toString(argument, astKeyType) != "COMPARE_EQUAL" {
@@ -194,25 +199,25 @@ func (a *AST) traverseTableFunction(parent astNode, childKey string) {
 		}
 
 		right := toNode(argument, astKeyRight)
-		switch toString(right, astKeyType) {
-		case "VALUE_CONSTANT":
-			ref.Properties[columnNames[0].(string)] = constantValueToGoValue(toNode(right, astKeyValue))
-		case "FUNCTION":
-			if toString(right, astKeyFunctionName) == "struct_pack" {
-				ref.Properties[columnNames[0].(string)] = structValueToGoValue(right)
-			}
-		}
+		ref.Properties[columnNames[0].(string)] = valueToGoValue(right)
 	}
 }
 
-func structValueToGoValue(v astNode) map[string]any {
-	structVal := map[string]any{}
-
-	for _, child := range toNodeArray(v, astKeyChildren) {
-		structVal[toString(child, astKeyAlias)] = constantValueToGoValue(toNode(child, astKeyValue))
+func valueToGoValue(v astNode) any {
+	switch toString(v, astKeyType) {
+	case "VALUE_CONSTANT":
+		return constantValueToGoValue(toNode(v, astKeyValue))
+	case "FUNCTION":
+		if toString(v, astKeySchema) == "main" {
+			switch toString(v, astKeyFunctionName) {
+			case "struct_pack":
+				return structValueToGoValue(v)
+			case "list_value":
+				return arrayValueToGoValue(v)
+			}
+		}
 	}
-
-	return structVal
+	return nil
 }
 
 func constantValueToGoValue(v astNode) any {
@@ -221,20 +226,54 @@ func constantValueToGoValue(v astNode) any {
 	case "BOOLEAN":
 		return val.(bool)
 	case "TINYINT", "SMALLINT", "INTEGER":
-		return val.(int32)
+		return forceConvertToNum[int32](val)
 	case "BIGINT":
-		return val.(int64)
+		return forceConvertToNum[int64](val)
 	case "UTINYINT", "USMALLINT", "UINTEGER":
-		return val.(uint32)
+		return forceConvertToNum[uint32](val)
 	case "UBIGINT":
-		return val.(uint64)
+		return forceConvertToNum[uint64](val)
 	case "FLOAT":
-		return val.(float32)
+		return forceConvertToNum[float32](val)
 	case "DOUBLE":
-		return val.(float64)
+		return forceConvertToNum[float64](val)
 	case "VARCHAR":
 		return val.(string)
 		// TODO: others
 	}
 	return nil
+}
+
+func structValueToGoValue(v astNode) map[string]any {
+	structVal := map[string]any{}
+
+	for _, child := range toNodeArray(v, astKeyChildren) {
+		structVal[toString(child, astKeyAlias)] = valueToGoValue(child)
+	}
+
+	return structVal
+}
+
+func arrayValueToGoValue(v astNode) []any {
+	arr := make([]any, 0)
+	for _, child := range toNodeArray(v, astKeyChildren) {
+		arr = append(arr, valueToGoValue(child))
+	}
+	return arr
+}
+
+func forceConvertToNum[N int32 | int64 | uint32 | uint64 | float32 | float64](v any) N {
+	switch vt := v.(type) {
+	case int:
+		return N(vt)
+	case int32:
+		return N(vt)
+	case int64:
+		return N(vt)
+	case float32:
+		return N(vt)
+	case float64:
+		return N(vt)
+	}
+	return 0
 }

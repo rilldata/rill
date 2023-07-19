@@ -5,6 +5,7 @@ import (
 	databasesql "database/sql"
 	"database/sql/driver"
 	"encoding/json"
+	"fmt"
 	"sync"
 
 	"github.com/marcboeker/go-duckdb"
@@ -42,6 +43,7 @@ func Parse(sql string) (*AST, error) {
 		return nil, err
 	}
 
+	fmt.Println(string(sqlAst))
 	nativeAst := astNode{}
 	err = json.Unmarshal(sqlAst, &nativeAst)
 	if err != nil {
@@ -83,9 +85,13 @@ func (a *AST) RewriteTableRefs(fn func(table *TableRef) (*TableRef, bool)) error
 			continue
 		}
 
-		// only rewriting to a base table is supported as of now.
 		if newRef.Name != "" {
 			err := node.rewriteToBaseTable(newRef.Name)
+			if err != nil {
+				return err
+			}
+		} else if newRef.Function != "" {
+			err := node.rewriteToReadTableFunction(newRef.Function, newRef.Paths, newRef.Properties)
 			if err != nil {
 				return err
 			}
@@ -141,7 +147,7 @@ func (a *AST) newColumnNode(node astNode, ref *ColumnRef) {
 type TableRef struct {
 	Name       string
 	Function   string
-	Path       string
+	Paths      []string
 	Properties map[string]any
 	LocalAlias bool
 }
