@@ -154,6 +154,29 @@ function syncMeasures(
         metricsExplorer.visibleMeasureKeys.delete(measureKey);
       }
     }
+    // If there are no visible measures, make the first measure visible
+    if (
+      metricsView.measures.length &&
+      metricsExplorer.visibleMeasureKeys.size === 0
+    ) {
+      metricsExplorer.visibleMeasureKeys = new Set([
+        metricsView.measures[0].name,
+      ]);
+    }
+
+    // check if current leaderboard measure is visible,
+    // if not set it to first visible measure
+    if (
+      metricsExplorer.visibleMeasureKeys.size &&
+      !metricsExplorer.visibleMeasureKeys.has(
+        metricsExplorer.leaderboardMeasureName
+      )
+    ) {
+      const firstVisibleMeasure = metricsView.measures
+        .map((measure) => measure.name)
+        .find((key) => metricsExplorer.visibleMeasureKeys.has(key));
+      metricsExplorer.leaderboardMeasureName = firstVisibleMeasure;
+    }
   }
 }
 

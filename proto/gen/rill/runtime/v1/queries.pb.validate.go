@@ -2408,6 +2408,8 @@ func (m *MetricsViewTimeSeriesRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for TimeZone
+
 	// no validation rules for Priority
 
 	if len(errors) > 0 {
@@ -3257,6 +3259,8 @@ func (m *MetricsViewRowsRequest) validate(all bool) error {
 	}
 
 	// no validation rules for Priority
+
+	// no validation rules for TimeZone
 
 	if len(errors) > 0 {
 		return MetricsViewRowsRequestMultiError(errors)
@@ -7581,6 +7585,8 @@ func (m *ColumnTimeSeriesRequest) validate(all bool) error {
 	}
 
 	// no validation rules for Priority
+
+	// no validation rules for TimeZone
 
 	if len(errors) > 0 {
 		return ColumnTimeSeriesRequestMultiError(errors)

@@ -48,12 +48,16 @@
 
   $: numSelected = selectedItems?.filter((s) => s)?.length || 0;
 
+  $: singleSelection = numSelected === 1;
+
   $: numSelectedNotShown =
     numSelected - (menuItems?.filter((item) => item.selected)?.length || 0);
 
-  $: allToggleText = numSelected === 0 ? "Select all" : "Deselect all";
+  $: allToggleText =
+    numSelected === selectableItems?.length ? "Deselect all" : "Select all";
 
-  $: allToggleEvt = numSelected === 0 ? "select-all" : "deselect-all";
+  $: allToggleEvt =
+    numSelected === selectableItems?.length ? "deselect-all" : "select-all";
   $: dispatchAllToggleEvt = () => {
     dispatch(allToggleEvt);
   };
@@ -80,12 +84,16 @@
         animateSelect={false}
         focusOnMount={false}
         on:select={() => {
+          if (singleSelection && selected) return;
           dispatch("item-clicked", { index, name });
         }}
       >
         <svelte:fragment slot="icon">
           {#if selected}
-            <Check size="20px" color="#15141A" />
+            <Check
+              size="20px"
+              color={singleSelection ? "#9CA3AF" : "#15141A"}
+            />
           {:else}
             <Spacer size="20px" />
           {/if}

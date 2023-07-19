@@ -72,6 +72,11 @@
   $: validPercentOfTotal =
     activeLeaderboardMeasure?.validPercentOfTotal || false;
 
+  // if the percent of total is not valid for this measure, turn it off
+  $: if (!validPercentOfTotal) {
+    metricsExplorerStore.displayPercentOfTotal(metricViewName, false);
+  }
+
   $: showHideDimensions = createShowHideDimensionsStore(
     metricViewName,
     metaQuery
