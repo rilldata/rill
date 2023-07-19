@@ -1,3 +1,4 @@
+import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   createQueryServiceMetricsViewToplist,
   createRuntimeServiceGetCatalogEntry,
@@ -54,9 +55,13 @@ export const getFilterSearchList = (
     searchText: string;
   }
 ): Readable<QueryObserverResult<V1MetricsViewToplistResponse, RpcStatus>> => {
-  const hasTimeSeriesStore = useModelHasTimeSeries(ctx);
   return derived(
-    [ctx.dashboardStore, hasTimeSeriesStore, ctx.metricsViewName, ctx.runtime],
+    [
+      ctx.dashboardStore,
+      useTimeControlStore(ctx),
+      ctx.metricsViewName,
+      ctx.runtime,
+    ],
     ([metricsExplorer, hasTimeSeries, metricViewName, runtime], set) => {
       let topListParams = {
         dimensionName: dimension,

@@ -3,7 +3,8 @@
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { getTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     ALL_TIME,
     DEFAULT_TIME_RANGES,
@@ -40,7 +41,7 @@
 
   $: dashboardStore = useDashboardStore(metricViewName);
 
-  const timeControlsStore = getTimeControlStore();
+  const timeControlsStore = useTimeControlStore(getStateManagers());
 
   let isCustomRangeOpen = false;
   let isCalendarRecentlyClosed = false;

@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { getTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useMetaQuery } from "../selectors";
   import {
@@ -17,7 +18,7 @@
   const FALLBACK_SAMPLE_SIZE = 1000;
 
   $: dashboardStore = useDashboardStore(metricViewName);
-  const timeControlsStore = getTimeControlStore();
+  const timeControlsStore = useTimeControlStore(getStateManagers());
 
   $: modelName = useMetaQuery<string>(
     $runtime.instanceId,

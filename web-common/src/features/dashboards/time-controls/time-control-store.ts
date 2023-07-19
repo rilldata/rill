@@ -1,8 +1,10 @@
-import type { RpcStatus } from "@rilldata/web-admin/client";
 import {
   MetricsExplorerEntity,
   metricsExplorerStore,
+  useDashboardStore,
 } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
+import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
   getComparisonRange,
@@ -29,12 +31,9 @@ import type { TimeRangeType } from "@rilldata/web-common/lib/time/types";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
   createQueryServiceColumnTimeRange,
-  createRuntimeServiceGetCatalogEntry,
   V1ColumnTimeRangeResponse,
-  V1MetricsView,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
-import type { QueryObserverResult } from "@tanstack/query-core";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { getContext } from "svelte";
 import { derived } from "svelte/store";
@@ -70,37 +69,6 @@ export type TimeControlState = {
 } & TimeRangeState &
   ComparisonTimeRangeState;
 export type TimeControlStore = Readable<TimeControlState>;
-
-export const DEFAULT_TIME_STORE_KEY = "time-store";
-export function getTimeControlStore(): TimeControlStore {
-  return getContext(DEFAULT_TIME_STORE_KEY);
-}
-
-// TODO: remove once #2749 is merged
-export function useMetaQuery<T = V1MetricsView>(
-  ctx: StateManagers,
-  selector?: (meta: V1MetricsView) => T
-): Readable<QueryObserverResult<T | V1MetricsView, RpcStatus>> {
-  return derived(
-    [ctx.runtime, ctx.metricsViewName],
-    ([runtime, metricViewName], set) => {
-      const store = createRuntimeServiceGetCatalogEntry(
-        runtime.instanceId,
-        metricViewName,
-        {
-          query: {
-            select: (data) =>
-              selector
-                ? selector(data?.entry?.metricsView)
-                : data?.entry?.metricsView,
-            queryClient: ctx.queryClient,
-          },
-        }
-      );
-      return store.subscribe(set);
-    }
-  );
-}
 
 function createTimeRangeSummary(
   ctx: StateManagers
@@ -189,6 +157,13 @@ export function createTimeControlStore(ctx: StateManagers) {
     }
   ) as TimeControlStore;
 }
+
+/**
+ * Memoized version of the store. Currently, memoized by metrics view name.
+ */
+export const useTimeControlStore = memoizeMetricsStore<TimeControlStore>(
+  (ctx: StateManagers) => createTimeControlStore(ctx)
+);
 
 /**
  * Calculates time range and grain from all time range and selected time range name.

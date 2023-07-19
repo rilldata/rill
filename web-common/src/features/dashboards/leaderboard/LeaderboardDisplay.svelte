@@ -3,7 +3,8 @@
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideDimensionsStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
-  import { getTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     createQueryServiceMetricsViewTotals,
     MetricsViewDimension,
@@ -36,7 +37,7 @@
       (measure) => measure.name === $dashboardStore?.leaderboardMeasureName
     );
 
-  const timeControlsStore = getTimeControlStore();
+  const timeControlsStore = useTimeControlStore(getStateManagers());
 
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     $runtime.instanceId,

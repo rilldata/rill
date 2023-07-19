@@ -1,6 +1,7 @@
 <script lang="ts">
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
-  import { getTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import RowsViewer from "./RowsViewer.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
@@ -40,7 +41,7 @@
   );
 
   $: dashboardStore = useDashboardStore(metricViewName);
-  const timeControlsStore = getTimeControlStore();
+  const timeControlsStore = useTimeControlStore(getStateManagers());
 
   $: metricTimeSeries = useModelHasTimeSeries(
     $runtime.instanceId,
