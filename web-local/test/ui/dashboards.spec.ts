@@ -436,7 +436,7 @@ describe("dashboards", () => {
     await updateMetricsInput(page, docWithCompleteMeasure);
     await playwrightExpect(
       page.getByRole("button", { name: "Go to dashboard" })
-    ).toBeEnabled({ timeout: 1 });
+    ).toBeEnabled({ timeout: 20000 });
 
     // Go to dashboard
     await page.getByRole("button", { name: "Go to dashboard" }).click();
