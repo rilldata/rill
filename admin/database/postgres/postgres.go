@@ -554,12 +554,13 @@ func (c *connection) UpdateUser(ctx context.Context, id string, opts *database.U
 	}
 
 	res := &database.User{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$2, photo_url=$3, github_username=$4, quota_singleuser_orgs=$5, updated_on=now() WHERE id=$1 RETURNING *",
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$2, photo_url=$3, github_username=$4, quota_singleuser_orgs=$5, preference_time_zone=$6, updated_on=now() WHERE id=$1 RETURNING *",
 		id,
 		opts.DisplayName,
 		opts.PhotoURL,
 		opts.GithubUsername,
-		opts.QuotaSingleuserOrgs).StructScan(res)
+		opts.QuotaSingleuserOrgs,
+		opts.PreferenceTimeZone).StructScan(res)
 	if err != nil {
 		return nil, parseErr("user", err)
 	}
@@ -1001,6 +1002,48 @@ func (c *connection) DeleteProjectInvite(ctx context.Context, id string) error {
 func (c *connection) UpdateProjectInviteRole(ctx context.Context, id, roleID string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE project_invites SET project_role_id = $1 WHERE id = $2`, roleID, id)
 	return checkUpdateRow("project invite", res, err)
+}
+
+// FindBookmarks returns a list of bookmarks for a user per project
+func (c *connection) FindBookmarks(ctx context.Context, projectID, userID string) ([]*database.Bookmark, error) {
+	var res []*database.Bookmark
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM bookmarks WHERE project_id = $1 and user_id = $2", projectID, userID)
+	if err != nil {
+		return nil, parseErr("bookmarks", err)
+	}
+	return res, nil
+}
+
+// FindBookmark returns a bookmark for given bookmark id
+func (c *connection) FindBookmark(ctx context.Context, bookmarkID string) (*database.Bookmark, error) {
+	res := &database.Bookmark{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM bookmarks WHERE id = $1", bookmarkID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("bookmarks", err)
+	}
+	return res, nil
+}
+
+// InsertBookmark inserts a bookmark for a user per project
+func (c *connection) InsertBookmark(ctx context.Context, opts *database.InsertBookmarkOptions) (*database.Bookmark, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.Bookmark{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO bookmarks (display_name, data, dashboard_name, project_id, user_id) 
+		VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+		opts.DisplayName, opts.Data, opts.DashboardName, opts.ProjectID, opts.UserID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("bookmarks", err)
+	}
+	return res, nil
+}
+
+// DeleteBookmark deletes a bookmark for a given bookmark id
+func (c *connection) DeleteBookmark(ctx context.Context, bookmarkID string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM bookmarks WHERE id = $1", bookmarkID)
+	return checkDeleteRow("bookmarks", res, err)
 }
 
 func checkUpdateRow(target string, res sql.Result, err error) error {

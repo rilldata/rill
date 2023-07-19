@@ -62,6 +62,7 @@ func (s *Server) ColumnTimeSeries(ctx context.Context, req *runtimev1.ColumnTime
 		TimeRange:           req.TimeRange,
 		Pixels:              req.Pixels,
 		SampleSize:          req.SampleSize,
+		TimeZone:            req.TimeZone,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {

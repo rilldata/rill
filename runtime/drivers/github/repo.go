@@ -115,3 +115,7 @@ func (c *connection) Delete(ctx context.Context, instID, filePath string) error 
 func (c *connection) Sync(ctx context.Context, instID string) error {
 	return c.cloneOrPull(ctx, false)
 }
+
+func (c *connection) Watch(ctx context.Context, replay bool, callback drivers.WatchCallback) error {
+	return fmt.Errorf("cannot watch %s repository is not supported", c.Driver())
+}

@@ -14,6 +14,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	// Load time zone data for time.ParseInLocation
+	_ "time/tzdata"
 )
 
 func (s *Server) ListSuperusers(ctx context.Context, req *adminv1.ListSuperusersRequest) (*adminv1.ListSuperusersResponse, error) {
@@ -114,6 +117,51 @@ func (s *Server) GetCurrentUser(ctx context.Context, req *adminv1.GetCurrentUser
 
 	return &adminv1.GetCurrentUserResponse{
 		User: userToPB(u),
+		Preferences: &adminv1.UserPreferences{
+			TimeZone: &u.PreferenceTimeZone,
+		},
+	}, nil
+}
+
+func (s *Server) UpdateUserPreferences(ctx context.Context, req *adminv1.UpdateUserPreferencesRequest) (*adminv1.UpdateUserPreferencesResponse, error) {
+	claims := auth.GetClaims(ctx)
+
+	// Error if authenticated as anything other than a user
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, fmt.Errorf("not authenticated as a user")
+	}
+
+	if req.Preferences.TimeZone != nil {
+		_, err := time.LoadLocation(*req.Preferences.TimeZone)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid time zone: %s", *req.Preferences.TimeZone))
+		}
+
+		observability.AddRequestAttributes(ctx, attribute.String("preferences_time_zone", *req.Preferences.TimeZone))
+	}
+
+	// Owner is a user
+	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+	if err != nil {
+		return nil, err
+	}
+
+	// Update user quota here
+	updatedUser, err := s.admin.DB.UpdateUser(ctx, user.ID, &database.UpdateUserOptions{
+		DisplayName:         user.DisplayName,
+		PhotoURL:            user.PhotoURL,
+		GithubUsername:      user.GithubUsername,
+		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
+		PreferenceTimeZone:  valOrDefault(req.Preferences.TimeZone, user.PreferenceTimeZone),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.UpdateUserPreferencesResponse{
+		Preferences: &adminv1.UserPreferences{
+			TimeZone: &updatedUser.PreferenceTimeZone,
+		},
 	}, nil
 }
 
@@ -260,6 +308,7 @@ func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpda
 		PhotoURL:            user.PhotoURL,
 		GithubUsername:      user.GithubUsername,
 		QuotaSingleuserOrgs: int(valOrDefault(req.SingleuserOrgs, uint32(user.QuotaSingleuserOrgs))),
+		PreferenceTimeZone:  user.PreferenceTimeZone,
 	})
 	if err != nil {
 		return nil, err
