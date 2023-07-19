@@ -157,8 +157,6 @@
         >
           <div
             class="flex items-baseline gap-x-1"
-            class:ui-copy-disabled={excluded}
-            class:ui-copy-strong={!excluded && selected}
             in:fly={{ duration: 200, y: 4 }}
           >
             {#if showPreviousTimeValue}
@@ -177,8 +175,6 @@
           </div>
           {#if showContext}
             <div
-              class:ui-copy-disabled={excluded}
-              class:ui-copy-strong={!excluded && selected}
               class="text-xs text-gray-500 dark:text-gray-400"
               style:width="44px"
             >
