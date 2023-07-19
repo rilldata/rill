@@ -67,14 +67,12 @@ func TestWatch_create_remove(t *testing.T) {
 		root: dir,
 	}
 
+	eventsChan := make(chan drivers.WatchEvent)
 	allReceivedChannel := make(chan bool)
 	go func() {
 		err := c.Watch(ctx, true, func(event drivers.WatchEvent) error {
 			fmt.Printf("type %s path %s\n", event.Type.String(), event.Path)
-			events = append(events, event)
-			if len(events) == 5 {
-				allReceivedChannel <- true
-			}
+			eventsChan <- event
 			return nil
 		})
 		require.NoError(t, err)
@@ -94,15 +92,21 @@ func TestWatch_create_remove(t *testing.T) {
 	received2 := make(chan bool)
 	go func() {
 		for {
+			select {
+			case a := <-eventsChan:
+				events = append(events, a)
+			}
 			if len(events) == 2 {
 				received2 <- true
+			} else if len(events) == 5 {
+				allReceivedChannel <- true
 				return
 			}
 			time.Sleep(1 * time.Second)
 		}
 	}()
 
-	waitWithSecondsTimeout(received2, 30)
+	waitWithSecondsTimeout(t, received2, 30)
 
 	fullname2 := filepath.Join(subDirName, "file2")
 	f2, err := os.Create(fullname2)
@@ -126,7 +130,7 @@ func TestWatch_create_remove(t *testing.T) {
 	err = os.Remove(fullname2)
 	require.NoError(t, err)
 
-	waitWithSecondsTimeout(allReceivedChannel, 30)
+	waitWithSecondsTimeout(t, allReceivedChannel, 30)
 
 	require.Equal(t, 5, len(events), "%v", events)
 	require.Equal(t, runtimev1.FileEvent_FILE_EVENT_WRITE, events[0].Type)
@@ -145,9 +149,10 @@ func TestWatch_create_remove(t *testing.T) {
 	require.Equal(t, "/subdir/file2", events[4].Path)
 }
 
-func waitWithSecondsTimeout(c <-chan bool, seconds time.Duration) {
+func waitWithSecondsTimeout(t *testing.T, c <-chan bool, seconds time.Duration) {
 	select {
 	case <-c:
 	case <-time.After(seconds * time.Second):
+		t.FailNow()
 	}
 }
