@@ -15,6 +15,7 @@ type RepoStore interface {
 	Driver() string
 	// Root returns directory where artifacts are stored.
 	Root() string
+	CommitHash(ctx context.Context, instID string) (string, error)
 	ListRecursive(ctx context.Context, instID string, glob string) ([]string, error)
 	Get(ctx context.Context, instID string, path string) (string, error)
 	Stat(ctx context.Context, instID string, path string) (*RepoObjectStat, error)
