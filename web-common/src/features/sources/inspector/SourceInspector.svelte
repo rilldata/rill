@@ -125,7 +125,7 @@
 </script>
 
 <div class="table-profile">
-  {#if sourceCatalog}
+  {#if sourceCatalog && !$getSource.isError}
     <!-- summary info -->
     <div class=" p-4 pt-2">
       <LeftRightGrid>
