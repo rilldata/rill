@@ -61,8 +61,10 @@ export interface MetricsExplorerEntity {
   // flag to show/hide comparison based on user preference
   showComparison?: boolean;
 
-  // flag to show/hide the percent of total column
+  // flag to show/hide the percent of total column *in the leaderboard*
   showPercentOfTotal?: boolean;
+  // flag to show/hide the delta change column *in the leaderboard*
+  showDeltaChange?: boolean;
 
   // user selected dimension
   selectedDimensionName?: string;
@@ -325,7 +327,16 @@ const metricViewReducers = {
   displayComparison(name: string, showComparison: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.showComparison = showComparison;
-      if (metricsExplorer.showPercentOfTotal === true && showComparison) {
+      if (showComparison === false) {
+        metricsExplorer.showDeltaChange = false;
+      }
+    });
+  },
+
+  displayDeltaChange(name: string, showDeltaChange: boolean) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.showDeltaChange = showDeltaChange;
+      if (metricsExplorer.showPercentOfTotal === true && showDeltaChange) {
         metricsExplorer.showPercentOfTotal = false;
       }
     });
@@ -334,8 +345,8 @@ const metricViewReducers = {
   displayPercentOfTotal(name: string, showPct: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.showPercentOfTotal = showPct;
-      if (metricsExplorer.showComparison === true && showPct) {
-        metricsExplorer.showComparison = false;
+      if (metricsExplorer.showDeltaChange === true && showPct) {
+        metricsExplorer.showDeltaChange = false;
       }
     });
   },

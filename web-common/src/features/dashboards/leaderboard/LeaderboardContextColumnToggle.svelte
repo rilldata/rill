@@ -29,6 +29,7 @@
     disabledButtons = [];
     if (
       !hasTimeSeries ||
+      !metricsExplorer.showComparison ||
       metricsExplorer.selectedComparisonTimeRange === undefined
     )
       disabledButtons.push("delta");
@@ -37,18 +38,19 @@
 
   let selectedButton: "delta" | "pie" | null = null;
   // NOTE: time comparison takes precedence over percent of total
-  $: selectedButton = metricsExplorer?.showComparison
-    ? "delta"
-    : metricsExplorer?.showPercentOfTotal
-    ? "pie"
-    : null;
+  $: selectedButton =
+    metricsExplorer?.showDeltaChange && metricsExplorer.showComparison
+      ? "delta"
+      : metricsExplorer?.showPercentOfTotal
+      ? "pie"
+      : null;
 
   const handleContextValueButtonGroupClick = (evt) => {
     const value = evt.detail;
     if (value === "delta" && selectedButton == "delta") {
-      metricsExplorerStore.displayComparison(metricViewName, false);
+      metricsExplorerStore.displayDeltaChange(metricViewName, false);
     } else if (value === "delta" && selectedButton != "delta") {
-      metricsExplorerStore.displayComparison(metricViewName, true);
+      metricsExplorerStore.displayDeltaChange(metricViewName, true);
     } else if (value === "pie" && selectedButton == "pie") {
       metricsExplorerStore.displayPercentOfTotal(metricViewName, false);
     } else if (value === "pie" && selectedButton != "pie") {

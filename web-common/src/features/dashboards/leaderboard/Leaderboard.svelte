@@ -173,7 +173,8 @@
     });
 
   // Compose the comparison /toplist query
-  $: showTimeComparison = $dashboardStore?.showComparison;
+  $: showTimeComparison =
+    $dashboardStore?.showDeltaChange && $dashboardStore?.showComparison;
   $: showPercentOfTotal = $dashboardStore?.showPercentOfTotal;
 
   // add all sliced and active values to the include filter.
