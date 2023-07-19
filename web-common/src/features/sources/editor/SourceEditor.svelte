@@ -54,7 +54,7 @@
     <YAMLEditor
       bind:this={editor}
       bind:view
-      content={yaml}
+      content={$sourceStore.clientYAML}
       on:update={handleUpdate}
     />
   </div>

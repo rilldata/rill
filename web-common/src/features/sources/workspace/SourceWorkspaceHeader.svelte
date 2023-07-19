@@ -105,6 +105,10 @@
     }
   };
 
+  function onRevertChanges() {
+    sourceStore.set({ clientYAML: $file.data?.blob || "" });
+  }
+
   const onSaveAndRefreshClick = async (tableName: string) => {
     saveAndRefresh(queryClient, tableName, $sourceStore.clientYAML);
   };
@@ -193,6 +197,13 @@
     </svelte:fragment>
     <svelte:fragment slot="cta">
       <PanelCTA side="right">
+        <Button
+          on:click={() => onRevertChanges()}
+          type="secondary"
+          disabled={!isSourceUnsaved}
+        >
+          Revert changes
+        </Button>
         {#if isSourceUnsaved}
           <Button
             on:click={() => onSaveAndRefreshClick(sourceName)}
