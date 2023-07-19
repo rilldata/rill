@@ -127,4 +127,6 @@ type Connection interface {
 	// a) myDuckDB.AsTransporter(myGCS, myDuckDB)
 	// b) myBeam.AsTransporter(myGCS, myS3) // In the future
 	AsTransporter(from Connection, to Connection) (Transporter, bool)
+
+	AsSQLStore() (SQLStore, bool)
 }

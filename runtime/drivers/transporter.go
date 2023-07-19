@@ -100,6 +100,7 @@ type DatabaseSource struct {
 	Table    string
 	Database string
 	Limit    int
+	Props    map[string]any
 }
 
 var _ Source = &DatabaseSource{}

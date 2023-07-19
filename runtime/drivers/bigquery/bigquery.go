@@ -1,52 +1,62 @@
-package gcs
+package bigquery
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
+	"math/big"
 	"os"
 	"strings"
 
-	"github.com/bmatcuk/doublestar/v4"
+	"cloud.google.com/go/bigquery"
+	"cloud.google.com/go/civil"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
-	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
-	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"go.uber.org/zap"
-	"gocloud.dev/blob/gcsblob"
 	"gocloud.dev/gcp"
-	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-	"google.golang.org/api/googleapi"
+	"google.golang.org/api/option"
 )
-
-const defaultPageSize = 20
 
 var errNoCredentials = errors.New("empty credentials: set `google_application_credentials` env variable")
 
 func init() {
-	drivers.Register("gcs", driver{})
-	drivers.RegisterAsConnector("gcs", driver{})
+	drivers.Register("bigquery", driver{})
+	drivers.RegisterAsConnector("bigquery", driver{})
 }
 
+// spec for duckdb as motherduck connector
 var spec = drivers.Spec{
-	DisplayName:        "Google Cloud Storage",
-	Description:        "Connect to Google Cloud Storage.",
+	DisplayName:        "BigQuery",
+	Description:        "Import data from BigQuery.",
 	ServiceAccountDocs: "https://docs.rilldata.com/deploy/credentials/gcs",
 	SourceProperties: []drivers.PropertySchema{
 		{
-			Key:         "path",
-			DisplayName: "GS URI",
-			Description: "Path to file on the disk.",
-			Placeholder: "gs://bucket-name/path/to/file.csv",
+			Key:         "query",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
-			Hint:        "Glob patterns are supported",
+			DisplayName: "Query",
+			Description: "Query to extract data from BigQuery.",
+			Placeholder: "select * from my_db.my_table;",
 		},
 		{
-			Key:         "gcp.credentials",
+			Key:         "project_id",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "project_id",
+			Description: "Google project ID.",
+			Placeholder: "*detect-project-id*",
+		},
+		{
+			Key:         "enable_storage_api",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "enable_storage_api",
+			Description: "Enable storage API usage for running query. See limitations around storage API usage before enabling this.",
+			Placeholder: "false",
+		},
+		{
+			Key:         "google_application_credentials",
 			DisplayName: "GCP credentials",
 			Description: "GCP credentials inferred from your local environment.",
 			Type:        drivers.InformationalPropertyType,
@@ -121,56 +131,7 @@ func (d driver) Spec() drivers.Spec {
 }
 
 func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
-	b, ok := src.BucketSource()
-	if !ok {
-		return false, fmt.Errorf("require bucket source")
-	}
-
-	conf, err := parseSourceProperties(b.Properties)
-	if err != nil {
-		return false, fmt.Errorf("failed to parse config: %w", err)
-	}
-
-	client := gcp.NewAnonymousHTTPClient(gcp.DefaultTransport())
-	bucketObj, err := gcsblob.OpenBucket(ctx, client, conf.url.Host, nil)
-	if err != nil {
-		return false, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, err)
-	}
-
-	return bucketObj.IsAccessible(ctx)
-}
-
-type sourceProperties struct {
-	Path                  string `key:"path"`
-	GlobMaxTotalSize      int64  `mapstructure:"glob.max_total_size"`
-	GlobMaxObjectsMatched int    `mapstructure:"glob.max_objects_matched"`
-	GlobMaxObjectsListed  int64  `mapstructure:"glob.max_objects_listed"`
-	GlobPageSize          int    `mapstructure:"glob.page_size"`
-	url                   *globutil.URL
-}
-
-func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
-	conf := &sourceProperties{}
-	err := mapstructure.Decode(props, conf)
-	if err != nil {
-		return nil, err
-	}
-	if !doublestar.ValidatePattern(conf.Path) {
-		// ideally this should be validated at much earlier stage
-		// keeping it here to have gcs specific validations
-		return nil, fmt.Errorf("glob pattern %s is invalid", conf.Path)
-	}
-	url, err := globutil.ParseBucketURL(conf.Path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse path %q, %w", conf.Path, err)
-	}
-
-	if url.Scheme != "gs" {
-		return nil, fmt.Errorf("invalid gcs path %q, should start with gs://", conf.Path)
-	}
-
-	conf.url = url
-	return conf, nil
+	return false, fmt.Errorf("todo")
 }
 
 type Connection struct {
@@ -179,6 +140,8 @@ type Connection struct {
 }
 
 var _ drivers.Connection = &Connection{}
+
+var _ drivers.SQLStore = &Connection{}
 
 // Driver implements drivers.Connection.
 func (c *Connection) Driver() string {
@@ -230,6 +193,11 @@ func (c *Connection) MigrationStatus(ctx context.Context) (current, desired int,
 
 // AsObjectStore implements drivers.Connection.
 func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
+	return nil, false
+}
+
+// AsSQLStore implements drivers.Connection.
+func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return c, true
 }
 
@@ -242,71 +210,111 @@ func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
-// AsSQLStore implements drivers.Connection.
-func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
-	return nil, false
+type sourceProperties struct {
+	ProjectID        string `mapstructure:"project_id"`
+	EnableStorageAPI bool   `mapstructure:"enable_storage_api"`
 }
 
-// DownloadFiles returns a file iterator over objects stored in gcs.
-// The credential json is read from config google_application_credentials.
-// Additionally in case `allow_host_credentials` is true it looks for "Application Default Credentials" as well
-func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSource) (drivers.FileIterator, error) {
-	conf, err := parseSourceProperties(source.Properties)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse config: %w", err)
-	}
+func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
+	conf := &sourceProperties{}
+	err := mapstructure.Decode(props, conf)
+	return conf, err
+}
 
-	client, err := c.createClient(ctx)
+func (c *Connection) Exec(ctx context.Context, src *drivers.DatabaseSource) (drivers.RowIterator, error) {
+	props, err := parseSourceProperties(src.Props)
 	if err != nil {
 		return nil, err
 	}
 
-	bucketObj, err := gcsblob.OpenBucket(ctx, client, conf.url.Host, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, err)
-	}
-
-	// prepare fetch configs
-	opts := rillblob.Options{
-		GlobMaxTotalSize:      conf.GlobMaxTotalSize,
-		GlobMaxObjectsMatched: conf.GlobMaxObjectsMatched,
-		GlobMaxObjectsListed:  conf.GlobMaxObjectsListed,
-		GlobPageSize:          conf.GlobPageSize,
-		GlobPattern:           conf.url.Path,
-		ExtractPolicy:         source.ExtractPolicy,
-	}
-
-	iter, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
-	if err != nil {
-		apiError := &googleapi.Error{}
-		// in cases when no creds are passed
-		if errors.As(err, &apiError) && apiError.Code == http.StatusUnauthorized {
-			return nil, drivers.NewPermissionDeniedError(fmt.Sprintf("can't access remote err: %v", apiError))
-		}
-
-		// StatusUnauthorized when incorrect key is passsed
-		// StatusBadRequest when key doesn't have a valid credentials file
-		retrieveError := &oauth2.RetrieveError{}
-		if errors.As(err, &retrieveError) && (retrieveError.Response.StatusCode == http.StatusUnauthorized || retrieveError.Response.StatusCode == http.StatusBadRequest) {
-			return nil, drivers.NewPermissionDeniedError(fmt.Sprintf("can't access remote err: %v", retrieveError))
-		}
-	}
-
-	return iter, err
-}
-
-func (c *Connection) createClient(ctx context.Context) (*gcp.HTTPClient, error) {
 	creds, err := c.resolvedCredentials(ctx)
 	if err != nil {
-		if !errors.Is(err, errNoCredentials) {
+		return nil, err
+	}
+
+	client, err := bigquery.NewClient(ctx, props.ProjectID, option.WithCredentials(creds))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create bigquery client: %w", err)
+	}
+
+	if props.EnableStorageAPI {
+		if err := client.EnableStorageReadClient(ctx); err != nil {
+			return nil, err
+		}
+	}
+
+	q := client.Query(src.Query)
+	it, err := q.Read(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to run query: %w", err)
+	}
+
+	return &rowIterator{bqIter: it}, nil
+}
+
+type rowIterator struct {
+	next    []any
+	nexterr error
+	schema  drivers.Schema
+	bqIter  *bigquery.RowIterator
+}
+
+var _ drivers.RowIterator = &rowIterator{}
+
+func (r *rowIterator) ResultSchema(ctx context.Context) (drivers.Schema, error) {
+	if r.schema != nil {
+		return r.schema, nil
+	}
+
+	// schema is only available after first next call
+	r.next, r.nexterr = r.Next(ctx)
+	if r.nexterr != nil {
+		return nil, r.nexterr
+	}
+
+	r.schema = make([]drivers.Field, len(r.bqIter.Schema))
+	for i, s := range r.bqIter.Schema {
+		dbt, err := typeToDuckDBType(string(s.Type))
+		if err != nil {
 			return nil, err
 		}
 
-		// no credentials set, we try with a anonymous client in case user is trying to access public buckets
-		return gcp.NewAnonymousHTTPClient(gcp.DefaultTransport()), nil
+		r.schema[i] = drivers.Field{Name: s.Name, Type: dbt}
 	}
-	// the token source returned from credentials works for all kind of credentials like serviceAccountKey, credentialsKey etc.
-	return gcp.NewHTTPClient(gcp.DefaultTransport(), gcp.CredentialsTokenSource(creds))
+	return r.schema, nil
+}
+
+func (r *rowIterator) Next(ctx context.Context) ([]any, error) {
+	if r.next != nil || r.nexterr != nil {
+		next, err := r.next, r.nexterr
+		r.next = nil
+		r.nexterr = nil
+		return next, err
+	}
+
+	var row row = make([]any, 0)
+	if err := r.bqIter.Next(&row); err != nil {
+		return nil, err
+	}
+
+	return row, nil
+}
+
+type row []any
+
+var _ bigquery.ValueLoader = &row{}
+
+func (r *row) Load(v []bigquery.Value, s bigquery.Schema) error {
+	m := make([]any, len(v))
+	for i := 0; i < len(v); i++ {
+		if s[i].Type == bigquery.RecordFieldType {
+			return fmt.Errorf("repeated or nested data is not supported")
+		}
+
+		m[i] = convert(v[i])
+	}
+	*r = m
+	return nil
 }
 
 func (c *Connection) resolvedCredentials(ctx context.Context) (*google.Credentials, error) {
@@ -328,4 +336,60 @@ func (c *Connection) resolvedCredentials(ctx context.Context) (*google.Credentia
 		return creds, nil
 	}
 	return nil, errNoCredentials
+}
+
+func typeToDuckDBType(dbt string) (string, error) {
+	switch dbt {
+	case "STRING":
+		return "VARCHAR", nil
+	case "JSON":
+		return "VARCHAR", nil
+	case "INTERVAL":
+		return "INTERVAL", nil
+	case "GEOGRAPHY":
+		return "VARCHAR", nil
+	case "NUMERIC": // TODO :: fix this to correct duckdb type
+		return "VARCHAR", nil
+	case "BIGNUMERIC": // TODO :: fix this to correct duckdb type
+		return "VARCHAR", nil
+	case "DATETIME": // TODO :: fix this to correct duckdb type
+		return "VARCHAR", nil
+	case "TIME": // TODO :: fix this to correct duckdb type
+		return "VARCHAR", nil
+	case "DATE": // TODO :: fix this to correct duckdb type
+		return "VARCHAR", nil
+	case "TIMESTAMP":
+		return "TIMESTAMP", nil
+	case "BOOLEAN":
+		return "BOOLEAN", nil
+	case "FLOAT":
+		return "DOUBLE", nil
+	case "INTEGER":
+		return "INTEGER", nil
+	case "BYTES":
+		return "BLOB", nil
+	case "RECORD":
+		return "", fmt.Errorf("record type not supported")
+	default:
+		panic("not implemeted")
+	}
+}
+
+func convert(v any) any {
+	if v == nil {
+		return nil
+	}
+
+	switch val := v.(type) {
+	case civil.Date:
+		return val.String() // TODO :: convert this to correct duckdb type
+	case civil.Time:
+		return val.String() // TODO :: convert this to correct duckdb type
+	case civil.DateTime:
+		return val.String() // TODO :: convert this to correct duckdb type
+	case big.Rat:
+		return val.String()
+	default:
+		return val
+	}
 }
