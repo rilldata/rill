@@ -68,7 +68,7 @@
   const deltaTooltips = {
     selected: "Hide percent change",
     unselected: "Show percent change",
-    disabled: "To show percent change, select a comparison period above",
+    disabled: "To show percent change, select a comparison time range",
   };
 </script>
 
