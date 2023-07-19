@@ -274,6 +274,37 @@ service AdminService {
     };
   }
 
+  // UpdateUserPreferences updates the preferences for the user
+  rpc UpdateUserPreferences(UpdateUserPreferencesRequest) returns (UpdateUserPreferencesResponse) {
+    option (google.api.http) = {
+      put: "/v1/users/preferences",
+      body: "*"
+    };
+  }
+
+  // ListBookmarks lists all the bookmarks for the user
+  rpc ListBookmarks(ListBookmarksRequest) returns (ListBookmarksResponse) {
+    option (google.api.http) = {get: "/v1/users/bookmarks"};
+  }
+
+  // GetBookmark returns the bookmark for the given user for the given project
+  rpc GetBookmark(GetBookmarkRequest) returns (GetBookmarkResponse) {
+    option (google.api.http) = {get: "/v1/users/bookmarks/{bookmark_id}"};
+  }
+
+  // CreateBookmark creates a bookmark for the given user for the given project
+  rpc CreateBookmark(CreateBookmarkRequest) returns (CreateBookmarkResponse) {
+    option (google.api.http) = {
+      post: "/v1/users/bookmarks",
+      body: "*"
+    };
+  }
+  
+  // RemoveBookmark removes the bookmark for the given user for the given project
+  rpc RemoveBookmark(RemoveBookmarkRequest) returns (RemoveBookmarkResponse) {
+    option (google.api.http) = {delete: "/v1/users/bookmarks/{bookmark_id}"};
+  }
+
 }
 
 message PingRequest {}
@@ -617,6 +648,7 @@ message GetCurrentUserRequest {}
 
 message GetCurrentUserResponse {
   User user = 1;
+  UserPreferences preferences = 2;
 }
 
 message GetUserRequest {
@@ -626,6 +658,53 @@ message GetUserRequest {
 message GetUserResponse {
   User user = 1;
 }
+
+// Message containing user preferences
+message UserPreferences {
+  optional string time_zone = 1;
+}
+
+// Updating user preferences for the current user
+message UpdateUserPreferencesRequest {
+    UserPreferences preferences = 1;
+}
+
+message UpdateUserPreferencesResponse {
+    UserPreferences preferences = 1;
+}
+
+message ListBookmarksRequest {
+    string project_id = 1;
+}
+
+message ListBookmarksResponse {
+    repeated Bookmark bookmarks = 1;
+}
+
+message GetBookmarkRequest {
+    string bookmark_id = 1;
+}
+
+message GetBookmarkResponse {
+    Bookmark bookmark = 1;
+}
+
+message CreateBookmarkRequest {
+  string display_name = 1;
+  bytes data = 2;
+  string dashboard_name = 3;
+  string project_id = 4;
+}
+
+message CreateBookmarkResponse {
+  Bookmark bookmark = 1;
+}
+
+message RemoveBookmarkRequest {
+    string bookmark_id = 1;
+}
+
+message RemoveBookmarkResponse {}
 
 // It can be some string as well so not validating for email here
 message SearchUsersRequest {
@@ -814,4 +893,15 @@ message UserInvite {
 message WhitelistedDomain {
   string domain = 1;
   string role = 2;
+}
+
+message Bookmark {
+  string id = 1;
+  string display_name = 2;
+  bytes data = 3;
+  string dashboard_name = 4;
+  string project_id = 5;
+  string user_id = 6;
+  google.protobuf.Timestamp created_on = 7;
+  google.protobuf.Timestamp updated_on = 8;
 }

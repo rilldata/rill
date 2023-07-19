@@ -80,7 +80,13 @@ function createShowHideStore<Item>(
 
   derivedStore.setAllToNotVisible = () => {
     updateMetricsExplorerByName(metricsViewName, (metricsExplorer) => {
-      metricsExplorer[visibleFieldInStore].clear();
+      // Remove all keys except for the first one
+      const firstKey = get(derivedStore).availableKeys.slice(0, 1);
+      metricsExplorer[visibleFieldInStore] = new Set(firstKey);
+
+      if (fieldInMeta === "measures") {
+        metricsExplorer.leaderboardMeasureName = firstKey[0];
+      }
       metricsExplorer[allVisibleFieldInStore] = false;
     });
   };
@@ -89,6 +95,25 @@ function createShowHideStore<Item>(
     updateMetricsExplorerByName(metricsViewName, (metricsExplorer) => {
       if (metricsExplorer[visibleFieldInStore].has(key)) {
         metricsExplorer[visibleFieldInStore].delete(key);
+
+        /*
+         * If current leaderboard measure is hidden, set the first
+         * visible measure as the current leaderboard measure
+         */
+        if (
+          fieldInMeta === "measures" &&
+          metricsExplorer.leaderboardMeasureName === key
+        ) {
+          /*
+           * To maintain the order of keys, filter out the
+           * non-visible ones from the available keys
+           */
+          const firstVisible = get(derivedStore).availableKeys.find((key) =>
+            metricsExplorer[visibleFieldInStore].has(key)
+          );
+
+          metricsExplorer.leaderboardMeasureName = firstVisible;
+        }
       } else {
         metricsExplorer[visibleFieldInStore].add(key);
       }

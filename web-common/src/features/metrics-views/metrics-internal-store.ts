@@ -71,6 +71,7 @@ export function addQuickMetricsToDashboardYAML(yaml: string, model: V1Model) {
     name: "total_records",
     description: "Total number of records present",
     format_preset: "humanize",
+    valid_percent_of_total: true,
   });
   doc.set("measures", [measureNode]);
 

@@ -141,6 +141,7 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		TimeEnd:         req.TimeEnd,
 		TimeGranularity: req.TimeGranularity,
 		Filter:          req.Filter,
+		TimeZone:        req.TimeZone,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -205,6 +206,7 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 		Sort:            req.Sort,
 		Limit:           &limit,
 		Offset:          req.Offset,
+		TimeZone:        req.TimeZone,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {

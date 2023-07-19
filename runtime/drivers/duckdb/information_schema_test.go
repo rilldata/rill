@@ -11,7 +11,7 @@ import (
 
 func TestInformationSchemaAll(t *testing.T) {
 	conn := prepareConn(t)
-	olap, _ := conn.OLAPStore()
+	olap, _ := conn.AsOLAP()
 
 	err := olap.Exec(context.Background(), &drivers.Statement{
 		Query: "CREATE VIEW model as (select 1, 2, 3)",
@@ -35,7 +35,7 @@ func TestInformationSchemaAll(t *testing.T) {
 
 func TestInformationSchemaLookup(t *testing.T) {
 	conn := prepareConn(t)
-	olap, _ := conn.OLAPStore()
+	olap, _ := conn.AsOLAP()
 	ctx := context.Background()
 
 	err := olap.Exec(ctx, &drivers.Statement{
