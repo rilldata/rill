@@ -607,6 +607,36 @@ paths:
             title: Request message for RuntimeService.UnpackExample
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/files/watch:
+    get:
+      summary: WatchFiles streams repo file update events. It is not supported on all backends.
+      operationId: RuntimeService_WatchFiles
+      responses:
+        "200":
+          description: A successful response.(streaming responses)
+          schema:
+            type: object
+            properties:
+              result:
+                $ref: '#/definitions/v1WatchFilesResponse'
+              error:
+                $ref: '#/definitions/rpcStatus'
+            title: Stream result of v1WatchFilesResponse
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: replay
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
     get:
       summary: Get cardinality for a column
@@ -851,6 +881,8 @@ paths:
               priority:
                 type: integer
                 format: int32
+              timeZone:
+                type: string
             title: Request message for QueryService.MetricsViewRows
       tags:
         - QueryService
@@ -903,6 +935,8 @@ paths:
                 $ref: '#/definitions/v1TimeGrain'
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
+              timeZone:
+                type: string
               priority:
                 type: integer
                 format: int32
@@ -1346,6 +1380,8 @@ paths:
               priority:
                 type: integer
                 format: int32
+              timeZone:
+                type: string
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/topk/tables/{tableName}:
@@ -1801,13 +1837,6 @@ definitions:
       - TYPE_INFORMATIONAL
     default: TYPE_UNSPECIFIED
     title: Type represents the field type
-  ExtractPolicyStrategy:
-    type: string
-    enum:
-      - STRATEGY_UNSPECIFIED
-      - STRATEGY_HEAD
-      - STRATEGY_TAIL
-    default: STRATEGY_UNSPECIFIED
   MetricsViewDimension:
     type: object
     properties:
@@ -1890,21 +1919,11 @@ definitions:
       count:
         type: integer
         format: int32
-  ReconcileErrorCharLocation:
-    type: object
-    properties:
-      line:
-        type: integer
-        format: int64
-      column:
-        type: integer
-        format: int64
-    title: CharLocation is a line and column in a code artifact
   SourceExtractPolicy:
     type: object
     properties:
       rowsStrategy:
-        $ref: '#/definitions/ExtractPolicyStrategy'
+        $ref: '#/definitions/SourceExtractPolicyStrategy'
         title: strategy for selecting rows in a file
       rowsLimitBytes:
         type: string
@@ -1913,13 +1932,20 @@ definitions:
           could in future add: uint64 rows_limit = n;
           limit on data fetched in bytes
       filesStrategy:
-        $ref: '#/definitions/ExtractPolicyStrategy'
+        $ref: '#/definitions/SourceExtractPolicyStrategy'
         title: strategy for selecting files
       filesLimit:
         type: string
         format: uint64
         title: limit on number of files
     title: Extract policy for glob connectors
+  SourceExtractPolicyStrategy:
+    type: string
+    enum:
+      - STRATEGY_UNSPECIFIED
+      - STRATEGY_HEAD
+      - STRATEGY_TAIL
+    default: STRATEGY_UNSPECIFIED
   StructTypeField:
     type: object
     properties:
@@ -2223,6 +2249,8 @@ definitions:
       priority:
         type: integer
         format: int32
+      timeZone:
+        type: string
   v1ColumnTimeSeriesResponse:
     type: object
     properties:
@@ -2369,6 +2397,7 @@ definitions:
         type: string
       description:
         type: string
+    description: Example contains metadata about an example project that is available for unpacking.
   v1ExportFormat:
     type: string
     enum:
@@ -2383,6 +2412,15 @@ definitions:
       downloadUrlPath:
         type: string
     title: Response message for QueryService.Export
+  v1FileEvent:
+    type: string
+    enum:
+      - FILE_EVENT_UNSPECIFIED
+      - FILE_EVENT_WRITE
+      - FILE_EVENT_DELETE
+      - FILE_EVENT_RENAME
+    default: FILE_EVENT_UNSPECIFIED
+    description: FileEvent describes a file change.
   v1GCSGetCredentialsInfoResponse:
     type: object
     properties:
@@ -2739,6 +2777,8 @@ definitions:
       priority:
         type: integer
         format: int32
+      timeZone:
+        type: string
     title: Request message for QueryService.MetricsViewRows
   v1MetricsViewRowsResponse:
     type: object
@@ -2787,6 +2827,8 @@ definitions:
         $ref: '#/definitions/v1TimeGrain'
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
+      timeZone:
+        type: string
       priority:
         type: integer
         format: int32
@@ -3185,16 +3227,26 @@ definitions:
           It only applies to structured code artifacts (i.e. YAML).
           Only applicable if file_path is set.
       startLocation:
-        $ref: '#/definitions/ReconcileErrorCharLocation'
+        $ref: '#/definitions/v1ReconcileErrorCharLocation'
         description: |-
           Start location of the error in the code artifact (if any).
           Only applicable if file_path is set.
       endLocation:
-        $ref: '#/definitions/ReconcileErrorCharLocation'
+        $ref: '#/definitions/v1ReconcileErrorCharLocation'
         description: |-
           End location of the error in the code artifact (if any).
           Only applicable if file_path and start_location is set.
     description: ReconcileError represents an error encountered while running Reconcile.
+  v1ReconcileErrorCharLocation:
+    type: object
+    properties:
+      line:
+        type: integer
+        format: int64
+      column:
+        type: integer
+        format: int64
+    title: CharLocation is a line and column in a code artifact
   v1ReconcileErrorCode:
     type: string
     enum:
@@ -3605,3 +3657,11 @@ definitions:
   v1UnpackExampleResponse:
     type: object
     title: Response message for RuntimeService.UnpackExample
+  v1WatchFilesResponse:
+    type: object
+    properties:
+      event:
+        $ref: '#/definitions/v1FileEvent'
+      path:
+        type: string
+    title: Response message for RuntimeService.WatchFiles

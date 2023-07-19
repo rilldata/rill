@@ -23,6 +23,7 @@ type MetricsViewRows struct {
 	Sort            []*runtimev1.MetricsViewSort `json:"sort,omitempty"`
 	Limit           *int64                       `json:"limit,omitempty"`
 	Offset          int64                        `json:"offset,omitempty"`
+	TimeZone        string                       `json:"time_zone,omitempty"`
 
 	Result *runtimev1.MetricsViewRowsResponse `json:"-"`
 }
@@ -235,7 +236,12 @@ func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsView, dialect
 			panic("timeRollupColumnName is set, but time dimension info is missing")
 		}
 
-		rollup := fmt.Sprintf("date_trunc('%s', %s) AS %s", convertToDateTruncSpecifier(q.TimeGranularity), safeName(mv.TimeDimension), safeName(timeRollupColumnName))
+		timezone := "UTC"
+		if q.TimeZone != "" {
+			timezone = q.TimeZone
+		}
+		args = append([]any{timezone}, args...)
+		rollup := fmt.Sprintf("time_bucket(INTERVAL '%s', %s::TIMESTAMPTZ, ?) AS %s", convertToDuckDBTimeBucketSpecifier(q.TimeGranularity), safeName(mv.TimeDimension), safeName(timeRollupColumnName))
 
 		// Prepend the rollup column
 		selectColumns = append([]string{rollup}, selectColumns...)
