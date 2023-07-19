@@ -82,7 +82,14 @@ path: ${TestDataPath}/non_existent_file.csv`;
     const adImpressionsSource = `type: local_file
 path: ${TestDataPath}/AdImpressions.tsv`;
     await updateCodeEditor(page, adImpressionsSource);
+    const tableRowsPromise = page.waitForResponse(
+      // (We're editing the AdBids source, though the new data is from AdImpressions)
+      new RegExp(`/queries/rows/tables/AdBids`)
+    );
     await page.getByRole("button", { name: "Save and refresh" }).click();
+
+    // Wait for data to be loaded
+    await tableRowsPromise;
 
     // Check that the source data is updated
     // (The column "user_id" exists in AdImpressions, but not in AdBids)
