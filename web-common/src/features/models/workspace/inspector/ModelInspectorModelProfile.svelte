@@ -36,11 +36,7 @@
 
       {#if showColumns}
         <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-          <ColumnProfile
-            key={entry?.model?.sql}
-            objectName={entry?.model?.name}
-            indentLevel={0}
-          />
+          <ColumnProfile objectName={entry?.model?.name} indentLevel={0} />
         </div>
       {/if}
     </div>
