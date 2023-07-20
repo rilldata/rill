@@ -142,7 +142,7 @@ func (c *connection) Sync(ctx context.Context, instID string) error {
 }
 
 // Watch implements drivers.RepoStore.
-func (c *connection) Watch(ctx context.Context, cb drivers.WatchCallback) error {
+func (c *connection) Watch(ctx context.Context, instID string, cb drivers.WatchCallback) error {
 	c.watcherMu.Lock()
 	if c.watcher == nil {
 		w, err := newWatcher(c.root)

@@ -23,7 +23,7 @@ type RepoStore interface {
 	Rename(ctx context.Context, instID string, fromPath string, toPath string) error
 	Delete(ctx context.Context, instID string, path string) error
 	Sync(ctx context.Context, instID string) error
-	Watch(ctx context.Context, cb WatchCallback) error
+	Watch(ctx context.Context, instID string, cb WatchCallback) error
 }
 
 type WatchCallback func(event []WatchEvent)

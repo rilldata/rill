@@ -21,7 +21,7 @@ func TestWatch(t *testing.T) {
 
 	ch := make(chan drivers.WatchEvent, 10)
 	go func() {
-		err := c.Watch(ctx, func(es []drivers.WatchEvent) {
+		err := c.Watch(ctx, "", func(es []drivers.WatchEvent) {
 			for _, e := range es {
 				ch <- e
 			}
@@ -32,16 +32,14 @@ func TestWatch(t *testing.T) {
 	time.Sleep(time.Second) // Ensure Watcher had time to be initialized
 
 	fullname1 := filepath.Join(dir, "file1")
-	err := os.WriteFile(fullname1, []byte("hello"), 0o644)
-	require.NoError(t, err)
+	createFile(t, fullname1)
 
 	subDirName := filepath.Join(dir, "subdir")
-	err = os.Mkdir(subDirName, 0777)
+	err := os.Mkdir(subDirName, 0777)
 	require.NoError(t, err)
 
 	fullname2 := filepath.Join(subDirName, "file2")
-	err = os.WriteFile(fullname2, []byte("hello"), 0o644)
-	require.NoError(t, err)
+	createFile(t, fullname2)
 
 	time.Sleep(2 * time.Second) // Ensure Watcher picks up events
 
@@ -71,6 +69,7 @@ func TestWatch(t *testing.T) {
 
 	require.Equal(t, runtimev1.FileEvent_FILE_EVENT_WRITE, events[1].Type)
 	require.Equal(t, "/subdir", events[1].Path)
+	require.Equal(t, true, events[1].Dir)
 
 	require.Equal(t, runtimev1.FileEvent_FILE_EVENT_WRITE, events[2].Type)
 	require.Equal(t, "/subdir/file2", events[2].Path)
@@ -80,4 +79,11 @@ func TestWatch(t *testing.T) {
 
 	require.Equal(t, runtimev1.FileEvent_FILE_EVENT_DELETE, events[4].Type)
 	require.Equal(t, "/subdir/file2", events[4].Path)
+}
+
+func createFile(t *testing.T, fullname string) {
+	f, err := os.Create(fullname)
+	require.NoError(t, err)
+	err = f.Close()
+	require.NoError(t, err)
 }

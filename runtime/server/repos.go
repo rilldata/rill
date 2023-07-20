@@ -74,7 +74,7 @@ func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, ss runtimev1.Runti
 		}
 	}
 
-	return repo.Watch(ss.Context(), func(events []drivers.WatchEvent) {
+	return repo.Watch(ss.Context(), "", func(events []drivers.WatchEvent) {
 		for _, event := range events {
 			if !event.Dir {
 				err := ss.Send(&runtimev1.WatchFilesResponse{

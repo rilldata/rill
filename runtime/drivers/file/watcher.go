@@ -139,29 +139,34 @@ func (w *watcher) runInner() error {
 				return nil
 			}
 
+			we := drivers.WatchEvent{}
+			if e.Has(fsnotify.Create) || e.Has(fsnotify.Write) {
+				we.Type = runtimev1.FileEvent_FILE_EVENT_WRITE
+			} else if e.Has(fsnotify.Remove) || e.Has(fsnotify.Rename) {
+				we.Type = runtimev1.FileEvent_FILE_EVENT_DELETE
+			} else {
+				continue
+			}
+
 			path, err := filepath.Rel(w.root, e.Name)
 			if err != nil {
 				return err
 			}
 			path = filepath.Join("/", path)
-			we := drivers.WatchEvent{Path: path}
-
-			if e.Has(fsnotify.Create) || e.Has(fsnotify.Write) {
-				we.Type = runtimev1.FileEvent_FILE_EVENT_WRITE
-			} else if e.Has(fsnotify.Remove) || e.Has(fsnotify.Rename) {
-				we.Type = runtimev1.FileEvent_FILE_EVENT_DELETE
-			}
-
-			w.buffer = append(w.buffer, we)
+			we.Path = path
 
 			if e.Has(fsnotify.Create) {
 				info, err := os.Stat(e.Name)
 				we.Dir = err == nil && info.IsDir()
-				if we.Dir {
-					err = w.addDir(e.Name, true)
-					if err != nil {
-						return err
-					}
+			}
+
+			w.buffer = append(w.buffer, we)
+
+			// Calling addDir after appending to w.buffer, to sequence events correctly
+			if we.Dir && e.Has(fsnotify.Create) {
+				err = w.addDir(e.Name, true)
+				if err != nil {
+					return err
 				}
 			}
 
