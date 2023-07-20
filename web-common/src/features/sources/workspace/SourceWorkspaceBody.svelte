@@ -3,10 +3,7 @@
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import HorizontalSplitter from "../../../layout/workspace/HorizontalSplitter.svelte";
-  import {
-    createRuntimeServiceGetCatalogEntry,
-    createRuntimeServiceGetFile,
-  } from "../../../runtime-client";
+  import { createRuntimeServiceGetFile } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
   import {
@@ -18,12 +15,6 @@
   import ErrorPane from "../errors/ErrorPane.svelte";
 
   export let sourceName: string;
-
-  $: getSource = createRuntimeServiceGetCatalogEntry(
-    $runtime?.instanceId,
-    sourceName
-  );
-  $: isValidSource = $getSource?.data?.entry;
 
   $: fileQuery = createRuntimeServiceGetFile(
     $runtime.instanceId,
