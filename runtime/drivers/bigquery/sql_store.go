@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"strings"
 
 	"cloud.google.com/go/bigquery"
 	"cloud.google.com/go/civil"
@@ -19,21 +20,34 @@ func (c *Connection) Exec(ctx context.Context, src *drivers.DatabaseSource) (dri
 
 	client, err := c.createClient(ctx, props)
 	if err != nil {
+		if strings.Contains(err.Error(), "unable to detect projectID") {
+			return nil, fmt.Errorf("projectID not detected in credentials. Please set project ID")
+		}
 		return nil, fmt.Errorf("failed to create bigquery client: %w", err)
 	}
 
-	if props.EnableStorageAPI {
-		if err := client.EnableStorageReadClient(ctx); err != nil {
-			client.Close()
-			return nil, err
-		}
+	if err := client.EnableStorageReadClient(ctx); err != nil {
+		client.Close()
+		return nil, err
 	}
 
 	q := client.Query(src.Query)
 	it, err := q.Read(ctx)
+	if err != nil && !strings.Contains(err.Error(), "Syntax error") {
+		// the query results are always cached in a temporary table that storage api can use
+		// there are some exceptions when results aren't cached
+		// so we also try without storage api
+		client, err = c.createClient(ctx, props)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create bigquery client: %w", err)
+		}
+
+		q := client.Query(src.Query)
+		it, err = q.Read(ctx)
+	}
 	if err != nil {
 		client.Close()
-		return nil, fmt.Errorf("failed to run query: %w", err)
+		return nil, err
 	}
 
 	return &rowIterator{
@@ -110,7 +124,7 @@ var _ bigquery.ValueLoader = &row{}
 func (r *row) Load(v []bigquery.Value, s bigquery.Schema) error {
 	m := make([]any, len(v))
 	for i := 0; i < len(v); i++ {
-		if s[i].Type == bigquery.RecordFieldType {
+		if s[i].Type == bigquery.RecordFieldType || s[i].Repeated {
 			return fmt.Errorf("repeated or nested data is not supported")
 		}
 

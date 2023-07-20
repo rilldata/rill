@@ -13,7 +13,7 @@ type Schema []Field
 
 // SQLStore is implemented by drivers capable of running sql queries and generating an iterator to consume results.
 // In future the results can be produced in other formats like arrow as well.
-// This is kept differnt from OLAP store since results can be produced in other formats in future and drivers like gcs, athena may not produce sql.Rows.
+// May be call it DataWarehouse to differentiate from OLAP or postgres?
 type SQLStore interface {
 	Exec(ctx context.Context, src *DatabaseSource) (RowIterator, error)
 }

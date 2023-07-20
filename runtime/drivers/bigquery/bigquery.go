@@ -3,7 +3,6 @@ package bigquery
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"strings"
 
@@ -11,13 +10,10 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/gcputil"
 	"go.uber.org/zap"
-	"gocloud.dev/gcp"
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
 )
-
-var errNoCredentials = errors.New("empty credentials: set `google_application_credentials` env variable")
 
 func init() {
 	drivers.Register("bigquery", driver{})
@@ -43,8 +39,8 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Project ID",
 			Description: "Google project ID.",
-			Required:    true,
-			Placeholder: "projectID",
+			Placeholder: "*detect-project-id*",
+			Hint:        "Rill will use the project ID from your local credentials, unless set here. Set this if no project ID configured in credentials.",
 		},
 		{
 			Key:         "google_application_credentials",
@@ -122,23 +118,8 @@ func (d driver) Spec() drivers.Spec {
 }
 
 func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
-	c, err := d.Open(nil, logger)
-	if err != nil {
-		return false, err
-	}
-
-	dbsrc, ok := src.DatabaseSource()
-	if !ok {
-		return false, fmt.Errorf("require database source")
-	}
-	iter, err := c.(*Connection).Exec(ctx, dbsrc)
-	if err != nil {
-		return false, err
-	}
-	defer iter.Close()
-
-	_, err = iter.ResultSchema(ctx)
-	return err == nil, err
+	// gcp provides public access to the data via a project
+	return false, nil
 }
 
 type Connection struct {
@@ -217,46 +198,28 @@ func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 }
 
 type sourceProperties struct {
-	ProjectID        string `mapstructure:"project_id"`
-	EnableStorageAPI bool   `mapstructure:"enable_storage_api"`
+	ProjectID string `mapstructure:"project_id"`
 }
 
 func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 	conf := &sourceProperties{}
 	err := mapstructure.Decode(props, conf)
+	if err != nil {
+		return nil, err
+	}
+	if conf.ProjectID == "" {
+		conf.ProjectID = bigquery.DetectProjectID
+	}
 	return conf, err
 }
 
-
 func (c *Connection) createClient(ctx context.Context, props *sourceProperties) (*bigquery.Client, error) {
-	creds, err := c.resolvedCredentials(ctx)
+	creds, err := gcputil.Credentials(ctx, c.config.SecretJSON, c.config.AllowHostAccess)
 	if err != nil {
-		if !errors.Is(err, errNoCredentials) {
+		if !errors.Is(err, gcputil.ErrNoCredentials) {
 			return nil, err
 		}
-
 		return bigquery.NewClient(ctx, props.ProjectID)
 	}
 	return bigquery.NewClient(ctx, props.ProjectID, option.WithCredentials(creds))
-}
-
-func (c *Connection) resolvedCredentials(ctx context.Context) (*google.Credentials, error) {
-	if c.config.SecretJSON != "" {
-		// google_application_credentials is set, use credentials from json string provided by user
-		return google.CredentialsFromJSON(ctx, []byte(c.config.SecretJSON), "https://www.googleapis.com/auth/cloud-platform")
-	}
-	// google_application_credentials is not set
-	if c.config.AllowHostAccess {
-		// use host credentials
-		creds, err := gcp.DefaultCredentials(ctx)
-		if err != nil {
-			if strings.Contains(err.Error(), "google: could not find default credentials") {
-				return nil, errNoCredentials
-			}
-
-			return nil, err
-		}
-		return creds, nil
-	}
-	return nil, errNoCredentials
 }
