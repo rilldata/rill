@@ -67,9 +67,7 @@
       {#if !reconciliationErrors || reconciliationErrors.length === 0}
         {#key sourceName}
           <div
-            style="{isSourceUnsaved ? 'filter: brightness(.9);' : ''}
-            transition: filter 200ms;
-          "
+            class="{isSourceUnsaved && 'brightness-90'} transition duration-200"
           >
             <ConnectedPreviewTable objectName={sourceName} />
           </div>
