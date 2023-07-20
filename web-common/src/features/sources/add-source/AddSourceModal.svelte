@@ -21,7 +21,14 @@
 
   let selectedConnector: V1Connector;
 
-  const TAB_ORDER = ["gcs", "s3", "https", "local_file", "motherduck", "bigquery"];
+  const TAB_ORDER = [
+    "gcs",
+    "s3",
+    "https",
+    "local_file",
+    "motherduck",
+    "bigquery",
+  ];
 
   const connectors = createRuntimeServiceListConnectors({
     query: {

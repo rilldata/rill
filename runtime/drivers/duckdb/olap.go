@@ -171,12 +171,7 @@ func (c *connection) EstimateSize() (int64, bool) {
 	return fileSize(paths), true
 }
 
-func (c *connection) WithRaw(ctx context.Context, priority int, fn drivers.RawFunc) error {
-	// Check not nested
-	if connFromContext(ctx) != nil {
-		panic("nested WithConnection")
-	}
-
+func (c *connection) WithRaw(ctx context.Context, priority int, fn drivers.WithRawFunc) error {
 	// Acquire connection
 	conn, release, err := c.acquireOLAPConn(ctx, priority)
 	if err != nil {

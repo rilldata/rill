@@ -128,5 +128,6 @@ type Connection interface {
 	// b) myBeam.AsTransporter(myGCS, myS3) // In the future
 	AsTransporter(from Connection, to Connection) (Transporter, bool)
 
+	// AsSQLStore returns a SQLStore if the driver can serve as such, otherwise returns false.
 	AsSQLStore() (SQLStore, bool)
 }

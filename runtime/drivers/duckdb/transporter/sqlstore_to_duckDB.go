@@ -30,13 +30,12 @@ func NewSQLStoreToDuckDB(from drivers.SQLStore, to drivers.OLAPStore, logger *za
 	}
 }
 
-// TODO :: should it run count from user_query to set target in progress ?
 func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, sink drivers.Sink, opts *drivers.TransferOpts, p drivers.Progress) error {
 	src, ok := source.DatabaseSource()
 	if !ok {
 		return fmt.Errorf("type of source should `drivers.DatabaseSource`")
 	}
-	fSink, ok := sink.DatabaseSink()
+	dbSink, ok := sink.DatabaseSink()
 	if !ok {
 		return fmt.Errorf("type of source should `drivers.DatabaseSink`")
 	}
@@ -52,8 +51,12 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, 
 		return err
 	}
 
+	if total, ok := iter.Size(drivers.ProgressUnitRecord); ok {
+		s.logger.Info("records to be ingested", zap.Uint64("rows", total))
+		p.Target(int64(total), drivers.ProgressUnitRecord)
+	}
 	// create table
-	if err := s.to.Exec(ctx, &drivers.Statement{Query: createTableQuery(schema, fSink.Table), Priority: 1}); err != nil {
+	if err := s.to.Exec(ctx, &drivers.Statement{Query: createTableQuery(schema, dbSink.Table), Priority: 1}); err != nil {
 		return err
 	}
 
@@ -71,12 +74,13 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, 
 			return err
 		}
 
-		a, err := duckdb.NewAppenderFromConn(conn, "", fSink.Table)
+		a, err := duckdb.NewAppenderFromConn(conn, "", dbSink.Table)
 		if err != nil {
 			return err
 		}
 		defer a.Close()
 
+		// TODO :: may be add metric for length of buffer to determine an optimal capacity?
 		ch := make(chan result, 1000)
 		go func() {
 			for {
@@ -99,6 +103,7 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, 
 
 		for num := 0; ; num++ {
 			if num == _batchSize {
+				p.Observe(_batchSize, drivers.ProgressUnitRecord)
 				num = 0
 				if err := a.Flush(); err != nil {
 					return err
@@ -126,10 +131,10 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, 
 }
 
 func createTableQuery(schema drivers.Schema, name string) string {
-	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s(", name)
+	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s(", safeName(name))
 	for i, s := range schema {
 		i++
-		query += fmt.Sprintf("%s %s", s.Name, s.Type)
+		query += fmt.Sprintf("%s %s", safeName(s.Name), s.Type)
 		if i != len(schema) {
 			query += ","
 		}
