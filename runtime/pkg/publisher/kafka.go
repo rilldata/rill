@@ -1,4 +1,4 @@
-package emitter
+package publisher
 
 import (
 	"fmt"
@@ -30,7 +30,7 @@ func NewKafkaSink(brokers, topic string, logger *zap.Logger) (*KafkaSink, error)
 // Sink doesn't wait till all events are delivered to Kafka
 func (s *KafkaSink) Sink(events []Event) {
 	for _, event := range events {
-		message, err := convertEventToBytes(event)
+		message, err := event.Marshal()
 		if err != nil {
 			s.logger.Debug(fmt.Sprintf("could not serialize event: %v", event), zap.Error(err))
 			continue

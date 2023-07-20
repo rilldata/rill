@@ -981,7 +981,7 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	// no validation rules for IngestionLimitBytes
 
-	// no validation rules for Labels
+	// no validation rules for Annotations
 
 	if len(errors) > 0 {
 		return CreateInstanceRequestMultiError(errors)

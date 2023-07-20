@@ -2092,7 +2092,7 @@ definitions:
       ingestionLimitBytes:
         type: string
         format: int64
-      labels:
+      annotations:
         type: object
         additionalProperties:
           type: string

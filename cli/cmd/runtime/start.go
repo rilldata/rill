@@ -11,9 +11,9 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/pkg/emitter"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/publisher"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server"
 	"github.com/spf13/cobra"
@@ -58,17 +58,15 @@ type Config struct {
 	// Redis server address host:port
 	RedisURL string `default:"" split_words:"true"`
 	// Sink type of emitter: noop, console, kafka, gcs
-	EmitterSinkType string `default:"console" split_words:"true"`
+	EmitterSinkType string `default:"" split_words:"true"`
 	// Sink period of an emitter in millis
 	EmitterSinkPeriod int `default:"1000" split_words:"true"`
 	// Max queue size of an emitter
-	EmitterMaxQueueSize int `default:"1000" split_words:"true"`
+	EmitterMaxBufferSize int `default:"1000" split_words:"true"`
 	// Kafka brokers of an emitter's sink
 	EmitterSinkKafkaBrokers string `default:"" split_words:"true"`
 	// Kafka topic of an emitter's sink
 	EmitterSinkKafkaTopic string `default:"" split_words:"true"`
-	// GCS bucket of an emitter's sink
-	EmitterSinkGCSBucket string `default:"" split_words:"true"`
 }
 
 // StartCmd starts a stand-alone runtime server. It only allows configuration using environment variables.
@@ -147,29 +145,24 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				limiter = ratelimit.NewRedis(redis.NewClient(opts))
 			}
 
-			var sink emitter.Sink
+			var sink publisher.Sink
 			switch conf.EmitterSinkType {
-			case "noop":
-				sink = emitter.NewNoopSink()
+			case "":
+				sink = publisher.NewNoopSink()
 			case "kafka":
-				sink, err = emitter.NewKafkaSink(conf.EmitterSinkKafkaBrokers, conf.EmitterSinkKafkaTopic, logger)
+				sink, err = publisher.NewKafkaSink(conf.EmitterSinkKafkaBrokers, conf.EmitterSinkKafkaTopic, logger)
 				if err != nil {
 					logger.Fatal("failed to create a kafka sink", zap.Error(err))
-				}
-			case "gcs":
-				sink, err = emitter.NewGCSSink(conf.EmitterSinkGCSBucket, logger)
-				if err != nil {
-					logger.Fatal("failed to create a gcs sink", zap.Error(err))
 				}
 			default:
 				logger.Fatal(fmt.Sprintf("unknown usage sink type: %s", conf.EmitterSinkType))
 			}
-			c := emitter.Conf{
+			c := publisher.Options{
 				Sink:       sink,
 				SinkPeriod: time.Duration(conf.EmitterSinkPeriod) * time.Millisecond,
-				QueueSize:  conf.EmitterMaxQueueSize,
+				BufferSize: conf.EmitterMaxBufferSize,
 			}
-			emitter.Set(emitter.New(c))
+			publisher.Set(publisher.New(c))
 
 			// Init server
 			srvOpts := &server.Options{

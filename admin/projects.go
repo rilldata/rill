@@ -69,9 +69,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 	// Start using original context again since transaction in txCtx is done.
 	depl, err := s.createDeployment(ctx, &createDeploymentOptions{
 		OrganizationID:       proj.OrganizationID,
-		OrganizationName:     org.Name,
 		ProjectID:            proj.ID,
-		ProjectName:          proj.Name,
 		Region:               proj.Region,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
@@ -146,7 +144,6 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions) (*database.Project, error) {
 	if proj.Region != opts.Region || proj.ProdSlots != opts.ProdSlots { // require new deployments
 		s.logger.Info("recreating deployment", observability.ZapCtx(ctx))
-
 		var oldDepl *database.Deployment
 		var err error
 		if proj.ProdDeploymentID != nil {
@@ -156,16 +153,9 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 			}
 		}
 
-		org, err := s.DB.FindOrganization(ctx, proj.OrganizationID)
-		if err != nil {
-			return nil, err
-		}
-
 		depl, err := s.createDeployment(ctx, &createDeploymentOptions{
 			OrganizationID:       proj.OrganizationID,
-			OrganizationName:     org.Name,
 			ProjectID:            proj.ID,
-			ProjectName:          proj.Name,
 			Subpath:              proj.Subpath,
 			ProdOLAPDriver:       proj.ProdOLAPDriver,
 			ProdOLAPDSN:          proj.ProdOLAPDSN,
@@ -258,17 +248,10 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, proj *database.Pro
 
 // TriggerRedeploy de-provisions and re-provisions a project's prod deployment.
 func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, prevDepl *database.Deployment) error {
-	org, err := s.DB.FindOrganization(ctx, proj.OrganizationID)
-	if err != nil {
-		return err
-	}
-
 	// Provision new deployment
 	newDepl, err := s.createDeployment(ctx, &createDeploymentOptions{
 		OrganizationID:       proj.OrganizationID,
-		OrganizationName:     org.Name,
 		ProjectID:            proj.ID,
-		ProjectName:          proj.Name,
 		Region:               proj.Region,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,

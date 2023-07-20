@@ -7,8 +7,8 @@ import (
 	"strconv"
 
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/emitter"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/publisher"
 	"go.uber.org/zap"
 )
 
@@ -18,14 +18,14 @@ func (r *Runtime) FindInstances(ctx context.Context) ([]*drivers.Instance, error
 
 func (r *Runtime) FindInstance(ctx context.Context, instanceID string) (*drivers.Instance, error) {
 	instance, err := r.Registry().FindInstance(ctx, instanceID)
-	emitter.AddDimsToContext(ctx, *emitter.String("instance_id", instanceID))
+	publisher.WithDims(ctx, *publisher.String("instance_id", instanceID))
 
 	if err != nil && instance != nil {
-		var usageDims []emitter.Dim
-		for k, v := range instance.Labels {
-			usageDims = append(usageDims, *emitter.String(k, v))
+		var usageDims []publisher.Dim
+		for k, v := range instance.Annotations {
+			usageDims = append(usageDims, *publisher.String(k, v))
 		}
-		emitter.AddDimsToContext(ctx, usageDims...)
+		publisher.WithDims(ctx, usageDims...)
 	}
 	return instance, err
 }

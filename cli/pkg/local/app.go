@@ -20,9 +20,9 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/emitter"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/publisher"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	runtimeserver "github.com/rilldata/rill/runtime/server"
 	"go.uber.org/zap"
@@ -42,11 +42,9 @@ const (
 
 // Default instance config on local.
 const (
-	DefaultInstanceID     = "default"
-	DefaultProjectID      = "defaultProject"
-	DefaultOrganizationID = "defaultOrganization"
-	DefaultOLAPDriver     = "duckdb"
-	DefaultOLAPDSN        = "stage.db"
+	DefaultInstanceID = "default"
+	DefaultOLAPDriver = "duckdb"
+	DefaultOLAPDSN    = "stage.db"
 )
 
 // App encapsulates the logic associated with configuring and running the UI and the runtime in a local environment.
@@ -113,11 +111,8 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 
 	// Create instance with its repo set to the project directory
 	inst := &drivers.Instance{
-		ID: DefaultInstanceID,
-		Labels: map[string]string{
-			"organization_id": DefaultOrganizationID,
-			"project_id":      DefaultProjectID,
-		},
+		ID:           DefaultInstanceID,
+		Annotations:  map[string]string{},
 		OLAPDriver:   olapDriver,
 		OLAPDSN:      olapDSN,
 		RepoDriver:   "file",
@@ -265,10 +260,10 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		return err
 	}
 
-	emitter.Set(emitter.New(emitter.Conf{
-		Sink:       emitter.NewNoopSink(),
+	publisher.Set(publisher.New(publisher.Options{
+		Sink:       publisher.NewNoopSink(),
 		SinkPeriod: time.Duration(100) * time.Millisecond,
-		QueueSize:  1000,
+		BufferSize: 1000,
 	}))
 
 	// Start the gRPC server

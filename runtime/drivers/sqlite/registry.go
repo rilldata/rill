@@ -31,7 +31,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 	// Override ctx because sqlite sometimes segfaults on context cancellation
 	ctx := context.Background()
 
-	sql := fmt.Sprintf("SELECT id, olap_driver, olap_dsn, repo_driver, repo_dsn, embed_catalog, created_on, updated_on, variables, project_variables, ingestion_limit_bytes, labels FROM instances %s ORDER BY id", whereClause)
+	sql := fmt.Sprintf("SELECT id, olap_driver, olap_dsn, repo_driver, repo_dsn, embed_catalog, created_on, updated_on, variables, project_variables, ingestion_limit_bytes, annotations FROM instances %s ORDER BY id", whereClause)
 
 	rows, err := c.db.QueryxContext(ctx, sql, args...)
 	if err != nil {
@@ -42,9 +42,9 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 	var res []*drivers.Instance
 	for rows.Next() {
 		// sqlite doesn't support maps need to read as bytes and convert to map
-		var variables, projectVariables, labels []byte
+		var variables, projectVariables, annotations []byte
 		i := &drivers.Instance{}
-		err := rows.Scan(&i.ID, &i.OLAPDriver, &i.OLAPDSN, &i.RepoDriver, &i.RepoDSN, &i.EmbedCatalog, &i.CreatedOn, &i.UpdatedOn, &variables, &projectVariables, &i.IngestionLimitBytes, &labels)
+		err := rows.Scan(&i.ID, &i.OLAPDriver, &i.OLAPDSN, &i.RepoDriver, &i.RepoDSN, &i.EmbedCatalog, &i.CreatedOn, &i.UpdatedOn, &variables, &projectVariables, &i.IngestionLimitBytes, &annotations)
 		if err != nil {
 			return nil, err
 		}
@@ -58,7 +58,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			return nil, err
 		}
 
-		i.Labels, err = mapFromJSON(labels)
+		i.Annotations, err = mapFromJSON(annotations)
 		if err != nil {
 			return nil, err
 		}
@@ -89,7 +89,7 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		return err
 	}
 
-	labels, err := mapToJSON(inst.Labels)
+	annotations, err := mapToJSON(inst.Annotations)
 	if err != nil {
 		return err
 	}
@@ -97,7 +97,7 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
-		"INSERT INTO instances(id, olap_driver, olap_dsn, repo_driver, repo_dsn, embed_catalog, created_on, updated_on, variables, project_variables, ingestion_limit_bytes, labels) "+
+		"INSERT INTO instances(id, olap_driver, olap_dsn, repo_driver, repo_dsn, embed_catalog, created_on, updated_on, variables, project_variables, ingestion_limit_bytes, annotations) "+
 			"VALUES ($1, $2, $3, $4, $5, $6, $7, $7, $8, $9, $10, $11)",
 		inst.ID,
 		inst.OLAPDriver,
@@ -109,7 +109,7 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		variables,
 		projectVariables,
 		inst.IngestionLimitBytes,
-		labels,
+		annotations,
 	)
 	if err != nil {
 		return err
@@ -137,7 +137,7 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 		return err
 	}
 
-	labels, err := mapToJSON(inst.Labels)
+	annotations, err := mapToJSON(inst.Annotations)
 	if err != nil {
 		return err
 	}
@@ -145,7 +145,7 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
-		"UPDATE instances SET olap_driver = $2, olap_dsn = $3, repo_driver = $4, repo_dsn = $5, embed_catalog = $6, variables = $7, project_variables = $8, updated_on = $9, ingestion_limit_bytes = $10, labels = $11 "+
+		"UPDATE instances SET olap_driver = $2, olap_dsn = $3, repo_driver = $4, repo_dsn = $5, embed_catalog = $6, variables = $7, project_variables = $8, updated_on = $9, ingestion_limit_bytes = $10, annotations = $11 "+
 			"WHERE id = $1",
 		inst.ID,
 		inst.OLAPDriver,
@@ -157,7 +157,7 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 		projVariables,
 		now,
 		inst.IngestionLimitBytes,
-		labels,
+		annotations,
 	)
 	if err != nil {
 		return err

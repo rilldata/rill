@@ -1,4 +1,4 @@
-package emitter
+package publisher
 
 import (
 	"sync/atomic"

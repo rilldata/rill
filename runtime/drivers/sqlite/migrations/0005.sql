@@ -1,1 +1,1 @@
-ALTER TABLE instances ADD COLUMN labels TEXT;
+ALTER TABLE instances ADD COLUMN annotations TEXT NOT NULL DEFAULT '';

@@ -1,7 +1,6 @@
-package emitter
+package publisher
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
@@ -9,7 +8,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Sink is used by a Client to sink collected Event-s.
+// Sink is used by a Client to flush collected Event-s.
 type Sink interface {
 	Sink(events []Event)
 	Close() error
@@ -65,7 +64,7 @@ func (s *FileSink) Sink(events []Event) {
 	defer s.mu.Unlock()
 
 	for _, event := range events {
-		data, err := convertEventToBytes(event)
+		data, err := event.Marshal()
 		if err != nil {
 			s.logger.Debug(fmt.Sprintf("could not serialize event: %v", event), zap.Error(err))
 		}
@@ -83,21 +82,4 @@ func (s *FileSink) Sink(events []Event) {
 
 func (s *FileSink) Close() error {
 	return s.file.Close()
-}
-
-func convertEventToBytes(event Event) ([]byte, error) {
-	// Create a map to hold the flattened event structure.
-	flattened := make(map[string]interface{})
-
-	// Add the non-dims fields.
-	flattened["Time"] = event.Time
-	flattened["Name"] = event.Name
-	flattened["Value"] = event.Value
-
-	// Iterate over the dims slice and add each dim to the map.
-	for _, dim := range event.Dims {
-		flattened[dim.Name] = dim.Value
-	}
-
-	return json.Marshal(flattened)
 }
