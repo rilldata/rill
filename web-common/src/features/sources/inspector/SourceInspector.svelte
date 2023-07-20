@@ -15,7 +15,6 @@
     createQueryServiceTableCardinality,
     createQueryServiceTableColumns,
     createRuntimeServiceGetCatalogEntry,
-    createRuntimeServiceGetFile,
     V1CatalogEntry,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
@@ -24,8 +23,6 @@
   import { GridCell, LeftRightGrid } from "../../../components/grid";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
-  import { EntityType } from "../../entity-management/types";
   import { useIsSourceUnsaved } from "../selectors";
   import { useSourceStore } from "../sources-store";
 
@@ -128,17 +125,14 @@
     nullPercentage = formatBigNumberPercentage(totalNulls / totalCells);
   }
 
-  // Include `$file.dataUpdatedAt` and `clientYAML` in the reactive statement to recompute
-  // the `isSourceUnsaved` value whenever they change
-  $: file = createRuntimeServiceGetFile(
+  const sourceStore = useSourceStore(sourceName);
+
+  $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,
-    getFilePathFromNameAndType(sourceName, EntityType.Table)
+    sourceName,
+    $sourceStore.clientYAML
   );
-  const sourceStore = useSourceStore();
-  $: isSourceUnsaved =
-    $file.dataUpdatedAt &&
-    $sourceStore.clientYAML &&
-    useIsSourceUnsaved($runtime.instanceId, sourceName);
+  $: isSourceUnsaved = $isSourceUnsavedQuery.data;
 </script>
 
 <div

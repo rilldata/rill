@@ -15,7 +15,7 @@
   let editor: YAMLEditor;
   let view: EditorView;
 
-  const sourceStore = useSourceStore();
+  const sourceStore = useSourceStore(sourceName);
 
   function handleUpdate(e: CustomEvent<{ content: string }>) {
     // Update the client-side store

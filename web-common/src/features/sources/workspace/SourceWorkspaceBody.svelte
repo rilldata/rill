@@ -18,7 +18,7 @@
 
   export let sourceName: string;
 
-  const sourceStore = useSourceStore();
+  const sourceStore = useSourceStore(sourceName);
 
   $: file = createRuntimeServiceGetFile(
     $runtime.instanceId,
@@ -45,12 +45,12 @@
     "rill:app:output-visibility-tween"
   ) as Writable<number>;
 
-  // Include `$file.dataUpdatedAt` and `clientYAML` in the reactive statement to recompute
-  // the `isSourceUnsaved` value whenever they change
-  $: isSourceUnsaved =
-    $file.dataUpdatedAt &&
-    $sourceStore.clientYAML &&
-    useIsSourceUnsaved($runtime.instanceId, sourceName);
+  $: isSourceUnsavedQuery = useIsSourceUnsaved(
+    $runtime.instanceId,
+    sourceName,
+    $sourceStore.clientYAML
+  );
+  $: isSourceUnsaved = $isSourceUnsavedQuery.data;
 </script>
 
 <div class="h-full pb-3">

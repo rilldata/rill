@@ -12,14 +12,14 @@
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import {
-    V1CatalogEntry,
-    V1Source,
     createRuntimeServiceGetCatalogEntry,
     createRuntimeServiceGetFile,
     createRuntimeServicePutFileAndReconcile,
     createRuntimeServiceRefreshAndReconcile,
     createRuntimeServiceRenameFileAndReconcile,
     getRuntimeServiceGetCatalogEntryQueryKey,
+    V1CatalogEntry,
+    V1Source,
   } from "@rilldata/web-common/runtime-client";
   import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -47,14 +47,17 @@
   const queryClient = useQueryClient();
 
   const renameSource = createRuntimeServiceRenameFileAndReconcile();
-
-  $: runtimeInstanceId = $runtime.instanceId;
   const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
   const createSource = createRuntimeServicePutFileAndReconcile();
 
+  $: runtimeInstanceId = $runtime.instanceId;
   $: getSource = createRuntimeServiceGetCatalogEntry(
     runtimeInstanceId,
     sourceName
+  );
+  $: file = createRuntimeServiceGetFile(
+    runtimeInstanceId,
+    getFilePathFromNameAndType(sourceName, EntityType.Table)
   );
 
   let headerWidth;
@@ -152,17 +155,14 @@
     });
   }
 
-  // Include `$file.dataUpdatedAt` and `clientYAML` in the reactive statement to recompute
-  // the `isSourceUnsaved` value whenever they change
-  const file = createRuntimeServiceGetFile(
+  const sourceStore = useSourceStore(sourceName);
+
+  $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,
-    getFilePathFromNameAndType(sourceName, EntityType.Table)
+    sourceName,
+    $sourceStore.clientYAML
   );
-  const sourceStore = useSourceStore();
-  $: isSourceUnsaved =
-    $file.dataUpdatedAt &&
-    $sourceStore.clientYAML &&
-    useIsSourceUnsaved($runtime.instanceId, sourceName);
+  $: isSourceUnsaved = $isSourceUnsavedQuery.data;
 
   $: reconciliationErrors = getFileArtifactReconciliationErrors(
     $fileArtifactsStore,

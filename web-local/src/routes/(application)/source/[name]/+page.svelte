@@ -4,7 +4,7 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { SourceWorkspace } from "@rilldata/web-common/features/sources";
-  import { sourceStore } from "@rilldata/web-common/features/sources/sources-store";
+  import { useSourceStore } from "@rilldata/web-common/features/sources/sources-store";
   import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { error } from "@sveltejs/kit";
@@ -36,6 +36,7 @@
   );
 
   // Initialize the source store
+  $: sourceStore = useSourceStore(sourceName);
   $: if ($fileQuery.isSuccess && $fileQuery.data.blob) {
     sourceStore.set({ clientYAML: $fileQuery.data.blob });
   }

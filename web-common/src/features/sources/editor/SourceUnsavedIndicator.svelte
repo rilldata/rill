@@ -1,27 +1,20 @@
 <script lang="ts">
   import { cubicOut } from "svelte/easing";
   import { scale } from "svelte/transition";
-  import { createRuntimeServiceGetFile } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
-  import { EntityType } from "../../entity-management/types";
   import { useIsSourceUnsaved } from "../selectors";
   import { useSourceStore } from "../sources-store";
 
   export let sourceName: string;
 
-  const sourceStore = useSourceStore();
+  const sourceStore = useSourceStore(sourceName);
 
-  // Include `$file.dataUpdatedAt` and `clientYAML` in the reactive statement to recompute
-  // the `isSourceUnsaved` value whenever they change
-  const file = createRuntimeServiceGetFile(
+  $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,
-    getFilePathFromNameAndType(sourceName, EntityType.Table)
+    sourceName,
+    $sourceStore.clientYAML
   );
-  $: isSourceUnsaved =
-    $file.dataUpdatedAt &&
-    $sourceStore.clientYAML &&
-    useIsSourceUnsaved($runtime.instanceId, sourceName);
+  $: isSourceUnsaved = $isSourceUnsavedQuery.data;
 </script>
 
 {#if isSourceUnsaved}

@@ -1,28 +1,22 @@
 <script lang="ts">
   import { beforeNavigate, goto } from "$app/navigation";
   import { useIsSourceUnsaved } from "@rilldata/web-common/features/sources/selectors";
-  import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { emitNavigationTelemetry } from "../../../layout/navigation/navigation-utils";
   import { currentHref } from "../../../layout/navigation/stores";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
-  import { EntityType } from "../../entity-management/types";
   import { useSourceStore } from "../sources-store";
   import UnsavedSourceDialog from "./UnsavedSourceDialog.svelte";
 
   export let sourceName: string;
 
-  // Include `$file.dataUpdatedAt` and `clientYAML` in the reactive statement to recompute
-  // the `isSourceUnsaved` value whenever they change
-  const file = createRuntimeServiceGetFile(
+  const sourceStore = useSourceStore(sourceName);
+
+  $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,
-    getFilePathFromNameAndType(sourceName, EntityType.Table)
+    sourceName,
+    $sourceStore.clientYAML
   );
-  const sourceStore = useSourceStore();
-  $: isSourceUnsaved =
-    $file.dataUpdatedAt &&
-    $sourceStore.clientYAML &&
-    useIsSourceUnsaved($runtime.instanceId, sourceName);
+  $: isSourceUnsaved = $isSourceUnsavedQuery.data;
 
   // Intercepted navigation follows this example:
   // https://github.com/sveltejs/kit/pull/3293#issuecomment-1011553037
