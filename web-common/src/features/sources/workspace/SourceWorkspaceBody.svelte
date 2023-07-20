@@ -13,10 +13,14 @@
   import { EntityType } from "../../entity-management/types";
   import SourceEditor from "../editor/SourceEditor.svelte";
   import ErrorPane from "../errors/ErrorPane.svelte";
+  import { useIsSourceUnsaved } from "../selectors";
+  import { useSourceStore } from "../sources-store";
 
   export let sourceName: string;
 
-  $: fileQuery = createRuntimeServiceGetFile(
+  const sourceStore = useSourceStore();
+
+  $: file = createRuntimeServiceGetFile(
     $runtime.instanceId,
     getFilePathFromNameAndType(sourceName, EntityType.Table),
     {
@@ -27,7 +31,7 @@
     }
   );
 
-  $: yaml = $fileQuery.data?.blob || "";
+  $: yaml = $file.data?.blob || "";
 
   $: reconciliationErrors = getFileArtifactReconciliationErrors(
     $fileArtifactsStore,
@@ -40,6 +44,13 @@
   const outputVisibilityTween = getContext(
     "rill:app:output-visibility-tween"
   ) as Writable<number>;
+
+  // Include `$file.dataUpdatedAt` and `clientYAML` in the reactive statement to recompute
+  // the `isSourceUnsaved` value whenever they change
+  $: isSourceUnsaved =
+    $file.dataUpdatedAt &&
+    $sourceStore.clientYAML &&
+    useIsSourceUnsaved($runtime.instanceId, sourceName);
 </script>
 
 <div class="h-full pb-3">
@@ -55,7 +66,13 @@
     <div class="h-full border border-gray-300 rounded overflow-auto">
       {#if !reconciliationErrors || reconciliationErrors.length === 0}
         {#key sourceName}
-          <ConnectedPreviewTable objectName={sourceName} />
+          <div
+            style="{isSourceUnsaved ? 'filter: brightness(.9);' : ''}
+            transition: filter 200ms;
+          "
+          >
+            <ConnectedPreviewTable objectName={sourceName} />
+          </div>
         {/key}
       {:else}
         <ErrorPane error={reconciliationErrors[0]} />
