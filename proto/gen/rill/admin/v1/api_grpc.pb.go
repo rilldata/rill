@@ -50,6 +50,9 @@ const (
 	AdminService_GetCurrentUser_FullMethodName               = "/rill.admin.v1.AdminService/GetCurrentUser"
 	AdminService_IssueRepresentativeAuthToken_FullMethodName = "/rill.admin.v1.AdminService/IssueRepresentativeAuthToken"
 	AdminService_RevokeCurrentAuthToken_FullMethodName       = "/rill.admin.v1.AdminService/RevokeCurrentAuthToken"
+	AdminService_ListServiceAuthTokens_FullMethodName        = "/rill.admin.v1.AdminService/ListServiceAuthTokens"
+	AdminService_IssueServiceAuthToken_FullMethodName        = "/rill.admin.v1.AdminService/IssueServiceAuthToken"
+	AdminService_RevokeServiceAuthToken_FullMethodName       = "/rill.admin.v1.AdminService/RevokeServiceAuthToken"
 	AdminService_GetGithubRepoStatus_FullMethodName          = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
 	AdminService_GetGitCredentials_FullMethodName            = "/rill.admin.v1.AdminService/GetGitCredentials"
 	AdminService_CreateWhitelistedDomain_FullMethodName      = "/rill.admin.v1.AdminService/CreateWhitelistedDomain"
@@ -139,6 +142,12 @@ type AdminServiceClient interface {
 	IssueRepresentativeAuthToken(ctx context.Context, in *IssueRepresentativeAuthTokenRequest, opts ...grpc.CallOption) (*IssueRepresentativeAuthTokenResponse, error)
 	// RevokeCurrentAuthToken revoke the current auth token
 	RevokeCurrentAuthToken(ctx context.Context, in *RevokeCurrentAuthTokenRequest, opts ...grpc.CallOption) (*RevokeCurrentAuthTokenResponse, error)
+	// ListServiceAuthTokens lists all the service auth tokens
+	ListServiceAuthTokens(ctx context.Context, in *ListServiceAuthTokensRequest, opts ...grpc.CallOption) (*ListServiceAuthTokensResponse, error)
+	// IssueServiceAuthToken returns the temporary token for given service account
+	IssueServiceAuthToken(ctx context.Context, in *IssueServiceAuthTokenRequest, opts ...grpc.CallOption) (*IssueServiceAuthTokenResponse, error)
+	// RevokeServiceAuthToken revoke the service auth token
+	RevokeServiceAuthToken(ctx context.Context, in *RevokeServiceAuthTokenRequest, opts ...grpc.CallOption) (*RevokeServiceAuthTokenResponse, error)
 	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
 	// If the caller has not granted access to the repository, instructions for granting access are returned.
 	GetGithubRepoStatus(ctx context.Context, in *GetGithubRepoStatusRequest, opts ...grpc.CallOption) (*GetGithubRepoStatusResponse, error)
@@ -471,6 +480,33 @@ func (c *adminServiceClient) RevokeCurrentAuthToken(ctx context.Context, in *Rev
 	return out, nil
 }
 
+func (c *adminServiceClient) ListServiceAuthTokens(ctx context.Context, in *ListServiceAuthTokensRequest, opts ...grpc.CallOption) (*ListServiceAuthTokensResponse, error) {
+	out := new(ListServiceAuthTokensResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListServiceAuthTokens_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) IssueServiceAuthToken(ctx context.Context, in *IssueServiceAuthTokenRequest, opts ...grpc.CallOption) (*IssueServiceAuthTokenResponse, error) {
+	out := new(IssueServiceAuthTokenResponse)
+	err := c.cc.Invoke(ctx, AdminService_IssueServiceAuthToken_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) RevokeServiceAuthToken(ctx context.Context, in *RevokeServiceAuthTokenRequest, opts ...grpc.CallOption) (*RevokeServiceAuthTokenResponse, error) {
+	out := new(RevokeServiceAuthTokenResponse)
+	err := c.cc.Invoke(ctx, AdminService_RevokeServiceAuthToken_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) GetGithubRepoStatus(ctx context.Context, in *GetGithubRepoStatusRequest, opts ...grpc.CallOption) (*GetGithubRepoStatusResponse, error) {
 	out := new(GetGithubRepoStatusResponse)
 	err := c.cc.Invoke(ctx, AdminService_GetGithubRepoStatus_FullMethodName, in, out, opts...)
@@ -726,6 +762,12 @@ type AdminServiceServer interface {
 	IssueRepresentativeAuthToken(context.Context, *IssueRepresentativeAuthTokenRequest) (*IssueRepresentativeAuthTokenResponse, error)
 	// RevokeCurrentAuthToken revoke the current auth token
 	RevokeCurrentAuthToken(context.Context, *RevokeCurrentAuthTokenRequest) (*RevokeCurrentAuthTokenResponse, error)
+	// ListServiceAuthTokens lists all the service auth tokens
+	ListServiceAuthTokens(context.Context, *ListServiceAuthTokensRequest) (*ListServiceAuthTokensResponse, error)
+	// IssueServiceAuthToken returns the temporary token for given service account
+	IssueServiceAuthToken(context.Context, *IssueServiceAuthTokenRequest) (*IssueServiceAuthTokenResponse, error)
+	// RevokeServiceAuthToken revoke the service auth token
+	RevokeServiceAuthToken(context.Context, *RevokeServiceAuthTokenRequest) (*RevokeServiceAuthTokenResponse, error)
 	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
 	// If the caller has not granted access to the repository, instructions for granting access are returned.
 	GetGithubRepoStatus(context.Context, *GetGithubRepoStatusRequest) (*GetGithubRepoStatusResponse, error)
@@ -868,6 +910,15 @@ func (UnimplementedAdminServiceServer) IssueRepresentativeAuthToken(context.Cont
 }
 func (UnimplementedAdminServiceServer) RevokeCurrentAuthToken(context.Context, *RevokeCurrentAuthTokenRequest) (*RevokeCurrentAuthTokenResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RevokeCurrentAuthToken not implemented")
+}
+func (UnimplementedAdminServiceServer) ListServiceAuthTokens(context.Context, *ListServiceAuthTokensRequest) (*ListServiceAuthTokensResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListServiceAuthTokens not implemented")
+}
+func (UnimplementedAdminServiceServer) IssueServiceAuthToken(context.Context, *IssueServiceAuthTokenRequest) (*IssueServiceAuthTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IssueServiceAuthToken not implemented")
+}
+func (UnimplementedAdminServiceServer) RevokeServiceAuthToken(context.Context, *RevokeServiceAuthTokenRequest) (*RevokeServiceAuthTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RevokeServiceAuthToken not implemented")
 }
 func (UnimplementedAdminServiceServer) GetGithubRepoStatus(context.Context, *GetGithubRepoStatusRequest) (*GetGithubRepoStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetGithubRepoStatus not implemented")
@@ -1503,6 +1554,60 @@ func _AdminService_RevokeCurrentAuthToken_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_ListServiceAuthTokens_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListServiceAuthTokensRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListServiceAuthTokens(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListServiceAuthTokens_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListServiceAuthTokens(ctx, req.(*ListServiceAuthTokensRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_IssueServiceAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IssueServiceAuthTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).IssueServiceAuthToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_IssueServiceAuthToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).IssueServiceAuthToken(ctx, req.(*IssueServiceAuthTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_RevokeServiceAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeServiceAuthTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RevokeServiceAuthToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_RevokeServiceAuthToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RevokeServiceAuthToken(ctx, req.(*RevokeServiceAuthTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_GetGithubRepoStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetGithubRepoStatusRequest)
 	if err := dec(in); err != nil {
@@ -2011,6 +2116,18 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RevokeCurrentAuthToken",
 			Handler:    _AdminService_RevokeCurrentAuthToken_Handler,
+		},
+		{
+			MethodName: "ListServiceAuthTokens",
+			Handler:    _AdminService_ListServiceAuthTokens_Handler,
+		},
+		{
+			MethodName: "IssueServiceAuthToken",
+			Handler:    _AdminService_IssueServiceAuthToken_Handler,
+		},
+		{
+			MethodName: "RevokeServiceAuthToken",
+			Handler:    _AdminService_RevokeServiceAuthToken_Handler,
 		},
 		{
 			MethodName: "GetGithubRepoStatus",

@@ -18,6 +18,15 @@ export type AdminServiceGetUserParams = {
   email?: string;
 };
 
+export type AdminServiceRevokeServiceAuthTokenParams = {
+  tokenId?: string;
+};
+
+export type AdminServiceListServiceAuthTokensParams = {
+  organizationName?: string;
+  serviceName?: string;
+};
+
 export type AdminServiceSudoGetResourceParams = {
   userId?: string;
   orgId?: string;
@@ -30,6 +39,10 @@ export type AdminServiceSearchProjectNamesParams = {
   namePattern?: string;
   pageSize?: number;
   pageToken?: string;
+};
+
+export type AdminServiceUpdateServiceBody = {
+  newName?: string;
 };
 
 export type AdminServiceCreateServiceParams = {
@@ -123,6 +136,8 @@ export type AdminServiceTriggerRefreshSourcesBody = {
   sources?: string[];
 };
 
+export type AdminServiceTriggerReconcileBody = { [key: string]: any };
+
 export type AdminServiceAddOrganizationMemberBodyBody = {
   email?: string;
   role?: string;
@@ -131,8 +146,6 @@ export type AdminServiceAddOrganizationMemberBodyBody = {
 export type AdminServiceSetOrganizationMemberRoleBodyBody = {
   role?: string;
 };
-
-export type AdminServiceTriggerReconcileBodyBody = { [key: string]: any };
 
 export interface V1WhitelistedDomain {
   domain?: string;
@@ -274,6 +287,10 @@ export interface V1SearchProjectNamesResponse {
   nextPageToken?: string;
 }
 
+export interface V1RevokeServiceAuthTokenResponse {
+  [key: string]: any;
+}
+
 export interface V1RevokeCurrentAuthTokenResponse {
   tokenId?: string;
 }
@@ -381,6 +398,10 @@ export interface V1ListServicesResponse {
   services?: V1Service[];
 }
 
+export interface V1ListServiceAuthTokensResponse {
+  tokens?: string[];
+}
+
 export interface V1ListProjectsForOrganizationResponse {
   projects?: V1Project[];
   nextPageToken?: string;
@@ -417,6 +438,15 @@ export interface V1ListBookmarksResponse {
 
 export interface V1LeaveOrganizationResponse {
   [key: string]: any;
+}
+
+export interface V1IssueServiceAuthTokenResponse {
+  token?: string;
+}
+
+export interface V1IssueServiceAuthTokenRequest {
+  organizationName?: string;
+  serviceName?: string;
 }
 
 export interface V1IssueRepresentativeAuthTokenResponse {

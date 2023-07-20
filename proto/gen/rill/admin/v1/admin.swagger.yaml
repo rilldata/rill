@@ -947,6 +947,9 @@ paths:
           required: true
           schema:
             type: object
+            properties:
+              newName:
+                type: string
       tags:
         - AdminService
   /v1/ping:
@@ -1161,6 +1164,69 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1IssueRepresentativeAuthTokenRequest'
+      tags:
+        - AdminService
+  /v1/tokens/service:
+    get:
+      summary: ListServiceAuthTokens lists all the service auth tokens
+      operationId: AdminService_ListServiceAuthTokens
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListServiceAuthTokensResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: query
+          required: false
+          type: string
+        - name: serviceName
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+    delete:
+      summary: RevokeServiceAuthToken revoke the service auth token
+      operationId: AdminService_RevokeServiceAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RevokeServiceAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: tokenId
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+    post:
+      summary: IssueServiceAuthToken returns the temporary token for given service account
+      operationId: AdminService_IssueServiceAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1IssueServiceAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1IssueServiceAuthTokenRequest'
       tags:
         - AdminService
   /v1/users:
@@ -1541,6 +1607,18 @@ definitions:
     properties:
       token:
         type: string
+  v1IssueServiceAuthTokenRequest:
+    type: object
+    properties:
+      organizationName:
+        type: string
+      serviceName:
+        type: string
+  v1IssueServiceAuthTokenResponse:
+    type: object
+    properties:
+      token:
+        type: string
   v1LeaveOrganizationResponse:
     type: object
   v1ListBookmarksResponse:
@@ -1611,6 +1689,13 @@ definitions:
           $ref: '#/definitions/v1Project'
       nextPageToken:
         type: string
+  v1ListServiceAuthTokensResponse:
+    type: object
+    properties:
+      tokens:
+        type: array
+        items:
+          type: string
   v1ListServicesResponse:
     type: object
     properties:
@@ -1793,6 +1878,8 @@ definitions:
     properties:
       tokenId:
         type: string
+  v1RevokeServiceAuthTokenResponse:
+    type: object
   v1SearchProjectNamesResponse:
     type: object
     properties:

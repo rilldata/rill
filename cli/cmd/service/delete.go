@@ -1,19 +1,19 @@
 package service
 
 import (
+	"fmt"
+
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func RenameCmd(cfg *config.Config) *cobra.Command {
-	var newName string
-
-	renameCmd := &cobra.Command{
-		Use:   "rename",
+func DeleteCmd(cfg *config.Config) *cobra.Command {
+	deleteCmd := &cobra.Command{
+		Use:   "delete",
 		Args:  cobra.MaximumNArgs(1),
-		Short: "Rename service",
+		Short: "Delete service",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -21,23 +21,20 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			res, err := client.UpdateService(cmd.Context(), &adminv1.UpdateServiceRequest{
+			_, err = client.DeleteService(cmd.Context(), &adminv1.DeleteServiceRequest{
 				Name:             args[0],
 				OrganizationName: cfg.Org,
-				NewName:          &newName,
 			})
+
 			if err != nil {
 				return err
 			}
 
-			cmdutil.PrintlnSuccess("Renamed service")
-			cmdutil.TablePrinter(toRow(res.Service))
+			cmdutil.PrintlnSuccess(fmt.Sprintf("Deleted service: %s", args[0]))
 
 			return nil
 		},
 	}
-	renameCmd.Flags().SortFlags = false
-	renameCmd.Flags().StringVar(&newName, "new-name", "", "New Service Name")
 
-	return renameCmd
+	return deleteCmd
 }

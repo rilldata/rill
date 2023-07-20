@@ -7,13 +7,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func RenameCmd(cfg *config.Config) *cobra.Command {
-	var newName string
-
-	renameCmd := &cobra.Command{
-		Use:   "rename",
+func CreateCmd(cfg *config.Config) *cobra.Command {
+	createCmd := &cobra.Command{
+		Use:   "create",
 		Args:  cobra.MaximumNArgs(1),
-		Short: "Rename service",
+		Short: "Create service",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -21,23 +19,20 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			res, err := client.UpdateService(cmd.Context(), &adminv1.UpdateServiceRequest{
+			res, err := client.CreateService(cmd.Context(), &adminv1.CreateServiceRequest{
 				Name:             args[0],
 				OrganizationName: cfg.Org,
-				NewName:          &newName,
 			})
 			if err != nil {
 				return err
 			}
 
-			cmdutil.PrintlnSuccess("Renamed service")
+			cmdutil.PrintlnSuccess("Created service")
 			cmdutil.TablePrinter(toRow(res.Service))
 
 			return nil
 		},
 	}
-	renameCmd.Flags().SortFlags = false
-	renameCmd.Flags().StringVar(&newName, "new-name", "", "New Service Name")
 
-	return renameCmd
+	return createCmd
 }

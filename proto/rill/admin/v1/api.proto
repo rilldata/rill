@@ -202,6 +202,24 @@ service AdminService {
     option (google.api.http) = {delete: "/v1/tokens/current"};
   }
 
+  // ListServiceAuthTokens lists all the service auth tokens
+  rpc ListServiceAuthTokens(ListServiceAuthTokensRequest) returns (ListServiceAuthTokensResponse) {
+    option (google.api.http) = {get: "/v1/tokens/service"};
+  }
+
+  // IssueServiceAuthToken returns the temporary token for given service account
+  rpc IssueServiceAuthToken(IssueServiceAuthTokenRequest) returns (IssueServiceAuthTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/tokens/service",
+      body: "*"
+    };
+  }
+
+  // RevokeServiceAuthToken revoke the service auth token
+  rpc RevokeServiceAuthToken(RevokeServiceAuthTokenRequest) returns (RevokeServiceAuthTokenResponse) {
+    option (google.api.http) = {delete: "/v1/tokens/service"};
+  }
+
   // GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
   // If the caller has not granted access to the repository, instructions for granting access are returned.
   rpc GetGithubRepoStatus(GetGithubRepoStatusRequest) returns (GetGithubRepoStatusResponse) {
@@ -446,6 +464,7 @@ message CreateServiceResponse {
 message UpdateServiceRequest {
   string name = 1 [(validate.rules).string.min_len = 1];
   string organization_name = 2 [(validate.rules).string.min_len = 1];
+  optional string new_name = 3;
 }
 
 message UpdateServiceResponse {
@@ -791,6 +810,30 @@ message IssueRepresentativeAuthTokenRequest {
 
 message IssueRepresentativeAuthTokenResponse {
   string token = 1;
+}
+
+message RevokeServiceAuthTokenRequest {
+  string token_id = 1;
+}
+
+message RevokeServiceAuthTokenResponse {}
+
+message IssueServiceAuthTokenRequest {
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string service_name = 2;
+}
+
+message IssueServiceAuthTokenResponse {
+  string token = 1;
+}
+
+message ListServiceAuthTokensRequest {
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string service_name = 2;
+}
+
+message ListServiceAuthTokensResponse {
+  repeated string tokens = 1;
 }
 
 message GetGithubRepoStatusRequest {

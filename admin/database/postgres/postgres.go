@@ -649,6 +649,131 @@ func (c *connection) DeleteExpiredUserAuthTokens(ctx context.Context, retention 
 	return parseErr("auth token", err)
 }
 
+// FindServicesByOrgName returns a list of services in an org.
+func (c *connection) FindServicesByOrgName(ctx context.Context, orgName string) ([]*database.Service, error) {
+	var res []*database.Service
+
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM services WHERE org_name=$1", orgName)
+	if err != nil {
+		return nil, parseErr("services", err)
+	}
+	return res, nil
+}
+
+// FindService returns a service.
+func (c *connection) FindService(ctx context.Context, id string) (*database.Service, error) {
+	res := &database.Service{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM services WHERE id=$1", id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("service", err)
+	}
+	return res, nil
+}
+
+// FindServiceByName returns a service.
+func (c *connection) FindServiceByName(ctx context.Context, orgName, name string) (*database.Service, error) {
+	res := &database.Service{}
+
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM services WHERE org_name=$1 AND name=$2", orgName, name).StructScan(res)
+	if err != nil {
+		return nil, parseErr("service", err)
+	}
+	return res, nil
+}
+
+// InsertService inserts a service.
+func (c *connection) InsertService(ctx context.Context, opts *database.InsertServiceOptions) (*database.Service, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.Service{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO services (org_name, name)
+		VALUES ($1, $2) RETURNING *`,
+		opts.OrgName, opts.Name,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("service", err)
+	}
+	return res, nil
+}
+
+// UpdateService updates a service.
+func (c *connection) UpdateService(ctx context.Context, id string, opts *database.UpdateServiceOptions) (*database.Service, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.Service{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		UPDATE services
+		SET name=$1
+		WHERE id=$2 RETURNING *`,
+		opts.Name, id,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("service", err)
+	}
+	return res, nil
+}
+
+// DeleteService deletes a service.
+func (c *connection) DeleteService(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM services WHERE id=$1", id)
+	return checkDeleteRow("service", res, err)
+}
+
+// FindSeviceAuthTokens returns a list of service auth tokens.
+func (c *connection) FindServiceAuthTokens(ctx context.Context, serviceID string) ([]*database.ServiceAuthToken, error) {
+	var res []*database.ServiceAuthToken
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT t.* FROM service_auth_tokens t WHERE t.service_id=$1", serviceID)
+	if err != nil {
+		return nil, parseErr("service auth tokens", err)
+	}
+	return res, nil
+}
+
+// FindServiceAuthToken returns a service auth token.
+func (c *connection) FindServiceAuthToken(ctx context.Context, id string) (*database.ServiceAuthToken, error) {
+	res := &database.ServiceAuthToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT t.* FROM service_auth_tokens t WHERE t.id=$1", id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("service auth token", err)
+	}
+	return res, nil
+}
+
+// InsertServiceAuthToken inserts a service auth token.
+func (c *connection) InsertServiceAuthToken(ctx context.Context, opts *database.InsertServiceAuthTokenOptions) (*database.ServiceAuthToken, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.ServiceAuthToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO service_auth_tokens (id, secret_hash, service_id, expires_on)
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+		opts.ID, opts.SecretHash, opts.ServieID, opts.ExpiresOn,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("service auth token", err)
+	}
+	return res, nil
+}
+
+// DeleteServiceAuthToken deletes a service auth token.
+func (c *connection) DeleteServiceAuthToken(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM service_auth_tokens WHERE id=$1", id)
+	return checkDeleteRow("service auth token", res, err)
+}
+
+// DeleteExpiredServiceAuthTokens deletes expired service auth tokens.
+func (c *connection) DeleteExpiredServiceAuthTokens(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM service_auth_tokens WHERE expires_on IS NOT NULL AND expires_on + $1 < now()", retention)
+	return parseErr("service auth token", err)
+}
+
 func (c *connection) FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*database.DeviceAuthCode, error) {
 	authCode := &database.DeviceAuthCode{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM device_auth_codes WHERE device_code = $1", deviceCode).StructScan(authCode)
