@@ -113,6 +113,7 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, 
 			res := <-ch
 			if res.err != nil {
 				if errors.Is(res.err, iterator.Done) {
+					p.Observe(int64(num), drivers.ProgressUnitRecord)
 					return nil
 				}
 				return res.err
