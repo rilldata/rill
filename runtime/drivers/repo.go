@@ -26,7 +26,7 @@ type RepoStore interface {
 	Watch(ctx context.Context, cb WatchCallback) error
 }
 
-type WatchCallback func(event []WatchEvent) error
+type WatchCallback func(event []WatchEvent)
 
 type WatchEvent struct {
 	Type runtimev1.FileEvent

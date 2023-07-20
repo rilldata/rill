@@ -5,20 +5,18 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
-
-const watchBatchInterval = 250 * time.Millisecond
 
 // ListFiles implements RuntimeService.
 func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest) (*runtimev1.ListFilesResponse, error) {
@@ -76,7 +74,7 @@ func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, ss runtimev1.Runti
 		}
 	}
 
-	return repo.Watch(ss.Context(), func(events []drivers.WatchEvent) error {
+	return repo.Watch(ss.Context(), func(events []drivers.WatchEvent) {
 		for _, event := range events {
 			if !event.Dir {
 				err := ss.Send(&runtimev1.WatchFilesResponse{
@@ -84,11 +82,10 @@ func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, ss runtimev1.Runti
 					Path:  event.Path,
 				})
 				if err != nil {
-					return err
+					s.logger.Info("failed to send watch event", zap.Error(err))
 				}
 			}
 		}
-		return nil
 	})
 }
 
