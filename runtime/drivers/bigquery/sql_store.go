@@ -3,12 +3,14 @@ package bigquery
 import (
 	"context"
 	"fmt"
+	"math"
 	"math/big"
 	"strings"
 
 	"cloud.google.com/go/bigquery"
 	"cloud.google.com/go/civil"
 	"github.com/rilldata/rill/runtime/drivers"
+	"go.uber.org/zap"
 )
 
 // Exec implements drivers.SQLStore
@@ -34,6 +36,7 @@ func (c *Connection) Exec(ctx context.Context, src *drivers.DatabaseSource) (dri
 	q := client.Query(src.Query)
 	it, err := q.Read(ctx)
 	if err != nil && !strings.Contains(err.Error(), "Syntax error") {
+		c.logger.Info("query failed, retyring without storage api", zap.Error(err))
 		// the query results are always cached in a temporary table that storage api can use
 		// there are some exceptions when results aren't cached
 		// so we also try without storage api
@@ -149,9 +152,9 @@ func bqToDuckDB(dbt string) (string, error) {
 	// TODO :: NUMERIC and BIGNUMERIC are represented as *big.Rat type.
 	// There is no support for these types in go-duckdb driver.
 	// Users can cast these to duckdb types in model.
-	case "NUMERIC": // TODO :: fix this to correct duckdb type
+	case "NUMERIC":
 		return "VARCHAR", nil
-	case "BIGNUMERIC": // TODO :: fix this to correct duckdb type
+	case "BIGNUMERIC":
 		return "VARCHAR", nil
 	case "TIMESTAMP":
 		return "TIMESTAMP", nil
@@ -190,7 +193,13 @@ func convert(v any) any {
 	case civil.DateTime:
 		return val.String()
 	case *big.Rat:
-		return val.String()
+		f, _ := val.Float64()
+		if math.IsInf(f, 0) {
+			// big.Rat can't always be represented in float64
+			// we use string notation(in the form num/denom) in such cases which is not ideal
+			return val.String()
+		}
+		return f
 	default:
 		return val
 	}
