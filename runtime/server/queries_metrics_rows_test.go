@@ -40,6 +40,30 @@ func TestServer_MetricsViewRows_Granularity(t *testing.T) {
 	require.Equal(t, "timestamp__day", tr.Meta[0].Name)
 }
 
+/*
+|id |timestamp               |publisher|domain   |bid_price|volume|impressions|ad words|clicks|device|
+|---|------------------------|---------|---------|---------|------|-----------|--------|------|------|
+|0  |2022-01-01T14:49:50.459Z|         |msn.com  |2        |4     |2          |cars    |      |iphone|
+|1  |2022-01-02T11:58:12.475Z|Yahoo    |yahoo.com|2        |4     |1          |cars    |1     |      |
+*/
+func TestServer_MetricsViewRows_Granularity_Kathmandu(t *testing.T) {
+	t.Parallel()
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewRows(testCtx(), &runtimev1.MetricsViewRowsRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
+		TimeStart:       parseTimeToProtoTimeStamps(t, "2022-01-01T14:15:00Z"),
+		TimeEnd:         parseTimeToProtoTimeStamps(t, "2022-01-01T15:15:00Z"),
+		TimeZone:        "Asia/Kathmandu",
+	})
+	require.NoError(t, err)
+	require.Equal(t, 1, len(tr.Data))
+	require.Equal(t, "timestamp__hour", tr.Meta[0].Name)
+	require.Equal(t, "2022-01-01T14:15:00Z", tr.Data[0].Fields["timestamp__hour"].GetStringValue())
+}
+
 func TestServer_MetricsViewRows_export(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")

@@ -54,6 +54,54 @@ func convertToDateTruncSpecifier(specifier runtimev1.TimeGrain) string {
 	panic(fmt.Errorf("unconvertable time grain specifier: %v", specifier))
 }
 
+func convertToDruidTimeFloorSpecifier(specifier runtimev1.TimeGrain) string {
+	switch specifier {
+	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
+		return "PT0.001S"
+	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
+		return "PT1S"
+	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
+		return "PT1M"
+	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+		return "PT1H"
+	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
+		return "P1D"
+	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
+		return "P1W"
+	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
+		return "P1M"
+	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
+		return "P3M"
+	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
+		return "P1Y"
+	}
+	panic(fmt.Errorf("unconvertable time grain specifier: %v", specifier))
+}
+
+func convertToDuckDBTimeBucketSpecifier(specifier runtimev1.TimeGrain) string {
+	switch specifier {
+	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
+		return "1 MILLISECOND"
+	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
+		return "1 SECOND"
+	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
+		return "1 MINUTE"
+	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+		return "1 HOUR"
+	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
+		return "1 DAY"
+	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
+		return "1 WEEK"
+	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
+		return "1 MONTH"
+	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
+		return "1 QUARTER"
+	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
+		return "1 YEAR"
+	}
+	panic(fmt.Errorf("unconvertable time grain specifier: %v", specifier))
+}
+
 func toTimeGrain(val string) runtimev1.TimeGrain {
 	switch strings.ToUpper(val) {
 	case "MILLISECOND":

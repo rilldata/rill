@@ -63,6 +63,7 @@ export type QueryServiceColumnTimeSeriesBody = {
   pixels?: number;
   sampleSize?: number;
   priority?: number;
+  timeZone?: string;
 };
 
 export type QueryServiceColumnTimeRangeParams = {
@@ -144,6 +145,7 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
   filter?: V1MetricsViewFilter;
+  timeZone?: string;
   priority?: number;
 };
 
@@ -156,6 +158,7 @@ export type QueryServiceMetricsViewRowsBody = {
   limit?: number;
   offset?: string;
   priority?: number;
+  timeZone?: string;
 };
 
 export type QueryServiceMetricsViewComparisonToplistBody = {
@@ -190,6 +193,15 @@ export type QueryServiceTableColumnsParams = {
 export type QueryServiceColumnCardinalityParams = {
   columnName?: string;
   priority?: number;
+};
+
+export type RuntimeServiceWatchFiles200 = {
+  result?: V1WatchFilesResponse;
+  error?: RpcStatus;
+};
+
+export type RuntimeServiceWatchFilesParams = {
+  replay?: boolean;
 };
 
 export type RuntimeServiceUnpackExampleBody = {
@@ -281,6 +293,11 @@ export type ConnectorServiceGCSListObjectsParams = {
   endOffset?: string;
   delimiter?: string;
 };
+
+export interface V1WatchFilesResponse {
+  event?: V1FileEvent;
+  path?: string;
+}
 
 export interface V1UnpackExampleResponse {
   [key: string]: any;
@@ -778,6 +795,7 @@ export interface V1MetricsViewTimeSeriesRequest {
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
   filter?: V1MetricsViewFilter;
+  timeZone?: string;
   priority?: number;
 }
 
@@ -792,6 +810,7 @@ export interface V1MetricsViewRowsRequest {
   limit?: number;
   offset?: string;
   priority?: number;
+  timeZone?: string;
 }
 
 export interface V1MetricsViewComparisonValue {
@@ -979,6 +998,19 @@ export interface V1GCSGetCredentialsInfoResponse {
   projectId?: string;
 }
 
+/**
+ * FileEvent describes a file change.
+ */
+export type V1FileEvent = (typeof V1FileEvent)[keyof typeof V1FileEvent];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1FileEvent = {
+  FILE_EVENT_UNSPECIFIED: "FILE_EVENT_UNSPECIFIED",
+  FILE_EVENT_WRITE: "FILE_EVENT_WRITE",
+  FILE_EVENT_DELETE: "FILE_EVENT_DELETE",
+  FILE_EVENT_RENAME: "FILE_EVENT_RENAME",
+} as const;
+
 export interface V1ExportResponse {
   downloadUrlPath?: string;
 }
@@ -1097,6 +1129,7 @@ export interface V1ColumnTimeSeriesRequest {
   pixels?: number;
   sampleSize?: number;
   priority?: number;
+  timeZone?: string;
 }
 
 export interface V1ColumnTimeRangeResponse {
