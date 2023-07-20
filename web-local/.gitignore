@@ -8,3 +8,5 @@
 *.db
 *.wal
 log
+/test-results
+/playwright-report

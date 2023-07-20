@@ -1,11 +1,13 @@
-import { expect } from "@jest/globals";
-import { expect as playwrightExpect } from "@playwright/test";
+// import { expect } from "@jest/globals";
+import { expect } from "@playwright/test";
 import type {
   MetricsViewFilterCond,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
 import type { Page, Response } from "playwright";
 import { clickMenuButton, openEntityMenu } from "./helpers";
+
+const playwrightExpect = expect;
 
 export async function createDashboardFromSource(page: Page, source: string) {
   await openEntityMenu(page, source);

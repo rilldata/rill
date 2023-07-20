@@ -9,6 +9,11 @@ import {
   waitForProfiling,
 } from "./helpers";
 import { waitForEntity } from "./waitHelpers";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+
+const __dirname = path.dirname(__filename);
 
 const TestDataPath = path.join(__dirname, "../../data");
 
