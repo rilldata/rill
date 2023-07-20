@@ -102,6 +102,10 @@ func (r *rowIterator) Next(ctx context.Context) ([]any, error) {
 
 	var row row = make([]any, 0)
 	if err := r.bqIter.Next(&row); err != nil {
+		// the sdk returns this weird error instead of iterartor.Done for zero results
+		if strings.Contains(err.Error(), "no more items in iterator") {
+			return nil, fmt.Errorf("no results found for the query")
+		}
 		return nil, err
 	}
 
