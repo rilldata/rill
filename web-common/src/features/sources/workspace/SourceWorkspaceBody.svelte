@@ -63,14 +63,13 @@
   </div>
   <HorizontalSplitter />
   <div class="p-5" style:height="{$outputPosition}px">
-    <div class="h-full border border-gray-300 rounded overflow-auto">
+    <div
+      class="h-full border border-gray-300 rounded overflow-auto {isSourceUnsaved &&
+        'brightness-90'} transition duration-200"
+    >
       {#if !reconciliationErrors || reconciliationErrors.length === 0}
         {#key sourceName}
-          <div
-            class="{isSourceUnsaved && 'brightness-90'} transition duration-200"
-          >
-            <ConnectedPreviewTable objectName={sourceName} />
-          </div>
+          <ConnectedPreviewTable objectName={sourceName} />
         {/key}
       {:else}
         <ErrorPane error={reconciliationErrors[0]} />
