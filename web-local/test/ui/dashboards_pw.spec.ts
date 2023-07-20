@@ -1,27 +1,13 @@
-import { describe, it } from "@jest/globals";
 import { expect, test } from "@playwright/test";
-import { rmSync, writeFileSync, existsSync, mkdirSync } from "fs";
-import {
-  RequestMatcher,
-  assertLeaderboards,
-  clickOnFilter,
-  createDashboardFromModel,
-  createDashboardFromSource,
-  metricsViewRequestFilterMatcher,
-  updateMetricsInput,
-  waitForTimeSeries,
-  waitForTopLists,
-} from "./utils/dashboardHelpers";
-import {
-  assertAdBidsDashboard,
-  createAdBidsModel,
-} from "./utils/dataSpecifcHelpers";
-import { TestEntityType, wrapRetryAssertion } from "./utils/helpers";
-import { useRegisteredServer } from "./utils/serverConfigs";
-import { createOrReplaceSource } from "./utils/sourceHelpers";
-import { waitForEntity } from "./utils/waitHelpers";
 import { asyncWaitUntil } from "@rilldata/web-local/lib/util/waitUtils";
 import axios from "axios";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "fs";
+import {
+  createDashboardFromModel,
+  updateMetricsInput,
+} from "./utils/dashboardHelpers";
+import { createAdBidsModel } from "./utils/dataSpecifcHelpers";
+import { wrapRetryAssertion } from "./utils/helpers";
 
 console.log("change");
 
@@ -213,25 +199,25 @@ test.describe("dashboard", () => {
 
     const changeDisplayNameDoc = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-    title: "AdBids_model_dashboard_rename"
-    model: "AdBids_model"
-    default_time_range: ""
-    smallest_time_grain: ""
-    measures:
-      - label: Total records
-        expression: count(*)
-        name: total_records
-        description: Total number of records present
-        format_preset: humanize
-    dimensions:
-      - name: publisher
-        label: Publisher
-        column: publisher
-        description: ""
-      - name: domain
-        label: Domain
-        column: domain
-        description: ""
+title: "AdBids_model_dashboard_rename"
+model: "AdBids_model"
+default_time_range: ""
+smallest_time_grain: ""
+measures:
+  - label: Total records
+    expression: count(*)
+    name: total_records
+    description: Total number of records present
+    format_preset: humanize
+dimensions:
+  - name: publisher
+    label: Publisher
+    column: publisher
+    description: ""
+  - name: domain
+    label: Domain
+    column: domain
+    description: ""
     
         `;
     await updateMetricsInput(page, changeDisplayNameDoc);
@@ -254,26 +240,26 @@ test.describe("dashboard", () => {
 
     const addBackTimestampColumnDoc = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-    title: "AdBids_model_dashboard_rename"
-    model: "AdBids_model"
-    default_time_range: ""
-    smallest_time_grain: "week"
-    timeseries: "timestamp"
-    measures:
-      - label: Total records
-        expression: count(*)
-        name: total_records
-        description: Total number of records present
-        format_preset: humanize
-    dimensions:
-      - name: publisher
-        label: Publisher
-        column: publisher
-        description: ""
-      - name: domain
-        label: Domain
-        column: domain
-        description: ""
+title: "AdBids_model_dashboard_rename"
+model: "AdBids_model"
+default_time_range: ""
+smallest_time_grain: "week"
+timeseries: "timestamp"
+measures:
+  - label: Total records
+    expression: count(*)
+    name: total_records
+    description: Total number of records present
+    format_preset: humanize
+dimensions:
+  - name: publisher
+    label: Publisher
+    column: publisher
+    description: ""
+  - name: domain
+    label: Domain
+    column: domain
+    description: ""
     
         `;
     await updateMetricsInput(page, addBackTimestampColumnDoc);
@@ -291,21 +277,21 @@ test.describe("dashboard", () => {
 
     const deleteOnlyMeasureDoc = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-    title: "AdBids_model_dashboard_rename"
-    model: "AdBids_model"
-    default_time_range: ""
-    smallest_time_grain: "week"
-    timeseries: "timestamp"
-    measures: []
-    dimensions:
-      - name: publisher
-        label: Publisher
-        column: publisher
-        description: ""
-      - name: domain
-        label: Domain
-        column: domain
-        description: ""
+title: "AdBids_model_dashboard_rename"
+model: "AdBids_model"
+default_time_range: ""
+smallest_time_grain: "week"
+timeseries: "timestamp"
+measures: []
+dimensions:
+  - name: publisher
+    label: Publisher
+    column: publisher
+    description: ""
+  - name: domain
+    label: Domain
+    column: domain
+    description: ""
     
         `;
     await updateMetricsInput(page, deleteOnlyMeasureDoc);
@@ -321,22 +307,22 @@ test.describe("dashboard", () => {
     // Add back the total rows measure for
     const docWithIncompleteMeasure = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-    title: "AdBids_model_dashboard_rename"
-    model: "AdBids_model"
-    default_time_range: ""
-    smallest_time_grain: "week"
-    timeseries: "timestamp"
-    measures:
-      - label: Avg Bid Price
-    dimensions:
-      - name: publisher
-        label: Publisher
-        column: publisher
-        description: ""
-      - name: domain
-        label: Domain
-        column: domain
-        description: ""
+title: "AdBids_model_dashboard_rename"
+model: "AdBids_model"
+default_time_range: ""
+smallest_time_grain: "week"
+timeseries: "timestamp"
+measures:
+  - label: Avg Bid Price
+dimensions:
+  - name: publisher
+    label: Publisher
+    column: publisher
+    description: ""
+  - name: domain
+    label: Domain
+    column: domain
+    description: ""
     
         `;
 
@@ -347,29 +333,29 @@ test.describe("dashboard", () => {
 
     const docWithCompleteMeasure = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-    title: "AdBids_model_dashboard_rename"
-    model: "AdBids_model"
-    default_time_range: ""
-    smallest_time_grain: "week"
-    timeseries: "timestamp"
-    measures:
-      - label: Total rows
-        expression: count(*)
-        name: total_rows
-        description: Total number of records present
-      - label: Avg Bid Price
-        expression: avg(bid_price)
-        name: avg_bid_price
-        format_preset: currency_usd
-    dimensions:
-      - name: publisher
-        label: Publisher
-        column: publisher
-        description: ""
-      - name: domain
-        label: Domain Name
-        column: domain
-        description: ""
+title: "AdBids_model_dashboard_rename"
+model: "AdBids_model"
+default_time_range: ""
+smallest_time_grain: "week"
+timeseries: "timestamp"
+measures:
+  - label: Total rows
+    expression: count(*)
+    name: total_rows
+    description: Total number of records present
+  - label: Avg Bid Price
+    expression: avg(bid_price)
+    name: avg_bid_price
+    format_preset: currency_usd
+dimensions:
+  - name: publisher
+    label: Publisher
+    column: publisher
+    description: ""
+  - name: domain
+    label: Domain Name
+    column: domain
+    description: ""
         `;
 
     await updateMetricsInput(page, docWithCompleteMeasure);
