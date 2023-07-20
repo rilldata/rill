@@ -57,6 +57,18 @@ export function getYupSchema(connector: V1Connector) {
           )
           .required("Source name is required"),
       });
+    case "bigquery":
+      return yup.object().shape({
+        query: yup.string().required("Query is required"),
+        sourceName: yup
+          .string()
+          .matches(
+            /^[a-zA-Z_][a-zA-Z0-9_]*$/,
+            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores"
+          )
+          .required("Source name is required"),
+        projectid: yup.string().required("Project ID is required"),
+      });
     default:
       throw new Error(`Unknown connector: ${connector.name}`);
   }

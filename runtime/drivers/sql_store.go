@@ -22,4 +22,6 @@ type RowIterator interface {
 	ResultSchema(ctx context.Context) (Schema, error)
 	// Next fetches next row
 	Next(ctx context.Context) ([]any, error)
+	// Close closes the iterator and frees resources
+	Close() error
 }

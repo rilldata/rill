@@ -42,7 +42,7 @@ type Source struct {
 	AllowSchemaRelaxation *bool          `yaml:"ingest.allow_schema_relaxation,omitempty" mapstructure:"allow_schema_relaxation,omitempty"`
 	Query                 string         `yaml:"query,omitempty" mapstructure:"query,omitempty"`
 	DB                    string         `yaml:"db,omitempty" mapstructure:"db,omitempty"`
-	ProjectID             string         `yaml:"project_id,omitempty" mapstructure:"project_id,omitempty"`
+	ProjectID             string         `yaml:"projectid,omitempty" mapstructure:"project_id,omitempty"`
 	EnableStorageAPI      *bool          `yaml:"enable_storage_api,omitempty" mapstructure:"enable_storage_api,omitempty"`
 }
 

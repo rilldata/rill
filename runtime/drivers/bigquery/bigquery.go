@@ -26,7 +26,7 @@ func init() {
 	drivers.RegisterAsConnector("bigquery", driver{})
 }
 
-// spec for duckdb as motherduck connector
+// spec for bigquery connector
 var spec = drivers.Spec{
 	DisplayName:        "BigQuery",
 	Description:        "Import data from BigQuery.",
@@ -41,19 +41,12 @@ var spec = drivers.Spec{
 			Placeholder: "select * from my_db.my_table;",
 		},
 		{
-			Key:         "project_id",
+			Key:         "projectid",
 			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "project_id",
+			DisplayName: "Project ID",
 			Description: "Google project ID.",
-			Placeholder: "*detect-project-id*",
-		},
-		{
-			Key:         "enable_storage_api",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "enable_storage_api",
-			Description: "Enable storage API usage for running query. See limitations around storage API usage before enabling this.",
-			Placeholder: "false",
+			Required:    true,
+			Placeholder: "projectID",
 		},
 		{
 			Key:         "google_application_credentials",
@@ -131,7 +124,23 @@ func (d driver) Spec() drivers.Spec {
 }
 
 func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
-	return false, fmt.Errorf("todo")
+	c, err := d.Open(nil, logger)
+	if err != nil {
+		return false, err
+	}
+
+	dbsrc, ok := src.DatabaseSource()
+	if !ok {
+		return false, fmt.Errorf("require database source")
+	}
+	iter, err := c.(*Connection).Exec(ctx, dbsrc)
+	if err != nil {
+		return false, err
+	}
+	defer iter.Close()
+
+	_, err = iter.ResultSchema(ctx)
+	return err == nil, err
 }
 
 type Connection struct {
@@ -157,7 +166,6 @@ func (c *Connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *Connection) Close() error {
-	// TODO:: anshul :: fix
 	return nil
 }
 
@@ -227,12 +235,7 @@ func (c *Connection) Exec(ctx context.Context, src *drivers.DatabaseSource) (dri
 		return nil, err
 	}
 
-	creds, err := c.resolvedCredentials(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := bigquery.NewClient(ctx, props.ProjectID, option.WithCredentials(creds))
+	client, err := c.createClient(ctx, props)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create bigquery client: %w", err)
 	}
@@ -249,10 +252,47 @@ func (c *Connection) Exec(ctx context.Context, src *drivers.DatabaseSource) (dri
 		return nil, fmt.Errorf("failed to run query: %w", err)
 	}
 
-	return &rowIterator{bqIter: it}, nil
+	return &rowIterator{
+		client: client,
+		bqIter: it,
+	}, nil
+}
+
+func (c *Connection) createClient(ctx context.Context, props *sourceProperties) (*bigquery.Client, error) {
+	creds, err := c.resolvedCredentials(ctx)
+	if err != nil {
+		if !errors.Is(err, errNoCredentials) {
+			return nil, err
+		}
+
+		return bigquery.NewClient(ctx, props.ProjectID)
+	}
+	return bigquery.NewClient(ctx, props.ProjectID, option.WithCredentials(creds))
+}
+
+func (c *Connection) resolvedCredentials(ctx context.Context) (*google.Credentials, error) {
+	if c.config.SecretJSON != "" {
+		// google_application_credentials is set, use credentials from json string provided by user
+		return google.CredentialsFromJSON(ctx, []byte(c.config.SecretJSON), "https://www.googleapis.com/auth/cloud-platform")
+	}
+	// google_application_credentials is not set
+	if c.config.AllowHostAccess {
+		// use host credentials
+		creds, err := gcp.DefaultCredentials(ctx)
+		if err != nil {
+			if strings.Contains(err.Error(), "google: could not find default credentials") {
+				return nil, errNoCredentials
+			}
+
+			return nil, err
+		}
+		return creds, nil
+	}
+	return nil, errNoCredentials
 }
 
 type rowIterator struct {
+	client  *bigquery.Client
 	next    []any
 	nexterr error
 	schema  drivers.Schema
@@ -274,7 +314,7 @@ func (r *rowIterator) ResultSchema(ctx context.Context) (drivers.Schema, error) 
 
 	r.schema = make([]drivers.Field, len(r.bqIter.Schema))
 	for i, s := range r.bqIter.Schema {
-		dbt, err := typeToDuckDBType(string(s.Type))
+		dbt, err := bqToDuckDB(string(s.Type))
 		if err != nil {
 			return nil, err
 		}
@@ -300,6 +340,10 @@ func (r *rowIterator) Next(ctx context.Context) ([]any, error) {
 	return row, nil
 }
 
+func (r *rowIterator) Close() error {
+	return r.client.Close()
+}
+
 type row []any
 
 var _ bigquery.ValueLoader = &row{}
@@ -317,53 +361,37 @@ func (r *row) Load(v []bigquery.Value, s bigquery.Schema) error {
 	return nil
 }
 
-func (c *Connection) resolvedCredentials(ctx context.Context) (*google.Credentials, error) {
-	if c.config.SecretJSON != "" {
-		// google_application_credentials is set, use credentials from json string provided by user
-		return google.CredentialsFromJSON(ctx, []byte(c.config.SecretJSON), "https://www.googleapis.com/auth/cloud-platform")
-	}
-	// google_application_credentials is not set
-	if c.config.AllowHostAccess {
-		// use host credentials
-		creds, err := gcp.DefaultCredentials(ctx)
-		if err != nil {
-			if strings.Contains(err.Error(), "google: could not find default credentials") {
-				return nil, errNoCredentials
-			}
-
-			return nil, err
-		}
-		return creds, nil
-	}
-	return nil, errNoCredentials
-}
-
-func typeToDuckDBType(dbt string) (string, error) {
+func bqToDuckDB(dbt string) (string, error) {
 	switch dbt {
 	case "STRING":
 		return "VARCHAR", nil
 	case "JSON":
 		return "VARCHAR", nil
 	case "INTERVAL":
-		return "INTERVAL", nil
+		return "VARCHAR", nil
 	case "GEOGRAPHY":
 		return "VARCHAR", nil
+	case "FLOAT":
+		return "DOUBLE", nil
+	// TODO :: NUMERIC and BIGNUMERIC are represented as *big.Rat type.
+	// There is no support for these types in go-duckdb driver.
+	// Users can cast these to duckdb types in model.
 	case "NUMERIC": // TODO :: fix this to correct duckdb type
 		return "VARCHAR", nil
 	case "BIGNUMERIC": // TODO :: fix this to correct duckdb type
 		return "VARCHAR", nil
-	case "DATETIME": // TODO :: fix this to correct duckdb type
-		return "VARCHAR", nil
-	case "TIME": // TODO :: fix this to correct duckdb type
-		return "VARCHAR", nil
-	case "DATE": // TODO :: fix this to correct duckdb type
-		return "VARCHAR", nil
 	case "TIMESTAMP":
 		return "TIMESTAMP", nil
+	// TODO :: DATETIME, TIME, DATE doesn't have equivalent constructs in go and not supported in go-duckdb driver.
+	// Users can cast these to duckdb types in model.
+	case "DATETIME":
+		return "VARCHAR", nil
+	case "TIME":
+		return "VARCHAR", nil
+	case "DATE":
+		return "VARCHAR", nil
 	case "BOOLEAN":
 		return "BOOLEAN", nil
-	case "FLOAT":
-		return "DOUBLE", nil
 	case "INTEGER":
 		return "INTEGER", nil
 	case "BYTES":
@@ -371,7 +399,8 @@ func typeToDuckDBType(dbt string) (string, error) {
 	case "RECORD":
 		return "", fmt.Errorf("record type not supported")
 	default:
-		panic("not implemeted")
+		// TODO :: may be just use VARCHAR ?
+		return "", fmt.Errorf("type %s not supported", dbt)
 	}
 }
 
@@ -379,15 +408,15 @@ func convert(v any) any {
 	if v == nil {
 		return nil
 	}
-
+	// refer to documentation on bigquery.RowIterator.Next for the superset of all go types possible
 	switch val := v.(type) {
 	case civil.Date:
-		return val.String() // TODO :: convert this to correct duckdb type
+		return val.String()
 	case civil.Time:
-		return val.String() // TODO :: convert this to correct duckdb type
+		return val.String()
 	case civil.DateTime:
-		return val.String() // TODO :: convert this to correct duckdb type
-	case big.Rat:
+		return val.String()
+	case *big.Rat:
 		return val.String()
 	default:
 		return val

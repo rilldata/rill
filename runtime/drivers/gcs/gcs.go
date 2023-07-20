@@ -194,7 +194,6 @@ func (c *Connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *Connection) Close() error {
-	// TODO:: anshul :: fix
 	return nil
 }
 

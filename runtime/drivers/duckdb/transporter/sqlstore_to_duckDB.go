@@ -45,6 +45,7 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, 
 	if err != nil {
 		return err
 	}
+	defer iter.Close()
 
 	schema, err := iter.ResultSchema(ctx)
 	if err != nil {

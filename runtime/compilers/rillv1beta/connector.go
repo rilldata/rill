@@ -181,8 +181,8 @@ func source(connector string, src *runtimev1.Source) drivers.Source {
 	case "motherduck":
 		return &drivers.DatabaseSource{}
 	case "bigquery":
-		return &drivers.BucketSource{
-			Properties: props,
+		return &drivers.DatabaseSource{
+			Props: props,
 		}
 	default:
 		return nil
