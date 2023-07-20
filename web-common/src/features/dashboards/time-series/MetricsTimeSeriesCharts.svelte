@@ -32,6 +32,10 @@
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   import { prepareTimeSeries } from "./utils";
+  import {
+    getDateStringForZone,
+    getDateStringInZone,
+  } from "@rilldata/web-common/lib/time/timezone";
 
   export let metricViewName;
   export let workspaceWidth: number;
@@ -134,6 +138,7 @@
     const { start: adjustedStart, end: adjustedEnd } = getAdjustedFetchTime(
       $dashboardStore?.selectedTimeRange?.start,
       $dashboardStore?.selectedTimeRange?.end,
+      $dashboardStore?.selectedTimezone,
       interval
     );
 
@@ -146,6 +151,7 @@
         timeStart: adjustedStart,
         timeEnd: adjustedEnd,
         timeGranularity: interval,
+        timeZone: $dashboardStore?.selectedTimezone,
       }
     );
     if (displayComparison) {
@@ -153,6 +159,7 @@
         getAdjustedFetchTime(
           $dashboardStore?.selectedComparisonTimeRange?.start,
           $dashboardStore?.selectedComparisonTimeRange?.end,
+          $dashboardStore?.selectedTimezone,
           interval
         );
 
@@ -165,6 +172,7 @@
           timeStart: compAdjustedStart,
           timeEnd: compAdjustedEnd,
           timeGranularity: interval,
+          timeZone: $dashboardStore?.selectedTimezone,
         }
       );
     }
@@ -205,6 +213,7 @@
     const adjustedChartValue = getAdjustedChartTime(
       $dashboardStore?.selectedTimeRange?.start,
       $dashboardStore?.selectedTimeRange?.end,
+      $dashboardStore?.selectedTimezone,
       interval,
       $dashboardStore?.selectedTimeRange?.name
     );
@@ -296,18 +305,18 @@
             data={formattedData}
             xAccessor="ts_position"
             labelAccessor="ts"
+            zone={$dashboardStore?.selectedTimezone}
             timeGrain={interval}
             yAccessor={measure.name}
             xMin={startValue}
             xMax={endValue}
             {showComparison}
-            mouseoverTimeFormat={(value) => {
-              /** format the date according to the time grain */
-              return new Date(value).toLocaleDateString(
-                undefined,
+            mouseoverTimeFormat={(value) =>
+              getDateStringForZone(
+                value,
+                $dashboardStore?.selectedTimezone,
                 TIME_GRAIN[interval].formatDate
-              );
-            }}
+              )}
             numberKind={nicelyFormattedTypesToNumberKind(measure?.format)}
             mouseoverFormat={(value) =>
               formatPreset === NicelyFormattedTypes.NONE

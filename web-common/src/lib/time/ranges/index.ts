@@ -296,10 +296,14 @@ export const prettyFormatTimeRange = (
   )} - ${inclusiveEndDate.toLocaleDateString(undefined, dateFormatOptions)}`;
 };
 
-/** Get extra data points for extrapolating the chart on both ends */
+/**
+ * Return start and end date such that the results include
+ * extra data points for extrapolating the chart on both ends
+ */
 export function getAdjustedFetchTime(
   startTime: Date,
   endTime: Date,
+  zone: string,
   interval: V1TimeGrain
 ) {
   if (!startTime || !endTime)
@@ -313,7 +317,8 @@ export function getAdjustedFetchTime(
   // the data point previous to the first date inside the chart.
   const fetchStartTime = getStartOfPeriod(
     offsetedStartTime,
-    TIME_GRAIN[interval].duration
+    TIME_GRAIN[interval].duration,
+    zone
   );
 
   const offsetedEndTime = getOffset(
@@ -325,7 +330,8 @@ export function getAdjustedFetchTime(
   // the data point after the last complete date.
   const fetchEndTime = getStartOfPeriod(
     offsetedEndTime,
-    TIME_GRAIN[interval].duration
+    TIME_GRAIN[interval].duration,
+    zone
   );
 
   return {
@@ -334,9 +340,15 @@ export function getAdjustedFetchTime(
   };
 }
 
+// TODO: Check what removeTimezoneOffset is used for
+/**
+ * Return start and end date to be used as extents of the
+ * time series charts
+ */
 export function getAdjustedChartTime(
   start: Date,
   end: Date,
+  zone: string,
   interval: V1TimeGrain,
   timePreset: TimeRangeType
 ) {

@@ -41,3 +41,22 @@ export function getDateMonthYearForTimezone(date: Date, timezone: string) {
   const year = timeZoneDate.year;
   return { day, month, year };
 }
+
+// FIX ME
+export function getDateStringForZone(
+  value,
+  timeZone: string,
+  dateFormatOptions
+) {
+  const options = {
+    timeZone,
+    ...dateFormatOptions,
+  };
+
+  console.log(
+    value.toISOString(),
+    timeZone,
+    new Date(value).toLocaleDateString(undefined, options)
+  );
+  return new Date(value).toLocaleDateString(undefined, options);
+}
