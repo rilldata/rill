@@ -38,6 +38,7 @@
    * or for a count(*) metric, the reference value is the total number of rows.
    */
   export let referenceValue: number;
+  export let unfilteredTotal: number;
 
   export let formatPreset: NicelyFormattedTypes;
   export let isSummableMeasure = false;
@@ -263,6 +264,7 @@
           {filterExcludeMode}
           {atLeastOneActive}
           {referenceValue}
+          {unfilteredTotal}
           {isSummableMeasure}
           on:select-item
         />
@@ -280,6 +282,7 @@
             {filterExcludeMode}
             {atLeastOneActive}
             {referenceValue}
+            {unfilteredTotal}
             {isSummableMeasure}
             on:select-item
           />
