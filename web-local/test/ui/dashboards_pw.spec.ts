@@ -49,6 +49,11 @@ test.describe("dashboard", () => {
       `${dir}/rill.yaml`,
       'compiler: rill-beta\ntitle: "Test Project"'
     );
+
+    // await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    // delete "default" instance
+    // create "default" instance
   });
 
   // test("Autogenerate dashboard from source", async ({ page }) => {
