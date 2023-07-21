@@ -46,6 +46,4 @@
   <title>Rill Developer | {sourceName}</title>
 </svelte:head>
 
-{#if $fileQuery.data}
-  <SourceWorkspace {sourceName} />
-{/if}
+<SourceWorkspace {sourceName} />
