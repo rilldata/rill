@@ -50,10 +50,31 @@ test.describe("dashboard", () => {
       'compiler: rill-beta\ntitle: "Test Project"'
     );
 
-    // await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    // delete "default" instance
-    // create "default" instance
+    // // delete "default" instance
+    // await axios.post("http://localhost:8083/v1/instances/default", {
+    //   dropDb: true,
+    // });
+    // // create "default" instance
+    // await axios.post(
+    //   "http://localhost:8083/v1/instances",
+    //   {
+    //     instanceId: "default",
+    //     olapDriver: "duckdb",
+    //     olapDsn: "stage.db",
+    //     repoDriver: "file",
+    //     repoDsn: "temp/dashboards",
+    //     embedCatalog: true,
+    //     variables: {},
+    //     // ingestionLimitBytes: string;
+    //   },
+    //   {
+    //     headers: {
+    //       "Content-Type": "application/json",
+    //     },
+    //   }
+    // );
   });
 
   test("Autogenerate dashboard from source", async ({ page }) => {
