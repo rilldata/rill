@@ -56,20 +56,20 @@ test.describe("dashboard", () => {
     // create "default" instance
   });
 
-  // test("Autogenerate dashboard from source", async ({ page }) => {
-  //   // const { page } = testBrowser;
-  //   await page.goto("http://localhost:8083");
+  test("Autogenerate dashboard from source", async ({ page }) => {
+    // const { page } = testBrowser;
+    await page.goto("http://localhost:8083");
 
-  //   await createOrReplaceSource(page, "AdBids.csv", "AdBids");
-  //   await createDashboardFromSource(page, "AdBids");
-  //   await waitForEntity(
-  //     page,
-  //     TestEntityType.Dashboard,
-  //     "AdBids_dashboard",
-  //     true
-  //   );
-  //   await assertAdBidsDashboard(page);
-  // });
+    await createOrReplaceSource(page, "AdBids.csv", "AdBids");
+    await createDashboardFromSource(page, "AdBids");
+    await waitForEntity(
+      page,
+      TestEntityType.Dashboard,
+      "AdBids_dashboard",
+      true
+    );
+    await assertAdBidsDashboard(page);
+  });
 
   test("Dashboard runthrough", async ({ page }) => {
     await page.goto("http://localhost:8083");
