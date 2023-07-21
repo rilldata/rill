@@ -1,8 +1,9 @@
 import path from "node:path";
 import type { Page } from "playwright";
+import { updateCodeEditor } from "./commonHelpers";
 import { assertLeaderboards } from "./dashboardHelpers";
 import { waitForProfiling, wrapRetryAssertion } from "./helpers";
-import { createModel, updateModelSql } from "./modelHelpers";
+import { createModel } from "./modelHelpers";
 import { waitForSource } from "./sourceHelpers";
 
 export async function waitForAdBids(page: Page, name: string) {
@@ -21,7 +22,7 @@ export async function createAdBidsModel(page: Page) {
       "domain",
       "timestamp",
     ]),
-    updateModelSql(
+    updateCodeEditor(
       page,
       `from "${path.join(__dirname, "../../data", "AdBids.csv")}"`
     ),

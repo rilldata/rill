@@ -11,10 +11,10 @@
   } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
   import { useModelNames } from "@rilldata/web-common/features/models/selectors";
   import {
-    V1GetCatalogEntryResponse,
     getRuntimeServiceGetCatalogEntryQueryKey,
     runtimeServiceGetCatalogEntry,
     runtimeServicePutFileAndReconcile,
+    V1GetCatalogEntryResponse,
   } from "@rilldata/web-common/runtime-client";
   import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";

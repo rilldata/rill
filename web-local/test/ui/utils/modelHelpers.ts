@@ -17,17 +17,6 @@ export async function createModelFromSource(page: Page, source: string) {
   await clickMenuButton(page, "Create New Model");
 }
 
-export async function updateModelSql(page: Page, sql: string) {
-  await page.locator(".cm-line").first().click();
-  if (process.platform === "darwin") {
-    await page.keyboard.press("Meta+A");
-  } else {
-    await page.keyboard.press("Control+A");
-  }
-  await page.keyboard.press("Delete");
-  await page.keyboard.insertText(sql);
-}
-
 export async function modelHasError(page: Page, hasError: boolean, error = "") {
   const errorLocator = page.locator(".editor-pane .error");
   try {

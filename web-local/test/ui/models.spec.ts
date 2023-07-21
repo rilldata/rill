@@ -1,10 +1,11 @@
 import { describe, it } from "@jest/globals";
-import { createAdBidsModel } from "./utils/dataSpecifcHelpers";
 import {
   deleteEntity,
   gotoEntity,
   renameEntityUsingMenu,
+  updateCodeEditor,
 } from "./utils/commonHelpers";
+import { createAdBidsModel } from "./utils/dataSpecifcHelpers";
 import {
   TestEntityType,
   waitForProfiling,
@@ -14,7 +15,6 @@ import {
   createModel,
   createModelFromSource,
   modelHasError,
-  updateModelSql,
 } from "./utils/modelHelpers";
 import { useRegisteredServer } from "./utils/serverConfigs";
 import { createOrReplaceSource } from "./utils/sourceHelpers";
@@ -37,16 +37,16 @@ describe("models", () => {
         "domain",
         "timestamp",
       ]),
-      updateModelSql(page, "select * from AdBids"),
+      updateCodeEditor(page, "select * from AdBids"),
     ]);
     await wrapRetryAssertion(() => modelHasError(page, false));
 
     // Catalog error
-    await updateModelSql(page, "select * from AdBid");
+    await updateCodeEditor(page, "select * from AdBid");
     await wrapRetryAssertion(() => modelHasError(page, true, "Catalog Error"));
 
     // Query parse error
-    await updateModelSql(page, "select from AdBids");
+    await updateCodeEditor(page, "select from AdBids");
     await wrapRetryAssertion(() => modelHasError(page, true, "Parser Error"));
   });
 
