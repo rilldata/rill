@@ -8,5 +8,3 @@ CREATE TABLE rill.catalog (
 	refreshed_on TIMESTAMPTZ NOT NULL,
 	PRIMARY KEY (name)
 );
-
-CREATE UNIQUE INDEX lower_name_unique_idx ON rill.catalog (lower(name));

@@ -9,8 +9,6 @@ import {
 import { createAdBidsModel } from "./utils/dataSpecifcHelpers";
 import { wrapRetryAssertion } from "./utils/helpers";
 
-console.log("change");
-
 test.describe("dashboard", () => {
   test.beforeEach(async () => {
     const dir = "temp/dashboards";
@@ -37,6 +35,47 @@ test.describe("dashboard", () => {
       `${dir}/rill.yaml`,
       'compiler: rill-beta\ntitle: "Test Project"'
     );
+
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    // // delete "default" instance
+    // await axios.post("http://localhost:8083/v1/instances/default", {
+    //   dropDb: true,
+    // });
+    // // create "default" instance
+    // await axios.post(
+    //   "http://localhost:8083/v1/instances",
+    //   {
+    //     instanceId: "default",
+    //     olapDriver: "duckdb",
+    //     olapDsn: "stage.db",
+    //     repoDriver: "file",
+    //     repoDsn: "temp/dashboards",
+    //     embedCatalog: true,
+    //     variables: {},
+    //     // ingestionLimitBytes: string;
+    //   },
+    //   {
+    //     headers: {
+    //       "Content-Type": "application/json",
+    //     },
+    //   }
+    // );
+  });
+
+  test("Autogenerate dashboard from source", async ({ page }) => {
+    // const { page } = testBrowser;
+    await page.goto("http://localhost:8083");
+
+    await createOrReplaceSource(page, "AdBids.csv", "AdBids");
+    await createDashboardFromSource(page, "AdBids");
+    await waitForEntity(
+      page,
+      TestEntityType.Dashboard,
+      "AdBids_dashboard",
+      true
+    );
+    await assertAdBidsDashboard(page);
   });
 
   test("Dashboard runthrough", async ({ page }) => {
