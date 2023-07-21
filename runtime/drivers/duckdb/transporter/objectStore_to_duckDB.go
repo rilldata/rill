@@ -93,12 +93,12 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, source drivers.Sourc
 				return err
 			}
 		} else {
-			from, err := sourceReader(files, format, ingestionProps)
+			from, err := sourceReader(files, format, "", ingestionProps)
 			if err != nil {
 				return err
 			}
 
-			query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", dbSink.Table, from)
+			query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s);", dbSink.Table, from)
 			if err := t.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1}); err != nil {
 				return err
 			}
@@ -135,16 +135,16 @@ func newAppender(to drivers.OLAPStore, sink *drivers.DatabaseSink, ingestionProp
 }
 
 func (a *appender) appendData(ctx context.Context, files []string, format string) error {
-	from, err := sourceReader(files, format, a.ingestionProps)
+	from, err := sourceReader(files, format, "", a.ingestionProps)
 	if err != nil {
 		return err
 	}
 
 	var query string
 	if a.allowSchemaRelaxation {
-		query = fmt.Sprintf("INSERT INTO %q BY NAME (SELECT * FROM %s);", a.sink.Table, from)
+		query = fmt.Sprintf("INSERT INTO %q BY NAME (%s);", a.sink.Table, from)
 	} else {
-		query = fmt.Sprintf("INSERT INTO %q (SELECT * FROM %s);", a.sink.Table, from)
+		query = fmt.Sprintf("INSERT INTO %q (%s);", a.sink.Table, from)
 	}
 	a.logger.Debug("generated query", zap.String("query", query), observability.ZapCtx(ctx))
 	err = a.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
@@ -159,7 +159,7 @@ func (a *appender) appendData(ctx context.Context, files []string, format string
 		return fmt.Errorf("failed to update schema %w", err)
 	}
 
-	query = fmt.Sprintf("INSERT INTO %q BY NAME (SELECT * FROM %s);", a.sink.Table, from)
+	query = fmt.Sprintf("INSERT INTO %q BY NAME (%s);", a.sink.Table, from)
 	a.logger.Debug("generated query", zap.String("query", query), observability.ZapCtx(ctx))
 	return a.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
 }
@@ -168,13 +168,13 @@ func (a *appender) appendData(ctx context.Context, files []string, format string
 // updates the datatypes of an existing columns with a wider datatype.
 func (a *appender) updateSchema(ctx context.Context, from string, fileNames []string) error {
 	// schema of new files
-	srcSchema, err := a.scanSchemaFromQuery(ctx, fmt.Sprintf("DESCRIBE (SELECT * FROM %s LIMIT 0);", from))
+	srcSchema, err := a.scanSchemaFromQuery(ctx, fmt.Sprintf("DESCRIBE (%s LIMIT 0);", from))
 	if err != nil {
 		return err
 	}
 
 	// combined schema
-	qry := fmt.Sprintf("DESCRIBE ((SELECT * FROM %s limit 0) UNION ALL BY NAME (SELECT * FROM %s limit 0));", a.sink.Table, from)
+	qry := fmt.Sprintf("DESCRIBE ((%s limit 0) UNION ALL BY NAME (%s limit 0));", a.sink.Table, from)
 	unionSchema, err := a.scanSchemaFromQuery(ctx, qry)
 	if err != nil {
 		return err

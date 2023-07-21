@@ -10,8 +10,10 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 const _defaultIngestTimeout = 60 * time.Minute
@@ -192,6 +194,14 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 		name = apiSource.Name
 	}
 
+	// TODO: this should go in the parser in the new reconcile
+	if apiSource.Connector == "duckdb" {
+		err := mergeFromParsedQuery(apiSource)
+		if err != nil {
+			return err
+		}
+	}
+
 	logger = logger.With(zap.String("source", name))
 	variables := convertLower(opts.InstanceEnv)
 	srcConnector, err := drivers.Open(apiSource.Connector, connectorVariables(apiSource, variables, repo.Root()), logger)
@@ -245,6 +255,60 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 		return drivers.ErrIngestionLimitExceeded
 	}
 	return err
+}
+
+func mergeFromParsedQuery(apiSource *runtimev1.Source) error {
+	props := apiSource.Properties.AsMap()
+	query, ok := props["query"]
+	if !ok {
+		return nil
+	}
+
+	// raw sql query
+	ast, err := duckdbsql.Parse(query.(string))
+	if err != nil {
+		return err
+	}
+	refs := ast.GetTableRefs()
+	if len(refs) > 1 {
+		return errors.New("sql source can have only one table reference")
+	}
+	ref := refs[0]
+
+	if ref.Name != "" {
+		p, c, ok := parseEmbeddedSourceConnector(ref.Name)
+		if !ok {
+			return errors.New("unknown source")
+		}
+		apiSource.Connector = c
+		props["path"] = p
+	} else if len(ref.Paths) == 1 {
+		var dp map[string]any
+		if v, def := props["duckdb"]; !def {
+			dp = map[string]any{}
+		} else {
+			dp = v.(map[string]any)
+		}
+		for k, v := range ref.Properties {
+			dp[k] = v
+		}
+		props["duckdb"] = dp
+		p, c, ok := parseEmbeddedSourceConnector(ref.Paths[0])
+		if !ok {
+			return errors.New("unknown source")
+		}
+		apiSource.Connector = c
+		props["path"] = p
+	} else {
+		return errors.New("invalid source, only a single path for source is supported")
+	}
+
+	pbProps, err := structpb.NewStruct(props)
+	if err != nil {
+		return err
+	}
+	apiSource.Properties = pbProps
+	return nil
 }
 
 type progress struct {
