@@ -23,8 +23,6 @@ import { waitForEntity } from "./utils/waitHelpers";
 import { asyncWaitUntil } from "@rilldata/web-local/lib/util/waitUtils";
 import axios from "axios";
 
-console.log("change");
-
 test.describe("dashboard", () => {
   test.beforeEach(async () => {
     const dir = "temp/dashboards";
@@ -52,6 +50,21 @@ test.describe("dashboard", () => {
       'compiler: rill-beta\ntitle: "Test Project"'
     );
   });
+
+  // test("Autogenerate dashboard from source", async ({ page }) => {
+  //   // const { page } = testBrowser;
+  //   await page.goto("http://localhost:8083");
+
+  //   await createOrReplaceSource(page, "AdBids.csv", "AdBids");
+  //   await createDashboardFromSource(page, "AdBids");
+  //   await waitForEntity(
+  //     page,
+  //     TestEntityType.Dashboard,
+  //     "AdBids_dashboard",
+  //     true
+  //   );
+  //   await assertAdBidsDashboard(page);
+  // });
 
   test("Dashboard runthrough", async ({ page }) => {
     await page.goto("http://localhost:8083");
