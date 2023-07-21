@@ -72,7 +72,7 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: {
     command:
-      "../rill start --no-open --port 8083 --port-grpc 9083 --db temp/dashboards/stage.db?rill_pool_size=4 temp/dashboards",
+      "../rill start --no-open --port 8083 --port-grpc 9083 --db temp/dashboards/stage.db?rill_pool_size=1 temp/dashboards",
     url: "http://localhost:8083",
     reuseExistingServer: !process.env.CI,
   },
