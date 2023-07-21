@@ -25,14 +25,6 @@
     setLineStatuses([], view);
   }
 
-  // PLACEDHOLDER
-  /** note: this codemirror plugin does actually utilize tanstack query, and the
-   * instantiation of the underlying svelte component that defines the placeholder
-   * must be instantiated in the component.
-   */
-  // const placeholderElement = createPlaceholderElement(sourceName);
-  // const placeholder = createPlaceholder(placeholderElement.DOMElement);
-
   /**
    * Handle errors.
    */
