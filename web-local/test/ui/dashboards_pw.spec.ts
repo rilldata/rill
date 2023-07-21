@@ -1,5 +1,5 @@
 import { describe, it } from "@jest/globals";
-import { expect, test } from "@playwright/test";
+import { chromium, expect, test } from "@playwright/test";
 import { rmSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import {
   RequestMatcher,
@@ -22,8 +22,29 @@ import { createOrReplaceSource } from "./utils/sourceHelpers";
 import { waitForEntity } from "./utils/waitHelpers";
 import { asyncWaitUntil } from "@rilldata/web-local/lib/util/waitUtils";
 import axios from "axios";
+import { spawn } from "node:child_process";
+import type { ChildProcess } from "node:child_process";
+import path from "path";
+import treeKill from "tree-kill";
+import { isPortOpen } from "@rilldata/web-local/lib/util/isPortOpen";
 
 test.describe("dashboard", () => {
+  let childProcess: ChildProcess;
+  // let browser;
+  // let page;
+
+  // test.beforeAll(async () => {
+  //   browser = await chromium.launch({
+  //     // headless: false,
+  //     // slowMo: 500,
+  //     // devtools: true,
+  //   });
+  // });
+
+  // test.beforeEach(async () => {
+  //   page = await browser.newPage();
+  // });
+
   test.beforeEach(async () => {
     const dir = "temp/dashboards";
     rmSync(dir, {
@@ -33,6 +54,14 @@ test.describe("dashboard", () => {
     if (!existsSync(dir)) {
       mkdirSync(dir, { recursive: true });
     }
+
+    const cmd = `start --no-open --port 8083 --port-grpc 9083 --db temp/dashboards/stage.db?rill_pool_size=4 temp/dashboards`;
+
+    childProcess = spawn("../rill", cmd.split(" "), {
+      stdio: "inherit",
+      shell: true,
+    });
+    childProcess.on("error", console.log);
 
     // Ping runtime until it's ready
     await asyncWaitUntil(async () => {
@@ -50,7 +79,7 @@ test.describe("dashboard", () => {
       'compiler: rill-beta\ntitle: "Test Project"'
     );
 
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    // await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // // delete "default" instance
     // await axios.post("http://localhost:8083/v1/instances/default", {
@@ -75,6 +104,15 @@ test.describe("dashboard", () => {
     //     },
     //   }
     // );
+  });
+
+  test.afterEach(async () => {
+    const processExit = new Promise((resolve) => {
+      childProcess.on("exit", resolve);
+    });
+    if (childProcess.pid) treeKill(childProcess.pid);
+    await asyncWaitUntil(async () => !(await isPortOpen(8083)));
+    await processExit;
   });
 
   test("Autogenerate dashboard from source", async ({ page }) => {
