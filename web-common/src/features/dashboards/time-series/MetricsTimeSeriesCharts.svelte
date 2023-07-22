@@ -21,7 +21,6 @@
     getAdjustedFetchTime,
   } from "@rilldata/web-common/lib/time/ranges";
   import {
-    connectorServiceS3ListBuckets,
     createQueryServiceMetricsViewTimeSeries,
     createQueryServiceMetricsViewTotals,
     V1MetricsViewTimeSeriesResponse,
@@ -33,7 +32,6 @@
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   import { prepareTimeSeries } from "./utils";
-  import { getDateStringForZone } from "@rilldata/web-common/lib/time/timezone";
 
   export let metricViewName;
   export let workspaceWidth: number;

@@ -23,6 +23,7 @@
     ISODurationToTimePreset,
     convertTimeRangePreset,
   } from "@rilldata/web-common/lib/time/ranges";
+  import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
   import {
     DashboardTimeControls,
     TimeComparisonOption,
@@ -43,8 +44,7 @@
   import TimeComparisonSelector from "./TimeComparisonSelector.svelte";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeSelector from "./TimeRangeSelector.svelte";
-  import TimeZoneSelector from "@rilldata/web-common/features/dashboards/time-controls/TimeZoneSelector.svelte";
-  import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
+  import TimeZoneSelector from "./TimeZoneSelector.svelte";
 
   export let metricViewName: string;
 
@@ -97,6 +97,8 @@
     availableTimeZones =
       $metricsViewQuery?.data?.entry?.metricsView?.availableTimeZones;
 
+    // For legacy dashboards, we need to set the available time
+    // zones to the default if they are not defined.
     if (!availableTimeZones?.length) {
       availableTimeZones = DEFAULT_TIMEZONES;
     }

@@ -113,8 +113,6 @@ export function getTicks(
 ) {
   const tickCount = ~~(axisLength / (xOrY === "x" ? 150 : 50));
 
-  // TODO: Scales are being calculatd using the user default timezone here
-  // Fix it to use the timezone of the dashboard
   let ticks = scale.ticks(tickCount);
 
   if (ticks.length <= 1) {

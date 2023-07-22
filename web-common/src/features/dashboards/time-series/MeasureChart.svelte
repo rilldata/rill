@@ -48,8 +48,6 @@
   export let scrubbing = false;
   export let scrubEnd = undefined;
 
-  // $: console.log(data?.map((d) => d["ts_position"].toISOString()));
-
   $: [xExtentMin, xExtentMax] = extent(data, (d) => d[xAccessor]);
   $: [yExtentMin, yExtentMax] = extent(data, (d) => d[yAccessor]);
   let comparisonExtents;
