@@ -13,6 +13,7 @@ message Resource {
     SourceV2 source = 3;
     ModelV2 model = 4;
     MetricsViewV2 metrics_view = 5;
+    Migration migration = 9;
     PullTrigger pull_trigger = 6;
     RefreshTrigger refresh_trigger = 7;
     BucketPlanner bucket_planner = 8;
@@ -22,7 +23,8 @@ message Resource {
 message ResourceMeta {
   ResourceName name = 1;
   repeated ResourceName refs = 2;
-  map<string, string> annotations = 3;
+  optional ResourceName owner = 3;
+  repeated string file_paths = 4;
   int64 spec_version = 5;
   int64 state_version = 6;
   bool deleted = 7;

@@ -588,12 +588,11 @@ export interface V1ResourceName {
   name?: string;
 }
 
-export type V1ResourceMetaAnnotations = { [key: string]: string };
-
 export interface V1ResourceMeta {
   name?: V1ResourceName;
   refs?: V1ResourceName[];
-  annotations?: V1ResourceMetaAnnotations;
+  owner?: V1ResourceName;
+  filePaths?: string[];
   specVersion?: string;
   stateVersion?: string;
   deleted?: boolean;
@@ -622,6 +621,7 @@ export interface V1Resource {
   source?: V1SourceV2;
   model?: V1ModelV2;
   metricsView?: V1MetricsViewV2;
+  migration?: V1Migration;
   pullTrigger?: V1PullTrigger;
   refreshTrigger?: V1RefreshTrigger;
   bucketPlanner?: V1BucketPlanner;
@@ -942,6 +942,21 @@ export interface V1Model {
   dialect?: ModelDialect;
   schema?: V1StructType;
   materialize?: boolean;
+}
+
+export interface V1MigrationState {
+  version?: number;
+}
+
+export interface V1MigrationSpec {
+  connector?: string;
+  sql?: string;
+  version?: number;
+}
+
+export interface V1Migration {
+  spec?: V1MigrationSpec;
+  state?: V1MigrationState;
 }
 
 export interface V1MetricsViewV2 {

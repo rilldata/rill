@@ -3320,6 +3320,29 @@ definitions:
         $ref: '#/definitions/v1MetricsViewSpec'
       state:
         $ref: '#/definitions/v1MetricsViewState'
+  v1Migration:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1MigrationSpec'
+      state:
+        $ref: '#/definitions/v1MigrationState'
+  v1MigrationSpec:
+    type: object
+    properties:
+      connector:
+        type: string
+      sql:
+        type: string
+      version:
+        type: integer
+        format: int64
+  v1MigrationState:
+    type: object
+    properties:
+      version:
+        type: integer
+        format: int64
   v1Model:
     type: object
     properties:
@@ -3880,6 +3903,8 @@ definitions:
         $ref: '#/definitions/v1ModelV2'
       metricsView:
         $ref: '#/definitions/v1MetricsViewV2'
+      migration:
+        $ref: '#/definitions/v1Migration'
       pullTrigger:
         $ref: '#/definitions/v1PullTrigger'
       refreshTrigger:
@@ -3905,9 +3930,11 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1ResourceName'
-      annotations:
-        type: object
-        additionalProperties:
+      owner:
+        $ref: '#/definitions/v1ResourceName'
+      filePaths:
+        type: array
+        items:
           type: string
       specVersion:
         type: string

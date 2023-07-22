@@ -47,6 +47,12 @@ export class Resource extends Message<Resource> {
     case: "metricsView";
   } | {
     /**
+     * @generated from field: rill.runtime.v1.Migration migration = 9;
+     */
+    value: Migration;
+    case: "migration";
+  } | {
+    /**
      * @generated from field: rill.runtime.v1.PullTrigger pull_trigger = 6;
      */
     value: PullTrigger;
@@ -78,6 +84,7 @@ export class Resource extends Message<Resource> {
     { no: 3, name: "source", kind: "message", T: SourceV2, oneof: "resource" },
     { no: 4, name: "model", kind: "message", T: ModelV2, oneof: "resource" },
     { no: 5, name: "metrics_view", kind: "message", T: MetricsViewV2, oneof: "resource" },
+    { no: 9, name: "migration", kind: "message", T: Migration, oneof: "resource" },
     { no: 6, name: "pull_trigger", kind: "message", T: PullTrigger, oneof: "resource" },
     { no: 7, name: "refresh_trigger", kind: "message", T: RefreshTrigger, oneof: "resource" },
     { no: 8, name: "bucket_planner", kind: "message", T: BucketPlanner, oneof: "resource" },
@@ -115,9 +122,14 @@ export class ResourceMeta extends Message<ResourceMeta> {
   refs: ResourceName[] = [];
 
   /**
-   * @generated from field: map<string, string> annotations = 3;
+   * @generated from field: optional rill.runtime.v1.ResourceName owner = 3;
    */
-  annotations: { [key: string]: string } = {};
+  owner?: ResourceName;
+
+  /**
+   * @generated from field: repeated string file_paths = 4;
+   */
+  filePaths: string[] = [];
 
   /**
    * @generated from field: int64 spec_version = 5;
@@ -169,7 +181,8 @@ export class ResourceMeta extends Message<ResourceMeta> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "message", T: ResourceName },
     { no: 2, name: "refs", kind: "message", T: ResourceName, repeated: true },
-    { no: 3, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 3, name: "owner", kind: "message", T: ResourceName, opt: true },
+    { no: 4, name: "file_paths", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 5, name: "spec_version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 6, name: "state_version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 7, name: "deleted", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
