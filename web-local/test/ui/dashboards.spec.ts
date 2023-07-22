@@ -114,6 +114,13 @@ describe("dashboards", () => {
     // Change the time range
     await page.getByLabel("Select time range").click();
     await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
+
+    // Change time zone to UTC
+    await page.getByLabel("Timezone selector").click();
+    await page
+      .getByRole("menuitem", { name: "UTC GMT +00:00 Etc/UTC" })
+      .click();
+
     // Check that the total records are 272 and have comparisons
     await playwrightExpect(page.getByText("272 -23 -7%")).toBeVisible();
 

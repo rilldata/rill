@@ -22,6 +22,27 @@ const getAbbreviationForIANATestCases = [
   },
 ];
 
+const addZoneOffsetTestCases = [
+  {
+    test: "adds the correct offset for the Indian timezone",
+    dt: new Date("2022-01-01T00:00:00.000Z"),
+    iana: "Asia/Kolkata",
+    expected: new Date("2022-01-01T05:30:00.000Z"),
+  },
+  {
+    test: "adds the correct offset for the Pacific timezone",
+    dt: new Date("2022-01-01T00:00:00.000Z"),
+    iana: "America/Los_Angeles",
+    expected: new Date("2021-12-31T16:00:00.000Z"),
+  },
+  {
+    test: "adds the correct offset accounting for Daylight Savings Time",
+    dt: new Date("2022-06-01T00:00:00.000Z"),
+    iana: "America/Los_Angeles",
+    expected: new Date("2022-05-31T17:00:00.000Z"),
+  },
+];
+
 describe("getAbbreviationForIANA", () => {
   getAbbreviationForIANATestCases.forEach((testCase) => {
     it(testCase.test, () => {
@@ -32,27 +53,10 @@ describe("getAbbreviationForIANA", () => {
 });
 
 describe("addZoneOffset", () => {
-  it("adds the correct offset for the Indian timezone", () => {
-    const dt = new Date("2022-01-01T00:00:00.000Z");
-    const iana = "Asia/Kolkata";
-    const expected = new Date("2022-01-01T05:30:00.000Z");
-    const result = addZoneOffset(dt, iana);
-    expect(result).toEqual(expected);
-  });
-
-  it("adds the correct offset for the Pacific timezone", () => {
-    const dt = new Date("2022-01-01T00:00:00.000Z");
-    const iana = "America/Los_Angeles";
-    const expected = new Date("2021-12-31T08:00:00.000Z");
-    const result = addZoneOffset(dt, iana);
-    expect(result).toEqual(expected);
-  });
-
-  it("adds the correct offset accounting for Daylight Savings Time", () => {
-    const dt = new Date("2022-06-01T00:00:00.000Z");
-    const iana = "America/Los_Angeles";
-    const expected = new Date("2022-05-31T07:00:00.000Z");
-    const result = addZoneOffset(dt, iana);
-    expect(result).toEqual(expected);
+  addZoneOffsetTestCases.forEach((testCase) => {
+    it(testCase.test, () => {
+      const offset = addZoneOffset(testCase.dt, testCase.iana);
+      expect(offset).toEqual(testCase.expected);
+    });
   });
 });
