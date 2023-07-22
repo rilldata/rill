@@ -163,7 +163,6 @@ export const prettyFormatTimeRange = (
   timeZone: string
 ): string => {
   const isAllTime = timePreset === TimeRangePreset.ALL_TIME;
-  const isCustom = timePreset === TimeRangePreset.CUSTOM;
   if (!start && end) {
     return `- ${end}`;
   }
@@ -217,14 +216,6 @@ export const prettyFormatTimeRange = (
   if (
     timeRangeDurationMs <= durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
   ) {
-    if (isCustom) {
-      // For custom time ranges, we want to show just the date
-      return `${start.toLocaleDateString(undefined, {
-        month: "short",
-        timeZone,
-      })} ${startDate}`;
-    }
-
     return `${start.toLocaleDateString(undefined, {
       month: "short",
       timeZone,

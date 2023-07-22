@@ -365,6 +365,7 @@
       currentEnd={$dashboardStore?.selectedTimeRange?.end}
       boundaryStart={allTimeRange.start}
       boundaryEnd={allTimeRange.end}
+      zone={$dashboardStore?.selectedTimezone}
       showComparison={$dashboardStore?.showComparison}
       selectedComparison={$dashboardStore?.selectedComparisonTimeRange}
       comparisonOptions={availableComparisons}

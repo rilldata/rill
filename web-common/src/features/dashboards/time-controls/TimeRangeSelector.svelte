@@ -236,6 +236,7 @@
           {boundaryStart}
           {boundaryEnd}
           {minTimeGrain}
+          zone={$dashboardStore?.selectedTimezone}
           defaultDate={selectedRange}
           on:apply={(e) =>
             onSelectCustomTimeRange(
