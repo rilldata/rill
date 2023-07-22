@@ -238,6 +238,45 @@ FRO m1
 	requireResourcesAndErrors(t, p, nil, errors)
 }
 
+func TestUniqueSourceModelName(t *testing.T) {
+	files := map[string]string{
+		// rill.yaml
+		`rill.yaml`: ``,
+		// source s1
+		`sources/s1.yaml`: `
+connector: s3
+`,
+		// model s1
+		`/models/s1.sql`: `
+SELECT 1
+`,
+	}
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindSource, Name: "s1"},
+			Paths: []string{"/sources/s1.yaml"},
+			SourceSpec: &runtimev1.SourceSpec{
+				SourceConnector: "s3",
+				Properties:      must(structpb.NewStruct(map[string]any{})),
+			},
+		},
+	}
+
+	errors := []*runtimev1.ParseError{
+		{
+			Message:  "model name collides with source \"s1\"",
+			FilePath: "/models/s1.sql",
+		},
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, errors)
+}
+
 func TestReparse(t *testing.T) {
 	// Prepare
 	truth := true
@@ -322,15 +361,41 @@ SELECT * FROM bar
 		Modified: []ResourceName{m1.Name},
 	}, diff)
 
-	// Add a syntax error in the source
+	// Rename the model to collide with the source
 	putRepo(t, repo, map[string]string{
+		`models/m1.sql`: `
+-- @name: s1
+SELECT * FROM bar
+`,
+	})
+	diff, err = p.Reparse(ctx, []string{"/models/m1.sql"})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{s1}, []*runtimev1.ParseError{
+		{
+			Message:  "model name collides with source \"s1\"",
+			FilePath: "/models/m1.sql",
+		},
+		{
+			Message:  "model name collides with source \"s1\"",
+			FilePath: "/models/m1.yaml",
+		},
+	})
+	require.Equal(t, &Diff{
+		Deleted: []ResourceName{m1.Name},
+	}, diff)
+
+	// Put m1 back and add a syntax error in the source
+	putRepo(t, repo, map[string]string{
+		`models/m1.sql`: `
+SELECT * FROM bar
+`,
 		`sources/s1.yaml`: `
 connector: s3
 path: hello
   world: path
 `,
 	})
-	diff, err = p.Reparse(ctx, s1.Paths)
+	diff, err = p.Reparse(ctx, []string{"/models/m1.sql", "/sources/s1.yaml"})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{m1}, []*runtimev1.ParseError{{
 		Message:       "mapping values are not allowed in this context", // note: approximate string match
@@ -338,6 +403,7 @@ path: hello
 		StartLocation: &runtimev1.CharLocation{Line: 4},
 	}})
 	require.Equal(t, &Diff{
+		Added:   []ResourceName{m1.Name},
 		Deleted: []ResourceName{s1.Name},
 	}, diff)
 

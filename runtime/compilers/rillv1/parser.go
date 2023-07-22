@@ -104,9 +104,10 @@ func (k ResourceKind) String() string {
 
 // Diff shows changes to Parser.Resources following an incremental reparse.
 type Diff struct {
-	Added    []ResourceName
-	Modified []ResourceName
-	Deleted  []ResourceName
+	Added            []ResourceName
+	Modified         []ResourceName
+	ModifiedRillYAML bool
+	Deleted          []ResourceName
 }
 
 // Parser parses a Rill project directory into a set of resources.
@@ -258,6 +259,7 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 			}
 		}
 	}
+	modifiedRillYAML := p.RillYAML == nil
 
 	// Phase 2: Parse (or reparse) the related paths, adding back resources
 	err := p.parsePaths(ctx, parsePaths)
@@ -266,7 +268,7 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	}
 
 	// Phase 3: Build the diff using p.insertedResources, p.updatedResources and deletedResources
-	diff := &Diff{}
+	diff := &Diff{ModifiedRillYAML: modifiedRillYAML}
 	for _, resource := range p.insertedResources {
 		addedBack := false
 		for _, deleted := range deletedResources {
@@ -345,7 +347,63 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 		return ErrInvalidProject
 	}
 
+	// As a special case, we need to check that there aren't any sources and models with the same name.
+	// NOTE 1: We always attach the error to the model when there's a collision.
+	// NOTE 2: Using a map since the two-way check (necessary for reparses) may match a duplicate twice.
+	modelsWithNameErrs := make(map[ResourceName]string)
+	for _, r := range p.insertedResources {
+		if r.Name.Kind == ResourceKindSource {
+			n := ResourceName{Kind: ResourceKindModel, Name: r.Name.Name}.Normalized()
+			if _, ok := p.Resources[n]; ok {
+				modelsWithNameErrs[n.Normalized()] = r.Name.Name
+			}
+		} else if r.Name.Kind == ResourceKindModel {
+			n := ResourceName{Kind: ResourceKindSource, Name: r.Name.Name}.Normalized()
+			if r2, ok := p.Resources[n]; ok {
+				modelsWithNameErrs[r.Name.Normalized()] = r2.Name.Name
+			}
+		}
+	}
+	for n, s := range modelsWithNameErrs {
+		p.replaceResourceWithError(n, fmt.Errorf("model name collides with source %q", s))
+	}
+
 	return nil
+}
+
+func (p *Parser) replaceResourceWithError(n ResourceName, err error) {
+	// Remove from p.Resources
+	r := p.Resources[n.Normalized()]
+	delete(p.Resources, n.Normalized())
+
+	for _, path := range r.Paths {
+		// Add parse error
+		p.addParseError(path, err)
+
+		// Remove from p.resourcesForPath
+		rs := p.resourcesForPath[path]
+		idx := slices.Index(rs, r)
+		if idx < 0 {
+			panic(fmt.Errorf("resource %q not found in resourcesForPath", r))
+		}
+		if len(rs) == 1 {
+			delete(p.resourcesForPath, path)
+		} else {
+			p.resourcesForPath[path] = slices.Delete(rs, idx, idx+1)
+		}
+	}
+
+	// Remove from p.insertedResources
+	idx := slices.Index(p.insertedResources, r)
+	if idx >= 0 {
+		p.insertedResources = slices.Delete(p.insertedResources, idx, idx+1)
+	}
+
+	// Remove from p.updatedResources
+	idx = slices.Index(p.updatedResources, r)
+	if idx >= 0 {
+		p.updatedResources = slices.Delete(p.updatedResources, idx, idx+1)
+	}
 }
 
 // parseStem parses a set of paths with the same stem (path without extension).
@@ -441,7 +499,15 @@ func (p *Parser) upsertResource(kind ResourceKind, name string, paths []string, 
 			}
 		}
 		if !found {
-			p.updatedResources = append(p.updatedResources, r)
+			for _, ur := range p.updatedResources {
+				if ur.Name.Normalized() == rn.Normalized() {
+					found = true
+					break
+				}
+			}
+			if !found {
+				p.updatedResources = append(p.updatedResources, r)
+			}
 		}
 	} else {
 		// Create new resource and track in insertedResources
