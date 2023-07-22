@@ -21,6 +21,7 @@
     getAdjustedFetchTime,
   } from "@rilldata/web-common/lib/time/ranges";
   import {
+    connectorServiceS3ListBuckets,
     createQueryServiceMetricsViewTimeSeries,
     createQueryServiceMetricsViewTotals,
     V1MetricsViewTimeSeriesResponse,
@@ -32,10 +33,7 @@
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   import { prepareTimeSeries } from "./utils";
-  import {
-    getDateStringForZone,
-    getDateStringInZone,
-  } from "@rilldata/web-common/lib/time/timezone";
+  import { getDateStringForZone } from "@rilldata/web-common/lib/time/timezone";
 
   export let metricViewName;
   export let workspaceWidth: number;
@@ -186,7 +184,9 @@
   let dataCopy;
   let dataComparisonCopy;
 
-  $: if ($timeSeriesQuery?.data?.data) dataCopy = $timeSeriesQuery.data.data;
+  $: if ($timeSeriesQuery?.data?.data) {
+    dataCopy = $timeSeriesQuery.data.data;
+  }
   $: if ($timeSeriesComparisonQuery?.data?.data)
     dataComparisonCopy = $timeSeriesComparisonQuery.data.data;
 
@@ -196,7 +196,8 @@
     formattedData = prepareTimeSeries(
       dataCopy,
       dataComparisonCopy,
-      TIME_GRAIN[interval].duration
+      TIME_GRAIN[interval].duration,
+      $dashboardStore.selectedTimezone
     );
   }
 
@@ -311,12 +312,13 @@
             xMin={startValue}
             xMax={endValue}
             {showComparison}
-            mouseoverTimeFormat={(value) =>
-              getDateStringForZone(
-                value,
-                $dashboardStore?.selectedTimezone,
+            mouseoverTimeFormat={(value) => {
+              /** format the date according to the time grain */
+              return new Date(value).toLocaleDateString(
+                undefined,
                 TIME_GRAIN[interval].formatDate
-              )}
+              );
+            }}
             numberKind={nicelyFormattedTypesToNumberKind(measure?.format)}
             mouseoverFormat={(value) =>
               formatPreset === NicelyFormattedTypes.NONE

@@ -1,6 +1,15 @@
 import { DateTime } from "luxon";
 import { timeZoneNameToAbbreviationMap } from "@rilldata/web-common/lib/time/timezone/abbreviationMap";
 
+export function removeLocalTimezoneOffset(dt: Date) {
+  return new Date(dt.getTime() + dt.getTimezoneOffset() * 60000);
+}
+
+export function addZoneOffset(dt: Date, iana: string) {
+  const offset = DateTime.fromJSDate(dt).setZone(iana).offset;
+  return new Date(dt.getTime() + offset * 60000);
+}
+
 export function getLocalIANA(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
@@ -40,23 +49,4 @@ export function getDateMonthYearForTimezone(date: Date, timezone: string) {
   const month = timeZoneDate.month;
   const year = timeZoneDate.year;
   return { day, month, year };
-}
-
-// FIX ME
-export function getDateStringForZone(
-  value,
-  timeZone: string,
-  dateFormatOptions
-) {
-  const options = {
-    timeZone,
-    ...dateFormatOptions,
-  };
-
-  console.log(
-    value.toISOString(),
-    timeZone,
-    new Date(value).toLocaleDateString(undefined, options)
-  );
-  return new Date(value).toLocaleDateString(undefined, options);
 }

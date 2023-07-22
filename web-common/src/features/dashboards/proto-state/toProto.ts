@@ -73,7 +73,6 @@ export function getProtoFromDashboardState(
 
   state.showPercentOfTotal = Boolean(metrics.showPercentOfTotal);
 
-  console.log(metrics, state);
   const message = new DashboardState(state);
   return protoToBase64(message.toBinary());
 }

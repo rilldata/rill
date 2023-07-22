@@ -29,8 +29,11 @@ import {
   TimeRangePreset,
   TimeRangeType,
 } from "../types";
-import { removeTimezoneOffset } from "../../formatters";
-import { getDateMonthYearForTimezone } from "@rilldata/web-common/lib/time/timezone";
+import {
+  addZoneOffset,
+  getDateMonthYearForTimezone,
+  removeLocalTimezoneOffset,
+} from "@rilldata/web-common/lib/time/timezone";
 
 // Loop through all presets to check if they can be a part of subset of given start and end date
 export function getChildTimeRanges(
@@ -340,7 +343,6 @@ export function getAdjustedFetchTime(
   };
 }
 
-// TODO: Check what removeTimezoneOffset is used for
 /**
  * Return start and end date to be used as extents of the
  * time series charts
@@ -371,10 +373,8 @@ export function getAdjustedChartTime(
   const offsetDuration = getDurationMultiple(grainDuration, 0.45);
   adjustedEnd = getOffset(adjustedEnd, offsetDuration, TimeOffsetType.SUBTRACT);
 
-  adjustedEnd = removeTimezoneOffset(adjustedEnd);
-
   return {
-    start: removeTimezoneOffset(new Date(start)),
-    end: adjustedEnd,
+    start: addZoneOffset(removeLocalTimezoneOffset(start), zone),
+    end: addZoneOffset(removeLocalTimezoneOffset(adjustedEnd), zone),
   };
 }

@@ -30,12 +30,6 @@ export function getStartOfPeriod(
   zone = "Etc/UTC"
 ) {
   const date = DateTime.fromJSDate(referenceTime, { zone });
-  // console.log(
-  //   "start date",
-  //   referenceTime.toISOString(),
-  //   date.toJSDate().toISOString(),
-  //   date.startOf(TimeUnit[period]).toJSDate()
-  // );
   return date.startOf(TimeUnit[period]).toJSDate();
 }
 

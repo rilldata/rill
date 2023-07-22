@@ -1,4 +1,4 @@
-import { getAbbreviationForIANA } from "./index";
+import { getAbbreviationForIANA, addZoneOffset } from "./index";
 
 const getAbbreviationForIANATestCases = [
   {
@@ -27,5 +27,31 @@ describe("getAbbreviationForIANA", () => {
       const abbreviation = getAbbreviationForIANA(testCase.now, testCase.iana);
       expect(abbreviation).toEqual(testCase.expected);
     });
+  });
+});
+
+describe("addZoneOffset", () => {
+  it("adds the correct offset for the Indian timezone", () => {
+    const dt = new Date("2022-01-01T00:00:00.000Z");
+    const iana = "Asia/Kolkata";
+    const expected = new Date("2022-01-01T05:30:00.000Z");
+    const result = addZoneOffset(dt, iana);
+    expect(result).toEqual(expected);
+  });
+
+  it("adds the correct offset for the Pacific timezone", () => {
+    const dt = new Date("2022-01-01T00:00:00.000Z");
+    const iana = "America/Los_Angeles";
+    const expected = new Date("2021-12-31T08:00:00.000Z");
+    const result = addZoneOffset(dt, iana);
+    expect(result).toEqual(expected);
+  });
+
+  it("adds the correct offset accounting for Daylight Savings Time", () => {
+    const dt = new Date("2022-06-01T00:00:00.000Z");
+    const iana = "America/Los_Angeles";
+    const expected = new Date("2022-05-31T07:00:00.000Z");
+    const result = addZoneOffset(dt, iana);
+    expect(result).toEqual(expected);
   });
 });
