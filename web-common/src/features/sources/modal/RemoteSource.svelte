@@ -4,72 +4,31 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import DialogFooter from "@rilldata/web-common/components/modal/dialog/DialogFooter.svelte";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
-  import { appScreen } from "@rilldata/web-common/layout/app-store";
-  import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
     ConnectorProperty,
     ConnectorPropertyType,
-    createRuntimeServiceDeleteFileAndReconcile,
-    createRuntimeServicePutFileAndReconcile,
-    createRuntimeServiceUnpackEmpty,
+    RpcStatus,
     V1Connector,
-    V1ReconcileError,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import type { Writable } from "svelte/store";
   import type * as yup from "yup";
-  import { runtime } from "../../../runtime-client/runtime-store";
-  import { deleteFileArtifact } from "../../entity-management/actions";
-  import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
-  import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
-  import {
-    compileCreateSourceYAML,
-    getSourceError,
-    inferSourceName,
-    emitSourceErrorTelemetry,
-    emitSourceSuccessTelemetry,
-  } from "../sourceUtils";
-  import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
-  import { createSource } from "./createSource";
+  import { overlay } from "../../../layout/overlay-store";
+  import { inferSourceName } from "../sourceUtils";
   import { humanReadableErrorMessage } from "./errors";
-  import {
-    fromYupFriendlyKey,
-    getYupSchema,
-    toYupFriendlyKey,
-  } from "./yupSchemas";
-  import { connectorToSourceConnectionType } from "../../../metrics/service/SourceEventTypes";
-  import {
-    BehaviourEventAction,
-    BehaviourEventMedium,
-  } from "../../../metrics/service/BehaviourEventTypes";
-  import { behaviourEvent } from "../../../metrics/initMetrics";
+  import { submitRemoteSourceForm } from "./submitRemoteSourceForm";
+  import { getYupSchema, toYupFriendlyKey } from "./yupSchemas";
 
   export let connector: V1Connector;
 
-  $: runtimeInstanceId = $runtime.instanceId;
-  $: sourceNames = useSourceNames(runtimeInstanceId);
-  $: isProjectInitialized = useIsProjectInitialized(runtimeInstanceId);
-
-  const createSourceMutation = createRuntimeServicePutFileAndReconcile();
-  let createSourceMutationError: {
-    code: number;
-    message: string;
-  };
-  $: createSourceMutationError = ($createSourceMutation?.error as any)?.response
-    ?.data;
-  const deleteSource = createRuntimeServiceDeleteFileAndReconcile();
-  const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
-
-  const dispatch = createEventDispatcher();
-
   const queryClient = useQueryClient();
+  const dispatch = createEventDispatcher();
 
   let connectorProperties: ConnectorProperty[];
   let yupSchema: yup.AnyObjectSchema;
+  let rpcError: RpcStatus = null;
 
   // state from svelte-forms-lib
   let form: Writable<any>;
@@ -77,99 +36,28 @@
   let errors: Writable<Record<never, string>>;
   let handleChange: (event: Event) => any;
   let handleSubmit: (event: Event) => any;
-
-  let waitingOnSourceImport = false;
-  let error: V1ReconcileError;
+  let isSubmitting: Writable<boolean>;
 
   function onConnectorChange(connector: V1Connector) {
     yupSchema = getYupSchema(connector);
 
-    ({ form, touched, errors, handleChange, handleSubmit } = createForm({
-      // TODO: initialValues should come from SQL asset and be reactive to asset modifications
-      initialValues: {
-        sourceName: "", // avoids `values.sourceName` warning
-      },
-      validationSchema: yupSchema,
-      onSubmit: async (values) => {
-        behaviourEvent?.fireSourceTriggerEvent(
-          BehaviourEventAction.SourceAdd,
-          BehaviourEventMedium.Button,
-          $appScreen,
-          MetricsEventSpace.Modal
-        );
-
-        overlay.set({ title: `Importing ${values.sourceName}` });
-
-        // If project is uninitialized, initialize an empty project
-        if (!$isProjectInitialized.data) {
-          $unpackEmptyProject.mutate({
-            instanceId: $runtime.instanceId,
-            data: {
-              title: EMPTY_PROJECT_TITLE,
-            },
-          });
-        }
-
-        const formValues = Object.fromEntries(
-          Object.entries(values).map(([key, value]) => [
-            fromYupFriendlyKey(key),
-            value,
-          ])
-        );
-
-        const yaml = compileCreateSourceYAML(formValues, connector.name);
-
-        waitingOnSourceImport = true;
-        try {
-          const errors = await createSource(
-            queryClient,
-            runtimeInstanceId,
-            values.sourceName,
-            yaml,
-            $createSourceMutation
-          );
-
-          error = errors[0];
-          if (!error) {
+    ({ form, touched, errors, handleChange, handleSubmit, isSubmitting } =
+      createForm({
+        initialValues: {
+          sourceName: "", // avoids `values.sourceName` warning
+        },
+        validationSchema: yupSchema,
+        onSubmit: async (values) => {
+          overlay.set({ title: `Importing ${values.sourceName}` });
+          try {
+            submitRemoteSourceForm(queryClient, connector.name, values);
             dispatch("close");
-          } else {
-            await deleteFileArtifact(
-              queryClient,
-              runtimeInstanceId,
-              values.sourceName,
-              EntityType.Table,
-              $deleteSource,
-              $appScreen,
-              $sourceNames.data,
-              false
-            );
+          } catch (e) {
+            rpcError = e?.response?.data;
           }
-
-          const sourceError = getSourceError(errors, values.sourceName);
-          if ($createSourceMutation.isError || sourceError) {
-            emitSourceErrorTelemetry(
-              MetricsEventSpace.Modal,
-              $appScreen,
-              createSourceMutationError?.message ?? sourceError?.message,
-              connectorToSourceConnectionType[connector.name],
-              formValues?.uri
-            );
-          } else {
-            emitSourceSuccessTelemetry(
-              MetricsEventSpace.Modal,
-              $appScreen,
-              BehaviourEventMedium.Button,
-              connectorToSourceConnectionType[connector.name],
-              formValues?.uri
-            );
-          }
-        } catch (err) {
-          // no-op
-        }
-        waitingOnSourceImport = false;
-        overlay.set(null);
-      },
-    }));
+          overlay.set(null);
+        },
+      }));
 
     // Place the "Source name" field directly under the "Path" field, which is the first property for each connector (s3, gcs, https).
     connectorProperties = [
@@ -214,12 +102,12 @@
         rel="noreferrer">docs</a
       > for more information.
     </div>
-    {#if $createSourceMutation.isError || error}
+    {#if rpcError}
       <SubmissionError
         message={humanReadableErrorMessage(
           connector.name,
-          createSourceMutationError?.code ?? 3,
-          createSourceMutationError?.message ?? error.message
+          rpcError.code,
+          rpcError.message
         )}
       />
     {/if}
@@ -266,7 +154,7 @@
           type="primary"
           submitForm
           form="remote-source-{connector.name}-form"
-          disabled={$createSourceMutation.isLoading || waitingOnSourceImport}
+          disabled={$isSubmitting}
         >
           Add source
         </Button>
