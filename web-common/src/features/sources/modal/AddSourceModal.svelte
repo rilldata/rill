@@ -15,7 +15,7 @@
   } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import LocalSource from "./LocalSource.svelte";
-  import RemoteSource from "./RemoteSource.svelte";
+  import RemoteSourceForm from "./RemoteSourceForm.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -85,7 +85,7 @@
   <div class="flex-grow overflow-y-auto">
     {#if selectedConnector?.name === "gcs" || selectedConnector?.name === "s3" || selectedConnector?.name === "https" || selectedConnector?.name === "motherduck"}
       {#key selectedConnector}
-        <RemoteSource connector={selectedConnector} on:close />
+        <RemoteSourceForm connector={selectedConnector} on:close />
       {/key}
     {/if}
     {#if selectedConnector?.name === "local_file"}
