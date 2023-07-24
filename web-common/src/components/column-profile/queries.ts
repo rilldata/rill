@@ -10,8 +10,10 @@ import {
   createQueryServiceTableCardinality,
   QueryServiceColumnNumericHistogramHistogramMethod,
   V1ProfileColumn,
+  V1TableColumnsResponse,
 } from "@rilldata/web-common/runtime-client";
 import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
+import type { QueryObserverResult } from "@tanstack/query-core";
 import { derived, Readable, writable } from "svelte/store";
 
 export function isFetching(...queries) {
@@ -28,11 +30,11 @@ export type ColumnSummary = V1ProfileColumn & {
 export function getSummaries(
   objectName: string,
   instanceId: string,
-  profileColumnResults: Array<V1ProfileColumn>
+  profileColumnResponse: QueryObserverResult<V1TableColumnsResponse>
 ): Readable<Array<ColumnSummary>> {
-  if (!profileColumnResults && !profileColumnResults?.length) return;
+  if (!profileColumnResponse && !profileColumnResponse?.data) return;
   return derived(
-    profileColumnResults.map((column) => {
+    profileColumnResponse.data.profileColumns.map((column) => {
       return derived(
         [
           writable(column),
@@ -41,14 +43,22 @@ export function getSummaries(
             objectName,
             { columnName: column.name },
             {
-              query: { keepPreviousData: true },
+              query: {
+                keepPreviousData: true,
+                enabled: !profileColumnResponse.isFetching,
+              },
             }
           ),
           createQueryServiceColumnCardinality(
             instanceId,
             objectName,
             { columnName: column.name },
-            { query: { keepPreviousData: true } }
+            {
+              query: {
+                keepPreviousData: true,
+                enabled: !profileColumnResponse.isFetching,
+              },
+            }
           ),
         ],
         ([col, nullValues, cardinality]) => {
@@ -56,7 +66,10 @@ export function getSummaries(
             ...col,
             nullCount: +nullValues?.data?.count,
             cardinality: +cardinality?.data?.categoricalSummary?.cardinality,
-            isFetching: nullValues?.isFetching || cardinality?.isFetching,
+            isFetching:
+              profileColumnResponse.isFetching ||
+              nullValues?.isFetching ||
+              cardinality?.isFetching,
           };
         }
       );
@@ -71,14 +84,30 @@ export function getSummaries(
 export function getNullPercentage(
   instanceId: string,
   objectName: string,
-  columnName: string
+  columnName: string,
+  enabled = true
 ) {
-  const nullQuery = createQueryServiceColumnNullCount(instanceId, objectName, {
-    columnName,
-  });
+  const nullQuery = createQueryServiceColumnNullCount(
+    instanceId,
+    objectName,
+    {
+      columnName,
+    },
+    {
+      query: {
+        enabled,
+      },
+    }
+  );
   const totalRowsQuery = createQueryServiceTableCardinality(
     instanceId,
-    objectName
+    objectName,
+    {},
+    {
+      query: {
+        enabled,
+      },
+    }
   );
   return derived([nullQuery, totalRowsQuery], ([nulls, totalRows]) => {
     return {
@@ -92,17 +121,25 @@ export function getNullPercentage(
 export function getCountDistinct(
   instanceId: string,
   objectName: string,
-  columnName: string
+  columnName: string,
+  enabled = true
 ) {
   const cardinalityQuery = createQueryServiceColumnCardinality(
     instanceId,
     objectName,
-    { columnName }
+    { columnName },
+    {
+      query: { enabled },
+    }
   );
 
   const totalRowsQuery = createQueryServiceTableCardinality(
     instanceId,
-    objectName
+    objectName,
+    {},
+    {
+      query: { enabled },
+    }
   );
 
   return derived(
@@ -121,14 +158,24 @@ export function getTopK(
   instanceId: string,
   objectName: string,
   columnName: string,
+  enabled = true,
   active = false
 ) {
-  const topKQuery = createQueryServiceColumnTopK(instanceId, objectName, {
-    columnName: columnName,
-    agg: "count(*)",
-    k: 75,
-    priority: getPriorityForColumn("topk", active),
-  });
+  const topKQuery = createQueryServiceColumnTopK(
+    instanceId,
+    objectName,
+    {
+      columnName: columnName,
+      agg: "count(*)",
+      k: 75,
+      priority: getPriorityForColumn("topk", active),
+    },
+    {
+      query: {
+        enabled,
+      },
+    }
+  );
   return derived(topKQuery, ($topKQuery) => {
     return $topKQuery?.data?.categoricalSummary?.topK?.entries;
   });
@@ -138,6 +185,7 @@ export function getTimeSeriesAndSpark(
   instanceId: string,
   objectName: string,
   columnName: string,
+  enabled = true,
   active = false
 ) {
   const query = createQueryServiceColumnTimeSeries(
@@ -153,12 +201,18 @@ export function getTimeSeriesAndSpark(
       ],
       pixels: 92,
       priority: getPriorityForColumn("timeseries", active),
+    },
+    {
+      query: { enabled },
     }
   );
   const estimatedInterval = createQueryServiceColumnRollupInterval(
     instanceId,
     objectName,
-    { columnName, priority: getPriorityForColumn("rollup-interval", active) }
+    { columnName, priority: getPriorityForColumn("rollup-interval", active) },
+    {
+      query: { enabled },
+    }
   );
 
   const smallestTimeGrain = createQueryServiceColumnTimeGrain(
@@ -167,6 +221,9 @@ export function getTimeSeriesAndSpark(
     {
       columnName,
       priority: getPriorityForColumn("smallest-time-grain", active),
+    },
+    {
+      query: { enabled },
     }
   );
 
@@ -205,6 +262,7 @@ export function getNumericHistogram(
   objectName: string,
   columnName: string,
   histogramMethod: QueryServiceColumnNumericHistogramHistogramMethod,
+  enabled = true,
   active = false
 ) {
   return createQueryServiceColumnNumericHistogram(
@@ -220,6 +278,7 @@ export function getNumericHistogram(
         select(query) {
           return query?.numericSummary?.numericHistogramBins?.bins;
         },
+        enabled,
       },
     }
   );

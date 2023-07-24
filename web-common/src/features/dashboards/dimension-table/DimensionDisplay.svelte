@@ -22,6 +22,7 @@
     createQueryServiceMetricsViewTotals,
     MetricsViewDimension,
     MetricsViewFilterCond,
+    MetricsViewMeasure,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -32,6 +33,7 @@
   } from "../humanize-numbers";
   import {
     computeComparisonValues,
+    computePercentOfTotal,
     getComparisonProperties,
     getFilterForComparisonTable,
     updateFilterOnSearch,
@@ -255,17 +257,27 @@
     const selectedMeasure = allMeasures.find((m) => m.name === sortByColumn);
     const sortByColumnIndex = columnNames.indexOf(sortByColumn);
     // Add comparison columns if available
+    let percentOfTotalSpliceIndex = 1;
     if (displayComparison) {
+      percentOfTotalSpliceIndex = 2;
       columnNames.splice(sortByColumnIndex + 1, 0, `${sortByColumn}_delta`);
 
       // Only push percentage delta column if selected measure is not a percentage
       if (selectedMeasure?.format != NicelyFormattedTypes.PERCENTAGE) {
+        percentOfTotalSpliceIndex = 3;
         columnNames.splice(
           sortByColumnIndex + 2,
           0,
           `${sortByColumn}_delta_perc`
         );
       }
+    }
+    if (validPercentOfTotal) {
+      columnNames.splice(
+        sortByColumnIndex + percentOfTotalSpliceIndex,
+        0,
+        `${sortByColumn}_percent_of_total`
+      );
     }
 
     // Make dimension the first column
@@ -341,6 +353,19 @@
       values,
       dimensionName,
       dimensionColumn,
+      leaderboardMeasureName
+    );
+  }
+
+  $: validPercentOfTotal = (
+    $leaderboardMeasureQuery?.data as MetricsViewMeasure
+  )?.validPercentOfTotal;
+
+  $: if (validPercentOfTotal && values.length && sortByColumn) {
+    const referenceValue = $totalsQuery.data?.data?.[sortByColumn];
+    values = computePercentOfTotal(
+      values,
+      referenceValue,
       leaderboardMeasureName
     );
   }

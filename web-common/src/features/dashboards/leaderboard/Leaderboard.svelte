@@ -38,6 +38,7 @@
    * or for a count(*) metric, the reference value is the total number of rows.
    */
   export let referenceValue: number;
+  export let unfilteredTotal: number;
 
   export let formatPreset: NicelyFormattedTypes;
   export let isSummableMeasure = false;
@@ -173,7 +174,8 @@
     });
 
   // Compose the comparison /toplist query
-  $: displayComparison = $dashboardStore?.showComparison;
+  $: showTimeComparison = $dashboardStore?.showComparison;
+  $: showPercentOfTotal = $dashboardStore?.showPercentOfTotal;
 
   // add all sliced and active values to the include filter.
   $: currentVisibleValues =
@@ -211,7 +213,7 @@
     {
       query: {
         enabled: Boolean(
-          displayComparison &&
+          showTimeComparison &&
             !!comparisonTimeStart &&
             !!comparisonTimeEnd &&
             !!updatedFilters
@@ -238,6 +240,8 @@
     on:mouseleave={() => (hovered = false)}
   >
     <LeaderboardHeader
+      {showTimeComparison}
+      {showPercentOfTotal}
       isFetching={$topListQuery.isFetching}
       {displayName}
       on:toggle-filter-mode={toggleFilterMode}
@@ -254,11 +258,13 @@
           loading={$topListQuery?.isFetching}
           values={values.slice(0, slice)}
           {comparisonValues}
-          showComparison={displayComparison}
+          {showTimeComparison}
+          {showPercentOfTotal}
           {activeValues}
           {filterExcludeMode}
           {atLeastOneActive}
           {referenceValue}
+          {unfilteredTotal}
           {isSummableMeasure}
           on:select-item
         />
@@ -270,11 +276,13 @@
             loading={$topListQuery?.isFetching}
             values={selectedValuesThatAreBelowTheFold}
             {comparisonValues}
-            showComparison={displayComparison}
+            {showTimeComparison}
+            {showPercentOfTotal}
             {activeValues}
             {filterExcludeMode}
             {atLeastOneActive}
             {referenceValue}
+            {unfilteredTotal}
             {isSummableMeasure}
             on:select-item
           />

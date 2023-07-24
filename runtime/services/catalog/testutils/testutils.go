@@ -18,6 +18,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
+
+	// import file driver to be able to do driver.Open
+	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
+	_ "github.com/rilldata/rill/runtime/drivers/file"
 )
 
 func CreateSource(t *testing.T, s *catalog.Service, name, file, sourcePath string) string {
@@ -181,18 +185,18 @@ func CopyFileToData(t *testing.T, dir, source, name string) {
 func GetService(t *testing.T) (*catalog.Service, string) {
 	dir := t.TempDir()
 
-	duckdbStore, err := drivers.Open("duckdb", filepath.Join(dir, "stage.db"), zap.NewNop())
+	duckdbStore, err := drivers.Open("duckdb", map[string]any{"dsn": filepath.Join(dir, "stage.db")}, zap.NewNop())
 	require.NoError(t, err)
 	err = duckdbStore.Migrate(context.Background())
 	require.NoError(t, err)
-	olap, ok := duckdbStore.OLAPStore()
+	olap, ok := duckdbStore.AsOLAP()
 	require.True(t, ok)
-	catalogObject, ok := duckdbStore.CatalogStore()
+	catalogObject, ok := duckdbStore.AsCatalogStore()
 	require.True(t, ok)
 
-	fileStore, err := drivers.Open("file", dir, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
 	require.NoError(t, err)
-	repo, ok := fileStore.RepoStore()
+	repo, ok := fileStore.AsRepoStore()
 	require.True(t, ok)
 
 	err = repo.Put(context.Background(), "test", "rill.yaml", strings.NewReader(""))
@@ -202,11 +206,11 @@ func GetService(t *testing.T) (*catalog.Service, string) {
 }
 
 func registryStore(t *testing.T) drivers.RegistryStore {
-	store, err := drivers.Open("sqlite", ":memory:", zap.NewNop())
+	store, err := drivers.Open("sqlite", map[string]any{"dsn": ":memory:"}, zap.NewNop())
 	require.NoError(t, err)
 	err = store.Migrate(context.Background())
 	require.NoError(t, err)
-	registry, _ := store.RegistryStore()
+	registry, _ := store.AsRegistry()
 
 	err = registry.CreateInstance(context.Background(), &drivers.Instance{ID: "test", Variables: map[string]string{"allow_host_access": "true"}})
 	require.NoError(t, err)

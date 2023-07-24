@@ -11,6 +11,8 @@
   export let pad = 8;
   export let suppress = false;
   export let active = false;
+  export let inline = false;
+  export let overflowFlipY = true;
 
   /** this passes down the dom element used for the "outside click" action.
    * Since this element is not strictly within the parent of the menu (which is in a Portal),
@@ -30,7 +32,7 @@
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
-<div bind:this={parent}>
+<div class:inline bind:this={parent}>
   <slot
     {active}
     handleClose={() => {
@@ -50,6 +52,7 @@
           {alignment}
           {distance}
           {pad}
+          {overflowFlipY}
         >
           <slot name="floating-element" />
         </FloatingElement>

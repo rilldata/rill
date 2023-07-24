@@ -29,6 +29,15 @@ This is mainly used by UI to reconcile paths missing in catalog and get errors i
   strict?: boolean;
 };
 
+export type QueryServiceQueryBatch200 = {
+  result?: V1QueryBatchResponse;
+  error?: RpcStatus;
+};
+
+export type QueryServiceQueryBatchBody = {
+  queries?: V1QueryBatchEntry[];
+};
+
 export type QueryServiceQueryBody = {
   sql?: string;
   args?: unknown[];
@@ -54,6 +63,7 @@ export type QueryServiceColumnTimeSeriesBody = {
   pixels?: number;
   sampleSize?: number;
   priority?: number;
+  timeZone?: string;
 };
 
 export type QueryServiceColumnTimeRangeParams = {
@@ -86,7 +96,7 @@ export type QueryServiceColumnRollupIntervalBody = {
 };
 
 export type QueryServiceColumnNumericHistogramHistogramMethod =
-  typeof QueryServiceColumnNumericHistogramHistogramMethod[keyof typeof QueryServiceColumnNumericHistogramHistogramMethod];
+  (typeof QueryServiceColumnNumericHistogramHistogramMethod)[keyof typeof QueryServiceColumnNumericHistogramHistogramMethod];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const QueryServiceColumnNumericHistogramHistogramMethod = {
@@ -135,6 +145,7 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
   filter?: V1MetricsViewFilter;
+  timeZone?: string;
   priority?: number;
 };
 
@@ -147,6 +158,7 @@ export type QueryServiceMetricsViewRowsBody = {
   limit?: number;
   offset?: string;
   priority?: number;
+  timeZone?: string;
 };
 
 export type QueryServiceMetricsViewComparisonToplistBody = {
@@ -163,7 +175,7 @@ export type QueryServiceMetricsViewComparisonToplistBody = {
 };
 
 export type QueryServiceExportBody = {
-  limit?: number;
+  limit?: string;
   format?: V1ExportFormat;
   metricsViewToplistRequest?: V1MetricsViewToplistRequest;
   metricsViewRowsRequest?: V1MetricsViewRowsRequest;
@@ -181,6 +193,15 @@ export type QueryServiceTableColumnsParams = {
 export type QueryServiceColumnCardinalityParams = {
   columnName?: string;
   priority?: number;
+};
+
+export type RuntimeServiceWatchFiles200 = {
+  result?: V1WatchFilesResponse;
+  error?: RpcStatus;
+};
+
+export type RuntimeServiceWatchFilesParams = {
+  replay?: boolean;
 };
 
 export type RuntimeServiceUnpackExampleBody = {
@@ -211,7 +232,7 @@ export type RuntimeServiceListFilesParams = {
 };
 
 export type RuntimeServiceListCatalogEntriesType =
-  typeof RuntimeServiceListCatalogEntriesType[keyof typeof RuntimeServiceListCatalogEntriesType];
+  (typeof RuntimeServiceListCatalogEntriesType)[keyof typeof RuntimeServiceListCatalogEntriesType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const RuntimeServiceListCatalogEntriesType = {
@@ -273,6 +294,11 @@ export type ConnectorServiceGCSListObjectsParams = {
   delimiter?: string;
 };
 
+export interface V1WatchFilesResponse {
+  event?: V1FileEvent;
+  path?: string;
+}
+
 export interface V1UnpackExampleResponse {
   [key: string]: any;
 }
@@ -281,7 +307,7 @@ export interface V1UnpackEmptyResponse {
   [key: string]: any;
 }
 
-export type V1TypeCode = typeof V1TypeCode[keyof typeof V1TypeCode];
+export type V1TypeCode = (typeof V1TypeCode)[keyof typeof V1TypeCode];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1TypeCode = {
@@ -358,7 +384,7 @@ export interface V1TimeRange {
   end?: string;
 }
 
-export type V1TimeGrain = typeof V1TimeGrain[keyof typeof V1TimeGrain];
+export type V1TimeGrain = (typeof V1TimeGrain)[keyof typeof V1TimeGrain];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1TimeGrain = {
@@ -380,12 +406,36 @@ export interface V1TableRowsResponse {
   data?: V1TableRowsResponseDataItem[];
 }
 
+export interface V1TableRowsRequest {
+  instanceId?: string;
+  tableName?: string;
+  limit?: number;
+  priority?: number;
+}
+
+export interface V1TableInfo {
+  database?: string;
+  name?: string;
+}
+
 export interface V1TableColumnsResponse {
   profileColumns?: V1ProfileColumn[];
 }
 
+export interface V1TableColumnsRequest {
+  instanceId?: string;
+  tableName?: string;
+  priority?: number;
+}
+
 export interface V1TableCardinalityResponse {
   cardinality?: string;
+}
+
+export interface V1TableCardinalityRequest {
+  instanceId?: string;
+  tableName?: string;
+  priority?: number;
 }
 
 export interface V1StructType {
@@ -483,7 +533,7 @@ export interface V1RefreshAndReconcileRequest {
  - CODE_SOURCE_PERMISSION_DENIED: Error returned when unauthorised to access remote sources
  */
 export type V1ReconcileErrorCode =
-  typeof V1ReconcileErrorCode[keyof typeof V1ReconcileErrorCode];
+  (typeof V1ReconcileErrorCode)[keyof typeof V1ReconcileErrorCode];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1ReconcileErrorCode = {
@@ -495,6 +545,11 @@ export const V1ReconcileErrorCode = {
   CODE_SOURCE: "CODE_SOURCE",
   CODE_SOURCE_PERMISSION_DENIED: "CODE_SOURCE_PERMISSION_DENIED",
 } as const;
+
+export interface V1ReconcileErrorCharLocation {
+  line?: number;
+  column?: number;
+}
 
 /**
  * ReconcileError represents an error encountered while running Reconcile.
@@ -508,8 +563,8 @@ It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
 It only applies to structured code artifacts (i.e. YAML).
 Only applicable if file_path is set. */
   propertyPath?: string[];
-  startLocation?: ReconcileErrorCharLocation;
-  endLocation?: ReconcileErrorCharLocation;
+  startLocation?: V1ReconcileErrorCharLocation;
+  endLocation?: V1ReconcileErrorCharLocation;
 }
 
 export interface V1RenameFileAndReconcileResponse {
@@ -537,6 +592,52 @@ export type V1QueryResponseDataItem = { [key: string]: any };
 export interface V1QueryResponse {
   meta?: V1StructType;
   data?: V1QueryResponseDataItem[];
+}
+
+export interface V1QueryBatchResponse {
+  key?: number;
+  error?: string;
+  metricsViewToplistResponse?: V1MetricsViewToplistResponse;
+  metricsViewComparisonToplistResponse?: V1MetricsViewComparisonToplistResponse;
+  metricsViewTimeSeriesResponse?: V1MetricsViewTimeSeriesResponse;
+  metricsViewTotalsResponse?: V1MetricsViewTotalsResponse;
+  metricsViewRowsResponse?: V1MetricsViewRowsResponse;
+  columnRollupIntervalResponse?: V1ColumnRollupIntervalResponse;
+  columnTopKResponse?: V1ColumnTopKResponse;
+  columnNullCountResponse?: V1ColumnNullCountResponse;
+  columnDescriptiveStatisticsResponse?: V1ColumnDescriptiveStatisticsResponse;
+  columnTimeGrainResponse?: V1ColumnTimeGrainResponse;
+  columnNumericHistogramResponse?: V1ColumnNumericHistogramResponse;
+  columnRugHistogramResponse?: V1ColumnRugHistogramResponse;
+  columnTimeRangeResponse?: V1ColumnTimeRangeResponse;
+  columnCardinalityResponse?: V1ColumnCardinalityResponse;
+  columnTimeSeriesResponse?: V1ColumnTimeSeriesResponse;
+  tableCardinalityResponse?: V1TableCardinalityResponse;
+  tableColumnsResponse?: V1TableColumnsResponse;
+  tableRowsResponse?: V1TableRowsResponse;
+}
+
+export interface V1QueryBatchEntry {
+  /** Since response could out of order `key` is used to co-relate a specific response to request. */
+  key?: number;
+  metricsViewToplistRequest?: V1MetricsViewToplistRequest;
+  metricsViewComparisonToplistRequest?: V1MetricsViewComparisonToplistRequest;
+  metricsViewTimeSeriesRequest?: V1MetricsViewTimeSeriesRequest;
+  metricsViewTotalsRequest?: V1MetricsViewTotalsRequest;
+  metricsViewRowsRequest?: V1MetricsViewRowsRequest;
+  columnRollupIntervalRequest?: V1ColumnRollupIntervalRequest;
+  columnTopKRequest?: V1ColumnTopKRequest;
+  columnNullCountRequest?: V1ColumnNullCountRequest;
+  columnDescriptiveStatisticsRequest?: V1ColumnDescriptiveStatisticsRequest;
+  columnTimeGrainRequest?: V1ColumnTimeGrainRequest;
+  columnNumericHistogramRequest?: V1ColumnNumericHistogramRequest;
+  columnRugHistogramRequest?: V1ColumnRugHistogramRequest;
+  columnTimeRangeRequest?: V1ColumnTimeRangeRequest;
+  columnCardinalityRequest?: V1ColumnCardinalityRequest;
+  columnTimeSeriesRequest?: V1ColumnTimeSeriesRequest;
+  tableCardinalityRequest?: V1TableCardinalityRequest;
+  tableColumnsRequest?: V1TableColumnsRequest;
+  tableRowsRequest?: V1TableRowsRequest;
 }
 
 export interface V1PutFileResponse {
@@ -577,7 +678,7 @@ export interface V1PingResponse {
   time?: string;
 }
 
-export type V1ObjectType = typeof V1ObjectType[keyof typeof V1ObjectType];
+export type V1ObjectType = (typeof V1ObjectType)[keyof typeof V1ObjectType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1ObjectType = {
@@ -616,6 +717,10 @@ export interface V1NumericSummary {
   numericOutliers?: V1NumericOutliers;
 }
 
+export interface V1MotherduckListTablesResponse {
+  tables?: V1TableInfo[];
+}
+
 export interface V1Model {
   name?: string;
   sql?: string;
@@ -629,6 +734,17 @@ export type V1MetricsViewTotalsResponseData = { [key: string]: any };
 export interface V1MetricsViewTotalsResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1MetricsViewTotalsResponseData;
+}
+
+export interface V1MetricsViewTotalsRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  filter?: V1MetricsViewFilter;
+  priority?: number;
 }
 
 export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
@@ -648,18 +764,6 @@ export interface V1MetricsViewSort {
   ascending?: boolean;
 }
 
-export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
-
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
-}
-
-export interface V1MetricsViewFilter {
-  include?: MetricsViewFilterCond[];
-  exclude?: MetricsViewFilterCond[];
-}
-
 export interface V1MetricsViewToplistRequest {
   instanceId?: string;
   metricsViewName?: string;
@@ -675,6 +779,26 @@ export interface V1MetricsViewToplistRequest {
   priority?: number;
 }
 
+export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
+
+export interface V1MetricsViewFilter {
+  include?: MetricsViewFilterCond[];
+  exclude?: MetricsViewFilterCond[];
+}
+
+export interface V1MetricsViewTimeSeriesRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
+  filter?: V1MetricsViewFilter;
+  timeZone?: string;
+  priority?: number;
+}
+
 export interface V1MetricsViewRowsRequest {
   instanceId?: string;
   metricsViewName?: string;
@@ -686,6 +810,7 @@ export interface V1MetricsViewRowsRequest {
   limit?: number;
   offset?: string;
   priority?: number;
+  timeZone?: string;
 }
 
 export interface V1MetricsViewComparisonValue {
@@ -701,7 +826,7 @@ export interface V1MetricsViewComparisonToplistResponse {
 }
 
 export type V1MetricsViewComparisonSortType =
-  typeof V1MetricsViewComparisonSortType[keyof typeof V1MetricsViewComparisonSortType];
+  (typeof V1MetricsViewComparisonSortType)[keyof typeof V1MetricsViewComparisonSortType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1MetricsViewComparisonSortType = {
@@ -734,6 +859,11 @@ export interface V1MetricsViewColumn {
   nullable?: boolean;
 }
 
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
+}
+
 export interface V1MetricsView {
   name?: string;
   model?: string;
@@ -745,6 +875,8 @@ export interface V1MetricsView {
   smallestTimeGrain?: V1TimeGrain;
   /** Default time range for the dashboard. It should be a valid ISO 8601 duration string. */
   defaultTimeRange?: string;
+  /** Available time zones list preferred time zones using IANA location identifiers. */
+  availableTimeZones?: string[];
 }
 
 export interface V1MapType {
@@ -806,8 +938,23 @@ export interface V1InlineMeasure {
   expression?: string;
 }
 
+export interface V1MetricsViewComparisonToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  baseTimeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  sort?: V1MetricsViewComparisonSort[];
+  filter?: V1MetricsViewFilter;
+  limit?: string;
+  offset?: string;
+  priority?: number;
+}
+
 export type V1HistogramMethod =
-  typeof V1HistogramMethod[keyof typeof V1HistogramMethod];
+  (typeof V1HistogramMethod)[keyof typeof V1HistogramMethod];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1HistogramMethod = {
@@ -851,11 +998,25 @@ export interface V1GCSGetCredentialsInfoResponse {
   projectId?: string;
 }
 
+/**
+ * FileEvent describes a file change.
+ */
+export type V1FileEvent = (typeof V1FileEvent)[keyof typeof V1FileEvent];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1FileEvent = {
+  FILE_EVENT_UNSPECIFIED: "FILE_EVENT_UNSPECIFIED",
+  FILE_EVENT_WRITE: "FILE_EVENT_WRITE",
+  FILE_EVENT_DELETE: "FILE_EVENT_DELETE",
+  FILE_EVENT_RENAME: "FILE_EVENT_RENAME",
+} as const;
+
 export interface V1ExportResponse {
   downloadUrlPath?: string;
 }
 
-export type V1ExportFormat = typeof V1ExportFormat[keyof typeof V1ExportFormat];
+export type V1ExportFormat =
+  (typeof V1ExportFormat)[keyof typeof V1ExportFormat];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1ExportFormat = {
@@ -864,6 +1025,9 @@ export const V1ExportFormat = {
   EXPORT_FORMAT_XLSX: "EXPORT_FORMAT_XLSX",
 } as const;
 
+/**
+ * Example contains metadata about an example project that is available for unpacking.
+ */
 export interface V1Example {
   name?: string;
   title?: string;
@@ -908,8 +1072,6 @@ export interface V1CreateInstanceResponse {
   instance?: V1Instance;
 }
 
-export type V1CreateInstanceRequestAnnotations = { [key: string]: string };
-
 export type V1CreateInstanceRequestVariables = { [key: string]: string };
 
 /**
@@ -925,7 +1087,6 @@ export interface V1CreateInstanceRequest {
   embedCatalog?: boolean;
   variables?: V1CreateInstanceRequestVariables;
   ingestionLimitBytes?: string;
-  annotations?: V1CreateInstanceRequestAnnotations;
 }
 
 /**
@@ -943,20 +1104,65 @@ export interface V1ColumnTopKResponse {
   categoricalSummary?: V1CategoricalSummary;
 }
 
+/**
+ * Request for QueryService.ColumnTopK. Returns the top K values for a given column using agg function for table table_name.
+ */
+export interface V1ColumnTopKRequest {
+  instanceId?: string;
+  tableName?: string;
+  columnName?: string;
+  agg?: string;
+  k?: number;
+  priority?: number;
+}
+
 export interface V1ColumnTimeSeriesResponse {
   rollup?: V1TimeSeriesResponse;
+}
+
+export interface V1ColumnTimeSeriesRequest {
+  instanceId?: string;
+  tableName?: string;
+  measures?: ColumnTimeSeriesRequestBasicMeasure[];
+  timestampColumnName?: string;
+  timeRange?: V1TimeSeriesTimeRange;
+  pixels?: number;
+  sampleSize?: number;
+  priority?: number;
+  timeZone?: string;
 }
 
 export interface V1ColumnTimeRangeResponse {
   timeRangeSummary?: V1TimeRangeSummary;
 }
 
+export interface V1ColumnTimeRangeRequest {
+  instanceId?: string;
+  tableName?: string;
+  columnName?: string;
+  priority?: number;
+}
+
 export interface V1ColumnTimeGrainResponse {
   timeGrain?: V1TimeGrain;
 }
 
+export interface V1ColumnTimeGrainRequest {
+  instanceId?: string;
+  tableName?: string;
+  columnName?: string;
+  priority?: number;
+}
+
 export interface V1ColumnRugHistogramResponse {
   numericSummary?: V1NumericSummary;
+}
+
+export interface V1ColumnRugHistogramRequest {
+  instanceId?: string;
+  tableName?: string;
+  columnName?: string;
+  priority?: number;
 }
 
 export interface V1ColumnRollupIntervalResponse {
@@ -965,16 +1171,56 @@ export interface V1ColumnRollupIntervalResponse {
   interval?: V1TimeGrain;
 }
 
+export interface V1ColumnRollupIntervalRequest {
+  instanceId?: string;
+  tableName?: string;
+  columnName?: string;
+  priority?: number;
+}
+
 export interface V1ColumnNumericHistogramResponse {
   numericSummary?: V1NumericSummary;
+}
+
+export interface V1ColumnNumericHistogramRequest {
+  instanceId?: string;
+  tableName?: string;
+  columnName?: string;
+  histogramMethod?: V1HistogramMethod;
+  priority?: number;
 }
 
 export interface V1ColumnNullCountResponse {
   count?: number;
 }
 
+export interface V1ColumnNullCountRequest {
+  instanceId?: string;
+  tableName?: string;
+  columnName?: string;
+  priority?: number;
+}
+
 export interface V1ColumnDescriptiveStatisticsResponse {
   numericSummary?: V1NumericSummary;
+}
+
+export interface V1ColumnDescriptiveStatisticsRequest {
+  instanceId?: string;
+  tableName?: string;
+  columnName?: string;
+  priority?: number;
+}
+
+export interface V1ColumnCardinalityResponse {
+  categoricalSummary?: V1CategoricalSummary;
+}
+
+export interface V1ColumnCardinalityRequest {
+  instanceId?: string;
+  tableName?: string;
+  columnName?: string;
+  priority?: number;
 }
 
 /**
@@ -983,10 +1229,6 @@ export interface V1ColumnDescriptiveStatisticsResponse {
 export interface V1CategoricalSummary {
   topK?: V1TopK;
   cardinality?: number;
-}
-
-export interface V1ColumnCardinalityResponse {
-  categoricalSummary?: V1CategoricalSummary;
 }
 
 export interface V1CatalogEntry {
@@ -1028,7 +1270,7 @@ export interface RpcStatus {
  - NULL_VALUE: Null value.
  */
 export type ProtobufNullValue =
-  typeof ProtobufNullValue[keyof typeof ProtobufNullValue];
+  (typeof ProtobufNullValue)[keyof typeof ProtobufNullValue];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ProtobufNullValue = {
@@ -1056,16 +1298,21 @@ export interface StructTypeField {
   type?: Runtimev1Type;
 }
 
-export interface SourceExtractPolicy {
-  rowsStrategy?: ExtractPolicyStrategy;
-  rowsLimitBytes?: string;
-  filesStrategy?: ExtractPolicyStrategy;
-  filesLimit?: string;
-}
+export type SourceExtractPolicyStrategy =
+  (typeof SourceExtractPolicyStrategy)[keyof typeof SourceExtractPolicyStrategy];
 
-export interface ReconcileErrorCharLocation {
-  line?: number;
-  column?: number;
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SourceExtractPolicyStrategy = {
+  STRATEGY_UNSPECIFIED: "STRATEGY_UNSPECIFIED",
+  STRATEGY_HEAD: "STRATEGY_HEAD",
+  STRATEGY_TAIL: "STRATEGY_TAIL",
+} as const;
+
+export interface SourceExtractPolicy {
+  rowsStrategy?: SourceExtractPolicyStrategy;
+  rowsLimitBytes?: string;
+  filesStrategy?: SourceExtractPolicyStrategy;
+  filesLimit?: string;
 }
 
 export interface NumericOutliersOutlier {
@@ -1084,7 +1331,7 @@ export interface NumericHistogramBinsBin {
   count?: number;
 }
 
-export type ModelDialect = typeof ModelDialect[keyof typeof ModelDialect];
+export type ModelDialect = (typeof ModelDialect)[keyof typeof ModelDialect];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ModelDialect = {
@@ -1098,6 +1345,7 @@ export interface MetricsViewMeasure {
   expression?: string;
   description?: string;
   format?: string;
+  validPercentOfTotal?: boolean;
 }
 
 export interface MetricsViewFilterCond {
@@ -1113,18 +1361,8 @@ export interface MetricsViewDimension {
   column?: string;
 }
 
-export type ExtractPolicyStrategy =
-  typeof ExtractPolicyStrategy[keyof typeof ExtractPolicyStrategy];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const ExtractPolicyStrategy = {
-  STRATEGY_UNSPECIFIED: "STRATEGY_UNSPECIFIED",
-  STRATEGY_HEAD: "STRATEGY_HEAD",
-  STRATEGY_TAIL: "STRATEGY_TAIL",
-} as const;
-
 export type ConnectorPropertyType =
-  typeof ConnectorPropertyType[keyof typeof ConnectorPropertyType];
+  (typeof ConnectorPropertyType)[keyof typeof ConnectorPropertyType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ConnectorPropertyType = {

@@ -32,13 +32,14 @@ import (
 var ErrForbidden = status.Error(codes.Unauthenticated, "action not allowed")
 
 type Options struct {
-	HTTPPort        int
-	GRPCPort        int
-	AllowedOrigins  []string
-	ServePrometheus bool
-	AuthEnable      bool
-	AuthIssuerURL   string
-	AuthAudienceURL string
+	HTTPPort         int
+	GRPCPort         int
+	AllowedOrigins   []string
+	ServePrometheus  bool
+	AuthEnable       bool
+	AuthIssuerURL    string
+	AuthAudienceURL  string
+	DownloadRowLimit *int64
 }
 
 type Server struct {
@@ -245,13 +246,19 @@ func HTTPErrorHandler(ctx context.Context, mux *gateway.ServeMux, marshaler gate
 	gateway.DefaultHTTPErrorHandler(ctx, mux, marshaler, w, r, err)
 }
 
-func timeoutSelector(service, method string) time.Duration {
-	if service == "rill.runtime.v1.RuntimeService" && (strings.Contains(method, "Trigger") || strings.Contains(method, "Reconcile")) {
+func timeoutSelector(fullMethodName string) time.Duration {
+	if strings.HasPrefix(fullMethodName, "/rill.runtime.v1.RuntimeService") && (strings.Contains(fullMethodName, "/Trigger") || strings.HasSuffix(fullMethodName, "Reconcile")) {
 		return time.Minute * 30
 	}
-	if service == "rill.runtime.v1.QueryService" {
+
+	if strings.HasPrefix(fullMethodName, "/rill.runtime.v1.QueryService") {
 		return time.Minute * 5
 	}
+
+	if fullMethodName == runtimev1.RuntimeService_WatchFiles_FullMethodName {
+		return 0
+	}
+
 	return time.Second * 30
 }
 

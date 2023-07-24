@@ -21,8 +21,9 @@ type MetricsViewRows struct {
 	TimeGranularity runtimev1.TimeGrain          `json:"time_granularity,omitempty"`
 	Filter          *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
 	Sort            []*runtimev1.MetricsViewSort `json:"sort,omitempty"`
-	Limit           int32                        `json:"limit,omitempty"`
+	Limit           *int64                       `json:"limit,omitempty"`
 	Offset          int64                        `json:"offset,omitempty"`
+	TimeZone        string                       `json:"time_zone,omitempty"`
 
 	Result *runtimev1.MetricsViewRowsResponse `json:"-"`
 }
@@ -99,19 +100,36 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	return nil
 }
 
-func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, format runtimev1.ExportFormat, writer io.Writer) error {
-	err := q.Resolve(ctx, rt, instanceID, priority)
+func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
+	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
 	if err != nil {
 		return err
 	}
 
-	switch format {
+	mv, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
+	if err != nil {
+		return err
+	}
+
+	filename := strings.ReplaceAll(mv.Model, `"`, `_`)
+	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
+		filename += "_filtered"
+	}
+
+	if opts.PreWriteHook != nil {
+		err = opts.PreWriteHook(filename)
+		if err != nil {
+			return err
+		}
+	}
+
+	switch opts.Format {
 	case runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED:
 		return fmt.Errorf("unspecified format")
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		return writeCSV(q.Result.Meta, q.Result.Data, writer)
+		return writeCSV(q.Result.Meta, q.Result.Data, w)
 	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		return writeXLSX(q.Result.Meta, q.Result.Data, writer)
+		return writeXLSX(q.Result.Meta, q.Result.Data, w)
 	}
 
 	return nil
@@ -203,8 +221,12 @@ func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsView, dialect
 		orderClause = "ORDER BY " + strings.Join(sortingCriteria, ", ")
 	}
 
-	if q.Limit == 0 {
-		q.Limit = 100
+	var limitClause string
+	if q.Limit != nil {
+		if *q.Limit == 0 {
+			*q.Limit = 100
+		}
+		limitClause = fmt.Sprintf("LIMIT %d", *q.Limit)
 	}
 
 	selectColumns := []string{"*"}
@@ -214,18 +236,23 @@ func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsView, dialect
 			panic("timeRollupColumnName is set, but time dimension info is missing")
 		}
 
-		rollup := fmt.Sprintf("date_trunc('%s', %s) AS %s", convertToDateTruncSpecifier(q.TimeGranularity), safeName(mv.TimeDimension), safeName(timeRollupColumnName))
+		timezone := "UTC"
+		if q.TimeZone != "" {
+			timezone = q.TimeZone
+		}
+		args = append([]any{timezone, timezone}, args...)
+		rollup := fmt.Sprintf("timezone(?, date_trunc('%s', timezone(?, %s::TIMESTAMPTZ))) AS %s", convertToDateTruncSpecifier(q.TimeGranularity), safeName(mv.TimeDimension), safeName(timeRollupColumnName))
 
 		// Prepend the rollup column
 		selectColumns = append([]string{rollup}, selectColumns...)
 	}
 
-	sql := fmt.Sprintf("SELECT %s FROM %q WHERE %s %s LIMIT %d OFFSET %d",
+	sql := fmt.Sprintf("SELECT %s FROM %q WHERE %s %s %s OFFSET %d",
 		strings.Join(selectColumns, ","),
 		mv.Model,
 		whereClause,
 		orderClause,
-		q.Limit,
+		limitClause,
 		q.Offset,
 	)
 

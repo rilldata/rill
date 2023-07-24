@@ -16,7 +16,7 @@
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import { NicelyFormattedTypes } from "../humanize-numbers";
   import Leaderboard from "./Leaderboard.svelte";
-  import LeaderboardMeasureSelector from "./LeaderboardMeasureSelector.svelte";
+  import LeaderboardControls from "./LeaderboardControls.svelte";
 
   export let metricViewName: string;
 
@@ -74,6 +74,26 @@
     referenceValue = $totalsQuery.data.data?.[activeMeasure.name];
   }
 
+  $: unfilteredTotalsQuery = createQueryServiceMetricsViewTotals(
+    $runtime.instanceId,
+    metricViewName,
+    {
+      measureNames: selectedMeasureNames,
+      timeStart: hasTimeSeries ? timeStart : undefined,
+      timeEnd: hasTimeSeries ? timeEnd : undefined,
+    },
+    {
+      query: {
+        enabled: hasTimeSeries ? !!timeStart && !!timeEnd : true,
+      },
+    }
+  );
+
+  let unfilteredTotal: number;
+  $: unfilteredTotal = $unfilteredTotalsQuery.data?.data?.[activeMeasure.name];
+
+  $: console.log("unfilteredTotal", unfilteredTotal);
+
   let leaderboardExpanded;
 
   function onSelectItem(event, item: MetricsViewDimension) {
@@ -128,7 +148,7 @@
   <div
     class="grid grid-auto-cols justify-between grid-flow-col items-center pl-1 pb-3"
   >
-    <LeaderboardMeasureSelector {metricViewName} />
+    <LeaderboardControls {metricViewName} />
   </div>
   {#if $dashboardStore}
     <VirtualizedGrid {columns} height="100%" items={dimensionsShown} let:item>
@@ -150,6 +170,7 @@
         }}
         on:select-item={(event) => onSelectItem(event, item)}
         referenceValue={referenceValue || 0}
+        {unfilteredTotal}
       />
     </VirtualizedGrid>
   {/if}

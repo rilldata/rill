@@ -28,19 +28,32 @@
   export let compact = false;
   export let hideNullPercentage = false;
 
+  export let enableProfiling = true;
+
   let topKLimit = 15;
 
   let active = false;
 
-  $: nulls = getNullPercentage($runtime?.instanceId, objectName, columnName);
+  $: nulls = getNullPercentage(
+    $runtime?.instanceId,
+    objectName,
+    columnName,
+    enableProfiling
+  );
 
   $: columnCardinality = getCountDistinct(
     $runtime?.instanceId,
     objectName,
-    columnName
+    columnName,
+    enableProfiling
   );
 
-  $: topK = getTopK($runtime?.instanceId, objectName, columnName);
+  $: topK = getTopK(
+    $runtime?.instanceId,
+    objectName,
+    columnName,
+    enableProfiling
+  );
 
   function toggleColumnProfile() {
     active = !active;
@@ -51,20 +64,20 @@
 </script>
 
 <ProfileContainer
-  isFetching={fetchingSummaries}
   {active}
   {compact}
   emphasize={active}
   {example}
   {hideNullPercentage}
   {hideRight}
+  isFetching={fetchingSummaries}
   {mode}
   on:select={toggleColumnProfile}
   on:shift-click={() =>
     copyToClipboard(columnName, `copied ${columnName} to clipboard`)}
   {type}
 >
-  <ColumnProfileIcon slot="icon" isFetching={fetchingSummaries} {type} />
+  <ColumnProfileIcon isFetching={fetchingSummaries} slot="icon" {type} />
 
   <svelte:fragment slot="left">{columnName}</svelte:fragment>
 
@@ -83,15 +96,15 @@
   />
   <div
     class="pl-10 pr-4 py-4"
-    slot="details"
     class:hidden={INTERVALS.has(type)}
+    slot="details"
   >
     <TopK
-      {type}
-      topK={$topK}
-      k={topKLimit}
-      totalRows={$columnCardinality?.totalRows}
       colorClass={DATA_TYPE_COLORS["STRUCT"].bgClass}
+      k={topKLimit}
+      topK={$topK}
+      totalRows={$columnCardinality?.totalRows}
+      {type}
     />
   </div>
 </ProfileContainer>
