@@ -3,6 +3,7 @@ package activity
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"sync"
 	"time"
 
@@ -77,10 +78,11 @@ func (c *bufferedClient) Emit(ctx context.Context, name string, value float64, d
 
 func (c *bufferedClient) Close() error {
 	close(c.stop)
-	err := c.flush() // Do not return the error immediately so concurrent flush calls can complete
+	errFlush := c.flush() // Do not return the error immediately so concurrent flush calls can complete
 	// Wait for all Sink calls to complete
 	c.sinkWg.Wait()
-	return err
+	errSink := c.sink.Close()
+	return errors.Join(errFlush, errSink)
 }
 
 func (c *bufferedClient) init() {
@@ -159,13 +161,17 @@ func (e *Event) Marshal() ([]byte, error) {
 	flattened := make(map[string]interface{})
 
 	// Add the non-dims fields.
-	flattened["time"] = e.Time
+	flattened["time"] = e.Time.UTC().Format(time.RFC3339)
 	flattened["name"] = e.Name
 	flattened["value"] = e.Value
 
 	// Iterate over the dims slice and add each dim to the map.
 	for _, dim := range e.Dims {
-		flattened[dim.Name] = dim.Value
+		if dim.Name != "time" && dim.Name != "name" && dim.Name != "value" {
+			flattened[dim.Name] = dim.Value
+		} else {
+			return nil, errors.New("time/name/value are not allowed as dimension names")
+		}
 	}
 
 	return json.Marshal(flattened)

@@ -11,31 +11,31 @@ type Sink interface {
 	Close() error
 }
 
-type noopSink struct{}
+type NoopSink struct{}
 
-func NewNoopSink() *noopSink {
-	return &noopSink{}
+func NewNoopSink() *NoopSink {
+	return &NoopSink{}
 }
 
-func (n *noopSink) Sink(_ []Event) error {
+func (n *NoopSink) Sink(_ []Event) error {
 	return nil
 }
 
-func (n *noopSink) Close() error {
+func (n *NoopSink) Close() error {
 	return nil
 }
 
-type consoleSink struct {
+type ConsoleSink struct {
 	logger *zap.Logger
 	level  zapcore.Level
 }
 
 // NewConsoleSink might be used for a local run
-func NewConsoleSink(logger *zap.Logger, level zapcore.Level) *consoleSink {
-	return &consoleSink{logger: logger, level: level}
+func NewConsoleSink(logger *zap.Logger, level zapcore.Level) *ConsoleSink {
+	return &ConsoleSink{logger: logger, level: level}
 }
 
-func (s *consoleSink) Sink(events []Event) error {
+func (s *ConsoleSink) Sink(events []Event) error {
 	if s.logger.Core().Enabled(s.level) {
 		for _, e := range events {
 			jsonEvent, err := e.Marshal()
@@ -48,6 +48,6 @@ func (s *consoleSink) Sink(events []Event) error {
 	return nil
 }
 
-func (s *consoleSink) Close() error {
+func (s *ConsoleSink) Close() error {
 	return nil
 }
