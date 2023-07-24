@@ -117,7 +117,7 @@ func (c *authTokenClaims) OrganizationPermissions(ctx context.Context, orgID str
 	case authtoken.TypeUser:
 		// continue
 	case authtoken.TypeService:
-		panic(errors.New("service tokens not supported"))
+		// continue
 	default:
 		panic(fmt.Errorf("unexpected token type %q", c.token.Token().Type))
 	}
@@ -148,7 +148,7 @@ func (c *authTokenClaims) ProjectPermissions(ctx context.Context, orgID, project
 	case authtoken.TypeUser:
 		// continue
 	case authtoken.TypeService:
-		panic(errors.New("service tokens not supported"))
+		// continue
 	default:
 		panic(fmt.Errorf("unexpected token type %q", c.token.Token().Type))
 	}
