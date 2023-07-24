@@ -7,7 +7,6 @@ import (
 	"math"
 
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
 )
 
@@ -27,7 +26,6 @@ type Runtime struct {
 	connCache          *connectionCache
 	migrationMetaCache *migrationMetaCache
 	queryCache         *queryCache
-	activityClient     activity.Client
 }
 
 func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
@@ -54,7 +52,6 @@ func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 		connCache:          newConnectionCache(opts.ConnectionCacheSize, logger),
 		migrationMetaCache: newMigrationMetaCache(math.MaxInt),
 		queryCache:         newQueryCache(opts.QueryCacheSizeBytes),
-		activityClient:     activity.NewNoopClient(),
 	}, nil
 }
 
@@ -67,6 +64,5 @@ func (r *Runtime) Close() error {
 		r.metastore.Close(),
 		r.connCache.Close(),
 		r.queryCache.close(),
-		r.activityClient.Close(),
 	)
 }

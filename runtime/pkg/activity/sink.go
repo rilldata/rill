@@ -2,6 +2,7 @@ package activity
 
 import (
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 // Sink is used by a bufferedClient to flush collected Event-s.
@@ -10,40 +11,43 @@ type Sink interface {
 	Close() error
 }
 
-type NoopSink struct{}
+type noopSink struct{}
 
-func NewNoopSink() *NoopSink {
-	return &NoopSink{}
+func NewNoopSink() *noopSink {
+	return &noopSink{}
 }
 
-func (n *NoopSink) Sink(_ []Event) error {
+func (n *noopSink) Sink(_ []Event) error {
 	return nil
 }
 
-func (n *NoopSink) Close() error {
+func (n *noopSink) Close() error {
 	return nil
 }
 
-type ConsoleSink struct {
+type consoleSink struct {
 	logger *zap.Logger
+	level  zapcore.Level
 }
 
 // NewConsoleSink might be used for a local run
-func NewConsoleSink(logger *zap.Logger) *ConsoleSink {
-	return &ConsoleSink{logger: logger}
+func NewConsoleSink(logger *zap.Logger, level zapcore.Level) *consoleSink {
+	return &consoleSink{logger: logger, level: level}
 }
 
-func (s *ConsoleSink) Sink(events []Event) error {
-	for _, e := range events {
-		jsonEvent, err := e.Marshal()
-		if err != nil {
-			return err
+func (s *consoleSink) Sink(events []Event) error {
+	if s.logger.Core().Enabled(s.level) {
+		for _, e := range events {
+			jsonEvent, err := e.Marshal()
+			if err != nil {
+				return err
+			}
+			s.logger.Log(s.level, string(jsonEvent))
 		}
-		s.logger.Info(string(jsonEvent))
 	}
 	return nil
 }
 
-func (s *ConsoleSink) Close() error {
+func (s *consoleSink) Close() error {
 	return nil
 }
