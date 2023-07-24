@@ -1,4 +1,3 @@
-// import { expect } from "@jest/globals";
 import { expect } from "@playwright/test";
 import type {
   MetricsViewFilterCond,
@@ -6,8 +5,6 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import type { Page, Response } from "playwright";
 import { clickMenuButton, openEntityMenu } from "./helpers";
-
-const playwrightExpect = expect;
 
 export async function createDashboardFromSource(page: Page, source: string) {
   await openEntityMenu(page, source);
@@ -44,7 +41,7 @@ export async function assertLeaderboards(
     const leaderboardBlock = await page.locator("svelte-virtual-list-row", {
       hasText: label,
     });
-    await playwrightExpect(leaderboardBlock).toBeVisible();
+    await expect(leaderboardBlock).toBeVisible();
 
     const actualValues = await leaderboardBlock
       .locator(".leaderboard-entry")

@@ -1,4 +1,3 @@
-// import { expect } from "@jest/globals";
 import type { Page } from "playwright";
 import { expect } from "@playwright/test";
 import { renameEntityUsingTitle } from "./commonHelpers";
