@@ -1072,6 +1072,8 @@ export interface V1CreateInstanceResponse {
   instance?: V1Instance;
 }
 
+export type V1CreateInstanceRequestAnnotations = { [key: string]: string };
+
 export type V1CreateInstanceRequestVariables = { [key: string]: string };
 
 /**
@@ -1087,6 +1089,7 @@ export interface V1CreateInstanceRequest {
   embedCatalog?: boolean;
   variables?: V1CreateInstanceRequestVariables;
   ingestionLimitBytes?: string;
+  annotations?: V1CreateInstanceRequestAnnotations;
 }
 
 /**
