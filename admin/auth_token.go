@@ -99,6 +99,8 @@ func (s *Service) IssueServiceAuthToken(ctx context.Context, serviceID string, t
 }
 
 // ListServiceAuthTokens lists all auth tokens for a service.
+// Looks like we cannot list auth tokens for a user. We can just list token.ID which are available for given serviceID
+// Need to update this method to list token ID for a serviceID
 func (s *Service) ListServiceAuthTokens(ctx context.Context, serviceID string) ([]AuthToken, error) {
 	tokens, err := s.DB.FindServiceAuthTokens(ctx, serviceID)
 	if err != nil {
@@ -117,7 +119,6 @@ func (s *Service) ListServiceAuthTokens(ctx context.Context, serviceID string) (
 			ID:     id,
 			Secret: [24]byte(token.SecretHash),
 		}
-		
 		authTokens[i] = &serviceAuthToken{model: token, token: tkn}
 	}
 
