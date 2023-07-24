@@ -352,19 +352,26 @@ export function getAdjustedChartTime(
     };
 
   const grainDuration = TIME_GRAIN[interval].duration;
+  const offsetDuration = getDurationMultiple(grainDuration, 0.45);
 
   let adjustedEnd = new Date(end);
 
   if (timePreset === TimeRangePreset.ALL_TIME) {
     // No offset has been applied to All time range so far
     // Adjust end according to the interval
-    adjustedEnd = getEndOfPeriod(adjustedEnd, grainDuration);
+    start = getStartOfPeriod(start, grainDuration, zone);
+    start = getOffset(start, offsetDuration, TimeOffsetType.ADD);
+    adjustedEnd = getEndOfPeriod(adjustedEnd, grainDuration, zone);
   }
 
-  const offsetDuration = getDurationMultiple(grainDuration, 0.45);
   adjustedEnd = getOffset(adjustedEnd, offsetDuration, TimeOffsetType.SUBTRACT);
 
   return {
+    /**
+     * Values in the charts are displayed in the local time zone.
+     * To get the correct values, we need to remove the local time zone offset
+     * and add the offset of the selected time zone.
+     */
     start: addZoneOffset(removeLocalTimezoneOffset(start), zone),
     end: addZoneOffset(removeLocalTimezoneOffset(adjustedEnd), zone),
   };
