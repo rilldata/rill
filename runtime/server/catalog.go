@@ -7,6 +7,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -21,6 +22,8 @@ func (s *Server) ListCatalogEntries(ctx context.Context, req *runtimev1.ListCata
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.type", req.Type.String()),
 	)
+
+	activity.WithRequestInstanceID(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
 		return nil, ErrForbidden
@@ -50,6 +53,8 @@ func (s *Server) GetCatalogEntry(ctx context.Context, req *runtimev1.GetCatalogE
 		attribute.String("args.name", req.Name),
 	)
 
+	activity.WithRequestInstanceID(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
 		return nil, ErrForbidden
 	}
@@ -72,6 +77,9 @@ func (s *Server) Reconcile(ctx context.Context, req *runtimev1.ReconcileRequest)
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 	)
+
+	activity.WithRequestInstanceID(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditInstance) {
 		return nil, ErrForbidden
 	}
@@ -92,6 +100,8 @@ func (s *Server) PutFileAndReconcile(ctx context.Context, req *runtimev1.PutFile
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 	)
+
+	activity.WithRequestInstanceID(ctx, req.InstanceId)
 
 	claims := auth.GetClaims(ctx)
 	if !claims.CanInstance(req.InstanceId, auth.EditRepo) || !claims.CanInstance(req.InstanceId, auth.EditInstance) {
@@ -120,6 +130,9 @@ func (s *Server) RenameFileAndReconcile(ctx context.Context, req *runtimev1.Rena
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 	)
+
+	activity.WithRequestInstanceID(ctx, req.InstanceId)
+
 	claims := auth.GetClaims(ctx)
 	if !claims.CanInstance(req.InstanceId, auth.EditRepo) || !claims.CanInstance(req.InstanceId, auth.EditInstance) {
 		return nil, ErrForbidden
@@ -147,6 +160,9 @@ func (s *Server) DeleteFileAndReconcile(ctx context.Context, req *runtimev1.Dele
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 	)
+
+	activity.WithRequestInstanceID(ctx, req.InstanceId)
+
 	claims := auth.GetClaims(ctx)
 	if !claims.CanInstance(req.InstanceId, auth.EditRepo) || !claims.CanInstance(req.InstanceId, auth.EditInstance) {
 		return nil, ErrForbidden
@@ -174,6 +190,9 @@ func (s *Server) RefreshAndReconcile(ctx context.Context, req *runtimev1.Refresh
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 	)
+
+	activity.WithRequestInstanceID(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditInstance) {
 		return nil, ErrForbidden
 	}
@@ -195,6 +214,9 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *runtimev1.TriggerRefre
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 	)
+
+	activity.WithRequestInstanceID(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditInstance) {
 		return nil, ErrForbidden
 	}
@@ -212,6 +234,9 @@ func (s *Server) TriggerSync(ctx context.Context, req *runtimev1.TriggerSyncRequ
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 	)
+
+	activity.WithRequestInstanceID(ctx, req.InstanceId)
+
 	err := s.runtime.SyncExistingTables(ctx, req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())

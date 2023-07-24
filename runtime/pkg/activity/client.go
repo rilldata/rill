@@ -1,14 +1,21 @@
-package publisher
+package activity
 
 import (
 	"context"
 	"encoding/json"
 	"sync"
 	"time"
+
+	"go.uber.org/zap"
 )
 
-// Client collects and periodically sinks Event-s.
-type Client struct {
+type Client interface {
+	Emit(ctx context.Context, name string, value float64, dims ...Dim)
+	Close() error
+}
+
+// bufferedClient collects and periodically sinks Event-s.
+type bufferedClient struct {
 	sinkPeriod time.Duration
 	sink       Sink
 	buffer     []Event
@@ -16,32 +23,18 @@ type Client struct {
 	bufferMx   sync.Mutex
 	stop       chan struct{}
 	sinkWg     sync.WaitGroup
+	logger     *zap.Logger
 }
 
-type Options struct {
+type BufferedClientOptions struct {
 	Sink       Sink
 	SinkPeriod time.Duration
 	BufferSize int
+	Logger     *zap.Logger
 }
 
-type Event struct {
-	Time  time.Time
-	Name  string
-	Value float64
-	Dims  []Dim
-}
-
-type Dim struct {
-	Name  string
-	Value string
-}
-
-func String(name, value string) *Dim {
-	return &Dim{Name: name, Value: value}
-}
-
-func New(opts Options) *Client {
-	client := &Client{
+func NewBufferedClient(opts BufferedClientOptions) Client {
+	client := &bufferedClient{
 		sinkPeriod: opts.SinkPeriod,
 		sink:       opts.Sink,
 		buffer:     make([]Event, 0, opts.BufferSize),
@@ -49,12 +42,12 @@ func New(opts Options) *Client {
 		stop:       make(chan struct{}),
 	}
 
-	go client.start()
+	go client.init()
 
 	return client
 }
 
-func (c *Client) Emit(ctx context.Context, name string, value float64, dims ...Dim) {
+func (c *bufferedClient) Emit(ctx context.Context, name string, value float64, dims ...Dim) {
 	dimsFromCtx := GetDimsFromContext(ctx)
 	if dimsFromCtx == nil {
 		dimsFromCtx = &[]Dim{}
@@ -73,24 +66,33 @@ func (c *Client) Emit(ctx context.Context, name string, value float64, dims ...D
 	c.buffer = append(c.buffer, event)
 
 	if len(c.buffer) >= c.bufferSize {
-		go c.flush()
+		go func() {
+			err := c.flush()
+			if err != nil {
+				c.logger.Error("could not flush activity events", zap.Error(err))
+			}
+		}()
 	}
 }
 
-func (c *Client) Stop() {
+func (c *bufferedClient) Close() error {
 	close(c.stop)
-	c.flush()
+	err := c.flush() // Do not return the error immediately so concurrent flush calls can complete
 	// Wait for all Sink calls to complete
 	c.sinkWg.Wait()
+	return err
 }
 
-func (c *Client) start() {
+func (c *bufferedClient) init() {
 	ticker := time.NewTicker(c.sinkPeriod)
 
 	for {
 		select {
 		case <-ticker.C:
-			c.flush()
+			err := c.flush()
+			if err != nil {
+				c.logger.Error("could not flush activity events", zap.Error(err))
+			}
 		case <-c.stop:
 			ticker.Stop()
 			return
@@ -98,7 +100,7 @@ func (c *Client) start() {
 	}
 }
 
-func (c *Client) flush() {
+func (c *bufferedClient) flush() error {
 	c.sinkWg.Add(1)
 	defer c.sinkWg.Done()
 
@@ -114,8 +116,42 @@ func (c *Client) flush() {
 
 	// If there are events, use a sink to process them
 	if len(events) > 0 {
-		c.sink.Sink(events)
+		err := c.sink.Sink(events)
+		if err != nil {
+			return err
+		}
 	}
+
+	return nil
+}
+
+type noopClient struct{}
+
+func NewNoopClient() Client {
+	return &noopClient{}
+}
+
+func (n *noopClient) Emit(ctx context.Context, name string, value float64, dims ...Dim) {
+}
+
+func (n *noopClient) Close() error {
+	return nil
+}
+
+type Event struct {
+	Time  time.Time
+	Name  string
+	Value float64
+	Dims  []Dim
+}
+
+type Dim struct {
+	Name  string
+	Value string
+}
+
+func String(name, value string) Dim {
+	return Dim{Name: name, Value: value}
 }
 
 func (e *Event) Marshal() ([]byte, error) {
@@ -123,9 +159,9 @@ func (e *Event) Marshal() ([]byte, error) {
 	flattened := make(map[string]interface{})
 
 	// Add the non-dims fields.
-	flattened["Time"] = e.Time
-	flattened["Name"] = e.Name
-	flattened["Value"] = e.Value
+	flattened["time"] = e.Time
+	flattened["name"] = e.Name
+	flattened["value"] = e.Value
 
 	// Iterate over the dims slice and add each dim to the map.
 	for _, dim := range e.Dims {

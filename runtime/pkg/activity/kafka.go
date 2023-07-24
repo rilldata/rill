@@ -1,20 +1,16 @@
-package publisher
+package activity
 
 import (
-	"fmt"
-
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"go.uber.org/zap"
 )
 
 // KafkaSink sinks events to a Kafka cluster.
 type KafkaSink struct {
 	producer *kafka.Producer
 	topic    string
-	logger   *zap.Logger
 }
 
-func NewKafkaSink(brokers, topic string, logger *zap.Logger) (*KafkaSink, error) {
+func NewKafkaSink(brokers, topic string) (*KafkaSink, error) {
 	producer, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": brokers})
 	if err != nil {
 		return nil, err
@@ -23,17 +19,15 @@ func NewKafkaSink(brokers, topic string, logger *zap.Logger) (*KafkaSink, error)
 	return &KafkaSink{
 		producer: producer,
 		topic:    topic,
-		logger:   logger,
 	}, nil
 }
 
 // Sink doesn't wait till all events are delivered to Kafka
-func (s *KafkaSink) Sink(events []Event) {
+func (s *KafkaSink) Sink(events []Event) error {
 	for _, event := range events {
 		message, err := event.Marshal()
 		if err != nil {
-			s.logger.Debug(fmt.Sprintf("could not serialize event: %v", event), zap.Error(err))
-			continue
+			return err
 		}
 
 		err = s.producer.Produce(&kafka.Message{
@@ -42,9 +36,10 @@ func (s *KafkaSink) Sink(events []Event) {
 		}, nil)
 
 		if err != nil {
-			s.logger.Debug(fmt.Sprintf("could not produce event to Kafka: %v", event), zap.Error(err))
+			return err
 		}
 	}
+	return nil
 }
 
 func (s *KafkaSink) Close() error {

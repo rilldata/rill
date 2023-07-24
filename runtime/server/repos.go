@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -22,6 +23,8 @@ func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest)
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.glob", req.Glob),
 	)
+
+	activity.WithRequestInstanceID(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadRepo) {
 		return nil, ErrForbidden
@@ -47,6 +50,8 @@ func (s *Server) GetFile(ctx context.Context, req *runtimev1.GetFileRequest) (*r
 		attribute.String("args.path", req.Path),
 	)
 
+	activity.WithRequestInstanceID(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadRepo) {
 		return nil, ErrForbidden
 	}
@@ -68,6 +73,8 @@ func (s *Server) PutFile(ctx context.Context, req *runtimev1.PutFileRequest) (*r
 		attribute.Bool("args.create_only", req.CreateOnly),
 	)
 
+	activity.WithRequestInstanceID(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
 		return nil, ErrForbidden
 	}
@@ -86,6 +93,8 @@ func (s *Server) DeleteFile(ctx context.Context, req *runtimev1.DeleteFileReques
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.path", req.Path),
 	)
+
+	activity.WithRequestInstanceID(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
 		return nil, ErrForbidden
@@ -106,6 +115,8 @@ func (s *Server) RenameFile(ctx context.Context, req *runtimev1.RenameFileReques
 		attribute.String("args.from_path", req.FromPath),
 		attribute.String("args.to_path", req.ToPath),
 	)
+
+	activity.WithRequestInstanceID(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
 		return nil, ErrForbidden
@@ -148,6 +159,8 @@ func (s *Server) UploadMultipartFile(w http.ResponseWriter, req *http.Request, p
 		attribute.String("args.instance_id", pathParams["instance_id"]),
 		attribute.String("args.path", pathParams["path"]),
 	)
+
+	activity.WithRequestInstanceID(ctx, pathParams["instance_id"])
 
 	err = s.runtime.PutFile(ctx, pathParams["instance_id"], pathParams["path"], f, true, false)
 	if err != nil {

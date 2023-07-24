@@ -7,8 +7,8 @@ import (
 	"strconv"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	"github.com/rilldata/rill/runtime/pkg/publisher"
 	"go.uber.org/zap"
 )
 
@@ -18,15 +18,17 @@ func (r *Runtime) FindInstances(ctx context.Context) ([]*drivers.Instance, error
 
 func (r *Runtime) FindInstance(ctx context.Context, instanceID string) (*drivers.Instance, error) {
 	instance, err := r.Registry().FindInstance(ctx, instanceID)
-	publisher.WithDims(ctx, *publisher.String("instance_id", instanceID))
 
-	if err != nil && instance != nil {
-		var usageDims []publisher.Dim
+	// If instanceID is a request instance id then add its labels as activity dimensions
+	// Make sure instance id of every request is validated using the registry
+	if err != nil && instance != nil && activity.GetRequestInstanceIDFromContext(ctx) == instanceID {
+		var usageDims []activity.Dim
 		for k, v := range instance.Annotations {
-			usageDims = append(usageDims, *publisher.String(k, v))
+			usageDims = append(usageDims, activity.String(k, v))
 		}
-		publisher.WithDims(ctx, usageDims...)
+		activity.WithDims(ctx, usageDims...)
 	}
+
 	return instance, err
 }
 

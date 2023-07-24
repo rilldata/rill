@@ -3,12 +3,14 @@ package observability
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"runtime"
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/attribute"
@@ -309,7 +311,7 @@ func logFieldsFromContext(ctx context.Context) *[]zap.Field {
 	return v
 }
 
-// AddRequestAttributes sets attributes on both the current trace span and the finish log of the current request.
+// AddRequestAttributes sets attributes on the current trace span, the finish log of the current request, and the activity track
 func AddRequestAttributes(ctx context.Context, attrs ...attribute.KeyValue) {
 	// Set attributes on the span
 	span := trace.SpanFromContext(ctx)
@@ -321,5 +323,14 @@ func AddRequestAttributes(ctx context.Context, attrs ...attribute.KeyValue) {
 		for _, attr := range attrs {
 			*fields = append(*fields, zap.Any(string(attr.Key), attr.Value.AsInterface()))
 		}
+	}
+
+	// Add attributes as activity dimensions
+	var dims []activity.Dim
+	for _, attr := range attrs {
+		dims = append(dims, activity.String(string(attr.Key), fmt.Sprintf("%v", attr.Value.AsInterface())))
+	}
+	if len(dims) > 0 {
+		activity.WithDims(ctx, dims...)
 	}
 }

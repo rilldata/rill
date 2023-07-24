@@ -11,9 +11,9 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	"github.com/rilldata/rill/runtime/pkg/publisher"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server"
 	"github.com/spf13/cobra"
@@ -145,24 +145,25 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				limiter = ratelimit.NewRedis(redis.NewClient(opts))
 			}
 
-			var sink publisher.Sink
+			var sink activity.Sink
 			switch conf.EmitterSinkType {
 			case "":
-				sink = publisher.NewNoopSink()
+				sink = activity.NewNoopSink()
 			case "kafka":
-				sink, err = publisher.NewKafkaSink(conf.EmitterSinkKafkaBrokers, conf.EmitterSinkKafkaTopic, logger)
+				sink, err = activity.NewKafkaSink(conf.EmitterSinkKafkaBrokers, conf.EmitterSinkKafkaTopic)
 				if err != nil {
 					logger.Fatal("failed to create a kafka sink", zap.Error(err))
 				}
 			default:
-				logger.Fatal(fmt.Sprintf("unknown usage sink type: %s", conf.EmitterSinkType))
+				logger.Fatal(fmt.Sprintf("unknown activity sink type: %s", conf.EmitterSinkType))
 			}
-			c := publisher.Options{
+			activityOpts := activity.BufferedClientOptions{
 				Sink:       sink,
 				SinkPeriod: time.Duration(conf.EmitterSinkPeriod) * time.Millisecond,
 				BufferSize: conf.EmitterMaxBufferSize,
+				Logger:     logger,
 			}
-			publisher.Set(publisher.New(c))
+			activityClient := activity.NewBufferedClient(activityOpts)
 
 			// Init server
 			srvOpts := &server.Options{
@@ -174,7 +175,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				AuthIssuerURL:   conf.AuthIssuerURL,
 				AuthAudienceURL: conf.AuthAudienceURL,
 			}
-			s, err := server.NewServer(ctx, srvOpts, rt, logger, limiter)
+			s, err := server.NewServer(ctx, srvOpts, rt, logger, limiter, activityClient)
 			if err != nil {
 				logger.Fatal("error: could not create server", zap.Error(err))
 			}

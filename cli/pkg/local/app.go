@@ -20,9 +20,9 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	"github.com/rilldata/rill/runtime/pkg/publisher"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	runtimeserver "github.com/rilldata/rill/runtime/server"
 	"go.uber.org/zap"
@@ -255,16 +255,10 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		AllowedOrigins:  []string{"*"},
 		ServePrometheus: true,
 	}
-	runtimeServer, err := runtimeserver.NewServer(ctx, opts, a.Runtime, serverLogger, ratelimit.NewNoop())
+	runtimeServer, err := runtimeserver.NewServer(ctx, opts, a.Runtime, serverLogger, ratelimit.NewNoop(), activity.NewNoopClient())
 	if err != nil {
 		return err
 	}
-
-	publisher.Set(publisher.New(publisher.Options{
-		Sink:       publisher.NewNoopSink(),
-		SinkPeriod: time.Duration(100) * time.Millisecond,
-		BufferSize: 1000,
-	}))
 
 	// Start the gRPC server
 	group.Go(func() error {

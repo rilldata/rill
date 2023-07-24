@@ -4,6 +4,7 @@ import (
 	"context"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -20,6 +21,8 @@ func (s *Server) ColumnTopK(ctx context.Context, req *runtimev1.ColumnTopKReques
 		attribute.Int("args.k", int(req.K)),
 		attribute.Int("args.priority", int(req.Priority)),
 	)
+
+	activity.WithRequestInstanceID(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
@@ -64,6 +67,8 @@ func (s *Server) ColumnNullCount(ctx context.Context, req *runtimev1.ColumnNullC
 		attribute.Int("args.priority", int(req.Priority)),
 	)
 
+	activity.WithRequestInstanceID(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -90,6 +95,8 @@ func (s *Server) ColumnDescriptiveStatistics(ctx context.Context, req *runtimev1
 		attribute.String("args.column", req.ColumnName),
 		attribute.Int("args.priority", int(req.Priority)),
 	)
+
+	activity.WithRequestInstanceID(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
@@ -152,6 +159,8 @@ func (s *Server) ColumnTimeGrain(ctx context.Context, req *runtimev1.ColumnTimeG
 		attribute.Int("args.priority", int(req.Priority)),
 	)
 
+	activity.WithRequestInstanceID(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -177,6 +186,8 @@ func (s *Server) ColumnNumericHistogram(ctx context.Context, req *runtimev1.Colu
 		attribute.String("args.histogram", req.HistogramMethod.String()),
 		attribute.Int("args.priority", int(req.Priority)),
 	)
+
+	activity.WithRequestInstanceID(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
@@ -213,6 +224,8 @@ func (s *Server) ColumnRugHistogram(ctx context.Context, req *runtimev1.ColumnRu
 		attribute.Int("args.priority", int(req.Priority)),
 	)
 
+	activity.WithRequestInstanceID(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -244,6 +257,8 @@ func (s *Server) ColumnTimeRange(ctx context.Context, req *runtimev1.ColumnTimeR
 		attribute.Int("args.priority", int(req.Priority)),
 	)
 
+	activity.WithRequestInstanceID(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -268,6 +283,8 @@ func (s *Server) ColumnCardinality(ctx context.Context, req *runtimev1.ColumnCar
 		attribute.String("args.column", req.ColumnName),
 		attribute.Int("args.priority", int(req.Priority)),
 	)
+
+	activity.WithRequestInstanceID(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
