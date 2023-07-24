@@ -92,11 +92,6 @@ jobs:
         if: steps.filter.outputs.common == 'true'
         run: npm run test -w web-common
 
-      # - name: Build & Test the web local
-      #   if: ${{ steps.filter.outputs.local == 'true' || steps.filter.outputs.common == 'true' }}
-      #   run: |-
-      #     SKIP_UI_BUILD=true npm run test
-
       - name: Build & Test the web local with playwright
         if: ${{ steps.filter.outputs.local == 'true' || steps.filter.outputs.common == 'true' }}
         run: npx playwright test
