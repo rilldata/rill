@@ -57,7 +57,7 @@ type Config struct {
 	AllowHostAccess bool `default:"false" split_words:"true"`
 	// Redis server address host:port
 	RedisURL string `default:"" split_words:"true"`
-	// Sink type of activity client: noop, kafka
+	// Sink type of activity client: noop (or empty string), kafka
 	ActivitySinkType string `default:"" split_words:"true"`
 	// Sink period of a buffered activity client in millis
 	ActivitySinkPeriodMs int `default:"1000" split_words:"true"`
@@ -147,7 +147,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 
 			var sink activity.Sink
 			switch conf.ActivitySinkType {
-			case "":
+			case "", "noop":
 				sink = activity.NewNoopSink()
 			case "kafka":
 				sink, err = activity.NewKafkaSink(conf.ActivitySinkKafkaBrokers, conf.ActivitySinkKafkaTopic)
