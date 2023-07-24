@@ -107,7 +107,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		}
 
 		measures := normaliseMeasures(q.Measures, q.Pixels != 0)
-		timeBucketSpecifier := convertToDuckDBTimeBucketSpecifier(timeRange.Interval)
+		dateTruncSpecifier := convertToDateTruncSpecifier(timeRange.Interval)
 		tsAlias := tempName("_ts_")
 		temporaryTableName := tempName("_timeseries_")
 
@@ -121,7 +121,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 			return err
 		}
 
-		args = append([]any{timeRange.Start.AsTime(), timezone, timeRange.End.AsTime(), timezone, timezone}, args...)
+		args = append([]any{timezone, timezone, timeRange.Start.AsTime(), timezone, timezone, timeRange.End.AsTime(), timezone, timezone}, args...)
 
 		querySQL := `CREATE TEMPORARY TABLE ` + temporaryTableName + ` AS (
 			-- generate a time series column that has the intended range
@@ -130,14 +130,14 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 				range as ` + tsAlias + `
 			FROM
 				range(
-				time_bucket(INTERVAL '` + timeBucketSpecifier + `', ?::TIMESTAMPTZ, ?),
-				time_bucket(INTERVAL '` + timeBucketSpecifier + `', ?::TIMESTAMPTZ, ?),
-				INTERVAL '` + timeBucketSpecifier + `')
+				timezone(?, date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ))),
+				timezone(?, date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ))),
+				INTERVAL '1 ` + dateTruncSpecifier + `')
 			),
 			-- transform the original data, and optionally sample it.
 			series AS (
 			SELECT
-				time_bucket(INTERVAL '` + timeBucketSpecifier + `', ` + safeName(q.TimestampColumnName) + `::TIMESTAMPTZ, ?) as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
+				timezone(?, date_trunc('` + dateTruncSpecifier + `', timezone(?, ` + safeName(q.TimestampColumnName) + `::TIMESTAMPTZ))) as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
 			FROM ` + safeName(q.TableName) + ` ` + filter + `
 			GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
 			)
