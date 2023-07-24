@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -104,6 +105,10 @@ type connection struct {
 	root         string
 	driverConfig map[string]any
 	driverName   string
+
+	watcherMu    sync.Mutex
+	watcherCount int
+	watcher      *watcher
 }
 
 // Config implements drivers.Connection.

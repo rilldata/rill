@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -57,16 +58,34 @@ func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, ss runtimev1.Runti
 		return err
 	}
 
-	return repo.Watch(ss.Context(), req.Replay, func(event drivers.WatchEvent) error {
-		if !event.Dir {
-			err := ss.Send(&runtimev1.WatchFilesResponse{
-				Event: event.Type,
-				Path:  event.Path,
-			})
-
+	if req.Replay {
+		paths, err := repo.ListRecursive(ss.Context(), req.InstanceId, "**")
+		if err != nil {
 			return err
 		}
-		return nil
+		for _, p := range paths {
+			err = ss.Send(&runtimev1.WatchFilesResponse{
+				Event: runtimev1.FileEvent_FILE_EVENT_WRITE,
+				Path:  p,
+			})
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return repo.Watch(ss.Context(), "", func(events []drivers.WatchEvent) {
+		for _, event := range events {
+			if !event.Dir {
+				err := ss.Send(&runtimev1.WatchFilesResponse{
+					Event: event.Type,
+					Path:  event.Path,
+				})
+				if err != nil {
+					s.logger.Info("failed to send watch event", zap.Error(err))
+				}
+			}
+		}
 	})
 }
 

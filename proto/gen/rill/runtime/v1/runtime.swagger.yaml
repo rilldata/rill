@@ -2418,7 +2418,6 @@ definitions:
       - FILE_EVENT_UNSPECIFIED
       - FILE_EVENT_WRITE
       - FILE_EVENT_DELETE
-      - FILE_EVENT_RENAME
     default: FILE_EVENT_UNSPECIFIED
     description: FileEvent describes a file change.
   v1GCSGetCredentialsInfoResponse:
