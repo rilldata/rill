@@ -37,7 +37,7 @@ func (s *Server) CreateService(ctx context.Context, req *adminv1.CreateServiceRe
 	// 	return nil, status.Error(codes.PermissionDenied, "not allowed to update org")
 	// }
 
-	service, err := s.admin.CreateServiceForOrganization(ctx, org.ID, req.Name)
+	service, err := s.admin.CreateServiceForOrganization(ctx, org.Name, req.Name)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -262,6 +262,7 @@ func serviceToPB(service *database.Service) *adminv1.Service {
 	return &adminv1.Service{
 		Id:          service.ID,
 		ServiceName: service.Name,
+		OrgName:     service.OrgName,
 	}
 }
 

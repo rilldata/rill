@@ -19,6 +19,7 @@ func ServiceCmd(cfg *config.Config) *cobra.Command {
 	serviceCmd.AddCommand(RenameCmd(cfg))
 	serviceCmd.AddCommand(CreateCmd(cfg))
 	serviceCmd.AddCommand(DeleteCmd(cfg))
+	serviceCmd.AddCommand(ListCmd(cfg))
 	serviceCmd.AddCommand(token.TokenCmd(cfg))
 
 	return serviceCmd
@@ -30,6 +31,16 @@ func toRow(s *adminv1.Service) *service {
 		OrgName:   s.OrgName,
 		CreatedAt: s.CreatedOn.AsTime().Format(cmdutil.TSFormatLayout),
 	}
+}
+
+func toTable(sv []*adminv1.Service) []*service {
+	services := make([]*service, 0, len(sv))
+
+	for _, s := range sv {
+		services = append(services, toRow(s))
+	}
+
+	return services
 }
 
 type service struct {

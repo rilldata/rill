@@ -653,9 +653,9 @@ func (c *connection) DeleteExpiredUserAuthTokens(ctx context.Context, retention 
 func (c *connection) FindServicesByOrgName(ctx context.Context, orgName string) ([]*database.Service, error) {
 	var res []*database.Service
 
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM services WHERE org_name=$1", orgName)
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM service WHERE org_name=$1", orgName)
 	if err != nil {
-		return nil, parseErr("services", err)
+		return nil, parseErr("service", err)
 	}
 	return res, nil
 }
@@ -663,7 +663,7 @@ func (c *connection) FindServicesByOrgName(ctx context.Context, orgName string) 
 // FindService returns a service.
 func (c *connection) FindService(ctx context.Context, id string) (*database.Service, error) {
 	res := &database.Service{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM services WHERE id=$1", id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM service WHERE id=$1", id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("service", err)
 	}
@@ -674,7 +674,7 @@ func (c *connection) FindService(ctx context.Context, id string) (*database.Serv
 func (c *connection) FindServiceByName(ctx context.Context, orgName, name string) (*database.Service, error) {
 	res := &database.Service{}
 
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM services WHERE org_name=$1 AND name=$2", orgName, name).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM service WHERE org_name=$1 AND name=$2", orgName, name).StructScan(res)
 	if err != nil {
 		return nil, parseErr("service", err)
 	}
@@ -689,7 +689,7 @@ func (c *connection) InsertService(ctx context.Context, opts *database.InsertSer
 
 	res := &database.Service{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO services (org_name, name)
+		INSERT INTO service (org_name, name)
 		VALUES ($1, $2) RETURNING *`,
 		opts.OrgName, opts.Name,
 	).StructScan(res)
@@ -707,7 +707,7 @@ func (c *connection) UpdateService(ctx context.Context, id string, opts *databas
 
 	res := &database.Service{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE services
+		UPDATE service
 		SET name=$1
 		WHERE id=$2 RETURNING *`,
 		opts.Name, id,
@@ -720,7 +720,7 @@ func (c *connection) UpdateService(ctx context.Context, id string, opts *databas
 
 // DeleteService deletes a service.
 func (c *connection) DeleteService(ctx context.Context, id string) error {
-	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM services WHERE id=$1", id)
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM service WHERE id=$1", id)
 	return checkDeleteRow("service", res, err)
 }
 
@@ -753,7 +753,7 @@ func (c *connection) InsertServiceAuthToken(ctx context.Context, opts *database.
 	res := &database.ServiceAuthToken{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		INSERT INTO service_auth_tokens (id, secret_hash, service_id, expires_on)
-		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+		VALUES ($1, $2, $3, $4) RETURNING *`,
 		opts.ID, opts.SecretHash, opts.ServieID, opts.ExpiresOn,
 	).StructScan(res)
 	if err != nil {

@@ -9,7 +9,7 @@ import (
 
 func CreateCmd(cfg *config.Config) *cobra.Command {
 	createCmd := &cobra.Command{
-		Use:   "create",
+		Use:   "create <service-name>",
 		Args:  cobra.MaximumNArgs(1),
 		Short: "Create service",
 		RunE: func(cmd *cobra.Command, args []string) error {

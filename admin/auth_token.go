@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/authtoken"
 )
@@ -106,10 +107,17 @@ func (s *Service) ListServiceAuthTokens(ctx context.Context, serviceID string) (
 
 	authTokens := make([]AuthToken, len(tokens))
 	for i, token := range tokens {
-		tkn, err := authtoken.FromString(token.ID)
+		id, err := uuid.Parse(token.ID)
 		if err != nil {
 			return nil, err
 		}
+
+		tkn := &authtoken.Token{
+			Type:   authtoken.TypeService,
+			ID:     id,
+			Secret: [24]byte(token.SecretHash),
+		}
+		
 		authTokens[i] = &serviceAuthToken{model: token, token: tkn}
 	}
 

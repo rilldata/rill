@@ -1,4 +1,4 @@
-package token
+package service
 
 import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -8,11 +8,10 @@ import (
 )
 
 func ListCmd(cfg *config.Config) *cobra.Command {
-	var name string
 	listCmd := &cobra.Command{
 		Use:   "list",
-		Args:  cobra.NoArgs,
-		Short: "List tokens",
+		Args:  cobra.MaximumNArgs(1),
+		Short: "List service",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -20,21 +19,18 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			res, err := client.ListServiceAuthTokens(cmd.Context(), &adminv1.ListServiceAuthTokensRequest{
-				ServiceName:      name,
+			res, err := client.ListServices(cmd.Context(), &adminv1.ListServicesRequest{
 				OrganizationName: cfg.Org,
 			})
 			if err != nil {
 				return err
 			}
 
-			cmdutil.TablePrinter(res.Tokens)
+			cmdutil.TablePrinter(toTable(res.Services))
+
 			return nil
 		},
 	}
-
-	listCmd.Flags().SortFlags = false
-	listCmd.Flags().StringVar(&name, "service", "", "Service Name")
 
 	return listCmd
 }

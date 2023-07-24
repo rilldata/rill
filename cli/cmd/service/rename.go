@@ -11,7 +11,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 	var newName string
 
 	renameCmd := &cobra.Command{
-		Use:   "rename",
+		Use:   "rename <service-name>",
 		Args:  cobra.MaximumNArgs(1),
 		Short: "Rename service",
 		RunE: func(cmd *cobra.Command, args []string) error {

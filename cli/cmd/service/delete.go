@@ -11,7 +11,7 @@ import (
 
 func DeleteCmd(cfg *config.Config) *cobra.Command {
 	deleteCmd := &cobra.Command{
-		Use:   "delete",
+		Use:   "delete <service-name>",
 		Args:  cobra.MaximumNArgs(1),
 		Short: "Delete service",
 		RunE: func(cmd *cobra.Command, args []string) error {
