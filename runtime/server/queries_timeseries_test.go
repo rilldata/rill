@@ -299,7 +299,7 @@ func getTimeseriesTestServerWithDSTForward(t *testing.T) (*Server, string) {
 
 	`)
 
-	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop())
+	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	return server, instanceID
@@ -314,7 +314,7 @@ func getTimeseriesTestServerWithDSTBackward(t *testing.T) (*Server, string) {
 		SELECT 1.0 AS clicks, TIMESTAMP '2023-10-29 02:00:00' AS time, 'iphone' AS device
 	`)
 
-	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop())
+	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	return server, instanceID
@@ -329,7 +329,7 @@ func getTimeseriesTestServerWithKathmandu(t *testing.T) (*Server, string) {
 		SELECT 1.0 AS clicks, TIMESTAMP '2023-10-29 02:15:00' AS time, 'iphone' AS device
 	`)
 
-	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop())
+	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	return server, instanceID
