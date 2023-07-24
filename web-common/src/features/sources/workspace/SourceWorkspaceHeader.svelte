@@ -110,7 +110,9 @@
   }
 
   const onSaveAndRefreshClick = async (tableName: string) => {
+    overlay.set({ title: `Importing ${tableName}.yaml` });
     saveAndRefresh(queryClient, tableName, $sourceStore.clientYAML);
+    overlay.set(null);
   };
 
   const onRefreshClick = async (tableName: string) => {

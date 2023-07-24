@@ -1,6 +1,5 @@
 import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
-import { overlay } from "../../layout/overlay-store";
 import { runtimeServicePutFileAndReconcile } from "../../runtime-client";
 import { invalidateAfterReconcile } from "../../runtime-client/invalidation";
 import { runtime } from "../../runtime-client/runtime-store";
@@ -13,8 +12,6 @@ export async function saveAndRefresh(
   tableName: string,
   yaml: string
 ) {
-  overlay.set({ title: `Importing ${tableName}.yaml` });
-
   const instanceId = get(runtime).instanceId;
   const resp = await runtimeServicePutFileAndReconcile({
     instanceId,
@@ -30,6 +27,4 @@ export async function saveAndRefresh(
 
   // handle errors
   fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-
-  overlay.set(null);
 }
