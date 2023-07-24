@@ -240,8 +240,8 @@ func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsView, dialect
 		if q.TimeZone != "" {
 			timezone = q.TimeZone
 		}
-		args = append([]any{timezone}, args...)
-		rollup := fmt.Sprintf("time_bucket(INTERVAL '%s', %s::TIMESTAMPTZ, ?) AS %s", convertToDuckDBTimeBucketSpecifier(q.TimeGranularity), safeName(mv.TimeDimension), safeName(timeRollupColumnName))
+		args = append([]any{timezone, timezone}, args...)
+		rollup := fmt.Sprintf("timezone(?, date_trunc('%s', timezone(?, %s::TIMESTAMPTZ))) AS %s", convertToDateTruncSpecifier(q.TimeGranularity), safeName(mv.TimeDimension), safeName(timeRollupColumnName))
 
 		// Prepend the rollup column
 		selectColumns = append([]string{rollup}, selectColumns...)

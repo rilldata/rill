@@ -39,6 +39,8 @@ see more button
   export let filterExcludeMode: boolean;
   export let isSummableMeasure: boolean;
   export let referenceValue;
+  export let unfilteredTotal: number;
+
   export let atLeastOneActive;
   export let loading = false;
   export let formatPreset;
@@ -85,7 +87,7 @@ see more button
           comparisonValue
         )
       : showPercentOfTotal
-      ? getFormatterValueForPercDiff(v.value, referenceValue)
+      ? getFormatterValueForPercDiff(v.value, unfilteredTotal)
       : undefined;
 
     return {
