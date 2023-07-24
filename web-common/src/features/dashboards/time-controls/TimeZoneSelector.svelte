@@ -55,6 +55,7 @@
     <Tooltip distance={8} suppress={active}>
       <SelectorButton
         {active}
+        label="Timezone selector"
         on:click={() => {
           toggleFloatingElement();
         }}
@@ -75,7 +76,6 @@
     <Menu
       slot="floating-element"
       on:escape={toggleFloatingElement}
-      label="Timezone selector"
       minWidth="320px"
     >
       {#each availableTimeZones as option}

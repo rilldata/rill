@@ -33,7 +33,6 @@
   export let xAccessor = "ts";
   export let labelAccessor = "label";
   export let yAccessor = "value";
-  export let zone = "Etc/UTC";
   export let mouseoverValue;
   export let hovered = false;
   export let mouseoverFormat: (d: number | Date | string) => string = (v) =>

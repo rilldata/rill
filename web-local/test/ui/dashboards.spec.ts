@@ -116,6 +116,7 @@ describe("dashboards", () => {
     await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
 
     // Change time zone to UTC
+
     await page.getByLabel("Timezone selector").click();
     await page
       .getByRole("menuitem", { name: "UTC GMT +00:00 Etc/UTC" })
