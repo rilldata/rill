@@ -65,7 +65,7 @@
   $: source = entry?.source;
 
   let connector: string;
-  $: connector = $getSource.data?.entry?.source.connector as string;
+  $: connector = $getSource.data?.entry?.source?.connector as string;
 
   $: allNamesQuery = useAllNames(runtimeInstanceId);
 
