@@ -148,7 +148,7 @@ SELECT * FROM {{ ref "m2" }}
 		// model m2
 		{
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "m2"},
-			Refs:  []ResourceName{{Name: "m1"}},
+			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
 			Paths: []string{"/models/m2.yaml", "/models/m2.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
 				Sql:         strings.TrimSpace(files["models/m2.sql"]),
@@ -158,7 +158,7 @@ SELECT * FROM {{ ref "m2" }}
 		// dashboard d1
 		{
 			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
-			Refs:  []ResourceName{{Name: "m2"}},
+			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m2"}},
 			Paths: []string{"/dashboards/d1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Model: "m2",
@@ -182,7 +182,7 @@ SELECT * FROM {{ ref "m2" }}
 		// model c2
 		{
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "c2"},
-			Refs:  []ResourceName{{Name: "m2"}},
+			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m2"}},
 			Paths: []string{"/custom/c2.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
 				Sql:            strings.TrimSpace(files["custom/c2.sql"]),
@@ -318,7 +318,6 @@ SELECT * FROM foo
 	})
 	m1 := &Resource{
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
-		Refs:  []ResourceName{{Name: "foo"}},
 		Paths: []string{"/models/m1.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
 			Sql: "SELECT * FROM foo",
@@ -352,7 +351,6 @@ materialize: true
 SELECT * FROM bar
 `,
 	})
-	m1.Refs = []ResourceName{{Name: "bar"}}
 	m1.ModelSpec.Sql = "SELECT * FROM bar"
 	diff, err = p.Reparse(ctx, []string{"/models/m1.sql"})
 	require.NoError(t, err)
@@ -415,6 +413,58 @@ path: hello
 	require.Equal(t, &Diff{}, diff)
 }
 
+func TestRefInferrence(t *testing.T) {
+	// Create model referencing "bar"
+	foo := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "foo"},
+		Paths: []string{"/models/foo.sql"},
+		ModelSpec: &runtimev1.ModelSpec{
+			Sql: "SELECT * FROM bar",
+		},
+	}
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		// rill.yaml
+		`rill.yaml`: ``,
+		// model foo
+		`models/foo.sql`: `SELECT * FROM bar`,
+	})
+	p, err := Parse(ctx, repo, "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{foo}, nil)
+
+	// Add model "bar"
+	foo.Refs = []ResourceName{{Kind: ResourceKindModel, Name: "bar"}}
+	bar := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "bar"},
+		Paths: []string{"/models/bar.sql"},
+		ModelSpec: &runtimev1.ModelSpec{
+			Sql: "SELECT * FROM baz",
+		},
+	}
+	putRepo(t, repo, map[string]string{
+		`models/bar.sql`: `SELECT * FROM baz`,
+	})
+	diff, err := p.Reparse(ctx, []string{"/models/bar.sql"})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{foo, bar}, nil)
+	require.Equal(t, &Diff{
+		Added:    []ResourceName{bar.Name},
+		Modified: []ResourceName{foo.Name},
+	}, diff)
+
+	// Remove "bar"
+	foo.Refs = nil
+	deleteRepo(t, repo, bar.Paths[0])
+	diff, err = p.Reparse(ctx, []string{"/models/bar.sql"})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{foo}, nil)
+	require.Equal(t, &Diff{
+		Modified: []ResourceName{foo.Name},
+		Deleted:  []ResourceName{bar.Name},
+	}, diff)
+}
+
 func BenchmarkReparse(b *testing.B) {
 	ctx := context.Background()
 	truth := true
@@ -445,7 +495,7 @@ materialize: true
 		// m2
 		{
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "m2"},
-			Refs:  []ResourceName{{Name: "m1"}},
+			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
 			Paths: []string{"/models/m2.sql", "/models/m2.yaml"},
 			ModelSpec: &runtimev1.ModelSpec{
 				Sql:         strings.TrimSpace(files["models/m2.sql"]),
@@ -499,7 +549,7 @@ SELECT * FROM m2
 	}
 	m3 := &Resource{
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m3"},
-		Refs:  []ResourceName{{Name: "m2"}},
+		Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m2"}},
 		Paths: []string{"/models/m3.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
 			Sql: "SELECT * FROM m2",
@@ -528,7 +578,7 @@ SELECT * FROM m2
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{m2, m3, embed}, nil)
 	require.ElementsMatch(t, []ResourceName{}, diff.Added)
-	require.ElementsMatch(t, []ResourceName{embed.Name, m2.Name}, diff.Modified)
+	require.ElementsMatch(t, []ResourceName{embed.Name, m2.Name, m3.Name}, diff.Modified)
 	require.ElementsMatch(t, []ResourceName{m1.Name}, diff.Deleted)
 }
 
