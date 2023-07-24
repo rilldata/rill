@@ -17,8 +17,8 @@ type Client interface {
 
 // bufferedClient collects and periodically sinks Event-s.
 type bufferedClient struct {
-	sinkPeriod time.Duration
 	sink       Sink
+	sinkPeriod time.Duration
 	buffer     []Event
 	bufferSize int
 	bufferMx   sync.Mutex
@@ -36,8 +36,8 @@ type BufferedClientOptions struct {
 
 func NewBufferedClient(opts BufferedClientOptions) Client {
 	client := &bufferedClient{
-		sinkPeriod: opts.SinkPeriod,
 		sink:       opts.Sink,
+		sinkPeriod: opts.SinkPeriod,
 		buffer:     make([]Event, 0, opts.BufferSize),
 		bufferSize: opts.BufferSize,
 		stop:       make(chan struct{}),
@@ -118,7 +118,7 @@ func (c *bufferedClient) flush() error {
 
 	// If there are events, use a sink to process them
 	if len(events) > 0 {
-		err := c.sink.Sink(events)
+		err := c.sink.Sink(context.Background(), events)
 		if err != nil {
 			return err
 		}
@@ -133,7 +133,7 @@ func NewNoopClient() Client {
 	return &noopClient{}
 }
 
-func (n *noopClient) Emit(ctx context.Context, name string, value float64, dims ...Dim) {
+func (n *noopClient) Emit(_ context.Context, _ string, _ float64, _ ...Dim) {
 }
 
 func (n *noopClient) Close() error {

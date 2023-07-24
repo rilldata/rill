@@ -1,13 +1,15 @@
 package activity
 
 import (
+	"context"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
 // Sink is used by a bufferedClient to flush collected Event-s.
 type Sink interface {
-	Sink(events []Event) error
+	Sink(ctx context.Context, events []Event) error
 	Close() error
 }
 
@@ -17,7 +19,7 @@ func NewNoopSink() *NoopSink {
 	return &NoopSink{}
 }
 
-func (n *NoopSink) Sink(_ []Event) error {
+func (n *NoopSink) Sink(_ context.Context, _ []Event) error {
 	return nil
 }
 
@@ -35,7 +37,7 @@ func NewConsoleSink(logger *zap.Logger, level zapcore.Level) *ConsoleSink {
 	return &ConsoleSink{logger: logger, level: level}
 }
 
-func (s *ConsoleSink) Sink(events []Event) error {
+func (s *ConsoleSink) Sink(_ context.Context, events []Event) error {
 	if s.logger.Core().Enabled(s.level) {
 		for _, e := range events {
 			jsonEvent, err := e.Marshal()

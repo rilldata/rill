@@ -1,6 +1,8 @@
 package activity
 
 import (
+	"context"
+
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
@@ -23,7 +25,7 @@ func NewKafkaSink(brokers, topic string) (*KafkaSink, error) {
 }
 
 // Sink doesn't wait till all events are delivered to Kafka
-func (s *KafkaSink) Sink(events []Event) error {
+func (s *KafkaSink) Sink(_ context.Context, events []Event) error {
 	for _, event := range events {
 		message, err := event.Marshal()
 		if err != nil {
