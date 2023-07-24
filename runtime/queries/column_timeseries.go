@@ -121,7 +121,8 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 			return err
 		}
 
-		args = append([]any{timezone, timezone, timeRange.Start.AsTime(), timezone, timezone, timeRange.End.AsTime(), timezone, timezone}, args...)
+		args = append([]any{timezone, timeRange.Start.AsTime(), timezone, timeRange.End.AsTime(), timezone}, args...)
+		args = append(args, timezone)
 
 		querySQL := `CREATE TEMPORARY TABLE ` + temporaryTableName + ` AS (
 			-- generate a time series column that has the intended range
@@ -130,14 +131,14 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 				range as ` + tsAlias + `
 			FROM
 				range(
-				timezone(?, date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ))),
-				timezone(?, date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ))),
+				date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ)),
+				date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ)),
 				INTERVAL '1 ` + dateTruncSpecifier + `')
 			),
 			-- transform the original data, and optionally sample it.
 			series AS (
 			SELECT
-				timezone(?, date_trunc('` + dateTruncSpecifier + `', timezone(?, ` + safeName(q.TimestampColumnName) + `::TIMESTAMPTZ))) as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
+				date_trunc('` + dateTruncSpecifier + `', timezone(?, ` + safeName(q.TimestampColumnName) + `::TIMESTAMPTZ)) as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
 			FROM ` + safeName(q.TableName) + ` ` + filter + `
 			GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
 			)
@@ -146,7 +147,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 			-- does not have that value.
 			SELECT
 			` + getCoalesceStatementsMeasures(measures) + `,
-			template.` + tsAlias + ` from template
+			timezone(?, template.` + tsAlias + `) as ` + tsAlias + ` from template
 			LEFT OUTER JOIN series ON template.` + tsAlias + ` = series.` + tsAlias + `
 			ORDER BY template.` + tsAlias + `
 		)`
