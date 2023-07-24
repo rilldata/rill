@@ -36,6 +36,8 @@
     V1TimeGrain,
     createRuntimeServiceGetCatalogEntry,
   } from "@rilldata/web-common/runtime-client";
+  import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
+  import type { LocalUserPreferences } from "@rilldata/web-local/lib/types";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -47,6 +49,13 @@
   import TimeZoneSelector from "./TimeZoneSelector.svelte";
 
   export let metricViewName: string;
+
+  const localUserPreferences = localStorageStore<LocalUserPreferences>(
+    `${metricViewName}-userPreference`,
+    {
+      timeZone: getLocalIANA(),
+    }
+  );
 
   const queryClient = useQueryClient();
   $: dashboardStore = useDashboardStore(metricViewName);
@@ -118,15 +127,14 @@
   }
 
   function setDefaultTimeControls(allTimeRange: DashboardTimeControls) {
-    // Show users locale time zone by default
-    const userLocalIANA = getLocalIANA();
-    metricsExplorerStore.setTimeZone(metricViewName, userLocalIANA);
+    const defaultIANA = $localUserPreferences.timeZone;
+    metricsExplorerStore.setTimeZone(metricViewName, defaultIANA);
 
     baseTimeRange = convertTimeRangePreset(
       defaultTimeRange,
       allTimeRange.start,
       allTimeRange.end,
-      userLocalIANA
+      defaultIANA
     ) || { ...allTimeRange, end: new Date(allTimeRange.end.getTime() + 1) };
 
     const timeGrain = getDefaultTimeGrain(
@@ -209,6 +217,7 @@
 
   function onSelectTimeZone(timeZone: string) {
     metricsExplorerStore.setTimeZone(metricViewName, timeZone);
+    localUserPreferences.set({ timeZone });
   }
 
   function onSelectComparisonRange(

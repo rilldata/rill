@@ -76,3 +76,7 @@ export interface LayoutElement {
   value: number;
   visible: boolean;
 }
+
+export interface LocalUserPreferences {
+  timeZone: string;
+}
