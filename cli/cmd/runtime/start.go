@@ -57,16 +57,16 @@ type Config struct {
 	AllowHostAccess bool `default:"false" split_words:"true"`
 	// Redis server address host:port
 	RedisURL string `default:"" split_words:"true"`
-	// Sink type of emitter: noop, console, kafka, gcs
-	EmitterSinkType string `default:"" split_words:"true"`
-	// Sink period of an emitter in millis
-	EmitterSinkPeriod int `default:"1000" split_words:"true"`
-	// Max queue size of an emitter
-	EmitterMaxBufferSize int `default:"1000" split_words:"true"`
-	// Kafka brokers of an emitter's sink
-	EmitterSinkKafkaBrokers string `default:"" split_words:"true"`
-	// Kafka topic of an emitter's sink
-	EmitterSinkKafkaTopic string `default:"" split_words:"true"`
+	// Sink type of activity client: noop, kafka
+	ActivitySinkType string `default:"" split_words:"true"`
+	// Sink period of a buffered activity client in millis
+	ActivitySinkPeriodMs int `default:"1000" split_words:"true"`
+	// Max queue size of a buffered activity client
+	ActivityMaxBufferSize int `default:"1000" split_words:"true"`
+	// Kafka brokers of an activity client's sink
+	ActivitySinkKafkaBrokers string `default:"" split_words:"true"`
+	// Kafka topic of an activity client's sink
+	ActivitySinkKafkaTopic string `default:"" split_words:"true"`
 }
 
 // StartCmd starts a stand-alone runtime server. It only allows configuration using environment variables.
@@ -146,21 +146,21 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			}
 
 			var sink activity.Sink
-			switch conf.EmitterSinkType {
+			switch conf.ActivitySinkType {
 			case "":
 				sink = activity.NewNoopSink()
 			case "kafka":
-				sink, err = activity.NewKafkaSink(conf.EmitterSinkKafkaBrokers, conf.EmitterSinkKafkaTopic)
+				sink, err = activity.NewKafkaSink(conf.ActivitySinkKafkaBrokers, conf.ActivitySinkKafkaTopic)
 				if err != nil {
 					logger.Fatal("failed to create a kafka sink", zap.Error(err))
 				}
 			default:
-				logger.Fatal(fmt.Sprintf("unknown activity sink type: %s", conf.EmitterSinkType))
+				logger.Fatal(fmt.Sprintf("unknown activity sink type: %s", conf.ActivitySinkType))
 			}
 			activityOpts := activity.BufferedClientOptions{
 				Sink:       sink,
-				SinkPeriod: time.Duration(conf.EmitterSinkPeriod) * time.Millisecond,
-				BufferSize: conf.EmitterMaxBufferSize,
+				SinkPeriod: time.Duration(conf.ActivitySinkPeriodMs) * time.Millisecond,
+				BufferSize: conf.ActivityMaxBufferSize,
 				Logger:     logger,
 			}
 			activityClient := activity.NewBufferedClient(activityOpts)

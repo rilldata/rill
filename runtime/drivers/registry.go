@@ -42,7 +42,7 @@ type Instance struct {
 	// IngestionLimitBytes is total data allowed to ingest across all sources
 	// 0 means there is no limit
 	IngestionLimitBytes int64 `db:"ingestion_limit_bytes"`
-	// Annotations to enrich emitter events (like usage tracking)
+	// Annotations to enrich activity events (like usage tracking)
 	Annotations map[string]string
 }
 
