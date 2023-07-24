@@ -65,25 +65,25 @@ func (w *watcher) closeWithErr(err error) {
 	default:
 	}
 
-	w.err = err
-
-	err = w.watcher.Close()
-	if w.err == nil {
+	closeErr := w.watcher.Close()
+	if err != nil {
 		w.err = err
-	}
-	if w.err == nil {
+	} else if closeErr != nil {
+		w.err = closeErr
+	} else {
 		w.err = fmt.Errorf("file watcher closed")
 	}
+
 	close(w.done)
 }
 
 func (w *watcher) subscribe(ctx context.Context, fn drivers.WatchCallback) error {
+	w.mu.Lock()
 	if w.err != nil {
+		w.mu.Unlock()
 		return w.err
 	}
-
 	id := fmt.Sprintf("%v", fn)
-	w.mu.Lock()
 	w.subscribers[id] = fn
 	w.mu.Unlock()
 
@@ -101,6 +101,9 @@ func (w *watcher) subscribe(ctx context.Context, fn drivers.WatchCallback) error
 	}
 }
 
+// flush emits buffered events to all subscribers.
+// Note it is called in the event loop in runInner, so new events will not be appended to w.buffer while a flush is running.
+// Calls to flush block until all subscribers have processed the events. This is an acceptable trade-off for now, but we may want to revisit it in the future.
 func (w *watcher) flush() {
 	if len(w.buffer) == 0 {
 		return
