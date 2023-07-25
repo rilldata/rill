@@ -2,6 +2,7 @@ package file
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -66,11 +67,8 @@ func (w *watcher) closeWithErr(err error) {
 	}
 
 	closeErr := w.watcher.Close()
-	if err != nil {
-		w.err = err
-	} else if closeErr != nil {
-		w.err = closeErr
-	} else {
+	w.err = errors.Join(err, closeErr)
+	if w.err == nil {
 		w.err = fmt.Errorf("file watcher closed")
 	}
 
@@ -125,13 +123,12 @@ func (w *watcher) run() {
 }
 
 func (w *watcher) runInner() error {
-	timer := time.NewTimer(batchInterval)
-	timerActive := true
+	ticker := time.NewTicker(batchInterval)
 	for {
 		select {
-		case <-timer.C:
-			timerActive = false
+		case <-ticker.C:
 			w.flush()
+			ticker.Stop()
 		case err, ok := <-w.watcher.Errors:
 			if !ok {
 				return nil
@@ -173,12 +170,8 @@ func (w *watcher) runInner() error {
 				}
 			}
 
-			// NOTE: See docs for timer.Reset() for context on why we need to check if the timer is active
-			if timerActive && !timer.Stop() {
-				<-timer.C
-			}
-			timer.Reset(batchInterval)
-			timerActive = true
+			// Reset ticker
+			ticker.Reset(batchInterval)
 		}
 	}
 }
@@ -198,8 +191,10 @@ func (w *watcher) addDir(path string, replay bool) error {
 	}
 
 	for _, e := range entries {
+		fullPath := filepath.Join(path, e.Name())
+
 		if replay {
-			ep, err := filepath.Rel(w.root, filepath.Join(path, e.Name()))
+			ep, err := filepath.Rel(w.root, fullPath)
 			if err != nil {
 				return err
 			}
@@ -213,7 +208,7 @@ func (w *watcher) addDir(path string, replay bool) error {
 		}
 
 		if e.IsDir() {
-			err := w.addDir(filepath.Join(path, e.Name()), replay)
+			err := w.addDir(fullPath, replay)
 			if err != nil {
 				return err
 			}
