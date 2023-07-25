@@ -85,6 +85,11 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 
 			// Verify that the projectPath contains a Rill project
 			if !rillv1beta.HasRillProject(fullProjectPath) {
+				// we still navigate user to login and then fail
+				if !cfg.IsAuthenticated() {
+					_ = loginWithTelemetry(ctx, cfg, "", tel)
+					fmt.Println()
+				}
 				fullpath, err := filepath.Abs(fullProjectPath)
 				if err != nil {
 					return err
@@ -99,6 +104,11 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			// Verify projectPath is a Git repo with remote on Github
 			remote, githubURL, err := gitutil.ExtractGitRemote(projectPath, remote)
 			if err != nil {
+				// if github remote not found we still navigate user to login and then fail
+				if !cfg.IsAuthenticated() {
+					_ = loginWithTelemetry(ctx, cfg, "", tel)
+					fmt.Println()
+				}
 				if errors.Is(err, gitutil.ErrGitRemoteNotFound) || errors.Is(err, git.ErrRepositoryNotExists) {
 					info.Print(githubSetupMsg)
 					return nil
@@ -118,12 +128,9 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				return nil
 			}
 
-			userLoginSuccess := false
 			silentGitFlow := false
 			// If user is not authenticated, run login flow
 			if !cfg.IsAuthenticated() {
-				info.Println("Please log in or sign up for Rill. Opening browser...")
-				time.Sleep(2 * time.Second)
 				silentGitFlow = true
 				authURL := cfg.AdminURL
 				if strings.Contains(authURL, "http://localhost:9090") {
@@ -133,37 +140,14 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				if err != nil {
 					return err
 				}
-
-				tel.Emit(telemetry.ActionLoginStart)
-				if err := auth.Login(ctx, cfg, redirectURL); err != nil {
-					if errors.Is(err, deviceauth.ErrAuthenticationTimedout) {
-						warn.Println("Rill login has timed out as the code was not confirmed in the browser.")
-						warn.Println("Run `rill deploy` again.")
-						return nil
-					} else if errors.Is(err, deviceauth.ErrCodeRejected) {
-						errorWriter.Println("Login failed: Confirmation code rejected")
-						return nil
-					}
-					return fmt.Errorf("login failed: %w", err)
+				if err := loginWithTelemetry(ctx, cfg, redirectURL, tel); err != nil {
+					return err
 				}
-				userLoginSuccess = true
-				fmt.Println("")
 			}
 
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
-			}
-			if tel.UserID == "" {
-				user, err := client.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
-				if err == nil {
-					tel.WithUserID(user.GetUser().GetId())
-				}
-			}
-
-			if userLoginSuccess {
-				// fire this after we potentially get the user id
-				tel.Emit(telemetry.ActionLoginSuccess)
 			}
 
 			// Run flow for access to the Github remote (if necessary)
@@ -313,6 +297,34 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 	}
 
 	return deployCmd
+}
+
+func loginWithTelemetry(ctx context.Context, cfg *config.Config, redirectURL string, tel *telemetry.Telemetry) error {
+	info := color.New(color.Bold).Add(color.FgWhite)
+	warn := color.New(color.Bold).Add(color.FgYellow)
+	errorWriter := color.New(color.Bold).Add(color.FgRed)
+	info.Println("Please log in or sign up for Rill. Opening browser...")
+	time.Sleep(2 * time.Second)
+
+	tel.Emit(telemetry.ActionLoginStart)
+	if err := auth.Login(ctx, cfg, redirectURL); err != nil {
+		if errors.Is(err, deviceauth.ErrAuthenticationTimedout) {
+			warn.Println("Rill login has timed out as the code was not confirmed in the browser.")
+			warn.Println("Run `rill deploy` again.")
+			return nil
+		} else if errors.Is(err, deviceauth.ErrCodeRejected) {
+			errorWriter.Println("Login failed: Confirmation code rejected")
+			return nil
+		}
+		return fmt.Errorf("login failed: %w", err)
+	}
+	userID, err := cmdutil.FetchUserID(ctx, cfg)
+	if err == nil {
+		tel.WithUserID(userID)
+	}
+	// fire this after we potentially get the user id
+	tel.Emit(telemetry.ActionLoginSuccess)
+	return nil
 }
 
 func githubFlow(ctx context.Context, c *adminclient.Client, githubURL string, silent bool, tel *telemetry.Telemetry) (*adminv1.GetGithubRepoStatusResponse, error) {

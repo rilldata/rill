@@ -27,12 +27,39 @@ select 1`,
 			[]*TableRef{
 				{
 					Function: "read_csv",
-					Path:     "data.csv",
+					Paths:    []string{"data.csv"},
 					Properties: map[string]any{
 						"delim": "|",
 						"columns": map[string]any{
 							"A": "Date",
 						},
+					},
+				},
+			},
+		},
+		{
+			"read_json with array of paths",
+			`
+select * from read_json(
+    ['data1.csv', 'data2.csv'], delim='|',
+    columns={'A':'Date', 'L': ['INT32','INT64'], 'O': {'K1':1,'K2':1.2,'K3':12.34}},
+    list=['A', 'B'])`,
+			[]*TableRef{
+				{
+					Function: "read_json",
+					Paths:    []string{"data1.csv", "data2.csv"},
+					Properties: map[string]any{
+						"delim": "|",
+						"columns": map[string]any{
+							"A": "Date",
+							"L": []interface{}{"INT32", "INT64"},
+							"O": map[string]any{
+								"K1": int32(1),
+								"K2": 1.2,
+								"K3": 12.34,
+							},
+						},
+						"list": []interface{}{"A", "B"},
 					},
 				},
 			},
@@ -70,6 +97,12 @@ select 1`,
 				{Name: "tbl2", LocalAlias: true},
 				{Name: "tbl3", LocalAlias: true},
 			},
+		},
+		{
+			"other table functions",
+			`select * from generate_series(TIMESTAMP '2001-04-10', TIMESTAMP '2001-04-11', INTERVAL 30 MINUTE)`,
+			// other table functions are ignored right now
+			[]*TableRef{},
 		},
 	}
 
@@ -226,14 +259,15 @@ select col1 from tbl2 union all select col1 from tbl3 union all select col1 from
 			require.NoError(t, err)
 
 			err = ast.RewriteTableRefs(func(table *TableRef) (*TableRef, bool) {
-				if table.Path == "" {
+				if len(table.Paths) == 0 {
 					return nil, false
 				}
 
 				return &TableRef{
-					Name: fileutil.Stem(table.Path),
+					Name: fileutil.Stem(table.Paths[0]),
 				}, true
 			})
+			require.NoError(t, err)
 
 			actualSql, err := ast.Format()
 			require.NoError(t, err)
@@ -300,10 +334,124 @@ select col1 from tbl2 union all select col1 from tbl3 union all select col1 from
 					Name: tt.replace[i],
 				}, true
 			})
+			require.NoError(t, err)
 
 			actualSql, err := ast.Format()
 			require.NoError(t, err)
 			require.EqualValues(t, tt.expectedSql, actualSql)
+		})
+	}
+}
+
+func TestAST_RewriteWithFunctionRef(t *testing.T) {
+	sqlVariations := []struct {
+		title       string
+		sql         string
+		replace     []*TableRef
+		expectedSql string
+	}{
+		{
+			"with single path and literal prop",
+			`select * from AdBids`,
+			[]*TableRef{
+				{
+					Function: "read_csv",
+					Paths:    []string{"/path/to/AdBids.csv"},
+					Properties: map[string]any{
+						"delim": "|",
+					},
+				},
+			},
+			`SELECT * FROM read_csv(main.list_value('/path/to/AdBids.csv'), (delim = '|'))`,
+		},
+		{
+			"with multiple paths with map prop",
+			`select * from AdBids`,
+			[]*TableRef{
+				{
+					Function: "read_csv",
+					Paths:    []string{"/path/to/AdBids1.csv", "/path/to/AdBids2.csv"},
+					Properties: map[string]any{
+						"columns": map[string]any{
+							"A": "Date",
+						},
+					},
+				},
+			},
+			`SELECT * FROM read_csv(main.list_value('/path/to/AdBids1.csv', '/path/to/AdBids2.csv'), ("columns" = main.struct_pack(A := 'Date')))`,
+		},
+		{
+			"with deep map prop",
+			`select * from AdBids`,
+			[]*TableRef{
+				{
+					Function: "read_csv",
+					Paths:    []string{"/path/to/AdBids.csv"},
+					Properties: map[string]any{
+						"columns": map[string]any{
+							"O": map[string]any{
+								"K1": 1.2,
+							},
+						},
+					},
+				},
+			},
+			`SELECT * FROM read_csv(main.list_value('/path/to/AdBids.csv'), ("columns" = main.struct_pack(O := main.struct_pack(K1 := 1.2))))`,
+		},
+		{
+			"with list prop",
+			`select * from AdBids`,
+			[]*TableRef{
+				{
+					Function: "read_csv",
+					Paths:    []string{"/path/to/AdBids.csv"},
+					Properties: map[string]any{
+						"list": []interface{}{1.2, 1},
+					},
+				},
+			},
+			`SELECT * FROM read_csv(main.list_value('/path/to/AdBids.csv'), (list = main.list_value(1.2, 1)))`,
+		},
+		{
+			"with deep list paths",
+			`select * from AdBids`,
+			[]*TableRef{
+				{
+					Function: "read_csv",
+					Paths:    []string{"/path/to/AdBids.csv"},
+					Properties: map[string]any{
+						"columns": map[string]any{
+							"L": []interface{}{"INT32", "INT64"},
+						},
+					},
+				},
+			},
+			`SELECT * FROM read_csv(main.list_value('/path/to/AdBids.csv'), ("columns" = main.struct_pack(L := main.list_value('INT32', 'INT64'))))`,
+		},
+	}
+
+	for _, tt := range sqlVariations {
+		t.Run(tt.title, func(t *testing.T) {
+			ast, err := Parse(tt.sql)
+			require.NoError(t, err)
+
+			i := -1
+			err = ast.RewriteTableRefs(func(table *TableRef) (*TableRef, bool) {
+				i = i + 1
+				return tt.replace[i], true
+			})
+			require.NoError(t, err)
+
+			actualSql, err := ast.Format()
+			require.NoError(t, err)
+			require.EqualValues(t, tt.expectedSql, actualSql)
+
+			// Verify generated sql is consistent
+			ast, err = Parse(actualSql)
+			require.NoError(t, err)
+			newSql, err := ast.Format()
+			require.NoError(t, err)
+			require.EqualValues(t, tt.expectedSql, newSql)
 		})
 	}
 }
