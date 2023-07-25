@@ -14,6 +14,6 @@
   <CtaContentContainer>
     <RillLogoSquareNegative size="84px" />
     <CtaHeader>Authorised to Rill successfully</CtaHeader>
-    <CtaMessage>Close this page and continue setup in the Rill CLI.</CtaMessage>
+    <CtaMessage>Close this page and continue in the Rill CLI.</CtaMessage>
   </CtaContentContainer>
 </CtaLayoutContainer>
