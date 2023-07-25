@@ -66,6 +66,33 @@ select * from read_json(
 			},
 		},
 		{
+			"read_json with array of paths",
+			`
+select * from read_json(
+    ['data1.csv', 'data2.csv'], delim='|',
+    columns={'A':'Date', 'L': ['INT32','INT64'], 'O': {'K1':1,'K2':1.2,'K3':12.34}},
+    list=['A', 'B'])`,
+			[]*TableRef{
+				{
+					Function: "read_json",
+					Paths:    []string{"data1.csv", "data2.csv"},
+					Properties: map[string]any{
+						"delim": "|",
+						"columns": map[string]any{
+							"A": "Date",
+							"L": []interface{}{"INT32", "INT64"},
+							"O": map[string]any{
+								"K1": int32(1),
+								"K2": 1.2,
+								"K3": 12.34,
+							},
+						},
+						"list": []interface{}{"A", "B"},
+					},
+				},
+			},
+		},
+		{
 			"join",
 			`select * from AdBid a join AdImp i on a.id=i.id where a='1' group by b limit 2`,
 			[]*TableRef{
