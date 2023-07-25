@@ -265,7 +265,7 @@ func mergeFromParsedQuery(apiSource *runtimev1.Source) error {
 	}
 	queryStr, ok := query.(string)
 	if !ok {
-		return nil
+		return errors.New("query should be a string")
 	}
 
 	// raw sql query
@@ -293,7 +293,7 @@ func mergeFromParsedQuery(apiSource *runtimev1.Source) error {
 		} else {
 			dp, ok = v.(map[string]any)
 			if !ok {
-				dp = map[string]any{}
+				return errors.New("duckdb should be a record")
 			}
 		}
 		for k, v := range ref.Properties {
