@@ -2,29 +2,31 @@ package activity
 
 import (
 	"context"
+
+	"go.opentelemetry.io/otel/attribute"
 )
 
 type activityContextKey struct{}
 
 type activityInfo struct {
-	dims              *[]Dim
+	dims              *[]attribute.KeyValue
 	requestInstanceID string
 }
 
-func WithDims(ctx context.Context, dims ...Dim) context.Context {
+func WithDims(ctx context.Context, dims ...attribute.KeyValue) context.Context {
 	info := getInfoFromContext(ctx)
 	if info == nil {
 		info = &activityInfo{}
 		ctx = context.WithValue(ctx, activityContextKey{}, info)
 	}
 	if info.dims == nil {
-		info.dims = &[]Dim{}
+		info.dims = &[]attribute.KeyValue{}
 	}
 	*info.dims = append(*info.dims, dims...)
 	return ctx
 }
 
-func GetDimsFromContext(ctx context.Context) *[]Dim {
+func GetDimsFromContext(ctx context.Context) *[]attribute.KeyValue {
 	info := getInfoFromContext(ctx)
 	if info == nil {
 		return nil

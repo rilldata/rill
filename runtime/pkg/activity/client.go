@@ -7,11 +7,12 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
 
 type Client interface {
-	Emit(ctx context.Context, name string, value float64, dims ...Dim)
+	Emit(ctx context.Context, name string, value float64, dims ...attribute.KeyValue)
 	Close() error
 }
 
@@ -48,14 +49,14 @@ func NewBufferedClient(opts BufferedClientOptions) Client {
 	return client
 }
 
-func (c *bufferedClient) Emit(ctx context.Context, name string, value float64, dims ...Dim) {
+func (c *bufferedClient) Emit(ctx context.Context, name string, value float64, dims ...attribute.KeyValue) {
 	dimsFromCtx := GetDimsFromContext(ctx)
 	if dimsFromCtx == nil {
-		dimsFromCtx = &[]Dim{}
+		dimsFromCtx = &[]attribute.KeyValue{}
 	}
 
 	if dims == nil {
-		dims = []Dim{}
+		dims = []attribute.KeyValue{}
 	}
 	dims = append(*dimsFromCtx, dims...)
 
@@ -133,7 +134,7 @@ func NewNoopClient() Client {
 	return &noopClient{}
 }
 
-func (n *noopClient) Emit(_ context.Context, _ string, _ float64, _ ...Dim) {
+func (n *noopClient) Emit(_ context.Context, _ string, _ float64, _ ...attribute.KeyValue) {
 }
 
 func (n *noopClient) Close() error {
@@ -144,31 +145,23 @@ type Event struct {
 	Time  time.Time
 	Name  string
 	Value float64
-	Dims  []Dim
-}
-
-type Dim struct {
-	Name  string
-	Value string
-}
-
-func String(name, value string) Dim {
-	return Dim{Name: name, Value: value}
+	Dims  []attribute.KeyValue
 }
 
 func (e *Event) Marshal() ([]byte, error) {
 	// Create a map to hold the flattened event structure.
 	flattened := make(map[string]interface{})
 
-	// Add the non-dims fields.
+	// Add the non-dim fields.
 	flattened["time"] = e.Time.UTC().Format(time.RFC3339)
 	flattened["name"] = e.Name
 	flattened["value"] = e.Value
 
 	// Iterate over the dims slice and add each dim to the map.
 	for _, dim := range e.Dims {
-		if dim.Name != "time" && dim.Name != "name" && dim.Name != "value" {
-			flattened[dim.Name] = dim.Value
+		key := string(dim.Key)
+		if key != "time" && key != "name" && key != "value" {
+			flattened[key] = dim.Value.AsInterface()
 		} else {
 			return nil, errors.New("time/name/value are not allowed as dimension names")
 		}

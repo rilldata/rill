@@ -7,6 +7,7 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/server/auth"
+	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc"
 )
 
@@ -21,8 +22,8 @@ func ActivityStreamServerInterceptor(activityClient activity.Client) grpc.Stream
 		subject := auth.GetClaims(ctx).Subject()
 
 		ctx = activity.WithDims(ctx,
-			activity.String("user_id", subject),
-			activity.String("request_method", info.FullMethod),
+			attribute.String("user_id", subject),
+			attribute.String("request_method", info.FullMethod),
 		)
 		wss := grpc_middleware.WrapServerStream(ss)
 		wss.WrappedContext = ctx
@@ -47,8 +48,8 @@ func ActivityUnaryServerInterceptor(activityClient activity.Client) grpc.UnarySe
 		subject := auth.GetClaims(ctx).Subject()
 
 		ctx = activity.WithDims(ctx,
-			activity.String("user_id", subject),
-			activity.String("request_method", info.FullMethod),
+			attribute.String("user_id", subject),
+			attribute.String("request_method", info.FullMethod),
 		)
 
 		start := time.Now()

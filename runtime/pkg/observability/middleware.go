@@ -3,7 +3,6 @@ package observability
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"net/http"
 	"runtime"
@@ -326,11 +325,5 @@ func AddRequestAttributes(ctx context.Context, attrs ...attribute.KeyValue) {
 	}
 
 	// Add attributes as activity dimensions
-	var dims []activity.Dim
-	for _, attr := range attrs {
-		dims = append(dims, activity.String(string(attr.Key), fmt.Sprintf("%v", attr.Value.AsInterface())))
-	}
-	if len(dims) > 0 {
-		activity.WithDims(ctx, dims...)
-	}
+	activity.WithDims(ctx, attrs...)
 }
