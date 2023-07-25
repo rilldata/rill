@@ -263,9 +263,13 @@ func mergeFromParsedQuery(apiSource *runtimev1.Source) error {
 	if !ok {
 		return nil
 	}
+	queryStr, ok := query.(string)
+	if !ok {
+		return nil
+	}
 
 	// raw sql query
-	ast, err := duckdbsql.Parse(query.(string))
+	ast, err := duckdbsql.Parse(queryStr)
 	if err != nil {
 		return err
 	}
@@ -287,7 +291,10 @@ func mergeFromParsedQuery(apiSource *runtimev1.Source) error {
 		if v, def := props["duckdb"]; !def {
 			dp = map[string]any{}
 		} else {
-			dp = v.(map[string]any)
+			dp, ok = v.(map[string]any)
+			if !ok {
+				dp = map[string]any{}
+			}
 		}
 		for k, v := range ref.Properties {
 			dp[k] = v

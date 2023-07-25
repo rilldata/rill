@@ -174,7 +174,7 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 	}
 
 	// combined schema
-	qry := fmt.Sprintf("DESCRIBE ((%s limit 0) UNION ALL BY NAME (%s limit 0));", a.sink.Table, from)
+	qry := fmt.Sprintf("DESCRIBE ((SELECT * FROM %s limit 0) UNION ALL BY NAME (%s limit 0));", a.sink.Table, from)
 	unionSchema, err := a.scanSchemaFromQuery(ctx, qry)
 	if err != nil {
 		return err

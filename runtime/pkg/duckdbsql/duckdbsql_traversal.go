@@ -278,11 +278,10 @@ func arrayValueToGoValue(v astNode) []any {
 
 func castValueToGoValue(v astNode) any {
 	val := valueToGoValue(toNode(v, astKeyChild))
-	switch toString(toNode(v, astKeyCastType), astKeyID) {
-	case "BOOLEAN":
+	if toString(toNode(v, astKeyCastType), astKeyID) == "BOOLEAN" {
 		return castToBoolean(val)
-		// TODO: others
 	}
+	// TODO: other types
 	return nil
 }
 
