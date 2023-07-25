@@ -126,4 +126,3 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 
 	return startCmd
 }
-49152–65535 
