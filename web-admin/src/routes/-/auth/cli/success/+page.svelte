@@ -7,13 +7,13 @@
 </script>
 
 <svelte:head>
-  <title>Authorised to Rill successfully</title>
+  <title>Successfully authorized Rill CLI</title>
 </svelte:head>
 
 <CtaLayoutContainer>
   <CtaContentContainer>
     <RillLogoSquareNegative size="84px" />
-    <CtaHeader>Authorised to Rill successfully</CtaHeader>
+    <CtaHeader>Successfully authorized Rill CLI</CtaHeader>
     <CtaMessage>Close this page and continue in the Rill CLI.</CtaMessage>
   </CtaContentContainer>
 </CtaLayoutContainer>
