@@ -45,6 +45,9 @@
   /** for summable measures, this is the value we use to calculate the bar % to fill */
   export let referenceValue;
 
+  /** the unfilteredTotal is used to compute the "percent of total" context value*/
+  export let unfilteredTotal: number;
+
   $: formattedValue = humanizeDataType(measureValue, formatPreset);
 
   $: percentChangeFormatted =
@@ -56,7 +59,7 @@
           comparisonValue
         )
       : showContext === "percent"
-      ? getFormatterValueForPercDiff(measureValue, referenceValue)
+      ? getFormatterValueForPercDiff(measureValue, unfilteredTotal)
       : undefined;
 
   $: previousValueString =

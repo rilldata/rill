@@ -4,17 +4,9 @@
   import { action } from "@storybook/addon-actions";
 
   import LeaderboardListItem from "../LeaderboardListItem.svelte";
-  import type { LeaderboardItemData } from "../leaderboard-utils";
+
   import { NicelyFormattedTypes } from "../../humanize-numbers";
 
-  const itemData: LeaderboardItemData = {
-    label: "item label",
-    value: 300,
-    selected: false,
-    comparisonValue: 200,
-  };
-
-  const showContext = "time";
   const atLeastOneActive = true;
   const filterExcludeMode = true;
   const isSummableMeasure = true;
@@ -30,6 +22,7 @@
     filterExcludeMode: false,
     isSummableMeasure: true,
     referenceValue: 400,
+    unfilteredTotal: 1000,
     formatPreset: "humanize",
   };
 </script>
