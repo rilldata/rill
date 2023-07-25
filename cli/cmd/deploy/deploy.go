@@ -87,7 +87,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			if !rillv1beta.HasRillProject(fullProjectPath) {
 				// we still navigate user to login and then fail
 				if !cfg.IsAuthenticated() {
-					_ = loginWithTelemetary(ctx, cfg, "", tel)
+					_ = loginWithTelemetry(ctx, cfg, "", tel)
 					fmt.Println()
 				}
 				fullpath, err := filepath.Abs(fullProjectPath)
@@ -106,7 +106,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			if err != nil {
 				// if github remote not found we still navigate user to login and then fail
 				if !cfg.IsAuthenticated() {
-					_ = loginWithTelemetary(ctx, cfg, "", tel)
+					_ = loginWithTelemetry(ctx, cfg, "", tel)
 					fmt.Println()
 				}
 				if errors.Is(err, gitutil.ErrGitRemoteNotFound) || errors.Is(err, git.ErrRepositoryNotExists) {
@@ -131,6 +131,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			silentGitFlow := false
 			// If user is not authenticated, run login flow
 			if !cfg.IsAuthenticated() {
+				silentGitFlow = true
 				authURL := cfg.AdminURL
 				if strings.Contains(authURL, "http://localhost:9090") {
 					authURL = "http://localhost:8080"
@@ -139,7 +140,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				if err := loginWithTelemetary(ctx, cfg, redirectURL, tel); err != nil {
+				if err := loginWithTelemetry(ctx, cfg, redirectURL, tel); err != nil {
 					return err
 				}
 			}
@@ -298,7 +299,7 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 	return deployCmd
 }
 
-func loginWithTelemetary(ctx context.Context, cfg *config.Config, redirectURL string, tel *telemetry.Telemetry) error {
+func loginWithTelemetry(ctx context.Context, cfg *config.Config, redirectURL string, tel *telemetry.Telemetry) error {
 	info := color.New(color.Bold).Add(color.FgWhite)
 	warn := color.New(color.Bold).Add(color.FgYellow)
 	errorWriter := color.New(color.Bold).Add(color.FgRed)
