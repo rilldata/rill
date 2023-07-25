@@ -3,7 +3,10 @@
   import { useIsSourceUnsaved } from "@rilldata/web-common/features/sources/selectors";
   import { emitNavigationTelemetry } from "../../../layout/navigation/navigation-utils";
   import { currentHref } from "../../../layout/navigation/stores";
+  import { createRuntimeServiceGetFile } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
+  import { EntityType } from "../../entity-management/types";
   import { useSourceStore } from "../sources-store";
   import UnsavedSourceDialog from "./UnsavedSourceDialog.svelte";
 
@@ -18,6 +21,11 @@
   );
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;
 
+  $: file = createRuntimeServiceGetFile(
+    $runtime.instanceId,
+    getFilePathFromNameAndType(sourceName, EntityType.Table)
+  );
+
   // Intercepted navigation follows this example:
   // https://github.com/sveltejs/kit/pull/3293#issuecomment-1011553037
 
@@ -28,7 +36,13 @@
   };
 
   const handleConfirm = () => {
+    // Revert clientYAML to the last saved version
+    sourceStore.set({ clientYAML: $file.data?.blob || "" });
+
+    // Navigate to the new page
     goto(interceptedNavigation.url);
+
+    // Reset the intercepted navigation
     interceptedNavigation = null;
   };
 
