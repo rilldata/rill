@@ -36,7 +36,6 @@
   export let atLeastOneActive = false;
 
   export let formattedValue: string;
-  export let percentChangeFormatted;
   export let filterExcludeMode;
 
   export let formatPreset;
