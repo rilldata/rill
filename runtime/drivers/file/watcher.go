@@ -127,8 +127,8 @@ func (w *watcher) runInner() error {
 	for {
 		select {
 		case <-ticker.C:
-			w.flush()
 			ticker.Stop()
+			w.flush()
 		case err, ok := <-w.watcher.Errors:
 			if !ok {
 				return nil
@@ -170,7 +170,6 @@ func (w *watcher) runInner() error {
 				}
 			}
 
-			// Reset ticker
 			ticker.Reset(batchInterval)
 		}
 	}
