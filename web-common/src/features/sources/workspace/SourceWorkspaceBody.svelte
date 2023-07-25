@@ -77,7 +77,7 @@
           <ConnectedPreviewTable objectName={sourceName} />
         {/key}
       {:else}
-        <ErrorPane error={reconciliationErrors[0]} />
+        <ErrorPane {sourceName} error={reconciliationErrors[0]} />
       {/if}
     </div>
   </div>
