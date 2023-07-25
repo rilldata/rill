@@ -9,6 +9,7 @@
 
   import { useModelHasTimeSeries } from "@rilldata/web-common/features/dashboards/selectors";
   import {
+    LeaderboardContextColumn,
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../dashboard-stores";
@@ -24,7 +25,10 @@
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
-  let disabledButtons: ("delta" | "pie")[] = [];
+  let disabledButtons: (
+    | LeaderboardContextColumn.DELTA_CHANGE
+    | LeaderboardContextColumn.PERCENT
+  )[] = [];
   $: {
     disabledButtons = [];
     if (
@@ -32,29 +36,31 @@
       !metricsExplorer.showComparison ||
       metricsExplorer.selectedComparisonTimeRange === undefined
     )
-      disabledButtons.push("delta");
-    if (validPercentOfTotal !== true) disabledButtons.push("pie");
+      disabledButtons.push(LeaderboardContextColumn.DELTA_CHANGE);
+    if (validPercentOfTotal !== true)
+      disabledButtons.push(LeaderboardContextColumn.PERCENT);
   }
 
-  let selectedButton: "delta" | "pie" | null = null;
+  let selectedButton: LeaderboardContextColumn;
   // NOTE: time comparison takes precedence over percent of total
-  $: selectedButton =
-    metricsExplorer?.showDeltaChange && metricsExplorer.showComparison
-      ? "delta"
-      : metricsExplorer?.showPercentOfTotal
-      ? "pie"
-      : null;
+  $: selectedButton = metricsExplorer?.leaderboardContextColumn;
 
   const handleContextValueButtonGroupClick = (evt) => {
     const value = evt.detail;
-    if (value === "delta" && selectedButton == "delta") {
-      metricsExplorerStore.displayDeltaChange(metricViewName, false);
-    } else if (value === "delta" && selectedButton != "delta") {
-      metricsExplorerStore.displayDeltaChange(metricViewName, true);
-    } else if (value === "pie" && selectedButton == "pie") {
-      metricsExplorerStore.displayPercentOfTotal(metricViewName, false);
-    } else if (value === "pie" && selectedButton != "pie") {
-      metricsExplorerStore.displayPercentOfTotal(metricViewName, true);
+
+    // hide context column if the button that is
+    // clicked is already selected
+    if (value === selectedButton) {
+      metricsExplorerStore.hideContextColumn(metricViewName);
+      return;
+    }
+
+    // If a non-selected button is clicked, show the corresponding
+    // context column
+    if (value === LeaderboardContextColumn.DELTA_CHANGE) {
+      metricsExplorerStore.displayDeltaChange(metricViewName);
+    } else if (value === LeaderboardContextColumn.PERCENT) {
+      metricsExplorerStore.displayPercentOfTotal(metricViewName);
     }
   };
 
@@ -79,10 +85,13 @@
   disabled={disabledButtons}
   on:subbutton-click={handleContextValueButtonGroupClick}
 >
-  <SubButton value={"delta"} tooltips={deltaTooltips}>
+  <SubButton
+    value={LeaderboardContextColumn.DELTA_CHANGE}
+    tooltips={deltaTooltips}
+  >
     <Delta />%
   </SubButton>
-  <SubButton value={"pie"} tooltips={pieTooltips}>
+  <SubButton value={LeaderboardContextColumn.PERCENT} tooltips={pieTooltips}>
     <PieChart />%
   </SubButton>
 </ButtonGroup>

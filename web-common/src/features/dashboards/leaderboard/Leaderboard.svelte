@@ -23,7 +23,11 @@
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
+  import {
+    LeaderboardContextColumn,
+    metricsExplorerStore,
+    useDashboardStore,
+  } from "../dashboard-stores";
   import { getFilterForComparsion } from "../dimension-table/dimension-table-utils";
   import type { NicelyFormattedTypes } from "../humanize-numbers";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
@@ -174,14 +178,13 @@
 
   // Compose the comparison /toplist query
   $: showTimeComparison =
-    $dashboardStore?.showDeltaChange && $dashboardStore?.showComparison;
-  $: showPercentOfTotal = $dashboardStore?.showPercentOfTotal;
-  let showContext: "time" | "percent" | false = false;
-  $: showContext = showTimeComparison
-    ? "time"
-    : showPercentOfTotal
-    ? "percent"
-    : false;
+    $dashboardStore?.leaderboardContextColumn ===
+      LeaderboardContextColumn.DELTA_CHANGE && $dashboardStore?.showComparison;
+  $: showPercentOfTotal =
+    $dashboardStore?.leaderboardContextColumn ===
+    LeaderboardContextColumn.PERCENT;
+
+  $: showContext = $dashboardStore?.leaderboardContextColumn;
 
   // add all sliced and active values to the include filter.
   $: currentVisibleValues =

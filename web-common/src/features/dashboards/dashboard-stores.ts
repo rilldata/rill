@@ -23,6 +23,18 @@ export interface LeaderboardValues {
 
 export type ActiveValues = Record<string, Array<[unknown, boolean]>>;
 
+/**
+ * This enum determines the state of the context column in the leaderboard
+ */
+export enum LeaderboardContextColumn {
+  // show percent-of-total
+  PERCENT = "percent",
+  // show percent change of the value compared to the previous time range
+  DELTA_CHANGE = "delta_change",
+  // Do not show the context column
+  HIDDEN = "hidden",
+}
+
 export interface MetricsExplorerEntity {
   name: string;
   // selected measure names to be shown
@@ -58,13 +70,14 @@ export interface MetricsExplorerEntity {
   // user selected time range
   selectedTimeRange?: DashboardTimeControls;
   selectedComparisonTimeRange?: DashboardTimeControls;
-  // flag to show/hide comparison based on user preference
+  // flag to show/hide time comparison based on user preference.
+  // This controls whether a time comparison is shown in e.g.
+  // the line charts and bignums.
+  // It does NOT affect the leaderboard context column.
   showComparison?: boolean;
 
-  // flag to show/hide the percent of total column *in the leaderboard*
-  showPercentOfTotal?: boolean;
-  // flag to show/hide the delta change column *in the leaderboard*
-  showDeltaChange?: boolean;
+  // state of context column in the leaderboard
+  leaderboardContextColumn: LeaderboardContextColumn;
 
   // user selected dimension
   selectedDimensionName?: string;
@@ -250,6 +263,7 @@ const metricViewReducers = {
         dimensionFilterExcludeMode: includeExcludeModeFromFilters(
           partial.filters
         ),
+        leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
         defaultsSelected: true,
         ...partial,
       })
@@ -287,6 +301,7 @@ const metricViewReducers = {
           exclude: [],
         },
         dimensionFilterExcludeMode: new Map(),
+        leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
       })
     );
   },
@@ -327,27 +342,51 @@ const metricViewReducers = {
   displayComparison(name: string, showComparison: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.showComparison = showComparison;
-      if (showComparison === false) {
-        metricsExplorer.showDeltaChange = false;
+      // if setting showComparison===true and not currently
+      //  showing any context column, then show DELTA_CHANGE
+      if (
+        showComparison &&
+        metricsExplorer.leaderboardContextColumn ===
+          LeaderboardContextColumn.HIDDEN
+      ) {
+        metricsExplorer.leaderboardContextColumn =
+          LeaderboardContextColumn.DELTA_CHANGE;
+      }
+
+      // if setting showComparison===false and currently
+      //  showing DELTA_CHANGE, then hide context column
+      if (
+        !showComparison &&
+        metricsExplorer.leaderboardContextColumn ===
+          LeaderboardContextColumn.DELTA_CHANGE
+      ) {
+        metricsExplorer.leaderboardContextColumn =
+          LeaderboardContextColumn.HIDDEN;
       }
     });
   },
 
-  displayDeltaChange(name: string, showDeltaChange: boolean) {
+  displayDeltaChange(name: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.showDeltaChange = showDeltaChange;
-      if (metricsExplorer.showPercentOfTotal === true && showDeltaChange) {
-        metricsExplorer.showPercentOfTotal = false;
-      }
+      // NOTE: only show delta change if comparison is enabled
+      if (metricsExplorer.showComparison === false) return;
+
+      metricsExplorer.leaderboardContextColumn =
+        LeaderboardContextColumn.DELTA_CHANGE;
     });
   },
 
-  displayPercentOfTotal(name: string, showPct: boolean) {
+  displayPercentOfTotal(name: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.showPercentOfTotal = showPct;
-      if (metricsExplorer.showDeltaChange === true && showPct) {
-        metricsExplorer.showDeltaChange = false;
-      }
+      metricsExplorer.leaderboardContextColumn =
+        LeaderboardContextColumn.PERCENT;
+    });
+  },
+
+  hideContextColumn(name: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.leaderboardContextColumn =
+        LeaderboardContextColumn.HIDDEN;
     });
   },
 

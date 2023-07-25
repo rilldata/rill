@@ -9,6 +9,7 @@
   import Spinner from "../../entity-management/Spinner.svelte";
 
   import {
+    LeaderboardContextColumn,
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../dashboard-stores";
@@ -72,9 +73,14 @@
   $: validPercentOfTotal =
     activeLeaderboardMeasure?.validPercentOfTotal || false;
 
-  // if the percent of total is not valid for this measure, turn it off
-  $: if (!validPercentOfTotal) {
-    metricsExplorerStore.displayPercentOfTotal(metricViewName, false);
+  // if the percent of total is currently being shown,
+  // but it is not valid for this measure, then turn it off
+  $: if (
+    !validPercentOfTotal &&
+    metricsExplorer?.leaderboardContextColumn ===
+      LeaderboardContextColumn.PERCENT
+  ) {
+    metricsExplorerStore.hideContextColumn(metricViewName);
   }
 
   $: showHideDimensions = createShowHideDimensionsStore(

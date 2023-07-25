@@ -24,6 +24,7 @@
     LeaderboardItemData,
     getFormatterValueForPercDiff,
   } from "./leaderboard-utils";
+  import { LeaderboardContextColumn } from "../dashboard-stores";
 
   export let itemData: LeaderboardItemData;
   $: label = itemData.label;
@@ -31,7 +32,7 @@
   $: selected = itemData.selected;
   $: comparisonValue = itemData.comparisonValue;
 
-  export let showContext: "time" | "percent" | false = false;
+  export let showContext: LeaderboardContextColumn;
 
   export let atLeastOneActive = false;
 
@@ -51,14 +52,14 @@
   $: formattedValue = humanizeDataType(measureValue, formatPreset);
 
   $: percentChangeFormatted =
-    showContext === "time"
+    showContext === LeaderboardContextColumn.DELTA_CHANGE
       ? getFormatterValueForPercDiff(
           measureValue && comparisonValue
             ? measureValue - comparisonValue
             : null,
           comparisonValue
         )
-      : showContext === "percent"
+      : showContext === LeaderboardContextColumn.PERCENT
       ? getFormatterValueForPercDiff(measureValue, unfilteredTotal)
       : undefined;
 
@@ -175,7 +176,7 @@
               value={formattedValue || measureValue}
             />
           </div>
-          {#if showContext}
+          {#if percentChangeFormatted !== undefined}
             <div
               class="text-xs text-gray-500 dark:text-gray-400"
               style:width="44px"
