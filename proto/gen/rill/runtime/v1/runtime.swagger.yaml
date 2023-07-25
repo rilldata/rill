@@ -3649,6 +3649,7 @@ definitions:
       - CODE_DECIMAL
       - CODE_JSON
       - CODE_UUID
+      - CODE_DATETIME
     default: CODE_UNSPECIFIED
     title: Code enumerates all the types that can be represented in a schema
   v1UnpackEmptyResponse:

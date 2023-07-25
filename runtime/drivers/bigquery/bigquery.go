@@ -32,14 +32,14 @@ var spec = drivers.Spec{
 			Required:    true,
 			DisplayName: "Query",
 			Description: "Query to extract data from BigQuery.",
-			Placeholder: "select * from my_db.my_table;",
+			Placeholder: "select * from project.dataset.table;",
 		},
 		{
-			Key:         "projectid",
+			Key:         "project_id",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Project ID",
 			Description: "Google project ID.",
-			Placeholder: "*detect-project-id*",
+			Placeholder: "my-project",
 			Hint:        "Rill will use the project ID from your local credentials, unless set here. Set this if no project ID configured in credentials.",
 		},
 		{

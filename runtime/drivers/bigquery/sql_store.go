@@ -2,28 +2,32 @@ package bigquery
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"math/big"
 	"strings"
+	"time"
 
 	"cloud.google.com/go/bigquery"
 	"cloud.google.com/go/civil"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"go.uber.org/zap"
+	"google.golang.org/api/iterator"
 )
 
-// Exec implements drivers.SQLStore
-func (c *Connection) Exec(ctx context.Context, src *drivers.DatabaseSource) (drivers.RowIterator, error) {
-	props, err := parseSourceProperties(src.Props)
+// Query implements drivers.SQLStore
+func (c *Connection) Query(ctx context.Context, props map[string]any, qry string) (drivers.RowIterator, error) {
+	srcProps, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, err
 	}
 
-	client, err := c.createClient(ctx, props)
+	client, err := c.createClient(ctx, srcProps)
 	if err != nil {
 		if strings.Contains(err.Error(), "unable to detect projectID") {
-			return nil, fmt.Errorf("projectID not detected in credentials. Please set project ID")
+			return nil, fmt.Errorf("projectID not detected in credentials. Please set `project_id` in source yaml")
 		}
 		return nil, fmt.Errorf("failed to create bigquery client: %w", err)
 	}
@@ -33,19 +37,19 @@ func (c *Connection) Exec(ctx context.Context, src *drivers.DatabaseSource) (dri
 		return nil, err
 	}
 
-	q := client.Query(src.Query)
+	q := client.Query(qry)
 	it, err := q.Read(ctx)
 	if err != nil && !strings.Contains(err.Error(), "Syntax error") {
-		c.logger.Info("query failed, retyring without storage api", zap.Error(err))
+		c.logger.Info("query failed, retrying without storage api", zap.Error(err))
 		// the query results are always cached in a temporary table that storage api can use
 		// there are some exceptions when results aren't cached
 		// so we also try without storage api
-		client, err = c.createClient(ctx, props)
+		client, err = c.createClient(ctx, srcProps)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create bigquery client: %w", err)
 		}
 
-		q := client.Query(src.Query)
+		q := client.Query(qry)
 		it, err = q.Read(ctx)
 	}
 	if err != nil {
@@ -63,13 +67,13 @@ type rowIterator struct {
 	client  *bigquery.Client
 	next    []any
 	nexterr error
-	schema  drivers.Schema
+	schema  *runtimev1.StructType
 	bqIter  *bigquery.RowIterator
 }
 
 var _ drivers.RowIterator = &rowIterator{}
 
-func (r *rowIterator) ResultSchema(ctx context.Context) (drivers.Schema, error) {
+func (r *rowIterator) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 	if r.schema != nil {
 		return r.schema, nil
 	}
@@ -80,15 +84,16 @@ func (r *rowIterator) ResultSchema(ctx context.Context) (drivers.Schema, error) 
 		return nil, r.nexterr
 	}
 
-	r.schema = make([]drivers.Field, len(r.bqIter.Schema))
+	fields := make([]*runtimev1.StructType_Field, len(r.bqIter.Schema))
 	for i, s := range r.bqIter.Schema {
-		dbt, err := bqToDuckDB(string(s.Type))
+		dbt, err := toPB(s)
 		if err != nil {
 			return nil, err
 		}
 
-		r.schema[i] = drivers.Field{Name: s.Name, Type: dbt}
+		fields[i] = &runtimev1.StructType_Field{Name: s.Name, Type: dbt}
 	}
+	r.schema = &runtimev1.StructType{Fields: fields}
 	return r.schema, nil
 }
 
@@ -102,9 +107,8 @@ func (r *rowIterator) Next(ctx context.Context) ([]any, error) {
 
 	var row row = make([]any, 0)
 	if err := r.bqIter.Next(&row); err != nil {
-		// the sdk returns this weird error instead of iterartor.Done for zero results
-		if strings.Contains(err.Error(), "no more items in iterator") {
-			return nil, fmt.Errorf("no results found for the query")
+		if errors.Is(err, iterator.Done) {
+			return nil, drivers.ErrIteratorDone
 		}
 		return nil, err
 	}
@@ -141,47 +145,52 @@ func (r *row) Load(v []bigquery.Value, s bigquery.Schema) error {
 	return nil
 }
 
-func bqToDuckDB(dbt string) (string, error) {
-	switch dbt {
-	case "STRING":
-		return "VARCHAR", nil
-	case "JSON":
-		return "VARCHAR", nil
-	case "INTERVAL":
-		return "VARCHAR", nil
-	case "GEOGRAPHY":
-		return "VARCHAR", nil
-	case "FLOAT":
-		return "DOUBLE", nil
-	// TODO :: NUMERIC and BIGNUMERIC are represented as *big.Rat type.
-	// There is no support for these types in go-duckdb driver.
-	// Users can cast these to duckdb types in model.
-	case "NUMERIC":
-		return "VARCHAR", nil
-	case "BIGNUMERIC":
-		return "VARCHAR", nil
-	case "TIMESTAMP":
-		return "TIMESTAMP", nil
-	// TODO :: DATETIME, TIME, DATE doesn't have equivalent constructs in go and not supported in go-duckdb driver.
-	// Users can cast these to duckdb types in model.
-	case "DATETIME":
-		return "VARCHAR", nil
-	case "TIME":
-		return "VARCHAR", nil
-	case "DATE":
-		return "VARCHAR", nil
-	case "BOOLEAN":
-		return "BOOLEAN", nil
-	case "INTEGER":
-		return "INTEGER", nil
-	case "BYTES":
-		return "BLOB", nil
-	case "RECORD":
-		return "", fmt.Errorf("record type not supported")
+// type conversion table for time
+// bigquery(format) -- duckdb -- internal pb type
+// TIMESTAMP -- TIMESTAMPTZ/TIMESTAMP WITH TIME ZONE -- Type_CODE_TIMESTAMP
+// DATETIME(9999-12-31 23:59:59.999999) -- TIMESTAMP/DATETIME -- Type_CODE_DATETIME
+// TIME([H]H:[M]M:[S]S[.DDDDDD|.F]) -- TIME -- Type_CODE_TIME
+// DATE(YYYY-[M]M-[D]D) -- DATE -- Type_CODE_DATE
+func toPB(field *bigquery.FieldSchema) (*runtimev1.Type, error) {
+	t := &runtimev1.Type{Nullable: !field.Required}
+	switch field.Type {
+	case bigquery.StringFieldType:
+		t.Code = runtimev1.Type_CODE_STRING
+	case bigquery.JSONFieldType:
+		t.Code = runtimev1.Type_CODE_JSON
+	case bigquery.IntervalFieldType:
+		t.Code = runtimev1.Type_CODE_STRING
+	case bigquery.GeographyFieldType:
+		t.Code = runtimev1.Type_CODE_STRING
+	case bigquery.FloatFieldType:
+		t.Code = runtimev1.Type_CODE_FLOAT64
+	case bigquery.NumericFieldType:
+		t.Code = runtimev1.Type_CODE_DECIMAL
+	// big numeric can have width upto 76 digits which can't be converted to DECIMAL type in duckdb
+	// which supports width upto 38 digits only.
+	case bigquery.BigNumericFieldType:
+		t.Code = runtimev1.Type_CODE_STRING
+	case bigquery.TimestampFieldType:
+		t.Code = runtimev1.Type_CODE_TIMESTAMP
+	case bigquery.DateTimeFieldType:
+		t.Code = runtimev1.Type_CODE_DATETIME
+	case bigquery.TimeFieldType:
+		t.Code = runtimev1.Type_CODE_TIME
+	case bigquery.DateFieldType:
+		t.Code = runtimev1.Type_CODE_DATE
+	case bigquery.BooleanFieldType:
+		t.Code = runtimev1.Type_CODE_BOOL
+	case bigquery.IntegerFieldType:
+		t.Code = runtimev1.Type_CODE_INT64
+	case bigquery.BytesFieldType:
+		t.Code = runtimev1.Type_CODE_BYTES
+	case bigquery.RecordFieldType:
+		return nil, fmt.Errorf("record type not supported")
 	default:
 		// TODO :: may be just use VARCHAR ?
-		return "", fmt.Errorf("type %s not supported", dbt)
+		return nil, fmt.Errorf("type %s not supported", field.Type)
 	}
+	return t, nil
 }
 
 func convert(v any) any {
@@ -191,11 +200,12 @@ func convert(v any) any {
 	// refer to documentation on bigquery.RowIterator.Next for the superset of all go types possible
 	switch val := v.(type) {
 	case civil.Date:
-		return val.String()
+		return val.In(time.UTC)
 	case civil.Time:
-		return val.String()
+		t, _ := time.Parse("15:04:05.999999999", val.String())
+		return t
 	case civil.DateTime:
-		return val.String()
+		return val.In(time.UTC)
 	case *big.Rat:
 		f, _ := val.Float64()
 		if math.IsInf(f, 0) {

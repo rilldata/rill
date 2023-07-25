@@ -7,9 +7,9 @@ import (
 	"fmt"
 
 	"github.com/marcboeker/go-duckdb"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"go.uber.org/zap"
-	"google.golang.org/api/iterator"
 )
 
 const _batchSize = 10000
@@ -40,14 +40,17 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, 
 		return fmt.Errorf("type of source should `drivers.DatabaseSink`")
 	}
 
-	iter, err := s.from.Exec(ctx, src)
+	iter, err := s.from.Query(ctx, src.Props, src.Query)
 	if err != nil {
 		return err
 	}
 	defer iter.Close()
 
-	schema, err := iter.ResultSchema(ctx)
+	schema, err := iter.Schema(ctx)
 	if err != nil {
+		if errors.Is(err, drivers.ErrIteratorDone) {
+			return fmt.Errorf("no results found for the query")
+		}
 		return err
 	}
 
@@ -56,7 +59,12 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, 
 		p.Target(int64(total), drivers.ProgressUnitRecord)
 	}
 	// create table
-	if err := s.to.Exec(ctx, &drivers.Statement{Query: createTableQuery(schema, dbSink.Table), Priority: 1}); err != nil {
+	qry, err := createTableQuery(schema, dbSink.Table)
+	if err != nil {
+		return err
+	}
+
+	if err := s.to.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1}); err != nil {
 		return err
 	}
 
@@ -80,75 +88,113 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, 
 		}
 		defer a.Close()
 
-		// TODO :: may be add metric for length of buffer to determine an optimal capacity?
-		ch := make(chan result, 1000)
-		go func() {
-			for {
-				select {
-				case <-ctx.Done():
-					ch <- result{val: nil, err: ctx.Err()}
-					close(ch)
-					return
-				default:
-					row, err := iter.Next(ctx)
-					ch <- result{val: row, err: err}
-					if err != nil {
-						close(ch)
-						// received an error return
-						return
+		for num := 0; ; num++ {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+				if num == _batchSize {
+					p.Observe(_batchSize, drivers.ProgressUnitRecord)
+					num = 0
+					if err := a.Flush(); err != nil {
+						return err
 					}
 				}
-			}
-		}()
 
-		for num := 0; ; num++ {
-			if num == _batchSize {
-				p.Observe(_batchSize, drivers.ProgressUnitRecord)
-				num = 0
-				if err := a.Flush(); err != nil {
+				row, err := iter.Next(ctx)
+				if err != nil {
+					if errors.Is(err, drivers.ErrIteratorDone) {
+						p.Observe(int64(num), drivers.ProgressUnitRecord)
+						return nil
+					}
 					return err
 				}
-			}
 
-			res := <-ch
-			if res.err != nil {
-				if errors.Is(res.err, iterator.Done) {
-					p.Observe(int64(num), drivers.ProgressUnitRecord)
-					return nil
+				colValues := make([]driver.Value, len(row))
+				for i, col := range row {
+					colValues[i] = driver.Value(col)
 				}
-				return res.err
-			}
 
-			colValues := make([]driver.Value, len(res.val))
-			for i, col := range res.val {
-				colValues[i] = driver.Value(col)
-			}
-
-			if err := a.AppendRowArray(colValues); err != nil {
-				return err
+				if err := a.AppendRowArray(colValues); err != nil {
+					return err
+				}
 			}
 		}
 	})
 }
 
-func createTableQuery(schema drivers.Schema, name string) string {
+func createTableQuery(schema *runtimev1.StructType, name string) (string, error) {
 	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s(", safeName(name))
-	for i, s := range schema {
+	for i, s := range schema.Fields {
 		i++
-		query += fmt.Sprintf("%s %s", safeName(s.Name), s.Type)
-		if i != len(schema) {
+		duckDBType, err := pbTypeToDuckDB(s.Type.Code)
+		if err != nil {
+			return "", err
+		}
+		query += fmt.Sprintf("%s %s", safeName(s.Name), duckDBType)
+		if i != len(schema.Fields) {
 			query += ","
 		}
 	}
 	query += ")"
-	return query
+	return query, nil
+}
+
+func pbTypeToDuckDB(code runtimev1.Type_Code) (string, error) {
+	switch code {
+	case runtimev1.Type_CODE_UNSPECIFIED:
+		return "", fmt.Errorf("unspecified code")
+	case runtimev1.Type_CODE_BOOL:
+		return "BOOLEAN", nil
+	case runtimev1.Type_CODE_INT8:
+		return "TINYINT", nil
+	case runtimev1.Type_CODE_INT16:
+		return "SMALLINT", nil
+	case runtimev1.Type_CODE_INT32:
+		return "INTEGER", nil
+	case runtimev1.Type_CODE_INT64:
+		return "BIGINT", nil
+	case runtimev1.Type_CODE_INT128:
+		return "HUGEINT", nil
+	case runtimev1.Type_CODE_UINT8:
+		return "UTINYINT", nil
+	case runtimev1.Type_CODE_UINT16:
+		return "USMALLINT", nil
+	case runtimev1.Type_CODE_UINT32:
+		return "UINTEGER", nil
+	case runtimev1.Type_CODE_UINT64:
+		return "UBIGINT", nil
+	case runtimev1.Type_CODE_FLOAT32:
+		return "FLOAT", nil
+	case runtimev1.Type_CODE_FLOAT64:
+		return "DOUBLE", nil
+	case runtimev1.Type_CODE_TIMESTAMP:
+		return "TIMESTAMP WITH TIME ZONE", nil
+	case runtimev1.Type_CODE_DATE:
+		return "DATE", nil
+	case runtimev1.Type_CODE_TIME:
+		return "TIME", nil
+	case runtimev1.Type_CODE_DATETIME:
+		return "TIMESTAMP", nil
+	case runtimev1.Type_CODE_STRING:
+		return "VARCHAR", nil
+	case runtimev1.Type_CODE_BYTES:
+		return "BLOB", nil
+	case runtimev1.Type_CODE_ARRAY:
+		return "", fmt.Errorf("array is not supported")
+	case runtimev1.Type_CODE_STRUCT:
+		return "", fmt.Errorf("struct is not supported")
+	case runtimev1.Type_CODE_MAP:
+		return "", fmt.Errorf("map is not supported")
+	case runtimev1.Type_CODE_DECIMAL:
+		return "DECIMAL", nil
+	case runtimev1.Type_CODE_JSON:
+		return "JSON", nil
+	default:
+		return "", fmt.Errorf("unknown type_code %s", code)
+	}
 }
 
 type rawer interface {
 	Raw() driver.Conn
-}
-
-type result struct {
-	val []any
-	err error
 }

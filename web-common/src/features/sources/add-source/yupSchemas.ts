@@ -67,7 +67,7 @@ export function getYupSchema(connector: V1Connector) {
             "Source name must start with a letter or underscore and contain only letters, numbers, and underscores"
           )
           .required("Source name is required"),
-        projectid: yup.string(),
+        project_id: yup.string(),
       });
     default:
       throw new Error(`Unknown connector: ${connector.name}`);

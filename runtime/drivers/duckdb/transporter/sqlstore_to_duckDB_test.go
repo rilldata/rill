@@ -4,17 +4,17 @@ import (
 	"context"
 	"testing"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/duckdb/transporter"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"google.golang.org/api/iterator"
 )
 
 // Mock SQLStore implementation for testing
 type mockSQLStore struct{}
 
-func (m *mockSQLStore) Exec(ctx context.Context, source *drivers.DatabaseSource) (drivers.RowIterator, error) {
+func (m *mockSQLStore) Query(ctx context.Context, props map[string]any, qry string) (drivers.RowIterator, error) {
 	// Return a mock iterator
 	return &mockRowIterator{}, nil
 }
@@ -30,7 +30,7 @@ type mockRowIterator struct {
 
 func (m *mockRowIterator) Next(ctx context.Context) ([]any, error) {
 	if m.count == 10 { // send ten rows and stop
-		return nil, iterator.Done
+		return nil, drivers.ErrIteratorDone
 	}
 	m.count++
 	return []any{"value1", m.count}, nil
@@ -40,11 +40,13 @@ func (m *mockRowIterator) Close() error {
 	return nil
 }
 
-func (m *mockRowIterator) ResultSchema(ctx context.Context) (drivers.Schema, error) {
+func (m *mockRowIterator) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 	// Return a mock schema with two columns
-	return drivers.Schema{
-		{Type: "varchar", Name: "col1"},
-		{Type: "integer", Name: "col2"},
+	return &runtimev1.StructType{
+		Fields: []*runtimev1.StructType_Field{
+			{Name: "col1", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}},
+			{Name: "col2", Type: &runtimev1.Type{Code: runtimev1.Type_CODE_INT64}},
+		},
 	}, nil
 }
 

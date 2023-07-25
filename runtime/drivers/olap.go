@@ -25,10 +25,10 @@ type WithRawFunc func(driverConn any) error
 type OLAPStore interface {
 	Dialect() Dialect
 	WithConnection(ctx context.Context, priority int, fn WithConnectionFunc) error
+	WithRaw(ctx context.Context, priority int, fn WithRawFunc) error
 	Exec(ctx context.Context, stmt *Statement) error
 	Execute(ctx context.Context, stmt *Statement) (*Result, error)
 	InformationSchema() InformationSchema
-	WithRaw(ctx context.Context, priority int, fn WithRawFunc) error
 	EstimateSize() (int64, bool)
 }
 

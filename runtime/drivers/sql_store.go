@@ -2,32 +2,29 @@ package drivers
 
 import (
 	"context"
+	"errors"
+
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
-type Field struct {
-	Name string
-	Type string
-}
-
-type Schema []Field
+var ErrIteratorDone = errors.New("empty iterator")
 
 // SQLStore is implemented by drivers capable of running sql queries and generating an iterator to consume results.
 // In future the results can be produced in other formats like arrow as well.
 // May be call it DataWarehouse to differentiate from OLAP or postgres?
 type SQLStore interface {
-	Exec(ctx context.Context, src *DatabaseSource) (RowIterator, error)
+	Query(ctx context.Context, props map[string]any, query string) (RowIterator, error)
 }
 
 // RowIterator returns an iterator to iterate over result of a sql query
 type RowIterator interface {
 	// Schema of the underlying data
-	// TODO :: some enum for types may be ?
-	ResultSchema(ctx context.Context) (Schema, error)
+	Schema(ctx context.Context) (*runtimev1.StructType, error)
 	// Next fetches next row
 	Next(ctx context.Context) ([]any, error)
 	// Close closes the iterator and frees resources
 	Close() error
-	// Size returns size of data downloaded in unit.
+	// Size returns total size of data downloaded in unit.
 	// Returns 0,false if not able to compute size in given unit
 	Size(unit ProgressUnit) (uint64, bool)
 }
