@@ -88,6 +88,8 @@ func (a *Authenticator) handleDeviceCodeRequest(w http.ResponseWriter, r *http.R
 	qry := map[string]string{"user_code": readableUserCode}
 	if values.Get("redirect") != "" {
 		qry["redirect"] = values.Get("redirect")
+	} else {
+		qry["redirect"] = urlutil.MustJoinURL(a.opts.FrontendURL, "/-/auth/cli/success")
 	}
 
 	verificationCompleteURI, err := urlutil.WithQuery(verificationURI, qry)
