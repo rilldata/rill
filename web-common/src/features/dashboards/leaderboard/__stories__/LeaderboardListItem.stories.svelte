@@ -90,4 +90,4 @@
   </div>
 </Template>
 
-<Story name="LeaderboardListItem" args={defaultArgs} />
+<Story name="LeaderboardListItem (with controls)" args={defaultArgs} />
