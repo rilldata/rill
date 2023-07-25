@@ -37,8 +37,14 @@
     return column?.endsWith("_delta_perc");
   }
 
+  function isPercentOfTotal(column) {
+    return column?.endsWith("_percent_of_total");
+  }
+
   function isHighlightedColumn(column) {
-    return isDelta(column) || isDeltaPercentage(column);
+    return (
+      isDelta(column) || isDeltaPercentage(column) || isPercentOfTotal(column)
+    );
   }
 </script>
 

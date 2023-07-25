@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/google/uuid"
@@ -157,6 +158,19 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 	return res, nil
 }
 
+func (c *connection) EstimateSize() (int64, bool) {
+	var paths []string
+	path := c.config.DBFilePath
+	if path == "" {
+		return 0, true
+	}
+
+	// Add .wal file path (e.g final size will be sum of *.db and *.db.wal)
+	dbWalPath := fmt.Sprintf("%s.wal", path)
+	paths = append(paths, path, dbWalPath)
+	return fileSize(paths), true
+}
+
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	if r == nil {
 		return nil, nil
@@ -186,4 +200,14 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	}
 
 	return &runtimev1.StructType{Fields: fields}, nil
+}
+
+func fileSize(paths []string) int64 {
+	var size int64
+	for _, path := range paths {
+		if info, err := os.Stat(path); err == nil { // ignoring error since only error possible is *PathError
+			size += info.Size()
+		}
+	}
+	return size
 }

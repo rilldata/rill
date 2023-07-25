@@ -49,7 +49,7 @@ export const getFilterSearchList = (
     addNull,
     searchText,
   }: {
-    dimension?: string;
+    dimension: string;
     addNull: boolean;
     searchText: string;
   }
@@ -92,7 +92,6 @@ export const getFilterSearchList = (
         {
           query: {
             queryClient: ctx.queryClient,
-            enabled: !!dimension,
           },
         }
       ).subscribe(set);

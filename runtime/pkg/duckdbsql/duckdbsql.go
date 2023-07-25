@@ -5,7 +5,6 @@ import (
 	databasesql "database/sql"
 	"database/sql/driver"
 	"encoding/json"
-	"regexp"
 	"sync"
 
 	"github.com/marcboeker/go-duckdb"
@@ -84,11 +83,22 @@ func (a *AST) RewriteTableRefs(fn func(table *TableRef) (*TableRef, bool)) error
 			continue
 		}
 
-		// only rewriting to a base table is supported as of now.
 		if newRef.Name != "" {
 			err := node.rewriteToBaseTable(newRef.Name)
 			if err != nil {
 				return err
+			}
+		} else if newRef.Function != "" {
+			switch newRef.Function {
+			case "read_csv_auto", "read_csv",
+				"read_parquet",
+				"read_json", "read_json_auto", "read_json_objects", "read_json_objects_auto",
+				"read_ndjson_objects", "read_ndjson", "read_ndjson_auto":
+				err := node.rewriteToReadTableFunction(newRef.Function, newRef.Paths, newRef.Properties)
+				if err != nil {
+					return err
+				}
+				// non read_ functions are not supported right now
 			}
 		}
 	}
@@ -120,25 +130,6 @@ func (a *AST) ExtractColumnRefs() []*ColumnRef {
 	return columnRefs
 }
 
-var annotationsRegex = regexp.MustCompile(`(?m)^--[ \t]*@([a-zA-Z0-9_\-.]*)[ \t]*(?::[ \t]*(.*?))?\s*$`)
-
-// ExtractAnnotations extracts annotations from comments prefixed with '@', and optionally a value after a ':'.
-// Examples: "-- @materialize" and "-- @materialize: true".
-func (a *AST) ExtractAnnotations() map[string]*Annotation {
-	annotations := map[string]*Annotation{}
-	subMatches := annotationsRegex.FindAllStringSubmatch(a.sql, -1)
-	for _, subMatch := range subMatches {
-		an := &Annotation{
-			Key: subMatch[1],
-		}
-		if len(subMatch) > 2 {
-			an.Value = subMatch[2]
-		}
-		annotations[an.Key] = an
-	}
-	return annotations
-}
-
 func (a *AST) newFromNode(node, parent astNode, childKey string, ref *TableRef) {
 	fn := &fromNode{
 		ast:      node,
@@ -161,15 +152,9 @@ func (a *AST) newColumnNode(node astNode, ref *ColumnRef) {
 type TableRef struct {
 	Name       string
 	Function   string
-	Path       string
+	Paths      []string
 	Properties map[string]any
 	LocalAlias bool
-}
-
-// Annotation is key-value annotation extracted from a DuckDB SQL comment
-type Annotation struct {
-	Key   string
-	Value string
 }
 
 // ColumnRef has information about a column in the select list of a DuckDB SQL statement

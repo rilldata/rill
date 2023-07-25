@@ -21,15 +21,14 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	// Load infra drivers and connectors for runtime
-	_ "github.com/rilldata/rill/runtime/connectors/gcs"
-	_ "github.com/rilldata/rill/runtime/connectors/https"
-	_ "github.com/rilldata/rill/runtime/connectors/motherduck"
-	_ "github.com/rilldata/rill/runtime/connectors/s3"
 	_ "github.com/rilldata/rill/runtime/drivers/druid"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
+	_ "github.com/rilldata/rill/runtime/drivers/gcs"
 	_ "github.com/rilldata/rill/runtime/drivers/github"
+	_ "github.com/rilldata/rill/runtime/drivers/https"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
+	_ "github.com/rilldata/rill/runtime/drivers/s3"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 )
 

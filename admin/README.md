@@ -97,3 +97,13 @@ For trying out CLI logout add api-url parameter to point to local admin server l
 ```
 go run ./cli logout --api-url http://localhost:9090/
 ```
+## Adding a new field preferences
+To add a new preference field for the user, follow these steps:
+
+1. Include a new column named `preference_<name>` in the `users` table. This can be accomplished by appending an appropriate `ALTER TABLE` query to a newly created `.sql` file located within the `postgres/migrations` folder. 
+2. In the admin `api.proto` file, incorporate the optional preference field within the `message UserPreferences` definition. 
+3. Revise the method definition for UpdateUserPreferences to encompass the handling of the new preference in the respective service. 
+4. Adjust the `UpdateUser` SQL query to encompass the new preference field, ensuring that it is included during the update operation.
+5. Identify all instances where the `UpdateUser` method is called and update them to include the new preference value.
+
+By meticulously following these steps, the new preference field can be successfully incorporated for the user. Remember to update the database schema, proto file, service method, SQL query, and method invocations to properly accommodate the new preference field.

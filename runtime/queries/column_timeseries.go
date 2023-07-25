@@ -17,6 +17,9 @@ import (
 	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	// Load IANA time zone data
+	_ "time/tzdata"
 )
 
 const IsoFormat string = "2006-01-02T15:04:05.000Z"
@@ -36,6 +39,7 @@ type ColumnTimeseries struct {
 	TimeRange           *runtimev1.TimeSeriesTimeRange                    `json:"time_range"`
 	Pixels              int32                                             `json:"pixels"`
 	SampleSize          int32                                             `json:"sample_size"`
+	TimeZone            string                                            `json:"time_zone,omitempty"`
 	Result              *ColumnTimeseriesResult                           `json:"-"`
 
 	// MetricsView-related fields. These can be removed when MetricsViewTimeSeries is refactored to a standalone implementation.
@@ -106,6 +110,19 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		dateTruncSpecifier := convertToDateTruncSpecifier(timeRange.Interval)
 		tsAlias := tempName("_ts_")
 		temporaryTableName := tempName("_timeseries_")
+
+		timezone := "UTC"
+		if q.TimeZone != "" {
+			timezone = q.TimeZone
+		}
+
+		_, err = time.LoadLocation(timezone)
+		if err != nil {
+			return err
+		}
+
+		args = append([]any{timezone, timezone, timeRange.Start.AsTime(), timezone, timezone, timeRange.End.AsTime(), timezone, timezone}, args...)
+
 		querySQL := `CREATE TEMPORARY TABLE ` + temporaryTableName + ` AS (
 			-- generate a time series column that has the intended range
 			WITH template as (
@@ -113,14 +130,14 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 				range as ` + tsAlias + `
 			FROM
 				range(
-				date_trunc('` + dateTruncSpecifier + `', TIMESTAMP '` + timeRange.Start.AsTime().Format(IsoFormat) + `'),
-				date_trunc('` + dateTruncSpecifier + `', TIMESTAMP '` + timeRange.End.AsTime().Format(IsoFormat) + `'),
+				timezone(?, date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ))),
+				timezone(?, date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ))),
 				INTERVAL '1 ` + dateTruncSpecifier + `')
 			),
 			-- transform the original data, and optionally sample it.
 			series AS (
 			SELECT
-				date_trunc('` + dateTruncSpecifier + `', ` + safeName(q.TimestampColumnName) + `) as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
+				timezone(?, date_trunc('` + dateTruncSpecifier + `', timezone(?, ` + safeName(q.TimestampColumnName) + `::TIMESTAMPTZ))) as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
 			FROM ` + safeName(q.TableName) + ` ` + filter + `
 			GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
 			)

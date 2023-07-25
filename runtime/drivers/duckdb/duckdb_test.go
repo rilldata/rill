@@ -17,10 +17,10 @@ func TestOpenDrop(t *testing.T) {
 	walpath := path + ".wal"
 	dsn := path + "?rill_pool_size=2"
 
-	handle, err := Driver{}.Open(dsn, zap.NewNop())
+	handle, err := Driver{}.Open(map[string]any{"dsn": dsn}, zap.NewNop())
 	require.NoError(t, err)
 
-	olap, ok := handle.OLAPStore()
+	olap, ok := handle.AsOLAP()
 	require.True(t, ok)
 
 	err = olap.Exec(context.Background(), &drivers.Statement{Query: "CREATE TABLE foo (bar INTEGER)"})
@@ -31,7 +31,7 @@ func TestOpenDrop(t *testing.T) {
 	require.FileExists(t, path)
 	require.FileExists(t, walpath)
 
-	err = Driver{}.Drop(dsn, zap.NewNop())
+	err = Driver{}.Drop(map[string]any{"dsn": dsn}, zap.NewNop())
 	require.NoError(t, err)
 	require.NoFileExists(t, path)
 	require.NoFileExists(t, walpath)
@@ -43,10 +43,10 @@ func TestFatalErr(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "tmp.db")
 	dsn := path + "?rill_pool_size=2"
 
-	handle, err := Driver{}.Open(dsn, zap.NewNop())
+	handle, err := Driver{}.Open(map[string]any{"dsn": dsn}, zap.NewNop())
 	require.NoError(t, err)
 
-	olap, ok := handle.OLAPStore()
+	olap, ok := handle.AsOLAP()
 	require.True(t, ok)
 
 	qry := `
@@ -106,10 +106,10 @@ func TestFatalErrConcurrent(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "tmp.db")
 	dsn := path + "?rill_pool_size=3"
 
-	handle, err := Driver{}.Open(dsn, zap.NewNop())
+	handle, err := Driver{}.Open(map[string]any{"dsn": dsn}, zap.NewNop())
 	require.NoError(t, err)
 
-	olap, ok := handle.OLAPStore()
+	olap, ok := handle.AsOLAP()
 	require.True(t, ok)
 
 	qry := `

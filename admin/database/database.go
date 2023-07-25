@@ -156,6 +156,11 @@ type DB interface {
 	InsertProjectInvite(ctx context.Context, opts *InsertProjectInviteOptions) error
 	DeleteProjectInvite(ctx context.Context, id string) error
 	UpdateProjectInviteRole(ctx context.Context, id, roleID string) error
+
+	FindBookmarks(ctx context.Context, projectID, userID string) ([]*Bookmark, error)
+	FindBookmark(ctx context.Context, bookmarkID string) (*Bookmark, error)
+	InsertBookmark(ctx context.Context, opts *InsertBookmarkOptions) (*Bookmark, error)
+	DeleteBookmark(ctx context.Context, bookmarkID string) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -336,6 +341,7 @@ type User struct {
 	CreatedOn           time.Time `db:"created_on"`
 	UpdatedOn           time.Time `db:"updated_on"`
 	QuotaSingleuserOrgs int       `db:"quota_singleuser_orgs"`
+	PreferenceTimeZone  string    `db:"preference_time_zone"`
 	Superuser           bool      `db:"superuser"`
 }
 
@@ -354,6 +360,7 @@ type UpdateUserOptions struct {
 	PhotoURL            string
 	GithubUsername      string
 	QuotaSingleuserOrgs int
+	PreferenceTimeZone  string
 }
 
 // Usergroup represents a group of org members
@@ -553,4 +560,24 @@ type InsertProjectInviteOptions struct {
 	InviterID string
 	ProjectID string `validate:"required"`
 	RoleID    string `validate:"required"`
+}
+
+type Bookmark struct {
+	ID            string
+	DisplayName   string    `db:"display_name"`
+	Data          []byte    `db:"data"`
+	DashboardName string    `db:"dashboard_name"`
+	ProjectID     string    `db:"project_id"`
+	UserID        string    `db:"user_id"`
+	CreatedOn     time.Time `db:"created_on"`
+	UpdatedOn     time.Time `db:"updated_on"`
+}
+
+// InsertBookmarksOptions defines options for inserting a new bookmark
+type InsertBookmarkOptions struct {
+	DisplayName   string `json:"display_name"`
+	Data          []byte `json:"data"`
+	DashboardName string `json:"dashboard_name"`
+	ProjectID     string `json:"project_id"`
+	UserID        string `json:"user_id"`
 }

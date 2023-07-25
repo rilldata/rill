@@ -2,6 +2,7 @@ package duckdbsql
 
 import (
 	"errors"
+	"math"
 	"regexp"
 )
 
@@ -168,16 +169,21 @@ func (a *AST) traverseTableFunction(parent astNode, childKey string) {
 		Function:   functionName,
 		Properties: map[string]any{},
 	}
-	a.newFromNode(node, parent, childKey, ref)
 	// TODO: add to local alias
 
 	switch functionName {
-	case "read_csv_auto", "read_csv", "read_parquet", "read_json_auto", "read_json":
-		ref.Path = toString(toNode(arguments[0], astKeyValue), astKeyValue)
+	case "read_csv_auto", "read_csv",
+		"read_parquet",
+		"read_json", "read_json_auto", "read_json_objects", "read_json_objects_auto",
+		"read_ndjson_objects", "read_ndjson", "read_ndjson_auto":
+		ref.Paths = getListOfValues[string](arguments[0])
 	default:
 		// only read_... are supported for now
 		return
 	}
+
+	// adding the node here will make sure other types of table functions are ignored
+	a.newFromNode(node, parent, childKey, ref)
 
 	for _, argument := range arguments[1:] {
 		if toString(argument, astKeyType) != "COMPARE_EQUAL" {
@@ -194,47 +200,92 @@ func (a *AST) traverseTableFunction(parent astNode, childKey string) {
 		}
 
 		right := toNode(argument, astKeyRight)
-		switch toString(right, astKeyType) {
-		case "VALUE_CONSTANT":
-			ref.Properties[columnNames[0].(string)] = constantValueToGoValue(toNode(right, astKeyValue))
-		case "FUNCTION":
-			if toString(right, astKeyFunctionName) == "struct_pack" {
-				ref.Properties[columnNames[0].(string)] = structValueToGoValue(right)
+		ref.Properties[columnNames[0].(string)] = valueToGoValue(right)
+	}
+}
+
+func valueToGoValue(v astNode) any {
+	switch toString(v, astKeyType) {
+	case "VALUE_CONSTANT":
+		return constantValueToGoValue(toNode(v, astKeyValue))
+	case "FUNCTION":
+		if toString(v, astKeySchema) == "main" {
+			switch toString(v, astKeyFunctionName) {
+			case "struct_pack":
+				return structValueToGoValue(v)
+			case "list_value":
+				return arrayValueToGoValue(v)
 			}
 		}
 	}
+	return nil
+}
+
+func constantValueToGoValue(v astNode) any {
+	if toBoolean(v, astKeyIsNull) {
+		return nil
+	}
+
+	t := toNode(v, astKeyType)
+	val := v[astKeyValue]
+	switch toString(t, astKeyID) {
+	case "BOOLEAN":
+		return val.(bool)
+	case "TINYINT", "SMALLINT", "INTEGER":
+		return forceConvertToNum[int32](val)
+	case "BIGINT":
+		return forceConvertToNum[int64](val)
+	case "UTINYINT", "USMALLINT", "UINTEGER":
+		return forceConvertToNum[uint32](val)
+	case "UBIGINT":
+		return forceConvertToNum[uint64](val)
+	case "FLOAT":
+		return forceConvertToNum[float32](val)
+	case "DOUBLE":
+		return forceConvertToNum[float64](val)
+	case "DECIMAL":
+		ti := toNode(t, astKeyTypeInfo)
+		if ti == nil {
+			return 0.0
+		}
+		return forceConvertToNum[float64](val) / math.Pow(10, forceConvertToNum[float64](ti[astKeyScale]))
+	case "VARCHAR":
+		return val.(string)
+		// TODO: others
+	}
+	return nil
 }
 
 func structValueToGoValue(v astNode) map[string]any {
 	structVal := map[string]any{}
 
 	for _, child := range toNodeArray(v, astKeyChildren) {
-		structVal[toString(child, astKeyAlias)] = constantValueToGoValue(toNode(child, astKeyValue))
+		structVal[toString(child, astKeyAlias)] = valueToGoValue(child)
 	}
 
 	return structVal
 }
 
-func constantValueToGoValue(v astNode) any {
-	val := v[astKeyValue]
-	switch toString(toNode(v, astKeyType), astKeyID) {
-	case "BOOLEAN":
-		return val.(bool)
-	case "TINYINT", "SMALLINT", "INTEGER":
-		return val.(int32)
-	case "BIGINT":
-		return val.(int64)
-	case "UTINYINT", "USMALLINT", "UINTEGER":
-		return val.(uint32)
-	case "UBIGINT":
-		return val.(uint64)
-	case "FLOAT":
-		return val.(float32)
-	case "DOUBLE":
-		return val.(float64)
-	case "VARCHAR":
-		return val.(string)
-		// TODO: others
+func arrayValueToGoValue(v astNode) []any {
+	arr := make([]any, 0)
+	for _, child := range toNodeArray(v, astKeyChildren) {
+		arr = append(arr, valueToGoValue(child))
 	}
-	return nil
+	return arr
+}
+
+func forceConvertToNum[N int32 | int64 | uint32 | uint64 | float32 | float64](v any) N {
+	switch vt := v.(type) {
+	case int:
+		return N(vt)
+	case int32:
+		return N(vt)
+	case int64:
+		return N(vt)
+	case float32:
+		return N(vt)
+	case float64:
+		return N(vt)
+	}
+	return 0
 }

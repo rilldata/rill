@@ -37,15 +37,23 @@
   export let compact = false;
   export let hideNullPercentage = false;
 
+  export let enableProfiling = true;
+
   let active = false;
 
-  $: nulls = getNullPercentage($runtime?.instanceId, objectName, columnName);
+  $: nulls = getNullPercentage(
+    $runtime?.instanceId,
+    objectName,
+    columnName,
+    enableProfiling
+  );
 
   $: diagnosticHistogram = getNumericHistogram(
     $runtime?.instanceId,
     objectName,
     columnName,
     QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_DIAGNOSTIC,
+    enableProfiling,
     active
   );
   let fdHistogram;
@@ -55,6 +63,7 @@
       objectName,
       columnName,
       QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
+      enableProfiling,
       active
     );
   }
@@ -81,10 +90,16 @@
         select($query) {
           return $query?.numericSummary?.numericOutliers?.outliers;
         },
+        enabled: enableProfiling,
       },
     }
   );
-  $: topK = getTopK($runtime?.instanceId, objectName, columnName);
+  $: topK = getTopK(
+    $runtime?.instanceId,
+    objectName,
+    columnName,
+    enableProfiling
+  );
 
   $: summary = derived(
     createQueryServiceColumnDescriptiveStatistics(
@@ -93,6 +108,11 @@
       {
         columnName: columnName,
         priority: getPriorityForColumn("descriptive-statistics", active),
+      },
+      {
+        query: {
+          enabled: enableProfiling,
+        },
       }
     ),
     ($query) => {
@@ -146,23 +166,23 @@
 </script>
 
 <ProfileContainer
-  isFetching={fetchingSummaries}
   {active}
   {compact}
   emphasize={active}
   {example}
   {hideNullPercentage}
   {hideRight}
+  isFetching={fetchingSummaries}
   {mode}
   on:select={toggleColumnProfile}
   on:shift-click={() =>
     copyToClipboard(columnName, `copied ${columnName} to clipboard`)}
   {type}
 >
-  <ColumnProfileIcon slot="icon" isFetching={fetchingSummaries} {type} />
+  <ColumnProfileIcon isFetching={fetchingSummaries} slot="icon" {type} />
 
   <svelte:fragment slot="left">{columnName}</svelte:fragment>
-  <NumericSpark {type} {compact} data={histogramData} slot="summary" />
+  <NumericSpark {compact} data={histogramData} slot="summary" {type} />
   <NullPercentageSpark
     nullCount={$nulls?.nullCount}
     slot="nullity"
@@ -171,8 +191,8 @@
   />
   <div
     class="pl-10 pr-4 py-4"
-    slot="details"
     class:hidden={INTERVALS.has(type)}
+    slot="details"
   >
     <NumericPlot
       data={histogramData}
