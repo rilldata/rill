@@ -45,7 +45,7 @@ export async function assertLeaderboards(
 
     const actualValues = await leaderboardBlock
       .locator(".leaderboard-entry")
-      .locator("div[slot='title']")
+      .locator(".leaderboard-label")
       .allInnerTexts();
     expect(actualValues).toEqual(values);
   }
