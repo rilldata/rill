@@ -252,8 +252,7 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 			p.deleteResource(resource)
 			deletedResources = append(deletedResources, resource)
 
-			// Multiple paths in resourcesForPath may point to the same resource.
-			// By adding resource.Paths to checkPaths, the outer loop will eventually clear those (maybe it already has).
+			// Make sure we-reparse all paths that contributed to the deleted resource.
 			checkPaths = append(checkPaths, resource.Paths...)
 		}
 
@@ -287,13 +286,13 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	inferRefsSeen := make(map[ResourceName]bool)
 	// ... all inserted resources
 	for _, r := range p.insertedResources {
-		p.inferUnspecifiedRefs(r)
 		inferRefsSeen[r.Name.Normalized()] = true
+		p.inferUnspecifiedRefs(r)
 	}
 	// ... all updated resources
 	for _, r := range p.updatedResources {
-		p.inferUnspecifiedRefs(r)
 		inferRefsSeen[r.Name.Normalized()] = true
+		p.inferUnspecifiedRefs(r)
 	}
 	// ... any unchanged resource that may have an unspecified ref to a deleted resource
 	for _, r1 := range deletedResources {
@@ -396,7 +395,7 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 
 	// As a special case, we need to check that there aren't any sources and models with the same name.
 	// NOTE 1: We always attach the error to the model when there's a collision.
-	// NOTE 2: Using a map since the two-way check (necessary for reparses) may match a duplicate twice.
+	// NOTE 2: Using a map since the two-way check (necessary for reparses) may match the same resource twice.
 	modelsWithNameErrs := make(map[ResourceName]string)
 	for _, r := range p.insertedResources {
 		if r.Name.Kind == ResourceKindSource {
@@ -496,7 +495,12 @@ func (p *Parser) parseStemPaths(ctx context.Context, paths []string) error {
 
 // inferUnspecifiedRefs populates r.Refs with a) all explicit refs from r.rawRefs, and b) any implicit refs that we can infer from context.
 // An implicit ref is one where the kind is unspecified. They are common when extracted from SQL.
-// For example, if a model contains "SELET * FROM foo", we add "foo" to r.rawRefs, and need to infer whether "foo" is a source or a model.
+// For example, if a model contains "SELECT * FROM foo", we add "foo" to r.rawRefs, and need to infer whether "foo" is a source or a model.
+//
+// If an unspecified ref can't be matched to another resource, it is not added to r.Refs.
+// That allows, for example, a model like "SELECT * FROM foo", to parse successfully even when no other model or source is named "foo" exists.
+// This is necessary to support referencing existing tables in a database. Errors for such cases will be thrown from the downstream reconciliation logic instead.
+// We may want to revisit this handling in the future.
 func (p *Parser) inferUnspecifiedRefs(r *Resource) {
 	var refs []ResourceName
 	for _, ref := range r.rawRefs {
