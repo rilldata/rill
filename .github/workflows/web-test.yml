@@ -92,10 +92,9 @@ jobs:
         if: steps.filter.outputs.common == 'true'
         run: npm run test -w web-common
 
-      - name: Build & Test the web local with playwright
+      - name: Test web local
         if: ${{ steps.filter.outputs.local == 'true' || steps.filter.outputs.common == 'true' }}
-        run: npx playwright test
-        working-directory: ./web-local
+        run: npm run test -w web-local
 
       - uses: actions/upload-artifact@v3
         if: always()
