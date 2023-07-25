@@ -1,6 +1,9 @@
 <script lang="ts">
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
-  import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
+  import {
+    Axis,
+    Grid,
+  } from "@rilldata/web-common/components/data-graphic/guides";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
@@ -227,7 +230,7 @@
 </script>
 
 <TimeSeriesChartContainer end={endValue} start={startValue} {workspaceWidth}>
-  <div class="bg-white sticky top-0" style="z-index:100">
+  <div class="bg-white sticky top-0 flex" style="z-index:100">
     <SeachableFilterButton
       label="Measures"
       on:deselect-all={setAllMeasuresNotVisible}
@@ -238,19 +241,26 @@
       tooltipText="Choose measures to display"
     />
   </div>
-  <div class="bg-white sticky left-0 top-0">
+  <div
+    class="bg-white sticky left-0 top-0 overflow-visible"
+    style="z-index:101"
+  >
     <div style:height="20px" style:padding-left="24px" />
     <!-- top axis element -->
     <div />
     {#if $dashboardStore?.selectedTimeRange}
       <SimpleDataGraphic
-        height={32}
-        top={34}
+        height={26}
+        overflowHidden={false}
+        top={29}
         bottom={0}
         xMin={startValue}
         xMax={endValue}
       >
-        <Axis superlabel side="top" />
+        <Grid showY={false} />
+        <g transform="translate(0 11)">
+          <Axis superlabel side="top" placement="start" />
+        </g>
       </SimpleDataGraphic>
     {/if}
   </div>
