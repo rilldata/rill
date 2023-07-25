@@ -34,6 +34,10 @@ const (
 	astKeyQuery            string = "query"
 	astKeySubQuery         string = "subquery"
 	astKetRelationName     string = "relation_name"
+	astKeySchema           string = "schema"
+	astKeyIsNull           string = "is_null"
+	astKeyTypeInfo         string = "type_info"
+	astKeyScale            string = "scale"
 )
 
 func toBoolean(a astNode, k string) bool {
@@ -104,6 +108,30 @@ func toTypedArray[E interface{}](a astNode, k string) []E {
 		typedArr[i] = e.(E)
 	}
 	return typedArr
+}
+
+// getListOfValues converts a node that can have a single value or a list of values to a go array of a type
+func getListOfValues[E interface{}](a astNode) []E {
+	arr := make([]E, 0)
+	switch toString(a, astKeyType) {
+	case "VALUE_CONSTANT":
+		if vt, ok := a[astKeyValue].(map[string]interface{})[astKeyValue].(E); ok {
+			arr = append(arr, vt)
+		}
+
+	case "FUNCTION":
+		if toString(a, astKeyFunctionName) == "list_value" {
+			for _, child := range toNodeArray(a, astKeyChildren) {
+				if toString(child, astKeyType) != "VALUE_CONSTANT" {
+					continue
+				}
+				if vt, ok := child[astKeyValue].(map[string]interface{})[astKeyValue].(E); ok {
+					arr = append(arr, vt)
+				}
+			}
+		}
+	}
+	return arr
 }
 
 func getColumnName(node astNode) string {

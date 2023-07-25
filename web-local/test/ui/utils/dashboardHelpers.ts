@@ -1,5 +1,4 @@
-import { expect } from "@jest/globals";
-import { expect as playwrightExpect } from "@playwright/test";
+import { expect } from "@playwright/test";
 import type {
   MetricsViewFilterCond,
   V1MetricsViewFilter,
@@ -42,7 +41,7 @@ export async function assertLeaderboards(
     const leaderboardBlock = await page.locator("svelte-virtual-list-row", {
       hasText: label,
     });
-    await playwrightExpect(leaderboardBlock).toBeVisible();
+    await expect(leaderboardBlock).toBeVisible();
 
     const actualValues = await leaderboardBlock
       .locator(".leaderboard-entry")

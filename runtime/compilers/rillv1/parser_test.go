@@ -148,7 +148,7 @@ SELECT * FROM {{ ref "m2" }}
 		// model m2
 		{
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "m2"},
-			Refs:  []ResourceName{{Name: "m1"}},
+			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
 			Paths: []string{"/models/m2.yaml", "/models/m2.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
 				Sql:         strings.TrimSpace(files["models/m2.sql"]),
@@ -158,7 +158,7 @@ SELECT * FROM {{ ref "m2" }}
 		// dashboard d1
 		{
 			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
-			Refs:  []ResourceName{{Name: "m2"}},
+			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m2"}},
 			Paths: []string{"/dashboards/d1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Model: "m2",
@@ -182,7 +182,7 @@ SELECT * FROM {{ ref "m2" }}
 		// model c2
 		{
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "c2"},
-			Refs:  []ResourceName{{Name: "m2"}},
+			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m2"}},
 			Paths: []string{"/custom/c2.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
 				Sql:            strings.TrimSpace(files["custom/c2.sql"]),
@@ -238,6 +238,45 @@ FRO m1
 	requireResourcesAndErrors(t, p, nil, errors)
 }
 
+func TestUniqueSourceModelName(t *testing.T) {
+	files := map[string]string{
+		// rill.yaml
+		`rill.yaml`: ``,
+		// source s1
+		`sources/s1.yaml`: `
+connector: s3
+`,
+		// model s1
+		`/models/s1.sql`: `
+SELECT 1
+`,
+	}
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindSource, Name: "s1"},
+			Paths: []string{"/sources/s1.yaml"},
+			SourceSpec: &runtimev1.SourceSpec{
+				SourceConnector: "s3",
+				Properties:      must(structpb.NewStruct(map[string]any{})),
+			},
+		},
+	}
+
+	errors := []*runtimev1.ParseError{
+		{
+			Message:  "model name collides with source \"s1\"",
+			FilePath: "/models/s1.sql",
+		},
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, errors)
+}
+
 func TestReparse(t *testing.T) {
 	// Prepare
 	truth := true
@@ -279,7 +318,6 @@ SELECT * FROM foo
 	})
 	m1 := &Resource{
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
-		Refs:  []ResourceName{{Name: "foo"}},
 		Paths: []string{"/models/m1.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
 			Sql: "SELECT * FROM foo",
@@ -313,7 +351,6 @@ materialize: true
 SELECT * FROM bar
 `,
 	})
-	m1.Refs = []ResourceName{{Name: "bar"}}
 	m1.ModelSpec.Sql = "SELECT * FROM bar"
 	diff, err = p.Reparse(ctx, []string{"/models/m1.sql"})
 	require.NoError(t, err)
@@ -322,15 +359,41 @@ SELECT * FROM bar
 		Modified: []ResourceName{m1.Name},
 	}, diff)
 
-	// Add a syntax error in the source
+	// Rename the model to collide with the source
 	putRepo(t, repo, map[string]string{
+		`models/m1.sql`: `
+-- @name: s1
+SELECT * FROM bar
+`,
+	})
+	diff, err = p.Reparse(ctx, []string{"/models/m1.sql"})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{s1}, []*runtimev1.ParseError{
+		{
+			Message:  "model name collides with source \"s1\"",
+			FilePath: "/models/m1.sql",
+		},
+		{
+			Message:  "model name collides with source \"s1\"",
+			FilePath: "/models/m1.yaml",
+		},
+	})
+	require.Equal(t, &Diff{
+		Deleted: []ResourceName{m1.Name},
+	}, diff)
+
+	// Put m1 back and add a syntax error in the source
+	putRepo(t, repo, map[string]string{
+		`models/m1.sql`: `
+SELECT * FROM bar
+`,
 		`sources/s1.yaml`: `
 connector: s3
 path: hello
   world: path
 `,
 	})
-	diff, err = p.Reparse(ctx, s1.Paths)
+	diff, err = p.Reparse(ctx, []string{"/models/m1.sql", "/sources/s1.yaml"})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{m1}, []*runtimev1.ParseError{{
 		Message:       "mapping values are not allowed in this context", // note: approximate string match
@@ -338,6 +401,7 @@ path: hello
 		StartLocation: &runtimev1.CharLocation{Line: 4},
 	}})
 	require.Equal(t, &Diff{
+		Added:   []ResourceName{m1.Name},
 		Deleted: []ResourceName{s1.Name},
 	}, diff)
 
@@ -347,6 +411,58 @@ path: hello
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{m1}, nil)
 	require.Equal(t, &Diff{}, diff)
+}
+
+func TestRefInferrence(t *testing.T) {
+	// Create model referencing "bar"
+	foo := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "foo"},
+		Paths: []string{"/models/foo.sql"},
+		ModelSpec: &runtimev1.ModelSpec{
+			Sql: "SELECT * FROM bar",
+		},
+	}
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		// rill.yaml
+		`rill.yaml`: ``,
+		// model foo
+		`models/foo.sql`: `SELECT * FROM bar`,
+	})
+	p, err := Parse(ctx, repo, "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{foo}, nil)
+
+	// Add model "bar"
+	foo.Refs = []ResourceName{{Kind: ResourceKindModel, Name: "bar"}}
+	bar := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "bar"},
+		Paths: []string{"/models/bar.sql"},
+		ModelSpec: &runtimev1.ModelSpec{
+			Sql: "SELECT * FROM baz",
+		},
+	}
+	putRepo(t, repo, map[string]string{
+		`models/bar.sql`: `SELECT * FROM baz`,
+	})
+	diff, err := p.Reparse(ctx, []string{"/models/bar.sql"})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{foo, bar}, nil)
+	require.Equal(t, &Diff{
+		Added:    []ResourceName{bar.Name},
+		Modified: []ResourceName{foo.Name},
+	}, diff)
+
+	// Remove "bar"
+	foo.Refs = nil
+	deleteRepo(t, repo, bar.Paths[0])
+	diff, err = p.Reparse(ctx, []string{"/models/bar.sql"})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{foo}, nil)
+	require.Equal(t, &Diff{
+		Modified: []ResourceName{foo.Name},
+		Deleted:  []ResourceName{bar.Name},
+	}, diff)
 }
 
 func BenchmarkReparse(b *testing.B) {
@@ -379,7 +495,7 @@ materialize: true
 		// m2
 		{
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "m2"},
-			Refs:  []ResourceName{{Name: "m1"}},
+			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
 			Paths: []string{"/models/m2.sql", "/models/m2.yaml"},
 			ModelSpec: &runtimev1.ModelSpec{
 				Sql:         strings.TrimSpace(files["models/m2.sql"]),
@@ -433,7 +549,7 @@ SELECT * FROM m2
 	}
 	m3 := &Resource{
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m3"},
-		Refs:  []ResourceName{{Name: "m2"}},
+		Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m2"}},
 		Paths: []string{"/models/m3.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
 			Sql: "SELECT * FROM m2",
@@ -462,7 +578,7 @@ SELECT * FROM m2
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{m2, m3, embed}, nil)
 	require.ElementsMatch(t, []ResourceName{}, diff.Added)
-	require.ElementsMatch(t, []ResourceName{embed.Name, m2.Name}, diff.Modified)
+	require.ElementsMatch(t, []ResourceName{embed.Name, m2.Name, m3.Name}, diff.Modified)
 	require.ElementsMatch(t, []ResourceName{m1.Name}, diff.Deleted)
 }
 
