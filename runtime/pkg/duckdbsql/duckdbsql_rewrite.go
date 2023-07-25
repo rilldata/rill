@@ -14,6 +14,15 @@ func (fn *fromNode) rewriteToBaseTable(name string) error {
 	return nil
 }
 
+func (fn *fromNode) rewriteToReadTableFunction(name string, paths []string, props map[string]any) error {
+	baseTable, err := createTableFunction(name, paths, props, fn.ast)
+	if err != nil {
+		return err
+	}
+	fn.parent[fn.childKey] = baseTable
+	return nil
+}
+
 func (sn *selectNode) rewriteLimit(limit, offset int) error {
 	modifiersNode := toNodeArray(sn.ast, astKeyModifiers)
 	updated := false
@@ -70,6 +79,48 @@ func createBaseTable(name string, ast astNode) (astNode, error) {
 
 	n[astKeySample] = ast[astKeySample]
 	n[astKeyColumnNameAlias] = ast[astKeyColumnNameAlias]
+	return n, nil
+}
+
+func createTableFunction(name string, paths []string, props map[string]any, ast astNode) (astNode, error) {
+	var n astNode
+	err := json.Unmarshal([]byte(fmt.Sprintf(`{
+  "type": "TABLE_FUNCTION",
+  "alias": "%s",
+  "sample": null,
+  "function": {},
+  "column_name_alias": []
+}`, toString(ast, astKeyAlias))), &n)
+	if err != nil {
+		return nil, err
+	}
+
+	fn, err := createFunctionCall("", name, "")
+	if err != nil {
+		return nil, err
+	}
+	n[astKeyFunction] = fn
+
+	pa, err := createListValue[string]("", paths)
+	if err != nil {
+		return nil, err
+	}
+	// create the list of args with the 1st arg being the list of path
+	args := []astNode{pa}
+
+	for k, v := range props {
+		vn, err := createKeyedFunctionArg(k, v)
+		if err != nil {
+			return nil, err
+		}
+		if vn == nil {
+			continue
+		}
+		args = append(args, vn)
+	}
+
+	fn[astKeyChildren] = args
+
 	return n, nil
 }
 
@@ -155,4 +206,143 @@ func createExpressionStatement(exprNode astNode) (string, error) {
   }],
 }
 `, jsonNode), nil
+}
+
+// createKeyedFunctionArg creates an arg with a key.
+// EG: read_csv("/path", delim='|') - delim='|' is an arg with key, whereas "/path" a plain constant.
+func createKeyedFunctionArg(key string, val any) (astNode, error) {
+	var n astNode
+	err := json.Unmarshal([]byte(fmt.Sprintf(`{
+  "class": "COMPARISON",
+  "type": "COMPARE_EQUAL",
+  "alias": "",
+  "left": {
+    "class": "COLUMN_REF",
+    "type": "COLUMN_REF",
+    "alias": "",
+    "column_names": ["%s"]
+  },
+  "right": {}
+}`, key)), &n)
+	if err != nil {
+		return nil, err
+	}
+	rvn, err := createGenericValue("", val)
+	if err != nil {
+		return nil, err
+	}
+	n[astKeyRight] = rvn
+	return n, nil
+}
+
+func createGenericValue(key string, val any) (astNode, error) {
+	var t string
+	switch vt := val.(type) {
+	case map[string]any:
+		return createStructValue(key, vt)
+	case []any:
+		return createListValue[any](key, vt)
+	case bool:
+		t = "BOOLEAN"
+	case int, int32:
+		t = "INTEGER"
+	case int64:
+		t = "BIGINT"
+	case uint, uint32:
+		t = "UINTEGER"
+	case uint64:
+		t = "UBIGINT"
+	case float32:
+		t = "FLOAT"
+	case float64:
+		t = "DOUBLE"
+	case string:
+		t = "VARCHAR"
+		val = fmt.Sprintf(`"%s"`, vt)
+	// TODO: others
+	default:
+		return nil, nil
+	}
+
+	var n astNode
+	err := json.Unmarshal([]byte(fmt.Sprintf(`{
+  "class": "CONSTANT",
+  "type": "VALUE_CONSTANT",
+  "alias": "%s",
+  "value": {
+    "type": {
+      "id": "%s",
+      "type_info": null
+    },
+    "is_null": false,
+    "value": %v
+  }
+}`, key, t, val)), &n)
+	return n, err
+}
+
+func createStructValue(key string, val map[string]any) (astNode, error) {
+	n, err := createFunctionCall(key, "struct_pack", "main")
+	if err != nil {
+		return nil, err
+	}
+
+	var list []astNode
+	for k, v := range val {
+		vn, err := createGenericValue(k, v)
+		if err != nil {
+			return nil, err
+		}
+		if vn == nil {
+			continue
+		}
+		list = append(list, vn)
+	}
+
+	n[astKeyChildren] = list
+	return n, nil
+}
+
+func createListValue[E any](key string, val []E) (astNode, error) {
+	n, err := createFunctionCall(key, "list_value", "main")
+	if err != nil {
+		return nil, err
+	}
+
+	var list []astNode
+	for _, v := range val {
+		vn, err := createGenericValue("", v)
+		if err != nil {
+			return nil, err
+		}
+		if vn == nil {
+			continue
+		}
+		list = append(list, vn)
+	}
+
+	n[astKeyChildren] = list
+	return n, nil
+}
+
+func createFunctionCall(key, name, schema string) (astNode, error) {
+	var n astNode
+	err := json.Unmarshal([]byte(fmt.Sprintf(`{
+  "class": "FUNCTION",
+  "type": "FUNCTION",
+  "alias": "%s",
+  "function_name": "%s",
+  "schema": "%s",
+  "children": [],
+  "filter": null,
+  "order_bys": {
+    "type": "ORDER_MODIFIER",
+    "orders": []
+  },
+  "distinct": false,
+  "is_operator": false,
+  "export_state": false,
+  "catalog": ""
+}`, key, name, schema)), &n)
+	return n, err
 }

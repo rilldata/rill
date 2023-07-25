@@ -1,5 +1,4 @@
-import { describe, it } from "@jest/globals";
-import { expect as playwrightExpect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import {
   deleteEntity,
   renameEntityUsingMenu,
@@ -10,19 +9,19 @@ import {
   waitForAdImpressions,
 } from "./utils/dataSpecifcHelpers";
 import { TestEntityType } from "./utils/helpers";
-import { useRegisteredServer } from "./utils/serverConfigs";
 import {
   TestDataPath,
   createOrReplaceSource,
   uploadFile,
 } from "./utils/sourceHelpers";
+import { startRuntimeForEachTest } from "./utils/startRuntimeForEachTest";
 import { entityNotPresent, waitForEntity } from "./utils/waitHelpers";
 
-describe("sources", () => {
-  const testBrowser = useRegisteredServer("sources");
+test.describe("sources", () => {
+  startRuntimeForEachTest();
 
-  it("Import sources", async () => {
-    const { page } = testBrowser;
+  test("Import sources", async ({ page }) => {
+    await page.goto("/");
 
     await Promise.all([
       waitForAdBids(page, "AdBids"),
@@ -46,8 +45,8 @@ describe("sources", () => {
     await entityNotPresent(page, "AdBids_2");
   });
 
-  it("Rename and delete sources", async () => {
-    const { page } = testBrowser;
+  test("Rename and delete sources", async ({ page }) => {
+    await page.goto("/");
 
     await createOrReplaceSource(page, "AdBids.csv", "AdBids");
 
@@ -62,8 +61,8 @@ describe("sources", () => {
     await entityNotPresent(page, "AdBids");
   });
 
-  it("Edit source", async () => {
-    const { page } = testBrowser;
+  test("Edit source", async ({ page }) => {
+    await page.goto("/");
 
     // Upload data & create two sources
     await createOrReplaceSource(page, "AdImpressions.tsv", "AdImpressions");
@@ -76,7 +75,7 @@ path: ${TestDataPath}/non_existent_file.csv`;
     await page.getByRole("button", { name: "Save and refresh" }).click();
 
     // Observe error message "file does not exist"
-    await playwrightExpect(page.getByText("file does not exist")).toBeVisible();
+    await expect(page.getByText("file does not exist")).toBeVisible();
 
     // Edit source path to an existent file
     const adImpressionsSource = `type: local_file
@@ -86,7 +85,7 @@ path: ${TestDataPath}/AdImpressions.tsv`;
 
     // Check that the source data is updated
     // (The column "user_id" exists in AdImpressions, but not in AdBids)
-    await playwrightExpect(
+    await expect(
       page.getByRole("button").filter({ hasText: "user_id" }).first()
     ).toBeVisible();
   });
