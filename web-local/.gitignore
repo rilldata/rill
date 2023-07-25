@@ -9,3 +9,4 @@
 *.wal
 log
 /playwright-report
+/test-results
