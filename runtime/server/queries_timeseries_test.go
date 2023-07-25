@@ -471,18 +471,15 @@ func TestServer_Timeseries_timezone_dst_forward(t *testing.T) {
 
 	require.NoError(t, err)
 	results := response.GetRollup().Results
-	require.Equal(t, 5, len(results))
-
+	require.Equal(t, 4, len(results))
 	require.Equal(t, "2023-03-26 00:00:00", results[0].Ts.AsTime().Format(time.DateTime))
 	require.Equal(t, 1.0, results[0].Records.Fields["count"].GetNumberValue())
 	require.Equal(t, "2023-03-26 01:00:00", results[1].Ts.AsTime().Format(time.DateTime))
-	require.Equal(t, 0.0, results[1].Records.Fields["count"].GetNumberValue())
-	require.Equal(t, "2023-03-26 01:00:00", results[2].Ts.AsTime().Format(time.DateTime))
+	require.Equal(t, 1.0, results[1].Records.Fields["count"].GetNumberValue())
+	require.Equal(t, "2023-03-26 02:00:00", results[2].Ts.AsTime().Format(time.DateTime))
 	require.Equal(t, 1.0, results[2].Records.Fields["count"].GetNumberValue())
-	require.Equal(t, "2023-03-26 02:00:00", results[3].Ts.AsTime().Format(time.DateTime))
+	require.Equal(t, "2023-03-26 03:00:00", results[3].Ts.AsTime().Format(time.DateTime))
 	require.Equal(t, 1.0, results[3].Records.Fields["count"].GetNumberValue())
-	require.Equal(t, "2023-03-26 03:00:00", results[4].Ts.AsTime().Format(time.DateTime))
-	require.Equal(t, 1.0, results[4].Records.Fields["count"].GetNumberValue())
 
 }
 
