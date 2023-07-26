@@ -17,7 +17,6 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
-	"go.uber.org/multierr"
 	"golang.org/x/sync/errgroup"
 
 	// Load postgres driver
@@ -54,7 +53,8 @@ func main() {
 		panic("require go version greater than 1.20")
 	}
 
-	cctx := graceful.WithCancelOnTerminate(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	cctx := graceful.WithCancelOnTerminate(ctx)
 	group, ctx := errgroup.WithContext(cctx)
 
 	// check node version
@@ -96,7 +96,8 @@ func main() {
 	group.Go(func() error {
 		err := pgCmd.Wait()
 		red.Println("STOPPING DOCKER SERVICES")
-		return multierr.Append(err, context.Canceled)
+		cancel()
+		return err
 	})
 	waitDBUP(ctx)
 	waitRedis(ctx)
@@ -114,7 +115,8 @@ func main() {
 		group.Go(func() error {
 			err := admin.Wait()
 			red.Println("ADMIN SERVER STOPPED")
-			return multierr.Append(err, context.Canceled)
+			cancel()
+			return err
 		})
 		waitAdmin(ctx)
 	}
@@ -132,7 +134,8 @@ func main() {
 		group.Go(func() error {
 			err := rt.Wait()
 			red.Println("RUNTIME SERVER STOPPED")
-			return multierr.Append(err, context.Canceled)
+			cancel()
+			return err
 		})
 		waitRuntime(ctx)
 	}
@@ -160,7 +163,8 @@ func main() {
 				yellow.Println(err)
 			}
 			red.Println("UI STOPPED")
-			return multierr.Append(err, context.Canceled)
+			cancel()
+			return err
 		})
 		// todo :: add health check ui
 	}
@@ -202,7 +206,9 @@ func waitAdmin(ctx context.Context) {
 			time.Sleep(2 * time.Second)
 			continue
 		}
-		if resp.StatusCode == http.StatusOK {
+		statusCode := resp.StatusCode
+		resp.Body.Close()
+		if statusCode == http.StatusOK {
 			green.Println("ADMIN STARTED")
 			return
 		}
@@ -223,10 +229,14 @@ func waitRedis(ctx context.Context) {
 		c := redis.NewClient(opts)
 		res, err := c.Echo(ctx, "hello").Result()
 		c.Close()
-		if errors.Is(err, context.Canceled) {
-			return
+		if err != nil {
+			if errors.Is(err, context.Canceled) {
+				return
+			}
+			time.Sleep(2 * time.Second)
+			continue
 		}
-		if err == nil && res == "hello" {
+		if res == "hello" {
 			green.Println("REDIS STARTED")
 			return
 		}
