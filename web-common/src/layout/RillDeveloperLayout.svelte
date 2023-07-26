@@ -13,6 +13,7 @@
   import { initMetrics } from "@rilldata/web-common/metrics/initMetrics";
   import type { ApplicationBuildMetadata } from "@rilldata/web-local/lib/application-state-stores/build-metadata";
   import { getContext, onMount } from "svelte";
+  import { get } from "svelte/store";
   import type { Writable } from "svelte/store";
   import { getArtifactErrors } from "../features/entity-management/getArtifactErrors";
   import PreparingImport from "../features/sources/add-source/PreparingImport.svelte";
@@ -30,6 +31,15 @@
 
     featureFlags.set({
       readOnly: config.readonly,
+    });
+
+    // Override feature flags with any locally set URL flags
+    const flags = get(page).url.searchParams.get("feature")?.split(" ") ?? [];
+    featureFlags.update((state) => {
+      flags.forEach((flag) => {
+        state[flag] = true;
+      });
+      return state;
     });
 
     appBuildMetaStore.set({
