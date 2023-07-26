@@ -7,7 +7,7 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
-  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
+  import { useDashboardStore } from "../dashboard-stores";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
   import LeaderboardDisplay from "../leaderboard/LeaderboardDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
@@ -26,8 +26,8 @@
     if (!$featureFlags.readOnly && !$metricsViewQuery.data?.measures?.length) {
       goto(`/dashboard/${metricViewName}/edit`);
     }
-    metricsExplorerStore.sync(metricViewName, $metricsViewQuery.data);
   }
+
   $: if (!$featureFlags.readOnly && $metricsViewQuery.isError) {
     goto(`/dashboard/${metricViewName}/edit`);
   }

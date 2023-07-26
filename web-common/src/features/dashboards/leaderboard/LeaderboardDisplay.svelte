@@ -92,8 +92,6 @@
   let unfilteredTotal: number;
   $: unfilteredTotal = $unfilteredTotalsQuery.data?.data?.[activeMeasure.name];
 
-  $: console.log("unfilteredTotal", unfilteredTotal);
-
   let leaderboardExpanded;
 
   function onSelectItem(event, item: MetricsViewDimension) {
