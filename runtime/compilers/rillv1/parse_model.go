@@ -3,10 +3,8 @@ package rillv1
 import (
 	"context"
 	"crypto/md5"
-	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"io"
 	"net/url"
 	"strings"
 	"time"
@@ -14,8 +12,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
+	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -243,7 +240,7 @@ func parseEmbeddedSource(t *duckdbsql.TableRef, sinkConnector string) (ResourceN
 	spec.Properties = propsPB
 
 	hash := md5.New()
-	err = pbValueToHash(structpb.NewStructValue(propsPB), hash)
+	err = pbutil.WriteHash(structpb.NewStructValue(propsPB), hash)
 	if err != nil {
 		return ResourceName{}, nil, false
 	}
@@ -259,46 +256,4 @@ func parseEmbeddedSource(t *duckdbsql.TableRef, sinkConnector string) (ResourceN
 	name := ResourceName{Kind: ResourceKindSource, Name: "embed_" + hex.EncodeToString(hash.Sum(nil))}
 
 	return name, spec, true
-}
-
-// pbValueToHash writes the contents of a structpb.Value to a hash writer in a deterministic order.
-func pbValueToHash(v *structpb.Value, w io.Writer) error {
-	switch v2 := v.Kind.(type) {
-	case *structpb.Value_NullValue:
-		_, err := w.Write([]byte{0})
-		return err
-	case *structpb.Value_NumberValue:
-		err := binary.Write(w, binary.BigEndian, v2.NumberValue)
-		return err
-	case *structpb.Value_StringValue:
-		_, err := w.Write([]byte(v2.StringValue))
-		return err
-	case *structpb.Value_BoolValue:
-		err := binary.Write(w, binary.BigEndian, v2.BoolValue)
-		return err
-	case *structpb.Value_ListValue:
-		for _, v3 := range v2.ListValue.Values {
-			err := pbValueToHash(v3, w)
-			if err != nil {
-				return err
-			}
-		}
-	case *structpb.Value_StructValue:
-		// Iterate over sorted keys
-		ks := maps.Keys(v2.StructValue.Fields)
-		slices.Sort(ks)
-		for _, k := range ks {
-			_, err := w.Write([]byte(k))
-			if err != nil {
-				return err
-			}
-			err = pbValueToHash(v2.StructValue.Fields[k], w)
-			if err != nil {
-				return err
-			}
-		}
-	default:
-		panic(fmt.Sprintf("unknown kind %T", v.Kind))
-	}
-	return nil
 }
