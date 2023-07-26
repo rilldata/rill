@@ -167,20 +167,16 @@ func (e *Event) Marshal() ([]byte, error) {
 	// Create a map to hold the flattened event structure.
 	flattened := make(map[string]interface{})
 
+	// Iterate over the dims slice and add each dim to the map.
+	for _, dim := range e.Dims {
+		key := string(dim.Key)
+		flattened[key] = dim.Value.AsInterface()
+	}
+
 	// Add the non-dim fields.
 	flattened["time"] = e.Time.UTC().Format(time.RFC3339)
 	flattened["name"] = e.Name
 	flattened["value"] = e.Value
-
-	// Iterate over the dims slice and add each dim to the map.
-	for _, dim := range e.Dims {
-		key := string(dim.Key)
-		if key != "time" && key != "name" && key != "value" {
-			flattened[key] = dim.Value.AsInterface()
-		} else {
-			return nil, errors.New("time/name/value are not allowed as dimension names")
-		}
-	}
 
 	return json.Marshal(flattened)
 }
