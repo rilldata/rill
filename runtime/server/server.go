@@ -52,8 +52,8 @@ type Server struct {
 	logger  *zap.Logger
 	aud     *auth.Audience
 	limiter ratelimit.Limiter
-	// activityClient is used for usage tracking
-	activityClient activity.Client
+	// activity is used for usage tracking
+	activity activity.Client
 }
 
 var (
@@ -66,11 +66,11 @@ var (
 // The provided ctx is used for the lifetime of the server for background refresh of the JWKS that is used to validate auth tokens.
 func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *zap.Logger, limiter ratelimit.Limiter, activityClient activity.Client) (*Server, error) {
 	srv := &Server{
-		opts:           opts,
-		runtime:        rt,
-		logger:         logger,
-		limiter:        limiter,
-		activityClient: activityClient,
+		opts:     opts,
+		runtime:  rt,
+		logger:   logger,
+		limiter:  limiter,
+		activity: activityClient,
 	}
 
 	if opts.AuthEnable {
@@ -92,7 +92,7 @@ func (s *Server) Close() error {
 		s.aud.Close()
 	}
 
-	err := s.activityClient.Close()
+	err := s.activity.Close()
 
 	return err
 }
@@ -116,7 +116,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			errorMappingStreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
 			auth.StreamServerInterceptor(s.aud),
-			middleware.ActivityStreamServerInterceptor(s.activityClient),
+			middleware.ActivityStreamServerInterceptor(s.activity),
 			grpc_auth.StreamServerInterceptor(s.checkRateLimit),
 		),
 		grpc.ChainUnaryInterceptor(
@@ -126,7 +126,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			errorMappingUnaryServerInterceptor(),
 			grpc_validator.UnaryServerInterceptor(),
 			auth.UnaryServerInterceptor(s.aud),
-			middleware.ActivityUnaryServerInterceptor(s.activityClient),
+			middleware.ActivityUnaryServerInterceptor(s.activity),
 			grpc_auth.UnaryServerInterceptor(s.checkRateLimit),
 		),
 	)
