@@ -190,6 +190,10 @@ func (c *Controller) UpdateState(ctx context.Context, name *runtimev1.ResourceNa
 	panic("not implemented")
 }
 
+func (c *Controller) UpdateError(ctx context.Context, name *runtimev1.ResourceName, err error) error {
+	panic("not implemented")
+}
+
 func (c *Controller) Delete(ctx context.Context, names ...*runtimev1.ResourceName) error {
 	panic("not implemented")
 }

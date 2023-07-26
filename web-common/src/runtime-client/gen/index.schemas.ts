@@ -520,11 +520,10 @@ scanning the database's information schema. */
 }
 
 export interface V1SourceState {
-  tableName?: string;
+  connector?: string;
+  table?: string;
   specHash?: string;
   refreshedOn?: string;
-  validationError?: V1ValidationError;
-  executionError?: V1ExecutionError;
 }
 
 export type V1SourceSpecProperties = { [key: string]: any };
@@ -535,7 +534,8 @@ export interface V1SourceSpec {
   properties?: V1SourceSpecProperties;
   refreshSchedule?: V1Schedule;
   timeoutSeconds?: number;
-  atomic?: boolean;
+  stageChanges?: boolean;
+  streamIngestion?: boolean;
   trigger?: boolean;
 }
 
@@ -844,10 +844,10 @@ export interface V1ProjectParserState {
 export interface V1ProjectParserSpec {
   compiler?: string;
   watch?: boolean;
-  atomic?: boolean;
-  streamSourceIngestion?: boolean;
-  materializeModelDefault?: boolean;
-  materializeModelDelaySeconds?: number;
+  stageChanges?: boolean;
+  sourceStreamIngestion?: boolean;
+  modelDefaultMaterialize?: boolean;
+  modelMaterializeDelaySeconds?: number;
   duckdbConnectors?: string[];
 }
 
@@ -931,11 +931,13 @@ export interface V1ModelState {
 export interface V1ModelSpec {
   connector?: string;
   sql?: string;
-  deriveMetricsView?: boolean;
   refreshSchedule?: V1Schedule;
   timeoutSeconds?: number;
   materialize?: boolean;
   usesTemplating?: boolean;
+  stageChanges?: boolean;
+  materializeDelaySeconds?: number;
+  trigger?: boolean;
 }
 
 export interface V1ModelV2 {
@@ -1045,6 +1047,7 @@ export interface V1MetricsViewSpec {
   /** Default time range for the dashboard. It should be a valid ISO 8601 duration string. */
   defaultTimeRange?: string;
   availableTimeZones?: string[];
+  stageChanges?: boolean;
 }
 
 export interface V1MetricsViewSort {

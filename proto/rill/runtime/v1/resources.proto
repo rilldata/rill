@@ -53,15 +53,15 @@ message ProjectParserSpec {
   string compiler = 1;
   // watch makes the project parser watch for and incrementally parse changed files
   bool watch = 2;
-  // atomic makes the project parser stage all changes before committing them
-  bool atomic = 3;
+  // stage_changes sets stage_changes on created sources and models 
+  bool stage_changes = 3;
   // stream_source_ingestion
-  bool stream_source_ingestion = 8;
-  // materialize_model_default sets a default for whether or not to materialize a model, if not explicitly set in the model
-  bool materialize_model_default = 4;
+  bool source_stream_ingestion = 4;
+  // model_default_materialize sets a default for whether or not to materialize a model, if not explicitly set in the model
+  bool model_default_materialize = 5;
   // materialize_model_delay_seconds makes the project parser delay materialization of updated models
-  uint32 materialize_model_delay_seconds = 5;
-  // bool simulate_streaming_ingestion = 6;
+  uint32 model_materialize_delay_seconds = 6;
+  // duckdb_connectors is a list of connectors that use DuckDB
   repeated string duckdb_connectors = 7;
 }
 
@@ -82,20 +82,17 @@ message SourceSpec {
   google.protobuf.Struct properties = 3;
   Schedule refresh_schedule = 5;
   uint32 timeout_seconds = 6;
-
-  // 
-  bool atomic = 10;
-  bool trigger = 11;
+  // Fields not derived from code files
+  bool stage_changes = 7;
+  bool stream_ingestion = 8;
+  bool trigger = 9;
 }
 
 message SourceState {
-  // TODO: Add tmp table name here for better cleanup
-  // TODO
-  string table_name = 1;
-  string spec_hash = 2;
-  google.protobuf.Timestamp refreshed_on = 3;
-  ValidationError validation_error = 4;
-  ExecutionError execution_error = 5;
+  string connector = 1;
+  string table = 2;
+  string spec_hash = 3;
+  google.protobuf.Timestamp refreshed_on = 4;
 }
 
 message ModelV2 {
@@ -106,11 +103,14 @@ message ModelV2 {
 message ModelSpec {
   string connector = 1;
   string sql = 2;
-  bool derive_metrics_view = 3;
   Schedule refresh_schedule = 4;
   uint32 timeout_seconds = 6;
   optional bool materialize = 7;
   bool uses_templating = 8;
+  // Fields not derived from code files
+  bool stage_changes = 9;
+  uint32 materialize_delay_seconds = 11;
+  bool trigger = 12;
 }
 
 message ModelState {
@@ -161,11 +161,14 @@ message MetricsViewSpec {
   string default_time_range = 8;
   // Available time zones list preferred time zones using IANA location identifiers
   repeated string available_time_zones = 9;
+
+  // Fields not derived from code files
+  bool stage_changes = 10;
 }
 
 message MetricsViewState {
-  ValidationError validation_error = 1;
-  DependencyError dependency_error = 2;
+  ValidationError validation_error = 2;
+  DependencyError dependency_error = 3;
 }
 
 message Migration {

@@ -1143,13 +1143,13 @@ func (m *ProjectParserSpec) validate(all bool) error {
 
 	// no validation rules for Watch
 
-	// no validation rules for Atomic
+	// no validation rules for StageChanges
 
-	// no validation rules for StreamSourceIngestion
+	// no validation rules for SourceStreamIngestion
 
-	// no validation rules for MaterializeModelDefault
+	// no validation rules for ModelDefaultMaterialize
 
-	// no validation rules for MaterializeModelDelaySeconds
+	// no validation rules for ModelMaterializeDelaySeconds
 
 	if len(errors) > 0 {
 		return ProjectParserSpecMultiError(errors)
@@ -1612,7 +1612,9 @@ func (m *SourceSpec) validate(all bool) error {
 
 	// no validation rules for TimeoutSeconds
 
-	// no validation rules for Atomic
+	// no validation rules for StageChanges
+
+	// no validation rules for StreamIngestion
 
 	// no validation rules for Trigger
 
@@ -1715,7 +1717,9 @@ func (m *SourceState) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for TableName
+	// no validation rules for Connector
+
+	// no validation rules for Table
 
 	// no validation rules for SpecHash
 
@@ -1742,64 +1746,6 @@ func (m *SourceState) validate(all bool) error {
 		if err := v.Validate(); err != nil {
 			return SourceStateValidationError{
 				field:  "RefreshedOn",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if all {
-		switch v := interface{}(m.GetValidationError()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, SourceStateValidationError{
-					field:  "ValidationError",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, SourceStateValidationError{
-					field:  "ValidationError",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetValidationError()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return SourceStateValidationError{
-				field:  "ValidationError",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if all {
-		switch v := interface{}(m.GetExecutionError()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, SourceStateValidationError{
-					field:  "ExecutionError",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, SourceStateValidationError{
-					field:  "ExecutionError",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetExecutionError()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return SourceStateValidationError{
-				field:  "ExecutionError",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -2065,8 +2011,6 @@ func (m *ModelSpec) validate(all bool) error {
 
 	// no validation rules for Sql
 
-	// no validation rules for DeriveMetricsView
-
 	if all {
 		switch v := interface{}(m.GetRefreshSchedule()).(type) {
 		case interface{ ValidateAll() error }:
@@ -2099,6 +2043,12 @@ func (m *ModelSpec) validate(all bool) error {
 	// no validation rules for TimeoutSeconds
 
 	// no validation rules for UsesTemplating
+
+	// no validation rules for StageChanges
+
+	// no validation rules for MaterializeDelaySeconds
+
+	// no validation rules for Trigger
 
 	if m.Materialize != nil {
 		// no validation rules for Materialize
@@ -2630,6 +2580,8 @@ func (m *MetricsViewSpec) validate(all bool) error {
 	// no validation rules for SmallestTimeGrain
 
 	// no validation rules for DefaultTimeRange
+
+	// no validation rules for StageChanges
 
 	if len(errors) > 0 {
 		return MetricsViewSpecMultiError(errors)

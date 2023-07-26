@@ -3167,6 +3167,9 @@ definitions:
         items:
           type: string
         title: Available time zones list preferred time zones using IANA location identifiers
+      stageChanges:
+        type: boolean
+        title: Fields not derived from code files
   v1MetricsViewState:
     type: object
     properties:
@@ -3369,8 +3372,6 @@ definitions:
         type: string
       sql:
         type: string
-      deriveMetricsView:
-        type: boolean
       refreshSchedule:
         $ref: '#/definitions/v1Schedule'
       timeoutSeconds:
@@ -3379,6 +3380,14 @@ definitions:
       materialize:
         type: boolean
       usesTemplating:
+        type: boolean
+      stageChanges:
+        type: boolean
+        title: Fields not derived from code files
+      materializeDelaySeconds:
+        type: integer
+        format: int64
+      trigger:
         type: boolean
   v1ModelState:
     type: object
@@ -3517,16 +3526,16 @@ definitions:
       watch:
         type: boolean
         title: watch makes the project parser watch for and incrementally parse changed files
-      atomic:
+      stageChanges:
         type: boolean
-        title: atomic makes the project parser stage all changes before committing them
-      streamSourceIngestion:
+        title: stage_changes sets stage_changes on created sources and models
+      sourceStreamIngestion:
         type: boolean
         title: stream_source_ingestion
-      materializeModelDefault:
+      modelDefaultMaterialize:
         type: boolean
-        title: materialize_model_default sets a default for whether or not to materialize a model, if not explicitly set in the model
-      materializeModelDelaySeconds:
+        title: model_default_materialize sets a default for whether or not to materialize a model, if not explicitly set in the model
+      modelMaterializeDelaySeconds:
         type: integer
         format: int64
         title: materialize_model_delay_seconds makes the project parser delay materialization of updated models
@@ -3534,7 +3543,7 @@ definitions:
         type: array
         items:
           type: string
-        title: bool simulate_streaming_ingestion = 6;
+        title: duckdb_connectors is a list of connectors that use DuckDB
   v1ProjectParserState:
     type: object
     properties:
@@ -4065,27 +4074,25 @@ definitions:
       timeoutSeconds:
         type: integer
         format: int64
-      atomic:
+      stageChanges:
+        type: boolean
+        title: Fields not derived from code files
+      streamIngestion:
         type: boolean
       trigger:
         type: boolean
   v1SourceState:
     type: object
     properties:
-      tableName:
+      connector:
         type: string
-        title: |-
-          TODO: Add tmp table name here for better cleanup
-          TODO
+      table:
+        type: string
       specHash:
         type: string
       refreshedOn:
         type: string
         format: date-time
-      validationError:
-        $ref: '#/definitions/v1ValidationError'
-      executionError:
-        $ref: '#/definitions/v1ExecutionError'
   v1SourceV2:
     type: object
     properties:

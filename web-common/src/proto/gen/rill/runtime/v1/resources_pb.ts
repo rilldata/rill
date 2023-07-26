@@ -333,35 +333,35 @@ export class ProjectParserSpec extends Message<ProjectParserSpec> {
   watch = false;
 
   /**
-   * atomic makes the project parser stage all changes before committing them
+   * stage_changes sets stage_changes on created sources and models 
    *
-   * @generated from field: bool atomic = 3;
+   * @generated from field: bool stage_changes = 3;
    */
-  atomic = false;
+  stageChanges = false;
 
   /**
    * stream_source_ingestion
    *
-   * @generated from field: bool stream_source_ingestion = 8;
+   * @generated from field: bool source_stream_ingestion = 4;
    */
-  streamSourceIngestion = false;
+  sourceStreamIngestion = false;
 
   /**
-   * materialize_model_default sets a default for whether or not to materialize a model, if not explicitly set in the model
+   * model_default_materialize sets a default for whether or not to materialize a model, if not explicitly set in the model
    *
-   * @generated from field: bool materialize_model_default = 4;
+   * @generated from field: bool model_default_materialize = 5;
    */
-  materializeModelDefault = false;
+  modelDefaultMaterialize = false;
 
   /**
    * materialize_model_delay_seconds makes the project parser delay materialization of updated models
    *
-   * @generated from field: uint32 materialize_model_delay_seconds = 5;
+   * @generated from field: uint32 model_materialize_delay_seconds = 6;
    */
-  materializeModelDelaySeconds = 0;
+  modelMaterializeDelaySeconds = 0;
 
   /**
-   * bool simulate_streaming_ingestion = 6;
+   * duckdb_connectors is a list of connectors that use DuckDB
    *
    * @generated from field: repeated string duckdb_connectors = 7;
    */
@@ -377,10 +377,10 @@ export class ProjectParserSpec extends Message<ProjectParserSpec> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "compiler", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "watch", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 3, name: "atomic", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 8, name: "stream_source_ingestion", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 4, name: "materialize_model_default", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 5, name: "materialize_model_delay_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 3, name: "stage_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "source_stream_ingestion", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "model_default_materialize", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "model_materialize_delay_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 7, name: "duckdb_connectors", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
@@ -523,14 +523,19 @@ export class SourceSpec extends Message<SourceSpec> {
   timeoutSeconds = 0;
 
   /**
+   * Fields not derived from code files
    *
-   *
-   * @generated from field: bool atomic = 10;
+   * @generated from field: bool stage_changes = 7;
    */
-  atomic = false;
+  stageChanges = false;
 
   /**
-   * @generated from field: bool trigger = 11;
+   * @generated from field: bool stream_ingestion = 8;
+   */
+  streamIngestion = false;
+
+  /**
+   * @generated from field: bool trigger = 9;
    */
   trigger = false;
 
@@ -547,8 +552,9 @@ export class SourceSpec extends Message<SourceSpec> {
     { no: 3, name: "properties", kind: "message", T: Struct },
     { no: 5, name: "refresh_schedule", kind: "message", T: Schedule },
     { no: 6, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 10, name: "atomic", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 11, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "stage_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "stream_ingestion", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SourceSpec {
@@ -573,32 +579,24 @@ export class SourceSpec extends Message<SourceSpec> {
  */
 export class SourceState extends Message<SourceState> {
   /**
-   * TODO: Add tmp table name here for better cleanup
-   * TODO
-   *
-   * @generated from field: string table_name = 1;
+   * @generated from field: string connector = 1;
    */
-  tableName = "";
+  connector = "";
 
   /**
-   * @generated from field: string spec_hash = 2;
+   * @generated from field: string table = 2;
+   */
+  table = "";
+
+  /**
+   * @generated from field: string spec_hash = 3;
    */
   specHash = "";
 
   /**
-   * @generated from field: google.protobuf.Timestamp refreshed_on = 3;
+   * @generated from field: google.protobuf.Timestamp refreshed_on = 4;
    */
   refreshedOn?: Timestamp;
-
-  /**
-   * @generated from field: rill.runtime.v1.ValidationError validation_error = 4;
-   */
-  validationError?: ValidationError;
-
-  /**
-   * @generated from field: rill.runtime.v1.ExecutionError execution_error = 5;
-   */
-  executionError?: ExecutionError;
 
   constructor(data?: PartialMessage<SourceState>) {
     super();
@@ -608,11 +606,10 @@ export class SourceState extends Message<SourceState> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.SourceState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "spec_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "refreshed_on", kind: "message", T: Timestamp },
-    { no: 4, name: "validation_error", kind: "message", T: ValidationError },
-    { no: 5, name: "execution_error", kind: "message", T: ExecutionError },
+    { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "spec_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "refreshed_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SourceState {
@@ -690,11 +687,6 @@ export class ModelSpec extends Message<ModelSpec> {
   sql = "";
 
   /**
-   * @generated from field: bool derive_metrics_view = 3;
-   */
-  deriveMetricsView = false;
-
-  /**
    * @generated from field: rill.runtime.v1.Schedule refresh_schedule = 4;
    */
   refreshSchedule?: Schedule;
@@ -714,6 +706,23 @@ export class ModelSpec extends Message<ModelSpec> {
    */
   usesTemplating = false;
 
+  /**
+   * Fields not derived from code files
+   *
+   * @generated from field: bool stage_changes = 9;
+   */
+  stageChanges = false;
+
+  /**
+   * @generated from field: uint32 materialize_delay_seconds = 11;
+   */
+  materializeDelaySeconds = 0;
+
+  /**
+   * @generated from field: bool trigger = 12;
+   */
+  trigger = false;
+
   constructor(data?: PartialMessage<ModelSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -724,11 +733,13 @@ export class ModelSpec extends Message<ModelSpec> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "derive_metrics_view", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "refresh_schedule", kind: "message", T: Schedule },
     { no: 6, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 7, name: "materialize", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 8, name: "uses_templating", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 9, name: "stage_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 11, name: "materialize_delay_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 12, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelSpec {
@@ -919,6 +930,13 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    */
   availableTimeZones: string[] = [];
 
+  /**
+   * Fields not derived from code files
+   *
+   * @generated from field: bool stage_changes = 10;
+   */
+  stageChanges = false;
+
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -936,6 +954,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 7, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 8, name: "default_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "available_time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 10, name: "stage_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {
@@ -1086,12 +1105,12 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
  */
 export class MetricsViewState extends Message<MetricsViewState> {
   /**
-   * @generated from field: rill.runtime.v1.ValidationError validation_error = 1;
+   * @generated from field: rill.runtime.v1.ValidationError validation_error = 2;
    */
   validationError?: ValidationError;
 
   /**
-   * @generated from field: rill.runtime.v1.DependencyError dependency_error = 2;
+   * @generated from field: rill.runtime.v1.DependencyError dependency_error = 3;
    */
   dependencyError?: DependencyError;
 
@@ -1103,8 +1122,8 @@ export class MetricsViewState extends Message<MetricsViewState> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.MetricsViewState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "validation_error", kind: "message", T: ValidationError },
-    { no: 2, name: "dependency_error", kind: "message", T: DependencyError },
+    { no: 2, name: "validation_error", kind: "message", T: ValidationError },
+    { no: 3, name: "dependency_error", kind: "message", T: DependencyError },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewState {

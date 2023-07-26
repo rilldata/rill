@@ -172,6 +172,15 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, owner *ru
 		return err
 	}
 
+	// Set an error without returning to mark if there are parse errors (if not, force error to nil in case there previously were parse errors)
+	if len(parser.Errors) > 0 {
+		err = fmt.Errorf("encountered parser errors")
+	}
+	err = r.C.UpdateError(ctx, owner.Meta.Name, err)
+	if err != nil {
+		return err
+	}
+
 	// Reconcile resources.
 	// The lock serves to delay the controller from triggering reconciliation until all resources have been updated.
 	// By delaying reconciliation until all resources have been updated, we don't need to worry about making changes in DAG order here.
@@ -353,19 +362,32 @@ func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, ow
 // It does an insert if existing is nil, otherwise it does an update.
 // If existing is not nil, it compares values and only updates meta/spec values if they have changed (ensuring stable resource version numbers).
 func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, owner *runtimev1.Resource, def *compilerv1.Resource, existing *runtimev1.Resource) error {
+	// NOTE: Some resource config is not set in code files, but instead exist on the ProjectParser.
+	// E.g. stage_changes, stream_source_ingestion, materialize_model_default, etc.
+	// Those fields are applied to the resource specs in this function.
+	pp := owner.GetProjectParser()
+
 	// Make resource spec to insert/update.
 	// res should be nil if no spec changes are needed.
 	var res *runtimev1.Resource
 	switch def.Name.Kind {
 	case compilerv1.ResourceKindSource:
+		def.SourceSpec.StageChanges = pp.Spec.StageChanges
+		def.SourceSpec.StreamIngestion = pp.Spec.SourceStreamIngestion
 		if existing == nil || !equalSourceSpec(existing.GetSource().Spec, def.SourceSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Source{Source: &runtimev1.SourceV2{Spec: def.SourceSpec}}}
 		}
 	case compilerv1.ResourceKindModel:
+		def.ModelSpec.StageChanges = pp.Spec.StageChanges
+		if def.ModelSpec.Materialize == nil {
+			def.ModelSpec.Materialize = &pp.Spec.ModelDefaultMaterialize
+		}
+		def.ModelSpec.MaterializeDelaySeconds = pp.Spec.ModelMaterializeDelaySeconds
 		if existing == nil || !equalModelSpec(existing.GetModel().Spec, def.ModelSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Model{Model: &runtimev1.ModelV2{Spec: def.ModelSpec}}}
 		}
 	case compilerv1.ResourceKindMetricsView:
+		def.MetricsViewSpec.StageChanges = pp.Spec.StageChanges
 		if existing == nil || !equalMetricsViewSpec(existing.GetMetricsView().Spec, def.MetricsViewSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_MetricsView{MetricsView: &runtimev1.MetricsViewV2{Spec: def.MetricsViewSpec}}}
 		}
