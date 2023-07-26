@@ -41,9 +41,19 @@ service ConnectorService {
     option (google.api.http) = {get: "/v1/gcs/credentials_info"};
   }
 
-  // MotherduckListTables list all tables across all databases on motherduck
-  rpc MotherduckListTables(MotherduckListTablesRequest) returns (MotherduckListTablesResponse) {
-    option (google.api.http) = {get: "/v1/md/tables"};
+  // OLAPListTables list all tables across all databases on motherduck
+  rpc OLAPListTables(OLAPListTablesRequest) returns (OLAPListTablesResponse) {
+    option (google.api.http) = {get: "/v1/olap/tables"};
+  }
+
+  // BigQueryListDatasets list all datasets in a bigquery project
+  rpc BigQueryListDatasets(BigQueryListDatasetsRequest) returns (BigQueryListDatasetsResponse) {
+    option (google.api.http) = {get: "/v1/bigquery/datasets"};
+  }
+
+  // BigQueryListTables list all tables in a bigquery project:dataset
+  rpc BigQueryListTables(BigQueryListTablesRequest) returns (BigQueryListTablesResponse) {
+    option (google.api.http) = {get: "/v1/bigquery/tables"};
   }
 }
 
@@ -55,8 +65,10 @@ message S3Object {
 }
 
 message S3ListBucketsRequest {
-  uint32 page_size = 1;
-  string page_token = 2;
+  string instance_id = 1;
+  string connector = 2;
+  uint32 page_size = 3;
+  string page_token = 4;
 }
 
 message S3ListBucketsResponse {
@@ -65,13 +77,15 @@ message S3ListBucketsResponse {
 }
 
 message S3ListObjectsRequest {
-  uint32 page_size = 1 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
-  string page_token = 2;
-  string bucket = 3 [(validate.rules).string.min_len = 1];
-  string region = 4;
-  string prefix = 5;
-  string start_after = 6;
-  string delimiter = 7;
+  string instance_id = 1;
+  string connector = 2;
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  string page_token = 4;
+  string bucket = 5 [(validate.rules).string.min_len = 1];
+  string region = 6;
+  string prefix = 7;
+  string start_after = 8;
+  string delimiter = 9;
 }
 
 message S3ListObjectsResponse {
@@ -80,14 +94,19 @@ message S3ListObjectsResponse {
 }
 
 message S3GetBucketMetadataRequest {
-  string bucket = 1 [(validate.rules).string.min_len = 1];
+  string instance_id = 1;
+  string connector = 2;
+  string bucket = 3 [(validate.rules).string.min_len = 1];
 }
 
 message S3GetBucketMetadataResponse {
   string region = 1;
 }
 
-message S3GetCredentialsInfoRequest {}
+message S3GetCredentialsInfoRequest {
+  string instance_id = 1;
+  string connector = 2;
+}
 
 message S3GetCredentialsInfoResponse {
   bool exist = 1;
@@ -102,8 +121,10 @@ message GCSObject {
 }
 
 message GCSListBucketsRequest {
-  uint32 page_size = 1 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
-  string page_token = 2;
+  string instance_id = 1;
+  string connector = 2;
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  string page_token = 4;
 }
 
 message GCSListBucketsResponse {
@@ -112,13 +133,15 @@ message GCSListBucketsResponse {
 }
 
 message GCSListObjectsRequest {
-  uint32 page_size = 1 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
-  string page_token = 2;
-  string bucket = 3 [(validate.rules).string.min_len = 1];
-  string prefix = 4;
-  string start_offset = 5;
-  string end_offset = 6;
-  string delimiter = 7;
+  string instance_id = 1;
+  string connector = 2;
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  string page_token = 4;
+  string bucket = 5 [(validate.rules).string.min_len = 1];
+  string prefix = 6;
+  string start_offset = 7;
+  string end_offset = 8;
+  string delimiter = 9;
 }
 
 message GCSListObjectsResponse {
@@ -126,20 +149,51 @@ message GCSListObjectsResponse {
   repeated GCSObject objects = 2;
 }
 
-message GCSGetCredentialsInfoRequest {}
+message GCSGetCredentialsInfoRequest {
+  string instance_id = 1;
+  string connector = 2;
+}
 
 message GCSGetCredentialsInfoResponse {
   bool exist = 1;
   string project_id = 2;
 }
 
-message MotherduckListTablesRequest {}
+message OLAPListTablesRequest {
+  string instance_id = 1;
+  string connector = 2;
+}
 
-message MotherduckListTablesResponse {
+message OLAPListTablesResponse {
   repeated TableInfo tables = 1;
 }
 
 message TableInfo {
   string database = 1;
   string name = 2;
+}
+
+message BigQueryListDatasetsRequest {
+  string instance_id = 1;
+  string connector = 2;
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  string page_token = 4;
+}
+
+message BigQueryListDatasetsResponse {
+  string next_page_token = 1;
+  repeated string names = 2;
+}
+
+message BigQueryListTablesRequest {
+  string instance_id = 1;
+  string connector = 2;
+  string dataset = 3;
+  uint32 page_size = 4 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  string page_token = 5;
+}
+
+message BigQueryListTablesResponse {
+  string next_page_token = 1;
+  repeated string names = 2;
 }

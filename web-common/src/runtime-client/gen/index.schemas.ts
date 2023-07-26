@@ -4,18 +4,37 @@
  * rill/runtime/v1/schema.proto
  * OpenAPI spec version: version not set
  */
+export type ConnectorServiceS3GetCredentialsInfoParams = {
+  instanceId?: string;
+  connector?: string;
+};
+
 export type ConnectorServiceS3ListBucketsParams = {
+  instanceId?: string;
+  connector?: string;
   pageSize?: number;
   pageToken?: string;
 };
 
 export type ConnectorServiceS3ListObjectsParams = {
+  instanceId?: string;
+  connector?: string;
   pageSize?: number;
   pageToken?: string;
   region?: string;
   prefix?: string;
   startAfter?: string;
   delimiter?: string;
+};
+
+export type ConnectorServiceS3GetBucketMetadataParams = {
+  instanceId?: string;
+  connector?: string;
+};
+
+export type ConnectorServiceOLAPListTablesParams = {
+  instanceId?: string;
+  connector?: string;
 };
 
 export type RuntimeServiceReconcileBody = {
@@ -280,18 +299,42 @@ export type RuntimeServiceListInstancesParams = {
   pageToken?: string;
 };
 
+export type ConnectorServiceGCSGetCredentialsInfoParams = {
+  instanceId?: string;
+  connector?: string;
+};
+
 export type ConnectorServiceGCSListBucketsParams = {
+  instanceId?: string;
+  connector?: string;
   pageSize?: number;
   pageToken?: string;
 };
 
 export type ConnectorServiceGCSListObjectsParams = {
+  instanceId?: string;
+  connector?: string;
   pageSize?: number;
   pageToken?: string;
   prefix?: string;
   startOffset?: string;
   endOffset?: string;
   delimiter?: string;
+};
+
+export type ConnectorServiceBigQueryListTablesParams = {
+  instanceId?: string;
+  connector?: string;
+  dataset?: string;
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type ConnectorServiceBigQueryListDatasetsParams = {
+  instanceId?: string;
+  connector?: string;
+  pageSize?: number;
+  pageToken?: string;
 };
 
 export interface V1WatchFilesResponse {
@@ -497,16 +540,7 @@ export interface V1RenameFileResponse {
   [key: string]: any;
 }
 
-export interface V1RenameFileAndReconcileRequest {
-  instanceId?: string;
-  fromPath?: string;
-  toPath?: string;
-  /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
-  dry?: boolean;
-  strict?: boolean;
-}
-
-export interface V1RefreshAndReconcileResponse {
+export interface V1RenameFileAndReconcileResponse {
   /** Errors encountered during reconciliation. If strict = false, any path in
 affected_paths without an error can be assumed to have been reconciled succesfully. */
   errors?: V1ReconcileError[];
@@ -516,12 +550,31 @@ code artifacts in the repo. */
   affectedPaths?: string[];
 }
 
+export interface V1RenameFileAndReconcileRequest {
+  instanceId?: string;
+  fromPath?: string;
+  toPath?: string;
+  /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
+  dry?: boolean;
+  strict?: boolean;
+}
+
 export interface V1RefreshAndReconcileRequest {
   instanceId?: string;
   path?: string;
   /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
   dry?: boolean;
   strict?: boolean;
+}
+
+export interface V1ReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
 }
 
 /**
@@ -568,17 +621,7 @@ Only applicable if file_path is set. */
   endLocation?: V1ReconcileErrorCharLocation;
 }
 
-export interface V1RenameFileAndReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-}
-
-export interface V1ReconcileResponse {
+export interface V1RefreshAndReconcileResponse {
   /** Errors encountered during reconciliation. If strict = false, any path in
 affected_paths without an error can be assumed to have been reconciled succesfully. */
   errors?: V1ReconcileError[];
@@ -690,6 +733,10 @@ export const V1ObjectType = {
   OBJECT_TYPE_METRICS_VIEW: "OBJECT_TYPE_METRICS_VIEW",
 } as const;
 
+export interface V1OLAPListTablesResponse {
+  tables?: V1TableInfo[];
+}
+
 export interface V1NumericStatistics {
   min?: number;
   max?: number;
@@ -716,10 +763,6 @@ export interface V1NumericSummary {
   numericHistogramBins?: V1NumericHistogramBins;
   numericStatistics?: V1NumericStatistics;
   numericOutliers?: V1NumericOutliers;
-}
-
-export interface V1MotherduckListTablesResponse {
-  tables?: V1TableInfo[];
 }
 
 export interface V1Model {
@@ -1246,6 +1289,16 @@ export interface V1CatalogEntry {
   createdOn?: string;
   updatedOn?: string;
   refreshedOn?: string;
+}
+
+export interface V1BigQueryListTablesResponse {
+  nextPageToken?: string;
+  names?: string[];
+}
+
+export interface V1BigQueryListDatasetsResponse {
+  nextPageToken?: string;
+  names?: string[];
 }
 
 export interface Runtimev1Type {
