@@ -11,6 +11,7 @@
     unselected?: string;
     disabled?: string;
   } = undefined;
+  export let ariaLabel: string = undefined;
 
   const {
     registerSubButton,
@@ -22,17 +23,18 @@
 
   registerSubButton(value);
 
-  $: isDisabled = $disabledKeys.includes(value);
+  $: disabled = $disabledKeys.includes(value);
+  $: console.log("disabled", disabled);
   $: isSelected = $selectedKeys.includes(value);
 
   const baseStyles = `shrink flex flex-row items-center px-1 py-1
   transition-transform duration-100`;
 
-  $: textStyle = isDisabled
+  $: textStyle = disabled
     ? "text-gray-400"
     : "text-gray-700 hover:text-gray-900 ";
 
-  $: bgStyle = isDisabled
+  $: bgStyle = disabled
     ? "bg-white"
     : isSelected
     ? "bg-gray-100 hover:bg-gray-200 "
@@ -46,7 +48,7 @@
 
   $: finalStyles = `${baseStyles} ${roundings} ${textStyle} ${bgStyle}`;
 
-  $: tooltipText = isDisabled
+  $: tooltipText = disabled
     ? tooltips?.disabled
     : isSelected
     ? tooltips?.selected
@@ -59,10 +61,13 @@
     <button
       class={finalStyles}
       on:click={() => {
-        if (!isDisabled) {
+        if (!disabled) {
           dispatch("subbutton-click", value);
         }
       }}
+      aria-label={ariaLabel}
+      aria-pressed={isSelected}
+      disabled={disabled || null}
     >
       <slot />
     </button>
