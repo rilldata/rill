@@ -68,8 +68,11 @@ func (c *bufferedClient) Emit(ctx context.Context, name string, value float64, d
 	c.buffer = append(c.buffer, event)
 
 	if len(c.buffer) >= c.bufferSize {
+		events := c.buffer
+		c.buffer = make([]Event, 0, c.bufferSize)
+
 		go func() {
-			err := c.flush()
+			err := c.flush(events)
 			if err != nil {
 				c.logger.Error("could not flush activity events", zap.Error(err))
 			}
@@ -79,10 +82,22 @@ func (c *bufferedClient) Emit(ctx context.Context, name string, value float64, d
 
 func (c *bufferedClient) Close() error {
 	close(c.stop)
-	errFlush := c.flush() // Do not return the error immediately so concurrent flush calls can complete
+
+	var events []Event
+	// flush call may take some time to process, so it's better to unlock the mutex early
+	func() {
+		c.bufferMx.Lock()
+		defer c.bufferMx.Unlock()
+
+		events = c.buffer
+		c.buffer = make([]Event, 0, c.bufferSize)
+	}()
+	errFlush := c.flush(events) // Do not return the error immediately so concurrent flush calls can complete
+
 	// Wait for all Sink calls to complete
 	c.sinkWg.Wait()
 	errSink := c.sink.Close()
+
 	return errors.Join(errFlush, errSink)
 }
 
@@ -92,7 +107,17 @@ func (c *bufferedClient) init() {
 	for {
 		select {
 		case <-ticker.C:
-			err := c.flush()
+			var events []Event
+			// flush call may take some time to process, so it's better to unlock the mutex early
+			func() {
+				c.bufferMx.Lock()
+				defer c.bufferMx.Unlock()
+
+				events = c.buffer
+				c.buffer = make([]Event, 0, c.bufferSize)
+			}()
+
+			err := c.flush(events)
 			if err != nil {
 				c.logger.Error("could not flush activity events", zap.Error(err))
 			}
@@ -103,19 +128,9 @@ func (c *bufferedClient) init() {
 	}
 }
 
-func (c *bufferedClient) flush() error {
+func (c *bufferedClient) flush(events []Event) error {
 	c.sinkWg.Add(1)
 	defer c.sinkWg.Done()
-
-	var events []Event
-	// Sink call may take some time to process, so it's better to unlock the mutex early
-	func() {
-		c.bufferMx.Lock()
-		defer c.bufferMx.Unlock()
-
-		events = c.buffer
-		c.buffer = make([]Event, 0, c.bufferSize)
-	}()
 
 	// If there are events, use a sink to process them
 	if len(events) > 0 {
