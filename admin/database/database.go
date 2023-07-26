@@ -116,9 +116,9 @@ type DB interface {
 	DeleteUserAuthToken(ctx context.Context, id string) error
 	DeleteExpiredUserAuthTokens(ctx context.Context, retention time.Duration) error
 
-	FindServicesByOrgName(ctx context.Context, orgName string) ([]*Service, error)
+	FindServicesByOrgID(ctx context.Context, orgID string) ([]*Service, error)
 	FindService(ctx context.Context, id string) (*Service, error)
-	FindServiceByName(ctx context.Context, orgName, name string) (*Service, error)
+	FindServiceByName(ctx context.Context, orgID, name string) (*Service, error)
 	InsertService(ctx context.Context, opts *InsertServiceOptions) (*Service, error)
 	DeleteService(ctx context.Context, id string) error
 	UpdateService(ctx context.Context, id string, opts *UpdateServiceOptions) (*Service, error)
@@ -381,7 +381,6 @@ type UpdateUserOptions struct {
 type Service struct {
 	ID        string
 	OrgID     string    `db:"org_id"`
-	OrgName   string    `db:"org_name"`
 	Name      string    `validate:"slug"`
 	CreatedOn time.Time `db:"created_on"`
 	UpdatedOn time.Time `db:"updated_on"`

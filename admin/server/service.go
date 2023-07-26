@@ -39,7 +39,7 @@ func (s *Server) CreateService(ctx context.Context, req *adminv1.CreateServiceRe
 	}
 
 	return &adminv1.CreateServiceResponse{
-		Service: serviceToPB(service),
+		Service: serviceToPB(service, req.OrganizationName),
 	}, nil
 }
 
@@ -61,13 +61,13 @@ func (s *Server) ListServices(ctx context.Context, req *adminv1.ListServicesRequ
 		return nil, status.Error(codes.PermissionDenied, "not allowed to list services")
 	}
 
-	services, err := s.admin.DB.FindServicesByOrgName(ctx, org.Name)
+	services, err := s.admin.DB.FindServicesByOrgID(ctx, org.Name)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &adminv1.ListServicesResponse{
-		Services: servicesToPB(services),
+		Services: servicesToPB(services, req.OrganizationName),
 	}, nil
 }
 
@@ -92,7 +92,7 @@ func (s *Server) UpdateService(ctx context.Context, req *adminv1.UpdateServiceRe
 		return nil, status.Error(codes.PermissionDenied, "not allowed to update service")
 	}
 
-	service, err := s.admin.DB.FindServiceByName(ctx, req.OrganizationName, req.Name)
+	service, err := s.admin.DB.FindServiceByName(ctx, org.ID, req.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -105,7 +105,7 @@ func (s *Server) UpdateService(ctx context.Context, req *adminv1.UpdateServiceRe
 	}
 
 	return &adminv1.UpdateServiceResponse{
-		Service: serviceToPB(updatedService),
+		Service: serviceToPB(updatedService, req.OrganizationName),
 	}, nil
 }
 
@@ -116,12 +116,12 @@ func (s *Server) DeleteService(ctx context.Context, req *adminv1.DeleteServiceRe
 		attribute.String("args.organization_name", req.OrganizationName),
 	)
 
-	service, err := s.admin.DB.FindServiceByName(ctx, req.OrganizationName, req.Name)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
+	service, err := s.admin.DB.FindServiceByName(ctx, org.ID, req.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -156,7 +156,7 @@ func (s *Server) ListServiceAuthTokens(ctx context.Context, req *adminv1.ListSer
 		return nil, status.Error(codes.PermissionDenied, "not allowed to update org")
 	}
 
-	service, err := s.admin.DB.FindServiceByName(ctx, req.OrganizationName, req.ServiceName)
+	service, err := s.admin.DB.FindServiceByName(ctx, org.ID, req.ServiceName)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -187,12 +187,12 @@ func (s *Server) IssueServiceAuthToken(ctx context.Context, req *adminv1.IssueSe
 		attribute.String("args.organization_name", req.OrganizationName),
 	)
 
-	service, err := s.admin.DB.FindServiceByName(ctx, req.OrganizationName, req.ServiceName)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
+	service, err := s.admin.DB.FindServiceByName(ctx, org.ID, req.ServiceName)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -246,19 +246,19 @@ func (s *Server) RevokeServiceAuthToken(ctx context.Context, req *adminv1.Revoke
 	return &adminv1.RevokeServiceAuthTokenResponse{}, nil
 }
 
-func serviceToPB(service *database.Service) *adminv1.Service {
+func serviceToPB(service *database.Service, orgName string) *adminv1.Service {
 	return &adminv1.Service{
 		Id:      service.ID,
 		Name:    service.Name,
 		OrgId:   service.OrgID,
-		OrgName: service.OrgName,
+		OrgName: orgName,
 	}
 }
 
-func servicesToPB(services []*database.Service) []*adminv1.Service {
+func servicesToPB(services []*database.Service, orgName string) []*adminv1.Service {
 	var pbServices []*adminv1.Service
 	for _, service := range services {
-		pbServices = append(pbServices, serviceToPB(service))
+		pbServices = append(pbServices, serviceToPB(service, orgName))
 	}
 	return pbServices
 }

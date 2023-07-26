@@ -649,11 +649,11 @@ func (c *connection) DeleteExpiredUserAuthTokens(ctx context.Context, retention 
 	return parseErr("auth token", err)
 }
 
-// FindServicesByOrgName returns a list of services in an org.
-func (c *connection) FindServicesByOrgName(ctx context.Context, orgName string) ([]*database.Service, error) {
+// FindServicesByOrgID returns a list of services in an org.
+func (c *connection) FindServicesByOrgID(ctx context.Context, orgID string) ([]*database.Service, error) {
 	var res []*database.Service
 
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM service WHERE org_name=$1", orgName)
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM service WHERE org_id=$1", orgID)
 	if err != nil {
 		return nil, parseErr("service", err)
 	}
@@ -671,10 +671,10 @@ func (c *connection) FindService(ctx context.Context, id string) (*database.Serv
 }
 
 // FindServiceByName returns a service.
-func (c *connection) FindServiceByName(ctx context.Context, orgName, name string) (*database.Service, error) {
+func (c *connection) FindServiceByName(ctx context.Context, orgID, name string) (*database.Service, error) {
 	res := &database.Service{}
 
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM service WHERE org_name=$1 AND name=$2", orgName, name).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM service WHERE org_id=$1 AND name=$2", orgID, name).StructScan(res)
 	if err != nil {
 		return nil, parseErr("service", err)
 	}
