@@ -16,6 +16,8 @@ import (
 
 const batchInterval = 250 * time.Millisecond
 
+const maxBufferSize = 1000
+
 // watcher implements a recursive, batching file watcher on top of fsnotify.
 type watcher struct {
 	root        string
@@ -124,6 +126,8 @@ func (w *watcher) run() {
 
 func (w *watcher) runInner() error {
 	ticker := time.NewTicker(batchInterval)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ticker.C:
@@ -170,7 +174,14 @@ func (w *watcher) runInner() error {
 				}
 			}
 
-			ticker.Reset(batchInterval)
+			// Reset the timer so we only flush when no events have been observed for batchInterval.
+			// (But to avoid the buffer growing infinitely in edge cases, we enforce a max buffer size.)
+			if len(w.buffer) < maxBufferSize {
+				ticker.Reset(batchInterval)
+			} else {
+				ticker.Stop()
+				w.flush()
+			}
 		}
 	}
 }
