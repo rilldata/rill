@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"time"
 
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -171,7 +172,7 @@ func (s *Server) ListServiceAuthTokens(ctx context.Context, req *adminv1.ListSer
 		dtos[i] = &adminv1.ServiceToken{
 			Id:        token.ID,
 			CreatedOn: timestamppb.New(token.CreatedOn),
-			ExpiresOn: timestamppb.New(*token.ExpiresOn),
+			ExpiresOn: timestamppb.New(safeTime(token.ExpiresOn)),
 		}
 	}
 
@@ -228,7 +229,7 @@ func (s *Server) RevokeServiceAuthToken(ctx context.Context, req *adminv1.Revoke
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, service.OrgID)
+	org, err := s.admin.DB.FindOrganization(ctx, service.OrgID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -238,7 +239,7 @@ func (s *Server) RevokeServiceAuthToken(ctx context.Context, req *adminv1.Revoke
 		return nil, status.Error(codes.PermissionDenied, "not allowed to revoke auth token")
 	}
 
-	err = s.admin.RevokeAuthToken(ctx, req.TokenId)
+	err = s.admin.DB.DeleteServiceAuthToken(ctx, token.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -261,4 +262,11 @@ func servicesToPB(services []*database.Service, orgName string) []*adminv1.Servi
 		pbServices = append(pbServices, serviceToPB(service, orgName))
 	}
 	return pbServices
+}
+
+func safeTime(t *time.Time) time.Time {
+	if t == nil {
+		return time.Time{}
+	}
+	return *t
 }

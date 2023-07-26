@@ -32,7 +32,12 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.TablePrinter(res.Tokens)
+			if len(res.Tokens) == 0 {
+				cmdutil.PrintlnWarn("No tokens found")
+				return nil
+			}
+
+			cmdutil.TablePrinter(toTable(res.Tokens))
 			return nil
 		},
 	}
