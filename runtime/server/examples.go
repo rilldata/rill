@@ -8,7 +8,6 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
-	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/examples"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -43,7 +42,7 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 		attribute.Bool("args.force", req.Force),
 	)
 
-	activity.WithRequestInstanceID(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
 		return nil, ErrForbidden
@@ -118,7 +117,7 @@ func (s *Server) UnpackEmpty(ctx context.Context, req *runtimev1.UnpackEmptyRequ
 		attribute.Bool("args.force", req.Force),
 	)
 
-	activity.WithRequestInstanceID(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
 		return nil, ErrForbidden

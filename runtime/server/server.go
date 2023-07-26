@@ -27,6 +27,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 var ErrForbidden = status.Error(codes.Unauthenticated, "action not allowed")
@@ -313,4 +314,16 @@ func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
 	}
 
 	return ctx, nil
+}
+
+func (s *Server) addInstanceRequestAttributes(ctx context.Context, instanceID string) {
+	instance, err := s.runtime.FindInstance(ctx, instanceID)
+
+	if err != nil && instance != nil {
+		var attrs []attribute.KeyValue
+		for k, v := range instance.Annotations {
+			attrs = append(attrs, attribute.String(k, v))
+		}
+		observability.AddRequestAttributes(ctx, attrs...)
+	}
 }

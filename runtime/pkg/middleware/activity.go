@@ -31,7 +31,7 @@ func ActivityStreamServerInterceptor(activityClient activity.Client) grpc.Stream
 		start := time.Now()
 		defer func() {
 			// Emit usage metric
-			activityClient.Emit(ctx, "request/time", float64(time.Since(start).Milliseconds()))
+			activityClient.Emit(ctx, "request_time_ms", float64(time.Since(start).Milliseconds()))
 		}()
 
 		return handler(srv, wss)
@@ -55,7 +55,7 @@ func ActivityUnaryServerInterceptor(activityClient activity.Client) grpc.UnarySe
 		start := time.Now()
 		defer func() {
 			// Emit usage metric
-			activityClient.Emit(ctx, "request/time", float64(time.Since(start).Milliseconds()))
+			activityClient.Emit(ctx, "request_time_ms", float64(time.Since(start).Milliseconds()))
 		}()
 
 		return handler(ctx, req)

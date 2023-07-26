@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -30,7 +29,7 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 		attribute.Int("args.filter_count", filterCount(req.Filter)),
 	)
 
-	activity.WithRequestInstanceID(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
 		return nil, ErrForbidden
@@ -76,7 +75,7 @@ func (s *Server) MetricsViewComparisonToplist(ctx context.Context, req *runtimev
 		attribute.Int("args.priority", int(req.Priority)),
 	)
 
-	activity.WithRequestInstanceID(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if req.BaseTimeRange != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.base_time_range.start", safeTimeStr(req.BaseTimeRange.Start)))
@@ -130,7 +129,7 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		attribute.Int("args.priority", int(req.Priority)),
 	)
 
-	activity.WithRequestInstanceID(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
 		return nil, ErrForbidden
@@ -199,7 +198,7 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 		attribute.Int("args.priority", int(req.Priority)),
 	)
 
-	activity.WithRequestInstanceID(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
 		return nil, ErrForbidden

@@ -7,9 +7,7 @@ import (
 	"strconv"
 
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
 
@@ -18,19 +16,7 @@ func (r *Runtime) FindInstances(ctx context.Context) ([]*drivers.Instance, error
 }
 
 func (r *Runtime) FindInstance(ctx context.Context, instanceID string) (*drivers.Instance, error) {
-	instance, err := r.Registry().FindInstance(ctx, instanceID)
-
-	// If instanceID belongs to a client request then add its annotations as activity dimensions
-	// Make sure instance id of every request isf validated using the registry
-	if err != nil && instance != nil && activity.GetRequestInstanceIDFromContext(ctx) == instanceID {
-		var activityDims []attribute.KeyValue
-		for k, v := range instance.Annotations {
-			activityDims = append(activityDims, attribute.String(k, v))
-		}
-		activity.WithDims(ctx, activityDims...)
-	}
-
-	return instance, err
+	return r.Registry().FindInstance(ctx, instanceID)
 }
 
 func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) error {

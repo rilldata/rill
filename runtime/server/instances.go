@@ -6,7 +6,6 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -39,7 +38,7 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 		attribute.String("args.instance_id", req.InstanceId),
 	)
 
-	activity.WithRequestInstanceID(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadInstance) {
 		return nil, ErrForbidden
@@ -66,7 +65,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		attribute.String("args.repo_driver", req.RepoDriver),
 	)
 
-	activity.WithRequestInstanceID(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
 		return nil, ErrForbidden
@@ -104,7 +103,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		observability.AddRequestAttributes(ctx, attribute.String("args.repo_driver", *req.RepoDriver))
 	}
 
-	activity.WithRequestInstanceID(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
 		return nil, ErrForbidden
@@ -141,7 +140,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 func (s *Server) EditInstanceVariables(ctx context.Context, req *runtimev1.EditInstanceVariablesRequest) (*runtimev1.EditInstanceVariablesResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.instance_id", req.InstanceId))
 
-	activity.WithRequestInstanceID(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
 		return nil, ErrForbidden
@@ -181,7 +180,7 @@ func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstan
 		attribute.Bool("args.drop_db", req.DropDb),
 	)
 
-	activity.WithRequestInstanceID(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
 		return nil, ErrForbidden

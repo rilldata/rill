@@ -4,7 +4,6 @@ import (
 	"context"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -20,7 +19,7 @@ func (s *Server) ColumnRollupInterval(ctx context.Context, req *runtimev1.Column
 		attribute.Int("args.priority", int(req.Priority)),
 	)
 
-	activity.WithRequestInstanceID(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
@@ -49,7 +48,7 @@ func (s *Server) ColumnTimeSeries(ctx context.Context, req *runtimev1.ColumnTime
 		attribute.Int("args.priority", int(req.Priority)),
 	)
 
-	activity.WithRequestInstanceID(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if req.TimeRange != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.time_range.start", safeTimeStr(req.TimeRange.Start)))
