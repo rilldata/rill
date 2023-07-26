@@ -158,8 +158,8 @@ func (it *blobIterator) NextBatch(n int) ([]string, error) {
 	}
 	if len(it.nextPaths) != 0 {
 		paths := it.nextPaths
+		it.index += len(paths)
 		it.nextPaths = nil
-		it.index += len(it.nextPaths)
 		return paths, nil
 	}
 
