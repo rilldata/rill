@@ -37,8 +37,14 @@ var ErrResourceNotFound = errors.New("controller: resource not found")
 // Reconciler implements reconciliation logic for all resources of a specific kind.
 // Reconcilers are managed and invoked by a Controller.
 type Reconciler interface {
-	Reconcile(ctx context.Context, s *Signal) error
+	Reconcile(ctx context.Context, s *Signal) ReconcileResult
 	Close(ctx context.Context) error
+}
+
+// ReconcileResult propagates results from a reconciler invocation
+type ReconcileResult struct {
+	Err       error
+	Retrigger time.Time
 }
 
 // SignalCode enumerates signals that can trigger a reconciler
@@ -165,7 +171,14 @@ func (c *Controller) Create(ctx context.Context, name *runtimev1.ResourceName, r
 	panic("not implemented")
 }
 
-func (c *Controller) UpdateMeta(ctx context.Context, name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths []string) error {
+type UpdateMetaOptions struct {
+	NewName *runtimev1.ResourceName
+	Refs    []*runtimev1.ResourceName
+	Owner   *runtimev1.ResourceName
+	Paths   []string
+}
+
+func (c *Controller) UpdateMeta(ctx context.Context, name *runtimev1.ResourceName, opts *UpdateMetaOptions) error {
 	panic("not implemented")
 }
 

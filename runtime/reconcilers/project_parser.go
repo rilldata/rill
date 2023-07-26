@@ -31,13 +31,18 @@ func (r *ProjectParserReconciler) Close(ctx context.Context) error {
 	return nil
 }
 
-func (r *ProjectParserReconciler) Reconcile(ctx context.Context, s *runtime.Signal) error {
+func (r *ProjectParserReconciler) Reconcile(ctx context.Context, s *runtime.Signal) runtime.ReconcileResult {
 	// Get ProjectParser resource
 	owner, err := r.C.Get(ctx, s.Name)
 	if err != nil {
-		return err
+		return runtime.ReconcileResult{Err: err}
 	}
 	pp := owner.GetProjectParser()
+
+	// Does not support renames
+	if owner.Meta.RenamedFrom != nil {
+		return runtime.ReconcileResult{Err: fmt.Errorf("project parser cannot be renamed")}
+	}
 
 	// If deleted, remove all resources created by owner
 	if owner.Meta.Deleted {
@@ -46,34 +51,34 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, s *runtime.Sign
 
 		resources, err := r.C.List(ctx)
 		if err != nil {
-			return err
+			return runtime.ReconcileResult{Err: err}
 		}
 
 		for _, resource := range resources {
 			if equalResourceName(resource.Meta.Owner, owner.Meta.Name) {
 				err := r.C.Delete(ctx, resource.Meta.Name)
 				if err != nil {
-					return err
+					return runtime.ReconcileResult{Err: err}
 				}
 			}
 		}
 
-		return nil
+		return runtime.ReconcileResult{}
 	}
 
 	// Check pp.Spec.Compiler
 	if pp.Spec.Compiler != compilerv1.Version {
-		return fmt.Errorf("unsupported compiler %q", pp.Spec.Compiler)
+		return runtime.ReconcileResult{Err: fmt.Errorf("unsupported compiler %q", pp.Spec.Compiler)}
 	}
 
 	// Get and sync repo
 	repo, err := r.C.Runtime.Repo(ctx, r.C.InstanceID)
 	if err != nil {
-		return fmt.Errorf("failed to access repo: %w", err)
+		return runtime.ReconcileResult{Err: fmt.Errorf("failed to access repo: %w", err)}
 	}
 	err = repo.Sync(ctx, r.C.InstanceID)
 	if err != nil {
-		return fmt.Errorf("failed to sync repo: %w", err)
+		return runtime.ReconcileResult{Err: fmt.Errorf("failed to sync repo: %w", err)}
 	}
 
 	// Update commit sha
@@ -86,25 +91,25 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, s *runtime.Sign
 		pp.State.CurrentCommitSha = hash
 		err = r.C.UpdateState(ctx, s.Name, owner) // TODO: Pointer relationship between owner and pp makes this hard to follow
 		if err != nil {
-			return err
+			return runtime.ReconcileResult{Err: err}
 		}
 	}
 
 	// Parse the project
 	parser, err := compilerv1.Parse(ctx, repo, r.C.InstanceID, pp.Spec.DuckdbConnectors)
 	if err != nil {
-		return fmt.Errorf("failed to parse repo: %w", err)
+		return runtime.ReconcileResult{Err: fmt.Errorf("failed to parse repo: %w", err)}
 	}
 
 	// Do the actual reconciliation of parsed resources and catalog resources
 	err = r.reconcileParser(ctx, owner, parser, nil)
 	if err != nil {
-		return err
+		return runtime.ReconcileResult{Err: err}
 	}
 
 	// Exit if not watching
 	if !pp.Spec.Watch {
-		return nil
+		return runtime.ReconcileResult{}
 	}
 
 	// Start a watcher that incrementally reparses the project.
@@ -138,7 +143,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, s *runtime.Sign
 	} else if err != nil {
 		if errors.Is(err, ctx.Err()) {
 			// The controller cancelled the context. It means pp.Spec was changed. Will be rescheduled.
-			return err
+			return runtime.ReconcileResult{Err: err}
 		}
 		err = fmt.Errorf("watch failed: %w", err)
 	}
@@ -146,7 +151,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, s *runtime.Sign
 	// If the watch failed, we return without rescheduling.
 	// TODO: Should we have some kind of retry?
 	r.C.Logger.Error("stopped watching for file changes", slog.String("err", err.Error()))
-	return err
+	return runtime.ReconcileResult{Err: err}
 }
 
 // reconcileParser reconciles a parser's output with the current resources in the catalog.
@@ -201,6 +206,9 @@ func (r *ProjectParserReconciler) reconcileRillYAML(ctx context.Context, parser 
 
 // reconcileResources creates, updates and deletes resources as necessary to match the parser's output with the current resources in the catalog.
 func (r *ProjectParserReconciler) reconcileResources(ctx context.Context, owner *runtimev1.Resource, parser *compilerv1.Parser) error {
+	// Gather resources to delete so we can check for renames.
+	var deleteResources []*runtimev1.Resource
+
 	// Pass over all existing resources in the catalog.
 	resources, err := r.C.List(ctx)
 	if err != nil {
@@ -223,10 +231,7 @@ func (r *ProjectParserReconciler) reconcileResources(ctx context.Context, owner 
 
 		// If the existing resource is not in the parser output, delete it, but only if it was previously created by owner.
 		if equalResourceName(rr.Meta.Owner, owner.Meta.Name) {
-			err = r.C.Delete(ctx, rr.Meta.Name)
-			if err != nil {
-				return err
-			}
+			deleteResources = append(deleteResources, rr)
 		}
 	}
 
@@ -236,7 +241,37 @@ func (r *ProjectParserReconciler) reconcileResources(ctx context.Context, owner 
 			continue
 		}
 
+		// Rename if possible
+		renamed := false
+		for idx, rr := range deleteResources {
+			renamed, err = r.attemptRename(ctx, owner, def, rr)
+			if err != nil {
+				return err
+			}
+			if renamed {
+				deleteResources[idx] = nil
+				break
+			}
+		}
+		if renamed {
+			continue
+		}
+
+		// Insert resource
 		err = r.putParserResourceDef(ctx, owner, def, nil)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Delete resources that did not get renamed
+	for _, rr := range deleteResources {
+		// The ones that got renamed were set to nil
+		if rr == nil {
+			continue
+		}
+
+		err = r.C.Delete(ctx, rr.Meta.Name)
 		if err != nil {
 			return err
 		}
@@ -247,12 +282,14 @@ func (r *ProjectParserReconciler) reconcileResources(ctx context.Context, owner 
 
 // reconcileResourcesDiff is similar to reconcileResources, but uses a diff from parser.Reparse instead of doing a full comparison of all resources.
 func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, owner *runtimev1.Resource, parser *compilerv1.Parser, diff *compilerv1.Diff) error {
-	// Deletes
+	// Gather resource to delete so we can check for renames.
+	deleteResources := make([]*runtimev1.Resource, 0, len(diff.Deleted))
 	for _, n := range diff.Deleted {
-		err := r.C.Delete(ctx, resourceNameFromCompiler(n))
+		r, err := r.C.Get(ctx, resourceNameFromCompiler(n))
 		if err != nil {
 			return err
 		}
+		deleteResources = append(deleteResources, r)
 	}
 
 	// Updates
@@ -271,7 +308,39 @@ func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, ow
 	// Inserts
 	for _, n := range diff.Added {
 		def := parser.Resources[n]
+
+		// Rename if possible
+		renamed := false
+		for idx, rr := range deleteResources {
+			var err error
+			renamed, err = r.attemptRename(ctx, owner, def, rr)
+			if err != nil {
+				return err
+			}
+			if renamed {
+				deleteResources[idx] = nil
+				break
+			}
+		}
+		if renamed {
+			continue
+		}
+
+		// Insert resource
 		err := r.putParserResourceDef(ctx, owner, def, nil)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Deletes
+	for _, rr := range deleteResources {
+		// The ones that got renamed were set to nil
+		if rr == nil {
+			continue
+		}
+
+		err := r.C.Delete(ctx, rr.Meta.Name)
 		if err != nil {
 			return err
 		}
@@ -322,7 +391,11 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, owne
 
 	// Update meta if refs or file paths changed
 	if !slices.Equal(existing.Meta.FilePaths, def.Paths) || !slices.Equal(existing.Meta.Refs, refs) {
-		err := r.C.UpdateMeta(ctx, n, refs, owner.Meta.Name, def.Paths)
+		err := r.C.UpdateMeta(ctx, n, &runtime.UpdateMetaOptions{
+			Refs:  refs,
+			Owner: owner.Meta.Name,
+			Paths: def.Paths,
+		})
 		if err != nil {
 			return err
 		}
@@ -337,6 +410,58 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, owne
 	}
 
 	return nil
+}
+
+// attemptRename renames an existing resource if its spec matches a parser resource definition.
+// It returns false if no rename was done.
+// In addition to renaming, it also updates the resource's meta to match the parser resource definition.
+func (r *ProjectParserReconciler) attemptRename(ctx context.Context, owner *runtimev1.Resource, def *compilerv1.Resource, existing *runtimev1.Resource) (bool, error) {
+	newName := resourceNameFromCompiler(def.Name)
+	if existing.Meta.Name.Kind != newName.Kind {
+		return false, nil
+	}
+
+	switch def.Name.Kind {
+	case compilerv1.ResourceKindSource:
+		if !equalSourceSpec(existing.GetSource().Spec, def.SourceSpec) {
+			return false, nil
+		}
+	case compilerv1.ResourceKindModel:
+		if !equalModelSpec(existing.GetModel().Spec, def.ModelSpec) {
+			return false, nil
+		}
+	case compilerv1.ResourceKindMetricsView:
+		if !equalMetricsViewSpec(existing.GetMetricsView().Spec, def.MetricsViewSpec) {
+			return false, nil
+		}
+	case compilerv1.ResourceKindMigration:
+		if !equalMigrationSpec(existing.GetMigration().Spec, def.MigrationSpec) {
+			return false, nil
+		}
+	default:
+		// NOTE: No panic because we don't need to support renames for all resource kinds.
+		// If renaming is not supported, it will just do a delete + insert instead.
+		return false, nil
+	}
+
+	// Make refs for the resource meta
+	refs := make([]*runtimev1.ResourceName, 0, len(def.Refs))
+	for _, r := range def.Refs {
+		refs = append(refs, resourceNameFromCompiler(r))
+	}
+
+	// Run rename
+	err := r.C.UpdateMeta(ctx, existing.Meta.Name, &runtime.UpdateMetaOptions{
+		NewName: newName,
+		Refs:    refs,
+		Owner:   owner.Meta.Name,
+		Paths:   def.Paths,
+	})
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 func resourceNameFromCompiler(name compilerv1.ResourceName) *runtimev1.ResourceName {

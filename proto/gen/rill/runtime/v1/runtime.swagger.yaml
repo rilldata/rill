@@ -3520,6 +3520,9 @@ definitions:
       atomic:
         type: boolean
         title: atomic makes the project parser stage all changes before committing them
+      streamSourceIngestion:
+        type: boolean
+        title: stream_source_ingestion
       materializeModelDefault:
         type: boolean
         title: materialize_model_default sets a default for whether or not to materialize a model, if not explicitly set in the model
@@ -3936,16 +3939,24 @@ definitions:
         type: array
         items:
           type: string
+      deleted:
+        type: boolean
+      renamedFrom:
+        $ref: '#/definitions/v1ResourceName'
+      reconcileError:
+        type: string
+      version:
+        type: string
+        format: int64
+      metaVersion:
+        type: string
+        format: int64
       specVersion:
         type: string
         format: int64
       stateVersion:
         type: string
         format: int64
-      deleted:
-        type: boolean
-      reconcileError:
-        type: string
       createdOn:
         type: string
         format: date-time
@@ -4054,13 +4065,23 @@ definitions:
       timeoutSeconds:
         type: integer
         format: int64
+      atomic:
+        type: boolean
+      trigger:
+        type: boolean
   v1SourceState:
     type: object
     properties:
       tableName:
         type: string
-      stageTableName:
+        title: |-
+          TODO: Add tmp table name here for better cleanup
+          TODO
+      specHash:
         type: string
+      refreshedOn:
+        type: string
+        format: date-time
       validationError:
         $ref: '#/definitions/v1ValidationError'
       executionError:

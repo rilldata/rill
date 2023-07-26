@@ -132,6 +132,31 @@ export class ResourceMeta extends Message<ResourceMeta> {
   filePaths: string[] = [];
 
   /**
+   * @generated from field: bool deleted = 7;
+   */
+  deleted = false;
+
+  /**
+   * @generated from field: optional rill.runtime.v1.ResourceName renamed_from = 13;
+   */
+  renamedFrom?: ResourceName;
+
+  /**
+   * @generated from field: string reconcile_error = 8;
+   */
+  reconcileError = "";
+
+  /**
+   * @generated from field: int64 version = 15;
+   */
+  version = protoInt64.zero;
+
+  /**
+   * @generated from field: int64 meta_version = 14;
+   */
+  metaVersion = protoInt64.zero;
+
+  /**
    * @generated from field: int64 spec_version = 5;
    */
   specVersion = protoInt64.zero;
@@ -140,16 +165,6 @@ export class ResourceMeta extends Message<ResourceMeta> {
    * @generated from field: int64 state_version = 6;
    */
   stateVersion = protoInt64.zero;
-
-  /**
-   * @generated from field: bool deleted = 7;
-   */
-  deleted = false;
-
-  /**
-   * @generated from field: string reconcile_error = 8;
-   */
-  reconcileError = "";
 
   /**
    * @generated from field: google.protobuf.Timestamp created_on = 9;
@@ -183,10 +198,13 @@ export class ResourceMeta extends Message<ResourceMeta> {
     { no: 2, name: "refs", kind: "message", T: ResourceName, repeated: true },
     { no: 3, name: "owner", kind: "message", T: ResourceName, opt: true },
     { no: 4, name: "file_paths", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 7, name: "deleted", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 13, name: "renamed_from", kind: "message", T: ResourceName, opt: true },
+    { no: 8, name: "reconcile_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 15, name: "version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 14, name: "meta_version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 5, name: "spec_version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 6, name: "state_version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 7, name: "deleted", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 8, name: "reconcile_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "created_on", kind: "message", T: Timestamp },
     { no: 10, name: "spec_updated_on", kind: "message", T: Timestamp },
     { no: 11, name: "state_updated_on", kind: "message", T: Timestamp },
@@ -322,6 +340,13 @@ export class ProjectParserSpec extends Message<ProjectParserSpec> {
   atomic = false;
 
   /**
+   * stream_source_ingestion
+   *
+   * @generated from field: bool stream_source_ingestion = 8;
+   */
+  streamSourceIngestion = false;
+
+  /**
    * materialize_model_default sets a default for whether or not to materialize a model, if not explicitly set in the model
    *
    * @generated from field: bool materialize_model_default = 4;
@@ -353,6 +378,7 @@ export class ProjectParserSpec extends Message<ProjectParserSpec> {
     { no: 1, name: "compiler", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "watch", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "atomic", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "stream_source_ingestion", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "materialize_model_default", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 5, name: "materialize_model_delay_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 7, name: "duckdb_connectors", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
@@ -496,6 +522,18 @@ export class SourceSpec extends Message<SourceSpec> {
    */
   timeoutSeconds = 0;
 
+  /**
+   *
+   *
+   * @generated from field: bool atomic = 10;
+   */
+  atomic = false;
+
+  /**
+   * @generated from field: bool trigger = 11;
+   */
+  trigger = false;
+
   constructor(data?: PartialMessage<SourceSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -509,6 +547,8 @@ export class SourceSpec extends Message<SourceSpec> {
     { no: 3, name: "properties", kind: "message", T: Struct },
     { no: 5, name: "refresh_schedule", kind: "message", T: Schedule },
     { no: 6, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 10, name: "atomic", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 11, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SourceSpec {
@@ -533,22 +573,30 @@ export class SourceSpec extends Message<SourceSpec> {
  */
 export class SourceState extends Message<SourceState> {
   /**
+   * TODO: Add tmp table name here for better cleanup
+   * TODO
+   *
    * @generated from field: string table_name = 1;
    */
   tableName = "";
 
   /**
-   * @generated from field: string stage_table_name = 2;
+   * @generated from field: string spec_hash = 2;
    */
-  stageTableName = "";
+  specHash = "";
 
   /**
-   * @generated from field: rill.runtime.v1.ValidationError validation_error = 3;
+   * @generated from field: google.protobuf.Timestamp refreshed_on = 3;
+   */
+  refreshedOn?: Timestamp;
+
+  /**
+   * @generated from field: rill.runtime.v1.ValidationError validation_error = 4;
    */
   validationError?: ValidationError;
 
   /**
-   * @generated from field: rill.runtime.v1.ExecutionError execution_error = 4;
+   * @generated from field: rill.runtime.v1.ExecutionError execution_error = 5;
    */
   executionError?: ExecutionError;
 
@@ -561,9 +609,10 @@ export class SourceState extends Message<SourceState> {
   static readonly typeName = "rill.runtime.v1.SourceState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "stage_table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "validation_error", kind: "message", T: ValidationError },
-    { no: 4, name: "execution_error", kind: "message", T: ExecutionError },
+    { no: 2, name: "spec_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "refreshed_on", kind: "message", T: Timestamp },
+    { no: 4, name: "validation_error", kind: "message", T: ValidationError },
+    { no: 5, name: "execution_error", kind: "message", T: ExecutionError },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SourceState {

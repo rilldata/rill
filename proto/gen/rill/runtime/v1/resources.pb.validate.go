@@ -581,13 +581,17 @@ func (m *ResourceMeta) validate(all bool) error {
 
 	}
 
-	// no validation rules for SpecVersion
-
-	// no validation rules for StateVersion
-
 	// no validation rules for Deleted
 
 	// no validation rules for ReconcileError
+
+	// no validation rules for Version
+
+	// no validation rules for MetaVersion
+
+	// no validation rules for SpecVersion
+
+	// no validation rules for StateVersion
 
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
@@ -701,6 +705,39 @@ func (m *ResourceMeta) validate(all bool) error {
 			if err := v.Validate(); err != nil {
 				return ResourceMetaValidationError{
 					field:  "Owner",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if m.RenamedFrom != nil {
+
+		if all {
+			switch v := interface{}(m.GetRenamedFrom()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ResourceMetaValidationError{
+						field:  "RenamedFrom",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ResourceMetaValidationError{
+						field:  "RenamedFrom",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetRenamedFrom()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ResourceMetaValidationError{
+					field:  "RenamedFrom",
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
@@ -1107,6 +1144,8 @@ func (m *ProjectParserSpec) validate(all bool) error {
 	// no validation rules for Watch
 
 	// no validation rules for Atomic
+
+	// no validation rules for StreamSourceIngestion
 
 	// no validation rules for MaterializeModelDefault
 
@@ -1573,6 +1612,10 @@ func (m *SourceSpec) validate(all bool) error {
 
 	// no validation rules for TimeoutSeconds
 
+	// no validation rules for Atomic
+
+	// no validation rules for Trigger
+
 	if len(errors) > 0 {
 		return SourceSpecMultiError(errors)
 	}
@@ -1674,7 +1717,36 @@ func (m *SourceState) validate(all bool) error {
 
 	// no validation rules for TableName
 
-	// no validation rules for StageTableName
+	// no validation rules for SpecHash
+
+	if all {
+		switch v := interface{}(m.GetRefreshedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, SourceStateValidationError{
+					field:  "RefreshedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, SourceStateValidationError{
+					field:  "RefreshedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetRefreshedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return SourceStateValidationError{
+				field:  "RefreshedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	if all {
 		switch v := interface{}(m.GetValidationError()).(type) {
