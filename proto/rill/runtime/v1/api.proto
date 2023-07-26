@@ -883,4 +883,3 @@ message ListConnectorsRequest {}
 message ListConnectorsResponse {
   repeated Connector connectors = 1;
 }
-

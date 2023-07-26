@@ -2,6 +2,7 @@ package file
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -14,6 +15,8 @@ import (
 )
 
 const batchInterval = 250 * time.Millisecond
+
+const maxBufferSize = 1000
 
 // watcher implements a recursive, batching file watcher on top of fsnotify.
 type watcher struct {
@@ -65,25 +68,22 @@ func (w *watcher) closeWithErr(err error) {
 	default:
 	}
 
-	w.err = err
-
-	err = w.watcher.Close()
-	if w.err == nil {
-		w.err = err
-	}
+	closeErr := w.watcher.Close()
+	w.err = errors.Join(err, closeErr)
 	if w.err == nil {
 		w.err = fmt.Errorf("file watcher closed")
 	}
+
 	close(w.done)
 }
 
 func (w *watcher) subscribe(ctx context.Context, fn drivers.WatchCallback) error {
+	w.mu.Lock()
 	if w.err != nil {
+		w.mu.Unlock()
 		return w.err
 	}
-
 	id := fmt.Sprintf("%v", fn)
-	w.mu.Lock()
 	w.subscribers[id] = fn
 	w.mu.Unlock()
 
@@ -101,6 +101,9 @@ func (w *watcher) subscribe(ctx context.Context, fn drivers.WatchCallback) error
 	}
 }
 
+// flush emits buffered events to all subscribers.
+// Note it is called in the event loop in runInner, so new events will not be appended to w.buffer while a flush is running.
+// Calls to flush block until all subscribers have processed the events. This is an acceptable trade-off for now, but we may want to revisit it in the future.
 func (w *watcher) flush() {
 	if len(w.buffer) == 0 {
 		return
@@ -122,12 +125,13 @@ func (w *watcher) run() {
 }
 
 func (w *watcher) runInner() error {
-	timer := time.NewTimer(batchInterval)
-	timerActive := true
+	ticker := time.NewTicker(batchInterval)
+	defer ticker.Stop()
+
 	for {
 		select {
-		case <-timer.C:
-			timerActive = false
+		case <-ticker.C:
+			ticker.Stop()
 			w.flush()
 		case err, ok := <-w.watcher.Errors:
 			if !ok {
@@ -170,12 +174,14 @@ func (w *watcher) runInner() error {
 				}
 			}
 
-			// NOTE: See docs for timer.Reset() for context on why we need to check if the timer is active
-			if timerActive && !timer.Stop() {
-				<-timer.C
+			// Reset the timer so we only flush when no events have been observed for batchInterval.
+			// (But to avoid the buffer growing infinitely in edge cases, we enforce a max buffer size.)
+			if len(w.buffer) < maxBufferSize {
+				ticker.Reset(batchInterval)
+			} else {
+				ticker.Stop()
+				w.flush()
 			}
-			timer.Reset(batchInterval)
-			timerActive = true
 		}
 	}
 }
@@ -195,8 +201,10 @@ func (w *watcher) addDir(path string, replay bool) error {
 	}
 
 	for _, e := range entries {
+		fullPath := filepath.Join(path, e.Name())
+
 		if replay {
-			ep, err := filepath.Rel(w.root, filepath.Join(path, e.Name()))
+			ep, err := filepath.Rel(w.root, fullPath)
 			if err != nil {
 				return err
 			}
@@ -210,7 +218,7 @@ func (w *watcher) addDir(path string, replay bool) error {
 		}
 
 		if e.IsDir() {
-			err := w.addDir(filepath.Join(path, e.Name()), replay)
+			err := w.addDir(fullPath, replay)
 			if err != nil {
 				return err
 			}
