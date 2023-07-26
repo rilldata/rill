@@ -27,7 +27,7 @@ func ServiceCmd(cfg *config.Config) *cobra.Command {
 
 func toRow(s *adminv1.Service) *service {
 	return &service{
-		Name:      s.ServiceName,
+		Name:      s.Name,
 		OrgName:   s.OrgName,
 		CreatedAt: s.CreatedOn.AsTime().Format(cmdutil.TSFormatLayout),
 	}

@@ -4294,9 +4294,9 @@ export class ListServiceAuthTokensRequest extends Message<ListServiceAuthTokensR
  */
 export class ListServiceAuthTokensResponse extends Message<ListServiceAuthTokensResponse> {
   /**
-   * @generated from field: repeated string tokens = 1;
+   * @generated from field: repeated rill.admin.v1.ServiceToken tokens = 1;
    */
-  tokens: string[] = [];
+  tokens: ServiceToken[] = [];
 
   constructor(data?: PartialMessage<ListServiceAuthTokensResponse>) {
     super();
@@ -4306,7 +4306,7 @@ export class ListServiceAuthTokensResponse extends Message<ListServiceAuthTokens
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.ListServiceAuthTokensResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "tokens", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 1, name: "tokens", kind: "message", T: ServiceToken, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListServiceAuthTokensResponse {
@@ -4827,24 +4827,27 @@ export class Service extends Message<Service> {
   id = "";
 
   /**
-   * @generated from field: string service_name = 2;
+   * @generated from field: string name = 2;
    */
-  serviceName = "";
+  name = "";
 
   /**
-   * @generated from field: string org_name = 3;
+   * @generated from field: string org_id = 3;
+   */
+  orgId = "";
+
+  /**
+   * @generated from field: string org_name = 4;
    */
   orgName = "";
 
   /**
-   * string role = 4;
-   *
-   * @generated from field: google.protobuf.Timestamp created_on = 4;
+   * @generated from field: google.protobuf.Timestamp created_on = 5;
    */
   createdOn?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Timestamp updated_on = 5;
+   * @generated from field: google.protobuf.Timestamp updated_on = 6;
    */
   updatedOn?: Timestamp;
 
@@ -4857,10 +4860,11 @@ export class Service extends Message<Service> {
   static readonly typeName = "rill.admin.v1.Service";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "service_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "org_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "created_on", kind: "message", T: Timestamp },
-    { no: 5, name: "updated_on", kind: "message", T: Timestamp },
+    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "org_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "created_on", kind: "message", T: Timestamp },
+    { no: 6, name: "updated_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Service {
@@ -5678,6 +5682,55 @@ export class Bookmark extends Message<Bookmark> {
 
   static equals(a: Bookmark | PlainMessage<Bookmark> | undefined, b: Bookmark | PlainMessage<Bookmark> | undefined): boolean {
     return proto3.util.equals(Bookmark, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ServiceToken
+ */
+export class ServiceToken extends Message<ServiceToken> {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp created_on = 2;
+   */
+  createdOn?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp expires_on = 3;
+   */
+  expiresOn?: Timestamp;
+
+  constructor(data?: PartialMessage<ServiceToken>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ServiceToken";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "created_on", kind: "message", T: Timestamp },
+    { no: 3, name: "expires_on", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ServiceToken {
+    return new ServiceToken().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ServiceToken {
+    return new ServiceToken().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ServiceToken {
+    return new ServiceToken().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ServiceToken | PlainMessage<ServiceToken> | undefined, b: ServiceToken | PlainMessage<ServiceToken> | undefined): boolean {
+    return proto3.util.equals(ServiceToken, a, b);
   }
 }
 

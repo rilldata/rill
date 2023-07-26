@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/authtoken"
 )
@@ -23,17 +22,7 @@ type userAuthToken struct {
 	token *authtoken.Token
 }
 
-// serviceAuthToken implements AuthToken for tokens belonging to a service.
-type serviceAuthToken struct {
-	model *database.ServiceAuthToken
-	token *authtoken.Token
-}
-
 func (t *userAuthToken) Token() *authtoken.Token {
-	return t.token
-}
-
-func (t *serviceAuthToken) Token() *authtoken.Token {
 	return t.token
 }
 
@@ -43,10 +32,6 @@ func (t *userAuthToken) OwnerID() string {
 	}
 
 	return t.model.UserID
-}
-
-func (t *serviceAuthToken) OwnerID() string {
-	return t.model.ServiceID
 }
 
 // IssueUserAuthToken generates and persists a new auth token for a user.
@@ -75,6 +60,20 @@ func (s *Service) IssueUserAuthToken(ctx context.Context, userID, clientID, disp
 	return &userAuthToken{model: uat, token: tkn}, nil
 }
 
+// serviceAuthToken implements AuthToken for tokens belonging to a service.
+type serviceAuthToken struct {
+	model *database.ServiceAuthToken
+	token *authtoken.Token
+}
+
+func (t *serviceAuthToken) Token() *authtoken.Token {
+	return t.token
+}
+
+func (t *serviceAuthToken) OwnerID() string {
+	return t.model.ServiceID
+}
+
 // IssueServiceAuthToken generates and persists a new auth token for a service.
 func (s *Service) IssueServiceAuthToken(ctx context.Context, serviceID string, ttl *time.Duration) (AuthToken, error) {
 	tkn := authtoken.NewRandom(authtoken.TypeService)
@@ -96,33 +95,6 @@ func (s *Service) IssueServiceAuthToken(ctx context.Context, serviceID string, t
 	}
 
 	return &serviceAuthToken{model: sat, token: tkn}, nil
-}
-
-// ListServiceAuthTokens lists all auth tokens for a service.
-// Looks like we cannot list auth tokens for a user. We can just list token.ID which are available for given serviceID
-// Need to update this method to list token ID for a serviceID
-func (s *Service) ListServiceAuthTokens(ctx context.Context, serviceID string) ([]AuthToken, error) {
-	tokens, err := s.DB.FindServiceAuthTokens(ctx, serviceID)
-	if err != nil {
-		return nil, err
-	}
-
-	authTokens := make([]AuthToken, len(tokens))
-	for i, token := range tokens {
-		id, err := uuid.Parse(token.ID)
-		if err != nil {
-			return nil, err
-		}
-
-		tkn := &authtoken.Token{
-			Type:   authtoken.TypeService,
-			ID:     id,
-			Secret: [24]byte(token.SecretHash),
-		}
-		authTokens[i] = &serviceAuthToken{model: token, token: tkn}
-	}
-
-	return authTokens, nil
 }
 
 // ValidateAuthToken validates an auth token against persistent storage.

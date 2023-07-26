@@ -10,33 +10,32 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // CreateService creates a new service account.
 func (s *Server) CreateService(ctx context.Context, req *adminv1.CreateServiceRequest) (*adminv1.CreateServiceResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.name", req.Name),
-		attribute.String("args.OrganizationName", req.OrganizationName),
+		attribute.String("args.organization_name", req.OrganizationName),
 	)
-
-	// Check the request is made by an authenticated user
-	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
-	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	claims := auth.GetClaims(ctx)
 	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to create a service")
 	}
 
-	service, err := s.admin.CreateServiceForOrganization(ctx, org.Name, req.Name)
+	service, err := s.admin.DB.InsertService(ctx, &database.InsertServiceOptions{
+		OrgID: org.ID,
+		Name:  req.Name,
+	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	return &adminv1.CreateServiceResponse{
@@ -48,20 +47,15 @@ func (s *Server) CreateService(ctx context.Context, req *adminv1.CreateServiceRe
 func (s *Server) ListServices(ctx context.Context, req *adminv1.ListServicesRequest) (*adminv1.ListServicesResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.OrganizationName),
-		attribute.String("args.OrganizationName", req.OrganizationName),
+		attribute.String("args.O]organization_name", req.OrganizationName),
 	)
-
-	// Check the request is made by an authenticated user
-	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
-	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	claims := auth.GetClaims(ctx)
 	// Need a check if any other service permission to list a services
 	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to list services")
@@ -81,17 +75,11 @@ func (s *Server) ListServices(ctx context.Context, req *adminv1.ListServicesRequ
 func (s *Server) UpdateService(ctx context.Context, req *adminv1.UpdateServiceRequest) (*adminv1.UpdateServiceResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.name", req.Name),
-		attribute.String("args.OrganizationName", req.OrganizationName),
+		attribute.String("args.organization_name", req.OrganizationName),
 	)
 
 	if req.NewName != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.new_name", *req.NewName))
-	}
-
-	// Check the request is made by an authenticated user
-	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
@@ -99,7 +87,7 @@ func (s *Server) UpdateService(ctx context.Context, req *adminv1.UpdateServiceRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// Need a check for service permission to update a service
+	claims := auth.GetClaims(ctx)
 	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to update service")
 	}
@@ -125,7 +113,7 @@ func (s *Server) UpdateService(ctx context.Context, req *adminv1.UpdateServiceRe
 func (s *Server) DeleteService(ctx context.Context, req *adminv1.DeleteServiceRequest) (*adminv1.DeleteServiceResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.name", req.Name),
-		attribute.String("args.OrganizationName", req.OrganizationName),
+		attribute.String("args.organization_name", req.OrganizationName),
 	)
 
 	service, err := s.admin.DB.FindServiceByName(ctx, req.OrganizationName, req.Name)
@@ -133,18 +121,12 @@ func (s *Server) DeleteService(ctx context.Context, req *adminv1.DeleteServiceRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// Check the request is made by an authenticated user
-	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
-	}
-
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// Need a check for service permission to delete a service
+	claims := auth.GetClaims(ctx)
 	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to delete service")
 	}
@@ -164,20 +146,14 @@ func (s *Server) ListServiceAuthTokens(ctx context.Context, req *adminv1.ListSer
 		attribute.String("args.organization_name", req.OrganizationName),
 	)
 
-	// Check the request is made by an authenticated user
-	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
-	}
-
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// Need a check for service permission to list a service auth tokens
+	claims := auth.GetClaims(ctx)
 	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
-		return nil, status.Error(codes.PermissionDenied, "not allowed to list service auth tokens")
+		return nil, status.Error(codes.PermissionDenied, "not allowed to update org")
 	}
 
 	service, err := s.admin.DB.FindServiceByName(ctx, req.OrganizationName, req.ServiceName)
@@ -185,14 +161,18 @@ func (s *Server) ListServiceAuthTokens(ctx context.Context, req *adminv1.ListSer
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	tokens, err := s.admin.ListServiceAuthTokens(ctx, service.ID)
+	tokens, err := s.admin.DB.FindServiceAuthTokens(ctx, service.ID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
-	dtos := make([]string, len(tokens))
-	for i, p := range tokens {
-		dtos[i] = p.Token().String()
+	dtos := make([]*adminv1.ServiceToken, len(tokens))
+	for i, token := range tokens {
+		dtos[i] = &adminv1.ServiceToken{
+			Id:        token.ID,
+			CreatedOn: timestamppb.New(token.CreatedOn),
+			ExpiresOn: timestamppb.New(*token.ExpiresOn),
+		}
 	}
 
 	return &adminv1.ListServiceAuthTokensResponse{
@@ -207,12 +187,6 @@ func (s *Server) IssueServiceAuthToken(ctx context.Context, req *adminv1.IssueSe
 		attribute.String("args.organization_name", req.OrganizationName),
 	)
 
-	// Check the request is made by an authenticated user
-	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
-	}
-
 	service, err := s.admin.DB.FindServiceByName(ctx, req.OrganizationName, req.ServiceName)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -223,7 +197,7 @@ func (s *Server) IssueServiceAuthToken(ctx context.Context, req *adminv1.IssueSe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// Need a check for service permission to issue a token
+	claims := auth.GetClaims(ctx)
 	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to update org")
 	}
@@ -244,18 +218,27 @@ func (s *Server) RevokeServiceAuthToken(ctx context.Context, req *adminv1.Revoke
 		attribute.String("args.token_id", req.TokenId),
 	)
 
-	// Check the request is made by an authenticated user
-	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+	token, err := s.admin.DB.FindServiceAuthToken(ctx, req.TokenId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// Need a check for service permission to revoke a token
-	// if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
-	// 	return nil, status.Error(codes.PermissionDenied, "not allowed to update org")
-	// }
+	service, err := s.admin.DB.FindService(ctx, token.ServiceID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 
-	err := s.admin.RevokeAuthToken(ctx, req.TokenId)
+	org, err := s.admin.DB.FindOrganizationByName(ctx, service.OrgID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to revoke auth token")
+	}
+
+	err = s.admin.RevokeAuthToken(ctx, req.TokenId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -265,9 +248,10 @@ func (s *Server) RevokeServiceAuthToken(ctx context.Context, req *adminv1.Revoke
 
 func serviceToPB(service *database.Service) *adminv1.Service {
 	return &adminv1.Service{
-		Id:          service.ID,
-		ServiceName: service.Name,
-		OrgName:     service.OrgName,
+		Id:      service.ID,
+		Name:    service.Name,
+		OrgId:   service.OrgID,
+		OrgName: service.OrgName,
 	}
 }
 

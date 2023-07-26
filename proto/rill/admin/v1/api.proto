@@ -202,24 +202,6 @@ service AdminService {
     option (google.api.http) = {delete: "/v1/tokens/current"};
   }
 
-  // ListServiceAuthTokens lists all the service auth tokens
-  rpc ListServiceAuthTokens(ListServiceAuthTokensRequest) returns (ListServiceAuthTokensResponse) {
-    option (google.api.http) = {get: "/v1/tokens/service"};
-  }
-
-  // IssueServiceAuthToken returns the temporary token for given service account
-  rpc IssueServiceAuthToken(IssueServiceAuthTokenRequest) returns (IssueServiceAuthTokenResponse) {
-    option (google.api.http) = {
-      post: "/v1/tokens/service",
-      body: "*"
-    };
-  }
-
-  // RevokeServiceAuthToken revoke the service auth token
-  rpc RevokeServiceAuthToken(RevokeServiceAuthTokenRequest) returns (RevokeServiceAuthTokenResponse) {
-    option (google.api.http) = {delete: "/v1/tokens/service"};
-  }
-
   // GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
   // If the caller has not granted access to the repository, instructions for granting access are returned.
   rpc GetGithubRepoStatus(GetGithubRepoStatusRequest) returns (GetGithubRepoStatusResponse) {
@@ -315,6 +297,24 @@ service AdminService {
   // DeleteService deletes a service per organization
   rpc DeleteService(DeleteServiceRequest) returns (DeleteServiceResponse) {
     option (google.api.http) = {delete: "/v1/organizations/{organization_name}/services/{name}"};
+  }
+
+   // ListServiceAuthTokens lists all the service auth tokens
+  rpc ListServiceAuthTokens(ListServiceAuthTokensRequest) returns (ListServiceAuthTokensResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization_name}/services/{service_name}/tokens"};
+  }
+
+  // IssueServiceAuthToken returns the temporary token for given service account
+  rpc IssueServiceAuthToken(IssueServiceAuthTokenRequest) returns (IssueServiceAuthTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization_name}/services/{service_name}/tokens",
+      body: "*"
+    };
+  }
+
+  // RevokeServiceAuthToken revoke the service auth token
+  rpc RevokeServiceAuthToken(RevokeServiceAuthTokenRequest) returns (RevokeServiceAuthTokenResponse) {
+    option (google.api.http) = {delete: "/v1/services/tokens/{token_id}"};
   }
 
   // UpdateUserPreferences updates the preferences for the user
@@ -833,7 +833,7 @@ message ListServiceAuthTokensRequest {
 }
 
 message ListServiceAuthTokensResponse {
-  repeated string tokens = 1;
+  repeated ServiceToken tokens = 1;
 }
 
 message GetGithubRepoStatusRequest {
@@ -894,11 +894,11 @@ message User {
 
 message Service {
   string id = 1;
-  string service_name = 2;
-  string org_name = 3;
-  // string role = 4;
-  google.protobuf.Timestamp created_on = 4;
-  google.protobuf.Timestamp updated_on = 5;
+  string name = 2;
+  string org_id = 3;
+  string org_name = 4;
+  google.protobuf.Timestamp created_on = 5;
+  google.protobuf.Timestamp updated_on = 6;
 }
 
 message Organization {
@@ -1016,4 +1016,10 @@ message Bookmark {
   string user_id = 6;
   google.protobuf.Timestamp created_on = 7;
   google.protobuf.Timestamp updated_on = 8;
+}
+
+message ServiceToken {
+  string id = 1;
+  google.protobuf.Timestamp created_on = 2;
+  google.protobuf.Timestamp expires_on = 3;
 }

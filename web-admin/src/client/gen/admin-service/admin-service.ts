@@ -16,7 +16,7 @@ import type {
 import type {
   V1TriggerReconcileResponse,
   RpcStatus,
-  AdminServiceTriggerReconcileBody,
+  AdminServiceTriggerReconcileBodyBody,
   V1TriggerRefreshSourcesResponse,
   AdminServiceTriggerRefreshSourcesBody,
   V1GetGithubRepoStatusResponse,
@@ -69,9 +69,12 @@ import type {
   V1DeleteServiceResponse,
   V1UpdateServiceResponse,
   AdminServiceUpdateServiceBody,
+  V1ListServiceAuthTokensResponse,
+  V1IssueServiceAuthTokenResponse,
   V1PingResponse,
   V1TriggerRedeployResponse,
   V1TriggerRedeployRequest,
+  V1RevokeServiceAuthTokenResponse,
   V1ListSuperusersResponse,
   V1SetSuperuserResponse,
   V1SetSuperuserRequest,
@@ -86,12 +89,6 @@ import type {
   V1RevokeCurrentAuthTokenResponse,
   V1IssueRepresentativeAuthTokenResponse,
   V1IssueRepresentativeAuthTokenRequest,
-  V1ListServiceAuthTokensResponse,
-  AdminServiceListServiceAuthTokensParams,
-  V1RevokeServiceAuthTokenResponse,
-  AdminServiceRevokeServiceAuthTokenParams,
-  V1IssueServiceAuthTokenResponse,
-  V1IssueServiceAuthTokenRequest,
   V1GetUserResponse,
   AdminServiceGetUserParams,
   V1ListBookmarksResponse,
@@ -113,13 +110,13 @@ import { httpClient } from "../../http-client";
  */
 export const adminServiceTriggerReconcile = (
   deploymentId: string,
-  adminServiceTriggerReconcileBody: AdminServiceTriggerReconcileBody
+  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody
 ) => {
   return httpClient<V1TriggerReconcileResponse>({
     url: `/v1/deployments/${deploymentId}/reconcile`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceTriggerReconcileBody,
+    data: adminServiceTriggerReconcileBodyBody,
   });
 };
 
@@ -130,20 +127,20 @@ export const getAdminServiceTriggerReconcileMutationOptions = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceTriggerReconcile>>,
     TError,
-    { deploymentId: string; data: AdminServiceTriggerReconcileBody },
+    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
     TContext
   >;
 }): CreateMutationOptions<
   Awaited<ReturnType<typeof adminServiceTriggerReconcile>>,
   TError,
-  { deploymentId: string; data: AdminServiceTriggerReconcileBody },
+  { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
   TContext
 > => {
   const { mutation: mutationOptions } = options ?? {};
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminServiceTriggerReconcile>>,
-    { deploymentId: string; data: AdminServiceTriggerReconcileBody }
+    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody }
   > = (props) => {
     const { deploymentId, data } = props ?? {};
 
@@ -157,7 +154,7 @@ export type AdminServiceTriggerReconcileMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceTriggerReconcile>>
 >;
 export type AdminServiceTriggerReconcileMutationBody =
-  AdminServiceTriggerReconcileBody;
+  AdminServiceTriggerReconcileBodyBody;
 export type AdminServiceTriggerReconcileMutationError = RpcStatus;
 
 /**
@@ -170,7 +167,7 @@ export const createAdminServiceTriggerReconcile = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceTriggerReconcile>>,
     TError,
-    { deploymentId: string; data: AdminServiceTriggerReconcileBody },
+    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
     TContext
   >;
 }) => {
@@ -2896,6 +2893,196 @@ export const createAdminServiceUpdateService = <
   return createMutation(mutationOptions);
 };
 /**
+ * @summary ListServiceAuthTokens lists all the service auth tokens
+ */
+export const adminServiceListServiceAuthTokens = (
+  organizationName: string,
+  serviceName: string,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1ListServiceAuthTokensResponse>({
+    url: `/v1/organizations/${organizationName}/services/${serviceName}/tokens`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceListServiceAuthTokensQueryKey = (
+  organizationName: string,
+  serviceName: string
+) =>
+  [
+    `/v1/organizations/${organizationName}/services/${serviceName}/tokens`,
+  ] as const;
+
+export const getAdminServiceListServiceAuthTokensQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceListServiceAuthTokens>>,
+  TError = RpcStatus
+>(
+  organizationName: string,
+  serviceName: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceListServiceAuthTokens>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryOptions<
+  Awaited<ReturnType<typeof adminServiceListServiceAuthTokens>>,
+  TError,
+  TData
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceListServiceAuthTokensQueryKey(organizationName, serviceName);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListServiceAuthTokens>>
+  > = ({ signal }) =>
+    adminServiceListServiceAuthTokens(organizationName, serviceName, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(organizationName && serviceName),
+    ...queryOptions,
+  };
+};
+
+export type AdminServiceListServiceAuthTokensQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListServiceAuthTokens>>
+>;
+export type AdminServiceListServiceAuthTokensQueryError = RpcStatus;
+
+/**
+ * @summary ListServiceAuthTokens lists all the service auth tokens
+ */
+export const createAdminServiceListServiceAuthTokens = <
+  TData = Awaited<ReturnType<typeof adminServiceListServiceAuthTokens>>,
+  TError = RpcStatus
+>(
+  organizationName: string,
+  serviceName: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceListServiceAuthTokens>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const queryOptions = getAdminServiceListServiceAuthTokensQueryOptions(
+    organizationName,
+    serviceName,
+    options
+  );
+
+  const query = createQuery(queryOptions) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+};
+
+/**
+ * @summary IssueServiceAuthToken returns the temporary token for given service account
+ */
+export const adminServiceIssueServiceAuthToken = (
+  organizationName: string,
+  serviceName: string,
+  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody
+) => {
+  return httpClient<V1IssueServiceAuthTokenResponse>({
+    url: `/v1/organizations/${organizationName}/services/${serviceName}/tokens`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceTriggerReconcileBodyBody,
+  });
+};
+
+export const getAdminServiceIssueServiceAuthTokenMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceIssueServiceAuthToken>>,
+    TError,
+    {
+      organizationName: string;
+      serviceName: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceIssueServiceAuthToken>>,
+  TError,
+  {
+    organizationName: string;
+    serviceName: string;
+    data: AdminServiceTriggerReconcileBodyBody;
+  },
+  TContext
+> => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceIssueServiceAuthToken>>,
+    {
+      organizationName: string;
+      serviceName: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    }
+  > = (props) => {
+    const { organizationName, serviceName, data } = props ?? {};
+
+    return adminServiceIssueServiceAuthToken(
+      organizationName,
+      serviceName,
+      data
+    );
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceIssueServiceAuthTokenMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceIssueServiceAuthToken>>
+>;
+export type AdminServiceIssueServiceAuthTokenMutationBody =
+  AdminServiceTriggerReconcileBodyBody;
+export type AdminServiceIssueServiceAuthTokenMutationError = RpcStatus;
+
+/**
+ * @summary IssueServiceAuthToken returns the temporary token for given service account
+ */
+export const createAdminServiceIssueServiceAuthToken = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceIssueServiceAuthToken>>,
+    TError,
+    {
+      organizationName: string;
+      serviceName: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >;
+}) => {
+  const mutationOptions =
+    getAdminServiceIssueServiceAuthTokenMutationOptions(options);
+
+  return createMutation(mutationOptions);
+};
+/**
  * @summary Ping returns information about the server
  */
 export const adminServicePing = (signal?: AbortSignal) => {
@@ -3025,6 +3212,71 @@ export const createAdminServiceTriggerRedeploy = <
 }) => {
   const mutationOptions =
     getAdminServiceTriggerRedeployMutationOptions(options);
+
+  return createMutation(mutationOptions);
+};
+/**
+ * @summary RevokeServiceAuthToken revoke the service auth token
+ */
+export const adminServiceRevokeServiceAuthToken = (tokenId: string) => {
+  return httpClient<V1RevokeServiceAuthTokenResponse>({
+    url: `/v1/services/tokens/${tokenId}`,
+    method: "delete",
+  });
+};
+
+export const getAdminServiceRevokeServiceAuthTokenMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceRevokeServiceAuthToken>>,
+    TError,
+    { tokenId: string },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceRevokeServiceAuthToken>>,
+  TError,
+  { tokenId: string },
+  TContext
+> => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceRevokeServiceAuthToken>>,
+    { tokenId: string }
+  > = (props) => {
+    const { tokenId } = props ?? {};
+
+    return adminServiceRevokeServiceAuthToken(tokenId);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceRevokeServiceAuthTokenMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceRevokeServiceAuthToken>>
+>;
+
+export type AdminServiceRevokeServiceAuthTokenMutationError = RpcStatus;
+
+/**
+ * @summary RevokeServiceAuthToken revoke the service auth token
+ */
+export const createAdminServiceRevokeServiceAuthToken = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceRevokeServiceAuthToken>>,
+    TError,
+    { tokenId: string },
+    TContext
+  >;
+}) => {
+  const mutationOptions =
+    getAdminServiceRevokeServiceAuthTokenMutationOptions(options);
 
   return createMutation(mutationOptions);
 };
@@ -3608,229 +3860,6 @@ export const createAdminServiceIssueRepresentativeAuthToken = <
 }) => {
   const mutationOptions =
     getAdminServiceIssueRepresentativeAuthTokenMutationOptions(options);
-
-  return createMutation(mutationOptions);
-};
-/**
- * @summary ListServiceAuthTokens lists all the service auth tokens
- */
-export const adminServiceListServiceAuthTokens = (
-  params?: AdminServiceListServiceAuthTokensParams,
-  signal?: AbortSignal
-) => {
-  return httpClient<V1ListServiceAuthTokensResponse>({
-    url: `/v1/tokens/service`,
-    method: "get",
-    params,
-    signal,
-  });
-};
-
-export const getAdminServiceListServiceAuthTokensQueryKey = (
-  params?: AdminServiceListServiceAuthTokensParams
-) => [`/v1/tokens/service`, ...(params ? [params] : [])] as const;
-
-export const getAdminServiceListServiceAuthTokensQueryOptions = <
-  TData = Awaited<ReturnType<typeof adminServiceListServiceAuthTokens>>,
-  TError = RpcStatus
->(
-  params?: AdminServiceListServiceAuthTokensParams,
-  options?: {
-    query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof adminServiceListServiceAuthTokens>>,
-      TError,
-      TData
-    >;
-  }
-): CreateQueryOptions<
-  Awaited<ReturnType<typeof adminServiceListServiceAuthTokens>>,
-  TError,
-  TData
-> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ??
-    getAdminServiceListServiceAuthTokensQueryKey(params);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceListServiceAuthTokens>>
-  > = ({ signal }) => adminServiceListServiceAuthTokens(params, signal);
-
-  return { queryKey, queryFn, ...queryOptions };
-};
-
-export type AdminServiceListServiceAuthTokensQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceListServiceAuthTokens>>
->;
-export type AdminServiceListServiceAuthTokensQueryError = RpcStatus;
-
-/**
- * @summary ListServiceAuthTokens lists all the service auth tokens
- */
-export const createAdminServiceListServiceAuthTokens = <
-  TData = Awaited<ReturnType<typeof adminServiceListServiceAuthTokens>>,
-  TError = RpcStatus
->(
-  params?: AdminServiceListServiceAuthTokensParams,
-  options?: {
-    query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof adminServiceListServiceAuthTokens>>,
-      TError,
-      TData
-    >;
-  }
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
-  const queryOptions = getAdminServiceListServiceAuthTokensQueryOptions(
-    params,
-    options
-  );
-
-  const query = createQuery(queryOptions) as CreateQueryResult<
-    TData,
-    TError
-  > & { queryKey: QueryKey };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
-};
-
-/**
- * @summary RevokeServiceAuthToken revoke the service auth token
- */
-export const adminServiceRevokeServiceAuthToken = (
-  params?: AdminServiceRevokeServiceAuthTokenParams
-) => {
-  return httpClient<V1RevokeServiceAuthTokenResponse>({
-    url: `/v1/tokens/service`,
-    method: "delete",
-    params,
-  });
-};
-
-export const getAdminServiceRevokeServiceAuthTokenMutationOptions = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceRevokeServiceAuthToken>>,
-    TError,
-    { params?: AdminServiceRevokeServiceAuthTokenParams },
-    TContext
-  >;
-}): CreateMutationOptions<
-  Awaited<ReturnType<typeof adminServiceRevokeServiceAuthToken>>,
-  TError,
-  { params?: AdminServiceRevokeServiceAuthTokenParams },
-  TContext
-> => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceRevokeServiceAuthToken>>,
-    { params?: AdminServiceRevokeServiceAuthTokenParams }
-  > = (props) => {
-    const { params } = props ?? {};
-
-    return adminServiceRevokeServiceAuthToken(params);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type AdminServiceRevokeServiceAuthTokenMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceRevokeServiceAuthToken>>
->;
-
-export type AdminServiceRevokeServiceAuthTokenMutationError = RpcStatus;
-
-/**
- * @summary RevokeServiceAuthToken revoke the service auth token
- */
-export const createAdminServiceRevokeServiceAuthToken = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceRevokeServiceAuthToken>>,
-    TError,
-    { params?: AdminServiceRevokeServiceAuthTokenParams },
-    TContext
-  >;
-}) => {
-  const mutationOptions =
-    getAdminServiceRevokeServiceAuthTokenMutationOptions(options);
-
-  return createMutation(mutationOptions);
-};
-/**
- * @summary IssueServiceAuthToken returns the temporary token for given service account
- */
-export const adminServiceIssueServiceAuthToken = (
-  v1IssueServiceAuthTokenRequest: V1IssueServiceAuthTokenRequest
-) => {
-  return httpClient<V1IssueServiceAuthTokenResponse>({
-    url: `/v1/tokens/service`,
-    method: "post",
-    headers: { "Content-Type": "application/json" },
-    data: v1IssueServiceAuthTokenRequest,
-  });
-};
-
-export const getAdminServiceIssueServiceAuthTokenMutationOptions = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceIssueServiceAuthToken>>,
-    TError,
-    { data: V1IssueServiceAuthTokenRequest },
-    TContext
-  >;
-}): CreateMutationOptions<
-  Awaited<ReturnType<typeof adminServiceIssueServiceAuthToken>>,
-  TError,
-  { data: V1IssueServiceAuthTokenRequest },
-  TContext
-> => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceIssueServiceAuthToken>>,
-    { data: V1IssueServiceAuthTokenRequest }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return adminServiceIssueServiceAuthToken(data);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type AdminServiceIssueServiceAuthTokenMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceIssueServiceAuthToken>>
->;
-export type AdminServiceIssueServiceAuthTokenMutationBody =
-  V1IssueServiceAuthTokenRequest;
-export type AdminServiceIssueServiceAuthTokenMutationError = RpcStatus;
-
-/**
- * @summary IssueServiceAuthToken returns the temporary token for given service account
- */
-export const createAdminServiceIssueServiceAuthToken = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceIssueServiceAuthToken>>,
-    TError,
-    { data: V1IssueServiceAuthTokenRequest },
-    TContext
-  >;
-}) => {
-  const mutationOptions =
-    getAdminServiceIssueServiceAuthTokenMutationOptions(options);
 
   return createMutation(mutationOptions);
 };

@@ -689,9 +689,9 @@ func (c *connection) InsertService(ctx context.Context, opts *database.InsertSer
 
 	res := &database.Service{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO service (org_name, name)
+		INSERT INTO service (org_id, name)
 		VALUES ($1, $2) RETURNING *`,
-		opts.OrgName, opts.Name,
+		opts.OrgID, opts.Name,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("service", err)

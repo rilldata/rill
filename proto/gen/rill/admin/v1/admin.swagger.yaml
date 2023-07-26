@@ -952,6 +952,58 @@ paths:
                 type: string
       tags:
         - AdminService
+  /v1/organizations/{organizationName}/services/{serviceName}/tokens:
+    get:
+      summary: ListServiceAuthTokens lists all the service auth tokens
+      operationId: AdminService_ListServiceAuthTokens
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListServiceAuthTokensResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: serviceName
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    post:
+      summary: IssueServiceAuthToken returns the temporary token for given service account
+      operationId: AdminService_IssueServiceAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1IssueServiceAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: serviceName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - AdminService
   /v1/ping:
     get:
       summary: Ping returns information about the server
@@ -986,6 +1038,26 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1TriggerRedeployRequest'
+      tags:
+        - AdminService
+  /v1/services/tokens/{tokenId}:
+    delete:
+      summary: RevokeServiceAuthToken revoke the service auth token
+      operationId: AdminService_RevokeServiceAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RevokeServiceAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: tokenId
+          in: path
+          required: true
+          type: string
       tags:
         - AdminService
   /v1/superuser/members:
@@ -1164,69 +1236,6 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1IssueRepresentativeAuthTokenRequest'
-      tags:
-        - AdminService
-  /v1/tokens/service:
-    get:
-      summary: ListServiceAuthTokens lists all the service auth tokens
-      operationId: AdminService_ListServiceAuthTokens
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ListServiceAuthTokensResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: query
-          required: false
-          type: string
-        - name: serviceName
-          in: query
-          required: false
-          type: string
-      tags:
-        - AdminService
-    delete:
-      summary: RevokeServiceAuthToken revoke the service auth token
-      operationId: AdminService_RevokeServiceAuthToken
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1RevokeServiceAuthTokenResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: tokenId
-          in: query
-          required: false
-          type: string
-      tags:
-        - AdminService
-    post:
-      summary: IssueServiceAuthToken returns the temporary token for given service account
-      operationId: AdminService_IssueServiceAuthToken
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1IssueServiceAuthTokenResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: body
-          in: body
-          required: true
-          schema:
-            $ref: '#/definitions/v1IssueServiceAuthTokenRequest'
       tags:
         - AdminService
   /v1/users:
@@ -1607,13 +1616,6 @@ definitions:
     properties:
       token:
         type: string
-  v1IssueServiceAuthTokenRequest:
-    type: object
-    properties:
-      organizationName:
-        type: string
-      serviceName:
-        type: string
   v1IssueServiceAuthTokenResponse:
     type: object
     properties:
@@ -1695,7 +1697,8 @@ definitions:
       tokens:
         type: array
         items:
-          type: string
+          type: object
+          $ref: '#/definitions/v1ServiceToken'
   v1ListServicesResponse:
     type: object
     properties:
@@ -1904,15 +1907,27 @@ definitions:
     properties:
       id:
         type: string
-      serviceName:
+      name:
+        type: string
+      orgId:
         type: string
       orgName:
         type: string
       createdOn:
         type: string
         format: date-time
-        title: string role = 4;
       updatedOn:
+        type: string
+        format: date-time
+  v1ServiceToken:
+    type: object
+    properties:
+      id:
+        type: string
+      createdOn:
+        type: string
+        format: date-time
+      expiresOn:
         type: string
         format: date-time
   v1SetOrganizationMemberRoleResponse:

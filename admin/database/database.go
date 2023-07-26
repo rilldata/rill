@@ -380,6 +380,7 @@ type UpdateUserOptions struct {
 // Service accounts may belong to single organization
 type Service struct {
 	ID        string
+	OrgID     string    `db:"org_id"`
 	OrgName   string    `db:"org_name"`
 	Name      string    `validate:"slug"`
 	CreatedOn time.Time `db:"created_on"`
@@ -388,8 +389,8 @@ type Service struct {
 
 // InsertServiceOptions defines options for inserting a new service
 type InsertServiceOptions struct {
-	OrgName string
-	Name    string `validate:"slug"`
+	OrgID string
+	Name  string `validate:"slug"`
 }
 
 // UpdateServiceOptions defines options for updating an existing service

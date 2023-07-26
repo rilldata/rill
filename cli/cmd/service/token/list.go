@@ -10,8 +10,8 @@ import (
 func ListCmd(cfg *config.Config) *cobra.Command {
 	var name string
 	listCmd := &cobra.Command{
-		Use:   "list",
-		Args:  cobra.NoArgs,
+		Use:   "list [<service>]",
+		Args:  cobra.MaximumNArgs(1),
 		Short: "List tokens",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
@@ -19,6 +19,10 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 			defer client.Close()
+
+			if len(args) > 0 {
+				name = args[0]
+			}
 
 			res, err := client.ListServiceAuthTokens(cmd.Context(), &adminv1.ListServiceAuthTokensRequest{
 				ServiceName:      name,

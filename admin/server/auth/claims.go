@@ -115,80 +115,23 @@ func (c *authTokenClaims) AuthTokenID() string {
 func (c *authTokenClaims) OrganizationPermissions(ctx context.Context, orgID string) *adminv1.OrganizationPermissions {
 	switch c.token.Token().Type {
 	case authtoken.TypeUser:
-		// continue
+		return c.organizationPermissionsUser(ctx, orgID)
 	case authtoken.TypeService:
-		// continue
+		return c.organizationPermissionsService(ctx, orgID)
 	default:
 		panic(fmt.Errorf("unexpected token type %q", c.token.Token().Type))
 	}
-
-	c.Lock()
-	defer c.Unlock()
-
-	if perm, ok := c.orgPermissionsCache[orgID]; ok {
-		return perm
-	}
-
-	roles, err := c.admin.DB.ResolveOrganizationRolesForUser(ctx, c.token.OwnerID(), orgID)
-	if err != nil {
-		panic(fmt.Errorf("failed to get org permissions: %w", err))
-	}
-
-	composite := &adminv1.OrganizationPermissions{}
-	for _, role := range roles {
-		composite = unionOrgRoles(composite, role)
-	}
-
-	c.orgPermissionsCache[orgID] = composite
-	return composite
 }
 
 func (c *authTokenClaims) ProjectPermissions(ctx context.Context, orgID, projectID string) *adminv1.ProjectPermissions {
 	switch c.token.Token().Type {
 	case authtoken.TypeUser:
-		// continue
+		return c.projectPermissionsUser(ctx, orgID, projectID)
 	case authtoken.TypeService:
-		// continue
+		return c.projectPermissionsService(ctx, orgID, projectID)
 	default:
 		panic(fmt.Errorf("unexpected token type %q", c.token.Token().Type))
 	}
-
-	// ManageProjects permission on the org gives full access to all projects in the org (only org admins have this)
-	orgPerms := c.OrganizationPermissions(ctx, orgID)
-	if orgPerms.ManageProjects {
-		return &adminv1.ProjectPermissions{
-			ReadProject:          true,
-			ManageProject:        true,
-			ReadProd:             true,
-			ReadProdStatus:       true,
-			ManageProd:           true,
-			ReadDev:              true,
-			ReadDevStatus:        true,
-			ManageDev:            true,
-			ReadProjectMembers:   true,
-			ManageProjectMembers: true,
-		}
-	}
-
-	c.Lock()
-	defer c.Unlock()
-
-	if perm, ok := c.projectPermissionsCache[projectID]; ok {
-		return perm
-	}
-
-	roles, err := c.admin.DB.ResolveProjectRolesForUser(ctx, c.token.OwnerID(), projectID)
-	if err != nil {
-		panic(fmt.Errorf("failed to get project permissions: %w", err))
-	}
-
-	composite := &adminv1.ProjectPermissions{}
-	for _, role := range roles {
-		composite = unionProjectRoles(composite, role)
-	}
-
-	c.projectPermissionsCache[projectID] = composite
-	return composite
 }
 
 func (c *authTokenClaims) Superuser(ctx context.Context) bool {
@@ -246,4 +189,113 @@ func unionProjectRoles(a *adminv1.ProjectPermissions, b *database.ProjectRole) *
 		ReadProjectMembers:   a.ReadProjectMembers || b.ReadProjectMembers,
 		ManageProjectMembers: a.ManageProjectMembers || b.ManageProjectMembers,
 	}
+}
+
+// organizationPermissionsUser is a Claims implementation for resolve the organization permissions for user
+func (c *authTokenClaims) organizationPermissionsUser(ctx context.Context, orgID string) *adminv1.OrganizationPermissions {
+	c.Lock()
+	defer c.Unlock()
+
+	if perm, ok := c.orgPermissionsCache[orgID]; ok {
+		return perm
+	}
+
+	roles, err := c.admin.DB.ResolveOrganizationRolesForUser(context.Background(), c.token.OwnerID(), orgID)
+	if err != nil {
+		panic(fmt.Errorf("failed to get org permissions: %w", err))
+	}
+
+	composite := &adminv1.OrganizationPermissions{}
+	for _, role := range roles {
+		composite = unionOrgRoles(composite, role)
+	}
+
+	c.orgPermissionsCache[orgID] = composite
+	return composite
+}
+
+// organizationPermissionsService is a Claims implementation for resolve the organization permissions for service
+func (c *authTokenClaims) organizationPermissionsService(ctx context.Context, orgID string) *adminv1.OrganizationPermissions {
+	// Not adding caching for now
+	var orgPermissions *adminv1.OrganizationPermissions
+	service, err := c.admin.DB.FindService(ctx, c.token.OwnerID())
+	if err != nil {
+		panic(fmt.Errorf("failed to get service info: %w", err))
+	}
+
+	if orgID == service.OrgID {
+		orgPermissions = &adminv1.OrganizationPermissions{
+			ReadOrg:          true,
+			ManageOrg:        true,
+			ReadProjects:     true,
+			CreateProjects:   true,
+			ManageProjects:   true,
+			ReadOrgMembers:   true,
+			ManageOrgMembers: true,
+		}
+	}
+	return orgPermissions
+}
+
+// projectPermissionsUser is a Claims implementation for resolve the project permissions for user
+func (c *authTokenClaims) projectPermissionsUser(ctx context.Context, orgID, projectID string) *adminv1.ProjectPermissions {
+	// ManageProjects permission on the org gives full access to all projects in the org (only org admins have this)
+	orgPerms := c.OrganizationPermissions(ctx, orgID)
+	if orgPerms.ManageProjects {
+		return &adminv1.ProjectPermissions{
+			ReadProject:          true,
+			ManageProject:        true,
+			ReadProd:             true,
+			ReadProdStatus:       true,
+			ManageProd:           true,
+			ReadDev:              true,
+			ReadDevStatus:        true,
+			ManageDev:            true,
+			ReadProjectMembers:   true,
+			ManageProjectMembers: true,
+		}
+	}
+
+	c.Lock()
+	defer c.Unlock()
+
+	if perm, ok := c.projectPermissionsCache[projectID]; ok {
+		return perm
+	}
+
+	roles, err := c.admin.DB.ResolveProjectRolesForUser(ctx, c.token.OwnerID(), projectID)
+	if err != nil {
+		panic(fmt.Errorf("failed to get project permissions: %w", err))
+	}
+
+	composite := &adminv1.ProjectPermissions{}
+	for _, role := range roles {
+		composite = unionProjectRoles(composite, role)
+	}
+
+	c.projectPermissionsCache[projectID] = composite
+	return composite
+}
+
+// projectPermissionsService is a Claims implementation for resolve the project permissions for service
+func (c *authTokenClaims) projectPermissionsService(ctx context.Context, orgID, projectID string) *adminv1.ProjectPermissions {
+	// Not adding caching for now
+	// ManageProjects permission on the org gives full access to all projects in the org (only org admins have this)
+	orgPerms := c.OrganizationPermissions(ctx, orgID)
+	if orgPerms.ManageProjects {
+		return &adminv1.ProjectPermissions{
+			ReadProject:          true,
+			ManageProject:        true,
+			ReadProd:             true,
+			ReadProdStatus:       true,
+			ManageProd:           true,
+			ReadDev:              true,
+			ReadDevStatus:        true,
+			ManageDev:            true,
+			ReadProjectMembers:   true,
+			ManageProjectMembers: true,
+		}
+	}
+
+	return &adminv1.ProjectPermissions{}
 }

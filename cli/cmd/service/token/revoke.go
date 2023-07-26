@@ -9,8 +9,8 @@ import (
 
 func RevokeCmd(cfg *config.Config) *cobra.Command {
 	revokeCmd := &cobra.Command{
-		Use:   "revoke",
-		Args:  cobra.MaximumNArgs(1),
+		Use:   "revoke <token-id>",
+		Args:  cobra.ExactArgs(1),
 		Short: "Revoke token",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)

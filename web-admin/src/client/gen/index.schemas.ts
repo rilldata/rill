@@ -18,15 +18,6 @@ export type AdminServiceGetUserParams = {
   email?: string;
 };
 
-export type AdminServiceRevokeServiceAuthTokenParams = {
-  tokenId?: string;
-};
-
-export type AdminServiceListServiceAuthTokensParams = {
-  organizationName?: string;
-  serviceName?: string;
-};
-
 export type AdminServiceSudoGetResourceParams = {
   userId?: string;
   orgId?: string;
@@ -136,8 +127,6 @@ export type AdminServiceTriggerRefreshSourcesBody = {
   sources?: string[];
 };
 
-export type AdminServiceTriggerReconcileBody = { [key: string]: any };
-
 export type AdminServiceAddOrganizationMemberBodyBody = {
   email?: string;
   role?: string;
@@ -146,6 +135,8 @@ export type AdminServiceAddOrganizationMemberBodyBody = {
 export type AdminServiceSetOrganizationMemberRoleBodyBody = {
   role?: string;
 };
+
+export type AdminServiceTriggerReconcileBodyBody = { [key: string]: any };
 
 export interface V1WhitelistedDomain {
   domain?: string;
@@ -269,9 +260,16 @@ export interface V1SetOrganizationMemberRoleResponse {
   [key: string]: any;
 }
 
+export interface V1ServiceToken {
+  id?: string;
+  createdOn?: string;
+  expiresOn?: string;
+}
+
 export interface V1Service {
   id?: string;
-  serviceName?: string;
+  name?: string;
+  orgId?: string;
   orgName?: string;
   createdOn?: string;
   updatedOn?: string;
@@ -399,7 +397,7 @@ export interface V1ListServicesResponse {
 }
 
 export interface V1ListServiceAuthTokensResponse {
-  tokens?: string[];
+  tokens?: V1ServiceToken[];
 }
 
 export interface V1ListProjectsForOrganizationResponse {
@@ -442,11 +440,6 @@ export interface V1LeaveOrganizationResponse {
 
 export interface V1IssueServiceAuthTokenResponse {
   token?: string;
-}
-
-export interface V1IssueServiceAuthTokenRequest {
-  organizationName?: string;
-  serviceName?: string;
 }
 
 export interface V1IssueRepresentativeAuthTokenResponse {
