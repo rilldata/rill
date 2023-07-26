@@ -23,7 +23,6 @@ func (s *Server) ListCatalogEntries(ctx context.Context, req *runtimev1.ListCata
 	)
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
-	
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
 		return nil, ErrForbidden
