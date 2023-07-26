@@ -53,9 +53,9 @@ func main() {
 		panic("require go version greater than 1.20")
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	cctx := graceful.WithCancelOnTerminate(ctx)
-	group, ctx := errgroup.WithContext(cctx)
+	c, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	group, ctx := errgroup.WithContext(graceful.WithCancelOnTerminate(c))
 
 	// check node version
 	nodeVersion, err := exec.CommandContext(ctx, "node", "--version").Output()
