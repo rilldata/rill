@@ -27,18 +27,12 @@ export enum FileEvent {
    * @generated from enum value: FILE_EVENT_DELETE = 2;
    */
   DELETE = 2,
-
-  /**
-   * @generated from enum value: FILE_EVENT_RENAME = 3;
-   */
-  RENAME = 3,
 }
 // Retrieve enum metadata with: proto3.getEnumType(FileEvent)
 proto3.util.setEnumType(FileEvent, "rill.runtime.v1.FileEvent", [
   { no: 0, name: "FILE_EVENT_UNSPECIFIED" },
   { no: 1, name: "FILE_EVENT_WRITE" },
   { no: 2, name: "FILE_EVENT_DELETE" },
-  { no: 3, name: "FILE_EVENT_RENAME" },
 ]);
 
 /**
