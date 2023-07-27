@@ -31,9 +31,7 @@ const (
 	retryWait   = 500 * time.Millisecond
 )
 
-var (
-	tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/github")
-)
+var tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/github")
 
 type DSN struct {
 	GithubURL      string `json:"github_url"`
