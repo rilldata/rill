@@ -356,6 +356,13 @@ message ListFilesResponse {
   repeated string paths = 1;
 }
 
+// FileEvent describes a file change.
+enum FileEvent {
+  FILE_EVENT_UNSPECIFIED = 0;
+  FILE_EVENT_WRITE = 1;
+  FILE_EVENT_DELETE = 2;
+}
+
 // Request message for RuntimeService.WatchFiles
 message WatchFilesRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
@@ -748,12 +755,4 @@ message ListConnectorsRequest {}
 // Response message for RuntimeService.ListConnectors
 message ListConnectorsResponse {
   repeated Connector connectors = 1;
-}
-
-// FileEvent describes a file change.
-enum FileEvent {
-  FILE_EVENT_UNSPECIFIED = 0;
-  FILE_EVENT_WRITE = 1;
-  FILE_EVENT_DELETE = 2;
-  FILE_EVENT_RENAME = 3;
 }
