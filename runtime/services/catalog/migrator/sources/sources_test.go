@@ -67,9 +67,6 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 		{"local_file", filepath.Join(testdataPathAbs, "AdBids.parquet"), nil},
 		{"local_file", filepath.Join(testdataPathAbs, "AdBids.txt"), nil},
 		{"duckdb", "", map[string]any{
-			"query": fmt.Sprintf("select * from \"%s\"", filepath.Join(testdataPathAbs, "AdBids.csv")),
-		}},
-		{"duckdb", "", map[string]any{
 			"query": fmt.Sprintf(`select * from read_csv_auto('%s')`, filepath.Join(testdataPathAbs, "AdBids.csv")),
 		}},
 		// something wrong with this particular file. duckdb fails to extract
@@ -84,6 +81,9 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 		//{"gcs", "gs://scratch.rilldata.com/rill-developer/AdBids.csv.gz", nil},
 		//{"gcs", "gs://scratch.rilldata.com/rill-developer/AdBids.parquet", nil},
 		//{"gcs", "gs://scratch.rilldata.com/rill-developer/AdBids.parquet.gz", nil},
+		//{"duckdb", "", map[string]any{
+		//	"query": `select * from read_csv_auto('gs://scratch.rilldata.com/rill-developer/AdBids.csv.gz')`,
+		//}},
 	}
 
 	ctx := context.Background()
@@ -264,10 +264,6 @@ func TestFileFormatAndDelimiter(t *testing.T) {
 		{"direct file reference", "local_file", testDelimiterCsvPath, map[string]any{
 			"duckdb": map[string]any{"delim": "' '"},
 		}},
-		{"sql with direct file reference", "duckdb", "", map[string]any{
-			"query":  fmt.Sprintf(`from '%s'`, testDelimiterCsvPath),
-			"duckdb": map[string]any{"delim": " "},
-		}},
 		{"sql with read_csv_auto", "duckdb", "", map[string]any{
 			"query": fmt.Sprintf(`from read_csv_auto('%s',delim=' ')`, testDelimiterCsvPath),
 		}},
@@ -336,10 +332,6 @@ func TestCSVIngestionWithColumns(t *testing.T) {
 		additionalProps map[string]any
 	}{
 		{"direct file reference", "local_file", filePath, map[string]any{
-			"duckdb": duckdbProps,
-		}},
-		{"sql with direct file reference", "duckdb", "", map[string]any{
-			"query":  fmt.Sprintf(`from '%s'`, filePath),
 			"duckdb": duckdbProps,
 		}},
 		{"sql with read_csv_auto", "duckdb", "", map[string]any{
@@ -552,15 +544,11 @@ func TestJsonIngestionWithVariousParams(t *testing.T) {
 		{"direct file reference", "local_file", filePath, map[string]any{
 			"duckdb": duckdbProps,
 		}},
-		{"sql with direct file reference", "duckdb", "", map[string]any{
-			"query":  fmt.Sprintf(`from '%s'`, filePath),
-			"duckdb": duckdbProps,
-		}},
 		{"sql with read_csv_auto", "duckdb", "", map[string]any{
 			"query": fmt.Sprintf(`
 from read_json('%s',maximum_object_size=9999999,records=true,ignore_errors=true,
 columns={id:'INTEGER',name:'VARCHAR',isActive:'BOOLEAN',createdDate:'VARCHAR'},
-auto_detect=false,sample_size=-1,dateformat='iso',timestampformat='iso')`, filePath),
+auto_detect=false,sample_size=-1,dateformat='iso',timestampformat='iso',format='auto')`, filePath),
 		}},
 	}
 
@@ -768,7 +756,7 @@ func TestSqlIngestionWithFiltersAndColumns(t *testing.T) {
 	props["query"] = fmt.Sprintf(`
 select * exclude(publisher),
 (case when publisher = 'Yahoo' then 0 when publisher = 'Google' then 1 else 2 end) as pub,
-from "%s" where publisher in ('Yahoo', 'Google')`, testCsvPath)
+from read_csv_auto('%s') where publisher in ('Yahoo', 'Google')`, testCsvPath)
 
 	p, err := structpb.NewStruct(props)
 	require.NoError(t, err)

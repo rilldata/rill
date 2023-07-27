@@ -57,6 +57,8 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, source drivers.Sourc
 		format = fmt.Sprintf(".%s", val)
 	}
 
+	query, _ := src.Properties["query"].(string)
+
 	allowSchemaRelaxation, err := schemaRelaxationProperty(src.Properties)
 	if err != nil {
 		return err
@@ -93,14 +95,21 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, source drivers.Sourc
 				return err
 			}
 		} else {
-			from, err := sourceReader(files, format, "", ingestionProps)
-			if err != nil {
-				return err
-			}
+			if query != "" {
+				query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s);", dbSink.Table, query)
+				if err := t.to.Exec(ctx, &drivers.Statement{Query: query, Args: []any{strings.Join(files, ",")}, Priority: 1}); err != nil {
+					return err
+				}
+			} else {
+				from, err := sourceReader(files, format, "", ingestionProps)
+				if err != nil {
+					return err
+				}
 
-			query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s);", dbSink.Table, from)
-			if err := t.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1}); err != nil {
-				return err
+				query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s);", dbSink.Table, from)
+				if err := t.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1}); err != nil {
+					return err
+				}
 			}
 		}
 

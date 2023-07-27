@@ -203,12 +203,19 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 	}
 
 	logger = logger.With(zap.String("source", name))
-	variables := convertLower(opts.InstanceEnv)
-	srcConnector, err := drivers.Open(apiSource.Connector, connectorVariables(apiSource, variables, repo.Root()), logger)
-	if err != nil {
-		return fmt.Errorf("failed to open driver %w", err)
+	var srcConnector drivers.Connection
+
+	if apiSource.Connector == "duckdb" {
+		srcConnector = olap.(drivers.Connection)
+	} else {
+		var err error
+		variables := convertLower(opts.InstanceEnv)
+		srcConnector, err = drivers.Open(apiSource.Connector, connectorVariables(apiSource, variables, repo.Root()), logger)
+		if err != nil {
+			return fmt.Errorf("failed to open driver %w", err)
+		}
+		defer srcConnector.Close()
 	}
-	defer srcConnector.Close()
 
 	olapConnection := olap.(drivers.Connection)
 	t, ok := olapConnection.AsTransporter(srcConnector, olapConnection)
@@ -279,36 +286,40 @@ func mergeFromParsedQuery(apiSource *runtimev1.Source) error {
 	}
 	ref := refs[0]
 
-	if ref.Name != "" {
-		p, c, ok := parseEmbeddedSourceConnector(ref.Name)
-		if !ok {
-			return errors.New("unknown source")
-		}
-		apiSource.Connector = c
-		props["path"] = p
-	} else if len(ref.Paths) == 1 {
-		var dp map[string]any
-		if v, def := props["duckdb"]; !def {
-			dp = map[string]any{}
-		} else {
-			dp, ok = v.(map[string]any)
-			if !ok {
-				return errors.New("duckdb should be a record")
-			}
-		}
-		for k, v := range ref.Properties {
-			dp[k] = v
-		}
-		props["duckdb"] = dp
-		p, c, ok := parseEmbeddedSourceConnector(ref.Paths[0])
-		if !ok {
-			return errors.New("unknown source")
-		}
-		apiSource.Connector = c
-		props["path"] = p
-	} else {
+	if len(ref.Paths) == 0 {
+		return errors.New("only read_* functions with a single path is supported")
+	}
+	if len(ref.Paths) > 1 {
 		return errors.New("invalid source, only a single path for source is supported")
 	}
+
+	p, c, ok := parseEmbeddedSourceConnector(ref.Paths[0])
+	if !ok {
+		return errors.New("unknown source")
+	}
+	if c == "local_file" {
+		return nil
+	}
+
+	err = ast.RewriteTableRefs(func(table *duckdbsql.TableRef) (*duckdbsql.TableRef, bool) {
+		return &duckdbsql.TableRef{
+			Paths:      []string{"__path_as_args__"},
+			Function:   table.Function,
+			Properties: table.Properties,
+		}, true
+	})
+	if err != nil {
+		return err
+	}
+
+	newQuery, err := ast.Format()
+	if err != nil {
+		return err
+	}
+
+	apiSource.Connector = c
+	props["path"] = p
+	props["query"] = strings.Replace(newQuery, "main.list_value('__path_as_args__')", "?", 1)
 
 	pbProps, err := structpb.NewStruct(props)
 	if err != nil {
@@ -367,6 +378,14 @@ func source(connector string, src *runtimev1.Source) (drivers.Source, error) {
 		return &drivers.DatabaseSource{
 			Query:    query,
 			Database: db,
+		}, nil
+	case "duckdb":
+		query, ok := props["query"].(string)
+		if !ok {
+			return nil, fmt.Errorf("property \"query\" is mandatory for connector \"duckdb\"")
+		}
+		return &drivers.DatabaseSource{
+			Query: query,
 		}, nil
 	default:
 		return nil, nil

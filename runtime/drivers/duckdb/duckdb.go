@@ -198,6 +198,9 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 func (c *connection) AsTransporter(from, to drivers.Connection) (drivers.Transporter, bool) {
 	olap, _ := to.AsOLAP()
 	if c == to {
+		if from == to {
+			return transporter.NewDuckDBToDuckDB(olap, c.logger), true
+		}
 		if from.Driver() == "motherduck" {
 			return transporter.NewMotherduckToDuckDB(from, olap, c.logger), true
 		}
