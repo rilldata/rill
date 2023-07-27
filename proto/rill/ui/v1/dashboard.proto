@@ -7,6 +7,12 @@ import "rill/runtime/v1/queries.proto";
 
 // DashboardState represents the dashboard as seen by the user
 message DashboardState {
+  enum DashboardLeaderboardContextColumn {
+    PERCENT = 0;
+    DELTA_CHANGE = 1;
+    HIDDEN = 2;
+  }
+
   // Selected time range
   DashboardTimeRange time_range = 1;
   // Dimension filters applied
@@ -29,7 +35,7 @@ message DashboardState {
   repeated string visible_dimensions = 10;
   optional bool all_dimensions_visible = 11;
 
-  optional bool show_percent_of_total = 12;
+  optional DashboardLeaderboardContextColumn leaderboard_context_column = 12;
 }
 
 message DashboardTimeRange {

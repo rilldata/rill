@@ -82,9 +82,9 @@ export class DashboardState extends Message<DashboardState> {
   allDimensionsVisible?: boolean;
 
   /**
-   * @generated from field: optional bool show_percent_of_total = 12;
+   * @generated from field: optional rill.ui.v1.DashboardState.DashboardLeaderboardContextColumn leaderboard_context_column = 12;
    */
-  showPercentOfTotal?: boolean;
+  leaderboardContextColumn?: DashboardState_DashboardLeaderboardContextColumn;
 
   constructor(data?: PartialMessage<DashboardState>) {
     super();
@@ -105,7 +105,7 @@ export class DashboardState extends Message<DashboardState> {
     { no: 9, name: "all_measures_visible", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 10, name: "visible_dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "all_dimensions_visible", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
-    { no: 12, name: "show_percent_of_total", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 12, name: "leaderboard_context_column", kind: "enum", T: proto3.getEnumType(DashboardState_DashboardLeaderboardContextColumn), opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardState {
@@ -124,6 +124,32 @@ export class DashboardState extends Message<DashboardState> {
     return proto3.util.equals(DashboardState, a, b);
   }
 }
+
+/**
+ * @generated from enum rill.ui.v1.DashboardState.DashboardLeaderboardContextColumn
+ */
+export enum DashboardState_DashboardLeaderboardContextColumn {
+  /**
+   * @generated from enum value: PERCENT = 0;
+   */
+  PERCENT = 0,
+
+  /**
+   * @generated from enum value: DELTA_CHANGE = 1;
+   */
+  DELTA_CHANGE = 1,
+
+  /**
+   * @generated from enum value: HIDDEN = 2;
+   */
+  HIDDEN = 2,
+}
+// Retrieve enum metadata with: proto3.getEnumType(DashboardState_DashboardLeaderboardContextColumn)
+proto3.util.setEnumType(DashboardState_DashboardLeaderboardContextColumn, "rill.ui.v1.DashboardState.DashboardLeaderboardContextColumn", [
+  { no: 0, name: "PERCENT" },
+  { no: 1, name: "DELTA_CHANGE" },
+  { no: 2, name: "HIDDEN" },
+]);
 
 /**
  * @generated from message rill.ui.v1.DashboardTimeRange

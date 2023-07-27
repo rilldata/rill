@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { createEventDispatcher } from "svelte";
   import { fly, slide } from "svelte/transition";
   import BarAndLabel from "../../../components/BarAndLabel.svelte";
@@ -24,7 +25,6 @@
     LeaderboardItemData,
     getFormatterValueForPercDiff,
   } from "./leaderboard-utils";
-  import { LeaderboardContextColumn } from "../dashboard-stores";
 
   export let itemData: LeaderboardItemData;
   $: label = itemData.label;
@@ -119,20 +119,20 @@
   <button
     class="flex flex-row w-full text-left transition-color"
     on:blur={onLeave}
-    on:focus={onHover}
-    on:mouseleave={onLeave}
-    on:mouseover={onHover}
-    transition:slide|local={{ duration: 200 }}
-    use:shiftClickAction
-    on:shift-click={() => shiftClickHandler(label)}
     on:click={() => {
       dispatch("select-item", {
         label,
       });
     }}
+    on:focus={onHover}
     on:keydown
+    on:mouseleave={onLeave}
+    on:mouseover={onHover}
+    on:shift-click={() => shiftClickHandler(label)}
+    transition:slide|local={{ duration: 200 }}
+    use:shiftClickAction
   >
-    <LeaderboardItemFilterIcon {selected} {excluded} />
+    <LeaderboardItemFilterIcon {excluded} {selected} />
     <BarAndLabel
       {color}
       justify={false}
@@ -147,10 +147,10 @@
       >
         <!-- NOTE: empty class leaderboard-label is used to locate this elt in e2e tests -->
         <div
-          class:ui-copy={!atLeastOneActive}
-          class:ui-copy-strong={!excluded && selected}
-          class:ui-copy-disabled={excluded}
           class="leaderboard-label justify-self-start text-left w-full text-ellipsis overflow-hidden whitespace-nowrap"
+          class:ui-copy={!atLeastOneActive}
+          class:ui-copy-disabled={excluded}
+          class:ui-copy-strong={!excluded && selected}
         >
           <FormattedDataType value={label} />
         </div>
@@ -194,11 +194,11 @@
   {/if}
 
   <LeaderboardTooltipContent
-    slot="tooltip-content"
-    {label}
     {atLeastOneActive}
     {excluded}
     {filterExcludeMode}
+    {label}
+    slot="tooltip-content"
   />
 </Tooltip>
 
