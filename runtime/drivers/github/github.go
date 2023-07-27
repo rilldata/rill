@@ -18,6 +18,9 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/rilldata/rill/runtime/drivers"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
 )
@@ -27,6 +30,8 @@ const (
 	retryN      = 3
 	retryWait   = 500 * time.Millisecond
 )
+
+var tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/github")
 
 type DSN struct {
 	GithubURL      string `json:"github_url"`
@@ -162,6 +167,9 @@ func (c *connection) cloneOrPull(ctx context.Context, onlyClone bool) error {
 	if onlyClone && c.cloned.Load() {
 		return nil
 	}
+
+	ctx, span := tracer.Start(ctx, "cloneOrPull", trace.WithAttributes(attribute.Bool("onlyClone", onlyClone)))
+	defer span.End()
 
 	ch := c.singleflight.DoChan("pullOrClone", func() (interface{}, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), pullTimeout)

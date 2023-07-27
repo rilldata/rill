@@ -27,9 +27,10 @@ var ErrInvalidProject = errors.New("parser: not a valid project (rill.yaml not f
 // One file may output multiple resources and multiple files may contribute config to one resource.
 type Resource struct {
 	// Metadata
-	Name  ResourceName
-	Refs  []ResourceName
-	Paths []string
+	Name    ResourceName
+	Paths   []string
+	Refs    []ResourceName // Derived from rawRefs after parsing (can't contain ResourceKindUnspecified)
+	rawRefs []ResourceName // Populated during parsing (may contain ResourceKindUnspecified)
 
 	// Only one of these will be non-nil
 	SourceSpec      *runtimev1.SourceSpec
@@ -104,9 +105,10 @@ func (k ResourceKind) String() string {
 
 // Diff shows changes to Parser.Resources following an incremental reparse.
 type Diff struct {
-	Added    []ResourceName
-	Modified []ResourceName
-	Deleted  []ResourceName
+	Added            []ResourceName
+	Modified         []ResourceName
+	ModifiedRillYAML bool
+	Deleted          []ResourceName
 }
 
 // Parser parses a Rill project directory into a set of resources.
@@ -124,9 +126,10 @@ type Parser struct {
 	Errors    []*runtimev1.ParseError
 
 	// Internal state
-	resourcesForPath  map[string][]*Resource
-	insertedResources []*Resource
-	updatedResources  []*Resource
+	resourcesForPath           map[string][]*Resource // Reverse index of Resource.Paths
+	resourcesForUnspecifiedRef map[string][]*Resource // Reverse index of Resource.rawRefs where kind=ResourceKindUnspecified
+	insertedResources          []*Resource
+	updatedResources           []*Resource
 }
 
 // ParseRillYAML parses only the project's rill.yaml (or rill.yml) file.
@@ -151,11 +154,12 @@ func ParseRillYAML(ctx context.Context, repo drivers.RepoStore, instanceID strin
 // To enable SQL parsing for a connector, pass it in duckDBConnectors. If DuckDB SQL parsing should be used on files where no connector is specified, put an empty string in duckDBConnectors.
 func Parse(ctx context.Context, repo drivers.RepoStore, instanceID string, duckDBConnectors []string) (*Parser, error) {
 	p := &Parser{
-		Repo:             repo,
-		InstanceID:       instanceID,
-		DuckDBConnectors: duckDBConnectors,
-		Resources:        make(map[ResourceName]*Resource),
-		resourcesForPath: make(map[string][]*Resource),
+		Repo:                       repo,
+		InstanceID:                 instanceID,
+		DuckDBConnectors:           duckDBConnectors,
+		Resources:                  make(map[ResourceName]*Resource),
+		resourcesForPath:           make(map[string][]*Resource),
+		resourcesForUnspecifiedRef: make(map[string][]*Resource),
 	}
 
 	paths, err := p.Repo.ListRecursive(ctx, p.InstanceID, "**/*.{sql,yaml,yml}")
@@ -166,6 +170,11 @@ func Parse(ctx context.Context, repo drivers.RepoStore, instanceID string, duckD
 	err = p.parsePaths(ctx, paths)
 	if err != nil {
 		return nil, err
+	}
+
+	// Infer unspecified refs for all inserted resources
+	for _, r := range p.insertedResources {
+		p.inferUnspecifiedRefs(r)
 	}
 
 	return p, nil
@@ -183,6 +192,14 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	// The high-level approach is: We'll delete all existing resources *related* to the changed paths and (re)parse them.
 	// Then at the end, we build a diff that treats any resource that was both "deleted" and "added" as an "update".
 	// (Renames are not supported in the parser. It needs to be handled by the caller, since parser state alone is insufficient to detect it.)
+	//
+	// Another wrinkle is that we need to re-infer unspecified refs for:
+	// - any resources pointing to a changed resource, and
+	// - any resources with previously unmatched unspecified refs that may match a new resource.
+
+	// Reset insertedResources and updatedResources on reparse (used to construct Diff)
+	p.insertedResources = nil
+	p.updatedResources = nil
 
 	// Phase 1: Clear existing state related to the paths.
 	// Identify all paths directly passed and paths indirectly related through resourcesForPath and Resource.Paths.
@@ -230,17 +247,14 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 		}
 
 		// Remove all resources derived from this path, and add any related paths to the check list
-		for _, resource := range p.resourcesForPath[path] {
-			// Multiple entries in resourcesForPath may point to the same resource.
-			// By adding resource.Paths to checkPaths, the outer loop will eventually clear those (maybe it already has).
+		rs := slices.Clone(p.resourcesForPath[path]) // Use Clone because deleteResource mutates it
+		for _, resource := range rs {
+			p.deleteResource(resource)
+			deletedResources = append(deletedResources, resource)
+
+			// Make sure we-reparse all paths that contributed to the deleted resource.
 			checkPaths = append(checkPaths, resource.Paths...)
-			// But make sure we only track each deleted resource once
-			if _, ok := p.Resources[resource.Name.Normalized()]; ok {
-				delete(p.Resources, resource.Name.Normalized())
-				deletedResources = append(deletedResources, resource)
-			}
 		}
-		delete(p.resourcesForPath, path)
 
 		// Remove all parse errors related to this path
 		// (We can't mutate p.Errors while iterating over it, hence the nested loop here.)
@@ -259,14 +273,52 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 		}
 	}
 
+	// Capture if rill.yaml will be updated
+	modifiedRillYAML := p.RillYAML == nil
+
 	// Phase 2: Parse (or reparse) the related paths, adding back resources
 	err := p.parsePaths(ctx, parsePaths)
 	if err != nil {
 		return nil, err
 	}
 
+	// Infer or re-infer refs for...
+	inferRefsSeen := make(map[ResourceName]bool)
+	// ... all inserted resources
+	for _, r := range p.insertedResources {
+		inferRefsSeen[r.Name.Normalized()] = true
+		p.inferUnspecifiedRefs(r)
+	}
+	// ... all updated resources
+	for _, r := range p.updatedResources {
+		inferRefsSeen[r.Name.Normalized()] = true
+		p.inferUnspecifiedRefs(r)
+	}
+	// ... any unchanged resource that may have an unspecified ref to a deleted resource
+	for _, r1 := range deletedResources {
+		for _, r2 := range p.resourcesForUnspecifiedRef[strings.ToLower(r1.Name.Name)] {
+			n := r2.Name.Normalized()
+			if !inferRefsSeen[n] {
+				inferRefsSeen[n] = true
+				p.inferUnspecifiedRefs(r2)
+				p.updatedResources = append(p.updatedResources, r2) // inferRefsSeen ensures it's not already in insertedResources or updatedResources
+			}
+		}
+	}
+	// ... any unchanged resource that might have an unspecified ref (previously unmatched) that now matches a newly inserted resource
+	for _, r1 := range p.insertedResources {
+		for _, r2 := range p.resourcesForUnspecifiedRef[strings.ToLower(r1.Name.Name)] {
+			n := r2.Name.Normalized()
+			if !inferRefsSeen[n] {
+				inferRefsSeen[n] = true
+				p.inferUnspecifiedRefs(r2)
+				p.updatedResources = append(p.updatedResources, r2) // inferRefsSeen ensures it's not already in insertedResources or updatedResources
+			}
+		}
+	}
+
 	// Phase 3: Build the diff using p.insertedResources, p.updatedResources and deletedResources
-	diff := &Diff{}
+	diff := &Diff{ModifiedRillYAML: modifiedRillYAML}
 	for _, resource := range p.insertedResources {
 		addedBack := false
 		for _, deleted := range deletedResources {
@@ -304,10 +356,6 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 		return fmt.Errorf("project exceeds file limit of %d", maxFiles)
 	}
 
-	// Reset insertedResources and updatedResources on each parse (only used to construct Diff in Reparse)
-	p.insertedResources = nil
-	p.updatedResources = nil
-
 	// Sort paths such that we align files with the same name but different extensions next to each other.
 	// Then iterate over the sorted paths, processing all paths with the same stem at once (stem = path without extension).
 	slices.Sort(paths)
@@ -343,6 +391,27 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 	// If we didn't encounter rill.yaml, that's a breaking error
 	if p.RillYAML == nil {
 		return ErrInvalidProject
+	}
+
+	// As a special case, we need to check that there aren't any sources and models with the same name.
+	// NOTE 1: We always attach the error to the model when there's a collision.
+	// NOTE 2: Using a map since the two-way check (necessary for reparses) may match the same resource twice.
+	modelsWithNameErrs := make(map[ResourceName]string)
+	for _, r := range p.insertedResources {
+		if r.Name.Kind == ResourceKindSource {
+			n := ResourceName{Kind: ResourceKindModel, Name: r.Name.Name}.Normalized()
+			if _, ok := p.Resources[n]; ok {
+				modelsWithNameErrs[n.Normalized()] = r.Name.Name
+			}
+		} else if r.Name.Kind == ResourceKindModel {
+			n := ResourceName{Kind: ResourceKindSource, Name: r.Name.Name}.Normalized()
+			if r2, ok := p.Resources[n]; ok {
+				modelsWithNameErrs[r.Name.Normalized()] = r2.Name.Name
+			}
+		}
+	}
+	for n, s := range modelsWithNameErrs {
+		p.replaceResourceWithError(n, fmt.Errorf("model name collides with source %q", s))
 	}
 
 	return nil
@@ -424,6 +493,58 @@ func (p *Parser) parseStemPaths(ctx context.Context, paths []string) error {
 	return nil
 }
 
+// inferUnspecifiedRefs populates r.Refs with a) all explicit refs from r.rawRefs, and b) any implicit refs that we can infer from context.
+// An implicit ref is one where the kind is unspecified. They are common when extracted from SQL.
+// For example, if a model contains "SELECT * FROM foo", we add "foo" to r.rawRefs, and need to infer whether "foo" is a source or a model.
+//
+// If an unspecified ref can't be matched to another resource, it is not added to r.Refs.
+// That allows, for example, a model like "SELECT * FROM foo", to parse successfully even when no other model or source is named "foo" exists.
+// This is necessary to support referencing existing tables in a database. Errors for such cases will be thrown from the downstream reconciliation logic instead.
+// We may want to revisit this handling in the future.
+func (p *Parser) inferUnspecifiedRefs(r *Resource) {
+	var refs []ResourceName
+	for _, ref := range r.rawRefs {
+		if ref.Kind != ResourceKindUnspecified {
+			refs = append(refs, ref)
+			continue
+		}
+
+		// Rule 1: If it's a model and there's a source with that name, use it
+		if r.Name.Kind == ResourceKindModel {
+			n := ResourceName{Kind: ResourceKindSource, Name: ref.Name}
+			if _, ok := p.Resources[n.Normalized()]; ok {
+				refs = append(refs, n)
+				continue
+			}
+		}
+
+		// Rule 2: If it's a metrics view and there's a model or source with that name, use it
+		if r.Name.Kind == ResourceKindMetricsView {
+			n := ResourceName{Kind: ResourceKindModel, Name: ref.Name}
+			if _, ok := p.Resources[n.Normalized()]; ok {
+				refs = append(refs, n)
+				continue
+			}
+			n = ResourceName{Kind: ResourceKindSource, Name: ref.Name}
+			if _, ok := p.Resources[n.Normalized()]; ok {
+				refs = append(refs, n)
+				continue
+			}
+		}
+
+		// Rule 3: If there's a resource of the same kind with that name, use it
+		n := ResourceName{Kind: r.Name.Kind, Name: ref.Name}
+		if _, ok := p.Resources[n.Normalized()]; ok {
+			refs = append(refs, n)
+			continue
+		}
+
+		// Rule 4: Skip it
+	}
+
+	r.Refs = refs
+}
+
 // upsertResource inserts or updates a resource in the parser's internal state.
 // Upserting is required since both a YAML and SQL file may contribute information to the same resource.
 // After calling upsertResource, the caller can modify the returned resource's spec, and should be cautious with overriding values that may have been set from another file.
@@ -441,7 +562,15 @@ func (p *Parser) upsertResource(kind ResourceKind, name string, paths []string, 
 			}
 		}
 		if !found {
-			p.updatedResources = append(p.updatedResources, r)
+			for _, ur := range p.updatedResources {
+				if ur.Name.Normalized() == rn.Normalized() {
+					found = true
+					break
+				}
+			}
+			if !found {
+				p.updatedResources = append(p.updatedResources, r)
+			}
 		}
 	} else {
 		// Create new resource and track in insertedResources
@@ -480,18 +609,86 @@ func (p *Parser) upsertResource(kind ResourceKind, name string, paths []string, 
 	// Add refs that are not already present
 	for _, refA := range refs {
 		found := false
-		for _, refB := range r.Refs {
+		for _, refB := range r.rawRefs {
 			if refA.Normalized() == refB.Normalized() {
 				found = true
 				break
 			}
 		}
 		if !found {
-			r.Refs = append(r.Refs, refA)
+			// Add to r.rawRefs
+			r.rawRefs = append(r.rawRefs, refA)
+
+			// Index in p.resourcesForUnspecifiedRef
+			if refA.Kind == ResourceKindUnspecified {
+				n := strings.ToLower(refA.Name)
+				p.resourcesForUnspecifiedRef[n] = append(p.resourcesForUnspecifiedRef[n], r)
+			}
 		}
 	}
 
 	return r
+}
+
+// deleteResource removes a resource from p.Resources as well as all internal indexes.
+func (p *Parser) deleteResource(r *Resource) {
+	// Remove from p.Resources
+	delete(p.Resources, r.Name.Normalized())
+
+	// Remove from p.insertedResources
+	checkUpdatedResources := true
+	idx := slices.Index(p.insertedResources, r)
+	if idx >= 0 {
+		p.insertedResources = slices.Delete(p.insertedResources, idx, idx+1)
+		checkUpdatedResources = false
+	}
+
+	// Remove from p.updatedResources
+	idx = slices.Index(p.updatedResources, r)
+	if checkUpdatedResources && idx >= 0 {
+		p.updatedResources = slices.Delete(p.updatedResources, idx, idx+1)
+	}
+
+	// Remove from p.resourcesForPath
+	for _, path := range r.Paths {
+		rs := p.resourcesForPath[path]
+		idx := slices.Index(rs, r)
+		if idx < 0 {
+			panic(fmt.Errorf("resource %q not found in resourcesForPath", r))
+		}
+		if len(rs) == 1 {
+			delete(p.resourcesForPath, path)
+		} else {
+			p.resourcesForPath[path] = slices.Delete(rs, idx, idx+1)
+		}
+	}
+
+	// Remove pointers indexed in resourcesForUnspecifiedRef
+	for _, ref := range r.rawRefs {
+		if ref.Kind != ResourceKindUnspecified {
+			continue
+		}
+		n := strings.ToLower(ref.Name)
+		rs := p.resourcesForUnspecifiedRef[n]
+		idx := slices.Index(rs, r)
+		if idx < 0 {
+			panic(fmt.Errorf("resource %q not found in resourcesForUnspecifiedRef for ref %q", r.Name, ref.Name))
+		}
+		if len(rs) == 1 {
+			delete(p.resourcesForUnspecifiedRef, n)
+		} else {
+			p.resourcesForUnspecifiedRef[n] = slices.Delete(rs, idx, idx+1)
+		}
+	}
+}
+
+// replaceResourceWithError removes a resource from the parser's internal state and adds a parse error for its paths instead.
+func (p *Parser) replaceResourceWithError(n ResourceName, err error) {
+	r := p.Resources[n.Normalized()]
+	p.deleteResource(r)
+	for _, path := range r.Paths {
+		p.addParseError(path, err)
+	}
 }
 
 // addParseError adds a parse error to the p.Errors

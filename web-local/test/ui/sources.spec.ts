@@ -1,19 +1,19 @@
-import { describe, it } from "@jest/globals";
+import { test } from "@playwright/test";
 import { deleteEntity, renameEntityUsingMenu } from "./utils/commonHelpers";
 import {
   waitForAdBids,
   waitForAdImpressions,
 } from "./utils/dataSpecifcHelpers";
 import { TestEntityType } from "./utils/helpers";
-import { useRegisteredServer } from "./utils/serverConfigs";
 import { createOrReplaceSource, uploadFile } from "./utils/sourceHelpers";
 import { entityNotPresent, waitForEntity } from "./utils/waitHelpers";
+import { startRuntimeForEachTest } from "./utils/startRuntimeForEachTest";
 
-describe("sources", () => {
-  const testBrowser = useRegisteredServer("sources");
+test.describe("sources", () => {
+  startRuntimeForEachTest();
 
-  it("Import sources", async () => {
-    const { page } = testBrowser;
+  test("Import sources", async ({ page }) => {
+    await page.goto("/");
 
     await Promise.all([
       waitForAdBids(page, "AdBids"),
@@ -37,8 +37,8 @@ describe("sources", () => {
     await entityNotPresent(page, "AdBids_2");
   });
 
-  it("Rename and delete sources", async () => {
-    const { page } = testBrowser;
+  test("Rename and delete sources", async ({ page }) => {
+    await page.goto("/");
 
     await createOrReplaceSource(page, "AdBids.csv", "AdBids");
 
