@@ -23,7 +23,6 @@
     ISODurationToTimePreset,
     convertTimeRangePreset,
   } from "@rilldata/web-common/lib/time/ranges";
-  import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
   import {
     DashboardTimeControls,
     TimeComparisonOption,
@@ -36,7 +35,6 @@
     V1TimeGrain,
     createRuntimeServiceGetCatalogEntry,
   } from "@rilldata/web-common/runtime-client";
-  import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
