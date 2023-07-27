@@ -37,11 +37,11 @@
     createRuntimeServiceGetCatalogEntry,
   } from "@rilldata/web-common/runtime-client";
   import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
-  import type { LocalUserPreferences } from "@rilldata/web-local/lib/types";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
+  import { initLocalUserPreferenceStore } from "../user-preferences";
   import NoTimeDimensionCTA from "./NoTimeDimensionCTA.svelte";
   import TimeComparisonSelector from "./TimeComparisonSelector.svelte";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
@@ -50,12 +50,7 @@
 
   export let metricViewName: string;
 
-  const localUserPreferences = localStorageStore<LocalUserPreferences>(
-    `${metricViewName}-userPreference`,
-    {
-      timeZone: getLocalIANA(),
-    }
-  );
+  const localUserPreferences = initLocalUserPreferenceStore(metricViewName);
 
   const queryClient = useQueryClient();
   $: dashboardStore = useDashboardStore(metricViewName);
