@@ -161,6 +161,10 @@ func (c *connection) AsTransporter(from, to drivers.Connection) (drivers.Transpo
 	return nil, false
 }
 
+func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
+	return nil, false
+}
+
 // cloneOrPull clones or pulls the repo with an exponential backoff retry on retryable errors.
 // It's safe for concurrent calls, which are deduplicated.
 func (c *connection) cloneOrPull(ctx context.Context, onlyClone bool) error {

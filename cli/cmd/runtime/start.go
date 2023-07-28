@@ -22,6 +22,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	// Load infra drivers and connectors for runtime
+	_ "github.com/rilldata/rill/runtime/drivers/bigquery"
 	_ "github.com/rilldata/rill/runtime/drivers/druid"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
