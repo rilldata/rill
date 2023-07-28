@@ -5,6 +5,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"testing"
 
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
@@ -13,7 +14,7 @@ import (
 func getTestServer(t *testing.T) (*Server, string) {
 	rt, instanceID := testruntime.NewInstance(t)
 
-	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop())
+	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	return server, instanceID

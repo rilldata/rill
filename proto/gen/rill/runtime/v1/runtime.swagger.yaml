@@ -2324,6 +2324,10 @@ definitions:
       ingestionLimitBytes:
         type: string
         format: int64
+      annotations:
+        type: object
+        additionalProperties:
+          type: string
     description: |-
       Request message for RuntimeService.CreateInstance.
       See message Instance for field descriptions.

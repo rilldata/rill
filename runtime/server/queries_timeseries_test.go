@@ -10,6 +10,7 @@ import (
 	"github.com/marcboeker/go-duckdb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	structpb "google.golang.org/protobuf/types/known/structpb"
@@ -298,7 +299,7 @@ func getTimeseriesTestServerWithDSTForward(t *testing.T) (*Server, string) {
 
 	`)
 
-	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop())
+	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	return server, instanceID
@@ -313,7 +314,7 @@ func getTimeseriesTestServerWithDSTBackward(t *testing.T) (*Server, string) {
 		SELECT 1.0 AS clicks, TIMESTAMP '2023-10-29 02:00:00' AS time, 'iphone' AS device
 	`)
 
-	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop())
+	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	return server, instanceID
@@ -328,7 +329,7 @@ func getTimeseriesTestServerWithKathmandu(t *testing.T) (*Server, string) {
 		SELECT 1.0 AS clicks, TIMESTAMP '2023-10-29 02:15:00' AS time, 'iphone' AS device
 	`)
 
-	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop())
+	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	return server, instanceID
@@ -341,7 +342,7 @@ func getTimeseriesTestServer(t *testing.T) (*Server, string) {
 		SELECT 1.0 AS clicks, 5 as imps, TIMESTAMP '2019-01-02 00:00:00' AS time, DATE '2019-01-02' as day, 'iphone' AS device, null AS publisher, 'msn.com' AS domain, NULL as latitude, NULL as country
 	`)
 
-	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop())
+	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	return server, instanceID
@@ -352,7 +353,7 @@ func getTimeseriesTestServerWithEmptyModel(t *testing.T) (*Server, string) {
 		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-01 00:00:00' AS time, 'android' AS device, 'Google' AS publisher, 'google.com' AS domain where 1<>1
 	`)
 
-	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop())
+	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	return server, instanceID
@@ -379,7 +380,7 @@ func getSparkTimeseriesTestServer(t *testing.T) (*Server, string) {
 		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-09T00:00:00Z' AS time, 'iphone' AS device
 	`)
 
-	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop())
+	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	return server, instanceID
