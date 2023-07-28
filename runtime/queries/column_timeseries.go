@@ -522,16 +522,16 @@ func getCoalesceStatementsMeasures(measures []*runtimev1.ColumnTimeSeriesRequest
 	return result
 }
 
-func getCoalesceStatementsMeasuresLast(measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) string {
-	var result string
-	for i, measure := range measures {
-		result += fmt.Sprintf(`last(%[1]s) as %[1]s`, safeName(measure.SqlName))
-		if i < len(measures)-1 {
-			result += ", "
-		}
-	}
-	return result
-}
+// func getCoalesceStatementsMeasuresLast(measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) string {
+// 	var result string
+// 	for i, measure := range measures {
+// 		result += fmt.Sprintf(`last(%[1]s) as %[1]s`, safeName(measure.SqlName))
+// 		if i < len(measures)-1 {
+// 			result += ", "
+// 		}
+// 	}
+// 	return result
+// }
 
 func normaliseMeasures(measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure, generateCount bool) []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure {
 	if len(measures) == 0 {
