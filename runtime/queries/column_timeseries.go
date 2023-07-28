@@ -152,7 +152,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 				timezone(?, template.` + tsAlias + `) as ` + tsAlias + ` from template
 				LEFT OUTER JOIN series ON template.` + tsAlias + ` = series.` + tsAlias + `
 				ORDER BY template.` + tsAlias + `
-			) GROUP BY 1
+			) GROUP BY 1 ORDER BY 1
 		)`
 
 		err = olap.Exec(ctx, &drivers.Statement{
