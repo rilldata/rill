@@ -3,9 +3,12 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"testing"
 	"time"
+
+	"github.com/rilldata/rill/runtime/pkg/ratelimit"
+
+	"strings"
 
 	"github.com/marcboeker/go-duckdb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -14,7 +17,6 @@ import (
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	structpb "google.golang.org/protobuf/types/known/structpb"
-	"strings"
 )
 
 func TestServer_Timeseries_EmptyModel(t *testing.T) {

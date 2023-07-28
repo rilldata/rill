@@ -17,6 +17,10 @@ func (c *connection) WithConnection(ctx context.Context, priority int, fn driver
 	panic("not implemented")
 }
 
+func (c *connection) WithRaw(ctx context.Context, priority int, fn drivers.WithRawFunc) error {
+	panic("not implemented")
+}
+
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	res, err := c.Execute(ctx, stmt)
 	if err != nil {

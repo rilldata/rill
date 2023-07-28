@@ -203,6 +203,11 @@ func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
+// AsSQLStore implements drivers.Connection.
+func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
+	return nil, false
+}
+
 type sourceProperties struct {
 	Path                  string `mapstructure:"path"`
 	AWSRegion             string `mapstructure:"region"`
