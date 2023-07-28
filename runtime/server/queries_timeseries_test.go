@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/rilldata/rill/runtime/pkg/ratelimit"
+	"strings"
 	"testing"
 	"time"
 
@@ -11,10 +11,10 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	structpb "google.golang.org/protobuf/types/known/structpb"
-	"strings"
 )
 
 func TestServer_Timeseries_EmptyModel(t *testing.T) {
@@ -573,7 +573,7 @@ func getTimeseriesTestServerWithWeekGrain(t *testing.T) (*Server, string) {
 	sql := strings.Join(selects, " UNION ALL ")
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "timeseries", sql)
 
-	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop())
+	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	return server, instanceID
