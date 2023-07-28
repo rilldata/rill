@@ -287,9 +287,9 @@ func source(connector string, src *runtimev1.Source) (drivers.Source, error) {
 			Properties: props,
 		}, nil
 	case "motherduck":
-		query, ok := props["query"].(string)
+		query, ok := props["sql"].(string)
 		if !ok {
-			return nil, fmt.Errorf("property \"query\" is mandatory for connector \"motherduck\"")
+			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"motherduck\"")
 		}
 		var db string
 		if val, ok := props["db"].(string); ok {
@@ -297,16 +297,16 @@ func source(connector string, src *runtimev1.Source) (drivers.Source, error) {
 		}
 
 		return &drivers.DatabaseSource{
-			Query:    query,
+			SQL:      query,
 			Database: db,
 		}, nil
 	case "bigquery":
-		query, ok := props["query"].(string)
+		query, ok := props["sql"].(string)
 		if !ok {
-			return nil, fmt.Errorf("property \"query\" is mandatory for connector \"bigquery\"")
+			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"bigquery\"")
 		}
 		return &drivers.DatabaseSource{
-			Query: query,
+			SQL:   query,
 			Props: props,
 		}, nil
 	default:

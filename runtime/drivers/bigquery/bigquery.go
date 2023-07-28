@@ -27,10 +27,10 @@ var spec = drivers.Spec{
 	ServiceAccountDocs: "https://docs.rilldata.com/deploy/credentials/gcs",
 	SourceProperties: []drivers.PropertySchema{
 		{
-			Key:         "query",
+			Key:         "sql",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
-			DisplayName: "Query",
+			DisplayName: "SQL",
 			Description: "Query to extract data from BigQuery.",
 			Placeholder: "select * from project.dataset.table;",
 		},

@@ -40,7 +40,7 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, 
 		return fmt.Errorf("type of source should `drivers.DatabaseSink`")
 	}
 
-	iter, err := s.from.Query(ctx, src.Props, src.Query)
+	iter, err := s.from.Query(ctx, src.Props, src.SQL)
 	if err != nil {
 		return err
 	}
