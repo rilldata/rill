@@ -28,6 +28,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 	var strict bool
 	var logFormat string
 	var variables []string
+	var featureFlags []string
 
 	startCmd := &cobra.Command{
 		Use:   "start [<path>]",
@@ -84,7 +85,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 				return fmt.Errorf("invalid log format %q", logFormat)
 			}
 
-			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, olapDriver, olapDSN, projectPath, parsedLogFormat, variables)
+			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, olapDriver, olapDSN, projectPath, parsedLogFormat, variables, featureFlags)
 			if err != nil {
 				return err
 			}
@@ -123,6 +124,14 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 	startCmd.Flags().BoolVar(&strict, "strict", false, "Exit if project has build errors")
 	startCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
 	startCmd.Flags().StringSliceVarP(&variables, "env", "e", []string{}, "Set project variables")
+
+	startCmd.Flags().StringSliceVar(&featureFlags, "feature", []string{}, "Set feature flags")
+	if cfg.IsDev() {
+		err := startCmd.Flags().MarkHidden("feature")
+		if err != nil {
+			panic(err)
+		}
+	}
 
 	return startCmd
 }

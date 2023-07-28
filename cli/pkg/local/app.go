@@ -59,11 +59,12 @@ type App struct {
 	Version               config.Version
 	Verbose               bool
 	ProjectPath           string
+	FeatureFlags          []string
 	observabilityShutdown observability.ShutdownFunc
 	loggerCleanUp         func()
 }
 
-func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string) (*App, error) {
+func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables, featureFlags []string) (*App, error) {
 	logger, cleanupFn := initLogger(verbose, logFormat)
 	// Init Prometheus telemetry
 	shutdown, err := observability.Start(ctx, logger, &observability.Options{
@@ -135,6 +136,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 		Version:               ver,
 		Verbose:               verbose,
 		ProjectPath:           projectPath,
+		FeatureFlags:          featureFlags,
 		observabilityShutdown: shutdown,
 		loggerCleanUp:         cleanupFn,
 	}
@@ -234,6 +236,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		IsDev:            a.Version.IsDev(),
 		AnalyticsEnabled: enabled,
 		Readonly:         readonly,
+		FeatureFlags:     a.FeatureFlags,
 	}
 
 	// Create server logger.
@@ -324,17 +327,18 @@ func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy bool) 
 }
 
 type localInfo struct {
-	InstanceID       string `json:"instance_id"`
-	GRPCPort         int    `json:"grpc_port"`
-	InstallID        string `json:"install_id"`
-	UserID           string `json:"user_id"`
-	ProjectPath      string `json:"project_path"`
-	Version          string `json:"version"`
-	BuildCommit      string `json:"build_commit"`
-	BuildTime        string `json:"build_time"`
-	IsDev            bool   `json:"is_dev"`
-	AnalyticsEnabled bool   `json:"analytics_enabled"`
-	Readonly         bool   `json:"readonly"`
+	InstanceID       string   `json:"instance_id"`
+	GRPCPort         int      `json:"grpc_port"`
+	InstallID        string   `json:"install_id"`
+	UserID           string   `json:"user_id"`
+	ProjectPath      string   `json:"project_path"`
+	Version          string   `json:"version"`
+	BuildCommit      string   `json:"build_commit"`
+	BuildTime        string   `json:"build_time"`
+	IsDev            bool     `json:"is_dev"`
+	AnalyticsEnabled bool     `json:"analytics_enabled"`
+	Readonly         bool     `json:"readonly"`
+	FeatureFlags     []string `json:"feature_flags"`
 }
 
 // infoHandler servers the local info struct.
