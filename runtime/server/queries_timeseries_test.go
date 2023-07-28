@@ -591,7 +591,6 @@ func getTimeseriesTestServerWithMonthGrain(t *testing.T) (*Server, string) {
 	sql := strings.Join(selects, " UNION ALL ")
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "timeseries", sql)
 	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
->>>>>>> main
 	require.NoError(t, err)
 
 	return server, instanceID
