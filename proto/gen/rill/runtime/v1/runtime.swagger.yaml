@@ -2479,6 +2479,10 @@ definitions:
       ingestionLimitBytes:
         type: string
         format: int64
+      annotations:
+        type: object
+        additionalProperties:
+          type: string
     description: |-
       Request message for RuntimeService.CreateInstance.
       See message Instance for field descriptions.
@@ -2573,7 +2577,6 @@ definitions:
       - FILE_EVENT_UNSPECIFIED
       - FILE_EVENT_WRITE
       - FILE_EVENT_DELETE
-      - FILE_EVENT_RENAME
     default: FILE_EVENT_UNSPECIFIED
     description: FileEvent describes a file change.
   v1GCSGetCredentialsInfoResponse:
@@ -3804,7 +3807,6 @@ definitions:
       - CODE_DECIMAL
       - CODE_JSON
       - CODE_UUID
-      - CODE_DATETIME
     default: CODE_UNSPECIFIED
     title: Code enumerates all the types that can be represented in a schema
   v1UnpackEmptyResponse:

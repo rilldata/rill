@@ -40,7 +40,7 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, 
 		return fmt.Errorf("type of source should `drivers.DatabaseSink`")
 	}
 
-	iter, err := s.from.Query(ctx, src.Props, src.Query)
+	iter, err := s.from.Query(ctx, src.Props, src.SQL)
 	if err != nil {
 		return err
 	}
@@ -169,13 +169,11 @@ func pbTypeToDuckDB(code runtimev1.Type_Code) (string, error) {
 	case runtimev1.Type_CODE_FLOAT64:
 		return "DOUBLE", nil
 	case runtimev1.Type_CODE_TIMESTAMP:
-		return "TIMESTAMP WITH TIME ZONE", nil
+		return "TIMESTAMP", nil
 	case runtimev1.Type_CODE_DATE:
 		return "DATE", nil
 	case runtimev1.Type_CODE_TIME:
 		return "TIME", nil
-	case runtimev1.Type_CODE_DATETIME:
-		return "TIMESTAMP", nil
 	case runtimev1.Type_CODE_STRING:
 		return "VARCHAR", nil
 	case runtimev1.Type_CODE_BYTES:

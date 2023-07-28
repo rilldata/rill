@@ -40,7 +40,7 @@ type Source struct {
 	DuckDBProps           map[string]any `yaml:"duckdb,omitempty" mapstructure:"duckdb,omitempty"`
 	Headers               map[string]any `yaml:"headers,omitempty" mapstructure:"headers,omitempty"`
 	AllowSchemaRelaxation *bool          `yaml:"ingest.allow_schema_relaxation,omitempty" mapstructure:"allow_schema_relaxation,omitempty"`
-	Query                 string         `yaml:"query,omitempty" mapstructure:"query,omitempty"`
+	SQL                   string         `yaml:"sql,omitempty" mapstructure:"sql,omitempty"`
 	DB                    string         `yaml:"db,omitempty" mapstructure:"db,omitempty"`
 	ProjectID             string         `yaml:"project_id,omitempty" mapstructure:"project_id,omitempty"`
 }
@@ -212,8 +212,8 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 		props["allow_schema_relaxation"] = *source.AllowSchemaRelaxation
 	}
 
-	if source.Query != "" {
-		props["query"] = source.Query
+	if source.SQL != "" {
+		props["sql"] = source.SQL
 	}
 
 	if source.DB != "" {

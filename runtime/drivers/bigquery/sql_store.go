@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
 	"math/big"
 	"strings"
 	"time"
@@ -18,7 +17,7 @@ import (
 )
 
 // Query implements drivers.SQLStore
-func (c *Connection) Query(ctx context.Context, props map[string]any, qry string) (drivers.RowIterator, error) {
+func (c *Connection) Query(ctx context.Context, props map[string]any, sql string) (drivers.RowIterator, error) {
 	srcProps, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, err
@@ -37,7 +36,7 @@ func (c *Connection) Query(ctx context.Context, props map[string]any, qry string
 		return nil, err
 	}
 
-	q := client.Query(qry)
+	q := client.Query(sql)
 	it, err := q.Read(ctx)
 	if err != nil && !strings.Contains(err.Error(), "Syntax error") {
 		c.logger.Info("query failed, retrying without storage api", zap.Error(err))
@@ -49,7 +48,7 @@ func (c *Connection) Query(ctx context.Context, props map[string]any, qry string
 			return nil, fmt.Errorf("failed to create bigquery client: %w", err)
 		}
 
-		q := client.Query(qry)
+		q := client.Query(sql)
 		it, err = q.Read(ctx)
 	}
 	if err != nil {
@@ -146,11 +145,6 @@ func (r *row) Load(v []bigquery.Value, s bigquery.Schema) error {
 }
 
 // type conversion table for time
-// bigquery(format) -- duckdb -- internal pb type
-// TIMESTAMP -- TIMESTAMPTZ/TIMESTAMP WITH TIME ZONE -- Type_CODE_TIMESTAMP
-// DATETIME(9999-12-31 23:59:59.999999) -- TIMESTAMP/DATETIME -- Type_CODE_DATETIME
-// TIME([H]H:[M]M:[S]S[.DDDDDD|.F]) -- TIME -- Type_CODE_TIME
-// DATE(YYYY-[M]M-[D]D) -- DATE -- Type_CODE_DATE
 func toPB(field *bigquery.FieldSchema) (*runtimev1.Type, error) {
 	t := &runtimev1.Type{Nullable: !field.Required}
 	switch field.Type {
@@ -165,7 +159,7 @@ func toPB(field *bigquery.FieldSchema) (*runtimev1.Type, error) {
 	case bigquery.FloatFieldType:
 		t.Code = runtimev1.Type_CODE_FLOAT64
 	case bigquery.NumericFieldType:
-		t.Code = runtimev1.Type_CODE_DECIMAL
+		t.Code = runtimev1.Type_CODE_STRING
 	// big numeric can have width upto 76 digits which can't be converted to DECIMAL type in duckdb
 	// which supports width upto 38 digits only.
 	case bigquery.BigNumericFieldType:
@@ -173,7 +167,7 @@ func toPB(field *bigquery.FieldSchema) (*runtimev1.Type, error) {
 	case bigquery.TimestampFieldType:
 		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	case bigquery.DateTimeFieldType:
-		t.Code = runtimev1.Type_CODE_DATETIME
+		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	case bigquery.TimeFieldType:
 		t.Code = runtimev1.Type_CODE_TIME
 	case bigquery.DateFieldType:
@@ -207,13 +201,10 @@ func convert(v any) any {
 	case civil.DateTime:
 		return val.In(time.UTC)
 	case *big.Rat:
-		f, _ := val.Float64()
-		if math.IsInf(f, 0) {
-			// big.Rat can't always be represented in float64
-			// we use string notation(in the form num/denom) in such cases which is not ideal
-			return val.String()
+		if val.IsInt() {
+			return val.FloatString(0)
 		}
-		return f
+		return strings.TrimRight(val.FloatString(38), "0")
 	default:
 		return val
 	}

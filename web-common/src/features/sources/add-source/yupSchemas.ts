@@ -48,7 +48,7 @@ export function getYupSchema(connector: V1Connector) {
       });
     case "motherduck":
       return yup.object().shape({
-        query: yup.string().required("Query is required"),
+        sql: yup.string().required("sql is required"),
         sourceName: yup
           .string()
           .matches(
@@ -59,7 +59,7 @@ export function getYupSchema(connector: V1Connector) {
       });
     case "bigquery":
       return yup.object().shape({
-        query: yup.string().required("Query is required"),
+        sql: yup.string().required("sql is required"),
         sourceName: yup
           .string()
           .matches(

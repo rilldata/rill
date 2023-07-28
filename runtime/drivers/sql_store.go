@@ -13,7 +13,7 @@ var ErrIteratorDone = errors.New("empty iterator")
 // In future the results can be produced in other formats like arrow as well.
 // May be call it DataWarehouse to differentiate from OLAP or postgres?
 type SQLStore interface {
-	Query(ctx context.Context, props map[string]any, query string) (RowIterator, error)
+	Query(ctx context.Context, props map[string]any, sql string) (RowIterator, error)
 }
 
 // RowIterator returns an iterator to iterate over result of a sql query

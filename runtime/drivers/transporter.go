@@ -95,8 +95,8 @@ func (b *BucketSink) DatabaseSink() (*DatabaseSink, bool) {
 }
 
 type DatabaseSource struct {
-	// Pass only Query OR Table
-	Query    string
+	// Pass only SQL OR Table
+	SQL      string
 	Table    string
 	Database string
 	Limit    int

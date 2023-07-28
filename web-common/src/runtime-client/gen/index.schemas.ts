@@ -379,7 +379,6 @@ export const V1TypeCode = {
   CODE_DECIMAL: "CODE_DECIMAL",
   CODE_JSON: "CODE_JSON",
   CODE_UUID: "CODE_UUID",
-  CODE_DATETIME: "CODE_DATETIME",
 } as const;
 
 export interface V1TriggerSyncResponse {
@@ -865,10 +864,6 @@ export interface V1MetricsViewComparisonValue {
   deltaRel?: unknown;
 }
 
-export interface V1MetricsViewComparisonToplistResponse {
-  rows?: V1MetricsViewComparisonRow[];
-}
-
 export type V1MetricsViewComparisonSortType =
   (typeof V1MetricsViewComparisonSortType)[keyof typeof V1MetricsViewComparisonSortType];
 
@@ -892,9 +887,28 @@ export interface V1MetricsViewComparisonSort {
   type?: V1MetricsViewComparisonSortType;
 }
 
+export interface V1MetricsViewComparisonToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  baseTimeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  sort?: V1MetricsViewComparisonSort[];
+  filter?: V1MetricsViewFilter;
+  limit?: string;
+  offset?: string;
+  priority?: number;
+}
+
 export interface V1MetricsViewComparisonRow {
   dimensionValue?: unknown;
   measureValues?: V1MetricsViewComparisonValue[];
+}
+
+export interface V1MetricsViewComparisonToplistResponse {
+  rows?: V1MetricsViewComparisonRow[];
 }
 
 export interface V1MetricsViewColumn {
@@ -982,21 +996,6 @@ export interface V1InlineMeasure {
   expression?: string;
 }
 
-export interface V1MetricsViewComparisonToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  baseTimeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  sort?: V1MetricsViewComparisonSort[];
-  filter?: V1MetricsViewFilter;
-  limit?: string;
-  offset?: string;
-  priority?: number;
-}
-
 export type V1HistogramMethod =
   (typeof V1HistogramMethod)[keyof typeof V1HistogramMethod];
 
@@ -1052,7 +1051,6 @@ export const V1FileEvent = {
   FILE_EVENT_UNSPECIFIED: "FILE_EVENT_UNSPECIFIED",
   FILE_EVENT_WRITE: "FILE_EVENT_WRITE",
   FILE_EVENT_DELETE: "FILE_EVENT_DELETE",
-  FILE_EVENT_RENAME: "FILE_EVENT_RENAME",
 } as const;
 
 export interface V1ExportResponse {
@@ -1116,6 +1114,8 @@ export interface V1CreateInstanceResponse {
   instance?: V1Instance;
 }
 
+export type V1CreateInstanceRequestAnnotations = { [key: string]: string };
+
 export type V1CreateInstanceRequestVariables = { [key: string]: string };
 
 /**
@@ -1131,6 +1131,7 @@ export interface V1CreateInstanceRequest {
   embedCatalog?: boolean;
   variables?: V1CreateInstanceRequestVariables;
   ingestionLimitBytes?: string;
+  annotations?: V1CreateInstanceRequestAnnotations;
 }
 
 /**
