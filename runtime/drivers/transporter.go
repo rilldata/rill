@@ -5,6 +5,7 @@ import (
 	"math"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 )
 
 // Transporter implements logic for moving data between two connectors
@@ -16,6 +17,7 @@ type Transporter interface {
 type TransferOpts struct {
 	IteratorBatch int
 	LimitInBytes  int64
+	AST           *duckdbsql.AST
 }
 
 func NewTransferOpts(opts ...TransferOption) *TransferOpts {
@@ -41,6 +43,12 @@ func WithIteratorBatch(b int) TransferOption {
 func WithLimitInBytes(limit int64) TransferOption {
 	return func(t *TransferOpts) {
 		t.LimitInBytes = limit
+	}
+}
+
+func WithAST(ast *duckdbsql.AST) TransferOption {
+	return func(t *TransferOpts) {
+		t.AST = ast
 	}
 }
 

@@ -64,18 +64,13 @@ func (t *fileStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source,
 		ingestionProps = map[string]any{}
 	}
 
-	var query string
-	if q, ok := src.Properties["query"]; ok {
-		query = q.(string)
-	}
-
 	// Ingest data
-	from, err := sourceReader(localPaths, format, query, ingestionProps)
+	from, err := sourceReader(localPaths, format, ingestionProps)
 	if err != nil {
 		return err
 	}
 
-	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %q AS (%s)", fSink.Table, from)
+	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %q AS (SELECT * FROM %s)", fSink.Table, from)
 	err = t.to.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1})
 	if err != nil {
 		return err

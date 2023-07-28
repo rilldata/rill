@@ -194,9 +194,11 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 		name = apiSource.Name
 	}
 
+	var err error
+	var ast *duckdbsql.AST
 	// TODO: this should go in the parser in the new reconcile
 	if apiSource.Connector == "duckdb" {
-		err := mergeFromParsedQuery(apiSource)
+		ast, err = mergeFromParsedQuery(apiSource)
 		if err != nil {
 			return err
 		}
@@ -257,76 +259,60 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 			}
 		}
 	}()
-	err = t.Transfer(ctxWithTimeout, src, sink, drivers.NewTransferOpts(drivers.WithLimitInBytes(ingestionLimit)), p)
+	err = t.Transfer(ctxWithTimeout, src, sink, drivers.NewTransferOpts(drivers.WithLimitInBytes(ingestionLimit), drivers.WithAST(ast)), p)
 	if limitExceeded {
 		return drivers.ErrIngestionLimitExceeded
 	}
 	return err
 }
 
-func mergeFromParsedQuery(apiSource *runtimev1.Source) error {
+func mergeFromParsedQuery(apiSource *runtimev1.Source) (*duckdbsql.AST, error) {
 	props := apiSource.Properties.AsMap()
 	query, ok := props["query"]
 	if !ok {
-		return nil
+		return nil, nil
 	}
 	queryStr, ok := query.(string)
 	if !ok {
-		return errors.New("query should be a string")
+		return nil, errors.New("query should be a string")
 	}
 
 	// raw sql query
 	ast, err := duckdbsql.Parse(queryStr)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	refs := ast.GetTableRefs()
 	if len(refs) > 1 {
-		return errors.New("sql source can have only one table reference")
+		return nil, errors.New("sql source can have only one table reference")
 	}
 	ref := refs[0]
 
 	if len(ref.Paths) == 0 {
-		return errors.New("only read_* functions with a single path is supported")
+		return nil, errors.New("only read_* functions with a single path is supported")
 	}
 	if len(ref.Paths) > 1 {
-		return errors.New("invalid source, only a single path for source is supported")
+		return nil, errors.New("invalid source, only a single path for source is supported")
 	}
 
 	p, c, ok := parseEmbeddedSourceConnector(ref.Paths[0])
 	if !ok {
-		return errors.New("unknown source")
+		return nil, errors.New("unknown source")
 	}
 	if c == "local_file" {
-		return nil
-	}
-
-	err = ast.RewriteTableRefs(func(table *duckdbsql.TableRef) (*duckdbsql.TableRef, bool) {
-		return &duckdbsql.TableRef{
-			Paths:      []string{"__path_as_args__"},
-			Function:   table.Function,
-			Properties: table.Properties,
-		}, true
-	})
-	if err != nil {
-		return err
-	}
-
-	newQuery, err := ast.Format()
-	if err != nil {
-		return err
+		return nil, nil
 	}
 
 	apiSource.Connector = c
 	props["path"] = p
-	props["query"] = strings.Replace(newQuery, "main.list_value('__path_as_args__')", "?", 1)
+	props["query"] = queryStr
 
 	pbProps, err := structpb.NewStruct(props)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	apiSource.Properties = pbProps
-	return nil
+	return ast, nil
 }
 
 type progress struct {
