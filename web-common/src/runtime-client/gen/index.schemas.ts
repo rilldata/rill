@@ -1008,7 +1008,6 @@ export const V1FileEvent = {
   FILE_EVENT_UNSPECIFIED: "FILE_EVENT_UNSPECIFIED",
   FILE_EVENT_WRITE: "FILE_EVENT_WRITE",
   FILE_EVENT_DELETE: "FILE_EVENT_DELETE",
-  FILE_EVENT_RENAME: "FILE_EVENT_RENAME",
 } as const;
 
 export interface V1ExportResponse {
@@ -1072,6 +1071,8 @@ export interface V1CreateInstanceResponse {
   instance?: V1Instance;
 }
 
+export type V1CreateInstanceRequestAnnotations = { [key: string]: string };
+
 export type V1CreateInstanceRequestVariables = { [key: string]: string };
 
 /**
@@ -1087,6 +1088,7 @@ export interface V1CreateInstanceRequest {
   embedCatalog?: boolean;
   variables?: V1CreateInstanceRequestVariables;
   ingestionLimitBytes?: string;
+  annotations?: V1CreateInstanceRequestAnnotations;
 }
 
 /**

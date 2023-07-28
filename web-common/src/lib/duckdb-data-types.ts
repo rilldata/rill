@@ -90,8 +90,10 @@ export const STRING_LIKES = new Set([
   // Go Types
   "CODE_STRING",
   "CODE_BYTES",
+  "CODE_UUID",
 
   // Node Types
+  "UUID",
   "BYTE_ARRAY",
   "VARCHAR",
   "CHAR",
