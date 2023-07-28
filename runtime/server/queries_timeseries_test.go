@@ -573,7 +573,24 @@ func getTimeseriesTestServerWithWeekGrain(t *testing.T) (*Server, string) {
 	sql := strings.Join(selects, " UNION ALL ")
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "timeseries", sql)
 
-	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop())
+	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	return server, instanceID
+}
+
+func getTimeseriesTestServerWithMonthGrain(t *testing.T) (*Server, string) {
+	selects := make([]string, 0, 120)
+	tm, err := time.Parse(time.DateOnly, "2013-09-01")
+	require.NoError(t, err)
+	for i := 0; i < 120; i++ {
+		selects = append(selects, `SELECT 1.0 AS clicks, TIMESTAMP '`+tm.Format(time.DateTime)+`' AS time, 'iphone' AS device`)
+		tm = tm.AddDate(0, 1, 0)
+	}
+
+	sql := strings.Join(selects, " UNION ALL ")
+	rt, instanceID := testruntime.NewInstanceWithModel(t, "timeseries", sql)
+	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	return server, instanceID
@@ -605,10 +622,16 @@ func TestServer_Timeseries_Kathmandu_with_week(t *testing.T) {
 	results := response.GetRollup().Results
 	require.Equal(t, 52, len(results))
 
+	var previousTime *time.Time
 	for i := 0; i < 52; i++ {
 		value := results[i].Records.Fields["max_clicks"]
 		n, ok := value.GetKind().(*structpb.Value_NumberValue)
-		require.True(t, ok, "Element %d %s", i, results[i].Ts.AsTime())
+		tm := results[i].Ts.AsTime()
+		require.True(t, ok, "Element %d %s", i, tm)
+		if previousTime != nil {
+			require.Less(t, 0, tm.Compare(*previousTime))
+		}
+		previousTime = &tm
 		require.Equal(t, 1.0, n.NumberValue, "Element %d %s", i, results[i].Ts.AsTime())
 	}
 }
@@ -639,10 +662,59 @@ func TestServer_Timeseries_Copenhagen_with_week(t *testing.T) {
 	results := response.GetRollup().Results
 	require.Equal(t, 52, len(results))
 
+	var previousTime *time.Time
+
 	for i := 0; i < len(results); i++ {
 		value := results[i].Records.Fields["max_clicks"]
 		n, ok := value.GetKind().(*structpb.Value_NumberValue)
-		require.True(t, ok, "Element %d %s", i, results[i].Ts.AsTime())
+		tm := results[i].Ts.AsTime()
+		require.True(t, ok, "Element %d %s", i, tm)
+		if previousTime != nil {
+			require.Less(t, 0, tm.Compare(*previousTime))
+		}
+		previousTime = &tm
+		require.Equal(t, 1.0, n.NumberValue, "Element %d %s", i, results[i].Ts.AsTime())
+	}
+}
+
+func TestServer_Timeseries_Copenhagen_with_month(t *testing.T) {
+	t.Parallel()
+	server, instanceID := getTimeseriesTestServerWithMonthGrain(t)
+
+	response, err := server.ColumnTimeSeries(testCtx(), &runtimev1.ColumnTimeSeriesRequest{
+		InstanceId:          instanceID,
+		TableName:           "timeseries",
+		TimestampColumnName: "time",
+		Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
+			{
+				Expression: "max(clicks)",
+				SqlName:    "max_clicks",
+			},
+		},
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Start:    parseTimeToProtoTimeStamps(t, "2013-09-01T00:00:00Z"),
+			End:      parseTimeToProtoTimeStamps(t, "2023-09-01T00:00:00Z"),
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
+		},
+		TimeZone: "Europe/Copenhagen",
+	})
+
+	require.NoError(t, err)
+	results := response.GetRollup().Results
+	require.Equal(t, 120, len(results))
+
+	var previousTime *time.Time
+
+	for i := 0; i < len(results); i++ {
+		value := results[i].Records.Fields["max_clicks"]
+		n, ok := value.GetKind().(*structpb.Value_NumberValue)
+		tm := results[i].Ts.AsTime()
+		require.True(t, ok, "Element %d %s", i, tm)
+		fmt.Printf("%s %.1f\n", tm.Format(time.DateOnly), value.GetNumberValue())
+		if previousTime != nil {
+			require.Less(t, 0, tm.Compare(*previousTime))
+		}
+		previousTime = &tm
 		require.Equal(t, 1.0, n.NumberValue, "Element %d %s", i, results[i].Ts.AsTime())
 	}
 }
