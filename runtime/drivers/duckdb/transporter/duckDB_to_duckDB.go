@@ -10,7 +10,6 @@ import (
 
 type duckDBToDuckDB struct {
 	to     drivers.OLAPStore
-	from   drivers.FileStore
 	logger *zap.Logger
 }
 

@@ -3,7 +3,6 @@ package transporter
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -70,15 +69,6 @@ func convertToStatementParamsStr(paths []string, properties map[string]any) stri
 	return strings.Join(ingestionParamsStr, ",")
 }
 
-type duckDBTableSchemaResult struct {
-	ColumnName string  `db:"column_name"`
-	ColumnType string  `db:"column_type"`
-	Nullable   *string `db:"null"`
-	Key        *string `db:"key"`
-	Default    *string `db:"default"`
-	Extra      *string `db:"extra"`
-}
-
 func schemaRelaxationProperty(prop map[string]interface{}) (bool, error) {
 	allowSchemaRelaxation, defined := prop["allow_schema_relaxation"].(bool)
 	val, ok := prop["union_by_name"].(bool)
@@ -107,32 +97,6 @@ func hasKey(m map[string]interface{}, key ...string) bool {
 		}
 	}
 	return false
-}
-
-func missingMapKeys(src, lookup map[string]string) []string {
-	keys := make([]string, 0)
-	for k := range src {
-		if _, ok := lookup[k]; !ok {
-			keys = append(keys, k)
-		}
-	}
-	return keys
-}
-
-func keys(src map[string]string) []string {
-	keys := make([]string, 0, len(src))
-	for k := range src {
-		keys = append(keys, k)
-	}
-	return keys
-}
-
-func names(filePaths []string) []string {
-	names := make([]string, len(filePaths))
-	for i, f := range filePaths {
-		names[i] = filepath.Base(f)
-	}
-	return names
 }
 
 // copyMap does a shallow copy of the map
