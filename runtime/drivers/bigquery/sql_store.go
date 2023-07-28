@@ -146,11 +146,6 @@ func (r *row) Load(v []bigquery.Value, s bigquery.Schema) error {
 }
 
 // type conversion table for time
-// bigquery(format) -- duckdb -- internal pb type
-// TIMESTAMP -- TIMESTAMPTZ/TIMESTAMP WITH TIME ZONE -- Type_CODE_TIMESTAMP
-// DATETIME(9999-12-31 23:59:59.999999) -- TIMESTAMP/DATETIME -- Type_CODE_DATETIME
-// TIME([H]H:[M]M:[S]S[.DDDDDD|.F]) -- TIME -- Type_CODE_TIME
-// DATE(YYYY-[M]M-[D]D) -- DATE -- Type_CODE_DATE
 func toPB(field *bigquery.FieldSchema) (*runtimev1.Type, error) {
 	t := &runtimev1.Type{Nullable: !field.Required}
 	switch field.Type {
@@ -173,7 +168,7 @@ func toPB(field *bigquery.FieldSchema) (*runtimev1.Type, error) {
 	case bigquery.TimestampFieldType:
 		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	case bigquery.DateTimeFieldType:
-		t.Code = runtimev1.Type_CODE_DATETIME
+		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	case bigquery.TimeFieldType:
 		t.Code = runtimev1.Type_CODE_TIME
 	case bigquery.DateFieldType:

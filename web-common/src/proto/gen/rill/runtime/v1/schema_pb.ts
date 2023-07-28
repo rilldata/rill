@@ -209,11 +209,6 @@ export enum Type_Code {
    * @generated from enum value: CODE_UUID = 24;
    */
   UUID = 24,
-
-  /**
-   * @generated from enum value: CODE_DATETIME = 25;
-   */
-  DATETIME = 25,
 }
 // Retrieve enum metadata with: proto3.getEnumType(Type_Code)
 proto3.util.setEnumType(Type_Code, "rill.runtime.v1.Type.Code", [
@@ -242,7 +237,6 @@ proto3.util.setEnumType(Type_Code, "rill.runtime.v1.Type.Code", [
   { no: 22, name: "CODE_DECIMAL" },
   { no: 23, name: "CODE_JSON" },
   { no: 24, name: "CODE_UUID" },
-  { no: 25, name: "CODE_DATETIME" },
 ]);
 
 /**
