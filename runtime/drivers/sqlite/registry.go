@@ -182,6 +182,9 @@ func mapToJSON(data map[string]string) ([]byte, error) {
 }
 
 func mapFromJSON(data []byte) (map[string]string, error) {
+	if len(data) == 0 {
+		return map[string]string{}, nil
+	}
 	var m map[string]string
 	err := json.Unmarshal(data, &m)
 	return m, err
