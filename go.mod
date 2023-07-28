@@ -19,6 +19,7 @@ require (
 	github.com/bradleyfalzon/ghinstallation/v2 v2.4.0
 	github.com/briandowns/spinner v1.23.0
 	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
+	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/coreos/go-oidc/v3 v3.6.0
 	github.com/dgraph-io/ristretto v0.1.1
 	github.com/eapache/go-resiliency v1.3.0
@@ -134,7 +135,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
-	github.com/fsnotify/fsnotify v1.6.0 // indirect
+	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.4.1 // indirect
