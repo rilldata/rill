@@ -226,13 +226,13 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 
 	ingestionLimit := opts.IngestStorageLimitInBytes
 	p := &progress{}
-	ticker := time.NewTicker(5 * time.Second)
 	limitExceeded := false
 	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
 		for {
 			select {
 			case <-ctxWithTimeout.Done():
-				ticker.Stop()
 				return
 			case <-ticker.C:
 				olap, _ := olapConnection.AsOLAP()
