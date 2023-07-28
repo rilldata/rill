@@ -25,6 +25,8 @@ func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest)
 		attribute.String("args.glob", req.Glob),
 	)
 
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadRepo) {
 		return nil, ErrForbidden
 	}
@@ -96,6 +98,8 @@ func (s *Server) GetFile(ctx context.Context, req *runtimev1.GetFileRequest) (*r
 		attribute.String("args.path", req.Path),
 	)
 
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadRepo) {
 		return nil, ErrForbidden
 	}
@@ -117,6 +121,8 @@ func (s *Server) PutFile(ctx context.Context, req *runtimev1.PutFileRequest) (*r
 		attribute.Bool("args.create_only", req.CreateOnly),
 	)
 
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
 		return nil, ErrForbidden
 	}
@@ -135,6 +141,8 @@ func (s *Server) DeleteFile(ctx context.Context, req *runtimev1.DeleteFileReques
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.path", req.Path),
 	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
 		return nil, ErrForbidden
@@ -155,6 +163,8 @@ func (s *Server) RenameFile(ctx context.Context, req *runtimev1.RenameFileReques
 		attribute.String("args.from_path", req.FromPath),
 		attribute.String("args.to_path", req.ToPath),
 	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
 		return nil, ErrForbidden
@@ -197,6 +207,8 @@ func (s *Server) UploadMultipartFile(w http.ResponseWriter, req *http.Request, p
 		attribute.String("args.instance_id", pathParams["instance_id"]),
 		attribute.String("args.path", pathParams["path"]),
 	)
+
+	s.addInstanceRequestAttributes(ctx, pathParams["instance_id"])
 
 	err = s.runtime.PutFile(ctx, pathParams["instance_id"], pathParams["path"], f, true, false)
 	if err != nil {

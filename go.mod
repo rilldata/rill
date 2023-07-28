@@ -19,6 +19,7 @@ require (
 	github.com/bradleyfalzon/ghinstallation/v2 v2.4.0
 	github.com/briandowns/spinner v1.23.0
 	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
+	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/coreos/go-oidc/v3 v3.6.0
 	github.com/dgraph-io/ristretto v0.1.1
 	github.com/eapache/go-resiliency v1.3.0
@@ -73,8 +74,7 @@ require (
 	golang.org/x/oauth2 v0.8.0
 	golang.org/x/sync v0.2.0
 	golang.org/x/sys v0.9.0
-	google.golang.org/api v0.124.0
-	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1
+	google.golang.org/api v0.126.0
 	google.golang.org/grpc v1.55.0
 	google.golang.org/protobuf v1.30.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
@@ -85,11 +85,14 @@ require (
 	moul.io/zapfilter v1.7.0
 )
 
+require google.golang.org/genproto v0.0.0-20230530153820-e85fd2cbaebc // indirect
+
 require (
-	cloud.google.com/go v0.110.2 // indirect
+	cloud.google.com/go v0.110.2
+	cloud.google.com/go/bigquery v1.52.0
 	cloud.google.com/go/compute v1.19.3 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
-	cloud.google.com/go/iam v1.0.1 // indirect
+	cloud.google.com/go/iam v1.1.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/JohnCGriffin/overflow v0.0.0-20211019200055-46fa312c352c // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
@@ -99,6 +102,7 @@ require (
 	github.com/acomagu/bufpipe v1.0.4 // indirect
 	github.com/alicebob/gopher-json v0.0.0-20230218143504-906a9b012302 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
+	github.com/apache/arrow/go/v12 v12.0.0 // indirect
 	github.com/apache/thrift v0.18.1 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.18.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.10 // indirect
@@ -134,7 +138,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
-	github.com/fsnotify/fsnotify v1.6.0 // indirect
+	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.4.1 // indirect
@@ -157,7 +161,7 @@ require (
 	github.com/google/s2a-go v0.1.4 // indirect
 	github.com/google/wire v0.5.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
-	github.com/googleapis/gax-go/v2 v2.9.1 // indirect
+	github.com/googleapis/gax-go/v2 v2.11.0 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/huandu/xstrings v1.4.0 // indirect
 	github.com/icholy/digest v0.1.22 // indirect
@@ -238,6 +242,8 @@ require (
 	golang.org/x/tools v0.9.1 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20230530153820-e85fd2cbaebc
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gotest.tools/v3 v3.1.0 // indirect
 	lukechampine.com/uint128 v1.3.0 // indirect

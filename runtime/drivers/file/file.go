@@ -166,6 +166,11 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 	return c, true
 }
 
+// AsSQLStore implements drivers.Connection.
+func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
+	return nil, false
+}
+
 // checkPath checks that the connection's root is a valid directory.
 func (c *connection) checkRoot() error {
 	info, err := os.Stat(c.root)

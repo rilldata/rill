@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -14,7 +15,7 @@ import (
 func getMetricsTestServer(t *testing.T, projectName string) (*Server, string) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, projectName)
 
-	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop())
+	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	return server, instanceID

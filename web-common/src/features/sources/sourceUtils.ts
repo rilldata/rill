@@ -20,7 +20,11 @@ export function compileCreateSourceYAML(
 ) {
   const topLineComment = `# Visit https://docs.rilldata.com/ to learn more about Rill code files.`;
 
-  if (connectorName !== "local_file" && connectorName !== "motherduck") {
+  if (
+    connectorName !== "local_file" &&
+    connectorName !== "motherduck" &&
+    connectorName !== "bigquery"
+  ) {
     values.uri = values.path;
     delete values.path;
   }

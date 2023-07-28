@@ -30,10 +30,10 @@ var spec = drivers.Spec{
 	Description: "Import data from MotherDuck.",
 	SourceProperties: []drivers.PropertySchema{
 		{
-			Key:         "query",
+			Key:         "sql",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
-			DisplayName: "Query",
+			DisplayName: "SQL",
 			Description: "Query to extract data from MotherDuck.",
 			Placeholder: "select * from my_db.my_table;",
 		},
@@ -194,12 +194,21 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
 }
 
+// AsSQLStore implements drivers.Connection.
+// Use OLAPStore instead.
+func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
+	return nil, false
+}
+
 // AsTransporter implements drivers.Connection.
 func (c *connection) AsTransporter(from, to drivers.Connection) (drivers.Transporter, bool) {
 	olap, _ := to.AsOLAP()
 	if c == to {
 		if from.Driver() == "motherduck" {
 			return transporter.NewMotherduckToDuckDB(from, olap, c.logger), true
+		}
+		if store, ok := from.AsSQLStore(); ok {
+			return transporter.NewSQLStoreToDuckDB(store, olap, c.logger), true
 		}
 		if store, ok := from.AsObjectStore(); ok { // objectstore to duckdb transfer
 			return transporter.NewObjectStoreToDuckDB(store, olap, c.logger), true
