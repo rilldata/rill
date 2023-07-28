@@ -201,6 +201,9 @@ func convert(v any) any {
 	case civil.DateTime:
 		return val.In(time.UTC)
 	case *big.Rat:
+		if val.IsInt() {
+			return val.FloatString(0)
+		}
 		return strings.TrimRight(val.FloatString(38), "0")
 	default:
 		return val
