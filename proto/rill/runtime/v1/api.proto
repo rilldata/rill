@@ -286,6 +286,7 @@ message CreateInstanceRequest {
   bool embed_catalog = 6;
   map<string, string> variables = 7;
   int64 ingestion_limit_bytes = 8;
+  map<string, string> annotations = 9;
 }
 
 // Response message for RuntimeService.CreateInstance

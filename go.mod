@@ -19,6 +19,7 @@ require (
 	github.com/bradleyfalzon/ghinstallation/v2 v2.4.0
 	github.com/briandowns/spinner v1.23.0
 	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
+	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/coreos/go-oidc/v3 v3.6.0
 	github.com/dgraph-io/ristretto v0.1.1
 	github.com/eapache/go-resiliency v1.3.0
