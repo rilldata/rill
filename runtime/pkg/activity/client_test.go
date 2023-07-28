@@ -2,7 +2,9 @@ package activity
 
 import (
 	"context"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
+	"sync"
 	"testing"
 	"time"
 )
@@ -16,13 +18,10 @@ func TestBufferedClientEmit(t *testing.T) {
 	})
 
 	client.Emit(context.Background(), "test_event", 1.0, attribute.String("test_dim", "test_val"))
-	time.Sleep(time.Millisecond * 100) // wait for the event to be processed
 
-	if len(sink.Events) == 0 {
-		t.Fatalf("Expected at least one event, but got none")
-	}
+	require.Eventually(t, func() bool { return len(sink.GetEvents()) == 1 }, time.Second*2, time.Millisecond*10)
 
-	event := sink.Events[0]
+	event := sink.GetEvents()[0]
 	if event.Name != "test_event" {
 		t.Errorf("Expected 'test_event', but got '%s'", event.Name)
 	}
@@ -65,16 +64,25 @@ func TestEventMarshal(t *testing.T) {
 }
 
 type TestSink struct {
-	Events []Event
+	events   []Event
+	eventsMu sync.Mutex
 }
 
 func NewTestSink() *TestSink {
 	return &TestSink{}
 }
 
-func (n *TestSink) Sink(ctx context.Context, events []Event) error {
-	n.Events = append(n.Events, events...)
+func (n *TestSink) Sink(_ context.Context, events []Event) error {
+	n.eventsMu.Lock()
+	defer n.eventsMu.Unlock()
+	n.events = append(n.events, events...)
 	return nil
+}
+
+func (n *TestSink) GetEvents() []Event {
+	n.eventsMu.Lock()
+	defer n.eventsMu.Unlock()
+	return n.events
 }
 
 func (n *TestSink) Close() error {
