@@ -159,6 +159,17 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 
 // MetricsViewTotals implements QueryService.
 func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsViewTotalsRequest) (*runtimev1.MetricsViewTotalsResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.metric_view", req.MetricsViewName),
+		attribute.StringSlice("args.measures", req.MeasureNames),
+		attribute.StringSlice("args.inline_measures.names", marshalInlineMeasure(req.InlineMeasures)),
+		attribute.String("args.time_start", safeTimeStr(req.TimeStart)),
+		attribute.String("args.time_end", safeTimeStr(req.TimeEnd)),
+		attribute.Int("args.filter_count", filterCount(req.Filter)),
+		attribute.Int("args.priority", int(req.Priority)),
+	)
+
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
