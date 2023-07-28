@@ -471,6 +471,9 @@ func TestServer_Timeseries_timezone_dst_forward(t *testing.T) {
 
 	require.NoError(t, err)
 	results := response.GetRollup().Results
+	for i := 0; i < len(results); i++ {
+		fmt.Printf("%s %.1f\n", results[i].Ts.AsTime().Format(time.DateTime), results[0].Records.Fields["count"].GetNumberValue())
+	}
 	require.Equal(t, 4, len(results))
 	require.Equal(t, "2023-03-26 00:00:00", results[0].Ts.AsTime().Format(time.DateTime))
 	require.Equal(t, 1.0, results[0].Records.Fields["count"].GetNumberValue())

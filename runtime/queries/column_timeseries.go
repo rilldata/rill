@@ -127,7 +127,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		querySQL := `CREATE TEMPORARY TABLE ` + temporaryTableName + ` AS (
 			-- generate a time series column that has the intended range
 			WITH template as (
-				SELECT
+				SELECT distinct
 					range as ` + tsAlias + `
 				FROM
 					range(
@@ -143,7 +143,6 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 			GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
 			)
 			-- an additional grouping is required for time zone DST (see unit tests for examples)
-			SELECT ` + tsAlias + `,` + getCoalesceStatementsMeasuresLast(measures) + ` FROM (
 				-- join the transformed data with the generated time series column,
 				-- coalescing the first value to get the 0-default when the rolled up data
 				-- does not have that value.
@@ -152,7 +151,6 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 				timezone(?, template.` + tsAlias + `) as ` + tsAlias + ` from template
 				LEFT OUTER JOIN series ON template.` + tsAlias + ` = series.` + tsAlias + `
 				ORDER BY template.` + tsAlias + `
-			) GROUP BY 1
 		)`
 
 		err = olap.Exec(ctx, &drivers.Statement{
