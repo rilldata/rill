@@ -83,11 +83,22 @@ func (a *AST) RewriteTableRefs(fn func(table *TableRef) (*TableRef, bool)) error
 			continue
 		}
 
-		// only rewriting to a base table is supported as of now.
 		if newRef.Name != "" {
 			err := node.rewriteToBaseTable(newRef.Name)
 			if err != nil {
 				return err
+			}
+		} else if newRef.Function != "" {
+			switch newRef.Function {
+			case "read_csv_auto", "read_csv",
+				"read_parquet",
+				"read_json", "read_json_auto", "read_json_objects", "read_json_objects_auto",
+				"read_ndjson_objects", "read_ndjson", "read_ndjson_auto":
+				err := node.rewriteToReadTableFunction(newRef.Function, newRef.Paths, newRef.Properties)
+				if err != nil {
+					return err
+				}
+				// non read_ functions are not supported right now
 			}
 		}
 	}
@@ -141,7 +152,7 @@ func (a *AST) newColumnNode(node astNode, ref *ColumnRef) {
 type TableRef struct {
 	Name       string
 	Function   string
-	Path       string
+	Paths      []string
 	Properties map[string]any
 	LocalAlias bool
 }

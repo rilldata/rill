@@ -61,13 +61,14 @@
   const pieTooltips = {
     selected: "Hide percent of total",
     unselected: "Show percent of total",
-    disabled: "To show percent of total, show top values by a summable metric",
+    disabled:
+      "To show percent of total, select a metric that is defined as summable",
   };
 
   const deltaTooltips = {
     selected: "Hide percent change",
     unselected: "Show percent change",
-    disabled: "To show percent change, select a comparison period above",
+    disabled: "To show percent change, select a comparison time range",
   };
 </script>
 

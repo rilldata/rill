@@ -6,7 +6,6 @@ import (
 	"io"
 	"io/fs"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -35,7 +34,7 @@ func (c *connection) ListRecursive(ctx context.Context, instID, glob string) ([]
 	}
 
 	fsRoot := os.DirFS(c.root)
-	glob = path.Clean(path.Join("./", glob))
+	glob = filepath.Clean(filepath.Join("./", glob))
 
 	var paths []string
 	err := doublestar.GlobWalk(fsRoot, glob, func(p string, d fs.DirEntry) error {
@@ -113,9 +112,9 @@ func (c *connection) Put(ctx context.Context, instID, filePath string, reader io
 
 // Rename implements drivers.RepoStore.
 func (c *connection) Rename(ctx context.Context, instID, fromPath, toPath string) error {
-	toPath = path.Join(c.root, toPath)
+	toPath = filepath.Join(c.root, toPath)
 
-	fromPath = path.Join(c.root, fromPath)
+	fromPath = filepath.Join(c.root, fromPath)
 	if _, err := os.Stat(toPath); !strings.EqualFold(fromPath, toPath) && err == nil {
 		return drivers.ErrFileAlreadyExists
 	}
@@ -132,6 +131,34 @@ func (c *connection) Delete(ctx context.Context, instID, filePath string) error 
 	return os.Remove(filePath)
 }
 
+// Sync implements drivers.RepoStore.
 func (c *connection) Sync(ctx context.Context, instID string) error {
 	return nil
+}
+
+// Watch implements drivers.RepoStore.
+func (c *connection) Watch(ctx context.Context, instID string, cb drivers.WatchCallback) error {
+	c.watcherMu.Lock()
+	if c.watcher == nil {
+		w, err := newWatcher(c.root)
+		if err != nil {
+			c.watcherMu.Unlock()
+			return err
+		}
+		c.watcher = w
+	}
+	c.watcherCount++
+	c.watcherMu.Unlock()
+
+	defer func() {
+		c.watcherMu.Lock()
+		c.watcherCount--
+		if c.watcherCount == 0 {
+			c.watcher.close()
+			c.watcher = nil
+		}
+		c.watcherMu.Unlock()
+	}()
+
+	return c.watcher.subscribe(ctx, cb)
 }

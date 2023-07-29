@@ -107,12 +107,14 @@
   <ProjectErrored organization={orgName} project={projectName} />
 {:else}
   <StateManagersProvider metricsViewName={dashboardName}>
-    <DashboardStateProvider metricViewName={dashboardName}>
-      <Dashboard
-        leftMargin={"48px"}
-        hasTitle={false}
-        metricViewName={dashboardName}
-      />
-    </DashboardStateProvider>
+    {#key dashboardName}
+      <DashboardStateProvider metricViewName={dashboardName}>
+        <Dashboard
+          leftMargin={"48px"}
+          hasTitle={false}
+          metricViewName={dashboardName}
+        />
+      </DashboardStateProvider>
+    {/key}
   </StateManagersProvider>
 {/if}

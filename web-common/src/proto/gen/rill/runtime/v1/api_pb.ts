@@ -8,6 +8,34 @@ import { Message, proto3, protoInt64, Timestamp } from "@bufbuild/protobuf";
 import { MetricsView, Model, ObjectType, Source, Table } from "./catalog_pb.js";
 
 /**
+ * FileEvent describes a file change.
+ *
+ * @generated from enum rill.runtime.v1.FileEvent
+ */
+export enum FileEvent {
+  /**
+   * @generated from enum value: FILE_EVENT_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: FILE_EVENT_WRITE = 1;
+   */
+  WRITE = 1,
+
+  /**
+   * @generated from enum value: FILE_EVENT_DELETE = 2;
+   */
+  DELETE = 2,
+}
+// Retrieve enum metadata with: proto3.getEnumType(FileEvent)
+proto3.util.setEnumType(FileEvent, "rill.runtime.v1.FileEvent", [
+  { no: 0, name: "FILE_EVENT_UNSPECIFIED" },
+  { no: 1, name: "FILE_EVENT_WRITE" },
+  { no: 2, name: "FILE_EVENT_DELETE" },
+]);
+
+/**
  * Request message for RuntimeService.Ping
  *
  * @generated from message rill.runtime.v1.PingRequest
@@ -416,6 +444,11 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
    */
   ingestionLimitBytes = protoInt64.zero;
 
+  /**
+   * @generated from field: map<string, string> annotations = 9;
+   */
+  annotations: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<CreateInstanceRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -432,6 +465,7 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 8, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 9, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateInstanceRequest {
@@ -848,6 +882,96 @@ export class ListFilesResponse extends Message<ListFilesResponse> {
 
   static equals(a: ListFilesResponse | PlainMessage<ListFilesResponse> | undefined, b: ListFilesResponse | PlainMessage<ListFilesResponse> | undefined): boolean {
     return proto3.util.equals(ListFilesResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.WatchFiles
+ *
+ * @generated from message rill.runtime.v1.WatchFilesRequest
+ */
+export class WatchFilesRequest extends Message<WatchFilesRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: bool replay = 2;
+   */
+  replay = false;
+
+  constructor(data?: PartialMessage<WatchFilesRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.WatchFilesRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "replay", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): WatchFilesRequest {
+    return new WatchFilesRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): WatchFilesRequest {
+    return new WatchFilesRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): WatchFilesRequest {
+    return new WatchFilesRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: WatchFilesRequest | PlainMessage<WatchFilesRequest> | undefined, b: WatchFilesRequest | PlainMessage<WatchFilesRequest> | undefined): boolean {
+    return proto3.util.equals(WatchFilesRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.WatchFiles
+ *
+ * @generated from message rill.runtime.v1.WatchFilesResponse
+ */
+export class WatchFilesResponse extends Message<WatchFilesResponse> {
+  /**
+   * @generated from field: rill.runtime.v1.FileEvent event = 1;
+   */
+  event = FileEvent.UNSPECIFIED;
+
+  /**
+   * @generated from field: string path = 2;
+   */
+  path = "";
+
+  constructor(data?: PartialMessage<WatchFilesResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.WatchFilesResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "event", kind: "enum", T: proto3.getEnumType(FileEvent) },
+    { no: 2, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): WatchFilesResponse {
+    return new WatchFilesResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): WatchFilesResponse {
+    return new WatchFilesResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): WatchFilesResponse {
+    return new WatchFilesResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: WatchFilesResponse | PlainMessage<WatchFilesResponse> | undefined, b: WatchFilesResponse | PlainMessage<WatchFilesResponse> | undefined): boolean {
+    return proto3.util.equals(WatchFilesResponse, a, b);
   }
 }
 
