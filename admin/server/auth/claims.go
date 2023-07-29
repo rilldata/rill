@@ -113,6 +113,13 @@ func (c *authTokenClaims) AuthTokenID() string {
 }
 
 func (c *authTokenClaims) OrganizationPermissions(ctx context.Context, orgID string) *adminv1.OrganizationPermissions {
+	c.Lock()
+	defer c.Unlock()
+
+	if perm, ok := c.orgPermissionsCache[orgID]; ok {
+		return perm
+	}
+
 	switch c.token.Token().Type {
 	case authtoken.TypeUser:
 		return c.organizationPermissionsUser(ctx, orgID)
@@ -124,6 +131,13 @@ func (c *authTokenClaims) OrganizationPermissions(ctx context.Context, orgID str
 }
 
 func (c *authTokenClaims) ProjectPermissions(ctx context.Context, orgID, projectID string) *adminv1.ProjectPermissions {
+	c.Lock()
+	defer c.Unlock()
+
+	if perm, ok := c.projectPermissionsCache[projectID]; ok {
+		return perm
+	}
+
 	switch c.token.Token().Type {
 	case authtoken.TypeUser:
 		return c.projectPermissionsUser(ctx, orgID, projectID)
@@ -193,13 +207,6 @@ func unionProjectRoles(a *adminv1.ProjectPermissions, b *database.ProjectRole) *
 
 // organizationPermissionsUser is a Claims implementation for resolve the organization permissions for user
 func (c *authTokenClaims) organizationPermissionsUser(ctx context.Context, orgID string) *adminv1.OrganizationPermissions {
-	c.Lock()
-	defer c.Unlock()
-
-	if perm, ok := c.orgPermissionsCache[orgID]; ok {
-		return perm
-	}
-
 	roles, err := c.admin.DB.ResolveOrganizationRolesForUser(context.Background(), c.token.OwnerID(), orgID)
 	if err != nil {
 		panic(fmt.Errorf("failed to get org permissions: %w", err))
@@ -216,15 +223,13 @@ func (c *authTokenClaims) organizationPermissionsUser(ctx context.Context, orgID
 
 // organizationPermissionsService is a Claims implementation for resolve the organization permissions for service
 func (c *authTokenClaims) organizationPermissionsService(ctx context.Context, orgID string) *adminv1.OrganizationPermissions {
-	// Not adding caching for now
-	var orgPermissions *adminv1.OrganizationPermissions
 	service, err := c.admin.DB.FindService(ctx, c.token.OwnerID())
 	if err != nil {
 		panic(fmt.Errorf("failed to get service info: %w", err))
 	}
 
 	if orgID == service.OrgID {
-		orgPermissions = &adminv1.OrganizationPermissions{
+		return &adminv1.OrganizationPermissions{
 			ReadOrg:          true,
 			ManageOrg:        true,
 			ReadProjects:     true,
@@ -234,7 +239,7 @@ func (c *authTokenClaims) organizationPermissionsService(ctx context.Context, or
 			ManageOrgMembers: true,
 		}
 	}
-	return orgPermissions
+	return &adminv1.OrganizationPermissions{}
 }
 
 // projectPermissionsUser is a Claims implementation for resolve the project permissions for user
@@ -256,13 +261,6 @@ func (c *authTokenClaims) projectPermissionsUser(ctx context.Context, orgID, pro
 		}
 	}
 
-	c.Lock()
-	defer c.Unlock()
-
-	if perm, ok := c.projectPermissionsCache[projectID]; ok {
-		return perm
-	}
-
 	roles, err := c.admin.DB.ResolveProjectRolesForUser(ctx, c.token.OwnerID(), projectID)
 	if err != nil {
 		panic(fmt.Errorf("failed to get project permissions: %w", err))
@@ -279,7 +277,6 @@ func (c *authTokenClaims) projectPermissionsUser(ctx context.Context, orgID, pro
 
 // projectPermissionsService is a Claims implementation for resolve the project permissions for service
 func (c *authTokenClaims) projectPermissionsService(ctx context.Context, orgID, projectID string) *adminv1.ProjectPermissions {
-	// Not adding caching for now
 	// ManageProjects permission on the org gives full access to all projects in the org (only org admins have this)
 	orgPerms := c.OrganizationPermissions(ctx, orgID)
 	if orgPerms.ManageProjects {

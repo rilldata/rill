@@ -754,7 +754,7 @@ func (c *connection) InsertServiceAuthToken(ctx context.Context, opts *database.
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		INSERT INTO service_auth_tokens (id, secret_hash, service_id, expires_on)
 		VALUES ($1, $2, $3, $4) RETURNING *`,
-		opts.ID, opts.SecretHash, opts.ServieID, opts.ExpiresOn,
+		opts.ID, opts.SecretHash, opts.ServiceID, opts.ExpiresOn,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("service auth token", err)

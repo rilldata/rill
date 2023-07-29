@@ -1,6 +1,8 @@
 package service
 
 import (
+	"fmt"
+
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -20,6 +22,10 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 			defer client.Close()
+
+			if newName == "" {
+				return fmt.Errorf("please provide valid service new-name, provided: %q", newName)
+			}
 
 			res, err := client.UpdateService(cmd.Context(), &adminv1.UpdateServiceRequest{
 				Name:             args[0],

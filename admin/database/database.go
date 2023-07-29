@@ -446,7 +446,7 @@ type ServiceAuthToken struct {
 type InsertServiceAuthTokenOptions struct {
 	ID         string
 	SecretHash []byte
-	ServieID   string
+	ServiceID  string
 	ExpiresOn  *time.Time
 }
 

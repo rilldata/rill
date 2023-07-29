@@ -58,20 +58,6 @@ func NewRandom(t Type) *Token {
 	return &tkn
 }
 
-// NewToken generates a token from a UUID and secret.
-func NewToken(t Type, id uuid.UUID, secret [24]byte) *Token {
-	return &Token{
-		Type:   t,
-		ID:     id,
-		Secret: secret,
-	}
-}
-
-// TokenString returns the token as a string.
-func (t *Token) TokenString() string {
-	return fmt.Sprintf("%s_%s_%s", Prefix, t.Type, marshalBase62(append(t.ID[:], t.Secret[:]...)))
-}
-
 // FromString re-creates a token from it's string representation (acquired by calling String()).
 // The things I do for pretty tokens.
 func FromString(s string) (*Token, error) {

@@ -87,7 +87,7 @@ func (s *Service) IssueServiceAuthToken(ctx context.Context, serviceID string, t
 	sat, err := s.DB.InsertServiceAuthToken(ctx, &database.InsertServiceAuthTokenOptions{
 		ID:         tkn.ID.String(),
 		SecretHash: tkn.SecretHash(),
-		ServieID:   serviceID,
+		ServiceID:  serviceID,
 		ExpiresOn:  expiresOn,
 	})
 	if err != nil {
