@@ -43,7 +43,7 @@ In your Rill project directory, create a `<source_name>.yaml` file in the `sourc
   - default value is _`1,000`_
 
 **`glob.max_objects_listed`**
- — Appplicable if the URI is a glob pattern. The max number of objects to list and match against glob pattern (excluding files excluded by the glob prefix).
+ — Applicable if the URI is a glob pattern. The max number of objects to list and match against glob pattern (excluding files excluded by the glob prefix).
   - default value is _`1,000,000`_
 
 **`timeout`**
@@ -66,3 +66,11 @@ In your Rill project directory, create a `<source_name>.yaml` file in the `sourc
 
 **`db`**
  — Optionally set database for motherduck connector.
+
+**`duckdb`** – Optionally specify raw parameters to inject into the DuckDB [`read_csv`](https://duckdb.org/docs/data/csv/overview.html), [`read_json`](https://duckdb.org/docs/data/json/overview.html) or [`read_parquet`](https://duckdb.org/docs/data/parquet/overview) statement that Rill generates internally. See the DuckDB [docs](https://duckdb.org/docs/data/overview) for a full list of available parameters. Example usage:
+```yaml
+duckdb:
+  header: True
+  delim: "'|'"
+  columns: "columns={'FlightDate': 'DATE', 'UniqueCarrier': 'VARCHAR', 'OriginCityName': 'VARCHAR', 'DestCityName': 'VARCHAR'}"
+```

@@ -2,22 +2,20 @@ package gcs
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
 
 	"cloud.google.com/go/storage"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/gcputil"
 	"gocloud.dev/blob"
 	"gocloud.dev/blob/gcsblob"
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func (c *Connection) ListBuckets(ctx context.Context, req *runtimev1.GCSListBucketsRequest) ([]string, string, error) {
-	credentials, err := c.resolvedCredentials(ctx)
+	credentials, err := gcputil.Credentials(ctx, c.config.SecretJSON, c.config.AllowHostAccess)
 	if err != nil {
 		return nil, "", err
 	}
@@ -28,7 +26,7 @@ func (c *Connection) ListBuckets(ctx context.Context, req *runtimev1.GCSListBuck
 	}
 	defer client.Close()
 
-	projectID, err := getProjectID(credentials)
+	projectID, err := gcputil.ProjectID(credentials)
 	if err != nil {
 		return nil, "", err
 	}
@@ -106,54 +104,14 @@ func (c *Connection) ListObjects(ctx context.Context, req *runtimev1.GCSListObje
 }
 
 func (c *Connection) GetCredentialsInfo(ctx context.Context) (string, bool, error) {
-	creds, err := c.resolvedCredentials(ctx)
+	creds, err := gcputil.Credentials(ctx, c.config.SecretJSON, c.config.AllowHostAccess)
 	if err != nil {
-		if errors.Is(err, errNoCredentials) {
+		if errors.Is(err, gcputil.ErrNoCredentials) {
 			return "", false, nil
 		}
 		return "", false, err
 	}
 
-	projectID, err := getProjectID(creds)
+	projectID, err := gcputil.ProjectID(creds)
 	return projectID, err == nil, err
-}
-
-func getProjectID(credentials *google.Credentials) (string, error) {
-	projectID := credentials.ProjectID
-	if projectID == "" {
-		if len(credentials.JSON) == 0 {
-			return "", fmt.Errorf("unable to get project ID")
-		}
-		f := &credentialsFile{}
-		if err := json.Unmarshal(credentials.JSON, f); err != nil {
-			return "", err
-		}
-
-		projectID = f.getProjectID()
-	}
-	return projectID, nil
-}
-
-// credentialsFile is the unmarshalled representation of a credentials file.
-type credentialsFile struct {
-	Type string `json:"type"`
-
-	// Service Account fields
-	ProjectID string `json:"project_id"`
-
-	// External Account fields
-	QuotaProjectID string `json:"quota_project_id"`
-
-	// Service account impersonation
-	SourceCredentials *credentialsFile `json:"source_credentials"`
-}
-
-func (c *credentialsFile) getProjectID() string {
-	if c.Type == "impersonated_service_account" {
-		return c.SourceCredentials.getProjectID()
-	}
-	if c.ProjectID != "" {
-		return c.ProjectID
-	}
-	return c.QuotaProjectID
 }

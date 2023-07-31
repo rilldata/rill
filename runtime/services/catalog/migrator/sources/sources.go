@@ -226,17 +226,20 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 
 	ingestionLimit := opts.IngestStorageLimitInBytes
 	p := &progress{}
-	ticker := time.NewTicker(5 * time.Second)
 	limitExceeded := false
 	go func() {
-		select {
-		case <-ctxWithTimeout.Done():
-			return
-		case <-ticker.C:
-			olap, _ := olapConnection.AsOLAP()
-			if size, ok := olap.EstimateSize(); ok && size > ingestionLimit {
-				limitExceeded = true
-				cancel()
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctxWithTimeout.Done():
+				return
+			case <-ticker.C:
+				olap, _ := olapConnection.AsOLAP()
+				if size, ok := olap.EstimateSize(); ok && size > ingestionLimit {
+					limitExceeded = true
+					cancel()
+				}
 			}
 		}
 	}()
@@ -284,9 +287,9 @@ func source(connector string, src *runtimev1.Source) (drivers.Source, error) {
 			Properties: props,
 		}, nil
 	case "motherduck":
-		query, ok := props["query"].(string)
+		query, ok := props["sql"].(string)
 		if !ok {
-			return nil, fmt.Errorf("property \"query\" is mandatory for connector \"motherduck\"")
+			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"motherduck\"")
 		}
 		var db string
 		if val, ok := props["db"].(string); ok {
@@ -294,11 +297,20 @@ func source(connector string, src *runtimev1.Source) (drivers.Source, error) {
 		}
 
 		return &drivers.DatabaseSource{
-			Query:    query,
+			SQL:      query,
 			Database: db,
 		}, nil
+	case "bigquery":
+		query, ok := props["sql"].(string)
+		if !ok {
+			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"bigquery\"")
+		}
+		return &drivers.DatabaseSource{
+			SQL:   query,
+			Props: props,
+		}, nil
 	default:
-		return nil, nil
+		return nil, fmt.Errorf("connector %v not supported", connector)
 	}
 }
 
@@ -330,6 +342,8 @@ func connectorVariables(src *runtimev1.Source, env map[string]string, repoRoot s
 		vars["dsn"] = ""
 	case "local_file":
 		vars["dsn"] = repoRoot
+	case "bigquery":
+		vars["google_application_credentials"] = env["google_application_credentials"]
 	}
 	return vars
 }

@@ -19,6 +19,8 @@ func (s *Server) ColumnRollupInterval(ctx context.Context, req *runtimev1.Column
 		attribute.Int("args.priority", int(req.Priority)),
 	)
 
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -45,6 +47,9 @@ func (s *Server) ColumnTimeSeries(ctx context.Context, req *runtimev1.ColumnTime
 		attribute.Int("args.sample_size", int(req.SampleSize)),
 		attribute.Int("args.priority", int(req.Priority)),
 	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
 	if req.TimeRange != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.time_range.start", safeTimeStr(req.TimeRange.Start)))
 		observability.AddRequestAttributes(ctx, attribute.String("args.time_range.end", safeTimeStr(req.TimeRange.End)))

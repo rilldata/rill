@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
 	"go.uber.org/zap"
@@ -35,13 +36,14 @@ func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connect
 	}
 
 	// Open DB handle
-	db, err := sqlx.Connect("sqlite", dsn)
+	db, err := otelsql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, err
 	}
+	dbx := sqlx.NewDb(db, "sqlite")
 	db.SetMaxOpenConns(1)
 	return &connection{
-		db:     db,
+		db:     dbx,
 		config: config,
 	}, nil
 }
@@ -112,5 +114,10 @@ func (c *connection) AsTransporter(from, to drivers.Connection) (drivers.Transpo
 
 // AsFileStore implements drivers.Connection.
 func (c *connection) AsFileStore() (drivers.FileStore, bool) {
+	return nil, false
+}
+
+// AsSQLStore implements drivers.Connection.
+func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
 }

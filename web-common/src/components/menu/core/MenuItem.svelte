@@ -126,7 +126,7 @@
   class="
         text-left
         py-1
-        px-3
+        {icon ? 'px-2' : 'px-3'}
         focus:outline-none
         active:outline-none
         grid

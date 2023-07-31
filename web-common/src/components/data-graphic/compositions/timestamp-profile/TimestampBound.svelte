@@ -15,9 +15,9 @@
   import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
   import {
     datePortion,
-    removeTimezoneOffset,
     timePortion,
   } from "@rilldata/web-common/lib/formatters";
+  import { removeLocalTimezoneOffset } from "@rilldata/web-common/lib/time/timezone";
 
   const { shiftClickAction } = createShiftClickAction();
 
@@ -26,7 +26,7 @@
   export let align: "left" | "right" = "left";
   let valueWithoutOffset = undefined;
   $: if (value instanceof Date)
-    valueWithoutOffset = removeTimezoneOffset(value);
+    valueWithoutOffset = removeLocalTimezoneOffset(value);
 </script>
 
 <Tooltip alignment={align == "left" ? "start" : "end"} distance={8}>

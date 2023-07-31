@@ -47,6 +47,9 @@ type blobIterator struct {
 	tempDir string
 	opts    *Options
 	logger  *zap.Logger
+	// data is already fetched during planning stage itself for single file cases
+	// TODO :: refactor this to return a different iterator maybe ?
+	nextPaths []string
 }
 
 var _ drivers.FileIterator = &blobIterator{}
@@ -121,6 +124,14 @@ func NewIterator(ctx context.Context, bucket *blob.Bucket, opts Options, l *zap.
 		return nil, err
 	}
 	it.objects = objects
+	if len(objects) == 1 {
+		it.nextPaths, err = it.NextBatch(1)
+		it.index = 0
+		if err != nil {
+			it.Close()
+			return nil, err
+		}
+	}
 
 	return it, nil
 }
@@ -144,6 +155,12 @@ func (it *blobIterator) HasNext() bool {
 func (it *blobIterator) NextBatch(n int) ([]string, error) {
 	if !it.HasNext() {
 		return nil, io.EOF
+	}
+	if len(it.nextPaths) != 0 {
+		paths := it.nextPaths
+		it.index += len(paths)
+		it.nextPaths = nil
+		return paths, nil
 	}
 
 	// delete files created in last iteration

@@ -38,6 +38,8 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 		attribute.String("args.instance_id", req.InstanceId),
 	)
 
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadInstance) {
 		return nil, ErrForbidden
 	}
@@ -63,6 +65,8 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		attribute.String("args.repo_driver", req.RepoDriver),
 	)
 
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
 		return nil, ErrForbidden
 	}
@@ -76,6 +80,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		EmbedCatalog:        req.EmbedCatalog,
 		Variables:           req.Variables,
 		IngestionLimitBytes: req.IngestionLimitBytes,
+		Annotations:         req.Annotations,
 	}
 
 	err := s.runtime.CreateInstance(ctx, inst)
@@ -98,6 +103,8 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		observability.AddRequestAttributes(ctx, attribute.String("args.repo_driver", *req.RepoDriver))
 	}
 
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
 		return nil, ErrForbidden
 	}
@@ -116,6 +123,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		EmbedCatalog:        valOrDefault(req.EmbedCatalog, oldInst.EmbedCatalog),
 		Variables:           oldInst.Variables,
 		IngestionLimitBytes: valOrDefault(req.IngestionLimitBytes, oldInst.IngestionLimitBytes),
+		Annotations:         oldInst.Annotations,
 	}
 
 	err = s.runtime.EditInstance(ctx, inst)
@@ -131,6 +139,9 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 // EditInstanceVariables implements RuntimeService.
 func (s *Server) EditInstanceVariables(ctx context.Context, req *runtimev1.EditInstanceVariablesRequest) (*runtimev1.EditInstanceVariablesResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.instance_id", req.InstanceId))
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
 		return nil, ErrForbidden
 	}
@@ -149,6 +160,7 @@ func (s *Server) EditInstanceVariables(ctx context.Context, req *runtimev1.EditI
 		EmbedCatalog:        oldInst.EmbedCatalog,
 		IngestionLimitBytes: oldInst.IngestionLimitBytes,
 		Variables:           req.Variables,
+		Annotations:         oldInst.Annotations,
 	}
 
 	err = s.runtime.EditInstance(ctx, inst)
@@ -167,6 +179,8 @@ func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstan
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.Bool("args.drop_db", req.DropDb),
 	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
 		return nil, ErrForbidden
