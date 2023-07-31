@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 
@@ -25,9 +24,9 @@ type Claims interface {
 	OwnerType() OwnerType
 	OwnerID() string
 	AuthTokenID() string
+	Superuser(ctx context.Context) bool
 	OrganizationPermissions(ctx context.Context, orgID string) *adminv1.OrganizationPermissions
 	ProjectPermissions(ctx context.Context, orgID, projectID string) *adminv1.ProjectPermissions
-	Superuser(ctx context.Context) bool
 }
 
 // claimsContextKey is used to set and get Claims on a request context.
@@ -47,6 +46,9 @@ func GetClaims(ctx context.Context) Claims {
 // anonClaims represents claims for an unauthenticated user.
 type anonClaims struct{}
 
+// ensure anonClaims implements Claims
+var _ Claims = anonClaims{}
+
 func (c anonClaims) OwnerType() OwnerType {
 	return OwnerTypeAnon
 }
@@ -59,6 +61,10 @@ func (c anonClaims) AuthTokenID() string {
 	return ""
 }
 
+func (c anonClaims) Superuser(ctx context.Context) bool {
+	return false
+}
+
 func (c anonClaims) OrganizationPermissions(ctx context.Context, orgID string) *adminv1.OrganizationPermissions {
 	return &adminv1.OrganizationPermissions{}
 }
@@ -66,13 +72,6 @@ func (c anonClaims) OrganizationPermissions(ctx context.Context, orgID string) *
 func (c anonClaims) ProjectPermissions(ctx context.Context, orgID, projectID string) *adminv1.ProjectPermissions {
 	return &adminv1.ProjectPermissions{}
 }
-
-func (c anonClaims) Superuser(ctx context.Context) bool {
-	return false
-}
-
-// ensure anonClaims implements Claims
-var _ Claims = anonClaims{}
 
 // authTokenClaims represents claims for an admin.AuthToken.
 type authTokenClaims struct {
@@ -94,6 +93,9 @@ func newAuthTokenClaims(token admin.AuthToken, adminService *admin.Service) Clai
 	}
 }
 
+// ensure *authTokenClaims implements Claims
+var _ Claims = &authTokenClaims{}
+
 func (c *authTokenClaims) OwnerType() OwnerType {
 	t := c.token.Token().Type
 	switch t {
@@ -112,48 +114,13 @@ func (c *authTokenClaims) AuthTokenID() string {
 	return c.token.Token().ID.String()
 }
 
-func (c *authTokenClaims) OrganizationPermissions(ctx context.Context, orgID string) *adminv1.OrganizationPermissions {
-	c.Lock()
-	defer c.Unlock()
-
-	if perm, ok := c.orgPermissionsCache[orgID]; ok {
-		return perm
-	}
-
-	switch c.token.Token().Type {
-	case authtoken.TypeUser:
-		return c.organizationPermissionsUser(ctx, orgID)
-	case authtoken.TypeService:
-		return c.organizationPermissionsService(ctx, orgID)
-	default:
-		panic(fmt.Errorf("unexpected token type %q", c.token.Token().Type))
-	}
-}
-
-func (c *authTokenClaims) ProjectPermissions(ctx context.Context, orgID, projectID string) *adminv1.ProjectPermissions {
-	c.Lock()
-	defer c.Unlock()
-
-	if perm, ok := c.projectPermissionsCache[projectID]; ok {
-		return perm
-	}
-
-	switch c.token.Token().Type {
-	case authtoken.TypeUser:
-		return c.projectPermissionsUser(ctx, orgID, projectID)
-	case authtoken.TypeService:
-		return c.projectPermissionsService(ctx, orgID, projectID)
-	default:
-		panic(fmt.Errorf("unexpected token type %q", c.token.Token().Type))
-	}
-}
-
 func (c *authTokenClaims) Superuser(ctx context.Context) bool {
 	switch c.token.Token().Type {
 	case authtoken.TypeUser:
 		// continue
 	case authtoken.TypeService:
-		panic(errors.New("service account cannot be superuser"))
+		// services can't be superusers
+		return false
 	default:
 		panic(fmt.Errorf("unexpected token type %q", c.token.Token().Type))
 	}
@@ -175,34 +142,48 @@ func (c *authTokenClaims) Superuser(ctx context.Context) bool {
 	return *c.superuser
 }
 
-// ensure *authTokenClaims implements Claims
-var _ Claims = &authTokenClaims{}
+func (c *authTokenClaims) OrganizationPermissions(ctx context.Context, orgID string) *adminv1.OrganizationPermissions {
+	c.Lock()
+	defer c.Unlock()
 
-func unionOrgRoles(a *adminv1.OrganizationPermissions, b *database.OrganizationRole) *adminv1.OrganizationPermissions {
-	return &adminv1.OrganizationPermissions{
-		ReadOrg:          a.ReadOrg || b.ReadOrg,
-		ManageOrg:        a.ManageOrg || b.ManageOrg,
-		ReadProjects:     a.ReadProjects || b.ReadProjects,
-		CreateProjects:   a.CreateProjects || b.CreateProjects,
-		ManageProjects:   a.ManageProjects || b.ManageProjects,
-		ReadOrgMembers:   a.ReadOrgMembers || b.ReadOrgMembers,
-		ManageOrgMembers: a.ManageOrgMembers || b.ManageOrgMembers,
+	perm, ok := c.orgPermissionsCache[orgID]
+	if ok {
+		return perm
 	}
+
+	switch c.token.Token().Type {
+	case authtoken.TypeUser:
+		perm = c.organizationPermissionsUser(ctx, orgID)
+	case authtoken.TypeService:
+		perm = c.organizationPermissionsService(ctx, orgID)
+	default:
+		panic(fmt.Errorf("unexpected token type %q", c.token.Token().Type))
+	}
+
+	c.orgPermissionsCache[orgID] = perm
+	return perm
 }
 
-func unionProjectRoles(a *adminv1.ProjectPermissions, b *database.ProjectRole) *adminv1.ProjectPermissions {
-	return &adminv1.ProjectPermissions{
-		ReadProject:          a.ReadProject || b.ReadProject,
-		ManageProject:        a.ManageProject || b.ManageProject,
-		ReadProd:             a.ReadProd || b.ReadProd,
-		ReadProdStatus:       a.ReadProdStatus || b.ReadProdStatus,
-		ManageProd:           a.ManageProd || b.ManageProd,
-		ReadDev:              a.ReadDev || b.ReadDev,
-		ReadDevStatus:        a.ReadDevStatus || b.ReadDevStatus,
-		ManageDev:            a.ManageDev || b.ManageDev,
-		ReadProjectMembers:   a.ReadProjectMembers || b.ReadProjectMembers,
-		ManageProjectMembers: a.ManageProjectMembers || b.ManageProjectMembers,
+func (c *authTokenClaims) ProjectPermissions(ctx context.Context, orgID, projectID string) *adminv1.ProjectPermissions {
+	c.Lock()
+	defer c.Unlock()
+
+	perm, ok := c.projectPermissionsCache[projectID]
+	if ok {
+		return perm
 	}
+
+	switch c.token.Token().Type {
+	case authtoken.TypeUser:
+		perm = c.projectPermissionsUser(ctx, orgID, projectID)
+	case authtoken.TypeService:
+		perm = c.projectPermissionsService(ctx, orgID, projectID)
+	default:
+		panic(fmt.Errorf("unexpected token type %q", c.token.Token().Type))
+	}
+
+	c.projectPermissionsCache[projectID] = perm
+	return perm
 }
 
 // organizationPermissionsUser is a Claims implementation for resolve the organization permissions for user
@@ -217,7 +198,6 @@ func (c *authTokenClaims) organizationPermissionsUser(ctx context.Context, orgID
 		composite = unionOrgRoles(composite, role)
 	}
 
-	c.orgPermissionsCache[orgID] = composite
 	return composite
 }
 
@@ -228,6 +208,7 @@ func (c *authTokenClaims) organizationPermissionsService(ctx context.Context, or
 		panic(fmt.Errorf("failed to get service info: %w", err))
 	}
 
+	// Services get full permissions on the org they belong to
 	if orgID == service.OrgID {
 		return &adminv1.OrganizationPermissions{
 			ReadOrg:          true,
@@ -239,6 +220,7 @@ func (c *authTokenClaims) organizationPermissionsService(ctx context.Context, or
 			ManageOrgMembers: true,
 		}
 	}
+
 	return &adminv1.OrganizationPermissions{}
 }
 
@@ -271,13 +253,12 @@ func (c *authTokenClaims) projectPermissionsUser(ctx context.Context, orgID, pro
 		composite = unionProjectRoles(composite, role)
 	}
 
-	c.projectPermissionsCache[projectID] = composite
 	return composite
 }
 
 // projectPermissionsService is a Claims implementation for resolve the project permissions for service
 func (c *authTokenClaims) projectPermissionsService(ctx context.Context, orgID, projectID string) *adminv1.ProjectPermissions {
-	// ManageProjects permission on the org gives full access to all projects in the org (only org admins have this)
+	// Services get full permissions on projects in the org they belong to
 	orgPerms := c.OrganizationPermissions(ctx, orgID)
 	if orgPerms.ManageProjects {
 		return &adminv1.ProjectPermissions{
@@ -295,4 +276,31 @@ func (c *authTokenClaims) projectPermissionsService(ctx context.Context, orgID, 
 	}
 
 	return &adminv1.ProjectPermissions{}
+}
+
+func unionOrgRoles(a *adminv1.OrganizationPermissions, b *database.OrganizationRole) *adminv1.OrganizationPermissions {
+	return &adminv1.OrganizationPermissions{
+		ReadOrg:          a.ReadOrg || b.ReadOrg,
+		ManageOrg:        a.ManageOrg || b.ManageOrg,
+		ReadProjects:     a.ReadProjects || b.ReadProjects,
+		CreateProjects:   a.CreateProjects || b.CreateProjects,
+		ManageProjects:   a.ManageProjects || b.ManageProjects,
+		ReadOrgMembers:   a.ReadOrgMembers || b.ReadOrgMembers,
+		ManageOrgMembers: a.ManageOrgMembers || b.ManageOrgMembers,
+	}
+}
+
+func unionProjectRoles(a *adminv1.ProjectPermissions, b *database.ProjectRole) *adminv1.ProjectPermissions {
+	return &adminv1.ProjectPermissions{
+		ReadProject:          a.ReadProject || b.ReadProject,
+		ManageProject:        a.ManageProject || b.ManageProject,
+		ReadProd:             a.ReadProd || b.ReadProd,
+		ReadProdStatus:       a.ReadProdStatus || b.ReadProdStatus,
+		ManageProd:           a.ManageProd || b.ManageProd,
+		ReadDev:              a.ReadDev || b.ReadDev,
+		ReadDevStatus:        a.ReadDevStatus || b.ReadDevStatus,
+		ManageDev:            a.ManageDev || b.ManageDev,
+		ReadProjectMembers:   a.ReadProjectMembers || b.ReadProjectMembers,
+		ManageProjectMembers: a.ManageProjectMembers || b.ManageProjectMembers,
+	}
 }

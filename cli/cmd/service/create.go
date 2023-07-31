@@ -10,7 +10,7 @@ import (
 func CreateCmd(cfg *config.Config) *cobra.Command {
 	createCmd := &cobra.Command{
 		Use:   "create <service-name>",
-		Args:  cobra.MaximumNArgs(1),
+		Args:  cobra.ExactArgs(1),
 		Short: "Create service",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)

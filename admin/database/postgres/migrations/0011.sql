@@ -6,6 +6,8 @@ CREATE TABLE service (
 	updated_on TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
+CREATE UNIQUE INDEX service_name_idx ON service (org_id, lower(name));
+
 CREATE TABLE service_auth_tokens (
 	id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
 	secret_hash BYTEA NOT NULL,
@@ -14,5 +16,4 @@ CREATE TABLE service_auth_tokens (
 	expires_on TIMESTAMPTZ
 );
 
-CREATE UNIQUE INDEX service_name_idx ON service (org_id, lower(name));
 CREATE INDEX service_auth_tokens_service_idx ON service_auth_tokens (service_id);

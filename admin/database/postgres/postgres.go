@@ -1251,6 +1251,8 @@ func parseErr(target string, err error) error {
 			return newAlreadyExistsErr("email has already been invited to the project")
 		case "orgs_autoinvite_domains_org_id_domain_idx":
 			return newAlreadyExistsErr("domain has already been added for the org")
+		case "service_name_idx":
+			return newAlreadyExistsErr("a service with that name already exists in the org")
 		default:
 			if target == "" {
 				return database.ErrNotUnique

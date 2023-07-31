@@ -1,8 +1,6 @@
 package service
 
 import (
-	"fmt"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -14,7 +12,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 
 	renameCmd := &cobra.Command{
 		Use:   "rename <service-name>",
-		Args:  cobra.MaximumNArgs(1),
+		Args:  cobra.ExactArgs(1),
 		Short: "Rename service",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
@@ -23,15 +21,16 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			if newName == "" {
-				return fmt.Errorf("please provide valid service new-name, provided: %q", newName)
-			}
-
-			res, err := client.UpdateService(cmd.Context(), &adminv1.UpdateServiceRequest{
+			req := &adminv1.UpdateServiceRequest{
 				Name:             args[0],
 				OrganizationName: cfg.Org,
-				NewName:          &newName,
-			})
+			}
+
+			if newName != "" {
+				req.NewName = &newName
+			}
+
+			res, err := client.UpdateService(cmd.Context(), req)
 			if err != nil {
 				return err
 			}
