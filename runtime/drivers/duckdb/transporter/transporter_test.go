@@ -44,6 +44,9 @@ func (m *mockIterator) Size(unit drivers.ProgressUnit) (int64, bool) {
 	return 0, false
 }
 
+func (m *mockIterator) KeepFilesUntilClose(keepFilesUntilClose bool) {
+}
+
 var _ drivers.FileIterator = &mockIterator{}
 
 func TestIterativeCSVIngestionWithVariableSchema(t *testing.T) {

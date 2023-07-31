@@ -2,6 +2,7 @@ package transporter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -276,6 +277,7 @@ func (t *objectStoreToDuckDB) ingestDuckDBSQL(
 	opts *drivers.TransferOpts,
 	p drivers.Progress,
 ) error {
+	iterator.KeepFilesUntilClose(true)
 	allFiles := make([]string, 0)
 	for iterator.HasNext() {
 		files, err := iterator.NextBatch(opts.IteratorBatch)
@@ -288,6 +290,21 @@ func (t *objectStoreToDuckDB) ingestDuckDBSQL(
 	ast, err := duckdbsql.Parse(originalSQL)
 	if err != nil {
 		return err
+	}
+
+	// Validate the sql is supported for sources
+	// TODO: find a good common place for this validation and avoid code duplication here and in sources packages as well
+	refs := ast.GetTableRefs()
+	if len(refs) > 1 {
+		return errors.New("sql source can have only one table reference")
+	}
+	ref := refs[0]
+
+	if len(ref.Paths) == 0 {
+		return errors.New("only read_* functions with a single path is supported")
+	}
+	if len(ref.Paths) > 1 {
+		return errors.New("invalid source, only a single path for source is supported")
 	}
 
 	err = ast.RewriteTableRefs(func(table *duckdbsql.TableRef) (*duckdbsql.TableRef, bool) {
