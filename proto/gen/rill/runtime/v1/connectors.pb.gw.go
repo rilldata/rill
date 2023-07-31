@@ -137,6 +137,10 @@ func local_request_ConnectorService_S3ListObjects_0(ctx context.Context, marshal
 
 }
 
+var (
+	filter_ConnectorService_S3GetBucketMetadata_0 = &utilities.DoubleArray{Encoding: map[string]int{"bucket": 0}, Base: []int{1, 2, 0, 0}, Check: []int{0, 1, 2, 2}}
+)
+
 func request_ConnectorService_S3GetBucketMetadata_0(ctx context.Context, marshaler runtime.Marshaler, client ConnectorServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq S3GetBucketMetadataRequest
 	var metadata runtime.ServerMetadata
@@ -156,6 +160,13 @@ func request_ConnectorService_S3GetBucketMetadata_0(ctx context.Context, marshal
 	protoReq.Bucket, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "bucket", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ConnectorService_S3GetBucketMetadata_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.S3GetBucketMetadata(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -184,14 +195,32 @@ func local_request_ConnectorService_S3GetBucketMetadata_0(ctx context.Context, m
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "bucket", err)
 	}
 
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ConnectorService_S3GetBucketMetadata_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
 	msg, err := server.S3GetBucketMetadata(ctx, &protoReq)
 	return msg, metadata, err
 
 }
 
+var (
+	filter_ConnectorService_S3GetCredentialsInfo_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+)
+
 func request_ConnectorService_S3GetCredentialsInfo_0(ctx context.Context, marshaler runtime.Marshaler, client ConnectorServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq S3GetCredentialsInfoRequest
 	var metadata runtime.ServerMetadata
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ConnectorService_S3GetCredentialsInfo_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
 
 	msg, err := client.S3GetCredentialsInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
@@ -201,6 +230,13 @@ func request_ConnectorService_S3GetCredentialsInfo_0(ctx context.Context, marsha
 func local_request_ConnectorService_S3GetCredentialsInfo_0(ctx context.Context, marshaler runtime.Marshaler, server ConnectorServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq S3GetCredentialsInfoRequest
 	var metadata runtime.ServerMetadata
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ConnectorService_S3GetCredentialsInfo_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
 
 	msg, err := server.S3GetCredentialsInfo(ctx, &protoReq)
 	return msg, metadata, err
@@ -313,9 +349,20 @@ func local_request_ConnectorService_GCSListObjects_0(ctx context.Context, marsha
 
 }
 
+var (
+	filter_ConnectorService_GCSGetCredentialsInfo_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+)
+
 func request_ConnectorService_GCSGetCredentialsInfo_0(ctx context.Context, marshaler runtime.Marshaler, client ConnectorServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GCSGetCredentialsInfoRequest
 	var metadata runtime.ServerMetadata
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ConnectorService_GCSGetCredentialsInfo_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
 
 	msg, err := client.GCSGetCredentialsInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
@@ -326,25 +373,122 @@ func local_request_ConnectorService_GCSGetCredentialsInfo_0(ctx context.Context,
 	var protoReq GCSGetCredentialsInfoRequest
 	var metadata runtime.ServerMetadata
 
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ConnectorService_GCSGetCredentialsInfo_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
 	msg, err := server.GCSGetCredentialsInfo(ctx, &protoReq)
 	return msg, metadata, err
 
 }
 
-func request_ConnectorService_MotherduckListTables_0(ctx context.Context, marshaler runtime.Marshaler, client ConnectorServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq MotherduckListTablesRequest
+var (
+	filter_ConnectorService_OLAPListTables_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+)
+
+func request_ConnectorService_OLAPListTables_0(ctx context.Context, marshaler runtime.Marshaler, client ConnectorServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq OLAPListTablesRequest
 	var metadata runtime.ServerMetadata
 
-	msg, err := client.MotherduckListTables(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ConnectorService_OLAPListTables_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := client.OLAPListTables(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_ConnectorService_MotherduckListTables_0(ctx context.Context, marshaler runtime.Marshaler, server ConnectorServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq MotherduckListTablesRequest
+func local_request_ConnectorService_OLAPListTables_0(ctx context.Context, marshaler runtime.Marshaler, server ConnectorServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq OLAPListTablesRequest
 	var metadata runtime.ServerMetadata
 
-	msg, err := server.MotherduckListTables(ctx, &protoReq)
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ConnectorService_OLAPListTables_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := server.OLAPListTables(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+var (
+	filter_ConnectorService_BigQueryListDatasets_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+)
+
+func request_ConnectorService_BigQueryListDatasets_0(ctx context.Context, marshaler runtime.Marshaler, client ConnectorServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq BigQueryListDatasetsRequest
+	var metadata runtime.ServerMetadata
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ConnectorService_BigQueryListDatasets_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := client.BigQueryListDatasets(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_ConnectorService_BigQueryListDatasets_0(ctx context.Context, marshaler runtime.Marshaler, server ConnectorServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq BigQueryListDatasetsRequest
+	var metadata runtime.ServerMetadata
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ConnectorService_BigQueryListDatasets_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := server.BigQueryListDatasets(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+var (
+	filter_ConnectorService_BigQueryListTables_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+)
+
+func request_ConnectorService_BigQueryListTables_0(ctx context.Context, marshaler runtime.Marshaler, client ConnectorServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq BigQueryListTablesRequest
+	var metadata runtime.ServerMetadata
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ConnectorService_BigQueryListTables_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := client.BigQueryListTables(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_ConnectorService_BigQueryListTables_0(ctx context.Context, marshaler runtime.Marshaler, server ConnectorServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq BigQueryListTablesRequest
+	var metadata runtime.ServerMetadata
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_ConnectorService_BigQueryListTables_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := server.BigQueryListTables(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -530,7 +674,7 @@ func RegisterConnectorServiceHandlerServer(ctx context.Context, mux *runtime.Ser
 
 	})
 
-	mux.Handle("GET", pattern_ConnectorService_MotherduckListTables_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_ConnectorService_OLAPListTables_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -538,12 +682,12 @@ func RegisterConnectorServiceHandlerServer(ctx context.Context, mux *runtime.Ser
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.ConnectorService/MotherduckListTables", runtime.WithHTTPPathPattern("/v1/md/tables"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.ConnectorService/OLAPListTables", runtime.WithHTTPPathPattern("/v1/olap/tables"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ConnectorService_MotherduckListTables_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ConnectorService_OLAPListTables_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -551,7 +695,57 @@ func RegisterConnectorServiceHandlerServer(ctx context.Context, mux *runtime.Ser
 			return
 		}
 
-		forward_ConnectorService_MotherduckListTables_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_ConnectorService_OLAPListTables_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_ConnectorService_BigQueryListDatasets_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.ConnectorService/BigQueryListDatasets", runtime.WithHTTPPathPattern("/v1/bigquery/datasets"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_ConnectorService_BigQueryListDatasets_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_ConnectorService_BigQueryListDatasets_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_ConnectorService_BigQueryListTables_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.runtime.v1.ConnectorService/BigQueryListTables", runtime.WithHTTPPathPattern("/v1/bigquery/tables"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_ConnectorService_BigQueryListTables_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_ConnectorService_BigQueryListTables_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -750,25 +944,69 @@ func RegisterConnectorServiceHandlerClient(ctx context.Context, mux *runtime.Ser
 
 	})
 
-	mux.Handle("GET", pattern_ConnectorService_MotherduckListTables_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_ConnectorService_OLAPListTables_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.ConnectorService/MotherduckListTables", runtime.WithHTTPPathPattern("/v1/md/tables"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.ConnectorService/OLAPListTables", runtime.WithHTTPPathPattern("/v1/olap/tables"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ConnectorService_MotherduckListTables_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ConnectorService_OLAPListTables_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_ConnectorService_MotherduckListTables_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_ConnectorService_OLAPListTables_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_ConnectorService_BigQueryListDatasets_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.ConnectorService/BigQueryListDatasets", runtime.WithHTTPPathPattern("/v1/bigquery/datasets"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_ConnectorService_BigQueryListDatasets_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_ConnectorService_BigQueryListDatasets_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_ConnectorService_BigQueryListTables_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.runtime.v1.ConnectorService/BigQueryListTables", runtime.WithHTTPPathPattern("/v1/bigquery/tables"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_ConnectorService_BigQueryListTables_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_ConnectorService_BigQueryListTables_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -790,7 +1028,11 @@ var (
 
 	pattern_ConnectorService_GCSGetCredentialsInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "gcs", "credentials_info"}, ""))
 
-	pattern_ConnectorService_MotherduckListTables_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "md", "tables"}, ""))
+	pattern_ConnectorService_OLAPListTables_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "olap", "tables"}, ""))
+
+	pattern_ConnectorService_BigQueryListDatasets_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "bigquery", "datasets"}, ""))
+
+	pattern_ConnectorService_BigQueryListTables_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "bigquery", "tables"}, ""))
 )
 
 var (
@@ -808,5 +1050,9 @@ var (
 
 	forward_ConnectorService_GCSGetCredentialsInfo_0 = runtime.ForwardResponseMessage
 
-	forward_ConnectorService_MotherduckListTables_0 = runtime.ForwardResponseMessage
+	forward_ConnectorService_OLAPListTables_0 = runtime.ForwardResponseMessage
+
+	forward_ConnectorService_BigQueryListDatasets_0 = runtime.ForwardResponseMessage
+
+	forward_ConnectorService_BigQueryListTables_0 = runtime.ForwardResponseMessage
 )

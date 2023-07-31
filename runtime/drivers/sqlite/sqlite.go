@@ -116,3 +116,8 @@ func (c *connection) AsTransporter(from, to drivers.Connection) (drivers.Transpo
 func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
+
+// AsSQLStore implements drivers.Connection.
+func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
+	return nil, false
+}
