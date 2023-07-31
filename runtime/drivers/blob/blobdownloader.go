@@ -65,6 +65,8 @@ type Options struct {
 	// this is total size the source should consume on disk and is calculated upstream basis how much data one instance has already consumed
 	// across other sources and the instance level limits
 	StorageLimitInBytes int64
+	// Retain files and only delete during close
+	KeepFilesUntilClose bool
 }
 
 // sets defaults if not set by user
@@ -163,8 +165,10 @@ func (it *blobIterator) NextBatch(n int) ([]string, error) {
 		return paths, nil
 	}
 
-	// delete files created in last iteration
-	fileutil.ForceRemoveFiles(it.localFiles)
+	if !it.opts.KeepFilesUntilClose {
+		// delete files created in last iteration
+		fileutil.ForceRemoveFiles(it.localFiles)
+	}
 	start := it.index
 	end := it.index + n
 	if end > len(it.objects) {
@@ -268,6 +272,10 @@ func (it *blobIterator) Size(unit drivers.ProgressUnit) (int64, bool) {
 	default:
 		return 0, false
 	}
+}
+
+func (it *blobIterator) KeepFilesUntilClose(keepFilesUntilClose bool) {
+	it.opts.KeepFilesUntilClose = keepFilesUntilClose
 }
 
 // todo :: ideally planner should take ownership of the bucket and return an iterator with next returning objectWithPlan

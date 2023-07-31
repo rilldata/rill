@@ -10,8 +10,10 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 const _defaultIngestTimeout = 60 * time.Minute
@@ -192,13 +194,29 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 		name = apiSource.Name
 	}
 
-	logger = logger.With(zap.String("source", name))
-	variables := convertLower(opts.InstanceEnv)
-	srcConnector, err := drivers.Open(apiSource.Connector, connectorVariables(apiSource, variables, repo.Root()), logger)
-	if err != nil {
-		return fmt.Errorf("failed to open driver %w", err)
+	var err error
+	// TODO: this should go in the parser in the new reconcile
+	if apiSource.Connector == "duckdb" {
+		err = mergeFromParsedQuery(apiSource)
+		if err != nil {
+			return err
+		}
 	}
-	defer srcConnector.Close()
+
+	logger = logger.With(zap.String("source", name))
+	var srcConnector drivers.Connection
+
+	if apiSource.Connector == "duckdb" {
+		srcConnector = olap.(drivers.Connection)
+	} else {
+		var err error
+		variables := convertLower(opts.InstanceEnv)
+		srcConnector, err = drivers.Open(apiSource.Connector, connectorVariables(apiSource, variables, repo.Root()), logger)
+		if err != nil {
+			return fmt.Errorf("failed to open driver %w", err)
+		}
+		defer srcConnector.Close()
+	}
 
 	olapConnection := olap.(drivers.Connection)
 	t, ok := olapConnection.AsTransporter(srcConnector, olapConnection)
@@ -250,6 +268,55 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 	return err
 }
 
+func mergeFromParsedQuery(apiSource *runtimev1.Source) error {
+	props := apiSource.Properties.AsMap()
+	query, ok := props["sql"]
+	if !ok {
+		return nil
+	}
+	queryStr, ok := query.(string)
+	if !ok {
+		return errors.New("query should be a string")
+	}
+
+	// raw sql query
+	ast, err := duckdbsql.Parse(queryStr)
+	if err != nil {
+		return err
+	}
+	refs := ast.GetTableRefs()
+	if len(refs) != 1 {
+		return errors.New("sql source should have exactly one table reference")
+	}
+	ref := refs[0]
+
+	if len(ref.Paths) == 0 {
+		return errors.New("only read_* functions with a single path is supported")
+	}
+	if len(ref.Paths) > 1 {
+		return errors.New("invalid source, only a single path for source is supported")
+	}
+
+	p, c, ok := parseEmbeddedSourceConnector(ref.Paths[0])
+	if !ok {
+		return errors.New("unknown source")
+	}
+	if c == "local_file" {
+		return nil
+	}
+
+	apiSource.Connector = c
+	props["path"] = p
+	props["sql"] = queryStr
+
+	pbProps, err := structpb.NewStruct(props)
+	if err != nil {
+		return err
+	}
+	apiSource.Properties = pbProps
+	return nil
+}
+
 type progress struct {
 	catalogObj drivers.CatalogEntry
 	unit       drivers.ProgressUnit
@@ -299,6 +366,14 @@ func source(connector string, src *runtimev1.Source) (drivers.Source, error) {
 		return &drivers.DatabaseSource{
 			SQL:      query,
 			Database: db,
+		}, nil
+	case "duckdb":
+		query, ok := props["sql"].(string)
+		if !ok {
+			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"duckdb\"")
+		}
+		return &drivers.DatabaseSource{
+			SQL: query,
 		}, nil
 	case "bigquery":
 		query, ok := props["sql"].(string)

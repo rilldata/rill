@@ -3,6 +3,7 @@ package duckdbsql
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 )
 
 func (fn *fromNode) rewriteToBaseTable(name string) error {
@@ -254,8 +255,18 @@ func createGenericValue(key string, val any) (astNode, error) {
 		t = "UBIGINT"
 	case float32:
 		t = "FLOAT"
+		// Temporary fix since duckdb is not converting to sql properly
+		if math.Floor(float64(vt)) == float64(vt) {
+			val = forceConvertToNum[int32](vt)
+			t = "INTEGER"
+		}
 	case float64:
 		t = "DOUBLE"
+		// Temporary fix since duckdb is not converting to sql properly
+		if math.Floor(vt) == vt {
+			val = forceConvertToNum[int64](vt)
+			t = "BIGINT"
+		}
 	case string:
 		t = "VARCHAR"
 		val = fmt.Sprintf(`"%s"`, vt)
