@@ -29,14 +29,19 @@ import {
   TimeRangePreset,
   TimeRangeType,
 } from "../types";
-import { removeTimezoneOffset } from "../../formatters";
+import {
+  addZoneOffset,
+  getDateMonthYearForTimezone,
+  removeLocalTimezoneOffset,
+} from "@rilldata/web-common/lib/time/timezone";
 
 // Loop through all presets to check if they can be a part of subset of given start and end date
 export function getChildTimeRanges(
   start: Date,
   end: Date,
   ranges: Record<string, TimeRangeMeta>,
-  minTimeGrain: V1TimeGrain
+  minTimeGrain: V1TimeGrain,
+  zone: string
 ): TimeRangeOption[] {
   const timeRanges: TimeRangeOption[] = [];
 
@@ -59,7 +64,8 @@ export function getChildTimeRanges(
       const timeRangeDates = relativePointInTimeToAbsolute(
         end,
         timeRange.start,
-        timeRange.end
+        timeRange.end,
+        zone
       );
 
       // check if time range is possible with given minTimeGrain
@@ -120,7 +126,8 @@ export function ISODurationToTimePreset(
 export function convertTimeRangePreset(
   timeRangePreset: TimeRangeType,
   start: Date,
-  end: Date
+  end: Date,
+  zone: string
 ): TimeRange {
   if (timeRangePreset === TimeRangePreset.ALL_TIME) {
     return {
@@ -133,7 +140,8 @@ export function convertTimeRangePreset(
   const timeRangeDates = relativePointInTimeToAbsolute(
     end,
     timeRange.start,
-    timeRange.end
+    timeRange.end,
+    zone
   );
 
   return {
@@ -151,10 +159,10 @@ export function convertTimeRangePreset(
 export const prettyFormatTimeRange = (
   start: Date,
   end: Date,
-  timePreset: TimeRangeType
+  timePreset: TimeRangeType,
+  timeZone: string
 ): string => {
   const isAllTime = timePreset === TimeRangePreset.ALL_TIME;
-  const isCustom = timePreset === TimeRangePreset.CUSTOM;
   if (!start && end) {
     return `- ${end}`;
   }
@@ -167,15 +175,17 @@ export const prettyFormatTimeRange = (
     return "";
   }
 
-  const TIMEZONE = "UTC";
-  // const TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone; // the user's local timezone
+  const {
+    day: startDate,
+    month: startMonth,
+    year: startYear,
+  } = getDateMonthYearForTimezone(start, timeZone);
 
-  const startDate = start.getUTCDate(); // use start.getDate() for local timezone
-  const startMonth = start.getUTCMonth();
-  const startYear = start.getUTCFullYear();
-  let endDate = end.getUTCDate();
-  let endMonth = end.getUTCMonth();
-  let endYear = end.getUTCFullYear();
+  let {
+    day: endDate,
+    month: endMonth,
+    year: endYear,
+  } = getDateMonthYearForTimezone(end, timeZone);
 
   if (
     startDate === endDate &&
@@ -184,20 +194,20 @@ export const prettyFormatTimeRange = (
   ) {
     return `${start.toLocaleDateString(undefined, {
       month: "short",
-      timeZone: TIMEZONE,
+      timeZone,
     })} ${startDate}, ${startYear} (${start
       .toLocaleString(undefined, {
         hour12: true,
         hour: "numeric",
         minute: "numeric",
-        timeZone: TIMEZONE,
+        timeZone,
       })
       .replace(/\s/g, "")}-${end
       .toLocaleString(undefined, {
         hour12: true,
         hour: "numeric",
         minute: "numeric",
-        timeZone: TIMEZONE,
+        timeZone,
       })
       .replace(/\s/g, "")})`;
   }
@@ -206,30 +216,22 @@ export const prettyFormatTimeRange = (
   if (
     timeRangeDurationMs <= durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
   ) {
-    if (isCustom) {
-      // For custom time ranges, we want to show just the date
-      return `${start.toLocaleDateString(undefined, {
-        month: "short",
-        timeZone: TIMEZONE,
-      })} ${startDate}`;
-    }
-
     return `${start.toLocaleDateString(undefined, {
       month: "short",
-      timeZone: TIMEZONE,
+      timeZone,
     })} ${startDate}-${endDate}, ${startYear} (${start
       .toLocaleString(undefined, {
         hour12: true,
         hour: "numeric",
         minute: "numeric",
-        timeZone: TIMEZONE,
+        timeZone,
       })
       .replace(/\s/g, "")}-${end
       .toLocaleString(undefined, {
         hour12: true,
         hour: "numeric",
         minute: "numeric",
-        timeZone: TIMEZONE,
+        timeZone,
       })
       .replace(/\s/g, "")})`;
   }
@@ -244,16 +246,22 @@ export const prettyFormatTimeRange = (
     inclusiveEndDate = new Date(
       end.getTime() - durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
     );
-    endDate = inclusiveEndDate.getUTCDate();
-    endMonth = inclusiveEndDate.getUTCMonth();
-    endYear = inclusiveEndDate.getUTCFullYear();
+
+    const inclusiveEndDateWithTimeZone = getDateMonthYearForTimezone(
+      inclusiveEndDate,
+      timeZone
+    );
+
+    endDate = inclusiveEndDateWithTimeZone.day;
+    endMonth = inclusiveEndDateWithTimeZone.month;
+    endYear = inclusiveEndDateWithTimeZone.year;
   }
 
   // month is the same
   if (startMonth === endMonth && startYear === endYear) {
     return `${start.toLocaleDateString(undefined, {
       month: "short",
-      timeZone: TIMEZONE,
+      timeZone,
     })} ${startDate}-${endDate}, ${startYear}`;
   }
 
@@ -262,11 +270,11 @@ export const prettyFormatTimeRange = (
     return `${start.toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
-      timeZone: TIMEZONE,
+      timeZone,
     })} - ${inclusiveEndDate.toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
-      timeZone: TIMEZONE,
+      timeZone,
     })}, ${startYear}`;
   }
   // year is different
@@ -274,7 +282,7 @@ export const prettyFormatTimeRange = (
     year: "numeric",
     month: "short",
     day: "numeric",
-    timeZone: TIMEZONE,
+    timeZone,
   };
   return `${start.toLocaleDateString(
     undefined,
@@ -282,10 +290,14 @@ export const prettyFormatTimeRange = (
   )} - ${inclusiveEndDate.toLocaleDateString(undefined, dateFormatOptions)}`;
 };
 
-/** Get extra data points for extrapolating the chart on both ends */
+/**
+ * Return start and end date such that the results include
+ * extra data points for extrapolating the chart on both ends
+ */
 export function getAdjustedFetchTime(
   startTime: Date,
   endTime: Date,
+  zone: string,
   interval: V1TimeGrain
 ) {
   if (!startTime || !endTime)
@@ -299,7 +311,8 @@ export function getAdjustedFetchTime(
   // the data point previous to the first date inside the chart.
   const fetchStartTime = getStartOfPeriod(
     offsetedStartTime,
-    TIME_GRAIN[interval].duration
+    TIME_GRAIN[interval].duration,
+    zone
   );
 
   const offsetedEndTime = getOffset(
@@ -311,7 +324,8 @@ export function getAdjustedFetchTime(
   // the data point after the last complete date.
   const fetchEndTime = getStartOfPeriod(
     offsetedEndTime,
-    TIME_GRAIN[interval].duration
+    TIME_GRAIN[interval].duration,
+    zone
   );
 
   return {
@@ -320,9 +334,14 @@ export function getAdjustedFetchTime(
   };
 }
 
+/**
+ * Return start and end date to be used as extents of the
+ * time series charts
+ */
 export function getAdjustedChartTime(
   start: Date,
   end: Date,
+  zone: string,
   interval: V1TimeGrain,
   timePreset: TimeRangeType
 ) {
@@ -333,22 +352,27 @@ export function getAdjustedChartTime(
     };
 
   const grainDuration = TIME_GRAIN[interval].duration;
+  const offsetDuration = getDurationMultiple(grainDuration, 0.45);
 
   let adjustedEnd = new Date(end);
 
   if (timePreset === TimeRangePreset.ALL_TIME) {
     // No offset has been applied to All time range so far
     // Adjust end according to the interval
-    adjustedEnd = getEndOfPeriod(adjustedEnd, grainDuration);
+    start = getStartOfPeriod(start, grainDuration, zone);
+    start = getOffset(start, offsetDuration, TimeOffsetType.ADD);
+    adjustedEnd = getEndOfPeriod(adjustedEnd, grainDuration, zone);
   }
 
-  const offsetDuration = getDurationMultiple(grainDuration, 0.45);
   adjustedEnd = getOffset(adjustedEnd, offsetDuration, TimeOffsetType.SUBTRACT);
 
-  adjustedEnd = removeTimezoneOffset(adjustedEnd);
-
   return {
-    start: removeTimezoneOffset(new Date(start)),
-    end: adjustedEnd,
+    /**
+     * Values in the charts are displayed in the local time zone.
+     * To get the correct values, we need to remove the local time zone offset
+     * and add the offset of the selected time zone.
+     */
+    start: addZoneOffset(removeLocalTimezoneOffset(start), zone),
+    end: addZoneOffset(removeLocalTimezoneOffset(adjustedEnd), zone),
   };
 }

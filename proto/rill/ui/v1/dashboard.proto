@@ -30,6 +30,9 @@ message DashboardState {
   optional bool all_dimensions_visible = 11;
 
   optional bool show_percent_of_total = 12;
+
+  // Selected timezone for the dashboard
+  optional string selected_timezone = 13;
 }
 
 message DashboardTimeRange {

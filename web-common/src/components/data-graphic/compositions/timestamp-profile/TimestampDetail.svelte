@@ -16,8 +16,8 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
-  import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
   import { guidGenerator } from "@rilldata/web-common/lib/guid";
+  import { removeLocalTimezoneOffset } from "@rilldata/web-common/lib/time/timezone";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { bisector, extent, max, min } from "d3-array";
   import type { ScaleLinear } from "d3-scale";
@@ -306,7 +306,7 @@
       use:scrollAction
       use:shiftClickAction
       on:shift-click={async () => {
-        const exportedValue = `TIMESTAMP '${removeTimezoneOffset(
+        const exportedValue = `TIMESTAMP '${removeLocalTimezoneOffset(
           nearestPoint[xAccessor]
         ).toISOString()}'`;
         await navigator.clipboard.writeText(exportedValue);

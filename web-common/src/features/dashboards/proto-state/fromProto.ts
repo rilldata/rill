@@ -59,6 +59,10 @@ export function getDashboardStateFromProto(
     entity.selectedDimensionName = dashboard.selectedDimension;
   }
 
+  if (dashboard.selectedTimezone) {
+    entity.selectedTimezone = dashboard.selectedTimezone;
+  }
+
   if (dashboard.allMeasuresVisible) {
     entity.allMeasuresVisible = true;
     entity.visibleMeasureKeys = new Set(
