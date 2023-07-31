@@ -854,6 +854,156 @@ paths:
                   type: string
       tags:
         - AdminService
+  /v1/organizations/{organizationName}/services:
+    get:
+      summary: ListService returns all the services per organization
+      operationId: AdminService_ListServices
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListServicesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    post:
+      summary: CreateService creates a new service per organization
+      operationId: AdminService_CreateService
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateServiceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organizationName}/services/{name}:
+    delete:
+      summary: DeleteService deletes a service per organization
+      operationId: AdminService_DeleteService
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteServiceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    patch:
+      summary: UpdateService updates a service per organization
+      operationId: AdminService_UpdateService
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateServiceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              newName:
+                type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organizationName}/services/{serviceName}/tokens:
+    get:
+      summary: ListServiceAuthTokens lists all the service auth tokens
+      operationId: AdminService_ListServiceAuthTokens
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListServiceAuthTokensResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: serviceName
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    post:
+      summary: IssueServiceAuthToken returns the temporary token for given service account
+      operationId: AdminService_IssueServiceAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1IssueServiceAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: serviceName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - AdminService
   /v1/ping:
     get:
       summary: Ping returns information about the server
@@ -888,6 +1038,26 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1TriggerRedeployRequest'
+      tags:
+        - AdminService
+  /v1/services/tokens/{tokenId}:
+    delete:
+      summary: RevokeServiceAuthToken revoke the service auth token
+      operationId: AdminService_RevokeServiceAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RevokeServiceAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: tokenId
+          in: path
+          required: true
+          type: string
       tags:
         - AdminService
   /v1/superuser/members:
@@ -1318,12 +1488,22 @@ definitions:
     properties:
       project:
         $ref: '#/definitions/v1Project'
+  v1CreateServiceResponse:
+    type: object
+    properties:
+      service:
+        $ref: '#/definitions/v1Service'
   v1CreateWhitelistedDomainResponse:
     type: object
   v1DeleteOrganizationResponse:
     type: object
   v1DeleteProjectResponse:
     type: object
+  v1DeleteServiceResponse:
+    type: object
+    properties:
+      service:
+        $ref: '#/definitions/v1Service'
   v1Deployment:
     type: object
     properties:
@@ -1436,6 +1616,11 @@ definitions:
     properties:
       token:
         type: string
+  v1IssueServiceAuthTokenResponse:
+    type: object
+    properties:
+      token:
+        type: string
   v1LeaveOrganizationResponse:
     type: object
   v1ListBookmarksResponse:
@@ -1506,6 +1691,22 @@ definitions:
           $ref: '#/definitions/v1Project'
       nextPageToken:
         type: string
+  v1ListServiceAuthTokensResponse:
+    type: object
+    properties:
+      tokens:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ServiceToken'
+  v1ListServicesResponse:
+    type: object
+    properties:
+      services:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Service'
   v1ListSuperusersResponse:
     type: object
     properties:
@@ -1680,6 +1881,8 @@ definitions:
     properties:
       tokenId:
         type: string
+  v1RevokeServiceAuthTokenResponse:
+    type: object
   v1SearchProjectNamesResponse:
     type: object
     properties:
@@ -1699,6 +1902,34 @@ definitions:
           $ref: '#/definitions/v1User'
       nextPageToken:
         type: string
+  v1Service:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      orgId:
+        type: string
+      orgName:
+        type: string
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
+  v1ServiceToken:
+    type: object
+    properties:
+      id:
+        type: string
+      createdOn:
+        type: string
+        format: date-time
+      expiresOn:
+        type: string
+        format: date-time
   v1SetOrganizationMemberRoleResponse:
     type: object
   v1SetProjectMemberRoleResponse:
@@ -1803,6 +2034,11 @@ definitions:
         type: object
         additionalProperties:
           type: string
+  v1UpdateServiceResponse:
+    type: object
+    properties:
+      service:
+        $ref: '#/definitions/v1Service'
   v1UpdateUserPreferencesRequest:
     type: object
     properties:

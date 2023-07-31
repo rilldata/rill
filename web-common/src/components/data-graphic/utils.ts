@@ -112,6 +112,7 @@ export function getTicks(
   isDate: boolean
 ) {
   const tickCount = ~~(axisLength / (xOrY === "x" ? 150 : 50));
+
   let ticks = scale.ticks(tickCount);
 
   if (ticks.length <= 1) {

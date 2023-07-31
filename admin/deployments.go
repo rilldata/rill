@@ -21,6 +21,7 @@ import (
 )
 
 type createDeploymentOptions struct {
+	OrganizationID       string
 	ProjectID            string
 	Region               string
 	GithubURL            *string
@@ -90,6 +91,10 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		EmbedCatalog:        embedCatalog,
 		Variables:           opts.ProdVariables,
 		IngestionLimitBytes: ingestionLimit,
+		Annotations: map[string]string{
+			"organization_id": opts.OrganizationID,
+			"project_id":      opts.ProjectID,
+		},
 	})
 	if err != nil {
 		return nil, err

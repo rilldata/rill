@@ -12,6 +12,7 @@ import {
   PreviewRollupInterval,
   TIMESTAMPS,
 } from "./duckdb-data-types";
+import { removeLocalTimezoneOffset } from "@rilldata/web-common/lib/time/timezone";
 
 /** This heuristic is courtesy Dominik Moritz.
  * Best used in cases where (1) you have no context for the number, and (2) you
@@ -68,21 +69,17 @@ export function formatBigNumberPercentage(v) {
   }
 }
 
-export function removeTimezoneOffset(dt: Date) {
-  return new Date(dt.getTime() + dt.getTimezoneOffset() * 60000);
-}
-
 export const standardTimestampFormat = (v, type = "TIMESTAMP") => {
   let fmt = timeFormat("%Y-%m-%d %H:%M:%S Z");
   if (type === "DATE") {
     fmt = timeFormat("%Y-%m-%d");
   }
-  return fmt(removeTimezoneOffset(new Date(v)));
+  return fmt(removeLocalTimezoneOffset(new Date(v)));
 };
 
 export const fullTimestampFormat = (v) => {
   const fmt = timeFormat("%Y-%m-%d %H:%M:%S.%L");
-  return fmt(removeTimezoneOffset(new Date(v)));
+  return fmt(removeLocalTimezoneOffset(new Date(v)));
 };
 
 export const datePortion = timeFormat("%Y-%m-%d");
