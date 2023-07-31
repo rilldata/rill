@@ -5,8 +5,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	// Load IANA time zone data
-	_ "time/tzdata"
 
 	"github.com/c2h5oh/datasize"
 	"github.com/jinzhu/copier"
@@ -16,6 +14,9 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"google.golang.org/protobuf/types/known/structpb"
+
+	// Load IANA time zone data
+	_ "time/tzdata"
 )
 
 /**
