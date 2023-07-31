@@ -285,8 +285,8 @@ func mergeFromParsedQuery(apiSource *runtimev1.Source) error {
 		return err
 	}
 	refs := ast.GetTableRefs()
-	if len(refs) > 1 {
-		return errors.New("sql source can have only one table reference")
+	if len(refs) != 1 {
+		return errors.New("sql source should have exactly one table reference")
 	}
 	ref := refs[0]
 

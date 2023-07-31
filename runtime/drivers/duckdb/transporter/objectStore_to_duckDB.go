@@ -295,8 +295,8 @@ func (t *objectStoreToDuckDB) ingestDuckDBSQL(
 	// Validate the sql is supported for sources
 	// TODO: find a good common place for this validation and avoid code duplication here and in sources packages as well
 	refs := ast.GetTableRefs()
-	if len(refs) > 1 {
-		return errors.New("sql source can have only one table reference")
+	if len(refs) != 1 {
+		return errors.New("sql source should have exactly one table reference")
 	}
 	ref := refs[0]
 
