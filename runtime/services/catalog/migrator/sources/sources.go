@@ -195,10 +195,9 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 	}
 
 	var err error
-	var ast *duckdbsql.AST
 	// TODO: this should go in the parser in the new reconcile
 	if apiSource.Connector == "duckdb" {
-		ast, err = mergeFromParsedQuery(apiSource)
+		err = mergeFromParsedQuery(apiSource)
 		if err != nil {
 			return err
 		}
@@ -262,60 +261,60 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 			}
 		}
 	}()
-	err = t.Transfer(ctxWithTimeout, src, sink, drivers.NewTransferOpts(drivers.WithLimitInBytes(ingestionLimit), drivers.WithAST(ast)), p)
+	err = t.Transfer(ctxWithTimeout, src, sink, drivers.NewTransferOpts(drivers.WithLimitInBytes(ingestionLimit)), p)
 	if limitExceeded {
 		return drivers.ErrIngestionLimitExceeded
 	}
 	return err
 }
 
-func mergeFromParsedQuery(apiSource *runtimev1.Source) (*duckdbsql.AST, error) {
+func mergeFromParsedQuery(apiSource *runtimev1.Source) error {
 	props := apiSource.Properties.AsMap()
-	query, ok := props["query"]
+	query, ok := props["sql"]
 	if !ok {
-		return nil, nil
+		return nil
 	}
 	queryStr, ok := query.(string)
 	if !ok {
-		return nil, errors.New("query should be a string")
+		return errors.New("query should be a string")
 	}
 
 	// raw sql query
 	ast, err := duckdbsql.Parse(queryStr)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	refs := ast.GetTableRefs()
 	if len(refs) > 1 {
-		return nil, errors.New("sql source can have only one table reference")
+		return errors.New("sql source can have only one table reference")
 	}
 	ref := refs[0]
 
 	if len(ref.Paths) == 0 {
-		return nil, errors.New("only read_* functions with a single path is supported")
+		return errors.New("only read_* functions with a single path is supported")
 	}
 	if len(ref.Paths) > 1 {
-		return nil, errors.New("invalid source, only a single path for source is supported")
+		return errors.New("invalid source, only a single path for source is supported")
 	}
 
 	p, c, ok := parseEmbeddedSourceConnector(ref.Paths[0])
 	if !ok {
-		return nil, errors.New("unknown source")
+		return errors.New("unknown source")
 	}
 	if c == "local_file" {
-		return nil, nil
+		return nil
 	}
 
 	apiSource.Connector = c
 	props["path"] = p
-	props["query"] = queryStr
+	props["sql"] = queryStr
 
 	pbProps, err := structpb.NewStruct(props)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	apiSource.Properties = pbProps
-	return ast, nil
+	return nil
 }
 
 type progress struct {

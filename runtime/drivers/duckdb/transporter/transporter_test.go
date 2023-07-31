@@ -10,7 +10,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	"github.com/rilldata/rill/runtime/drivers/duckdb/transporter"
-	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -156,16 +155,16 @@ mum,8.2`)
 			ctx := context.Background()
 			tr := transporter.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
 
-			var opts *drivers.TransferOpts
+			var src *drivers.BucketSource
 			if test.query {
-				ast, err := duckdbsql.Parse("select * from read_csv_auto('path',union_by_name=true,sample_size=200000)")
-				require.NoError(t, err)
-				opts = drivers.NewTransferOpts(drivers.WithAST(ast))
+				src = &drivers.BucketSource{
+					Properties: map[string]any{"sql": "select * from read_csv_auto('path',union_by_name=true,sample_size=200000)"},
+				}
 			} else {
-				opts = drivers.NewTransferOpts()
+				src = &drivers.BucketSource{}
 			}
 
-			err = tr.Transfer(ctx, &drivers.BucketSource{}, &drivers.DatabaseSink{Table: test.name}, opts,
+			err = tr.Transfer(ctx, src, &drivers.DatabaseSink{Table: test.name}, drivers.NewTransferOpts(),
 				drivers.NoOpProgress{})
 			require.NoError(t, err, "no err expected test %s", test.name)
 
@@ -304,18 +303,19 @@ mum,8.2`)
 			ctx := context.Background()
 			tr := transporter.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
 
-			var opts *drivers.TransferOpts
+			var src *drivers.BucketSource
 			if test.query {
-				ast, err := duckdbsql.Parse("select * from read_csv_auto('path')")
-				require.NoError(t, err)
-				opts = drivers.NewTransferOpts(drivers.WithAST(ast))
+				src = &drivers.BucketSource{
+					Properties: map[string]any{"sql": "select * from read_csv_auto('path')"},
+				}
 			} else {
-				opts = drivers.NewTransferOpts()
+				src = &drivers.BucketSource{
+					Properties: map[string]any{"allow_schema_relaxation": false},
+				}
 			}
 
-			err = tr.Transfer(ctx, &drivers.BucketSource{Properties: map[string]any{"allow_schema_relaxation": false}},
-				&drivers.DatabaseSink{Table: test.name}, opts,
-				drivers.NoOpProgress{})
+			err = tr.Transfer(ctx, src, &drivers.DatabaseSink{Table: test.name},
+				drivers.NewTransferOpts(), drivers.NoOpProgress{})
 			if test.hasError {
 				require.Error(t, err, fmt.Errorf("error expected for %s got nil", test.name))
 			} else {
@@ -407,17 +407,17 @@ func TestIterativeParquetIngestionWithVariableSchema(t *testing.T) {
 			ctx := context.Background()
 			tr := transporter.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
 
-			var opts *drivers.TransferOpts
+			var src *drivers.BucketSource
 			if test.query {
-				ast, err := duckdbsql.Parse("select * from read_parquet('path',union_by_name=true,hive_partitioning=true)")
-				require.NoError(t, err)
-				opts = drivers.NewTransferOpts(drivers.WithAST(ast))
+				src = &drivers.BucketSource{
+					Properties: map[string]any{"sql": "select * from read_parquet('path',union_by_name=true,hive_partitioning=true)"},
+				}
 			} else {
-				opts = drivers.NewTransferOpts()
+				src = &drivers.BucketSource{}
 			}
 
-			err := tr.Transfer(ctx, &drivers.BucketSource{}, &drivers.DatabaseSink{Table: test.name},
-				opts, drivers.NoOpProgress{})
+			err := tr.Transfer(ctx, src, &drivers.DatabaseSink{Table: test.name},
+				drivers.NewTransferOpts(), drivers.NoOpProgress{})
 			require.NoError(t, err)
 
 			var count int
@@ -551,17 +551,17 @@ func TestIterativeJSONIngestionWithVariableSchema(t *testing.T) {
 			ctx := context.Background()
 			tr := transporter.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
 
-			var opts *drivers.TransferOpts
+			var src *drivers.BucketSource
 			if test.query {
-				ast, err := duckdbsql.Parse("select * from read_json('path',format='auto',union_by_name=true,auto_detect=true,sample_size=200000)")
-				require.NoError(t, err)
-				opts = drivers.NewTransferOpts(drivers.WithAST(ast))
+				src = &drivers.BucketSource{
+					Properties: map[string]any{"sql": "select * from read_json('path',format='auto',union_by_name=true,auto_detect=true,sample_size=200000)"},
+				}
 			} else {
-				opts = drivers.NewTransferOpts()
+				src = &drivers.BucketSource{}
 			}
 
-			err := tr.Transfer(ctx, &drivers.BucketSource{}, &drivers.DatabaseSink{Table: test.name},
-				opts, drivers.NoOpProgress{})
+			err := tr.Transfer(ctx, src, &drivers.DatabaseSink{Table: test.name},
+				drivers.NewTransferOpts(), drivers.NoOpProgress{})
 			require.NoError(t, err, "no err expected test %s", test.name)
 
 			var count int

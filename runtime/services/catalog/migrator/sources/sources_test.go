@@ -67,7 +67,7 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 		{"local_file", filepath.Join(testdataPathAbs, "AdBids.parquet"), nil},
 		{"local_file", filepath.Join(testdataPathAbs, "AdBids.txt"), nil},
 		{"duckdb", "", map[string]any{
-			"query": fmt.Sprintf(`select * from read_csv_auto('%s')`, filepath.Join(testdataPathAbs, "AdBids.csv")),
+			"sql": fmt.Sprintf(`select * from read_csv_auto('%s')`, filepath.Join(testdataPathAbs, "AdBids.csv")),
 		}},
 		// something wrong with this particular file. duckdb fails to extract
 		// TODO: move the generator to go and fix the parquet file
@@ -82,7 +82,7 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 		//{"gcs", "gs://scratch.rilldata.com/rill-developer/AdBids.parquet", nil},
 		//{"gcs", "gs://scratch.rilldata.com/rill-developer/AdBids.parquet.gz", nil},
 		//{"duckdb", "", map[string]any{
-		//	"query": `select * from read_csv_auto('gs://scratch.rilldata.com/rill-developer/AdBids.csv.gz')`,
+		//	"sql": `select * from read_csv_auto('gs://scratch.rilldata.com/rill-developer/AdBids.csv.gz')`,
 		//}},
 	}
 
@@ -265,7 +265,7 @@ func TestFileFormatAndDelimiter(t *testing.T) {
 			"duckdb": map[string]any{"delim": "' '"},
 		}},
 		{"sql with read_csv_auto", "duckdb", "", map[string]any{
-			"query": fmt.Sprintf(`from read_csv_auto('%s',delim=' ')`, testDelimiterCsvPath),
+			"sql": fmt.Sprintf(`from read_csv_auto('%s',delim=' ')`, testDelimiterCsvPath),
 		}},
 	}
 
@@ -335,7 +335,7 @@ func TestCSVIngestionWithColumns(t *testing.T) {
 			"duckdb": duckdbProps,
 		}},
 		{"sql with read_csv_auto", "duckdb", "", map[string]any{
-			"query": fmt.Sprintf(`
+			"sql": fmt.Sprintf(`
 from read_csv_auto('%s',auto_detect=false,header=true,ignore_errors=true,
 columns={id:'INTEGER',name:'VARCHAR',country:'VARCHAR',city:'VARCHAR'})`, filePath),
 		}},
@@ -545,7 +545,7 @@ func TestJsonIngestionWithVariousParams(t *testing.T) {
 			"duckdb": duckdbProps,
 		}},
 		{"sql with read_csv_auto", "duckdb", "", map[string]any{
-			"query": fmt.Sprintf(`
+			"sql": fmt.Sprintf(`
 from read_json('%s',maximum_object_size=9999999,records=true,ignore_errors=true,
 columns={id:'INTEGER',name:'VARCHAR',isActive:'BOOLEAN',createdDate:'VARCHAR'},
 auto_detect=false,sample_size=-1,dateformat='iso',timestampformat='iso',format='auto')`, filePath),
@@ -753,7 +753,7 @@ func TestSqlIngestionWithFiltersAndColumns(t *testing.T) {
 
 	props := make(map[string]any, 0)
 	props["repo_root"] = "."
-	props["query"] = fmt.Sprintf(`
+	props["sql"] = fmt.Sprintf(`
 select * exclude(publisher),
 (case when publisher = 'Yahoo' then 0 when publisher = 'Google' then 1 else 2 end) as pub,
 from read_csv_auto('%s') where publisher in ('Yahoo', 'Google')`, testCsvPath)
