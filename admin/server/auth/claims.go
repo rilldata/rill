@@ -146,22 +146,7 @@ func (c *authTokenClaims) OrganizationPermissions(ctx context.Context, orgID str
 	c.Lock()
 	defer c.Unlock()
 
-	perm, ok := c.orgPermissionsCache[orgID]
-	if ok {
-		return perm
-	}
-
-	switch c.token.Token().Type {
-	case authtoken.TypeUser:
-		perm = c.organizationPermissionsUser(ctx, orgID)
-	case authtoken.TypeService:
-		perm = c.organizationPermissionsService(ctx, orgID)
-	default:
-		panic(fmt.Errorf("unexpected token type %q", c.token.Token().Type))
-	}
-
-	c.orgPermissionsCache[orgID] = perm
-	return perm
+	return c.organizationPermissionsUnsafe(ctx, orgID)
 }
 
 func (c *authTokenClaims) ProjectPermissions(ctx context.Context, orgID, projectID string) *adminv1.ProjectPermissions {
@@ -186,7 +171,28 @@ func (c *authTokenClaims) ProjectPermissions(ctx context.Context, orgID, project
 	return perm
 }
 
-// organizationPermissionsUser is a Claims implementation for resolve the organization permissions for user
+// organizationPermissionsUnsafe resolves organization permissions.
+// organizationPermissionsUnsafe accesses the cache without locking, so it should only be called from a function that already has a lock.
+func (c *authTokenClaims) organizationPermissionsUnsafe(ctx context.Context, orgID string) *adminv1.OrganizationPermissions {
+	perm, ok := c.orgPermissionsCache[orgID]
+	if ok {
+		return perm
+	}
+
+	switch c.token.Token().Type {
+	case authtoken.TypeUser:
+		perm = c.organizationPermissionsUser(ctx, orgID)
+	case authtoken.TypeService:
+		perm = c.organizationPermissionsService(ctx, orgID)
+	default:
+		panic(fmt.Errorf("unexpected token type %q", c.token.Token().Type))
+	}
+
+	c.orgPermissionsCache[orgID] = perm
+	return perm
+}
+
+// organizationPermissionsUser resolves organization permissions for a user.
 func (c *authTokenClaims) organizationPermissionsUser(ctx context.Context, orgID string) *adminv1.OrganizationPermissions {
 	roles, err := c.admin.DB.ResolveOrganizationRolesForUser(context.Background(), c.token.OwnerID(), orgID)
 	if err != nil {
@@ -201,7 +207,8 @@ func (c *authTokenClaims) organizationPermissionsUser(ctx context.Context, orgID
 	return composite
 }
 
-// organizationPermissionsService is a Claims implementation for resolve the organization permissions for service
+// organizationPermissionsService resolves organization permissions for a service.
+// A service currently gets full permissions on the org they belong to.
 func (c *authTokenClaims) organizationPermissionsService(ctx context.Context, orgID string) *adminv1.OrganizationPermissions {
 	service, err := c.admin.DB.FindService(ctx, c.token.OwnerID())
 	if err != nil {
@@ -224,10 +231,10 @@ func (c *authTokenClaims) organizationPermissionsService(ctx context.Context, or
 	return &adminv1.OrganizationPermissions{}
 }
 
-// projectPermissionsUser is a Claims implementation for resolve the project permissions for user
+// projectPermissionsUser resolves project permissions for a user.
 func (c *authTokenClaims) projectPermissionsUser(ctx context.Context, orgID, projectID string) *adminv1.ProjectPermissions {
 	// ManageProjects permission on the org gives full access to all projects in the org (only org admins have this)
-	orgPerms := c.OrganizationPermissions(ctx, orgID)
+	orgPerms := c.organizationPermissionsUnsafe(ctx, orgID)
 	if orgPerms.ManageProjects {
 		return &adminv1.ProjectPermissions{
 			ReadProject:          true,
@@ -256,10 +263,10 @@ func (c *authTokenClaims) projectPermissionsUser(ctx context.Context, orgID, pro
 	return composite
 }
 
-// projectPermissionsService is a Claims implementation for resolve the project permissions for service
+// projectPermissionsService resolves project permissions for a service.
+// A service currently gets full permissions on all projects in the org they belong to.
 func (c *authTokenClaims) projectPermissionsService(ctx context.Context, orgID, projectID string) *adminv1.ProjectPermissions {
-	// Services get full permissions on projects in the org they belong to
-	orgPerms := c.OrganizationPermissions(ctx, orgID)
+	orgPerms := c.organizationPermissionsUnsafe(ctx, orgID)
 	if orgPerms.ManageProjects {
 		return &adminv1.ProjectPermissions{
 			ReadProject:          true,
