@@ -2,7 +2,7 @@ import type {
   V1Connector,
   V1ReconcileError,
 } from "@rilldata/web-common/runtime-client";
-import { sanitizeEntityName } from "./extract-table-name";
+import { extractFileExtension, sanitizeEntityName } from "./extract-table-name";
 import type { SourceConnectionType } from "../../metrics/service/SourceEventTypes";
 import { behaviourEvent, errorEvent } from "../../metrics/initMetrics";
 import { categorizeSourceError } from "./add-source/errors";
@@ -20,13 +20,14 @@ export function compileCreateSourceYAML(
 ) {
   const topLineComment = `# Visit https://docs.rilldata.com/ to learn more about Rill code files.`;
 
-  if (
-    connectorName !== "local_file" &&
-    connectorName !== "motherduck" &&
-    connectorName !== "bigquery"
-  ) {
-    values.uri = values.path;
-    delete values.path;
+  switch (connectorName) {
+    case "s3":
+    case "gcs":
+    case "https":
+      connectorName = "duckdb";
+      values.sql = buildDuckDbQuery(values.path as string);
+      delete values.path;
+      break;
   }
 
   const compiledKeyValues = Object.entries(values)
@@ -35,6 +36,25 @@ export function compileCreateSourceYAML(
     .join("\n");
 
   return `${topLineComment}\n\ntype: "${connectorName}"\n` + compiledKeyValues;
+}
+
+function buildDuckDbQuery(path: string): string {
+  const extension = extractFileExtension(path as string);
+  if (containsAny(extension, [".csv", ".tsv", ".txt"])) {
+    return `select * from read_csv_auto('${path}')`;
+  } else if (containsAny(extension, [".parquet"])) {
+    return `select * from read_parquet('${path}')`;
+  } else if (containsAny(extension, [".json", ".ndjson"])) {
+    return `select * from read_json('${path}',auto_detect=true,format='auto')`;
+  }
+  return `select * from '${path}'`;
+}
+
+function containsAny(fullExtensions: string, extensions: Array<string>) {
+  for (const extension of extensions) {
+    if (fullExtensions.indexOf(extension) >= 0) return true;
+  }
+  return false;
 }
 
 export function inferSourceName(connector: V1Connector, path: string) {
