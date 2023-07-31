@@ -265,10 +265,7 @@
         xMin={startValue}
         xMax={endValue}
       >
-        <Grid showY={false} />
-        <g transform="translate(0 11)">
-          <Axis superlabel side="top" placement="start" />
-        </g>
+        <Axis superlabel side="top" placement="start" />
       </SimpleDataGraphic>
     {/if}
   </div>
