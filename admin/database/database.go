@@ -116,6 +116,19 @@ type DB interface {
 	DeleteUserAuthToken(ctx context.Context, id string) error
 	DeleteExpiredUserAuthTokens(ctx context.Context, retention time.Duration) error
 
+	FindServicesByOrgID(ctx context.Context, orgID string) ([]*Service, error)
+	FindService(ctx context.Context, id string) (*Service, error)
+	FindServiceByName(ctx context.Context, orgID, name string) (*Service, error)
+	InsertService(ctx context.Context, opts *InsertServiceOptions) (*Service, error)
+	DeleteService(ctx context.Context, id string) error
+	UpdateService(ctx context.Context, id string, opts *UpdateServiceOptions) (*Service, error)
+
+	FindServiceAuthTokens(ctx context.Context, serviceID string) ([]*ServiceAuthToken, error)
+	FindServiceAuthToken(ctx context.Context, id string) (*ServiceAuthToken, error)
+	InsertServiceAuthToken(ctx context.Context, opts *InsertServiceAuthTokenOptions) (*ServiceAuthToken, error)
+	DeleteServiceAuthToken(ctx context.Context, id string) error
+	DeleteExpiredServiceAuthTokens(ctx context.Context, retention time.Duration) error
+
 	FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*DeviceAuthCode, error)
 	FindPendingDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*DeviceAuthCode, error)
 	InsertDeviceAuthCode(ctx context.Context, deviceCode, userCode, clientID string, expiresOn time.Time) (*DeviceAuthCode, error)
@@ -363,6 +376,27 @@ type UpdateUserOptions struct {
 	PreferenceTimeZone  string
 }
 
+// Service represents a service account.
+// Service accounts may belong to single organization
+type Service struct {
+	ID        string
+	OrgID     string    `db:"org_id"`
+	Name      string    `validate:"slug"`
+	CreatedOn time.Time `db:"created_on"`
+	UpdatedOn time.Time `db:"updated_on"`
+}
+
+// InsertServiceOptions defines options for inserting a new service
+type InsertServiceOptions struct {
+	OrgID string
+	Name  string `validate:"slug"`
+}
+
+// UpdateServiceOptions defines options for updating an existing service
+type UpdateServiceOptions struct {
+	Name string `validate:"slug"`
+}
+
 // Usergroup represents a group of org members
 type Usergroup struct {
 	ID    string `db:"id"`
@@ -397,6 +431,23 @@ type InsertUserAuthTokenOptions struct {
 	AuthClientID       *string
 	RepresentingUserID *string
 	ExpiresOn          *time.Time
+}
+
+// ServiceAuthToken is a persistent API token for a service.
+type ServiceAuthToken struct {
+	ID         string
+	SecretHash []byte     `db:"secret_hash"`
+	ServiceID  string     `db:"service_id"`
+	CreatedOn  time.Time  `db:"created_on"`
+	ExpiresOn  *time.Time `db:"expires_on"`
+}
+
+// InsertServiceAuthTokenOptions defines options for creating a ServiceAuthToken.
+type InsertServiceAuthTokenOptions struct {
+	ID         string
+	SecretHash []byte
+	ServiceID  string
+	ExpiresOn  *time.Time
 }
 
 // AuthClient is a client that requests and consumes auth tokens.
