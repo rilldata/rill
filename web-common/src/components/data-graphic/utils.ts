@@ -111,9 +111,14 @@ export function getTicks(
   axisLength: number,
   isDate: boolean
 ) {
-  const tickCount = ~~(axisLength / (xOrY === "x" ? 150 : 50));
+  const tickCount = ~~(axisLength / (xOrY === "x" ? 100 : 50));
 
   let ticks = scale.ticks(tickCount);
+
+  // Prevent overlapping ticks on X axis
+  if (xOrY === "x" && axisLength / ticks.length < 60) {
+    ticks = scale.ticks(tickCount - 1);
+  }
 
   if (ticks.length <= 1) {
     if (isDate) ticks = scale.domain();
