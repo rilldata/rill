@@ -15,8 +15,9 @@ import (
 type OwnerType string
 
 const (
-	OwnerTypeAnon OwnerType = "anon"
-	OwnerTypeUser OwnerType = "user"
+	OwnerTypeAnon    OwnerType = "anon"
+	OwnerTypeUser    OwnerType = "user"
+	OwnerTypeService OwnerType = "service"
 )
 
 // Claims resolves permissions for a requester.
@@ -101,6 +102,8 @@ func (c *authTokenClaims) OwnerType() OwnerType {
 	switch t {
 	case authtoken.TypeUser:
 		return OwnerTypeUser
+	case authtoken.TypeService:
+		return OwnerTypeService
 	default:
 		panic(fmt.Errorf("unexpected token type %q", t))
 	}
