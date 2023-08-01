@@ -81,7 +81,7 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 			validationErrors = append(validationErrors, &runtimev1.ReconcileError{
 				Code:         runtimev1.ReconcileError_CODE_VALIDATION,
 				FilePath:     catalog.Path,
-				Message:      "duplicate dimension name",
+				Message:      fmt.Sprintf("duplicate dimension name : %s", dimension.Column),
 				PropertyPath: []string{"Dimensions", strconv.Itoa(i)},
 			})
 			continue
@@ -104,7 +104,7 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 			validationErrors = append(validationErrors, &runtimev1.ReconcileError{
 				Code:         runtimev1.ReconcileError_CODE_VALIDATION,
 				FilePath:     catalog.Path,
-				Message:      "duplicate measure name",
+				Message:      fmt.Sprintf("duplicate measure name: %s", measure.Name),
 				PropertyPath: []string{"Measures", strconv.Itoa(i)},
 			})
 			continue
