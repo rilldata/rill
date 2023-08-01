@@ -20,7 +20,7 @@ export function getFullUrlForPath(
   const newUrl = getUrlForPath(path, retainParams);
 
   if (newUrl.search !== "") {
-    return `${newUrl.pathname}/${newUrl.search}`;
+    return `${newUrl.pathname}${newUrl.search}`;
   }
   return newUrl.pathname;
 }

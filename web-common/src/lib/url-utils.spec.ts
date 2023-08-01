@@ -31,9 +31,9 @@ describe("url-utils", () => {
         "/new/path/dashboard",
       ],
       [
-        "/path/to/dashboard/?feature=all&state=qwerty",
+        "/path/to/dashboard?feature=all&state=qwerty",
         "new/path/dashboard",
-        "/new/path/dashboard/?state=qwerty",
+        "/new/path/dashboard?state=qwerty",
       ],
     ];
     for (const [currentPath, newPath, expectedPath] of Variations) {
