@@ -622,7 +622,7 @@ measures:
 	require.NoError(t, err)
 	// duplicate measure names throws error
 	testutils.AssertMigration(t, result, 1, 0, 0, 0, []string{AdBidsDashboardRepoPath})
-	require.Equal(t, "duplicate measure name", result.Errors[0].Message)
+	require.Equal(t, "duplicate measure name: imp", result.Errors[0].Message)
 }
 
 func TestInvalidFiles(t *testing.T) {
