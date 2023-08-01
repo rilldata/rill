@@ -1,0 +1,26 @@
+import { page } from "$app/stores";
+import { get } from "svelte/store";
+
+export function getUrlForPath(path: string, retainParams = ["feature"]): URL {
+  const url = get(page).url;
+  if (!path.startsWith("/")) path = "/" + path;
+  const newUrl = new URL(`http://${url.hostname}${path}`);
+
+  for (const param of retainParams) {
+    if (!url.searchParams.has(param)) continue;
+    newUrl.searchParams.set(param, url.searchParams.get(param));
+  }
+  return newUrl;
+}
+
+export function getFullUrlForPath(
+  path: string,
+  retainParams = ["feature"]
+): string {
+  const newUrl = getUrlForPath(path, retainParams);
+
+  if (newUrl.search !== "") {
+    return `${newUrl.pathname}/${newUrl.search}`;
+  }
+  return newUrl.pathname;
+}
