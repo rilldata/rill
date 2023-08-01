@@ -24,7 +24,6 @@
   registerSubButton(value);
 
   $: disabled = $disabledKeys.includes(value);
-  $: console.log("disabled", disabled);
   $: isSelected = $selectedKeys.includes(value);
 
   const baseStyles = `shrink flex flex-row items-center px-1 py-1
