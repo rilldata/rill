@@ -7,6 +7,7 @@ import {
   FormatterFactoryOptions,
   NumberKind,
 } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
+import { formatMsInterval } from "@rilldata/web-common/lib/number-formatting/strategies/intervals";
 import { PerRangeFormatter } from "@rilldata/web-common/lib/number-formatting/strategies/per-range";
 
 const shortHandSymbols = ["Q", "T", "B", "M", "k", "none"] as const;
@@ -97,7 +98,7 @@ export function humanizeDataType(
   options?: FormatterFactoryOptions
 ): string {
   if (value === undefined || value === null) return "";
-  if (typeof value != "number") return value.toString();
+  if (typeof value !== "number") return value.toString();
 
   const numberKind = nicelyFormattedTypesToNumberKind(type);
 
@@ -108,6 +109,8 @@ export function humanizeDataType(
       numberKind,
       padWithInsignificantZeros: false,
     };
+  } else if (type === FormatPreset.INTERVAL) {
+    return formatMsInterval(value);
   } else if (options === undefined) {
     innerOptions = {
       strategy: "default",
