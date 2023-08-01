@@ -13,18 +13,16 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/gcputil"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"go.uber.org/zap"
 	"gocloud.dev/blob/gcsblob"
 	"gocloud.dev/gcp"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/googleapi"
 )
 
 const defaultPageSize = 20
-
-var errNoCredentials = errors.New("empty credentials: set `google_application_credentials` env variable")
 
 func init() {
 	drivers.Register("gcs", driver{})
@@ -194,7 +192,6 @@ func (c *Connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *Connection) Close() error {
-	// TODO:: anshul :: fix
 	return nil
 }
 
@@ -239,6 +236,11 @@ func (c *Connection) AsTransporter(from, to drivers.Connection) (drivers.Transpo
 }
 
 func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
+	return nil, false
+}
+
+// AsSQLStore implements drivers.Connection.
+func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
 }
 
@@ -291,9 +293,9 @@ func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSo
 }
 
 func (c *Connection) createClient(ctx context.Context) (*gcp.HTTPClient, error) {
-	creds, err := c.resolvedCredentials(ctx)
+	creds, err := gcputil.Credentials(ctx, c.config.SecretJSON, c.config.AllowHostAccess)
 	if err != nil {
-		if !errors.Is(err, errNoCredentials) {
+		if !errors.Is(err, gcputil.ErrNoCredentials) {
 			return nil, err
 		}
 
@@ -302,25 +304,4 @@ func (c *Connection) createClient(ctx context.Context) (*gcp.HTTPClient, error) 
 	}
 	// the token source returned from credentials works for all kind of credentials like serviceAccountKey, credentialsKey etc.
 	return gcp.NewHTTPClient(gcp.DefaultTransport(), gcp.CredentialsTokenSource(creds))
-}
-
-func (c *Connection) resolvedCredentials(ctx context.Context) (*google.Credentials, error) {
-	if c.config.SecretJSON != "" {
-		// google_application_credentials is set, use credentials from json string provided by user
-		return google.CredentialsFromJSON(ctx, []byte(c.config.SecretJSON), "https://www.googleapis.com/auth/cloud-platform")
-	}
-	// google_application_credentials is not set
-	if c.config.AllowHostAccess {
-		// use host credentials
-		creds, err := gcp.DefaultCredentials(ctx)
-		if err != nil {
-			if strings.Contains(err.Error(), "google: could not find default credentials") {
-				return nil, errNoCredentials
-			}
-
-			return nil, err
-		}
-		return creds, nil
-	}
-	return nil, errNoCredentials
 }

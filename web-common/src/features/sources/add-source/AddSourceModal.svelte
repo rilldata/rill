@@ -21,7 +21,14 @@
 
   let selectedConnector: V1Connector;
 
-  const TAB_ORDER = ["gcs", "s3", "https", "local_file", "motherduck"];
+  const TAB_ORDER = [
+    "gcs",
+    "s3",
+    "https",
+    "local_file",
+    "motherduck",
+    "bigquery",
+  ];
 
   const connectors = createRuntimeServiceListConnectors({
     query: {
@@ -83,7 +90,7 @@
     </TabGroup>
   </div>
   <div class="flex-grow overflow-y-auto">
-    {#if selectedConnector?.name === "gcs" || selectedConnector?.name === "s3" || selectedConnector?.name === "https" || selectedConnector?.name === "motherduck"}
+    {#if selectedConnector?.name === "gcs" || selectedConnector?.name === "s3" || selectedConnector?.name === "https" || selectedConnector?.name === "motherduck" || selectedConnector?.name === "bigquery"}
       {#key selectedConnector}
         <RemoteSource connector={selectedConnector} on:close />
       {/key}

@@ -110,11 +110,16 @@
           });
         }
 
+        // TODO: Quite a few adhoc code is being added. We should revisit the way we generate the yaml.
         const formValues = Object.fromEntries(
-          Object.entries(values).map(([key, value]) => [
-            fromYupFriendlyKey(key),
-            value,
-          ])
+          Object.entries(values).map(([key, value]) => {
+            switch (key) {
+              case "project_id":
+                return [key, value];
+              default:
+                return [fromYupFriendlyKey(key), value];
+            }
+          })
         );
 
         const yaml = compileCreateSourceYAML(formValues, connector.name);
@@ -202,16 +207,16 @@
 
 <div class="h-full w-full flex flex-col">
   <form
-    on:submit|preventDefault={handleSubmit}
-    id="remote-source-{connector.name}-form"
     class="px-4 pb-2 flex-grow overflow-y-auto"
+    id="remote-source-{connector.name}-form"
+    on:submit|preventDefault={handleSubmit}
   >
     <div class="pt-4 pb-2">
       Need help? Refer to our
       <a
         href="https://docs.rilldata.com/develop/import-data"
-        target="_blank"
-        rel="noreferrer">docs</a
+        rel="noreferrer"
+        target="_blank">docs</a
       > for more information.
     </div>
     {#if $createSourceMutation.isError || error}
@@ -263,10 +268,10 @@
     <DialogFooter>
       <div class="flex items-center space-x-2">
         <Button
-          type="primary"
-          submitForm
-          form="remote-source-{connector.name}-form"
           disabled={$createSourceMutation.isLoading || waitingOnSourceImport}
+          form="remote-source-{connector.name}-form"
+          submitForm
+          type="primary"
         >
           Add source
         </Button>

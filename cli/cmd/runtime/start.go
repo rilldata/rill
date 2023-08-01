@@ -11,6 +11,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
@@ -21,6 +22,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	// Load infra drivers and connectors for runtime
+	_ "github.com/rilldata/rill/runtime/drivers/bigquery"
 	_ "github.com/rilldata/rill/runtime/drivers/druid"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
@@ -56,6 +58,16 @@ type Config struct {
 	AllowHostAccess bool `default:"false" split_words:"true"`
 	// Redis server address host:port
 	RedisURL string `default:"" split_words:"true"`
+	// Sink type of activity client: noop (or empty string), kafka
+	ActivitySinkType string `default:"" split_words:"true"`
+	// Sink period of a buffered activity client in millis
+	ActivitySinkPeriodMs int `default:"1000" split_words:"true"`
+	// Max queue size of a buffered activity client
+	ActivityMaxBufferSize int `default:"1000" split_words:"true"`
+	// Kafka brokers of an activity client's sink
+	ActivitySinkKafkaBrokers string `default:"" split_words:"true"`
+	// Kafka topic of an activity client's sink
+	ActivitySinkKafkaTopic string `default:"" split_words:"true"`
 }
 
 // StartCmd starts a stand-alone runtime server. It only allows configuration using environment variables.
@@ -134,6 +146,26 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				limiter = ratelimit.NewRedis(redis.NewClient(opts))
 			}
 
+			var sink activity.Sink
+			switch conf.ActivitySinkType {
+			case "", "noop":
+				sink = activity.NewNoopSink()
+			case "kafka":
+				sink, err = activity.NewKafkaSink(conf.ActivitySinkKafkaBrokers, conf.ActivitySinkKafkaTopic)
+				if err != nil {
+					logger.Fatal("failed to create a kafka sink", zap.Error(err))
+				}
+			default:
+				logger.Fatal(fmt.Sprintf("unknown activity sink type: %s", conf.ActivitySinkType))
+			}
+			activityOpts := activity.BufferedClientOptions{
+				Sink:       sink,
+				SinkPeriod: time.Duration(conf.ActivitySinkPeriodMs) * time.Millisecond,
+				BufferSize: conf.ActivityMaxBufferSize,
+				Logger:     logger,
+			}
+			activityClient := activity.NewBufferedClient(activityOpts)
+
 			// Init server
 			srvOpts := &server.Options{
 				HTTPPort:         conf.HTTPPort,
@@ -145,7 +177,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				AuthAudienceURL:  conf.AuthAudienceURL,
 				DownloadRowLimit: &conf.DownloadRowLimit,
 			}
-			s, err := server.NewServer(ctx, srvOpts, rt, logger, limiter)
+			s, err := server.NewServer(ctx, srvOpts, rt, logger, limiter, activityClient)
 			if err != nil {
 				logger.Fatal("error: could not create server", zap.Error(err))
 			}

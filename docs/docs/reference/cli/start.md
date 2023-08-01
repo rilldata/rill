@@ -16,7 +16,7 @@ rill start [<path>] [flags]
       --db string           Database DSN (default "stage.db")
       --db-driver string    Database driver (default "duckdb")
       --port int            Port for HTTP (default 9009)
-      --port-grpc int       Port for gRPC (default 9010)
+      --port-grpc int       Port for gRPC (internal) (default 49009)
       --readonly            Show only dashboards in UI
       --no-ui               Serve only the backend
       --verbose             Sets the log level to debug
