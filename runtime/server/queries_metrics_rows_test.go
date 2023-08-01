@@ -120,12 +120,34 @@ func TestServer_MetricsViewRows_parquet_export(t *testing.T) {
 
 	require.NoError(t, err)
 
+	values := make(map[string]interface{})
 	for k, columnBuffer := range reader.ColumnBuffers {
 		table, _ := columnBuffer.ReadRows(1)
 		v := table.Values[0]
-		fmt.Printf("%s %v", k, v)
+		splits := strings.Split(k, "\x01")
+		k = strings.ToLower(splits[len(splits)-1])
+		values[k] = v
+		fmt.Printf("%s %v\n", k, v)
 		require.NotNil(t, v)
 	}
+
+	require.Equal(t, true, values["tbool"])
+	require.Equal(t, int32(-1), values["tint1"])
+	require.Equal(t, int32(-2), values["tint2"])
+	require.Equal(t, int32(-4), values["tint4"])
+	require.Equal(t, int64(-8), values["tint8"])
+	require.Equal(t, int32(1), values["tuint1"])
+	require.Equal(t, int32(2), values["tuint2"])
+	require.Equal(t, int32(4), values["tuint4"])
+	require.Equal(t, int64(8), values["tuint8"])
+	require.Equal(t, float64(1.0), values["thugeint"])
+	require.Equal(t, float32(4.0), values["tfloat4"])
+	require.Equal(t, float64(8.0), values["tfloat8"])
+	require.Equal(t, float64(1.0), values["tdecimal"])
+	require.Equal(t, "2023-01-01T00:00:00Z", values["timestamp"])
+	require.Equal(t, `["a", "b"]`, values["tlist"])
+	require.Equal(t, `{"f1":1,"f2":2}`, values["tmap"])
+	require.Equal(t, `{"f1":1,"f2":{"f3":3}}`, values["tstruct"])
 
 	schema := reader.Footer.Schema
 	meta := make(map[string]*parquet.SchemaElement)

@@ -486,7 +486,12 @@ func writeParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, 
 			case "CODE_STRING", "CODE_UUID", "CODE_TIMESTAMP":
 				recordBuilder.Field(idx).(*array.StringBuilder).Append(v.GetStringValue())
 			case "CODE_ARRAY", "CODE_MAP", "CODE_STRUCT":
-				recordBuilder.Field(idx).(*array.StringBuilder).Append(fmt.Sprintf("%v", v.AsInterface()))
+				bts, err := protojson.Marshal(v)
+				if err != nil {
+					return err
+				}
+
+				recordBuilder.Field(idx).(*array.StringBuilder).Append(string(bts))
 			}
 		}
 	}
