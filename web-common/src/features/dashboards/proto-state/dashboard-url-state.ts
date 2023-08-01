@@ -4,6 +4,7 @@ import {
   metricsExplorerStore,
   useDashboardStore,
 } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+import { getUrlForPath } from "@rilldata/web-common/lib/url-utils";
 import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, Readable } from "svelte/store";
@@ -87,16 +88,18 @@ function gotoNewDashboardUrl(url: URL, newState: string, defaultState: string) {
   // this store the actual state. for default state it will be empty
   let newStateInUrl = "";
   // changed when filters etc are changed on the dashboard
-  let newPath = url.pathname;
+
+  const newUrl = getUrlForPath(url.pathname);
+
   if (newState !== defaultState) {
     newStateInUrl = encodeURIComponent(newState);
-    newPath = `${newPath}?state=${newStateInUrl}`;
+    newUrl.searchParams.set("state", newStateInUrl);
   }
 
   const currentStateInUrl = url.searchParams.get("state") ?? "";
 
   if (newStateInUrl === currentStateInUrl) return;
-  goto(newPath);
+  goto(newUrl.toString());
 }
 
 // TODO: if these are necessary anywhere else move them to a separate file
