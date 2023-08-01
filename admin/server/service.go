@@ -62,7 +62,7 @@ func (s *Server) ListServices(ctx context.Context, req *adminv1.ListServicesRequ
 		return nil, status.Error(codes.PermissionDenied, "not allowed to list services")
 	}
 
-	services, err := s.admin.DB.FindServicesByOrgID(ctx, org.Name)
+	services, err := s.admin.DB.FindServicesByOrgID(ctx, org.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
