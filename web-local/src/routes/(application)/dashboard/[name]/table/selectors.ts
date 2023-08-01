@@ -12,7 +12,7 @@ export function getTableData(managers: StateManagers) {
         runtime.instanceId,
         metricsViewName,
         {
-          limit: 100,
+          limit: 20,
           //   filter: dashboardStore.filters,
           //   timeStart: hasTimeSeries ? timeStart : undefined,
           //   timeEnd: hasTimeSeries ? timeEnd : undefined,
