@@ -10,6 +10,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/singleflight"
+	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -87,6 +88,18 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 			return fmt.Errorf("query dependency %q not found", dep)
 		}
 		depKeys[i] = entry.Name + ":" + entry.RefreshedOn.String()
+		// if catalog entry is a metrics view and it has a policy, we should add user attributes to the cache key
+		if entry.IsMetricsView() {
+			policy := entry.GetMetricsView().Policy
+			if policy != nil {
+				attr := auth.GetClaims(ctx).Attributes()
+				attrKey := ""
+				for k, v := range attr {
+					attrKey += fmt.Sprintf(":%v:%v", k, v)
+				}
+				depKeys[i] += attrKey
+			}
+		}
 	}
 
 	// If there were no known dependencies, skip caching

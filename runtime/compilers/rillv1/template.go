@@ -6,6 +6,7 @@ import (
 	"text/template"
 	"text/template/parse"
 
+	"github.com/Knetic/govaluate"
 	"github.com/Masterminds/sprig/v3"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"golang.org/x/exp/maps"
@@ -265,4 +266,22 @@ func resourceNameFromArgs(parts ...string) (ResourceName, error) {
 		Kind: kind,
 		Name: parts[1],
 	}, nil
+}
+
+func EvaluateBoolExpression(expr string) (bool, error) {
+	if expr == "" {
+		return false, fmt.Errorf("cannot evaluate empty expression")
+	}
+	expression, err := govaluate.NewEvaluableExpression(expr)
+	if err != nil {
+		return false, err
+	}
+	result, err := expression.Evaluate(nil)
+	if err != nil {
+		return false, err
+	}
+	if _, ok := result.(bool); !ok {
+		return false, fmt.Errorf("expression did not evaluate to a bool")
+	}
+	return result.(bool), nil
 }

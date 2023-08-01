@@ -119,6 +119,36 @@ paths:
             $ref: '#/definitions/v1DeleteFileAndReconcileRequest'
       tags:
         - RuntimeService
+  /v1/dev-jwt:
+    get:
+      operationId: RuntimeService_IssueDevJWT
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1IssueDevJWTResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: name
+          in: query
+          required: false
+          type: string
+        - name: email
+          in: query
+          required: false
+          type: string
+        - name: groups
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+      tags:
+        - RuntimeService
   /v1/examples:
     get:
       summary: ListExamples lists all the examples embedded into binary
@@ -2285,6 +2315,27 @@ definitions:
       validPercentOfTotal:
         type: boolean
     title: Measures are aggregated computed values
+  MetricsViewPolicy:
+    type: object
+    properties:
+      hasAccess:
+        type: string
+        title: Dashboard level access condition
+      filter:
+        type: string
+        title: row level access condition
+      include:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/PolicyFieldCondition'
+        title: either one of include or exclude will be specified
+      exclude:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/PolicyFieldCondition'
+    title: Policy is the access policy for the metrics view
   MetricsViewSpecDimensionV2:
     type: object
     properties:
@@ -2313,6 +2364,27 @@ definitions:
       validPercentOfTotal:
         type: boolean
     title: Measures are aggregated computed values
+  MetricsViewSpecPolicyV2:
+    type: object
+    properties:
+      hasAccess:
+        type: string
+        title: Dashboard level access condition
+      filter:
+        type: string
+        title: row level access condition
+      include:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/PolicyV2FieldConditionV2'
+        title: either one of include or exclude will be specified
+      exclude:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/PolicyV2FieldConditionV2'
+    title: Access policy for the dashboard
   ModelDialect:
     type: string
     enum:
@@ -2355,6 +2427,22 @@ definitions:
       count:
         type: integer
         format: int32
+  PolicyFieldCondition:
+    type: object
+    properties:
+      name:
+        type: string
+      condition:
+        type: string
+    title: Dimension/measure access condition
+  PolicyV2FieldConditionV2:
+    type: object
+    properties:
+      name:
+        type: string
+      condition:
+        type: string
+    title: Dimension/measure level access condition
   SourceExtractPolicy:
     type: object
     properties:
@@ -3079,6 +3167,12 @@ definitions:
       the runtime. They enable one runtime deployment to serve not only multiple data
       projects, but also multiple tenants. On local, the runtime will usually have
       just a single instance.
+  v1IssueDevJWTResponse:
+    type: object
+    properties:
+      jwt:
+        type: string
+    title: Response message for RuntimeService.IssueDevJWT
   v1ListCatalogEntriesResponse:
     type: object
     properties:
@@ -3203,6 +3297,9 @@ definitions:
         items:
           type: string
         description: Available time zones list preferred time zones using IANA location identifiers.
+      policy:
+        $ref: '#/definitions/MetricsViewPolicy'
+        title: Access policy for the dashboard
     title: Metrics view is the internal representation of a metrics view definition
   v1MetricsViewColumn:
     type: object
@@ -3408,6 +3505,9 @@ definitions:
         items:
           type: string
         title: Available time zones list preferred time zones using IANA location identifiers
+      policy:
+        $ref: '#/definitions/MetricsViewSpecPolicyV2'
+        title: Access policy for the dashboard
   v1MetricsViewState:
     type: object
     properties:

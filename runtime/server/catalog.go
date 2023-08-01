@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/mohae/deepcopy"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -31,6 +33,29 @@ func (s *Server) ListCatalogEntries(ctx context.Context, req *runtimev1.ListCata
 	entries, err := s.runtime.ListCatalogEntries(ctx, req.InstanceId, pbToObjectType(req.Type))
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	if req.Type == runtimev1.ObjectType_OBJECT_TYPE_METRICS_VIEW {
+		// apply access policies to metrics views
+		accessibleEntries := make([]*drivers.CatalogEntry, 0)
+
+		for _, entry := range entries {
+			policy, err := s.runtime.ResolveMetricsViewPolicy(auth.GetClaims(ctx).Attributes(), req.InstanceId, entry.GetMetricsView(), entry.UpdatedOn)
+			if err != nil {
+				return nil, err
+			}
+
+			if policy != nil && !policy.HasAccess {
+				continue
+			}
+			// deep copy the catalog entry, so we can filter dimensions which mutates the metricsview
+			newEntry := deepcopy.Copy(entry).(*drivers.CatalogEntry)
+			mv := newEntry.GetMetricsView()
+
+			filterDimensions(policy, mv)
+			accessibleEntries = append(accessibleEntries, newEntry)
+		}
+		entries = accessibleEntries
 	}
 
 	pbs := make([]*runtimev1.CatalogEntry, len(entries))
@@ -63,12 +88,60 @@ func (s *Server) GetCatalogEntry(ctx context.Context, req *runtimev1.GetCatalogE
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
-	pb, err := catalogObjectToPB(entry)
+	newEntry := entry
+	if entry.Type == drivers.ObjectTypeMetricsView {
+		policy, err := s.runtime.ResolveMetricsViewPolicy(auth.GetClaims(ctx).Attributes(), req.InstanceId, entry.GetMetricsView(), entry.UpdatedOn)
+		if err != nil {
+			return nil, err
+		}
+
+		if policy != nil && !policy.HasAccess {
+			return nil, ErrForbidden
+		}
+		// deep copy the entry, so we can filter dimensions which mutates the metricsview
+		newEntry = deepcopy.Copy(entry).(*drivers.CatalogEntry)
+		mv := newEntry.GetMetricsView()
+
+		filterDimensions(policy, mv)
+	}
+
+	pb, err := catalogObjectToPB(newEntry)
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	return &runtimev1.GetCatalogEntryResponse{Entry: pb}, nil
+}
+
+func filterDimensions(policy *runtime.ResolvedMetricsViewPolicy, mv *runtimev1.MetricsView) {
+	if policy == nil {
+		return
+	}
+	allowedDims := make([]*runtimev1.MetricsView_Dimension, 0)
+
+	if len(policy.Include) > 0 {
+		allowed := make(map[string]bool)
+		for _, include := range policy.Include {
+			allowed[include] = true
+		}
+		for _, dim := range mv.Dimensions {
+			if allowed[dim.Name] {
+				allowedDims = append(allowedDims, dim)
+			}
+		}
+		mv.Dimensions = allowedDims
+	} else if len(policy.Exclude) > 0 {
+		restricted := make(map[string]bool)
+		for _, exclude := range policy.Exclude {
+			restricted[exclude] = true
+		}
+		for _, dim := range mv.Dimensions {
+			if !restricted[dim.Name] {
+				allowedDims = append(allowedDims, dim)
+			}
+		}
+		mv.Dimensions = allowedDims
+	}
 }
 
 // Reconcile implements RuntimeService.

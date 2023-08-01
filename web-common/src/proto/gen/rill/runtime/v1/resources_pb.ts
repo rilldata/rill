@@ -931,6 +931,13 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    */
   availableTimeZones: string[] = [];
 
+  /**
+   * Access policy for the dashboard
+   *
+   * @generated from field: rill.runtime.v1.MetricsViewSpec.PolicyV2 policy = 11;
+   */
+  policy?: MetricsViewSpec_PolicyV2;
+
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -949,6 +956,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 8, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 9, name: "default_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "available_time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 11, name: "policy", kind: "message", T: MetricsViewSpec_PolicyV2 },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {
@@ -1091,6 +1099,114 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
 
   static equals(a: MetricsViewSpec_MeasureV2 | PlainMessage<MetricsViewSpec_MeasureV2> | undefined, b: MetricsViewSpec_MeasureV2 | PlainMessage<MetricsViewSpec_MeasureV2> | undefined): boolean {
     return proto3.util.equals(MetricsViewSpec_MeasureV2, a, b);
+  }
+}
+
+/**
+ * Access policy for the dashboard
+ *
+ * @generated from message rill.runtime.v1.MetricsViewSpec.PolicyV2
+ */
+export class MetricsViewSpec_PolicyV2 extends Message<MetricsViewSpec_PolicyV2> {
+  /**
+   * Dashboard level access condition
+   *
+   * @generated from field: string has_access = 1;
+   */
+  hasAccess = "";
+
+  /**
+   * row level access condition
+   *
+   * @generated from field: string filter = 2;
+   */
+  filter = "";
+
+  /**
+   * either one of include or exclude will be specified
+   *
+   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.PolicyV2.FieldConditionV2 include = 3;
+   */
+  include: MetricsViewSpec_PolicyV2_FieldConditionV2[] = [];
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.PolicyV2.FieldConditionV2 exclude = 4;
+   */
+  exclude: MetricsViewSpec_PolicyV2_FieldConditionV2[] = [];
+
+  constructor(data?: PartialMessage<MetricsViewSpec_PolicyV2>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.PolicyV2";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "has_access", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "filter", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "include", kind: "message", T: MetricsViewSpec_PolicyV2_FieldConditionV2, repeated: true },
+    { no: 4, name: "exclude", kind: "message", T: MetricsViewSpec_PolicyV2_FieldConditionV2, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_PolicyV2 {
+    return new MetricsViewSpec_PolicyV2().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_PolicyV2 {
+    return new MetricsViewSpec_PolicyV2().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_PolicyV2 {
+    return new MetricsViewSpec_PolicyV2().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewSpec_PolicyV2 | PlainMessage<MetricsViewSpec_PolicyV2> | undefined, b: MetricsViewSpec_PolicyV2 | PlainMessage<MetricsViewSpec_PolicyV2> | undefined): boolean {
+    return proto3.util.equals(MetricsViewSpec_PolicyV2, a, b);
+  }
+}
+
+/**
+ * Dimension/measure level access condition
+ *
+ * @generated from message rill.runtime.v1.MetricsViewSpec.PolicyV2.FieldConditionV2
+ */
+export class MetricsViewSpec_PolicyV2_FieldConditionV2 extends Message<MetricsViewSpec_PolicyV2_FieldConditionV2> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string condition = 2;
+   */
+  condition = "";
+
+  constructor(data?: PartialMessage<MetricsViewSpec_PolicyV2_FieldConditionV2>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.PolicyV2.FieldConditionV2";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "condition", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_PolicyV2_FieldConditionV2 {
+    return new MetricsViewSpec_PolicyV2_FieldConditionV2().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_PolicyV2_FieldConditionV2 {
+    return new MetricsViewSpec_PolicyV2_FieldConditionV2().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_PolicyV2_FieldConditionV2 {
+    return new MetricsViewSpec_PolicyV2_FieldConditionV2().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewSpec_PolicyV2_FieldConditionV2 | PlainMessage<MetricsViewSpec_PolicyV2_FieldConditionV2> | undefined, b: MetricsViewSpec_PolicyV2_FieldConditionV2 | PlainMessage<MetricsViewSpec_PolicyV2_FieldConditionV2> | undefined): boolean {
+    return proto3.util.equals(MetricsViewSpec_PolicyV2_FieldConditionV2, a, b);
   }
 }
 

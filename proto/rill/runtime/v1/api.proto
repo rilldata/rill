@@ -241,6 +241,10 @@ service RuntimeService {
   rpc ListConnectors(ListConnectorsRequest) returns (ListConnectorsResponse) {
     option (google.api.http) = {get: "/v1/connectors/meta"};
   }
+
+  rpc IssueDevJWT(IssueDevJWTRequest) returns (IssueDevJWTResponse) {
+    option (google.api.http) = {get: "/v1/dev-jwt"};
+  }
 }
 
 // Request message for RuntimeService.Ping
@@ -888,4 +892,16 @@ message ListConnectorsRequest {}
 // Response message for RuntimeService.ListConnectors
 message ListConnectorsResponse {
   repeated ConnectorSpec connectors = 1;
+}
+
+// Request message for RuntimeService.IssueDevJWT
+message IssueDevJWTRequest {
+  string name = 1 [(validate.rules).string.min_len = 1];
+  string email = 2 [(validate.rules).string.min_len = 1];
+  repeated string groups = 3;
+}
+
+// Response message for RuntimeService.IssueDevJWT
+message IssueDevJWTResponse {
+  string jwt = 1;
 }

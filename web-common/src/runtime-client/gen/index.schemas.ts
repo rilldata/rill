@@ -391,6 +391,12 @@ export type ConnectorServiceGCSListObjectsParams = {
   delimiter?: string;
 };
 
+export type RuntimeServiceIssueDevJWTParams = {
+  name?: string;
+  email?: string;
+  groups?: string[];
+};
+
 export type ConnectorServiceBigQueryListTablesParams = {
   instanceId?: string;
   connector?: string;
@@ -482,6 +488,12 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -514,12 +526,6 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
-
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
 
 export type V1TableRowsResponseDataItem = { [key: string]: any };
 
@@ -583,11 +589,6 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
-export interface V1SourceV2 {
-  spec?: V1SourceSpec;
-  state?: V1SourceState;
-}
-
 export type V1SourceSpecProperties = { [key: string]: any };
 
 export interface V1SourceSpec {
@@ -599,6 +600,11 @@ export interface V1SourceSpec {
   stageChanges?: boolean;
   streamIngestion?: boolean;
   trigger?: boolean;
+}
+
+export interface V1SourceV2 {
+  spec?: V1SourceSpec;
+  state?: V1SourceState;
 }
 
 export type V1SourceProperties = { [key: string]: any };
@@ -744,16 +750,6 @@ export interface V1RefreshAndReconcileRequest {
   strict?: boolean;
 }
 
-export interface V1ReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-}
-
 /**
  * - CODE_UNSPECIFIED: Unspecified error
  - CODE_SYNTAX: Code artifact failed to parse
@@ -796,6 +792,16 @@ Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: V1ReconcileErrorCharLocation;
   endLocation?: V1ReconcileErrorCharLocation;
+}
+
+export interface V1ReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
 }
 
 export type V1QueryResponseDataItem = { [key: string]: any };
@@ -1019,11 +1025,6 @@ export interface V1Migration {
   state?: V1MigrationState;
 }
 
-export interface V1MetricsViewV2 {
-  spec?: V1MetricsViewSpec;
-  state?: V1MetricsViewState;
-}
-
 export type V1MetricsViewTotalsResponseData = { [key: string]: any };
 
 export interface V1MetricsViewTotalsResponse {
@@ -1085,10 +1086,16 @@ export interface V1MetricsViewSpec {
   /** Default time range for the dashboard. It should be a valid ISO 8601 duration string. */
   defaultTimeRange?: string;
   availableTimeZones?: string[];
+  policy?: MetricsViewSpecPolicyV2;
 }
 
 export interface V1MetricsViewState {
   validSpec?: V1MetricsViewSpec;
+}
+
+export interface V1MetricsViewV2 {
+  spec?: V1MetricsViewSpec;
+  state?: V1MetricsViewState;
 }
 
 export interface V1MetricsViewSort {
@@ -1209,6 +1216,7 @@ export interface V1MetricsView {
   defaultTimeRange?: string;
   /** Available time zones list preferred time zones using IANA location identifiers. */
   availableTimeZones?: string[];
+  policy?: MetricsViewPolicy;
 }
 
 export interface V1MapType {
@@ -1259,6 +1267,10 @@ export interface V1ListConnectorsResponse {
 
 export interface V1ListCatalogEntriesResponse {
   entries?: V1CatalogEntry[];
+}
+
+export interface V1IssueDevJWTResponse {
+  jwt?: string;
 }
 
 export type V1InstanceProjectVariables = { [key: string]: string };
@@ -1727,6 +1739,16 @@ export interface SourceExtractPolicy {
   filesLimit?: string;
 }
 
+export interface PolicyV2FieldConditionV2 {
+  name?: string;
+  condition?: string;
+}
+
+export interface PolicyFieldCondition {
+  name?: string;
+  condition?: string;
+}
+
 export interface NumericOutliersOutlier {
   bucket?: number;
   low?: number;
@@ -1751,6 +1773,13 @@ export const ModelDialect = {
   DIALECT_DUCKDB: "DIALECT_DUCKDB",
 } as const;
 
+export interface MetricsViewSpecPolicyV2 {
+  hasAccess?: string;
+  filter?: string;
+  include?: PolicyV2FieldConditionV2[];
+  exclude?: PolicyV2FieldConditionV2[];
+}
+
 export interface MetricsViewSpecMeasureV2 {
   name?: string;
   expression?: string;
@@ -1765,6 +1794,13 @@ export interface MetricsViewSpecDimensionV2 {
   column?: string;
   label?: string;
   description?: string;
+}
+
+export interface MetricsViewPolicy {
+  hasAccess?: string;
+  filter?: string;
+  include?: PolicyFieldCondition[];
+  exclude?: PolicyFieldCondition[];
 }
 
 export interface MetricsViewMeasure {

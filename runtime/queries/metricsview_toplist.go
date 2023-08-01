@@ -10,6 +10,9 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/server/auth"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -69,9 +72,18 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	mv, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
+	mv, lastUpdateOn, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
 	if err != nil {
 		return err
+	}
+
+	policy, err := rt.ResolveMetricsViewPolicy(auth.GetClaims(ctx).Attributes(), instanceID, mv, lastUpdateOn)
+	if err != nil {
+		return err
+	}
+
+	if !checkFieldAccess(q.DimensionName, policy) {
+		return status.Error(codes.Unauthenticated, "action not allowed")
 	}
 
 	if mv.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
@@ -79,7 +91,7 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	}
 
 	// Build query
-	sql, args, err := q.buildMetricsTopListSQL(mv, olap.Dialect())
+	sql, args, err := q.buildMetricsTopListSQL(mv, olap.Dialect(), policy)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -105,9 +117,18 @@ func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, in
 	}
 	defer release()
 
-	mv, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
+	mv, lastUpdateOn, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
 	if err != nil {
 		return err
+	}
+
+	policy, err := rt.ResolveMetricsViewPolicy(auth.GetClaims(ctx).Attributes(), instanceID, mv, lastUpdateOn)
+	if err != nil {
+		return err
+	}
+
+	if !checkFieldAccess(q.DimensionName, policy) {
+		return status.Error(codes.Unauthenticated, "action not allowed")
 	}
 
 	switch olap.Dialect() {
@@ -117,7 +138,7 @@ func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, in
 				return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 			}
 
-			sql, args, err := q.buildMetricsTopListSQL(mv, olap.Dialect())
+			sql, args, err := q.buildMetricsTopListSQL(mv, olap.Dialect(), policy)
 			if err != nil {
 				return err
 			}
@@ -177,7 +198,7 @@ func (q *MetricsViewToplist) generateFilename(mv *runtimev1.MetricsView) string 
 	return filename
 }
 
-func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect) (string, []any, error) {
+func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewPolicy) (string, []any, error) {
 	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
 	if err != nil {
 		return "", nil, err
@@ -208,7 +229,7 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, d
 	}
 
 	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect)
+		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
 		if err != nil {
 			return "", nil, err
 		}
@@ -251,4 +272,30 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, d
 	)
 
 	return sql, args, nil
+}
+
+func checkFieldAccess(field string, policy *runtime.ResolvedMetricsViewPolicy) bool {
+	if policy != nil {
+		if !policy.HasAccess {
+			return false
+		}
+
+		if len(policy.Include) > 0 {
+			for _, include := range policy.Include {
+				if include == field {
+					return true
+				}
+			}
+		} else if len(policy.Exclude) > 0 {
+			for _, exclude := range policy.Exclude {
+				if exclude == field {
+					return false
+				}
+			}
+		} else {
+			// if no include/exclude is specified, then all fields are allowed
+			return true
+		}
+	}
+	return true
 }

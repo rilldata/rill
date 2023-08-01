@@ -12,7 +12,10 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
+	"github.com/rilldata/rill/runtime/server/auth"
 	"golang.org/x/exp/slices"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -64,9 +67,18 @@ func (q *MetricsViewTimeSeries) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	mv, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
+	mv, lastUpdateOn, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
 	if err != nil {
 		return err
+	}
+
+	policy, err := rt.ResolveMetricsViewPolicy(auth.GetClaims(ctx).Attributes(), instanceID, mv, lastUpdateOn)
+	if err != nil {
+		return err
+	}
+
+	if policy != nil && !policy.HasAccess {
+		return status.Error(codes.Unauthenticated, "action not allowed")
 	}
 
 	if mv.TimeDimension == "" {
@@ -81,9 +93,9 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
-		return q.resolveDuckDB(ctx, rt, instanceID, mv, priority)
+		return q.resolveDuckDB(ctx, rt, instanceID, mv, priority, policy)
 	case drivers.DialectDruid:
-		return q.resolveDruid(ctx, olap, mv, priority)
+		return q.resolveDruid(ctx, olap, mv, priority, policy)
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
@@ -95,7 +107,7 @@ func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime,
 		return err
 	}
 
-	mv, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
+	mv, _, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
 	if err != nil {
 		return err
 	}
@@ -138,7 +150,7 @@ func (q *MetricsViewTimeSeries) generateFilename(mv *runtimev1.MetricsView) stri
 	return filename
 }
 
-func (q *MetricsViewTimeSeries) resolveDuckDB(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsView, priority int) error {
+func (q *MetricsViewTimeSeries) resolveDuckDB(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsView, priority int, policy *runtime.ResolvedMetricsViewPolicy) error {
 	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
 	if err != nil {
 		return err
@@ -161,6 +173,7 @@ func (q *MetricsViewTimeSeries) resolveDuckDB(ctx context.Context, rt *runtime.R
 		MetricsView:       mv,
 		MetricsViewFilter: q.Filter,
 		TimeZone:          q.TimeZone,
+		MetricsViewPolicy: policy,
 	}
 	err = rt.Query(ctx, instanceID, tsq, priority)
 	if err != nil {
@@ -188,8 +201,8 @@ func toColumnTimeseriesMeasures(measures []*runtimev1.MetricsView_Measure) ([]*r
 	return res, nil
 }
 
-func (q *MetricsViewTimeSeries) resolveDruid(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsView, priority int) error {
-	sql, tsAlias, args, err := q.buildDruidMetricsTimeseriesSQL(mv)
+func (q *MetricsViewTimeSeries) resolveDruid(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsView, priority int, policy *runtime.ResolvedMetricsViewPolicy) error {
+	sql, tsAlias, args, err := q.buildDruidMetricsTimeseriesSQL(mv, policy)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -254,7 +267,7 @@ func (q *MetricsViewTimeSeries) resolveDruid(ctx context.Context, olap drivers.O
 	return nil
 }
 
-func (q *MetricsViewTimeSeries) buildDruidMetricsTimeseriesSQL(mv *runtimev1.MetricsView) (string, string, []any, error) {
+func (q *MetricsViewTimeSeries) buildDruidMetricsTimeseriesSQL(mv *runtimev1.MetricsView, policy *runtime.ResolvedMetricsViewPolicy) (string, string, []any, error) {
 	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
 	if err != nil {
 		return "", "", nil, err
@@ -278,7 +291,7 @@ func (q *MetricsViewTimeSeries) buildDruidMetricsTimeseriesSQL(mv *runtimev1.Met
 	}
 
 	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, drivers.DialectDruid)
+		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, drivers.DialectDruid, policy)
 		if err != nil {
 			return "", "", nil, err
 		}

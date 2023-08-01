@@ -7,6 +7,9 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/server/auth"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type MetricsViewTimeRange struct {
@@ -41,9 +44,23 @@ func (q *MetricsViewTimeRange) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	mv, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
+	mv, lastUpdatedOn, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
 	if err != nil {
 		return err
+	}
+
+	policyFilter := ""
+	if mv != nil {
+		resolvedMv, err := rt.ResolveMetricsViewPolicy(auth.GetClaims(ctx).Attributes(), instanceID, mv, lastUpdatedOn)
+		if err != nil {
+			return err
+		}
+		if resolvedMv != nil {
+			if !resolvedMv.HasAccess {
+				return status.Error(codes.Unauthenticated, "action not allowed")
+			}
+			policyFilter = resolvedMv.Filter
+		}
 	}
 
 	if mv.TimeDimension == "" {
@@ -51,8 +68,9 @@ func (q *MetricsViewTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime,
 	}
 
 	ctr := &ColumnTimeRange{
-		TableName:  mv.Model,
-		ColumnName: mv.TimeDimension,
+		TableName:    mv.Model,
+		ColumnName:   mv.TimeDimension,
+		PolicyFilter: policyFilter,
 	}
 
 	err = rt.Query(ctx, instanceID, ctr, priority)

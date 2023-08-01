@@ -535,11 +535,12 @@ func NewTestRunTime(t *testing.T) *Runtime {
 	}
 
 	opts := &Options{
-		ConnectionCacheSize: 100,
-		MetastoreConnector:  "metastore",
-		QueryCacheSizeBytes: int64(datasize.MB) * 100,
-		AllowHostAccess:     true,
-		SystemConnectors:    globalConnectors,
+		ConnectionCacheSize:   100,
+		MetastoreConnector:    "metastore",
+		QueryCacheSizeBytes:   int64(datasize.MB) * 100,
+		AllowHostAccess:       true,
+		SystemConnectors:      globalConnectors,
+		PolicyEngineCacheSize: 100,
 	}
 	rt, err := New(opts, zap.NewNop(), nil)
 	t.Cleanup(func() {

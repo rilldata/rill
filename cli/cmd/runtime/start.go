@@ -70,6 +70,7 @@ type Config struct {
 	ActivitySinkKafkaBrokers string `default:"" split_words:"true"`
 	// Kafka topic of an activity client's sink
 	ActivitySinkKafkaTopic string `default:"" split_words:"true"`
+	PolicyEngineCacheSize  int    `default:"1000" split_words:"true"`
 }
 
 // StartCmd starts a stand-alone runtime server. It only allows configuration using environment variables.
@@ -154,6 +155,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 						Config: map[string]string{"dsn": conf.MetastoreURL},
 					},
 				},
+				PolicyEngineCacheSize: conf.PolicyEngineCacheSize,
 			}
 			rt, err := runtime.New(opts, logger, activityClient)
 			if err != nil {

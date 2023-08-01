@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/apache/arrow/go/v11/arrow"
 	"github.com/apache/arrow/go/v11/arrow/array"
@@ -25,17 +26,20 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.MetricsView, error) {
+// returns the metrics view and the time the catalog was last updated
+func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.MetricsView, time.Time, error) {
 	obj, err := rt.GetCatalogEntry(ctx, instanceID, name)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, time.Now(), status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if obj.GetMetricsView() == nil {
-		return nil, status.Errorf(codes.NotFound, "object named '%s' is not a metrics view", name)
+	if !obj.IsMetricsView() {
+		return nil, time.Now(), status.Errorf(codes.NotFound, "object named '%s' is not a metrics view", name)
 	}
 
-	return obj.GetMetricsView(), nil
+	mv := obj.GetMetricsView()
+
+	return mv, obj.UpdatedOn, nil
 }
 
 // resolveMeasures returns the selected measures
@@ -134,7 +138,7 @@ func structTypeToMetricsViewColumn(v *runtimev1.StructType) []*runtimev1.Metrics
 // buildFilterClauseForMetricsViewFilter builds a SQL string of conditions joined with AND.
 // Unless the result is empty, it is prefixed with "AND".
 // I.e. it has the format "AND (...) AND (...) ...".
-func buildFilterClauseForMetricsViewFilter(mv *runtimev1.MetricsView, filter *runtimev1.MetricsViewFilter, dialect drivers.Dialect) (string, []any, error) {
+func buildFilterClauseForMetricsViewFilter(mv *runtimev1.MetricsView, filter *runtimev1.MetricsViewFilter, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewPolicy) (string, []any, error) {
 	var clauses []string
 	var args []any
 
@@ -154,6 +158,10 @@ func buildFilterClauseForMetricsViewFilter(mv *runtimev1.MetricsView, filter *ru
 		}
 		clauses = append(clauses, clause)
 		args = append(args, clauseArgs...)
+	}
+
+	if policy != nil && policy.Filter != "" {
+		clauses = append(clauses, "AND "+policy.Filter)
 	}
 
 	return strings.Join(clauses, " "), args, nil
