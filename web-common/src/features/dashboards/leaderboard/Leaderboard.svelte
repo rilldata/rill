@@ -25,7 +25,7 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import { getFilterForComparsion } from "../dimension-table/dimension-table-utils";
-  import type { NicelyFormattedTypes } from "../humanize-numbers";
+  import type { FormatPreset } from "../humanize-numbers";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import { prepareLeaderboardItemData } from "./leaderboard-utils";
   import LeaderboardListItem from "./LeaderboardListItem.svelte";
@@ -39,7 +39,7 @@
   export let referenceValue: number;
   export let unfilteredTotal: number;
 
-  export let formatPreset: NicelyFormattedTypes;
+  export let formatPreset: FormatPreset;
   export let isSummableMeasure = false;
 
   let slice = 7;

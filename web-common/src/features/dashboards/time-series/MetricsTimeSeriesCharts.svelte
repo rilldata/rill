@@ -6,7 +6,7 @@
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import {
     humanizeDataType,
-    NicelyFormattedTypes,
+    FormatPreset,
     nicelyFormattedTypesToNumberKind,
   } from "@rilldata/web-common/features/dashboards/humanize-numbers";
   import {
@@ -275,7 +275,7 @@
           ? (bigNum - comparisonValue) / comparisonValue
           : undefined}
       {@const formatPreset =
-        NicelyFormattedTypes[measure?.format] || NicelyFormattedTypes.HUMANIZE}
+        FormatPreset[measure?.format] || FormatPreset.HUMANIZE}
       <!-- FIXME: I can't select a time series by measure id. -->
       <MeasureBigNumber
         value={bigNum}
@@ -319,7 +319,7 @@
             }}
             numberKind={nicelyFormattedTypesToNumberKind(measure?.format)}
             mouseoverFormat={(value) =>
-              formatPreset === NicelyFormattedTypes.NONE
+              formatPreset === FormatPreset.NONE
                 ? `${value}`
                 : humanizeDataType(value, measure?.format)}
           />

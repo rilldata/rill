@@ -14,7 +14,7 @@
   import { onDestroy, onMount } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
-  import { NicelyFormattedTypes } from "../humanize-numbers";
+  import { FormatPreset } from "../humanize-numbers";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
 
@@ -66,8 +66,7 @@
   );
 
   $: formatPreset =
-    (activeMeasure?.format as NicelyFormattedTypes) ??
-    NicelyFormattedTypes.HUMANIZE;
+    (activeMeasure?.format as FormatPreset) ?? FormatPreset.HUMANIZE;
 
   let referenceValue: number;
   $: if (activeMeasure?.name && $totalsQuery?.data?.data) {
