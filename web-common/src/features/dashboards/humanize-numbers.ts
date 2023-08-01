@@ -32,22 +32,6 @@ interface ColFormatSpec {
   formatPreset: NicelyFormattedTypes;
 }
 
-export const nicelyFormattedTypesSelectorOptions = [
-  { value: NicelyFormattedTypes.HUMANIZE, label: "Humanize" },
-  {
-    value: NicelyFormattedTypes.NONE,
-    label: "No formatting",
-  },
-  {
-    value: NicelyFormattedTypes.CURRENCY,
-    label: "Currency (USD)",
-  },
-  {
-    value: NicelyFormattedTypes.PERCENTAGE,
-    label: "Percentage",
-  },
-];
-
 export function humanizeGroupValues(
   values: Array<Record<string, number | string>>,
   type: NicelyFormattedTypes,
