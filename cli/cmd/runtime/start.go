@@ -30,6 +30,9 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
 	_ "github.com/rilldata/rill/runtime/drivers/s3"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
+
+	// Load built-in reconcilers
+	_ "github.com/rilldata/rill/runtime/reconcilers"
 )
 
 // Config describes runtime server config derived from environment variables.
