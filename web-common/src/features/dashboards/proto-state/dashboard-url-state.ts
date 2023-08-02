@@ -4,6 +4,7 @@ import {
   metricsExplorerStore,
   useDashboardStore,
 } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { getUrlForPath } from "@rilldata/web-common/lib/url-utils";
 import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
@@ -12,6 +13,7 @@ import { derived, get, Readable } from "svelte/store";
 export type DashboardUrlState = {
   proto: string;
   defaultProto: string;
+  urlName: string;
   urlProto: string;
 };
 export type DashboardUrlStore = Readable<DashboardUrlState>;
@@ -36,6 +38,7 @@ export function useDashboardUrlState(
       return {
         proto,
         defaultProto,
+        urlName: getNameFromFile(page.url.pathname),
         urlProto,
       };
     }
@@ -67,6 +70,8 @@ export function useDashboardUrlSync(
   const dashboardUrlState = useDashboardUrlState(metricViewName);
   let lastKnownProto: string;
   return dashboardUrlState.subscribe((state) => {
+    if (state.urlName !== metricViewName) return;
+
     if (state.proto !== lastKnownProto) {
       // changed when filters etc are changed on the dashboard
       gotoNewDashboardUrl(get(page).url, state.proto, state.defaultProto);
