@@ -177,8 +177,8 @@ func (s *Service) newMigrationItemFromFile(
 }
 
 func (s *Service) checkFileChange(ctx context.Context, item *MigrationItem) {
-	repoStat, _ := s.Repo.Stat(ctx, s.InstID, item.Path)
-	catalogLastUpdated, _ := migrator.LastUpdated(ctx, s.InstID, s.Repo, item.CatalogInFile)
+	repoStat, _ := s.Repo.Stat(ctx, item.Path)
+	catalogLastUpdated, _ := migrator.LastUpdated(ctx, s.Repo, item.CatalogInFile)
 	if repoStat.LastUpdated.After(catalogLastUpdated) {
 		item.CatalogInFile.UpdatedOn = repoStat.LastUpdated
 	} else {

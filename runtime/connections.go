@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog"
 )
@@ -17,93 +18,127 @@ func (r *Runtime) Registry() drivers.RegistryStore {
 	return registry
 }
 
-func (r *Runtime) Repo(ctx context.Context, instanceID string) (drivers.RepoStore, error) {
+func (r *Runtime) AcquireHandle(ctx context.Context, instanceID string, connector string) (drivers.Handle, func(), error) {
+	repo, release, err := r.Repo(ctx, instanceID)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer release()
+
+	// TODO :: do we have to parse yaml again and again
+	yaml, err := rillv1.ParseRillYAML(ctx, repo, instanceID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	for _, c := range yaml.Connectors {
+		if c.Name == connector {
+			// TODO :: check this ?
+			dsn := c.Defaults["dsn"]
+			return r.connCache.get(ctx, instanceID, c.Type, dsn, false)
+		}
+	}
+	return nil, nil, fmt.Errorf("connector %s doesn't exist", connector)
+}
+
+func (r *Runtime) Repo(ctx context.Context, instanceID string) (drivers.RepoStore, func(), error) {
 	inst, err := r.FindInstance(ctx, instanceID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	conn, err := r.connCache.get(ctx, instanceID, inst.RepoDriver, inst.RepoDSN)
+	conn, release, err := r.connCache.get(ctx, instanceID, inst.RepoDriver, inst.RepoDSN, false)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	repo, ok := conn.AsRepoStore()
+	repo, ok := conn.AsRepoStore(instanceID)
 	if !ok {
+		release()
 		// Verified as repo when instance is created, so this should never happen
-		return nil, fmt.Errorf("connection for instance '%s' is not a repo", instanceID)
+		return nil, release, fmt.Errorf("connection for instance '%s' is not a repo", instanceID)
 	}
 
-	return repo, nil
+	return repo, release, nil
 }
 
-func (r *Runtime) OLAP(ctx context.Context, instanceID string) (drivers.OLAPStore, error) {
+func (r *Runtime) OLAP(ctx context.Context, instanceID string) (drivers.OLAPStore, func(), error) {
 	inst, err := r.FindInstance(ctx, instanceID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	conn, err := r.connCache.get(ctx, instanceID, inst.OLAPDriver, inst.OLAPDSN)
+	conn, release, err := r.connCache.get(ctx, instanceID, inst.OLAPDriver, inst.OLAPDSN, false)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	olap, ok := conn.AsOLAP()
+	olap, ok := conn.AsOLAP(instanceID)
 	if !ok {
+		release()
 		// Verified as OLAP when instance is created, so this should never happen
-		return nil, fmt.Errorf("connection for instance '%s' is not an olap", instanceID)
+		return nil, nil, fmt.Errorf("connection for instance '%s' is not an olap", instanceID)
 	}
 
-	return olap, nil
+	return olap, release, nil
 }
 
-func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.CatalogStore, error) {
+func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.CatalogStore, func(), error) {
 	inst, err := r.FindInstance(ctx, instanceID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if inst.EmbedCatalog {
-		conn, err := r.connCache.get(ctx, inst.ID, inst.OLAPDriver, inst.OLAPDSN)
+		conn, release, err := r.connCache.get(ctx, inst.ID, inst.OLAPDriver, inst.OLAPDSN, false)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
-		store, ok := conn.AsCatalogStore()
+		store, ok := conn.AsCatalogStore(instanceID)
 		if !ok {
+			release()
 			// Verified as CatalogStore when instance is created, so this should never happen
-			return nil, fmt.Errorf("instance cannot embed catalog")
+			return nil, nil, fmt.Errorf("instance cannot embed catalog")
 		}
 
-		return store, nil
+		return store, release, nil
 	}
 
-	store, ok := r.metastore.AsCatalogStore()
+	store, ok := r.metastore.AsCatalogStore(instanceID)
 	if !ok {
-		return nil, fmt.Errorf("metastore cannot serve as catalog")
+		return nil, nil, fmt.Errorf("metastore cannot serve as catalog")
 	}
-	return store, nil
+	return store, func() {}, nil
 }
 
 func (r *Runtime) NewCatalogService(ctx context.Context, instanceID string) (*catalog.Service, error) {
 	// get all stores
-	olapStore, err := r.OLAP(ctx, instanceID)
+	olapStore, releaseOLAP, err := r.OLAP(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
 
-	catalogStore, err := r.Catalog(ctx, instanceID)
+	catalogStore, releaseCatalog, err := r.Catalog(ctx, instanceID)
 	if err != nil {
+		releaseOLAP()
 		return nil, err
 	}
 
-	repoStore, err := r.Repo(ctx, instanceID)
+	repoStore, releaseRepo, err := r.Repo(ctx, instanceID)
 	if err != nil {
+		releaseOLAP()
+		releaseCatalog()
 		return nil, err
 	}
 
 	registry := r.Registry()
 
 	migrationMetadata := r.migrationMetaCache.get(instanceID)
-	return catalog.NewService(catalogStore, repoStore, olapStore, registry, instanceID, r.logger, migrationMetadata), nil
+	releaseFunc := func() {
+		releaseOLAP()
+		releaseCatalog()
+		releaseRepo()
+	}
+	return catalog.NewService(catalogStore, repoStore, olapStore, registry, instanceID, r.logger, migrationMetadata, releaseFunc), nil
 }

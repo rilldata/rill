@@ -15,6 +15,11 @@ import (
 
 var limit = 500
 
+type repoStore struct {
+	*connection
+	instanceID string
+}
+
 // Driver implements drivers.RepoStore.
 func (c *connection) Driver() string {
 	return "github"
@@ -26,7 +31,7 @@ func (c *connection) Root() string {
 }
 
 // ListRecursive implements drivers.RepoStore.
-func (c *connection) ListRecursive(ctx context.Context, instID, glob string) ([]string, error) {
+func (c *repoStore) ListRecursive(ctx context.Context, glob string) ([]string, error) {
 	err := c.cloneOrPull(ctx, true)
 	if err != nil {
 		return nil, err
@@ -61,7 +66,7 @@ func (c *connection) ListRecursive(ctx context.Context, instID, glob string) ([]
 }
 
 // Get implements drivers.RepoStore.
-func (c *connection) Get(ctx context.Context, instID, filePath string) (string, error) {
+func (c *repoStore) Get(ctx context.Context, filePath string) (string, error) {
 	err := c.cloneOrPull(ctx, true)
 	if err != nil {
 		return "", err
@@ -78,7 +83,7 @@ func (c *connection) Get(ctx context.Context, instID, filePath string) (string, 
 }
 
 // Stat implements drivers.RepoStore.
-func (c *connection) Stat(ctx context.Context, instID, filePath string) (*drivers.RepoObjectStat, error) {
+func (c *repoStore) Stat(ctx context.Context, filePath string) (*drivers.RepoObjectStat, error) {
 	err := c.cloneOrPull(ctx, true)
 	if err != nil {
 		return nil, err
@@ -97,25 +102,25 @@ func (c *connection) Stat(ctx context.Context, instID, filePath string) (*driver
 }
 
 // Put implements drivers.RepoStore.
-func (c *connection) Put(ctx context.Context, instID, filePath string, reader io.Reader) error {
+func (c *repoStore) Put(ctx context.Context, filePath string, reader io.Reader) error {
 	return fmt.Errorf("Put operation is unsupported")
 }
 
 // Rename implements drivers.RepoStore.
-func (c *connection) Rename(ctx context.Context, instID, fromPath, toPath string) error {
+func (c *repoStore) Rename(ctx context.Context, fromPath, toPath string) error {
 	return fmt.Errorf("Rename operation is unsupported")
 }
 
 // Delete implements drivers.RepoStore.
-func (c *connection) Delete(ctx context.Context, instID, filePath string) error {
+func (c *repoStore) Delete(ctx context.Context, filePath string) error {
 	return fmt.Errorf("Delete operation is unsupported")
 }
 
 // Sync implements drivers.RepoStore.
-func (c *connection) Sync(ctx context.Context, instID string) error {
+func (c *repoStore) Sync(ctx context.Context) error {
 	return c.cloneOrPull(ctx, false)
 }
 
-func (c *connection) Watch(ctx context.Context, instID string, callback drivers.WatchCallback) error {
+func (c *repoStore) Watch(ctx context.Context, callback drivers.WatchCallback) error {
 	return fmt.Errorf("cannot watch %s repository is not supported", c.Driver())
 }

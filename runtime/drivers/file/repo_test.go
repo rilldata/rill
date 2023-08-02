@@ -14,14 +14,14 @@ import (
 
 func TestWatch(t *testing.T) {
 	dir := t.TempDir()
-	c := connection{root: dir}
+	c := &repoStore{connection: &connection{root: dir}, instanceID: "default"}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	ch := make(chan drivers.WatchEvent, 10)
 	go func() {
-		err := c.Watch(ctx, "", func(es []drivers.WatchEvent) {
+		err := c.Watch(ctx, func(es []drivers.WatchEvent) {
 			for _, e := range es {
 				ch <- e
 			}

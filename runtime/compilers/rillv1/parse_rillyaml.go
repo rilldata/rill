@@ -42,7 +42,7 @@ type rillYAML struct {
 
 // parseRillYAML parses rill.yaml
 func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
-	data, err := p.Repo.Get(ctx, p.InstanceID, path)
+	data, err := p.Repo.Get(ctx, path)
 	if err != nil {
 		return fmt.Errorf("error loading %q: %w", path, err)
 	}

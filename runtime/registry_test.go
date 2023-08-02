@@ -163,9 +163,11 @@ func TestRuntime_EditInstance(t *testing.T) {
 			require.Equal(t, tt.savedInst.Variables, newInst.Variables)
 
 			// verify older olap connection is closed and cache updated if olap changed
-			require.Equal(t, !tt.clearCache, rt.connCache.cache.Contains(inst.ID+inst.OLAPDriver+inst.OLAPDSN))
-			require.Equal(t, !tt.clearCache, rt.connCache.cache.Contains(inst.ID+inst.RepoDriver+inst.RepoDSN))
-			_, ok := rt.migrationMetaCache.cache.Get(inst.ID)
+			_, ok := rt.connCache.cache[inst.ID+inst.OLAPDriver+inst.OLAPDSN]
+			require.Equal(t, !tt.clearCache, ok)
+			_, ok = rt.connCache.cache[inst.ID+inst.RepoDriver+inst.RepoDSN]
+			require.Equal(t, !tt.clearCache, ok)
+			_, ok = rt.migrationMetaCache.cache.Get(inst.ID)
 			require.Equal(t, !tt.clearCache, ok)
 			_, err = svc.Olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM rill.migration_version"})
 			require.Equal(t, tt.clearCache, err != nil)
@@ -206,7 +208,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 			// ingest some data
 			require.NoError(t, svc.Olap.Exec(ctx, &drivers.Statement{Query: "CREATE TABLE data(id INTEGER, name VARCHAR)"}))
 			require.NoError(t, svc.Olap.Exec(ctx, &drivers.Statement{Query: "INSERT INTO data VALUES (1, 'Mark'), (2, 'Hannes')"}))
-			require.NoError(t, svc.Catalog.CreateEntry(ctx, "default", &drivers.CatalogEntry{
+			require.NoError(t, svc.Catalog.CreateEntry(ctx, &drivers.CatalogEntry{
 				Name: "data",
 				Type: drivers.ObjectTypeTable,
 				Object: &runtimev1.Table{
@@ -214,7 +216,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 					Managed: true,
 				},
 			}))
-			require.ErrorContains(t, svc.Catalog.CreateEntry(ctx, "default", &drivers.CatalogEntry{
+			require.ErrorContains(t, svc.Catalog.CreateEntry(ctx, &drivers.CatalogEntry{
 				Name: "data",
 				Type: drivers.ObjectTypeModel,
 				Object: &runtimev1.Model{
@@ -236,8 +238,8 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 			require.Error(t, err)
 
 			// verify older olap connection is closed and cache updated
-			require.False(t, rt.connCache.cache.Contains(inst.ID+inst.OLAPDriver+inst.OLAPDSN))
-			require.False(t, rt.connCache.cache.Contains(inst.ID+inst.RepoDriver+inst.RepoDSN))
+			require.False(t, rt.connCache.lruCache.Contains(inst.ID+inst.OLAPDriver+inst.OLAPDSN))
+			require.False(t, rt.connCache.lruCache.Contains(inst.ID+inst.RepoDriver+inst.RepoDSN))
 			_, ok := rt.migrationMetaCache.cache.Get(inst.ID)
 			require.False(t, ok)
 			_, err = svc.Olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM rill.migration_version"})
@@ -271,8 +273,9 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 	require.NoError(t, err)
 
 	// Put some data into it to create a .db file on disk
-	olap, err := rt.OLAP(ctx, inst.ID)
+	olap, release, err := rt.OLAP(ctx, inst.ID)
 	require.NoError(t, err)
+	defer release()
 	err = olap.Exec(ctx, &drivers.Statement{Query: "CREATE TABLE data(id INTEGER, name VARCHAR)"})
 	require.NoError(t, err)
 
@@ -282,9 +285,10 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 
 	// Corrupt database file
 	err = os.WriteFile(dbpath, []byte("corrupted"), 0644)
+	require.NoError(t, err)
 
 	// Check we can't open it anymore
-	_, err = rt.OLAP(ctx, inst.ID)
+	_, _, err = rt.OLAP(ctx, inst.ID)
 	require.Error(t, err)
 	require.FileExists(t, dbpath)
 

@@ -15,14 +15,14 @@ type RepoStore interface {
 	Driver() string
 	// Root returns directory where artifacts are stored.
 	Root() string
-	ListRecursive(ctx context.Context, instID string, glob string) ([]string, error)
-	Get(ctx context.Context, instID string, path string) (string, error)
-	Stat(ctx context.Context, instID string, path string) (*RepoObjectStat, error)
-	Put(ctx context.Context, instID string, path string, reader io.Reader) error
-	Rename(ctx context.Context, instID string, fromPath string, toPath string) error
-	Delete(ctx context.Context, instID string, path string) error
-	Sync(ctx context.Context, instID string) error
-	Watch(ctx context.Context, instID string, cb WatchCallback) error
+	ListRecursive(ctx context.Context, glob string) ([]string, error)
+	Get(ctx context.Context, path string) (string, error)
+	Stat(ctx context.Context, path string) (*RepoObjectStat, error)
+	Put(ctx context.Context, path string, reader io.Reader) error
+	Rename(ctx context.Context, fromPath string, toPath string) error
+	Delete(ctx context.Context, path string) error
+	Sync(ctx context.Context) error
+	Watch(ctx context.Context, cb WatchCallback) error
 }
 
 type WatchCallback func(event []WatchEvent)

@@ -10,14 +10,19 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func (c *connection) FindEntries(ctx context.Context, instanceID string, typ drivers.ObjectType) ([]*drivers.CatalogEntry, error) {
+type catalogStore struct {
+	*connection
+	instanceID string
+}
+
+func (c *catalogStore) FindEntries(ctx context.Context, typ drivers.ObjectType) ([]*drivers.CatalogEntry, error) {
 	if typ == drivers.ObjectTypeUnspecified {
 		return c.findEntries(ctx, "")
 	}
 	return c.findEntries(ctx, "WHERE type = ?", typ)
 }
 
-func (c *connection) FindEntry(ctx context.Context, instanceID, name string) (*drivers.CatalogEntry, error) {
+func (c *connection) FindEntry(ctx context.Context, name string) (*drivers.CatalogEntry, error) {
 	// Names are stored with case everywhere, but the checks should be case-insensitive.
 	// Hence, the translation to lower case here.
 	es, err := c.findEntries(ctx, "WHERE LOWER(name) = LOWER(?)", name)
@@ -81,7 +86,7 @@ func (c *connection) findEntries(ctx context.Context, whereClause string, args .
 	return res, nil
 }
 
-func (c *connection) CreateEntry(ctx context.Context, instanceID string, e *drivers.CatalogEntry) error {
+func (c *connection) CreateEntry(ctx context.Context, e *drivers.CatalogEntry) error {
 	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
 		return err
@@ -129,7 +134,7 @@ func (c *connection) CreateEntry(ctx context.Context, instanceID string, e *driv
 	return nil
 }
 
-func (c *connection) UpdateEntry(ctx context.Context, instanceID string, e *drivers.CatalogEntry) error {
+func (c *connection) UpdateEntry(ctx context.Context, e *drivers.CatalogEntry) error {
 	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
 		return err
@@ -161,7 +166,7 @@ func (c *connection) UpdateEntry(ctx context.Context, instanceID string, e *driv
 	return nil
 }
 
-func (c *connection) DeleteEntry(ctx context.Context, instanceID, name string) error {
+func (c *connection) DeleteEntry(ctx context.Context, name string) error {
 	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
 		return err
@@ -175,7 +180,7 @@ func (c *connection) DeleteEntry(ctx context.Context, instanceID, name string) e
 // DeleteEntries deletes the entire catalog table.
 // This will be handled by dropping the entire rill db file when deleting instance.
 // But implementing this from completeness pov.
-func (c *connection) DeleteEntries(ctx context.Context, instanceID string) error {
+func (c *connection) DeleteEntries(ctx context.Context) error {
 	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {
 		return err

@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
@@ -16,9 +15,7 @@ import (
 
 func testCatalog(t *testing.T, catalog drivers.CatalogStore) {
 	ctx := context.Background()
-	instanceID := uuid.NewString()
-
-	objs, err := catalog.FindEntries(ctx, instanceID, drivers.ObjectTypeSource)
+	objs, err := catalog.FindEntries(ctx, drivers.ObjectTypeSource)
 	require.NoError(t, err)
 	require.Len(t, objs, 0)
 
@@ -45,21 +42,21 @@ func testCatalog(t *testing.T, catalog drivers.CatalogStore) {
 		},
 	}
 
-	err = catalog.CreateEntry(ctx, instanceID, obj1)
+	err = catalog.CreateEntry(ctx, obj1)
 	require.NoError(t, err)
 	require.Greater(t, time.Minute, time.Since(obj1.CreatedOn))
 	require.Greater(t, time.Minute, time.Since(obj1.UpdatedOn))
 
-	err = catalog.CreateEntry(ctx, instanceID, obj1)
+	err = catalog.CreateEntry(ctx, obj1)
 	require.Error(t, err)
 	require.True(t, strings.Contains(err.Error(), "already exists") ||
 		strings.Contains(err.Error(), "Duplicate key") ||
 		strings.Contains(err.Error(), "UNIQUE constraint failed"))
 
-	err = catalog.CreateEntry(ctx, instanceID, obj2)
+	err = catalog.CreateEntry(ctx, obj2)
 	require.NoError(t, err)
 
-	objs, err = catalog.FindEntries(ctx, instanceID, drivers.ObjectTypeSource)
+	objs, err = catalog.FindEntries(ctx, drivers.ObjectTypeSource)
 	require.NoError(t, err)
 	require.Len(t, objs, 1)
 	require.Equal(t, objs[0].Name, obj1.Name)
@@ -68,7 +65,7 @@ func testCatalog(t *testing.T, catalog drivers.CatalogStore) {
 	require.Equal(t, objs[0].BytesIngested, obj1.BytesIngested)
 	require.True(t, proto.Equal(objs[0].GetSource(), obj1.GetSource()))
 
-	objs, err = catalog.FindEntries(ctx, instanceID, drivers.ObjectTypeUnspecified)
+	objs, err = catalog.FindEntries(ctx, drivers.ObjectTypeUnspecified)
 	require.NoError(t, err)
 	require.Len(t, objs, 2)
 	require.Equal(t, objs[0].Name, obj1.Name)
@@ -77,18 +74,18 @@ func testCatalog(t *testing.T, catalog drivers.CatalogStore) {
 	require.Equal(t, objs[1].Type, obj2.Type)
 
 	obj1.Type = drivers.ObjectTypeMetricsView
-	err = catalog.UpdateEntry(ctx, instanceID, obj1)
+	err = catalog.UpdateEntry(ctx, obj1)
 	require.NoError(t, err)
 
-	obj, err := catalog.FindEntry(ctx, instanceID, "bar")
+	obj, err := catalog.FindEntry(ctx, "bar")
 	require.NoError(t, err)
 	require.Equal(t, obj.Name, "bar")
 	require.Equal(t, obj.Type, drivers.ObjectTypeMetricsView)
 
-	err = catalog.DeleteEntry(ctx, instanceID, "bar")
+	err = catalog.DeleteEntry(ctx, "bar")
 	require.NoError(t, err)
 
-	obj, err = catalog.FindEntry(ctx, instanceID, "bar")
+	obj, err = catalog.FindEntry(ctx, "bar")
 	require.ErrorIs(t, err, drivers.ErrNotFound)
 	require.Nil(t, obj)
 }

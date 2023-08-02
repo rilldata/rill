@@ -503,7 +503,7 @@ func TestReconcileMetricsView(t *testing.T) {
 
 	// remove timestamp all together
 	time.Sleep(time.Millisecond * 10)
-	err = s.Repo.Put(context.Background(), s.InstID, AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
+	err = s.Repo.Put(context.Background(), AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
 dimensions:
 - label: Publisher
   property: publisher
@@ -529,7 +529,7 @@ measures:
 
 	// ignore invalid measure and dimension
 	time.Sleep(time.Millisecond * 10)
-	err = s.Repo.Put(context.Background(), s.InstID, AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
+	err = s.Repo.Put(context.Background(), AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
 timeseries: timestamp
 timegrains:
 - 1 day
@@ -557,7 +557,7 @@ measures:
 	require.Equal(t, "publisher", mv.Dimensions[0].Name)
 
 	time.Sleep(time.Millisecond * 10)
-	err = s.Repo.Put(context.Background(), s.InstID, AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
+	err = s.Repo.Put(context.Background(), AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
 timeseries: timestamp
 smallest_time_grain: 
 dimensions:
@@ -579,7 +579,7 @@ measures:
 	require.Equal(t, metricsviews.MissingMeasure, result.Errors[0].Message)
 
 	time.Sleep(time.Millisecond * 10)
-	err = s.Repo.Put(context.Background(), s.InstID, AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
+	err = s.Repo.Put(context.Background(), AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
 timeseries: timestamp
 smallest_time_grain: 
 dimensions:
@@ -601,7 +601,7 @@ measures:
 	testutils.AssertMigration(t, result, 0, 1, 0, 0, []string{AdBidsDashboardRepoPath})
 
 	time.Sleep(time.Millisecond * 10)
-	err = s.Repo.Put(context.Background(), s.InstID, AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
+	err = s.Repo.Put(context.Background(), AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
 timeseries: timestamp
 smallest_time_grain: 
 dimensions:
@@ -629,7 +629,7 @@ func TestInvalidFiles(t *testing.T) {
 	s, _ := initBasicService(t)
 	ctx := context.Background()
 
-	err := s.Repo.Put(ctx, s.InstID, AdBidsRepoPath, strings.NewReader(`type: local_file
+	err := s.Repo.Put(ctx, AdBidsRepoPath, strings.NewReader(`type: local_file
 path:
  - data/source.csv`))
 	require.NoError(t, err)
@@ -719,7 +719,7 @@ func TestReconcileNewFile(t *testing.T) {
 	testutils.AssertMigration(t, result, 0, 1, 0, 0, []string{AdImpressionsRepoPath})
 
 	// new file with invalid content
-	err = s.Repo.Put(ctx, s.InstID, AdBidsNewRepoPath, strings.NewReader(`type: local_file
+	err = s.Repo.Put(ctx, AdBidsNewRepoPath, strings.NewReader(`type: local_file
 path: "data/AdBids.csv`))
 	require.NoError(t, err)
 	result, err = s.Reconcile(ctx, catalog.ReconcileConfig{

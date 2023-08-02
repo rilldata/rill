@@ -78,13 +78,13 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, zap.NewNop())
+	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, false, zap.NewNop())
 	require.NoError(t, err)
-	olap, _ := conn.AsOLAP()
+	olap, _ := conn.AsOLAP("default")
 
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathRel}, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathRel}, false, zap.NewNop())
 	require.NoError(t, err)
-	repo, _ := fileStore.AsRepoStore()
+	repo, _ := fileStore.AsRepoStore("default")
 
 	m := migrator.Migrators[drivers.ObjectTypeSource]
 	opts := migrator.Options{InstanceEnv: map[string]string{"allow_host_access": "true"}, IngestStorageLimitInBytes: 1024 * 1024 * 1024}
@@ -108,7 +108,7 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 					Properties: p,
 				},
 			}
-			err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+			err = m.Create(ctx, olap, repo, opts, source, "default", zap.NewNop())
 			require.NoError(t, err)
 
 			var count int
@@ -140,13 +140,13 @@ func TestConnectorWithoutRootAccess(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, zap.NewNop())
+	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, false, zap.NewNop())
 	require.NoError(t, err)
-	olap, _ := conn.AsOLAP()
+	olap, _ := conn.AsOLAP("default")
 
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathRel}, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathRel}, false, zap.NewNop())
 	require.NoError(t, err)
-	repo, _ := fileStore.AsRepoStore()
+	repo, _ := fileStore.AsRepoStore("default")
 
 	m := migrator.Migrators[drivers.ObjectTypeSource]
 	opts := migrator.Options{InstanceEnv: map[string]string{"allow_host_access": "false"}, IngestStorageLimitInBytes: 1024 * 1024 * 1024}
@@ -166,7 +166,7 @@ func TestConnectorWithoutRootAccess(t *testing.T) {
 					Properties: p,
 				},
 			}
-			err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+			err = m.Create(ctx, olap, repo, opts, source, "default", zap.NewNop())
 			if tt.isError {
 				require.Error(t, err, "file connector cannot ingest source: path is outside repo root")
 				return
@@ -191,15 +191,15 @@ func TestCSVDelimiter(t *testing.T) {
 	testDelimiterCsvPath := filepath.Join(testdataPathAbs, "test-delimiter.csv")
 
 	ctx := context.Background()
-	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, zap.NewNop())
+	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, false, zap.NewNop())
 	require.NoError(t, err)
 	defer conn.Close()
-	olap, _ := conn.AsOLAP()
+	olap, _ := conn.AsOLAP("default")
 
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathAbs}, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathAbs}, false, zap.NewNop())
 	require.NoError(t, err)
 	defer fileStore.Close()
-	repo, _ := fileStore.AsRepoStore()
+	repo, _ := fileStore.AsRepoStore("default")
 
 	m := migrator.Migrators[drivers.ObjectTypeSource]
 	opts := migrator.Options{InstanceEnv: map[string]string{"allow_host_access": "false"}, IngestStorageLimitInBytes: 1024 * 1024 * 1024}
@@ -219,7 +219,7 @@ func TestCSVDelimiter(t *testing.T) {
 			Properties: p,
 		},
 	}
-	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+	err = m.Create(ctx, olap, repo, opts, source, "default", zap.NewNop())
 	require.NoError(t, err)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM foo"})
@@ -233,10 +233,10 @@ func TestCSVDelimiter(t *testing.T) {
 
 func TestFileFormatAndDelimiter(t *testing.T) {
 	ctx := context.Background()
-	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, zap.NewNop())
+	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, false, zap.NewNop())
 	require.NoError(t, err)
 	defer conn.Close()
-	olap, _ := conn.AsOLAP()
+	olap, _ := conn.AsOLAP("default")
 
 	testdataPathAbs, err := filepath.Abs("../../../../../web-local/test/data")
 	require.NoError(t, err)
@@ -263,7 +263,7 @@ func TestFileFormatAndDelimiter(t *testing.T) {
 			Properties: p,
 		},
 	}
-	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+	err = m.Create(ctx, olap, repo, opts, source, "default", zap.NewNop())
 	require.NoError(t, err)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM foo"})
@@ -313,7 +313,7 @@ func TestCSVIngestionWithColumns(t *testing.T) {
 			Properties: p,
 		},
 	}
-	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+	err = m.Create(ctx, olap, repo, opts, source, "default", zap.NewNop())
 	require.NoError(t, err)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM csv_source"})
@@ -356,7 +356,7 @@ func TestJsonIngestionDefault(t *testing.T) {
 			Properties: p,
 		},
 	}
-	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+	err = m.Create(ctx, olap, repo, opts, source, "default", zap.NewNop())
 	require.NoError(t, err)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM json_source"})
@@ -401,7 +401,7 @@ func TestJsonIngestionWithColumns(t *testing.T) {
 			Properties: p,
 		},
 	}
-	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+	err = m.Create(ctx, olap, repo, opts, source, "default", zap.NewNop())
 	require.NoError(t, err)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM json_source"})
@@ -446,7 +446,7 @@ func TestJsonIngestionWithLessColumns(t *testing.T) {
 			Properties: p,
 		},
 	}
-	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+	err = m.Create(ctx, olap, repo, opts, source, "default", zap.NewNop())
 	require.NoError(t, err)
 
 	require.NoError(t, err)
@@ -499,7 +499,7 @@ func TestJsonIngestionWithVariousParams(t *testing.T) {
 			Properties: p,
 		},
 	}
-	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+	err = m.Create(ctx, olap, repo, opts, source, "default", zap.NewNop())
 	require.NoError(t, err)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM json_source"})
@@ -546,7 +546,7 @@ func TestJsonIngestionWithInvalidParam(t *testing.T) {
 			Properties: p,
 		},
 	}
-	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+	err = m.Create(ctx, olap, repo, opts, source, "default", zap.NewNop())
 	require.Error(t, err, "Invalid named parameter \"invalid_param\" for function read_json")
 }
 
@@ -663,16 +663,16 @@ func createFilePath(t *testing.T, dirPath string, fileName string) string {
 }
 
 func runOLAPStore(t *testing.T) drivers.OLAPStore {
-	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, zap.NewNop())
+	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, false, zap.NewNop())
 	require.NoError(t, err)
-	olap, canServe := conn.AsOLAP()
+	olap, canServe := conn.AsOLAP("default")
 	require.True(t, canServe)
 	return olap
 }
 
 func runRepoStore(t *testing.T, testdataPathAbs string) drivers.RepoStore {
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathAbs}, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathAbs}, false, zap.NewNop())
 	require.NoError(t, err)
-	repo, _ := fileStore.AsRepoStore()
+	repo, _ := fileStore.AsRepoStore("default")
 	return repo
 }

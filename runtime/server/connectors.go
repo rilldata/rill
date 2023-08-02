@@ -190,13 +190,13 @@ func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTabl
 
 	env := convertLower(instance.ResolveVariables())
 	vars := connectorVariables(req.Connector, env)
-	conn, err := drivers.Open(req.Connector, vars, s.logger)
+	conn, err := drivers.Open(req.Connector, vars, false, s.logger)
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close()
 
-	olap, _ := conn.AsOLAP()
+	olap, _ := conn.AsOLAP(req.InstanceId)
 	tables, err := olap.InformationSchema().All(ctx)
 	if err != nil {
 		return nil, err
@@ -256,7 +256,7 @@ func (s *Server) getGCSConn(ctx context.Context, instanceID string) (*gcs.Connec
 
 	env := convertLower(instance.ResolveVariables())
 	vars := connectorVariables("gcs", env)
-	conn, err := drivers.Open("gcs", vars, s.logger)
+	conn, err := drivers.Open("gcs", vars, false, s.logger)
 	if err != nil {
 		return nil, fmt.Errorf("can't open connection to gcs %w", err)
 	}
@@ -276,7 +276,7 @@ func (s *Server) getS3Conn(ctx context.Context, instanceID string) (*s3.Connecti
 
 	env := convertLower(instance.ResolveVariables())
 	vars := connectorVariables("s3", env)
-	conn, err := drivers.Open("s3", vars, s.logger)
+	conn, err := drivers.Open("s3", vars, false, s.logger)
 	if err != nil {
 		return nil, fmt.Errorf("can't open connection to s3 %w", err)
 	}
@@ -296,7 +296,7 @@ func (s *Server) getBigQueryConn(ctx context.Context, instanceID string) (*bigqu
 
 	env := convertLower(instance.ResolveVariables())
 	vars := connectorVariables("bigquery", env)
-	conn, err := drivers.Open("bigquery", vars, s.logger)
+	conn, err := drivers.Open("bigquery", vars, false, s.logger)
 	if err != nil {
 		return nil, err
 	}

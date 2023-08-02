@@ -15,7 +15,7 @@ import (
 
 func TestQuery(t *testing.T) {
 	conn := prepareConn(t)
-	olap, _ := conn.AsOLAP()
+	olap, _ := conn.AsOLAP("default")
 
 	rows, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM foo"})
 	require.NoError(t, err)
@@ -36,7 +36,7 @@ func TestPriorityQueue(t *testing.T) {
 	}
 
 	conn := prepareConn(t)
-	olap, _ := conn.AsOLAP()
+	olap, _ := conn.AsOLAP("default")
 	defer conn.Close()
 
 	n := 100
@@ -85,7 +85,7 @@ func TestCancel(t *testing.T) {
 	}
 
 	conn := prepareConn(t)
-	olap, _ := conn.AsOLAP()
+	olap, _ := conn.AsOLAP("default")
 	defer conn.Close()
 
 	n := 100
@@ -162,7 +162,7 @@ func TestClose(t *testing.T) {
 	}
 
 	conn := prepareConn(t)
-	olap, _ := conn.AsOLAP()
+	olap, _ := conn.AsOLAP("default")
 
 	n := 100
 	results := make(chan int, n)
@@ -202,11 +202,11 @@ func TestClose(t *testing.T) {
 	require.Greater(t, x, 0)
 }
 
-func prepareConn(t *testing.T) drivers.Connection {
-	conn, err := Driver{}.Open(map[string]any{"dsn": "?access_mode=read_write&rill_pool_size=4"}, zap.NewNop())
+func prepareConn(t *testing.T) drivers.Handle {
+	conn, err := Driver{}.Open(map[string]any{"dsn": "?access_mode=read_write&rill_pool_size=4"}, false, zap.NewNop())
 	require.NoError(t, err)
 
-	olap, ok := conn.AsOLAP()
+	olap, ok := conn.AsOLAP("default")
 	require.True(t, ok)
 
 	err = olap.Exec(context.Background(), &drivers.Statement{

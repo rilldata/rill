@@ -28,9 +28,10 @@ func (m *sourceMigrator) Create(
 	repo drivers.RepoStore,
 	opts migrator.Options,
 	catalogObj *drivers.CatalogEntry,
+	instanceID string,
 	logger *zap.Logger,
 ) error {
-	return ingestSource(ctx, olap, repo, opts, catalogObj, "", logger)
+	return ingestSource(ctx, olap, repo, opts, catalogObj, "", instanceID, logger)
 }
 
 func (m *sourceMigrator) Update(ctx context.Context,
@@ -38,13 +39,14 @@ func (m *sourceMigrator) Update(ctx context.Context,
 	repo drivers.RepoStore,
 	opts migrator.Options,
 	oldCatalogObj, newCatalogObj *drivers.CatalogEntry,
+	instanceID string,
 	logger *zap.Logger,
 ) error {
 	apiSource := newCatalogObj.GetSource()
 
 	tempName := fmt.Sprintf("__rill_temp_%s", apiSource.Name)
 
-	err := ingestSource(ctx, olap, repo, opts, newCatalogObj, tempName, logger)
+	err := ingestSource(ctx, olap, repo, opts, newCatalogObj, tempName, instanceID, logger)
 	if err != nil {
 		// cleanup of temp table. can exist and still error out in incremental ingestion
 		_ = olap.Exec(ctx, &drivers.Statement{
@@ -185,7 +187,7 @@ func convertLower(in map[string]string) map[string]string {
 }
 
 func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts migrator.Options,
-	catalogObj *drivers.CatalogEntry, name string, logger *zap.Logger,
+	catalogObj *drivers.CatalogEntry, name string, instanceID string, logger *zap.Logger,
 ) error {
 	apiSource := catalogObj.GetSource()
 	if name == "" {
@@ -194,16 +196,16 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 
 	logger = logger.With(zap.String("source", name))
 	variables := convertLower(opts.InstanceEnv)
-	srcConnector, err := drivers.Open(apiSource.Connector, connectorVariables(apiSource, variables, repo.Root()), logger)
+	srcConnector, err := drivers.Open(apiSource.Connector, connectorVariables(apiSource, variables, repo.Root()), false, logger)
 	if err != nil {
 		return fmt.Errorf("failed to open driver %w", err)
 	}
 	defer srcConnector.Close()
 
-	olapConnection := olap.(drivers.Connection)
-	t, ok := olapConnection.AsTransporter(srcConnector, olapConnection)
+	olapConnection := olap.(drivers.Handle)
+	t, ok := olapConnection.AsTransporter(instanceID, srcConnector, olapConnection)
 	if !ok {
-		t, ok = srcConnector.AsTransporter(srcConnector, olapConnection)
+		t, ok = srcConnector.AsTransporter(instanceID, srcConnector, olapConnection)
 		if !ok {
 			return fmt.Errorf("data transfer not possible from %q to %q", srcConnector.Driver(), olapConnection.Driver())
 		}
@@ -229,13 +231,13 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 	limitExceeded := false
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)
+		olap, _ := olapConnection.AsOLAP(instanceID)
 		defer ticker.Stop()
 		for {
 			select {
 			case <-ctxWithTimeout.Done():
 				return
 			case <-ticker.C:
-				olap, _ := olapConnection.AsOLAP()
 				if size, ok := olap.EstimateSize(); ok && size > ingestionLimit {
 					limitExceeded = true
 					cancel()

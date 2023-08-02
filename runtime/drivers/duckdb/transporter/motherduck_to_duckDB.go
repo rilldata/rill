@@ -12,13 +12,13 @@ import (
 
 type motherduckToDuckDB struct {
 	to     drivers.OLAPStore
-	from   drivers.Connection
+	from   drivers.Handle
 	logger *zap.Logger
 }
 
 var _ drivers.Transporter = &motherduckToDuckDB{}
 
-func NewMotherduckToDuckDB(from drivers.Connection, to drivers.OLAPStore, logger *zap.Logger) drivers.Transporter {
+func NewMotherduckToDuckDB(from drivers.Handle, to drivers.OLAPStore, logger *zap.Logger) drivers.Transporter {
 	return &motherduckToDuckDB{
 		to:     to,
 		from:   from,

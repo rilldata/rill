@@ -36,7 +36,7 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) er
 
 	// Check that it's a driver that supports embedded catalogs
 	if inst.EmbedCatalog {
-		_, ok := olap.AsCatalogStore()
+		_, ok := olap.AsCatalogStore(inst.ID)
 		if !ok {
 			return errors.New("driver does not support embedded catalogs")
 		}
@@ -81,9 +81,10 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 
 	// Delete instance related data if catalog is not embedded
 	if !inst.EmbedCatalog {
-		catalog, err := r.Catalog(ctx, instanceID)
+		catalog, release, err := r.Catalog(ctx, instanceID)
 		if err == nil {
-			err = catalog.DeleteEntries(ctx, instanceID)
+			err = catalog.DeleteEntries(ctx)
+			release()
 		}
 		if err != nil {
 			r.logger.Error("delete instance: error deleting catalog", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
@@ -92,12 +93,13 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 
 	// Drop the underlying data store
 	if dropDB {
-		conn, err := r.connCache.get(ctx, instanceID, inst.OLAPDriver, inst.OLAPDSN)
+		conn, release, err := r.connCache.get(ctx, instanceID, inst.OLAPDriver, inst.OLAPDSN, false)
 		if err == nil {
 			err = conn.Close()
 			if err != nil {
 				r.logger.Error("delete instance: error closing connection", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 			}
+			release()
 		} else {
 			r.logger.Error("delete instance: error getting connection", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 		}
@@ -142,11 +144,12 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 
 	// 2. Check that it's a driver that supports embedded catalogs
 	if inst.EmbedCatalog {
-		olapConn, err := r.connCache.get(ctx, inst.ID, inst.OLAPDriver, inst.OLAPDSN)
+		olapConn, release, err := r.connCache.get(ctx, inst.ID, inst.OLAPDriver, inst.OLAPDSN, false)
 		if err != nil {
 			return err
 		}
-		_, ok := olapConn.AsCatalogStore()
+		defer release()
+		_, ok := olapConn.AsCatalogStore(inst.ID)
 		if !ok {
 			return errors.New("driver does not support embedded catalogs")
 		}
@@ -195,12 +198,12 @@ func (r *Runtime) evictCaches(ctx context.Context, inst *drivers.Instance) {
 	// query cache can't be evicted since key is a combination of instance ID and other parameters
 }
 
-func (r *Runtime) checkRepoConnection(inst *drivers.Instance) (drivers.Connection, drivers.RepoStore, error) {
-	repo, err := drivers.Open(inst.RepoDriver, map[string]any{"dsn": inst.RepoDSN}, r.logger)
+func (r *Runtime) checkRepoConnection(inst *drivers.Instance) (drivers.Handle, drivers.RepoStore, error) {
+	repo, err := drivers.Open(inst.RepoDriver, map[string]any{"dsn": inst.RepoDSN}, false, r.logger)
 	if err != nil {
 		return nil, nil, err
 	}
-	repoStore, ok := repo.AsRepoStore()
+	repoStore, ok := repo.AsRepoStore(inst.ID)
 	if !ok {
 		return nil, nil, fmt.Errorf("not a valid repo driver: '%s'", inst.RepoDriver)
 	}
@@ -208,12 +211,12 @@ func (r *Runtime) checkRepoConnection(inst *drivers.Instance) (drivers.Connectio
 	return repo, repoStore, nil
 }
 
-func (r *Runtime) checkOlapConnection(inst *drivers.Instance) (drivers.Connection, drivers.OLAPStore, error) {
-	olap, err := drivers.Open(inst.OLAPDriver, map[string]any{"dsn": inst.OLAPDSN}, r.logger)
+func (r *Runtime) checkOlapConnection(inst *drivers.Instance) (drivers.Handle, drivers.OLAPStore, error) {
+	olap, err := drivers.Open(inst.OLAPDriver, map[string]any{"dsn": inst.OLAPDSN}, false, r.logger)
 	if err != nil {
 		return nil, nil, err
 	}
-	olapStore, ok := olap.AsOLAP()
+	olapStore, ok := olap.AsOLAP(inst.ID)
 	if !ok {
 		return nil, nil, fmt.Errorf("not a valid OLAP driver: '%s'", inst.OLAPDriver)
 	}

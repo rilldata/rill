@@ -34,8 +34,8 @@ type Options struct {
 }
 
 type EntityMigrator interface {
-	Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts Options, catalog *drivers.CatalogEntry, logger *zap.Logger) error
-	Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts Options, oldCatalog *drivers.CatalogEntry, newCatalog *drivers.CatalogEntry, logger *zap.Logger) error
+	Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts Options, catalog *drivers.CatalogEntry, instanceID string, logger *zap.Logger) error
+	Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts Options, oldCatalog *drivers.CatalogEntry, newCatalog *drivers.CatalogEntry, instanceID string, logger *zap.Logger) error
 	Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalog *drivers.CatalogEntry) error
 	Delete(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) error
 	GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) ([]string, []*drivers.CatalogEntry)
@@ -45,22 +45,22 @@ type EntityMigrator interface {
 	ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) (bool, error)
 }
 
-func Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts Options, catalog *drivers.CatalogEntry, logger *zap.Logger) error {
+func Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts Options, catalog *drivers.CatalogEntry, instanceID string, logger *zap.Logger) error {
 	migrator, ok := getMigrator(catalog)
 	if !ok {
 		// no error here. not all migrators are needed
 		return nil
 	}
-	return migrator.Create(ctx, olap, repo, opts, catalog, logger)
+	return migrator.Create(ctx, olap, repo, opts, catalog, instanceID, logger)
 }
 
-func Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts Options, oldCatalog, newCatalog *drivers.CatalogEntry, logger *zap.Logger) error {
+func Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts Options, oldCatalog, newCatalog *drivers.CatalogEntry, instanceID string, logger *zap.Logger) error {
 	migrator, ok := getMigrator(newCatalog)
 	if !ok {
 		// no error here. not all migrators are needed
 		return nil
 	}
-	return migrator.Update(ctx, olap, repo, opts, oldCatalog, newCatalog, logger)
+	return migrator.Update(ctx, olap, repo, opts, oldCatalog, newCatalog, instanceID, logger)
 }
 
 func Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalog *drivers.CatalogEntry) error {
@@ -145,13 +145,13 @@ func SetSchema(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.Cat
 	return nil
 }
 
-func LastUpdated(ctx context.Context, instID string, repo drivers.RepoStore, catalog *drivers.CatalogEntry) (time.Time, error) {
+func LastUpdated(ctx context.Context, repo drivers.RepoStore, catalog *drivers.CatalogEntry) (time.Time, error) {
 	// TODO: do we need to push this to individual implementations to handle just local_file source?
 	if catalog.Type != drivers.ObjectTypeSource || catalog.GetSource().Connector != "local_file" {
 		// return a very old time
 		return time.Time{}, nil
 	}
-	stat, err := repo.Stat(ctx, instID, catalog.GetSource().Properties.Fields["path"].GetStringValue())
+	stat, err := repo.Stat(ctx, catalog.GetSource().Properties.Fields["path"].GetStringValue())
 	if err != nil {
 		return time.Time{}, err
 	}

@@ -3,9 +3,10 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"testing"
 	"time"
+
+	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -583,9 +584,9 @@ func getColumnTestServerWithModel(t *testing.T, sql string, expectation int) (*S
 	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
-	olap, err := rt.OLAP(testCtx(), instanceID)
+	olap, release, err := rt.OLAP(testCtx(), instanceID)
 	require.NoError(t, err)
-
+	defer release()
 	res, err := olap.Execute(testCtx(), &drivers.Statement{Query: "SELECT count(*) FROM test"})
 	require.NoError(t, err)
 	defer res.Close()

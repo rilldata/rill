@@ -59,10 +59,11 @@ func (q *MetricsViewToplist) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID)
 	if err != nil {
 		return err
 	}
+	defer release()
 
 	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())

@@ -155,10 +155,11 @@ func (a *App) Close() error {
 }
 
 func (a *App) IsProjectInit() bool {
-	repo, err := a.Runtime.Repo(a.Context, a.Instance.ID)
+	repo, release, err := a.Runtime.Repo(a.Context, a.Instance.ID)
 	if err != nil {
 		panic(err) // checks in New should ensure it never happens
 	}
+	defer release()
 
 	c := rillv1beta.New(repo, a.Instance.ID)
 	return c.IsInit(a.Context)

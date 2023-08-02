@@ -21,7 +21,7 @@ type Options struct {
 
 type Runtime struct {
 	opts               *Options
-	metastore          drivers.Connection
+	metastore          drivers.Handle
 	logger             *zap.Logger
 	connCache          *connectionCache
 	migrationMetaCache *migrationMetaCache
@@ -30,7 +30,7 @@ type Runtime struct {
 
 func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 	// Open metadata db connection
-	metastore, err := drivers.Open(opts.MetastoreDriver, map[string]any{"dsn": opts.MetastoreDSN}, logger)
+	metastore, err := drivers.Open(opts.MetastoreDriver, map[string]any{"dsn": opts.MetastoreDSN}, true, logger)
 	if err != nil {
 		return nil, fmt.Errorf("could not connect to metadata db: %w", err)
 	}

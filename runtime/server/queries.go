@@ -26,10 +26,11 @@ func (s *Server) Query(ctx context.Context, req *runtimev1.QueryRequest) (*runti
 		args[i] = arg.AsInterface()
 	}
 
-	olap, err := s.runtime.OLAP(ctx, req.InstanceId)
+	olap, release, err := s.runtime.OLAP(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
+	defer release()
 
 	transformedSQL := req.Sql
 	if req.Limit != 0 {
