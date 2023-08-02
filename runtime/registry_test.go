@@ -10,6 +10,7 @@ import (
 
 	"github.com/c2h5oh/datasize"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -208,7 +209,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 			// ingest some data
 			require.NoError(t, svc.Olap.Exec(ctx, &drivers.Statement{Query: "CREATE TABLE data(id INTEGER, name VARCHAR)"}))
 			require.NoError(t, svc.Olap.Exec(ctx, &drivers.Statement{Query: "INSERT INTO data VALUES (1, 'Mark'), (2, 'Hannes')"}))
-			require.NoError(t, svc.Catalog.CreateEntry(ctx, &drivers.CatalogEntry{
+			require.NoError(t, svc.Catalog.CreateEntry(ctx, "", &drivers.CatalogEntry{
 				Name: "data",
 				Type: drivers.ObjectTypeTable,
 				Object: &runtimev1.Table{
@@ -216,7 +217,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 					Managed: true,
 				},
 			}))
-			require.ErrorContains(t, svc.Catalog.CreateEntry(ctx, &drivers.CatalogEntry{
+			require.ErrorContains(t, svc.Catalog.CreateEntry(ctx, "", &drivers.CatalogEntry{
 				Name: "data",
 				Type: drivers.ObjectTypeModel,
 				Object: &runtimev1.Model{
@@ -238,8 +239,8 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 			require.Error(t, err)
 
 			// verify older olap connection is closed and cache updated
-			require.False(t, rt.connCache.lruCache.Contains(inst.ID+inst.OLAPDriver+inst.OLAPDSN))
-			require.False(t, rt.connCache.lruCache.Contains(inst.ID+inst.RepoDriver+inst.RepoDSN))
+			require.False(t, rt.connCache.lruCache.Contains(inst.ID+inst.OLAPDriver+fmt.Sprintf("dsn:%s ", inst.OLAPDSN)))
+			require.False(t, rt.connCache.lruCache.Contains(inst.ID+inst.RepoDriver+fmt.Sprintf("dsn:%s ", inst.RepoDSN)))
 			_, ok := rt.migrationMetaCache.cache.Get(inst.ID)
 			require.False(t, ok)
 			_, err = svc.Olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM rill.migration_version"})
@@ -280,7 +281,7 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 	require.NoError(t, err)
 
 	// Close OLAP connection
-	evicted := rt.connCache.evict(ctx, inst.ID, inst.OLAPDriver, inst.OLAPDSN)
+	evicted := rt.connCache.evict(ctx, inst.ID, inst.OLAPDriver, variables("repo", nil, inst.ResolveVariables()))
 	require.True(t, evicted)
 
 	// Corrupt database file
@@ -300,6 +301,24 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 
 // New returns a runtime configured for use in tests.
 func NewTestRunTime(t *testing.T) *Runtime {
+	globalConnectors := []*rillv1.ConnectorDef{
+		{
+			Type:     "sqlite",
+			Name:     "metastore",
+			Defaults: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
+		},
+	}
+	privateConnectors := []*rillv1.ConnectorDef{
+		{
+			Type: "file",
+			Name: "repo",
+		},
+		{
+			Name:     "olap",
+			Defaults: map[string]string{"dsn": ""},
+		},
+	}
+
 	opts := &Options{
 		ConnectionCacheSize: 100,
 		MetastoreDriver:     "sqlite",
@@ -308,6 +327,8 @@ func NewTestRunTime(t *testing.T) *Runtime {
 		MetastoreDSN:        fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name()),
 		QueryCacheSizeBytes: int64(datasize.MB) * 100,
 		AllowHostAccess:     true,
+		GlobalConnectors:    globalConnectors,
+		PrivateConnectors:   privateConnectors,
 	}
 	rt, err := New(opts, zap.NewNop())
 	t.Cleanup(func() {

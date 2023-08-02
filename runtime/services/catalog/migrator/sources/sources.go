@@ -10,8 +10,10 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 const _defaultIngestTimeout = 60 * time.Minute
@@ -28,10 +30,9 @@ func (m *sourceMigrator) Create(
 	repo drivers.RepoStore,
 	opts migrator.Options,
 	catalogObj *drivers.CatalogEntry,
-	instanceID string,
 	logger *zap.Logger,
 ) error {
-	return ingestSource(ctx, olap, repo, opts, catalogObj, "", instanceID, logger)
+	return ingestSource(ctx, olap, repo, opts, catalogObj, "", logger)
 }
 
 func (m *sourceMigrator) Update(ctx context.Context,
@@ -39,14 +40,13 @@ func (m *sourceMigrator) Update(ctx context.Context,
 	repo drivers.RepoStore,
 	opts migrator.Options,
 	oldCatalogObj, newCatalogObj *drivers.CatalogEntry,
-	instanceID string,
 	logger *zap.Logger,
 ) error {
 	apiSource := newCatalogObj.GetSource()
 
 	tempName := fmt.Sprintf("__rill_temp_%s", apiSource.Name)
 
-	err := ingestSource(ctx, olap, repo, opts, newCatalogObj, tempName, instanceID, logger)
+	err := ingestSource(ctx, olap, repo, opts, newCatalogObj, tempName, logger)
 	if err != nil {
 		// cleanup of temp table. can exist and still error out in incremental ingestion
 		_ = olap.Exec(ctx, &drivers.Statement{
@@ -187,25 +187,41 @@ func convertLower(in map[string]string) map[string]string {
 }
 
 func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts migrator.Options,
-	catalogObj *drivers.CatalogEntry, name string, instanceID string, logger *zap.Logger,
+	catalogObj *drivers.CatalogEntry, name string, logger *zap.Logger,
 ) error {
 	apiSource := catalogObj.GetSource()
 	if name == "" {
 		name = apiSource.Name
 	}
 
-	logger = logger.With(zap.String("source", name))
-	variables := convertLower(opts.InstanceEnv)
-	srcConnector, err := drivers.Open(apiSource.Connector, connectorVariables(apiSource, variables, repo.Root()), false, logger)
-	if err != nil {
-		return fmt.Errorf("failed to open driver %w", err)
+	var err error
+	// TODO: this should go in the parser in the new reconcile
+	if apiSource.Connector == "duckdb" {
+		err = mergeFromParsedQuery(apiSource)
+		if err != nil {
+			return err
+		}
 	}
-	defer srcConnector.Close()
 
-	olapConnection := olap.(drivers.Handle)
-	t, ok := olapConnection.AsTransporter(instanceID, srcConnector, olapConnection)
+	logger = logger.With(zap.String("source", name))
+	var srcConnector drivers.Connection
+
+	if apiSource.Connector == "duckdb" {
+		srcConnector = olap.(drivers.Connection)
+	} else {
+		var err error
+		variables := convertLower(opts.InstanceEnv)
+		srcConnector, err = drivers.Open(apiSource.Connector, connectorVariables(apiSource, variables, repo.Root()), logger)
+		if err != nil {
+			return fmt.Errorf("failed to open driver %w", err)
+		}
+		defer srcConnector.Close()
+	}
+
+	olapConnection := olap.(drivers.Connection)
+	t, ok := olapConnection.AsTransporter(srcConnector, olapConnection)
 	if !ok {
-		t, ok = srcConnector.AsTransporter(instanceID, srcConnector, olapConnection)
+		t, ok = srcConnector.AsTransporter(srcConnector, olapConnection)
 		if !ok {
 			return fmt.Errorf("data transfer not possible from %q to %q", srcConnector.Driver(), olapConnection.Driver())
 		}
@@ -231,13 +247,13 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 	limitExceeded := false
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)
-		olap, _ := olapConnection.AsOLAP(instanceID)
 		defer ticker.Stop()
 		for {
 			select {
 			case <-ctxWithTimeout.Done():
 				return
 			case <-ticker.C:
+				olap, _ := olapConnection.AsOLAP()
 				if size, ok := olap.EstimateSize(); ok && size > ingestionLimit {
 					limitExceeded = true
 					cancel()
@@ -250,6 +266,55 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 		return drivers.ErrIngestionLimitExceeded
 	}
 	return err
+}
+
+func mergeFromParsedQuery(apiSource *runtimev1.Source) error {
+	props := apiSource.Properties.AsMap()
+	query, ok := props["sql"]
+	if !ok {
+		return nil
+	}
+	queryStr, ok := query.(string)
+	if !ok {
+		return errors.New("query should be a string")
+	}
+
+	// raw sql query
+	ast, err := duckdbsql.Parse(queryStr)
+	if err != nil {
+		return err
+	}
+	refs := ast.GetTableRefs()
+	if len(refs) != 1 {
+		return errors.New("sql source should have exactly one table reference")
+	}
+	ref := refs[0]
+
+	if len(ref.Paths) == 0 {
+		return errors.New("only read_* functions with a single path is supported")
+	}
+	if len(ref.Paths) > 1 {
+		return errors.New("invalid source, only a single path for source is supported")
+	}
+
+	p, c, ok := parseEmbeddedSourceConnector(ref.Paths[0])
+	if !ok {
+		return errors.New("unknown source")
+	}
+	if c == "local_file" {
+		return nil
+	}
+
+	apiSource.Connector = c
+	props["path"] = p
+	props["sql"] = queryStr
+
+	pbProps, err := structpb.NewStruct(props)
+	if err != nil {
+		return err
+	}
+	apiSource.Properties = pbProps
+	return nil
 }
 
 type progress struct {
@@ -301,6 +366,14 @@ func source(connector string, src *runtimev1.Source) (drivers.Source, error) {
 		return &drivers.DatabaseSource{
 			SQL:      query,
 			Database: db,
+		}, nil
+	case "duckdb":
+		query, ok := props["sql"].(string)
+		if !ok {
+			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"duckdb\"")
+		}
+		return &drivers.DatabaseSource{
+			SQL: query,
 		}, nil
 	case "bigquery":
 		query, ok := props["sql"].(string)

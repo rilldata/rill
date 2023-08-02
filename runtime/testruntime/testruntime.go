@@ -9,6 +9,7 @@ import (
 
 	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -30,6 +31,24 @@ type TestingT interface {
 
 // New returns a runtime configured for use in tests.
 func New(t TestingT) *runtime.Runtime {
+	globalConnectors := []*rillv1.ConnectorDef{
+		{
+			Type:     "sqlite",
+			Name:     "metastore",
+			Defaults: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
+		},
+	}
+	privateConnectors := []*rillv1.ConnectorDef{
+		{
+			Type: "file",
+			Name: "repo",
+		},
+		{
+			Type:     "duckdb",
+			Name:     "olap",
+			Defaults: map[string]string{"dsn": ""},
+		},
+	}
 	opts := &runtime.Options{
 		ConnectionCacheSize: 100,
 		MetastoreDriver:     "sqlite",
@@ -38,6 +57,8 @@ func New(t TestingT) *runtime.Runtime {
 		MetastoreDSN:        fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name()),
 		QueryCacheSizeBytes: int64(datasize.MB * 100),
 		AllowHostAccess:     true,
+		GlobalConnectors:    globalConnectors,
+		PrivateConnectors:   privateConnectors,
 	}
 	rt, err := runtime.New(opts, zap.NewNop())
 	require.NoError(t, err)

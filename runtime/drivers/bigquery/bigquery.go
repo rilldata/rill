@@ -3,7 +3,6 @@ package bigquery
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"strings"
 
@@ -96,10 +95,7 @@ type configProperties struct {
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }
 
-func (d driver) Open(config map[string]any, shared bool, logger *zap.Logger) (drivers.Handle, error) {
-	if shared {
-		return nil, fmt.Errorf("bigquery driver can't be shared")
-	}
+func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Handle, error) {
 	conf := &configProperties{}
 	err := mapstructure.Decode(config, conf)
 	if err != nil {
@@ -158,17 +154,17 @@ func (c *Connection) AsRegistry() (drivers.RegistryStore, bool) {
 }
 
 // Catalog implements drivers.Connection.
-func (c *Connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
+func (c *Connection) AsCatalogStore() (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // Repo implements drivers.Connection.
-func (c *Connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
+func (c *Connection) AsRepoStore() (drivers.RepoStore, bool) {
 	return nil, false
 }
 
 // OLAP implements drivers.Connection.
-func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+func (c *Connection) AsOLAP() (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
@@ -193,7 +189,7 @@ func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 }
 
 // AsTransporter implements drivers.Connection.
-func (c *Connection) AsTransporter(instanceID string, from, to drivers.Handle) (drivers.Transporter, bool) {
+func (c *Connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
 	return nil, false
 }
 

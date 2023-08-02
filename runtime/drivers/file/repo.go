@@ -16,18 +16,18 @@ import (
 
 var limit = 500
 
-type repoStore struct {
-	*connection
-	instanceID string
+// Driver implements drivers.RepoStore.
+func (c *connection) Driver() string {
+	return "file"
 }
 
 // Root implements drivers.RepoStore.
-func (c *repoStore) Root() string {
+func (c *connection) Root() string {
 	return c.root
 }
 
 // ListRecursive implements drivers.RepoStore.
-func (c *repoStore) ListRecursive(ctx context.Context, glob string) ([]string, error) {
+func (c *connection) ListRecursive(ctx context.Context, instID, glob string) ([]string, error) {
 	// Check that folder hasn't been moved
 	if err := c.checkRoot(); err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func (c *repoStore) ListRecursive(ctx context.Context, glob string) ([]string, e
 }
 
 // Get implements drivers.RepoStore.
-func (c *repoStore) Get(ctx context.Context, filePath string) (string, error) {
+func (c *connection) Get(ctx context.Context, instID, filePath string) (string, error) {
 	filePath = filepath.Join(c.root, filePath)
 
 	b, err := os.ReadFile(filePath)
@@ -74,7 +74,7 @@ func (c *repoStore) Get(ctx context.Context, filePath string) (string, error) {
 }
 
 // Stat implements drivers.RepoStore.
-func (c *repoStore) Stat(ctx context.Context, filePath string) (*drivers.RepoObjectStat, error) {
+func (c *connection) Stat(ctx context.Context, instID, filePath string) (*drivers.RepoObjectStat, error) {
 	filePath = filepath.Join(c.root, filePath)
 
 	info, err := os.Stat(filePath)
@@ -88,7 +88,7 @@ func (c *repoStore) Stat(ctx context.Context, filePath string) (*drivers.RepoObj
 }
 
 // Put implements drivers.RepoStore.
-func (c *repoStore) Put(ctx context.Context, filePath string, reader io.Reader) error {
+func (c *connection) Put(ctx context.Context, instID, filePath string, reader io.Reader) error {
 	filePath = filepath.Join(c.root, filePath)
 
 	err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
@@ -111,7 +111,7 @@ func (c *repoStore) Put(ctx context.Context, filePath string, reader io.Reader) 
 }
 
 // Rename implements drivers.RepoStore.
-func (c *repoStore) Rename(ctx context.Context, fromPath, toPath string) error {
+func (c *connection) Rename(ctx context.Context, instID, fromPath, toPath string) error {
 	toPath = filepath.Join(c.root, toPath)
 
 	fromPath = filepath.Join(c.root, fromPath)
@@ -126,18 +126,18 @@ func (c *repoStore) Rename(ctx context.Context, fromPath, toPath string) error {
 }
 
 // Delete implements drivers.RepoStore.
-func (c *repoStore) Delete(ctx context.Context, filePath string) error {
+func (c *connection) Delete(ctx context.Context, instID, filePath string) error {
 	filePath = filepath.Join(c.root, filePath)
 	return os.Remove(filePath)
 }
 
 // Sync implements drivers.RepoStore.
-func (c *repoStore) Sync(ctx context.Context) error {
+func (c *connection) Sync(ctx context.Context, instID string) error {
 	return nil
 }
 
 // Watch implements drivers.RepoStore.
-func (c *repoStore) Watch(ctx context.Context, cb drivers.WatchCallback) error {
+func (c *connection) Watch(ctx context.Context, instID string, cb drivers.WatchCallback) error {
 	c.watcherMu.Lock()
 	if c.watcher == nil {
 		w, err := newWatcher(c.root)

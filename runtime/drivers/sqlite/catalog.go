@@ -10,21 +10,16 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type catalogStore struct {
-	*connection
-	instanceID string
-}
-
-func (c *catalogStore) FindEntries(ctx context.Context, typ drivers.ObjectType) ([]*drivers.CatalogEntry, error) {
+func (c *connection) FindEntries(ctx context.Context, instanceID string, typ drivers.ObjectType) ([]*drivers.CatalogEntry, error) {
 	if typ == drivers.ObjectTypeUnspecified {
-		return c.findEntries(ctx, "WHERE instance_id = ?", c.instanceID)
+		return c.findEntries(ctx, "WHERE instance_id = ?", instanceID)
 	}
-	return c.findEntries(ctx, "WHERE instance_id = ? AND type = ?", c.instanceID, typ)
+	return c.findEntries(ctx, "WHERE instance_id = ? AND type = ?", instanceID, typ)
 }
 
-func (c *catalogStore) FindEntry(ctx context.Context, name string) (*drivers.CatalogEntry, error) {
+func (c *connection) FindEntry(ctx context.Context, instanceID, name string) (*drivers.CatalogEntry, error) {
 	// Names are stored with case everywhere, but the checks should be case-insensitive. Hence, the translation to lower case here.
-	es, err := c.findEntries(ctx, "WHERE instance_id = ? AND LOWER(name) = LOWER(?)", c.instanceID, name)
+	es, err := c.findEntries(ctx, "WHERE instance_id = ? AND LOWER(name) = LOWER(?)", instanceID, name)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +29,7 @@ func (c *catalogStore) FindEntry(ctx context.Context, name string) (*drivers.Cat
 	return es[0], nil
 }
 
-func (c *catalogStore) findEntries(_ context.Context, whereClause string, args ...any) ([]*drivers.CatalogEntry, error) {
+func (c *connection) findEntries(_ context.Context, whereClause string, args ...any) ([]*drivers.CatalogEntry, error) {
 	// Override ctx because sqlite sometimes segfaults on context cancellation
 	ctx := context.Background()
 
@@ -83,7 +78,7 @@ func (c *catalogStore) findEntries(_ context.Context, whereClause string, args .
 	return res, nil
 }
 
-func (c *catalogStore) CreateEntry(_ context.Context, e *drivers.CatalogEntry) error {
+func (c *connection) CreateEntry(_ context.Context, instanceID string, e *drivers.CatalogEntry) error {
 	// Override ctx because sqlite sometimes segfaults on context cancellation
 	ctx := context.Background()
 
@@ -97,7 +92,7 @@ func (c *catalogStore) CreateEntry(_ context.Context, e *drivers.CatalogEntry) e
 	_, err = c.db.ExecContext(
 		ctx,
 		"INSERT INTO catalog(instance_id, name, type, object, path, bytes_ingested, created_on, updated_on, refreshed_on) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-		c.instanceID,
+		instanceID,
 		e.Name,
 		e.Type,
 		obj,
@@ -117,7 +112,7 @@ func (c *catalogStore) CreateEntry(_ context.Context, e *drivers.CatalogEntry) e
 	return nil
 }
 
-func (c *catalogStore) UpdateEntry(_ context.Context, e *drivers.CatalogEntry) error {
+func (c *connection) UpdateEntry(_ context.Context, instanceID string, e *drivers.CatalogEntry) error {
 	// Override ctx because sqlite sometimes segfaults on context cancellation
 	ctx := context.Background()
 
@@ -137,7 +132,7 @@ func (c *catalogStore) UpdateEntry(_ context.Context, e *drivers.CatalogEntry) e
 		e.BytesIngested,
 		now,
 		e.RefreshedOn,
-		c.instanceID,
+		instanceID,
 		e.Name,
 	)
 	if err != nil {
@@ -148,18 +143,18 @@ func (c *catalogStore) UpdateEntry(_ context.Context, e *drivers.CatalogEntry) e
 	return nil
 }
 
-func (c *catalogStore) DeleteEntry(_ context.Context, name string) error {
+func (c *connection) DeleteEntry(_ context.Context, instanceID, name string) error {
 	// Override ctx because sqlite sometimes segfaults on context cancellation
 	ctx := context.Background()
 
-	_, err := c.db.ExecContext(ctx, "DELETE FROM catalog WHERE instance_id = ? AND LOWER(name) = LOWER(?)", c.instanceID, name)
+	_, err := c.db.ExecContext(ctx, "DELETE FROM catalog WHERE instance_id = ? AND LOWER(name) = LOWER(?)", instanceID, name)
 	return err
 }
 
-func (c *catalogStore) DeleteEntries(_ context.Context) error {
+func (c *connection) DeleteEntries(_ context.Context, instanceID string) error {
 	// Override ctx because sqlite sometimes segfaults on context cancellation
 	ctx := context.Background()
 
-	_, err := c.db.ExecContext(ctx, "DELETE FROM catalog WHERE instance_id = ?", c.instanceID)
+	_, err := c.db.ExecContext(ctx, "DELETE FROM catalog WHERE instance_id = ?", instanceID)
 	return err
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"go.uber.org/zap"
 )
@@ -17,6 +18,8 @@ type Options struct {
 	QueryCacheSizeBytes int64
 	AllowHostAccess     bool
 	SafeSourceRefresh   bool
+	GlobalConnectors    []*rillv1.ConnectorDef
+	PrivateConnectors   []*rillv1.ConnectorDef
 }
 
 type Runtime struct {
@@ -30,7 +33,7 @@ type Runtime struct {
 
 func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 	// Open metadata db connection
-	metastore, err := drivers.Open(opts.MetastoreDriver, map[string]any{"dsn": opts.MetastoreDSN}, true, logger)
+	metastore, err := drivers.Open(opts.MetastoreDriver, map[string]any{"dsn": opts.MetastoreDSN}, logger)
 	if err != nil {
 		return nil, fmt.Errorf("could not connect to metadata db: %w", err)
 	}

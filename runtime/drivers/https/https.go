@@ -35,10 +35,8 @@ var spec = drivers.Spec{
 
 type driver struct{}
 
-func (d driver) Open(config map[string]any, shared bool, logger *zap.Logger) (drivers.Handle, error) {
-	if shared {
-		return nil, fmt.Errorf("https driver can't be shared")
-	}
+func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Handle, error) {
+
 	conn := &connection{
 		config: config,
 		logger: logger,
@@ -100,17 +98,17 @@ func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 }
 
 // Catalog implements drivers.Connection.
-func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
+func (c *connection) AsCatalogStore() (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // Repo implements drivers.Connection.
-func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
+func (c *connection) AsRepoStore() (drivers.RepoStore, bool) {
 	return nil, false
 }
 
 // OLAP implements drivers.Connection.
-func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+func (c *connection) AsOLAP() (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
@@ -130,7 +128,7 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsTransporter implements drivers.Connection.
-func (c *connection) AsTransporter(instanceID string, from, to drivers.Handle) (drivers.Transporter, bool) {
+func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
 	return nil, false
 }
 

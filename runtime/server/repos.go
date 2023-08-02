@@ -55,7 +55,6 @@ func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, ss runtimev1.Runti
 		return ErrForbidden
 	}
 
-	// TODO :: check here
 	repo, release, err := s.runtime.Repo(ss.Context(), req.InstanceId)
 	if err != nil {
 		return err
@@ -63,7 +62,7 @@ func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, ss runtimev1.Runti
 	defer release()
 
 	if req.Replay {
-		paths, err := repo.ListRecursive(ss.Context(), "**")
+		paths, err := repo.ListRecursive(ss.Context(), req.InstanceId, "**")
 		if err != nil {
 			return err
 		}
@@ -78,7 +77,7 @@ func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, ss runtimev1.Runti
 		}
 	}
 
-	return repo.Watch(ss.Context(), func(events []drivers.WatchEvent) {
+	return repo.Watch(ss.Context(), "", func(events []drivers.WatchEvent) {
 		for _, event := range events {
 			if !event.Dir {
 				err := ss.Send(&runtimev1.WatchFilesResponse{

@@ -3,10 +3,12 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog"
+	"golang.org/x/exp/maps"
 )
 
 func (r *Runtime) Registry() drivers.RegistryStore {
@@ -25,20 +27,28 @@ func (r *Runtime) AcquireHandle(ctx context.Context, instanceID string, connecto
 	}
 	defer release()
 
-	// TODO :: do we have to parse yaml again and again
+	// TODO :: parse it and keep a cache in instance to avoid reparsing
 	yaml, err := rillv1.ParseRillYAML(ctx, repo, instanceID)
 	if err != nil {
 		return nil, nil, err
 	}
 
+	instance, err := r.FindInstance(ctx, instanceID)
+	if err != nil {
+		return nil, nil, err
+	}
+	// defined in rill.yaml
 	for _, c := range yaml.Connectors {
 		if c.Name == connector {
-			// TODO :: check this ?
-			dsn := c.Defaults["dsn"]
-			return r.connCache.get(ctx, instanceID, c.Type, dsn, false)
+			return r.connCache.get(ctx, instanceID, c.Type, variables(connector, c.Defaults, instance.ResolveVariables()), false)
 		}
 	}
-	return nil, nil, fmt.Errorf("connector %s doesn't exist", connector)
+	if c, shared, err := r.connectorByName(connector); err == nil { // connector found
+		// defined in runtime options
+		return r.connCache.get(ctx, instanceID, c.Type, variables(connector, c.Defaults, instance.ResolveVariables()), shared)
+	}
+	// neither defined in rill.yaml nor in runtime options, directly used in source
+	return r.connCache.get(ctx, instanceID, connector, variables(connector, nil, instance.ResolveVariables()), false)
 }
 
 func (r *Runtime) Repo(ctx context.Context, instanceID string) (drivers.RepoStore, func(), error) {
@@ -47,12 +57,13 @@ func (r *Runtime) Repo(ctx context.Context, instanceID string) (drivers.RepoStor
 		return nil, nil, err
 	}
 
-	conn, release, err := r.connCache.get(ctx, instanceID, inst.RepoDriver, inst.RepoDSN, false)
+	_, shared, _ := r.connectorByName("repo")
+	conn, release, err := r.connCache.get(ctx, instanceID, inst.RepoDriver, variables("repo", nil, inst.ResolveVariables()), shared)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	repo, ok := conn.AsRepoStore(instanceID)
+	repo, ok := conn.AsRepoStore()
 	if !ok {
 		release()
 		// Verified as repo when instance is created, so this should never happen
@@ -68,12 +79,13 @@ func (r *Runtime) OLAP(ctx context.Context, instanceID string) (drivers.OLAPStor
 		return nil, nil, err
 	}
 
-	conn, release, err := r.connCache.get(ctx, instanceID, inst.OLAPDriver, inst.OLAPDSN, false)
+	_, shared, _ := r.connectorByName("repo")
+	conn, release, err := r.connCache.get(ctx, instanceID, inst.RepoDriver, variables("repo", nil, inst.ResolveVariables()), shared)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	olap, ok := conn.AsOLAP(instanceID)
+	olap, ok := conn.AsOLAP()
 	if !ok {
 		release()
 		// Verified as OLAP when instance is created, so this should never happen
@@ -90,12 +102,13 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 	}
 
 	if inst.EmbedCatalog {
-		conn, release, err := r.connCache.get(ctx, inst.ID, inst.OLAPDriver, inst.OLAPDSN, false)
+		_, shared, _ := r.connectorByName("repo")
+		conn, release, err := r.connCache.get(ctx, instanceID, inst.RepoDriver, variables("repo", nil, inst.ResolveVariables()), shared)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		store, ok := conn.AsCatalogStore(instanceID)
+		store, ok := conn.AsCatalogStore()
 		if !ok {
 			release()
 			// Verified as CatalogStore when instance is created, so this should never happen
@@ -105,7 +118,7 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 		return store, release, nil
 	}
 
-	store, ok := r.metastore.AsCatalogStore(instanceID)
+	store, ok := r.metastore.AsCatalogStore()
 	if !ok {
 		return nil, nil, fmt.Errorf("metastore cannot serve as catalog")
 	}
@@ -141,4 +154,35 @@ func (r *Runtime) NewCatalogService(ctx context.Context, instanceID string) (*ca
 		releaseRepo()
 	}
 	return catalog.NewService(catalogStore, repoStore, olapStore, registry, instanceID, r.logger, migrationMetadata, releaseFunc), nil
+}
+
+func (r *Runtime) connectorByName(name string) (*rillv1.ConnectorDef, bool, error) {
+	for _, c := range r.opts.GlobalConnectors {
+		if c.Name == name {
+			return c, true, nil
+		}
+	}
+	for _, c := range r.opts.PrivateConnectors {
+		if c.Name == name {
+			return c, false, nil
+		}
+	}
+	return nil, false, fmt.Errorf("connector %s doesn't exist", name)
+}
+
+func variables(name string, def, variables map[string]string) map[string]string {
+	vars := make(map[string]string, 0)
+	maps.Copy(vars, def) // set default connector variables
+
+	// connector variables are of format connector.name.var
+	// there could also be other variables like allow_host_access which are global for all connectors
+	prefix := fmt.Sprintf("connector.%s.", name)
+	for key, value := range variables {
+		if !strings.HasPrefix(key, "connector") { // global variable
+			vars[key] = value
+		} else if after, found := strings.CutPrefix(key, prefix); found { // connector specific variable
+			vars[after] = value
+		}
+	}
+	return vars
 }

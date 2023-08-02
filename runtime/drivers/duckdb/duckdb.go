@@ -50,10 +50,8 @@ type Driver struct {
 	name string
 }
 
-func (d Driver) Open(config map[string]any, shared bool, logger *zap.Logger) (drivers.Handle, error) {
-	if shared {
-		return nil, fmt.Errorf("druid driver can't be shared")
-	}
+func (d Driver) Open(config map[string]any, logger *zap.Logger) (drivers.Handle, error) {
+
 	dsn, ok := config["dsn"].(string)
 	if !ok {
 		return nil, fmt.Errorf("require dsn to open duckdb connection")
@@ -178,18 +176,18 @@ func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 }
 
 // AsCatalogStore Catalog implements drivers.Connection.
-func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
-	return &catalogStore{connection: c, instanceID: instanceID}, true
+func (c *connection) AsCatalogStore() (drivers.CatalogStore, bool) {
+	return c, true
 }
 
 // AsRepoStore Repo implements drivers.Connection.
-func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
+func (c *connection) AsRepoStore() (drivers.RepoStore, bool) {
 	return nil, false
 }
 
 // AsOLAP OLAP implements drivers.Connection.
-func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
-	return &olapStore{connection: c, instanceID: instanceID}, true
+func (c *connection) AsOLAP() (drivers.OLAPStore, bool) {
+	return c, true
 }
 
 // AsObjectStore implements drivers.Connection.
@@ -204,9 +202,9 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 }
 
 // AsTransporter implements drivers.Connection.
-func (c *connection) AsTransporter(instanceID string, from, to drivers.Handle) (drivers.Transporter, bool) {
-	olap, _ := to.AsOLAP(instanceID)
-	if store, ok := olap.(*olapStore); ok && c == store.connection {
+func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
+	olap, _ := to.AsOLAP()
+	if c == olap {
 		if from.Driver() == "motherduck" {
 			return transporter.NewMotherduckToDuckDB(from, olap, c.logger), true
 		}

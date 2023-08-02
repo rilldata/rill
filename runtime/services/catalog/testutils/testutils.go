@@ -43,7 +43,7 @@ func CreateSource(t *testing.T, s *catalog.Service, name, file, sourcePath strin
 		},
 	})
 	require.NoError(t, err)
-	blob, err := s.Repo.Get(ctx, sourcePath)
+	blob, err := s.Repo.Get(ctx, s.InstID, sourcePath)
 	require.NoError(t, err)
 	return blob
 }
@@ -62,7 +62,7 @@ func CreateModel(t *testing.T, s *catalog.Service, name, sql, sourcePath string)
 		},
 	})
 	require.NoError(t, err)
-	blob, err := s.Repo.Get(ctx, sourcePath)
+	blob, err := s.Repo.Get(ctx, s.InstID, sourcePath)
 	require.NoError(t, err)
 	return blob
 }
@@ -77,7 +77,7 @@ func CreateMetricsView(t *testing.T, s *catalog.Service, metricsView *runtimev1.
 		Object: metricsView,
 	})
 	require.NoError(t, err)
-	blob, err := s.Repo.Get(ctx, sourcePath)
+	blob, err := s.Repo.Get(ctx, s.InstID, sourcePath)
 	require.NoError(t, err)
 	return blob
 }
@@ -185,28 +185,28 @@ func CopyFileToData(t *testing.T, dir, source, name string) {
 func GetService(t *testing.T) (*catalog.Service, string) {
 	dir := t.TempDir()
 
-	duckdbStore, err := drivers.Open("duckdb", map[string]any{"dsn": filepath.Join(dir, "stage.db")}, false, zap.NewNop())
+	duckdbStore, err := drivers.Open("duckdb", map[string]any{"dsn": filepath.Join(dir, "stage.db")}, zap.NewNop())
 	require.NoError(t, err)
 	err = duckdbStore.Migrate(context.Background())
 	require.NoError(t, err)
-	olap, ok := duckdbStore.AsOLAP("default")
+	olap, ok := duckdbStore.AsOLAP()
 	require.True(t, ok)
-	catalogObject, ok := duckdbStore.AsCatalogStore("default")
+	catalogObject, ok := duckdbStore.AsCatalogStore()
 	require.True(t, ok)
 
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
 	require.NoError(t, err)
-	repo, ok := fileStore.AsRepoStore("default")
+	repo, ok := fileStore.AsRepoStore()
 	require.True(t, ok)
 
-	err = repo.Put(context.Background(), "rill.yaml", strings.NewReader(""))
+	err = repo.Put(context.Background(), "test", "rill.yaml", strings.NewReader(""))
 	require.NoError(t, err)
 
 	return catalog.NewService(catalogObject, repo, olap, registryStore(t), "test", nil, catalog.NewMigrationMeta(), func() {}), dir
 }
 
 func registryStore(t *testing.T) drivers.RegistryStore {
-	store, err := drivers.Open("sqlite", map[string]any{"dsn": ":memory:"}, false, zap.NewNop())
+	store, err := drivers.Open("sqlite", map[string]any{"dsn": ":memory:"}, zap.NewNop())
 	require.NoError(t, err)
 	err = store.Migrate(context.Background())
 	require.NoError(t, err)

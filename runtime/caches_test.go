@@ -15,17 +15,17 @@ func TestConnectionCache(t *testing.T) {
 	id := uuid.NewString()
 
 	c := newConnectionCache(10, zap.NewNop())
-	conn1, release, err := c.get(ctx, id, "sqlite", ":memory:", false)
+	conn1, release, err := c.get(ctx, id, "sqlite", map[string]string{"dsn": ":memory:"}, false)
 	require.NoError(t, err)
 	release()
 	require.NotNil(t, conn1)
 
-	conn2, release, err := c.get(ctx, id, "sqlite", ":memory:", false)
+	conn2, release, err := c.get(ctx, id, "sqlite", map[string]string{"dsn": ":memory:"}, false)
 	require.NoError(t, err)
 	release()
 	require.NotNil(t, conn2)
 
-	conn3, release, err := c.get(ctx, uuid.NewString(), "sqlite", ":memory:", false)
+	conn3, release, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]string{"dsn": ":memory:"}, false)
 	require.NoError(t, err)
 	release()
 	require.NotNil(t, conn3)

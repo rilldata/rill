@@ -18,6 +18,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/variable"
 	"github.com/rilldata/rill/cli/pkg/web"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -77,12 +78,33 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 	}
 
 	// Create a local runtime with an in-memory metastore
+	globalConnectors := []*rillv1.ConnectorDef{
+		{
+			Type:     "sqlite",
+			Name:     "metastore",
+			Defaults: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
+		},
+	}
+	privateConnectors := []*rillv1.ConnectorDef{
+		{
+			Type:     "file",
+			Name:     "repo",
+			Defaults: map[string]string{"dsn": projectPath},
+		},
+		{
+			Type:     olapDriver,
+			Name:     "olap",
+			Defaults: map[string]string{"dsn": olapDSN},
+		},
+	}
 	rtOpts := &runtime.Options{
 		ConnectionCacheSize: 100,
 		MetastoreDriver:     "sqlite",
 		MetastoreDSN:        "file:rill?mode=memory&cache=shared",
 		QueryCacheSizeBytes: int64(datasize.MB * 100),
 		AllowHostAccess:     true,
+		GlobalConnectors:    globalConnectors,
+		PrivateConnectors:   privateConnectors,
 	}
 	rt, err := runtime.New(rtOpts, logger)
 	if err != nil {

@@ -9,24 +9,19 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-type olapStore struct {
-	*connection
-	instanceID string
-}
-
-func (c *olapStore) Dialect() drivers.Dialect {
+func (c *connection) Dialect() drivers.Dialect {
 	return drivers.DialectDruid
 }
 
-func (c *olapStore) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
+func (c *connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
 	panic("not implemented")
 }
 
-func (c *olapStore) WithRaw(ctx context.Context, priority int, fn drivers.WithRawFunc) error {
+func (c *connection) WithRaw(ctx context.Context, priority int, fn drivers.WithRawFunc) error {
 	panic("not implemented")
 }
 
-func (c *olapStore) Exec(ctx context.Context, stmt *drivers.Statement) error {
+func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	res, err := c.Execute(ctx, stmt)
 	if err != nil {
 		return err
@@ -37,7 +32,7 @@ func (c *olapStore) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	return res.Close()
 }
 
-func (c *olapStore) Execute(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
+func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
 	if stmt.DryRun {
 		// TODO: Find way to validate with args
 		prepared, err := c.db.PrepareContext(ctx, stmt.Query)
@@ -82,7 +77,7 @@ func (c *olapStore) Execute(ctx context.Context, stmt *drivers.Statement) (*driv
 	return r, nil
 }
 
-func (c *olapStore) DropDB() error {
+func (c *connection) DropDB() error {
 	return fmt.Errorf("dropping database not supported")
 }
 

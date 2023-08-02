@@ -26,16 +26,11 @@ var (
 	totalLatencyHistogram = observability.Must(meter.Int64Histogram("total_latency", metric.WithUnit("ms")))
 )
 
-type olapStore struct {
-	*connection
-	instanceID string
-}
-
-func (c *olapStore) Dialect() drivers.Dialect {
+func (c *connection) Dialect() drivers.Dialect {
 	return drivers.DialectDuckDB
 }
 
-func (c *olapStore) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
+func (c *connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
 	// Check not nested
 	if connFromContext(ctx) != nil {
 		panic("nested WithConnection")
@@ -54,7 +49,7 @@ func (c *olapStore) WithConnection(ctx context.Context, priority int, fn drivers
 	return fn(wrappedCtx, ensuredCtx)
 }
 
-func (c *olapStore) Exec(ctx context.Context, stmt *drivers.Statement) error {
+func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	res, err := c.Execute(ctx, stmt)
 	if err != nil {
 		return err
@@ -66,7 +61,7 @@ func (c *olapStore) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	return c.checkErr(err)
 }
 
-func (c *olapStore) Execute(ctx context.Context, stmt *drivers.Statement) (res *drivers.Result, outErr error) {
+func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res *drivers.Result, outErr error) {
 	// We use the meta conn for dry run queries
 	if stmt.DryRun {
 		conn, release, err := c.acquireMetaConn(ctx)
@@ -163,7 +158,7 @@ func (c *olapStore) Execute(ctx context.Context, stmt *drivers.Statement) (res *
 	return res, nil
 }
 
-func (c *olapStore) EstimateSize() (int64, bool) {
+func (c *connection) EstimateSize() (int64, bool) {
 	var paths []string
 	path := c.config.DBFilePath
 	if path == "" {
@@ -176,7 +171,7 @@ func (c *olapStore) EstimateSize() (int64, bool) {
 	return fileSize(paths), true
 }
 
-func (c *olapStore) WithRaw(ctx context.Context, priority int, fn drivers.WithRawFunc) error {
+func (c *connection) WithRaw(ctx context.Context, priority int, fn drivers.WithRawFunc) error {
 	// Acquire connection
 	conn, release, err := c.acquireOLAPConn(ctx, priority)
 	if err != nil {

@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"errors"
+	"strings"
 	"sync"
 	"time"
 
@@ -11,6 +12,8 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/services/catalog"
 	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 )
 
 var errConnectionCacheClosed = errors.New("connectionCache: closed")
@@ -72,7 +75,7 @@ func (c *connectionCache) Close() error {
 	return firstErr
 }
 
-func (c *connectionCache) get(ctx context.Context, instanceID, driver, dsn string, shared bool) (drivers.Handle, func(), error) {
+func (c *connectionCache) get(ctx context.Context, instanceID, driver string, config map[string]string, shared bool) (drivers.Handle, func(), error) {
 	// TODO: This locks for all instances for the duration of Open and Migrate.
 	// Adapt to lock only on the lookup, and then on the individual instance's Open and Migrate.
 
@@ -83,7 +86,13 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver, dsn strin
 		return nil, nil, errConnectionCacheClosed
 	}
 
-	key := instanceID + driver + dsn
+	var key string
+	if shared {
+		// not using instanceID to ensure all instances share the same handle
+		key = driver + generateKey(config)
+	} else {
+		key = instanceID + driver + generateKey(config)
+	}
 	val, ok := c.cache[key]
 	if !ok { // not in use
 		val, ok = c.lruCache.Get(key)
@@ -92,7 +101,7 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver, dsn strin
 			if instanceID != "default" {
 				logger = c.logger.With(zap.String("instance_id", instanceID), zap.String("driver", driver))
 			}
-			conn, err := drivers.Open(driver, map[string]any{"dsn": dsn}, shared, logger)
+			conn, err := drivers.Open(driver, convert(config), logger)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -130,7 +139,7 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver, dsn strin
 }
 
 // evict removes the connection from cache and closes the connection
-func (c *connectionCache) evict(ctx context.Context, instanceID, driver, dsn string) bool {
+func (c *connectionCache) evict(ctx context.Context, instanceID, driver string, config map[string]string) bool {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -138,7 +147,7 @@ func (c *connectionCache) evict(ctx context.Context, instanceID, driver, dsn str
 		return false
 	}
 
-	key := instanceID + driver + dsn
+	key := instanceID + driver + generateKey(config)
 	conn, ok := c.lruCache.Get(key)
 	if !ok {
 		conn, ok = c.cache[key]
@@ -184,4 +193,25 @@ func (c *migrationMetaCache) evict(ctx context.Context, instID string) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	c.cache.Remove(instID)
+}
+
+func convert(m map[string]string) map[string]any {
+	res := make(map[string]any, len(m))
+	for key, value := range m {
+		res[key] = value
+	}
+	return res
+}
+
+func generateKey(m map[string]string) string {
+	sb := strings.Builder{}
+	keys := maps.Keys(m)
+	slices.Sort(keys)
+	for _, key := range keys {
+		sb.WriteString(key)
+		sb.WriteString(":")
+		sb.WriteString(m[key])
+		sb.WriteString(" ")
+	}
+	return sb.String()
 }

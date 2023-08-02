@@ -11,6 +11,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -117,6 +118,13 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				}
 			}()
 
+			globalConnectors := []*rillv1.ConnectorDef{
+				{
+					Type:     conf.MetastoreDriver,
+					Name:     "metastore",
+					Defaults: map[string]string{"dsn": conf.MetastoreURL},
+				},
+			}
 			// Init runtime
 			opts := &runtime.Options{
 				ConnectionCacheSize: conf.ConnectionCacheSize,
@@ -125,6 +133,8 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				QueryCacheSizeBytes: conf.QueryCacheSizeBytes,
 				AllowHostAccess:     conf.AllowHostAccess,
 				SafeSourceRefresh:   conf.SafeSourceRefresh,
+				GlobalConnectors:    globalConnectors,
+				PrivateConnectors:   nil,
 			}
 			rt, err := runtime.New(opts, logger)
 			if err != nil {

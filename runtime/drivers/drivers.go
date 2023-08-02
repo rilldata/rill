@@ -42,13 +42,13 @@ func Register(name string, driver Driver) {
 }
 
 // Open opens a new connection
-func Open(driver string, config map[string]any, shared bool, logger *zap.Logger) (Handle, error) {
+func Open(driver string, config map[string]any, logger *zap.Logger) (Handle, error) {
 	d, ok := Drivers[driver]
 	if !ok {
 		return nil, fmt.Errorf("unknown driver: %s", driver)
 	}
 
-	conn, err := d.Open(config, shared, logger)
+	conn, err := d.Open(config, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ type Driver interface {
 	Spec() Spec
 
 	// Open opens a new connection to an underlying store.
-	Open(config map[string]any, shared bool, logger *zap.Logger) (Handle, error)
+	Open(config map[string]any, logger *zap.Logger) (Handle, error)
 
 	// Drop tears down a store. Drivers that do not support it return ErrDropNotSupported.
 	Drop(config map[string]any, logger *zap.Logger) error
@@ -105,15 +105,15 @@ type Handle interface {
 
 	// AsCatalogStore returns a AsCatalogStore if the driver can serve as such, otherwise returns false.
 	// A catalog is used to store state about migrated/deployed objects (such as sources and metrics views).
-	AsCatalogStore(instanceID string) (CatalogStore, bool)
+	AsCatalogStore() (CatalogStore, bool)
 
 	// AsRepoStore returns a AsRepoStore if the driver can serve as such, otherwise returns false.
 	// A repo stores file artifacts (either in a folder or virtualized in a database).
-	AsRepoStore(instanceID string) (RepoStore, bool)
+	AsRepoStore() (RepoStore, bool)
 
 	// AsOLAP returns an AsOLAP if the driver can serve as such, otherwise returns false.
 	// OLAP stores are where we actually store, transform, and query users' data.
-	AsOLAP(instanceID string) (OLAPStore, bool)
+	AsOLAP() (OLAPStore, bool)
 
 	// AsObjectStore returns an ObjectStore if the driver can serve as such, otherwise returns false.
 	AsObjectStore() (ObjectStore, bool)
@@ -126,7 +126,7 @@ type Handle interface {
 	// Examples:
 	// a) myDuckDB.AsTransporter(myGCS, myDuckDB)
 	// b) myBeam.AsTransporter(myGCS, myS3) // In the future
-	AsTransporter(instanceID string, from Handle, to Handle) (Transporter, bool)
+	AsTransporter(from Handle, to Handle) (Transporter, bool)
 
 	// AsSQLStore returns a SQLStore if the driver can serve as such, otherwise returns false.
 	AsSQLStore() (SQLStore, bool)

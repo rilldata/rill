@@ -61,7 +61,7 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 
 	existingPaths := make(map[string]bool)
 	if !req.Force {
-		paths, err := repo.ListRecursive(ctx, "**")
+		paths, err := repo.ListRecursive(ctx, req.InstanceId, "**")
 		if err != nil {
 			return nil, err
 		}
@@ -101,7 +101,7 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 			}
 			defer file.Close()
 
-			return repo.Put(ctx, path, file)
+			return repo.Put(ctx, req.InstanceId, path, file)
 		}()
 		if err != nil {
 			return nil, err

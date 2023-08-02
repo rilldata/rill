@@ -498,9 +498,9 @@ func TestIterativeJSONIngestionWithVariableSchema(t *testing.T) {
 }
 
 func runOLAPStore(t *testing.T) drivers.OLAPStore {
-	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, false, zap.NewNop())
+	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, zap.NewNop())
 	require.NoError(t, err)
-	olap, canServe := conn.AsOLAP("default")
+	olap, canServe := conn.AsOLAP()
 	require.True(t, canServe)
 	return olap
 }
