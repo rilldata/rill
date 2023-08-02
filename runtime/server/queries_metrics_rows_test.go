@@ -145,7 +145,7 @@ func TestServer_MetricsViewRows_parquet_export(t *testing.T) {
 	require.Equal(t, float64(8.0), values["tfloat8"])
 	require.Equal(t, float64(1.0), values["tdecimal"])
 	require.Equal(t, "2023-01-01T00:00:00Z", values["timestamp"])
-	require.Equal(t, `["a", "b"]`, values["tlist"])
+	require.Equal(t, `["a","b"]`, values["tlist"])
 	require.Equal(t, `{"f1":1,"f2":2}`, values["tmap"])
 	require.Equal(t, `{"f1":1,"f2":{"f3":3}}`, values["tstruct"])
 
