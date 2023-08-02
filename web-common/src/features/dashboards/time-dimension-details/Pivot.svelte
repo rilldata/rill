@@ -123,9 +123,17 @@
     <tbody>
       <!-- Virtual top padding row -->
       {#if paddingTop > 0}
-        <tr>
-          <td style={`height: ${paddingTop}px;`} />
-        </tr>
+        <PivotVirtualRow {paddingLeft} {paddingRight}>
+          {#each columnsToRender as column (column.index)}
+            <PivotCell
+              rowIdx={-1}
+              rowHeight={paddingTop}
+              fixed={isFixedColumn(column.index)}
+              renderCell={() => ""}
+              item={column}
+            />
+          {/each}
+        </PivotVirtualRow>
       {/if}
       {#each virtualRows as row (row.index)}
         <PivotVirtualRow {paddingLeft} {paddingRight}>
@@ -143,9 +151,17 @@
       {/each}
       <!-- Virtual bottom padding row -->
       {#if paddingBottom > 0}
-        <tr>
-          <td style={`height: ${paddingBottom}px`} />
-        </tr>
+        <PivotVirtualRow {paddingLeft} {paddingRight}>
+          {#each columnsToRender as column (column.index)}
+            <PivotCell
+              rowIdx={-1}
+              rowHeight={paddingBottom}
+              fixed={isFixedColumn(column.index)}
+              renderCell={() => ""}
+              item={column}
+            />
+          {/each}
+        </PivotVirtualRow>
       {/if}
     </tbody>
   </table>
