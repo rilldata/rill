@@ -129,5 +129,4 @@ func (u *usedFlusher) flush() {
 
 	// Flush service tokens
 	flushToDB(serviceTokens, u.db.UpdateServiceAuthTokenUsedOn, "service tokens")
-
 }
