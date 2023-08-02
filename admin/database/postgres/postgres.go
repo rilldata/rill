@@ -639,6 +639,14 @@ func (c *connection) InsertUserAuthToken(ctx context.Context, opts *database.Ins
 	return res, nil
 }
 
+func (c *connection) UpdateUserAuthTokenUsedOn(ctx context.Context, ids []string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE user_auth_tokens SET used_on=now() WHERE id=ANY($1)", ids)
+	if err != nil {
+		return parseErr("auth token", err)
+	}
+	return nil
+}
+
 func (c *connection) DeleteUserAuthToken(ctx context.Context, id string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM user_auth_tokens WHERE id=$1", id)
 	return checkDeleteRow("auth token", res, err)
@@ -760,6 +768,14 @@ func (c *connection) InsertServiceAuthToken(ctx context.Context, opts *database.
 		return nil, parseErr("service auth token", err)
 	}
 	return res, nil
+}
+
+func (c *connection) UpdateServiceAuthTokenUsedOn(ctx context.Context, ids []string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE service_auth_tokens SET used_on=now() WHERE id=ANY($1)", ids)
+	if err != nil {
+		return parseErr("service auth token", err)
+	}
+	return nil
 }
 
 // DeleteServiceAuthToken deletes a service auth token.

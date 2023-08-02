@@ -16,24 +16,28 @@ const (
 )
 
 type usedFlusher struct {
-	db          database.DB
-	logger      *zap.Logger
-	mu          sync.Mutex
-	deployments map[string]bool
-	ctx         context.Context
-	cancel      context.CancelFunc
-	flushWg     sync.WaitGroup
+	db            database.DB
+	logger        *zap.Logger
+	mu            sync.Mutex
+	deployments   map[string]bool
+	userTokens    map[string]bool
+	serviceTokens map[string]bool
+	ctx           context.Context
+	cancel        context.CancelFunc
+	flushWg       sync.WaitGroup
 }
 
 func newUsedFlusher(logger *zap.Logger, db database.DB) *usedFlusher {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	used := &usedFlusher{
-		db:          db,
-		logger:      logger,
-		deployments: make(map[string]bool),
-		ctx:         ctx,
-		cancel:      cancel,
+		db:            db,
+		logger:        logger,
+		deployments:   make(map[string]bool),
+		userTokens:    make(map[string]bool),
+		serviceTokens: make(map[string]bool),
+		ctx:           ctx,
+		cancel:        cancel,
 	}
 	go used.runBackground()
 
@@ -45,6 +49,20 @@ func (u *usedFlusher) Deployment(id string) {
 	defer u.mu.Unlock()
 
 	u.deployments[id] = true
+}
+
+func (u *usedFlusher) UserTokens(id string) {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+
+	u.userTokens[id] = true
+}
+
+func (u *usedFlusher) ServiceTokens(id string) {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+
+	u.serviceTokens[id] = true
 }
 
 func (u *usedFlusher) Close() {
@@ -73,24 +91,43 @@ func (u *usedFlusher) flush() {
 	u.mu.Lock()
 	deployments := u.deployments
 	u.deployments = make(map[string]bool)
+
+	userTokens := u.userTokens
+	u.userTokens = make(map[string]bool)
+
+	serviceTokens := u.serviceTokens
+	u.serviceTokens = make(map[string]bool)
 	u.mu.Unlock()
 
-	if len(deployments) > 0 {
-		u.logger.Info("flushing used_on to db", zap.Int("deployments", len(deployments)))
+	// Helper function to perform the flushing of used_on to the database.
+	flushToDB := func(data map[string]bool, updateFn func(ctx context.Context, ids []string) error, logMsg string) {
+		if len(data) > 0 {
+			u.logger.Info("flushing used_on to db", zap.Int(logMsg, len(data)))
 
-		ctx, cancel := context.WithTimeout(context.Background(), flushTimeout)
-		defer cancel()
+			ctx, cancel := context.WithTimeout(context.Background(), flushTimeout)
+			defer cancel()
 
-		ids := make([]string, 0, len(deployments))
-		for k := range deployments {
-			ids = append(ids, k)
+			ids := make([]string, 0, len(data))
+			for k := range data {
+				ids = append(ids, k)
+			}
+
+			err := updateFn(ctx, ids)
+			if err != nil {
+				u.logger.Error("flushing used_on failed", zap.Error(err), zap.Strings(logMsg, ids), observability.ZapCtx(ctx))
+			}
+
+			u.logger.Info("flushed used_on to db", zap.Int(logMsg, len(data)))
 		}
-
-		err := u.db.UpdateDeploymentUsedOn(ctx, ids)
-		if err != nil {
-			u.logger.Error("flushing used_on failed", zap.Error(err), zap.Strings("deployment_ids", ids), observability.ZapCtx(ctx))
-		}
-
-		u.logger.Info("flushed used_on to db", zap.Int("deployments", len(deployments)))
 	}
+
+	// Flush deployments
+	flushToDB(deployments, u.db.UpdateDeploymentUsedOn, "deployments")
+
+	// Flush user tokens
+	flushToDB(userTokens, u.db.UpdateUserAuthTokenUsedOn, "user tokens")
+
+	// Flush service tokens
+	flushToDB(serviceTokens, u.db.UpdateServiceAuthTokenUsedOn, "service tokens")
+
 }

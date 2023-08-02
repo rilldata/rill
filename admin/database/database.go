@@ -113,6 +113,7 @@ type DB interface {
 	FindUserAuthTokens(ctx context.Context, userID string) ([]*UserAuthToken, error)
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
 	InsertUserAuthToken(ctx context.Context, opts *InsertUserAuthTokenOptions) (*UserAuthToken, error)
+	UpdateUserAuthTokenUsedOn(ctx context.Context, ids []string) error
 	DeleteUserAuthToken(ctx context.Context, id string) error
 	DeleteExpiredUserAuthTokens(ctx context.Context, retention time.Duration) error
 
@@ -126,6 +127,7 @@ type DB interface {
 	FindServiceAuthTokens(ctx context.Context, serviceID string) ([]*ServiceAuthToken, error)
 	FindServiceAuthToken(ctx context.Context, id string) (*ServiceAuthToken, error)
 	InsertServiceAuthToken(ctx context.Context, opts *InsertServiceAuthTokenOptions) (*ServiceAuthToken, error)
+	UpdateServiceAuthTokenUsedOn(ctx context.Context, ids []string) error
 	DeleteServiceAuthToken(ctx context.Context, id string) error
 	DeleteExpiredServiceAuthTokens(ctx context.Context, retention time.Duration) error
 
@@ -420,6 +422,7 @@ type UserAuthToken struct {
 	RepresentingUserID *string    `db:"representing_user_id"`
 	CreatedOn          time.Time  `db:"created_on"`
 	ExpiresOn          *time.Time `db:"expires_on"`
+	UsedOn             time.Time  `db:"used_on"`
 }
 
 // InsertUserAuthTokenOptions defines options for creating a UserAuthToken.
