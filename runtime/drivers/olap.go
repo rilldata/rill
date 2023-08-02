@@ -17,10 +17,15 @@ var ErrUnsupportedConnector = errors.New("drivers: connector not supported")
 // and ensuredCtx wraps a background context (ensuring it can never be cancelled).
 type WithConnectionFunc func(wrappedCtx context.Context, ensuredCtx context.Context) error
 
+// WithRawFunc is a callback function that exposes the underlying driver connection.
+// The driverConn must not be used outside of this function.
+type WithRawFunc func(driverConn any) error
+
 // OLAPStore is implemented by drivers that are capable of storing, transforming and serving analytical queries.
 type OLAPStore interface {
 	Dialect() Dialect
 	WithConnection(ctx context.Context, priority int, fn WithConnectionFunc) error
+	WithRaw(ctx context.Context, priority int, fn WithRawFunc) error
 	Exec(ctx context.Context, stmt *Statement) error
 	Execute(ctx context.Context, stmt *Statement) (*Result, error)
 	InformationSchema() InformationSchema

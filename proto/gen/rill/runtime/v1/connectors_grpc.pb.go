@@ -26,7 +26,9 @@ const (
 	ConnectorService_GCSListBuckets_FullMethodName        = "/rill.runtime.v1.ConnectorService/GCSListBuckets"
 	ConnectorService_GCSListObjects_FullMethodName        = "/rill.runtime.v1.ConnectorService/GCSListObjects"
 	ConnectorService_GCSGetCredentialsInfo_FullMethodName = "/rill.runtime.v1.ConnectorService/GCSGetCredentialsInfo"
-	ConnectorService_MotherduckListTables_FullMethodName  = "/rill.runtime.v1.ConnectorService/MotherduckListTables"
+	ConnectorService_OLAPListTables_FullMethodName        = "/rill.runtime.v1.ConnectorService/OLAPListTables"
+	ConnectorService_BigQueryListDatasets_FullMethodName  = "/rill.runtime.v1.ConnectorService/BigQueryListDatasets"
+	ConnectorService_BigQueryListTables_FullMethodName    = "/rill.runtime.v1.ConnectorService/BigQueryListTables"
 )
 
 // ConnectorServiceClient is the client API for ConnectorService service.
@@ -47,8 +49,12 @@ type ConnectorServiceClient interface {
 	GCSListObjects(ctx context.Context, in *GCSListObjectsRequest, opts ...grpc.CallOption) (*GCSListObjectsResponse, error)
 	// GCSGetCredentialsInfo returns metadata for the given bucket.
 	GCSGetCredentialsInfo(ctx context.Context, in *GCSGetCredentialsInfoRequest, opts ...grpc.CallOption) (*GCSGetCredentialsInfoResponse, error)
-	// MotherduckListTables list all tables across all databases on motherduck
-	MotherduckListTables(ctx context.Context, in *MotherduckListTablesRequest, opts ...grpc.CallOption) (*MotherduckListTablesResponse, error)
+	// OLAPListTables list all tables across all databases on motherduck
+	OLAPListTables(ctx context.Context, in *OLAPListTablesRequest, opts ...grpc.CallOption) (*OLAPListTablesResponse, error)
+	// BigQueryListDatasets list all datasets in a bigquery project
+	BigQueryListDatasets(ctx context.Context, in *BigQueryListDatasetsRequest, opts ...grpc.CallOption) (*BigQueryListDatasetsResponse, error)
+	// BigQueryListTables list all tables in a bigquery project:dataset
+	BigQueryListTables(ctx context.Context, in *BigQueryListTablesRequest, opts ...grpc.CallOption) (*BigQueryListTablesResponse, error)
 }
 
 type connectorServiceClient struct {
@@ -122,9 +128,27 @@ func (c *connectorServiceClient) GCSGetCredentialsInfo(ctx context.Context, in *
 	return out, nil
 }
 
-func (c *connectorServiceClient) MotherduckListTables(ctx context.Context, in *MotherduckListTablesRequest, opts ...grpc.CallOption) (*MotherduckListTablesResponse, error) {
-	out := new(MotherduckListTablesResponse)
-	err := c.cc.Invoke(ctx, ConnectorService_MotherduckListTables_FullMethodName, in, out, opts...)
+func (c *connectorServiceClient) OLAPListTables(ctx context.Context, in *OLAPListTablesRequest, opts ...grpc.CallOption) (*OLAPListTablesResponse, error) {
+	out := new(OLAPListTablesResponse)
+	err := c.cc.Invoke(ctx, ConnectorService_OLAPListTables_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *connectorServiceClient) BigQueryListDatasets(ctx context.Context, in *BigQueryListDatasetsRequest, opts ...grpc.CallOption) (*BigQueryListDatasetsResponse, error) {
+	out := new(BigQueryListDatasetsResponse)
+	err := c.cc.Invoke(ctx, ConnectorService_BigQueryListDatasets_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *connectorServiceClient) BigQueryListTables(ctx context.Context, in *BigQueryListTablesRequest, opts ...grpc.CallOption) (*BigQueryListTablesResponse, error) {
+	out := new(BigQueryListTablesResponse)
+	err := c.cc.Invoke(ctx, ConnectorService_BigQueryListTables_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -149,8 +173,12 @@ type ConnectorServiceServer interface {
 	GCSListObjects(context.Context, *GCSListObjectsRequest) (*GCSListObjectsResponse, error)
 	// GCSGetCredentialsInfo returns metadata for the given bucket.
 	GCSGetCredentialsInfo(context.Context, *GCSGetCredentialsInfoRequest) (*GCSGetCredentialsInfoResponse, error)
-	// MotherduckListTables list all tables across all databases on motherduck
-	MotherduckListTables(context.Context, *MotherduckListTablesRequest) (*MotherduckListTablesResponse, error)
+	// OLAPListTables list all tables across all databases on motherduck
+	OLAPListTables(context.Context, *OLAPListTablesRequest) (*OLAPListTablesResponse, error)
+	// BigQueryListDatasets list all datasets in a bigquery project
+	BigQueryListDatasets(context.Context, *BigQueryListDatasetsRequest) (*BigQueryListDatasetsResponse, error)
+	// BigQueryListTables list all tables in a bigquery project:dataset
+	BigQueryListTables(context.Context, *BigQueryListTablesRequest) (*BigQueryListTablesResponse, error)
 	mustEmbedUnimplementedConnectorServiceServer()
 }
 
@@ -179,8 +207,14 @@ func (UnimplementedConnectorServiceServer) GCSListObjects(context.Context, *GCSL
 func (UnimplementedConnectorServiceServer) GCSGetCredentialsInfo(context.Context, *GCSGetCredentialsInfoRequest) (*GCSGetCredentialsInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GCSGetCredentialsInfo not implemented")
 }
-func (UnimplementedConnectorServiceServer) MotherduckListTables(context.Context, *MotherduckListTablesRequest) (*MotherduckListTablesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method MotherduckListTables not implemented")
+func (UnimplementedConnectorServiceServer) OLAPListTables(context.Context, *OLAPListTablesRequest) (*OLAPListTablesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method OLAPListTables not implemented")
+}
+func (UnimplementedConnectorServiceServer) BigQueryListDatasets(context.Context, *BigQueryListDatasetsRequest) (*BigQueryListDatasetsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BigQueryListDatasets not implemented")
+}
+func (UnimplementedConnectorServiceServer) BigQueryListTables(context.Context, *BigQueryListTablesRequest) (*BigQueryListTablesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BigQueryListTables not implemented")
 }
 func (UnimplementedConnectorServiceServer) mustEmbedUnimplementedConnectorServiceServer() {}
 
@@ -321,20 +355,56 @@ func _ConnectorService_GCSGetCredentialsInfo_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ConnectorService_MotherduckListTables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MotherduckListTablesRequest)
+func _ConnectorService_OLAPListTables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(OLAPListTablesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ConnectorServiceServer).MotherduckListTables(ctx, in)
+		return srv.(ConnectorServiceServer).OLAPListTables(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ConnectorService_MotherduckListTables_FullMethodName,
+		FullMethod: ConnectorService_OLAPListTables_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ConnectorServiceServer).MotherduckListTables(ctx, req.(*MotherduckListTablesRequest))
+		return srv.(ConnectorServiceServer).OLAPListTables(ctx, req.(*OLAPListTablesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ConnectorService_BigQueryListDatasets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BigQueryListDatasetsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConnectorServiceServer).BigQueryListDatasets(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConnectorService_BigQueryListDatasets_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConnectorServiceServer).BigQueryListDatasets(ctx, req.(*BigQueryListDatasetsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ConnectorService_BigQueryListTables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BigQueryListTablesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConnectorServiceServer).BigQueryListTables(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConnectorService_BigQueryListTables_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConnectorServiceServer).BigQueryListTables(ctx, req.(*BigQueryListTablesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -375,8 +445,16 @@ var ConnectorService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ConnectorService_GCSGetCredentialsInfo_Handler,
 		},
 		{
-			MethodName: "MotherduckListTables",
-			Handler:    _ConnectorService_MotherduckListTables_Handler,
+			MethodName: "OLAPListTables",
+			Handler:    _ConnectorService_OLAPListTables_Handler,
+		},
+		{
+			MethodName: "BigQueryListDatasets",
+			Handler:    _ConnectorService_BigQueryListDatasets_Handler,
+		},
+		{
+			MethodName: "BigQueryListTables",
+			Handler:    _ConnectorService_BigQueryListTables_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -42,6 +42,8 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 		attribute.Bool("args.force", req.Force),
 	)
 
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
 		return nil, ErrForbidden
 	}
@@ -114,6 +116,9 @@ func (s *Server) UnpackEmpty(ctx context.Context, req *runtimev1.UnpackEmptyRequ
 		attribute.String("args.title", req.Title),
 		attribute.Bool("args.force", req.Force),
 	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
 		return nil, ErrForbidden
 	}

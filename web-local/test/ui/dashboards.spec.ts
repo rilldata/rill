@@ -1,5 +1,4 @@
-import { describe, it } from "@jest/globals";
-import { expect as playwrightExpect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import {
   RequestMatcher,
   assertLeaderboards,
@@ -16,15 +15,15 @@ import {
   createAdBidsModel,
 } from "./utils/dataSpecifcHelpers";
 import { TestEntityType, wrapRetryAssertion } from "./utils/helpers";
-import { useRegisteredServer } from "./utils/serverConfigs";
 import { createOrReplaceSource } from "./utils/sourceHelpers";
 import { waitForEntity } from "./utils/waitHelpers";
+import { startRuntimeForEachTest } from "./utils/startRuntimeForEachTest";
 
-describe("dashboards", () => {
-  const testBrowser = useRegisteredServer("dashboards");
+test.describe("dashboard", () => {
+  startRuntimeForEachTest();
 
-  it("Autogenerate dashboard from source", async () => {
-    const { page } = testBrowser;
+  test("Autogenerate dashboard from source", async ({ page }) => {
+    await page.goto("/");
 
     await createOrReplaceSource(page, "AdBids.csv", "AdBids");
     await createDashboardFromSource(page, "AdBids");
@@ -37,8 +36,8 @@ describe("dashboards", () => {
     await assertAdBidsDashboard(page);
   });
 
-  it("Autogenerate dashboard from model", async () => {
-    const { page } = testBrowser;
+  test("Autogenerate dashboard from model", async ({ page }) => {
+    await page.goto("/");
 
     await createAdBidsModel(page);
     await Promise.all([
@@ -86,26 +85,16 @@ describe("dashboards", () => {
     );
   });
 
-  it("should run through the dashboard", async () => {
-    const { page } = testBrowser;
+  test("Dashboard runthrough", async ({ page }) => {
+    await page.goto("/");
     await createAdBidsModel(page);
     await createDashboardFromModel(page, "AdBids_model");
-    await waitForEntity(
-      page,
-      TestEntityType.Dashboard,
-      "AdBids_model_dashboard",
-      true
-    );
 
     // Check the total records are 100k
-    await playwrightExpect(
-      page.getByText("Total records 100.0k")
-    ).toBeVisible();
+    await expect(page.getByText("Total records 100.0k")).toBeVisible();
 
     // Check the row viewer accordion is visible
-    await playwrightExpect(
-      page.getByText("Model Data 100k of 100k rows")
-    ).toBeVisible();
+    await expect(page.getByText("Model Data 100k of 100k rows")).toBeVisible();
 
     // Change the metric trend granularity
     await page.getByRole("button", { name: "Metric trends by day" }).click();
@@ -114,30 +103,37 @@ describe("dashboards", () => {
     // Change the time range
     await page.getByLabel("Select time range").click();
     await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
+    // Wait for menu to close
+    await expect(
+      page.getByRole("menuitem", { name: "Last 6 Hours" })
+    ).not.toBeVisible();
+
+    // Change time zone to UTC
+    await page.getByLabel("Timezone selector").click();
+    await page
+      .getByRole("menuitem", { name: "UTC GMT +00:00 Etc/UTC" })
+      .click();
+    // Wait for menu to close
+    await expect(
+      page.getByRole("menuitem", { name: "UTC GMT +00:00 Etc/UTC" })
+    ).not.toBeVisible();
+
     // Check that the total records are 272 and have comparisons
-    await playwrightExpect(page.getByText("272 -23 -7%")).toBeVisible();
+    await expect(page.getByText("272 -23 -7%")).toBeVisible();
 
     // Check the row viewer accordion is updated
-    await playwrightExpect(
-      page.getByText("Model Data 272 of 100k rows")
-    ).toBeVisible();
+    await expect(page.getByText("Model Data 272 of 100k rows")).toBeVisible();
 
     // Check row viewer is collapsed by looking for the cell value "7029", which should be in the table
-    await playwrightExpect(
-      page.getByRole("button", { name: "7029" })
-    ).not.toBeVisible();
+    await expect(page.getByRole("button", { name: "7029" })).not.toBeVisible();
 
     // Expand row viewer and check data is there
     await page.getByRole("button", { name: "Toggle rows viewer" }).click();
-    await playwrightExpect(
-      page.getByRole("button", { name: "7029" })
-    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "7029" })).toBeVisible();
 
     await page.getByRole("button", { name: "Toggle rows viewer" }).click();
     // Check row viewer is collapsed
-    await playwrightExpect(
-      page.getByRole("button", { name: "7029" })
-    ).not.toBeVisible();
+    await expect(page.getByRole("button", { name: "7029" })).not.toBeVisible();
 
     // Download the data as CSV
     // Start waiting for download before clicking. Note no await.
@@ -147,7 +143,7 @@ describe("dashboards", () => {
     const downloadCSV = await downloadCSVPromise;
     await downloadCSV.path();
     const csvRegex = /^AdBids_model_filtered_.*\.csv$/;
-    playwrightExpect(csvRegex.test(downloadCSV.suggestedFilename())).toBe(true);
+    expect(csvRegex.test(downloadCSV.suggestedFilename())).toBe(true);
 
     // Download the data as XLSX
     // Start waiting for download before clicking. Note no await.
@@ -157,9 +153,7 @@ describe("dashboards", () => {
     const downloadXLSX = await downloadXLSXPromise;
     await downloadXLSX.path();
     const xlsxRegex = /^AdBids_model_filtered_.*\.xlsx$/;
-    playwrightExpect(xlsxRegex.test(downloadXLSX.suggestedFilename())).toBe(
-      true
-    );
+    expect(xlsxRegex.test(downloadXLSX.suggestedFilename())).toBe(true);
 
     // Turn off comparison
     await page
@@ -171,9 +165,7 @@ describe("dashboards", () => {
       .click();
 
     // Check number
-    await playwrightExpect(
-      page.getByText("272", { exact: true })
-    ).toBeVisible();
+    await expect(page.getByText("272", { exact: true })).toBeVisible();
 
     // Add comparison back
     await page.getByRole("button", { name: "no comparison" }).click();
@@ -193,9 +185,7 @@ describe("dashboards", () => {
 
       For now, we will wait for the menu to disappear before clicking the next menu
      */
-    await playwrightExpect(
-      page.getByLabel("Time comparison selector")
-    ).not.toBeVisible();
+    await expect(page.getByLabel("Time comparison selector")).not.toBeVisible();
 
     // Switch to a custom time range
     await page.getByLabel("Select time range").click();
@@ -210,14 +200,14 @@ describe("dashboards", () => {
     await timeRangeMenu.getByRole("button", { name: "Apply" }).click();
 
     // Check number
-    await playwrightExpect(page.getByText("Total records 65.1k")).toBeVisible();
+    await expect(page.getByText("Total records 65.1k")).toBeVisible();
 
     // Flip back to All Time
     await page.getByLabel("Select time range").click();
     await page.getByRole("menuitem", { name: "All Time" }).click();
 
     // Check number
-    await playwrightExpect(
+    await expect(
       page.getByText("Total records 100.0k", { exact: true })
     ).toBeVisible();
 
@@ -230,7 +220,7 @@ describe("dashboards", () => {
     await page.getByText("Exclude Publisher Facebook").click();
 
     // Check number
-    await playwrightExpect(
+    await expect(
       page.getByText("Total records 80.7k", { exact: true })
     ).toBeVisible();
 
@@ -241,7 +231,7 @@ describe("dashboards", () => {
     await page.getByRole("button", { name: "google.com 15.1k" }).click();
 
     // Check number
-    await playwrightExpect(
+    await expect(
       page.getByText("Total records 15.1k", { exact: true })
     ).toBeVisible();
 
@@ -249,12 +239,12 @@ describe("dashboards", () => {
     await page.getByRole("button", { name: "Clear filters" }).click();
 
     // Check number
-    await playwrightExpect(
+    await expect(
       page.getByText("Total records 100.0k", { exact: true })
     ).toBeVisible();
 
     // Check no filters label
-    await playwrightExpect(
+    await expect(
       page.getByText("No filters selected", { exact: true })
     ).toBeVisible();
 
@@ -299,14 +289,10 @@ describe("dashboards", () => {
     await page.getByRole("button", { name: "Go to Dashboard" }).click();
 
     // Assert that name changed
-    await playwrightExpect(
-      page.getByText("AdBids_model_dashboard_rename")
-    ).toBeVisible();
+    await expect(page.getByText("AdBids_model_dashboard_rename")).toBeVisible();
 
     // Assert that no time dimension specified
-    await playwrightExpect(
-      page.getByText("No time dimension specified")
-    ).toBeVisible();
+    await expect(page.getByText("No time dimension specified")).toBeVisible();
 
     // Open Edit Metrics
     await page.getByRole("button", { name: "Edit Metrics" }).click();
@@ -343,7 +329,7 @@ describe("dashboards", () => {
     await page.getByRole("button", { name: "Go to Dashboard" }).click();
 
     // Assert that time dimension is now week
-    await playwrightExpect(
+    await expect(
       page.getByRole("button", { name: "Metric trends by week" })
     ).toBeVisible();
 
@@ -371,11 +357,11 @@ describe("dashboards", () => {
         `;
     await updateMetricsInput(page, deleteOnlyMeasureDoc);
     // Check warning message appears, Go to Dashboard is disabled
-    await playwrightExpect(
+    await expect(
       page.getByText("at least one measure should be present")
     ).toBeVisible();
 
-    await playwrightExpect(
+    await expect(
       page.getByRole("button", { name: "Go to dashboard" })
     ).toBeDisabled();
 
@@ -402,7 +388,7 @@ describe("dashboards", () => {
         `;
 
     await updateMetricsInput(page, docWithIncompleteMeasure);
-    await playwrightExpect(
+    await expect(
       page.getByRole("button", { name: "Go to dashboard" })
     ).toBeDisabled();
 
@@ -434,7 +420,7 @@ describe("dashboards", () => {
         `;
 
     await updateMetricsInput(page, docWithCompleteMeasure);
-    await playwrightExpect(
+    await expect(
       page.getByRole("button", { name: "Go to dashboard" })
     ).toBeEnabled();
 
@@ -442,15 +428,15 @@ describe("dashboards", () => {
     await page.getByRole("button", { name: "Go to dashboard" }).click();
 
     // Check Avg Bid Price
-    await playwrightExpect(page.getByText("Avg Bid Price $3.01")).toBeVisible();
+    await expect(page.getByText("Avg Bid Price $3.01")).toBeVisible();
 
     // Change the leaderboard metric
     await page.getByRole("button", { name: "Total rows" }).click();
     await page.getByRole("menuitem", { name: "Avg Bid Price" }).click();
 
     // Check domain and sample value in leaderboard
-    await playwrightExpect(page.getByText("Domain Name")).toBeVisible();
-    await playwrightExpect(page.getByText("facebook.com $3.13")).toBeVisible();
+    await expect(page.getByText("Domain Name")).toBeVisible();
+    await expect(page.getByText("facebook.com $3.13")).toBeVisible();
 
     // Open the Publisher details table
     await page
@@ -459,14 +445,14 @@ describe("dashboards", () => {
       .click();
 
     // Check that table is shown
-    await playwrightExpect(
+    await expect(
       page.getByRole("table", { name: "Dimension table" })
     ).toBeVisible();
 
     // Check for a table value
     // Can do better table checking in the future when table is refactored to use proper row setup
     // For now, just check the dimensions
-    await playwrightExpect(
+    await expect(
       page
         .getByRole("button", { name: "Filter dimension value" })
         .filter({ hasText: "Microsoft" })
@@ -484,7 +470,7 @@ describe("dashboards", () => {
       .click();
 
     // Check that filter was applied
-    await playwrightExpect(
+    await expect(
       page.getByLabel("View filter").getByText("Publisher Microsoft")
     ).toBeVisible();
 
@@ -513,20 +499,11 @@ describe("dashboards", () => {
   });
 });
 
-/**
- * This flow assumes you start on a metrics page, and ends on the metrics page.
- * It will (1) delete any content
- * (2) add a skeleton YAML file
- * (3) scaffold in a metrics def from a model
- * (4) verify that the scaffolding works by looking at the dashboard.
- */
 async function runThroughEmptyMetricsFlows(page) {
   await updateMetricsInput(page, "");
 
   // the inspector should be empty.
-  await playwrightExpect(
-    await page.getByText("Let's get started.")
-  ).toBeVisible();
+  await expect(await page.getByText("Let's get started.")).toBeVisible();
 
   // skeleton should result in an empty skeleton YAML file
   await page.getByText("start with a skeleton").click();
@@ -534,26 +511,22 @@ async function runThroughEmptyMetricsFlows(page) {
   // check to see that the placeholder is gone by looking for the button
   // that was once there.
   await wrapRetryAssertion(async () => {
-    await playwrightExpect(
-      await page.getByText("start with a skeleton")
-    ).toBeHidden();
+    await expect(await page.getByText("start with a skeleton")).toBeHidden();
   });
 
   // the  button should be disabled.
-  await playwrightExpect(
+  await expect(
     await page.getByRole("button", { name: "Go to dashboard" })
   ).toBeDisabled();
 
   // the inspector should be empty.
-  await playwrightExpect(
-    await page.getByText("Model not defined.")
-  ).toBeVisible();
+  await expect(await page.getByText("Model not defined.")).toBeVisible();
 
   // now let's scaffold things in
   await updateMetricsInput(page, "");
 
   await wrapRetryAssertion(async () => {
-    await playwrightExpect(
+    await expect(
       await page.getByText("metrics configuration from an existing model")
     ).toBeVisible();
   });
@@ -563,20 +536,18 @@ async function runThroughEmptyMetricsFlows(page) {
   await page.getByRole("menuitem").getByText("AdBids_model").click();
 
   // let's check the inspector.
-  await playwrightExpect(await page.getByText("Model summary")).toBeVisible();
-  await playwrightExpect(await page.getByText("Model columns")).toBeVisible();
+  await expect(await page.getByText("Model summary")).toBeVisible();
+  await expect(await page.getByText("Model columns")).toBeVisible();
 
   // go to teh dashboard and make sure the metrics and dimensions are there.
 
   await page.getByRole("button", { name: "Go to dashboard" }).click();
 
   // check to see metrics make sense.
-  await playwrightExpect(
-    await page.getByText("Total Records 100.0k")
-  ).toBeVisible();
+  await expect(await page.getByText("Total Records 100.0k")).toBeVisible();
 
   // double-check that leaderboards make sense.
-  await playwrightExpect(
+  await expect(
     await page.getByRole("button", { name: "google.com 15.1k" })
   ).toBeVisible();
 

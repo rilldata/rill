@@ -98,7 +98,8 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 			}
 
 			// If embedded sources is enabled, parse it and add it to embeddedSources.
-			if duckDBRewriteSources {
+			// Also array of paths in read_ methods is not supported right now. So ignore when we have more than 1 path.
+			if duckDBRewriteSources && len(t.Paths) < 2 {
 				name, spec, ok := parseEmbeddedSource(t, node.Connector)
 				if ok {
 					if embeddedSources[name] == nil {
@@ -112,7 +113,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 
 			// Not an embedded source. Add it to refs if it's a regular table reference.
 			if duckDBInferRefs {
-				if t.Name != "" && t.Function == "" && t.Path == "" {
+				if t.Name != "" && t.Function == "" && len(t.Paths) == 0 {
 					refs = append(refs, ResourceName{Name: t.Name})
 				}
 			}
@@ -175,9 +176,15 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 // The returned name is derived from a hash of the source spec. It will be stable for any other table reference with equivalent path and properties.
 func parseEmbeddedSource(t *duckdbsql.TableRef, sinkConnector string) (ResourceName, *runtimev1.SourceSpec, bool) {
 	// The name can also potentially be a path
-	path := t.Path
-	if path == "" {
+	var path string
+	switch len(t.Paths) {
+	case 0:
 		path = t.Name
+	case 1:
+		path = t.Paths[0]
+	default:
+		// list of paths not supported right now
+		return ResourceName{}, nil, false
 	}
 
 	// NOTE: Using url.Parse is a little hacky. The first path component will be parsed as the host (so don't rely on uri.Path!)

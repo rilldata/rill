@@ -2,6 +2,7 @@ import { CATEGORICALS } from "@rilldata/web-common/lib/duckdb-data-types";
 import type { V1Model } from "@rilldata/web-common/runtime-client";
 import { parseDocument } from "yaml";
 import { selectTimestampColumnFromSchema } from "./column-selectors";
+import { DEFAULT_TIMEZONES } from "@rilldata/web-common/lib/time/config";
 
 export interface MetricsConfig extends MetricsParams {
   measures: MeasureEntity[];
@@ -47,7 +48,15 @@ timeseries: ""
 measures:
   - label: "Total Records"
     expression: "count(*)"
-dimensions: []
+dimensions:
+  - name: dimension1
+    label: First dimension
+    column: dimension1
+    description: ""
+available_time_zones:
+  - "Etc/UTC"
+  - "America/Los_Angeles"
+  - "America/New_York"
 `;
   const template = parseDocument(metricsTemplate);
   template.set("title", dashboardName);
@@ -91,6 +100,8 @@ export function addQuickMetricsToDashboardYAML(yaml: string, model: V1Model) {
 
   const dimensionNode = doc.createNode(diemensionSeq);
   doc.set("dimensions", dimensionNode);
+
+  doc.set("available_time_zones", DEFAULT_TIMEZONES);
 
   return `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
