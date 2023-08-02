@@ -18,6 +18,7 @@ const (
 	astKeyFunction         string = "function"
 	astKeyFunctionName     string = "function_name"
 	astKeyChildren         string = "children"
+	astKeyChild            string = "child"
 	astKeyValue            string = "value"
 	astKeyLeft             string = "left"
 	astKeyRight            string = "right"
@@ -38,6 +39,7 @@ const (
 	astKeyIsNull           string = "is_null"
 	astKeyTypeInfo         string = "type_info"
 	astKeyScale            string = "scale"
+	astKeyCastType         string = "cast_type"
 )
 
 func toBoolean(a astNode, k string) bool {
@@ -45,12 +47,7 @@ func toBoolean(a astNode, k string) bool {
 	if !ok {
 		return false
 	}
-	switch vt := v.(type) {
-	case bool:
-		return vt
-	default:
-		return false
-	}
+	return castToBoolean(v)
 }
 
 func toString(a astNode, k string) string {
@@ -140,4 +137,22 @@ func getColumnName(node astNode) string {
 		return alias
 	}
 	return strings.Join(toTypedArray[string](node, astKeyColumnNames), ".")
+}
+
+func castToBoolean(val any) bool {
+	switch vt := val.(type) {
+	case bool:
+		return vt
+	case string:
+		switch strings.ToLower(vt) {
+		case "true", "t":
+			return true
+		case "false", "f":
+			return false
+		default:
+			return false
+		}
+	default:
+		return false
+	}
 }

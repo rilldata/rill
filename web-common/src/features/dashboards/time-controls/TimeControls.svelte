@@ -9,7 +9,10 @@
     getComparisonRange,
     getTimeComparisonParametersForComponent,
   } from "@rilldata/web-common/lib/time/comparisons";
-  import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
+  import {
+    DEFAULT_TIMEZONES,
+    DEFAULT_TIME_RANGES,
+  } from "@rilldata/web-common/lib/time/config";
   import {
     checkValidTimeGrain,
     getDefaultTimeGrain,
@@ -36,12 +39,16 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
+  import { initLocalUserPreferenceStore } from "../user-preferences";
   import NoTimeDimensionCTA from "./NoTimeDimensionCTA.svelte";
   import TimeComparisonSelector from "./TimeComparisonSelector.svelte";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeSelector from "./TimeRangeSelector.svelte";
+  import TimeZoneSelector from "./TimeZoneSelector.svelte";
 
   export let metricViewName: string;
+
+  const localUserPreferences = initLocalUserPreferenceStore(metricViewName);
 
   const queryClient = useQueryClient();
   $: dashboardStore = useDashboardStore(metricViewName);
@@ -49,6 +56,7 @@
   let baseTimeRange: TimeRange;
   let defaultTimeRange: TimeRangeType;
   let minTimeGrain: V1TimeGrain;
+  let availableTimeZones: string[] = [];
 
   let metricsViewQuery;
   $: if ($runtime.instanceId) {
@@ -87,6 +95,15 @@
     minTimeGrain =
       $metricsViewQuery.data.entry.metricsView?.smallestTimeGrain ||
       V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
+
+    availableTimeZones =
+      $metricsViewQuery?.data?.entry?.metricsView?.availableTimeZones;
+
+    // For legacy dashboards, we need to set the available time
+    // zones to the default if they are not defined.
+    if (!availableTimeZones?.length) {
+      availableTimeZones = DEFAULT_TIMEZONES;
+    }
   }
   $: allTimeRange = $allTimeRangeQuery?.data as TimeRange;
   $: isDashboardDefined = $dashboardStore !== undefined;
@@ -103,10 +120,14 @@
   }
 
   function setDefaultTimeControls(allTimeRange: DashboardTimeControls) {
+    const defaultIANA = $localUserPreferences.timeZone;
+    metricsExplorerStore.setTimeZone(metricViewName, defaultIANA);
+
     baseTimeRange = convertTimeRangePreset(
       defaultTimeRange,
       allTimeRange.start,
-      allTimeRange.end
+      allTimeRange.end,
+      defaultIANA
     ) || { ...allTimeRange, end: new Date(allTimeRange.end.getTime() + 1) };
 
     const timeGrain = getDefaultTimeGrain(
@@ -138,7 +159,8 @@
         convertTimeRangePreset(
           $dashboardStore?.selectedTimeRange.name,
           allTimeRange.start,
-          allTimeRange.end
+          allTimeRange.end,
+          $dashboardStore?.selectedTimezone
         ) || allTimeRange;
     }
 
@@ -184,6 +206,11 @@
       timeGrain,
       $dashboardStore?.selectedComparisonTimeRange
     );
+  }
+
+  function onSelectTimeZone(timeZone: string) {
+    metricsExplorerStore.setTimeZone(metricViewName, timeZone);
+    localUserPreferences.set({ timeZone });
   }
 
   function onSelectComparisonRange(
@@ -325,6 +352,12 @@
       on:select-time-range={(e) =>
         onSelectTimeRange(e.detail.name, e.detail.start, e.detail.end)}
     />
+    <TimeZoneSelector
+      on:select-time-zone={(e) => onSelectTimeZone(e.detail.timeZone)}
+      {metricViewName}
+      {availableTimeZones}
+      now={allTimeRange?.end}
+    />
     <TimeComparisonSelector
       on:select-comparison={(e) => {
         onSelectComparisonRange(e.detail.name, e.detail.start, e.detail.end);
@@ -336,6 +369,7 @@
       currentEnd={$dashboardStore?.selectedTimeRange?.end}
       boundaryStart={allTimeRange.start}
       boundaryEnd={allTimeRange.end}
+      zone={$dashboardStore?.selectedTimezone}
       showComparison={$dashboardStore?.showComparison}
       selectedComparison={$dashboardStore?.selectedComparisonTimeRange}
       comparisonOptions={availableComparisons}

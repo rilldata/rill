@@ -86,6 +86,13 @@ export class DashboardState extends Message<DashboardState> {
    */
   showPercentOfTotal?: boolean;
 
+  /**
+   * Selected timezone for the dashboard
+   *
+   * @generated from field: optional string selected_timezone = 13;
+   */
+  selectedTimezone?: string;
+
   constructor(data?: PartialMessage<DashboardState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -106,6 +113,7 @@ export class DashboardState extends Message<DashboardState> {
     { no: 10, name: "visible_dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "all_dimensions_visible", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 12, name: "show_percent_of_total", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 13, name: "selected_timezone", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardState {
