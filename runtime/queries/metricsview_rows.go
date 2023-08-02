@@ -7,6 +7,7 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"uuid"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -24,6 +25,8 @@ type MetricsViewRows struct {
 	Limit           *int64                       `json:"limit,omitempty"`
 	Offset          int64                        `json:"offset,omitempty"`
 	TimeZone        string                       `json:"time_zone,omitempty"`
+	ExportFormat    runtimev1.ExportFormat
+	ExportFilename  string
 
 	Result *runtimev1.MetricsViewRowsResponse `json:"-"`
 }
@@ -255,6 +258,11 @@ func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsView, dialect
 		limitClause,
 		q.Offset,
 	)
+
+	switch q.ExportFormat {
+	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
+		sql = fmt.Sprintf("COPY (%s) TO %s.csv", sql, q.ExportFilename)
+	}
 
 	return sql, args, nil
 }
