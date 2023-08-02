@@ -10,7 +10,6 @@
   import Spinner from "../../entity-management/Spinner.svelte";
 
   import {
-    LeaderboardContextColumn,
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../dashboard-stores";

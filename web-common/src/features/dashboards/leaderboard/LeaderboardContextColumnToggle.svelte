@@ -10,7 +10,6 @@
 
   import { useModelHasTimeSeries } from "@rilldata/web-common/features/dashboards/selectors";
   import {
-    LeaderboardContextColumn,
     MetricsExplorerEntity,
     metricsExplorerStore,
   } from "../dashboard-stores";

@@ -24,18 +24,6 @@ export interface LeaderboardValues {
 
 export type ActiveValues = Record<string, Array<[unknown, boolean]>>;
 
-/**
- * This enum determines the state of the context column in the leaderboard
- */
-export enum LeaderboardContextColumn {
-  // show percent-of-total
-  PERCENT = "percent",
-  // show percent change of the value compared to the previous time range
-  DELTA_CHANGE = "delta_change",
-  // Do not show the context column
-  HIDDEN = "hidden",
-}
-
 export interface MetricsExplorerEntity {
   name: string;
   // selected measure names to be shown

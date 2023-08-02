@@ -25,7 +25,6 @@
     LeaderboardItemData,
     getFormatterValueForPercDiff,
   } from "./leaderboard-utils";
-  import { LeaderboardContextColumn } from "../dashboard-stores";
 
   export let itemData: LeaderboardItemData;
   $: label = itemData.label;
