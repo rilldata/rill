@@ -32,6 +32,14 @@ export type AdminServiceSearchProjectNamesParams = {
   pageToken?: string;
 };
 
+export type AdminServiceUpdateServiceBody = {
+  newName?: string;
+};
+
+export type AdminServiceCreateServiceParams = {
+  name?: string;
+};
+
 export type AdminServiceUpdateProjectVariablesBodyVariables = {
   [key: string]: string;
 };
@@ -119,8 +127,6 @@ export type AdminServiceTriggerRefreshSourcesBody = {
   sources?: string[];
 };
 
-export type AdminServiceTriggerReconcileBody = { [key: string]: any };
-
 export type AdminServiceAddOrganizationMemberBodyBody = {
   email?: string;
   role?: string;
@@ -129,6 +135,8 @@ export type AdminServiceAddOrganizationMemberBodyBody = {
 export type AdminServiceSetOrganizationMemberRoleBodyBody = {
   role?: string;
 };
+
+export type AdminServiceTriggerReconcileBodyBody = { [key: string]: any };
 
 export interface V1WhitelistedDomain {
   domain?: string;
@@ -165,6 +173,10 @@ export interface V1UpdateUserPreferencesResponse {
 
 export interface V1UpdateUserPreferencesRequest {
   preferences?: V1UserPreferences;
+}
+
+export interface V1UpdateServiceResponse {
+  service?: V1Service;
 }
 
 export type V1UpdateProjectVariablesResponseVariables = {
@@ -248,6 +260,21 @@ export interface V1SetOrganizationMemberRoleResponse {
   [key: string]: any;
 }
 
+export interface V1ServiceToken {
+  id?: string;
+  createdOn?: string;
+  expiresOn?: string;
+}
+
+export interface V1Service {
+  id?: string;
+  name?: string;
+  orgId?: string;
+  orgName?: string;
+  createdOn?: string;
+  updatedOn?: string;
+}
+
 export interface V1SearchUsersResponse {
   users?: V1User[];
   nextPageToken?: string;
@@ -256,6 +283,10 @@ export interface V1SearchUsersResponse {
 export interface V1SearchProjectNamesResponse {
   names?: string[];
   nextPageToken?: string;
+}
+
+export interface V1RevokeServiceAuthTokenResponse {
+  [key: string]: any;
 }
 
 export interface V1RevokeCurrentAuthTokenResponse {
@@ -361,6 +392,14 @@ export interface V1ListSuperusersResponse {
   users?: V1User[];
 }
 
+export interface V1ListServicesResponse {
+  services?: V1Service[];
+}
+
+export interface V1ListServiceAuthTokensResponse {
+  tokens?: V1ServiceToken[];
+}
+
 export interface V1ListProjectsForOrganizationResponse {
   projects?: V1Project[];
   nextPageToken?: string;
@@ -397,6 +436,10 @@ export interface V1ListBookmarksResponse {
 
 export interface V1LeaveOrganizationResponse {
   [key: string]: any;
+}
+
+export interface V1IssueServiceAuthTokenResponse {
+  token?: string;
 }
 
 export interface V1IssueRepresentativeAuthTokenResponse {
@@ -478,6 +521,10 @@ export interface V1Deployment {
   updatedOn?: string;
 }
 
+export interface V1DeleteServiceResponse {
+  service?: V1Service;
+}
+
 export interface V1DeleteProjectResponse {
   [key: string]: any;
 }
@@ -488,6 +535,10 @@ export interface V1DeleteOrganizationResponse {
 
 export interface V1CreateWhitelistedDomainResponse {
   [key: string]: any;
+}
+
+export interface V1CreateServiceResponse {
+  service?: V1Service;
 }
 
 export interface V1CreateProjectResponse {

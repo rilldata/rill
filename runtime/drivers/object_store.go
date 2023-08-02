@@ -20,4 +20,7 @@ type FileIterator interface {
 	// Size returns size of data downloaded in unit.
 	// Returns 0,false if not able to compute size in given unit
 	Size(unit ProgressUnit) (int64, bool)
+	// KeepFilesUntilClose marks the iterator to keep the files until close is called.
+	// This is used when the entire list of files is used at once in certain cases.
+	KeepFilesUntilClose(keepFilesUntilClose bool)
 }

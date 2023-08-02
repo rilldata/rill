@@ -171,6 +171,17 @@ func (c *connection) EstimateSize() (int64, bool) {
 	return fileSize(paths), true
 }
 
+func (c *connection) WithRaw(ctx context.Context, priority int, fn drivers.WithRawFunc) error {
+	// Acquire connection
+	conn, release, err := c.acquireOLAPConn(ctx, priority)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = release() }()
+
+	return conn.Raw(fn)
+}
+
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	if r == nil {
 		return nil, nil

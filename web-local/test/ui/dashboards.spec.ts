@@ -103,6 +103,21 @@ test.describe("dashboard", () => {
     // Change the time range
     await page.getByLabel("Select time range").click();
     await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
+    // Wait for menu to close
+    await expect(
+      page.getByRole("menuitem", { name: "Last 6 Hours" })
+    ).not.toBeVisible();
+
+    // Change time zone to UTC
+    await page.getByLabel("Timezone selector").click();
+    await page
+      .getByRole("menuitem", { name: "UTC GMT +00:00 Etc/UTC" })
+      .click();
+    // Wait for menu to close
+    await expect(
+      page.getByRole("menuitem", { name: "UTC GMT +00:00 Etc/UTC" })
+    ).not.toBeVisible();
+
     // Check that the total records are 272 and have comparisons
     await expect(page.getByText("272 -23 -7%")).toBeVisible();
 

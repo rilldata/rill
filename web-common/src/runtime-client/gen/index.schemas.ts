@@ -4,18 +4,37 @@
  * rill/runtime/v1/schema.proto
  * OpenAPI spec version: version not set
  */
+export type ConnectorServiceS3GetCredentialsInfoParams = {
+  instanceId?: string;
+  connector?: string;
+};
+
 export type ConnectorServiceS3ListBucketsParams = {
+  instanceId?: string;
+  connector?: string;
   pageSize?: number;
   pageToken?: string;
 };
 
 export type ConnectorServiceS3ListObjectsParams = {
+  instanceId?: string;
+  connector?: string;
   pageSize?: number;
   pageToken?: string;
   region?: string;
   prefix?: string;
   startAfter?: string;
   delimiter?: string;
+};
+
+export type ConnectorServiceS3GetBucketMetadataParams = {
+  instanceId?: string;
+  connector?: string;
+};
+
+export type ConnectorServiceOLAPListTablesParams = {
+  instanceId?: string;
+  connector?: string;
 };
 
 export type RuntimeServiceCreateTriggerBody = {
@@ -330,18 +349,42 @@ export type RuntimeServiceListInstancesParams = {
   pageToken?: string;
 };
 
+export type ConnectorServiceGCSGetCredentialsInfoParams = {
+  instanceId?: string;
+  connector?: string;
+};
+
 export type ConnectorServiceGCSListBucketsParams = {
+  instanceId?: string;
+  connector?: string;
   pageSize?: number;
   pageToken?: string;
 };
 
 export type ConnectorServiceGCSListObjectsParams = {
+  instanceId?: string;
+  connector?: string;
   pageSize?: number;
   pageToken?: string;
   prefix?: string;
   startOffset?: string;
   endOffset?: string;
   delimiter?: string;
+};
+
+export type ConnectorServiceBigQueryListTablesParams = {
+  instanceId?: string;
+  connector?: string;
+  dataset?: string;
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type ConnectorServiceBigQueryListDatasetsParams = {
+  instanceId?: string;
+  connector?: string;
+  pageSize?: number;
+  pageToken?: string;
 };
 
 export interface V1WatchResourcesResponse {
@@ -688,6 +731,16 @@ export interface V1RefreshAndReconcileRequest {
   strict?: boolean;
 }
 
+export interface V1ReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
+}
+
 /**
  * - CODE_UNSPECIFIED: Unspecified error
  - CODE_SYNTAX: Code artifact failed to parse
@@ -730,16 +783,6 @@ Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: V1ReconcileErrorCharLocation;
   endLocation?: V1ReconcileErrorCharLocation;
-}
-
-export interface V1ReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
 }
 
 export type V1QueryResponseDataItem = { [key: string]: any };
@@ -835,12 +878,6 @@ export interface V1PullTrigger {
   state?: V1PullTriggerState;
 }
 
-export interface V1ProjectParserState {
-  parseErrors?: V1ParseError[];
-  currentCommitSha?: string;
-  changedPaths?: string[];
-}
-
 export interface V1ProjectParserSpec {
   compiler?: string;
   watch?: boolean;
@@ -873,6 +910,12 @@ export interface V1ParseError {
   startLocation?: Runtimev1CharLocation;
 }
 
+export interface V1ProjectParserState {
+  parseErrors?: V1ParseError[];
+  currentCommitSha?: string;
+  changedPaths?: string[];
+}
+
 export type V1ObjectType = (typeof V1ObjectType)[keyof typeof V1ObjectType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
@@ -883,6 +926,10 @@ export const V1ObjectType = {
   OBJECT_TYPE_MODEL: "OBJECT_TYPE_MODEL",
   OBJECT_TYPE_METRICS_VIEW: "OBJECT_TYPE_METRICS_VIEW",
 } as const;
+
+export interface V1OLAPListTablesResponse {
+  tables?: V1TableInfo[];
+}
 
 export interface V1NumericStatistics {
   min?: number;
@@ -910,14 +957,6 @@ export interface V1NumericSummary {
   numericHistogramBins?: V1NumericHistogramBins;
   numericStatistics?: V1NumericStatistics;
   numericOutliers?: V1NumericOutliers;
-}
-
-export interface V1MotherduckListTablesResponse {
-  tables?: V1TableInfo[];
-}
-
-export interface V1ExecutionError {
-  message?: string;
 }
 
 export interface V1ModelState {
@@ -968,11 +1007,6 @@ export interface V1Migration {
   state?: V1MigrationState;
 }
 
-export interface V1MetricsViewV2 {
-  spec?: V1MetricsViewSpec;
-  state?: V1MetricsViewState;
-}
-
 export type V1MetricsViewTotalsResponseData = { [key: string]: any };
 
 export interface V1MetricsViewTotalsResponse {
@@ -996,21 +1030,6 @@ export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
 export interface V1MetricsViewToplistResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1MetricsViewToplistResponseDataItem[];
-}
-
-export interface V1MetricsViewToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  limit?: string;
-  offset?: string;
-  sort?: V1MetricsViewSort[];
-  filter?: V1MetricsViewFilter;
-  priority?: number;
 }
 
 export interface V1MetricsViewTimeSeriesResponse {
@@ -1050,6 +1069,11 @@ export interface V1MetricsViewSpec {
   stageChanges?: boolean;
 }
 
+export interface V1MetricsViewV2 {
+  spec?: V1MetricsViewSpec;
+  state?: V1MetricsViewState;
+}
+
 export interface V1MetricsViewSort {
   name?: string;
   ascending?: boolean;
@@ -1060,6 +1084,21 @@ export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
+}
+
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  filter?: V1MetricsViewFilter;
+  priority?: number;
 }
 
 export interface V1MetricsViewRowsRequest {
@@ -1082,10 +1121,6 @@ export interface V1MetricsViewComparisonValue {
   comparisonValue?: unknown;
   deltaAbs?: unknown;
   deltaRel?: unknown;
-}
-
-export interface V1MetricsViewComparisonToplistResponse {
-  rows?: V1MetricsViewComparisonRow[];
 }
 
 export type V1MetricsViewComparisonSortType =
@@ -1129,6 +1164,10 @@ export interface V1MetricsViewComparisonToplistRequest {
 export interface V1MetricsViewComparisonRow {
   dimensionValue?: unknown;
   measureValues?: V1MetricsViewComparisonValue[];
+}
+
+export interface V1MetricsViewComparisonToplistResponse {
+  rows?: V1MetricsViewComparisonRow[];
 }
 
 export interface V1MetricsViewColumn {
@@ -1319,6 +1358,10 @@ export const V1ExportFormat = {
   EXPORT_FORMAT_XLSX: "EXPORT_FORMAT_XLSX",
 } as const;
 
+export interface V1ExecutionError {
+  message?: string;
+}
+
 /**
  * Example contains metadata about an example project that is available for unpacking.
  */
@@ -1375,6 +1418,8 @@ export interface V1CreateInstanceResponse {
   instance?: V1Instance;
 }
 
+export type V1CreateInstanceRequestAnnotations = { [key: string]: string };
+
 export type V1CreateInstanceRequestVariables = { [key: string]: string };
 
 /**
@@ -1390,6 +1435,7 @@ export interface V1CreateInstanceRequest {
   embedCatalog?: boolean;
   variables?: V1CreateInstanceRequestVariables;
   ingestionLimitBytes?: string;
+  annotations?: V1CreateInstanceRequestAnnotations;
 }
 
 /**
@@ -1578,6 +1624,16 @@ export interface V1BucketExtractPolicy {
   rowsLimitBytes?: string;
   filesStrategy?: V1BucketExtractPolicyStrategy;
   filesLimit?: string;
+}
+
+export interface V1BigQueryListTablesResponse {
+  nextPageToken?: string;
+  names?: string[];
+}
+
+export interface V1BigQueryListDatasetsResponse {
+  nextPageToken?: string;
+  names?: string[];
 }
 
 export interface Runtimev1Type {

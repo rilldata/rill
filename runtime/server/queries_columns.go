@@ -21,6 +21,8 @@ func (s *Server) ColumnTopK(ctx context.Context, req *runtimev1.ColumnTopKReques
 		attribute.Int("args.priority", int(req.Priority)),
 	)
 
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -64,6 +66,8 @@ func (s *Server) ColumnNullCount(ctx context.Context, req *runtimev1.ColumnNullC
 		attribute.Int("args.priority", int(req.Priority)),
 	)
 
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -90,6 +94,8 @@ func (s *Server) ColumnDescriptiveStatistics(ctx context.Context, req *runtimev1
 		attribute.String("args.column", req.ColumnName),
 		attribute.Int("args.priority", int(req.Priority)),
 	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
@@ -152,6 +158,8 @@ func (s *Server) ColumnTimeGrain(ctx context.Context, req *runtimev1.ColumnTimeG
 		attribute.Int("args.priority", int(req.Priority)),
 	)
 
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -177,6 +185,8 @@ func (s *Server) ColumnNumericHistogram(ctx context.Context, req *runtimev1.Colu
 		attribute.String("args.histogram", req.HistogramMethod.String()),
 		attribute.Int("args.priority", int(req.Priority)),
 	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
@@ -213,6 +223,8 @@ func (s *Server) ColumnRugHistogram(ctx context.Context, req *runtimev1.ColumnRu
 		attribute.Int("args.priority", int(req.Priority)),
 	)
 
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -244,6 +256,8 @@ func (s *Server) ColumnTimeRange(ctx context.Context, req *runtimev1.ColumnTimeR
 		attribute.Int("args.priority", int(req.Priority)),
 	)
 
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -268,6 +282,8 @@ func (s *Server) ColumnCardinality(ctx context.Context, req *runtimev1.ColumnCar
 		attribute.String("args.column", req.ColumnName),
 		attribute.Int("args.priority", int(req.Priority)),
 	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden

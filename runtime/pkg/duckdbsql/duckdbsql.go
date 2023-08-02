@@ -130,6 +130,14 @@ func (a *AST) ExtractColumnRefs() []*ColumnRef {
 	return columnRefs
 }
 
+func (a *AST) GetTableRefs() []*TableRef {
+	tableRefs := make([]*TableRef, 0)
+	for _, node := range a.fromNodes {
+		tableRefs = append(tableRefs, node.ref)
+	}
+	return tableRefs
+}
+
 func (a *AST) newFromNode(node, parent astNode, childKey string, ref *TableRef) {
 	fn := &fromNode{
 		ast:      node,

@@ -110,11 +110,6 @@
   $: if (scrubbing) {
     scrubEnd = alwaysBetween(internalXMin, internalXMax, mouseoverValue);
   }
-
-  let something = true;
-  $: setTimeout(() => {
-    something = !something;
-  }, 1000);
 </script>
 
 <SimpleDataGraphic
