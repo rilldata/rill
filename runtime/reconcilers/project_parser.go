@@ -303,11 +303,11 @@ func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, ow
 
 	// Updates
 	for _, n := range diff.Modified {
-		def := parser.Resources[n]
 		existing, err := r.C.Get(ctx, resourceNameFromCompiler(n))
 		if err != nil {
 			return err
 		}
+		def := parser.Resources[n]
 		err = r.putParserResourceDef(ctx, owner, def, existing)
 		if err != nil {
 			return err

@@ -223,19 +223,19 @@ func (c *Controller) AcquireOLAP(ctx context.Context, connector string) (drivers
 }
 
 // reconciler gets or lazily initializes a reconciler
-func (c *Controller) reconciler(resourceKind string) Reconciler {
-	reconciler := c.reconcilers[resourceKind]
-	if reconciler != nil {
-		return reconciler
-	}
+// func (c *Controller) reconciler(resourceKind string) Reconciler {
+// 	reconciler := c.reconcilers[resourceKind]
+// 	if reconciler != nil {
+// 		return reconciler
+// 	}
 
-	initializer := ReconcilerInitializers[resourceKind]
-	if initializer == nil {
-		panic(fmt.Errorf("no reconciler registered for resource kind %q", resourceKind))
-	}
+// 	initializer := ReconcilerInitializers[resourceKind]
+// 	if initializer == nil {
+// 		panic(fmt.Errorf("no reconciler registered for resource kind %q", resourceKind))
+// 	}
 
-	reconciler = initializer(c)
-	c.reconcilers[resourceKind] = reconciler
+// 	reconciler = initializer(c)
+// 	c.reconcilers[resourceKind] = reconciler
 
-	return reconciler
-}
+// 	return reconciler
+// }
