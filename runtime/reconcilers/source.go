@@ -5,9 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"encoding/hex"
-	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -45,33 +43,33 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, s *runtime.Signal) run
 
 	// Handle deletion
 	if self.Meta.Deleted {
-		err1 := r.dropTableIfExists(ctx, src.State.Connector, src.State.Table)
-		err2 := r.dropTableIfExists(ctx, src.State.Connector, r.stagingTableName(src.State.Table))
-		err := errors.Join(err1, err2)
-		return runtime.ReconcileResult{Err: err}
+		olapDropTableIfExists(ctx, r.C, src.State.Connector, src.State.Table, false)
+		olapDropTableIfExists(ctx, r.C, src.State.Connector, r.stagingTableName(src.State.Table), false)
+		return runtime.ReconcileResult{}
 	}
 
 	// Handle renames
 	tableName := self.Meta.Name.Name
 	if self.Meta.RenamedFrom != nil {
-		exists, err := r.tableExists(ctx, src.State.Connector, src.State.Table)
-		if err != nil {
-			return runtime.ReconcileResult{Err: err}
-		}
+		// Check if the table exists (it should, but might somehow have been corrupted)
+		t, ok := olapTableInfo(ctx, r.C, src.State.Connector, src.State.Table)
+		if ok && !t.View { // Checking View only out of caution (would indicate very corrupted DB)
+			// Clear any existing table with the new name
+			if t2, ok := olapTableInfo(ctx, r.C, src.State.Connector, tableName); ok {
+				olapDropTableIfExists(ctx, r.C, src.State.Connector, tableName, t2.View)
+			}
 
-		if exists {
-			err = r.renameTable(ctx, src.State.Connector, src.State.Table, tableName)
+			// Rename and update state
+			err = olapRenameTable(ctx, r.C, src.State.Connector, src.State.Table, tableName, false)
 			if err != nil {
 				return runtime.ReconcileResult{Err: fmt.Errorf("failed to rename table: %w", err)}
 			}
-
 			src.State.Table = tableName
 			err = r.C.UpdateState(ctx, self.Meta.Name, self)
 			if err != nil {
 				return runtime.ReconcileResult{Err: err}
 			}
 		}
-
 		// Note: Not exiting early. It might need to be (re-)ingested, and we need to set the correct retrigger time based on the refresh schedule.
 	}
 
@@ -92,13 +90,11 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, s *runtime.Signal) run
 		}
 	}
 
-	// Check if the table still exists (might have been dropped by the user)
+	// Check if the table still exists (might have been corrupted/lost somehow)
 	tableExists := false
 	if src.State.Table != "" {
-		tableExists, err = r.tableExists(ctx, src.State.Connector, src.State.Table)
-		if err != nil {
-			return runtime.ReconcileResult{Err: fmt.Errorf("could not check table: %w", err)}
-		}
+		t, ok := olapTableInfo(ctx, r.C, src.State.Connector, src.State.Table)
+		tableExists = ok && !t.View
 	}
 
 	// Decide if we should trigger a refresh
@@ -116,22 +112,34 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, s *runtime.Signal) run
 
 	// If the SinkConnector was changed, drop data in the old connector
 	if src.State.Table != "" && src.State.Connector != src.Spec.SinkConnector {
-		_ = r.dropTableIfExists(ctx, src.State.Connector, src.State.Table)
-		_ = r.dropTableIfExists(ctx, src.State.Connector, r.stagingTableName(src.State.Table))
+		olapDropTableIfExists(ctx, r.C, src.State.Connector, src.State.Table, false)
+		olapDropTableIfExists(ctx, r.C, src.State.Connector, r.stagingTableName(src.State.Table), false)
 	}
 
-	// Do the actual ingestion
+	// Prepare for ingestion
 	stagingTableName := tableName
 	connector := src.Spec.SinkConnector
 	if src.Spec.StageChanges {
 		stagingTableName = r.stagingTableName(tableName)
 	}
+
+	// Should never happen, but if somehow the staging table was corrupted into a view, drop it
+	if t, ok := olapTableInfo(ctx, r.C, connector, stagingTableName); ok && t.View {
+		olapDropTableIfExists(ctx, r.C, connector, stagingTableName, t.View)
+	}
+
+	// Execute ingestion
 	ingestErr := r.ingestSource(ctx, src.Spec, stagingTableName)
 	if ingestErr != nil {
 		ingestErr = fmt.Errorf("failed to ingest source: %w", ingestErr)
 	}
 	if ingestErr == nil && src.Spec.StageChanges {
-		err = r.renameTable(ctx, connector, stagingTableName, tableName)
+		// Drop the main table name
+		if t, ok := olapTableInfo(ctx, r.C, connector, tableName); ok {
+			olapDropTableIfExists(ctx, r.C, connector, tableName, t.View)
+		}
+		// Rename staging table to main table
+		err = olapRenameTable(ctx, r.C, connector, stagingTableName, tableName, false)
 		if err != nil {
 			return runtime.ReconcileResult{Err: fmt.Errorf("failed to rename staging table: %w", err)}
 		}
@@ -152,11 +160,11 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, s *runtime.Signal) run
 		src.State.RefreshedOn = timestamppb.Now()
 	} else if src.Spec.StageChanges {
 		// Failed ingestion to staging table
-		_ = r.dropTableIfExists(ctx, connector, stagingTableName)
+		olapDropTableIfExists(ctx, r.C, connector, stagingTableName, false)
 	} else {
 		// Failed ingestion to main table
 		update = true
-		_ = r.dropTableIfExists(ctx, connector, tableName)
+		olapDropTableIfExists(ctx, r.C, connector, tableName, false)
 		src.State.Connector = ""
 		src.State.Table = ""
 		src.State.SpecHash = ""
@@ -218,101 +226,6 @@ func (r *SourceReconciler) ingestionSpecHash(spec *runtimev1.SourceSpec) (string
 // By using a stable temporary table name, we can ensure proper garbage collection without managing additional state.
 func (r *SourceReconciler) stagingTableName(table string) string {
 	return "__rill_tmp_src_" + table
-}
-
-// tableExists returns true if the table exists in the database associated with connector.
-// It will return an error if connector is not an OLAP.
-func (r *SourceReconciler) tableExists(ctx context.Context, connector, table string) (bool, error) {
-	if table == "" {
-		return false, nil
-	}
-
-	olap, release, err := r.C.AcquireOLAP(ctx, connector)
-	if err != nil {
-		return false, err
-	}
-	defer release()
-
-	_, err = olap.InformationSchema().Lookup(ctx, table)
-	if err != nil {
-		if errors.Is(err, drivers.ErrNotFound) {
-			return false, nil
-		}
-		return false, err
-	}
-
-	return true, nil
-}
-
-// renameTable renames the table from oldName to newName in the database associated with connector.
-// If newName already exists, it is overwritten.
-// It will return an error if connector is not an OLAP.
-func (r *SourceReconciler) renameTable(ctx context.Context, connector, oldName, newName string) error {
-	if oldName == "" || newName == "" {
-		return fmt.Errorf("cannot rename empty table name: oldName=%q, newName=%q", oldName, newName)
-	}
-
-	if oldName == newName {
-		return nil
-	}
-
-	olap, release, err := r.C.AcquireOLAP(ctx, connector)
-	if err != nil {
-		return err
-	}
-	defer release()
-
-	return olap.WithConnection(ctx, 100, func(ctx context.Context, ensuredCtx context.Context) error {
-		// TODO: Use a transaction?
-
-		// DuckDB does not support renaming a table to the same name with different casing.
-		// Workaround by renaming to a temporary name first.
-		if strings.EqualFold(oldName, newName) {
-			n := r.stagingTableName(newName)
-			err = olap.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP TABLE IF EXISTS %s", safeSQLName(n))})
-			if err != nil {
-				return err
-			}
-
-			err := olap.Exec(ctx, &drivers.Statement{
-				Query:    fmt.Sprintf("ALTER TABLE %s RENAME TO %s", safeSQLName(oldName), safeSQLName(n)),
-				Priority: 100,
-			})
-			if err != nil {
-				return err
-			}
-			oldName = n
-		}
-
-		err = olap.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP TABLE IF EXISTS %s", safeSQLName(newName))})
-		if err != nil {
-			return err
-		}
-
-		return olap.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("ALTER TABLE %s RENAME TO %s", safeSQLName(oldName), safeSQLName(newName)),
-			Priority: 100,
-		})
-	})
-}
-
-// dropTableIfExists drops the table from the database associated with connector.
-// It will return an error if connector is not an OLAP.
-func (r *SourceReconciler) dropTableIfExists(ctx context.Context, connector, table string) error {
-	if table == "" {
-		return nil
-	}
-
-	olap, release, err := r.C.AcquireOLAP(ctx, connector)
-	if err != nil {
-		return err
-	}
-	defer release()
-
-	return olap.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s", safeSQLName(table)),
-		Priority: 100,
-	})
 }
 
 // ingestSource ingests the source into a table with tableName.

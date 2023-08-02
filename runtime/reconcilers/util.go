@@ -1,11 +1,14 @@
 package reconcilers
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/robfig/cron/v3"
 )
 
@@ -40,6 +43,102 @@ func nextRefreshTime(t time.Time, schedule *runtimev1.Schedule) (time.Time, erro
 		return t1, nil
 	}
 	return t2, nil
+}
+
+// olapTableInfo returns info about a table in an OLAP connector.
+func olapTableInfo(ctx context.Context, c *runtime.Controller, connector, table string) (*drivers.Table, bool) {
+	if table == "" {
+		return nil, false
+	}
+
+	olap, release, err := c.AcquireOLAP(ctx, connector)
+	if err != nil {
+		return nil, false
+	}
+	defer release()
+
+	t, err := olap.InformationSchema().Lookup(ctx, table)
+	if err != nil {
+		return nil, false
+	}
+
+	return t, true
+}
+
+// olapDropTableIfExists drops a table from an OLAP connector.
+func olapDropTableIfExists(ctx context.Context, c *runtime.Controller, connector, table string, view bool) {
+	if table == "" {
+		return
+	}
+
+	olap, release, err := c.AcquireOLAP(ctx, connector)
+	if err != nil {
+		return
+	}
+	defer release()
+
+	var typ string
+	if view {
+		typ = "VIEW"
+	} else {
+		typ = "TABLE"
+	}
+
+	_ = olap.Exec(ctx, &drivers.Statement{
+		Query:    fmt.Sprintf("DROP %s IF EXISTS %s", typ, safeSQLName(table)),
+		Priority: 100,
+	})
+}
+
+// olapRenameTable renames the table from oldName to newName in the OLAP connector.
+// oldName must exist and newName must not exist.
+func olapRenameTable(ctx context.Context, c *runtime.Controller, connector, oldName, newName string, view bool) error {
+	if oldName == "" || newName == "" {
+		return fmt.Errorf("cannot rename empty table name: oldName=%q, newName=%q", oldName, newName)
+	}
+
+	if oldName == newName {
+		return nil
+	}
+
+	olap, release, err := c.AcquireOLAP(ctx, connector)
+	if err != nil {
+		return err
+	}
+	defer release()
+
+	var typ string
+	if view {
+		typ = "VIEW"
+	} else {
+		typ = "TABLE"
+	}
+
+	// TODO: Use a transaction?
+	return olap.WithConnection(ctx, 100, func(ctx context.Context, ensuredCtx context.Context) error {
+		// Renaming a table to the same name with different casing is not supported. Workaround by renaming to a temporary name first.
+		if strings.EqualFold(oldName, newName) {
+			tmp := "__rill_tmp_rename_%s_" + typ + newName
+			err = olap.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP %s IF EXISTS %s", typ, safeSQLName(tmp))})
+			if err != nil {
+				return err
+			}
+
+			err := olap.Exec(ctx, &drivers.Statement{
+				Query:    fmt.Sprintf("ALTER %s %s RENAME TO %s", typ, safeSQLName(oldName), safeSQLName(tmp)),
+				Priority: 100,
+			})
+			if err != nil {
+				return err
+			}
+			oldName = tmp
+		}
+
+		return olap.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("ALTER TABLE %s RENAME TO %s", safeSQLName(oldName), safeSQLName(newName)),
+			Priority: 100,
+		})
+	})
 }
 
 // safeSQLName returns a quoted SQL identifier.
