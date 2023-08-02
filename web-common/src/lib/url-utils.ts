@@ -1,7 +1,7 @@
 import { page } from "$app/stores";
 import { get } from "svelte/store";
 
-export function getUrlForPath(path: string, retainParams = ["feature"]): URL {
+export function getUrlForPath(path: string, retainParams = ["features"]): URL {
   const url = get(page).url;
   if (!path.startsWith("/")) path = "/" + path;
   const newUrl = new URL(`http://${url.host}${path}`);
@@ -15,7 +15,7 @@ export function getUrlForPath(path: string, retainParams = ["feature"]): URL {
 
 export function getFullUrlForPath(
   path: string,
-  retainParams = ["feature"]
+  retainParams = ["features"]
 ): string {
   const newUrl = getUrlForPath(path, retainParams);
 
