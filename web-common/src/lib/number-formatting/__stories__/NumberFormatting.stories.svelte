@@ -8,8 +8,8 @@
   const MIN = 60 * SEC;
   const HOUR = 60 * MIN;
   const DAY = 24 * HOUR;
-  const MONTH = 30 * DAY;
-  const YEAR = 365 * DAY;
+  const MONTH = 30 * DAY; //eslint-disable-line
+  const YEAR = 365 * DAY; //eslint-disable-line
 
   const time_formulas = [
     "-39 * SEC",
