@@ -7,14 +7,18 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+const _defaultIngestTimeout = 60 * time.Minute
 
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindSource, newSourceReconciler)
@@ -32,10 +36,6 @@ func (r *SourceReconciler) Close(ctx context.Context) error {
 	return nil
 }
 
-func (r *SourceReconciler) stagingTableName(table string) string {
-	return table + "_staging"
-}
-
 func (r *SourceReconciler) Reconcile(ctx context.Context, s *runtime.Signal) runtime.ReconcileResult {
 	self, err := r.C.Get(ctx, s.Name)
 	if err != nil {
@@ -43,6 +43,7 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, s *runtime.Signal) run
 	}
 	src := self.GetSource()
 
+	// Handle deletion
 	if self.Meta.Deleted {
 		err1 := r.dropTableIfExists(ctx, src.State.Connector, src.State.Table)
 		err2 := r.dropTableIfExists(ctx, src.State.Connector, r.stagingTableName(src.State.Table))
@@ -50,22 +51,28 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, s *runtime.Signal) run
 		return runtime.ReconcileResult{Err: err}
 	}
 
+	// Handle renames
+	tableName := self.Meta.Name.Name
 	if self.Meta.RenamedFrom != nil {
 		exists, err := r.tableExists(ctx, src.State.Connector, src.State.Table)
-		if err == nil && exists {
-			err = r.renameTable(ctx, src.State.Connector, src.State.Table, self.Meta.Name.Name)
-		}
-		if err != nil {
-			return runtime.ReconcileResult{Err: fmt.Errorf("failed to rename table: %w", err)}
-		}
-
-		src.State.Table = self.Meta.Name.Name
-		err = r.C.UpdateState(ctx, self.Meta.Name, self)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
 
-		return runtime.ReconcileResult{}
+		if exists {
+			err = r.renameTable(ctx, src.State.Connector, src.State.Table, tableName)
+			if err != nil {
+				return runtime.ReconcileResult{Err: fmt.Errorf("failed to rename table: %w", err)}
+			}
+
+			src.State.Table = tableName
+			err = r.C.UpdateState(ctx, self.Meta.Name, self)
+			if err != nil {
+				return runtime.ReconcileResult{Err: err}
+			}
+		}
+
+		// Note: Not exiting early. It might need to be (re-)ingested, and we need to set the correct retrigger time based on the refresh schedule.
 	}
 
 	// TODO: Exit if refs have errors
@@ -107,19 +114,24 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, s *runtime.Signal) run
 		return runtime.ReconcileResult{Retrigger: refreshOn}
 	}
 
+	// If the SinkConnector was changed, drop data in the old connector
+	if src.State.Table != "" && src.State.Connector != src.Spec.SinkConnector {
+		_ = r.dropTableIfExists(ctx, src.State.Connector, src.State.Table)
+		_ = r.dropTableIfExists(ctx, src.State.Connector, r.stagingTableName(src.State.Table))
+	}
+
 	// Do the actual ingestion
-	table := self.Meta.Name.Name
-	stagingTable := table
+	stagingTableName := tableName
 	connector := src.Spec.SinkConnector
 	if src.Spec.StageChanges {
-		stagingTable = r.stagingTableName(table)
+		stagingTableName = r.stagingTableName(tableName)
 	}
-	ingestErr := r.ingestSource(ctx, src.Spec, stagingTable)
+	ingestErr := r.ingestSource(ctx, src.Spec, stagingTableName)
 	if ingestErr != nil {
 		ingestErr = fmt.Errorf("failed to ingest source: %w", ingestErr)
 	}
 	if ingestErr == nil && src.Spec.StageChanges {
-		err = r.renameTable(ctx, connector, stagingTable, table)
+		err = r.renameTable(ctx, connector, stagingTableName, tableName)
 		if err != nil {
 			return runtime.ReconcileResult{Err: fmt.Errorf("failed to rename staging table: %w", err)}
 		}
@@ -127,27 +139,28 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, s *runtime.Signal) run
 
 	// How we handle ingestErr depends on StageChanges.
 	// If StageChanges is true, we retain the existing table, but still return the error.
-	// If StageChanges is false, we clear the table and return the error.
+	// If StageChanges is false, we clear the existing table and return the error.
 
 	// Update state
 	update := false
 	if ingestErr == nil {
+		// Successful ingestion
 		update = true
 		src.State.Connector = connector
-		src.State.Table = table
+		src.State.Table = tableName
 		src.State.SpecHash = hash
 		src.State.RefreshedOn = timestamppb.Now()
+	} else if src.Spec.StageChanges {
+		// Failed ingestion to staging table
+		_ = r.dropTableIfExists(ctx, connector, stagingTableName)
 	} else {
-		if src.Spec.StageChanges {
-			_ = r.dropTableIfExists(ctx, connector, stagingTable)
-		} else {
-			update = true
-			_ = r.dropTableIfExists(ctx, connector, table)
-			src.State.Connector = ""
-			src.State.Table = ""
-			src.State.SpecHash = ""
-			src.State.RefreshedOn = nil
-		}
+		// Failed ingestion to main table
+		update = true
+		_ = r.dropTableIfExists(ctx, connector, tableName)
+		src.State.Connector = ""
+		src.State.Table = ""
+		src.State.SpecHash = ""
+		src.State.RefreshedOn = nil
 	}
 	if update {
 		err = r.C.UpdateState(ctx, self.Meta.Name, self)
@@ -166,7 +179,7 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, s *runtime.Signal) run
 	}
 
 	// Compute next refresh time
-	refreshOn, err = nextRefreshTime(src.State.RefreshedOn.AsTime(), src.Spec.RefreshSchedule)
+	refreshOn, err = nextRefreshTime(time.Now(), src.Spec.RefreshSchedule)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
@@ -201,26 +214,275 @@ func (r *SourceReconciler) ingestionSpecHash(spec *runtimev1.SourceSpec) (string
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-// tableExists returns true if the table exists in the database associated with connector
-func (r *SourceReconciler) tableExists(ctx context.Context, connector string, table string) (bool, error) {
+// stagingTableName returns a stable temporary table name for a destination table.
+// By using a stable temporary table name, we can ensure proper garbage collection without managing additional state.
+func (r *SourceReconciler) stagingTableName(table string) string {
+	return "__rill_tmp_src_" + table
+}
+
+// tableExists returns true if the table exists in the database associated with connector.
+// It will return an error if connector is not an OLAP.
+func (r *SourceReconciler) tableExists(ctx context.Context, connector, table string) (bool, error) {
 	if table == "" {
 		return false, nil
 	}
 
-	panic("not implemented")
+	olap, release, err := r.C.AcquireOLAP(ctx, connector)
+	if err != nil {
+		return false, err
+	}
+	defer release()
+
+	_, err = olap.InformationSchema().Lookup(ctx, table)
+	if err != nil {
+		if errors.Is(err, drivers.ErrNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
 }
 
-// renameTable renames the table from oldName to newName in the database associated with connector
+// renameTable renames the table from oldName to newName in the database associated with connector.
+// If newName already exists, it is overwritten.
+// It will return an error if connector is not an OLAP.
 func (r *SourceReconciler) renameTable(ctx context.Context, connector, oldName, newName string) error {
-	panic("not implemented")
+	if oldName == "" || newName == "" {
+		return fmt.Errorf("cannot rename empty table name: oldName=%q, newName=%q", oldName, newName)
+	}
+
+	if oldName == newName {
+		return nil
+	}
+
+	olap, release, err := r.C.AcquireOLAP(ctx, connector)
+	if err != nil {
+		return err
+	}
+	defer release()
+
+	return olap.WithConnection(ctx, 100, func(ctx context.Context, ensuredCtx context.Context) error {
+		// TODO: Use a transaction?
+
+		// DuckDB does not support renaming a table to the same name with different casing.
+		// Workaround by renaming to a temporary name first.
+		if strings.EqualFold(oldName, newName) {
+			n := r.stagingTableName(newName)
+			err = olap.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP TABLE IF EXISTS %s", safeSQLName(n))})
+			if err != nil {
+				return err
+			}
+
+			err := olap.Exec(ctx, &drivers.Statement{
+				Query:    fmt.Sprintf("ALTER TABLE %s RENAME TO %s", safeSQLName(oldName), safeSQLName(n)),
+				Priority: 100,
+			})
+			if err != nil {
+				return err
+			}
+			oldName = n
+		}
+
+		err = olap.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP TABLE IF EXISTS %s", safeSQLName(newName))})
+		if err != nil {
+			return err
+		}
+
+		return olap.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("ALTER TABLE %s RENAME TO %s", safeSQLName(oldName), safeSQLName(newName)),
+			Priority: 100,
+		})
+	})
 }
 
-// dropTableIfExists drops the table from the database associated with connector
-func (r *SourceReconciler) dropTableIfExists(ctx context.Context, connector string, table string) error {
-	panic("not implemented")
+// dropTableIfExists drops the table from the database associated with connector.
+// It will return an error if connector is not an OLAP.
+func (r *SourceReconciler) dropTableIfExists(ctx context.Context, connector, table string) error {
+	if table == "" {
+		return nil
+	}
+
+	olap, release, err := r.C.AcquireOLAP(ctx, connector)
+	if err != nil {
+		return err
+	}
+	defer release()
+
+	return olap.Exec(ctx, &drivers.Statement{
+		Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s", safeSQLName(table)),
+		Priority: 100,
+	})
 }
 
-// ingestSource ingests the source into a table with tableName
+// ingestSource ingests the source into a table with tableName.
+// It does NOT drop the table if ingestion fails after the table has been created.
+// It will return an error if the sink connector is not an OLAP.
 func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.SourceSpec, tableName string) error {
-	panic("not implemented")
+	// Get connections and transporter
+	srcConn, release1, err := r.C.AcquireConn(ctx, src.SourceConnector)
+	if err != nil {
+		return err
+	}
+	defer release1()
+	sinkConn, release2, err := r.C.AcquireConn(ctx, src.SinkConnector)
+	if err != nil {
+		return err
+	}
+	defer release2()
+	t, ok := sinkConn.AsTransporter(srcConn, sinkConn)
+	if !ok {
+		t, ok = srcConn.AsTransporter(srcConn, sinkConn)
+		if !ok {
+			return fmt.Errorf("cannot transfer data between connectors %q and %q", src.SourceConnector, src.SinkConnector)
+		}
+	}
+
+	// Get source and sink configs
+	srcConfig, err := driversSource(srcConn, src.Properties)
+	if err != nil {
+		return err
+	}
+	sinkConfig, err := driversSink(sinkConn, tableName)
+	if err != nil {
+		return err
+	}
+
+	// Set timeout on ctx
+	timeout := _defaultIngestTimeout
+	if src.TimeoutSeconds > 0 {
+		timeout = time.Duration(src.TimeoutSeconds) * time.Second
+	}
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	// Enforce storage limits
+	// TODO: This code is pretty ugly. We should push storage limit tracking into the underlying driver and transporter.
+	var ingestionLimit *int64
+	var limitExceeded bool
+	if olap, ok := sinkConn.AsOLAP(); ok {
+		// Get storage limit
+		inst, err := r.C.Runtime.FindInstance(ctx, r.C.InstanceID)
+		if err != nil {
+			return err
+		}
+		storageLimit := inst.IngestionLimitBytes
+
+		// Enforce storage limit if it's set
+		if storageLimit > 0 {
+			// Get ingestion limit (storage limit minus current size)
+			bytes, ok := olap.EstimateSize()
+			if ok {
+				n := storageLimit - bytes
+				if n <= 0 {
+					return drivers.ErrIngestionLimitExceeded
+				}
+				ingestionLimit = &n
+
+				// Start background goroutine to check size is not exceeded during ingestion
+				go func() {
+					ticker := time.NewTicker(5 * time.Second)
+					defer ticker.Stop()
+					for {
+						select {
+						case <-ctx.Done():
+							return
+						case <-ticker.C:
+							if size, ok := olap.EstimateSize(); ok && size > storageLimit {
+								limitExceeded = true
+								cancel()
+							}
+						}
+					}
+				}()
+			}
+		}
+	}
+
+	// Execute the data transfer
+	opts := drivers.NewTransferOpts()
+	if ingestionLimit != nil {
+		opts.LimitInBytes = *ingestionLimit
+	}
+	err = t.Transfer(ctx, srcConfig, sinkConfig, opts, drivers.NoOpProgress{})
+	if limitExceeded {
+		return drivers.ErrIngestionLimitExceeded
+	}
+	return err
 }
+
+func driversSource(conn drivers.Connection, propsPB *structpb.Struct) (drivers.Source, error) {
+	props := propsPB.AsMap()
+	switch conn.Driver() {
+	case "s3":
+		return &drivers.BucketSource{
+			// ExtractPolicy: src.Policy, // TODO: Add
+			Properties: props,
+		}, nil
+	case "gcs":
+		return &drivers.BucketSource{
+			// ExtractPolicy: src.Policy, // TODO: Add
+			Properties: props,
+		}, nil
+	case "https":
+		return &drivers.FileSource{
+			Properties: props,
+		}, nil
+	case "local_file":
+		return &drivers.FileSource{
+			Properties: props,
+		}, nil
+	case "motherduck":
+		query, ok := props["sql"].(string)
+		if !ok {
+			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"motherduck\"")
+		}
+		var db string
+		if val, ok := props["db"].(string); ok {
+			db = val
+		}
+
+		return &drivers.DatabaseSource{
+			SQL:      query,
+			Database: db,
+		}, nil
+	case "duckdb":
+		query, ok := props["sql"].(string)
+		if !ok {
+			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"duckdb\"")
+		}
+		return &drivers.DatabaseSource{
+			SQL: query,
+		}, nil
+	case "bigquery":
+		query, ok := props["sql"].(string)
+		if !ok {
+			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"bigquery\"")
+		}
+		return &drivers.DatabaseSource{
+			SQL:   query,
+			Props: props,
+		}, nil
+	default:
+		return nil, fmt.Errorf("source connector %q not supported", conn.Driver())
+	}
+}
+
+func driversSink(conn drivers.Connection, tableName string) (drivers.Sink, error) {
+	switch conn.Driver() {
+	case "duckdb":
+		return &drivers.DatabaseSink{
+			Table: tableName,
+		}, nil
+	default:
+		return nil, fmt.Errorf("sink connector %q not supported", conn.Driver())
+	}
+}
+
+/*
+Features in old migrator not yet addressed:
+- parsing ExtractPolicy
+- rewriting source if `sql` field is set (mergeFromParsedQuery)
+- opening srcConnector with correct variables (connectorVariables)
+- adding source name to logger, and propagating the controller logger to the connection/transporter
+*/

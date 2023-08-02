@@ -7,6 +7,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slog"
 )
@@ -200,6 +201,25 @@ func (c *Controller) Delete(ctx context.Context, names ...*runtimev1.ResourceNam
 
 func (c *Controller) Flush(ctx context.Context) error {
 	panic("not implemented")
+}
+
+func (c *Controller) AcquireConn(ctx context.Context, connector string) (drivers.Connection, func(), error) {
+	panic("not implemented")
+}
+
+func (c *Controller) AcquireOLAP(ctx context.Context, connector string) (drivers.OLAPStore, func(), error) {
+	conn, release, err := c.AcquireConn(ctx, connector)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	olap, ok := conn.AsOLAP()
+	if !ok {
+		release()
+		return nil, nil, fmt.Errorf("connector %q is not an OLAP", connector)
+	}
+
+	return olap, release, nil
 }
 
 // reconciler gets or lazily initializes a reconciler

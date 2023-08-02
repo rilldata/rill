@@ -2,6 +2,7 @@ package reconcilers
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -39,4 +40,12 @@ func nextRefreshTime(t time.Time, schedule *runtimev1.Schedule) (time.Time, erro
 		return t1, nil
 	}
 	return t2, nil
+}
+
+// safeSQLName returns a quoted SQL identifier.
+func safeSQLName(name string) string {
+	if name == "" {
+		return name
+	}
+	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(name, "\"", "\"\""))
 }
