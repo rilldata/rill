@@ -1,5 +1,37 @@
+import type { Interval } from "@rilldata/web-common/lib/duckdb-data-types";
+
+const MS_PER_SEC = 1000;
+const MS_PER_MIN = 60 * MS_PER_SEC;
+const MS_PER_HOUR = 60 * MS_PER_MIN;
+const MS_PER_DAY = 24 * MS_PER_HOUR;
+const MS_PER_MONTH = 30 * MS_PER_DAY;
+const MS_PER_YEAR = 365 * MS_PER_DAY;
+
+const timeUnits = {
+  ms: "ms",
+  s: "s",
+  m: "m",
+  h: "h",
+  d: "d",
+  mon: "mon",
+  y: "y",
+};
+
+const ms_breakpoints = [
+  { ms: 0 },
+  { ms: 1 },
+  { ms: 100, divisor: 1, unit: timeUnits.ms },
+  { ms: 90 * MS_PER_SEC, divisor: MS_PER_SEC, unit: timeUnits.s },
+  { ms: 90 * MS_PER_MIN, divisor: MS_PER_MIN, unit: timeUnits.m },
+  { ms: 72 * MS_PER_HOUR, divisor: MS_PER_HOUR, unit: timeUnits.h },
+  { ms: 90 * MS_PER_DAY, divisor: MS_PER_DAY, unit: timeUnits.d },
+  { ms: 18 * MS_PER_MONTH, divisor: MS_PER_MONTH, unit: timeUnits.mon },
+  { ms: 100 * MS_PER_YEAR, divisor: MS_PER_YEAR, unit: timeUnits.y },
+  { ms: Infinity, unit: "TOO_LARGE" },
+];
+
 /**
- * Formats a millisecond value into a human readable interval.
+ * Formats a millisecond value into a compact human readable time interval.
  *
  * The strategy is to:
  * - show two digits of precision
@@ -8,46 +40,27 @@
  *
  * see https://www.notion.so/rilldata/Support-display-of-intervals-and-formatting-of-intervals-e-g-25-days-in-dashboardsal-data-t-8720522eded648f58f35421ebc28ee2f
  */
-
-const SEC = 1000;
-const MIN = 60 * SEC;
-const HOUR = 60 * MIN;
-const DAY = 24 * HOUR;
-const MONTH = 30 * DAY;
-const YEAR = 365 * DAY;
-
-const ms_breakpoints = [
-  { ms: 0 },
-  { ms: 1 },
-  { ms: 100, divisor: 1, unit: "ms" },
-  { ms: 90 * SEC, divisor: SEC, unit: "s" },
-  { ms: 90 * MIN, divisor: MIN, unit: "m" },
-  { ms: 72 * HOUR, divisor: HOUR, unit: "h" },
-  { ms: 90 * DAY, divisor: DAY, unit: "d" },
-  { ms: 18 * MONTH, divisor: MONTH, unit: "M" },
-  { ms: 100 * YEAR, divisor: YEAR, unit: "y" },
-  { ms: Infinity, unit: "TOO_LARGE" },
-];
-
 export function formatMsInterval(ms: number): string {
-  if (ms === 0) {
-    return "0s";
+  let negative = false;
+  if (ms < 0) {
+    ms = -ms;
+    negative = true;
   }
-  const i = ms_breakpoints.findIndex((b) => ms < b.ms);
 
-  if (i === 0) {
-    // this should never happen unless the input is negative,
-    // which is not possible for a valid interval.
-    return "<0s";
+  if (ms === 0) {
+    return `0 ${timeUnits.s}`;
+  } else if (ms < 1) {
+    return `~0 ${timeUnits.s}`;
+  } else if (ms >= 100 * MS_PER_YEAR) {
+    return negative ? `< -100 ${timeUnits.y}` : `>100 ${timeUnits.y}`;
   }
-  if (i === 1) {
-    return "<1ms";
-  }
+
+  const i = ms_breakpoints.findIndex((b) => ms < b.ms);
 
   const breakpoint = ms_breakpoints[i];
 
   if (breakpoint.unit === "TOO_LARGE") {
-    return ">100y";
+    return `>100 ${timeUnits.y}`;
   }
 
   const unit = breakpoint.unit;
@@ -58,5 +71,127 @@ export function formatMsInterval(ms: number): string {
     maximumSignificantDigits: 2,
   }).format(value);
 
-  return `${fmt}${unit}`;
+  return `${negative ? "-" : ""}${fmt} ${unit}`;
+}
+
+/**
+ * Formats a millisecond value into an expanded interval string
+ * that will be parsable by a duckdb INTERVAL constructor.
+ * The hour+min+sec portion will use whichever is shorter between the `HH:MM:SS.xxx`
+ * format and a sparse format like `2h 4s` for the HMS part of the interval.
+ *
+ */
+export function formatMsToDuckDbIntervalString(
+  ms: number,
+  style: "short" | "units" | "colon" = "short"
+): string {
+  let negative = false;
+  if (ms < 0) {
+    ms = -ms;
+    negative = true;
+  }
+
+  if (ms === 0) {
+    return `0${timeUnits.s}`;
+  }
+
+  if (ms < 1) {
+    return `~0${timeUnits.s}`;
+  }
+
+  let string = negative ? "-" : "";
+
+  const years = Math.floor(ms / MS_PER_YEAR);
+  const months = Math.floor((ms - years * MS_PER_YEAR) / MS_PER_MONTH);
+  const days = Math.floor(
+    (ms - years * MS_PER_YEAR - months * MS_PER_MONTH) / MS_PER_DAY
+  );
+
+  const date = new Date(ms);
+  const hours = date.getUTCHours();
+  const minutes = date.getUTCMinutes();
+  const float_seconds = date.getUTCSeconds() + date.getUTCMilliseconds() / 1000;
+  const seconds = date.getUTCSeconds();
+  const msec = date.getUTCMilliseconds();
+
+  string = [
+    [years, timeUnits.y],
+    [months, timeUnits.mon],
+    [days, timeUnits.d],
+  ].reduce((acc, [value, unit]) => {
+    if (value > 0) {
+      acc += `${value}${unit} `;
+    }
+    return acc;
+  }, string);
+
+  if (hours === 0 && minutes === 0 && seconds === 0) {
+    return string.trim();
+  }
+
+  if (style === "units") {
+    return string + formatUnitsHMS(hours, minutes, seconds, msec);
+  } else if (style === "colon") {
+    return string + formatColonHMS(hours, minutes, float_seconds);
+  }
+  return string + formatShortHMS(hours, minutes, seconds, msec);
+}
+
+function formatUnitsHMS(h: number, m: number, s: number, ms: number) {
+  return [
+    [h, timeUnits.h],
+    [m, timeUnits.m],
+    [s, timeUnits.s],
+    [ms, timeUnits.ms],
+  ].reduce((acc, [value, unit]) => {
+    if (value > 0) {
+      acc += `${value}${unit} `;
+    }
+    return acc;
+  }, "");
+}
+
+function formatColonHMS(h: number, m: number, s: number) {
+  const secPad = s < 10 ? "0" : "";
+  return `${h.toString()}:${m
+    .toString()
+    .padStart(2, "0")}:${secPad}${s.toString()}`;
+}
+
+function formatShortHMS(h: number, m: number, s: number, msec: number) {
+  const string1 = formatColonHMS(h, m, s + msec / 1000);
+  const string2 = formatUnitsHMS(h, m, s, msec);
+  return string1.length < string2.length ? string1 : string2;
+}
+
+/**
+ * Formats a millisecond value into a human readable time interval in the format HH:MM:SS.xxx, with xxx being milliseconds, and zero padding for minutes and seconds.
+ */
+export function formatMsIntervalHMS(ms: number) {
+  const date = new Date(ms);
+  const hours = date.getUTCHours();
+  const minutes = date.getUTCMinutes();
+  const seconds = date.getUTCSeconds();
+  const milliseconds = date.getUTCMilliseconds();
+
+  return `${hours.toString()}:${minutes.toString().padStart(2, "0")}:${seconds
+    .toString()
+    .padStart(2, "0")}.${milliseconds.toString()}`;
+}
+
+function duckdbIntervalToMs(interval: Interval): number {
+  return (
+    (interval?.months ?? 0) * MS_PER_MONTH +
+    (interval?.days ?? 0) * MS_PER_DAY +
+    (interval?.micros ?? 0) / 1000
+  );
+}
+
+/**
+ * Formats a duckdb Interval object
+ * `{ months: number, days: number, micros: number }`
+ * into a string that can be parsed by a duckdb INTERVAL constructor.
+ */
+export function formatDuckdbInterval(interval: Interval): string {
+  return formatMsToDuckDbIntervalString(duckdbIntervalToMs(interval));
 }
