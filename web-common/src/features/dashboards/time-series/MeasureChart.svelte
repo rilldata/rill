@@ -23,7 +23,6 @@
     niceMeasureExtents,
   } from "./utils";
   import {
-    ScrubRange,
     TimeRangePreset,
     TimeRoundingStrategy,
   } from "../../../lib/time/types";
@@ -67,8 +66,11 @@
 
   const xScale = getContext(contexts.scale("x")) as ScaleStore;
 
-  // scrub control points
+  // scrub local control points
   let justCreatedScrub = false;
+  let isMovingScrub = false;
+  let moveStartDelta = 0;
+  let moveEndDelta = 0;
   let isResizing = false;
   let isOverStart = false;
   let isOverEnd = false;
@@ -134,13 +136,6 @@
       ? 100
       : 0;
 
-  function alwaysBetween(min, max, value) {
-    // note: must work with dates
-    if (value < min) return min;
-    if (value > max) return max;
-    return value;
-  }
-
   function inBounds(min, max, value) {
     return value >= min && value <= max;
   }
@@ -161,13 +156,21 @@
     });
   }
 
+  // function alwaysBetween(min, max, value) {
+  //   // note: must work with dates
+  //   if (value < min) return min;
+  //   if (value > max) return max;
+  //   return value;
+  // }
+
   // $: if (scrubbing) {
   //   scrubEnd = alwaysBetween(internalXMin, internalXMax, mouseoverValue?.x);
   // }
 
   function startScrub(event) {
+    const startX = event.detail?.start?.x;
     const scrubStartDate = getBisectedTimeFromCordinates(
-      event.detail?.start?.x,
+      startX,
       $xScale,
       labelAccessor,
       data,
@@ -187,9 +190,17 @@
       isOverStart = scrubStartDate?.getTime() == scrubStart?.getTime();
       isOverEnd = scrubStartDate?.getTime() == scrubEnd?.getTime();
 
+      const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
+      isMovingScrub = inBounds(start, end, scrubStartDate);
+
       if (isOverStart || isOverEnd) {
         isResizing = true;
         updateScrub(scrubStart, scrubEnd, true);
+        return;
+      } else if (isMovingScrub) {
+        moveStartDelta = startX - $xScale(scrubStart);
+        moveEndDelta = startX - $xScale(scrubEnd);
+
         return;
       }
     }
@@ -197,17 +208,18 @@
   }
 
   function moveScrub(event) {
-    const x = event.detail?.stop?.x;
+    const stopX = event.detail?.stop?.x;
     const intermediateScrubVal = getBisectedTimeFromCordinates(
-      x,
+      stopX,
       $xScale,
       labelAccessor,
       data,
       TIME_GRAIN[timeGrain].label
     );
 
-    if (hasSubrangeSelected && isResizing) {
+    if (hasSubrangeSelected && (isResizing || isMovingScrub)) {
       if (
+        isResizing &&
         intermediateScrubVal?.getTime() !== scrubEnd?.getTime() &&
         intermediateScrubVal?.getTime() !== scrubStart?.getTime()
       ) {
@@ -215,6 +227,29 @@
         const newEnd = isOverEnd ? intermediateScrubVal : scrubEnd;
 
         updateScrub(newStart, newEnd, true);
+      } else if (!isResizing && isMovingScrub) {
+        const startX = event.detail?.start?.x;
+        const delta = stopX - startX;
+
+        const newStart = getBisectedTimeFromCordinates(
+          startX - moveStartDelta + delta,
+          $xScale,
+          labelAccessor,
+          data,
+          TIME_GRAIN[timeGrain].label
+        );
+
+        const newEnd = getBisectedTimeFromCordinates(
+          startX - moveEndDelta + delta,
+          $xScale,
+          labelAccessor,
+          data,
+          TIME_GRAIN[timeGrain].label
+        );
+
+        if (newStart?.getTime() !== scrubStart?.getTime()) {
+          updateScrub(newStart, newEnd, true);
+        }
       }
     } else {
       // Only make state changes when the bisected value changes
@@ -232,6 +267,7 @@
     }
 
     isResizing = false;
+    isMovingScrub = false;
     justCreatedScrub = true;
 
     // reset justCreatedScrub after 100 milliseconds
