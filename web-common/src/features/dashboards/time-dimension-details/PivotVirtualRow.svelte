@@ -5,10 +5,11 @@
 </script>
 
 <tr>
+  <slot name="pre" />
   {#if paddingLeft > 0}
     <svelte:element this={element} style={`width: ${paddingLeft}px;`} />
   {/if}
-  <slot />
+  <slot name="body" />
   {#if paddingRight > 0}
     <svelte:element this={element} style={`width: ${paddingRight}px;`} />
   {/if}

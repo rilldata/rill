@@ -45,42 +45,37 @@
     overscan: 5,
   });
 
-  let columnsToRender: VirtualItem[] = [];
   let totalHorizontalSize = 0;
   let paddingLeft = 0;
   let paddingRight = 0;
+  let fixedVirtualColumns: VirtualItem[] = [];
+  let nonfixedVirtualColumns: VirtualItem[] = [];
   $: {
     const virtualColumns = $columnVirtualizer?.getVirtualItems() ?? [];
     totalHorizontalSize = $columnVirtualizer?.getTotalSize() ?? 0;
 
     // Manually calculate fixed virtual column set as they may not be in current virtualized item set
-    const fixedVirtualColumns: VirtualItem[] = range(fixedColCt).reduce(
-      (arr, idx) => {
-        const start = arr[idx - 1]?.end ?? 0;
-        const size = getColumnWidth(idx);
-        const end = start + getColumnWidth(idx);
-        return [
-          ...arr,
-          {
-            index: idx,
-            start,
-            end,
-            key: idx,
-            lane: 0,
-            size,
-          },
-        ];
-      },
-      []
-    );
+    fixedVirtualColumns = range(fixedColCt).reduce((arr, idx) => {
+      const start = arr[idx - 1]?.end ?? 0;
+      const size = getColumnWidth(idx);
+      const end = start + getColumnWidth(idx);
+      return [
+        ...arr,
+        {
+          index: idx,
+          start,
+          end,
+          key: idx,
+          lane: 0,
+          size,
+        },
+      ];
+    }, []);
 
     // If current virtual column set has fixed columns, remove them since we will use our measurements
-    const virtualColumnsSansFixed = virtualColumns.filter(
+    nonfixedVirtualColumns = virtualColumns.filter(
       (c) => c.index >= fixedColCt
     );
-
-    // Merge the fixed column set with the remaining virtual column set
-    columnsToRender = [...fixedVirtualColumns, ...virtualColumnsSansFixed];
 
     paddingLeft =
       virtualColumns?.length > 0 ? virtualColumns?.[0]?.start || 0 : 0;
@@ -106,61 +101,114 @@
   >
     <thead class="sticky top-0 bg-gray-100 z-10">
       <PivotVirtualRow element="th" {paddingLeft} {paddingRight}>
-        {#each columnsToRender as column (column.index)}
-          <PivotCell
-            rowIdx={-1}
-            class={isFixedColumn(column.index)
-              ? "bg-gray-200 text-left"
-              : "text-left"}
-            fixed={isFixedColumn(column.index)}
-            element="th"
-            {renderCell}
-            item={column}
-          />
-        {/each}
+        <svelte:fragment slot="pre">
+          {#each fixedVirtualColumns as column (column.index)}
+            <PivotCell
+              rowIdx={-1}
+              class={isFixedColumn(column.index)
+                ? "bg-gray-200 text-left"
+                : "text-left"}
+              fixed={isFixedColumn(column.index)}
+              element="th"
+              {renderCell}
+              item={column}
+            />
+          {/each}
+        </svelte:fragment>
+        <svelte:fragment slot="body">
+          {#each nonfixedVirtualColumns as column (column.index)}
+            <PivotCell
+              rowIdx={-1}
+              class={isFixedColumn(column.index)
+                ? "bg-gray-200 text-left"
+                : "text-left"}
+              fixed={isFixedColumn(column.index)}
+              element="th"
+              {renderCell}
+              item={column}
+            />
+          {/each}
+        </svelte:fragment>
       </PivotVirtualRow>
     </thead>
     <tbody>
       <!-- Virtual top padding row -->
       {#if paddingTop > 0}
         <PivotVirtualRow {paddingLeft} {paddingRight}>
-          {#each columnsToRender as column (column.index)}
-            <PivotCell
-              rowIdx={-1}
-              rowHeight={paddingTop}
-              fixed={isFixedColumn(column.index)}
-              renderCell={() => ""}
-              item={column}
-            />
-          {/each}
+          <svelte:fragment slot="pre">
+            {#each fixedVirtualColumns as column (column.index)}
+              <PivotCell
+                rowIdx={-1}
+                rowHeight={paddingTop}
+                fixed
+                renderCell={() => ""}
+                item={column}
+              />
+            {/each}
+          </svelte:fragment>
+          <svelte:fragment slot="body">
+            {#each nonfixedVirtualColumns as column (column.index)}
+              <PivotCell
+                rowIdx={-1}
+                rowHeight={paddingTop}
+                renderCell={() => ""}
+                item={column}
+              />
+            {/each}
+          </svelte:fragment>
         </PivotVirtualRow>
       {/if}
       {#each virtualRows as row (row.index)}
         <PivotVirtualRow {paddingLeft} {paddingRight}>
-          {#each columnsToRender as column (column.index)}
-            <PivotCell
-              rowIdx={row.index}
-              rowHeight={getRowSize(row.index)}
-              class={isFixedColumn(column.index) ? "bg-gray-100" : ""}
-              fixed={isFixedColumn(column.index)}
-              {renderCell}
-              item={column}
-            />
-          {/each}
+          <svelte:fragment slot="pre">
+            {#each fixedVirtualColumns as column (column.index)}
+              <PivotCell
+                rowIdx={row.index}
+                rowHeight={getRowSize(row.index)}
+                class={isFixedColumn(column.index) ? "bg-gray-100" : ""}
+                fixed
+                {renderCell}
+                item={column}
+              />
+            {/each}
+          </svelte:fragment>
+          <svelte:fragment slot="body">
+            {#each nonfixedVirtualColumns as column (column.index)}
+              <PivotCell
+                rowIdx={row.index}
+                rowHeight={getRowSize(row.index)}
+                class={isFixedColumn(column.index) ? "bg-gray-100" : ""}
+                {renderCell}
+                item={column}
+              />
+            {/each}
+          </svelte:fragment>
         </PivotVirtualRow>
       {/each}
       <!-- Virtual bottom padding row -->
       {#if paddingBottom > 0}
         <PivotVirtualRow {paddingLeft} {paddingRight}>
-          {#each columnsToRender as column (column.index)}
-            <PivotCell
-              rowIdx={-1}
-              rowHeight={paddingBottom}
-              fixed={isFixedColumn(column.index)}
-              renderCell={() => ""}
-              item={column}
-            />
-          {/each}
+          <svelte:fragment slot="pre">
+            {#each fixedVirtualColumns as column (column.index)}
+              <PivotCell
+                rowIdx={-1}
+                rowHeight={paddingBottom}
+                fixed
+                renderCell={() => ""}
+                item={column}
+              />
+            {/each}
+          </svelte:fragment>
+          <svelte:fragment slot="body">
+            {#each nonfixedVirtualColumns as column (column.index)}
+              <PivotCell
+                rowIdx={-1}
+                rowHeight={paddingBottom}
+                renderCell={() => ""}
+                item={column}
+              />
+            {/each}
+          </svelte:fragment>
         </PivotVirtualRow>
       {/if}
     </tbody>

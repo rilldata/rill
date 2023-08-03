@@ -20,6 +20,6 @@
   }
 </script>
 
-<svelte:element this={element} class={_class} {style}
-  >{renderCell(rowIdx, item.index)}</svelte:element
->
+<svelte:element this={element} class={_class} {style}>
+  <svelte:component this={renderCell(rowIdx, item.index)} />
+</svelte:element>

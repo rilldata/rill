@@ -1,14 +1,14 @@
 <script lang="ts">
+  import { flexRender } from "@tanstack/svelte-table";
   import Pivot from "./Pivot.svelte";
+  import TimeDimensionDetailsTableCell from "./TimeDimensionDetailsTableCell.svelte";
 
   // Mock state for now
   let state = {
     getRowSize: () => 35,
     getColumnWidth: (idx: number) => (idx < 6 ? 60 : 100),
-    renderCell: (rowIdx, colIdx) => {
-      if (rowIdx === -1) return `Column ${colIdx}`;
-      return `cell ${rowIdx},${colIdx}`;
-    },
+    renderCell: (rowIdx, colIdx) =>
+      flexRender(TimeDimensionDetailsTableCell, { rowIdx, colIdx }),
   };
 
   // Mock data that is fetched from backend
@@ -40,9 +40,6 @@
   colCt={data.metadata.fixedColumnCt + data.metadata.pivotColumnCt}
   fixedColCt={data.metadata.fixedColumnCt}
   getColumnWidth={state.getColumnWidth}
-  getRowSize={() => 35}
-  renderCell={(rowIdx, colIdx) => {
-    if (rowIdx === -1) return `Column ${colIdx}`;
-    return `cell ${rowIdx},${colIdx}`;
-  }}
+  getRowSize={state.getRowSize}
+  renderCell={state.renderCell}
 />
