@@ -10,6 +10,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
@@ -579,7 +580,7 @@ func getColumnTestServerWithEmptyModel(t *testing.T) (*Server, string) {
 func getColumnTestServerWithModel(t *testing.T, sql string, expectation int) (*Server, string) {
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", sql)
 
-	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop())
+	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	olap, err := rt.OLAP(testCtx(), instanceID)

@@ -111,11 +111,11 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, source drivers.Source
 			}(ensuredCtx)
 		}
 
-		if src.Query == "" {
+		if src.SQL == "" {
 			return fmt.Errorf("property \"query\" is mandatory for connector \"motherduck\"")
 		}
 
-		userQuery := strings.TrimSpace(src.Query)
+		userQuery := strings.TrimSpace(src.SQL)
 		userQuery, _ = strings.CutSuffix(userQuery, ";") // trim trailing semi colon
 		query := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s AS (%s);", safeName(localDB), safeName(fSink.Table), userQuery)
 		return t.to.Exec(ctx, &drivers.Statement{Query: query})

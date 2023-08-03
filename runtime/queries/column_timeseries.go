@@ -107,7 +107,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		}
 
 		measures := normaliseMeasures(q.Measures, q.Pixels != 0)
-		timeBucketSpecifier := convertToDuckDBTimeBucketSpecifier(timeRange.Interval)
+		dateTruncSpecifier := convertToDateTruncSpecifier(timeRange.Interval)
 		tsAlias := tempName("_ts_")
 		temporaryTableName := tempName("_timeseries_")
 
@@ -121,34 +121,38 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 			return err
 		}
 
-		args = append([]any{timeRange.Start.AsTime(), timezone, timeRange.End.AsTime(), timezone, timezone}, args...)
+		args = append([]any{timezone, timeRange.Start.AsTime(), timezone, timeRange.End.AsTime(), timezone}, args...)
+		args = append(args, timezone)
 
 		querySQL := `CREATE TEMPORARY TABLE ` + temporaryTableName + ` AS (
 			-- generate a time series column that has the intended range
 			WITH template as (
-			SELECT
-				range as ` + tsAlias + `
-			FROM
-				range(
-				time_bucket(INTERVAL '` + timeBucketSpecifier + `', ?::TIMESTAMPTZ, ?),
-				time_bucket(INTERVAL '` + timeBucketSpecifier + `', ?::TIMESTAMPTZ, ?),
-				INTERVAL '` + timeBucketSpecifier + `')
+				SELECT
+					range as ` + tsAlias + `
+				FROM
+					range(
+					date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ)),
+					date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ)),
+					INTERVAL '1 ` + dateTruncSpecifier + `')
 			),
 			-- transform the original data, and optionally sample it.
 			series AS (
 			SELECT
-				time_bucket(INTERVAL '` + timeBucketSpecifier + `', ` + safeName(q.TimestampColumnName) + `::TIMESTAMPTZ, ?) as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
+				date_trunc('` + dateTruncSpecifier + `', timezone(?, ` + safeName(q.TimestampColumnName) + `::TIMESTAMPTZ)) as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
 			FROM ` + safeName(q.TableName) + ` ` + filter + `
 			GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
 			)
-			-- join the transformed data with the generated time series column,
-			-- coalescing the first value to get the 0-default when the rolled up data
-			-- does not have that value.
-			SELECT
-			` + getCoalesceStatementsMeasures(measures) + `,
-			template.` + tsAlias + ` from template
-			LEFT OUTER JOIN series ON template.` + tsAlias + ` = series.` + tsAlias + `
-			ORDER BY template.` + tsAlias + `
+			-- an additional grouping is required for time zone DST (see unit tests for examples)
+			SELECT ` + tsAlias + `,` + getCoalesceStatementsMeasuresLast(measures) + ` FROM (
+				-- join the transformed data with the generated time series column,
+				-- coalescing the first value to get the 0-default when the rolled up data
+				-- does not have that value.
+				SELECT
+				` + getCoalesceStatementsMeasures(measures) + `,
+				timezone(?, template.` + tsAlias + `) as ` + tsAlias + ` from template
+				LEFT OUTER JOIN series ON template.` + tsAlias + ` = series.` + tsAlias + `
+				ORDER BY template.` + tsAlias + `
+			) GROUP BY 1 ORDER BY 1
 		)`
 
 		err = olap.Exec(ctx, &drivers.Statement{
@@ -512,7 +516,18 @@ func getExpressionColumnsFromMeasures(measures []*runtimev1.ColumnTimeSeriesRequ
 func getCoalesceStatementsMeasures(measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) string {
 	var result string
 	for i, measure := range measures {
-		result += fmt.Sprintf(`series.%s as %s`, safeName(measure.SqlName), safeName(measure.SqlName))
+		result += fmt.Sprintf(`series.%[1]s as %[1]s`, safeName(measure.SqlName))
+		if i < len(measures)-1 {
+			result += ", "
+		}
+	}
+	return result
+}
+
+func getCoalesceStatementsMeasuresLast(measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) string {
+	var result string
+	for i, measure := range measures {
+		result += fmt.Sprintf(`last(%[1]s) as %[1]s`, safeName(measure.SqlName))
 		if i < len(measures)-1 {
 			result += ", "
 		}

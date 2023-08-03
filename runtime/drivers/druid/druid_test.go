@@ -86,9 +86,10 @@ func TestDruid(t *testing.T) {
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		Started: true,
 		ContainerRequest: testcontainers.ContainerRequest{
-			WaitingFor:   wait.ForHTTP("/status/health").WithPort("8081"),
+			WaitingFor:   wait.ForHTTP("/status/health").WithPort("8081").WithStartupTimeout(time.Minute * 2),
 			Image:        "gcr.io/rilldata/druid-micro:25.0.0",
 			ExposedPorts: []string{"8081/tcp", "8082/tcp"},
+			Cmd:          []string{"./bin/start-micro-quickstart"},
 		},
 	})
 	require.NoError(t, err)
@@ -116,6 +117,7 @@ func TestDruid(t *testing.T) {
 	t.Run("schema all", func(t *testing.T) { testSchemaAll(t, olap) })
 	t.Run("schema lookup", func(t *testing.T) { testSchemaLookup(t, olap) })
 	// Add new tests here
+	t.Run("time floor", func(t *testing.T) { testTimeFloor(t, olap) })
 
 	require.NoError(t, conn.Close())
 	require.Error(t, conn.(*connection).db.Ping())
@@ -151,6 +153,27 @@ func testMax(t *testing.T, olap drivers.OLAPStore) {
 	require.NoError(t, rows.Scan(&count))
 	require.Equal(t, expectedValue, count)
 	require.NoError(t, rows.Close())
+}
+
+func testTimeFloor(t *testing.T, olap drivers.OLAPStore) {
+	qry := fmt.Sprintf("SELECT time_floor(__time, 'P1D', null, CAST(? AS VARCHAR)) FROM %s", testTable)
+	rows, err := olap.Execute(context.Background(), &drivers.Statement{
+		Query: qry,
+		Args:  []any{"Asia/Kathmandu"},
+	})
+	require.NoError(t, err)
+	defer rows.Close()
+
+	var tmString string
+	count := 0
+	for rows.Next() {
+		require.NoError(t, rows.Scan(&tmString))
+		tm, err := time.Parse(time.RFC3339, tmString)
+		require.NoError(t, err)
+		require.Equal(t, 15, tm.Minute())
+		count += 1
+	}
+	require.Equal(t, 9, count)
 }
 
 func testSchemaAll(t *testing.T, olap drivers.OLAPStore) {

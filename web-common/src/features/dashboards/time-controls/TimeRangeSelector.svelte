@@ -55,7 +55,8 @@
       boundaryStart,
       boundaryEnd,
       LATEST_WINDOW_TIME_RANGES,
-      minTimeGrain
+      minTimeGrain,
+      $dashboardStore?.selectedTimezone
     );
   }
 
@@ -65,7 +66,8 @@
       boundaryStart,
       boundaryEnd,
       PERIOD_TO_DATE_RANGES,
-      minTimeGrain
+      minTimeGrain,
+      $dashboardStore?.selectedTimezone
     );
   }
 
@@ -160,7 +162,8 @@
         {prettyFormatTimeRange(
           $timeControlsStore?.selectedTimeRange?.start,
           $timeControlsStore?.selectedTimeRange?.end,
-          $timeControlsStore?.selectedTimeRange?.name
+          $timeControlsStore?.selectedTimeRange?.name,
+          $dashboardStore?.selectedTimezone
         )}
       </span>
     </div>
@@ -237,6 +240,7 @@
           {boundaryStart}
           {boundaryEnd}
           {minTimeGrain}
+          zone={$dashboardStore?.selectedTimezone}
           defaultDate={selectedRange}
           on:apply={(e) =>
             onSelectCustomTimeRange(

@@ -34,6 +34,7 @@ This component needs to do the following:
   export let boundaryStart: Date;
   export let boundaryEnd: Date;
   export let minTimeGrain: V1TimeGrain;
+  export let zone: string;
 
   export let showComparison = true;
   export let selectedComparison;
@@ -115,7 +116,12 @@ This component needs to do the following:
     : NO_COMPARISON_LABEL;
 </script>
 
-<WithTogglableFloatingElement let:active let:toggleFloatingElement>
+<WithTogglableFloatingElement
+  alignment="start"
+  distance={8}
+  let:active
+  let:toggleFloatingElement
+>
   <Tooltip distance={8} suppress={active}>
     <SelectorButton
       {active}
@@ -190,6 +196,7 @@ This component needs to do the following:
           {boundaryEnd}
           defaultDate={selectedComparison}
           {minTimeGrain}
+          {zone}
           on:apply={(e) => {
             onSelectCustomComparisonRange(
               e.detail.startDate,

@@ -10,7 +10,7 @@ The main feature-set component for dashboard filters
   import {
     defaultChipColors,
     excludeChipColors,
-    includeHiddenChipColors,
+    hiddenChipColors,
   } from "@rilldata/web-common/components/chip/chip-types";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import FilterRemove from "@rilldata/web-common/components/icons/FilterRemove.svelte";
@@ -116,10 +116,8 @@ The main feature-set component for dashboard filters
   }
 
   function getColorForChip(isHidden, isInclude) {
-    if (isInclude) {
-      return isHidden ? includeHiddenChipColors : defaultChipColors;
-    }
-    return excludeChipColors;
+    if (isHidden) return hiddenChipColors;
+    return isInclude ? defaultChipColors : excludeChipColors;
   }
 </script>
 

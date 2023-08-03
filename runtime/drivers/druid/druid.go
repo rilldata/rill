@@ -117,6 +117,12 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
+// AsSQLStore implements drivers.Connection.
+// Use OLAPStore instead.
+func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
+	return nil, false
+}
+
 func (c *connection) EstimateSize() (int64, bool) {
 	return 0, false
 }

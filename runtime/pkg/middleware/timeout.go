@@ -39,8 +39,12 @@ func TimeoutUnaryServerInterceptor(fn func(method string) time.Duration) grpc.Un
 	) (interface{}, error) {
 		duration := fn(info.FullMethod)
 
-		ctx, cancel := context.WithTimeout(ctx, duration)
-		defer cancel()
+		if duration != 0 {
+			ctx, cancel := context.WithTimeout(ctx, duration)
+			defer cancel()
+			return handler(ctx, req)
+		}
+
 		return handler(ctx, req)
 	}
 }

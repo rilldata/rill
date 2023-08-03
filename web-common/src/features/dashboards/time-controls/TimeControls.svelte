@@ -18,22 +18,27 @@
     TimeRange,
     TimeRangeType,
   } from "@rilldata/web-common/lib/time/types";
-  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
+  import { initLocalUserPreferenceStore } from "../user-preferences";
   import NoTimeDimensionCTA from "./NoTimeDimensionCTA.svelte";
   import TimeComparisonSelector from "./TimeComparisonSelector.svelte";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeSelector from "./TimeRangeSelector.svelte";
+  import TimeZoneSelector from "./TimeZoneSelector.svelte";
 
   export let metricViewName: string;
+
+  const localUserPreferences = initLocalUserPreferenceStore(metricViewName);
 
   const queryClient = useQueryClient();
   $: dashboardStore = useDashboardStore(metricViewName);
 
   let baseTimeRange: TimeRange;
   let minTimeGrain: V1TimeGrain;
+  let availableTimeZones: string[] = [];
 
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
 
@@ -81,6 +86,11 @@
       timeGrain,
       $dashboardStore?.selectedComparisonTimeRange
     );
+  }
+
+  function onSelectTimeZone(timeZone: string) {
+    metricsExplorerStore.setTimeZone(metricViewName, timeZone);
+    localUserPreferences.set({ timeZone });
   }
 
   function onSelectComparisonRange(
@@ -147,6 +157,12 @@
       on:select-time-range={(e) =>
         onSelectTimeRange(e.detail.name, e.detail.start, e.detail.end)}
     />
+    <TimeZoneSelector
+      on:select-time-zone={(e) => onSelectTimeZone(e.detail.timeZone)}
+      {metricViewName}
+      {availableTimeZones}
+      now={allTimeRange?.end}
+    />
     <TimeComparisonSelector
       on:select-comparison={(e) => {
         onSelectComparisonRange(e.detail.name, e.detail.start, e.detail.end);
@@ -160,6 +176,7 @@
       boundaryEnd={allTimeRange.end}
       showComparison={$timeControlsStore?.showComparison}
       selectedComparison={$timeControlsStore?.selectedComparisonTimeRange}
+      zone={$dashboardStore?.selectedTimezone}
       comparisonOptions={availableComparisons}
     />
     <TimeGrainSelector

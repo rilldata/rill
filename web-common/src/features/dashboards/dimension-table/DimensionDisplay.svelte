@@ -25,10 +25,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
-  import {
-    humanizeGroupByColumns,
-    NicelyFormattedTypes,
-  } from "../humanize-numbers";
+  import { humanizeGroupByColumns, FormatPreset } from "../humanize-numbers";
   import {
     computeComparisonValues,
     computePercentOfTotal,
@@ -226,7 +223,7 @@
       columnNames.splice(sortByColumnIndex + 1, 0, `${sortByColumn}_delta`);
 
       // Only push percentage delta column if selected measure is not a percentage
-      if (selectedMeasure?.format != NicelyFormattedTypes.PERCENTAGE) {
+      if (selectedMeasure?.format != FormatPreset.PERCENTAGE) {
         percentOfTotalSpliceIndex = 3;
         columnNames.splice(
           sortByColumnIndex + 2,
@@ -337,7 +334,7 @@
     const measureFormatSpec = columns?.map((column) => {
       return {
         columnName: column.name,
-        formatPreset: column.format as NicelyFormattedTypes,
+        formatPreset: column.format as FormatPreset,
       };
     });
     if (measureFormatSpec) {
