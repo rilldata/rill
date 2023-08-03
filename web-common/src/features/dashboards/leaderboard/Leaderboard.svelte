@@ -8,6 +8,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
+  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import {
     getFilterForDimension,
     useMetaDimension,
@@ -29,7 +30,7 @@
     useDashboardStore,
   } from "../dashboard-stores";
   import { getFilterForComparsion } from "../dimension-table/dimension-table-utils";
-  import type { NicelyFormattedTypes } from "../humanize-numbers";
+  import type { FormatPreset } from "../humanize-numbers";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import { prepareLeaderboardItemData } from "./leaderboard-utils";
   import LeaderboardListItem from "./LeaderboardListItem.svelte";
@@ -43,7 +44,7 @@
   export let referenceValue: number;
   export let unfilteredTotal: number;
 
-  export let formatPreset: NicelyFormattedTypes;
+  export let formatPreset: FormatPreset;
   export let isSummableMeasure = false;
 
   let slice = 7;

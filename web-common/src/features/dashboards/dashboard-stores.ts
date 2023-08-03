@@ -1,3 +1,4 @@
+import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import {
@@ -9,7 +10,7 @@ import type {
   V1MetricsView,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
-import { Readable, Writable, derived, writable } from "svelte/store";
+import { derived, Readable, Writable, writable } from "svelte/store";
 
 export interface LeaderboardValue {
   value: number;

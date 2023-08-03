@@ -5,6 +5,7 @@
     ButtonGroup,
     SubButton,
   } from "@rilldata/web-common/components/button-group";
+  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { runtime } from "../../../runtime-client/runtime-store";
 
   import { useModelHasTimeSeries } from "@rilldata/web-common/features/dashboards/selectors";
@@ -81,9 +82,9 @@
 </script>
 
 <ButtonGroup
-  selected={selectedButtons}
   disabled={disabledButtons}
   on:subbutton-click={handleContextValueButtonGroupClick}
+  selected={selectedButtons}
 >
   <SubButton
     value={LeaderboardContextColumn.DELTA_CHANGE}
