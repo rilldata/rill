@@ -1,5 +1,9 @@
 import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
+import { parse } from "yaml";
+import { appScreen } from "../../layout/app-store";
+import { BehaviourEventMedium } from "../../metrics/service/BehaviourEventTypes";
+import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
 import {
   getRuntimeServiceGetFileQueryKey,
   runtimeServicePutFileAndReconcile,
@@ -9,6 +13,10 @@ import { runtime } from "../../runtime-client/runtime-store";
 import { getFilePathFromNameAndType } from "../entity-management/entity-mappers";
 import { fileArtifactsStore } from "../entity-management/file-artifacts-store";
 import { EntityType } from "../entity-management/types";
+import {
+  emitSourceErrorTelemetry,
+  emitSourceSuccessTelemetry,
+} from "./sourceUtils";
 
 export async function saveAndRefresh(
   queryClient: QueryClient,
@@ -40,4 +48,29 @@ export async function saveAndRefresh(
 
   // handle errors
   fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
+
+  // emit telemetry
+  let yamlObj;
+  try {
+    yamlObj = parse(yaml);
+  } catch (e) {
+    // ignore
+  }
+  if (resp.errors.length > 0) {
+    emitSourceErrorTelemetry(
+      MetricsEventSpace.RightPanel,
+      get(appScreen),
+      resp.errors[0]?.message,
+      yamlObj?.type || "",
+      yamlObj?.uri || ""
+    );
+  } else {
+    emitSourceSuccessTelemetry(
+      MetricsEventSpace.Modal,
+      get(appScreen),
+      BehaviourEventMedium.Button,
+      yamlObj?.type || "",
+      yamlObj?.uri || ""
+    );
+  }
 }
