@@ -44,6 +44,9 @@ func (m *mockIterator) Size(unit drivers.ProgressUnit) (int64, bool) {
 	return 0, false
 }
 
+func (m *mockIterator) KeepFilesUntilClose(keepFilesUntilClose bool) {
+}
+
 var _ drivers.FileIterator = &mockIterator{}
 
 func TestIterativeCSVIngestionWithVariableSchema(t *testing.T) {
@@ -81,92 +84,116 @@ mum,8.2`)
 	require.NoError(t, err)
 
 	type test struct {
-		mockIterator mockIterator
-		name         string
-		count        int
-		filterCount  int
-		colCount     int
+		files       [][]string
+		query       bool
+		name        string
+		count       int
+		filterCount int
+		colCount    int
 	}
 
 	tests := []test{
 		{
-			mockIterator: mockIterator{batches: [][]string{
+			files: [][]string{
 				{file1, file1},
 				{file1, file1},
-			}},
+			},
 			name:        "same_schema",
 			count:       8,
 			filterCount: 4,
 			colCount:    2,
 		},
 		{
-			mockIterator: mockIterator{batches: [][]string{
+			files: [][]string{
 				{file1, file2, file3, file4},
-			}},
+			},
 			name:        "variable_schema_ingested_at_once",
 			count:       8,
 			filterCount: 4,
 			colCount:    3,
 		},
 		{
-			mockIterator: mockIterator{batches: [][]string{
+			files: [][]string{
 				{file1},
 				{file2},
 				{file3},
 				{file4},
-			}},
+			},
 			name:        "changing_schema",
 			count:       8,
 			filterCount: 4,
 			colCount:    3,
 		},
 		{
-			mockIterator: mockIterator{batches: [][]string{
+			files: [][]string{
 				{file1},
 				{file3, file1},
 				{file2, file1},
 				{file1, file4},
-			}},
+			},
 			name:        "schema_combination",
 			count:       14,
 			filterCount: 7,
 			colCount:    3,
 		},
 	}
+	queryTests := make([]test, len(tests))
+	for i, t := range tests {
+		queryTests[i] = test{
+			files:       t.files,
+			query:       true,
+			name:        t.name,
+			count:       t.count,
+			filterCount: t.filterCount,
+			colCount:    t.colCount,
+		}
+	}
+	tests = append(tests, queryTests...)
 
 	mockConnector := &mockObjectStore{}
-	for _, test := range tests {
-		mockConnector.mockIterator = &test.mockIterator
-		olap := runOLAPStore(t)
-		ctx := context.Background()
-		tr := transporter.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
+	for i, test := range tests {
+		t.Run(fmt.Sprintf("%d - query=%v", i, test.query), func(t *testing.T) {
+			mockConnector.mockIterator = &mockIterator{batches: test.files}
+			olap := runOLAPStore(t)
+			ctx := context.Background()
+			tr := transporter.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
 
-		err = tr.Transfer(ctx, &drivers.BucketSource{}, &drivers.DatabaseSink{Table: test.name}, drivers.NewTransferOpts(),
-			drivers.NoOpProgress{})
-		require.NoError(t, err, "no err expected test %s", test.name)
+			var src *drivers.BucketSource
+			if test.query {
+				src = &drivers.BucketSource{
+					Properties: map[string]any{"sql": "select * from read_csv_auto('path',union_by_name=true,sample_size=200000)"},
+				}
+			} else {
+				src = &drivers.BucketSource{}
+			}
 
-		var count int
-		rows, err := olap.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT count(*) FROM %s", test.name)})
-		require.NoError(t, err)
-		require.True(t, rows.Next())
-		require.NoError(t, rows.Scan(&count))
-		require.Equal(t, test.count, count)
-		require.NoError(t, rows.Close())
+			err = tr.Transfer(ctx, src, &drivers.DatabaseSink{Table: test.name}, drivers.NewTransferOpts(),
+				drivers.NoOpProgress{})
+			require.NoError(t, err, "no err expected test %s", test.name)
 
-		rows, err = olap.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT count(*) FROM %s where city='bglr'", test.name)})
-		require.NoError(t, err)
-		require.True(t, rows.Next())
-		require.NoError(t, rows.Scan(&count))
-		require.Equal(t, test.filterCount, count)
-		require.NoError(t, rows.Close())
+			var count int
+			rows, err := olap.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT count(*) FROM %s", test.name)})
+			require.NoError(t, err)
+			require.True(t, rows.Next())
+			require.NoError(t, rows.Scan(&count))
+			require.Equal(t, test.count, count)
+			require.NoError(t, rows.Close())
 
-		rows, err = olap.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("DESCRIBE %s", test.name)})
-		require.NoError(t, err)
-		colCount := 0
-		for rows.Next() {
-			colCount++
-		}
-		require.Equal(t, test.colCount, colCount)
+			rows, err = olap.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT count(*) FROM %s where city='bglr'", test.name)})
+			require.NoError(t, err)
+			require.True(t, rows.Next())
+			require.NoError(t, rows.Scan(&count))
+			require.Equal(t, test.filterCount, count)
+			require.NoError(t, rows.Close())
+
+			rows, err = olap.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("DESCRIBE %s", test.name)})
+			require.NoError(t, err)
+			colCount := 0
+			for rows.Next() {
+				colCount++
+			}
+			require.Equal(t, test.colCount, colCount)
+		})
 	}
 
 }
@@ -206,76 +233,98 @@ mum,8.2`)
 	require.NoError(t, err)
 
 	type test struct {
-		mockIterator mockIterator
-		name         string
-		hasError     bool
+		files    [][]string
+		query    bool
+		name     string
+		hasError bool
 	}
 
 	tests := []test{
 		{
-			mockIterator: mockIterator{batches: [][]string{
+			files: [][]string{
 				{file1, file1},
 				{file1, file1},
-			}},
+			},
 			name:     "same_schema",
 			hasError: false,
 		},
 		{
-			mockIterator: mockIterator{batches: [][]string{
+			files: [][]string{
 				{file1, file2, file3, file4},
-			}},
+			},
 			name:     "variable_schema_ingested_at_once",
 			hasError: true,
 		},
 		{
-			mockIterator: mockIterator{batches: [][]string{
+			files: [][]string{
 				{file1, file2, file3, file4},
-			}},
+			},
 			name:     "columns_jumbled",
 			hasError: true,
 		},
 		{
-			mockIterator: mockIterator{batches: [][]string{
+			files: [][]string{
 				{file1},
 				{file2},
-			}},
+			},
 			name:     "new_columns",
 			hasError: true,
 		},
 		{
-			mockIterator: mockIterator{batches: [][]string{
+			files: [][]string{
 				{file2},
 				{file1},
-			}},
+			},
 			name:     "less_columns",
 			hasError: true,
 		},
 		{
-			mockIterator: mockIterator{batches: [][]string{
+			files: [][]string{
 				{file1},
 				{file4},
-			}},
+			},
 			name:     "datatype_change",
 			hasError: true,
 		},
 	}
+	queryTests := make([]test, len(tests))
+	for i, t := range tests {
+		queryTests[i] = test{
+			files:    t.files,
+			query:    true,
+			name:     t.name,
+			hasError: t.hasError,
+		}
+	}
+	tests = append(tests, queryTests...)
 
 	mockConnector := &mockObjectStore{}
-	for _, test := range tests {
+	for i, test := range tests {
+		t.Run(fmt.Sprintf("%d - query=%v", i, test.query), func(t *testing.T) {
+			mockConnector.mockIterator = &mockIterator{batches: test.files}
+			olap := runOLAPStore(t)
+			ctx := context.Background()
+			tr := transporter.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
 
-		mockConnector.mockIterator = &test.mockIterator
-		olap := runOLAPStore(t)
-		ctx := context.Background()
-		tr := transporter.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
+			var src *drivers.BucketSource
+			if test.query {
+				src = &drivers.BucketSource{
+					Properties: map[string]any{"sql": "select * from read_csv_auto('path')"},
+				}
+			} else {
+				src = &drivers.BucketSource{
+					Properties: map[string]any{"allow_schema_relaxation": false},
+				}
+			}
 
-		err = tr.Transfer(ctx, &drivers.BucketSource{Properties: map[string]any{"allow_schema_relaxation": false}},
-			&drivers.DatabaseSink{Table: test.name}, drivers.NewTransferOpts(),
-			drivers.NoOpProgress{})
-		if test.hasError {
-			require.Error(t, err, fmt.Errorf("error expected for %s got nil", test.name))
-		} else {
-			require.NoError(t, err, fmt.Errorf("no error expected for %s got %s", test.name, err))
-		}
+			err = tr.Transfer(ctx, src, &drivers.DatabaseSink{Table: test.name},
+				drivers.NewTransferOpts(), drivers.NoOpProgress{})
+			if test.hasError {
+				require.Error(t, err, fmt.Errorf("error expected for %s got nil", test.name))
+			} else {
+				require.NoError(t, err, fmt.Errorf("no error expected for %s got %s", test.name, err))
+			}
+		})
 	}
 
 }
@@ -287,94 +336,117 @@ func TestIterativeParquetIngestionWithVariableSchema(t *testing.T) {
 	file4 := filepath.Join("../../../testruntime/testdata/variable-schema", "data3.parquet")
 
 	type test struct {
-		mockIterator mockIterator
-		name         string
-		count        int
-		filterCount  int
-		colCount     int
+		files       [][]string
+		query       bool
+		name        string
+		count       int
+		filterCount int
+		colCount    int
 	}
 
 	tests := []test{
 		{
-			mockIterator: mockIterator{batches: [][]string{
+			files: [][]string{
 				{file1, file1},
 				{file1, file1},
-			}},
+			},
 			name:        "same_schema",
 			count:       8,
 			filterCount: 4,
 			colCount:    2,
 		},
 		{
-			mockIterator: mockIterator{batches: [][]string{
+			files: [][]string{
 				{file1, file2, file3, file4},
-			}},
+			},
 			name:        "variable_schema_ingested_at_once",
 			count:       8,
 			filterCount: 4,
 			colCount:    3,
 		},
 		{
-			mockIterator: mockIterator{batches: [][]string{
+			files: [][]string{
 				{file1},
 				{file2},
 				{file3},
 				{file4},
-			}},
+			},
 			name:        "changing_schema",
 			count:       8,
 			filterCount: 4,
 			colCount:    3,
 		},
 		{
-			mockIterator: mockIterator{batches: [][]string{
+			files: [][]string{
 				{file1},
 				{file3, file1},
 				{file2, file1},
 				{file1, file4},
-			}},
+			},
 			name:        "schema_combination",
 			count:       14,
 			filterCount: 7,
 			colCount:    3,
 		},
 	}
+	queryTests := make([]test, len(tests))
+	for i, t := range tests {
+		queryTests[i] = test{
+			files:       t.files,
+			query:       true,
+			name:        t.name,
+			count:       t.count,
+			filterCount: t.filterCount,
+			colCount:    t.colCount,
+		}
+	}
+	tests = append(tests, queryTests...)
 
 	mockConnector := &mockObjectStore{}
-	for _, test := range tests {
-		mockConnector.mockIterator = &test.mockIterator
-		olap := runOLAPStore(t)
-		ctx := context.Background()
-		tr := transporter.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
+	for i, test := range tests {
+		t.Run(fmt.Sprintf("%d - query=%v", i, test.query), func(t *testing.T) {
+			mockConnector.mockIterator = &mockIterator{batches: test.files}
+			olap := runOLAPStore(t)
+			ctx := context.Background()
+			tr := transporter.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
 
-		err := tr.Transfer(ctx, &drivers.BucketSource{}, &drivers.DatabaseSink{Table: test.name},
-			drivers.NewTransferOpts(), drivers.NoOpProgress{})
-		require.NoError(t, err)
+			var src *drivers.BucketSource
+			if test.query {
+				src = &drivers.BucketSource{
+					Properties: map[string]any{"sql": "select * from read_parquet('path',union_by_name=true,hive_partitioning=true)"},
+				}
+			} else {
+				src = &drivers.BucketSource{}
+			}
 
-		var count int
-		rows, err := olap.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT count(*) FROM %s", test.name)})
-		require.NoError(t, err)
-		require.True(t, rows.Next())
-		require.NoError(t, rows.Scan(&count))
-		require.Equal(t, test.count, count)
-		require.NoError(t, rows.Close())
+			err := tr.Transfer(ctx, src, &drivers.DatabaseSink{Table: test.name},
+				drivers.NewTransferOpts(), drivers.NoOpProgress{})
+			require.NoError(t, err)
 
-		rows, err = olap.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT count(*) FROM %s where city='bglr'", test.name)})
-		require.NoError(t, err)
-		require.True(t, rows.Next())
-		require.NoError(t, rows.Scan(&count))
-		require.Equal(t, test.filterCount, count)
-		require.NoError(t, rows.Close())
+			var count int
+			rows, err := olap.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT count(*) FROM %s", test.name)})
+			require.NoError(t, err)
+			require.True(t, rows.Next())
+			require.NoError(t, rows.Scan(&count))
+			require.Equal(t, test.count, count)
+			require.NoError(t, rows.Close())
 
-		rows, err = olap.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("DESCRIBE %s", test.name)})
-		require.NoError(t, err)
-		colCount := 0
-		for rows.Next() {
-			colCount++
-		}
-		require.Equal(t, test.colCount, colCount)
+			rows, err = olap.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT count(*) FROM %s where city='bglr'", test.name)})
+			require.NoError(t, err)
+			require.True(t, rows.Next())
+			require.NoError(t, rows.Scan(&count))
+			require.Equal(t, test.filterCount, count)
+			require.NoError(t, rows.Close())
+
+			rows, err = olap.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("DESCRIBE %s", test.name)})
+			require.NoError(t, err)
+			colCount := 0
+			for rows.Next() {
+				colCount++
+			}
+			require.Equal(t, test.colCount, colCount)
+		})
 	}
-
 }
 
 func TestIterativeJSONIngestionWithVariableSchema(t *testing.T) {
@@ -408,92 +480,116 @@ func TestIterativeJSONIngestionWithVariableSchema(t *testing.T) {
 	require.NoError(t, err)
 
 	type test struct {
-		mockIterator mockIterator
-		name         string
-		count        int
-		filterCount  int
-		colCount     int
+		files       [][]string
+		query       bool
+		name        string
+		count       int
+		filterCount int
+		colCount    int
 	}
 
 	tests := []test{
 		{
-			mockIterator: mockIterator{batches: [][]string{
+			files: [][]string{
 				{file1, file1},
 				{file1, file1},
-			}},
+			},
 			name:        "same_schema",
 			count:       8,
 			filterCount: 4,
 			colCount:    2,
 		},
 		{
-			mockIterator: mockIterator{batches: [][]string{
+			files: [][]string{
 				{file1, file2, file3, file4},
-			}},
+			},
 			name:        "variable_schema_ingested_at_once",
 			count:       8,
 			filterCount: 4,
 			colCount:    3,
 		},
 		{
-			mockIterator: mockIterator{batches: [][]string{
+			files: [][]string{
 				{file1},
 				{file2},
 				{file3},
 				{file4},
-			}},
+			},
 			name:        "changing_schema",
 			count:       8,
 			filterCount: 4,
 			colCount:    3,
 		},
 		{
-			mockIterator: mockIterator{batches: [][]string{
+			files: [][]string{
 				{file1},
 				{file3, file1},
 				{file2, file1},
 				{file1, file4},
-			}},
+			},
 			name:        "schema_combination",
 			count:       14,
 			filterCount: 7,
 			colCount:    3,
 		},
 	}
+	queryTests := make([]test, len(tests))
+	for i, t := range tests {
+		queryTests[i] = test{
+			files:       t.files,
+			query:       true,
+			name:        t.name,
+			count:       t.count,
+			filterCount: t.filterCount,
+			colCount:    t.colCount,
+		}
+	}
+	tests = append(tests, queryTests...)
 
 	mockConnector := &mockObjectStore{}
-	for _, test := range tests {
-		mockConnector.mockIterator = &test.mockIterator
-		olap := runOLAPStore(t)
-		ctx := context.Background()
-		tr := transporter.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
+	for i, test := range tests {
+		t.Run(fmt.Sprintf("%d - query=%v", i, test.query), func(t *testing.T) {
+			mockConnector.mockIterator = &mockIterator{batches: test.files}
+			olap := runOLAPStore(t)
+			ctx := context.Background()
+			tr := transporter.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
 
-		err := tr.Transfer(ctx, &drivers.BucketSource{}, &drivers.DatabaseSink{Table: test.name},
-			drivers.NewTransferOpts(), drivers.NoOpProgress{})
-		require.NoError(t, err, "no err expected test %s", test.name)
+			var src *drivers.BucketSource
+			if test.query {
+				src = &drivers.BucketSource{
+					Properties: map[string]any{"sql": "select * from read_json('path',format='auto',union_by_name=true,auto_detect=true,sample_size=200000)"},
+				}
+			} else {
+				src = &drivers.BucketSource{}
+			}
 
-		var count int
-		rows, err := olap.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT count(*) FROM %s", test.name)})
-		require.NoError(t, err)
-		require.True(t, rows.Next())
-		require.NoError(t, rows.Scan(&count))
-		require.Equal(t, test.count, count)
-		require.NoError(t, rows.Close())
+			err := tr.Transfer(ctx, src, &drivers.DatabaseSink{Table: test.name},
+				drivers.NewTransferOpts(), drivers.NoOpProgress{})
+			require.NoError(t, err, "no err expected test %s", test.name)
 
-		rows, err = olap.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT count(*) FROM %s where city='bglr'", test.name)})
-		require.NoError(t, err)
-		require.True(t, rows.Next())
-		require.NoError(t, rows.Scan(&count))
-		require.Equal(t, test.filterCount, count)
-		require.NoError(t, rows.Close())
+			var count int
+			rows, err := olap.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT count(*) FROM %s", test.name)})
+			require.NoError(t, err)
+			require.True(t, rows.Next())
+			require.NoError(t, rows.Scan(&count))
+			require.Equal(t, test.count, count)
+			require.NoError(t, rows.Close())
 
-		rows, err = olap.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("DESCRIBE %s", test.name)})
-		require.NoError(t, err)
-		colCount := 0
-		for rows.Next() {
-			colCount++
-		}
-		require.Equal(t, test.colCount, colCount)
+			rows, err = olap.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT count(*) FROM %s where city='bglr'", test.name)})
+			require.NoError(t, err)
+			require.True(t, rows.Next())
+			require.NoError(t, rows.Scan(&count))
+			require.Equal(t, test.filterCount, count)
+			require.NoError(t, rows.Close())
+
+			rows, err = olap.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("DESCRIBE %s", test.name)})
+			require.NoError(t, err)
+			colCount := 0
+			for rows.Next() {
+				colCount++
+			}
+			require.Equal(t, test.colCount, colCount)
+		})
 	}
 }
 

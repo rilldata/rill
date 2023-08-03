@@ -12,3 +12,22 @@ export const duplicateSourceAction: Writable<DuplicateActions> = writable(
 );
 
 export const duplicateSourceName: Writable<string> = writable(null);
+
+interface SourceStore {
+  clientYAML: string;
+}
+
+// Dictionary of source stores
+const sourceStores: { [key: string]: Writable<SourceStore> } = {};
+
+function createSourceStore(): Writable<SourceStore> {
+  return writable({ clientYAML: null });
+}
+
+export function useSourceStore(sourceName: string): Writable<SourceStore> {
+  if (!sourceStores[sourceName]) {
+    sourceStores[sourceName] = createSourceStore();
+  }
+
+  return sourceStores[sourceName];
+}

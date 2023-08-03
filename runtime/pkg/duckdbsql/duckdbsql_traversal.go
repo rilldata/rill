@@ -217,6 +217,8 @@ func valueToGoValue(v astNode) any {
 				return arrayValueToGoValue(v)
 			}
 		}
+	case "OPERATOR_CAST":
+		return castValueToGoValue(v)
 	}
 	return nil
 }
@@ -272,6 +274,15 @@ func arrayValueToGoValue(v astNode) []any {
 		arr = append(arr, valueToGoValue(child))
 	}
 	return arr
+}
+
+func castValueToGoValue(v astNode) any {
+	val := valueToGoValue(toNode(v, astKeyChild))
+	if toString(toNode(v, astKeyCastType), astKeyID) == "BOOLEAN" {
+		return castToBoolean(val)
+	}
+	// TODO: other types
+	return nil
 }
 
 func forceConvertToNum[N int32 | int64 | uint32 | uint64 | float32 | float64](v any) N {

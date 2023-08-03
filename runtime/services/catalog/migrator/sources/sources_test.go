@@ -58,11 +58,17 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 		AdditionalProps map[string]any
 	}{
 		{"local_file", filepath.Join(testdataPathAbs, "AdBids.csv"), nil},
-		{"local_file", filepath.Join(testdataPathAbs, "AdBids.csv"), map[string]any{"csv.delimiter": ","}},
 		{"local_file", filepath.Join(testdataPathAbs, "AdBids.csv.gz"), nil},
-		{"local_file", filepath.Join(testdataPathAbs, "AdBids.parquet"), map[string]any{"hive_partitioning": true}},
+		{"local_file", filepath.Join(testdataPathAbs, "AdBids.parquet"), map[string]any{
+			"duckdb": map[string]any{
+				"hive_partitioning": true,
+			},
+		}},
 		{"local_file", filepath.Join(testdataPathAbs, "AdBids.parquet"), nil},
 		{"local_file", filepath.Join(testdataPathAbs, "AdBids.txt"), nil},
+		{"duckdb", "", map[string]any{
+			"sql": fmt.Sprintf(`select * from read_csv_auto('%s')`, filepath.Join(testdataPathAbs, "AdBids.csv")),
+		}},
 		// something wrong with this particular file. duckdb fails to extract
 		// TODO: move the generator to go and fix the parquet file
 		//{"local_file", testdataPath + "AdBids.parquet.gz", nil},
@@ -75,6 +81,9 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 		//{"gcs", "gs://scratch.rilldata.com/rill-developer/AdBids.csv.gz", nil},
 		//{"gcs", "gs://scratch.rilldata.com/rill-developer/AdBids.parquet", nil},
 		//{"gcs", "gs://scratch.rilldata.com/rill-developer/AdBids.parquet.gz", nil},
+		//{"duckdb", "", map[string]any{
+		//	"sql": `select * from read_csv_auto('gs://scratch.rilldata.com/rill-developer/AdBids.csv.gz')`,
+		//}},
 	}
 
 	ctx := context.Background()
@@ -104,7 +113,7 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 				Type: drivers.ObjectType(runtimev1.ObjectType_OBJECT_TYPE_SOURCE),
 				Object: &runtimev1.Source{
 					Name:       "foo",
-					Connector:  "local_file",
+					Connector:  tt.Connector,
 					Properties: p,
 				},
 			}
@@ -235,7 +244,6 @@ func TestFileFormatAndDelimiter(t *testing.T) {
 	ctx := context.Background()
 	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, zap.NewNop())
 	require.NoError(t, err)
-	defer conn.Close()
 	olap, _ := conn.AsOLAP()
 
 	testdataPathAbs, err := filepath.Abs("../../../../../web-local/test/data")
@@ -247,41 +255,60 @@ func TestFileFormatAndDelimiter(t *testing.T) {
 	m := migrator.Migrators[drivers.ObjectTypeSource]
 	opts := migrator.Options{InstanceEnv: map[string]string{"allow_host_access": "true"}, IngestStorageLimitInBytes: 1024 * 1024 * 1024}
 
-	props := make(map[string]any, 0)
-	props["path"] = testDelimiterCsvPath
-	props["repo_root"] = "."
-	props["duckdb"] = map[string]any{"delim": "' '"}
-	props["format"] = "csv"
-
-	p, err := structpb.NewStruct(props)
-	require.NoError(t, err)
-	source := &drivers.CatalogEntry{
-		Type: drivers.ObjectType(runtimev1.ObjectType_OBJECT_TYPE_SOURCE),
-		Object: &runtimev1.Source{
-			Name:       "foo",
-			Connector:  "local_file",
-			Properties: p,
-		},
+	variations := []struct {
+		title           string
+		connector       string
+		path            string
+		additionalProps map[string]any
+	}{
+		{"direct file reference", "local_file", testDelimiterCsvPath, map[string]any{
+			"duckdb": map[string]any{"delim": "' '"},
+		}},
+		{"sql with read_csv_auto", "duckdb", "", map[string]any{
+			"sql": fmt.Sprintf(`from read_csv_auto('%s',delim=' ')`, testDelimiterCsvPath),
+		}},
 	}
-	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
-	require.NoError(t, err)
 
-	rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM foo"})
-	require.NoError(t, err)
-	cols, err := rows.Columns()
-	require.NoError(t, err)
-	// 5 columns in file
-	require.Len(t, cols, 5)
-	require.NoError(t, rows.Close())
+	for _, tt := range variations {
+		t.Run(tt.title, func(t *testing.T) {
+			props := make(map[string]any, 0)
+			if tt.additionalProps != nil {
+				props = tt.additionalProps
+			}
+			props["path"] = tt.path
+			props["repo_root"] = "."
+			props["format"] = "csv"
+			p, err := structpb.NewStruct(props)
+			require.NoError(t, err)
+			source := &drivers.CatalogEntry{
+				Type: drivers.ObjectType(runtimev1.ObjectType_OBJECT_TYPE_SOURCE),
+				Object: &runtimev1.Source{
+					Name:       "foo",
+					Connector:  tt.connector,
+					Properties: p,
+				},
+			}
+			err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+			require.NoError(t, err)
 
-	var count int
-	rows, err = olap.Execute(ctx, &drivers.Statement{Query: "SELECT count(timestamp) FROM foo"})
-	require.NoError(t, err)
-	require.True(t, rows.Next())
-	require.NoError(t, rows.Scan(&count))
-	require.Equal(t, count, 8)
-	require.False(t, rows.Next())
-	require.NoError(t, rows.Close())
+			rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM foo"})
+			require.NoError(t, err)
+			cols, err := rows.Columns()
+			require.NoError(t, err)
+			// 5 columns in file
+			require.Len(t, cols, 5)
+			require.NoError(t, rows.Close())
+
+			var count int
+			rows, err = olap.Execute(ctx, &drivers.Statement{Query: "SELECT count(timestamp) FROM foo"})
+			require.NoError(t, err)
+			require.True(t, rows.Next())
+			require.NoError(t, rows.Scan(&count))
+			require.Equal(t, count, 8)
+			require.False(t, rows.Next())
+			require.NoError(t, rows.Close())
+		})
+	}
 }
 
 func TestCSVIngestionWithColumns(t *testing.T) {
@@ -292,46 +319,68 @@ func TestCSVIngestionWithColumns(t *testing.T) {
 	m := migrator.Migrators[drivers.ObjectTypeSource]
 	opts := migrator.Options{InstanceEnv: map[string]string{"allow_host_access": "true"}, IngestStorageLimitInBytes: 1024 * 1024 * 1024}
 
-	props := make(map[string]any, 0)
-	props["path"] = filePath
-	props["repo_root"] = "."
-	props["duckdb"] = map[string]any{
+	duckdbProps := map[string]any{
 		"auto_detect":   false,
 		"header":        true,
 		"ignore_errors": true,
 		"columns":       "{id:'INTEGER',name:'VARCHAR',country:'VARCHAR',city:'VARCHAR'}",
 	}
-	props["format"] = "csv"
-
-	p, err := structpb.NewStruct(props)
-	require.NoError(t, err)
-	source := &drivers.CatalogEntry{
-		Type: drivers.ObjectType(runtimev1.ObjectType_OBJECT_TYPE_SOURCE),
-		Object: &runtimev1.Source{
-			Name:       "csv_source",
-			Connector:  "local_file",
-			Properties: p,
-		},
+	variations := []struct {
+		title           string
+		connector       string
+		path            string
+		additionalProps map[string]any
+	}{
+		{"direct file reference", "local_file", filePath, map[string]any{
+			"duckdb": duckdbProps,
+		}},
+		{"sql with read_csv_auto", "duckdb", "", map[string]any{
+			"sql": fmt.Sprintf(`
+from read_csv_auto('%s',auto_detect=false,header=true,ignore_errors=true,
+columns={id:'INTEGER',name:'VARCHAR',country:'VARCHAR',city:'VARCHAR'})`, filePath),
+		}},
 	}
-	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
-	require.NoError(t, err)
 
-	rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM csv_source"})
-	require.NoError(t, err)
-	cols, err := rows.Columns()
-	require.NoError(t, err)
-	require.Len(t, cols, 4)
-	require.ElementsMatch(t, cols, [4]string{"id", "name", "country", "city"})
-	require.NoError(t, rows.Close())
+	for _, tt := range variations {
+		t.Run(tt.title, func(t *testing.T) {
+			props := make(map[string]any, 0)
+			if tt.additionalProps != nil {
+				props = tt.additionalProps
+			}
+			props["path"] = tt.path
+			props["repo_root"] = "."
+			props["format"] = "csv"
+			p, err := structpb.NewStruct(props)
+			require.NoError(t, err)
+			source := &drivers.CatalogEntry{
+				Type: drivers.ObjectType(runtimev1.ObjectType_OBJECT_TYPE_SOURCE),
+				Object: &runtimev1.Source{
+					Name:       "csv_source",
+					Connector:  tt.connector,
+					Properties: p,
+				},
+			}
+			err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+			require.NoError(t, err)
 
-	var count int
-	rows, err = olap.Execute(ctx, &drivers.Statement{Query: "SELECT count(*) FROM csv_source"})
-	require.NoError(t, err)
-	require.True(t, rows.Next())
-	require.NoError(t, rows.Scan(&count))
-	require.Equal(t, count, 100)
-	require.False(t, rows.Next())
-	require.NoError(t, rows.Close())
+			rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM csv_source"})
+			require.NoError(t, err)
+			cols, err := rows.Columns()
+			require.NoError(t, err)
+			require.Len(t, cols, 4)
+			require.ElementsMatch(t, cols, [4]string{"id", "name", "country", "city"})
+			require.NoError(t, rows.Close())
+
+			var count int
+			rows, err = olap.Execute(ctx, &drivers.Statement{Query: "SELECT count(*) FROM csv_source"})
+			require.NoError(t, err)
+			require.True(t, rows.Next())
+			require.NoError(t, rows.Scan(&count))
+			require.Equal(t, count, 100)
+			require.False(t, rows.Next())
+			require.NoError(t, rows.Close())
+		})
+	}
 }
 
 func TestJsonIngestionDefault(t *testing.T) {
@@ -475,6 +524,34 @@ func TestJsonIngestionWithVariousParams(t *testing.T) {
 	m := migrator.Migrators[drivers.ObjectTypeSource]
 	opts := migrator.Options{InstanceEnv: map[string]string{"allow_host_access": "true"}, IngestStorageLimitInBytes: 1024 * 1024 * 1024}
 
+	duckdbProps := map[string]any{
+		"maximum_object_size": "9999999",
+		"records":             true,
+		"ignore_errors":       true,
+		"columns":             "{id:'INTEGER',name:'VARCHAR',isActive:'BOOLEAN',createdDate:'VARCHAR'}",
+		"auto_detect":         false,
+		"sample_size":         -1,
+		"dateformat":          "iso",
+		"timestampformat":     "iso",
+	}
+
+	variations := []struct {
+		title           string
+		connector       string
+		path            string
+		additionalProps map[string]any
+	}{
+		{"direct file reference", "local_file", filePath, map[string]any{
+			"duckdb": duckdbProps,
+		}},
+		{"sql with read_csv_auto", "duckdb", "", map[string]any{
+			"sql": fmt.Sprintf(`
+from read_json('%s',maximum_object_size=9999999,records=true,ignore_errors=true,
+columns={id:'INTEGER',name:'VARCHAR',isActive:'BOOLEAN',createdDate:'VARCHAR'},
+auto_detect=false,sample_size=-1,dateformat='iso',timestampformat='iso',format='auto')`, filePath),
+		}},
+	}
+
 	props := make(map[string]any, 0)
 	props["path"] = filePath
 	props["repo_root"] = "."
@@ -489,34 +566,45 @@ func TestJsonIngestionWithVariousParams(t *testing.T) {
 		"timestampformat":     "iso",
 	}
 
-	p, err := structpb.NewStruct(props)
-	require.NoError(t, err)
-	source := &drivers.CatalogEntry{
-		Type: drivers.ObjectType(runtimev1.ObjectType_OBJECT_TYPE_SOURCE),
-		Object: &runtimev1.Source{
-			Name:       "json_source",
-			Connector:  "local_file",
-			Properties: p,
-		},
+	for _, tt := range variations {
+		t.Run(tt.title, func(t *testing.T) {
+			props := make(map[string]any, 0)
+			if tt.additionalProps != nil {
+				props = tt.additionalProps
+			}
+			props["path"] = tt.path
+			props["repo_root"] = "."
+
+			p, err := structpb.NewStruct(props)
+			require.NoError(t, err)
+			source := &drivers.CatalogEntry{
+				Type: drivers.ObjectType(runtimev1.ObjectType_OBJECT_TYPE_SOURCE),
+				Object: &runtimev1.Source{
+					Name:       "json_source",
+					Connector:  tt.connector,
+					Properties: p,
+				},
+			}
+			err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+			require.NoError(t, err)
+
+			rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM json_source"})
+			require.NoError(t, err)
+			cols, err := rows.Columns()
+			require.NoError(t, err)
+			require.Len(t, cols, 4)
+			require.NoError(t, rows.Close())
+
+			var count int
+			rows, err = olap.Execute(ctx, &drivers.Statement{Query: "SELECT count(*) FROM json_source"})
+			require.NoError(t, err)
+			require.True(t, rows.Next())
+			require.NoError(t, rows.Scan(&count))
+			require.Equal(t, count, 10)
+			require.False(t, rows.Next())
+			require.NoError(t, rows.Close())
+		})
 	}
-	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
-	require.NoError(t, err)
-
-	rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM json_source"})
-	require.NoError(t, err)
-	cols, err := rows.Columns()
-	require.NoError(t, err)
-	require.Len(t, cols, 4)
-	require.NoError(t, rows.Close())
-
-	var count int
-	rows, err = olap.Execute(ctx, &drivers.Statement{Query: "SELECT count(*) FROM json_source"})
-	require.NoError(t, err)
-	require.True(t, rows.Next())
-	require.NoError(t, rows.Scan(&count))
-	require.Equal(t, count, 10)
-	require.False(t, rows.Next())
-	require.NoError(t, rows.Close())
 }
 
 func TestJsonIngestionWithInvalidParam(t *testing.T) {
@@ -647,6 +735,69 @@ func TestPropertiesEquals(t *testing.T) {
 	// s6 and s7 should not be equal
 	require.False(t, m.IsEqual(ctx, &drivers.CatalogEntry{Object: s7}, &drivers.CatalogEntry{Object: s6}))
 	require.False(t, m.IsEqual(ctx, &drivers.CatalogEntry{Object: s6}, &drivers.CatalogEntry{Object: s7}))
+}
+
+func TestSqlIngestionWithFiltersAndColumns(t *testing.T) {
+	ctx := context.Background()
+	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, zap.NewNop())
+	require.NoError(t, err)
+	olap, _ := conn.AsOLAP()
+	m := migrator.Migrators[drivers.ObjectTypeSource]
+	opts := migrator.Options{InstanceEnv: map[string]string{"allow_host_access": "true"}, IngestStorageLimitInBytes: 1024 * 1024 * 1024}
+
+	testdataPathAbs, err := filepath.Abs("../../../../../web-local/test/data")
+	require.NoError(t, err)
+	testCsvPath := filepath.Join(testdataPathAbs, "AdBids.csv")
+
+	repo := runRepoStore(t, testdataPathAbs)
+
+	props := make(map[string]any, 0)
+	props["repo_root"] = "."
+	props["sql"] = fmt.Sprintf(`
+select * exclude(publisher),
+(case when publisher = 'Yahoo' then 0 when publisher = 'Google' then 1 else 2 end) as pub,
+from read_csv_auto('%s') where publisher in ('Yahoo', 'Google')`, testCsvPath)
+
+	p, err := structpb.NewStruct(props)
+	require.NoError(t, err)
+	source := &drivers.CatalogEntry{
+		Type: drivers.ObjectType(runtimev1.ObjectType_OBJECT_TYPE_SOURCE),
+		Object: &runtimev1.Source{
+			Name:       "csv_source",
+			Connector:  "duckdb",
+			Properties: p,
+		},
+	}
+	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+	require.NoError(t, err)
+
+	rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM csv_source"})
+	require.NoError(t, err)
+	cols, err := rows.Columns()
+	require.NoError(t, err)
+	require.Len(t, cols, 5)
+	require.ElementsMatch(t, cols, [5]string{"id", "timestamp", "domain", "bid_price", "pub"})
+	require.NoError(t, rows.Close())
+
+	var count int
+	rows, err = olap.Execute(ctx, &drivers.Statement{Query: "SELECT count(*) FROM csv_source"})
+	require.NoError(t, err)
+	require.True(t, rows.Next())
+	require.NoError(t, rows.Scan(&count))
+	require.Equal(t, count, 37356)
+	require.False(t, rows.Next())
+	require.NoError(t, rows.Close())
+
+	rows, err = olap.Execute(ctx, &drivers.Statement{Query: "SELECT count(pub) FROM csv_source group by pub"})
+	require.NoError(t, err)
+	counts := make([]int, 0)
+	for rows.Next() {
+		var count int
+		require.NoError(t, rows.Scan(&count))
+		counts = append(counts, count)
+	}
+	// Only 2 rows present since we filtered out other publishers
+	require.ElementsMatch(t, counts, [2]int{18593, 18763})
 }
 
 func newStruct(t *testing.T, m map[string]any) *structpb.Struct {

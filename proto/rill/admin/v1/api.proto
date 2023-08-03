@@ -274,6 +274,49 @@ service AdminService {
     };
   }
 
+  // ListService returns all the services per organization
+  rpc ListServices(ListServicesRequest) returns (ListServicesResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization_name}/services"};
+  }
+
+  // CreateService creates a new service per organization
+  rpc CreateService(CreateServiceRequest) returns (CreateServiceResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization_name}/services",
+    };
+  }
+
+  // UpdateService updates a service per organization
+  rpc UpdateService(UpdateServiceRequest) returns (UpdateServiceResponse) {
+    option (google.api.http) = {
+      patch: "/v1/organizations/{organization_name}/services/{name}",
+      body: "*"
+    };
+  }
+
+  // DeleteService deletes a service per organization
+  rpc DeleteService(DeleteServiceRequest) returns (DeleteServiceResponse) {
+    option (google.api.http) = {delete: "/v1/organizations/{organization_name}/services/{name}"};
+  }
+
+   // ListServiceAuthTokens lists all the service auth tokens
+  rpc ListServiceAuthTokens(ListServiceAuthTokensRequest) returns (ListServiceAuthTokensResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization_name}/services/{service_name}/tokens"};
+  }
+
+  // IssueServiceAuthToken returns the temporary token for given service account
+  rpc IssueServiceAuthToken(IssueServiceAuthTokenRequest) returns (IssueServiceAuthTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization_name}/services/{service_name}/tokens",
+      body: "*"
+    };
+  }
+
+  // RevokeServiceAuthToken revoke the service auth token
+  rpc RevokeServiceAuthToken(RevokeServiceAuthTokenRequest) returns (RevokeServiceAuthTokenResponse) {
+    option (google.api.http) = {delete: "/v1/services/tokens/{token_id}"};
+  }
+
   // UpdateUserPreferences updates the preferences for the user
   rpc UpdateUserPreferences(UpdateUserPreferencesRequest) returns (UpdateUserPreferencesResponse) {
     option (google.api.http) = {
@@ -304,7 +347,6 @@ service AdminService {
   rpc RemoveBookmark(RemoveBookmarkRequest) returns (RemoveBookmarkResponse) {
     option (google.api.http) = {delete: "/v1/users/bookmarks/{bookmark_id}"};
   }
-
 }
 
 message PingRequest {}
@@ -399,6 +441,43 @@ message GetProjectVariablesRequest {
 
 message GetProjectVariablesResponse {
   map<string, string> variables = 1;
+}
+
+
+message ListServicesRequest {
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
+}
+
+message ListServicesResponse {
+  repeated Service services = 1;
+}
+
+message CreateServiceRequest {
+  string name = 1 [(validate.rules).string.min_len = 1];
+  string organization_name = 2 [(validate.rules).string.min_len = 1];
+}
+
+message CreateServiceResponse {
+  Service service = 1;
+}
+
+message UpdateServiceRequest {
+  string name = 1 [(validate.rules).string.min_len = 1];
+  string organization_name = 2 [(validate.rules).string.min_len = 1];
+  optional string new_name = 3;
+}
+
+message UpdateServiceResponse {
+  Service service = 1;
+}
+
+message DeleteServiceRequest {
+  string name = 1 [(validate.rules).string.min_len = 1];
+  string organization_name = 2 [(validate.rules).string.min_len = 1];
+}
+
+message DeleteServiceResponse {
+  Service service = 1;
 }
 
 message CreateProjectRequest {
@@ -733,6 +812,30 @@ message IssueRepresentativeAuthTokenResponse {
   string token = 1;
 }
 
+message RevokeServiceAuthTokenRequest {
+  string token_id = 1;
+}
+
+message RevokeServiceAuthTokenResponse {}
+
+message IssueServiceAuthTokenRequest {
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string service_name = 2;
+}
+
+message IssueServiceAuthTokenResponse {
+  string token = 1;
+}
+
+message ListServiceAuthTokensRequest {
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string service_name = 2;
+}
+
+message ListServiceAuthTokensResponse {
+  repeated ServiceToken tokens = 1;
+}
+
 message GetGithubRepoStatusRequest {
   string github_url = 1;
 }
@@ -787,6 +890,15 @@ message User {
   UserQuotas quotas = 5;
   google.protobuf.Timestamp created_on = 6;
   google.protobuf.Timestamp updated_on = 7;
+}
+
+message Service {
+  string id = 1;
+  string name = 2;
+  string org_id = 3;
+  string org_name = 4;
+  google.protobuf.Timestamp created_on = 5;
+  google.protobuf.Timestamp updated_on = 6;
 }
 
 message Organization {
@@ -904,4 +1016,10 @@ message Bookmark {
   string user_id = 6;
   google.protobuf.Timestamp created_on = 7;
   google.protobuf.Timestamp updated_on = 8;
+}
+
+message ServiceToken {
+  string id = 1;
+  google.protobuf.Timestamp created_on = 2;
+  google.protobuf.Timestamp expires_on = 3;
 }

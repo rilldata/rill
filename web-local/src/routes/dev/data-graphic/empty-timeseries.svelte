@@ -2,7 +2,7 @@
   import { SimpleDataGraphic } from "@rilldata/web-common/components/data-graphic/elements";
   import { WithBisector } from "@rilldata/web-common/components/data-graphic/functional-components";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
-  import { NicelyFormattedTypes } from "@rilldata/web-common/features/dashboards/humanize-numbers";
+  import { FormatPreset } from "@rilldata/web-common/features/dashboards/humanize-numbers";
   import TimeSeriesBody from "@rilldata/web-common/features/dashboards/workspace/metrics-container/TimeSeriesBody.svelte";
   import TimeSeriesChartContainer from "@rilldata/web-common/features/dashboards/workspace/metrics-container/TimeSeriesChartContainer.svelte";
 
@@ -100,7 +100,7 @@
     <div />
     <TimeSeriesBody
       bind:mouseoverValue
-      formatPreset={NicelyFormattedTypes.HUMANIZE}
+      formatPreset={FormatPreset.HUMANIZE}
       {data}
       {key}
       mouseover={point}

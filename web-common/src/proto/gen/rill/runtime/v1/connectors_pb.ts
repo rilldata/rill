@@ -66,12 +66,22 @@ export class S3Object extends Message<S3Object> {
  */
 export class S3ListBucketsRequest extends Message<S3ListBucketsRequest> {
   /**
-   * @generated from field: uint32 page_size = 1;
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string connector = 2;
+   */
+  connector = "";
+
+  /**
+   * @generated from field: uint32 page_size = 3;
    */
   pageSize = 0;
 
   /**
-   * @generated from field: string page_token = 2;
+   * @generated from field: string page_token = 4;
    */
   pageToken = "";
 
@@ -83,8 +93,10 @@ export class S3ListBucketsRequest extends Message<S3ListBucketsRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.S3ListBucketsRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 2, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): S3ListBucketsRequest {
@@ -152,37 +164,47 @@ export class S3ListBucketsResponse extends Message<S3ListBucketsResponse> {
  */
 export class S3ListObjectsRequest extends Message<S3ListObjectsRequest> {
   /**
-   * @generated from field: uint32 page_size = 1;
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string connector = 2;
+   */
+  connector = "";
+
+  /**
+   * @generated from field: uint32 page_size = 3;
    */
   pageSize = 0;
 
   /**
-   * @generated from field: string page_token = 2;
+   * @generated from field: string page_token = 4;
    */
   pageToken = "";
 
   /**
-   * @generated from field: string bucket = 3;
+   * @generated from field: string bucket = 5;
    */
   bucket = "";
 
   /**
-   * @generated from field: string region = 4;
+   * @generated from field: string region = 6;
    */
   region = "";
 
   /**
-   * @generated from field: string prefix = 5;
+   * @generated from field: string prefix = 7;
    */
   prefix = "";
 
   /**
-   * @generated from field: string start_after = 6;
+   * @generated from field: string start_after = 8;
    */
   startAfter = "";
 
   /**
-   * @generated from field: string delimiter = 7;
+   * @generated from field: string delimiter = 9;
    */
   delimiter = "";
 
@@ -194,13 +216,15 @@ export class S3ListObjectsRequest extends Message<S3ListObjectsRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.S3ListObjectsRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 2, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "bucket", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "prefix", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "start_after", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "delimiter", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "bucket", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "prefix", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "start_after", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "delimiter", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): S3ListObjectsRequest {
@@ -268,7 +292,17 @@ export class S3ListObjectsResponse extends Message<S3ListObjectsResponse> {
  */
 export class S3GetBucketMetadataRequest extends Message<S3GetBucketMetadataRequest> {
   /**
-   * @generated from field: string bucket = 1;
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string connector = 2;
+   */
+  connector = "";
+
+  /**
+   * @generated from field: string bucket = 3;
    */
   bucket = "";
 
@@ -280,7 +314,9 @@ export class S3GetBucketMetadataRequest extends Message<S3GetBucketMetadataReque
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.S3GetBucketMetadataRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "bucket", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "bucket", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): S3GetBucketMetadataRequest {
@@ -341,6 +377,16 @@ export class S3GetBucketMetadataResponse extends Message<S3GetBucketMetadataResp
  * @generated from message rill.runtime.v1.S3GetCredentialsInfoRequest
  */
 export class S3GetCredentialsInfoRequest extends Message<S3GetCredentialsInfoRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string connector = 2;
+   */
+  connector = "";
+
   constructor(data?: PartialMessage<S3GetCredentialsInfoRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -349,6 +395,8 @@ export class S3GetCredentialsInfoRequest extends Message<S3GetCredentialsInfoReq
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.S3GetCredentialsInfoRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): S3GetCredentialsInfoRequest {
@@ -471,12 +519,22 @@ export class GCSObject extends Message<GCSObject> {
  */
 export class GCSListBucketsRequest extends Message<GCSListBucketsRequest> {
   /**
-   * @generated from field: uint32 page_size = 1;
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string connector = 2;
+   */
+  connector = "";
+
+  /**
+   * @generated from field: uint32 page_size = 3;
    */
   pageSize = 0;
 
   /**
-   * @generated from field: string page_token = 2;
+   * @generated from field: string page_token = 4;
    */
   pageToken = "";
 
@@ -488,8 +546,10 @@ export class GCSListBucketsRequest extends Message<GCSListBucketsRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.GCSListBucketsRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 2, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GCSListBucketsRequest {
@@ -557,37 +617,47 @@ export class GCSListBucketsResponse extends Message<GCSListBucketsResponse> {
  */
 export class GCSListObjectsRequest extends Message<GCSListObjectsRequest> {
   /**
-   * @generated from field: uint32 page_size = 1;
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string connector = 2;
+   */
+  connector = "";
+
+  /**
+   * @generated from field: uint32 page_size = 3;
    */
   pageSize = 0;
 
   /**
-   * @generated from field: string page_token = 2;
+   * @generated from field: string page_token = 4;
    */
   pageToken = "";
 
   /**
-   * @generated from field: string bucket = 3;
+   * @generated from field: string bucket = 5;
    */
   bucket = "";
 
   /**
-   * @generated from field: string prefix = 4;
+   * @generated from field: string prefix = 6;
    */
   prefix = "";
 
   /**
-   * @generated from field: string start_offset = 5;
+   * @generated from field: string start_offset = 7;
    */
   startOffset = "";
 
   /**
-   * @generated from field: string end_offset = 6;
+   * @generated from field: string end_offset = 8;
    */
   endOffset = "";
 
   /**
-   * @generated from field: string delimiter = 7;
+   * @generated from field: string delimiter = 9;
    */
   delimiter = "";
 
@@ -599,13 +669,15 @@ export class GCSListObjectsRequest extends Message<GCSListObjectsRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.GCSListObjectsRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 2, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "bucket", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "prefix", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "start_offset", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "end_offset", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "delimiter", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "bucket", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "prefix", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "start_offset", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "end_offset", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "delimiter", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GCSListObjectsRequest {
@@ -672,6 +744,16 @@ export class GCSListObjectsResponse extends Message<GCSListObjectsResponse> {
  * @generated from message rill.runtime.v1.GCSGetCredentialsInfoRequest
  */
 export class GCSGetCredentialsInfoRequest extends Message<GCSGetCredentialsInfoRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string connector = 2;
+   */
+  connector = "";
+
   constructor(data?: PartialMessage<GCSGetCredentialsInfoRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -680,6 +762,8 @@ export class GCSGetCredentialsInfoRequest extends Message<GCSGetCredentialsInfoR
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.GCSGetCredentialsInfoRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GCSGetCredentialsInfoRequest {
@@ -743,70 +827,82 @@ export class GCSGetCredentialsInfoResponse extends Message<GCSGetCredentialsInfo
 }
 
 /**
- * @generated from message rill.runtime.v1.MotherduckListTablesRequest
+ * @generated from message rill.runtime.v1.OLAPListTablesRequest
  */
-export class MotherduckListTablesRequest extends Message<MotherduckListTablesRequest> {
-  constructor(data?: PartialMessage<MotherduckListTablesRequest>) {
+export class OLAPListTablesRequest extends Message<OLAPListTablesRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string connector = 2;
+   */
+  connector = "";
+
+  constructor(data?: PartialMessage<OLAPListTablesRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.MotherduckListTablesRequest";
+  static readonly typeName = "rill.runtime.v1.OLAPListTablesRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MotherduckListTablesRequest {
-    return new MotherduckListTablesRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OLAPListTablesRequest {
+    return new OLAPListTablesRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MotherduckListTablesRequest {
-    return new MotherduckListTablesRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): OLAPListTablesRequest {
+    return new OLAPListTablesRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MotherduckListTablesRequest {
-    return new MotherduckListTablesRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): OLAPListTablesRequest {
+    return new OLAPListTablesRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: MotherduckListTablesRequest | PlainMessage<MotherduckListTablesRequest> | undefined, b: MotherduckListTablesRequest | PlainMessage<MotherduckListTablesRequest> | undefined): boolean {
-    return proto3.util.equals(MotherduckListTablesRequest, a, b);
+  static equals(a: OLAPListTablesRequest | PlainMessage<OLAPListTablesRequest> | undefined, b: OLAPListTablesRequest | PlainMessage<OLAPListTablesRequest> | undefined): boolean {
+    return proto3.util.equals(OLAPListTablesRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.runtime.v1.MotherduckListTablesResponse
+ * @generated from message rill.runtime.v1.OLAPListTablesResponse
  */
-export class MotherduckListTablesResponse extends Message<MotherduckListTablesResponse> {
+export class OLAPListTablesResponse extends Message<OLAPListTablesResponse> {
   /**
    * @generated from field: repeated rill.runtime.v1.TableInfo tables = 1;
    */
   tables: TableInfo[] = [];
 
-  constructor(data?: PartialMessage<MotherduckListTablesResponse>) {
+  constructor(data?: PartialMessage<OLAPListTablesResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.MotherduckListTablesResponse";
+  static readonly typeName = "rill.runtime.v1.OLAPListTablesResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "tables", kind: "message", T: TableInfo, repeated: true },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MotherduckListTablesResponse {
-    return new MotherduckListTablesResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OLAPListTablesResponse {
+    return new OLAPListTablesResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MotherduckListTablesResponse {
-    return new MotherduckListTablesResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): OLAPListTablesResponse {
+    return new OLAPListTablesResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MotherduckListTablesResponse {
-    return new MotherduckListTablesResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): OLAPListTablesResponse {
+    return new OLAPListTablesResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: MotherduckListTablesResponse | PlainMessage<MotherduckListTablesResponse> | undefined, b: MotherduckListTablesResponse | PlainMessage<MotherduckListTablesResponse> | undefined): boolean {
-    return proto3.util.equals(MotherduckListTablesResponse, a, b);
+  static equals(a: OLAPListTablesResponse | PlainMessage<OLAPListTablesResponse> | undefined, b: OLAPListTablesResponse | PlainMessage<OLAPListTablesResponse> | undefined): boolean {
+    return proto3.util.equals(OLAPListTablesResponse, a, b);
   }
 }
 
@@ -850,6 +946,208 @@ export class TableInfo extends Message<TableInfo> {
 
   static equals(a: TableInfo | PlainMessage<TableInfo> | undefined, b: TableInfo | PlainMessage<TableInfo> | undefined): boolean {
     return proto3.util.equals(TableInfo, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.BigQueryListDatasetsRequest
+ */
+export class BigQueryListDatasetsRequest extends Message<BigQueryListDatasetsRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string connector = 2;
+   */
+  connector = "";
+
+  /**
+   * @generated from field: uint32 page_size = 3;
+   */
+  pageSize = 0;
+
+  /**
+   * @generated from field: string page_token = 4;
+   */
+  pageToken = "";
+
+  constructor(data?: PartialMessage<BigQueryListDatasetsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.BigQueryListDatasetsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BigQueryListDatasetsRequest {
+    return new BigQueryListDatasetsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BigQueryListDatasetsRequest {
+    return new BigQueryListDatasetsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BigQueryListDatasetsRequest {
+    return new BigQueryListDatasetsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BigQueryListDatasetsRequest | PlainMessage<BigQueryListDatasetsRequest> | undefined, b: BigQueryListDatasetsRequest | PlainMessage<BigQueryListDatasetsRequest> | undefined): boolean {
+    return proto3.util.equals(BigQueryListDatasetsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.BigQueryListDatasetsResponse
+ */
+export class BigQueryListDatasetsResponse extends Message<BigQueryListDatasetsResponse> {
+  /**
+   * @generated from field: string next_page_token = 1;
+   */
+  nextPageToken = "";
+
+  /**
+   * @generated from field: repeated string names = 2;
+   */
+  names: string[] = [];
+
+  constructor(data?: PartialMessage<BigQueryListDatasetsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.BigQueryListDatasetsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BigQueryListDatasetsResponse {
+    return new BigQueryListDatasetsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BigQueryListDatasetsResponse {
+    return new BigQueryListDatasetsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BigQueryListDatasetsResponse {
+    return new BigQueryListDatasetsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BigQueryListDatasetsResponse | PlainMessage<BigQueryListDatasetsResponse> | undefined, b: BigQueryListDatasetsResponse | PlainMessage<BigQueryListDatasetsResponse> | undefined): boolean {
+    return proto3.util.equals(BigQueryListDatasetsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.BigQueryListTablesRequest
+ */
+export class BigQueryListTablesRequest extends Message<BigQueryListTablesRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string connector = 2;
+   */
+  connector = "";
+
+  /**
+   * @generated from field: string dataset = 3;
+   */
+  dataset = "";
+
+  /**
+   * @generated from field: uint32 page_size = 4;
+   */
+  pageSize = 0;
+
+  /**
+   * @generated from field: string page_token = 5;
+   */
+  pageToken = "";
+
+  constructor(data?: PartialMessage<BigQueryListTablesRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.BigQueryListTablesRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "dataset", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 5, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BigQueryListTablesRequest {
+    return new BigQueryListTablesRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BigQueryListTablesRequest {
+    return new BigQueryListTablesRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BigQueryListTablesRequest {
+    return new BigQueryListTablesRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BigQueryListTablesRequest | PlainMessage<BigQueryListTablesRequest> | undefined, b: BigQueryListTablesRequest | PlainMessage<BigQueryListTablesRequest> | undefined): boolean {
+    return proto3.util.equals(BigQueryListTablesRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.BigQueryListTablesResponse
+ */
+export class BigQueryListTablesResponse extends Message<BigQueryListTablesResponse> {
+  /**
+   * @generated from field: string next_page_token = 1;
+   */
+  nextPageToken = "";
+
+  /**
+   * @generated from field: repeated string names = 2;
+   */
+  names: string[] = [];
+
+  constructor(data?: PartialMessage<BigQueryListTablesResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.BigQueryListTablesResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BigQueryListTablesResponse {
+    return new BigQueryListTablesResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BigQueryListTablesResponse {
+    return new BigQueryListTablesResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BigQueryListTablesResponse {
+    return new BigQueryListTablesResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BigQueryListTablesResponse | PlainMessage<BigQueryListTablesResponse> | undefined, b: BigQueryListTablesResponse | PlainMessage<BigQueryListTablesResponse> | undefined): boolean {
+    return proto3.util.equals(BigQueryListTablesResponse, a, b);
   }
 }
 

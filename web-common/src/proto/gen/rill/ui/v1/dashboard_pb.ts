@@ -82,9 +82,16 @@ export class DashboardState extends Message<DashboardState> {
   allDimensionsVisible?: boolean;
 
   /**
-   * @generated from field: optional bool show_percent_of_total = 12;
+   * @generated from field: optional rill.ui.v1.DashboardState.DashboardLeaderboardContextColumn leaderboard_context_column = 12;
    */
-  showPercentOfTotal?: boolean;
+  leaderboardContextColumn?: DashboardState_DashboardLeaderboardContextColumn;
+
+  /**
+   * Selected timezone for the dashboard
+   *
+   * @generated from field: optional string selected_timezone = 13;
+   */
+  selectedTimezone?: string;
 
   constructor(data?: PartialMessage<DashboardState>) {
     super();
@@ -105,7 +112,8 @@ export class DashboardState extends Message<DashboardState> {
     { no: 9, name: "all_measures_visible", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 10, name: "visible_dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "all_dimensions_visible", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
-    { no: 12, name: "show_percent_of_total", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 12, name: "leaderboard_context_column", kind: "enum", T: proto3.getEnumType(DashboardState_DashboardLeaderboardContextColumn), opt: true },
+    { no: 13, name: "selected_timezone", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardState {
@@ -124,6 +132,38 @@ export class DashboardState extends Message<DashboardState> {
     return proto3.util.equals(DashboardState, a, b);
   }
 }
+
+/**
+ * @generated from enum rill.ui.v1.DashboardState.DashboardLeaderboardContextColumn
+ */
+export enum DashboardState_DashboardLeaderboardContextColumn {
+  /**
+   * @generated from enum value: DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_PERCENT = 1;
+   */
+  PERCENT = 1,
+
+  /**
+   * @generated from enum value: DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_DELTA_CHANGE = 2;
+   */
+  DELTA_CHANGE = 2,
+
+  /**
+   * @generated from enum value: DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_HIDDEN = 3;
+   */
+  HIDDEN = 3,
+}
+// Retrieve enum metadata with: proto3.getEnumType(DashboardState_DashboardLeaderboardContextColumn)
+proto3.util.setEnumType(DashboardState_DashboardLeaderboardContextColumn, "rill.ui.v1.DashboardState.DashboardLeaderboardContextColumn", [
+  { no: 0, name: "DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_UNSPECIFIED" },
+  { no: 1, name: "DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_PERCENT" },
+  { no: 2, name: "DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_DELTA_CHANGE" },
+  { no: 3, name: "DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_HIDDEN" },
+]);
 
 /**
  * @generated from message rill.ui.v1.DashboardTimeRange
