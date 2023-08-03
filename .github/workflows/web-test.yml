@@ -92,10 +92,16 @@ jobs:
         if: steps.filter.outputs.common == 'true'
         run: npm run test -w web-common
 
-      - name: Build & Test the web local
+      - name: Test web local
         if: ${{ steps.filter.outputs.local == 'true' || steps.filter.outputs.common == 'true' }}
-        run: |-
-          SKIP_UI_BUILD=true npm run test
+        run: npm run test -w web-local
+
+      - uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: playwright-report
+          path: web-local/playwright-report/
+          retention-days: 30
 
       - name: Build & Test the web admin
         if: ${{ steps.filter.outputs.admin == 'true' || steps.filter.outputs.common == 'true' }}

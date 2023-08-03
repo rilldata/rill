@@ -48,12 +48,16 @@
   $: windowWithoutZeros = dataWindow.filter((di) => {
     return di[yAccessor] !== 0;
   });
-  $: windowSize = dataWindow.length < 150 ? 30 : ~~(dataWindow.length / 25);
+  $: windowSize =
+    dataWindow.length < 150 ? 30 : Math.trunc(dataWindow.length / 25);
 
   $: smoothedData = data.map((di, i, arr) => {
     const dii = { ...di };
-    const window = Math.max(3, Math.min(~~windowSize, i));
-    const prev = arr.slice(i - ~~(window / 2), i + ~~(window / 2));
+    const window = Math.max(3, Math.min(Math.trunc(windowSize), i));
+    const prev = arr.slice(
+      i - Math.trunc(window / 2),
+      i + Math.trunc(window / 2)
+    );
     dii._smoothed = prev.reduce((a, b) => a + b.count, 0) / prev.length;
     return dii;
   });

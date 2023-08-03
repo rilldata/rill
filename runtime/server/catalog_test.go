@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/services/catalog/testutils"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
@@ -15,7 +16,7 @@ import (
 func TestServer_PutFileAndReconcile(t *testing.T) {
 	ctx := testCtx()
 	rt, instanceID := testruntime.NewInstance(t)
-	srv, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop())
+	srv, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	cat, err := rt.NewCatalogService(ctx, instanceID)
