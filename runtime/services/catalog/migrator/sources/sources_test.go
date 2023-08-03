@@ -27,7 +27,7 @@ var AdBidsCsvPath = filepath.Join(TestDataPath, "AdBids.csv")
 const AdBidsRepoPath = "/sources/AdBids.yaml"
 
 func TestSourceMigrator_Update(t *testing.T) {
-	s, _, _ := testutils.GetService(t)
+	s, _ := testutils.GetService(t)
 	testutils.CreateSource(t, s, "AdBids", AdBidsCsvPath, AdBidsRepoPath)
 	result, err := s.Reconcile(context.Background(), catalog.ReconcileConfig{
 		SafeSourceRefresh: true,

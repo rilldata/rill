@@ -162,7 +162,7 @@ func Parse(ctx context.Context, repo drivers.RepoStore, instanceID string, duckD
 		resourcesForUnspecifiedRef: make(map[string][]*Resource),
 	}
 
-	paths, err := p.Repo.ListRecursive(ctx, instanceID, "**/*.{sql,yaml,yml}")
+	paths, err := p.Repo.ListRecursive(ctx, p.InstanceID, "**/*.{sql,yaml,yml}")
 	if err != nil {
 		return nil, fmt.Errorf("could not list project files: %w", err)
 	}

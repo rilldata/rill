@@ -62,11 +62,11 @@ func (s *Server) ListConnectors(ctx context.Context, req *runtimev1.ListConnecto
 }
 
 func (s *Server) S3ListBuckets(ctx context.Context, req *runtimev1.S3ListBucketsRequest) (*runtimev1.S3ListBucketsResponse, error) {
-	s3Conn, err := s.getS3Conn(ctx, req.InstanceId)
+	s3Conn, release, err := s.getS3Conn(ctx, req.Connector, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
-	defer s3Conn.Close()
+	defer release()
 
 	buckets, err := s3Conn.ListBuckets(ctx)
 	if err != nil {
@@ -79,11 +79,11 @@ func (s *Server) S3ListBuckets(ctx context.Context, req *runtimev1.S3ListBuckets
 }
 
 func (s *Server) S3ListObjects(ctx context.Context, req *runtimev1.S3ListObjectsRequest) (*runtimev1.S3ListObjectsResponse, error) {
-	s3Conn, err := s.getS3Conn(ctx, req.InstanceId)
+	s3Conn, release, err := s.getS3Conn(ctx, req.Connector, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
-	defer s3Conn.Close()
+	defer release()
 
 	objects, nextToken, err := s3Conn.ListObjects(ctx, req)
 	if err != nil {
@@ -97,11 +97,11 @@ func (s *Server) S3ListObjects(ctx context.Context, req *runtimev1.S3ListObjects
 }
 
 func (s *Server) S3GetBucketMetadata(ctx context.Context, req *runtimev1.S3GetBucketMetadataRequest) (*runtimev1.S3GetBucketMetadataResponse, error) {
-	s3Conn, err := s.getS3Conn(ctx, req.InstanceId)
+	s3Conn, release, err := s.getS3Conn(ctx, req.Connector, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
-	defer s3Conn.Close()
+	defer release()
 
 	region, err := s3Conn.GetBucketMetadata(ctx, req)
 	if err != nil {
@@ -114,11 +114,11 @@ func (s *Server) S3GetBucketMetadata(ctx context.Context, req *runtimev1.S3GetBu
 }
 
 func (s *Server) S3GetCredentialsInfo(ctx context.Context, req *runtimev1.S3GetCredentialsInfoRequest) (*runtimev1.S3GetCredentialsInfoResponse, error) {
-	s3Conn, err := s.getS3Conn(ctx, req.InstanceId)
+	s3Conn, release, err := s.getS3Conn(ctx, req.Connector, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
-	defer s3Conn.Close()
+	defer release()
 
 	provider, exist, err := s3Conn.GetCredentialsInfo(ctx)
 	if err != nil {
@@ -132,10 +132,11 @@ func (s *Server) S3GetCredentialsInfo(ctx context.Context, req *runtimev1.S3GetC
 }
 
 func (s *Server) GCSListBuckets(ctx context.Context, req *runtimev1.GCSListBucketsRequest) (*runtimev1.GCSListBucketsResponse, error) {
-	gcsConn, err := s.getGCSConn(ctx, req.InstanceId)
+	gcsConn, release, err := s.getGCSConn(ctx, req.Connector, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
+	defer release()
 
 	buckets, next, err := gcsConn.ListBuckets(ctx, req)
 	if err != nil {
@@ -149,10 +150,11 @@ func (s *Server) GCSListBuckets(ctx context.Context, req *runtimev1.GCSListBucke
 }
 
 func (s *Server) GCSListObjects(ctx context.Context, req *runtimev1.GCSListObjectsRequest) (*runtimev1.GCSListObjectsResponse, error) {
-	gcsConn, err := s.getGCSConn(ctx, req.InstanceId)
+	gcsConn, release, err := s.getGCSConn(ctx, req.Connector, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
+	defer release()
 
 	objects, nextToken, err := gcsConn.ListObjects(ctx, req)
 	if err != nil {
@@ -166,10 +168,11 @@ func (s *Server) GCSListObjects(ctx context.Context, req *runtimev1.GCSListObjec
 }
 
 func (s *Server) GCSGetCredentialsInfo(ctx context.Context, req *runtimev1.GCSGetCredentialsInfoRequest) (*runtimev1.GCSGetCredentialsInfoResponse, error) {
-	gcsConn, err := s.getGCSConn(ctx, req.InstanceId)
+	gcsConn, release, err := s.getGCSConn(ctx, req.Connector, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
+	defer release()
 
 	projectID, exist, err := gcsConn.GetCredentialsInfo(ctx)
 	if err != nil {
@@ -183,18 +186,11 @@ func (s *Server) GCSGetCredentialsInfo(ctx context.Context, req *runtimev1.GCSGe
 }
 
 func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTablesRequest) (*runtimev1.OLAPListTablesResponse, error) {
-	instance, err := s.runtime.FindInstance(ctx, req.InstanceId)
+	conn, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, req.Connector)
 	if err != nil {
 		return nil, err
 	}
-
-	env := convertLower(instance.ResolveVariables())
-	vars := connectorVariables(req.Connector, env)
-	conn, err := drivers.Open(req.Connector, vars, s.logger)
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
+	defer release()
 
 	olap, _ := conn.AsOLAP()
 	tables, err := olap.InformationSchema().All(ctx)
@@ -215,10 +211,11 @@ func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTabl
 }
 
 func (s *Server) BigQueryListDatasets(ctx context.Context, req *runtimev1.BigQueryListDatasetsRequest) (*runtimev1.BigQueryListDatasetsResponse, error) {
-	bq, err := s.getBigQueryConn(ctx, req.InstanceId)
+	bq, release, err := s.getBigQueryConn(ctx, req.Connector, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
+	defer release()
 
 	names, nextToken, err := bq.ListDatasets(ctx, req)
 	if err != nil {
@@ -232,10 +229,11 @@ func (s *Server) BigQueryListDatasets(ctx context.Context, req *runtimev1.BigQue
 }
 
 func (s *Server) BigQueryListTables(ctx context.Context, req *runtimev1.BigQueryListTablesRequest) (*runtimev1.BigQueryListTablesResponse, error) {
-	bq, err := s.getBigQueryConn(ctx, req.InstanceId)
+	bq, release, err := s.getBigQueryConn(ctx, req.Connector, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
+	defer release()
 
 	names, nextToken, err := bq.ListTables(ctx, req)
 	if err != nil {
@@ -248,65 +246,43 @@ func (s *Server) BigQueryListTables(ctx context.Context, req *runtimev1.BigQuery
 	}, nil
 }
 
-func (s *Server) getGCSConn(ctx context.Context, instanceID string) (*gcs.Connection, error) {
-	instance, err := s.runtime.FindInstance(ctx, instanceID)
+func (s *Server) getGCSConn(ctx context.Context, connector, instanceID string) (*gcs.Connection, func(), error) {
+	conn, release, err := s.runtime.AcquireHandle(ctx, instanceID, connector)
 	if err != nil {
-		return nil, err
-	}
-
-	env := convertLower(instance.ResolveVariables())
-	vars := connectorVariables("gcs", env)
-	conn, err := drivers.Open("gcs", vars, s.logger)
-	if err != nil {
-		return nil, fmt.Errorf("can't open connection to gcs %w", err)
+		return nil, nil, fmt.Errorf("can't open connection to gcs %w", err)
 	}
 
 	gcsConn, ok := conn.(*gcs.Connection)
 	if !ok {
 		panic("conn is not gcs connection")
 	}
-	return gcsConn, nil
+	return gcsConn, release, nil
 }
 
-func (s *Server) getS3Conn(ctx context.Context, instanceID string) (*s3.Connection, error) {
-	instance, err := s.runtime.FindInstance(ctx, instanceID)
+func (s *Server) getS3Conn(ctx context.Context, connector, instanceID string) (*s3.Connection, func(), error) {
+	conn, release, err := s.runtime.AcquireHandle(ctx, instanceID, connector)
 	if err != nil {
-		return nil, err
-	}
-
-	env := convertLower(instance.ResolveVariables())
-	vars := connectorVariables("s3", env)
-	conn, err := drivers.Open("s3", vars, s.logger)
-	if err != nil {
-		return nil, fmt.Errorf("can't open connection to s3 %w", err)
+		return nil, nil, fmt.Errorf("can't open connection to s3 %w", err)
 	}
 
 	s3Conn, ok := conn.(*s3.Connection)
 	if !ok {
 		panic("conn is not s3 connection")
 	}
-	return s3Conn, nil
+	return s3Conn, release, nil
 }
 
-func (s *Server) getBigQueryConn(ctx context.Context, instanceID string) (*bigquery.Connection, error) {
-	instance, err := s.runtime.FindInstance(ctx, instanceID)
+func (s *Server) getBigQueryConn(ctx context.Context, connector, instanceID string) (*bigquery.Connection, func(), error) {
+	conn, release, err := s.runtime.AcquireHandle(ctx, instanceID, connector)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-
-	env := convertLower(instance.ResolveVariables())
-	vars := connectorVariables("bigquery", env)
-	conn, err := drivers.Open("bigquery", vars, s.logger)
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
 
 	bq, ok := conn.(*bigquery.Connection)
 	if !ok {
 		panic("conn is not bigquery connection")
 	}
-	return bq, nil
+	return bq, release, nil
 }
 
 func convertLower(in map[string]string) map[string]string {

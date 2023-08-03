@@ -204,10 +204,10 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 	}
 
 	logger = logger.With(zap.String("source", name))
-	var srcConnector drivers.Connection
+	var srcConnector drivers.Handle
 
 	if apiSource.Connector == "duckdb" {
-		srcConnector = olap.(drivers.Connection)
+		srcConnector = olap.(drivers.Handle)
 	} else {
 		var err error
 		variables := convertLower(opts.InstanceEnv)
@@ -218,7 +218,7 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 		defer srcConnector.Close()
 	}
 
-	olapConnection := olap.(drivers.Connection)
+	olapConnection := olap.(drivers.Handle)
 	t, ok := olapConnection.AsTransporter(srcConnector, olapConnection)
 	if !ok {
 		t, ok = srcConnector.AsTransporter(srcConnector, olapConnection)

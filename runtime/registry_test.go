@@ -164,9 +164,9 @@ func TestRuntime_EditInstance(t *testing.T) {
 			require.Equal(t, tt.savedInst.Variables, newInst.Variables)
 
 			// verify older olap connection is closed and cache updated if olap changed
-			_, ok := rt.connCache.cache[inst.ID+inst.OLAPDriver+inst.OLAPDSN]
+			_, ok := rt.connCache.cache[inst.ID+inst.OLAPDriver+generateKey(variables("olap", map[string]string{"dsn": ""}, inst.ResolveVariables()))]
 			require.Equal(t, !tt.clearCache, ok)
-			_, ok = rt.connCache.cache[inst.ID+inst.RepoDriver+inst.RepoDSN]
+			_, ok = rt.connCache.cache[inst.ID+inst.RepoDriver+generateKey(variables("repo", map[string]string{"dsn": repodsn}, inst.ResolveVariables()))]
 			require.Equal(t, !tt.clearCache, ok)
 			_, ok = rt.migrationMetaCache.cache.Get(inst.ID)
 			require.Equal(t, !tt.clearCache, ok)
@@ -281,7 +281,7 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 	require.NoError(t, err)
 
 	// Close OLAP connection
-	evicted := rt.connCache.evict(ctx, inst.ID, inst.OLAPDriver, variables("repo", nil, inst.ResolveVariables()))
+	evicted := rt.connCache.evict(ctx, inst.ID, inst.OLAPDriver, variables("olap", map[string]string{"dsn": inst.OLAPDSN}, inst.ResolveVariables()))
 	require.True(t, evicted)
 
 	// Corrupt database file

@@ -22,6 +22,20 @@ type Options struct {
 	PrivateConnectors   []*rillv1.ConnectorDef
 }
 
+func (o *Options) ConnectorByName(name string) (*rillv1.ConnectorDef, bool, error) {
+	for _, c := range o.GlobalConnectors {
+		if c.Name == name {
+			return c, true, nil
+		}
+	}
+	for _, c := range o.PrivateConnectors {
+		if c.Name == name {
+			return c, false, nil
+		}
+	}
+	return nil, false, fmt.Errorf("connector %s doesn't exist", name)
+}
+
 type Runtime struct {
 	opts               *Options
 	metastore          drivers.Handle
@@ -33,7 +47,11 @@ type Runtime struct {
 
 func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 	// Open metadata db connection
-	metastore, err := drivers.Open(opts.MetastoreDriver, map[string]any{"dsn": opts.MetastoreDSN}, logger)
+	c, _, err := opts.ConnectorByName("metastore")
+	if err != nil {
+		return nil, err
+	}
+	metastore, err := drivers.Open(c.Type, convert(c.Defaults), logger)
 	if err != nil {
 		return nil, fmt.Errorf("could not connect to metadata db: %w", err)
 	}

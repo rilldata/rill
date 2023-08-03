@@ -129,7 +129,7 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 	olapChanged := olderInstance.OLAPDriver != inst.OLAPDriver || olderInstance.OLAPDSN != inst.OLAPDSN
 	if olapChanged {
 		// Check OLAP connection
-		olap, _, err := r.AcquireHandle(ctx, inst.ID, "olap")
+		olap, _, err := r.checkOlapConnection(inst)
 		if err != nil {
 			return err
 		}
@@ -144,11 +144,11 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 
 	// 2. Check that it's a driver that supports embedded catalogs
 	if inst.EmbedCatalog {
-		olapConn, release, err := r.AcquireHandle(ctx, inst.ID, "olap")
+		olapConn, _, err := r.checkOlapConnection(inst)
 		if err != nil {
 			return err
 		}
-		defer release()
+		defer olapConn.Close()
 		_, ok := olapConn.AsCatalogStore()
 		if !ok {
 			return errors.New("driver does not support embedded catalogs")
@@ -159,7 +159,7 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 	repoChanged := inst.RepoDriver != olderInstance.RepoDriver || inst.RepoDSN != olderInstance.RepoDSN
 	if repoChanged {
 		// Check repo connection
-		repo, _, err := r.AcquireHandle(ctx, inst.ID, "repo")
+		repo, _, err := r.checkRepoConnection(inst)
 		if err != nil {
 			return err
 		}
@@ -190,8 +190,8 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 // TODO :: this is a rudimentary solution and ideally should be done in some producer/consumer pattern
 func (r *Runtime) evictCaches(ctx context.Context, inst *drivers.Instance) {
 	// evict and close exisiting connection
-	r.connCache.evict(ctx, inst.ID, inst.OLAPDriver, variables("olap", nil, inst.ResolveVariables()))
-	r.connCache.evict(ctx, inst.ID, inst.RepoDriver, variables("repo", nil, inst.ResolveVariables()))
+	r.connCache.evict(ctx, inst.ID, inst.OLAPDriver, variables("olap", map[string]string{"dsn": inst.OLAPDSN}, inst.ResolveVariables()))
+	r.connCache.evict(ctx, inst.ID, inst.RepoDriver, variables("repo", map[string]string{"dsn": inst.RepoDSN}, inst.ResolveVariables()))
 
 	// evict catalog cache
 	r.migrationMetaCache.evict(ctx, inst.ID)

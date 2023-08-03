@@ -46,7 +46,7 @@ func (r *Runtime) PutFile(ctx context.Context, instanceID, path string, blob io.
 
 	// TODO: Handle create, createOnly
 
-	err = repo.Put(ctx, path, instanceID, blob)
+	err = repo.Put(ctx, instanceID, path, blob)
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func (r *Runtime) RenameFile(ctx context.Context, instanceID, fromPath, toPath s
 	}
 	defer release()
 
-	err = repo.Rename(ctx, fromPath, instanceID, toPath)
+	err = repo.Rename(ctx, instanceID, fromPath, toPath)
 	if err != nil {
 		return err
 	}
