@@ -86,8 +86,8 @@ export function localToTimeZoneOffset(dt: Date, zone: string) {
 
 // Return start and end of the time range that is ordered.
 export function getOrderedStartEnd(start: Date, stop: Date) {
-  const startMs = start.getTime();
-  const stopMs = stop.getTime();
+  const startMs = start?.getTime();
+  const stopMs = stop?.getTime();
 
   if (startMs > stopMs) {
     return { start: stop, end: start };

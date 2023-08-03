@@ -226,7 +226,7 @@
 
   function endScrub(event) {
     // Remove scrub if start and end are same
-    if (scrubStart.getTime() == scrubEnd.getTime()) {
+    if (hasSubrangeSelected && scrubStart?.getTime() === scrubEnd?.getTime()) {
       resetScrub();
       return;
     }
@@ -250,6 +250,7 @@
     if (!hasSubrangeSelected) return;
 
     const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
+
     if (mouseoverValue?.x < start || mouseoverValue?.x > end) {
       resetScrub();
     }
