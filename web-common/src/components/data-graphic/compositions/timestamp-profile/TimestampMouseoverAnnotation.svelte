@@ -71,7 +71,7 @@
       class="fill-gray-500"
       use:outline
     >
-      {formatInteger(~~point[yAccessor])} row{#if point[yAccessor] !== 1}s{/if}
+      {formatInteger(Math.trunc(point[yAccessor]))} row{#if point[yAccessor] !== 1}s{/if}
     </text>
   </g>
 </g>

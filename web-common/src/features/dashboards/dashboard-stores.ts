@@ -1,3 +1,4 @@
+import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
@@ -13,7 +14,7 @@ import type {
   V1MetricsView,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
-import { Readable, Writable, derived, writable } from "svelte/store";
+import { derived, Readable, Writable, writable } from "svelte/store";
 
 export interface LeaderboardValue {
   value: number;
@@ -63,13 +64,18 @@ export interface MetricsExplorerEntity {
   selectedTimeRange?: DashboardTimeControls;
   selectedScrubRange?: ScrubRange;
   selectedComparisonTimeRange?: DashboardTimeControls;
+
   // user selected timezone
   selectedTimezone?: string;
-  // flag to show/hide comparison based on user preference
+
+  // flag to show/hide time comparison based on user preference.
+  // This controls whether a time comparison is shown in e.g.
+  // the line charts and bignums.
+  // It does NOT affect the leaderboard context column.
   showComparison?: boolean;
 
-  // flag to show/hide the percent of total column
-  showPercentOfTotal?: boolean;
+  // state of context column in the leaderboard
+  leaderboardContextColumn: LeaderboardContextColumn;
 
   // user selected dimension
   selectedDimensionName?: string;
@@ -255,6 +261,7 @@ const metricViewReducers = {
         dimensionFilterExcludeMode: includeExcludeModeFromFilters(
           partial.filters
         ),
+        leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
         defaultsSelected: true,
         ...partial,
       })
@@ -292,6 +299,7 @@ const metricViewReducers = {
           exclude: [],
         },
         dimensionFilterExcludeMode: new Map(),
+        leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
       })
     );
   },
@@ -344,18 +352,51 @@ const metricViewReducers = {
   displayComparison(name: string, showComparison: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.showComparison = showComparison;
-      if (metricsExplorer.showPercentOfTotal === true && showComparison) {
-        metricsExplorer.showPercentOfTotal = false;
+      // if setting showComparison===true and not currently
+      //  showing any context column, then show DELTA_CHANGE
+      if (
+        showComparison &&
+        metricsExplorer.leaderboardContextColumn ===
+          LeaderboardContextColumn.HIDDEN
+      ) {
+        metricsExplorer.leaderboardContextColumn =
+          LeaderboardContextColumn.DELTA_CHANGE;
+      }
+
+      // if setting showComparison===false and currently
+      //  showing DELTA_CHANGE, then hide context column
+      if (
+        !showComparison &&
+        metricsExplorer.leaderboardContextColumn ===
+          LeaderboardContextColumn.DELTA_CHANGE
+      ) {
+        metricsExplorer.leaderboardContextColumn =
+          LeaderboardContextColumn.HIDDEN;
       }
     });
   },
 
-  displayPercentOfTotal(name: string, showPct: boolean) {
+  displayDeltaChange(name: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.showPercentOfTotal = showPct;
-      if (metricsExplorer.showComparison === true && showPct) {
-        metricsExplorer.showComparison = false;
-      }
+      // NOTE: only show delta change if comparison is enabled
+      if (metricsExplorer.showComparison === false) return;
+
+      metricsExplorer.leaderboardContextColumn =
+        LeaderboardContextColumn.DELTA_CHANGE;
+    });
+  },
+
+  displayPercentOfTotal(name: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.leaderboardContextColumn =
+        LeaderboardContextColumn.PERCENT;
+    });
+  },
+
+  hideContextColumn(name: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.leaderboardContextColumn =
+        LeaderboardContextColumn.HIDDEN;
     });
   },
 

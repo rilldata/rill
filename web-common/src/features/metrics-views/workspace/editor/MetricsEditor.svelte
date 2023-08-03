@@ -16,7 +16,7 @@
   } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { mapRuntimeErrorsToLines } from "../../errors";
+  import { mapReconciliationErrorsToLines } from "../../errors";
   import { createPlaceholder } from "./create-placeholder";
   import { createUpdateMetricsCallback } from "./update-metrics";
 
@@ -62,7 +62,10 @@
     `${metricsDefName}.yaml`
   );
 
-  $: lineBasedRuntimeErrors = mapRuntimeErrorsToLines(runtimeErrors, yaml);
+  $: lineBasedRuntimeErrors = mapReconciliationErrorsToLines(
+    runtimeErrors,
+    yaml
+  );
   /** display the main error (the first in this array) at the bottom */
   $: mainError = [...lineBasedRuntimeErrors, ...(runtimeErrors || [])]?.at(0);
 
