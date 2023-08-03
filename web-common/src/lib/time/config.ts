@@ -456,3 +456,17 @@ export const TIME_COMPARISON = {
 };
 
 export const NO_COMPARISON_LABEL = "no comparison";
+
+export const DEFAULT_TIMEZONES = [
+  "America/Los_Angeles",
+  "America/Chicago",
+  "America/New_York",
+  "Europe/London",
+  "Europe/Paris",
+  "Asia/Jerusalem",
+  "Europe/Moscow",
+  "Asia/Kolkata",
+  "Asia/Shanghai",
+  "Asia/Tokyo",
+  "Australia/Sydney",
+];

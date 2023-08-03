@@ -14,7 +14,7 @@
   import { onDestroy, onMount } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
-  import { NicelyFormattedTypes } from "../humanize-numbers";
+  import { FormatPreset } from "../humanize-numbers";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
 
@@ -66,8 +66,7 @@
   );
 
   $: formatPreset =
-    (activeMeasure?.format as NicelyFormattedTypes) ??
-    NicelyFormattedTypes.HUMANIZE;
+    (activeMeasure?.format as FormatPreset) ?? FormatPreset.HUMANIZE;
 
   let referenceValue: number;
   $: if (activeMeasure?.name && $totalsQuery?.data?.data) {
@@ -90,9 +89,9 @@
   );
 
   let unfilteredTotal: number;
-  $: unfilteredTotal = $unfilteredTotalsQuery.data?.data?.[activeMeasure.name];
-
-  $: console.log("unfilteredTotal", unfilteredTotal);
+  $: if (activeMeasure?.name) {
+    unfilteredTotal = $unfilteredTotalsQuery.data?.data?.[activeMeasure.name];
+  }
 
   let leaderboardExpanded;
 
@@ -144,34 +143,37 @@
   bind:this={leaderboardContainer}
   style:height="calc(100vh - 130px - 4rem)"
   style:min-width="365px"
+  class="flex flex-col overflow-hidden"
 >
   <div
-    class="grid grid-auto-cols justify-between grid-flow-col items-center pl-1 pb-3"
+    class="grid grid-auto-cols justify-between grid-flow-col items-center pl-1 pb-3 flex-grow-0"
   >
     <LeaderboardControls {metricViewName} />
   </div>
-  {#if $dashboardStore}
-    <VirtualizedGrid {columns} height="100%" items={dimensionsShown} let:item>
-      <!-- the single virtual element -->
-      <Leaderboard
-        {formatPreset}
-        isSummableMeasure={activeMeasure?.expression
-          .toLowerCase()
-          ?.includes("count(") ||
-          activeMeasure?.expression?.toLowerCase()?.includes("sum(")}
-        {metricViewName}
-        dimensionName={item.name}
-        on:expand={() => {
-          if (leaderboardExpanded === item.name) {
-            leaderboardExpanded = undefined;
-          } else {
-            leaderboardExpanded = item.name;
-          }
-        }}
-        on:select-item={(event) => onSelectItem(event, item)}
-        referenceValue={referenceValue || 0}
-        {unfilteredTotal}
-      />
-    </VirtualizedGrid>
-  {/if}
+  <div class="grow overflow-hidden">
+    {#if $dashboardStore}
+      <VirtualizedGrid {columns} height="100%" items={dimensionsShown} let:item>
+        <!-- the single virtual element -->
+        <Leaderboard
+          {formatPreset}
+          isSummableMeasure={activeMeasure?.expression
+            .toLowerCase()
+            ?.includes("count(") ||
+            activeMeasure?.expression?.toLowerCase()?.includes("sum(")}
+          {metricViewName}
+          dimensionName={item.name}
+          on:expand={() => {
+            if (leaderboardExpanded === item.name) {
+              leaderboardExpanded = undefined;
+            } else {
+              leaderboardExpanded = item.name;
+            }
+          }}
+          on:select-item={(event) => onSelectItem(event, item)}
+          referenceValue={referenceValue || 0}
+          {unfilteredTotal}
+        />
+      </VirtualizedGrid>
+    {/if}
+  </div>
 </div>

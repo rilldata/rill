@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"time"
 
 	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -13,6 +14,8 @@ import (
 )
 
 var errConnectionCacheClosed = errors.New("connectionCache: closed")
+
+const _migrateTimeout = 30 * time.Second
 
 // cache for instance specific connections only
 // all instance specific connections should be opened via connection cache only
@@ -82,6 +85,9 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver, dsn strin
 		if err != nil {
 			return nil, err
 		}
+
+		ctx, cancel := context.WithTimeout(ctx, _migrateTimeout)
+		defer cancel()
 
 		err = conn.Migrate(ctx)
 		if err != nil {

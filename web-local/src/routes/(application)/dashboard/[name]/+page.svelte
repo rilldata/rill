@@ -68,9 +68,11 @@
     inspector={false}
   >
     <StateManagersProvider metricsViewName={metricViewName} slot="body">
-      <DashboardStateProvider {metricViewName}>
-        <Dashboard {metricViewName} hasTitle />
-      </DashboardStateProvider>
+      {#key metricViewName}
+        <DashboardStateProvider {metricViewName}>
+          <Dashboard {metricViewName} hasTitle />
+        </DashboardStateProvider>
+      {/key}
     </StateManagersProvider>
   </WorkspaceContainer>
 {/if}

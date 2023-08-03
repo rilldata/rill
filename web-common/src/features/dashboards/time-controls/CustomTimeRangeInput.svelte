@@ -17,11 +17,13 @@
     shiftToUTC,
   } from "@rilldata/web-common/components/date-picker/util";
   import { getOffset } from "@rilldata/web-common/lib/time/transforms";
+  import { addZoneOffset } from "@rilldata/web-common/lib/time/timezone";
 
   export let minTimeGrain: V1TimeGrain;
   export let boundaryStart: Date;
   export let boundaryEnd: Date;
   export let defaultDate: DashboardTimeControls;
+  export let zone: string;
 
   const dispatch = createEventDispatcher();
 
@@ -106,8 +108,8 @@
     ).toISOString();
 
     dispatch("apply", {
-      startDate,
-      endDate,
+      startDate: addZoneOffset(new Date(startDate), zone).toISOString(),
+      endDate: addZoneOffset(new Date(endDate), zone).toISOString(),
     });
   }
 

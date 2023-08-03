@@ -43,7 +43,7 @@ This component will draw an axis on the specified side.
   const plotConfig = getContext(contexts.config) as SimpleConfigurationStore;
 
   /** set a font size variable here */
-  $: innerFontSize = $plotConfig.fontSize || fontSize || 12;
+  $: innerFontSize = $plotConfig.fontSize || fontSize || 11;
 
   /** make any adjustments to the scale to get what we need */
   $: scale = $mainScale;
@@ -91,6 +91,11 @@ This component will draw an axis on the specified side.
     return ".35em";
   }
 
+  function dx(side: AxisSide) {
+    if (side === "left" || side === "right") return 0;
+    return `${$plotConfig?.bodyBuffer}px`;
+  }
+
   function placeTick(side: AxisSide, value) {
     if (side === "top") {
       return {
@@ -131,7 +136,7 @@ This component will draw an axis on the specified side.
     const twoDayDiff = diff / (60 * 60) < 48;
     const fourDaysDiff = diff / (60 * 60) < 24 * 4;
     const manyDaysDiff = diff / (60 * 60 * 24) < 60;
-    const manyMonthsDiff = diff / (60 * 60 * 24) < 365;
+    const manyMonthsDiff = diff / (60 * 60 * 24) < 3 * 365;
 
     if (millisecondDiff) {
       return [timeFormat("%M:%S.%L"), timeFormat("%H %d %b %Y")];
@@ -139,8 +144,10 @@ This component will draw an axis on the specified side.
       return [timeFormat("%M:%S"), timeFormat("%H %d %b %Y")];
     } else if (twoDayDiff) {
       return [timeFormat("%H:%M"), timeFormat("%d %b %Y")];
-    } else if (fourDaysDiff || manyDaysDiff || manyMonthsDiff) {
+    } else if (fourDaysDiff || manyDaysDiff) {
       return [timeFormat("%b %d"), timeFormat("%Y")];
+    } else if (manyMonthsDiff) {
+      return [timeFormat("%b"), timeFormat("%Y")];
     } else {
       return [timeFormat("%Y"), undefined];
     }
@@ -199,6 +206,7 @@ This component will draw an axis on the specified side.
       bind:this={tickTextPosition}
       x={x(side, tick)}
       y={y(side, tick)}
+      dx={dx(side)}
       dy={dy(side)}
       text-anchor={textAnchor}
       font-size={innerFontSize}
@@ -223,9 +231,7 @@ This component will draw an axis on the specified side.
         font-weight="bold"
         x={x(side, tick)}
         y={y(side, tick) + superlabelBuffer}
-        dx={tickTextPosition
-          ? (-1 * tickTextPosition.getBBox().width) / 2
-          : -18}
+        dx={dx(side)}
         text-anchor="start"
         font-size={innerFontSize}
         class="{labelColor} pointer-events-none"

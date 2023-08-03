@@ -24,8 +24,8 @@
   function makeData(intervalSize = 1000000) {
     let v1 = 36;
     let v2 = 50;
-    const windowSize1 = 1 + ~~(Math.random() * 5);
-    const windowSize2 = 1 + ~~(Math.random() * 5);
+    const windowSize1 = 1 + Math.trunc(Math.random() * 5);
+    const windowSize2 = 1 + Math.trunc(Math.random() * 5);
     const data = Array.from({ length: 50 }).map((_, i) => {
       v1 += 10 * (Math.random() - 0.5);
       v2 += 5 * (Math.random() - 0.5);

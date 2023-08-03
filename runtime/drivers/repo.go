@@ -22,10 +22,10 @@ type RepoStore interface {
 	Rename(ctx context.Context, instID string, fromPath string, toPath string) error
 	Delete(ctx context.Context, instID string, path string) error
 	Sync(ctx context.Context, instID string) error
-	Watch(ctx context.Context, replay bool, callback WatchCallback) error
+	Watch(ctx context.Context, instID string, cb WatchCallback) error
 }
 
-type WatchCallback func(event WatchEvent) error
+type WatchCallback func(event []WatchEvent)
 
 type WatchEvent struct {
 	Type runtimev1.FileEvent
