@@ -204,6 +204,10 @@ func (c *Controller) Flush(ctx context.Context) error {
 	panic("not implemented")
 }
 
+func (c *Controller) Retrigger(ctx context.Context, name *runtimev1.ResourceName, t time.Time) error {
+	panic("not implemented")
+}
+
 func (c *Controller) AcquireConn(ctx context.Context, connector string) (drivers.Connection, func(), error) {
 	panic("not implemented")
 }

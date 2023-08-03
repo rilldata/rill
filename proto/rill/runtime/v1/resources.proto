@@ -200,8 +200,7 @@ message RefreshTrigger {
 }
 
 message RefreshTriggerSpec {
-  string only_names = 1;
-  bool reset_increments = 2;
+  repeated ResourceName only_names = 1;
 }
 
 message RefreshTriggerState {}

@@ -43,7 +43,7 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, s *runtime.Signal) run
 
 	// The table name to ingest into is derived from the resource name.
 	// We only set src.State.Table after ingestion is complete.
-	// The value of tableName and src.State.Table will differ until initial succesful ingestion and when renamed.
+	// The value of tableName and src.State.Table will differ until initial successful ingestion and when renamed.
 	tableName := self.Meta.Name.Name
 
 	// Handle deletion

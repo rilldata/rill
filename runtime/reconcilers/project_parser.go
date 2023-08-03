@@ -15,6 +15,8 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+var GlobalProjectParserName = &runtimev1.ResourceName{Kind: runtime.ResourceKindProjectParser, Name: "parser"}
+
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindProjectParser, newProjectParser)
 }

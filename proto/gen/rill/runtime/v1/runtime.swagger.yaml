@@ -4006,9 +4006,10 @@ definitions:
     type: object
     properties:
       onlyNames:
-        type: string
-      resetIncrements:
-        type: boolean
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
   v1RefreshTriggerState:
     type: object
   v1RenameFileAndReconcileRequest:
