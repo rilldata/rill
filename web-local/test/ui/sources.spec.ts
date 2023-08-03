@@ -9,7 +9,6 @@ import {
   waitForAdImpressions,
 } from "./utils/dataSpecifcHelpers";
 import { TestEntityType } from "./utils/helpers";
-import { useRegisteredServer } from "./utils/serverConfigs";
 import {
   TestDataPath,
   createOrReplaceSource,
