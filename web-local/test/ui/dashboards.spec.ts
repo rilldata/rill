@@ -533,7 +533,7 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
       column: domain
       description: ""
       `;
-  await updateMetricsInput(page, metricsWithValidPercentOfTotal);
+  await updateCodeEditor(page, metricsWithValidPercentOfTotal);
 
   // Go to dashboard
   await page.getByRole("button", { name: "Go to dashboard" }).click();
