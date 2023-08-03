@@ -33,9 +33,11 @@ type TestingT interface {
 func New(t TestingT) *runtime.Runtime {
 	globalDrivers := []*rillv1.ConnectorDef{
 		{
-			Type:     "sqlite",
-			Name:     "metastore",
-			Defaults: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
+			Type: "sqlite",
+			Name: "metastore",
+			// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
+			// "cache=shared" is needed to prevent threading problems.
+			Defaults: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
 		},
 	}
 	privateDrivers := []*rillv1.ConnectorDef{
@@ -51,10 +53,6 @@ func New(t TestingT) *runtime.Runtime {
 	}
 	opts := &runtime.Options{
 		ConnectionCacheSize: 100,
-		MetastoreDriver:     "sqlite",
-		// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
-		// "cache=shared" is needed to prevent threading problems.
-		MetastoreDSN:        fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name()),
 		QueryCacheSizeBytes: int64(datasize.MB * 100),
 		AllowHostAccess:     true,
 		GlobalDrivers:       globalDrivers,

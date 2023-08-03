@@ -93,8 +93,8 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 
 	// Drop the underlying data store
 	if dropDB {
-		_, shared, _ := r.opts.ConnectorDefByName("olap")
-		conn, release, err := r.connCache.get(ctx, instanceID, inst.OLAPDriver, variables("olap", map[string]string{"dsn": inst.OLAPDSN}, inst.ResolveVariables()), shared)
+		c, shared, _ := r.opts.OLAPDef(inst.OLAPDSN)
+		conn, release, err := r.connCache.get(ctx, instanceID, inst.OLAPDriver, variables("olap", c.Defaults, inst.ResolveVariables()), shared)
 		if err == nil {
 			release()
 			err = conn.Close()
@@ -191,8 +191,10 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 // TODO :: this is a rudimentary solution and ideally should be done in some producer/consumer pattern
 func (r *Runtime) evictCaches(ctx context.Context, inst *drivers.Instance) {
 	// evict and close exisiting connection
-	r.connCache.evict(ctx, inst.ID, inst.OLAPDriver, variables("olap", map[string]string{"dsn": inst.OLAPDSN}, inst.ResolveVariables()))
-	r.connCache.evict(ctx, inst.ID, inst.RepoDriver, variables("repo", map[string]string{"dsn": inst.RepoDSN}, inst.ResolveVariables()))
+	c, _, _ := r.opts.OLAPDef(inst.OLAPDSN)
+	r.connCache.evict(ctx, inst.ID, inst.OLAPDriver, variables("olap", c.Defaults, inst.ResolveVariables()))
+	c, _, _ = r.opts.RepoDef(inst.RepoDSN)
+	r.connCache.evict(ctx, inst.ID, inst.RepoDriver, variables("repo", c.Defaults, inst.ResolveVariables()))
 
 	// evict catalog cache
 	r.migrationMetaCache.evict(ctx, inst.ID)

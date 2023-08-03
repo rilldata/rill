@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -44,8 +45,6 @@ type Config struct {
 	LogLevel            zapcore.Level          `default:"info" split_words:"true"`
 	MetricsExporter     observability.Exporter `default:"prometheus" split_words:"true"`
 	TracesExporter      observability.Exporter `default:"" split_words:"true"`
-	MetastoreDriver     string                 `default:"sqlite"`
-	MetastoreURL        string                 `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
 	AllowedOrigins      []string               `default:"*" split_words:"true"`
 	AuthEnable          bool                   `default:"false" split_words:"true"`
 	AuthIssuerURL       string                 `default:"" split_words:"true"`
@@ -69,6 +68,8 @@ type Config struct {
 	ActivitySinkKafkaBrokers string `default:"" split_words:"true"`
 	// Kafka topic of an activity client's sink
 	ActivitySinkKafkaTopic string `default:"" split_words:"true"`
+	GlobalDrivers          string `split_words:"true"`
+	PrivateDrivers         string `split_words:"true"`
 }
 
 // StartCmd starts a stand-alone runtime server. It only allows configuration using environment variables.
@@ -118,24 +119,14 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				}
 			}()
 
-			// TODO :: should we take full information as part of config ??
-			globalDrivers := []*rillv1.ConnectorDef{
-				{
-					Type:     conf.MetastoreDriver,
-					Name:     "metastore",
-					Defaults: map[string]string{"dsn": conf.MetastoreURL},
-				},
-			}
 			// Init runtime
 			opts := &runtime.Options{
 				ConnectionCacheSize: conf.ConnectionCacheSize,
-				MetastoreDriver:     conf.MetastoreDriver,
-				MetastoreDSN:        conf.MetastoreURL,
 				QueryCacheSizeBytes: conf.QueryCacheSizeBytes,
 				AllowHostAccess:     conf.AllowHostAccess,
 				SafeSourceRefresh:   conf.SafeSourceRefresh,
-				GlobalDrivers:       globalDrivers,
-				PrivateDrivers:      nil,
+				GlobalDrivers:       parseConnectorDefs(conf.GlobalDrivers),
+				PrivateDrivers:      parseConnectorDefs(conf.PrivateDrivers),
 			}
 			rt, err := runtime.New(opts, logger)
 			if err != nil {
@@ -207,4 +198,27 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 		},
 	}
 	return startCmd
+}
+
+// func parse(spec []string) []*rillv1.ConnectorDef {
+// 	res := make([]*rillv1.ConnectorDef, len(spec))
+// 	for i, s := range spec {
+// 		res[i] = &rillv1.ConnectorDef{}
+// 		err := json.Unmarshal([]byte(s), res[i])
+// 		if err != nil {
+// 			panic(err)
+// 		}
+// 	}
+
+// 	return res
+// }
+
+func parseConnectorDefs(s string) []*rillv1.ConnectorDef {
+	var defs []*rillv1.ConnectorDef
+	err := json.Unmarshal([]byte(s), &defs)
+	if err != nil {
+		panic(err)
+	}
+
+	return defs
 }

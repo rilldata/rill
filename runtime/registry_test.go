@@ -281,7 +281,8 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 	require.NoError(t, err)
 
 	// Close OLAP connection
-	evicted := rt.connCache.evict(ctx, inst.ID, inst.OLAPDriver, variables("olap", map[string]string{"dsn": inst.OLAPDSN}, inst.ResolveVariables()))
+	c, _, _ := rt.opts.OLAPDef(inst.OLAPDSN)
+	evicted := rt.connCache.evict(ctx, inst.ID, inst.OLAPDriver, variables("olap", c.Defaults, inst.ResolveVariables()))
 	require.True(t, evicted)
 
 	// Corrupt database file
@@ -303,8 +304,10 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 func NewTestRunTime(t *testing.T) *Runtime {
 	globalConnectors := []*rillv1.ConnectorDef{
 		{
-			Type:     "sqlite",
-			Name:     "metastore",
+			Type: "sqlite",
+			Name: "metastore",
+			// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
+			// "cache=shared" is needed to prevent threading problems.
 			Defaults: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
 		},
 	}
@@ -315,16 +318,13 @@ func NewTestRunTime(t *testing.T) *Runtime {
 		},
 		{
 			Name:     "olap",
+			Type:     "duckdb",
 			Defaults: map[string]string{"dsn": ""},
 		},
 	}
 
 	opts := &Options{
 		ConnectionCacheSize: 100,
-		MetastoreDriver:     "sqlite",
-		// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
-		// "cache=shared" is needed to prevent threading problems.
-		MetastoreDSN:        fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name()),
 		QueryCacheSizeBytes: int64(datasize.MB) * 100,
 		AllowHostAccess:     true,
 		GlobalDrivers:       globalConnectors,

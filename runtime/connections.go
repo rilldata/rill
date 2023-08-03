@@ -10,6 +10,22 @@ import (
 	"github.com/rilldata/rill/runtime/services/catalog"
 )
 
+// TODO :: may be use __system__ prefix ?
+const (
+	_metastoreDriverName = "metastore"
+	_repoDriverName      = "repo"
+	_olapDriverName      = "olap"
+)
+
+func (r *Runtime) newMetaStore(ctx context.Context, instanceID string) (drivers.Handle, func(), error) {
+	c, shared, err := r.opts.ConnectorDefByName(_metastoreDriverName)
+	if err != nil {
+		panic(err)
+	}
+
+	return r.connCache.get(ctx, instanceID, c.Type, c.Defaults, shared)
+}
+
 func (r *Runtime) Registry() drivers.RegistryStore {
 	registry, ok := r.metastore.AsRegistry()
 	if !ok {
@@ -56,9 +72,11 @@ func (r *Runtime) Repo(ctx context.Context, instanceID string) (drivers.RepoStor
 		return nil, nil, err
 	}
 
-	_, shared, _ := r.opts.ConnectorDefByName("repo")
-	// TODO :: pass repodsn and olapdsn as variables in form connector.repo.xxxx
-	conn, release, err := r.connCache.get(ctx, instanceID, inst.RepoDriver, variables("repo", map[string]string{"dsn": inst.RepoDSN}, inst.ResolveVariables()), shared)
+	c, shared, err := r.opts.RepoDef(inst.RepoDSN)
+	if err != nil {
+		return nil, nil, err
+	}
+	conn, release, err := r.connCache.get(ctx, instanceID, inst.RepoDriver, variables(_repoDriverName, c.Defaults, inst.ResolveVariables()), shared)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -79,8 +97,11 @@ func (r *Runtime) OLAP(ctx context.Context, instanceID string) (drivers.OLAPStor
 		return nil, nil, err
 	}
 
-	_, shared, _ := r.opts.ConnectorDefByName("olap")
-	conn, release, err := r.connCache.get(ctx, instanceID, inst.OLAPDriver, variables("olap", map[string]string{"dsn": inst.OLAPDSN}, inst.ResolveVariables()), shared)
+	c, shared, err := r.opts.OLAPDef(inst.OLAPDSN)
+	if err != nil {
+		return nil, nil, err
+	}
+	conn, release, err := r.connCache.get(ctx, instanceID, inst.OLAPDriver, variables(_olapDriverName, c.Defaults, inst.ResolveVariables()), shared)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -102,8 +123,11 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 	}
 
 	if inst.EmbedCatalog {
-		_, shared, _ := r.opts.ConnectorDefByName("olap")
-		conn, release, err := r.connCache.get(ctx, instanceID, inst.OLAPDriver, variables("olap", map[string]string{"dsn": inst.OLAPDSN}, inst.ResolveVariables()), shared)
+		c, shared, err := r.opts.OLAPDef(inst.OLAPDSN)
+		if err != nil {
+			return nil, nil, err
+		}
+		conn, release, err := r.connCache.get(ctx, instanceID, inst.OLAPDriver, variables(_olapDriverName, c.Defaults, inst.ResolveVariables()), shared)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -158,7 +182,7 @@ func (r *Runtime) NewCatalogService(ctx context.Context, instanceID string) (*ca
 
 func variables(name string, def, variables map[string]string) map[string]string {
 	vars := make(map[string]string, 0)
-	for key, value := range variables {
+	for key, value := range def {
 		vars[strings.ToLower(key)] = value
 	}
 
