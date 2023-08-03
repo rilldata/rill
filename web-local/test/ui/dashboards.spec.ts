@@ -1,4 +1,5 @@
 import { Page, expect, test } from "@playwright/test";
+import { updateCodeEditor } from "./utils/commonHelpers";
 import {
   RequestMatcher,
   assertLeaderboards,
@@ -6,7 +7,6 @@ import {
   createDashboardFromModel,
   createDashboardFromSource,
   metricsViewRequestFilterMatcher,
-  updateMetricsInput,
   waitForTimeSeries,
   waitForTopLists,
 } from "./utils/dashboardHelpers";
@@ -16,8 +16,8 @@ import {
 } from "./utils/dataSpecifcHelpers";
 import { TestEntityType, wrapRetryAssertion } from "./utils/helpers";
 import { createOrReplaceSource } from "./utils/sourceHelpers";
-import { waitForEntity } from "./utils/waitHelpers";
 import { startRuntimeForEachTest } from "./utils/startRuntimeForEachTest";
+import { waitForEntity } from "./utils/waitHelpers";
 
 test.describe("dashboard", () => {
   startRuntimeForEachTest();
@@ -279,9 +279,9 @@ test.describe("dashboard", () => {
         label: Domain
         column: domain
         description: ""
-    
+
         `;
-    await updateMetricsInput(page, changeDisplayNameDoc);
+    await updateCodeEditor(page, changeDisplayNameDoc);
 
     // Remove timestamp column
     // await page.getByLabel("Remove timestamp column").click();
@@ -321,9 +321,9 @@ test.describe("dashboard", () => {
         label: Domain
         column: domain
         description: ""
-    
+
         `;
-    await updateMetricsInput(page, addBackTimestampColumnDoc);
+    await updateCodeEditor(page, addBackTimestampColumnDoc);
 
     // Go to dashboard
     await page.getByRole("button", { name: "Go to Dashboard" }).click();
@@ -353,9 +353,9 @@ test.describe("dashboard", () => {
         label: Domain
         column: domain
         description: ""
-    
+
         `;
-    await updateMetricsInput(page, deleteOnlyMeasureDoc);
+    await updateCodeEditor(page, deleteOnlyMeasureDoc);
     // Check warning message appears, Go to Dashboard is disabled
     await expect(
       page.getByText("at least one measure should be present")
@@ -384,10 +384,10 @@ test.describe("dashboard", () => {
         label: Domain
         column: domain
         description: ""
-    
+
         `;
 
-    await updateMetricsInput(page, docWithIncompleteMeasure);
+    await updateCodeEditor(page, docWithIncompleteMeasure);
     await expect(
       page.getByRole("button", { name: "Go to dashboard" })
     ).toBeDisabled();
@@ -419,7 +419,7 @@ test.describe("dashboard", () => {
         description: ""
         `;
 
-    await updateMetricsInput(page, docWithCompleteMeasure);
+    await updateCodeEditor(page, docWithCompleteMeasure);
     await expect(
       page.getByRole("button", { name: "Go to dashboard" })
     ).toBeEnabled();
@@ -533,7 +533,7 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
       column: domain
       description: ""
       `;
-  await updateMetricsInput(page, metricsWithValidPercentOfTotal);
+  await updateCodeEditor(page, metricsWithValidPercentOfTotal);
 
   // Go to dashboard
   await page.getByRole("button", { name: "Go to dashboard" }).click();
@@ -649,7 +649,7 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
 }
 
 async function runThroughEmptyMetricsFlows(page) {
-  await updateMetricsInput(page, "");
+  await updateCodeEditor(page, "");
 
   // the inspector should be empty.
   await expect(await page.getByText("Let's get started.")).toBeVisible();
@@ -672,7 +672,7 @@ async function runThroughEmptyMetricsFlows(page) {
   await expect(await page.getByText("Model not defined.")).toBeVisible();
 
   // now let's scaffold things in
-  await updateMetricsInput(page, "");
+  await updateCodeEditor(page, "");
 
   await wrapRetryAssertion(async () => {
     await expect(
