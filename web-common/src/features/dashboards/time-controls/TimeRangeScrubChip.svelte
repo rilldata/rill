@@ -29,7 +29,6 @@
   {...colors}
   {label}
 >
-  Hello
   <!-- remove button tooltip -->
   <svelte:fragment slot="remove-tooltip">
     <slot name="remove-tooltip-content">remove selected subrange</slot>
