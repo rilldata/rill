@@ -8,6 +8,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
+  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import {
     getFilterForDimension,
     useMetaDimension,
@@ -173,14 +174,14 @@
     });
 
   // Compose the comparison /toplist query
-  $: showTimeComparison = $dashboardStore?.showComparison;
-  $: showPercentOfTotal = $dashboardStore?.showPercentOfTotal;
-  let showContext: "time" | "percent" | false = false;
-  $: showContext = showTimeComparison
-    ? "time"
-    : showPercentOfTotal
-    ? "percent"
-    : false;
+  $: showTimeComparison =
+    $dashboardStore?.leaderboardContextColumn ===
+      LeaderboardContextColumn.DELTA_CHANGE && $dashboardStore?.showComparison;
+  $: showPercentOfTotal =
+    $dashboardStore?.leaderboardContextColumn ===
+    LeaderboardContextColumn.PERCENT;
+
+  $: showContext = $dashboardStore?.leaderboardContextColumn;
 
   // add all sliced and active values to the include filter.
   $: currentVisibleValues =
