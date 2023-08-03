@@ -59,8 +59,10 @@ export interface MetricsExplorerEntity {
   // user selected time range
   selectedTimeRange?: DashboardTimeControls;
   selectedComparisonTimeRange?: DashboardTimeControls;
+
   // user selected timezone
   selectedTimezone?: string;
+
   // flag to show/hide time comparison based on user preference.
   // This controls whether a time comparison is shown in e.g.
   // the line charts and bignums.

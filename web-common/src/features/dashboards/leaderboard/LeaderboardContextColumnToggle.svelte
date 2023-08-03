@@ -86,12 +86,17 @@
   selected={selectedButtons}
 >
   <SubButton
-    tooltips={deltaTooltips}
     value={LeaderboardContextColumn.DELTA_CHANGE}
+    tooltips={deltaTooltips}
+    ariaLabel="Toggle percent change"
   >
     <Delta />%
   </SubButton>
-  <SubButton tooltips={pieTooltips} value={LeaderboardContextColumn.PERCENT}>
+  <SubButton
+    value={LeaderboardContextColumn.PERCENT}
+    tooltips={pieTooltips}
+    ariaLabel="Toggle percent of total"
+  >
     <PieChart />%
   </SubButton>
 </ButtonGroup>
