@@ -20,6 +20,7 @@ type usedFlusher struct {
 	logger        *zap.Logger
 	mu            sync.Mutex
 	deployments   map[string]bool
+	users         map[string]bool
 	userTokens    map[string]bool
 	serviceTokens map[string]bool
 	ctx           context.Context
@@ -34,6 +35,7 @@ func newUsedFlusher(logger *zap.Logger, db database.DB) *usedFlusher {
 		db:            db,
 		logger:        logger,
 		deployments:   make(map[string]bool),
+		users:         make(map[string]bool),
 		userTokens:    make(map[string]bool),
 		serviceTokens: make(map[string]bool),
 		ctx:           ctx,
@@ -49,6 +51,13 @@ func (u *usedFlusher) Deployment(id string) {
 	defer u.mu.Unlock()
 
 	u.deployments[id] = true
+}
+
+func (u *usedFlusher) User(id string) {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+
+	u.users[id] = true
 }
 
 func (u *usedFlusher) UserTokens(id string) {
@@ -92,6 +101,9 @@ func (u *usedFlusher) flush() {
 	deployments := u.deployments
 	u.deployments = make(map[string]bool)
 
+	users := u.users
+	u.users = make(map[string]bool)
+
 	userTokens := u.userTokens
 	u.userTokens = make(map[string]bool)
 
@@ -123,6 +135,9 @@ func (u *usedFlusher) flush() {
 
 	// Flush deployments
 	flushToDB(deployments, u.db.UpdateDeploymentUsedOn, "deployments")
+
+	// Flush users
+	flushToDB(users, u.db.UpdateUserActiveOn, "users")
 
 	// Flush user tokens
 	flushToDB(userTokens, u.db.UpdateUserAuthTokenUsedOn, "user tokens")

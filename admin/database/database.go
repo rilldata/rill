@@ -101,6 +101,7 @@ type DB interface {
 	InsertUser(ctx context.Context, opts *InsertUserOptions) (*User, error)
 	DeleteUser(ctx context.Context, id string) error
 	UpdateUser(ctx context.Context, id string, opts *UpdateUserOptions) (*User, error)
+	UpdateUserActiveOn(ctx context.Context, ids []string) error
 	CheckUsersEmpty(ctx context.Context) (bool, error)
 	FindSuperusers(ctx context.Context) ([]*User, error)
 	UpdateSuperuser(ctx context.Context, userID string, superuser bool) error
@@ -355,6 +356,7 @@ type User struct {
 	GithubUsername      string    `db:"github_username"`
 	CreatedOn           time.Time `db:"created_on"`
 	UpdatedOn           time.Time `db:"updated_on"`
+	ActiveOn            time.Time `db:"active_on"`
 	QuotaSingleuserOrgs int       `db:"quota_singleuser_orgs"`
 	PreferenceTimeZone  string    `db:"preference_time_zone"`
 	Superuser           bool      `db:"superuser"`
@@ -443,6 +445,7 @@ type ServiceAuthToken struct {
 	ServiceID  string     `db:"service_id"`
 	CreatedOn  time.Time  `db:"created_on"`
 	ExpiresOn  *time.Time `db:"expires_on"`
+	UsedOn     time.Time  `db:"used_on"`
 }
 
 // InsertServiceAuthTokenOptions defines options for creating a ServiceAuthToken.
