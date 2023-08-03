@@ -8,7 +8,6 @@ import {
 } from "@rilldata/web-common/features/dashboards/dashboard-stores-test-data";
 import { useDashboardUrlSync } from "@rilldata/web-common/features/dashboards/proto-state/dashboard-url-state";
 import type { Page } from "@sveltejs/kit";
-import { wait } from "@testing-library/user-event/dist/utils";
 import { get, Readable, writable } from "svelte/store";
 import {
   beforeEach,
@@ -57,7 +56,7 @@ describe("useDashboardUrlSync", () => {
       AD_BIDS_PUBLISHER_DIMENSION,
       "Google"
     );
-    await wait(10);
+    await new Promise((resolve) => setTimeout(resolve, 10));
     expect(get(pageMock).url.searchParams.get("state")).toEqual(
       get(metricsExplorerStore).entities[AD_BIDS_NAME].proto
     );
@@ -76,6 +75,7 @@ describe("useDashboardUrlSync", () => {
     expect(pageMock.gotoSpy).toBeCalledTimes(2);
 
     pageMock.updateState(protoWithFilter);
+    await new Promise((resolve) => setTimeout(resolve, 10));
     expect(get(pageMock).url.searchParams.get("state")).toEqual(
       get(metricsExplorerStore).entities[AD_BIDS_NAME].proto
     );
