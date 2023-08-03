@@ -51,7 +51,6 @@ type Driver struct {
 }
 
 func (d Driver) Open(config map[string]any, logger *zap.Logger) (drivers.Handle, error) {
-
 	dsn, ok := config["dsn"].(string)
 	if !ok {
 		return nil, fmt.Errorf("require dsn to open duckdb connection")

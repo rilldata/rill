@@ -36,7 +36,6 @@ var spec = drivers.Spec{
 type driver struct{}
 
 func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Handle, error) {
-
 	conn := &connection{
 		config: config,
 		logger: logger,

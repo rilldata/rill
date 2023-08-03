@@ -97,7 +97,6 @@ type configProperties struct {
 }
 
 func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Handle, error) {
-
 	conf := &configProperties{}
 	err := mapstructure.Decode(config, conf)
 	if err != nil {

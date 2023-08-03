@@ -18,17 +18,20 @@ type Options struct {
 	QueryCacheSizeBytes int64
 	AllowHostAccess     bool
 	SafeSourceRefresh   bool
-	GlobalConnectors    []*rillv1.ConnectorDef
-	PrivateConnectors   []*rillv1.ConnectorDef
+	// GlobalDrivers are drivers whose handles are shared with all instances
+	GlobalDrivers []*rillv1.ConnectorDef
+	// PrivateDrivers are drivers whose handles are private to an instance
+	PrivateDrivers []*rillv1.ConnectorDef
 }
 
-func (o *Options) ConnectorByName(name string) (*rillv1.ConnectorDef, bool, error) {
-	for _, c := range o.GlobalConnectors {
+// ConnectorDefByName return the connector definition and whether it should be shared or not
+func (o *Options) ConnectorDefByName(name string) (*rillv1.ConnectorDef, bool, error) {
+	for _, c := range o.GlobalDrivers {
 		if c.Name == name {
 			return c, true, nil
 		}
 	}
-	for _, c := range o.PrivateConnectors {
+	for _, c := range o.PrivateDrivers {
 		if c.Name == name {
 			return c, false, nil
 		}

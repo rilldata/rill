@@ -78,14 +78,14 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 	}
 
 	// Create a local runtime with an in-memory metastore
-	globalConnectors := []*rillv1.ConnectorDef{
+	globalDrivers := []*rillv1.ConnectorDef{
 		{
 			Type:     "sqlite",
 			Name:     "metastore",
 			Defaults: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
 		},
 	}
-	privateConnectors := []*rillv1.ConnectorDef{
+	privateDrivers := []*rillv1.ConnectorDef{
 		{
 			Type:     "file",
 			Name:     "repo",
@@ -103,8 +103,8 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 		MetastoreDSN:        "file:rill?mode=memory&cache=shared",
 		QueryCacheSizeBytes: int64(datasize.MB * 100),
 		AllowHostAccess:     true,
-		GlobalConnectors:    globalConnectors,
-		PrivateConnectors:   privateConnectors,
+		GlobalDrivers:       globalDrivers,
+		PrivateDrivers:      privateDrivers,
 	}
 	rt, err := runtime.New(rtOpts, logger)
 	if err != nil {

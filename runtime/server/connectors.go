@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -283,32 +282,4 @@ func (s *Server) getBigQueryConn(ctx context.Context, connector, instanceID stri
 		panic("conn is not bigquery connection")
 	}
 	return bq, release, nil
-}
-
-func convertLower(in map[string]string) map[string]string {
-	m := make(map[string]string, len(in))
-	for key, value := range in {
-		m[strings.ToLower(key)] = value
-	}
-	return m
-}
-
-func connectorVariables(connector string, env map[string]string) map[string]any {
-	vars := map[string]any{
-		"allow_host_access": strings.EqualFold(env["allow_host_access"], "true"),
-	}
-	switch connector {
-	case "s3":
-		vars["aws_access_key_id"] = env["aws_access_key_id"]
-		vars["aws_secret_access_key"] = env["aws_secret_access_key"]
-		vars["aws_session_token"] = env["aws_session_token"]
-	case "gcs":
-		vars["google_application_credentials"] = env["google_application_credentials"]
-	case "motherduck":
-		vars["token"] = env["token"]
-		vars["dsn"] = ""
-	case "bigquery":
-		vars["google_application_credentials"] = env["google_application_credentials"]
-	}
-	return vars
 }

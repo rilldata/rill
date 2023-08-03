@@ -8,7 +8,6 @@ import (
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog"
-	"golang.org/x/exp/maps"
 )
 
 func (r *Runtime) Registry() drivers.RegistryStore {
@@ -20,7 +19,7 @@ func (r *Runtime) Registry() drivers.RegistryStore {
 	return registry
 }
 
-func (r *Runtime) AcquireHandle(ctx context.Context, instanceID string, connector string) (drivers.Handle, func(), error) {
+func (r *Runtime) AcquireHandle(ctx context.Context, instanceID, connector string) (drivers.Handle, func(), error) {
 	repo, release, err := r.Repo(ctx, instanceID)
 	if err != nil {
 		return nil, nil, err
@@ -43,7 +42,7 @@ func (r *Runtime) AcquireHandle(ctx context.Context, instanceID string, connecto
 			return r.connCache.get(ctx, instanceID, c.Type, variables(connector, c.Defaults, instance.ResolveVariables()), false)
 		}
 	}
-	if c, shared, err := r.opts.ConnectorByName(connector); err == nil { // connector found
+	if c, shared, err := r.opts.ConnectorDefByName(connector); err == nil { // connector found
 		// defined in runtime options
 		return r.connCache.get(ctx, instanceID, c.Type, variables(connector, c.Defaults, instance.ResolveVariables()), shared)
 	}
@@ -57,7 +56,7 @@ func (r *Runtime) Repo(ctx context.Context, instanceID string) (drivers.RepoStor
 		return nil, nil, err
 	}
 
-	_, shared, _ := r.opts.ConnectorByName("repo")
+	_, shared, _ := r.opts.ConnectorDefByName("repo")
 	// TODO :: pass repodsn and olapdsn as variables in form connector.repo.xxxx
 	conn, release, err := r.connCache.get(ctx, instanceID, inst.RepoDriver, variables("repo", map[string]string{"dsn": inst.RepoDSN}, inst.ResolveVariables()), shared)
 	if err != nil {
@@ -80,7 +79,7 @@ func (r *Runtime) OLAP(ctx context.Context, instanceID string) (drivers.OLAPStor
 		return nil, nil, err
 	}
 
-	_, shared, _ := r.opts.ConnectorByName("olap")
+	_, shared, _ := r.opts.ConnectorDefByName("olap")
 	conn, release, err := r.connCache.get(ctx, instanceID, inst.OLAPDriver, variables("olap", map[string]string{"dsn": inst.OLAPDSN}, inst.ResolveVariables()), shared)
 	if err != nil {
 		return nil, nil, err
@@ -103,7 +102,7 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 	}
 
 	if inst.EmbedCatalog {
-		_, shared, _ := r.opts.ConnectorByName("olap")
+		_, shared, _ := r.opts.ConnectorDefByName("olap")
 		conn, release, err := r.connCache.get(ctx, instanceID, inst.OLAPDriver, variables("olap", map[string]string{"dsn": inst.OLAPDSN}, inst.ResolveVariables()), shared)
 		if err != nil {
 			return nil, nil, err
@@ -156,18 +155,21 @@ func (r *Runtime) NewCatalogService(ctx context.Context, instanceID string) (*ca
 	}
 	return catalog.NewService(catalogStore, repoStore, olapStore, registry, instanceID, r.logger, migrationMetadata, releaseFunc), nil
 }
+
 func variables(name string, def, variables map[string]string) map[string]string {
 	vars := make(map[string]string, 0)
-	maps.Copy(vars, def) // set default connector variables
+	for key, value := range variables {
+		vars[strings.ToLower(key)] = value
+	}
 
 	// connector variables are of format connector.name.var
 	// there could also be other variables like allow_host_access, region etc which are global for all connectors
 	prefix := fmt.Sprintf("connector.%s.", name)
 	for key, value := range variables {
 		if !strings.HasPrefix(key, "connector.") { // global variable
-			vars[key] = value
+			vars[strings.ToLower(key)] = value
 		} else if after, found := strings.CutPrefix(key, prefix); found { // connector specific variable
-			vars[after] = value
+			vars[strings.ToLower(after)] = value
 		}
 	}
 	return vars

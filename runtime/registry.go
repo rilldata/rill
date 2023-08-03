@@ -93,13 +93,14 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 
 	// Drop the underlying data store
 	if dropDB {
-		conn, release, err := r.connCache.get(ctx, instanceID, inst.OLAPDriver, variables("olap", nil, inst.ResolveVariables()), false)
+		_, shared, _ := r.opts.ConnectorDefByName("olap")
+		conn, release, err := r.connCache.get(ctx, instanceID, inst.OLAPDriver, variables("olap", map[string]string{"dsn": inst.OLAPDSN}, inst.ResolveVariables()), shared)
 		if err == nil {
+			release()
 			err = conn.Close()
 			if err != nil {
 				r.logger.Error("delete instance: error closing connection", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 			}
-			release()
 		} else {
 			r.logger.Error("delete instance: error getting connection", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 		}

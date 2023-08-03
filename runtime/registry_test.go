@@ -327,8 +327,8 @@ func NewTestRunTime(t *testing.T) *Runtime {
 		MetastoreDSN:        fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name()),
 		QueryCacheSizeBytes: int64(datasize.MB) * 100,
 		AllowHostAccess:     true,
-		GlobalConnectors:    globalConnectors,
-		PrivateConnectors:   privateConnectors,
+		GlobalDrivers:       globalConnectors,
+		PrivateDrivers:      privateConnectors,
 	}
 	rt, err := New(opts, zap.NewNop())
 	t.Cleanup(func() {

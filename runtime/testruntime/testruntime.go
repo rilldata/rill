@@ -31,14 +31,14 @@ type TestingT interface {
 
 // New returns a runtime configured for use in tests.
 func New(t TestingT) *runtime.Runtime {
-	globalConnectors := []*rillv1.ConnectorDef{
+	globalDrivers := []*rillv1.ConnectorDef{
 		{
 			Type:     "sqlite",
 			Name:     "metastore",
 			Defaults: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
 		},
 	}
-	privateConnectors := []*rillv1.ConnectorDef{
+	privateDrivers := []*rillv1.ConnectorDef{
 		{
 			Type: "file",
 			Name: "repo",
@@ -57,8 +57,8 @@ func New(t TestingT) *runtime.Runtime {
 		MetastoreDSN:        fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name()),
 		QueryCacheSizeBytes: int64(datasize.MB * 100),
 		AllowHostAccess:     true,
-		GlobalConnectors:    globalConnectors,
-		PrivateConnectors:   privateConnectors,
+		GlobalDrivers:       globalDrivers,
+		PrivateDrivers:      privateDrivers,
 	}
 	rt, err := runtime.New(opts, zap.NewNop())
 	require.NoError(t, err)

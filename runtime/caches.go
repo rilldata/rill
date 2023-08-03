@@ -98,21 +98,8 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver string, co
 	if !ok { // not in use
 		value, found := c.lruCache.Get(key)
 		if !found { // not opened
-			logger := c.logger
-			if instanceID != "default" {
-				logger = c.logger.With(zap.String("instance_id", instanceID), zap.String("driver", driver))
-			}
-			handle, err := drivers.Open(driver, convert(config), logger)
+			handle, err := c.openAndMigrate(ctx, instanceID, driver, config)
 			if err != nil {
-				return nil, nil, err
-			}
-
-			ctx, cancel := context.WithTimeout(ctx, _migrateTimeout)
-			defer cancel()
-
-			err = handle.Migrate(ctx)
-			if err != nil {
-				conn.Close()
 				return nil, nil, err
 			}
 			conn = &connWithRef{Handle: handle, ref: 0}
@@ -122,7 +109,7 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver string, co
 	}
 
 	// increase reference
-	conn.ref += 1
+	conn.ref++
 	// transfer from lru to in-use cache
 	c.cache[key] = conn
 	c.lruCache.Remove(key)
@@ -133,7 +120,7 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver string, co
 		c.lock.Lock()
 		defer c.lock.Unlock()
 
-		conn.ref -= 1
+		conn.ref--
 		if conn.ref == 0 { // not in use
 			// add key to lrucache for eviction
 			c.lruCache.Add(key, conn)
@@ -141,6 +128,27 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver string, co
 			delete(c.cache, key)
 		}
 	}, nil
+}
+
+func (c *connectionCache) openAndMigrate(ctx context.Context, instanceID, driver string, config map[string]string) (drivers.Handle, error) {
+	logger := c.logger
+	if instanceID != "default" {
+		logger = c.logger.With(zap.String("instance_id", instanceID), zap.String("driver", driver))
+	}
+	handle, err := drivers.Open(driver, convert(config), logger)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, _migrateTimeout)
+	defer cancel()
+
+	err = handle.Migrate(ctx)
+	if err != nil {
+		handle.Close()
+		return nil, err
+	}
+	return handle, nil
 }
 
 // evict removes the connection from cache and closes the connection

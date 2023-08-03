@@ -118,7 +118,8 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				}
 			}()
 
-			globalConnectors := []*rillv1.ConnectorDef{
+			// TODO :: should we take full information as part of config ??
+			globalDrivers := []*rillv1.ConnectorDef{
 				{
 					Type:     conf.MetastoreDriver,
 					Name:     "metastore",
@@ -133,8 +134,8 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				QueryCacheSizeBytes: conf.QueryCacheSizeBytes,
 				AllowHostAccess:     conf.AllowHostAccess,
 				SafeSourceRefresh:   conf.SafeSourceRefresh,
-				GlobalConnectors:    globalConnectors,
-				PrivateConnectors:   nil,
+				GlobalDrivers:       globalDrivers,
+				PrivateDrivers:      nil,
 			}
 			rt, err := runtime.New(opts, logger)
 			if err != nil {

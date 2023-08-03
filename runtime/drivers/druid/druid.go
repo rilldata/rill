@@ -21,7 +21,6 @@ type driver struct{}
 // Open connects to Druid using Avatica.
 // Note that the Druid connection string must have the form "http://host/druid/v2/sql/avatica-protobuf/".
 func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Handle, error) {
-
 	dsn, ok := config["dsn"].(string)
 	if !ok {
 		return nil, fmt.Errorf("require dsn to open druid connection")
