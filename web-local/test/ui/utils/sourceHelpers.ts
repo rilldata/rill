@@ -2,6 +2,7 @@ import { expect } from "@playwright/test";
 import { asyncWait } from "@rilldata/web-local/lib/util/waitUtils";
 import path from "node:path";
 import type { Page } from "playwright";
+import { fileURLToPath } from "url";
 import {
   clickModalButton,
   getEntityLink,
@@ -9,11 +10,10 @@ import {
   waitForProfiling,
 } from "./helpers";
 import { waitForEntity } from "./waitHelpers";
-import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const TestDataPath = path.join(__dirname, "../../data");
+export const TestDataPath = path.join(__dirname, "../../data");
 
 /**
  * Used to upload local file as a source

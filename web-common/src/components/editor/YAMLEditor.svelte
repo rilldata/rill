@@ -34,6 +34,24 @@
       parent: container,
     });
   });
+
+  function updateEditorContents(newContent: string) {
+    if (view && !view.hasFocus) {
+      let curContent = view.state.doc.toString();
+      if (newContent != curContent) {
+        view.dispatch({
+          changes: {
+            from: 0,
+            to: curContent.length,
+            insert: newContent,
+          },
+        });
+      }
+    }
+  }
+
+  // reactive statements to dynamically update the editor when inputs change
+  $: updateEditorContents(content);
 </script>
 
 <div class="contents" bind:this={container} />
