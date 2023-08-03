@@ -28,6 +28,7 @@ type connectionCache struct {
 	lock     sync.Mutex
 	closed   bool
 	logger   *zap.Logger
+	size     int
 }
 
 type connWithRef struct {
@@ -48,7 +49,7 @@ func newConnectionCache(size int, logger *zap.Logger) *connectionCache {
 	if err != nil {
 		panic(err)
 	}
-	return &connectionCache{lruCache: cache, cache: make(map[string]*connWithRef), logger: logger}
+	return &connectionCache{lruCache: cache, cache: make(map[string]*connWithRef), logger: logger, size: size}
 }
 
 func (c *connectionCache) Close() error {
@@ -125,6 +126,9 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver string, co
 	// transfer from lru to in-use cache
 	c.cache[key] = conn
 	c.lruCache.Remove(key)
+	if len(c.cache)+c.lruCache.Len() > c.size {
+		c.logger.Warn("number of in-use connections and open connections exceed total configured size", zap.Int("in-use", len(c.cache)), zap.Int("open", c.lruCache.Len()))
+	}
 	return conn.Handle, func() {
 		c.lock.Lock()
 		defer c.lock.Unlock()

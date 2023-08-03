@@ -47,11 +47,7 @@ type Runtime struct {
 
 func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 	// Open metadata db connection
-	c, _, err := opts.ConnectorByName("metastore")
-	if err != nil {
-		return nil, err
-	}
-	metastore, err := drivers.Open(c.Type, convert(c.Defaults), logger)
+	metastore, err := drivers.Open(opts.MetastoreDriver, map[string]any{"dsn": opts.MetastoreDSN}, logger)
 	if err != nil {
 		return nil, fmt.Errorf("could not connect to metadata db: %w", err)
 	}
