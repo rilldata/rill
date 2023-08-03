@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"strconv"
 	"strings"
-	"uuid"
 
+	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -25,8 +26,6 @@ type MetricsViewRows struct {
 	Limit           *int64                       `json:"limit,omitempty"`
 	Offset          int64                        `json:"offset,omitempty"`
 	TimeZone        string                       `json:"time_zone,omitempty"`
-	ExportFormat    runtimev1.ExportFormat
-	ExportFilename  string
 
 	Result *runtimev1.MetricsViewRowsResponse `json:"-"`
 }
@@ -103,8 +102,104 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	return nil
 }
 
+type GeneralExport struct {
+	query      *MetricsViewRows
+	olap       drivers.OLAPStore
+	mv         *runtimev1.MetricsView
+	opts       *runtime.ExportOptions
+	w          io.Writer
+	rt         *runtime.Runtime
+	instanceID string
+	ctx        context.Context
+}
+
+func (e GeneralExport) export() error {
+	err := e.query.Resolve(e.ctx, e.rt, e.instanceID, e.opts.Priority)
+	if err != nil {
+		return err
+	}
+
+	if e.opts.PreWriteHook != nil {
+		err = e.opts.PreWriteHook(e.query.generateFilename(e.mv))
+		if err != nil {
+			return err
+		}
+	}
+
+	switch e.opts.Format {
+	case runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED:
+		return fmt.Errorf("unspecified format")
+	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
+		return writeCSV(e.query.Result.Meta, e.query.Result.Data, e.w)
+	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
+		return writeXLSX(e.query.Result.Meta, e.query.Result.Data, e.w)
+	}
+
+	return nil
+}
+
+type DuckDBCopyExport struct {
+	query      *MetricsViewRows
+	olap       drivers.OLAPStore
+	mv         *runtimev1.MetricsView
+	opts       *runtime.ExportOptions
+	w          io.Writer
+	rt         *runtime.Runtime
+	instanceID string
+	ctx        context.Context
+}
+
+func (e DuckDBCopyExport) export() error {
+	if e.mv.TimeDimension == "" && (e.query.TimeStart != nil || e.query.TimeEnd != nil) {
+		return fmt.Errorf("metrics view '%s' does not have a time dimension", e.query.MetricsViewName)
+	}
+
+	timeRollupColumnName, err := e.query.resolveTimeRollupColumnName(e.ctx, e.rt, e.instanceID, e.opts.Priority, e.mv)
+	if err != nil {
+		return err
+	}
+
+	sql, args, err := e.query.buildMetricsRowsSQL(e.mv, e.olap.Dialect(), timeRollupColumnName)
+	if err != nil {
+		return err
+	}
+
+	temporaryFilename := "export_" + uuid.New().String()
+	sql = fmt.Sprintf("COPY (%s) TO %s", sql, temporaryFilename)
+
+	rows, err := e.olap.Execute(e.ctx, &drivers.Statement{
+		Query:            sql,
+		Args:             args,
+		Priority:         e.opts.Priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+	})
+	if err != nil {
+		return err
+	}
+
+	defer rows.Close()
+	defer os.Remove(temporaryFilename)
+
+	if e.opts.PreWriteHook != nil {
+		err = e.opts.PreWriteHook(e.query.generateFilename(e.mv))
+		if err != nil {
+			return err
+		}
+	}
+
+	f, err := os.Open(temporaryFilename)
+	if err != nil {
+		return err
+	}
+
+	defer f.Close()
+
+	_, err = io.Copy(e.w, f)
+	return err
+}
+
 func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
-	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
+	olap, err := rt.OLAP(ctx, instanceID)
 	if err != nil {
 		return err
 	}
@@ -114,28 +209,54 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 		return err
 	}
 
+	ge := GeneralExport{
+		query:      q,
+		ctx:        ctx,
+		mv:         mv,
+		olap:       olap,
+		rt:         rt,
+		instanceID: instanceID,
+		w:          w,
+		opts:       opts,
+	}
+	ddbe := DuckDBCopyExport{
+		query:      q,
+		ctx:        ctx,
+		mv:         mv,
+		olap:       olap,
+		rt:         rt,
+		instanceID: instanceID,
+		w:          w,
+		opts:       opts,
+	}
+	switch olap.Dialect() {
+	case drivers.DialectDuckDB:
+		if opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV {
+			ddbe.export()
+		} else {
+			err = ge.export()
+			if err != nil {
+				return err
+			}
+		}
+	case drivers.DialectDruid:
+		if err := ge.export(); err != nil {
+			return err
+		}
+
+	default:
+		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
+	}
+
+	return nil
+}
+
+func (q *MetricsViewRows) generateFilename(mv *runtimev1.MetricsView) string {
 	filename := strings.ReplaceAll(mv.Model, `"`, `_`)
 	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
 		filename += "_filtered"
 	}
-
-	if opts.PreWriteHook != nil {
-		err = opts.PreWriteHook(filename)
-		if err != nil {
-			return err
-		}
-	}
-
-	switch opts.Format {
-	case runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED:
-		return fmt.Errorf("unspecified format")
-	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		return writeCSV(q.Result.Meta, q.Result.Data, w)
-	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		return writeXLSX(q.Result.Meta, q.Result.Data, w)
-	}
-
-	return nil
+	return filename
 }
 
 // resolveTimeRollupColumnName infers a column name for time rollup values.
@@ -258,11 +379,6 @@ func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsView, dialect
 		limitClause,
 		q.Offset,
 	)
-
-	switch q.ExportFormat {
-	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		sql = fmt.Sprintf("COPY (%s) TO %s.csv", sql, q.ExportFilename)
-	}
 
 	return sql, args, nil
 }
