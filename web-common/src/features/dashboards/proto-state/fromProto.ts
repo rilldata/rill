@@ -19,6 +19,8 @@ const LeaderboardContextColumnReverseMap: Record<
   DashboardState_DashboardLeaderboardContextColumn,
   LeaderboardContextColumn
 > = {
+  [DashboardState_DashboardLeaderboardContextColumn.UNSPECIFIED]:
+    LeaderboardContextColumn.HIDDEN,
   [DashboardState_DashboardLeaderboardContextColumn.PERCENT]:
     LeaderboardContextColumn.PERCENT,
   [DashboardState_DashboardLeaderboardContextColumn.DELTA_CHANGE]:

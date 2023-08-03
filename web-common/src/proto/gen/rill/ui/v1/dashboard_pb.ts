@@ -130,25 +130,31 @@ export class DashboardState extends Message<DashboardState> {
  */
 export enum DashboardState_DashboardLeaderboardContextColumn {
   /**
-   * @generated from enum value: PERCENT = 0;
+   * @generated from enum value: DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_UNSPECIFIED = 0;
    */
-  PERCENT = 0,
+  UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: DELTA_CHANGE = 1;
+   * @generated from enum value: DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_PERCENT = 1;
    */
-  DELTA_CHANGE = 1,
+  PERCENT = 1,
 
   /**
-   * @generated from enum value: HIDDEN = 2;
+   * @generated from enum value: DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_DELTA_CHANGE = 2;
    */
-  HIDDEN = 2,
+  DELTA_CHANGE = 2,
+
+  /**
+   * @generated from enum value: DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_HIDDEN = 3;
+   */
+  HIDDEN = 3,
 }
 // Retrieve enum metadata with: proto3.getEnumType(DashboardState_DashboardLeaderboardContextColumn)
 proto3.util.setEnumType(DashboardState_DashboardLeaderboardContextColumn, "rill.ui.v1.DashboardState.DashboardLeaderboardContextColumn", [
-  { no: 0, name: "PERCENT" },
-  { no: 1, name: "DELTA_CHANGE" },
-  { no: 2, name: "HIDDEN" },
+  { no: 0, name: "DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_UNSPECIFIED" },
+  { no: 1, name: "DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_PERCENT" },
+  { no: 2, name: "DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_DELTA_CHANGE" },
+  { no: 3, name: "DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_HIDDEN" },
 ]);
 
 /**
