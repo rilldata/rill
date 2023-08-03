@@ -27,18 +27,12 @@ export enum FileEvent {
    * @generated from enum value: FILE_EVENT_DELETE = 2;
    */
   DELETE = 2,
-
-  /**
-   * @generated from enum value: FILE_EVENT_RENAME = 3;
-   */
-  RENAME = 3,
 }
 // Retrieve enum metadata with: proto3.getEnumType(FileEvent)
 proto3.util.setEnumType(FileEvent, "rill.runtime.v1.FileEvent", [
   { no: 0, name: "FILE_EVENT_UNSPECIFIED" },
   { no: 1, name: "FILE_EVENT_WRITE" },
   { no: 2, name: "FILE_EVENT_DELETE" },
-  { no: 3, name: "FILE_EVENT_RENAME" },
 ]);
 
 /**
@@ -450,6 +444,11 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
    */
   ingestionLimitBytes = protoInt64.zero;
 
+  /**
+   * @generated from field: map<string, string> annotations = 9;
+   */
+  annotations: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<CreateInstanceRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -466,6 +465,7 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 8, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 9, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateInstanceRequest {

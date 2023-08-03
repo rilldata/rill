@@ -65,7 +65,9 @@ export function getProtoFromDashboardState(
     );
   }
   state.showComparison = metrics.showComparison;
-
+  if (metrics.selectedTimezone) {
+    state.selectedTimezone = metrics.selectedTimezone;
+  }
   if (metrics.leaderboardMeasureName) {
     state.leaderboardMeasure = metrics.leaderboardMeasureName;
   }

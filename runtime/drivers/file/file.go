@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -104,6 +105,10 @@ type connection struct {
 	root         string
 	driverConfig map[string]any
 	driverName   string
+
+	watcherMu    sync.Mutex
+	watcherCount int
+	watcher      *watcher
 }
 
 // Config implements drivers.Connection.
@@ -159,6 +164,11 @@ func (c *connection) AsTransporter(from, to drivers.Connection) (drivers.Transpo
 // AsFileStore implements drivers.Connection.
 func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 	return c, true
+}
+
+// AsSQLStore implements drivers.Connection.
+func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
+	return nil, false
 }
 
 // checkPath checks that the connection's root is a valid directory.

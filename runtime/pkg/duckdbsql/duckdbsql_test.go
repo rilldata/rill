@@ -23,7 +23,7 @@ select 1`,
 		},
 		{
 			"read_csv",
-			`select * from read_csv( 'data.csv', delim='|', columns={'A':'Date'})`,
+			`select * from read_csv( 'data.csv', delim='|', columns={'A':'Date'}, ignore_errors=true)`,
 			[]*TableRef{
 				{
 					Function: "read_csv",
@@ -33,6 +33,34 @@ select 1`,
 						"columns": map[string]any{
 							"A": "Date",
 						},
+						"ignore_errors": true,
+					},
+				},
+			},
+		},
+		{
+			"read_json with array of paths",
+			`
+select * from read_json(
+    ['data1.csv', 'data2.csv'], delim='|',
+    columns={'A':'Date', 'L': ['INT32','INT64'], 'O': {'K1':1,'K2':1.2,'K3':12.34}},
+    list=['A', 'B'])`,
+			[]*TableRef{
+				{
+					Function: "read_json",
+					Paths:    []string{"data1.csv", "data2.csv"},
+					Properties: map[string]any{
+						"delim": "|",
+						"columns": map[string]any{
+							"A": "Date",
+							"L": []interface{}{"INT32", "INT64"},
+							"O": map[string]any{
+								"K1": int32(1),
+								"K2": 1.2,
+								"K3": 12.34,
+							},
+						},
+						"list": []interface{}{"A", "B"},
 					},
 				},
 			},
@@ -363,6 +391,20 @@ func TestAST_RewriteWithFunctionRef(t *testing.T) {
 				},
 			},
 			`SELECT * FROM read_csv(main.list_value('/path/to/AdBids.csv'), (delim = '|'))`,
+		},
+		{
+			"with single path and float prop",
+			`select * from AdBids`,
+			[]*TableRef{
+				{
+					Function: "read_csv",
+					Paths:    []string{"/path/to/AdBids.csv"},
+					Properties: map[string]any{
+						"sample_size": float64(-1),
+					},
+				},
+			},
+			`SELECT * FROM read_csv(main.list_value('/path/to/AdBids.csv'), (sample_size = -1))`,
 		},
 		{
 			"with multiple paths with map prop",

@@ -13,7 +13,7 @@ How you configure access to MotherDuck depends on whether you are developing a p
 
 ### Configure credentials for local development
 
-When developing a project locally, you need to set `motherduck_token` in your enviornment variables. 
+When developing a project locally, you need to set `motherduck_token` in your environment variables. 
 An example of using this syntax in terminal:
 ```
 export motherduck_token='<token>'

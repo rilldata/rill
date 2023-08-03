@@ -37,6 +37,9 @@ message DashboardState {
   optional bool all_dimensions_visible = 11;
 
   optional DashboardLeaderboardContextColumn leaderboard_context_column = 12;
+
+  // Selected timezone for the dashboard
+  optional string selected_timezone = 13;
 }
 
 message DashboardTimeRange {
