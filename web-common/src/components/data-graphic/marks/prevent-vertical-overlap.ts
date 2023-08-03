@@ -33,7 +33,7 @@ export function preventVerticalOverlap(
   if (!locations.length) return locations;
 
   // calculate the middle index.
-  const middle = ~~(locations.length / 2); // eslint-disable-line
+  const middle = Math.trunc(locations.length / 2); // eslint-disable-line
 
   // Adjust position of labels above the middle index
   let i = middle;

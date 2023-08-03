@@ -2,11 +2,13 @@ package transporter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
@@ -47,6 +49,12 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, source drivers.Sourc
 	size, _ := iterator.Size(drivers.ProgressUnitByte)
 	if size > opts.LimitInBytes {
 		return drivers.ErrIngestionLimitExceeded
+	}
+
+	sql, hasSQL := src.Properties["sql"].(string)
+	// if sql is specified use ast rewrite to fill in the downloaded files
+	if hasSQL {
+		return t.ingestDuckDBSQL(ctx, sql, iterator, dbSink, opts, p)
 	}
 
 	p.Target(size, drivers.ProgressUnitByte)
@@ -259,4 +267,70 @@ func (a *appender) scanSchemaFromQuery(ctx context.Context, qry string) (map[str
 	}
 
 	return schema, nil
+}
+
+func (t *objectStoreToDuckDB) ingestDuckDBSQL(
+	ctx context.Context,
+	originalSQL string,
+	iterator drivers.FileIterator,
+	dbSink *drivers.DatabaseSink,
+	opts *drivers.TransferOpts,
+	p drivers.Progress,
+) error {
+	iterator.KeepFilesUntilClose(true)
+	allFiles := make([]string, 0)
+	for iterator.HasNext() {
+		files, err := iterator.NextBatch(opts.IteratorBatch)
+		if err != nil {
+			return err
+		}
+		allFiles = append(allFiles, files...)
+	}
+
+	ast, err := duckdbsql.Parse(originalSQL)
+	if err != nil {
+		return err
+	}
+
+	// Validate the sql is supported for sources
+	// TODO: find a good common place for this validation and avoid code duplication here and in sources packages as well
+	refs := ast.GetTableRefs()
+	if len(refs) != 1 {
+		return errors.New("sql source should have exactly one table reference")
+	}
+	ref := refs[0]
+
+	if len(ref.Paths) == 0 {
+		return errors.New("only read_* functions with a single path is supported")
+	}
+	if len(ref.Paths) > 1 {
+		return errors.New("invalid source, only a single path for source is supported")
+	}
+
+	err = ast.RewriteTableRefs(func(table *duckdbsql.TableRef) (*duckdbsql.TableRef, bool) {
+		return &duckdbsql.TableRef{
+			Paths:      allFiles,
+			Function:   table.Function,
+			Properties: table.Properties,
+		}, true
+	})
+	if err != nil {
+		return err
+	}
+	sql, err := ast.Format()
+	if err != nil {
+		return err
+	}
+
+	st := time.Now()
+	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s);", dbSink.Table, sql)
+	err = t.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
+	if err != nil {
+		return err
+	}
+
+	size := fileSize(allFiles)
+	t.logger.Info("ingested files", zap.Strings("files", allFiles), zap.Int64("bytes_ingested", size), zap.Duration("duration", time.Since(st)), observability.ZapCtx(ctx))
+	p.Observe(size, drivers.ProgressUnitByte)
+	return nil
 }

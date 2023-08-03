@@ -38,12 +38,15 @@
     `${sourceName}.yaml`
   );
 
+  // Layout state
   const outputPosition = getContext(
     "rill:app:output-height-tween"
   ) as Writable<number>;
   const outputVisibilityTween = getContext(
     "rill:app:output-visibility-tween"
   ) as Writable<number>;
+  // track innerHeight to calculate the size of the editor element.
+  let innerHeight: number;
 
   $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,
@@ -52,6 +55,8 @@
   );
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;
 </script>
+
+<svelte:window bind:innerHeight />
 
 <div class="h-full pb-3">
   <div
@@ -72,7 +77,7 @@
           <ConnectedPreviewTable objectName={sourceName} />
         {/key}
       {:else}
-        <ErrorPane error={reconciliationErrors[0]} />
+        <ErrorPane {sourceName} error={reconciliationErrors[0]} />
       {/if}
     </div>
   </div>

@@ -61,11 +61,16 @@ export async function submitRemoteSourceForm(
   }
 
   // Convert the form values to Source YAML
+  // TODO: Quite a few adhoc code is being added. We should revisit the way we generate the yaml.
   const formValues = Object.fromEntries(
-    Object.entries(values).map(([key, value]) => [
-      fromYupFriendlyKey(key),
-      value,
-    ])
+    Object.entries(values).map(([key, value]) => {
+      switch (key) {
+        case "project_id":
+          return [key, value];
+        default:
+          return [fromYupFriendlyKey(key), value];
+      }
+    })
   );
   const yaml = compileCreateSourceYAML(formValues, connectorName);
 
