@@ -85,10 +85,10 @@ export function formatMsToDuckDbIntervalString(
   ms: number,
   style: "short" | "units" | "colon" = "short"
 ): string {
-  let negative = false;
+  let neg = "";
   if (ms < 0) {
     ms = -ms;
-    negative = true;
+    neg = "-";
   }
 
   if (ms === 0) {
@@ -99,7 +99,7 @@ export function formatMsToDuckDbIntervalString(
     return `~0${timeUnits.s}`;
   }
 
-  let string = negative ? "-" : "";
+  let string = "";
 
   const years = Math.floor(ms / MS_PER_YEAR);
   const months = Math.floor((ms - years * MS_PER_YEAR) / MS_PER_MONTH);
@@ -120,7 +120,7 @@ export function formatMsToDuckDbIntervalString(
     [days, timeUnits.d],
   ].reduce((acc, [value, unit]) => {
     if (value > 0) {
-      acc += `${value}${unit} `;
+      acc += `${neg}${value}${unit} `;
     }
     return acc;
   }, string);
@@ -130,14 +130,20 @@ export function formatMsToDuckDbIntervalString(
   }
 
   if (style === "units") {
-    return string + formatUnitsHMS(hours, minutes, seconds, msec);
+    return string + formatUnitsHMS(hours, minutes, seconds, msec, neg);
   } else if (style === "colon") {
-    return string + formatColonHMS(hours, minutes, float_seconds);
+    return string + formatColonHMS(hours, minutes, float_seconds, neg);
   }
-  return string + formatShortHMS(hours, minutes, seconds, msec);
+  return string + formatShortHMS(hours, minutes, seconds, msec, neg);
 }
 
-function formatUnitsHMS(h: number, m: number, s: number, ms: number) {
+function formatUnitsHMS(
+  h: number,
+  m: number,
+  s: number,
+  ms: number,
+  neg: string
+) {
   return [
     [h, timeUnits.h],
     [m, timeUnits.m],
@@ -145,22 +151,28 @@ function formatUnitsHMS(h: number, m: number, s: number, ms: number) {
     [ms, timeUnits.ms],
   ].reduce((acc, [value, unit]) => {
     if (value > 0) {
-      acc += `${value}${unit} `;
+      acc += `${neg}${value}${unit} `;
     }
     return acc;
   }, "");
 }
 
-function formatColonHMS(h: number, m: number, s: number) {
+function formatColonHMS(h: number, m: number, s: number, neg: string) {
   const secPad = s < 10 ? "0" : "";
-  return `${h.toString()}:${m
+  return `${neg}${h.toString()}:${m
     .toString()
     .padStart(2, "0")}:${secPad}${s.toString()}`;
 }
 
-function formatShortHMS(h: number, m: number, s: number, msec: number) {
-  const string1 = formatColonHMS(h, m, s + msec / 1000);
-  const string2 = formatUnitsHMS(h, m, s, msec);
+function formatShortHMS(
+  h: number,
+  m: number,
+  s: number,
+  msec: number,
+  neg: string
+) {
+  const string1 = formatColonHMS(h, m, s + msec / 1000, neg);
+  const string2 = formatUnitsHMS(h, m, s, msec, neg);
   return string1.length < string2.length ? string1 : string2;
 }
 
@@ -188,10 +200,29 @@ function duckdbIntervalToMs(interval: Interval): number {
 }
 
 /**
- * Formats a duckdb Interval object
+ * Formats a duckdb Interval object of the form
  * `{ months: number, days: number, micros: number }`
- * into a string that can be parsed by a duckdb INTERVAL constructor.
+ * into a _humanized_ string that can be parsed by a
+ * duckdb INTERVAL constructor.
+ *
+ * NOTE: this has not been tested for round-trip correctness,
+ * and may be lossy
  */
-export function formatDuckdbInterval(interval: Interval): string {
+export function formatDuckdbIntervalHumane(interval: Interval): string {
   return formatMsToDuckDbIntervalString(duckdbIntervalToMs(interval));
+}
+
+/**
+ * Formats a duckdb Interval object of the form
+ * `{ months: number, days: number, micros: number }`
+ * directly and without humanization into a string that can
+ * be parsed by a duckdb INTERVAL constructor.
+ *
+ * This non-pretty string should theoretically be lossless,
+ * as it is a direct representation of duckdb's internal
+ * representation of an interval. However, it has not been
+ * tested for round-trip correctness.
+ */
+export function formatDuckdbIntervalLossless(interval: Interval): string {
+  return `${interval.months}mon ${interval.days}d ${interval.micros}us`;
 }
