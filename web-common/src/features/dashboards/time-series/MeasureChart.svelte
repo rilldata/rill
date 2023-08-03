@@ -54,7 +54,7 @@
   export let hovered = false;
 
   // control point for scrub functionality.
-  export let scrubbing = false;
+  export let isScrubbing = false;
   export let scrubStart;
   export let scrubEnd;
 
@@ -76,12 +76,12 @@
   $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
 
   $: mainLineColor =
-    scrubbing || hasSubrangeSelected
+    isScrubbing || hasSubrangeSelected
       ? "hsla(217, 10%, 60%, 1)"
       : "hsla(217,60%, 55%, 1)";
 
   $: areaColor =
-    scrubbing || hasSubrangeSelected
+    isScrubbing || hasSubrangeSelected
       ? "hsla(225, 20%, 80%, .2)"
       : "hsla(217,70%, 80%, .4)";
 
@@ -244,7 +244,7 @@
 
   async function onMouseClick() {
     // skip if still scrubbing
-    if (justCreatedScrub || scrubbing || isResizing) return;
+    if (justCreatedScrub || isScrubbing || isResizing) return;
 
     // skip if no scrub range selected
     if (!hasSubrangeSelected) return;
@@ -272,7 +272,7 @@
   bind:hovered
   let:config
   let:yScale
-  customClass={scrubbing ? "cursor-ew-resize" : ""}
+  customClass={isScrubbing ? "cursor-ew-resize" : ""}
   yMinTweenProps={tweenProps}
   yMaxTweenProps={tweenProps}
   xMaxTweenProps={tweenProps}
@@ -325,7 +325,7 @@
       class="stroke-blue-200"
     />
   </Body>
-  {#if !scrubbing && mouseoverValue?.x}
+  {#if !isScrubbing && mouseoverValue?.x}
     <WithRoundToTimegrain
       strategy={TimeRoundingStrategy.PREVIOUS}
       value={mouseoverValue.x}
@@ -378,6 +378,11 @@
     </WithRoundToTimegrain>
   {/if}
   {#if hasSubrangeSelected}
-    <MeasureScrub start={scrubStart} stop={scrubEnd} {mouseoverTimeFormat} />
+    <MeasureScrub
+      start={scrubStart}
+      stop={scrubEnd}
+      {isScrubbing}
+      {mouseoverTimeFormat}
+    />
   {/if}
 </SimpleDataGraphic>

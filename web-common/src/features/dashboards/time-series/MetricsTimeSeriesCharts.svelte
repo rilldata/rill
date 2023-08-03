@@ -320,7 +320,7 @@
           <div class="p-5"><CrossIcon /></div>
         {:else if formattedData}
           <MeasureChart
-            scrubbing={$dashboardStore?.selectedScrubRange?.isScrubbing}
+            isScrubbing={$dashboardStore?.selectedScrubRange?.isScrubbing}
             {scrubStart}
             {scrubEnd}
             bind:mouseoverValue

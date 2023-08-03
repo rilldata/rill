@@ -8,6 +8,7 @@
 
   export let start;
   export let stop;
+  export let isScrubbing = false;
   export let showLabels = false;
   export let mouseoverTimeFormat;
 
@@ -71,8 +72,9 @@
         stroke-width={strokeWidth}
       />
     </g>
-    <g opacity="0.3">
+    <g opacity={isScrubbing ? "0.4" : "0.3"}>
       <rect
+        class:rect-shadow={isScrubbing}
         x={Math.min(xStart, xEnd)}
         y={y1}
         width={Math.abs(xStart - xEnd)}
@@ -86,7 +88,18 @@
 <defs>
   <linearGradient id="scrubbing-gradient" gradientUnits="userSpaceOnUse">
     <stop stop-color="#558AFF" />
-    <stop offset="0.359375" stop-color="#4881FF" />
+    <stop offset="0.36" stop-color="#4881FF" />
     <stop offset="1" stop-color="#2563EB" />
   </linearGradient>
 </defs>
+
+<style>
+  .rect-shadow {
+    filter: drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.1))
+      drop-shadow(0px 10px 15px rgba(0, 0, 0, 0.2));
+  }
+
+  g {
+    transition: opacity ease 0.4s;
+  }
+</style>
