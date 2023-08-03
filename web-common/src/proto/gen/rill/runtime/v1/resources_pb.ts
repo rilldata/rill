@@ -687,39 +687,39 @@ export class ModelSpec extends Message<ModelSpec> {
   sql = "";
 
   /**
+   * @generated from field: optional bool materialize = 3;
+   */
+  materialize?: boolean;
+
+  /**
    * @generated from field: rill.runtime.v1.Schedule refresh_schedule = 4;
    */
   refreshSchedule?: Schedule;
 
   /**
-   * @generated from field: uint32 timeout_seconds = 6;
+   * @generated from field: uint32 timeout_seconds = 5;
    */
   timeoutSeconds = 0;
 
   /**
-   * @generated from field: optional bool materialize = 7;
-   */
-  materialize?: boolean;
-
-  /**
-   * @generated from field: bool uses_templating = 8;
+   * @generated from field: bool uses_templating = 6;
    */
   usesTemplating = false;
 
   /**
    * Fields not derived from code files
    *
-   * @generated from field: bool stage_changes = 9;
+   * @generated from field: bool stage_changes = 7;
    */
   stageChanges = false;
 
   /**
-   * @generated from field: uint32 materialize_delay_seconds = 11;
+   * @generated from field: uint32 materialize_delay_seconds = 8;
    */
   materializeDelaySeconds = 0;
 
   /**
-   * @generated from field: bool trigger = 12;
+   * @generated from field: bool trigger = 9;
    */
   trigger = false;
 
@@ -733,13 +733,13 @@ export class ModelSpec extends Message<ModelSpec> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "materialize", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 4, name: "refresh_schedule", kind: "message", T: Schedule },
-    { no: 6, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 7, name: "materialize", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
-    { no: 8, name: "uses_templating", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 9, name: "stage_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 11, name: "materialize_delay_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 12, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 6, name: "uses_templating", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "stage_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "materialize_delay_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelSpec {
@@ -764,29 +764,24 @@ export class ModelSpec extends Message<ModelSpec> {
  */
 export class ModelState extends Message<ModelState> {
   /**
-   * @generated from field: string table_name = 1;
+   * @generated from field: string connector = 1;
    */
-  tableName = "";
+  connector = "";
 
   /**
-   * @generated from field: string stage_table_name = 2;
+   * @generated from field: string table = 2;
    */
-  stageTableName = "";
+  table = "";
 
   /**
-   * @generated from field: rill.runtime.v1.ValidationError validation_error = 3;
+   * @generated from field: string spec_hash = 3;
    */
-  validationError?: ValidationError;
+  specHash = "";
 
   /**
-   * @generated from field: rill.runtime.v1.ExecutionError execution_error = 4;
+   * @generated from field: google.protobuf.Timestamp refreshed_on = 4;
    */
-  executionError?: ExecutionError;
-
-  /**
-   * @generated from field: rill.runtime.v1.DependencyError dependency_error = 5;
-   */
-  dependencyError?: DependencyError;
+  refreshedOn?: Timestamp;
 
   constructor(data?: PartialMessage<ModelState>) {
     super();
@@ -796,11 +791,10 @@ export class ModelState extends Message<ModelState> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.ModelState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "stage_table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "validation_error", kind: "message", T: ValidationError },
-    { no: 4, name: "execution_error", kind: "message", T: ExecutionError },
-    { no: 5, name: "dependency_error", kind: "message", T: DependencyError },
+    { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "spec_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "refreshed_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelState {

@@ -103,22 +103,21 @@ message ModelV2 {
 message ModelSpec {
   string connector = 1;
   string sql = 2;
+  optional bool materialize = 3;
   Schedule refresh_schedule = 4;
-  uint32 timeout_seconds = 6;
-  optional bool materialize = 7;
-  bool uses_templating = 8;
+  uint32 timeout_seconds = 5;
+  bool uses_templating = 6;
   // Fields not derived from code files
-  bool stage_changes = 9;
-  uint32 materialize_delay_seconds = 11;
-  bool trigger = 12;
+  bool stage_changes = 7;
+  uint32 materialize_delay_seconds = 8;
+  bool trigger = 9;
 }
 
 message ModelState {
-  string table_name = 1;
-  string stage_table_name = 2;
-  ValidationError validation_error = 3;
-  ExecutionError execution_error = 4;
-  DependencyError dependency_error = 5;
+  string connector = 1;
+  string table = 2;
+  string spec_hash = 3;
+  google.protobuf.Timestamp refreshed_on = 4;
 }
 
 message MetricsViewV2 {

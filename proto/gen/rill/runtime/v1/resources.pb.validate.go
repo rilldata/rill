@@ -2153,16 +2153,18 @@ func (m *ModelState) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for TableName
+	// no validation rules for Connector
 
-	// no validation rules for StageTableName
+	// no validation rules for Table
+
+	// no validation rules for SpecHash
 
 	if all {
-		switch v := interface{}(m.GetValidationError()).(type) {
+		switch v := interface{}(m.GetRefreshedOn()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, ModelStateValidationError{
-					field:  "ValidationError",
+					field:  "RefreshedOn",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -2170,74 +2172,16 @@ func (m *ModelState) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, ModelStateValidationError{
-					field:  "ValidationError",
+					field:  "RefreshedOn",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetValidationError()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetRefreshedOn()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return ModelStateValidationError{
-				field:  "ValidationError",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if all {
-		switch v := interface{}(m.GetExecutionError()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ModelStateValidationError{
-					field:  "ExecutionError",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, ModelStateValidationError{
-					field:  "ExecutionError",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetExecutionError()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return ModelStateValidationError{
-				field:  "ExecutionError",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if all {
-		switch v := interface{}(m.GetDependencyError()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ModelStateValidationError{
-					field:  "DependencyError",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, ModelStateValidationError{
-					field:  "DependencyError",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetDependencyError()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return ModelStateValidationError{
-				field:  "DependencyError",
+				field:  "RefreshedOn",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}

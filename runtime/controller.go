@@ -188,6 +188,7 @@ func (c *Controller) UpdateSpec(ctx context.Context, name *runtimev1.ResourceNam
 }
 
 func (c *Controller) UpdateState(ctx context.Context, name *runtimev1.ResourceName, r *runtimev1.Resource) error {
+	// Need to accept a cancelled ctx if it's tagged for the resource
 	panic("not implemented")
 }
 

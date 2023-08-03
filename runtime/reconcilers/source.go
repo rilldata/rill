@@ -41,15 +41,19 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, s *runtime.Signal) run
 	}
 	src := self.GetSource()
 
+	// The table name to ingest into is derived from the resource name.
+	// We only set src.State.Table after ingestion is complete.
+	// The value of tableName and src.State.Table will differ until initial succesful ingestion and when renamed.
+	tableName := self.Meta.Name.Name
+
 	// Handle deletion
 	if self.Meta.Deleted {
 		olapDropTableIfExists(ctx, r.C, src.State.Connector, src.State.Table, false)
-		olapDropTableIfExists(ctx, r.C, src.State.Connector, r.stagingTableName(src.State.Table), false)
+		olapDropTableIfExists(ctx, r.C, src.State.Connector, r.stagingTableName(tableName), false)
 		return runtime.ReconcileResult{}
 	}
 
 	// Handle renames
-	tableName := self.Meta.Name.Name
 	if self.Meta.RenamedFrom != nil {
 		// Check if the table exists (it should, but might somehow have been corrupted)
 		t, ok := olapTableInfo(ctx, r.C, src.State.Connector, src.State.Table)
@@ -145,9 +149,19 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, s *runtime.Signal) run
 		}
 	}
 
-	// How we handle ingestErr depends on StageChanges.
+	// How we handle ingestErr depends on several things:
+	// If ctx was cancelled, we cleanup and exit
 	// If StageChanges is true, we retain the existing table, but still return the error.
 	// If StageChanges is false, we clear the existing table and return the error.
+
+	// ctx will only be cancelled in cases where the Controller guarantees a new call to Reconcile.
+	// We just clean up temp tables and state, then return.
+	cleanupCtx := ctx
+	if ctx.Err() != nil {
+		var cancel context.CancelFunc
+		cleanupCtx, cancel = context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
+	}
 
 	// Update state
 	update := false
@@ -160,11 +174,11 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, s *runtime.Signal) run
 		src.State.RefreshedOn = timestamppb.Now()
 	} else if src.Spec.StageChanges {
 		// Failed ingestion to staging table
-		olapDropTableIfExists(ctx, r.C, connector, stagingTableName, false)
+		olapDropTableIfExists(cleanupCtx, r.C, connector, stagingTableName, false)
 	} else {
 		// Failed ingestion to main table
 		update = true
-		olapDropTableIfExists(ctx, r.C, connector, tableName, false)
+		olapDropTableIfExists(cleanupCtx, r.C, connector, tableName, false)
 		src.State.Connector = ""
 		src.State.Table = ""
 		src.State.SpecHash = ""
@@ -175,6 +189,11 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, s *runtime.Signal) run
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
+	}
+
+	// See earlier note – essential cleanup is done, we can return now.
+	if ctx.Err() != nil {
+		return runtime.ReconcileResult{Err: ingestErr}
 	}
 
 	// Reset spec.Trigger

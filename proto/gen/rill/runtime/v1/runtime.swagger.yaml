@@ -2839,11 +2839,6 @@ definitions:
       description:
         type: string
     description: Example contains metadata about an example project that is available for unpacking.
-  v1ExecutionError:
-    type: object
-    properties:
-      message:
-        type: string
   v1ExportFormat:
     type: string
     enum:
@@ -3531,13 +3526,13 @@ definitions:
         type: string
       sql:
         type: string
+      materialize:
+        type: boolean
       refreshSchedule:
         $ref: '#/definitions/v1Schedule'
       timeoutSeconds:
         type: integer
         format: int64
-      materialize:
-        type: boolean
       usesTemplating:
         type: boolean
       stageChanges:
@@ -3551,16 +3546,15 @@ definitions:
   v1ModelState:
     type: object
     properties:
-      tableName:
+      connector:
         type: string
-      stageTableName:
+      table:
         type: string
-      validationError:
-        $ref: '#/definitions/v1ValidationError'
-      executionError:
-        $ref: '#/definitions/v1ExecutionError'
-      dependencyError:
-        $ref: '#/definitions/v1DependencyError'
+      specHash:
+        type: string
+      refreshedOn:
+        type: string
+        format: date-time
   v1ModelV2:
     type: object
     properties:
