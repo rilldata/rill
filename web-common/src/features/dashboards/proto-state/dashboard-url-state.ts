@@ -104,7 +104,9 @@ function gotoNewDashboardUrl(url: URL, newState: string, defaultState: string) {
   const currentStateInUrl = url.searchParams.get("state") ?? "";
 
   if (newStateInUrl === currentStateInUrl) return;
-  goto(newUrl.toString());
+  setTimeout(() => {
+    goto(newUrl.toString());
+  });
 }
 
 // TODO: if these are necessary anywhere else move them to a separate file
