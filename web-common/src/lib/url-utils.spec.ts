@@ -26,22 +26,36 @@ describe("url-utils", () => {
       ["/path/to/dashboard", "/new/path/dashboard", "/new/path/dashboard"],
       ["/path/to/dashboard", "new/path/dashboard", "/new/path/dashboard"],
       [
-        "/path/to/dashboard/?feature=all",
+        "/path/to/dashboard/?features=all",
         "new/path/dashboard",
-        "/new/path/dashboard",
+        "/new/path/dashboard?features=all",
       ],
       [
-        "/path/to/dashboard?feature=all&state=qwerty",
+        "/path/to/dashboard?features=all&state=qwerty",
         "new/path/dashboard",
-        "/new/path/dashboard?state=qwerty",
+        "/new/path/dashboard?features=all",
+      ],
+      [
+        "/path/to/dashboard?state=qwerty",
+        "new/path/dashboard",
+        "/new/path/dashboard",
       ],
     ];
     for (const [currentPath, newPath, expectedPath] of Variations) {
       it(`${currentPath} => ${expectedPath}`, () => {
         pageMock.goto(currentPath);
-        expect(getFullUrlForPath(newPath, ["state"])).toBe(expectedPath);
+        expect(getFullUrlForPath(newPath)).toBe(expectedPath);
       });
     }
+  });
+
+  it("getFullUrlForPath with explicit retainParam", () => {
+    pageMock.goto(
+      "/path/to/dashboard?features=all&state=qwerty&partner=asdfgh"
+    );
+    expect(
+      getFullUrlForPath("/new/path/to/dashboard", ["state", "partner"])
+    ).toBe("/new/path/to/dashboard?state=qwerty&partner=asdfgh");
   });
 });
 

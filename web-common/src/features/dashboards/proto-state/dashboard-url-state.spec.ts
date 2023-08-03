@@ -8,6 +8,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/dashboard-stores-test-data";
 import { useDashboardUrlSync } from "@rilldata/web-common/features/dashboards/proto-state/dashboard-url-state";
 import type { Page } from "@sveltejs/kit";
+import { wait } from "@testing-library/user-event/dist/utils";
 import { get, Readable, writable } from "svelte/store";
 import {
   beforeEach,
@@ -41,7 +42,7 @@ describe("useDashboardUrlSync", () => {
     clearMetricsExplorerStore();
   });
 
-  it("Changes from dashboard", () => {
+  it("Changes from dashboard", async () => {
     const metaMock = createMetricsMetaQueryMock();
     createAdBidsInStore();
     const unsubscribe = useDashboardUrlSync(AD_BIDS_NAME, metaMock);
@@ -56,6 +57,7 @@ describe("useDashboardUrlSync", () => {
       AD_BIDS_PUBLISHER_DIMENSION,
       "Google"
     );
+    await wait(10);
     expect(get(pageMock).url.searchParams.get("state")).toEqual(
       get(metricsExplorerStore).entities[AD_BIDS_NAME].proto
     );
