@@ -8,7 +8,6 @@ import (
 
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/authtoken"
-	"github.com/rilldata/rill/admin/server/auth"
 )
 
 // AuthToken is the interface package admin uses to provide a consolidated view of a token string and its DB model.
@@ -119,7 +118,7 @@ func (s *Service) ValidateAuthToken(ctx context.Context, token string) (AuthToke
 		if !bytes.Equal(uat.SecretHash, parsed.SecretHash()) {
 			return nil, fmt.Errorf("invalid auth token")
 		}
-		
+
 		s.Used.UserTokens(parsed.ID.String())
 		s.Used.User(uat.UserID)
 
