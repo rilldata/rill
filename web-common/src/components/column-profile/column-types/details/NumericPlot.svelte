@@ -223,7 +223,7 @@ Otherwise, the page will jump around as the data is fetched.
                   class="fill-gray-500"
                   opacity={0.8}
                 >
-                  {formatInteger(~~point.count)} row{#if point.count !== 1}s{/if}
+                  {formatInteger(Math.trunc(point.count))} row{#if point.count !== 1}s{/if}
                   ({((point.count / totalRows) * 100).toFixed(2)}%)
                 </text>
               </g>

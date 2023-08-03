@@ -8,7 +8,7 @@
 
   function makeData(intervalSize = 1000) {
     let v = 50;
-    const windowSize = 1 + ~~(Math.random() * 150);
+    const windowSize = 1 + Math.trunc(Math.random() * 150);
     const data = Array.from({ length: 200 }).map((_, i) => {
       v += 100 * (Math.random() - 0.5);
       return {
