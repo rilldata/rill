@@ -26,7 +26,11 @@
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
+  import {
+    metricsExplorerStore,
+    useDashboardStore,
+    useFetchTimeRange,
+  } from "../dashboard-stores";
   import {
     humanizeGroupByColumns,
     NicelyFormattedTypes,
@@ -62,6 +66,7 @@
   $: dimensionColumn = dimension?.column || dimension?.name;
 
   $: dashboardStore = useDashboardStore(metricViewName);
+  $: fetchTimeStore = useFetchTimeRange(metricViewName);
 
   $: leaderboardMeasureName = $dashboardStore?.leaderboardMeasureName;
   $: leaderboardMeasureQuery = useMetaMeasure(
@@ -155,13 +160,13 @@
     $dashboardStore?.showComparison &&
     // wait for the start time to be available
     // TODO: Move to better handling of undefined store values
-    $dashboardStore?.selectedTimeRange?.start;
+    $fetchTimeStore?.start;
 
   $: comparisonTimeRange =
     displayComparison &&
     getComparisonRange(
-      $dashboardStore?.selectedTimeRange?.start,
-      $dashboardStore?.selectedTimeRange?.end,
+      $fetchTimeStore?.start,
+      $fetchTimeStore?.end,
       ($dashboardStore?.selectedComparisonTimeRange
         ?.name as TimeComparisonOption) ||
         (DEFAULT_TIME_RANGES[timeRangeName]
@@ -209,8 +214,8 @@
     }
   );
 
-  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
-  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
+  $: timeStart = $fetchTimeStore?.start?.toISOString();
+  $: timeEnd = $fetchTimeStore?.end?.toISOString();
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     metricViewName,

@@ -24,6 +24,7 @@ to the props.
     startEventName: "scrub-start",
     moveEventName: "scrub-move",
     endEventName: "scrub-end",
+    startPredicate: (e: MouseEvent) => e.shiftKey,
   });
 
   // pull out the scrub action to be attached to the svg element
@@ -47,6 +48,7 @@ to the props.
   $: hovered = $coordinates.x !== undefined;
 </script>
 
+<!-- svelte-ignore a11y-click-events-have-key-events -->
 <svg
   style="overflow: {overflowHidden ? 'hidden' : 'visible'}"
   use:scrub
@@ -54,6 +56,7 @@ to the props.
   on:scrub-end
   on:scrub-move
   use:mousePositionToDomain
+  on:click
   width={$config.width}
   height={$config.height}
 >

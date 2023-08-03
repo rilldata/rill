@@ -351,6 +351,9 @@
       selectedRange={$dashboardStore?.selectedTimeRange}
       on:select-time-range={(e) =>
         onSelectTimeRange(e.detail.name, e.detail.start, e.detail.end)}
+      on:remove-scrub={() => {
+        metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
+      }}
     />
     <TimeZoneSelector
       on:select-time-zone={(e) => onSelectTimeZone(e.detail.timeZone)}

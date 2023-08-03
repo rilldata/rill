@@ -23,7 +23,11 @@
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
+  import {
+    metricsExplorerStore,
+    useDashboardStore,
+    useFetchTimeRange,
+  } from "../dashboard-stores";
   import { getFilterForComparsion } from "../dimension-table/dimension-table-utils";
   import type { NicelyFormattedTypes } from "../humanize-numbers";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
@@ -47,18 +51,7 @@
   const queryClient = useQueryClient();
 
   $: dashboardStore = useDashboardStore(metricViewName);
-  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
-
-  $: allTimeRangeQuery = useModelAllTimeRange(
-    $runtime.instanceId,
-    $metaQuery.data.model,
-    $metaQuery.data.timeDimension,
-    {
-      query: {
-        enabled: !!$metaQuery.data.timeDimension,
-      },
-    }
-  );
+  $: fetchTimeStore = useFetchTimeRange(metricViewName);
 
   let filterExcludeMode: boolean;
   $: filterExcludeMode =
@@ -110,8 +103,8 @@
     metricsExplorerStore.setMetricDimensionName(metricViewName, dimensionName);
   }
 
-  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
-  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
+  $: timeStart = $fetchTimeStore?.start?.toISOString();
+  $: timeEnd = $fetchTimeStore?.end?.toISOString();
   $: topListQuery = createQueryServiceMetricsViewToplist(
     $runtime.instanceId,
     metricViewName,

@@ -20,5 +20,6 @@ export function convertTimestampPreview(d, removeLocalTimezoneOffset = false) {
 
 /** used to remove local timezone offset and add dashboard selected zone offset */
 export function adjustOffsetForZone(ts, zone) {
+  if (!ts) return ts;
   return addZoneOffset(remove(new Date(ts)), zone);
 }

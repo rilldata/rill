@@ -1,4 +1,5 @@
 import type { ScaleLinear, ScaleTime } from "d3-scale";
+import { bisector } from "d3-array";
 import { area, curveLinear, curveStep, line } from "d3-shape";
 import { getContext } from "svelte";
 import { derived, writable } from "svelte/store";
@@ -280,4 +281,11 @@ export function createAdaptiveLineThicknessStore(yAccessor) {
       dataStore.set(d);
     },
   };
+}
+
+// This is function equivalent of WithBisector
+export function bisectData(value, direction, accessor, data) {
+  const bisect = bisector((d) => d[accessor])[direction];
+
+  return value !== undefined ? data[bisect(data, value)] : undefined;
 }

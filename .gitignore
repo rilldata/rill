@@ -22,6 +22,7 @@ export/
 /rill
 /cli/pkg/examples/embed/dist
 /dev-project*
+web-local/test/rill-e2e-test
 
 # data files
 *.duckdb

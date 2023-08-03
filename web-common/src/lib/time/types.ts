@@ -134,13 +134,17 @@ export const TimeRangePreset: { [K in TimeRangeType]: K } = {
 };
 
 export interface TimeRange {
-  name: TimeRangeType;
+  name?: TimeRangeType;
   start: Date;
   end: Date;
 }
 
 export interface TimeRangeOption extends TimeRange {
   label: string;
+}
+
+export interface ScrubRange extends TimeRange {
+  isScrubbing: boolean;
 }
 
 export interface DashboardTimeControls extends TimeRange {
