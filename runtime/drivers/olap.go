@@ -84,6 +84,7 @@ type Table struct {
 	Database       string
 	DatabaseSchema string
 	Name           string
+	View           bool
 	Schema         *runtimev1.StructType
 }
 
