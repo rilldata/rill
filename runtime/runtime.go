@@ -12,6 +12,13 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+const (
+	// may be use __system__ prefix ?
+	_metastoreDriverName = "metastore"
+	_repoDriverName      = "repo"
+	_olapDriverName      = "olap"
+)
+
 type Options struct {
 	ConnectionCacheSize int
 	QueryCacheSizeBytes int64
@@ -39,7 +46,7 @@ func (o *Options) ConnectorDefByName(name string) (*rillv1.ConnectorDef, bool, e
 }
 
 func (o *Options) OLAPDef(dsn string) (*rillv1.ConnectorDef, bool, error) {
-	c, shared, err := o.ConnectorDefByName("olap")
+	c, shared, err := o.ConnectorDefByName(_olapDriverName)
 	if err != nil {
 		return nil, false, fmt.Errorf("dev error, olap connector doesn't exist")
 	}
@@ -53,7 +60,7 @@ func (o *Options) OLAPDef(dsn string) (*rillv1.ConnectorDef, bool, error) {
 }
 
 func (o *Options) RepoDef(dsn string) (*rillv1.ConnectorDef, bool, error) {
-	c, shared, err := o.ConnectorDefByName("repo")
+	c, shared, err := o.ConnectorDefByName(_olapDriverName)
 	if err != nil {
 		return nil, false, fmt.Errorf("dev error, repo connector doesn't exist")
 	}

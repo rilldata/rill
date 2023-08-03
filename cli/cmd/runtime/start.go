@@ -200,19 +200,6 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 	return startCmd
 }
 
-// func parse(spec []string) []*rillv1.ConnectorDef {
-// 	res := make([]*rillv1.ConnectorDef, len(spec))
-// 	for i, s := range spec {
-// 		res[i] = &rillv1.ConnectorDef{}
-// 		err := json.Unmarshal([]byte(s), res[i])
-// 		if err != nil {
-// 			panic(err)
-// 		}
-// 	}
-
-// 	return res
-// }
-
 func parseConnectorDefs(s string) []*rillv1.ConnectorDef {
 	var defs []*rillv1.ConnectorDef
 	err := json.Unmarshal([]byte(s), &defs)

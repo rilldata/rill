@@ -10,13 +10,6 @@ import (
 	"github.com/rilldata/rill/runtime/services/catalog"
 )
 
-// TODO :: may be use __system__ prefix ?
-const (
-	_metastoreDriverName = "metastore"
-	_repoDriverName      = "repo"
-	_olapDriverName      = "olap"
-)
-
 func (r *Runtime) newMetaStore(ctx context.Context, instanceID string) (drivers.Handle, func(), error) {
 	c, shared, err := r.opts.ConnectorDefByName(_metastoreDriverName)
 	if err != nil {

@@ -20,8 +20,7 @@ var errConnectionCacheClosed = errors.New("connectionCache: closed")
 
 const _migrateTimeout = 30 * time.Second
 
-// cache for instance specific connections only
-// all instance specific connections should be opened via connection cache only
+// all connections should preferably be opened via connection cache only
 type connectionCache struct {
 	lruCache *simplelru.LRU          // items with zero references(opened but not in-use) ready for eviction
 	cache    map[string]*connWithRef // items with non zero references (in-use) which should not be evicted
