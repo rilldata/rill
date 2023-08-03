@@ -704,8 +704,7 @@ export interface V1RefreshTriggerState {
 }
 
 export interface V1RefreshTriggerSpec {
-  onlyNames?: string;
-  resetIncrements?: boolean;
+  onlyNames?: V1ResourceName[];
 }
 
 export interface V1RefreshTrigger {

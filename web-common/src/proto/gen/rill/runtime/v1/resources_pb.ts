@@ -1419,14 +1419,9 @@ export class RefreshTrigger extends Message<RefreshTrigger> {
  */
 export class RefreshTriggerSpec extends Message<RefreshTriggerSpec> {
   /**
-   * @generated from field: string only_names = 1;
+   * @generated from field: repeated rill.runtime.v1.ResourceName only_names = 1;
    */
-  onlyNames = "";
-
-  /**
-   * @generated from field: bool reset_increments = 2;
-   */
-  resetIncrements = false;
+  onlyNames: ResourceName[] = [];
 
   constructor(data?: PartialMessage<RefreshTriggerSpec>) {
     super();
@@ -1436,8 +1431,7 @@ export class RefreshTriggerSpec extends Message<RefreshTriggerSpec> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.RefreshTriggerSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "only_names", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "reset_increments", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 1, name: "only_names", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RefreshTriggerSpec {
