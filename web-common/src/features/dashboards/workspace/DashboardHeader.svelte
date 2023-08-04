@@ -88,7 +88,7 @@
   <div class="-ml-3 p-1 py-2 space-y-2">
     <TimeControls {metricViewName} />
     {#key metricViewName}
-      <Filters {metricViewName} />
+      <Filters />
     {/key}
   </div>
 </section>

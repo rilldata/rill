@@ -1,10 +1,11 @@
 import { test } from "@playwright/test";
-import { createAdBidsModel } from "./utils/dataSpecifcHelpers";
 import {
   deleteEntity,
   gotoEntity,
   renameEntityUsingMenu,
+  updateCodeEditor,
 } from "./utils/commonHelpers";
+import { createAdBidsModel } from "./utils/dataSpecifcHelpers";
 import {
   TestEntityType,
   waitForProfiling,
@@ -14,11 +15,10 @@ import {
   createModel,
   createModelFromSource,
   modelHasError,
-  updateModelSql,
 } from "./utils/modelHelpers";
 import { createOrReplaceSource } from "./utils/sourceHelpers";
-import { entityNotPresent, waitForEntity } from "./utils/waitHelpers";
 import { startRuntimeForEachTest } from "./utils/startRuntimeForEachTest";
+import { entityNotPresent, waitForEntity } from "./utils/waitHelpers";
 
 test.describe("models", () => {
   startRuntimeForEachTest();
@@ -37,16 +37,16 @@ test.describe("models", () => {
         "domain",
         "timestamp",
       ]),
-      updateModelSql(page, "select * from AdBids"),
+      updateCodeEditor(page, "select * from AdBids"),
     ]);
     await wrapRetryAssertion(() => modelHasError(page, false));
 
     // Catalog error
-    await updateModelSql(page, "select * from AdBid");
+    await updateCodeEditor(page, "select * from AdBid");
     await wrapRetryAssertion(() => modelHasError(page, true, "Catalog Error"));
 
     // Query parse error
-    await updateModelSql(page, "select from AdBids");
+    await updateCodeEditor(page, "select from AdBids");
     await wrapRetryAssertion(() => modelHasError(page, true, "Parser Error"));
   });
 

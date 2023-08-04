@@ -1,10 +1,10 @@
 <script lang="ts">
   import Portal from "@rilldata/web-common/components/Portal.svelte";
-  import type { LayoutElement } from "@rilldata/web-local/lib/types";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import { DEFAULT_INSPECTOR_WIDTH } from "../config";
   import { drag } from "../drag";
+  import type { LayoutElement } from "./types";
 
   /** the core inspector width element is stored in localStorage. */
   const inspectorLayout = getContext(

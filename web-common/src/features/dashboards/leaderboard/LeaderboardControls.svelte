@@ -1,6 +1,7 @@
 <script lang="ts">
   import { SelectMenu } from "@rilldata/web-common/components/menu";
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
+  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { createShowHideDimensionsStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import type { MetricsViewMeasure } from "@rilldata/web-common/runtime-client";
@@ -72,9 +73,14 @@
   $: validPercentOfTotal =
     activeLeaderboardMeasure?.validPercentOfTotal || false;
 
-  // if the percent of total is not valid for this measure, turn it off
-  $: if (!validPercentOfTotal) {
-    metricsExplorerStore.displayPercentOfTotal(metricViewName, false);
+  // if the percent of total is currently being shown,
+  // but it is not valid for this measure, then turn it off
+  $: if (
+    !validPercentOfTotal &&
+    metricsExplorer?.leaderboardContextColumn ===
+      LeaderboardContextColumn.PERCENT
+  ) {
+    metricsExplorerStore.hideContextColumn(metricViewName);
   }
 
   $: showHideDimensions = createShowHideDimensionsStore(
