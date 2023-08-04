@@ -27,3 +27,5 @@
 - If the `ctx` is cancelled, you can assume that `Reconcile` will be invoked again shortly
 - Calls to `Reconcile` may run for a long time
 - `Reconcile` should strive to keep the resource's state valid at all times. The resource may be accessed while `Reconcile` is running.
+- The `Reconciler` struct is shared for all resources of the registered type for a given instance ID
+- The `Reconciler` struct can be used to cache (ephemeral) state in-between invocations of `Reconcile` for optimization
