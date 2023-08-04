@@ -33,9 +33,9 @@ func (r *ProjectParserReconciler) Close(ctx context.Context) error {
 	return nil
 }
 
-func (r *ProjectParserReconciler) Reconcile(ctx context.Context, s *runtime.Signal) runtime.ReconcileResult {
+func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName) runtime.ReconcileResult {
 	// Get ProjectParser resource
-	owner, err := r.C.Get(ctx, s.Name)
+	owner, err := r.C.Get(ctx, n)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
@@ -91,7 +91,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, s *runtime.Sign
 	}
 	if pp.State.CurrentCommitSha != hash {
 		pp.State.CurrentCommitSha = hash
-		err = r.C.UpdateState(ctx, s.Name, owner) // TODO: Pointer relationship between owner and pp makes this hard to follow
+		err = r.C.UpdateState(ctx, n, owner) // TODO: Pointer relationship between owner and pp makes this hard to follow
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}

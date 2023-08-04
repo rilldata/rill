@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 )
 
@@ -26,8 +27,8 @@ func (r *PullTriggerReconciler) Close(ctx context.Context) error {
 	return nil
 }
 
-func (r *PullTriggerReconciler) Reconcile(ctx context.Context, s *runtime.Signal) runtime.ReconcileResult {
-	self, err := r.C.Get(ctx, s.Name)
+func (r *PullTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName) runtime.ReconcileResult {
+	self, err := r.C.Get(ctx, n)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
@@ -41,7 +42,7 @@ func (r *PullTriggerReconciler) Reconcile(ctx context.Context, s *runtime.Signal
 		return runtime.ReconcileResult{Err: err}
 	}
 
-	err = r.C.Delete(ctx, s.Name)
+	err = r.C.Delete(ctx, n)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}

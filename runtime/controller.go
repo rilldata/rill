@@ -38,7 +38,7 @@ var ErrResourceNotFound = errors.New("controller: resource not found")
 // Reconciler implements reconciliation logic for all resources of a specific kind.
 // Reconcilers are managed and invoked by a Controller.
 type Reconciler interface {
-	Reconcile(ctx context.Context, s *Signal) ReconcileResult
+	Reconcile(ctx context.Context, n *runtimev1.ResourceName) ReconcileResult
 	Close(ctx context.Context) error
 }
 
@@ -46,29 +46,6 @@ type Reconciler interface {
 type ReconcileResult struct {
 	Err       error
 	Retrigger time.Time
-}
-
-// SignalCode enumerates signals that can trigger a reconciler
-type SignalCode int
-
-const (
-	SignalCodeUnspecified SignalCode = iota
-	SignalCodeTrigger
-	SignalCodeRestart
-	SignalCodeCreated
-	SignalCodeUpdated
-	SignalCodeRefAdded
-	SignalCodeRefUpdated
-	SignalCodeDescendentsIdle
-)
-
-// Signal provides a reconciler with context about why it was triggered
-type Signal struct {
-	// Name is the resource that should be reconciled
-	Name *runtimev1.ResourceName
-	// Codes describe the signals that caused the reconciler to be triggered.
-	// Since triggers are linearized, multiple signals may accummulate before the reconciler is triggered.
-	Codes []SignalCode
 }
 
 // ReconcilerInitializer is a function that initializes a new reconciler for a specific controller

@@ -3,6 +3,7 @@ package reconcilers
 import (
 	"context"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"google.golang.org/protobuf/proto"
 )
@@ -26,8 +27,8 @@ func (r *RefreshTriggerReconciler) Close(ctx context.Context) error {
 	return nil
 }
 
-func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, s *runtime.Signal) runtime.ReconcileResult {
-	self, err := r.C.Get(ctx, s.Name)
+func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName) runtime.ReconcileResult {
+	self, err := r.C.Get(ctx, n)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
@@ -75,7 +76,7 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, s *runtime.Sig
 		}
 	}
 
-	err = r.C.Delete(ctx, s.Name)
+	err = r.C.Delete(ctx, n)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}

@@ -33,8 +33,8 @@ func (r *ModelReconciler) Close(ctx context.Context) error {
 	return nil
 }
 
-func (r *ModelReconciler) Reconcile(ctx context.Context, s *runtime.Signal) runtime.ReconcileResult {
-	self, err := r.C.Get(ctx, s.Name)
+func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName) runtime.ReconcileResult {
+	self, err := r.C.Get(ctx, n)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
