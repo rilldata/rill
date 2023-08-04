@@ -125,12 +125,12 @@
                   range={[100, 60]}
                   let:scale
                 >
-                  <Body bg bgColor="hsl(217,5%,{~~scale($height)}%)">
+                  <Body bg bgColor="hsl(217,5%,{Math.trunc(scale($height))}%)">
                     <Line
                       data={data2}
                       xAccessor="period"
                       yAccessor="value"
-                      color="hsl({~~scale($height * 5)}, 50%, 50%)"
+                      color="hsl({Math.trunc(scale($height * 5))}, 50%, 50%)"
                     />
                   </Body>
                 </WithSimpleLinearScale>

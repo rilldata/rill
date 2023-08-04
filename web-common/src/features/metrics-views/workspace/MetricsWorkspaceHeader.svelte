@@ -1,6 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import { renameFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
   import { isDuplicateName } from "@rilldata/web-common/features/entity-management/name-utils";
@@ -61,6 +60,5 @@
   {...{ titleInput, onChangeCallback }}
   appRunning={$appQueryStatusStore}
 >
-  <MetricsIcon slot="icon" />
   <GoToDashboardButton {metricsDefName} slot="cta" />
 </WorkspaceHeader>

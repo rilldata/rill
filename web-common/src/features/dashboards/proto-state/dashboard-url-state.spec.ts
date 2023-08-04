@@ -41,7 +41,7 @@ describe("useDashboardUrlSync", () => {
     clearMetricsExplorerStore();
   });
 
-  it("Changes from dashboard", () => {
+  it("Changes from dashboard", async () => {
     const metaMock = createMetricsMetaQueryMock();
     createAdBidsInStore();
     const unsubscribe = useDashboardUrlSync(AD_BIDS_NAME, metaMock);
@@ -56,6 +56,7 @@ describe("useDashboardUrlSync", () => {
       AD_BIDS_PUBLISHER_DIMENSION,
       "Google"
     );
+    await new Promise((resolve) => setTimeout(resolve, 10));
     expect(get(pageMock).url.searchParams.get("state")).toEqual(
       get(metricsExplorerStore).entities[AD_BIDS_NAME].proto
     );
@@ -74,6 +75,7 @@ describe("useDashboardUrlSync", () => {
     expect(pageMock.gotoSpy).toBeCalledTimes(2);
 
     pageMock.updateState(protoWithFilter);
+    await new Promise((resolve) => setTimeout(resolve, 10));
     expect(get(pageMock).url.searchParams.get("state")).toEqual(
       get(metricsExplorerStore).entities[AD_BIDS_NAME].proto
     );
