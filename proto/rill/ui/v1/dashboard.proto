@@ -40,6 +40,9 @@ message DashboardState {
 
   // Selected timezone for the dashboard
   optional string selected_timezone = 13;
+
+  // Scrub time range
+  optional DashboardTimeRange scrub_range = 14;
 }
 
 message DashboardTimeRange {

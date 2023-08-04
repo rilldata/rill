@@ -1,7 +1,10 @@
 import type { Timestamp } from "@bufbuild/protobuf";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
+import type {
+  DashboardTimeControls,
+  ScrubRange,
+} from "@rilldata/web-common/lib/time/types";
 import { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
 import type { MetricsViewFilter_Cond } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
 import {
@@ -67,6 +70,12 @@ export function getDashboardStateFromProto(
     : undefined;
   if (dashboard.timeGrain && dashboard.timeRange) {
     entity.selectedTimeRange.interval = fromTimeGrainProto(dashboard.timeGrain);
+  }
+
+  if (dashboard.scrubRange) {
+    entity.selectedScrubRange = fromTimeRangeProto(
+      dashboard.scrubRange
+    ) as ScrubRange;
   }
 
   if (dashboard.leaderboardMeasure) {
