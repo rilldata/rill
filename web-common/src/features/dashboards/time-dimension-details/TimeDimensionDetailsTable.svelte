@@ -2,14 +2,38 @@
   import { flexRender } from "@tanstack/svelte-table";
   import Pivot from "./Pivot.svelte";
   import TimeDimensionDetailsTableCell from "./TimeDimensionDetailsTableCell.svelte";
+  import TimeDimensionDetailsTableHeaderCell from "./TimeDimensionDetailsTableHeaderCell.svelte";
+  import { writable } from "svelte/store";
+
+  let store = writable<{
+    highlightedCol: number | null;
+    highlightedRow: number | null;
+    scrubbedCols: [number, number] | null;
+  }>({
+    highlightedCol: null,
+    highlightedRow: null,
+    scrubbedCols: [8, 12],
+  });
 
   // Mock state for now
   let state = {
     getRowSize: () => 35,
     getColumnWidth: (idx: number) => (idx < 6 ? 60 : 100),
     renderCell: (rowIdx, colIdx) =>
-      flexRender(TimeDimensionDetailsTableCell, { rowIdx, colIdx }),
+      flexRender(TimeDimensionDetailsTableCell, {
+        rowIdx,
+        colIdx,
+        store,
+        fixed: colIdx < 6,
+      }),
+    renderHeaderCell: (rowIdx, colIdx) => flexRender(TimeDimensionDetailsTableHeaderCell, {
+      rowIdx,
+      colIdx,
+      store,
+      fixed: colIdx < 6
+    })
   };
+
 
   // Mock data that is fetched from backend
   let data = {
@@ -32,7 +56,16 @@
 
     data.data.push(row);
   }
+
+  const handleEvt = (evt) =>
+    ($store.highlightedCol = parseInt(evt.target.value));
+  const handleRow = (evt) =>
+    ($store.highlightedRow = parseInt(evt.target.value));
 </script>
+
+<!-- @ts-ignore -->
+<input class="border" on:input={handleRow} />
+<input class="border" on:input={handleEvt} />
 
 <Pivot
   height={400}
@@ -42,4 +75,5 @@
   getColumnWidth={state.getColumnWidth}
   getRowSize={state.getRowSize}
   renderCell={state.renderCell}
+  renderHeaderCell={state.renderHeaderCell}
 />
