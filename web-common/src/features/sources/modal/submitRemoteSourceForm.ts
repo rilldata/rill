@@ -99,7 +99,7 @@ export async function submitRemoteSourceForm(
       get(appScreen),
       sourceError?.message,
       connectorToSourceConnectionType[connectorName],
-      formValues?.uri
+      formValues?.uri || ""
     );
 
     // Show the source YAML editor
