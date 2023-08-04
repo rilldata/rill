@@ -1,6 +1,7 @@
 import { goto } from "$app/navigation";
 import type { QueryClient } from "@tanstack/query-core";
 import { get } from "svelte/store";
+import { notifications } from "../../../components/notifications";
 import { appScreen } from "../../../layout/app-store";
 import { behaviourEvent } from "../../../metrics/initMetrics";
 import {
@@ -116,7 +117,18 @@ export async function submitRemoteSourceForm(
       formValues?.uri
     );
 
-    // Create and navigate to a `select *` model
-    createModelFromSourceV2(queryClient, values.sourceName);
+    // Create a `select *` model
+    const newModelName = await createModelFromSourceV2(
+      queryClient,
+      values.sourceName
+    );
+
+    // Navigate to new model
+    goto(`/model/${newModelName}?focus`);
+
+    // Show toast message
+    notifications.send({
+      message: `Data source imported. Start modeling it here.`,
+    });
   }
 }

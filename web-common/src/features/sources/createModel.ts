@@ -1,4 +1,3 @@
-import { goto } from "$app/navigation";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
 import { createModel } from "@rilldata/web-common/features/models/createModel";
 import type {
@@ -64,17 +63,9 @@ export async function createModelFromSourceV2(
   // Handle errors
   fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
 
-  // Navigate to new model
-  goto(`/model/${newModelName}?focus`);
-
   // Invalidate relevant queries
   invalidateAfterReconcile(queryClient, instanceId, resp);
 
-  // Show toast message
-  notifications.send({
-    message: `Data source imported. Start modeling it here.`,
-  });
-
   // Done
-  return;
+  return newModelName;
 }
