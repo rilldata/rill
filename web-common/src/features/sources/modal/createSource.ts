@@ -1,5 +1,3 @@
-import { goto } from "$app/navigation";
-import { notifications } from "@rilldata/web-common/components/notifications";
 import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
