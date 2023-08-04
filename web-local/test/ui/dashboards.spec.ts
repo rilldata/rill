@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { Page, expect, test } from "@playwright/test";
+import { updateCodeEditor } from "./utils/commonHelpers";
 import {
   RequestMatcher,
   assertLeaderboards,
@@ -6,7 +7,6 @@ import {
   createDashboardFromModel,
   createDashboardFromSource,
   metricsViewRequestFilterMatcher,
-  updateMetricsInput,
   waitForTimeSeries,
   waitForTopLists,
 } from "./utils/dashboardHelpers";
@@ -16,8 +16,8 @@ import {
 } from "./utils/dataSpecifcHelpers";
 import { TestEntityType, wrapRetryAssertion } from "./utils/helpers";
 import { createOrReplaceSource } from "./utils/sourceHelpers";
-import { waitForEntity } from "./utils/waitHelpers";
 import { startRuntimeForEachTest } from "./utils/startRuntimeForEachTest";
+import { waitForEntity } from "./utils/waitHelpers";
 
 test.describe("dashboard", () => {
   startRuntimeForEachTest();
@@ -279,9 +279,9 @@ test.describe("dashboard", () => {
         label: Domain
         column: domain
         description: ""
-    
+
         `;
-    await updateMetricsInput(page, changeDisplayNameDoc);
+    await updateCodeEditor(page, changeDisplayNameDoc);
 
     // Remove timestamp column
     // await page.getByLabel("Remove timestamp column").click();
@@ -321,9 +321,9 @@ test.describe("dashboard", () => {
         label: Domain
         column: domain
         description: ""
-    
+
         `;
-    await updateMetricsInput(page, addBackTimestampColumnDoc);
+    await updateCodeEditor(page, addBackTimestampColumnDoc);
 
     // Go to dashboard
     await page.getByRole("button", { name: "Go to Dashboard" }).click();
@@ -353,9 +353,9 @@ test.describe("dashboard", () => {
         label: Domain
         column: domain
         description: ""
-    
+
         `;
-    await updateMetricsInput(page, deleteOnlyMeasureDoc);
+    await updateCodeEditor(page, deleteOnlyMeasureDoc);
     // Check warning message appears, Go to Dashboard is disabled
     await expect(
       page.getByText("at least one measure should be present")
@@ -368,26 +368,26 @@ test.describe("dashboard", () => {
     // Add back the total rows measure for
     const docWithIncompleteMeasure = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-title: "AdBids_model_dashboard_rename"
-model: "AdBids_model"
-default_time_range: ""
-smallest_time_grain: "week"
-timeseries: "timestamp"
-measures:
-  - label: Avg Bid Price
-dimensions:
-  - name: publisher
-    label: Publisher
-    column: publisher
-    description: ""
-  - name: domain
-    label: Domain
-    column: domain
-    description: ""
-    
+    title: "AdBids_model_dashboard_rename"
+    model: "AdBids_model"
+    default_time_range: ""
+    smallest_time_grain: "week"
+    timeseries: "timestamp"
+    measures:
+      - label: Avg Bid Price
+    dimensions:
+      - name: publisher
+        label: Publisher
+        column: publisher
+        description: ""
+      - name: domain
+        label: Domain
+        column: domain
+        description: ""
+        
         `;
 
-    await updateMetricsInput(page, docWithIncompleteMeasure);
+    await updateCodeEditor(page, docWithIncompleteMeasure);
     await expect(
       page.getByRole("button", { name: "Go to dashboard" })
     ).toBeDisabled();
@@ -419,7 +419,7 @@ dimensions:
     description: ""
         `;
 
-    await updateMetricsInput(page, docWithCompleteMeasure);
+    await updateCodeEditor(page, docWithCompleteMeasure);
     await expect(
       page.getByRole("button", { name: "Go to dashboard" })
     ).toBeEnabled();
@@ -484,6 +484,8 @@ dimensions:
     /** walk through empty metrics def  */
     await runThroughEmptyMetricsFlows(page);
 
+    await runThroughLeaderboardContextColumnFlows(page);
+
     // go back to the dashboard
 
     // TODO
@@ -499,8 +501,155 @@ dimensions:
   });
 });
 
+async function runThroughLeaderboardContextColumnFlows(page: Page) {
+  // NOTE: this flow pick up from the end of runThroughEmptyMetricsFlows,
+  // at which point we are in the metrics editor
+
+  // reset metrics, and add a metric with `valid_percent_of_total: true`
+  const metricsWithValidPercentOfTotal = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
+
+  title: "AdBids_model_dashboard"
+  model: "AdBids_model"
+  default_time_range: ""
+  smallest_time_grain: ""
+  timeseries: "timestamp"
+  measures:
+    - label: Total rows
+      expression: count(*)
+      name: total_rows
+      description: Total number of records present
+    - label: Total Bid Price
+      expression: sum(bid_price)
+      name: total_bid_price
+      format_preset: currency_usd
+      valid_percent_of_total: true
+  dimensions:
+    - name: publisher
+      label: Publisher
+      column: publisher
+      description: ""
+    - name: domain
+      label: Domain Name
+      column: domain
+      description: ""
+      `;
+  await updateCodeEditor(page, metricsWithValidPercentOfTotal);
+
+  // Go to dashboard
+  await page.getByRole("button", { name: "Go to dashboard" }).click();
+
+  // make sure "All time" is selected to clear any time comparison
+  await page.getByLabel("Select time range").click();
+  await page.getByRole("menuitem", { name: "All Time" }).click();
+
+  // Check "toggle percent change" button is disabled since there is no time comparison
+  await expect(
+    page.getByRole("button", { name: "Toggle percent change" })
+  ).toBeDisabled();
+  // Check "toggle percent of total" button is disabled since `valid_percent_of_total` is not set for the measure "total rows"
+  await expect(
+    page.getByRole("button", { name: "Toggle percent change" })
+  ).toBeDisabled();
+
+  // Select a time range, which should automatically enable a time comparison (including context column)
+  await page.getByLabel("Select time range").click();
+  await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
+
+  // This regex matches a line that:
+  // - starts with "Facebook"
+  // - has two white space separated sets of characters (the number and the percent change)
+  // - ends with a percent sign literal
+  // e.g. "Facebook 68.9k -12%".
+  // This will detect both percent change and percent of total
+  const comparisonColumnRegex = /Facebook\s*\S*\s*\S*%/;
+
+  // Check that time comparison context column is visible with correct value now that there is a time comparison
+  await expect(page.getByText(comparisonColumnRegex)).toBeVisible();
+  // Check that the "toggle percent change" button is enabled
+  await expect(
+    page.getByRole("button", { name: "Toggle percent change" })
+  ).toBeEnabled();
+  // Check that the "toggle percent change" button is pressed
+  await expect(
+    page.getByRole("button", { name: "Toggle percent change" })
+  ).toHaveAttribute("aria-pressed", "true");
+
+  // click the "toggle percent change" button, and check that the percent change is hidden
+  await page.getByRole("button", { name: "Toggle percent change" }).click();
+  // Check that time comparison context column is hidden
+  await expect(page.getByText(comparisonColumnRegex)).not.toBeVisible();
+  await expect(page.getByText("Facebook 68")).toBeVisible();
+
+  // click the "toggle percent change" button, and check that the percent change is visible again
+  await page.getByRole("button", { name: "Toggle percent change" }).click();
+  await expect(page.getByText(comparisonColumnRegex)).toBeVisible();
+
+  // click back to "All time" to clear the time comparison
+  await page.getByLabel("Select time range").click();
+  await page.getByRole("menuitem", { name: "All Time" }).click();
+  // Check that time comparison context column is hidden
+  await expect(page.getByText(comparisonColumnRegex)).not.toBeVisible();
+  await expect(page.getByText("Facebook 19.3k")).toBeVisible();
+  // Check that the "toggle percent change" button is disabled
+  await expect(
+    page.getByRole("button", { name: "Toggle percent change" })
+  ).toBeDisabled();
+
+  // Switch to metric "total bid price"
+  await page.getByRole("button", { name: "Total rows" }).click();
+  await page.getByRole("menuitem", { name: "Total Bid Price" }).click();
+
+  // Check that the "toggle percent of total" button is enabled for this measure
+  await expect(
+    page.getByRole("button", { name: "Toggle percent of total" })
+  ).toBeEnabled();
+  // Check that the "toggle percent change" button is disabled since there is no time comparison
+  await expect(
+    page.getByRole("button", { name: "Toggle percent change" })
+  ).toBeDisabled();
+
+  // Check that the percent of total is hidden
+  await expect(page.getByText(comparisonColumnRegex)).not.toBeVisible();
+
+  // Click on the "toggle percent of total" button
+  await page.getByRole("button", { name: "Toggle percent of total" }).click();
+  // check that the percent of total is visible
+  await expect(page.getByText("Facebook $57.8k 19%")).toBeVisible();
+
+  // Add a time comparison
+  await page.getByLabel("Select time range").click();
+  await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
+  // check that the percent of total button remains pressed after adding a time comparison
+  await expect(
+    page.getByRole("button", { name: "Toggle percent of total" })
+  ).toHaveAttribute("aria-pressed", "true");
+
+  // Click on "toggle percent change" button
+  await page.getByRole("button", { name: "Toggle percent change" }).click();
+  // check that the percent change is visible+correct
+  await expect(page.getByText("Facebook $229.26 3%")).toBeVisible();
+  // click on "toggle percent of total" button
+  await page.getByRole("button", { name: "Toggle percent of total" }).click();
+  // check that the percent of total is visible+correct
+  await expect(page.getByText("Facebook $229.26 28%")).toBeVisible();
+
+  // Go back to measure without valid_percent_of_total
+  // while percent of total is still pressed, and make
+  // sure that it is unpressed and disabled.
+  await page.getByRole("button", { name: "Total Bid Price" }).click();
+  await page.getByRole("menuitem", { name: "Total rows" }).click();
+  await expect(
+    page.getByRole("button", { name: "Toggle percent of total" })
+  ).toHaveAttribute("aria-pressed", "false");
+  await expect(
+    page.getByRole("button", { name: "Toggle percent of total" })
+  ).toBeDisabled();
+  // check that the context column is hidden
+  await expect(page.getByText(comparisonColumnRegex)).not.toBeVisible();
+}
+
 async function runThroughEmptyMetricsFlows(page) {
-  await updateMetricsInput(page, "");
+  await updateCodeEditor(page, "");
 
   // the inspector should be empty.
   await expect(await page.getByText("Let's get started.")).toBeVisible();
@@ -523,7 +672,7 @@ async function runThroughEmptyMetricsFlows(page) {
   await expect(await page.getByText("Model not defined.")).toBeVisible();
 
   // now let's scaffold things in
-  await updateMetricsInput(page, "");
+  await updateCodeEditor(page, "");
 
   await wrapRetryAssertion(async () => {
     await expect(

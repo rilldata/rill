@@ -20,7 +20,7 @@ class StatusGutterMarker extends GutterMarker {
     this.active = active;
     this.component = new StatusGutterMarkerComponent({
       target: this.element,
-      props: { line, level, message, active },
+      props: { level, message, active },
     });
   }
   eq(mkr) {

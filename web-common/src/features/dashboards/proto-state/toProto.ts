@@ -5,21 +5,24 @@ import {
   Value,
 } from "@bufbuild/protobuf";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+
+import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import {
   DashboardTimeControls,
   TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
-  TimeGrain,
-  TimeGrain as TimeGrainProto,
-} from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
-import {
   MetricsViewFilter,
   MetricsViewFilter_Cond,
 } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
 import {
+  TimeGrain,
+  TimeGrain as TimeGrainProto,
+} from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
+import {
   DashboardState,
+  DashboardState_DashboardLeaderboardContextColumn,
   DashboardTimeRange,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
@@ -27,6 +30,19 @@ import type {
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+
+// TODO: make a follow up PR to use the one from the proto directly
+const LeaderboardContextColumnMap: Record<
+  LeaderboardContextColumn,
+  DashboardState_DashboardLeaderboardContextColumn
+> = {
+  [LeaderboardContextColumn.PERCENT]:
+    DashboardState_DashboardLeaderboardContextColumn.PERCENT,
+  [LeaderboardContextColumn.DELTA_CHANGE]:
+    DashboardState_DashboardLeaderboardContextColumn.DELTA_CHANGE,
+  [LeaderboardContextColumn.HIDDEN]:
+    DashboardState_DashboardLeaderboardContextColumn.HIDDEN,
+};
 
 export function getProtoFromDashboardState(
   metrics: MetricsExplorerEntity
@@ -71,7 +87,10 @@ export function getProtoFromDashboardState(
     state.visibleDimensions = [...metrics.visibleDimensionKeys];
   }
 
-  state.showPercentOfTotal = Boolean(metrics.showPercentOfTotal);
+  if (metrics.leaderboardContextColumn) {
+    state.leaderboardContextColumn =
+      LeaderboardContextColumnMap[metrics.leaderboardContextColumn];
+  }
 
   const message = new DashboardState(state);
   return protoToBase64(message.toBinary());
