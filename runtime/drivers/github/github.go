@@ -18,6 +18,9 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/rilldata/rill/runtime/drivers"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
 )
@@ -27,6 +30,8 @@ const (
 	retryN      = 3
 	retryWait   = 500 * time.Millisecond
 )
+
+var tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/github")
 
 type DSN struct {
 	GithubURL      string `json:"github_url"`
@@ -41,7 +46,12 @@ func init() {
 
 type driver struct{}
 
-func (d driver) Open(dsnStr string, logger *zap.Logger) (drivers.Connection, error) {
+func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connection, error) {
+	dsnStr, ok := config["dsn"].(string)
+	if !ok {
+		return nil, fmt.Errorf("require dsn to open github connection")
+	}
+
 	var dsn DSN
 	err := json.Unmarshal([]byte(dsnStr), &dsn)
 	if err != nil {
@@ -65,7 +75,7 @@ func (d driver) Open(dsnStr string, logger *zap.Logger) (drivers.Connection, err
 
 	// NOTE :: project isn't cloned yet
 	return &connection{
-		dsnStr:       dsnStr,
+		config:       config,
 		dsn:          dsn,
 		tempdir:      tempdir,
 		projectdir:   projectDir,
@@ -73,12 +83,20 @@ func (d driver) Open(dsnStr string, logger *zap.Logger) (drivers.Connection, err
 	}, nil
 }
 
-func (d driver) Drop(dsn string, logger *zap.Logger) error {
+func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
 	return drivers.ErrDropNotSupported
 }
 
+func (d driver) Spec() drivers.Spec {
+	return drivers.Spec{}
+}
+
+func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
+	return false, fmt.Errorf("not implemented")
+}
+
 type connection struct {
-	dsnStr              string
+	config              map[string]any
 	dsn                 DSN
 	tempdir             string // tempdir path should be absolute
 	projectdir          string
@@ -98,23 +116,28 @@ func (c *connection) Close() error {
 	return nil
 }
 
+// Config implements drivers.Connection.
+func (c *connection) Config() map[string]any {
+	return c.config
+}
+
 // Registry implements drivers.Connection.
-func (c *connection) RegistryStore() (drivers.RegistryStore, bool) {
+func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
 // Catalog implements drivers.Connection.
-func (c *connection) CatalogStore() (drivers.CatalogStore, bool) {
+func (c *connection) AsCatalogStore() (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // Repo implements drivers.Connection.
-func (c *connection) RepoStore() (drivers.RepoStore, bool) {
+func (c *connection) AsRepoStore() (drivers.RepoStore, bool) {
 	return c, true
 }
 
 // OLAP implements drivers.Connection.
-func (c *connection) OLAPStore() (drivers.OLAPStore, bool) {
+func (c *connection) AsOLAP() (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
@@ -128,12 +151,29 @@ func (c *connection) MigrationStatus(ctx context.Context) (current, desired int,
 	return 0, 0, nil
 }
 
+// AsObjectStore implements drivers.Connection.
+func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
+	return nil, false
+}
+
+// AsTransporter implements drivers.Connection.
+func (c *connection) AsTransporter(from, to drivers.Connection) (drivers.Transporter, bool) {
+	return nil, false
+}
+
+func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
+	return nil, false
+}
+
 // cloneOrPull clones or pulls the repo with an exponential backoff retry on retryable errors.
 // It's safe for concurrent calls, which are deduplicated.
 func (c *connection) cloneOrPull(ctx context.Context, onlyClone bool) error {
 	if onlyClone && c.cloned.Load() {
 		return nil
 	}
+
+	ctx, span := tracer.Start(ctx, "cloneOrPull", trace.WithAttributes(attribute.Bool("onlyClone", onlyClone)))
+	defer span.End()
 
 	ch := c.singleflight.DoChan("pullOrClone", func() (interface{}, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), pullTimeout)
@@ -184,7 +224,12 @@ func (c *connection) pullUnsafe(ctx context.Context) error {
 		return err
 	}
 
-	err = wt.Pull(&git.PullOptions{RemoteURL: cloneURL})
+	err = wt.Pull(&git.PullOptions{
+		RemoteURL:     cloneURL,
+		ReferenceName: plumbing.NewBranchReferenceName(c.dsn.Branch),
+		SingleBranch:  true,
+		Force:         true,
+	})
 	if errors.Is(err, git.NoErrAlreadyUpToDate) {
 		return nil
 	} else if err != nil {
@@ -256,10 +301,18 @@ func (c *connection) cloneURL(ctx context.Context) (string, error) {
 	return cloneURL, nil
 }
 
+func (c *connection) AsFileStore() (drivers.FileStore, bool) {
+	return nil, false
+}
+
 // retryErrClassifier classifies Github request errors as retryable or not.
 type retryErrClassifier struct{}
 
 func (retryErrClassifier) Classify(err error) retrier.Action {
+	if err == nil {
+		return retrier.Succeed
+	}
+
 	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
 		return retrier.Fail
 	}

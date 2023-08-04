@@ -14,6 +14,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	// Load time zone data for time.ParseInLocation
+	_ "time/tzdata"
 )
 
 func (s *Server) ListSuperusers(ctx context.Context, req *adminv1.ListSuperusersRequest) (*adminv1.ListSuperusersResponse, error) {
@@ -114,6 +117,51 @@ func (s *Server) GetCurrentUser(ctx context.Context, req *adminv1.GetCurrentUser
 
 	return &adminv1.GetCurrentUserResponse{
 		User: userToPB(u),
+		Preferences: &adminv1.UserPreferences{
+			TimeZone: &u.PreferenceTimeZone,
+		},
+	}, nil
+}
+
+func (s *Server) UpdateUserPreferences(ctx context.Context, req *adminv1.UpdateUserPreferencesRequest) (*adminv1.UpdateUserPreferencesResponse, error) {
+	claims := auth.GetClaims(ctx)
+
+	// Error if authenticated as anything other than a user
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, fmt.Errorf("not authenticated as a user")
+	}
+
+	if req.Preferences.TimeZone != nil {
+		_, err := time.LoadLocation(*req.Preferences.TimeZone)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid time zone: %s", *req.Preferences.TimeZone))
+		}
+
+		observability.AddRequestAttributes(ctx, attribute.String("preferences_time_zone", *req.Preferences.TimeZone))
+	}
+
+	// Owner is a user
+	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+	if err != nil {
+		return nil, err
+	}
+
+	// Update user quota here
+	updatedUser, err := s.admin.DB.UpdateUser(ctx, user.ID, &database.UpdateUserOptions{
+		DisplayName:         user.DisplayName,
+		PhotoURL:            user.PhotoURL,
+		GithubUsername:      user.GithubUsername,
+		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
+		PreferenceTimeZone:  valOrDefault(req.Preferences.TimeZone, user.PreferenceTimeZone),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.UpdateUserPreferencesResponse{
+		Preferences: &adminv1.UserPreferences{
+			TimeZone: &updatedUser.PreferenceTimeZone,
+		},
 	}, nil
 }
 
@@ -175,14 +223,111 @@ func (s *Server) RevokeCurrentAuthToken(ctx context.Context, req *adminv1.Revoke
 	}, nil
 }
 
+func (s *Server) SudoGetResource(ctx context.Context, req *adminv1.SudoGetResourceRequest) (*adminv1.SudoGetResourceResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can lookup resource")
+	}
+
+	res := &adminv1.SudoGetResourceResponse{}
+	switch id := req.Id.(type) {
+	case *adminv1.SudoGetResourceRequest_UserId:
+		user, err := s.admin.DB.FindUser(ctx, id.UserId)
+		if err != nil {
+			return nil, err
+		}
+		res.Resource = &adminv1.SudoGetResourceResponse_User{User: userToPB(user)}
+	case *adminv1.SudoGetResourceRequest_OrgId:
+		org, err := s.admin.DB.FindOrganization(ctx, id.OrgId)
+		if err != nil {
+			return nil, err
+		}
+		res.Resource = &adminv1.SudoGetResourceResponse_Org{Org: organizationToDTO(org)}
+	case *adminv1.SudoGetResourceRequest_ProjectId:
+		proj, err := s.admin.DB.FindProject(ctx, id.ProjectId)
+		if err != nil {
+			return nil, err
+		}
+		org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+		if err != nil {
+			return nil, err
+		}
+		res.Resource = &adminv1.SudoGetResourceResponse_Project{Project: s.projToDTO(proj, org.Name)}
+	case *adminv1.SudoGetResourceRequest_DeploymentId:
+		depl, err := s.admin.DB.FindDeployment(ctx, id.DeploymentId)
+		if err != nil {
+			return nil, err
+		}
+		res.Resource = &adminv1.SudoGetResourceResponse_Deployment{Deployment: deploymentToDTO(depl)}
+	case *adminv1.SudoGetResourceRequest_InstanceId:
+		depl, err := s.admin.DB.FindDeploymentByInstanceID(ctx, id.InstanceId)
+		if err != nil {
+			return nil, err
+		}
+		res.Resource = &adminv1.SudoGetResourceResponse_Instance{Instance: deploymentToDTO(depl)}
+	default:
+		return nil, status.Errorf(codes.Internal, "unexpected resource type %T", id)
+	}
+
+	return res, nil
+}
+
+func (s *Server) GetUser(ctx context.Context, req *adminv1.GetUserRequest) (*adminv1.GetUserResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can get user")
+	}
+
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.GetUserResponse{User: userToPB(user)}, nil
+}
+
+func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpdateUserQuotasRequest) (*adminv1.SudoUpdateUserQuotasResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.email", req.Email))
+	if req.SingleuserOrgs != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int("args.singleuser_orgs", int(*req.SingleuserOrgs)))
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can manage quotas")
+	}
+
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update user quota here
+	updatedUser, err := s.admin.DB.UpdateUser(ctx, user.ID, &database.UpdateUserOptions{
+		DisplayName:         user.DisplayName,
+		PhotoURL:            user.PhotoURL,
+		GithubUsername:      user.GithubUsername,
+		QuotaSingleuserOrgs: int(valOrDefault(req.SingleuserOrgs, uint32(user.QuotaSingleuserOrgs))),
+		PreferenceTimeZone:  user.PreferenceTimeZone,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.SudoUpdateUserQuotasResponse{User: userToPB(updatedUser)}, nil
+}
+
 func userToPB(u *database.User) *adminv1.User {
 	return &adminv1.User{
 		Id:          u.ID,
 		Email:       u.Email,
 		DisplayName: u.DisplayName,
 		PhotoUrl:    u.PhotoURL,
-		CreatedOn:   timestamppb.New(u.CreatedOn),
-		UpdatedOn:   timestamppb.New(u.UpdatedOn),
+		Quotas: &adminv1.UserQuotas{
+			SingleuserOrgs: uint32(u.QuotaSingleuserOrgs),
+		},
+		CreatedOn: timestamppb.New(u.CreatedOn),
+		UpdatedOn: timestamppb.New(u.UpdatedOn),
 	}
 }
 

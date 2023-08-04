@@ -4,7 +4,7 @@ import {
   TimeOffsetType,
   TimeTruncationType,
 } from "../types";
-import { transformDate } from "./";
+import { getDurationMultiple, transformDate } from "./";
 
 import { durationToMillis } from "../grains";
 import { getEndOfPeriod, getOffset, getStartOfPeriod, getTimeWidth } from "./";
@@ -19,6 +19,14 @@ describe("getStartOfPeriod", () => {
     const timeGrain = getStartOfPeriod(new Date("2020-03-15"), Period.MONTH);
     expect(timeGrain).toEqual(new Date("2020-03-01"));
   });
+  it("should return the start of month for given date and zone", () => {
+    const timeGrain = getStartOfPeriod(
+      new Date("2020-03-15"),
+      Period.MONTH,
+      "Asia/Kolkata"
+    );
+    expect(timeGrain).toEqual(new Date("2020-02-29T18:30:00.000Z"));
+  });
 });
 
 describe("getEndOfPeriod", () => {
@@ -30,6 +38,14 @@ describe("getEndOfPeriod", () => {
     const timeGrain = getEndOfPeriod(new Date("2020-02-15"), Period.MONTH);
     // leap year!
     expect(timeGrain).toEqual(new Date("2020-02-29T23:59:59.999Z"));
+  });
+  it("should return the end of week for given date and zone", () => {
+    const timeGrain = getEndOfPeriod(
+      new Date("2020-03-15"),
+      Period.MONTH,
+      "Asia/Kolkata"
+    );
+    expect(timeGrain).toEqual(new Date("2020-03-31T18:29:59.999Z"));
   });
 });
 
@@ -205,4 +221,15 @@ describe("transformDate", () => {
       ).toEqual(transformation.output.toISOString());
     });
   }
+});
+
+describe("getDurationMultiple", () => {
+  it("should return the half of given week duration", () => {
+    const duration = getDurationMultiple("P1W", 0.5);
+    expect(duration).toEqual("P3DT12H");
+  });
+  it("should return the triple of given arbitary duration", () => {
+    const duration = getDurationMultiple("P2DT12H", 3);
+    expect(duration).toEqual("P7DT12H");
+  });
 });

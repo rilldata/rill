@@ -7,9 +7,10 @@ import type {
   V1MetricsViewToplistResponseDataItem,
 } from "../../../runtime-client";
 import {
+  FormatPreset,
   formatMeasurePercentageDifference,
-  NicelyFormattedTypes,
 } from "../humanize-numbers";
+import PercentOfTotal from "./PercentOfTotal.svelte";
 
 /** Returns an updated filter set for a given dimension on search */
 export function updateFilterOnSearch(
@@ -79,11 +80,16 @@ export function getFilterForComparsion(
 export function getFilterForComparisonTable(
   filterForDimension,
   dimensionName,
+  dimensionColumn,
   values
 ) {
   if (!values || !values.length) return filterForDimension;
-  const filterValues = values.map((v) => v[dimensionName]);
-  getFilterForComparsion(filterForDimension, dimensionName, filterValues);
+  const filterValues = values.map((v) => v[dimensionColumn]);
+  return getFilterForComparsion(
+    filterForDimension,
+    dimensionName,
+    filterValues
+  );
 }
 
 /** Takes previous and current data to construct comparison data
@@ -92,16 +98,17 @@ export function computeComparisonValues(
   comparisonData: V1MetricsViewToplistResponse,
   values: V1MetricsViewToplistResponseDataItem[],
   dimensionName: string,
+  dimensionColumn: string,
   measureName: string
 ) {
   if (comparisonData?.meta?.length !== 2) return values;
 
   const dimensionToValueMap = new Map(
-    comparisonData?.data?.map((obj) => [obj[dimensionName], obj[measureName]])
+    comparisonData?.data?.map((obj) => [obj[dimensionColumn], obj[measureName]])
   );
 
   for (const value of values) {
-    const prevValue = dimensionToValueMap.get(value[dimensionName]);
+    const prevValue = dimensionToValueMap.get(value[dimensionColumn]);
 
     if (prevValue === undefined) {
       value[measureName + "_delta"] = null;
@@ -123,6 +130,24 @@ export function computeComparisonValues(
   return values;
 }
 
+export function computePercentOfTotal(
+  values: V1MetricsViewToplistResponseDataItem[],
+  total: number,
+  measureName: string
+) {
+  for (const value of values) {
+    if (total === 0 || total === null || total === undefined) {
+      value[measureName + "_percent_of_total"] =
+        PERC_DIFF.CURRENT_VALUE_NO_DATA;
+    } else {
+      value[measureName + "_percent_of_total"] =
+        formatMeasurePercentageDifference(value[measureName] / total);
+    }
+  }
+
+  return values;
+}
+
 export function getComparisonProperties(
   measureName: string,
   selectedMeasure: MetricsViewMeasure
@@ -131,7 +156,7 @@ export function getComparisonProperties(
     return {
       label: DeltaChangePercentage,
       type: "RILL_PERCENTAGE_CHANGE",
-      format: NicelyFormattedTypes.PERCENTAGE,
+      format: FormatPreset.PERCENTAGE,
       description: "Perc. change over comparison period",
     };
   else if (measureName.includes("_delta")) {
@@ -140,6 +165,13 @@ export function getComparisonProperties(
       type: "RILL_CHANGE",
       format: selectedMeasure.format,
       description: "Change over comparison period",
+    };
+  } else if (measureName.includes("_percent_of_total")) {
+    return {
+      label: PercentOfTotal,
+      type: "RILL_PERCENTAGE_CHANGE",
+      format: FormatPreset.PERCENTAGE,
+      description: "Percent of total",
     };
   }
 }

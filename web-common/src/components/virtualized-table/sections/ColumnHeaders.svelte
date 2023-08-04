@@ -11,6 +11,7 @@
   export let noPin = false;
   export let showDataIcon = false;
   export let selectedColumn: string = null;
+  export let fallbackBGClass = "";
 
   const getColumnHeaderProps = (header) => {
     const name = columns[header.index]?.label || columns[header.index]?.name;
@@ -36,8 +37,14 @@
     return column?.endsWith("_delta_perc");
   }
 
+  function isPercentOfTotal(column) {
+    return column?.endsWith("_percent_of_total");
+  }
+
   function isHighlightedColumn(column) {
-    return isDelta(column) || isDeltaPercentage(column);
+    return (
+      isDelta(column) || isDeltaPercentage(column) || isPercentOfTotal(column)
+    );
   }
 </script>
 
@@ -49,7 +56,7 @@
       on:reset-column-size
       bgClass={props.isSelected || isHighlightedColumn(header?.key)
         ? `bg-gray-50`
-        : "surface"}
+        : fallbackBGClass}
       {...props}
       {header}
       {noPin}

@@ -7,8 +7,12 @@
   import {
     getAvailableComparisonsForTimeRange,
     getComparisonRange,
+    getTimeComparisonParametersForComponent,
   } from "@rilldata/web-common/lib/time/comparisons";
-  import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
+  import {
+    DEFAULT_TIMEZONES,
+    DEFAULT_TIME_RANGES,
+  } from "@rilldata/web-common/lib/time/config";
   import {
     checkValidTimeGrain,
     getDefaultTimeGrain,
@@ -18,7 +22,6 @@
   import {
     ISODurationToTimePreset,
     convertTimeRangePreset,
-    isRangeInsideOther,
   } from "@rilldata/web-common/lib/time/ranges";
   import {
     DashboardTimeControls,
@@ -36,12 +39,16 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
+  import { initLocalUserPreferenceStore } from "../user-preferences";
   import NoTimeDimensionCTA from "./NoTimeDimensionCTA.svelte";
   import TimeComparisonSelector from "./TimeComparisonSelector.svelte";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeSelector from "./TimeRangeSelector.svelte";
+  import TimeZoneSelector from "./TimeZoneSelector.svelte";
 
   export let metricViewName: string;
+
+  const localUserPreferences = initLocalUserPreferenceStore(metricViewName);
 
   const queryClient = useQueryClient();
   $: dashboardStore = useDashboardStore(metricViewName);
@@ -49,6 +56,7 @@
   let baseTimeRange: TimeRange;
   let defaultTimeRange: TimeRangeType;
   let minTimeGrain: V1TimeGrain;
+  let availableTimeZones: string[] = [];
 
   let metricsViewQuery;
   $: if ($runtime.instanceId) {
@@ -87,6 +95,15 @@
     minTimeGrain =
       $metricsViewQuery.data.entry.metricsView?.smallestTimeGrain ||
       V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
+
+    availableTimeZones =
+      $metricsViewQuery?.data?.entry?.metricsView?.availableTimeZones;
+
+    // For legacy dashboards, we need to set the available time
+    // zones to the default if they are not defined.
+    if (!availableTimeZones?.length) {
+      availableTimeZones = DEFAULT_TIMEZONES;
+    }
   }
   $: allTimeRange = $allTimeRangeQuery?.data as TimeRange;
   $: isDashboardDefined = $dashboardStore !== undefined;
@@ -103,12 +120,15 @@
   }
 
   function setDefaultTimeControls(allTimeRange: DashboardTimeControls) {
-    baseTimeRange =
-      convertTimeRangePreset(
-        defaultTimeRange,
-        allTimeRange.start,
-        allTimeRange.end
-      ) || allTimeRange;
+    const defaultIANA = $localUserPreferences.timeZone;
+    metricsExplorerStore.setTimeZone(metricViewName, defaultIANA);
+
+    baseTimeRange = convertTimeRangePreset(
+      defaultTimeRange,
+      allTimeRange.start,
+      allTimeRange.end,
+      defaultIANA
+    ) || { ...allTimeRange, end: new Date(allTimeRange.end.getTime() + 1) };
 
     const timeGrain = getDefaultTimeGrain(
       baseTimeRange.start,
@@ -120,8 +140,6 @@
       {}
     );
 
-    /** enable comparisons by default */
-    metricsExplorerStore.toggleComparison(metricViewName, true);
     metricsExplorerStore.allDefaultsSelected(metricViewName);
   }
 
@@ -141,7 +159,8 @@
         convertTimeRangePreset(
           $dashboardStore?.selectedTimeRange.name,
           allTimeRange.start,
-          allTimeRange.end
+          allTimeRange.end,
+          $dashboardStore?.selectedTimezone
         ) || allTimeRange;
     }
 
@@ -189,6 +208,11 @@
     );
   }
 
+  function onSelectTimeZone(timeZone: string) {
+    metricsExplorerStore.setTimeZone(metricViewName, timeZone);
+    localUserPreferences.set({ timeZone });
+  }
+
   function onSelectComparisonRange(
     name: TimeComparisonOption,
     start: Date,
@@ -199,7 +223,7 @@
       start,
       end,
     });
-    metricsExplorerStore.toggleComparison(metricViewName, true);
+    metricsExplorerStore.displayComparison(metricViewName, true);
   }
 
   function makeTimeSeriesTimeRangeAndUpdateAppState(
@@ -251,12 +275,25 @@
       if (!comparisonTimeRange?.name) {
         const comparisonOption = DEFAULT_TIME_RANGES[name]
           ?.defaultComparison as TimeComparisonOption;
-        const range = getComparisonRange(start, end, comparisonOption);
+        const range = getTimeComparisonParametersForComponent(
+          comparisonOption,
+          allTimeRange.start,
+          allTimeRange.end,
+          start,
+          end
+        );
 
-        selectedComparisonTimeRange = {
-          ...range,
-          name: comparisonOption,
-        };
+        if (range.isComparisonRangeAvailable) {
+          selectedComparisonTimeRange = {
+            start: range.start,
+            end: range.end,
+            name: comparisonOption,
+          };
+          metricsExplorerStore.displayComparison(metricViewName, true);
+        } else {
+          // Default to no comparison if the default comparison range is not available.
+          metricsExplorerStore.displayComparison(metricViewName, false);
+        }
       } else if (comparisonTimeRange.name === TimeComparisonOption.CUSTOM) {
         selectedComparisonTimeRange = comparisonTimeRange;
       } else {
@@ -278,7 +315,6 @@
     }
   }
 
-  let isComparisonRangeAvailable;
   let availableComparisons;
 
   $: if (
@@ -286,13 +322,6 @@
     $dashboardStore?.selectedTimeRange?.start &&
     hasTimeSeries
   ) {
-    isComparisonRangeAvailable = isRangeInsideOther(
-      allTimeRange.start,
-      allTimeRange.end,
-      $dashboardStore?.selectedComparisonTimeRange?.start,
-      $dashboardStore?.selectedComparisonTimeRange?.end
-    );
-
     availableComparisons = getAvailableComparisonsForTimeRange(
       allTimeRange.start,
       allTimeRange.end,
@@ -323,18 +352,24 @@
       on:select-time-range={(e) =>
         onSelectTimeRange(e.detail.name, e.detail.start, e.detail.end)}
     />
+    <TimeZoneSelector
+      on:select-time-zone={(e) => onSelectTimeZone(e.detail.timeZone)}
+      {metricViewName}
+      {availableTimeZones}
+      now={allTimeRange?.end}
+    />
     <TimeComparisonSelector
       on:select-comparison={(e) => {
         onSelectComparisonRange(e.detail.name, e.detail.start, e.detail.end);
       }}
       on:disable-comparison={() =>
-        metricsExplorerStore.toggleComparison(metricViewName, false)}
+        metricsExplorerStore.displayComparison(metricViewName, false)}
       {minTimeGrain}
       currentStart={$dashboardStore?.selectedTimeRange?.start}
       currentEnd={$dashboardStore?.selectedTimeRange?.end}
       boundaryStart={allTimeRange.start}
       boundaryEnd={allTimeRange.end}
-      {isComparisonRangeAvailable}
+      zone={$dashboardStore?.selectedTimezone}
       showComparison={$dashboardStore?.showComparison}
       selectedComparison={$dashboardStore?.selectedComparisonTimeRange}
       comparisonOptions={availableComparisons}

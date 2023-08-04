@@ -7,9 +7,11 @@ import (
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -22,6 +24,8 @@ func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest)
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.glob", req.Glob),
 	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadRepo) {
 		return nil, ErrForbidden
@@ -40,12 +44,61 @@ func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest)
 	return &runtimev1.ListFilesResponse{Paths: paths}, nil
 }
 
+// WatchFiles implements RuntimeService.
+func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, ss runtimev1.RuntimeService_WatchFilesServer) error {
+	observability.AddRequestAttributes(ss.Context(),
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.Bool("args.replay", req.Replay),
+	)
+
+	if !auth.GetClaims(ss.Context()).CanInstance(req.InstanceId, auth.ReadRepo) {
+		return ErrForbidden
+	}
+
+	repo, err := s.runtime.Repo(ss.Context(), req.InstanceId)
+	if err != nil {
+		return err
+	}
+
+	if req.Replay {
+		paths, err := repo.ListRecursive(ss.Context(), req.InstanceId, "**")
+		if err != nil {
+			return err
+		}
+		for _, p := range paths {
+			err = ss.Send(&runtimev1.WatchFilesResponse{
+				Event: runtimev1.FileEvent_FILE_EVENT_WRITE,
+				Path:  p,
+			})
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return repo.Watch(ss.Context(), "", func(events []drivers.WatchEvent) {
+		for _, event := range events {
+			if !event.Dir {
+				err := ss.Send(&runtimev1.WatchFilesResponse{
+					Event: event.Type,
+					Path:  event.Path,
+				})
+				if err != nil {
+					s.logger.Info("failed to send watch event", zap.Error(err))
+				}
+			}
+		}
+	})
+}
+
 // GetFile implements RuntimeService.
 func (s *Server) GetFile(ctx context.Context, req *runtimev1.GetFileRequest) (*runtimev1.GetFileResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.path", req.Path),
 	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadRepo) {
 		return nil, ErrForbidden
@@ -68,6 +121,8 @@ func (s *Server) PutFile(ctx context.Context, req *runtimev1.PutFileRequest) (*r
 		attribute.Bool("args.create_only", req.CreateOnly),
 	)
 
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
 		return nil, ErrForbidden
 	}
@@ -86,6 +141,8 @@ func (s *Server) DeleteFile(ctx context.Context, req *runtimev1.DeleteFileReques
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.path", req.Path),
 	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
 		return nil, ErrForbidden
@@ -106,6 +163,8 @@ func (s *Server) RenameFile(ctx context.Context, req *runtimev1.RenameFileReques
 		attribute.String("args.from_path", req.FromPath),
 		attribute.String("args.to_path", req.ToPath),
 	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
 		return nil, ErrForbidden
@@ -148,6 +207,8 @@ func (s *Server) UploadMultipartFile(w http.ResponseWriter, req *http.Request, p
 		attribute.String("args.instance_id", pathParams["instance_id"]),
 		attribute.String("args.path", pathParams["path"]),
 	)
+
+	s.addInstanceRequestAttributes(ctx, pathParams["instance_id"])
 
 	err = s.runtime.PutFile(ctx, pathParams["instance_id"], pathParams["path"], f, true, false)
 	if err != nil {

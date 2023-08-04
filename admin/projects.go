@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
@@ -67,6 +68,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 	// Provision prod deployment.
 	// Start using original context again since transaction in txCtx is done.
 	depl, err := s.createDeployment(ctx, &createDeploymentOptions{
+		OrganizationID:       proj.OrganizationID,
 		ProjectID:            proj.ID,
 		Region:               proj.Region,
 		GithubURL:            proj.GithubURL,
@@ -94,6 +96,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		ProdVariables:        proj.ProdVariables,
 		ProdSlots:            proj.ProdSlots,
 		Region:               proj.Region,
+		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		ProdDeploymentID:     &depl.ID,
 	})
 	if err != nil {
@@ -139,7 +142,7 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 
 // UpdateProject updates a project and any impacted deployments.
 // It runs a reconcile if deployment parameters (like branch or variables) have been changed and reconcileDeployment is set.
-func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions, reconcileDeployment bool) (*database.Project, error) {
+func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions) (*database.Project, error) {
 	if proj.Region != opts.Region || proj.ProdSlots != opts.ProdSlots { // require new deployments
 		s.logger.Info("recreating deployment", observability.ZapCtx(ctx))
 		var oldDepl *database.Deployment
@@ -152,6 +155,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 		}
 
 		depl, err := s.createDeployment(ctx, &createDeploymentOptions{
+			OrganizationID:       proj.OrganizationID,
 			ProjectID:            proj.ID,
 			Subpath:              proj.Subpath,
 			ProdOLAPDriver:       proj.ProdOLAPDriver,
@@ -175,7 +179,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 
 		if oldDepl != nil {
 			if err := s.teardownDeployment(context.Background(), proj, oldDepl); err != nil {
-				s.logger.Error("could not delete old deploymnet", zap.Error(err), observability.ZapCtx(ctx))
+				s.logger.Error("could not delete old deployment", zap.Error(err), observability.ZapCtx(ctx))
 			}
 		}
 
@@ -188,8 +192,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 
 	impactsDeployments := (proj.ProdBranch != opts.ProdBranch ||
 		!reflect.DeepEqual(proj.GithubURL, opts.GithubURL) ||
-		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID) ||
-		!reflect.DeepEqual(map[string]string(proj.ProdVariables), opts.ProdVariables))
+		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID))
 
 	if impactsDeployments {
 		s.logger.Info("updating deployments", observability.ZapCtx(ctx))
@@ -207,7 +210,6 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 				Subpath:              proj.Subpath,
 				Branch:               opts.ProdBranch,
 				Variables:            opts.ProdVariables,
-				Reconcile:            reconcileDeployment,
 			})
 			if err != nil {
 				// TODO: This may leave things in an inconsistent state. (Although presently, there's almost never multiple deployments.)
@@ -224,10 +226,32 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 	return proj, nil
 }
 
+// UpdateProjectVariables updates project's variables and pushes the updated variables to deployments.
+// NOTE : this does not trigger reconcile.
+func (s *Service) UpdateProjectVariables(ctx context.Context, proj *database.Project, variables map[string]string) (*database.Project, error) {
+	ds, err := s.DB.FindDeploymentsForProject(ctx, proj.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	// NOTE: This assumes every deployment (almost always, there's just one) deploys the prod branch.
+	// It needs to be refactored when implementing preview deploys.
+	for _, d := range ds {
+		err := s.updateDeplVariables(ctx, d, variables)
+		if err != nil {
+			// TODO: This may leave things in an inconsistent state. (Although presently, there's almost never multiple deployments.)
+			return nil, err
+		}
+	}
+
+	return s.DB.UpdateProjectVariables(ctx, proj.ID, variables)
+}
+
 // TriggerRedeploy de-provisions and re-provisions a project's prod deployment.
 func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, prevDepl *database.Deployment) error {
 	// Provision new deployment
 	newDepl, err := s.createDeployment(ctx, &createDeploymentOptions{
+		OrganizationID:       proj.OrganizationID,
 		ProjectID:            proj.ID,
 		Region:               proj.Region,
 		GithubURL:            proj.GithubURL,
@@ -252,19 +276,22 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdBranch:           proj.ProdBranch,
 		ProdVariables:        proj.ProdVariables,
-		ProdSlots:            proj.ProdSlots,
-		Region:               proj.Region,
 		ProdDeploymentID:     &newDepl.ID,
+		ProdSlots:            proj.ProdSlots,
+		ProdTTLSeconds:       proj.ProdTTLSeconds,
+		Region:               proj.Region,
 	})
 	if err != nil {
 		err2 := s.teardownDeployment(ctx, proj, newDepl)
 		return multierr.Combine(err, err2)
 	}
 
-	// Delete old prod deployment
-	err = s.teardownDeployment(ctx, proj, prevDepl)
-	if err != nil {
-		s.logger.Error("trigger redeploy: could not teardown old deployment", zap.String("deployment_id", prevDepl.ID), zap.Error(err), observability.ZapCtx(ctx))
+	// Delete old prod deployment if exists
+	if prevDepl != nil {
+		err = s.teardownDeployment(ctx, proj, prevDepl)
+		if err != nil {
+			s.logger.Error("trigger redeploy: could not teardown old deployment", zap.String("deployment_id", prevDepl.ID), zap.Error(err), observability.ZapCtx(ctx))
+		}
 	}
 
 	// Trigger reconcile on new deployment
@@ -312,6 +339,34 @@ func (s *Service) triggerReconcile(ctx context.Context, depl *database.Deploymen
 
 // TriggerRefreshSource triggers refresh of a deployment's sources. If the sources slice is nil, it will refresh all sources.f
 func (s *Service) TriggerRefreshSources(ctx context.Context, depl *database.Deployment, sources []string) error {
+	// check if provided sources are exists in catalog
+	if len(sources) > 0 {
+		rt, err := s.openRuntimeClientForDeployment(depl)
+		if err != nil {
+			return err
+		}
+		defer rt.Close()
+
+		// Get paths of sources
+		res, err := rt.ListCatalogEntries(ctx, &runtimev1.ListCatalogEntriesRequest{InstanceId: depl.RuntimeInstanceID, Type: runtimev1.ObjectType_OBJECT_TYPE_SOURCE})
+		if err != nil {
+			return err
+		}
+
+		for _, source := range sources {
+			found := false
+			for _, entry := range res.Entries {
+				if strings.EqualFold(source, entry.Name) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return fmt.Errorf("source %q not found", source)
+			}
+		}
+	}
+
 	// Run reconcile in the background (since it's sync)
 	s.reconcileWg.Add(1)
 	go func() {

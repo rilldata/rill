@@ -3,6 +3,7 @@ package queries
 import (
 	"context"
 	"fmt"
+	"io"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -86,7 +87,7 @@ func (q *ColumnTopK) Resolve(ctx context.Context, rt *runtime.Runtime, instanceI
 			return err
 		}
 
-		entry.Value, err = pbutil.ToValue(val)
+		entry.Value, err = pbutil.ToValue(val, safeFieldType(rows.Schema, 0))
 		if err != nil {
 			return err
 		}
@@ -102,4 +103,8 @@ func (q *ColumnTopK) Resolve(ctx context.Context, rt *runtime.Runtime, instanceI
 	// Save result
 	q.Result = res
 	return nil
+}
+
+func (q *ColumnTopK) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
+	return ErrExportNotSupported
 }

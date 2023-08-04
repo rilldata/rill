@@ -8,16 +8,20 @@ import (
 	"strings"
 	"time"
 
+	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -29,13 +33,14 @@ import (
 var ErrForbidden = status.Error(codes.Unauthenticated, "action not allowed")
 
 type Options struct {
-	HTTPPort        int
-	GRPCPort        int
-	AllowedOrigins  []string
-	ServePrometheus bool
-	AuthEnable      bool
-	AuthIssuerURL   string
-	AuthAudienceURL string
+	HTTPPort         int
+	GRPCPort         int
+	AllowedOrigins   []string
+	ServePrometheus  bool
+	AuthEnable       bool
+	AuthIssuerURL    string
+	AuthAudienceURL  string
+	DownloadRowLimit *int64
 }
 
 type Server struct {
@@ -46,6 +51,9 @@ type Server struct {
 	opts    *Options
 	logger  *zap.Logger
 	aud     *auth.Audience
+	limiter ratelimit.Limiter
+	// activity is used for usage tracking
+	activity activity.Client
 }
 
 var (
@@ -56,11 +64,13 @@ var (
 
 // NewServer creates a new runtime server.
 // The provided ctx is used for the lifetime of the server for background refresh of the JWKS that is used to validate auth tokens.
-func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *zap.Logger) (*Server, error) {
+func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *zap.Logger, limiter ratelimit.Limiter, activityClient activity.Client) (*Server, error) {
 	srv := &Server{
-		opts:    opts,
-		runtime: rt,
-		logger:  logger,
+		opts:     opts,
+		runtime:  rt,
+		logger:   logger,
+		limiter:  limiter,
+		activity: activityClient,
 	}
 
 	if opts.AuthEnable {
@@ -82,7 +92,9 @@ func (s *Server) Close() error {
 		s.aud.Close()
 	}
 
-	return nil
+	err := s.activity.Close()
+
+	return err
 }
 
 // Ping implements RuntimeService
@@ -104,6 +116,8 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			errorMappingStreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
 			auth.StreamServerInterceptor(s.aud),
+			middleware.ActivityStreamServerInterceptor(s.activity),
+			grpc_auth.StreamServerInterceptor(s.checkRateLimit),
 		),
 		grpc.ChainUnaryInterceptor(
 			middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
@@ -112,6 +126,8 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			errorMappingUnaryServerInterceptor(),
 			grpc_validator.UnaryServerInterceptor(),
 			auth.UnaryServerInterceptor(s.aud),
+			middleware.ActivityUnaryServerInterceptor(s.activity),
+			grpc_auth.UnaryServerInterceptor(s.checkRateLimit),
 		),
 	)
 
@@ -174,8 +190,11 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 		registerAdditionalHandlers(httpMux)
 	}
 
-	// Add httpMux on gRPC-gateway
+	// Add gRPC-gateway on httpMux
 	httpMux.Handle("/v1/", gwMux)
+
+	// Add HTTP handler for query export downloads
+	httpMux.Handle("/v1/download", auth.HTTPMiddleware(s.aud, http.HandlerFunc(s.downloadHandler)))
 
 	// Add Prometheus
 	if s.opts.ServePrometheus {
@@ -230,13 +249,19 @@ func HTTPErrorHandler(ctx context.Context, mux *gateway.ServeMux, marshaler gate
 	gateway.DefaultHTTPErrorHandler(ctx, mux, marshaler, w, r, err)
 }
 
-func timeoutSelector(service, method string) time.Duration {
-	if service == "rill.runtime.v1.RuntimeService" && (strings.Contains(method, "Trigger") || strings.Contains(method, "Reconcile")) {
+func timeoutSelector(fullMethodName string) time.Duration {
+	if strings.HasPrefix(fullMethodName, "/rill.runtime.v1.RuntimeService") && (strings.Contains(fullMethodName, "/Trigger") || strings.HasSuffix(fullMethodName, "Reconcile")) {
 		return time.Minute * 30
 	}
-	if service == "rill.runtime.v1.QueryService" {
+
+	if strings.HasPrefix(fullMethodName, "/rill.runtime.v1.QueryService") {
 		return time.Minute * 5
 	}
+
+	if fullMethodName == runtimev1.RuntimeService_WatchFiles_FullMethodName {
+		return 0
+	}
+
 	return time.Second * 30
 }
 
@@ -268,4 +293,37 @@ func mapGRPCError(err error) error {
 		return status.Error(codes.Canceled, err.Error())
 	}
 	return err
+}
+
+func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
+	// Any request type might be limited separately as it is part of Metadata
+	// Any request type might be excluded from this limit check and limited later,
+	// e.g. in the corresponding request handler by calling s.limiter.Limit(ctx, "limitKey", redis_rate.PerMinute(100))
+	if auth.GetClaims(ctx).Subject() == "" {
+		method, ok := grpc.Method(ctx)
+		if !ok {
+			return ctx, fmt.Errorf("server context does not have a method")
+		}
+		limitKey := ratelimit.AnonLimitKey(method, observability.GrpcPeer(ctx))
+		if err := s.limiter.Limit(ctx, limitKey, ratelimit.Public); err != nil {
+			if errors.As(err, &ratelimit.QuotaExceededError{}) {
+				return ctx, status.Errorf(codes.ResourceExhausted, err.Error())
+			}
+			return ctx, err
+		}
+	}
+
+	return ctx, nil
+}
+
+func (s *Server) addInstanceRequestAttributes(ctx context.Context, instanceID string) {
+	instance, err := s.runtime.FindInstance(ctx, instanceID)
+
+	if err == nil && instance != nil {
+		var attrs []attribute.KeyValue
+		for k, v := range instance.Annotations {
+			attrs = append(attrs, attribute.String(k, v))
+		}
+		observability.AddRequestAttributes(ctx, attrs...)
+	}
 }

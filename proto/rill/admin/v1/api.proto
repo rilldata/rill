@@ -37,7 +37,7 @@ service AdminService {
   // UpdateOrganization deletes an organizations
   rpc UpdateOrganization(UpdateOrganizationRequest) returns (UpdateOrganizationResponse) {
     option (google.api.http) = {
-      put: "/v1/organizations/{name}",
+      patch: "/v1/organizations/{name}",
       body: "*"
     };
   }
@@ -50,6 +50,11 @@ service AdminService {
   // GetProject returns information about a specific project
   rpc GetProject(GetProjectRequest) returns (GetProjectResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{name}"};
+  }
+
+  // SearchProjectNames returns project names matching the pattern
+  rpc SearchProjectNames(SearchProjectNamesRequest) returns (SearchProjectNamesResponse) {
+    option (google.api.http) = {get: "/v1/superuser/projects/search"};
   }
 
   // GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
@@ -73,7 +78,7 @@ service AdminService {
   // UpdateProject updates a project
   rpc UpdateProject(UpdateProjectRequest) returns (UpdateProjectResponse) {
     option (google.api.http) = {
-      put: "/v1/organizations/{organization_name}/projects/{name}",
+      patch: "/v1/organizations/{organization_name}/projects/{name}",
       body: "*"
     };
   }
@@ -105,7 +110,7 @@ service AdminService {
   // TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
   rpc TriggerRedeploy(TriggerRedeployRequest) returns (TriggerRedeployResponse) {
     option (google.api.http) = {
-      post: "/v1/deployments/{deployment_id}/redeploy",
+      post: "/v1/projects/-/redeploy",
       body: "*"
     };
   }
@@ -226,7 +231,11 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{organization}/whitelisted"};
   }
 
-   // GetUsersByEmail returns user by email
+  // GetUser returns user by email
+  rpc GetUser(GetUserRequest) returns (GetUserResponse) {
+    option (google.api.http) = {get: "/v1/users"};
+  }
+   // GetUsersByEmail returns users by email
   rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse) {
     option (google.api.http) = {get: "/v1/users/search"};
   }
@@ -244,6 +253,100 @@ service AdminService {
     };
   }
 
+   // SudoGetResource returns details about a resource by ID lookup
+  rpc SudoGetResource(SudoGetResourceRequest) returns (SudoGetResourceResponse) {
+    option (google.api.http) = {get: "/v1/superuser/resource"};
+  }
+
+  // SudoUpdateUserQuotas update the quotas for users
+  rpc SudoUpdateUserQuotas(SudoUpdateUserQuotasRequest) returns (SudoUpdateUserQuotasResponse) {
+    option (google.api.http) = {
+      patch: "/v1/superuser/quotas/user",
+      body: "*"
+    };
+  }
+
+  // SudoUpdateOrganizationQuotas update the quotas available for orgs
+  rpc SudoUpdateOrganizationQuotas(SudoUpdateOrganizationQuotasRequest) returns (SudoUpdateOrganizationQuotasResponse) {
+    option (google.api.http) = {
+      patch: "/v1/superuser/quotas/organization",
+      body: "*"
+    };
+  }
+
+  // ListService returns all the services per organization
+  rpc ListServices(ListServicesRequest) returns (ListServicesResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization_name}/services"};
+  }
+
+  // CreateService creates a new service per organization
+  rpc CreateService(CreateServiceRequest) returns (CreateServiceResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization_name}/services",
+    };
+  }
+
+  // UpdateService updates a service per organization
+  rpc UpdateService(UpdateServiceRequest) returns (UpdateServiceResponse) {
+    option (google.api.http) = {
+      patch: "/v1/organizations/{organization_name}/services/{name}",
+      body: "*"
+    };
+  }
+
+  // DeleteService deletes a service per organization
+  rpc DeleteService(DeleteServiceRequest) returns (DeleteServiceResponse) {
+    option (google.api.http) = {delete: "/v1/organizations/{organization_name}/services/{name}"};
+  }
+
+   // ListServiceAuthTokens lists all the service auth tokens
+  rpc ListServiceAuthTokens(ListServiceAuthTokensRequest) returns (ListServiceAuthTokensResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization_name}/services/{service_name}/tokens"};
+  }
+
+  // IssueServiceAuthToken returns the temporary token for given service account
+  rpc IssueServiceAuthToken(IssueServiceAuthTokenRequest) returns (IssueServiceAuthTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization_name}/services/{service_name}/tokens",
+      body: "*"
+    };
+  }
+
+  // RevokeServiceAuthToken revoke the service auth token
+  rpc RevokeServiceAuthToken(RevokeServiceAuthTokenRequest) returns (RevokeServiceAuthTokenResponse) {
+    option (google.api.http) = {delete: "/v1/services/tokens/{token_id}"};
+  }
+
+  // UpdateUserPreferences updates the preferences for the user
+  rpc UpdateUserPreferences(UpdateUserPreferencesRequest) returns (UpdateUserPreferencesResponse) {
+    option (google.api.http) = {
+      put: "/v1/users/preferences",
+      body: "*"
+    };
+  }
+
+  // ListBookmarks lists all the bookmarks for the user
+  rpc ListBookmarks(ListBookmarksRequest) returns (ListBookmarksResponse) {
+    option (google.api.http) = {get: "/v1/users/bookmarks"};
+  }
+
+  // GetBookmark returns the bookmark for the given user for the given project
+  rpc GetBookmark(GetBookmarkRequest) returns (GetBookmarkResponse) {
+    option (google.api.http) = {get: "/v1/users/bookmarks/{bookmark_id}"};
+  }
+
+  // CreateBookmark creates a bookmark for the given user for the given project
+  rpc CreateBookmark(CreateBookmarkRequest) returns (CreateBookmarkResponse) {
+    option (google.api.http) = {
+      post: "/v1/users/bookmarks",
+      body: "*"
+    };
+  }
+  
+  // RemoveBookmark removes the bookmark for the given user for the given project
+  rpc RemoveBookmark(RemoveBookmarkRequest) returns (RemoveBookmarkResponse) {
+    option (google.api.http) = {delete: "/v1/users/bookmarks/{bookmark_id}"};
+  }
 }
 
 message PingRequest {}
@@ -254,7 +357,7 @@ message PingResponse {
 }
 
 message ListOrganizationsRequest {
-  uint32 page_size = 1 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  uint32 page_size = 1 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 2;
 }
 
@@ -288,9 +391,9 @@ message DeleteOrganizationRequest {
 message DeleteOrganizationResponse {}
 
 message UpdateOrganizationRequest {
-  string id = 1;
-  string name = 2 [(validate.rules).string.min_len = 1];
-  string description = 3;
+  string name = 1 [(validate.rules).string.min_len = 1];
+  optional string description = 2;
+  optional string new_name = 3;
 }
 
 message UpdateOrganizationResponse {
@@ -299,7 +402,7 @@ message UpdateOrganizationResponse {
 
 message ListProjectsForOrganizationRequest {
   string organization_name = 1 [(validate.rules).string.min_len = 1];
-  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
 }
 
@@ -320,6 +423,17 @@ message GetProjectResponse {
   ProjectPermissions project_permissions = 4;
 }
 
+message SearchProjectNamesRequest {
+  string name_pattern = 1;
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
+  string page_token = 3;
+}
+
+message SearchProjectNamesResponse {
+  repeated string names = 1;
+  string next_page_token = 2;
+}
+
 message GetProjectVariablesRequest {
   string organization_name = 1;
   string name = 2;
@@ -327,6 +441,43 @@ message GetProjectVariablesRequest {
 
 message GetProjectVariablesResponse {
   map<string, string> variables = 1;
+}
+
+
+message ListServicesRequest {
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
+}
+
+message ListServicesResponse {
+  repeated Service services = 1;
+}
+
+message CreateServiceRequest {
+  string name = 1 [(validate.rules).string.min_len = 1];
+  string organization_name = 2 [(validate.rules).string.min_len = 1];
+}
+
+message CreateServiceResponse {
+  Service service = 1;
+}
+
+message UpdateServiceRequest {
+  string name = 1 [(validate.rules).string.min_len = 1];
+  string organization_name = 2 [(validate.rules).string.min_len = 1];
+  optional string new_name = 3;
+}
+
+message UpdateServiceResponse {
+  Service service = 1;
+}
+
+message DeleteServiceRequest {
+  string name = 1 [(validate.rules).string.min_len = 1];
+  string organization_name = 2 [(validate.rules).string.min_len = 1];
+}
+
+message DeleteServiceResponse {
+  Service service = 1;
 }
 
 message CreateProjectRequest {
@@ -356,15 +507,16 @@ message DeleteProjectRequest {
 message DeleteProjectResponse {}
 
 message UpdateProjectRequest {
-  string id = 1;
-  string organization_name = 2 [(validate.rules).string.min_len = 1];
-  string name = 3 [(validate.rules).string.min_len = 1];
-  string description = 4;
-  bool public = 5;
-  string prod_branch = 6;
-  string github_url = 7;
-  int64 prod_slots = 8;
-  string region = 9;
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string name = 2 [(validate.rules).string.min_len = 1];
+  optional string description = 3;
+  optional bool public = 4;
+  optional string prod_branch = 5;
+  optional string github_url = 6;
+  optional int64 prod_slots = 7;
+  optional string region = 8;
+  optional string new_name = 9;
+  optional int64 prod_ttl_seconds = 10;
 }
 
 message UpdateProjectResponse {
@@ -395,6 +547,10 @@ message TriggerRefreshSourcesRequest {
 message TriggerRefreshSourcesResponse {}
 
 message TriggerRedeployRequest {
+  // It's sufficient to pass org/project name OR deployment_id.
+  // (To enable rehydrating hibernated projects.)
+  string organization = 2;
+  string project = 3;
   string deployment_id = 1;
 }
 
@@ -402,7 +558,7 @@ message TriggerRedeployResponse {}
 
 message ListOrganizationMembersRequest {
   string organization = 1;
-  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
 }
 
@@ -413,7 +569,7 @@ message ListOrganizationMembersResponse {
 
 message ListOrganizationInvitesRequest {
   string organization = 1;
-  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
 }
 
@@ -467,10 +623,58 @@ message SetSuperuserRequest {
 
 message SetSuperuserResponse {}
 
+// SudoGetResourceRequest
+message SudoGetResourceRequest {
+  oneof id {
+    string user_id = 1;
+    string org_id = 2;
+    string project_id = 3;
+    string deployment_id = 4;
+    string instance_id = 5;
+  }
+}
+
+// SudoGetResourceResponse
+message SudoGetResourceResponse {
+  oneof resource {
+    User user = 1;
+    Organization org = 2;
+    Project project = 3;
+    Deployment deployment = 4;
+    Deployment instance = 5;
+  }
+}
+
+// SudoUpdateOrganizationQuotasRequest
+message SudoUpdateOrganizationQuotasRequest {
+  string org_name = 1;
+  optional uint32 projects = 2;
+  optional uint32 deployments = 3;
+  optional uint32 slots_total = 4;
+  optional uint32 slots_per_deployment = 5;
+  optional uint32 outstanding_invites = 6;
+}
+
+// SudoUpdateOrganizationQuotasResponse
+message SudoUpdateOrganizationQuotasResponse {
+  Organization organization = 1;
+}
+
+// SudoUpdateUserQuotasRequest
+message SudoUpdateUserQuotasRequest {
+  string email = 1;
+  optional uint32 singleuser_orgs = 2;
+}
+
+// SudoUpdateUserQuotasResponse
+message SudoUpdateUserQuotasResponse {
+  User user = 1;
+}
+
 message ListProjectMembersRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
-  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 4 ;
 }
 
@@ -482,7 +686,7 @@ message ListProjectMembersResponse {
 message ListProjectInvitesRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
-  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 4;
 }
 
@@ -523,12 +727,68 @@ message GetCurrentUserRequest {}
 
 message GetCurrentUserResponse {
   User user = 1;
+  UserPreferences preferences = 2;
 }
+
+message GetUserRequest {
+  string email = 1 [(validate.rules).string.email = true];
+}
+
+message GetUserResponse {
+  User user = 1;
+}
+
+// Message containing user preferences
+message UserPreferences {
+  optional string time_zone = 1;
+}
+
+// Updating user preferences for the current user
+message UpdateUserPreferencesRequest {
+    UserPreferences preferences = 1;
+}
+
+message UpdateUserPreferencesResponse {
+    UserPreferences preferences = 1;
+}
+
+message ListBookmarksRequest {
+    string project_id = 1;
+}
+
+message ListBookmarksResponse {
+    repeated Bookmark bookmarks = 1;
+}
+
+message GetBookmarkRequest {
+    string bookmark_id = 1;
+}
+
+message GetBookmarkResponse {
+    Bookmark bookmark = 1;
+}
+
+message CreateBookmarkRequest {
+  string display_name = 1;
+  bytes data = 2;
+  string dashboard_name = 3;
+  string project_id = 4;
+}
+
+message CreateBookmarkResponse {
+  Bookmark bookmark = 1;
+}
+
+message RemoveBookmarkRequest {
+    string bookmark_id = 1;
+}
+
+message RemoveBookmarkResponse {}
 
 // It can be some string as well so not validating for email here
 message SearchUsersRequest {
   string email_pattern = 1 [(validate.rules).string.min_len = 1];
-  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 100}];
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
 }
 
@@ -550,6 +810,30 @@ message IssueRepresentativeAuthTokenRequest {
 
 message IssueRepresentativeAuthTokenResponse {
   string token = 1;
+}
+
+message RevokeServiceAuthTokenRequest {
+  string token_id = 1;
+}
+
+message RevokeServiceAuthTokenResponse {}
+
+message IssueServiceAuthTokenRequest {
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string service_name = 2;
+}
+
+message IssueServiceAuthTokenResponse {
+  string token = 1;
+}
+
+message ListServiceAuthTokensRequest {
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string service_name = 2;
+}
+
+message ListServiceAuthTokensResponse {
+  repeated ServiceToken tokens = 1;
 }
 
 message GetGithubRepoStatusRequest {
@@ -603,6 +887,16 @@ message User {
   string email = 2;
   string display_name = 3;
   string photo_url = 4;
+  UserQuotas quotas = 5;
+  google.protobuf.Timestamp created_on = 6;
+  google.protobuf.Timestamp updated_on = 7;
+}
+
+message Service {
+  string id = 1;
+  string name = 2;
+  string org_id = 3;
+  string org_name = 4;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
 }
@@ -611,8 +905,21 @@ message Organization {
   string id = 1;
   string name = 2; // Globally unique
   string description = 3;
-  google.protobuf.Timestamp created_on = 4;
-  google.protobuf.Timestamp updated_on = 5;
+  OrganizationQuotas quotas = 4;
+  google.protobuf.Timestamp created_on = 5;
+  google.protobuf.Timestamp updated_on = 6;
+}
+
+message UserQuotas {
+  uint32 singleuser_orgs = 1;
+}
+
+message OrganizationQuotas {
+  uint32 projects = 1;
+  uint32 deployments = 2;
+  uint32 slots_total = 3;
+  uint32 slots_per_deployment = 4;
+  uint32 outstanding_invites = 5;
 }
 
 message Project {
@@ -631,6 +938,7 @@ message Project {
   int64 prod_slots = 12;
   string prod_deployment_id = 13;
   string frontend_url = 16;
+  int64 prod_ttl_seconds = 18;
   google.protobuf.Timestamp created_on = 14;
   google.protobuf.Timestamp updated_on = 15;
 }
@@ -697,4 +1005,21 @@ message UserInvite {
 message WhitelistedDomain {
   string domain = 1;
   string role = 2;
+}
+
+message Bookmark {
+  string id = 1;
+  string display_name = 2;
+  bytes data = 3;
+  string dashboard_name = 4;
+  string project_id = 5;
+  string user_id = 6;
+  google.protobuf.Timestamp created_on = 7;
+  google.protobuf.Timestamp updated_on = 8;
+}
+
+message ServiceToken {
+  string id = 1;
+  google.protobuf.Timestamp created_on = 2;
+  google.protobuf.Timestamp expires_on = 3;
 }

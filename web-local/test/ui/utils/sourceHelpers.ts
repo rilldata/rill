@@ -1,7 +1,8 @@
-import { expect as playwrightExpect } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { asyncWait } from "@rilldata/web-local/lib/util/waitUtils";
 import path from "node:path";
 import type { Page } from "playwright";
+import { fileURLToPath } from "url";
 import {
   clickModalButton,
   getEntityLink,
@@ -10,7 +11,9 @@ import {
 } from "./helpers";
 import { waitForEntity } from "./waitHelpers";
 
-const TestDataPath = path.join(__dirname, "../../data");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+export const TestDataPath = path.join(__dirname, "../../data");
 
 /**
  * Used to upload local file as a source
@@ -61,9 +64,7 @@ export async function uploadFile(
     ]);
     // if not duplicate wait and make sure `Duplicate source name` modal is not open
     await asyncWait(100);
-    await playwrightExpect(
-      page.getByText("Duplicate source name")
-    ).toBeHidden();
+    await expect(page.getByText("Duplicate source name")).toBeHidden();
   }
 }
 

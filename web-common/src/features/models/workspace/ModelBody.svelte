@@ -25,17 +25,14 @@
     V1CatalogEntry,
     V1PutFileAndReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
-  import {
-    invalidateAfterReconcile,
-    isProfilingQuery,
-  } from "@rilldata/web-common/runtime-client/invalidation";
-  import type { LayoutElement } from "@rilldata/web-local/lib/types";
+  import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
+  import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import { slide } from "svelte/transition";
-  import { SIDE_PAD } from "../../../layout/config";
-  import { drag } from "../../../layout/drag";
+  import HorizontalSplitter from "../../../layout/workspace/HorizontalSplitter.svelte";
+  import type { LayoutElement } from "../../../layout/workspace/types";
   import { httpRequestQueue } from "../../../runtime-client/http-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useModelFileIsEmpty } from "../selectors";
@@ -98,22 +95,6 @@
     "rill:app:output-visibility-tween"
   ) as Writable<number>;
 
-  const inspectorWidth = getContext(
-    "rill:app:inspector-width-tween"
-  ) as Writable<number>;
-
-  const inspectorVisibilityTween = getContext(
-    "rill:app:inspector-visibility-tween"
-  ) as Writable<number>;
-
-  const navigationWidth = getContext(
-    "rill:app:navigation-width-tween"
-  ) as Writable<number>;
-
-  const navVisibilityTween = getContext(
-    "rill:app:navigation-visibility-tween"
-  ) as Writable<number>;
-
   async function updateModelContent(content: string) {
     const hasChanged = sanitizeQuery(content) !== sanitizedQuery;
     let overlayShown = false;
@@ -136,10 +117,8 @@
         httpRequestQueue.removeByName(modelName);
         // cancel all existing analytical queries currently running.
         await queryClient.cancelQueries({
-          fetching: true,
-          predicate: (query) => {
-            return isProfilingQuery(query.queryHash, modelName);
-          },
+          fetchStatus: "fetching",
+          predicate: (query) => isProfilingQuery(query, modelName),
         });
       }
 
@@ -209,29 +188,7 @@
   </div>
   <Portal target=".body">
     {#if $outputLayout.visible}
-      <div
-        class="fixed drawer-handler h-4 hover:cursor-col-resize translate-y-2 grid items-center"
-        style:bottom="{$outputPosition * $outputVisibilityTween}px"
-        style:left="{(1 - $navVisibilityTween) * $navigationWidth + 20}px"
-        style:padding-left="{$navVisibilityTween * SIDE_PAD}px"
-        style:padding-right="{(1 - $inspectorVisibilityTween) * SIDE_PAD}px"
-        style:right="{$inspectorVisibilityTween * $inspectorWidth + 20}px"
-        use:drag={{
-          minSize: 200,
-          maxSize: innerHeight - 200,
-          side: "modelPreviewHeight",
-          store: outputLayout,
-          orientation: "vertical",
-          reverse: true,
-        }}
-      >
-        <div class="border-t border-gray-300" />
-        <div class="absolute right-1/2 left-1/2 top-1/2 bottom-1/2">
-          <div
-            class="border-gray-400 border bg-white rounded h-1 w-8 absolute -translate-y-1/2"
-          />
-        </div>
-      </div>
+      <HorizontalSplitter />
     {/if}
   </Portal>
 

@@ -191,6 +191,10 @@ func (m *S3ListBucketsRequest) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for InstanceId
+
+	// no validation rules for Connector
+
 	// no validation rules for PageSize
 
 	// no validation rules for PageToken
@@ -400,6 +404,10 @@ func (m *S3ListObjectsRequest) validate(all bool) error {
 	}
 
 	var errors []error
+
+	// no validation rules for InstanceId
+
+	// no validation rules for Connector
 
 	if m.GetPageSize() != 0 {
 
@@ -677,6 +685,10 @@ func (m *S3GetBucketMetadataRequest) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for InstanceId
+
+	// no validation rules for Connector
+
 	if utf8.RuneCountInString(m.GetBucket()) < 1 {
 		err := S3GetBucketMetadataRequestValidationError{
 			field:  "Bucket",
@@ -894,6 +906,10 @@ func (m *S3GetCredentialsInfoRequest) validate(all bool) error {
 	}
 
 	var errors []error
+
+	// no validation rules for InstanceId
+
+	// no validation rules for Connector
 
 	if len(errors) > 0 {
 		return S3GetCredentialsInfoRequestMultiError(errors)
@@ -1239,6 +1255,10 @@ func (m *GCSListBucketsRequest) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for InstanceId
+
+	// no validation rules for Connector
+
 	if m.GetPageSize() != 0 {
 
 		if m.GetPageSize() > 100 {
@@ -1461,6 +1481,10 @@ func (m *GCSListObjectsRequest) validate(all bool) error {
 	}
 
 	var errors []error
+
+	// no validation rules for InstanceId
+
+	// no validation rules for Connector
 
 	if m.GetPageSize() != 0 {
 
@@ -1738,6 +1762,10 @@ func (m *GCSGetCredentialsInfoRequest) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for InstanceId
+
+	// no validation rules for Connector
+
 	if len(errors) > 0 {
 		return GCSGetCredentialsInfoRequestMultiError(errors)
 	}
@@ -1925,3 +1953,806 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GCSGetCredentialsInfoResponseValidationError{}
+
+// Validate checks the field values on OLAPListTablesRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *OLAPListTablesRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on OLAPListTablesRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// OLAPListTablesRequestMultiError, or nil if none found.
+func (m *OLAPListTablesRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *OLAPListTablesRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	// no validation rules for Connector
+
+	if len(errors) > 0 {
+		return OLAPListTablesRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// OLAPListTablesRequestMultiError is an error wrapping multiple validation
+// errors returned by OLAPListTablesRequest.ValidateAll() if the designated
+// constraints aren't met.
+type OLAPListTablesRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m OLAPListTablesRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m OLAPListTablesRequestMultiError) AllErrors() []error { return m }
+
+// OLAPListTablesRequestValidationError is the validation error returned by
+// OLAPListTablesRequest.Validate if the designated constraints aren't met.
+type OLAPListTablesRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e OLAPListTablesRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e OLAPListTablesRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e OLAPListTablesRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e OLAPListTablesRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e OLAPListTablesRequestValidationError) ErrorName() string {
+	return "OLAPListTablesRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e OLAPListTablesRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sOLAPListTablesRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = OLAPListTablesRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = OLAPListTablesRequestValidationError{}
+
+// Validate checks the field values on OLAPListTablesResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *OLAPListTablesResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on OLAPListTablesResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// OLAPListTablesResponseMultiError, or nil if none found.
+func (m *OLAPListTablesResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *OLAPListTablesResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetTables() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, OLAPListTablesResponseValidationError{
+						field:  fmt.Sprintf("Tables[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, OLAPListTablesResponseValidationError{
+						field:  fmt.Sprintf("Tables[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return OLAPListTablesResponseValidationError{
+					field:  fmt.Sprintf("Tables[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return OLAPListTablesResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// OLAPListTablesResponseMultiError is an error wrapping multiple validation
+// errors returned by OLAPListTablesResponse.ValidateAll() if the designated
+// constraints aren't met.
+type OLAPListTablesResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m OLAPListTablesResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m OLAPListTablesResponseMultiError) AllErrors() []error { return m }
+
+// OLAPListTablesResponseValidationError is the validation error returned by
+// OLAPListTablesResponse.Validate if the designated constraints aren't met.
+type OLAPListTablesResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e OLAPListTablesResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e OLAPListTablesResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e OLAPListTablesResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e OLAPListTablesResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e OLAPListTablesResponseValidationError) ErrorName() string {
+	return "OLAPListTablesResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e OLAPListTablesResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sOLAPListTablesResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = OLAPListTablesResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = OLAPListTablesResponseValidationError{}
+
+// Validate checks the field values on TableInfo with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *TableInfo) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on TableInfo with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in TableInfoMultiError, or nil
+// if none found.
+func (m *TableInfo) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *TableInfo) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Database
+
+	// no validation rules for Name
+
+	if len(errors) > 0 {
+		return TableInfoMultiError(errors)
+	}
+
+	return nil
+}
+
+// TableInfoMultiError is an error wrapping multiple validation errors returned
+// by TableInfo.ValidateAll() if the designated constraints aren't met.
+type TableInfoMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m TableInfoMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m TableInfoMultiError) AllErrors() []error { return m }
+
+// TableInfoValidationError is the validation error returned by
+// TableInfo.Validate if the designated constraints aren't met.
+type TableInfoValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e TableInfoValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e TableInfoValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e TableInfoValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e TableInfoValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e TableInfoValidationError) ErrorName() string { return "TableInfoValidationError" }
+
+// Error satisfies the builtin error interface
+func (e TableInfoValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sTableInfo.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = TableInfoValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = TableInfoValidationError{}
+
+// Validate checks the field values on BigQueryListDatasetsRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *BigQueryListDatasetsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on BigQueryListDatasetsRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// BigQueryListDatasetsRequestMultiError, or nil if none found.
+func (m *BigQueryListDatasetsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *BigQueryListDatasetsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	// no validation rules for Connector
+
+	if m.GetPageSize() != 0 {
+
+		if m.GetPageSize() > 100 {
+			err := BigQueryListDatasetsRequestValidationError{
+				field:  "PageSize",
+				reason: "value must be less than or equal to 100",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	// no validation rules for PageToken
+
+	if len(errors) > 0 {
+		return BigQueryListDatasetsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// BigQueryListDatasetsRequestMultiError is an error wrapping multiple
+// validation errors returned by BigQueryListDatasetsRequest.ValidateAll() if
+// the designated constraints aren't met.
+type BigQueryListDatasetsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m BigQueryListDatasetsRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m BigQueryListDatasetsRequestMultiError) AllErrors() []error { return m }
+
+// BigQueryListDatasetsRequestValidationError is the validation error returned
+// by BigQueryListDatasetsRequest.Validate if the designated constraints
+// aren't met.
+type BigQueryListDatasetsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e BigQueryListDatasetsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e BigQueryListDatasetsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e BigQueryListDatasetsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e BigQueryListDatasetsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e BigQueryListDatasetsRequestValidationError) ErrorName() string {
+	return "BigQueryListDatasetsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e BigQueryListDatasetsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sBigQueryListDatasetsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = BigQueryListDatasetsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = BigQueryListDatasetsRequestValidationError{}
+
+// Validate checks the field values on BigQueryListDatasetsResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *BigQueryListDatasetsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on BigQueryListDatasetsResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// BigQueryListDatasetsResponseMultiError, or nil if none found.
+func (m *BigQueryListDatasetsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *BigQueryListDatasetsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for NextPageToken
+
+	if len(errors) > 0 {
+		return BigQueryListDatasetsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// BigQueryListDatasetsResponseMultiError is an error wrapping multiple
+// validation errors returned by BigQueryListDatasetsResponse.ValidateAll() if
+// the designated constraints aren't met.
+type BigQueryListDatasetsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m BigQueryListDatasetsResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m BigQueryListDatasetsResponseMultiError) AllErrors() []error { return m }
+
+// BigQueryListDatasetsResponseValidationError is the validation error returned
+// by BigQueryListDatasetsResponse.Validate if the designated constraints
+// aren't met.
+type BigQueryListDatasetsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e BigQueryListDatasetsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e BigQueryListDatasetsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e BigQueryListDatasetsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e BigQueryListDatasetsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e BigQueryListDatasetsResponseValidationError) ErrorName() string {
+	return "BigQueryListDatasetsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e BigQueryListDatasetsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sBigQueryListDatasetsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = BigQueryListDatasetsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = BigQueryListDatasetsResponseValidationError{}
+
+// Validate checks the field values on BigQueryListTablesRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *BigQueryListTablesRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on BigQueryListTablesRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// BigQueryListTablesRequestMultiError, or nil if none found.
+func (m *BigQueryListTablesRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *BigQueryListTablesRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	// no validation rules for Connector
+
+	// no validation rules for Dataset
+
+	if m.GetPageSize() != 0 {
+
+		if m.GetPageSize() > 100 {
+			err := BigQueryListTablesRequestValidationError{
+				field:  "PageSize",
+				reason: "value must be less than or equal to 100",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	// no validation rules for PageToken
+
+	if len(errors) > 0 {
+		return BigQueryListTablesRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// BigQueryListTablesRequestMultiError is an error wrapping multiple validation
+// errors returned by BigQueryListTablesRequest.ValidateAll() if the
+// designated constraints aren't met.
+type BigQueryListTablesRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m BigQueryListTablesRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m BigQueryListTablesRequestMultiError) AllErrors() []error { return m }
+
+// BigQueryListTablesRequestValidationError is the validation error returned by
+// BigQueryListTablesRequest.Validate if the designated constraints aren't met.
+type BigQueryListTablesRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e BigQueryListTablesRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e BigQueryListTablesRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e BigQueryListTablesRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e BigQueryListTablesRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e BigQueryListTablesRequestValidationError) ErrorName() string {
+	return "BigQueryListTablesRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e BigQueryListTablesRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sBigQueryListTablesRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = BigQueryListTablesRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = BigQueryListTablesRequestValidationError{}
+
+// Validate checks the field values on BigQueryListTablesResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *BigQueryListTablesResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on BigQueryListTablesResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// BigQueryListTablesResponseMultiError, or nil if none found.
+func (m *BigQueryListTablesResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *BigQueryListTablesResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for NextPageToken
+
+	if len(errors) > 0 {
+		return BigQueryListTablesResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// BigQueryListTablesResponseMultiError is an error wrapping multiple
+// validation errors returned by BigQueryListTablesResponse.ValidateAll() if
+// the designated constraints aren't met.
+type BigQueryListTablesResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m BigQueryListTablesResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m BigQueryListTablesResponseMultiError) AllErrors() []error { return m }
+
+// BigQueryListTablesResponseValidationError is the validation error returned
+// by BigQueryListTablesResponse.Validate if the designated constraints aren't met.
+type BigQueryListTablesResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e BigQueryListTablesResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e BigQueryListTablesResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e BigQueryListTablesResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e BigQueryListTablesResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e BigQueryListTablesResponseValidationError) ErrorName() string {
+	return "BigQueryListTablesResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e BigQueryListTablesResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sBigQueryListTablesResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = BigQueryListTablesResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = BigQueryListTablesResponseValidationError{}

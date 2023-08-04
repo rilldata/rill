@@ -2,11 +2,18 @@ syntax = "proto3";
 package rill.ui.v1;
 
 import "google/protobuf/timestamp.proto";
-import "rill/runtime/v1/catalog.proto";
+import "rill/runtime/v1/time_grain.proto";
 import "rill/runtime/v1/queries.proto";
 
 // DashboardState represents the dashboard as seen by the user
 message DashboardState {
+  enum DashboardLeaderboardContextColumn {
+    DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_UNSPECIFIED=0;
+    DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_PERCENT = 1;
+    DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_DELTA_CHANGE = 2;
+    DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_HIDDEN = 3;
+  }
+
   // Selected time range
   DashboardTimeRange time_range = 1;
   // Dimension filters applied
@@ -22,6 +29,17 @@ message DashboardState {
   optional string selected_dimension = 6;
 
   optional bool show_comparison = 7;
+
+  // Selected measures and dimensions to be shown
+  repeated string visible_measures = 8;
+  optional bool all_measures_visible = 9;
+  repeated string visible_dimensions = 10;
+  optional bool all_dimensions_visible = 11;
+
+  optional DashboardLeaderboardContextColumn leaderboard_context_column = 12;
+
+  // Selected timezone for the dashboard
+  optional string selected_timezone = 13;
 }
 
 message DashboardTimeRange {

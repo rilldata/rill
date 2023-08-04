@@ -15,6 +15,7 @@ In your Rill project directory, create a `<source_name>.yaml` file in the `sourc
     - **Note** : Rill also supports ingesting data from other storage providers that support S3 API. Refer to the `endpoint` property below.
   - _`gcs`_ — a file available on google cloud platform.
   - _`local_file`_ — a locally available file.
+  - _`motherduck`_ - data stored in motherduck 
 
 **`uri`**
  —  the URI of the remote connector you are using for the source _(required for type: http, s3, gcs)_. Rill also supports glob patterns as part of the URI for S3 and GCS.
@@ -42,7 +43,7 @@ In your Rill project directory, create a `<source_name>.yaml` file in the `sourc
   - default value is _`1,000`_
 
 **`glob.max_objects_listed`**
- — Appplicable if the URI is a glob pattern. The max number of objects to list and match against glob pattern (excluding files excluded by the glob prefix).
+ — Applicable if the URI is a glob pattern. The max number of objects to list and match against glob pattern (excluding files excluded by the glob prefix).
   - default value is _`1,000,000`_
 
 **`timeout`**
@@ -59,3 +60,17 @@ In your Rill project directory, create a `<source_name>.yaml` file in the `sourc
     - If both `rows` and `files` are specified, each file matching the `files` clause will be extracted according to the `rows` clause.
     - If only `rows` is specified, no limit on number of files is applied. For example, getting a 1 GB `head` extract will download as many files as necessary.
     - If only `files` is specified, each file will be fully ingested.
+
+**`query`**
+ — The query is run against data stored on motherduck account and the results are used as source.
+
+**`db`**
+ — Optionally set database for motherduck connector.
+
+**`duckdb`** – Optionally specify raw parameters to inject into the DuckDB [`read_csv`](https://duckdb.org/docs/data/csv/overview.html), [`read_json`](https://duckdb.org/docs/data/json/overview.html) or [`read_parquet`](https://duckdb.org/docs/data/parquet/overview) statement that Rill generates internally. See the DuckDB [docs](https://duckdb.org/docs/data/overview) for a full list of available parameters. Example usage:
+```yaml
+duckdb:
+  header: True
+  delim: "'|'"
+  columns: "columns={'FlightDate': 'DATE', 'UniqueCarrier': 'VARCHAR', 'OriginCityName': 'VARCHAR', 'DestCityName': 'VARCHAR'}"
+```

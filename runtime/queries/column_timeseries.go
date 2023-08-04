@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"reflect"
 	"strconv"
 	"time"
@@ -13,8 +14,12 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
+	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	// Load IANA time zone data
+	_ "time/tzdata"
 )
 
 const IsoFormat string = "2006-01-02T15:04:05.000Z"
@@ -32,10 +37,14 @@ type ColumnTimeseries struct {
 	Measures            []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure `json:"measures"`
 	TimestampColumnName string                                            `json:"timestamp_column_name"`
 	TimeRange           *runtimev1.TimeSeriesTimeRange                    `json:"time_range"`
-	Filters             *runtimev1.MetricsViewFilter                      `json:"filters"`
 	Pixels              int32                                             `json:"pixels"`
 	SampleSize          int32                                             `json:"sample_size"`
+	TimeZone            string                                            `json:"time_zone,omitempty"`
 	Result              *ColumnTimeseriesResult                           `json:"-"`
+
+	// MetricsView-related fields. These can be removed when MetricsViewTimeSeries is refactored to a standalone implementation.
+	MetricsView       *runtimev1.MetricsView       `json:"-"`
+	MetricsViewFilter *runtimev1.MetricsViewFilter `json:"filters"`
 }
 
 var _ runtime.Query = &ColumnTimeseries{}
@@ -89,7 +98,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 	}
 
 	return olap.WithConnection(ctx, priority, func(ctx context.Context, ensuredCtx context.Context) error {
-		filter, args, err := buildFilterClauseForMetricsViewFilter(q.Filters, olap.Dialect())
+		filter, args, err := buildFilterClauseForMetricsViewFilter(q.MetricsView, q.MetricsViewFilter, olap.Dialect())
 		if err != nil {
 			return err
 		}
@@ -101,32 +110,49 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		dateTruncSpecifier := convertToDateTruncSpecifier(timeRange.Interval)
 		tsAlias := tempName("_ts_")
 		temporaryTableName := tempName("_timeseries_")
+
+		timezone := "UTC"
+		if q.TimeZone != "" {
+			timezone = q.TimeZone
+		}
+
+		_, err = time.LoadLocation(timezone)
+		if err != nil {
+			return err
+		}
+
+		args = append([]any{timezone, timeRange.Start.AsTime(), timezone, timeRange.End.AsTime(), timezone}, args...)
+		args = append(args, timezone)
+
 		querySQL := `CREATE TEMPORARY TABLE ` + temporaryTableName + ` AS (
 			-- generate a time series column that has the intended range
 			WITH template as (
-			SELECT
-				range as ` + tsAlias + `
-			FROM
-				range(
-				date_trunc('` + dateTruncSpecifier + `', TIMESTAMP '` + timeRange.Start.AsTime().Format(IsoFormat) + `'),
-				date_trunc('` + dateTruncSpecifier + `', TIMESTAMP '` + timeRange.End.AsTime().Format(IsoFormat) + `'),
-				INTERVAL '1 ` + dateTruncSpecifier + `')
+				SELECT
+					range as ` + tsAlias + `
+				FROM
+					range(
+					date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ)),
+					date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ)),
+					INTERVAL '1 ` + dateTruncSpecifier + `')
 			),
 			-- transform the original data, and optionally sample it.
 			series AS (
 			SELECT
-				date_trunc('` + dateTruncSpecifier + `', ` + safeName(q.TimestampColumnName) + `) as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
+				date_trunc('` + dateTruncSpecifier + `', timezone(?, ` + safeName(q.TimestampColumnName) + `::TIMESTAMPTZ)) as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
 			FROM ` + safeName(q.TableName) + ` ` + filter + `
 			GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
 			)
-			-- join the transformed data with the generated time series column,
-			-- coalescing the first value to get the 0-default when the rolled up data
-			-- does not have that value.
-			SELECT
-			` + getCoalesceStatementsMeasures(measures) + `,
-			template.` + tsAlias + ` from template
-			LEFT OUTER JOIN series ON template.` + tsAlias + ` = series.` + tsAlias + `
-			ORDER BY template.` + tsAlias + `
+			-- an additional grouping is required for time zone DST (see unit tests for examples)
+			SELECT ` + tsAlias + `,` + getCoalesceStatementsMeasuresLast(measures) + ` FROM (
+				-- join the transformed data with the generated time series column,
+				-- coalescing the first value to get the 0-default when the rolled up data
+				-- does not have that value.
+				SELECT
+				` + getCoalesceStatementsMeasures(measures) + `,
+				timezone(?, template.` + tsAlias + `) as ` + tsAlias + ` from template
+				LEFT OUTER JOIN series ON template.` + tsAlias + ` = series.` + tsAlias + `
+				ORDER BY template.` + tsAlias + `
+			) GROUP BY 1 ORDER BY 1
 		)`
 
 		err = olap.Exec(ctx, &drivers.Statement{
@@ -156,6 +182,17 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 			return err
 		}
 
+		// Omit the time value from the result schema
+		schema := rows.Schema
+		if schema != nil {
+			for i, f := range schema.Fields {
+				if f.Name == tsAlias {
+					schema.Fields = slices.Delete(schema.Fields, i, i+1)
+					break
+				}
+			}
+		}
+
 		var data []*runtimev1.TimeSeriesValue
 		for rows.Next() {
 			rowMap := make(map[string]any)
@@ -173,9 +210,9 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 				rows.Close()
 				panic(fmt.Sprintf("unexpected type for timestamp column: %T", v))
 			}
-
 			delete(rowMap, tsAlias)
-			records, err := pbutil.ToStruct(rowMap)
+
+			records, err := pbutil.ToStruct(rowMap, schema)
 			if err != nil {
 				rows.Close()
 				return err
@@ -210,6 +247,10 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		}
 		return nil
 	})
+}
+
+func (q *ColumnTimeseries) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
+	return ErrExportNotSupported
 }
 
 func (q *ColumnTimeseries) resolveNormaliseTimeRange(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) (*runtimev1.TimeSeriesTimeRange, error) {
@@ -306,7 +347,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 
 	if rowCount < int64(q.Pixels*4) {
 		rows, err := olap.Execute(ctx, &drivers.Statement{
-			Query:            `SELECT ` + safeTimestampColumnName + ` as ts, "` + valueColumn + `" as count FROM "` + tableName + `"`,
+			Query:            `SELECT ` + safeTimestampColumnName + ` as ts, "` + valueColumn + `"::DOUBLE as count FROM "` + tableName + `"`,
 			Priority:         priority,
 			ExecutionTimeout: defaultExecutionTimeout,
 		})
@@ -346,7 +387,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 
 	querySQL := ` -- extract unix time
       WITH Q as (
-        SELECT extract('epoch' from ` + safeTimestampColumnName + `) as t, "` + valueColumn + `" as v FROM "` + tableName + `"
+        SELECT extract('epoch' from ` + safeTimestampColumnName + `) as t, "` + valueColumn + `"::DOUBLE as v FROM "` + tableName + `"
       ),
       -- generate bounds
       M as (
@@ -475,7 +516,18 @@ func getExpressionColumnsFromMeasures(measures []*runtimev1.ColumnTimeSeriesRequ
 func getCoalesceStatementsMeasures(measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) string {
 	var result string
 	for i, measure := range measures {
-		result += fmt.Sprintf(`series.%s as %s`, safeName(measure.SqlName), safeName(measure.SqlName))
+		result += fmt.Sprintf(`series.%[1]s as %[1]s`, safeName(measure.SqlName))
+		if i < len(measures)-1 {
+			result += ", "
+		}
+	}
+	return result
+}
+
+func getCoalesceStatementsMeasuresLast(measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) string {
+	var result string
+	for i, measure := range measures {
+		result += fmt.Sprintf(`last(%[1]s) as %[1]s`, safeName(measure.SqlName))
 		if i < len(measures)-1 {
 			result += ", "
 		}

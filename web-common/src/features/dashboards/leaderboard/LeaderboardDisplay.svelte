@@ -5,28 +5,24 @@
     useMetaQuery,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { createShowHideDimensionsStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import {
-    MetricsViewDimension,
-    V1MetricsViewTotalsResponse,
     createQueryServiceMetricsViewTotals,
+    MetricsViewDimension,
   } from "@rilldata/web-common/runtime-client";
-  import { CreateQueryResult, useQueryClient } from "@tanstack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { onDestroy, onMount } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import {
-    MetricsExplorerEntity,
-    metricsExplorerStore,
-  } from "../dashboard-stores";
-  import { NicelyFormattedTypes } from "../humanize-numbers";
+  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
+  import { FormatPreset } from "../humanize-numbers";
   import Leaderboard from "./Leaderboard.svelte";
-  import LeaderboardMeasureSelector from "./LeaderboardMeasureSelector.svelte";
+  import LeaderboardControls from "./LeaderboardControls.svelte";
 
   export let metricViewName: string;
 
   const queryClient = useQueryClient();
 
-  let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  $: dashboardStore = useDashboardStore(metricViewName);
 
   // query the `/meta` endpoint to get the metric's measures and dimensions
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
@@ -34,12 +30,12 @@
   $: dimensions = $metaQuery.data?.dimensions;
   $: measures = $metaQuery.data?.measures;
 
-  $: selectedMeasureNames = metricsExplorer?.selectedMeasureNames;
+  $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
 
   $: activeMeasure =
     measures &&
     measures.find(
-      (measure) => measure.name === metricsExplorer?.leaderboardMeasureName
+      (measure) => measure.name === $dashboardStore?.leaderboardMeasureName
     );
 
   $: metricTimeSeries = useModelHasTimeSeries(
@@ -48,37 +44,53 @@
   );
   $: hasTimeSeries = $metricTimeSeries.data;
 
-  $: formatPreset =
-    (activeMeasure?.format as NicelyFormattedTypes) ??
-    NicelyFormattedTypes.HUMANIZE;
-
-  let totalsQuery: CreateQueryResult<V1MetricsViewTotalsResponse, Error>;
-  $: if (
-    metricsExplorer &&
-    metaQuery &&
-    $metaQuery.isSuccess &&
-    !$metaQuery.isRefetching
-  ) {
-    let totalsQueryParams = { measureNames: selectedMeasureNames };
-    if (hasTimeSeries) {
-      totalsQueryParams = {
-        ...totalsQueryParams,
-        ...{
-          timeStart: metricsExplorer.selectedTimeRange?.start,
-          timeEnd: metricsExplorer.selectedTimeRange?.end,
-        },
-      };
+  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
+  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
+  $: totalsQuery = createQueryServiceMetricsViewTotals(
+    $runtime.instanceId,
+    metricViewName,
+    {
+      measureNames: selectedMeasureNames,
+      timeStart: hasTimeSeries ? timeStart : undefined,
+      timeEnd: hasTimeSeries ? timeEnd : undefined,
+      filter: $dashboardStore?.filters,
+    },
+    {
+      query: {
+        enabled:
+          selectedMeasureNames?.length > 0 &&
+          (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
+          !!$dashboardStore?.filters,
+      },
     }
-    totalsQuery = createQueryServiceMetricsViewTotals(
-      $runtime.instanceId,
-      metricViewName,
-      totalsQueryParams
-    );
-  }
+  );
+
+  $: formatPreset =
+    (activeMeasure?.format as FormatPreset) ?? FormatPreset.HUMANIZE;
 
   let referenceValue: number;
   $: if (activeMeasure?.name && $totalsQuery?.data?.data) {
     referenceValue = $totalsQuery.data.data?.[activeMeasure.name];
+  }
+
+  $: unfilteredTotalsQuery = createQueryServiceMetricsViewTotals(
+    $runtime.instanceId,
+    metricViewName,
+    {
+      measureNames: selectedMeasureNames,
+      timeStart: hasTimeSeries ? timeStart : undefined,
+      timeEnd: hasTimeSeries ? timeEnd : undefined,
+    },
+    {
+      query: {
+        enabled: hasTimeSeries ? !!timeStart && !!timeEnd : true,
+      },
+    }
+  );
+
+  let unfilteredTotal: number;
+  $: if (activeMeasure?.name) {
+    unfilteredTotal = $unfilteredTotalsQuery.data?.data?.[activeMeasure.name];
   }
 
   let leaderboardExpanded;
@@ -116,52 +128,52 @@
     observer?.disconnect();
   });
 
-  // FIXME: this is pending the remaining state work for show/hide measures and dimensions
-  // $: availableDimensionKeys = selectDimensionKeys($metaQuery);
-  // $: visibleDimensionKeys = metricsExplorer?.visibleDimensionKeys;
-  // $: visibleDimensionsBitmask = availableDimensionKeys.map((k) =>
-  //   visibleDimensionKeys.has(k)
-  // );
+  $: showHideDimensions = createShowHideDimensionsStore(
+    metricViewName,
+    metaQuery
+  );
 
-  // $: dimensionsShown =
-  //   dimensions?.filter((_, i) => visibleDimensionsBitmask[i]) ?? [];
-
-  $: dimensionsShown = dimensions ?? [];
+  $: dimensionsShown =
+    dimensions?.filter((_, i) => $showHideDimensions.selectedItems[i]) ?? [];
 </script>
 
 <svelte:window on:resize={onResize} />
 <!-- container for the metrics leaderboard components and controls -->
 <div
   bind:this={leaderboardContainer}
+  class="flex flex-col overflow-hidden"
   style:height="calc(100vh - 130px - 4rem)"
   style:min-width="365px"
 >
   <div
-    class="grid grid-auto-cols justify-between grid-flow-col items-center pl-1 pb-3"
+    class="grid grid-auto-cols justify-between grid-flow-col items-center pl-1 pb-3 flex-grow-0"
   >
-    <LeaderboardMeasureSelector {metricViewName} />
+    <LeaderboardControls {metricViewName} />
   </div>
-  {#if metricsExplorer}
-    <VirtualizedGrid {columns} height="100%" items={dimensionsShown} let:item>
-      <!-- the single virtual element -->
-      <Leaderboard
-        {formatPreset}
-        isSummableMeasure={activeMeasure?.expression
-          .toLowerCase()
-          ?.includes("count(") ||
-          activeMeasure?.expression?.toLowerCase()?.includes("sum(")}
-        {metricViewName}
-        dimensionName={item.name}
-        on:expand={() => {
-          if (leaderboardExpanded === item.name) {
-            leaderboardExpanded = undefined;
-          } else {
-            leaderboardExpanded = item.name;
-          }
-        }}
-        on:select-item={(event) => onSelectItem(event, item)}
-        referenceValue={referenceValue || 0}
-      />
-    </VirtualizedGrid>
-  {/if}
+  <div class="grow overflow-hidden">
+    {#if $dashboardStore}
+      <VirtualizedGrid {columns} height="100%" items={dimensionsShown} let:item>
+        <!-- the single virtual element -->
+        <Leaderboard
+          {formatPreset}
+          isSummableMeasure={activeMeasure?.expression
+            .toLowerCase()
+            ?.includes("count(") ||
+            activeMeasure?.expression?.toLowerCase()?.includes("sum(")}
+          {metricViewName}
+          dimensionName={item.name}
+          on:expand={() => {
+            if (leaderboardExpanded === item.name) {
+              leaderboardExpanded = undefined;
+            } else {
+              leaderboardExpanded = item.name;
+            }
+          }}
+          on:select-item={(event) => onSelectItem(event, item)}
+          referenceValue={referenceValue || 0}
+          {unfilteredTotal}
+        />
+      </VirtualizedGrid>
+    {/if}
+  </div>
 </div>

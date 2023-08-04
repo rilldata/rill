@@ -2,10 +2,10 @@
   import {
     datePortion,
     formatInteger,
-    removeTimezoneOffset,
     timePortion,
   } from "@rilldata/web-common/lib/formatters";
   import type { ScaleLinear } from "d3-scale";
+  import { removeLocalTimezoneOffset } from "@rilldata/web-common/lib/time/timezone";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import { fly } from "svelte/transition";
@@ -25,7 +25,7 @@
   export let point;
   export let xAccessor: string;
   export let yAccessor: string;
-  $: xLabel = removeTimezoneOffset(point[xAccessor]);
+  $: xLabel = removeLocalTimezoneOffset(point[xAccessor]);
 </script>
 
 <g>
@@ -71,7 +71,7 @@
       class="fill-gray-500"
       use:outline
     >
-      {formatInteger(~~point[yAccessor])} row{#if point[yAccessor] !== 1}s{/if}
+      {formatInteger(Math.trunc(point[yAccessor]))} row{#if point[yAccessor] !== 1}s{/if}
     </text>
   </g>
 </g>

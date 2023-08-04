@@ -1,24 +1,47 @@
 import type { Timestamp } from "@bufbuild/protobuf";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
-import { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/catalog_pb";
+import { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
 import type { MetricsViewFilter_Cond } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
 import {
   DashboardState,
+  DashboardState_DashboardLeaderboardContextColumn,
   DashboardTimeRange,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import {
+  V1MetricsView,
+  V1TimeGrain,
+} from "@rilldata/web-common/runtime-client";
+
+// TODO: make a follow up PR to use the one from the proto directly
+const LeaderboardContextColumnReverseMap: Record<
+  DashboardState_DashboardLeaderboardContextColumn,
+  LeaderboardContextColumn
+> = {
+  [DashboardState_DashboardLeaderboardContextColumn.UNSPECIFIED]:
+    LeaderboardContextColumn.HIDDEN,
+  [DashboardState_DashboardLeaderboardContextColumn.PERCENT]:
+    LeaderboardContextColumn.PERCENT,
+  [DashboardState_DashboardLeaderboardContextColumn.DELTA_CHANGE]:
+    LeaderboardContextColumn.DELTA_CHANGE,
+  [DashboardState_DashboardLeaderboardContextColumn.HIDDEN]:
+    LeaderboardContextColumn.HIDDEN,
+};
 
 export function getDashboardStateFromUrl(
-  url: URL
+  urlState: string,
+  metricsView: V1MetricsView
 ): Partial<MetricsExplorerEntity> {
-  const state = url.searchParams.get("state");
-  if (!state) return undefined;
-  return getDashboardStateFromProto(base64ToProto(decodeURIComponent(state)));
+  return getDashboardStateFromProto(
+    base64ToProto(decodeURIComponent(urlState)),
+    metricsView
+  );
 }
 
 export function getDashboardStateFromProto(
-  binary: Uint8Array
+  binary: Uint8Array,
+  metricsView: V1MetricsView
 ): Partial<MetricsExplorerEntity> {
   const dashboard = DashboardState.fromBinary(binary);
   const entity: Partial<MetricsExplorerEntity> = {
@@ -51,6 +74,35 @@ export function getDashboardStateFromProto(
   }
   if (dashboard.selectedDimension) {
     entity.selectedDimensionName = dashboard.selectedDimension;
+  }
+
+  if (dashboard.selectedTimezone) {
+    entity.selectedTimezone = dashboard.selectedTimezone;
+  }
+
+  if (dashboard.allMeasuresVisible) {
+    entity.allMeasuresVisible = true;
+    entity.visibleMeasureKeys = new Set(
+      metricsView.measures.map((measure) => measure.name)
+    );
+  } else if (dashboard.visibleMeasures) {
+    entity.allMeasuresVisible = false;
+    entity.visibleMeasureKeys = new Set(dashboard.visibleMeasures);
+  }
+
+  if (dashboard.allDimensionsVisible) {
+    entity.allDimensionsVisible = true;
+    entity.visibleDimensionKeys = new Set(
+      metricsView.dimensions.map((measure) => measure.name)
+    );
+  } else if (dashboard.visibleDimensions) {
+    entity.allDimensionsVisible = false;
+    entity.visibleDimensionKeys = new Set(dashboard.visibleDimensions);
+  }
+
+  if (dashboard.leaderboardContextColumn !== undefined) {
+    entity.leaderboardContextColumn =
+      LeaderboardContextColumnReverseMap[dashboard.leaderboardContextColumn];
   }
 
   return entity;
@@ -121,6 +173,8 @@ function fromTimeGrainProto(timeGrain: TimeGrain): V1TimeGrain {
       return V1TimeGrain.TIME_GRAIN_WEEK;
     case TimeGrain.MONTH:
       return V1TimeGrain.TIME_GRAIN_MONTH;
+    case TimeGrain.QUARTER:
+      return V1TimeGrain.TIME_GRAIN_QUARTER;
     case TimeGrain.YEAR:
       return V1TimeGrain.TIME_GRAIN_YEAR;
   }

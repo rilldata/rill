@@ -34,31 +34,6 @@ paths:
             type: object
       tags:
         - AdminService
-  /v1/deployments/{deploymentId}/redeploy:
-    post:
-      summary: TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
-      operationId: AdminService_TriggerRedeploy
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1TriggerRedeployResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: deploymentId
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-      tags:
-        - AdminService
   /v1/deployments/{deploymentId}/refresh:
     post:
       summary: TriggerRefreshSources refresh the source for production deployment
@@ -195,7 +170,7 @@ paths:
           type: string
       tags:
         - AdminService
-    put:
+    patch:
       summary: UpdateOrganization deletes an organizations
       operationId: AdminService_UpdateOrganization
       responses:
@@ -218,9 +193,9 @@ paths:
           schema:
             type: object
             properties:
-              id:
-                type: string
               description:
+                type: string
+              newName:
                 type: string
       tags:
         - AdminService
@@ -775,7 +750,7 @@ paths:
           type: string
       tags:
         - AdminService
-    put:
+    patch:
       summary: UpdateProject updates a project
       operationId: AdminService_UpdateProject
       responses:
@@ -802,8 +777,6 @@ paths:
           schema:
             type: object
             properties:
-              id:
-                type: string
               description:
                 type: string
               public:
@@ -817,6 +790,11 @@ paths:
                 format: int64
               region:
                 type: string
+              newName:
+                type: string
+              prodTtlSeconds:
+                type: string
+                format: int64
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects/{name}/variables:
@@ -876,6 +854,156 @@ paths:
                   type: string
       tags:
         - AdminService
+  /v1/organizations/{organizationName}/services:
+    get:
+      summary: ListService returns all the services per organization
+      operationId: AdminService_ListServices
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListServicesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    post:
+      summary: CreateService creates a new service per organization
+      operationId: AdminService_CreateService
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateServiceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organizationName}/services/{name}:
+    delete:
+      summary: DeleteService deletes a service per organization
+      operationId: AdminService_DeleteService
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteServiceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    patch:
+      summary: UpdateService updates a service per organization
+      operationId: AdminService_UpdateService
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateServiceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              newName:
+                type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organizationName}/services/{serviceName}/tokens:
+    get:
+      summary: ListServiceAuthTokens lists all the service auth tokens
+      operationId: AdminService_ListServiceAuthTokens
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListServiceAuthTokensResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: serviceName
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    post:
+      summary: IssueServiceAuthToken returns the temporary token for given service account
+      operationId: AdminService_IssueServiceAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1IssueServiceAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: serviceName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - AdminService
   /v1/ping:
     get:
       summary: Ping returns information about the server
@@ -889,6 +1017,47 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
+      tags:
+        - AdminService
+  /v1/projects/-/redeploy:
+    post:
+      summary: TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
+      operationId: AdminService_TriggerRedeploy
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1TriggerRedeployResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1TriggerRedeployRequest'
+      tags:
+        - AdminService
+  /v1/services/tokens/{tokenId}:
+    delete:
+      summary: RevokeServiceAuthToken revoke the service auth token
+      operationId: AdminService_RevokeServiceAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RevokeServiceAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: tokenId
+          in: path
+          required: true
+          type: string
       tags:
         - AdminService
   /v1/superuser/members:
@@ -924,6 +1093,113 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1SetSuperuserRequest'
+      tags:
+        - AdminService
+  /v1/superuser/projects/search:
+    get:
+      summary: SearchProjectNames returns project names matching the pattern
+      operationId: AdminService_SearchProjectNames
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SearchProjectNamesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: namePattern
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+  /v1/superuser/quotas/organization:
+    patch:
+      summary: SudoUpdateOrganizationQuotas update the quotas available for orgs
+      operationId: AdminService_SudoUpdateOrganizationQuotas
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoUpdateOrganizationQuotasResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoUpdateOrganizationQuotasRequest'
+      tags:
+        - AdminService
+  /v1/superuser/quotas/user:
+    patch:
+      summary: SudoUpdateUserQuotas update the quotas for users
+      operationId: AdminService_SudoUpdateUserQuotas
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoUpdateUserQuotasResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoUpdateUserQuotasRequest'
+      tags:
+        - AdminService
+  /v1/superuser/resource:
+    get:
+      summary: SudoGetResource returns details about a resource by ID lookup
+      operationId: AdminService_SudoGetResource
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoGetResourceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          type: string
+        - name: orgId
+          in: query
+          required: false
+          type: string
+        - name: projectId
+          in: query
+          required: false
+          type: string
+        - name: deploymentId
+          in: query
+          required: false
+          type: string
+        - name: instanceId
+          in: query
+          required: false
+          type: string
       tags:
         - AdminService
   /v1/tokens/current:
@@ -962,6 +1238,105 @@ paths:
             $ref: '#/definitions/v1IssueRepresentativeAuthTokenRequest'
       tags:
         - AdminService
+  /v1/users:
+    get:
+      summary: GetUser returns user by email
+      operationId: AdminService_GetUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: email
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+  /v1/users/bookmarks:
+    get:
+      summary: ListBookmarks lists all the bookmarks for the user
+      operationId: AdminService_ListBookmarks
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListBookmarksResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: projectId
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+    post:
+      summary: CreateBookmark creates a bookmark for the given user for the given project
+      operationId: AdminService_CreateBookmark
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateBookmarkResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1CreateBookmarkRequest'
+      tags:
+        - AdminService
+  /v1/users/bookmarks/{bookmarkId}:
+    get:
+      summary: GetBookmark returns the bookmark for the given user for the given project
+      operationId: AdminService_GetBookmark
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetBookmarkResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: bookmarkId
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    delete:
+      summary: RemoveBookmark removes the bookmark for the given user for the given project
+      operationId: AdminService_RemoveBookmark
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RemoveBookmarkResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: bookmarkId
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
   /v1/users/current:
     get:
       summary: GetCurrentUser returns the currently authenticated user (if any)
@@ -977,9 +1352,30 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - AdminService
+  /v1/users/preferences:
+    put:
+      summary: UpdateUserPreferences updates the preferences for the user
+      operationId: AdminService_UpdateUserPreferences
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateUserPreferencesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1UpdateUserPreferencesRequest'
+      tags:
+        - AdminService
   /v1/users/search:
     get:
-      summary: GetUsersByEmail returns user by email
+      summary: GetUsersByEmail returns users by email
       operationId: AdminService_SearchUsers
       responses:
         "200":
@@ -1036,6 +1432,45 @@ definitions:
     properties:
       pendingSignup:
         type: boolean
+  v1Bookmark:
+    type: object
+    properties:
+      id:
+        type: string
+      displayName:
+        type: string
+      data:
+        type: string
+        format: byte
+      dashboardName:
+        type: string
+      projectId:
+        type: string
+      userId:
+        type: string
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
+  v1CreateBookmarkRequest:
+    type: object
+    properties:
+      displayName:
+        type: string
+      data:
+        type: string
+        format: byte
+      dashboardName:
+        type: string
+      projectId:
+        type: string
+  v1CreateBookmarkResponse:
+    type: object
+    properties:
+      bookmark:
+        $ref: '#/definitions/v1Bookmark'
   v1CreateOrganizationRequest:
     type: object
     properties:
@@ -1053,12 +1488,22 @@ definitions:
     properties:
       project:
         $ref: '#/definitions/v1Project'
+  v1CreateServiceResponse:
+    type: object
+    properties:
+      service:
+        $ref: '#/definitions/v1Service'
   v1CreateWhitelistedDomainResponse:
     type: object
   v1DeleteOrganizationResponse:
     type: object
   v1DeleteProjectResponse:
     type: object
+  v1DeleteServiceResponse:
+    type: object
+    properties:
+      service:
+        $ref: '#/definitions/v1Service'
   v1Deployment:
     type: object
     properties:
@@ -1094,11 +1539,18 @@ definitions:
       - DEPLOYMENT_STATUS_RECONCILING
       - DEPLOYMENT_STATUS_ERROR
     default: DEPLOYMENT_STATUS_UNSPECIFIED
+  v1GetBookmarkResponse:
+    type: object
+    properties:
+      bookmark:
+        $ref: '#/definitions/v1Bookmark'
   v1GetCurrentUserResponse:
     type: object
     properties:
       user:
         $ref: '#/definitions/v1User'
+      preferences:
+        $ref: '#/definitions/v1UserPreferences'
   v1GetGitCredentialsResponse:
     type: object
     properties:
@@ -1146,6 +1598,11 @@ definitions:
         type: object
         additionalProperties:
           type: string
+  v1GetUserResponse:
+    type: object
+    properties:
+      user:
+        $ref: '#/definitions/v1User'
   v1IssueRepresentativeAuthTokenRequest:
     type: object
     properties:
@@ -1159,8 +1616,21 @@ definitions:
     properties:
       token:
         type: string
+  v1IssueServiceAuthTokenResponse:
+    type: object
+    properties:
+      token:
+        type: string
   v1LeaveOrganizationResponse:
     type: object
+  v1ListBookmarksResponse:
+    type: object
+    properties:
+      bookmarks:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Bookmark'
   v1ListOrganizationInvitesResponse:
     type: object
     properties:
@@ -1221,6 +1691,22 @@ definitions:
           $ref: '#/definitions/v1Project'
       nextPageToken:
         type: string
+  v1ListServiceAuthTokensResponse:
+    type: object
+    properties:
+      tokens:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ServiceToken'
+  v1ListServicesResponse:
+    type: object
+    properties:
+      services:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Service'
   v1ListSuperusersResponse:
     type: object
     properties:
@@ -1264,6 +1750,8 @@ definitions:
         title: Globally unique
       description:
         type: string
+      quotas:
+        $ref: '#/definitions/v1OrganizationQuotas'
       createdOn:
         type: string
         format: date-time
@@ -1287,6 +1775,24 @@ definitions:
         type: boolean
       manageOrgMembers:
         type: boolean
+  v1OrganizationQuotas:
+    type: object
+    properties:
+      projects:
+        type: integer
+        format: int64
+      deployments:
+        type: integer
+        format: int64
+      slotsTotal:
+        type: integer
+        format: int64
+      slotsPerDeployment:
+        type: integer
+        format: int64
+      outstandingInvites:
+        type: integer
+        format: int64
   v1PingResponse:
     type: object
     properties:
@@ -1330,6 +1836,9 @@ definitions:
         type: string
       frontendUrl:
         type: string
+      prodTtlSeconds:
+        type: string
+        format: int64
       createdOn:
         type: string
         format: date-time
@@ -1359,6 +1868,8 @@ definitions:
         type: boolean
       manageProjectMembers:
         type: boolean
+  v1RemoveBookmarkResponse:
+    type: object
   v1RemoveOrganizationMemberResponse:
     type: object
   v1RemoveProjectMemberResponse:
@@ -1370,6 +1881,17 @@ definitions:
     properties:
       tokenId:
         type: string
+  v1RevokeServiceAuthTokenResponse:
+    type: object
+  v1SearchProjectNamesResponse:
+    type: object
+    properties:
+      names:
+        type: array
+        items:
+          type: string
+      nextPageToken:
+        type: string
   v1SearchUsersResponse:
     type: object
     properties:
@@ -1380,6 +1902,34 @@ definitions:
           $ref: '#/definitions/v1User'
       nextPageToken:
         type: string
+  v1Service:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      orgId:
+        type: string
+      orgName:
+        type: string
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
+  v1ServiceToken:
+    type: object
+    properties:
+      id:
+        type: string
+      createdOn:
+        type: string
+        format: date-time
+      expiresOn:
+        type: string
+        format: date-time
   v1SetOrganizationMemberRoleResponse:
     type: object
   v1SetProjectMemberRoleResponse:
@@ -1393,8 +1943,76 @@ definitions:
         type: boolean
   v1SetSuperuserResponse:
     type: object
+  v1SudoGetResourceResponse:
+    type: object
+    properties:
+      user:
+        $ref: '#/definitions/v1User'
+      org:
+        $ref: '#/definitions/v1Organization'
+      project:
+        $ref: '#/definitions/v1Project'
+      deployment:
+        $ref: '#/definitions/v1Deployment'
+      instance:
+        $ref: '#/definitions/v1Deployment'
+    title: SudoGetResourceResponse
+  v1SudoUpdateOrganizationQuotasRequest:
+    type: object
+    properties:
+      orgName:
+        type: string
+      projects:
+        type: integer
+        format: int64
+      deployments:
+        type: integer
+        format: int64
+      slotsTotal:
+        type: integer
+        format: int64
+      slotsPerDeployment:
+        type: integer
+        format: int64
+      outstandingInvites:
+        type: integer
+        format: int64
+    title: SudoUpdateOrganizationQuotasRequest
+  v1SudoUpdateOrganizationQuotasResponse:
+    type: object
+    properties:
+      organization:
+        $ref: '#/definitions/v1Organization'
+    title: SudoUpdateOrganizationQuotasResponse
+  v1SudoUpdateUserQuotasRequest:
+    type: object
+    properties:
+      email:
+        type: string
+      singleuserOrgs:
+        type: integer
+        format: int64
+    title: SudoUpdateUserQuotasRequest
+  v1SudoUpdateUserQuotasResponse:
+    type: object
+    properties:
+      user:
+        $ref: '#/definitions/v1User'
+    title: SudoUpdateUserQuotasResponse
   v1TriggerReconcileResponse:
     type: object
+  v1TriggerRedeployRequest:
+    type: object
+    properties:
+      organization:
+        type: string
+        title: |-
+          It's sufficient to pass org/project name OR deployment_id.
+          (To enable rehydrating hibernated projects.)
+      project:
+        type: string
+      deploymentId:
+        type: string
   v1TriggerRedeployResponse:
     type: object
   v1TriggerRefreshSourcesResponse:
@@ -1416,6 +2034,22 @@ definitions:
         type: object
         additionalProperties:
           type: string
+  v1UpdateServiceResponse:
+    type: object
+    properties:
+      service:
+        $ref: '#/definitions/v1Service'
+  v1UpdateUserPreferencesRequest:
+    type: object
+    properties:
+      preferences:
+        $ref: '#/definitions/v1UserPreferences'
+    title: Updating user preferences for the current user
+  v1UpdateUserPreferencesResponse:
+    type: object
+    properties:
+      preferences:
+        $ref: '#/definitions/v1UserPreferences'
   v1User:
     type: object
     properties:
@@ -1427,6 +2061,8 @@ definitions:
         type: string
       photoUrl:
         type: string
+      quotas:
+        $ref: '#/definitions/v1UserQuotas'
       createdOn:
         type: string
         format: date-time
@@ -1442,6 +2078,18 @@ definitions:
         type: string
       invitedBy:
         type: string
+  v1UserPreferences:
+    type: object
+    properties:
+      timeZone:
+        type: string
+    title: Message containing user preferences
+  v1UserQuotas:
+    type: object
+    properties:
+      singleuserOrgs:
+        type: integer
+        format: int64
   v1WhitelistedDomain:
     type: object
     properties:

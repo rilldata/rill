@@ -2,9 +2,11 @@ package server
 
 import (
 	"context"
+	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -13,7 +15,7 @@ import (
 func getMetricsTestServer(t *testing.T, projectName string) (*Server, string) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, projectName)
 
-	server, err := NewServer(context.Background(), &Options{}, rt, nil)
+	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	return server, instanceID
@@ -901,7 +903,7 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_complete_source_sanit
 	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
-		DimensionName:   "domain",
+		DimensionName:   "dom",
 		MeasureNames:    []string{"measure_0"},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
@@ -912,7 +914,7 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_complete_source_sanit
 		Filter: &runtimev1.MetricsViewFilter{
 			Exclude: []*runtimev1.MetricsViewFilter_Cond{
 				{
-					Name: "publisher",
+					Name: "pub",
 					In: []*structpb.Value{
 						structpb.NewStringValue("Yahoo"),
 					},

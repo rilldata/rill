@@ -1,5 +1,5 @@
-import { expect } from "@jest/globals";
 import type { Page } from "playwright";
+import { expect } from "@playwright/test";
 import { renameEntityUsingTitle } from "./commonHelpers";
 import { clickMenuButton, openEntityMenu, TestEntityType } from "./helpers";
 import { waitForEntity } from "./waitHelpers";
@@ -15,17 +15,6 @@ export async function createModel(page: Page, name: string) {
 export async function createModelFromSource(page: Page, source: string) {
   await openEntityMenu(page, source);
   await clickMenuButton(page, "Create New Model");
-}
-
-export async function updateModelSql(page: Page, sql: string) {
-  await page.locator(".cm-line").first().click();
-  if (process.platform === "darwin") {
-    await page.keyboard.press("Meta+A");
-  } else {
-    await page.keyboard.press("Control+A");
-  }
-  await page.keyboard.press("Delete");
-  await page.keyboard.insertText(sql);
 }
 
 export async function modelHasError(page: Page, hasError: boolean, error = "") {

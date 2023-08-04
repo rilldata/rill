@@ -1,6 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import { renameFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
   import { isDuplicateName } from "@rilldata/web-common/features/entity-management/name-utils";
@@ -11,10 +10,9 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { WorkspaceHeader } from "../../../layout/workspace";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import MetricsExploreMetricsButton from "./MetricsExploreMetricsButton.svelte";
+  import GoToDashboardButton from "./GoToDashboardButton.svelte";
 
   export let metricsDefName;
-  export let metricsInternalRep;
 
   $: runtimeInstanceId = $runtime.instanceId;
   $: allNamesQuery = useAllNames(runtimeInstanceId);
@@ -61,12 +59,6 @@
 <WorkspaceHeader
   {...{ titleInput, onChangeCallback }}
   appRunning={$appQueryStatusStore}
-  showInspectorToggle={false}
 >
-  <MetricsIcon slot="icon" />
-  <MetricsExploreMetricsButton
-    {metricsDefName}
-    {metricsInternalRep}
-    slot="cta"
-  />
+  <GoToDashboardButton {metricsDefName} slot="cta" />
 </WorkspaceHeader>

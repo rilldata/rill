@@ -6,7 +6,6 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
@@ -14,11 +13,11 @@ func (c *connection) Dialect() drivers.Dialect {
 	return drivers.DialectDruid
 }
 
-func (c *connection) Ingest(ctx context.Context, env *connectors.Env, source *connectors.Source) (*drivers.IngestionSummary, error) {
-	return nil, drivers.ErrUnsupportedConnector
+func (c *connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
+	panic("not implemented")
 }
 
-func (c *connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
+func (c *connection) WithRaw(ctx context.Context, priority int, fn drivers.WithRawFunc) error {
 	panic("not implemented")
 }
 
@@ -268,7 +267,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	case "TIMESTAMP":
 		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	case "DATE":
-		t.Code = runtimev1.Type_CODE_TIMESTAMP
+		t.Code = runtimev1.Type_CODE_DATE
 	case "OTHER":
 		t.Code = runtimev1.Type_CODE_JSON
 	}

@@ -1,4 +1,6 @@
-import { convertTimestampPreviewFcn } from "@rilldata/web-common/lib/convertTimestampPreview";
+import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
+import { getDurationMultiple, getOffset } from "../../../lib/time/transforms";
+import { TimeOffsetType } from "../../../lib/time/types";
 
 /** sets extents to 0 if it makes sense; otherwise, inflates each extent component */
 export function niceMeasureExtents(
@@ -14,14 +16,19 @@ export function niceMeasureExtents(
   ];
 }
 
-export function toComparisonKeys(d) {
+export function toComparisonKeys(d, offsetDuration: string, zone: string) {
   return Object.keys(d).reduce((acc, key) => {
     if (key === "records") {
       Object.entries(d.records).forEach(([key, value]) => {
         acc[`comparison.${key}`] = value;
       });
     } else if (`comparison.${key}` === "comparison.ts") {
-      acc[`comparison.${key}`] = convertTimestampPreviewFcn(d[key], true);
+      acc[`comparison.${key}`] = adjustOffsetForZone(d[key], zone);
+      acc["comparison.ts_position"] = getOffset(
+        acc["comparison.ts"],
+        offsetDuration,
+        TimeOffsetType.ADD
+      );
     } else {
       acc[`comparison.${key}`] = d[key];
     }
@@ -29,14 +36,24 @@ export function toComparisonKeys(d) {
   }, {});
 }
 
-export function prepareTimeSeries(original, comparison) {
+export function prepareTimeSeries(
+  original,
+  comparison,
+  timeGrainDuration: string,
+  zone: string
+) {
   return original.map((originalPt, i) => {
     const comparisonPt = comparison?.[i];
+
+    const ts = adjustOffsetForZone(originalPt.ts, zone);
+    const offsetDuration = getDurationMultiple(timeGrainDuration, 0.5);
+    const ts_position = getOffset(ts, offsetDuration, TimeOffsetType.ADD);
     return {
-      ts: convertTimestampPreviewFcn(originalPt.ts, true),
+      ts,
+      ts_position,
       bin: originalPt.bin,
       ...originalPt.records,
-      ...toComparisonKeys(comparisonPt || {}),
+      ...toComparisonKeys(comparisonPt || {}, offsetDuration, zone),
     };
   });
 }

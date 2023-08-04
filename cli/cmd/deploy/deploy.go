@@ -23,8 +23,8 @@ import (
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/telemetry"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
-	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/codes"
@@ -47,7 +47,6 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 		Short: "Deploy project to Rill Cloud",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-
 			warn := color.New(color.Bold).Add(color.FgYellow)
 			info := color.New(color.Bold).Add(color.FgWhite)
 			success := color.New(color.Bold).Add(color.FgGreen)
@@ -86,6 +85,11 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 
 			// Verify that the projectPath contains a Rill project
 			if !rillv1beta.HasRillProject(fullProjectPath) {
+				// we still navigate user to login and then fail
+				if !cfg.IsAuthenticated() {
+					_ = loginWithTelemetry(ctx, cfg, "", tel)
+					fmt.Println()
+				}
 				fullpath, err := filepath.Abs(fullProjectPath)
 				if err != nil {
 					return err
@@ -100,6 +104,11 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 			// Verify projectPath is a Git repo with remote on Github
 			remote, githubURL, err := gitutil.ExtractGitRemote(projectPath, remote)
 			if err != nil {
+				// if github remote not found we still navigate user to login and then fail
+				if !cfg.IsAuthenticated() {
+					_ = loginWithTelemetry(ctx, cfg, "", tel)
+					fmt.Println()
+				}
 				if errors.Is(err, gitutil.ErrGitRemoteNotFound) || errors.Is(err, git.ErrRepositoryNotExists) {
 					info.Print(githubSetupMsg)
 					return nil
@@ -119,12 +128,9 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				return nil
 			}
 
-			userLoginSuccess := false
 			silentGitFlow := false
 			// If user is not authenticated, run login flow
 			if !cfg.IsAuthenticated() {
-				info.Println("Please log in or sign up for Rill. Opening browser...")
-				time.Sleep(2 * time.Second)
 				silentGitFlow = true
 				authURL := cfg.AdminURL
 				if strings.Contains(authURL, "http://localhost:9090") {
@@ -134,37 +140,14 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 				if err != nil {
 					return err
 				}
-
-				tel.Emit(telemetry.ActionLoginStart)
-				if err := auth.Login(ctx, cfg, redirectURL); err != nil {
-					if errors.Is(err, deviceauth.ErrAuthenticationTimedout) {
-						warn.Println("Rill login has timed out as the code was not confirmed in the browser.")
-						warn.Println("Run `rill deploy` again.")
-						return nil
-					} else if errors.Is(err, deviceauth.ErrCodeRejected) {
-						errorWriter.Println("Login failed: Confirmation code rejected")
-						return nil
-					}
-					return fmt.Errorf("login failed: %w", err)
+				if err := loginWithTelemetry(ctx, cfg, redirectURL, tel); err != nil {
+					return err
 				}
-				userLoginSuccess = true
-				fmt.Println("")
 			}
 
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
-			}
-			if tel.UserID == "" {
-				user, err := client.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
-				if err == nil {
-					tel.WithUserID(user.GetUser().GetId())
-				}
-			}
-
-			if userLoginSuccess {
-				// fire this after we potentially get the user id
-				tel.Emit(telemetry.ActionLoginSuccess)
 			}
 
 			// Run flow for access to the Github remote (if necessary)
@@ -236,8 +219,11 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 					}
 				}
 
-				warn.Printf("Another project %q already deploys from %q\n", projects[0], githubURL)
-				if !cmdutil.ConfirmPrompt("Do you want to continue", "", true) {
+				warn.Printf("Another project %q already deploys from %q.\n", projects[0], githubURL)
+				warn.Printf("- To force the existing project to rebuild, press 'n' and run `rill project reconcile --reset`\n")
+				warn.Printf("- To delete the existing project, press 'n' and run `rill project delete`\n")
+				warn.Printf("- To deploy the repository as a new project under another name, press 'y' or enter\n")
+				if !cmdutil.ConfirmPrompt("Do you want to continue?", "", true) {
 					warn.Println("Aborted")
 					return nil
 				}
@@ -311,6 +297,34 @@ func DeployCmd(cfg *config.Config) *cobra.Command {
 	}
 
 	return deployCmd
+}
+
+func loginWithTelemetry(ctx context.Context, cfg *config.Config, redirectURL string, tel *telemetry.Telemetry) error {
+	info := color.New(color.Bold).Add(color.FgWhite)
+	warn := color.New(color.Bold).Add(color.FgYellow)
+	errorWriter := color.New(color.Bold).Add(color.FgRed)
+	info.Println("Please log in or sign up for Rill. Opening browser...")
+	time.Sleep(2 * time.Second)
+
+	tel.Emit(telemetry.ActionLoginStart)
+	if err := auth.Login(ctx, cfg, redirectURL); err != nil {
+		if errors.Is(err, deviceauth.ErrAuthenticationTimedout) {
+			warn.Println("Rill login has timed out as the code was not confirmed in the browser.")
+			warn.Println("Run `rill deploy` again.")
+			return nil
+		} else if errors.Is(err, deviceauth.ErrCodeRejected) {
+			errorWriter.Println("Login failed: Confirmation code rejected")
+			return nil
+		}
+		return fmt.Errorf("login failed: %w", err)
+	}
+	userID, err := cmdutil.FetchUserID(ctx, cfg)
+	if err == nil {
+		tel.WithUserID(userID)
+	}
+	// fire this after we potentially get the user id
+	tel.Emit(telemetry.ActionLoginSuccess)
+	return nil
 }
 
 func githubFlow(ctx context.Context, c *adminclient.Client, githubURL string, silent bool, tel *telemetry.Telemetry) (*adminv1.GetGithubRepoStatusResponse, error) {
@@ -480,7 +494,7 @@ func variablesFlow(ctx context.Context, projectPath, projectName string) {
 	}
 
 	// collect all sources
-	srcs := make([]*connectors.Source, 0)
+	srcs := make([]*runtimev1.Source, 0)
 	for _, c := range connectorList {
 		if !c.AnonymousAccess {
 			srcs = append(srcs, c.Sources...)
@@ -493,9 +507,10 @@ func variablesFlow(ctx context.Context, projectPath, projectName string) {
 	warn := color.New(color.Bold).Add(color.FgYellow)
 	warn.Printf("\nCould not ingest all sources. Rill requires credentials for the following sources:\n\n")
 	for _, src := range srcs {
-		if _, ok := src.Properties["path"]; ok {
+		props := src.Properties.AsMap()
+		if _, ok := props["path"]; ok {
 			// print URL wherever applicable
-			warn.Printf(" - %s\n", src.Properties["path"])
+			warn.Printf(" - %s\n", props["path"])
 		} else {
 			warn.Printf(" - %s\n", src.Name)
 		}

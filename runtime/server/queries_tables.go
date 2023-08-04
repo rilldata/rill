@@ -20,6 +20,8 @@ func (s *Server) TableCardinality(ctx context.Context, req *runtimev1.TableCardi
 		attribute.Int("args.priority", int(req.Priority)),
 	)
 
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -49,6 +51,8 @@ func (s *Server) TableColumns(ctx context.Context, req *runtimev1.TableColumnsRe
 		attribute.Int("args.priority", int(req.Priority)),
 	)
 
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
@@ -74,6 +78,8 @@ func (s *Server) TableRows(ctx context.Context, req *runtimev1.TableRowsRequest)
 		attribute.Int("args.limit", int(req.Limit)),
 		attribute.Int("args.priority", int(req.Priority)),
 	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden

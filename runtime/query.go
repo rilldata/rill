@@ -3,9 +3,11 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/dgraph-io/ristretto"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/singleflight"
 	"go.opentelemetry.io/otel"
@@ -27,6 +29,12 @@ type QueryResult struct {
 	Bytes int64
 }
 
+type ExportOptions struct {
+	Format       runtimev1.ExportFormat
+	Priority     int
+	PreWriteHook func(filename string) error
+}
+
 type Query interface {
 	// Key should return a cache key that uniquely identifies the query
 	Key() string
@@ -40,12 +48,24 @@ type Query interface {
 	// Resolve should execute the query against the instance's infra.
 	// Error can be nil along with a nil result in general, i.e. when a model contains no rows aggregation results can be nil.
 	Resolve(ctx context.Context, rt *Runtime, instanceID string, priority int) error
+	// Export resolves the query and serializes the result to the writer.
+	Export(ctx context.Context, rt *Runtime, instanceID string, w io.Writer, opts *ExportOptions) error
 }
 
 func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, priority int) error {
 	// If key is empty, skip caching
 	qk := query.Key()
 	if qk == "" {
+		return query.Resolve(ctx, r, instanceID, priority)
+	}
+
+	// Skip caching for specific named drivers.
+	// TODO: Make this configurable with a default provided by the driver.
+	inst, err := r.FindInstance(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+	if inst.OLAPDriver == "druid" {
 		return query.Resolve(ctx, r, instanceID, priority)
 	}
 

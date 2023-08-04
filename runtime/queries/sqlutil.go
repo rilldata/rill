@@ -9,6 +9,8 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
+var ErrExportNotSupported = fmt.Errorf("exporting is not supported")
+
 func quoteName(name string) string {
 	return fmt.Sprintf("\"%s\"", name)
 }
@@ -44,8 +46,34 @@ func convertToDateTruncSpecifier(specifier runtimev1.TimeGrain) string {
 		return "WEEK"
 	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
 		return "MONTH"
+	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
+		return "QUARTER"
 	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
 		return "YEAR"
+	}
+	panic(fmt.Errorf("unconvertable time grain specifier: %v", specifier))
+}
+
+func convertToDruidTimeFloorSpecifier(specifier runtimev1.TimeGrain) string {
+	switch specifier {
+	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
+		return "PT0.001S"
+	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
+		return "PT1S"
+	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
+		return "PT1M"
+	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+		return "PT1H"
+	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
+		return "P1D"
+	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
+		return "P1W"
+	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
+		return "P1M"
+	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
+		return "P3M"
+	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
+		return "P1Y"
 	}
 	panic(fmt.Errorf("unconvertable time grain specifier: %v", specifier))
 }
@@ -66,6 +94,8 @@ func toTimeGrain(val string) runtimev1.TimeGrain {
 		return runtimev1.TimeGrain_TIME_GRAIN_WEEK
 	case "MONTH":
 		return runtimev1.TimeGrain_TIME_GRAIN_MONTH
+	case "QUARTER":
+		return runtimev1.TimeGrain_TIME_GRAIN_QUARTER
 	case "YEAR":
 		return runtimev1.TimeGrain_TIME_GRAIN_YEAR
 	default:

@@ -1,9 +1,13 @@
 import path from "node:path";
 import type { Page } from "playwright";
+import { updateCodeEditor } from "./commonHelpers";
 import { assertLeaderboards } from "./dashboardHelpers";
 import { waitForProfiling, wrapRetryAssertion } from "./helpers";
-import { createModel, updateModelSql } from "./modelHelpers";
+import { createModel } from "./modelHelpers";
 import { waitForSource } from "./sourceHelpers";
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export async function waitForAdBids(page: Page, name: string) {
   return waitForSource(page, name, ["publisher", "domain", "timestamp"]);
@@ -21,7 +25,7 @@ export async function createAdBidsModel(page: Page) {
       "domain",
       "timestamp",
     ]),
-    updateModelSql(
+    updateCodeEditor(
       page,
       `from "${path.join(__dirname, "../../data", "AdBids.csv")}"`
     ),

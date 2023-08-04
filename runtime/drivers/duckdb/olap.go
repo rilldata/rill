@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/google/uuid"
@@ -56,7 +57,8 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 	if stmt.DryRun {
 		return nil
 	}
-	return res.Close()
+	err = res.Close()
+	return c.checkErr(err)
 }
 
 func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res *drivers.Result, outErr error) {
@@ -73,11 +75,11 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 		name := uuid.NewString()
 		_, err = conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY VIEW %q AS %s", name, stmt.Query))
 		if err != nil {
-			return nil, err
+			return nil, c.checkErr(err)
 		}
 
 		_, err = conn.ExecContext(context.Background(), fmt.Sprintf("DROP VIEW %q", name))
-		return nil, err
+		return nil, c.checkErr(err)
 	}
 
 	// Gather metrics only for actual queries
@@ -125,6 +127,8 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 			cancelFunc()
 		}
 
+		// err must be checked before release
+		err = c.checkErr(err)
 		_ = release()
 		return nil, err
 	}
@@ -135,6 +139,8 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 			cancelFunc()
 		}
 
+		// err must be checked before release
+		err = c.checkErr(err)
 		_ = rows.Close()
 		_ = release()
 		return nil, err
@@ -150,6 +156,30 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 	})
 
 	return res, nil
+}
+
+func (c *connection) EstimateSize() (int64, bool) {
+	var paths []string
+	path := c.config.DBFilePath
+	if path == "" {
+		return 0, true
+	}
+
+	// Add .wal file path (e.g final size will be sum of *.db and *.db.wal)
+	dbWalPath := fmt.Sprintf("%s.wal", path)
+	paths = append(paths, path, dbWalPath)
+	return fileSize(paths), true
+}
+
+func (c *connection) WithRaw(ctx context.Context, priority int, fn drivers.WithRawFunc) error {
+	// Acquire connection
+	conn, release, err := c.acquireOLAPConn(ctx, priority)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = release() }()
+
+	return conn.Raw(fn)
 }
 
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
@@ -181,4 +211,14 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	}
 
 	return &runtimev1.StructType{Fields: fields}, nil
+}
+
+func fileSize(paths []string) int64 {
+	var size int64
+	for _, path := range paths {
+		if info, err := os.Stat(path); err == nil { // ignoring error since only error possible is *PathError
+			size += info.Size()
+		}
+	}
+	return size
 }

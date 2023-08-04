@@ -1,14 +1,8 @@
-import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
 import { CATEGORICALS } from "@rilldata/web-common/lib/duckdb-data-types";
-import { guidGenerator } from "@rilldata/web-common/lib/guid";
-import type {
-  V1Model,
-  V1ReconcileError,
-} from "@rilldata/web-common/runtime-client";
-import { Subscriber, readable } from "svelte/store";
-import { Document, ParsedNode, YAMLMap, parseDocument } from "yaml";
-import type { Collection } from "yaml/dist/nodes/Collection";
+import type { V1Model } from "@rilldata/web-common/runtime-client";
+import { parseDocument } from "yaml";
 import { selectTimestampColumnFromSchema } from "./column-selectors";
+import { DEFAULT_TIMEZONES } from "@rilldata/web-common/lib/time/config";
 
 export interface MetricsConfig extends MetricsParams {
   measures: MeasureEntity[];
@@ -32,253 +26,12 @@ export interface MeasureEntity {
   __ERROR__?: string;
 }
 export interface DimensionEntity {
+  name?: string;
   label?: string;
   property?: string;
+  column?: string;
   description?: string;
   __ERROR__?: string;
-}
-
-// This is used to extract the base name from an auto incremented name.
-// EG: "measure_2".replace(NameNumberRegex, "") => "measure"
-const NameNumberRegex = new RegExp(/(\d+)$/);
-const MeasureNamePrefix = "measure";
-
-export class MetricsInternalRepresentation {
-  // All operations are done on the document to preserve comments
-  internalRepresentationDocument: Document.Parsed<ParsedNode>;
-
-  // Object respresentation of the Internal YAML Document
-  internalRepresentation: MetricsConfig;
-
-  // String representation of Internal YAML document
-  internalYAML: string;
-
-  updateStore: (instance: MetricsInternalRepresentation) => void;
-
-  updateRuntime: (yamlString: string) => void;
-
-  constructor(yamlString: string, updateRuntime) {
-    // backwards compatibility for dashboard title
-    yamlString = yamlString.replace(/^display_name:/m, "title:");
-
-    this.internalRepresentation = this.decorateInternalRepresentation(
-      yamlString
-    ) as MetricsConfig;
-    this.internalYAML = yamlString;
-
-    this.updateRuntime = updateRuntime;
-  }
-
-  bindStore(updateStore: Subscriber<MetricsInternalRepresentation>) {
-    this.updateStore = updateStore;
-  }
-
-  decorateInternalRepresentation(yamlString: string) {
-    const internalRepresentationDoc = parseDocument(yamlString);
-
-    this.fillNames(
-      (internalRepresentationDoc.get("measures") as Collection)
-        ?.items as YAMLMap[],
-      MeasureNamePrefix
-    );
-    // TODO: fill names for dimensions
-
-    this.internalRepresentationDocument = internalRepresentationDoc;
-
-    return internalRepresentationDoc.toJSON();
-  }
-
-  regenerateInternalYAML(shouldUpdateRuntime = true) {
-    // create json before any fields are removed
-    this.internalRepresentation = this.internalRepresentationDocument.toJSON();
-
-    // remove fields that are not to be sent as yaml
-    const temporaryRepresentation = this.internalRepresentationDocument.clone();
-
-    const numberOfMeasures =
-      (temporaryRepresentation.get("measures") as Collection)?.items?.length ||
-      0;
-
-    // if no measures, this block is skipped.
-    for (let i = 0; i < numberOfMeasures; i++) {
-      const measure = temporaryRepresentation.getIn(["measures", i]) as YAMLMap;
-
-      if (measure.has("__GUID__"))
-        temporaryRepresentation.deleteIn(["measures", i, "__GUID__"]);
-
-      if (measure.has("__ERROR__"))
-        temporaryRepresentation.deleteIn(["measures", i, "__ERROR__"]);
-    }
-
-    const numberOfDimensions = (
-      temporaryRepresentation.get("dimensions") as Collection
-    )?.items?.length;
-
-    // if no dimensions, this block is skipped.
-    for (let i = 0; i < numberOfDimensions; i++) {
-      const dimension = temporaryRepresentation.getIn([
-        "dimensions",
-        i,
-      ]) as YAMLMap;
-
-      if (dimension.has("__ERROR__"))
-        temporaryRepresentation.deleteIn(["dimensions", i, "__ERROR__"]);
-    }
-
-    this.internalYAML = temporaryRepresentation.toString({
-      collectionStyle: "block",
-    });
-
-    // Update svelte store
-    this.updateStore(this);
-
-    if (shouldUpdateRuntime) {
-      // Update Runtime
-      this.updateRuntime(this.internalYAML);
-    }
-  }
-
-  getMetricKey<K extends keyof MetricsConfig>(key: K): MetricsConfig[K] {
-    return this.internalRepresentation[key];
-  }
-
-  updateMetricsParams(params: Partial<MetricsParams>) {
-    for (const param in params) {
-      this.internalRepresentationDocument.set(param, params[param]);
-    }
-    this.regenerateInternalYAML();
-  }
-
-  updateErrors(errors: Array<V1ReconcileError>) {
-    // set errors for measures and dimensions
-    for (const error of errors) {
-      const index = Number(error.propertyPath[1]);
-      switch (error.propertyPath[0]) {
-        case "Measures":
-          this.internalRepresentationDocument.setIn(
-            ["measures", index, "__ERROR__"],
-            error.message
-          );
-          break;
-        case "Dimensions":
-          this.internalRepresentationDocument.setIn(
-            ["dimensions", index, "__ERROR__"],
-            error.message
-          );
-          break;
-      }
-    }
-
-    this.regenerateInternalYAML(false);
-  }
-
-  // MEASURE METHODS
-  getMeasures() {
-    return this.internalRepresentation.measures;
-  }
-
-  addNewMeasure() {
-    const newName = getName(
-      MeasureNamePrefix,
-      this.internalRepresentation.measures.map((measure) => measure?.name || "")
-    );
-
-    const measureNode = this.internalRepresentationDocument.createNode({
-      label: "",
-      expression: "",
-      name: newName,
-      description: "",
-      format_preset: "humanize",
-      __GUID__: guidGenerator(),
-    });
-
-    this.internalRepresentationDocument.addIn(["measures"], measureNode);
-    this.regenerateInternalYAML();
-  }
-
-  deleteMeasure(index: number) {
-    this.internalRepresentationDocument.deleteIn(["measures", index]);
-    this.regenerateInternalYAML();
-  }
-
-  updateMeasure(index: number, key: string, change) {
-    this.internalRepresentationDocument.setIn(["measures", index, key], change);
-    this.regenerateInternalYAML();
-  }
-
-  // DIMENSIONS METHODS
-  getDimensions() {
-    return this.internalRepresentation.dimensions;
-  }
-
-  addNewDimension() {
-    const dimensionNode = this.internalRepresentationDocument.createNode({
-      label: "",
-      property: "",
-      description: "",
-    });
-
-    this.internalRepresentationDocument.addIn(["dimensions"], dimensionNode);
-    this.regenerateInternalYAML();
-  }
-
-  updateDimension(index: number, key: string, change) {
-    this.internalRepresentationDocument.setIn(
-      ["dimensions", index, key],
-      change
-    );
-    this.regenerateInternalYAML();
-  }
-
-  deleteDimension(index: number) {
-    this.internalRepresentationDocument.deleteIn(["dimensions", index]);
-    this.regenerateInternalYAML();
-  }
-
-  fillNames(entities: Array<YAMLMap>, namePrefix: string) {
-    const numberOfEntities = entities?.length || 0;
-    const availableNames = new Array<number>(numberOfEntities).fill(1);
-    let missingName = false;
-
-    for (let i = 0; i < numberOfEntities; i++) {
-      if (entities[i].has("name")) {
-        const name = entities[i].get("name") as string;
-        const baseName = name.toLowerCase().replace(NameNumberRegex, "");
-        if (baseName === namePrefix) {
-          availableNames[i] = 0;
-        }
-      } else {
-        missingName = true;
-      }
-    }
-
-    // skip the following loop if all measures have names
-    if (!missingName) return;
-
-    for (let i = 0, nameCur = 0; i < numberOfEntities; i++) {
-      if (entities[i].has("name")) continue;
-      while (availableNames[nameCur] === 0) {
-        nameCur++;
-      }
-
-      const newName = nameCur === 0 ? namePrefix : `${namePrefix}_${nameCur}`;
-      entities[i].add({ key: "name", value: newName });
-      nameCur++;
-    }
-  }
-}
-
-export function createInternalRepresentation(yamlString, updateRuntime) {
-  const metricRep = new MetricsInternalRepresentation(
-    yamlString,
-    updateRuntime
-  );
-
-  return readable(metricRep, (set) => {
-    metricRep.bindStore((instance) => {
-      set(instance);
-    });
-  });
 }
 
 const capitalize = (s) => s && s[0].toUpperCase() + s.slice(1);
@@ -292,8 +45,18 @@ model: ""
 default_time_range: ""
 smallest_time_grain: ""
 timeseries: ""
-measures: []
-dimensions: []
+measures:
+  - label: "Total Records"
+    expression: "count(*)"
+dimensions:
+  - name: dimension1
+    label: First dimension
+    column: dimension1
+    description: ""
+available_time_zones:
+  - "Etc/UTC"
+  - "America/Los_Angeles"
+  - "America/New_York"
 `;
   const template = parseDocument(metricsTemplate);
   template.set("title", dashboardName);
@@ -317,6 +80,7 @@ export function addQuickMetricsToDashboardYAML(yaml: string, model: V1Model) {
     name: "total_records",
     description: "Total number of records present",
     format_preset: "humanize",
+    valid_percent_of_total: true,
   });
   doc.set("measures", [measureNode]);
 
@@ -327,8 +91,9 @@ export function addQuickMetricsToDashboardYAML(yaml: string, model: V1Model) {
     })
     .map((field) => {
       return {
+        name: field.name,
         label: capitalize(field.name),
-        property: field.name,
+        column: field.name,
         description: "",
       };
     });
@@ -336,5 +101,9 @@ export function addQuickMetricsToDashboardYAML(yaml: string, model: V1Model) {
   const dimensionNode = doc.createNode(diemensionSeq);
   doc.set("dimensions", dimensionNode);
 
-  return doc.toString({ collectionStyle: "block" });
+  doc.set("available_time_zones", DEFAULT_TIMEZONES);
+
+  return `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
+
+${doc.toString({ collectionStyle: "block" })}`;
 }

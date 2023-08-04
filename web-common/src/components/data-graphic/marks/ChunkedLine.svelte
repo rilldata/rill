@@ -31,6 +31,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   export let data;
   export let xAccessor: string;
   export let yAccessor: string;
+
   export let area = true;
   /** time in ms to trigger a delay when the underlying data changes */
   export let delay = 0;
@@ -49,9 +50,13 @@ Over time, we'll make this the default Line implementation, but it's not quite t
 
   let lineFunction;
   let areaFunction;
+
+  const curveType = "curveLinear";
+
   // FIXME:
   $: if ($xScale && $yScale) {
     lineFunction = lineFactory({
+      curve: curveType,
       xScale: $xScale,
       // the y should always plot a line segment so that we can
       // smoothly tween
@@ -64,6 +69,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
     });
     if (area) {
       areaFunction = areaFactory({
+        curve: curveType,
         xScale: $xScale,
         yScale: (d) => $yScale(d || 0),
         xAccessor,

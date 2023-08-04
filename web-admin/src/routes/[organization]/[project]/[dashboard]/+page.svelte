@@ -12,6 +12,7 @@
   import { useProjectDeploymentStatus } from "@rilldata/web-admin/components/projects/selectors";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardStateProvider.svelte";
+  import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import {
     getRuntimeServiceListCatalogEntriesQueryKey,
     getRuntimeServiceListFilesQueryKey,
@@ -103,13 +104,17 @@
 {#if isProjectPending || (isProjectReconciling && isDashboardNotFound)}
   <ProjectBuilding organization={orgName} project={projectName} />
 {:else if isDashboardOK}
-  <DashboardStateProvider metricViewName={dashboardName}>
-    <Dashboard
-      leftMargin={"48px"}
-      hasTitle={false}
-      metricViewName={dashboardName}
-    />
-  </DashboardStateProvider>
+  <StateManagersProvider metricsViewName={dashboardName}>
+    {#key dashboardName}
+      <DashboardStateProvider metricViewName={dashboardName}>
+        <Dashboard
+          leftMargin={"48px"}
+          hasTitle={false}
+          metricViewName={dashboardName}
+        />
+      </DashboardStateProvider>
+    {/key}
+  </StateManagersProvider>
 {:else if isDashboardErrored}
   <ProjectErrored organization={orgName} project={projectName} />
 {/if}

@@ -3,6 +3,7 @@ package queries
 import (
 	"context"
 	"fmt"
+	"io"
 	"reflect"
 
 	"github.com/rilldata/rill/runtime"
@@ -79,4 +80,8 @@ func (q *TableCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 
 	q.Result = count
 	return nil
+}
+
+func (q *TableCardinality) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
+	return ErrExportNotSupported
 }

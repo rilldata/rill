@@ -36,6 +36,10 @@
       decodeURIComponent(escape(window.atob(configParams)))
     );
 
+    if (config?.extraParams?.screen_hint === "signup") {
+      isLoginPage = false;
+    }
+
     if (cloudClientIDsArr.includes(config?.clientID)) {
       isRillCloud = true;
     }
@@ -211,13 +215,16 @@
     {/if}
 
     <Disclaimer />
-    <div class="mt-6 text-sm text-slate-500">
-      {isLoginPage ? "Don't" : "Already"} have an account?
 
-      <!-- svelte-ignore a11y-invalid-attribute -->
-      <a href="#" on:click={() => (isLoginPage = !isLoginPage)}>
-        {isLoginPage ? "Sign up" : "Log in"}</a
-      >
-    </div>
+    {#if isRillCloud}
+      <div class="mt-6 text-sm text-slate-500">
+        {isLoginPage ? "Don't" : "Already"} have an account?
+
+        <!-- svelte-ignore a11y-invalid-attribute -->
+        <a href="#" on:click={() => (isLoginPage = !isLoginPage)}>
+          {isLoginPage ? "Sign up" : "Log in"}</a
+        >
+      </div>
+    {/if}
   </AuthContainer>
 </RillTheme>

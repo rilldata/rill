@@ -9,6 +9,7 @@ import (
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/email"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -18,6 +19,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+const prodDeplTTL = 14 * 24 * time.Hour
 
 func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.ListProjectsForOrganizationRequest) (*adminv1.ListProjectsForOrganizationResponse, error) {
 	observability.AddRequestAttributes(ctx,
@@ -99,7 +102,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		permissions.ReadProd = true
 	}
 
-	if !permissions.ReadProject {
+	if !permissions.ReadProject && !claims.Superuser(ctx) {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
@@ -137,11 +140,45 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
 	}
 
+	s.admin.Used.Deployment(depl.ID)
+
 	return &adminv1.GetProjectResponse{
 		Project:            s.projToDTO(proj, org.Name),
 		ProdDeployment:     deploymentToDTO(depl),
 		Jwt:                jwt,
 		ProjectPermissions: permissions,
+	}, nil
+}
+
+func (s *Server) SearchProjectNames(ctx context.Context, req *adminv1.SearchProjectNamesRequest) (*adminv1.SearchProjectNamesResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.pattern", req.NamePattern),
+	)
+
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can search projects")
+	}
+
+	token, err := unmarshalPageToken(req.PageToken)
+	if err != nil {
+		return nil, err
+	}
+	pageSize := validPageSize(req.PageSize)
+
+	projectNames, err := s.admin.DB.FindProjectPathsByPattern(ctx, req.NamePattern, token.Val, pageSize)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	nextToken := ""
+	if len(projectNames) >= pageSize {
+		nextToken = marshalPageToken(projectNames[len(projectNames)-1])
+	}
+
+	return &adminv1.SearchProjectNamesResponse{
+		Names:         projectNames,
+		NextPageToken: nextToken,
 	}, nil
 }
 
@@ -208,6 +245,13 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, err
 	}
 
+	// Add prod TTL as 7 days if not a public project else infinite
+	var prodTTL *int64
+	if !req.Public {
+		tmp := int64(prodDeplTTL.Seconds())
+		prodTTL = &tmp
+	}
+
 	// Create the project
 	proj, err := s.admin.CreateProject(ctx, org, claims.OwnerID(), &database.InsertProjectOptions{
 		OrganizationID:       org.ID,
@@ -223,6 +267,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		GithubURL:            &req.GithubUrl,
 		GithubInstallationID: &installationID,
 		ProdVariables:        req.Variables,
+		ProdTTLSeconds:       prodTTL,
 	})
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -261,51 +306,75 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.OrganizationName),
 		attribute.String("args.project", req.Name),
-		attribute.String("args.description", req.Description),
-		attribute.Bool("args.public", req.Public),
-		attribute.String("args.region", req.Region),
-		attribute.Int64("args.prod_slots", req.ProdSlots),
-		attribute.String("args.prod_branch", req.ProdBranch),
-		attribute.String("args.github_url", req.GithubUrl),
 	)
+	if req.Description != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.description", *req.Description))
+	}
+	if req.Region != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.region", *req.Region))
+	}
+	if req.ProdBranch != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.prod_branch", *req.ProdBranch))
+	}
+	if req.GithubUrl != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.github_url", *req.GithubUrl))
+	}
+	if req.Public != nil {
+		observability.AddRequestAttributes(ctx, attribute.Bool("args.public", *req.Public))
+	}
+	if req.ProdSlots != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int64("args.prod_slots", *req.ProdSlots))
+	}
+	if req.ProdTtlSeconds != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int64("args.prod_ttl_seconds", *req.ProdTtlSeconds))
+	}
+	if req.NewName != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.new_name", *req.NewName))
+	}
+
+	// Check the request is made by a user
+	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated")
+	}
 
 	// Find project
-	proj, err := s.admin.DB.FindProject(ctx, req.Id)
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	claims := auth.GetClaims(ctx)
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete project")
 	}
 
-	// If changing the Github URL, check github app is installed and caller has access on the repo
-	if safeStr(proj.GithubURL) != req.GithubUrl {
-		_, err = s.getAndCheckGithubInstallationID(ctx, req.GithubUrl, claims.OwnerID())
-		if err != nil {
-			return nil, err
+	githubURL := proj.GithubURL
+	if req.GithubUrl != nil {
+		// If changing the Github URL, check github app is installed and caller has access on the repo
+		if safeStr(proj.GithubURL) != *req.GithubUrl {
+			_, err = s.getAndCheckGithubInstallationID(ctx, *req.GithubUrl, claims.OwnerID())
+			if err != nil {
+				return nil, err
+			}
+			githubURL = req.GithubUrl
 		}
 	}
 
-	githubURL := proj.GithubURL
-	if req.GithubUrl != "" {
-		githubURL = &req.GithubUrl
-	}
-
+	prodTTLSeconds := valOrDefault(req.ProdTtlSeconds, *proj.ProdTTLSeconds)
 	opts := &database.UpdateProjectOptions{
-		Name:                 req.Name,
-		Description:          req.Description,
-		Public:               req.Public,
-		ProdBranch:           req.ProdBranch,
-		ProdVariables:        proj.ProdVariables,
+		Name:                 valOrDefault(req.NewName, proj.Name),
+		Description:          valOrDefault(req.Description, proj.Description),
+		Public:               valOrDefault(req.Public, proj.Public),
 		GithubURL:            githubURL,
 		GithubInstallationID: proj.GithubInstallationID,
+		ProdBranch:           valOrDefault(req.ProdBranch, proj.ProdBranch),
+		ProdVariables:        proj.ProdVariables,
 		ProdDeploymentID:     proj.ProdDeploymentID,
-		ProdSlots:            int(req.ProdSlots),
-		Region:               req.Region,
+		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
+		ProdTTLSeconds:       &prodTTLSeconds,
+		Region:               valOrDefault(req.Region, proj.Region),
 	}
-	proj, err = s.admin.UpdateProject(ctx, proj, opts, true)
+	proj, err = s.admin.UpdateProject(ctx, proj, opts)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -340,24 +409,17 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	// Check the request is made by a user
 	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated")
+	}
+
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to update project variables")
 	}
 
-	opts := &database.UpdateProjectOptions{
-		Name:                 proj.Name,
-		Description:          proj.Description,
-		Public:               proj.Public,
-		ProdBranch:           proj.ProdBranch,
-		GithubURL:            proj.GithubURL,
-		GithubInstallationID: proj.GithubInstallationID,
-		ProdDeploymentID:     proj.ProdDeploymentID,
-		ProdSlots:            proj.ProdSlots,
-		Region:               proj.Region,
-		ProdVariables:        req.Variables,
-	}
-	proj, err = s.admin.UpdateProject(ctx, proj, opts, false)
+	proj, err = s.admin.UpdateProjectVariables(ctx, proj, req.Variables)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "variables updated failed with error %s", err.Error())
 	}
@@ -487,6 +549,16 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	var invitedByUserID, invitedByName string
+	if claims.OwnerType() == auth.OwnerTypeUser {
+		user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+		if err != nil && !errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		invitedByUserID = user.ID
+		invitedByName = user.DisplayName
+	}
+
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
@@ -494,14 +566,29 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 		}
 
 		// Invite user to join the project
-		invitedBy := ""
-		if claims.OwnerType() == auth.OwnerTypeUser {
-			invitedBy = claims.OwnerID()
-		}
-		err = s.admin.InviteUserToProject(ctx, req.Email, invitedBy, proj.ID, role.ID, proj.Name, role.Name)
+		err := s.admin.DB.InsertProjectInvite(ctx, &database.InsertProjectInviteOptions{
+			Email:     req.Email,
+			InviterID: invitedByUserID,
+			ProjectID: proj.ID,
+			RoleID:    role.ID,
+		})
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
+
+		// Send invitation email
+		err = s.admin.Email.SendProjectInvite(&email.ProjectInvite{
+			ToEmail:       req.Email,
+			ToName:        "",
+			OrgName:       org.Name,
+			ProjectName:   proj.Name,
+			RoleName:      role.Name,
+			InvitedByName: invitedByName,
+		})
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
 		return &adminv1.AddProjectMemberResponse{
 			PendingSignup: true,
 		}, nil
@@ -512,7 +599,14 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	err = s.admin.Email.SendProjectAdditionNotification(req.Email, "", proj.Name, role.Name)
+	err = s.admin.Email.SendProjectAddition(&email.ProjectAddition{
+		ToEmail:       req.Email,
+		ToName:        "",
+		OrgName:       org.Name,
+		ProjectName:   proj.Name,
+		RoleName:      role.Name,
+		InvitedByName: invitedByName,
+	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -671,6 +765,7 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		Subpath:          p.Subpath,
 		GithubUrl:        safeStr(p.GithubURL),
 		ProdDeploymentId: safeStr(p.ProdDeploymentID),
+		ProdTtlSeconds:   safeInt64(p.ProdTTLSeconds),
 		FrontendUrl:      frontendURL,
 		CreatedOn:        timestamppb.New(p.CreatedOn),
 		UpdatedOn:        timestamppb.New(p.UpdatedOn),
@@ -713,4 +808,18 @@ func safeStr(s *string) string {
 		return ""
 	}
 	return *s
+}
+
+func safeInt64(s *int64) int64 {
+	if s == nil {
+		return 0
+	}
+	return *s
+}
+
+func valOrDefault[T any](ptr *T, def T) T {
+	if ptr != nil {
+		return *ptr
+	}
+	return def
 }

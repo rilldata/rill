@@ -3,6 +3,7 @@ package queries
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -74,4 +75,8 @@ func (q *TableHead) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID
 
 	q.Result = data
 	return nil
+}
+
+func (q *TableHead) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
+	return ErrExportNotSupported
 }

@@ -27,6 +27,7 @@ const (
 	AdminService_UpdateOrganization_FullMethodName           = "/rill.admin.v1.AdminService/UpdateOrganization"
 	AdminService_ListProjectsForOrganization_FullMethodName  = "/rill.admin.v1.AdminService/ListProjectsForOrganization"
 	AdminService_GetProject_FullMethodName                   = "/rill.admin.v1.AdminService/GetProject"
+	AdminService_SearchProjectNames_FullMethodName           = "/rill.admin.v1.AdminService/SearchProjectNames"
 	AdminService_GetProjectVariables_FullMethodName          = "/rill.admin.v1.AdminService/GetProjectVariables"
 	AdminService_CreateProject_FullMethodName                = "/rill.admin.v1.AdminService/CreateProject"
 	AdminService_DeleteProject_FullMethodName                = "/rill.admin.v1.AdminService/DeleteProject"
@@ -54,9 +55,25 @@ const (
 	AdminService_CreateWhitelistedDomain_FullMethodName      = "/rill.admin.v1.AdminService/CreateWhitelistedDomain"
 	AdminService_RemoveWhitelistedDomain_FullMethodName      = "/rill.admin.v1.AdminService/RemoveWhitelistedDomain"
 	AdminService_ListWhitelistedDomains_FullMethodName       = "/rill.admin.v1.AdminService/ListWhitelistedDomains"
+	AdminService_GetUser_FullMethodName                      = "/rill.admin.v1.AdminService/GetUser"
 	AdminService_SearchUsers_FullMethodName                  = "/rill.admin.v1.AdminService/SearchUsers"
 	AdminService_ListSuperusers_FullMethodName               = "/rill.admin.v1.AdminService/ListSuperusers"
 	AdminService_SetSuperuser_FullMethodName                 = "/rill.admin.v1.AdminService/SetSuperuser"
+	AdminService_SudoGetResource_FullMethodName              = "/rill.admin.v1.AdminService/SudoGetResource"
+	AdminService_SudoUpdateUserQuotas_FullMethodName         = "/rill.admin.v1.AdminService/SudoUpdateUserQuotas"
+	AdminService_SudoUpdateOrganizationQuotas_FullMethodName = "/rill.admin.v1.AdminService/SudoUpdateOrganizationQuotas"
+	AdminService_ListServices_FullMethodName                 = "/rill.admin.v1.AdminService/ListServices"
+	AdminService_CreateService_FullMethodName                = "/rill.admin.v1.AdminService/CreateService"
+	AdminService_UpdateService_FullMethodName                = "/rill.admin.v1.AdminService/UpdateService"
+	AdminService_DeleteService_FullMethodName                = "/rill.admin.v1.AdminService/DeleteService"
+	AdminService_ListServiceAuthTokens_FullMethodName        = "/rill.admin.v1.AdminService/ListServiceAuthTokens"
+	AdminService_IssueServiceAuthToken_FullMethodName        = "/rill.admin.v1.AdminService/IssueServiceAuthToken"
+	AdminService_RevokeServiceAuthToken_FullMethodName       = "/rill.admin.v1.AdminService/RevokeServiceAuthToken"
+	AdminService_UpdateUserPreferences_FullMethodName        = "/rill.admin.v1.AdminService/UpdateUserPreferences"
+	AdminService_ListBookmarks_FullMethodName                = "/rill.admin.v1.AdminService/ListBookmarks"
+	AdminService_GetBookmark_FullMethodName                  = "/rill.admin.v1.AdminService/GetBookmark"
+	AdminService_CreateBookmark_FullMethodName               = "/rill.admin.v1.AdminService/CreateBookmark"
+	AdminService_RemoveBookmark_FullMethodName               = "/rill.admin.v1.AdminService/RemoveBookmark"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -79,6 +96,8 @@ type AdminServiceClient interface {
 	ListProjectsForOrganization(ctx context.Context, in *ListProjectsForOrganizationRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*GetProjectResponse, error)
+	// SearchProjectNames returns project names matching the pattern
+	SearchProjectNames(ctx context.Context, in *SearchProjectNamesRequest, opts ...grpc.CallOption) (*SearchProjectNamesResponse, error)
 	// GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
 	GetProjectVariables(ctx context.Context, in *GetProjectVariablesRequest, opts ...grpc.CallOption) (*GetProjectVariablesResponse, error)
 	// CreateProject creates a new project
@@ -134,12 +153,44 @@ type AdminServiceClient interface {
 	RemoveWhitelistedDomain(ctx context.Context, in *RemoveWhitelistedDomainRequest, opts ...grpc.CallOption) (*RemoveWhitelistedDomainResponse, error)
 	// ListWhitelistedDomains lists all the whitelisted domains for the organization
 	ListWhitelistedDomains(ctx context.Context, in *ListWhitelistedDomainsRequest, opts ...grpc.CallOption) (*ListWhitelistedDomainsResponse, error)
-	// GetUsersByEmail returns user by email
+	// GetUser returns user by email
+	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*GetUserResponse, error)
+	// GetUsersByEmail returns users by email
 	SearchUsers(ctx context.Context, in *SearchUsersRequest, opts ...grpc.CallOption) (*SearchUsersResponse, error)
 	// ListSuperusers lists all the superusers
 	ListSuperusers(ctx context.Context, in *ListSuperusersRequest, opts ...grpc.CallOption) (*ListSuperusersResponse, error)
 	// SetSuperuser adds/remove a superuser
 	SetSuperuser(ctx context.Context, in *SetSuperuserRequest, opts ...grpc.CallOption) (*SetSuperuserResponse, error)
+	// SudoGetResource returns details about a resource by ID lookup
+	SudoGetResource(ctx context.Context, in *SudoGetResourceRequest, opts ...grpc.CallOption) (*SudoGetResourceResponse, error)
+	// SudoUpdateUserQuotas update the quotas for users
+	SudoUpdateUserQuotas(ctx context.Context, in *SudoUpdateUserQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateUserQuotasResponse, error)
+	// SudoUpdateOrganizationQuotas update the quotas available for orgs
+	SudoUpdateOrganizationQuotas(ctx context.Context, in *SudoUpdateOrganizationQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationQuotasResponse, error)
+	// ListService returns all the services per organization
+	ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error)
+	// CreateService creates a new service per organization
+	CreateService(ctx context.Context, in *CreateServiceRequest, opts ...grpc.CallOption) (*CreateServiceResponse, error)
+	// UpdateService updates a service per organization
+	UpdateService(ctx context.Context, in *UpdateServiceRequest, opts ...grpc.CallOption) (*UpdateServiceResponse, error)
+	// DeleteService deletes a service per organization
+	DeleteService(ctx context.Context, in *DeleteServiceRequest, opts ...grpc.CallOption) (*DeleteServiceResponse, error)
+	// ListServiceAuthTokens lists all the service auth tokens
+	ListServiceAuthTokens(ctx context.Context, in *ListServiceAuthTokensRequest, opts ...grpc.CallOption) (*ListServiceAuthTokensResponse, error)
+	// IssueServiceAuthToken returns the temporary token for given service account
+	IssueServiceAuthToken(ctx context.Context, in *IssueServiceAuthTokenRequest, opts ...grpc.CallOption) (*IssueServiceAuthTokenResponse, error)
+	// RevokeServiceAuthToken revoke the service auth token
+	RevokeServiceAuthToken(ctx context.Context, in *RevokeServiceAuthTokenRequest, opts ...grpc.CallOption) (*RevokeServiceAuthTokenResponse, error)
+	// UpdateUserPreferences updates the preferences for the user
+	UpdateUserPreferences(ctx context.Context, in *UpdateUserPreferencesRequest, opts ...grpc.CallOption) (*UpdateUserPreferencesResponse, error)
+	// ListBookmarks lists all the bookmarks for the user
+	ListBookmarks(ctx context.Context, in *ListBookmarksRequest, opts ...grpc.CallOption) (*ListBookmarksResponse, error)
+	// GetBookmark returns the bookmark for the given user for the given project
+	GetBookmark(ctx context.Context, in *GetBookmarkRequest, opts ...grpc.CallOption) (*GetBookmarkResponse, error)
+	// CreateBookmark creates a bookmark for the given user for the given project
+	CreateBookmark(ctx context.Context, in *CreateBookmarkRequest, opts ...grpc.CallOption) (*CreateBookmarkResponse, error)
+	// RemoveBookmark removes the bookmark for the given user for the given project
+	RemoveBookmark(ctx context.Context, in *RemoveBookmarkRequest, opts ...grpc.CallOption) (*RemoveBookmarkResponse, error)
 }
 
 type adminServiceClient struct {
@@ -216,6 +267,15 @@ func (c *adminServiceClient) ListProjectsForOrganization(ctx context.Context, in
 func (c *adminServiceClient) GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*GetProjectResponse, error) {
 	out := new(GetProjectResponse)
 	err := c.cc.Invoke(ctx, AdminService_GetProject_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) SearchProjectNames(ctx context.Context, in *SearchProjectNamesRequest, opts ...grpc.CallOption) (*SearchProjectNamesResponse, error) {
+	out := new(SearchProjectNamesResponse)
+	err := c.cc.Invoke(ctx, AdminService_SearchProjectNames_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -465,6 +525,15 @@ func (c *adminServiceClient) ListWhitelistedDomains(ctx context.Context, in *Lis
 	return out, nil
 }
 
+func (c *adminServiceClient) GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*GetUserResponse, error) {
+	out := new(GetUserResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetUser_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) SearchUsers(ctx context.Context, in *SearchUsersRequest, opts ...grpc.CallOption) (*SearchUsersResponse, error) {
 	out := new(SearchUsersResponse)
 	err := c.cc.Invoke(ctx, AdminService_SearchUsers_FullMethodName, in, out, opts...)
@@ -492,6 +561,141 @@ func (c *adminServiceClient) SetSuperuser(ctx context.Context, in *SetSuperuserR
 	return out, nil
 }
 
+func (c *adminServiceClient) SudoGetResource(ctx context.Context, in *SudoGetResourceRequest, opts ...grpc.CallOption) (*SudoGetResourceResponse, error) {
+	out := new(SudoGetResourceResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoGetResource_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) SudoUpdateUserQuotas(ctx context.Context, in *SudoUpdateUserQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateUserQuotasResponse, error) {
+	out := new(SudoUpdateUserQuotasResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoUpdateUserQuotas_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) SudoUpdateOrganizationQuotas(ctx context.Context, in *SudoUpdateOrganizationQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationQuotasResponse, error) {
+	out := new(SudoUpdateOrganizationQuotasResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoUpdateOrganizationQuotas_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error) {
+	out := new(ListServicesResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListServices_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) CreateService(ctx context.Context, in *CreateServiceRequest, opts ...grpc.CallOption) (*CreateServiceResponse, error) {
+	out := new(CreateServiceResponse)
+	err := c.cc.Invoke(ctx, AdminService_CreateService_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) UpdateService(ctx context.Context, in *UpdateServiceRequest, opts ...grpc.CallOption) (*UpdateServiceResponse, error) {
+	out := new(UpdateServiceResponse)
+	err := c.cc.Invoke(ctx, AdminService_UpdateService_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) DeleteService(ctx context.Context, in *DeleteServiceRequest, opts ...grpc.CallOption) (*DeleteServiceResponse, error) {
+	out := new(DeleteServiceResponse)
+	err := c.cc.Invoke(ctx, AdminService_DeleteService_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListServiceAuthTokens(ctx context.Context, in *ListServiceAuthTokensRequest, opts ...grpc.CallOption) (*ListServiceAuthTokensResponse, error) {
+	out := new(ListServiceAuthTokensResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListServiceAuthTokens_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) IssueServiceAuthToken(ctx context.Context, in *IssueServiceAuthTokenRequest, opts ...grpc.CallOption) (*IssueServiceAuthTokenResponse, error) {
+	out := new(IssueServiceAuthTokenResponse)
+	err := c.cc.Invoke(ctx, AdminService_IssueServiceAuthToken_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) RevokeServiceAuthToken(ctx context.Context, in *RevokeServiceAuthTokenRequest, opts ...grpc.CallOption) (*RevokeServiceAuthTokenResponse, error) {
+	out := new(RevokeServiceAuthTokenResponse)
+	err := c.cc.Invoke(ctx, AdminService_RevokeServiceAuthToken_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) UpdateUserPreferences(ctx context.Context, in *UpdateUserPreferencesRequest, opts ...grpc.CallOption) (*UpdateUserPreferencesResponse, error) {
+	out := new(UpdateUserPreferencesResponse)
+	err := c.cc.Invoke(ctx, AdminService_UpdateUserPreferences_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListBookmarks(ctx context.Context, in *ListBookmarksRequest, opts ...grpc.CallOption) (*ListBookmarksResponse, error) {
+	out := new(ListBookmarksResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListBookmarks_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetBookmark(ctx context.Context, in *GetBookmarkRequest, opts ...grpc.CallOption) (*GetBookmarkResponse, error) {
+	out := new(GetBookmarkResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetBookmark_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) CreateBookmark(ctx context.Context, in *CreateBookmarkRequest, opts ...grpc.CallOption) (*CreateBookmarkResponse, error) {
+	out := new(CreateBookmarkResponse)
+	err := c.cc.Invoke(ctx, AdminService_CreateBookmark_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) RemoveBookmark(ctx context.Context, in *RemoveBookmarkRequest, opts ...grpc.CallOption) (*RemoveBookmarkResponse, error) {
+	out := new(RemoveBookmarkResponse)
+	err := c.cc.Invoke(ctx, AdminService_RemoveBookmark_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminServiceServer is the server API for AdminService service.
 // All implementations must embed UnimplementedAdminServiceServer
 // for forward compatibility
@@ -512,6 +716,8 @@ type AdminServiceServer interface {
 	ListProjectsForOrganization(context.Context, *ListProjectsForOrganizationRequest) (*ListProjectsForOrganizationResponse, error)
 	// GetProject returns information about a specific project
 	GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error)
+	// SearchProjectNames returns project names matching the pattern
+	SearchProjectNames(context.Context, *SearchProjectNamesRequest) (*SearchProjectNamesResponse, error)
 	// GetProjectVariables returns project variables. NOTE: Get project API doesn't return variables.
 	GetProjectVariables(context.Context, *GetProjectVariablesRequest) (*GetProjectVariablesResponse, error)
 	// CreateProject creates a new project
@@ -567,12 +773,44 @@ type AdminServiceServer interface {
 	RemoveWhitelistedDomain(context.Context, *RemoveWhitelistedDomainRequest) (*RemoveWhitelistedDomainResponse, error)
 	// ListWhitelistedDomains lists all the whitelisted domains for the organization
 	ListWhitelistedDomains(context.Context, *ListWhitelistedDomainsRequest) (*ListWhitelistedDomainsResponse, error)
-	// GetUsersByEmail returns user by email
+	// GetUser returns user by email
+	GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error)
+	// GetUsersByEmail returns users by email
 	SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error)
 	// ListSuperusers lists all the superusers
 	ListSuperusers(context.Context, *ListSuperusersRequest) (*ListSuperusersResponse, error)
 	// SetSuperuser adds/remove a superuser
 	SetSuperuser(context.Context, *SetSuperuserRequest) (*SetSuperuserResponse, error)
+	// SudoGetResource returns details about a resource by ID lookup
+	SudoGetResource(context.Context, *SudoGetResourceRequest) (*SudoGetResourceResponse, error)
+	// SudoUpdateUserQuotas update the quotas for users
+	SudoUpdateUserQuotas(context.Context, *SudoUpdateUserQuotasRequest) (*SudoUpdateUserQuotasResponse, error)
+	// SudoUpdateOrganizationQuotas update the quotas available for orgs
+	SudoUpdateOrganizationQuotas(context.Context, *SudoUpdateOrganizationQuotasRequest) (*SudoUpdateOrganizationQuotasResponse, error)
+	// ListService returns all the services per organization
+	ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error)
+	// CreateService creates a new service per organization
+	CreateService(context.Context, *CreateServiceRequest) (*CreateServiceResponse, error)
+	// UpdateService updates a service per organization
+	UpdateService(context.Context, *UpdateServiceRequest) (*UpdateServiceResponse, error)
+	// DeleteService deletes a service per organization
+	DeleteService(context.Context, *DeleteServiceRequest) (*DeleteServiceResponse, error)
+	// ListServiceAuthTokens lists all the service auth tokens
+	ListServiceAuthTokens(context.Context, *ListServiceAuthTokensRequest) (*ListServiceAuthTokensResponse, error)
+	// IssueServiceAuthToken returns the temporary token for given service account
+	IssueServiceAuthToken(context.Context, *IssueServiceAuthTokenRequest) (*IssueServiceAuthTokenResponse, error)
+	// RevokeServiceAuthToken revoke the service auth token
+	RevokeServiceAuthToken(context.Context, *RevokeServiceAuthTokenRequest) (*RevokeServiceAuthTokenResponse, error)
+	// UpdateUserPreferences updates the preferences for the user
+	UpdateUserPreferences(context.Context, *UpdateUserPreferencesRequest) (*UpdateUserPreferencesResponse, error)
+	// ListBookmarks lists all the bookmarks for the user
+	ListBookmarks(context.Context, *ListBookmarksRequest) (*ListBookmarksResponse, error)
+	// GetBookmark returns the bookmark for the given user for the given project
+	GetBookmark(context.Context, *GetBookmarkRequest) (*GetBookmarkResponse, error)
+	// CreateBookmark creates a bookmark for the given user for the given project
+	CreateBookmark(context.Context, *CreateBookmarkRequest) (*CreateBookmarkResponse, error)
+	// RemoveBookmark removes the bookmark for the given user for the given project
+	RemoveBookmark(context.Context, *RemoveBookmarkRequest) (*RemoveBookmarkResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -603,6 +841,9 @@ func (UnimplementedAdminServiceServer) ListProjectsForOrganization(context.Conte
 }
 func (UnimplementedAdminServiceServer) GetProject(context.Context, *GetProjectRequest) (*GetProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProject not implemented")
+}
+func (UnimplementedAdminServiceServer) SearchProjectNames(context.Context, *SearchProjectNamesRequest) (*SearchProjectNamesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchProjectNames not implemented")
 }
 func (UnimplementedAdminServiceServer) GetProjectVariables(context.Context, *GetProjectVariablesRequest) (*GetProjectVariablesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProjectVariables not implemented")
@@ -685,6 +926,9 @@ func (UnimplementedAdminServiceServer) RemoveWhitelistedDomain(context.Context, 
 func (UnimplementedAdminServiceServer) ListWhitelistedDomains(context.Context, *ListWhitelistedDomainsRequest) (*ListWhitelistedDomainsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListWhitelistedDomains not implemented")
 }
+func (UnimplementedAdminServiceServer) GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUser not implemented")
+}
 func (UnimplementedAdminServiceServer) SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchUsers not implemented")
 }
@@ -693,6 +937,51 @@ func (UnimplementedAdminServiceServer) ListSuperusers(context.Context, *ListSupe
 }
 func (UnimplementedAdminServiceServer) SetSuperuser(context.Context, *SetSuperuserRequest) (*SetSuperuserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetSuperuser not implemented")
+}
+func (UnimplementedAdminServiceServer) SudoGetResource(context.Context, *SudoGetResourceRequest) (*SudoGetResourceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoGetResource not implemented")
+}
+func (UnimplementedAdminServiceServer) SudoUpdateUserQuotas(context.Context, *SudoUpdateUserQuotasRequest) (*SudoUpdateUserQuotasResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateUserQuotas not implemented")
+}
+func (UnimplementedAdminServiceServer) SudoUpdateOrganizationQuotas(context.Context, *SudoUpdateOrganizationQuotasRequest) (*SudoUpdateOrganizationQuotasResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateOrganizationQuotas not implemented")
+}
+func (UnimplementedAdminServiceServer) ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListServices not implemented")
+}
+func (UnimplementedAdminServiceServer) CreateService(context.Context, *CreateServiceRequest) (*CreateServiceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateService not implemented")
+}
+func (UnimplementedAdminServiceServer) UpdateService(context.Context, *UpdateServiceRequest) (*UpdateServiceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateService not implemented")
+}
+func (UnimplementedAdminServiceServer) DeleteService(context.Context, *DeleteServiceRequest) (*DeleteServiceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteService not implemented")
+}
+func (UnimplementedAdminServiceServer) ListServiceAuthTokens(context.Context, *ListServiceAuthTokensRequest) (*ListServiceAuthTokensResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListServiceAuthTokens not implemented")
+}
+func (UnimplementedAdminServiceServer) IssueServiceAuthToken(context.Context, *IssueServiceAuthTokenRequest) (*IssueServiceAuthTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IssueServiceAuthToken not implemented")
+}
+func (UnimplementedAdminServiceServer) RevokeServiceAuthToken(context.Context, *RevokeServiceAuthTokenRequest) (*RevokeServiceAuthTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RevokeServiceAuthToken not implemented")
+}
+func (UnimplementedAdminServiceServer) UpdateUserPreferences(context.Context, *UpdateUserPreferencesRequest) (*UpdateUserPreferencesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateUserPreferences not implemented")
+}
+func (UnimplementedAdminServiceServer) ListBookmarks(context.Context, *ListBookmarksRequest) (*ListBookmarksResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListBookmarks not implemented")
+}
+func (UnimplementedAdminServiceServer) GetBookmark(context.Context, *GetBookmarkRequest) (*GetBookmarkResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBookmark not implemented")
+}
+func (UnimplementedAdminServiceServer) CreateBookmark(context.Context, *CreateBookmarkRequest) (*CreateBookmarkResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateBookmark not implemented")
+}
+func (UnimplementedAdminServiceServer) RemoveBookmark(context.Context, *RemoveBookmarkRequest) (*RemoveBookmarkResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveBookmark not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 
@@ -847,6 +1136,24 @@ func _AdminService_GetProject_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).GetProject(ctx, req.(*GetProjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_SearchProjectNames_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchProjectNamesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SearchProjectNames(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SearchProjectNames_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SearchProjectNames(ctx, req.(*SearchProjectNamesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1337,6 +1644,24 @@ func _AdminService_ListWhitelistedDomains_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetUser(ctx, req.(*GetUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_SearchUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SearchUsersRequest)
 	if err := dec(in); err != nil {
@@ -1391,6 +1716,276 @@ func _AdminService_SetSuperuser_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_SudoGetResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoGetResourceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SudoGetResource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SudoGetResource_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SudoGetResource(ctx, req.(*SudoGetResourceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_SudoUpdateUserQuotas_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoUpdateUserQuotasRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SudoUpdateUserQuotas(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SudoUpdateUserQuotas_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SudoUpdateUserQuotas(ctx, req.(*SudoUpdateUserQuotasRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_SudoUpdateOrganizationQuotas_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoUpdateOrganizationQuotasRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SudoUpdateOrganizationQuotas(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SudoUpdateOrganizationQuotas_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SudoUpdateOrganizationQuotas(ctx, req.(*SudoUpdateOrganizationQuotasRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListServices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListServicesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListServices(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListServices_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListServices(ctx, req.(*ListServicesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_CreateService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateServiceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).CreateService(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_CreateService_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).CreateService(ctx, req.(*CreateServiceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_UpdateService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateServiceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).UpdateService(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_UpdateService_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).UpdateService(ctx, req.(*UpdateServiceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_DeleteService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteServiceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DeleteService(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DeleteService_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DeleteService(ctx, req.(*DeleteServiceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListServiceAuthTokens_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListServiceAuthTokensRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListServiceAuthTokens(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListServiceAuthTokens_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListServiceAuthTokens(ctx, req.(*ListServiceAuthTokensRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_IssueServiceAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IssueServiceAuthTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).IssueServiceAuthToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_IssueServiceAuthToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).IssueServiceAuthToken(ctx, req.(*IssueServiceAuthTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_RevokeServiceAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeServiceAuthTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RevokeServiceAuthToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_RevokeServiceAuthToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RevokeServiceAuthToken(ctx, req.(*RevokeServiceAuthTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_UpdateUserPreferences_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateUserPreferencesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).UpdateUserPreferences(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_UpdateUserPreferences_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).UpdateUserPreferences(ctx, req.(*UpdateUserPreferencesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListBookmarks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListBookmarksRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListBookmarks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListBookmarks_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListBookmarks(ctx, req.(*ListBookmarksRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetBookmark_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetBookmarkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetBookmark(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetBookmark_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetBookmark(ctx, req.(*GetBookmarkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_CreateBookmark_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateBookmarkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).CreateBookmark(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_CreateBookmark_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).CreateBookmark(ctx, req.(*CreateBookmarkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_RemoveBookmark_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveBookmarkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RemoveBookmark(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_RemoveBookmark_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RemoveBookmark(ctx, req.(*RemoveBookmarkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1429,6 +2024,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetProject",
 			Handler:    _AdminService_GetProject_Handler,
+		},
+		{
+			MethodName: "SearchProjectNames",
+			Handler:    _AdminService_SearchProjectNames_Handler,
 		},
 		{
 			MethodName: "GetProjectVariables",
@@ -1539,6 +2138,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_ListWhitelistedDomains_Handler,
 		},
 		{
+			MethodName: "GetUser",
+			Handler:    _AdminService_GetUser_Handler,
+		},
+		{
 			MethodName: "SearchUsers",
 			Handler:    _AdminService_SearchUsers_Handler,
 		},
@@ -1549,6 +2152,66 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetSuperuser",
 			Handler:    _AdminService_SetSuperuser_Handler,
+		},
+		{
+			MethodName: "SudoGetResource",
+			Handler:    _AdminService_SudoGetResource_Handler,
+		},
+		{
+			MethodName: "SudoUpdateUserQuotas",
+			Handler:    _AdminService_SudoUpdateUserQuotas_Handler,
+		},
+		{
+			MethodName: "SudoUpdateOrganizationQuotas",
+			Handler:    _AdminService_SudoUpdateOrganizationQuotas_Handler,
+		},
+		{
+			MethodName: "ListServices",
+			Handler:    _AdminService_ListServices_Handler,
+		},
+		{
+			MethodName: "CreateService",
+			Handler:    _AdminService_CreateService_Handler,
+		},
+		{
+			MethodName: "UpdateService",
+			Handler:    _AdminService_UpdateService_Handler,
+		},
+		{
+			MethodName: "DeleteService",
+			Handler:    _AdminService_DeleteService_Handler,
+		},
+		{
+			MethodName: "ListServiceAuthTokens",
+			Handler:    _AdminService_ListServiceAuthTokens_Handler,
+		},
+		{
+			MethodName: "IssueServiceAuthToken",
+			Handler:    _AdminService_IssueServiceAuthToken_Handler,
+		},
+		{
+			MethodName: "RevokeServiceAuthToken",
+			Handler:    _AdminService_RevokeServiceAuthToken_Handler,
+		},
+		{
+			MethodName: "UpdateUserPreferences",
+			Handler:    _AdminService_UpdateUserPreferences_Handler,
+		},
+		{
+			MethodName: "ListBookmarks",
+			Handler:    _AdminService_ListBookmarks_Handler,
+		},
+		{
+			MethodName: "GetBookmark",
+			Handler:    _AdminService_GetBookmark_Handler,
+		},
+		{
+			MethodName: "CreateBookmark",
+			Handler:    _AdminService_CreateBookmark_Handler,
+		},
+		{
+			MethodName: "RemoveBookmark",
+			Handler:    _AdminService_RemoveBookmark_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

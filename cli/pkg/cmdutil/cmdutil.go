@@ -332,7 +332,7 @@ func ProjectNamesByGithubURL(ctx context.Context, c *client.Client, org, githubU
 	}
 
 	if len(names) == 0 {
-		return nil, fmt.Errorf("No project with githubURL %q exist in org %q", githubURL, org)
+		return nil, fmt.Errorf("no project with githubURL %q exist in org %q", githubURL, org)
 	}
 
 	return names, nil
@@ -353,7 +353,7 @@ func OrgNames(ctx context.Context, c *client.Client) ([]string, error) {
 	}
 
 	if len(resp.Organizations) == 0 {
-		return nil, fmt.Errorf("You are not a member of any orgs")
+		return nil, fmt.Errorf("you are not a member of any orgs")
 	}
 
 	var orgNames []string
@@ -371,7 +371,7 @@ func ProjectNamesByOrg(ctx context.Context, c *client.Client, orgName string) ([
 	}
 
 	if len(resp.Projects) == 0 {
-		return nil, fmt.Errorf("No projects found for org %q", orgName)
+		return nil, fmt.Errorf("no projects found for org %q", orgName)
 	}
 
 	var projNames []string
@@ -413,15 +413,8 @@ func SetFlagsByInputPrompts(cmd cobra.Command, flags ...string) error {
 	var val string
 	cmd.Flags().VisitAll(func(f *pflag.Flag) {
 		if !f.Changed && slices.Contains(flags, f.Name) {
-			if f.Value.Type() == "string" {
-				val, err = InputPrompt(fmt.Sprintf("Enter the %s", f.Usage), f.DefValue)
-				if err != nil {
-					fmt.Println("error while input prompt, error:", err)
-					return
-				}
-			}
-
-			if f.Value.Type() == "bool" {
+			switch f.Value.Type() {
+			case "bool":
 				var public bool
 				defVal, err := strconv.ParseBool(f.DefValue)
 				if err != nil {
@@ -439,6 +432,12 @@ func SetFlagsByInputPrompts(cmd cobra.Command, flags ...string) error {
 				}
 
 				val = fmt.Sprintf("%t", public)
+			default:
+				val, err = InputPrompt(fmt.Sprintf("Enter the %s", f.Usage), f.DefValue)
+				if err != nil {
+					fmt.Println("error while input prompt, error:", err)
+					return
+				}
 			}
 
 			err = f.Value.Set(val)
@@ -458,6 +457,7 @@ func FetchUserID(ctx context.Context, cfg *config.Config) (string, error) {
 		return "", err
 	}
 	defer c.Close()
+
 	user, err := c.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
 	if err != nil {
 		return "", err

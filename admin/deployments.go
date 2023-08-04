@@ -21,6 +21,7 @@ import (
 )
 
 type createDeploymentOptions struct {
+	OrganizationID       string
 	ProjectID            string
 	Region               string
 	GithubURL            *string
@@ -90,6 +91,10 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		EmbedCatalog:        embedCatalog,
 		Variables:           opts.ProdVariables,
 		IngestionLimitBytes: ingestionLimit,
+		Annotations: map[string]string{
+			"organization_id": opts.OrganizationID,
+			"project_id":      opts.ProjectID,
+		},
 	})
 	if err != nil {
 		return nil, err
@@ -123,7 +128,6 @@ type updateDeploymentOptions struct {
 	Subpath              string
 	Branch               string
 	Variables            map[string]string
-	Reconcile            bool
 }
 
 func (s *Service) updateDeployment(ctx context.Context, depl *database.Deployment, opts *updateDeploymentOptions) error {
@@ -142,21 +146,10 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 	}
 	defer rt.Close()
 
-	res, err := rt.GetInstance(ctx, &runtimev1.GetInstanceRequest{InstanceId: depl.RuntimeInstanceID})
-	if err != nil {
-		return err
-	}
-	inst := res.Instance
-
 	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
-		InstanceId:          inst.InstanceId,
-		OlapDriver:          inst.OlapDriver,
-		OlapDsn:             inst.OlapDsn,
-		RepoDriver:          repoDriver,
-		RepoDsn:             repoDSN,
-		EmbedCatalog:        inst.EmbedCatalog,
-		Variables:           opts.Variables,
-		IngestionLimitBytes: inst.IngestionLimitBytes,
+		InstanceId: depl.RuntimeInstanceID,
+		RepoDriver: &repoDriver,
+		RepoDsn:    &repoDSN,
 	})
 	if err != nil {
 		return err
@@ -173,14 +166,82 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 		depl.UpdatedOn = newDepl.UpdatedOn
 	}
 
-	if opts.Reconcile {
-		if err := s.triggerReconcile(ctx, depl); err != nil {
-			s.logger.Error("failed to trigger reconcile", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
+	if err := s.triggerReconcile(ctx, depl); err != nil {
+		s.logger.Error("failed to trigger reconcile", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
+		return err
+	}
+	return nil
+}
+
+// HibernateDeployments tears down unused deployments
+func (s *Service) HibernateDeployments(ctx context.Context) error {
+	depls, err := s.DB.FindExpiredDeployments(ctx)
+	if err != nil {
+		return err
+	}
+
+	if len(depls) == 0 {
+		return nil
+	}
+
+	s.logger.Info("hibernate: starting", zap.Int("deployments", len(depls)))
+
+	for _, depl := range depls {
+		if depl.Status == database.DeploymentStatusReconciling && time.Since(depl.UpdatedOn) < 30*time.Minute {
+			s.logger.Info("hibernate: skipping deployment because it is reconciling", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
+			continue
+		}
+
+		proj, err := s.DB.FindProject(ctx, depl.ProjectID)
+		if err != nil {
+			s.logger.Error("hibernate: find project error", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
+			continue
+		}
+
+		s.logger.Info("hibernate: deleting deployment", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID))
+
+		err = s.teardownDeployment(ctx, proj, depl)
+		if err != nil {
+			s.logger.Error("hibernate: teardown deployment error", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
+			continue
+		}
+
+		// Update prod deployment on project
+		_, err = s.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+			Name:                 proj.Name,
+			Description:          proj.Description,
+			Public:               proj.Public,
+			GithubURL:            proj.GithubURL,
+			GithubInstallationID: proj.GithubInstallationID,
+			ProdBranch:           proj.ProdBranch,
+			ProdVariables:        proj.ProdVariables,
+			ProdSlots:            proj.ProdSlots,
+			Region:               proj.Region,
+			ProdTTLSeconds:       proj.ProdTTLSeconds,
+			ProdDeploymentID:     nil,
+		})
+		if err != nil {
 			return err
 		}
 	}
 
+	s.logger.Info("hibernate: completed", zap.Int("deployments", len(depls)))
+
 	return nil
+}
+
+func (s *Service) updateDeplVariables(ctx context.Context, depl *database.Deployment, variables map[string]string) error {
+	rt, err := s.openRuntimeClientForDeployment(depl)
+	if err != nil {
+		return err
+	}
+	defer rt.Close()
+
+	_, err = rt.EditInstanceVariables(ctx, &runtimev1.EditInstanceVariablesRequest{
+		InstanceId: depl.RuntimeInstanceID,
+		Variables:  variables,
+	})
+	return err
 }
 
 func (s *Service) teardownDeployment(ctx context.Context, proj *database.Project, depl *database.Deployment) error {

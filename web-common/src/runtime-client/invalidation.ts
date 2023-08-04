@@ -1,5 +1,6 @@
 import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type { V1ReconcileResponse } from "@rilldata/web-common/runtime-client";
 import {
   getRuntimeServiceGetCatalogEntryQueryKey,
@@ -7,6 +8,11 @@ import {
   getRuntimeServiceListCatalogEntriesQueryKey,
   getRuntimeServiceListFilesQueryKey,
 } from "@rilldata/web-common/runtime-client";
+import {
+  isColumnProfilingQuery,
+  isProfilingQuery,
+  isTableProfilingQuery,
+} from "@rilldata/web-common/runtime-client/query-matcher";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 
@@ -25,12 +31,19 @@ export const invalidateAfterReconcile = async (
   instanceId: string,
   reconcileResponse: V1ReconcileResponse
 ) => {
+  const erroredMapByPath = getMapFromArray(
+    reconcileResponse.errors,
+    (reconcileError) => reconcileError.filePath
+  );
+
   // invalidate lists of catalog entries and files
   await Promise.all([
     queryClient.refetchQueries(getRuntimeServiceListFilesQueryKey(instanceId)),
     queryClient.refetchQueries(
       getRuntimeServiceListCatalogEntriesQueryKey(instanceId)
     ),
+    // TODO: There are other list calls with filters for model and metrics view.
+    //       We should perhaps have a single call and filter required items in a selector
     queryClient.refetchQueries(
       getRuntimeServiceListCatalogEntriesQueryKey(instanceId, {
         type: "OBJECT_TYPE_SOURCE",
@@ -59,20 +72,21 @@ export const invalidateAfterReconcile = async (
   // (applies to sources and models, but not dashboards)
   await Promise.all(
     reconcileResponse.affectedPaths.map((path) =>
-      getInvalidationsForPath(queryClient, path)
+      getInvalidationsForPath(queryClient, path, erroredMapByPath.has(path))
     )
   );
 };
 
 const getInvalidationsForPath = (
   queryClient: QueryClient,
-  filePath: string
+  filePath: string,
+  failed: boolean
 ) => {
   const name = getNameFromFile(filePath);
   if (filePath.startsWith("/dashboards")) {
-    return invalidateMetricsViewData(queryClient, name);
+    return invalidateMetricsViewData(queryClient, name, failed);
   } else {
-    return invalidateProfilingQueries(queryClient, name);
+    return invalidateProfilingQueries(queryClient, name, failed);
   }
 };
 
@@ -89,16 +103,10 @@ export function invalidationForMetricsViewData(query, metricsViewName: string) {
   );
 }
 
-export function isProfilingQuery(queryHash: string, name: string) {
-  const r = new RegExp(
-    `/v1/instances/[a-zA-Z0-9-]+/queries/[a-zA-Z0-9-]+/tables/${name}`
-  );
-  return r.test(queryHash);
-}
-
 export const invalidateMetricsViewData = (
   queryClient: QueryClient,
-  metricsViewName: string
+  metricsViewName: string,
+  failed: boolean
 ) => {
   // remove inactive queries, this is needed since these would be re-fetched with incorrect filter
   // invalidateQueries by itself doesnt work as of now.
@@ -108,6 +116,9 @@ export const invalidateMetricsViewData = (
       invalidationForMetricsViewData(query, metricsViewName),
     type: "inactive",
   });
+  // do not re-fetch for failed entities.
+  if (failed) return Promise.resolve();
+
   return queryClient.invalidateQueries({
     predicate: (query) =>
       invalidationForMetricsViewData(query, metricsViewName),
@@ -115,16 +126,25 @@ export const invalidateMetricsViewData = (
   });
 };
 
-export function invalidateProfilingQueries(
+export async function invalidateProfilingQueries(
   queryClient: QueryClient,
-  name: string
+  name: string,
+  failed: boolean
 ) {
   queryClient.removeQueries({
-    predicate: (query) => isProfilingQuery(query.queryHash, name),
+    predicate: (query) => isProfilingQuery(query, name),
     type: "inactive",
   });
-  return queryClient.refetchQueries({
-    predicate: (query) => isProfilingQuery(query.queryHash, name),
+  // do not re-fetch for failed entities.
+  if (failed) return Promise.resolve();
+
+  queryClient.removeQueries({
+    predicate: (query) => isColumnProfilingQuery(query, name),
+    type: "active",
+  });
+
+  await queryClient.invalidateQueries({
+    predicate: (query) => isTableProfilingQuery(query, name),
     type: "active",
   });
 }
@@ -154,9 +174,7 @@ export const removeEntityQueries = async (
   } else {
     // remove profiling queries
     return queryClient.removeQueries({
-      predicate: (query) => {
-        return isProfilingQuery(query.queryHash, name);
-      },
+      predicate: (query) => isProfilingQuery(query, name),
     });
   }
 };

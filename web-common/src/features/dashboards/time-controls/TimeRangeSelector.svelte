@@ -51,7 +51,8 @@
       boundaryStart,
       boundaryEnd,
       LATEST_WINDOW_TIME_RANGES,
-      minTimeGrain
+      minTimeGrain,
+      $dashboardStore?.selectedTimezone
     );
   }
 
@@ -61,7 +62,8 @@
       boundaryStart,
       boundaryEnd,
       PERIOD_TO_DATE_RANGES,
-      minTimeGrain
+      minTimeGrain,
+      $dashboardStore?.selectedTimezone
     );
   }
 
@@ -108,6 +110,7 @@
   // closes *before* the `click-outside` event is fired. A workaround is to check for `isCalendarRecentlyClosed`.
   function onCalendarClose() {
     isCalendarRecentlyClosed = true;
+
     setTimeout(() => {
       isCalendarRecentlyClosed = false;
     }, 300);
@@ -115,6 +118,12 @@
 
   $: currentSelection = $dashboardStore?.selectedTimeRange?.name;
   $: intermediateSelection = currentSelection;
+
+  const handleMenuOpen = () => {
+    if (intermediateSelection !== TimeRangePreset.CUSTOM) {
+      isCustomRangeOpen = false;
+    }
+  };
 </script>
 
 <WithTogglableFloatingElement
@@ -122,6 +131,7 @@
   distance={8}
   let:active
   let:toggleFloatingElement
+  on:open={handleMenuOpen}
 >
   <button
     class:bg-gray-200={active}
@@ -147,7 +157,9 @@
       <span style:transform="translateY(1px)">
         {prettyFormatTimeRange(
           $dashboardStore?.selectedTimeRange?.start,
-          $dashboardStore?.selectedTimeRange?.end
+          $dashboardStore?.selectedTimeRange?.end,
+          $dashboardStore?.selectedTimeRange?.name,
+          $dashboardStore?.selectedTimezone
         )}
       </span>
     </div>
@@ -162,12 +174,13 @@
     on:escape={toggleFloatingElement}
     slot="floating-element"
     label="Time range selector"
+    maxWidth="300px"
   >
     {@const allTime = {
       name: TimeRangePreset.ALL_TIME,
       label: ALL_TIME.label,
       start: boundaryStart,
-      end: boundaryEnd,
+      end: new Date(boundaryEnd.getTime() + 1), // end is exclusive
     }}
     <MenuItem
       on:before-select={setIntermediateSelection(allTime.name)}
@@ -223,6 +236,7 @@
           {boundaryStart}
           {boundaryEnd}
           {minTimeGrain}
+          zone={$dashboardStore?.selectedTimezone}
           defaultDate={selectedRange}
           on:apply={(e) =>
             onSelectCustomTimeRange(

@@ -65,6 +65,7 @@ type DB interface {
 	DeleteOrganizationWhitelistedDomain(ctx context.Context, id string) error
 
 	FindProjects(ctx context.Context, afterName string, limit int) ([]*Project, error)
+	FindProjectPathsByPattern(ctx context.Context, namePattern, afterName string, limit int) ([]string, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
 	FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user
@@ -77,14 +78,18 @@ type DB interface {
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
+	UpdateProjectVariables(ctx context.Context, id string, variables map[string]string) (*Project, error)
 	CountProjectsForOrganization(ctx context.Context, orgID string) (int, error)
 
+	FindExpiredDeployments(ctx context.Context) ([]*Deployment, error)
 	FindDeploymentsForProject(ctx context.Context, projectID string) ([]*Deployment, error)
 	FindDeployment(ctx context.Context, id string) (*Deployment, error)
+	FindDeploymentByInstanceID(ctx context.Context, instanceID string) (*Deployment, error)
 	InsertDeployment(ctx context.Context, opts *InsertDeploymentOptions) (*Deployment, error)
 	DeleteDeployment(ctx context.Context, id string) error
 	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, logs string) (*Deployment, error)
 	UpdateDeploymentBranch(ctx context.Context, id, branch string) (*Deployment, error)
+	UpdateDeploymentUsedOn(ctx context.Context, ids []string) error
 	CountDeploymentsForOrganization(ctx context.Context, orgID string) (*DeploymentsCount, error)
 
 	ResolveRuntimeSlotsUsed(ctx context.Context) ([]*RuntimeSlotsUsed, error)
@@ -110,6 +115,19 @@ type DB interface {
 	InsertUserAuthToken(ctx context.Context, opts *InsertUserAuthTokenOptions) (*UserAuthToken, error)
 	DeleteUserAuthToken(ctx context.Context, id string) error
 	DeleteExpiredUserAuthTokens(ctx context.Context, retention time.Duration) error
+
+	FindServicesByOrgID(ctx context.Context, orgID string) ([]*Service, error)
+	FindService(ctx context.Context, id string) (*Service, error)
+	FindServiceByName(ctx context.Context, orgID, name string) (*Service, error)
+	InsertService(ctx context.Context, opts *InsertServiceOptions) (*Service, error)
+	DeleteService(ctx context.Context, id string) error
+	UpdateService(ctx context.Context, id string, opts *UpdateServiceOptions) (*Service, error)
+
+	FindServiceAuthTokens(ctx context.Context, serviceID string) ([]*ServiceAuthToken, error)
+	FindServiceAuthToken(ctx context.Context, id string) (*ServiceAuthToken, error)
+	InsertServiceAuthToken(ctx context.Context, opts *InsertServiceAuthTokenOptions) (*ServiceAuthToken, error)
+	DeleteServiceAuthToken(ctx context.Context, id string) error
+	DeleteExpiredServiceAuthTokens(ctx context.Context, retention time.Duration) error
 
 	FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*DeviceAuthCode, error)
 	FindPendingDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*DeviceAuthCode, error)
@@ -151,6 +169,11 @@ type DB interface {
 	InsertProjectInvite(ctx context.Context, opts *InsertProjectInviteOptions) error
 	DeleteProjectInvite(ctx context.Context, id string) error
 	UpdateProjectInviteRole(ctx context.Context, id, roleID string) error
+
+	FindBookmarks(ctx context.Context, projectID, userID string) ([]*Bookmark, error)
+	FindBookmark(ctx context.Context, bookmarkID string) (*Bookmark, error)
+	InsertBookmark(ctx context.Context, opts *InsertBookmarkOptions) (*Bookmark, error)
+	DeleteBookmark(ctx context.Context, bookmarkID string) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -198,8 +221,13 @@ type InsertOrganizationOptions struct {
 
 // UpdateOrganizationOptions defines options for updating an existing org
 type UpdateOrganizationOptions struct {
-	Name        string `validate:"slug"`
-	Description string
+	Name                    string `validate:"slug"`
+	Description             string
+	QuotaProjects           int
+	QuotaDeployments        int
+	QuotaSlotsTotal         int
+	QuotaSlotsPerDeployment int
+	QuotaOutstandingInvites int
 }
 
 // Project represents one Git connection.
@@ -219,6 +247,7 @@ type Project struct {
 	ProdOLAPDriver       string    `db:"prod_olap_driver"`
 	ProdOLAPDSN          string    `db:"prod_olap_dsn"`
 	ProdSlots            int       `db:"prod_slots"`
+	ProdTTLSeconds       *int64    `db:"prod_ttl_seconds"`
 	ProdDeploymentID     *string   `db:"prod_deployment_id"`
 	CreatedOn            time.Time `db:"created_on"`
 	UpdatedOn            time.Time `db:"updated_on"`
@@ -250,6 +279,7 @@ type InsertProjectOptions struct {
 	ProdOLAPDriver       string
 	ProdOLAPDSN          string
 	ProdSlots            int
+	ProdTTLSeconds       *int64
 }
 
 // UpdateProjectOptions defines options for updating a Project.
@@ -263,6 +293,7 @@ type UpdateProjectOptions struct {
 	ProdVariables        map[string]string
 	ProdDeploymentID     *string
 	ProdSlots            int
+	ProdTTLSeconds       *int64
 	Region               string
 }
 
@@ -291,6 +322,7 @@ type Deployment struct {
 	Logs              string           `db:"logs"`
 	CreatedOn         time.Time        `db:"created_on"`
 	UpdatedOn         time.Time        `db:"updated_on"`
+	UsedOn            time.Time        `db:"used_on"`
 }
 
 // InsertDeploymentOptions defines options for inserting a new Deployment.
@@ -322,6 +354,7 @@ type User struct {
 	CreatedOn           time.Time `db:"created_on"`
 	UpdatedOn           time.Time `db:"updated_on"`
 	QuotaSingleuserOrgs int       `db:"quota_singleuser_orgs"`
+	PreferenceTimeZone  string    `db:"preference_time_zone"`
 	Superuser           bool      `db:"superuser"`
 }
 
@@ -336,9 +369,32 @@ type InsertUserOptions struct {
 
 // UpdateUserOptions defines options for updating an existing user
 type UpdateUserOptions struct {
-	DisplayName    string
-	PhotoURL       string
-	GithubUsername string
+	DisplayName         string
+	PhotoURL            string
+	GithubUsername      string
+	QuotaSingleuserOrgs int
+	PreferenceTimeZone  string
+}
+
+// Service represents a service account.
+// Service accounts may belong to single organization
+type Service struct {
+	ID        string
+	OrgID     string    `db:"org_id"`
+	Name      string    `validate:"slug"`
+	CreatedOn time.Time `db:"created_on"`
+	UpdatedOn time.Time `db:"updated_on"`
+}
+
+// InsertServiceOptions defines options for inserting a new service
+type InsertServiceOptions struct {
+	OrgID string
+	Name  string `validate:"slug"`
+}
+
+// UpdateServiceOptions defines options for updating an existing service
+type UpdateServiceOptions struct {
+	Name string `validate:"slug"`
 }
 
 // Usergroup represents a group of org members
@@ -375,6 +431,23 @@ type InsertUserAuthTokenOptions struct {
 	AuthClientID       *string
 	RepresentingUserID *string
 	ExpiresOn          *time.Time
+}
+
+// ServiceAuthToken is a persistent API token for a service.
+type ServiceAuthToken struct {
+	ID         string
+	SecretHash []byte     `db:"secret_hash"`
+	ServiceID  string     `db:"service_id"`
+	CreatedOn  time.Time  `db:"created_on"`
+	ExpiresOn  *time.Time `db:"expires_on"`
+}
+
+// InsertServiceAuthTokenOptions defines options for creating a ServiceAuthToken.
+type InsertServiceAuthTokenOptions struct {
+	ID         string
+	SecretHash []byte
+	ServiceID  string
+	ExpiresOn  *time.Time
 }
 
 // AuthClient is a client that requests and consumes auth tokens.
@@ -538,4 +611,24 @@ type InsertProjectInviteOptions struct {
 	InviterID string
 	ProjectID string `validate:"required"`
 	RoleID    string `validate:"required"`
+}
+
+type Bookmark struct {
+	ID            string
+	DisplayName   string    `db:"display_name"`
+	Data          []byte    `db:"data"`
+	DashboardName string    `db:"dashboard_name"`
+	ProjectID     string    `db:"project_id"`
+	UserID        string    `db:"user_id"`
+	CreatedOn     time.Time `db:"created_on"`
+	UpdatedOn     time.Time `db:"updated_on"`
+}
+
+// InsertBookmarksOptions defines options for inserting a new bookmark
+type InsertBookmarkOptions struct {
+	DisplayName   string `json:"display_name"`
+	Data          []byte `json:"data"`
+	DashboardName string `json:"dashboard_name"`
+	ProjectID     string `json:"project_id"`
+	UserID        string `json:"user_id"`
 }

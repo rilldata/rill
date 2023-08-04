@@ -24,8 +24,10 @@ const (
 	RuntimeService_GetInstance_FullMethodName            = "/rill.runtime.v1.RuntimeService/GetInstance"
 	RuntimeService_CreateInstance_FullMethodName         = "/rill.runtime.v1.RuntimeService/CreateInstance"
 	RuntimeService_EditInstance_FullMethodName           = "/rill.runtime.v1.RuntimeService/EditInstance"
+	RuntimeService_EditInstanceVariables_FullMethodName  = "/rill.runtime.v1.RuntimeService/EditInstanceVariables"
 	RuntimeService_DeleteInstance_FullMethodName         = "/rill.runtime.v1.RuntimeService/DeleteInstance"
 	RuntimeService_ListFiles_FullMethodName              = "/rill.runtime.v1.RuntimeService/ListFiles"
+	RuntimeService_WatchFiles_FullMethodName             = "/rill.runtime.v1.RuntimeService/WatchFiles"
 	RuntimeService_GetFile_FullMethodName                = "/rill.runtime.v1.RuntimeService/GetFile"
 	RuntimeService_PutFile_FullMethodName                = "/rill.runtime.v1.RuntimeService/PutFile"
 	RuntimeService_DeleteFile_FullMethodName             = "/rill.runtime.v1.RuntimeService/DeleteFile"
@@ -59,11 +61,15 @@ type RuntimeServiceClient interface {
 	CreateInstance(ctx context.Context, in *CreateInstanceRequest, opts ...grpc.CallOption) (*CreateInstanceResponse, error)
 	// EditInstance edits an existing instance
 	EditInstance(ctx context.Context, in *EditInstanceRequest, opts ...grpc.CallOption) (*EditInstanceResponse, error)
+	// EditInstanceVariables edits the instance variable
+	EditInstanceVariables(ctx context.Context, in *EditInstanceVariablesRequest, opts ...grpc.CallOption) (*EditInstanceVariablesResponse, error)
 	// DeleteInstance deletes an instance
 	DeleteInstance(ctx context.Context, in *DeleteInstanceRequest, opts ...grpc.CallOption) (*DeleteInstanceResponse, error)
 	// ListFiles lists all the files matching a glob in a repo.
 	// The files are sorted by their full path.
 	ListFiles(ctx context.Context, in *ListFilesRequest, opts ...grpc.CallOption) (*ListFilesResponse, error)
+	// WatchFiles streams repo file update events. It is not supported on all backends.
+	WatchFiles(ctx context.Context, in *WatchFilesRequest, opts ...grpc.CallOption) (RuntimeService_WatchFilesClient, error)
 	// GetFile returns the contents of a specific file in a repo.
 	GetFile(ctx context.Context, in *GetFileRequest, opts ...grpc.CallOption) (*GetFileResponse, error)
 	// PutFile creates or updates a file in a repo
@@ -160,6 +166,15 @@ func (c *runtimeServiceClient) EditInstance(ctx context.Context, in *EditInstanc
 	return out, nil
 }
 
+func (c *runtimeServiceClient) EditInstanceVariables(ctx context.Context, in *EditInstanceVariablesRequest, opts ...grpc.CallOption) (*EditInstanceVariablesResponse, error) {
+	out := new(EditInstanceVariablesResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_EditInstanceVariables_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) DeleteInstance(ctx context.Context, in *DeleteInstanceRequest, opts ...grpc.CallOption) (*DeleteInstanceResponse, error) {
 	out := new(DeleteInstanceResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_DeleteInstance_FullMethodName, in, out, opts...)
@@ -176,6 +191,38 @@ func (c *runtimeServiceClient) ListFiles(ctx context.Context, in *ListFilesReque
 		return nil, err
 	}
 	return out, nil
+}
+
+func (c *runtimeServiceClient) WatchFiles(ctx context.Context, in *WatchFilesRequest, opts ...grpc.CallOption) (RuntimeService_WatchFilesClient, error) {
+	stream, err := c.cc.NewStream(ctx, &RuntimeService_ServiceDesc.Streams[0], RuntimeService_WatchFiles_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &runtimeServiceWatchFilesClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type RuntimeService_WatchFilesClient interface {
+	Recv() (*WatchFilesResponse, error)
+	grpc.ClientStream
+}
+
+type runtimeServiceWatchFilesClient struct {
+	grpc.ClientStream
+}
+
+func (x *runtimeServiceWatchFilesClient) Recv() (*WatchFilesResponse, error) {
+	m := new(WatchFilesResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (c *runtimeServiceClient) GetFile(ctx context.Context, in *GetFileRequest, opts ...grpc.CallOption) (*GetFileResponse, error) {
@@ -345,11 +392,15 @@ type RuntimeServiceServer interface {
 	CreateInstance(context.Context, *CreateInstanceRequest) (*CreateInstanceResponse, error)
 	// EditInstance edits an existing instance
 	EditInstance(context.Context, *EditInstanceRequest) (*EditInstanceResponse, error)
+	// EditInstanceVariables edits the instance variable
+	EditInstanceVariables(context.Context, *EditInstanceVariablesRequest) (*EditInstanceVariablesResponse, error)
 	// DeleteInstance deletes an instance
 	DeleteInstance(context.Context, *DeleteInstanceRequest) (*DeleteInstanceResponse, error)
 	// ListFiles lists all the files matching a glob in a repo.
 	// The files are sorted by their full path.
 	ListFiles(context.Context, *ListFilesRequest) (*ListFilesResponse, error)
+	// WatchFiles streams repo file update events. It is not supported on all backends.
+	WatchFiles(*WatchFilesRequest, RuntimeService_WatchFilesServer) error
 	// GetFile returns the contents of a specific file in a repo.
 	GetFile(context.Context, *GetFileRequest) (*GetFileResponse, error)
 	// PutFile creates or updates a file in a repo
@@ -413,11 +464,17 @@ func (UnimplementedRuntimeServiceServer) CreateInstance(context.Context, *Create
 func (UnimplementedRuntimeServiceServer) EditInstance(context.Context, *EditInstanceRequest) (*EditInstanceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method EditInstance not implemented")
 }
+func (UnimplementedRuntimeServiceServer) EditInstanceVariables(context.Context, *EditInstanceVariablesRequest) (*EditInstanceVariablesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EditInstanceVariables not implemented")
+}
 func (UnimplementedRuntimeServiceServer) DeleteInstance(context.Context, *DeleteInstanceRequest) (*DeleteInstanceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteInstance not implemented")
 }
 func (UnimplementedRuntimeServiceServer) ListFiles(context.Context, *ListFilesRequest) (*ListFilesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListFiles not implemented")
+}
+func (UnimplementedRuntimeServiceServer) WatchFiles(*WatchFilesRequest, RuntimeService_WatchFilesServer) error {
+	return status.Errorf(codes.Unimplemented, "method WatchFiles not implemented")
 }
 func (UnimplementedRuntimeServiceServer) GetFile(context.Context, *GetFileRequest) (*GetFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetFile not implemented")
@@ -573,6 +630,24 @@ func _RuntimeService_EditInstance_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_EditInstanceVariables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EditInstanceVariablesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).EditInstanceVariables(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_EditInstanceVariables_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).EditInstanceVariables(ctx, req.(*EditInstanceVariablesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_DeleteInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteInstanceRequest)
 	if err := dec(in); err != nil {
@@ -607,6 +682,27 @@ func _RuntimeService_ListFiles_Handler(srv interface{}, ctx context.Context, dec
 		return srv.(RuntimeServiceServer).ListFiles(ctx, req.(*ListFilesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_WatchFiles_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(WatchFilesRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(RuntimeServiceServer).WatchFiles(m, &runtimeServiceWatchFilesServer{stream})
+}
+
+type RuntimeService_WatchFilesServer interface {
+	Send(*WatchFilesResponse) error
+	grpc.ServerStream
+}
+
+type runtimeServiceWatchFilesServer struct {
+	grpc.ServerStream
+}
+
+func (x *runtimeServiceWatchFilesServer) Send(m *WatchFilesResponse) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 func _RuntimeService_GetFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -943,6 +1039,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_EditInstance_Handler,
 		},
 		{
+			MethodName: "EditInstanceVariables",
+			Handler:    _RuntimeService_EditInstanceVariables_Handler,
+		},
+		{
 			MethodName: "DeleteInstance",
 			Handler:    _RuntimeService_DeleteInstance_Handler,
 		},
@@ -1019,6 +1119,12 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_ListConnectors_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "WatchFiles",
+			Handler:       _RuntimeService_WatchFiles_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "rill/runtime/v1/api.proto",
 }

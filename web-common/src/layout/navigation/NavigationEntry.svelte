@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import ContextButton from "@rilldata/web-common/components/column-profile/ContextButton.svelte";
   import ExpanderButton from "@rilldata/web-common/components/column-profile/ExpanderButton.svelte";
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
@@ -11,6 +10,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { createCommandClickAction } from "@rilldata/web-local/lib/util/command-click-action";
   import { createShiftClickAction } from "../../lib/actions/shift-click-action";
+  import { emitNavigationTelemetry } from "./navigation-utils";
   import { currentHref } from "./stores";
 
   export let name: string;
@@ -20,6 +20,8 @@
   export let tooltipMaxWidth: string = undefined;
   export let maxMenuWidth: string = undefined;
   export let showContextMenu = true;
+  // We set `immediatelyNavigate` to false for Sources because we want to confirm with the user before navigating away from an Unsaved Source.
+  export let immediatelyNavigate = true;
 
   const { commandClickAction } = createCommandClickAction();
   const { shiftClickAction } = createShiftClickAction();
@@ -65,10 +67,15 @@
   <a
     {href}
     on:click={() => {
+      if (immediatelyNavigate) {
+        emitNavigationTelemetry(href);
+      }
       if (open) onShowDetails();
     }}
     on:mousedown={() => {
-      currentHref.set(href);
+      if (immediatelyNavigate) {
+        currentHref.set(href);
+      }
       mousedown = true;
     }}
     on:mouseup={() => {
@@ -79,10 +86,10 @@
     on:mouseleave={onContainerFocus(false)}
     on:blur={onContainerFocus(false)}
     on:dragend={async () => {
-      // perform navigation in this case.
-      await goto(href);
+      if (immediatelyNavigate) {
+        currentHref.set(href);
+      }
       mousedown = false;
-      currentHref.set(href);
     }}
     style:height="24px"
     class:font-bold={isActive}

@@ -2,45 +2,36 @@
   import { page } from "$app/stores";
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import {
-    useEmbeddedSources,
-    useSourceNames,
-  } from "@rilldata/web-common/features/sources/selectors";
+  import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
   import {
     createRuntimeServiceListCatalogEntries,
     createRuntimeServicePutFileAndReconcile,
-    V1CatalogEntry,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
+  import { appScreen } from "../../../layout/app-store";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import NavigationEntry from "../../../layout/navigation/NavigationEntry.svelte";
   import NavigationHeader from "../../../layout/navigation/NavigationHeader.svelte";
-  import { runtime } from "../../../runtime-client/runtime-store";
-  import AddAssetButton from "../../entity-management/AddAssetButton.svelte";
-  import { useModelNames } from "../../models/selectors";
-  import AddSourceModal from "../add-source/AddSourceModal.svelte";
-  import { createModelFromSource } from "../createModel";
-  import EmbeddedSourceNav from "./EmbeddedSourceNav.svelte";
-  import SourceMenuItems from "./SourceMenuItems.svelte";
-  import SourceTooltip from "./SourceTooltip.svelte";
   import { behaviourEvent } from "../../../metrics/initMetrics";
   import {
     BehaviourEventAction,
     BehaviourEventMedium,
   } from "../../../metrics/service/BehaviourEventTypes";
-  import { appScreen } from "../../../layout/app-store";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
+  import { runtime } from "../../../runtime-client/runtime-store";
+  import AddAssetButton from "../../entity-management/AddAssetButton.svelte";
+  import { EntityType } from "../../entity-management/types";
+  import { useModelNames } from "../../models/selectors";
+  import { createModelFromSource } from "../createModel";
+  import AddSourceModal from "../modal/AddSourceModal.svelte";
+  import SourceMenuItems from "./SourceMenuItems.svelte";
+  import SourceTooltip from "./SourceTooltip.svelte";
 
   $: sourceNames = useSourceNames($runtime.instanceId);
   $: modelNames = useModelNames($runtime.instanceId);
   const createModelMutation = createRuntimeServicePutFileAndReconcile();
-
-  $: sourceCatalogsQuery = useEmbeddedSources($runtime?.instanceId);
-  let embeddedSourceCatalogs: Array<V1CatalogEntry>;
-  $: embeddedSourceCatalogs = $sourceCatalogsQuery?.data ?? [];
 
   const queryClient = useQueryClient();
 
@@ -96,10 +87,11 @@
           out:slide={{ duration: LIST_SLIDE_DURATION }}
         >
           <NavigationEntry
+            name={sourceName}
             href={`/source/${sourceName}`}
             open={$page.url.pathname === `/source/${sourceName}`}
+            immediatelyNavigate={false}
             on:command-click={() => queryHandler(sourceName)}
-            name={sourceName}
           >
             <svelte:fragment slot="more">
               <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
@@ -124,7 +116,6 @@
         </div>
       {/each}
     {/if}
-    <EmbeddedSourceNav />
     <AddAssetButton
       id="add-table"
       label="Add source"

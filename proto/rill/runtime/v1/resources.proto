@@ -1,0 +1,247 @@
+syntax = "proto3";
+package rill.runtime.v1;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+import "rill/runtime/v1/time_grain.proto";
+
+message Resource {
+  ResourceMeta meta = 1;
+  oneof resource {
+    // Well-known types only, for now. If required, we can add support for a google.protobuf.Any later.
+    ProjectParser project_parser = 2;
+    SourceV2 source = 3;
+    ModelV2 model = 4;
+    MetricsViewV2 metrics_view = 5;
+    PullTrigger pull_trigger = 6;
+    RefreshTrigger refresh_trigger = 7;
+    BucketPlanner bucket_planner = 8;
+  }
+}
+
+message ResourceMeta {
+  ResourceName name = 1;
+  repeated ResourceName refs = 2;
+  map<string, string> annotations = 3;
+  int64 spec_version = 5;
+  int64 state_version = 6;
+  bool deleted = 7;
+  string reconcile_error = 8;
+  google.protobuf.Timestamp created_on = 9;
+  google.protobuf.Timestamp spec_updated_on = 10;
+  google.protobuf.Timestamp state_updated_on = 11;
+  optional google.protobuf.Timestamp deleted_on = 12;
+}
+
+message ResourceName {
+  string kind = 1;
+  string name = 2;
+}
+
+message ProjectParser {
+  ProjectParserSpec spec = 1;
+  ProjectParserState state = 2;
+}
+
+message ProjectParserSpec {
+  // compiler identifies the project parser to use
+  string compiler = 1;
+  // watch makes the project parser watch for and incrementally parse changed files
+  bool watch = 2;
+  // atomic makes the project parser stage all changes before committing them
+  bool atomic = 3;
+  // materialize_model_default sets a default for whether or not to materialize a model, if not explicitly set in the model
+  bool materialize_model_default = 4;
+  // materialize_model_delay_seconds makes the project parser delay materialization of updated models
+  uint32 materialize_model_delay_seconds = 5;
+  // bool simulate_streaming_ingestion = 6;
+}
+
+message ProjectParserState {
+  repeated ParseError parse_errors = 1;
+  string current_commit_sha = 2;
+  repeated string changed_paths = 3;
+}
+
+message SourceV2 {
+  SourceSpec spec = 1;
+  SourceState state = 2;
+}
+
+message SourceSpec {
+  string source_connector = 1;
+  string sink_connector = 2;
+  google.protobuf.Struct properties = 3;
+  Schedule refresh_schedule = 5;
+  uint32 timeout_seconds = 6;
+}
+
+message SourceState {
+  string table_name = 1;
+  string stage_table_name = 2;
+  ValidationError validation_error = 3;
+  ExecutionError execution_error = 4;
+}
+
+message ModelV2 {
+  ModelSpec spec = 1;
+  ModelState state = 2;
+}
+
+message ModelSpec {
+  string connector = 1;
+  string sql = 2;
+  bool derive_metrics_view = 3;
+  Schedule refresh_schedule = 4;
+  uint32 timeout_seconds = 6;
+  optional bool materialize = 7;
+  bool uses_templating = 8;
+}
+
+message ModelState {
+  string table_name = 1;
+  string stage_table_name = 2;
+  ValidationError validation_error = 3;
+  ExecutionError execution_error = 4;
+  DependencyError dependency_error = 5;
+}
+
+message MetricsViewV2 {
+  MetricsViewSpec spec = 1;
+  MetricsViewState state = 2;
+}
+
+message MetricsViewSpec {
+  // Dimensions are columns to filter and group by
+  message DimensionV2 {
+    string name = 1;
+    string column = 2;
+    string label = 3;
+    string description = 4;
+  }
+  // Measures are aggregated computed values
+  message MeasureV2 {
+    string name = 1;
+    string expression = 2;
+    string label = 3;
+    string description = 4;
+    string format = 5;
+    bool valid_percent_of_total = 6;
+  }
+  // User friendly label for the dashboard
+  string title = 1;
+  // Description of the dashboard
+  string description = 2;
+  // Name of the source or model that the metrics view is based on
+  string model = 3;
+  // Name of the primary time dimension, used for rendering time series
+  string time_dimension = 4;
+  // Dimensions in the metrics view
+  repeated DimensionV2 dimensions = 5;
+  // Measures in the metrics view
+  repeated MeasureV2 measures = 6;
+  // Smallest time grain to show in the dashboard
+  TimeGrain smallest_time_grain = 7;
+  // Default time range for the dashboard. It should be a valid ISO 8601 duration string.
+  string default_time_range = 8;
+  // Available time zones list preferred time zones using IANA location identifiers
+  repeated string available_time_zones = 9;
+}
+
+message MetricsViewState {
+  ValidationError validation_error = 1;
+  DependencyError dependency_error = 2;
+}
+
+message Migration {
+  MigrationSpec spec = 1;
+  MigrationState state = 2;
+}
+
+message MigrationSpec {
+  string connector = 1;
+  string sql = 2;
+  uint32 version = 3;
+}
+
+message MigrationState {
+  uint32 version = 1;
+}
+
+message PullTrigger {
+  PullTriggerSpec spec = 1;
+  PullTriggerState state = 2;
+}
+
+message PullTriggerSpec {
+  repeated string only_paths = 1;
+  bool refresh_sources = 2;
+}
+
+message PullTriggerState {}
+
+message RefreshTrigger {
+  RefreshTriggerSpec spec = 1;
+  RefreshTriggerState state = 2;
+}
+
+message RefreshTriggerSpec {
+  string only_names = 1;
+  bool reset_increments = 2;
+}
+
+message RefreshTriggerState {}
+
+message BucketPlanner {
+  BucketPlannerSpec spec = 1;
+  BucketPlannerState state = 2;
+}
+
+message BucketPlannerSpec {
+  BucketExtractPolicy extract_policy = 1;
+}
+
+message BucketPlannerState {
+  string region = 1;
+}
+
+message BucketExtractPolicy {
+  enum Strategy {
+    STRATEGY_UNSPECIFIED = 0;
+    STRATEGY_HEAD = 1;
+    STRATEGY_TAIL = 2;
+  }
+  Strategy rows_strategy = 1;
+  uint64 rows_limit_bytes = 2;
+  Strategy files_strategy = 3;
+  uint64 files_limit = 4;
+}
+
+message Schedule {
+  string cron = 1;
+  uint32 ticker_seconds = 2;
+}
+
+message ParseError {
+  string message = 1;
+  string file_path = 2;
+  CharLocation start_location = 3;
+}
+
+message ValidationError {
+  string message = 1;
+  repeated string property_path = 2;
+}
+
+message DependencyError {
+  string message = 1;
+  string dependency = 2;
+}
+
+message ExecutionError {
+  string message = 1;
+}
+
+message CharLocation {
+  uint32 line = 1;
+}

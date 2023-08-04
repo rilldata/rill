@@ -34,9 +34,9 @@ This component needs to do the following:
   export let boundaryStart: Date;
   export let boundaryEnd: Date;
   export let minTimeGrain: V1TimeGrain;
+  export let zone: string;
 
   export let showComparison = true;
-  export let isComparisonRangeAvailable = true;
   export let selectedComparison;
   export let comparisonOptions: TimeComparisonOption[];
 
@@ -116,31 +116,26 @@ This component needs to do the following:
     : NO_COMPARISON_LABEL;
 </script>
 
-<WithTogglableFloatingElement let:toggleFloatingElement let:active>
+<WithTogglableFloatingElement
+  distance={8}
+  alignment="start"
+  let:toggleFloatingElement
+  let:active
+>
   <Tooltip distance={8} suppress={active}>
     <SelectorButton
       {active}
-      disabled={!isComparisonRangeAvailable}
       on:click={() => {
-        if (isComparisonRangeAvailable) toggleFloatingElement();
+        toggleFloatingElement();
       }}
     >
       <span class="font-normal">
-        {#if !isComparisonRangeAvailable}
-          <span class="italic text-gray-500">Time comparison not available</span
-          >
-        {:else}
-          {showComparison ? "Comparing to" : ""}
-          <span class="font-bold">{label}</span>
-        {/if}
+        {showComparison ? "Comparing to" : ""}
+        <span class="font-bold">{label}</span>
       </span>
     </SelectorButton>
     <TooltipContent slot="tooltip-content" maxWidth="220px">
-      {#if isComparisonRangeAvailable}
-        Select a time range to compare to the selected time range
-      {:else}
-        Select a shorter or more recent time range to enable comparisons.
-      {/if}
+      Select a time range to compare to the selected time range
     </TooltipContent>
   </Tooltip>
   <Menu
@@ -201,6 +196,7 @@ This component needs to do the following:
           {boundaryEnd}
           defaultDate={selectedComparison}
           {minTimeGrain}
+          {zone}
           on:apply={(e) => {
             onSelectCustomComparisonRange(
               e.detail.startDate,

@@ -29,6 +29,8 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 		attribute.Int("args.filter_count", filterCount(req.Filter)),
 	)
 
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
 		return nil, ErrForbidden
 	}
@@ -45,7 +47,7 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 		InlineMeasures:  req.InlineMeasures,
 		TimeStart:       req.TimeStart,
 		TimeEnd:         req.TimeEnd,
-		Limit:           req.Limit,
+		Limit:           &req.Limit,
 		Offset:          req.Offset,
 		Sort:            req.Sort,
 		Filter:          req.Filter,
@@ -72,6 +74,9 @@ func (s *Server) MetricsViewComparisonToplist(ctx context.Context, req *runtimev
 		attribute.Int64("args.offset", req.Offset),
 		attribute.Int("args.priority", int(req.Priority)),
 	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
 	if req.BaseTimeRange != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.base_time_range.start", safeTimeStr(req.BaseTimeRange.Start)))
 		observability.AddRequestAttributes(ctx, attribute.String("args.base_time_range.end", safeTimeStr(req.BaseTimeRange.End)))
@@ -124,6 +129,8 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		attribute.Int("args.priority", int(req.Priority)),
 	)
 
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
 		return nil, ErrForbidden
 	}
@@ -141,6 +148,7 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		TimeEnd:         req.TimeEnd,
 		TimeGranularity: req.TimeGranularity,
 		Filter:          req.Filter,
+		TimeZone:        req.TimeZone,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -151,6 +159,19 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 
 // MetricsViewTotals implements QueryService.
 func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsViewTotalsRequest) (*runtimev1.MetricsViewTotalsResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.metric_view", req.MetricsViewName),
+		attribute.StringSlice("args.measures", req.MeasureNames),
+		attribute.StringSlice("args.inline_measures.names", marshalInlineMeasure(req.InlineMeasures)),
+		attribute.String("args.time_start", safeTimeStr(req.TimeStart)),
+		attribute.String("args.time_end", safeTimeStr(req.TimeEnd)),
+		attribute.Int("args.filter_count", filterCount(req.Filter)),
+		attribute.Int("args.priority", int(req.Priority)),
+	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
 		return nil, ErrForbidden
 	}
@@ -182,6 +203,7 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 		attribute.String("args.metric_view", req.MetricsViewName),
 		attribute.String("args.time_start", safeTimeStr(req.TimeStart)),
 		attribute.String("args.time_end", safeTimeStr(req.TimeEnd)),
+		attribute.String("args.time_granularity", req.TimeGranularity.String()),
 		attribute.Int("args.filter_count", filterCount(req.Filter)),
 		attribute.StringSlice("args.sort.names", marshalMetricsViewSort(req.Sort)),
 		attribute.Int("args.limit", int(req.Limit)),
@@ -189,18 +211,24 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 		attribute.Int("args.priority", int(req.Priority)),
 	)
 
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
 		return nil, ErrForbidden
 	}
+
+	limit := int64(req.Limit)
 
 	q := &queries.MetricsViewRows{
 		MetricsViewName: req.MetricsViewName,
 		TimeStart:       req.TimeStart,
 		TimeEnd:         req.TimeEnd,
+		TimeGranularity: req.TimeGranularity,
 		Filter:          req.Filter,
 		Sort:            req.Sort,
-		Limit:           req.Limit,
+		Limit:           &limit,
 		Offset:          req.Offset,
+		TimeZone:        req.TimeZone,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {

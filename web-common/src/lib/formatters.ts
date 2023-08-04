@@ -12,6 +12,7 @@ import {
   PreviewRollupInterval,
   TIMESTAMPS,
 } from "./duckdb-data-types";
+import { removeLocalTimezoneOffset } from "@rilldata/web-common/lib/time/timezone";
 
 /** This heuristic is courtesy Dominik Moritz.
  * Best used in cases where (1) you have no context for the number, and (2) you
@@ -68,39 +69,35 @@ export function formatBigNumberPercentage(v) {
   }
 }
 
-export function removeTimezoneOffset(dt: Date) {
-  return new Date(dt.getTime() + dt.getTimezoneOffset() * 60000);
-}
-
 export const standardTimestampFormat = (v, type = "TIMESTAMP") => {
-  let fmt = timeFormat("%Y-%m-%d %I:%M:%S");
+  let fmt = timeFormat("%Y-%m-%d %H:%M:%S Z");
   if (type === "DATE") {
     fmt = timeFormat("%Y-%m-%d");
   }
-  return fmt(removeTimezoneOffset(new Date(v)));
+  return fmt(removeLocalTimezoneOffset(new Date(v)));
 };
 
 export const fullTimestampFormat = (v) => {
-  const fmt = timeFormat("%Y-%m-%d %I:%M:%S.%L");
-  return fmt(removeTimezoneOffset(new Date(v)));
+  const fmt = timeFormat("%Y-%m-%d %H:%M:%S.%L");
+  return fmt(removeLocalTimezoneOffset(new Date(v)));
 };
 
 export const datePortion = timeFormat("%Y-%m-%d");
-export const timePortion = timeFormat("%I:%M:%S");
+export const timePortion = timeFormat("%H:%M:%S");
 
 export function microsToTimestring(microseconds: number) {
   // to format micros, we need to translate this to hh:mm:ss.
   // start with hours/
   const sign = Math.sign(microseconds);
   const micros = Math.abs(microseconds);
-  const hours = ~~(micros / 1000 / 1000 / 60 / 60);
+  const hours = Math.trunc(micros / 1000 / 1000 / 60 / 60);
   let remaining = micros - hours * 1000 * 1000 * 60 * 60;
-  const minutes = ~~(remaining / 1000 / 1000 / 60);
+  const minutes = Math.trunc(remaining / 1000 / 1000 / 60);
   //const seconds = (remaining - (minutes * 1000 * 1000 * 60)) / 1000 / 1000;
   remaining -= minutes * 1000 * 1000 * 60;
-  const seconds = ~~(remaining / 1000 / 1000);
+  const seconds = Math.trunc(remaining / 1000 / 1000);
   remaining -= seconds * 1000 * 1000;
-  const ms = ~~(remaining / 1000);
+  const ms = Math.trunc(remaining / 1000);
   if (hours === 0 && minutes === 0 && seconds === 0 && ms > 0) {
     return `${sign == 1 ? "" : "-"}${ms}ms`;
   }
@@ -146,7 +143,7 @@ export function formatCompactInteger(n: number) {
   let fmt: (number) => string;
   if (n <= 1000) {
     fmt = formatInteger;
-    return fmt(~~n);
+    return fmt(Math.trunc(n));
   } else {
     fmt = format(".3s");
     return fmt(n);

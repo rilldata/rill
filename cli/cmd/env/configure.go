@@ -12,15 +12,15 @@ import (
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/telemetry"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
-	"github.com/rilldata/rill/runtime/connectors"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
 )
 
 func ConfigureCmd(cfg *config.Config) *cobra.Command {
 	var projectPath, projectName, subPath string
-	var redploy bool
+	var redeploy bool
 
 	configureCommand := &cobra.Command{
 		Use:   "configure",
@@ -115,16 +115,11 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 			cmdutil.PrintlnSuccess("Updated project variables")
 
 			if !cmd.Flags().Changed("redeploy") {
-				redploy = cmdutil.ConfirmPrompt("Do you want to redeploy project", "", redploy)
+				redeploy = cmdutil.ConfirmPrompt("Do you want to redeploy project", "", redeploy)
 			}
 
-			if redploy {
-				project, err := client.GetProject(ctx, &adminv1.GetProjectRequest{OrganizationName: cfg.Org, Name: projectName})
-				if err != nil {
-					return err
-				}
-
-				_, err = client.TriggerRedeploy(ctx, &adminv1.TriggerRedeployRequest{DeploymentId: project.ProdDeployment.Id})
+			if redeploy {
+				_, err = client.TriggerRedeploy(ctx, &adminv1.TriggerRedeployRequest{Organization: cfg.Org, Project: projectName})
 				if err != nil {
 					warn.Printf("Redeploy trigger failed. Trigger redeploy again with `rill project reconcile --reset=true` if required.\n")
 					return err
@@ -139,7 +134,7 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 	configureCommand.Flags().StringVar(&projectPath, "path", ".", "Project directory")
 	configureCommand.Flags().StringVar(&subPath, "subpath", "", "Project path to sub directory of a larger repository")
 	configureCommand.Flags().StringVar(&projectName, "project", "", "")
-	configureCommand.Flags().BoolVar(&redploy, "redeploy", false, "Redeploy project")
+	configureCommand.Flags().BoolVar(&redeploy, "redeploy", false, "Redeploy project")
 
 	return configureCommand
 }
@@ -151,7 +146,7 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 	}
 
 	// collect all sources
-	srcs := make([]*connectors.Source, 0)
+	srcs := make([]*runtimev1.Source, 0)
 	for _, c := range connectorList {
 		if !c.AnonymousAccess {
 			srcs = append(srcs, c.Sources...)
@@ -164,9 +159,10 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 	tel.Emit(telemetry.ActionDataAccessStart)
 	fmt.Printf("Finish deploying your project by providing access to the data store. Rill does not have access to the following data sources:\n\n")
 	for _, src := range srcs {
-		if _, ok := src.Properties["path"]; ok {
+		props := src.Properties.AsMap()
+		if _, ok := props["path"]; ok {
 			// print URL wherever applicable
-			fmt.Printf(" - %s\n", src.Properties["path"])
+			fmt.Printf(" - %s\n", props["path"])
 		} else {
 			fmt.Printf(" - %s\n", src.Name)
 		}
@@ -178,7 +174,7 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 			// ignore asking for credentials if external source can be access anonymously
 			continue
 		}
-		connectorVariables := c.Spec.ConnectorVariables
+		connectorVariables := c.Spec.ConfigProperties
 		if len(connectorVariables) != 0 {
 			fmt.Printf("\nConnector %q requires credentials.\n", c.Type)
 			if c.Spec.ServiceAccountDocs != "" {
@@ -189,11 +185,12 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 		if c.Spec.Help != "" {
 			fmt.Println(c.Spec.Help)
 		}
-		for _, prop := range connectorVariables {
+		for i := range connectorVariables {
+			prop := connectorVariables[i]
 			question := &survey.Question{}
 			msg := fmt.Sprintf("connector.%s.%s", c.Name, prop.Key)
-			if prop.Help != "" {
-				msg = fmt.Sprintf(msg+" (%s)", prop.Help)
+			if prop.Hint != "" {
+				msg = fmt.Sprintf(msg+" (%s)", prop.Hint)
 			}
 
 			if prop.Secret {

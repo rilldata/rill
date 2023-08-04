@@ -1,10 +1,11 @@
-import { describe, it } from "@jest/globals";
-import { createAdBidsModel } from "./utils/dataSpecifcHelpers";
+import { test } from "@playwright/test";
 import {
   deleteEntity,
   gotoEntity,
   renameEntityUsingMenu,
+  updateCodeEditor,
 } from "./utils/commonHelpers";
+import { createAdBidsModel } from "./utils/dataSpecifcHelpers";
 import {
   TestEntityType,
   waitForProfiling,
@@ -14,17 +15,16 @@ import {
   createModel,
   createModelFromSource,
   modelHasError,
-  updateModelSql,
 } from "./utils/modelHelpers";
-import { useRegisteredServer } from "./utils/serverConfigs";
 import { createOrReplaceSource } from "./utils/sourceHelpers";
+import { startRuntimeForEachTest } from "./utils/startRuntimeForEachTest";
 import { entityNotPresent, waitForEntity } from "./utils/waitHelpers";
 
-describe("models", () => {
-  const testBrowser = useRegisteredServer("models");
+test.describe("models", () => {
+  startRuntimeForEachTest();
 
-  it("Create and edit model", async () => {
-    const { page } = testBrowser;
+  test("Create and edit model", async ({ page }) => {
+    await page.goto("/");
 
     await createOrReplaceSource(page, "AdBids.csv", "AdBids");
     await createOrReplaceSource(page, "AdImpressions.tsv", "AdImpressions");
@@ -37,21 +37,21 @@ describe("models", () => {
         "domain",
         "timestamp",
       ]),
-      updateModelSql(page, "select * from AdBids"),
+      updateCodeEditor(page, "select * from AdBids"),
     ]);
     await wrapRetryAssertion(() => modelHasError(page, false));
 
     // Catalog error
-    await updateModelSql(page, "select * from AdBid");
+    await updateCodeEditor(page, "select * from AdBid");
     await wrapRetryAssertion(() => modelHasError(page, true, "Catalog Error"));
 
     // Query parse error
-    await updateModelSql(page, "select from AdBids");
+    await updateCodeEditor(page, "select from AdBids");
     await wrapRetryAssertion(() => modelHasError(page, true, "Parser Error"));
   });
 
-  it("Rename and delete model", async () => {
-    const { page } = testBrowser;
+  test("Rename and delete model", async ({ page }) => {
+    await page.goto("/");
 
     // make sure AdBids_rename_delete is present
     await createModel(page, "AdBids_rename_delete");
@@ -76,8 +76,8 @@ describe("models", () => {
     await entityNotPresent(page, "AdBids_rename_delete");
   });
 
-  it("Create model from source", async () => {
-    const { page } = testBrowser;
+  test("Create model from source", async ({ page }) => {
+    await page.goto("/");
 
     await createOrReplaceSource(page, "AdBids.csv", "AdBids");
 
@@ -101,8 +101,8 @@ describe("models", () => {
     await wrapRetryAssertion(() => modelHasError(page, true, "Catalog Error"));
   });
 
-  it("Embedded source", async () => {
-    const { page } = testBrowser;
+  test("Embedded source", async ({ page }) => {
+    await page.goto("/");
     await createAdBidsModel(page);
   });
 });

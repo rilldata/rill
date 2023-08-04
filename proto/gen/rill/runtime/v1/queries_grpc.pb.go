@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 
 const (
 	QueryService_Query_FullMethodName                        = "/rill.runtime.v1.QueryService/Query"
+	QueryService_Export_FullMethodName                       = "/rill.runtime.v1.QueryService/Export"
 	QueryService_MetricsViewToplist_FullMethodName           = "/rill.runtime.v1.QueryService/MetricsViewToplist"
 	QueryService_MetricsViewComparisonToplist_FullMethodName = "/rill.runtime.v1.QueryService/MetricsViewComparisonToplist"
 	QueryService_MetricsViewTimeSeries_FullMethodName        = "/rill.runtime.v1.QueryService/MetricsViewTimeSeries"
@@ -38,6 +39,7 @@ const (
 	QueryService_TableCardinality_FullMethodName             = "/rill.runtime.v1.QueryService/TableCardinality"
 	QueryService_TableColumns_FullMethodName                 = "/rill.runtime.v1.QueryService/TableColumns"
 	QueryService_TableRows_FullMethodName                    = "/rill.runtime.v1.QueryService/TableRows"
+	QueryService_QueryBatch_FullMethodName                   = "/rill.runtime.v1.QueryService/QueryBatch"
 )
 
 // QueryServiceClient is the client API for QueryService service.
@@ -46,6 +48,8 @@ const (
 type QueryServiceClient interface {
 	// Query runs a SQL query against the instance's OLAP datastore.
 	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error)
+	// Export builds a URL to download the results of a query as a file.
+	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
 	// MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewToplist(ctx context.Context, in *MetricsViewToplistRequest, opts ...grpc.CallOption) (*MetricsViewToplistResponse, error)
@@ -85,6 +89,8 @@ type QueryServiceClient interface {
 	TableColumns(ctx context.Context, in *TableColumnsRequest, opts ...grpc.CallOption) (*TableColumnsResponse, error)
 	// TableRows returns table rows
 	TableRows(ctx context.Context, in *TableRowsRequest, opts ...grpc.CallOption) (*TableRowsResponse, error)
+	// Batch request with different queries
+	QueryBatch(ctx context.Context, in *QueryBatchRequest, opts ...grpc.CallOption) (QueryService_QueryBatchClient, error)
 }
 
 type queryServiceClient struct {
@@ -98,6 +104,15 @@ func NewQueryServiceClient(cc grpc.ClientConnInterface) QueryServiceClient {
 func (c *queryServiceClient) Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error) {
 	out := new(QueryResponse)
 	err := c.cc.Invoke(ctx, QueryService_Query_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryServiceClient) Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error) {
+	out := new(ExportResponse)
+	err := c.cc.Invoke(ctx, QueryService_Export_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -266,12 +281,46 @@ func (c *queryServiceClient) TableRows(ctx context.Context, in *TableRowsRequest
 	return out, nil
 }
 
+func (c *queryServiceClient) QueryBatch(ctx context.Context, in *QueryBatchRequest, opts ...grpc.CallOption) (QueryService_QueryBatchClient, error) {
+	stream, err := c.cc.NewStream(ctx, &QueryService_ServiceDesc.Streams[0], QueryService_QueryBatch_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &queryServiceQueryBatchClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type QueryService_QueryBatchClient interface {
+	Recv() (*QueryBatchResponse, error)
+	grpc.ClientStream
+}
+
+type queryServiceQueryBatchClient struct {
+	grpc.ClientStream
+}
+
+func (x *queryServiceQueryBatchClient) Recv() (*QueryBatchResponse, error) {
+	m := new(QueryBatchResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // QueryServiceServer is the server API for QueryService service.
 // All implementations must embed UnimplementedQueryServiceServer
 // for forward compatibility
 type QueryServiceServer interface {
 	// Query runs a SQL query against the instance's OLAP datastore.
 	Query(context.Context, *QueryRequest) (*QueryResponse, error)
+	// Export builds a URL to download the results of a query as a file.
+	Export(context.Context, *ExportRequest) (*ExportResponse, error)
 	// MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewToplist(context.Context, *MetricsViewToplistRequest) (*MetricsViewToplistResponse, error)
@@ -311,6 +360,8 @@ type QueryServiceServer interface {
 	TableColumns(context.Context, *TableColumnsRequest) (*TableColumnsResponse, error)
 	// TableRows returns table rows
 	TableRows(context.Context, *TableRowsRequest) (*TableRowsResponse, error)
+	// Batch request with different queries
+	QueryBatch(*QueryBatchRequest, QueryService_QueryBatchServer) error
 	mustEmbedUnimplementedQueryServiceServer()
 }
 
@@ -320,6 +371,9 @@ type UnimplementedQueryServiceServer struct {
 
 func (UnimplementedQueryServiceServer) Query(context.Context, *QueryRequest) (*QueryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Query not implemented")
+}
+func (UnimplementedQueryServiceServer) Export(context.Context, *ExportRequest) (*ExportResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Export not implemented")
 }
 func (UnimplementedQueryServiceServer) MetricsViewToplist(context.Context, *MetricsViewToplistRequest) (*MetricsViewToplistResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MetricsViewToplist not implemented")
@@ -375,6 +429,9 @@ func (UnimplementedQueryServiceServer) TableColumns(context.Context, *TableColum
 func (UnimplementedQueryServiceServer) TableRows(context.Context, *TableRowsRequest) (*TableRowsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TableRows not implemented")
 }
+func (UnimplementedQueryServiceServer) QueryBatch(*QueryBatchRequest, QueryService_QueryBatchServer) error {
+	return status.Errorf(codes.Unimplemented, "method QueryBatch not implemented")
+}
 func (UnimplementedQueryServiceServer) mustEmbedUnimplementedQueryServiceServer() {}
 
 // UnsafeQueryServiceServer may be embedded to opt out of forward compatibility for this service.
@@ -402,6 +459,24 @@ func _QueryService_Query_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(QueryServiceServer).Query(ctx, req.(*QueryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QueryService_Export_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExportRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServiceServer).Export(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QueryService_Export_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServiceServer).Export(ctx, req.(*ExportRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -730,6 +805,27 @@ func _QueryService_TableRows_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _QueryService_QueryBatch_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(QueryBatchRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(QueryServiceServer).QueryBatch(m, &queryServiceQueryBatchServer{stream})
+}
+
+type QueryService_QueryBatchServer interface {
+	Send(*QueryBatchResponse) error
+	grpc.ServerStream
+}
+
+type queryServiceQueryBatchServer struct {
+	grpc.ServerStream
+}
+
+func (x *queryServiceQueryBatchServer) Send(m *QueryBatchResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // QueryService_ServiceDesc is the grpc.ServiceDesc for QueryService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -740,6 +836,10 @@ var QueryService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Query",
 			Handler:    _QueryService_Query_Handler,
+		},
+		{
+			MethodName: "Export",
+			Handler:    _QueryService_Export_Handler,
 		},
 		{
 			MethodName: "MetricsViewToplist",
@@ -814,6 +914,12 @@ var QueryService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _QueryService_TableRows_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "QueryBatch",
+			Handler:       _QueryService_QueryBatch_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "rill/runtime/v1/queries.proto",
 }

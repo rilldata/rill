@@ -16,8 +16,8 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
-  import { removeTimezoneOffset } from "@rilldata/web-common/lib/formatters";
   import { guidGenerator } from "@rilldata/web-common/lib/guid";
+  import { removeLocalTimezoneOffset } from "@rilldata/web-common/lib/time/timezone";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { bisector, extent, max, min } from "d3-array";
   import type { ScaleLinear } from "d3-scale";
@@ -255,17 +255,21 @@
   $: if ($zoomCoords.start.x && $zoomCoords.stop.x) {
     const xStart = $X.invert(Math.min($zoomCoords.start.x, $zoomCoords.stop.x));
     const xEnd = $X.invert(Math.max($zoomCoords.start.x, $zoomCoords.stop.x));
-    zoomedRows = ~~data
-      .filter((di) => {
-        return di[xAccessor] >= xStart && di[xAccessor] <= xEnd;
-      })
-      .reduce((sum, di) => (sum += di[yAccessor]), 0);
+    zoomedRows = Math.trunc(
+      data
+        .filter((di) => {
+          return di[xAccessor] >= xStart && di[xAccessor] <= xEnd;
+        })
+        .reduce((sum, di) => (sum += di[yAccessor]), 0)
+    );
   } else if (zoomedXStart && zoomedXEnd) {
-    zoomedRows = ~~data
-      .filter((di) => {
-        return di[xAccessor] >= zoomedXStart && di[xAccessor] <= zoomedXEnd;
-      })
-      .reduce((sum, di) => (sum += di[yAccessor]), 0);
+    zoomedRows = Math.trunc(
+      data
+        .filter((di) => {
+          return di[xAccessor] >= zoomedXStart && di[xAccessor] <= zoomedXEnd;
+        })
+        .reduce((sum, di) => (sum += di[yAccessor]), 0)
+    );
   }
 
   // Tooltip & timestamp range variables.
@@ -306,7 +310,7 @@
       use:scrollAction
       use:shiftClickAction
       on:shift-click={async () => {
-        const exportedValue = `TIMESTAMP '${removeTimezoneOffset(
+        const exportedValue = `TIMESTAMP '${removeLocalTimezoneOffset(
           nearestPoint[xAccessor]
         ).toISOString()}'`;
         await navigator.clipboard.writeText(exportedValue);
@@ -478,7 +482,7 @@
         tooltipPanShakeAmount={// we will shake the tooltip pan word
         $tooltipPanShakeAmount}
         {zoomedRows}
-        totalRows={~~data.reduce((a, b) => a + b[yAccessor], 0)}
+        totalRows={Math.trunc(data.reduce((a, b) => a + b[yAccessor], 0))}
         zoomed={$zoomCoords.start.x || zoomedXStart}
         zooming={zoomedXStart && !$zoomCoords.start.x}
         zoomWindowXMin={$zoomCoords.start.x

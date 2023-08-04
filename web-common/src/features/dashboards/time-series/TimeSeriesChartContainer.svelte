@@ -17,8 +17,9 @@ A container GraphicContext for the time series in a metrics dashboard.
   <GraphicContext
     bottom={4}
     height={MEASURE_CONFIG.chart.height}
-    left={24}
-    right={45}
+    left={0}
+    right={50}
+    fontSize={11}
     top={4}
     width={(workspaceWidth >= MEASURE_CONFIG.breakpoint
       ? MEASURE_CONFIG.container.width.full

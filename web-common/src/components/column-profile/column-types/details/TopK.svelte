@@ -5,7 +5,6 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import LeaderboardListItem from "@rilldata/web-common/features/dashboards/leaderboard/LeaderboardListItem.svelte";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import {
     copyToClipboard,
@@ -21,6 +20,7 @@
   import { format } from "d3-format";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
+  import TopKListItem from "./TopKListItem.svelte";
 
   export let colorClass = "bg-blue-200";
 
@@ -43,6 +43,11 @@
       : smallestPercentage
       ? format("0.1%")
       : () => "";
+
+  // We need this to get transition working properly.
+  // Since the topk query is in a reactive statement with `enable`, `topK` can be undefined.
+  // This leads to unexpected issues when paired with transition
+  $: topKCopy = topK ?? topKCopy;
 
   function ensureSpaces(str: string, n = 6) {
     return `${Array.from({ length: n - str.length })
@@ -67,18 +72,16 @@
   /** handle LISTs and STRUCTs */
 </script>
 
-{#if topK && totalRows}
+{#if topKCopy && totalRows}
   <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-    {#each topK.slice(0, k) as item (item.value)}
+    {#each topKCopy.slice(0, k) as item (item.value)}
       {@const negligiblePercentage = item.count / totalRows < 0.0002}
       {@const percentage = negligiblePercentage
         ? "<.01%"
         : formatPercentage(item.count / totalRows)}
-      <LeaderboardListItem
-        compact
+      <TopKListItem
         value={item.count / totalRows}
         color={colorClass}
-        showIcon={false}
         on:focus={handleFocus(item)}
         on:blur={handleBlur(item)}
       >
@@ -155,7 +158,7 @@
             </TooltipContent>
           </Tooltip>
         </svelte:fragment>
-      </LeaderboardListItem>
+      </TopKListItem>
     {/each}
   </div>
 {/if}

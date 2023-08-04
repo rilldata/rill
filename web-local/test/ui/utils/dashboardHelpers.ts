@@ -1,10 +1,9 @@
-import { expect } from "@jest/globals";
+import { expect } from "@playwright/test";
 import type {
   MetricsViewFilterCond,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
 import type { Page, Response } from "playwright";
-import { expect as playwrightExpect } from "@playwright/test";
 import { clickMenuButton, openEntityMenu } from "./helpers";
 
 export async function createDashboardFromSource(page: Page, source: string) {
@@ -28,11 +27,11 @@ export async function assertLeaderboards(
     const leaderboardBlock = await page.locator("svelte-virtual-list-row", {
       hasText: label,
     });
-    await playwrightExpect(leaderboardBlock).toBeVisible();
+    await expect(leaderboardBlock).toBeVisible();
 
     const actualValues = await leaderboardBlock
       .locator(".leaderboard-entry")
-      .locator("div[slot='title']")
+      .locator(".leaderboard-label")
       .allInnerTexts();
     expect(actualValues).toEqual(values);
   }

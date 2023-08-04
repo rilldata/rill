@@ -8,6 +8,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
+  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import {
     getFilterForDimension,
     useMetaDimension,
@@ -22,14 +23,12 @@
     MetricsViewMeasure,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { isRangeInsideOther } from "../../../lib/time/ranges";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import { getFilterForComparsion } from "../dimension-table/dimension-table-utils";
-  import type { NicelyFormattedTypes } from "../humanize-numbers";
-  import DimensionLeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
+  import type { FormatPreset } from "../humanize-numbers";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
-  import LeaderboardList from "./LeaderboardList.svelte";
+  import { prepareLeaderboardItemData } from "./leaderboard-utils";
   import LeaderboardListItem from "./LeaderboardListItem.svelte";
 
   export let metricViewName: string;
@@ -39,21 +38,18 @@
    * or for a count(*) metric, the reference value is the total number of rows.
    */
   export let referenceValue: number;
+  export let unfilteredTotal: number;
 
-  export let formatPreset: NicelyFormattedTypes;
+  export let formatPreset: FormatPreset;
   export let isSummableMeasure = false;
 
   let slice = 7;
 
   const queryClient = useQueryClient();
 
+  $: dashboardStore = useDashboardStore(metricViewName);
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
 
-  $: dashboardStore = useDashboardStore(metricViewName);
-
-  // the timeRangeName is the key to a selected time range's associated presets.
-  $: timeRangeName = $dashboardStore?.selectedTimeRange?.name;
-  // we'll need to get the entire time range.
   $: allTimeRangeQuery = useModelAllTimeRange(
     $runtime.instanceId,
     $metaQuery.data.model,
@@ -64,7 +60,6 @@
       },
     }
   );
-  $: allTimeRange = $allTimeRangeQuery?.data;
 
   let filterExcludeMode: boolean;
   $: filterExcludeMode =
@@ -80,6 +75,7 @@
   let dimension: MetricsViewDimension;
   $: dimension = $dimensionQuery?.data;
   $: displayName = dimension?.label || dimension?.name;
+  $: dimensionColumn = dimension?.column || dimension?.name;
 
   $: measureQuery = useMetaMeasure(
     $runtime.instanceId,
@@ -115,46 +111,36 @@
     metricsExplorerStore.setMetricDimensionName(metricViewName, dimensionName);
   }
 
-  let topListQuery;
-
-  $: if (
-    measure?.name &&
-    $dashboardStore &&
-    $metaQuery?.isSuccess &&
-    !$metaQuery?.isRefetching
-  ) {
-    let topListParams = {
+  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
+  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
+  $: topListQuery = createQueryServiceMetricsViewToplist(
+    $runtime.instanceId,
+    metricViewName,
+    {
       dimensionName: dimensionName,
-      measureNames: [measure.name],
+      measureNames: [measure?.name],
+      timeStart: hasTimeSeries ? timeStart : undefined,
+      timeEnd: hasTimeSeries ? timeEnd : undefined,
+      filter: filterForDimension,
       limit: "250",
       offset: "0",
       sort: [
         {
-          name: measure.name,
+          name: measure?.name,
           ascending: false,
         },
       ],
-      filter: filterForDimension,
-    };
-
-    if (hasTimeSeries) {
-      topListParams = {
-        ...topListParams,
-        ...{
-          timeStart: $dashboardStore.selectedTimeRange?.start,
-          timeEnd: $dashboardStore.selectedTimeRange?.end,
-        },
-      };
+    },
+    {
+      query: {
+        enabled:
+          (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
+          !!filterForDimension,
+      },
     }
+  );
 
-    topListQuery = createQueryServiceMetricsViewToplist(
-      $runtime.instanceId,
-      metricViewName,
-      topListParams
-    );
-  }
-
-  let values = [];
+  let values: { value: number; label: string | number }[] = [];
   let comparisonValues = [];
 
   /** replace data after fetched. */
@@ -162,7 +148,7 @@
     values =
       $topListQuery?.data?.data.map((val) => ({
         value: val[measure?.name],
-        label: val[dimension?.name],
+        label: val[dimensionColumn],
       })) ?? [];
   }
 
@@ -187,87 +173,84 @@
       return b.value - a.value;
     });
 
-  let comparisonTopListQuery;
-  let isComparisonRangeAvailable = false;
-  let displayComparison = false;
+  // Compose the comparison /toplist query
+  $: showTimeComparison =
+    $dashboardStore?.leaderboardContextColumn ===
+      LeaderboardContextColumn.DELTA_CHANGE && $dashboardStore?.showComparison;
+  $: showPercentOfTotal =
+    $dashboardStore?.leaderboardContextColumn ===
+    LeaderboardContextColumn.PERCENT;
 
-  // create the right compareTopListParams.
-  $: if (
-    !$topListQuery?.isFetching &&
-    hasTimeSeries &&
-    timeRangeName !== undefined &&
-    $dashboardStore?.selectedComparisonTimeRange?.start
-  ) {
-    const values = $topListQuery?.data?.data;
+  $: showContext = $dashboardStore?.leaderboardContextColumn;
 
-    isComparisonRangeAvailable = isRangeInsideOther(
-      allTimeRange?.start,
-      allTimeRange?.end,
-      $dashboardStore?.selectedComparisonTimeRange?.start,
-      $dashboardStore?.selectedComparisonTimeRange?.end
-    );
-    displayComparison =
-      $dashboardStore?.showComparison && isComparisonRangeAvailable;
-
-    const selectedComparisonTimeRange =
-      $dashboardStore?.selectedComparisonTimeRange;
-    const { start, end } = selectedComparisonTimeRange;
-    // add all sliced and active values to the include filter.
-    const currentVisibleValues =
-      values
-        ?.slice(0, slice)
-        ?.concat(selectedValuesThatAreBelowTheFold)
-        ?.map((v) => v[dimensionName]) ?? [];
-
-    const updatedFilters = getFilterForComparsion(
-      filterForDimension,
-      dimensionName,
-      currentVisibleValues
-    );
-
-    let comparisonParams = {
+  // add all sliced and active values to the include filter.
+  $: currentVisibleValues =
+    $topListQuery?.data?.data
+      ?.slice(0, slice)
+      ?.concat(selectedValuesThatAreBelowTheFold)
+      ?.map((v) => v[dimensionColumn]) ?? [];
+  $: updatedFilters = getFilterForComparsion(
+    filterForDimension,
+    dimensionName,
+    currentVisibleValues
+  );
+  $: comparisonTimeStart =
+    $dashboardStore?.selectedComparisonTimeRange?.start?.toISOString();
+  $: comparisonTimeEnd =
+    $dashboardStore?.selectedComparisonTimeRange?.end?.toISOString();
+  $: comparisonTopListQuery = createQueryServiceMetricsViewToplist(
+    $runtime.instanceId,
+    metricViewName,
+    {
       dimensionName: dimensionName,
-      measureNames: [measure.name],
+      measureNames: [measure?.name],
+      timeStart: comparisonTimeStart,
+      timeEnd: comparisonTimeEnd,
+      filter: updatedFilters,
       limit: currentVisibleValues.length.toString(),
       offset: "0",
       sort: [
         {
-          name: measure.name,
+          name: measure?.name,
           ascending: false,
         },
       ],
-      filter: updatedFilters,
-    };
-
-    if (hasTimeSeries) {
-      comparisonParams = {
-        ...comparisonParams,
-
-        ...{
-          timeStart: start,
-          timeEnd: end,
-        },
-      };
+    },
+    {
+      query: {
+        enabled: Boolean(
+          showTimeComparison &&
+            !!comparisonTimeStart &&
+            !!comparisonTimeEnd &&
+            !!updatedFilters
+        ),
+      },
     }
-
-    comparisonTopListQuery = createQueryServiceMetricsViewToplist(
-      $runtime.instanceId,
-      metricViewName,
-      comparisonParams
-    );
-  } else if (!hasTimeSeries) {
-    isComparisonRangeAvailable = false;
-  }
+  );
 
   $: if (!$comparisonTopListQuery?.isFetching) {
     comparisonValues =
       $comparisonTopListQuery?.data?.data?.map((val) => ({
         value: val[measure?.name],
-        label: val[dimension?.name],
+        label: val[dimensionColumn],
       })) ?? [];
   }
 
   let hovered: boolean;
+
+  $: comparisonMap = new Map(comparisonValues?.map((v) => [v.label, v.value]));
+
+  $: aboveTheFoldItems = prepareLeaderboardItemData(
+    values.slice(0, slice),
+    activeValues,
+    comparisonMap
+  );
+
+  $: belowTheFoldItems = prepareLeaderboardItemData(
+    selectedValuesThatAreBelowTheFold,
+    activeValues,
+    comparisonMap
+  );
 </script>
 
 {#if topListQuery}
@@ -277,6 +260,8 @@
     on:mouseleave={() => (hovered = false)}
   >
     <LeaderboardHeader
+      {showTimeComparison}
+      {showPercentOfTotal}
       isFetching={$topListQuery.isFetching}
       {displayName}
       on:toggle-filter-mode={toggleFilterMode}
@@ -286,37 +271,41 @@
       on:click={() => selectDimension(dimensionName)}
     />
     {#if values}
-      <LeaderboardList>
+      <div class="rounded-b border-gray-200 surface text-gray-800">
         <!-- place the leaderboard entries that are above the fold here -->
-        <DimensionLeaderboardEntrySet
-          {formatPreset}
-          loading={$topListQuery?.isFetching}
-          values={values.slice(0, slice)}
-          {comparisonValues}
-          showComparison={displayComparison}
-          {activeValues}
-          {filterExcludeMode}
-          {atLeastOneActive}
-          {referenceValue}
-          {isSummableMeasure}
-          on:select-item
-        />
+        {#each aboveTheFoldItems as itemData (itemData.label)}
+          <LeaderboardListItem
+            {itemData}
+            {showContext}
+            {atLeastOneActive}
+            {filterExcludeMode}
+            {unfilteredTotal}
+            {isSummableMeasure}
+            {referenceValue}
+            {formatPreset}
+            on:click
+            on:keydown
+            on:select-item
+          />
+        {/each}
         <!-- place the selected values that are not above the fold here -->
         {#if selectedValuesThatAreBelowTheFold?.length}
           <hr />
-          <DimensionLeaderboardEntrySet
-            {formatPreset}
-            loading={$topListQuery?.isFetching}
-            values={selectedValuesThatAreBelowTheFold}
-            {comparisonValues}
-            showComparison={displayComparison}
-            {activeValues}
-            {filterExcludeMode}
-            {atLeastOneActive}
-            {referenceValue}
-            {isSummableMeasure}
-            on:select-item
-          />
+          {#each belowTheFoldItems as itemData (itemData.label)}
+            <LeaderboardListItem
+              {itemData}
+              {showContext}
+              {atLeastOneActive}
+              {filterExcludeMode}
+              {isSummableMeasure}
+              {referenceValue}
+              {formatPreset}
+              on:click
+              on:keydown
+              on:select-item
+            />
+          {/each}
+
           <hr />
         {/if}
         {#if $topListQuery?.isError}
@@ -328,22 +317,21 @@
             no available values
           </div>
         {/if}
-
         {#if values.length > slice}
           <Tooltip location="right">
-            <LeaderboardListItem
-              value={0}
-              color="=ui-label"
+            <button
               on:click={() => selectDimension(dimensionName)}
+              class="block flex-row w-full text-left transition-color ui-copy-muted"
+              style:padding-left="30px"
             >
-              <div class="ui-copy-muted" slot="title">(Expand Table)</div>
-            </LeaderboardListItem>
+              (Expand Table)
+            </button>
             <TooltipContent slot="tooltip-content"
               >Expand dimension to see more values</TooltipContent
             >
           </Tooltip>
         {/if}
-      </LeaderboardList>
+      </div>
     {/if}
   </div>
 {/if}

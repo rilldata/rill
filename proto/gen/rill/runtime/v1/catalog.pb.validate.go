@@ -811,6 +811,8 @@ func (m *MetricsView_Dimension) validate(all bool) error {
 
 	// no validation rules for Description
 
+	// no validation rules for Column
+
 	if len(errors) > 0 {
 		return MetricsView_DimensionMultiError(errors)
 	}
@@ -922,6 +924,8 @@ func (m *MetricsView_Measure) validate(all bool) error {
 	// no validation rules for Description
 
 	// no validation rules for Format
+
+	// no validation rules for ValidPercentOfTotal
 
 	if len(errors) > 0 {
 		return MetricsView_MeasureMultiError(errors)

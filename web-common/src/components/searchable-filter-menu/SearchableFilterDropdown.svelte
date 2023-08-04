@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { SearchableFilterSelectableItem } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
   import Check from "../icons/Check.svelte";
   import Spacer from "../icons/Spacer.svelte";
   import { Menu, MenuItem } from "../menu";
@@ -10,22 +11,24 @@
 
   const dispatch = createEventDispatcher();
 
-  export let selectableItems: string[];
+  export let selectableItems: SearchableFilterSelectableItem[];
   export let selectedItems: boolean[];
 
   interface MenuItemData {
+    name: string;
     label: string;
     selected: boolean;
     index: number;
   }
 
   export const setItemsVisibleBySearchString = (
-    items: string[],
+    items: SearchableFilterSelectableItem[],
     selected: boolean[],
     searchText: string
   ): MenuItemData[] => {
     let menuEntries = items.map((item, i) => ({
-      label: item,
+      name: item.name,
+      label: item.label,
       selected: selected[i],
       index: i,
     }));
@@ -45,44 +48,52 @@
 
   $: numSelected = selectedItems?.filter((s) => s)?.length || 0;
 
+  $: singleSelection = numSelected === 1;
+
   $: numSelectedNotShown =
     numSelected - (menuItems?.filter((item) => item.selected)?.length || 0);
 
-  $: allToggleText = numSelected === 0 ? "Select all" : "Deselect all";
+  $: allToggleText =
+    numSelected === selectableItems?.length ? "Deselect all" : "Select all";
 
-  $: allToggleEvt = numSelected === 0 ? "select-all" : "deselect-all";
+  $: allToggleEvt =
+    numSelected === selectableItems?.length ? "deselect-all" : "select-all";
   $: dispatchAllToggleEvt = () => {
     dispatch(allToggleEvt);
   };
 </script>
 
 <Menu
-  paddingTop={1}
-  paddingBottom={0}
-  rounded={false}
   focusOnMount={false}
+  maxHeight="400px"
   maxWidth="480px"
   minHeight="150px"
-  maxHeight="400px"
-  on:escape
   on:click-outside
+  on:escape
+  paddingBottom={0}
+  paddingTop={1}
+  rounded={false}
 >
   <!-- the min-height is set to have about 3 entries in it -->
   <Search bind:value={searchText} />
   <!-- apply a wrapped flex element to ensure proper bottom spacing between body and footer -->
   <div class="flex flex-col flex-1 overflow-auto w-full pb-1">
-    {#each menuItems as { label, selected, index }}
+    {#each menuItems as { name, label, selected, index }}
       <MenuItem
         icon
         animateSelect={false}
         focusOnMount={false}
         on:select={() => {
-          dispatch("item-clicked", { index, label });
+          if (singleSelection && selected) return;
+          dispatch("item-clicked", { index, name });
         }}
       >
         <svelte:fragment slot="icon">
           {#if selected}
-            <Check size="20px" color="#15141A" />
+            <Check
+              size="20px"
+              color={singleSelection ? "#9CA3AF" : "#15141A"}
+            />
           {:else}
             <Spacer size="20px" />
           {/if}
@@ -101,7 +112,7 @@
   </div>
   <Footer>
     <span class="ui-copy">
-      <Button type="text" compact on:click={dispatchAllToggleEvt}
+      <Button compact on:click={dispatchAllToggleEvt} type="text"
         >{allToggleText}</Button
       >
     </span>
