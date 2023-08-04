@@ -9,7 +9,6 @@ import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashbo
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import {
   DashboardTimeControls,
-  ScrubRange,
   TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
