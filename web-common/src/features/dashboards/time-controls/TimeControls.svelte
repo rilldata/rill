@@ -7,6 +7,7 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { getAvailableComparisonsForTimeRange } from "@rilldata/web-common/lib/time/comparisons";
+  import { DEFAULT_TIMEZONES } from "@rilldata/web-common/lib/time/config";
   import {
     getDefaultTimeGrain,
     getAllowedTimeGrains,
@@ -51,6 +52,20 @@
   const timeControlsStore = useTimeControlStore(getStateManagers());
   $: allTimeRange = $timeControlsStore.allTimeRange;
   $: minTimeGrain = $timeControlsStore.minTimeGrain;
+
+  $: if (
+    $timeControlsStore.ready &&
+    !!$metaQuery?.data?.model &&
+    !!$metaQuery?.data?.timeDimension
+  ) {
+    availableTimeZones = $metaQuery?.data?.availableTimeZones;
+
+    // For legacy dashboards, we need to set the available time
+    // zones to the default if they are not defined.
+    if (!availableTimeZones?.length) {
+      availableTimeZones = DEFAULT_TIMEZONES;
+    }
+  }
 
   // we get the timeGrainOptions so that we can assess whether or not the
   // activeTimeGrain is valid whenever the baseTimeRange changes

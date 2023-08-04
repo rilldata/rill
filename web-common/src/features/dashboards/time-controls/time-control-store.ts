@@ -1,7 +1,6 @@
 import {
   MetricsExplorerEntity,
   metricsExplorerStore,
-  useDashboardStore,
 } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -35,7 +34,6 @@ import {
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { getContext } from "svelte";
 import { derived } from "svelte/store";
 import type { Readable } from "svelte/store";
 
@@ -188,6 +186,7 @@ function calculateTimeRangePartial(
   const { start: adjustedStart, end: adjustedEnd } = getAdjustedFetchTime(
     selectedTimeRange.start,
     selectedTimeRange.end,
+    metricsExplorer.selectedTimezone,
     selectedTimeRange.interval
   );
 
@@ -223,6 +222,7 @@ function calculateComparisonTimeRangePartial(
     const adjustedComparisonTime = getAdjustedFetchTime(
       selectedComparisonTimeRange.start,
       selectedComparisonTimeRange.end,
+      metricsExplorer.selectedTimezone,
       timeRangeState.selectedTimeRange.interval
     );
     comparisonAdjustedStart = adjustedComparisonTime.start;
@@ -249,7 +249,8 @@ function getTimeRange(
     timeRange = convertTimeRangePreset(
       defaultTimeRange,
       allTimeRange.start,
-      allTimeRange.end
+      allTimeRange.end,
+      metricsExplorer.selectedTimezone
     );
   } else {
     if (metricsExplorer.selectedTimeRange.name === TimeRangePreset.CUSTOM) {
@@ -264,7 +265,8 @@ function getTimeRange(
       timeRange = convertTimeRangePreset(
         metricsExplorer.selectedTimeRange?.name ?? TimeRangePreset.ALL_TIME,
         allTimeRange.start,
-        allTimeRange.end
+        allTimeRange.end,
+        metricsExplorer.selectedTimezone
       );
     }
   }
