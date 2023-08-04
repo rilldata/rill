@@ -24,6 +24,7 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import {
     metricsExplorerStore,
+    useComparisonRange,
     useDashboardStore,
     useFetchTimeRange,
   } from "../dashboard-stores";
@@ -51,6 +52,7 @@
 
   $: dashboardStore = useDashboardStore(metricViewName);
   $: fetchTimeStore = useFetchTimeRange(metricViewName);
+  $: comparisonStore = useComparisonRange(metricViewName);
 
   let filterExcludeMode: boolean;
   $: filterExcludeMode =
@@ -185,10 +187,8 @@
     dimensionName,
     currentVisibleValues
   );
-  $: comparisonTimeStart =
-    $dashboardStore?.selectedComparisonTimeRange?.start?.toISOString();
-  $: comparisonTimeEnd =
-    $dashboardStore?.selectedComparisonTimeRange?.end?.toISOString();
+  $: comparisonTimeStart = $comparisonStore?.start;
+  $: comparisonTimeEnd = $comparisonStore?.end;
   $: comparisonTopListQuery = createQueryServiceMetricsViewToplist(
     $runtime.instanceId,
     metricViewName,

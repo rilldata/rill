@@ -6,9 +6,11 @@ import {
   getMapFromArray,
   removeIfExists,
 } from "@rilldata/web-common/lib/arrayUtils";
+import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
 import type {
   DashboardTimeControls,
   ScrubRange,
+  TimeComparisonOption,
 } from "@rilldata/web-common/lib/time/types";
 import type {
   V1MetricsView,
@@ -530,9 +532,10 @@ export function useDashboardStore(
 }
 
 /***
- * Dervied store to get time range to be used for fetching data
- * If we have a scrub range and isScrubbing is false, use that,
- * otherwise use the selected time range
+ * Dervied stores to get time range and comparison range to be
+ * used for fetching data. If we have a scrub range and
+ * isScrubbing is false, use that, otherwise use the selected
+ * time range
  */
 
 export function useFetchTimeRange(name: string) {
@@ -551,6 +554,33 @@ export function useFetchTimeRange(name: string) {
       return {
         start: entity.selectedTimeRange?.start,
         end: entity.selectedTimeRange?.end,
+      };
+    }
+  });
+}
+
+export function useComparisonRange(name: string) {
+  return derived(metricsExplorerStore, ($store) => {
+    const entity = $store.entities[name];
+    if (entity?.selectedScrubRange && !entity.selectedScrubRange?.isScrubbing) {
+      const { start, end } = getOrderedStartEnd(
+        entity.selectedScrubRange?.start,
+        entity.selectedScrubRange?.end
+      );
+
+      const comparisonRange = getComparisonRange(
+        start,
+        end,
+        entity?.selectedComparisonTimeRange?.name as TimeComparisonOption
+      );
+      return {
+        start: comparisonRange?.start?.toISOString(),
+        end: comparisonRange?.end?.toISOString(),
+      };
+    } else {
+      return {
+        start: entity.selectedComparisonTimeRange?.start?.toISOString(),
+        end: entity.selectedComparisonTimeRange?.end?.toISOString(),
       };
     }
   });

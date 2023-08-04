@@ -6,6 +6,7 @@
   import {
     useDashboardStore,
     useFetchTimeRange,
+    useComparisonRange,
   } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import {
     humanizeDataType,
@@ -42,6 +43,7 @@
 
   $: dashboardStore = useDashboardStore(metricViewName);
   $: fetchTimeStore = useFetchTimeRange(metricViewName);
+  $: comparisonStore = useComparisonRange(metricViewName);
 
   $: instanceId = $runtime.instanceId;
 
@@ -91,10 +93,8 @@
   /** Generate the big number comparison query */
   $: displayComparison = showComparison;
 
-  $: comparisonTimeStart =
-    $dashboardStore?.selectedComparisonTimeRange?.start?.toISOString();
-  $: comparisonTimeEnd =
-    $dashboardStore?.selectedComparisonTimeRange?.end?.toISOString();
+  $: comparisonTimeStart = $comparisonStore?.start;
+  $: comparisonTimeEnd = $comparisonStore?.end;
   $: totalsComparisonQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     metricViewName,
