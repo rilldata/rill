@@ -14,7 +14,7 @@
     BehaviourEventMedium,
   } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
-  import LocalSource from "./LocalSource.svelte";
+  import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RemoteSourceForm from "./RemoteSourceForm.svelte";
 
   const dispatch = createEventDispatcher();
@@ -97,7 +97,7 @@
       {/key}
     {/if}
     {#if selectedConnector?.name === "local_file"}
-      <LocalSource on:close />
+      <LocalSourceUpload on:close />
     {/if}
   </div>
 </Dialog>
