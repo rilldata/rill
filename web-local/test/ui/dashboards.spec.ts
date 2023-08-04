@@ -384,7 +384,7 @@ test.describe("dashboard", () => {
         label: Domain
         column: domain
         description: ""
-
+        
         `;
 
     await updateCodeEditor(page, docWithIncompleteMeasure);
@@ -394,29 +394,29 @@ test.describe("dashboard", () => {
 
     const docWithCompleteMeasure = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-    title: "AdBids_model_dashboard_rename"
-    model: "AdBids_model"
-    default_time_range: ""
-    smallest_time_grain: "week"
-    timeseries: "timestamp"
-    measures:
-      - label: Total rows
-        expression: count(*)
-        name: total_rows
-        description: Total number of records present
-      - label: Avg Bid Price
-        expression: avg(bid_price)
-        name: avg_bid_price
-        format_preset: currency_usd
-    dimensions:
-      - name: publisher
-        label: Publisher
-        column: publisher
-        description: ""
-      - name: domain
-        label: Domain Name
-        column: domain
-        description: ""
+title: "AdBids_model_dashboard_rename"
+model: "AdBids_model"
+default_time_range: ""
+smallest_time_grain: "week"
+timeseries: "timestamp"
+measures:
+  - label: Total rows
+    expression: count(*)
+    name: total_rows
+    description: Total number of records present
+  - label: Avg Bid Price
+    expression: avg(bid_price)
+    name: avg_bid_price
+    format_preset: currency_usd
+dimensions:
+  - name: publisher
+    label: Publisher
+    column: publisher
+    description: ""
+  - name: domain
+    label: Domain Name
+    column: domain
+    description: ""
         `;
 
     await updateCodeEditor(page, docWithCompleteMeasure);
