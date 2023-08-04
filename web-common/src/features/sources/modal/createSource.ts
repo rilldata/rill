@@ -33,13 +33,8 @@ export async function createSource(
     },
   });
 
-  goto(`/source/${tableName}`);
   invalidateAfterReconcile(queryClient, instanceId, resp);
   fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-
-  if (resp.errors.length === 0) {
-    notifications.send({ message: `Created source ${tableName}` });
-  }
 
   return resp.errors;
 }
