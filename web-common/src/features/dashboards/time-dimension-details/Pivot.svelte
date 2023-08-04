@@ -77,10 +77,10 @@
       (c) => c.index >= fixedColCt
     );
 
-    paddingLeft =
+    const fullPaddingLeft =
       virtualColumns?.length > 0 ? virtualColumns?.[0]?.start || 0 : 0;
     // Adjust padding left for fixed virtual columns if needed
-    paddingLeft = Math.max(0, paddingLeft - fixedVirtualColumns.at(-1).end);
+    paddingLeft = Math.max(0, fullPaddingLeft - fixedVirtualColumns.at(-1).end);
     paddingRight =
       virtualColumns?.length > 0
         ? totalHorizontalSize - (virtualColumns?.at(-1)?.end || 0)
