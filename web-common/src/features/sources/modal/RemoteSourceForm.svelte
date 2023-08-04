@@ -50,7 +50,7 @@
         onSubmit: async (values) => {
           overlay.set({ title: `Importing ${values.sourceName}` });
           try {
-            submitRemoteSourceForm(queryClient, connector.name, values);
+            await submitRemoteSourceForm(queryClient, connector.name, values);
             dispatch("close");
           } catch (e) {
             rpcError = e?.response?.data;
