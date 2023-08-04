@@ -73,6 +73,7 @@
   size="md"
   useContentForMinSize
   yFixed
+  focusTriggerOnClose={false}
 >
   <div slot="title">
     <TabGroup
