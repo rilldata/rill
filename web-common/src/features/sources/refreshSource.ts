@@ -81,7 +81,6 @@ export async function refreshSource(
       instanceId,
       path: artifactPath,
       blob: yaml,
-      syncFromUrl: true,
       strict: true,
     },
   });

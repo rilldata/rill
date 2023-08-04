@@ -23,7 +23,6 @@ export async function createSource(
       instanceId,
       path: getFilePathFromNameAndType(tableName, EntityType.Table),
       blob: yaml,
-      syncFromUrl: true,
       // create source is used to upload and replace.
       // so we cannot send createOnly=true until we refactor it to use refresh source
       createOnly: false,
