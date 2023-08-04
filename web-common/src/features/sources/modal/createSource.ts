@@ -33,12 +33,13 @@ export async function createSource(
     },
   });
 
-  if (resp.errors.length) {
-    return resp.errors;
-  }
   goto(`/source/${tableName}`);
   invalidateAfterReconcile(queryClient, instanceId, resp);
   fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-  notifications.send({ message: `Created source ${tableName}` });
-  return [];
+
+  if (resp.errors.length === 0) {
+    notifications.send({ message: `Created source ${tableName}` });
+  }
+
+  return resp.errors;
 }
