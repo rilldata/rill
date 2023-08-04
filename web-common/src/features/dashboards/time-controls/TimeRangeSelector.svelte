@@ -154,13 +154,16 @@
   on:open={handleMenuOpen}
 >
   {#if hasSubRangeSelected}
-    <TimeRangeScrubChip
-      on:click={toggleFloatingElement}
-      on:remove={() => dispatch("remove-scrub")}
-      start={$dashboardStore?.selectedScrubRange?.start}
-      end={$dashboardStore?.selectedScrubRange?.end}
-      zone={$dashboardStore?.selectedTimezone}
-    />
+    <div class="flex">
+      <TimeRangeScrubChip
+        on:click={toggleFloatingElement}
+        on:remove={() => dispatch("remove-scrub")}
+        {active}
+        start={$dashboardStore?.selectedScrubRange?.start}
+        end={$dashboardStore?.selectedScrubRange?.end}
+        zone={$dashboardStore?.selectedTimezone}
+      />
+    </div>
   {:else}
     <button
       class:bg-gray-200={active}

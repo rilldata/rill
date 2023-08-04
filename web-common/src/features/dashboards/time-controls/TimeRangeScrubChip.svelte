@@ -1,9 +1,11 @@
 <script lang="ts">
+  import { IconSpaceFixer } from "@rilldata/web-common/components/button";
   import { Chip } from "@rilldata/web-common/components/chip";
   import {
     ChipColors,
     excludeChipColors,
   } from "@rilldata/web-common/components/chip/chip-types";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
   import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
   import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
@@ -12,6 +14,7 @@
   export let start: Date;
   export let end: Date;
   export let zone: string;
+  export let active = false;
 
   const dispatch = createEventDispatcher();
   const colors: ChipColors = excludeChipColors;
@@ -25,7 +28,7 @@
   removable
   on:click
   on:remove={() => dispatch("remove")}
-  active={false}
+  {active}
   {...colors}
   {label}
 >
@@ -45,6 +48,13 @@
         TimeRangePreset.CUSTOM,
         zone
       )}
+    </div>
+    <div class="flex items-center">
+      <IconSpaceFixer pullRight>
+        <div class="transition-transform" class:-rotate-180={active}>
+          <CaretDownIcon size="14px" />
+        </div>
+      </IconSpaceFixer>
     </div>
   </div>
 </Chip>
