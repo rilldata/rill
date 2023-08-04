@@ -48,8 +48,6 @@
     return handleUpload(await openFileUploadDialog());
   }
 
-  let errors;
-
   async function handleUpload(files: Array<File>) {
     const uploadedFiles = uploadTableFiles(
       files,
@@ -58,6 +56,8 @@
       false
     );
     for await (const { tableName, filePath } of uploadedFiles) {
+      let errors;
+
       try {
         // If project is uninitialized, initialize an empty project
         if (!$isProjectInitialized.data) {
