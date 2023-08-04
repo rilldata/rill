@@ -224,11 +224,6 @@
       TIME_GRAIN[timeGrain].label
     );
 
-    // if (intermediateScrubVal < internalXMin) {
-    //   intermediateScrubVal = internalXMin;
-    //   stopX = $xScale(internalXMin);
-    // }
-
     if (hasSubrangeSelected && (isResizing || isMovingScrub)) {
       if (
         isResizing &&
@@ -248,6 +243,7 @@
          * Pick up and shift the entire subrange left/right
          * This snaps to the nearest time grain
          */
+
         const startX = event.detail?.start?.x;
         const delta = stopX - startX;
 
@@ -267,11 +263,8 @@
           TIME_GRAIN[timeGrain].label
         );
 
-        if (
-          // newStart > internalXMin &&
-          // newEnd > internalXMin &&
-          newStart?.getTime() !== scrubStart?.getTime()
-        ) {
+        const insideBounds = $xScale(newStart) >= 0 && $xScale(newEnd) >= 0;
+        if (insideBounds && newStart?.getTime() !== scrubStart?.getTime()) {
           updateScrub(newStart, newEnd, true);
         }
       }
