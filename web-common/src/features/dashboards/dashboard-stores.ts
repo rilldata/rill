@@ -562,7 +562,11 @@ export function useFetchTimeRange(name: string) {
 export function useComparisonRange(name: string) {
   return derived(metricsExplorerStore, ($store) => {
     const entity = $store.entities[name];
-    if (entity?.selectedScrubRange && !entity.selectedScrubRange?.isScrubbing) {
+    if (
+      entity?.selectedScrubRange &&
+      !entity.selectedScrubRange?.isScrubbing &&
+      entity.showComparison
+    ) {
       const { start, end } = getOrderedStartEnd(
         entity.selectedScrubRange?.start,
         entity.selectedScrubRange?.end
