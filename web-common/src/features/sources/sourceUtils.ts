@@ -2,23 +2,24 @@ import type {
   V1Connector,
   V1ReconcileError,
 } from "@rilldata/web-common/runtime-client";
-import { extractFileExtension, sanitizeEntityName } from "./extract-table-name";
+import { extractFileExtension } from "./extract-table-name";
 import type { SourceConnectionType } from "../../metrics/service/SourceEventTypes";
 import { behaviourEvent, errorEvent } from "../../metrics/initMetrics";
-import { categorizeSourceError } from "./add-source/errors";
+import type { BehaviourEventMedium } from "../../metrics/service/BehaviourEventTypes";
 import type {
   MetricsEventScreenName,
   MetricsEventSpace,
 } from "../../metrics/service/MetricsTypes";
-import type { BehaviourEventMedium } from "../../metrics/service/BehaviourEventTypes";
 import { getFilePathFromNameAndType } from "../entity-management/entity-mappers";
 import { EntityType } from "../entity-management/types";
+import { sanitizeEntityName } from "./extract-table-name";
+import { categorizeSourceError } from "./modal/errors";
 
 export function compileCreateSourceYAML(
   values: Record<string, unknown>,
   connectorName: string
 ) {
-  const topLineComment = `# Visit https://docs.rilldata.com/ to learn more about Rill code files.`;
+  const topLineComment = `# Visit https://docs.rilldata.com/reference/project-files/sources to learn more about Rill source files.`;
 
   switch (connectorName) {
     case "s3":

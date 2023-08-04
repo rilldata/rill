@@ -12,6 +12,7 @@ func ServiceCmd(cfg *config.Config) *cobra.Command {
 	serviceCmd := &cobra.Command{
 		Use:               "service",
 		Short:             "Manage service accounts",
+		Hidden:            !cfg.IsDev(),
 		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
 	}
 

@@ -5,7 +5,7 @@
 
   import LeaderboardListItem from "../LeaderboardListItem.svelte";
 
-  import { NicelyFormattedTypes } from "../../humanize-numbers";
+  import { FormatPreset } from "../../humanize-numbers";
 
   const atLeastOneActive = true;
   const filterExcludeMode = true;
@@ -59,10 +59,10 @@
         type: "inline-radio",
       },
       options: [
-        NicelyFormattedTypes.HUMANIZE,
-        NicelyFormattedTypes.PERCENTAGE,
-        NicelyFormattedTypes.CURRENCY,
-        NicelyFormattedTypes.NONE,
+        FormatPreset.HUMANIZE,
+        FormatPreset.PERCENTAGE,
+        FormatPreset.CURRENCY,
+        FormatPreset.NONE,
       ],
     },
   }}

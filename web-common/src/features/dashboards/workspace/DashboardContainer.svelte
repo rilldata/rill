@@ -40,7 +40,7 @@
     <div class="explore-metrics pb-8 flex-none">
       <slot name="metrics" />
     </div>
-    <div class="explore-leaderboards px-4 pb-8 grow">
+    <div class="explore-leaderboards px-4 grow">
       <slot name="leaderboards" />
     </div>
   </div>
