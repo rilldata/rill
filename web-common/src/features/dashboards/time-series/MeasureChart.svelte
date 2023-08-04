@@ -155,18 +155,6 @@
       isScrubbing: isScrubbing,
     });
   }
-
-  // function alwaysBetween(min, max, value) {
-  //   // note: must work with dates
-  //   if (value < min) return min;
-  //   if (value > max) return max;
-  //   return value;
-  // }
-
-  // $: if (scrubbing) {
-  //   scrubEnd = alwaysBetween(internalXMin, internalXMax, mouseoverValue?.x);
-  // }
-
   function startScrub(event) {
     const startX = event.detail?.start?.x;
     const scrubStartDate = getBisectedTimeFromCordinates(
