@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
@@ -31,7 +32,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 	// Override ctx because sqlite sometimes segfaults on context cancellation
 	ctx := context.Background()
 
-	sql := fmt.Sprintf("SELECT id, olap_driver, olap_dsn, repo_driver, repo_dsn, embed_catalog, created_on, updated_on, variables, project_variables, ingestion_limit_bytes, annotations FROM instances %s ORDER BY id", whereClause)
+	sql := fmt.Sprintf("SELECT id, olap_driver, repo_driver, embed_catalog, created_on, updated_on, variables, project_variables, ingestion_limit_bytes, annotations, connectors FROM instances %s ORDER BY id", whereClause)
 
 	rows, err := c.db.QueryxContext(ctx, sql, args...)
 	if err != nil {
@@ -42,9 +43,9 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 	var res []*drivers.Instance
 	for rows.Next() {
 		// sqlite doesn't support maps need to read as bytes and convert to map
-		var variables, projectVariables, annotations []byte
+		var variables, projectVariables, annotations, connectors []byte
 		i := &drivers.Instance{}
-		err := rows.Scan(&i.ID, &i.OLAPDriver, &i.OLAPDSN, &i.RepoDriver, &i.RepoDSN, &i.EmbedCatalog, &i.CreatedOn, &i.UpdatedOn, &variables, &projectVariables, &i.IngestionLimitBytes, &annotations)
+		err := rows.Scan(&i.ID, &i.OLAPDriver, &i.RepoDriver, &i.EmbedCatalog, &i.CreatedOn, &i.UpdatedOn, &variables, &projectVariables, &i.IngestionLimitBytes, &annotations, &connectors)
 		if err != nil {
 			return nil, err
 		}
@@ -63,6 +64,10 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			return nil, err
 		}
 
+		i.Connectors, err = unmarshalConnectors(connectors)
+		if err != nil {
+			return nil, err
+		}
 		res = append(res, i)
 	}
 
@@ -94,22 +99,26 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		return err
 	}
 
+	connectors, err := json.Marshal(inst.Connectors)
+	if err != nil {
+		return err
+	}
+
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
-		"INSERT INTO instances(id, olap_driver, olap_dsn, repo_driver, repo_dsn, embed_catalog, created_on, updated_on, variables, project_variables, ingestion_limit_bytes, annotations) "+
-			"VALUES ($1, $2, $3, $4, $5, $6, $7, $7, $8, $9, $10, $11)",
+		"INSERT INTO instances(id, olap_driver, repo_driver, embed_catalog, created_on, updated_on, variables, project_variables, ingestion_limit_bytes, annotations, connectors) "+
+			"VALUES ($1, $2, $3, $4, $5, $5, $6, $7, $8, $9, $10)",
 		inst.ID,
 		inst.OLAPDriver,
-		inst.OLAPDSN,
 		inst.RepoDriver,
-		inst.RepoDSN,
 		inst.EmbedCatalog,
 		now,
 		variables,
 		projectVariables,
 		inst.IngestionLimitBytes,
 		annotations,
+		connectors,
 	)
 	if err != nil {
 		return err
@@ -142,22 +151,26 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 		return err
 	}
 
+	connectors, err := json.Marshal(inst.Connectors)
+	if err != nil {
+		return err
+	}
+
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
-		"UPDATE instances SET olap_driver = $2, olap_dsn = $3, repo_driver = $4, repo_dsn = $5, embed_catalog = $6, variables = $7, project_variables = $8, updated_on = $9, ingestion_limit_bytes = $10, annotations = $11 "+
+		"UPDATE instances SET olap_driver = $2, repo_driver = $3, embed_catalog = $4, variables = $5, project_variables = $6, updated_on = $7, ingestion_limit_bytes = $8, annotations = $9 "+
 			"WHERE id = $1",
 		inst.ID,
 		inst.OLAPDriver,
-		inst.OLAPDSN,
 		inst.RepoDriver,
-		inst.RepoDSN,
 		inst.EmbedCatalog,
 		variables,
 		projVariables,
 		now,
 		inst.IngestionLimitBytes,
 		annotations,
+		connectors,
 	)
 	if err != nil {
 		return err
@@ -188,4 +201,13 @@ func mapFromJSON(data []byte) (map[string]string, error) {
 	var m map[string]string
 	err := json.Unmarshal(data, &m)
 	return m, err
+}
+
+func unmarshalConnectors(s []byte) ([]*runtimev1.ConnectorDef, error) {
+	if len(s) == 0 {
+		return make([]*runtimev1.ConnectorDef, 0), nil
+	}
+	var defs []*runtimev1.ConnectorDef
+	err := json.Unmarshal([]byte(s), &defs)
+	return defs, err
 }

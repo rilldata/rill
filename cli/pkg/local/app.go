@@ -17,8 +17,8 @@ import (
 	"github.com/rilldata/rill/cli/pkg/update"
 	"github.com/rilldata/rill/cli/pkg/variable"
 	"github.com/rilldata/rill/cli/pkg/web"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -78,31 +78,19 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 	}
 
 	// Create a local runtime with an in-memory metastore
-	globalDrivers := []*rillv1.ConnectorDef{
+	globalDrivers := []*runtime.Connector{
 		{
-			Type:     "sqlite",
-			Name:     "metastore",
-			Defaults: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
+			Type:    "sqlite",
+			Name:    "metastore",
+			Configs: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
 		},
 	}
-	privateDrivers := []*rillv1.ConnectorDef{
-		{
-			Type:     "file",
-			Name:     "repo",
-			Defaults: map[string]string{"dsn": projectPath},
-		},
-		{
-			Type:     olapDriver,
-			Name:     "olap",
-			Defaults: map[string]string{"dsn": olapDSN},
-		},
-	}
+
 	rtOpts := &runtime.Options{
 		ConnectionCacheSize: 100,
 		QueryCacheSizeBytes: int64(datasize.MB * 100),
 		AllowHostAccess:     true,
 		GlobalDrivers:       globalDrivers,
-		PrivateDrivers:      privateDrivers,
 	}
 	rt, err := runtime.New(rtOpts, logger)
 	if err != nil {
@@ -134,11 +122,21 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 		ID:           DefaultInstanceID,
 		Annotations:  map[string]string{},
 		OLAPDriver:   olapDriver,
-		OLAPDSN:      olapDSN,
 		RepoDriver:   "file",
-		RepoDSN:      projectPath,
 		EmbedCatalog: olapDriver == "duckdb",
 		Variables:    parsedVariables,
+		Connectors: []*runtimev1.ConnectorDef{
+			{
+				Type:    "file",
+				Name:    "repo",
+				Configs: map[string]string{"dsn": projectPath},
+			},
+			{
+				Type:    olapDriver,
+				Name:    "olap",
+				Configs: map[string]string{"dsn": olapDSN},
+			},
+		},
 	}
 	err = rt.CreateInstance(ctx, inst)
 	if err != nil {

@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/c2h5oh/datasize"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -31,24 +31,13 @@ type TestingT interface {
 
 // New returns a runtime configured for use in tests.
 func New(t TestingT) *runtime.Runtime {
-	globalDrivers := []*rillv1.ConnectorDef{
+	globalDrivers := []*runtime.Connector{
 		{
 			Type: "sqlite",
 			Name: "metastore",
 			// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
 			// "cache=shared" is needed to prevent threading problems.
-			Defaults: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
-		},
-	}
-	privateDrivers := []*rillv1.ConnectorDef{
-		{
-			Type: "file",
-			Name: "repo",
-		},
-		{
-			Type:     "duckdb",
-			Name:     "olap",
-			Defaults: map[string]string{"dsn": ""},
+			Configs: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
 		},
 	}
 	opts := &runtime.Options{
@@ -56,7 +45,6 @@ func New(t TestingT) *runtime.Runtime {
 		QueryCacheSizeBytes: int64(datasize.MB * 100),
 		AllowHostAccess:     true,
 		GlobalDrivers:       globalDrivers,
-		PrivateDrivers:      privateDrivers,
 	}
 	rt, err := runtime.New(opts, zap.NewNop())
 	require.NoError(t, err)
@@ -72,11 +60,21 @@ func NewInstance(t TestingT) (*runtime.Runtime, string) {
 	rt := New(t)
 
 	inst := &drivers.Instance{
-		OLAPDriver:   "duckdb",
-		OLAPDSN:      "",
-		RepoDriver:   "file",
-		RepoDSN:      t.TempDir(),
+		OLAPDriver:   "olap",
+		RepoDriver:   "repo",
 		EmbedCatalog: true,
+		Connectors: []*runtimev1.ConnectorDef{
+			{
+				Type:    "file",
+				Name:    "repo",
+				Configs: map[string]string{"dsn": t.TempDir()},
+			},
+			{
+				Type:    "duckdb",
+				Name:    "olap",
+				Configs: map[string]string{"dsn": ""},
+			},
+		},
 	}
 
 	err := rt.CreateInstance(context.Background(), inst)
@@ -114,11 +112,21 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 	_, currentFile, _, _ := goruntime.Caller(0)
 
 	inst := &drivers.Instance{
-		OLAPDriver:   "duckdb",
-		OLAPDSN:      "?access_mode=read_write",
-		RepoDriver:   "file",
-		RepoDSN:      filepath.Join(currentFile, "..", "testdata", name),
+		OLAPDriver:   "olap",
+		RepoDriver:   "repo",
 		EmbedCatalog: true,
+		Connectors: []*runtimev1.ConnectorDef{
+			{
+				Type:    "file",
+				Name:    "repo",
+				Configs: map[string]string{"dsn": filepath.Join(currentFile, "..", "testdata", name)},
+			},
+			{
+				Type:    "duckdb",
+				Name:    "olap",
+				Configs: map[string]string{"dsn": "?access_mode=read_write"},
+			},
+		},
 	}
 
 	err := rt.CreateInstance(context.Background(), inst)

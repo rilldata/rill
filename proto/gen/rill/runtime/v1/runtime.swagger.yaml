@@ -406,6 +406,11 @@ paths:
               ingestionLimitBytes:
                 type: string
                 format: int64
+              connectors:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1ConnectorDef'
             description: |-
               Request message for RuntimeService.EditInstance.
               See message Instance for field descriptions.
@@ -2457,6 +2462,20 @@ definitions:
     description: |-
       Connector represents a connector available in the runtime.
       It should not be confused with a source.
+  v1ConnectorDef:
+    type: object
+    properties:
+      type:
+        type: string
+        description: Type of the connector. One of the infra driver supported.
+      name:
+        type: string
+        title: Name of the connector
+      configs:
+        type: object
+        additionalProperties:
+          type: string
+        title: Configs for the connector
   v1CreateInstanceRequest:
     type: object
     properties:
@@ -2483,6 +2502,11 @@ definitions:
         type: object
         additionalProperties:
           type: string
+      connectors:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ConnectorDef'
     description: |-
       Request message for RuntimeService.CreateInstance.
       See message Instance for field descriptions.
@@ -2693,6 +2717,12 @@ definitions:
         type: string
         format: int64
         title: ingestion limit across all sources, 0 means no limit
+      connectors:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ConnectorDef'
+        description: bare minimum connectors required by the instance.
     description: |-
       Instance represents a single data project, meaning one set of code artifacts,
       one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related

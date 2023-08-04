@@ -277,6 +277,7 @@ export type RuntimeServiceEditInstanceBody = {
   repoDsn?: string;
   embedCatalog?: boolean;
   ingestionLimitBytes?: string;
+  connectors?: V1ConnectorDef[];
 };
 
 export type RuntimeServiceEditInstanceVariablesBodyVariables = {
@@ -864,6 +865,10 @@ export interface V1MetricsViewComparisonValue {
   deltaRel?: unknown;
 }
 
+export interface V1MetricsViewComparisonToplistResponse {
+  rows?: V1MetricsViewComparisonRow[];
+}
+
 export type V1MetricsViewComparisonSortType =
   (typeof V1MetricsViewComparisonSortType)[keyof typeof V1MetricsViewComparisonSortType];
 
@@ -907,10 +912,6 @@ export interface V1MetricsViewComparisonRow {
   measureValues?: V1MetricsViewComparisonValue[];
 }
 
-export interface V1MetricsViewComparisonToplistResponse {
-  rows?: V1MetricsViewComparisonRow[];
-}
-
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
@@ -940,11 +941,6 @@ export interface V1MetricsView {
 export interface V1MapType {
   keyType?: Runtimev1Type;
   valueType?: Runtimev1Type;
-}
-
-export interface V1ListInstancesResponse {
-  instances?: V1Instance[];
-  nextPageToken?: string;
 }
 
 export interface V1ListFilesResponse {
@@ -989,6 +985,13 @@ of in the runtime's metadata store. Currently only supported for the duckdb driv
   variables?: V1InstanceVariables;
   projectVariables?: V1InstanceProjectVariables;
   ingestionLimitBytes?: string;
+  /** bare minimum connectors required by the instance. */
+  connectors?: V1ConnectorDef[];
+}
+
+export interface V1ListInstancesResponse {
+  instances?: V1Instance[];
+  nextPageToken?: string;
 }
 
 export interface V1InlineMeasure {
@@ -1132,6 +1135,16 @@ export interface V1CreateInstanceRequest {
   variables?: V1CreateInstanceRequestVariables;
   ingestionLimitBytes?: string;
   annotations?: V1CreateInstanceRequestAnnotations;
+  connectors?: V1ConnectorDef[];
+}
+
+export type V1ConnectorDefConfigs = { [key: string]: string };
+
+export interface V1ConnectorDef {
+  /** Type of the connector. One of the infra driver supported. */
+  type?: string;
+  name?: string;
+  configs?: V1ConnectorDefConfigs;
 }
 
 /**

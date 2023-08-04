@@ -139,7 +139,7 @@ func (x ReconcileError_Code) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ReconcileError_Code.Descriptor instead.
 func (ReconcileError_Code) EnumDescriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{45, 0}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{46, 0}
 }
 
 // Type represents the field type
@@ -195,7 +195,7 @@ func (x Connector_Property_Type) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Connector_Property_Type.Descriptor instead.
 func (Connector_Property_Type) EnumDescriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{54, 0, 0}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{55, 0, 0}
 }
 
 // Request message for RuntimeService.Ping
@@ -311,11 +311,15 @@ type Instance struct {
 	// Driver to connect to for OLAP (options: duckdb, druid)
 	OlapDriver string `protobuf:"bytes,2,opt,name=olap_driver,json=olapDriver,proto3" json:"olap_driver,omitempty"`
 	// DSN for connection to OLAP
+	//
+	// Deprecated: Marked as deprecated in rill/runtime/v1/api.proto.
 	OlapDsn string `protobuf:"bytes,3,opt,name=olap_dsn,json=olapDsn,proto3" json:"olap_dsn,omitempty"`
 	// Driver for reading/editing code artifacts (options: file, metastore, github).
 	// This enables virtualizing a file system in a cloud setting.
 	RepoDriver string `protobuf:"bytes,4,opt,name=repo_driver,json=repoDriver,proto3" json:"repo_driver,omitempty"`
 	// DSN for connecting to repo
+	//
+	// Deprecated: Marked as deprecated in rill/runtime/v1/api.proto.
 	RepoDsn string `protobuf:"bytes,5,opt,name=repo_dsn,json=repoDsn,proto3" json:"repo_dsn,omitempty"`
 	// If true, the runtime will store the instance's catalog in its OLAP store instead
 	// of in the runtime's metadata store. Currently only supported for the duckdb driver.
@@ -326,6 +330,8 @@ type Instance struct {
 	ProjectVariables map[string]string `protobuf:"bytes,8,rep,name=project_variables,json=projectVariables,proto3" json:"project_variables,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// ingestion limit across all sources, 0 means no limit
 	IngestionLimitBytes int64 `protobuf:"varint,9,opt,name=ingestion_limit_bytes,json=ingestionLimitBytes,proto3" json:"ingestion_limit_bytes,omitempty"`
+	// bare minimum connectors required by the instance.
+	Connectors []*ConnectorDef `protobuf:"bytes,10,rep,name=connectors,proto3" json:"connectors,omitempty"`
 }
 
 func (x *Instance) Reset() {
@@ -374,6 +380,7 @@ func (x *Instance) GetOlapDriver() string {
 	return ""
 }
 
+// Deprecated: Marked as deprecated in rill/runtime/v1/api.proto.
 func (x *Instance) GetOlapDsn() string {
 	if x != nil {
 		return x.OlapDsn
@@ -388,6 +395,7 @@ func (x *Instance) GetRepoDriver() string {
 	return ""
 }
 
+// Deprecated: Marked as deprecated in rill/runtime/v1/api.proto.
 func (x *Instance) GetRepoDsn() string {
 	if x != nil {
 		return x.RepoDsn
@@ -423,6 +431,79 @@ func (x *Instance) GetIngestionLimitBytes() int64 {
 	return 0
 }
 
+func (x *Instance) GetConnectors() []*ConnectorDef {
+	if x != nil {
+		return x.Connectors
+	}
+	return nil
+}
+
+type ConnectorDef struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Type of the connector. One of the infra driver supported.
+	Type string `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	// Name of the connector
+	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	// Configs for the connector
+	Configs map[string]string `protobuf:"bytes,3,rep,name=configs,proto3" json:"configs,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+}
+
+func (x *ConnectorDef) Reset() {
+	*x = ConnectorDef{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ConnectorDef) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConnectorDef) ProtoMessage() {}
+
+func (x *ConnectorDef) ProtoReflect() protoreflect.Message {
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConnectorDef.ProtoReflect.Descriptor instead.
+func (*ConnectorDef) Descriptor() ([]byte, []int) {
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ConnectorDef) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *ConnectorDef) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ConnectorDef) GetConfigs() map[string]string {
+	if x != nil {
+		return x.Configs
+	}
+	return nil
+}
+
 // Request message for RuntimeService.ListInstances
 type ListInstancesRequest struct {
 	state         protoimpl.MessageState
@@ -436,7 +517,7 @@ type ListInstancesRequest struct {
 func (x *ListInstancesRequest) Reset() {
 	*x = ListInstancesRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[3]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -449,7 +530,7 @@ func (x *ListInstancesRequest) String() string {
 func (*ListInstancesRequest) ProtoMessage() {}
 
 func (x *ListInstancesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[3]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -462,7 +543,7 @@ func (x *ListInstancesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListInstancesRequest.ProtoReflect.Descriptor instead.
 func (*ListInstancesRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{3}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ListInstancesRequest) GetPageSize() uint32 {
@@ -492,7 +573,7 @@ type ListInstancesResponse struct {
 func (x *ListInstancesResponse) Reset() {
 	*x = ListInstancesResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[4]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -505,7 +586,7 @@ func (x *ListInstancesResponse) String() string {
 func (*ListInstancesResponse) ProtoMessage() {}
 
 func (x *ListInstancesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[4]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -518,7 +599,7 @@ func (x *ListInstancesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListInstancesResponse.ProtoReflect.Descriptor instead.
 func (*ListInstancesResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{4}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ListInstancesResponse) GetInstances() []*Instance {
@@ -547,7 +628,7 @@ type GetInstanceRequest struct {
 func (x *GetInstanceRequest) Reset() {
 	*x = GetInstanceRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[5]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -560,7 +641,7 @@ func (x *GetInstanceRequest) String() string {
 func (*GetInstanceRequest) ProtoMessage() {}
 
 func (x *GetInstanceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[5]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -573,7 +654,7 @@ func (x *GetInstanceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetInstanceRequest.ProtoReflect.Descriptor instead.
 func (*GetInstanceRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{5}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GetInstanceRequest) GetInstanceId() string {
@@ -595,7 +676,7 @@ type GetInstanceResponse struct {
 func (x *GetInstanceResponse) Reset() {
 	*x = GetInstanceResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[6]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -608,7 +689,7 @@ func (x *GetInstanceResponse) String() string {
 func (*GetInstanceResponse) ProtoMessage() {}
 
 func (x *GetInstanceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[6]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -621,7 +702,7 @@ func (x *GetInstanceResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetInstanceResponse.ProtoReflect.Descriptor instead.
 func (*GetInstanceResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{6}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *GetInstanceResponse) GetInstance() *Instance {
@@ -638,21 +719,24 @@ type CreateInstanceRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	InstanceId          string            `protobuf:"bytes,1,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
-	OlapDriver          string            `protobuf:"bytes,2,opt,name=olap_driver,json=olapDriver,proto3" json:"olap_driver,omitempty"`
-	OlapDsn             string            `protobuf:"bytes,3,opt,name=olap_dsn,json=olapDsn,proto3" json:"olap_dsn,omitempty"`
-	RepoDriver          string            `protobuf:"bytes,4,opt,name=repo_driver,json=repoDriver,proto3" json:"repo_driver,omitempty"`
+	InstanceId string `protobuf:"bytes,1,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
+	OlapDriver string `protobuf:"bytes,2,opt,name=olap_driver,json=olapDriver,proto3" json:"olap_driver,omitempty"`
+	// Deprecated: Marked as deprecated in rill/runtime/v1/api.proto.
+	OlapDsn    string `protobuf:"bytes,3,opt,name=olap_dsn,json=olapDsn,proto3" json:"olap_dsn,omitempty"`
+	RepoDriver string `protobuf:"bytes,4,opt,name=repo_driver,json=repoDriver,proto3" json:"repo_driver,omitempty"`
+	// Deprecated: Marked as deprecated in rill/runtime/v1/api.proto.
 	RepoDsn             string            `protobuf:"bytes,5,opt,name=repo_dsn,json=repoDsn,proto3" json:"repo_dsn,omitempty"`
 	EmbedCatalog        bool              `protobuf:"varint,6,opt,name=embed_catalog,json=embedCatalog,proto3" json:"embed_catalog,omitempty"`
 	Variables           map[string]string `protobuf:"bytes,7,rep,name=variables,proto3" json:"variables,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	IngestionLimitBytes int64             `protobuf:"varint,8,opt,name=ingestion_limit_bytes,json=ingestionLimitBytes,proto3" json:"ingestion_limit_bytes,omitempty"`
 	Annotations         map[string]string `protobuf:"bytes,9,rep,name=annotations,proto3" json:"annotations,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Connectors          []*ConnectorDef   `protobuf:"bytes,10,rep,name=connectors,proto3" json:"connectors,omitempty"`
 }
 
 func (x *CreateInstanceRequest) Reset() {
 	*x = CreateInstanceRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[7]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -665,7 +749,7 @@ func (x *CreateInstanceRequest) String() string {
 func (*CreateInstanceRequest) ProtoMessage() {}
 
 func (x *CreateInstanceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[7]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -678,7 +762,7 @@ func (x *CreateInstanceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateInstanceRequest.ProtoReflect.Descriptor instead.
 func (*CreateInstanceRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{7}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *CreateInstanceRequest) GetInstanceId() string {
@@ -695,6 +779,7 @@ func (x *CreateInstanceRequest) GetOlapDriver() string {
 	return ""
 }
 
+// Deprecated: Marked as deprecated in rill/runtime/v1/api.proto.
 func (x *CreateInstanceRequest) GetOlapDsn() string {
 	if x != nil {
 		return x.OlapDsn
@@ -709,6 +794,7 @@ func (x *CreateInstanceRequest) GetRepoDriver() string {
 	return ""
 }
 
+// Deprecated: Marked as deprecated in rill/runtime/v1/api.proto.
 func (x *CreateInstanceRequest) GetRepoDsn() string {
 	if x != nil {
 		return x.RepoDsn
@@ -744,6 +830,13 @@ func (x *CreateInstanceRequest) GetAnnotations() map[string]string {
 	return nil
 }
 
+func (x *CreateInstanceRequest) GetConnectors() []*ConnectorDef {
+	if x != nil {
+		return x.Connectors
+	}
+	return nil
+}
+
 // Response message for RuntimeService.CreateInstance
 type CreateInstanceResponse struct {
 	state         protoimpl.MessageState
@@ -756,7 +849,7 @@ type CreateInstanceResponse struct {
 func (x *CreateInstanceResponse) Reset() {
 	*x = CreateInstanceResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[8]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -769,7 +862,7 @@ func (x *CreateInstanceResponse) String() string {
 func (*CreateInstanceResponse) ProtoMessage() {}
 
 func (x *CreateInstanceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[8]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -782,7 +875,7 @@ func (x *CreateInstanceResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateInstanceResponse.ProtoReflect.Descriptor instead.
 func (*CreateInstanceResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{8}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *CreateInstanceResponse) GetInstance() *Instance {
@@ -805,7 +898,7 @@ type DeleteInstanceRequest struct {
 func (x *DeleteInstanceRequest) Reset() {
 	*x = DeleteInstanceRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[9]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -818,7 +911,7 @@ func (x *DeleteInstanceRequest) String() string {
 func (*DeleteInstanceRequest) ProtoMessage() {}
 
 func (x *DeleteInstanceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[9]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -831,7 +924,7 @@ func (x *DeleteInstanceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteInstanceRequest.ProtoReflect.Descriptor instead.
 func (*DeleteInstanceRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{9}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *DeleteInstanceRequest) GetInstanceId() string {
@@ -858,7 +951,7 @@ type DeleteInstanceResponse struct {
 func (x *DeleteInstanceResponse) Reset() {
 	*x = DeleteInstanceResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[10]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -871,7 +964,7 @@ func (x *DeleteInstanceResponse) String() string {
 func (*DeleteInstanceResponse) ProtoMessage() {}
 
 func (x *DeleteInstanceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[10]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -884,7 +977,7 @@ func (x *DeleteInstanceResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteInstanceResponse.ProtoReflect.Descriptor instead.
 func (*DeleteInstanceResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{10}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{11}
 }
 
 // Request message for RuntimeService.EditInstance.
@@ -894,19 +987,22 @@ type EditInstanceRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	InstanceId          string  `protobuf:"bytes,1,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
-	OlapDriver          *string `protobuf:"bytes,2,opt,name=olap_driver,json=olapDriver,proto3,oneof" json:"olap_driver,omitempty"`
-	OlapDsn             *string `protobuf:"bytes,3,opt,name=olap_dsn,json=olapDsn,proto3,oneof" json:"olap_dsn,omitempty"`
-	RepoDriver          *string `protobuf:"bytes,4,opt,name=repo_driver,json=repoDriver,proto3,oneof" json:"repo_driver,omitempty"`
-	RepoDsn             *string `protobuf:"bytes,5,opt,name=repo_dsn,json=repoDsn,proto3,oneof" json:"repo_dsn,omitempty"`
-	EmbedCatalog        *bool   `protobuf:"varint,6,opt,name=embed_catalog,json=embedCatalog,proto3,oneof" json:"embed_catalog,omitempty"`
-	IngestionLimitBytes *int64  `protobuf:"varint,8,opt,name=ingestion_limit_bytes,json=ingestionLimitBytes,proto3,oneof" json:"ingestion_limit_bytes,omitempty"`
+	InstanceId string  `protobuf:"bytes,1,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
+	OlapDriver *string `protobuf:"bytes,2,opt,name=olap_driver,json=olapDriver,proto3,oneof" json:"olap_driver,omitempty"`
+	// Deprecated: Marked as deprecated in rill/runtime/v1/api.proto.
+	OlapDsn    *string `protobuf:"bytes,3,opt,name=olap_dsn,json=olapDsn,proto3,oneof" json:"olap_dsn,omitempty"`
+	RepoDriver *string `protobuf:"bytes,4,opt,name=repo_driver,json=repoDriver,proto3,oneof" json:"repo_driver,omitempty"`
+	// Deprecated: Marked as deprecated in rill/runtime/v1/api.proto.
+	RepoDsn             *string         `protobuf:"bytes,5,opt,name=repo_dsn,json=repoDsn,proto3,oneof" json:"repo_dsn,omitempty"`
+	EmbedCatalog        *bool           `protobuf:"varint,6,opt,name=embed_catalog,json=embedCatalog,proto3,oneof" json:"embed_catalog,omitempty"`
+	IngestionLimitBytes *int64          `protobuf:"varint,8,opt,name=ingestion_limit_bytes,json=ingestionLimitBytes,proto3,oneof" json:"ingestion_limit_bytes,omitempty"`
+	Connectors          []*ConnectorDef `protobuf:"bytes,9,rep,name=connectors,proto3" json:"connectors,omitempty"`
 }
 
 func (x *EditInstanceRequest) Reset() {
 	*x = EditInstanceRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[11]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -919,7 +1015,7 @@ func (x *EditInstanceRequest) String() string {
 func (*EditInstanceRequest) ProtoMessage() {}
 
 func (x *EditInstanceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[11]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -932,7 +1028,7 @@ func (x *EditInstanceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EditInstanceRequest.ProtoReflect.Descriptor instead.
 func (*EditInstanceRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{11}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *EditInstanceRequest) GetInstanceId() string {
@@ -949,6 +1045,7 @@ func (x *EditInstanceRequest) GetOlapDriver() string {
 	return ""
 }
 
+// Deprecated: Marked as deprecated in rill/runtime/v1/api.proto.
 func (x *EditInstanceRequest) GetOlapDsn() string {
 	if x != nil && x.OlapDsn != nil {
 		return *x.OlapDsn
@@ -963,6 +1060,7 @@ func (x *EditInstanceRequest) GetRepoDriver() string {
 	return ""
 }
 
+// Deprecated: Marked as deprecated in rill/runtime/v1/api.proto.
 func (x *EditInstanceRequest) GetRepoDsn() string {
 	if x != nil && x.RepoDsn != nil {
 		return *x.RepoDsn
@@ -984,6 +1082,13 @@ func (x *EditInstanceRequest) GetIngestionLimitBytes() int64 {
 	return 0
 }
 
+func (x *EditInstanceRequest) GetConnectors() []*ConnectorDef {
+	if x != nil {
+		return x.Connectors
+	}
+	return nil
+}
+
 // Response message for RuntimeService.EditInstance
 type EditInstanceResponse struct {
 	state         protoimpl.MessageState
@@ -996,7 +1101,7 @@ type EditInstanceResponse struct {
 func (x *EditInstanceResponse) Reset() {
 	*x = EditInstanceResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[12]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1009,7 +1114,7 @@ func (x *EditInstanceResponse) String() string {
 func (*EditInstanceResponse) ProtoMessage() {}
 
 func (x *EditInstanceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[12]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1022,7 +1127,7 @@ func (x *EditInstanceResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EditInstanceResponse.ProtoReflect.Descriptor instead.
 func (*EditInstanceResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{12}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *EditInstanceResponse) GetInstance() *Instance {
@@ -1045,7 +1150,7 @@ type EditInstanceVariablesRequest struct {
 func (x *EditInstanceVariablesRequest) Reset() {
 	*x = EditInstanceVariablesRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[13]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1058,7 +1163,7 @@ func (x *EditInstanceVariablesRequest) String() string {
 func (*EditInstanceVariablesRequest) ProtoMessage() {}
 
 func (x *EditInstanceVariablesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[13]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1071,7 +1176,7 @@ func (x *EditInstanceVariablesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EditInstanceVariablesRequest.ProtoReflect.Descriptor instead.
 func (*EditInstanceVariablesRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{13}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *EditInstanceVariablesRequest) GetInstanceId() string {
@@ -1100,7 +1205,7 @@ type EditInstanceVariablesResponse struct {
 func (x *EditInstanceVariablesResponse) Reset() {
 	*x = EditInstanceVariablesResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[14]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[15]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1113,7 +1218,7 @@ func (x *EditInstanceVariablesResponse) String() string {
 func (*EditInstanceVariablesResponse) ProtoMessage() {}
 
 func (x *EditInstanceVariablesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[14]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[15]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1126,7 +1231,7 @@ func (x *EditInstanceVariablesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EditInstanceVariablesResponse.ProtoReflect.Descriptor instead.
 func (*EditInstanceVariablesResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{14}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *EditInstanceVariablesResponse) GetInstance() *Instance {
@@ -1149,7 +1254,7 @@ type ListFilesRequest struct {
 func (x *ListFilesRequest) Reset() {
 	*x = ListFilesRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[15]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[16]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1162,7 +1267,7 @@ func (x *ListFilesRequest) String() string {
 func (*ListFilesRequest) ProtoMessage() {}
 
 func (x *ListFilesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[15]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[16]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1175,7 +1280,7 @@ func (x *ListFilesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListFilesRequest.ProtoReflect.Descriptor instead.
 func (*ListFilesRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{15}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ListFilesRequest) GetInstanceId() string {
@@ -1204,7 +1309,7 @@ type ListFilesResponse struct {
 func (x *ListFilesResponse) Reset() {
 	*x = ListFilesResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[16]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[17]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1217,7 +1322,7 @@ func (x *ListFilesResponse) String() string {
 func (*ListFilesResponse) ProtoMessage() {}
 
 func (x *ListFilesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[16]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[17]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1230,7 +1335,7 @@ func (x *ListFilesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListFilesResponse.ProtoReflect.Descriptor instead.
 func (*ListFilesResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{16}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ListFilesResponse) GetPaths() []string {
@@ -1253,7 +1358,7 @@ type WatchFilesRequest struct {
 func (x *WatchFilesRequest) Reset() {
 	*x = WatchFilesRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[17]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[18]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1266,7 +1371,7 @@ func (x *WatchFilesRequest) String() string {
 func (*WatchFilesRequest) ProtoMessage() {}
 
 func (x *WatchFilesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[17]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[18]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1279,7 +1384,7 @@ func (x *WatchFilesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WatchFilesRequest.ProtoReflect.Descriptor instead.
 func (*WatchFilesRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{17}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *WatchFilesRequest) GetInstanceId() string {
@@ -1309,7 +1414,7 @@ type WatchFilesResponse struct {
 func (x *WatchFilesResponse) Reset() {
 	*x = WatchFilesResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[18]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[19]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1322,7 +1427,7 @@ func (x *WatchFilesResponse) String() string {
 func (*WatchFilesResponse) ProtoMessage() {}
 
 func (x *WatchFilesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[18]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[19]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1335,7 +1440,7 @@ func (x *WatchFilesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WatchFilesResponse.ProtoReflect.Descriptor instead.
 func (*WatchFilesResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{18}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *WatchFilesResponse) GetEvent() FileEvent {
@@ -1365,7 +1470,7 @@ type GetFileRequest struct {
 func (x *GetFileRequest) Reset() {
 	*x = GetFileRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[19]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[20]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1378,7 +1483,7 @@ func (x *GetFileRequest) String() string {
 func (*GetFileRequest) ProtoMessage() {}
 
 func (x *GetFileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[19]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[20]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1391,7 +1496,7 @@ func (x *GetFileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetFileRequest.ProtoReflect.Descriptor instead.
 func (*GetFileRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{19}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *GetFileRequest) GetInstanceId() string {
@@ -1421,7 +1526,7 @@ type GetFileResponse struct {
 func (x *GetFileResponse) Reset() {
 	*x = GetFileResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[20]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[21]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1434,7 +1539,7 @@ func (x *GetFileResponse) String() string {
 func (*GetFileResponse) ProtoMessage() {}
 
 func (x *GetFileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[20]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[21]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1447,7 +1552,7 @@ func (x *GetFileResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetFileResponse.ProtoReflect.Descriptor instead.
 func (*GetFileResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{20}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *GetFileResponse) GetBlob() string {
@@ -1483,7 +1588,7 @@ type PutFileRequest struct {
 func (x *PutFileRequest) Reset() {
 	*x = PutFileRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[21]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[22]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1496,7 +1601,7 @@ func (x *PutFileRequest) String() string {
 func (*PutFileRequest) ProtoMessage() {}
 
 func (x *PutFileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[21]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[22]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1509,7 +1614,7 @@ func (x *PutFileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutFileRequest.ProtoReflect.Descriptor instead.
 func (*PutFileRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{21}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *PutFileRequest) GetInstanceId() string {
@@ -1559,7 +1664,7 @@ type PutFileResponse struct {
 func (x *PutFileResponse) Reset() {
 	*x = PutFileResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[22]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[23]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1572,7 +1677,7 @@ func (x *PutFileResponse) String() string {
 func (*PutFileResponse) ProtoMessage() {}
 
 func (x *PutFileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[22]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[23]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1585,7 +1690,7 @@ func (x *PutFileResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutFileResponse.ProtoReflect.Descriptor instead.
 func (*PutFileResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{22}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *PutFileResponse) GetFilePath() string {
@@ -1608,7 +1713,7 @@ type DeleteFileRequest struct {
 func (x *DeleteFileRequest) Reset() {
 	*x = DeleteFileRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[23]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[24]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1621,7 +1726,7 @@ func (x *DeleteFileRequest) String() string {
 func (*DeleteFileRequest) ProtoMessage() {}
 
 func (x *DeleteFileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[23]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[24]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1634,7 +1739,7 @@ func (x *DeleteFileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteFileRequest.ProtoReflect.Descriptor instead.
 func (*DeleteFileRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{23}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *DeleteFileRequest) GetInstanceId() string {
@@ -1661,7 +1766,7 @@ type DeleteFileResponse struct {
 func (x *DeleteFileResponse) Reset() {
 	*x = DeleteFileResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[24]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[25]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1674,7 +1779,7 @@ func (x *DeleteFileResponse) String() string {
 func (*DeleteFileResponse) ProtoMessage() {}
 
 func (x *DeleteFileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[24]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[25]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1687,7 +1792,7 @@ func (x *DeleteFileResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteFileResponse.ProtoReflect.Descriptor instead.
 func (*DeleteFileResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{24}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{25}
 }
 
 // Request message for RuntimeService.RenameFile
@@ -1704,7 +1809,7 @@ type RenameFileRequest struct {
 func (x *RenameFileRequest) Reset() {
 	*x = RenameFileRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[25]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[26]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1717,7 +1822,7 @@ func (x *RenameFileRequest) String() string {
 func (*RenameFileRequest) ProtoMessage() {}
 
 func (x *RenameFileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[25]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[26]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1730,7 +1835,7 @@ func (x *RenameFileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenameFileRequest.ProtoReflect.Descriptor instead.
 func (*RenameFileRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{25}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *RenameFileRequest) GetInstanceId() string {
@@ -1764,7 +1869,7 @@ type RenameFileResponse struct {
 func (x *RenameFileResponse) Reset() {
 	*x = RenameFileResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[26]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[27]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1777,7 +1882,7 @@ func (x *RenameFileResponse) String() string {
 func (*RenameFileResponse) ProtoMessage() {}
 
 func (x *RenameFileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[26]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[27]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1790,7 +1895,7 @@ func (x *RenameFileResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenameFileResponse.ProtoReflect.Descriptor instead.
 func (*RenameFileResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{26}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{27}
 }
 
 // Example contains metadata about an example project that is available for unpacking.
@@ -1807,7 +1912,7 @@ type Example struct {
 func (x *Example) Reset() {
 	*x = Example{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[27]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[28]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1820,7 +1925,7 @@ func (x *Example) String() string {
 func (*Example) ProtoMessage() {}
 
 func (x *Example) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[27]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[28]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1833,7 +1938,7 @@ func (x *Example) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Example.ProtoReflect.Descriptor instead.
 func (*Example) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{27}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *Example) GetName() string {
@@ -1867,7 +1972,7 @@ type ListExamplesRequest struct {
 func (x *ListExamplesRequest) Reset() {
 	*x = ListExamplesRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[28]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[29]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1880,7 +1985,7 @@ func (x *ListExamplesRequest) String() string {
 func (*ListExamplesRequest) ProtoMessage() {}
 
 func (x *ListExamplesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[28]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[29]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1893,7 +1998,7 @@ func (x *ListExamplesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListExamplesRequest.ProtoReflect.Descriptor instead.
 func (*ListExamplesRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{28}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{29}
 }
 
 // Response message for RuntimeService.ListExamples
@@ -1908,7 +2013,7 @@ type ListExamplesResponse struct {
 func (x *ListExamplesResponse) Reset() {
 	*x = ListExamplesResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[29]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[30]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1921,7 +2026,7 @@ func (x *ListExamplesResponse) String() string {
 func (*ListExamplesResponse) ProtoMessage() {}
 
 func (x *ListExamplesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[29]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[30]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1934,7 +2039,7 @@ func (x *ListExamplesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListExamplesResponse.ProtoReflect.Descriptor instead.
 func (*ListExamplesResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{29}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *ListExamplesResponse) GetExamples() []*Example {
@@ -1958,7 +2063,7 @@ type UnpackExampleRequest struct {
 func (x *UnpackExampleRequest) Reset() {
 	*x = UnpackExampleRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[30]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[31]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1971,7 +2076,7 @@ func (x *UnpackExampleRequest) String() string {
 func (*UnpackExampleRequest) ProtoMessage() {}
 
 func (x *UnpackExampleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[30]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[31]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1984,7 +2089,7 @@ func (x *UnpackExampleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnpackExampleRequest.ProtoReflect.Descriptor instead.
 func (*UnpackExampleRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{30}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *UnpackExampleRequest) GetInstanceId() string {
@@ -2018,7 +2123,7 @@ type UnpackExampleResponse struct {
 func (x *UnpackExampleResponse) Reset() {
 	*x = UnpackExampleResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[31]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[32]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2031,7 +2136,7 @@ func (x *UnpackExampleResponse) String() string {
 func (*UnpackExampleResponse) ProtoMessage() {}
 
 func (x *UnpackExampleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[31]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[32]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2044,7 +2149,7 @@ func (x *UnpackExampleResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnpackExampleResponse.ProtoReflect.Descriptor instead.
 func (*UnpackExampleResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{31}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{32}
 }
 
 // Request message for RuntimeService.UnpackEmpty
@@ -2061,7 +2166,7 @@ type UnpackEmptyRequest struct {
 func (x *UnpackEmptyRequest) Reset() {
 	*x = UnpackEmptyRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[32]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[33]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2074,7 +2179,7 @@ func (x *UnpackEmptyRequest) String() string {
 func (*UnpackEmptyRequest) ProtoMessage() {}
 
 func (x *UnpackEmptyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[32]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[33]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2087,7 +2192,7 @@ func (x *UnpackEmptyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnpackEmptyRequest.ProtoReflect.Descriptor instead.
 func (*UnpackEmptyRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{32}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *UnpackEmptyRequest) GetInstanceId() string {
@@ -2121,7 +2226,7 @@ type UnpackEmptyResponse struct {
 func (x *UnpackEmptyResponse) Reset() {
 	*x = UnpackEmptyResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[33]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[34]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2134,7 +2239,7 @@ func (x *UnpackEmptyResponse) String() string {
 func (*UnpackEmptyResponse) ProtoMessage() {}
 
 func (x *UnpackEmptyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[33]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[34]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2147,7 +2252,7 @@ func (x *UnpackEmptyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnpackEmptyResponse.ProtoReflect.Descriptor instead.
 func (*UnpackEmptyResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{33}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{34}
 }
 
 // CatalogEntry contains information about an object in the catalog
@@ -2179,7 +2284,7 @@ type CatalogEntry struct {
 func (x *CatalogEntry) Reset() {
 	*x = CatalogEntry{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[34]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[35]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2192,7 +2297,7 @@ func (x *CatalogEntry) String() string {
 func (*CatalogEntry) ProtoMessage() {}
 
 func (x *CatalogEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[34]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[35]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2205,7 +2310,7 @@ func (x *CatalogEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CatalogEntry.ProtoReflect.Descriptor instead.
 func (*CatalogEntry) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{34}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *CatalogEntry) GetName() string {
@@ -2340,7 +2445,7 @@ type ListCatalogEntriesRequest struct {
 func (x *ListCatalogEntriesRequest) Reset() {
 	*x = ListCatalogEntriesRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[35]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[36]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2353,7 +2458,7 @@ func (x *ListCatalogEntriesRequest) String() string {
 func (*ListCatalogEntriesRequest) ProtoMessage() {}
 
 func (x *ListCatalogEntriesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[35]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[36]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2366,7 +2471,7 @@ func (x *ListCatalogEntriesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListCatalogEntriesRequest.ProtoReflect.Descriptor instead.
 func (*ListCatalogEntriesRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{35}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *ListCatalogEntriesRequest) GetInstanceId() string {
@@ -2395,7 +2500,7 @@ type ListCatalogEntriesResponse struct {
 func (x *ListCatalogEntriesResponse) Reset() {
 	*x = ListCatalogEntriesResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[36]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[37]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2408,7 +2513,7 @@ func (x *ListCatalogEntriesResponse) String() string {
 func (*ListCatalogEntriesResponse) ProtoMessage() {}
 
 func (x *ListCatalogEntriesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[36]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[37]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2421,7 +2526,7 @@ func (x *ListCatalogEntriesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListCatalogEntriesResponse.ProtoReflect.Descriptor instead.
 func (*ListCatalogEntriesResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{36}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *ListCatalogEntriesResponse) GetEntries() []*CatalogEntry {
@@ -2444,7 +2549,7 @@ type GetCatalogEntryRequest struct {
 func (x *GetCatalogEntryRequest) Reset() {
 	*x = GetCatalogEntryRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[37]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[38]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2457,7 +2562,7 @@ func (x *GetCatalogEntryRequest) String() string {
 func (*GetCatalogEntryRequest) ProtoMessage() {}
 
 func (x *GetCatalogEntryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[37]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[38]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2470,7 +2575,7 @@ func (x *GetCatalogEntryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCatalogEntryRequest.ProtoReflect.Descriptor instead.
 func (*GetCatalogEntryRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{37}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *GetCatalogEntryRequest) GetInstanceId() string {
@@ -2499,7 +2604,7 @@ type GetCatalogEntryResponse struct {
 func (x *GetCatalogEntryResponse) Reset() {
 	*x = GetCatalogEntryResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[38]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[39]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2512,7 +2617,7 @@ func (x *GetCatalogEntryResponse) String() string {
 func (*GetCatalogEntryResponse) ProtoMessage() {}
 
 func (x *GetCatalogEntryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[38]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[39]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2525,7 +2630,7 @@ func (x *GetCatalogEntryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCatalogEntryResponse.ProtoReflect.Descriptor instead.
 func (*GetCatalogEntryResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{38}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *GetCatalogEntryResponse) GetEntry() *CatalogEntry {
@@ -2548,7 +2653,7 @@ type TriggerRefreshRequest struct {
 func (x *TriggerRefreshRequest) Reset() {
 	*x = TriggerRefreshRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[39]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[40]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2561,7 +2666,7 @@ func (x *TriggerRefreshRequest) String() string {
 func (*TriggerRefreshRequest) ProtoMessage() {}
 
 func (x *TriggerRefreshRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[39]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[40]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2574,7 +2679,7 @@ func (x *TriggerRefreshRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TriggerRefreshRequest.ProtoReflect.Descriptor instead.
 func (*TriggerRefreshRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{39}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *TriggerRefreshRequest) GetInstanceId() string {
@@ -2601,7 +2706,7 @@ type TriggerRefreshResponse struct {
 func (x *TriggerRefreshResponse) Reset() {
 	*x = TriggerRefreshResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[40]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[41]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2614,7 +2719,7 @@ func (x *TriggerRefreshResponse) String() string {
 func (*TriggerRefreshResponse) ProtoMessage() {}
 
 func (x *TriggerRefreshResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[40]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[41]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2627,7 +2732,7 @@ func (x *TriggerRefreshResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TriggerRefreshResponse.ProtoReflect.Descriptor instead.
 func (*TriggerRefreshResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{40}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{41}
 }
 
 // Request message for RuntimeService.TriggerSync
@@ -2642,7 +2747,7 @@ type TriggerSyncRequest struct {
 func (x *TriggerSyncRequest) Reset() {
 	*x = TriggerSyncRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[41]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[42]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2655,7 +2760,7 @@ func (x *TriggerSyncRequest) String() string {
 func (*TriggerSyncRequest) ProtoMessage() {}
 
 func (x *TriggerSyncRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[41]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[42]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2668,7 +2773,7 @@ func (x *TriggerSyncRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TriggerSyncRequest.ProtoReflect.Descriptor instead.
 func (*TriggerSyncRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{41}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *TriggerSyncRequest) GetInstanceId() string {
@@ -2693,7 +2798,7 @@ type TriggerSyncResponse struct {
 func (x *TriggerSyncResponse) Reset() {
 	*x = TriggerSyncResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[42]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[43]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2706,7 +2811,7 @@ func (x *TriggerSyncResponse) String() string {
 func (*TriggerSyncResponse) ProtoMessage() {}
 
 func (x *TriggerSyncResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[42]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[43]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2719,7 +2824,7 @@ func (x *TriggerSyncResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TriggerSyncResponse.ProtoReflect.Descriptor instead.
 func (*TriggerSyncResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{42}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *TriggerSyncResponse) GetObjectsCount() uint32 {
@@ -2775,7 +2880,7 @@ type ReconcileRequest struct {
 func (x *ReconcileRequest) Reset() {
 	*x = ReconcileRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[43]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[44]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2788,7 +2893,7 @@ func (x *ReconcileRequest) String() string {
 func (*ReconcileRequest) ProtoMessage() {}
 
 func (x *ReconcileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[43]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[44]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2801,7 +2906,7 @@ func (x *ReconcileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReconcileRequest.ProtoReflect.Descriptor instead.
 func (*ReconcileRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{43}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *ReconcileRequest) GetInstanceId() string {
@@ -2857,7 +2962,7 @@ type ReconcileResponse struct {
 func (x *ReconcileResponse) Reset() {
 	*x = ReconcileResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[44]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[45]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2870,7 +2975,7 @@ func (x *ReconcileResponse) String() string {
 func (*ReconcileResponse) ProtoMessage() {}
 
 func (x *ReconcileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[44]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[45]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2883,7 +2988,7 @@ func (x *ReconcileResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReconcileResponse.ProtoReflect.Descriptor instead.
 func (*ReconcileResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{44}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *ReconcileResponse) GetErrors() []*ReconcileError {
@@ -2928,7 +3033,7 @@ type ReconcileError struct {
 func (x *ReconcileError) Reset() {
 	*x = ReconcileError{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[45]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[46]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2941,7 +3046,7 @@ func (x *ReconcileError) String() string {
 func (*ReconcileError) ProtoMessage() {}
 
 func (x *ReconcileError) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[45]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[46]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2954,7 +3059,7 @@ func (x *ReconcileError) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReconcileError.ProtoReflect.Descriptor instead.
 func (*ReconcileError) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{45}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *ReconcileError) GetCode() ReconcileError_Code {
@@ -3026,7 +3131,7 @@ type PutFileAndReconcileRequest struct {
 func (x *PutFileAndReconcileRequest) Reset() {
 	*x = PutFileAndReconcileRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[46]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[47]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3039,7 +3144,7 @@ func (x *PutFileAndReconcileRequest) String() string {
 func (*PutFileAndReconcileRequest) ProtoMessage() {}
 
 func (x *PutFileAndReconcileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[46]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[47]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3052,7 +3157,7 @@ func (x *PutFileAndReconcileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutFileAndReconcileRequest.ProtoReflect.Descriptor instead.
 func (*PutFileAndReconcileRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{46}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *PutFileAndReconcileRequest) GetInstanceId() string {
@@ -3121,7 +3226,7 @@ type PutFileAndReconcileResponse struct {
 func (x *PutFileAndReconcileResponse) Reset() {
 	*x = PutFileAndReconcileResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[47]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[48]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3134,7 +3239,7 @@ func (x *PutFileAndReconcileResponse) String() string {
 func (*PutFileAndReconcileResponse) ProtoMessage() {}
 
 func (x *PutFileAndReconcileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[47]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[48]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3147,7 +3252,7 @@ func (x *PutFileAndReconcileResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutFileAndReconcileResponse.ProtoReflect.Descriptor instead.
 func (*PutFileAndReconcileResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{47}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *PutFileAndReconcileResponse) GetErrors() []*ReconcileError {
@@ -3184,7 +3289,7 @@ type DeleteFileAndReconcileRequest struct {
 func (x *DeleteFileAndReconcileRequest) Reset() {
 	*x = DeleteFileAndReconcileRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[48]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[49]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3197,7 +3302,7 @@ func (x *DeleteFileAndReconcileRequest) String() string {
 func (*DeleteFileAndReconcileRequest) ProtoMessage() {}
 
 func (x *DeleteFileAndReconcileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[48]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[49]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3210,7 +3315,7 @@ func (x *DeleteFileAndReconcileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteFileAndReconcileRequest.ProtoReflect.Descriptor instead.
 func (*DeleteFileAndReconcileRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{48}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *DeleteFileAndReconcileRequest) GetInstanceId() string {
@@ -3258,7 +3363,7 @@ type DeleteFileAndReconcileResponse struct {
 func (x *DeleteFileAndReconcileResponse) Reset() {
 	*x = DeleteFileAndReconcileResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[49]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[50]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3271,7 +3376,7 @@ func (x *DeleteFileAndReconcileResponse) String() string {
 func (*DeleteFileAndReconcileResponse) ProtoMessage() {}
 
 func (x *DeleteFileAndReconcileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[49]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[50]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3284,7 +3389,7 @@ func (x *DeleteFileAndReconcileResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteFileAndReconcileResponse.ProtoReflect.Descriptor instead.
 func (*DeleteFileAndReconcileResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{49}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *DeleteFileAndReconcileResponse) GetErrors() []*ReconcileError {
@@ -3323,7 +3428,7 @@ type RenameFileAndReconcileRequest struct {
 func (x *RenameFileAndReconcileRequest) Reset() {
 	*x = RenameFileAndReconcileRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[50]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[51]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3336,7 +3441,7 @@ func (x *RenameFileAndReconcileRequest) String() string {
 func (*RenameFileAndReconcileRequest) ProtoMessage() {}
 
 func (x *RenameFileAndReconcileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[50]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[51]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3349,7 +3454,7 @@ func (x *RenameFileAndReconcileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenameFileAndReconcileRequest.ProtoReflect.Descriptor instead.
 func (*RenameFileAndReconcileRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{50}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *RenameFileAndReconcileRequest) GetInstanceId() string {
@@ -3404,7 +3509,7 @@ type RenameFileAndReconcileResponse struct {
 func (x *RenameFileAndReconcileResponse) Reset() {
 	*x = RenameFileAndReconcileResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[51]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[52]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3417,7 +3522,7 @@ func (x *RenameFileAndReconcileResponse) String() string {
 func (*RenameFileAndReconcileResponse) ProtoMessage() {}
 
 func (x *RenameFileAndReconcileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[51]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[52]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3430,7 +3535,7 @@ func (x *RenameFileAndReconcileResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenameFileAndReconcileResponse.ProtoReflect.Descriptor instead.
 func (*RenameFileAndReconcileResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{51}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *RenameFileAndReconcileResponse) GetErrors() []*ReconcileError {
@@ -3467,7 +3572,7 @@ type RefreshAndReconcileRequest struct {
 func (x *RefreshAndReconcileRequest) Reset() {
 	*x = RefreshAndReconcileRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[52]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[53]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3480,7 +3585,7 @@ func (x *RefreshAndReconcileRequest) String() string {
 func (*RefreshAndReconcileRequest) ProtoMessage() {}
 
 func (x *RefreshAndReconcileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[52]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[53]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3493,7 +3598,7 @@ func (x *RefreshAndReconcileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefreshAndReconcileRequest.ProtoReflect.Descriptor instead.
 func (*RefreshAndReconcileRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{52}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{53}
 }
 
 func (x *RefreshAndReconcileRequest) GetInstanceId() string {
@@ -3541,7 +3646,7 @@ type RefreshAndReconcileResponse struct {
 func (x *RefreshAndReconcileResponse) Reset() {
 	*x = RefreshAndReconcileResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[53]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[54]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3554,7 +3659,7 @@ func (x *RefreshAndReconcileResponse) String() string {
 func (*RefreshAndReconcileResponse) ProtoMessage() {}
 
 func (x *RefreshAndReconcileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[53]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[54]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3567,7 +3672,7 @@ func (x *RefreshAndReconcileResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefreshAndReconcileResponse.ProtoReflect.Descriptor instead.
 func (*RefreshAndReconcileResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{53}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *RefreshAndReconcileResponse) GetErrors() []*ReconcileError {
@@ -3604,7 +3709,7 @@ type Connector struct {
 func (x *Connector) Reset() {
 	*x = Connector{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[54]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[55]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3617,7 +3722,7 @@ func (x *Connector) String() string {
 func (*Connector) ProtoMessage() {}
 
 func (x *Connector) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[54]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[55]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3630,7 +3735,7 @@ func (x *Connector) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Connector.ProtoReflect.Descriptor instead.
 func (*Connector) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{54}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *Connector) GetName() string {
@@ -3671,7 +3776,7 @@ type ListConnectorsRequest struct {
 func (x *ListConnectorsRequest) Reset() {
 	*x = ListConnectorsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[55]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[56]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3684,7 +3789,7 @@ func (x *ListConnectorsRequest) String() string {
 func (*ListConnectorsRequest) ProtoMessage() {}
 
 func (x *ListConnectorsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[55]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[56]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3697,7 +3802,7 @@ func (x *ListConnectorsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListConnectorsRequest.ProtoReflect.Descriptor instead.
 func (*ListConnectorsRequest) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{55}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{56}
 }
 
 // Response message for RuntimeService.ListConnectors
@@ -3712,7 +3817,7 @@ type ListConnectorsResponse struct {
 func (x *ListConnectorsResponse) Reset() {
 	*x = ListConnectorsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[56]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[57]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3725,7 +3830,7 @@ func (x *ListConnectorsResponse) String() string {
 func (*ListConnectorsResponse) ProtoMessage() {}
 
 func (x *ListConnectorsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[56]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[57]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3738,7 +3843,7 @@ func (x *ListConnectorsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListConnectorsResponse.ProtoReflect.Descriptor instead.
 func (*ListConnectorsResponse) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{56}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{57}
 }
 
 func (x *ListConnectorsResponse) GetConnectors() []*Connector {
@@ -3761,7 +3866,7 @@ type ReconcileError_CharLocation struct {
 func (x *ReconcileError_CharLocation) Reset() {
 	*x = ReconcileError_CharLocation{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[62]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[64]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3774,7 +3879,7 @@ func (x *ReconcileError_CharLocation) String() string {
 func (*ReconcileError_CharLocation) ProtoMessage() {}
 
 func (x *ReconcileError_CharLocation) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[62]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[64]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3787,7 +3892,7 @@ func (x *ReconcileError_CharLocation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReconcileError_CharLocation.ProtoReflect.Descriptor instead.
 func (*ReconcileError_CharLocation) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{45, 0}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{46, 0}
 }
 
 func (x *ReconcileError_CharLocation) GetLine() uint32 {
@@ -3831,7 +3936,7 @@ type Connector_Property struct {
 func (x *Connector_Property) Reset() {
 	*x = Connector_Property{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_rill_runtime_v1_api_proto_msgTypes[63]
+		mi := &file_rill_runtime_v1_api_proto_msgTypes[65]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3844,7 +3949,7 @@ func (x *Connector_Property) String() string {
 func (*Connector_Property) ProtoMessage() {}
 
 func (x *Connector_Property) ProtoReflect() protoreflect.Message {
-	mi := &file_rill_runtime_v1_api_proto_msgTypes[63]
+	mi := &file_rill_runtime_v1_api_proto_msgTypes[65]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3857,7 +3962,7 @@ func (x *Connector_Property) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Connector_Property.ProtoReflect.Descriptor instead.
 func (*Connector_Property) Descriptor() ([]byte, []int) {
-	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{54, 0}
+	return file_rill_runtime_v1_api_proto_rawDescGZIP(), []int{55, 0}
 }
 
 func (x *Connector_Property) GetKey() string {
@@ -3935,7 +4040,7 @@ var file_rill_runtime_v1_api_proto_rawDesc = []byte{
 	0x01, 0x28, 0x09, 0x52, 0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x2e, 0x0a, 0x04,
 	0x74, 0x69, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f,
 	0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d,
-	0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x04, 0x74, 0x69, 0x6d, 0x65, 0x22, 0xf5, 0x04, 0x0a,
+	0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x04, 0x74, 0x69, 0x6d, 0x65, 0x22, 0xbc, 0x05, 0x0a,
 	0x08, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x12, 0x39, 0x0a, 0x0b, 0x69, 0x6e, 0x73,
 	0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x18,
 	0xfa, 0x42, 0x15, 0x72, 0x13, 0x32, 0x11, 0x5e, 0x5b, 0x5f, 0x5c, 0x2d, 0x61, 0x2d, 0x7a, 0x41,
@@ -3943,139 +4048,164 @@ var file_rill_runtime_v1_api_proto_rawDesc = []byte{
 	0x63, 0x65, 0x49, 0x64, 0x12, 0x35, 0x0a, 0x0b, 0x6f, 0x6c, 0x61, 0x70, 0x5f, 0x64, 0x72, 0x69,
 	0x76, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x42, 0x14, 0xfa, 0x42, 0x11, 0x72, 0x0f,
 	0x52, 0x06, 0x64, 0x75, 0x63, 0x6b, 0x64, 0x62, 0x52, 0x05, 0x64, 0x72, 0x75, 0x69, 0x64, 0x52,
-	0x0a, 0x6f, 0x6c, 0x61, 0x70, 0x44, 0x72, 0x69, 0x76, 0x65, 0x72, 0x12, 0x19, 0x0a, 0x08, 0x6f,
-	0x6c, 0x61, 0x70, 0x5f, 0x64, 0x73, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x6f,
-	0x6c, 0x61, 0x70, 0x44, 0x73, 0x6e, 0x12, 0x3f, 0x0a, 0x0b, 0x72, 0x65, 0x70, 0x6f, 0x5f, 0x64,
-	0x72, 0x69, 0x76, 0x65, 0x72, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x42, 0x1e, 0xfa, 0x42, 0x1b,
-	0x72, 0x19, 0x52, 0x04, 0x66, 0x69, 0x6c, 0x65, 0x52, 0x09, 0x6d, 0x65, 0x74, 0x61, 0x73, 0x74,
-	0x6f, 0x72, 0x65, 0x52, 0x06, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x52, 0x0a, 0x72, 0x65, 0x70,
-	0x6f, 0x44, 0x72, 0x69, 0x76, 0x65, 0x72, 0x12, 0x19, 0x0a, 0x08, 0x72, 0x65, 0x70, 0x6f, 0x5f,
-	0x64, 0x73, 0x6e, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x72, 0x65, 0x70, 0x6f, 0x44,
-	0x73, 0x6e, 0x12, 0x23, 0x0a, 0x0d, 0x65, 0x6d, 0x62, 0x65, 0x64, 0x5f, 0x63, 0x61, 0x74, 0x61,
-	0x6c, 0x6f, 0x67, 0x18, 0x06, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0c, 0x65, 0x6d, 0x62, 0x65, 0x64,
-	0x43, 0x61, 0x74, 0x61, 0x6c, 0x6f, 0x67, 0x12, 0x46, 0x0a, 0x09, 0x76, 0x61, 0x72, 0x69, 0x61,
-	0x62, 0x6c, 0x65, 0x73, 0x18, 0x07, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x28, 0x2e, 0x72, 0x69, 0x6c,
-	0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x49, 0x6e, 0x73,
-	0x74, 0x61, 0x6e, 0x63, 0x65, 0x2e, 0x56, 0x61, 0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x45,
-	0x6e, 0x74, 0x72, 0x79, 0x52, 0x09, 0x76, 0x61, 0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x12,
-	0x5c, 0x0a, 0x11, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x5f, 0x76, 0x61, 0x72, 0x69, 0x61,
-	0x62, 0x6c, 0x65, 0x73, 0x18, 0x08, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x2f, 0x2e, 0x72, 0x69, 0x6c,
-	0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x49, 0x6e, 0x73,
-	0x74, 0x61, 0x6e, 0x63, 0x65, 0x2e, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x56, 0x61, 0x72,
-	0x69, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x10, 0x70, 0x72, 0x6f,
-	0x6a, 0x65, 0x63, 0x74, 0x56, 0x61, 0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x12, 0x32, 0x0a,
-	0x15, 0x69, 0x6e, 0x67, 0x65, 0x73, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x6c, 0x69, 0x6d, 0x69, 0x74,
-	0x5f, 0x62, 0x79, 0x74, 0x65, 0x73, 0x18, 0x09, 0x20, 0x01, 0x28, 0x03, 0x52, 0x13, 0x69, 0x6e,
-	0x67, 0x65, 0x73, 0x74, 0x69, 0x6f, 0x6e, 0x4c, 0x69, 0x6d, 0x69, 0x74, 0x42, 0x79, 0x74, 0x65,
-	0x73, 0x1a, 0x3c, 0x0a, 0x0e, 0x56, 0x61, 0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x45, 0x6e,
-	0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02,
-	0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x1a,
-	0x43, 0x0a, 0x15, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x56, 0x61, 0x72, 0x69, 0x61, 0x62,
-	0x6c, 0x65, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18,
-	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61,
-	0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65,
-	0x3a, 0x02, 0x38, 0x01, 0x22, 0x52, 0x0a, 0x14, 0x4c, 0x69, 0x73, 0x74, 0x49, 0x6e, 0x73, 0x74,
-	0x61, 0x6e, 0x63, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1b, 0x0a, 0x09,
-	0x70, 0x61, 0x67, 0x65, 0x5f, 0x73, 0x69, 0x7a, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0d, 0x52,
-	0x08, 0x70, 0x61, 0x67, 0x65, 0x53, 0x69, 0x7a, 0x65, 0x12, 0x1d, 0x0a, 0x0a, 0x70, 0x61, 0x67,
-	0x65, 0x5f, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x70,
-	0x61, 0x67, 0x65, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x22, 0x78, 0x0a, 0x15, 0x4c, 0x69, 0x73, 0x74,
-	0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x12, 0x37, 0x0a, 0x09, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x18, 0x01,
-	0x20, 0x03, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74,
-	0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x52,
-	0x09, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x12, 0x26, 0x0a, 0x0f, 0x6e, 0x65,
-	0x78, 0x74, 0x5f, 0x70, 0x61, 0x67, 0x65, 0x5f, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x18, 0x02, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x0d, 0x6e, 0x65, 0x78, 0x74, 0x50, 0x61, 0x67, 0x65, 0x54, 0x6f, 0x6b,
-	0x65, 0x6e, 0x22, 0x4f, 0x0a, 0x12, 0x47, 0x65, 0x74, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63,
-	0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x39, 0x0a, 0x0b, 0x69, 0x6e, 0x73, 0x74,
-	0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x18, 0xfa,
-	0x42, 0x15, 0x72, 0x13, 0x32, 0x11, 0x5e, 0x5b, 0x5f, 0x5c, 0x2d, 0x61, 0x2d, 0x7a, 0x41, 0x2d,
-	0x5a, 0x30, 0x2d, 0x39, 0x5d, 0x2b, 0x24, 0x52, 0x0a, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63,
-	0x65, 0x49, 0x64, 0x22, 0x4c, 0x0a, 0x13, 0x47, 0x65, 0x74, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e,
-	0x63, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x35, 0x0a, 0x08, 0x69, 0x6e,
-	0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x72,
-	0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x49,
-	0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x52, 0x08, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63,
-	0x65, 0x22, 0x8a, 0x05, 0x0a, 0x15, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x49, 0x6e, 0x73, 0x74,
-	0x61, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x3c, 0x0a, 0x0b, 0x69,
-	0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
-	0x42, 0x1b, 0xfa, 0x42, 0x18, 0x72, 0x16, 0x32, 0x11, 0x5e, 0x5b, 0x5f, 0x5c, 0x2d, 0x61, 0x2d,
-	0x7a, 0x41, 0x2d, 0x5a, 0x30, 0x2d, 0x39, 0x5d, 0x2b, 0x24, 0xd0, 0x01, 0x01, 0x52, 0x0a, 0x69,
-	0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x49, 0x64, 0x12, 0x35, 0x0a, 0x0b, 0x6f, 0x6c, 0x61,
-	0x70, 0x5f, 0x64, 0x72, 0x69, 0x76, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x42, 0x14,
-	0xfa, 0x42, 0x11, 0x72, 0x0f, 0x52, 0x06, 0x64, 0x75, 0x63, 0x6b, 0x64, 0x62, 0x52, 0x05, 0x64,
-	0x72, 0x75, 0x69, 0x64, 0x52, 0x0a, 0x6f, 0x6c, 0x61, 0x70, 0x44, 0x72, 0x69, 0x76, 0x65, 0x72,
-	0x12, 0x19, 0x0a, 0x08, 0x6f, 0x6c, 0x61, 0x70, 0x5f, 0x64, 0x73, 0x6e, 0x18, 0x03, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x07, 0x6f, 0x6c, 0x61, 0x70, 0x44, 0x73, 0x6e, 0x12, 0x3f, 0x0a, 0x0b, 0x72,
-	0x65, 0x70, 0x6f, 0x5f, 0x64, 0x72, 0x69, 0x76, 0x65, 0x72, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09,
-	0x42, 0x1e, 0xfa, 0x42, 0x1b, 0x72, 0x19, 0x52, 0x04, 0x66, 0x69, 0x6c, 0x65, 0x52, 0x09, 0x6d,
-	0x65, 0x74, 0x61, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x52, 0x06, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62,
-	0x52, 0x0a, 0x72, 0x65, 0x70, 0x6f, 0x44, 0x72, 0x69, 0x76, 0x65, 0x72, 0x12, 0x19, 0x0a, 0x08,
-	0x72, 0x65, 0x70, 0x6f, 0x5f, 0x64, 0x73, 0x6e, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07,
-	0x72, 0x65, 0x70, 0x6f, 0x44, 0x73, 0x6e, 0x12, 0x23, 0x0a, 0x0d, 0x65, 0x6d, 0x62, 0x65, 0x64,
-	0x5f, 0x63, 0x61, 0x74, 0x61, 0x6c, 0x6f, 0x67, 0x18, 0x06, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0c,
-	0x65, 0x6d, 0x62, 0x65, 0x64, 0x43, 0x61, 0x74, 0x61, 0x6c, 0x6f, 0x67, 0x12, 0x53, 0x0a, 0x09,
-	0x76, 0x61, 0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x18, 0x07, 0x20, 0x03, 0x28, 0x0b, 0x32,
-	0x35, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76,
-	0x31, 0x2e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x2e, 0x56, 0x61, 0x72, 0x69, 0x61, 0x62, 0x6c, 0x65,
-	0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x09, 0x76, 0x61, 0x72, 0x69, 0x61, 0x62, 0x6c, 0x65,
-	0x73, 0x12, 0x32, 0x0a, 0x15, 0x69, 0x6e, 0x67, 0x65, 0x73, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x6c,
-	0x69, 0x6d, 0x69, 0x74, 0x5f, 0x62, 0x79, 0x74, 0x65, 0x73, 0x18, 0x08, 0x20, 0x01, 0x28, 0x03,
-	0x52, 0x13, 0x69, 0x6e, 0x67, 0x65, 0x73, 0x74, 0x69, 0x6f, 0x6e, 0x4c, 0x69, 0x6d, 0x69, 0x74,
-	0x42, 0x79, 0x74, 0x65, 0x73, 0x12, 0x59, 0x0a, 0x0b, 0x61, 0x6e, 0x6e, 0x6f, 0x74, 0x61, 0x74,
-	0x69, 0x6f, 0x6e, 0x73, 0x18, 0x09, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x37, 0x2e, 0x72, 0x69, 0x6c,
-	0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x72, 0x65,
-	0x61, 0x74, 0x65, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65,
-	0x73, 0x74, 0x2e, 0x41, 0x6e, 0x6e, 0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x45, 0x6e,
-	0x74, 0x72, 0x79, 0x52, 0x0b, 0x61, 0x6e, 0x6e, 0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73,
-	0x1a, 0x3c, 0x0a, 0x0e, 0x56, 0x61, 0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x45, 0x6e, 0x74,
-	0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x1a, 0x3e,
-	0x0a, 0x10, 0x41, 0x6e, 0x6e, 0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x45, 0x6e, 0x74,
-	0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0x4f,
-	0x0a, 0x16, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65,
-	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x35, 0x0a, 0x08, 0x69, 0x6e, 0x73, 0x74,
-	0x61, 0x6e, 0x63, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x72, 0x69, 0x6c,
-	0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x49, 0x6e, 0x73,
-	0x74, 0x61, 0x6e, 0x63, 0x65, 0x52, 0x08, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x22,
-	0x6b, 0x0a, 0x15, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63,
-	0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x39, 0x0a, 0x0b, 0x69, 0x6e, 0x73, 0x74,
-	0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x18, 0xfa,
-	0x42, 0x15, 0x72, 0x13, 0x32, 0x11, 0x5e, 0x5b, 0x5f, 0x5c, 0x2d, 0x61, 0x2d, 0x7a, 0x41, 0x2d,
-	0x5a, 0x30, 0x2d, 0x39, 0x5d, 0x2b, 0x24, 0x52, 0x0a, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63,
-	0x65, 0x49, 0x64, 0x12, 0x17, 0x0a, 0x07, 0x64, 0x72, 0x6f, 0x70, 0x5f, 0x64, 0x62, 0x18, 0x02,
-	0x20, 0x01, 0x28, 0x08, 0x52, 0x06, 0x64, 0x72, 0x6f, 0x70, 0x44, 0x62, 0x22, 0x18, 0x0a, 0x16,
-	0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x52, 0x65,
-	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0xdb, 0x03, 0x0a, 0x13, 0x45, 0x64, 0x69, 0x74, 0x49,
-	0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x39,
-	0x0a, 0x0b, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x09, 0x42, 0x18, 0xfa, 0x42, 0x15, 0x72, 0x13, 0x32, 0x11, 0x5e, 0x5b, 0x5f, 0x5c,
-	0x2d, 0x61, 0x2d, 0x7a, 0x41, 0x2d, 0x5a, 0x30, 0x2d, 0x39, 0x5d, 0x2b, 0x24, 0x52, 0x0a, 0x69,
-	0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x49, 0x64, 0x12, 0x3a, 0x0a, 0x0b, 0x6f, 0x6c, 0x61,
-	0x70, 0x5f, 0x64, 0x72, 0x69, 0x76, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x42, 0x14,
-	0xfa, 0x42, 0x11, 0x72, 0x0f, 0x52, 0x06, 0x64, 0x75, 0x63, 0x6b, 0x64, 0x62, 0x52, 0x05, 0x64,
-	0x72, 0x75, 0x69, 0x64, 0x48, 0x00, 0x52, 0x0a, 0x6f, 0x6c, 0x61, 0x70, 0x44, 0x72, 0x69, 0x76,
-	0x65, 0x72, 0x88, 0x01, 0x01, 0x12, 0x1e, 0x0a, 0x08, 0x6f, 0x6c, 0x61, 0x70, 0x5f, 0x64, 0x73,
-	0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x48, 0x01, 0x52, 0x07, 0x6f, 0x6c, 0x61, 0x70, 0x44,
-	0x73, 0x6e, 0x88, 0x01, 0x01, 0x12, 0x44, 0x0a, 0x0b, 0x72, 0x65, 0x70, 0x6f, 0x5f, 0x64, 0x72,
-	0x69, 0x76, 0x65, 0x72, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x42, 0x1e, 0xfa, 0x42, 0x1b, 0x72,
-	0x19, 0x52, 0x04, 0x66, 0x69, 0x6c, 0x65, 0x52, 0x09, 0x6d, 0x65, 0x74, 0x61, 0x73, 0x74, 0x6f,
-	0x72, 0x65, 0x52, 0x06, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x48, 0x02, 0x52, 0x0a, 0x72, 0x65,
-	0x70, 0x6f, 0x44, 0x72, 0x69, 0x76, 0x65, 0x72, 0x88, 0x01, 0x01, 0x12, 0x1e, 0x0a, 0x08, 0x72,
-	0x65, 0x70, 0x6f, 0x5f, 0x64, 0x73, 0x6e, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x48, 0x03, 0x52,
-	0x07, 0x72, 0x65, 0x70, 0x6f, 0x44, 0x73, 0x6e, 0x88, 0x01, 0x01, 0x12, 0x28, 0x0a, 0x0d, 0x65,
-	0x6d, 0x62, 0x65, 0x64, 0x5f, 0x63, 0x61, 0x74, 0x61, 0x6c, 0x6f, 0x67, 0x18, 0x06, 0x20, 0x01,
-	0x28, 0x08, 0x48, 0x04, 0x52, 0x0c, 0x65, 0x6d, 0x62, 0x65, 0x64, 0x43, 0x61, 0x74, 0x61, 0x6c,
-	0x6f, 0x67, 0x88, 0x01, 0x01, 0x12, 0x37, 0x0a, 0x15, 0x69, 0x6e, 0x67, 0x65, 0x73, 0x74, 0x69,
-	0x6f, 0x6e, 0x5f, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x5f, 0x62, 0x79, 0x74, 0x65, 0x73, 0x18, 0x08,
-	0x20, 0x01, 0x28, 0x03, 0x48, 0x05, 0x52, 0x13, 0x69, 0x6e, 0x67, 0x65, 0x73, 0x74, 0x69, 0x6f,
-	0x6e, 0x4c, 0x69, 0x6d, 0x69, 0x74, 0x42, 0x79, 0x74, 0x65, 0x73, 0x88, 0x01, 0x01, 0x42, 0x0e,
+	0x0a, 0x6f, 0x6c, 0x61, 0x70, 0x44, 0x72, 0x69, 0x76, 0x65, 0x72, 0x12, 0x1d, 0x0a, 0x08, 0x6f,
+	0x6c, 0x61, 0x70, 0x5f, 0x64, 0x73, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x42, 0x02, 0x18,
+	0x01, 0x52, 0x07, 0x6f, 0x6c, 0x61, 0x70, 0x44, 0x73, 0x6e, 0x12, 0x3f, 0x0a, 0x0b, 0x72, 0x65,
+	0x70, 0x6f, 0x5f, 0x64, 0x72, 0x69, 0x76, 0x65, 0x72, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x42,
+	0x1e, 0xfa, 0x42, 0x1b, 0x72, 0x19, 0x52, 0x04, 0x66, 0x69, 0x6c, 0x65, 0x52, 0x09, 0x6d, 0x65,
+	0x74, 0x61, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x52, 0x06, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x52,
+	0x0a, 0x72, 0x65, 0x70, 0x6f, 0x44, 0x72, 0x69, 0x76, 0x65, 0x72, 0x12, 0x1d, 0x0a, 0x08, 0x72,
+	0x65, 0x70, 0x6f, 0x5f, 0x64, 0x73, 0x6e, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x42, 0x02, 0x18,
+	0x01, 0x52, 0x07, 0x72, 0x65, 0x70, 0x6f, 0x44, 0x73, 0x6e, 0x12, 0x23, 0x0a, 0x0d, 0x65, 0x6d,
+	0x62, 0x65, 0x64, 0x5f, 0x63, 0x61, 0x74, 0x61, 0x6c, 0x6f, 0x67, 0x18, 0x06, 0x20, 0x01, 0x28,
+	0x08, 0x52, 0x0c, 0x65, 0x6d, 0x62, 0x65, 0x64, 0x43, 0x61, 0x74, 0x61, 0x6c, 0x6f, 0x67, 0x12,
+	0x46, 0x0a, 0x09, 0x76, 0x61, 0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x18, 0x07, 0x20, 0x03,
+	0x28, 0x0b, 0x32, 0x28, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d,
+	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x2e, 0x56, 0x61,
+	0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x09, 0x76, 0x61,
+	0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x12, 0x5c, 0x0a, 0x11, 0x70, 0x72, 0x6f, 0x6a, 0x65,
+	0x63, 0x74, 0x5f, 0x76, 0x61, 0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x18, 0x08, 0x20, 0x03,
+	0x28, 0x0b, 0x32, 0x2f, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d,
+	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x2e, 0x50, 0x72,
+	0x6f, 0x6a, 0x65, 0x63, 0x74, 0x56, 0x61, 0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x45, 0x6e,
+	0x74, 0x72, 0x79, 0x52, 0x10, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x56, 0x61, 0x72, 0x69,
+	0x61, 0x62, 0x6c, 0x65, 0x73, 0x12, 0x32, 0x0a, 0x15, 0x69, 0x6e, 0x67, 0x65, 0x73, 0x74, 0x69,
+	0x6f, 0x6e, 0x5f, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x5f, 0x62, 0x79, 0x74, 0x65, 0x73, 0x18, 0x09,
+	0x20, 0x01, 0x28, 0x03, 0x52, 0x13, 0x69, 0x6e, 0x67, 0x65, 0x73, 0x74, 0x69, 0x6f, 0x6e, 0x4c,
+	0x69, 0x6d, 0x69, 0x74, 0x42, 0x79, 0x74, 0x65, 0x73, 0x12, 0x3d, 0x0a, 0x0a, 0x63, 0x6f, 0x6e,
+	0x6e, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x73, 0x18, 0x0a, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1d, 0x2e,
+	0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e,
+	0x43, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x44, 0x65, 0x66, 0x52, 0x0a, 0x63, 0x6f,
+	0x6e, 0x6e, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x73, 0x1a, 0x3c, 0x0a, 0x0e, 0x56, 0x61, 0x72, 0x69,
+	0x61, 0x62, 0x6c, 0x65, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65,
+	0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05,
+	0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c,
+	0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x1a, 0x43, 0x0a, 0x15, 0x50, 0x72, 0x6f, 0x6a, 0x65, 0x63,
+	0x74, 0x56, 0x61, 0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12,
+	0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65,
+	0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0xb8, 0x01, 0x0a, 0x0c,
+	0x43, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x44, 0x65, 0x66, 0x12, 0x12, 0x0a, 0x04,
+	0x74, 0x79, 0x70, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x74, 0x79, 0x70, 0x65,
+	0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04,
+	0x6e, 0x61, 0x6d, 0x65, 0x12, 0x44, 0x0a, 0x07, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x18,
+	0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x2a, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e,
+	0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x6f,
+	0x72, 0x44, 0x65, 0x66, 0x2e, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x45, 0x6e, 0x74, 0x72,
+	0x79, 0x52, 0x07, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x73, 0x1a, 0x3a, 0x0a, 0x0c, 0x43, 0x6f,
+	0x6e, 0x66, 0x69, 0x67, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65,
+	0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05,
+	0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c,
+	0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0x52, 0x0a, 0x14, 0x4c, 0x69, 0x73, 0x74, 0x49, 0x6e,
+	0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1b,
+	0x0a, 0x09, 0x70, 0x61, 0x67, 0x65, 0x5f, 0x73, 0x69, 0x7a, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x0d, 0x52, 0x08, 0x70, 0x61, 0x67, 0x65, 0x53, 0x69, 0x7a, 0x65, 0x12, 0x1d, 0x0a, 0x0a, 0x70,
+	0x61, 0x67, 0x65, 0x5f, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x09, 0x70, 0x61, 0x67, 0x65, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x22, 0x78, 0x0a, 0x15, 0x4c, 0x69,
+	0x73, 0x74, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x12, 0x37, 0x0a, 0x09, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73,
+	0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75,
+	0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63,
+	0x65, 0x52, 0x09, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x73, 0x12, 0x26, 0x0a, 0x0f,
+	0x6e, 0x65, 0x78, 0x74, 0x5f, 0x70, 0x61, 0x67, 0x65, 0x5f, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0d, 0x6e, 0x65, 0x78, 0x74, 0x50, 0x61, 0x67, 0x65, 0x54,
+	0x6f, 0x6b, 0x65, 0x6e, 0x22, 0x4f, 0x0a, 0x12, 0x47, 0x65, 0x74, 0x49, 0x6e, 0x73, 0x74, 0x61,
+	0x6e, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x39, 0x0a, 0x0b, 0x69, 0x6e,
+	0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42,
+	0x18, 0xfa, 0x42, 0x15, 0x72, 0x13, 0x32, 0x11, 0x5e, 0x5b, 0x5f, 0x5c, 0x2d, 0x61, 0x2d, 0x7a,
+	0x41, 0x2d, 0x5a, 0x30, 0x2d, 0x39, 0x5d, 0x2b, 0x24, 0x52, 0x0a, 0x69, 0x6e, 0x73, 0x74, 0x61,
+	0x6e, 0x63, 0x65, 0x49, 0x64, 0x22, 0x4c, 0x0a, 0x13, 0x47, 0x65, 0x74, 0x49, 0x6e, 0x73, 0x74,
+	0x61, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x35, 0x0a, 0x08,
+	0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x19,
+	0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31,
+	0x2e, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x52, 0x08, 0x69, 0x6e, 0x73, 0x74, 0x61,
+	0x6e, 0x63, 0x65, 0x22, 0xd1, 0x05, 0x0a, 0x15, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x49, 0x6e,
+	0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x3c, 0x0a,
+	0x0b, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x09, 0x42, 0x1b, 0xfa, 0x42, 0x18, 0x72, 0x16, 0x32, 0x11, 0x5e, 0x5b, 0x5f, 0x5c, 0x2d,
+	0x61, 0x2d, 0x7a, 0x41, 0x2d, 0x5a, 0x30, 0x2d, 0x39, 0x5d, 0x2b, 0x24, 0xd0, 0x01, 0x01, 0x52,
+	0x0a, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x49, 0x64, 0x12, 0x35, 0x0a, 0x0b, 0x6f,
+	0x6c, 0x61, 0x70, 0x5f, 0x64, 0x72, 0x69, 0x76, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
+	0x42, 0x14, 0xfa, 0x42, 0x11, 0x72, 0x0f, 0x52, 0x06, 0x64, 0x75, 0x63, 0x6b, 0x64, 0x62, 0x52,
+	0x05, 0x64, 0x72, 0x75, 0x69, 0x64, 0x52, 0x0a, 0x6f, 0x6c, 0x61, 0x70, 0x44, 0x72, 0x69, 0x76,
+	0x65, 0x72, 0x12, 0x1d, 0x0a, 0x08, 0x6f, 0x6c, 0x61, 0x70, 0x5f, 0x64, 0x73, 0x6e, 0x18, 0x03,
+	0x20, 0x01, 0x28, 0x09, 0x42, 0x02, 0x18, 0x01, 0x52, 0x07, 0x6f, 0x6c, 0x61, 0x70, 0x44, 0x73,
+	0x6e, 0x12, 0x3f, 0x0a, 0x0b, 0x72, 0x65, 0x70, 0x6f, 0x5f, 0x64, 0x72, 0x69, 0x76, 0x65, 0x72,
+	0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x42, 0x1e, 0xfa, 0x42, 0x1b, 0x72, 0x19, 0x52, 0x04, 0x66,
+	0x69, 0x6c, 0x65, 0x52, 0x09, 0x6d, 0x65, 0x74, 0x61, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x52, 0x06,
+	0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x52, 0x0a, 0x72, 0x65, 0x70, 0x6f, 0x44, 0x72, 0x69, 0x76,
+	0x65, 0x72, 0x12, 0x1d, 0x0a, 0x08, 0x72, 0x65, 0x70, 0x6f, 0x5f, 0x64, 0x73, 0x6e, 0x18, 0x05,
+	0x20, 0x01, 0x28, 0x09, 0x42, 0x02, 0x18, 0x01, 0x52, 0x07, 0x72, 0x65, 0x70, 0x6f, 0x44, 0x73,
+	0x6e, 0x12, 0x23, 0x0a, 0x0d, 0x65, 0x6d, 0x62, 0x65, 0x64, 0x5f, 0x63, 0x61, 0x74, 0x61, 0x6c,
+	0x6f, 0x67, 0x18, 0x06, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0c, 0x65, 0x6d, 0x62, 0x65, 0x64, 0x43,
+	0x61, 0x74, 0x61, 0x6c, 0x6f, 0x67, 0x12, 0x53, 0x0a, 0x09, 0x76, 0x61, 0x72, 0x69, 0x61, 0x62,
+	0x6c, 0x65, 0x73, 0x18, 0x07, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x35, 0x2e, 0x72, 0x69, 0x6c, 0x6c,
+	0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x72, 0x65, 0x61,
+	0x74, 0x65, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x2e, 0x56, 0x61, 0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79,
+	0x52, 0x09, 0x76, 0x61, 0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x12, 0x32, 0x0a, 0x15, 0x69,
+	0x6e, 0x67, 0x65, 0x73, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x5f, 0x62,
+	0x79, 0x74, 0x65, 0x73, 0x18, 0x08, 0x20, 0x01, 0x28, 0x03, 0x52, 0x13, 0x69, 0x6e, 0x67, 0x65,
+	0x73, 0x74, 0x69, 0x6f, 0x6e, 0x4c, 0x69, 0x6d, 0x69, 0x74, 0x42, 0x79, 0x74, 0x65, 0x73, 0x12,
+	0x59, 0x0a, 0x0b, 0x61, 0x6e, 0x6e, 0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x09,
+	0x20, 0x03, 0x28, 0x0b, 0x32, 0x37, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74,
+	0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x49, 0x6e, 0x73,
+	0x74, 0x61, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x2e, 0x41, 0x6e, 0x6e,
+	0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x0b, 0x61,
+	0x6e, 0x6e, 0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x3d, 0x0a, 0x0a, 0x63, 0x6f,
+	0x6e, 0x6e, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x73, 0x18, 0x0a, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1d,
+	0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31,
+	0x2e, 0x43, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x44, 0x65, 0x66, 0x52, 0x0a, 0x63,
+	0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x73, 0x1a, 0x3c, 0x0a, 0x0e, 0x56, 0x61, 0x72,
+	0x69, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b,
+	0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a,
+	0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61,
+	0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x1a, 0x3e, 0x0a, 0x10, 0x41, 0x6e, 0x6e, 0x6f, 0x74,
+	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b,
+	0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a,
+	0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61,
+	0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0x4f, 0x0a, 0x16, 0x43, 0x72, 0x65, 0x61, 0x74,
+	0x65, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x12, 0x35, 0x0a, 0x08, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69,
+	0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x52, 0x08,
+	0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x22, 0x6b, 0x0a, 0x15, 0x44, 0x65, 0x6c, 0x65,
+	0x74, 0x65, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x12, 0x39, 0x0a, 0x0b, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x18, 0xfa, 0x42, 0x15, 0x72, 0x13, 0x32, 0x11, 0x5e,
+	0x5b, 0x5f, 0x5c, 0x2d, 0x61, 0x2d, 0x7a, 0x41, 0x2d, 0x5a, 0x30, 0x2d, 0x39, 0x5d, 0x2b, 0x24,
+	0x52, 0x0a, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x49, 0x64, 0x12, 0x17, 0x0a, 0x07,
+	0x64, 0x72, 0x6f, 0x70, 0x5f, 0x64, 0x62, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x06, 0x64,
+	0x72, 0x6f, 0x70, 0x44, 0x62, 0x22, 0x18, 0x0a, 0x16, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x49,
+	0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
+	0xa2, 0x04, 0x0a, 0x13, 0x45, 0x64, 0x69, 0x74, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x39, 0x0a, 0x0b, 0x69, 0x6e, 0x73, 0x74, 0x61,
+	0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x18, 0xfa, 0x42,
+	0x15, 0x72, 0x13, 0x32, 0x11, 0x5e, 0x5b, 0x5f, 0x5c, 0x2d, 0x61, 0x2d, 0x7a, 0x41, 0x2d, 0x5a,
+	0x30, 0x2d, 0x39, 0x5d, 0x2b, 0x24, 0x52, 0x0a, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65,
+	0x49, 0x64, 0x12, 0x3a, 0x0a, 0x0b, 0x6f, 0x6c, 0x61, 0x70, 0x5f, 0x64, 0x72, 0x69, 0x76, 0x65,
+	0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x42, 0x14, 0xfa, 0x42, 0x11, 0x72, 0x0f, 0x52, 0x06,
+	0x64, 0x75, 0x63, 0x6b, 0x64, 0x62, 0x52, 0x05, 0x64, 0x72, 0x75, 0x69, 0x64, 0x48, 0x00, 0x52,
+	0x0a, 0x6f, 0x6c, 0x61, 0x70, 0x44, 0x72, 0x69, 0x76, 0x65, 0x72, 0x88, 0x01, 0x01, 0x12, 0x22,
+	0x0a, 0x08, 0x6f, 0x6c, 0x61, 0x70, 0x5f, 0x64, 0x73, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09,
+	0x42, 0x02, 0x18, 0x01, 0x48, 0x01, 0x52, 0x07, 0x6f, 0x6c, 0x61, 0x70, 0x44, 0x73, 0x6e, 0x88,
+	0x01, 0x01, 0x12, 0x44, 0x0a, 0x0b, 0x72, 0x65, 0x70, 0x6f, 0x5f, 0x64, 0x72, 0x69, 0x76, 0x65,
+	0x72, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x42, 0x1e, 0xfa, 0x42, 0x1b, 0x72, 0x19, 0x52, 0x04,
+	0x66, 0x69, 0x6c, 0x65, 0x52, 0x09, 0x6d, 0x65, 0x74, 0x61, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x52,
+	0x06, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x48, 0x02, 0x52, 0x0a, 0x72, 0x65, 0x70, 0x6f, 0x44,
+	0x72, 0x69, 0x76, 0x65, 0x72, 0x88, 0x01, 0x01, 0x12, 0x22, 0x0a, 0x08, 0x72, 0x65, 0x70, 0x6f,
+	0x5f, 0x64, 0x73, 0x6e, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x42, 0x02, 0x18, 0x01, 0x48, 0x03,
+	0x52, 0x07, 0x72, 0x65, 0x70, 0x6f, 0x44, 0x73, 0x6e, 0x88, 0x01, 0x01, 0x12, 0x28, 0x0a, 0x0d,
+	0x65, 0x6d, 0x62, 0x65, 0x64, 0x5f, 0x63, 0x61, 0x74, 0x61, 0x6c, 0x6f, 0x67, 0x18, 0x06, 0x20,
+	0x01, 0x28, 0x08, 0x48, 0x04, 0x52, 0x0c, 0x65, 0x6d, 0x62, 0x65, 0x64, 0x43, 0x61, 0x74, 0x61,
+	0x6c, 0x6f, 0x67, 0x88, 0x01, 0x01, 0x12, 0x37, 0x0a, 0x15, 0x69, 0x6e, 0x67, 0x65, 0x73, 0x74,
+	0x69, 0x6f, 0x6e, 0x5f, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x5f, 0x62, 0x79, 0x74, 0x65, 0x73, 0x18,
+	0x08, 0x20, 0x01, 0x28, 0x03, 0x48, 0x05, 0x52, 0x13, 0x69, 0x6e, 0x67, 0x65, 0x73, 0x74, 0x69,
+	0x6f, 0x6e, 0x4c, 0x69, 0x6d, 0x69, 0x74, 0x42, 0x79, 0x74, 0x65, 0x73, 0x88, 0x01, 0x01, 0x12,
+	0x3d, 0x0a, 0x0a, 0x63, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x73, 0x18, 0x09, 0x20,
+	0x03, 0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69,
+	0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x44,
+	0x65, 0x66, 0x52, 0x0a, 0x63, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x6f, 0x72, 0x73, 0x42, 0x0e,
 	0x0a, 0x0c, 0x5f, 0x6f, 0x6c, 0x61, 0x70, 0x5f, 0x64, 0x72, 0x69, 0x76, 0x65, 0x72, 0x42, 0x0b,
 	0x0a, 0x09, 0x5f, 0x6f, 0x6c, 0x61, 0x70, 0x5f, 0x64, 0x73, 0x6e, 0x42, 0x0e, 0x0a, 0x0c, 0x5f,
 	0x72, 0x65, 0x70, 0x6f, 0x5f, 0x64, 0x72, 0x69, 0x76, 0x65, 0x72, 0x42, 0x0b, 0x0a, 0x09, 0x5f,
@@ -4727,7 +4857,7 @@ func file_rill_runtime_v1_api_proto_rawDescGZIP() []byte {
 }
 
 var file_rill_runtime_v1_api_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_rill_runtime_v1_api_proto_msgTypes = make([]protoimpl.MessageInfo, 64)
+var file_rill_runtime_v1_api_proto_msgTypes = make([]protoimpl.MessageInfo, 66)
 var file_rill_runtime_v1_api_proto_goTypes = []interface{}{
 	(FileEvent)(0),                         // 0: rill.runtime.v1.FileEvent
 	(ReconcileError_Code)(0),               // 1: rill.runtime.v1.ReconcileError.Code
@@ -4735,167 +4865,173 @@ var file_rill_runtime_v1_api_proto_goTypes = []interface{}{
 	(*PingRequest)(nil),                    // 3: rill.runtime.v1.PingRequest
 	(*PingResponse)(nil),                   // 4: rill.runtime.v1.PingResponse
 	(*Instance)(nil),                       // 5: rill.runtime.v1.Instance
-	(*ListInstancesRequest)(nil),           // 6: rill.runtime.v1.ListInstancesRequest
-	(*ListInstancesResponse)(nil),          // 7: rill.runtime.v1.ListInstancesResponse
-	(*GetInstanceRequest)(nil),             // 8: rill.runtime.v1.GetInstanceRequest
-	(*GetInstanceResponse)(nil),            // 9: rill.runtime.v1.GetInstanceResponse
-	(*CreateInstanceRequest)(nil),          // 10: rill.runtime.v1.CreateInstanceRequest
-	(*CreateInstanceResponse)(nil),         // 11: rill.runtime.v1.CreateInstanceResponse
-	(*DeleteInstanceRequest)(nil),          // 12: rill.runtime.v1.DeleteInstanceRequest
-	(*DeleteInstanceResponse)(nil),         // 13: rill.runtime.v1.DeleteInstanceResponse
-	(*EditInstanceRequest)(nil),            // 14: rill.runtime.v1.EditInstanceRequest
-	(*EditInstanceResponse)(nil),           // 15: rill.runtime.v1.EditInstanceResponse
-	(*EditInstanceVariablesRequest)(nil),   // 16: rill.runtime.v1.EditInstanceVariablesRequest
-	(*EditInstanceVariablesResponse)(nil),  // 17: rill.runtime.v1.EditInstanceVariablesResponse
-	(*ListFilesRequest)(nil),               // 18: rill.runtime.v1.ListFilesRequest
-	(*ListFilesResponse)(nil),              // 19: rill.runtime.v1.ListFilesResponse
-	(*WatchFilesRequest)(nil),              // 20: rill.runtime.v1.WatchFilesRequest
-	(*WatchFilesResponse)(nil),             // 21: rill.runtime.v1.WatchFilesResponse
-	(*GetFileRequest)(nil),                 // 22: rill.runtime.v1.GetFileRequest
-	(*GetFileResponse)(nil),                // 23: rill.runtime.v1.GetFileResponse
-	(*PutFileRequest)(nil),                 // 24: rill.runtime.v1.PutFileRequest
-	(*PutFileResponse)(nil),                // 25: rill.runtime.v1.PutFileResponse
-	(*DeleteFileRequest)(nil),              // 26: rill.runtime.v1.DeleteFileRequest
-	(*DeleteFileResponse)(nil),             // 27: rill.runtime.v1.DeleteFileResponse
-	(*RenameFileRequest)(nil),              // 28: rill.runtime.v1.RenameFileRequest
-	(*RenameFileResponse)(nil),             // 29: rill.runtime.v1.RenameFileResponse
-	(*Example)(nil),                        // 30: rill.runtime.v1.Example
-	(*ListExamplesRequest)(nil),            // 31: rill.runtime.v1.ListExamplesRequest
-	(*ListExamplesResponse)(nil),           // 32: rill.runtime.v1.ListExamplesResponse
-	(*UnpackExampleRequest)(nil),           // 33: rill.runtime.v1.UnpackExampleRequest
-	(*UnpackExampleResponse)(nil),          // 34: rill.runtime.v1.UnpackExampleResponse
-	(*UnpackEmptyRequest)(nil),             // 35: rill.runtime.v1.UnpackEmptyRequest
-	(*UnpackEmptyResponse)(nil),            // 36: rill.runtime.v1.UnpackEmptyResponse
-	(*CatalogEntry)(nil),                   // 37: rill.runtime.v1.CatalogEntry
-	(*ListCatalogEntriesRequest)(nil),      // 38: rill.runtime.v1.ListCatalogEntriesRequest
-	(*ListCatalogEntriesResponse)(nil),     // 39: rill.runtime.v1.ListCatalogEntriesResponse
-	(*GetCatalogEntryRequest)(nil),         // 40: rill.runtime.v1.GetCatalogEntryRequest
-	(*GetCatalogEntryResponse)(nil),        // 41: rill.runtime.v1.GetCatalogEntryResponse
-	(*TriggerRefreshRequest)(nil),          // 42: rill.runtime.v1.TriggerRefreshRequest
-	(*TriggerRefreshResponse)(nil),         // 43: rill.runtime.v1.TriggerRefreshResponse
-	(*TriggerSyncRequest)(nil),             // 44: rill.runtime.v1.TriggerSyncRequest
-	(*TriggerSyncResponse)(nil),            // 45: rill.runtime.v1.TriggerSyncResponse
-	(*ReconcileRequest)(nil),               // 46: rill.runtime.v1.ReconcileRequest
-	(*ReconcileResponse)(nil),              // 47: rill.runtime.v1.ReconcileResponse
-	(*ReconcileError)(nil),                 // 48: rill.runtime.v1.ReconcileError
-	(*PutFileAndReconcileRequest)(nil),     // 49: rill.runtime.v1.PutFileAndReconcileRequest
-	(*PutFileAndReconcileResponse)(nil),    // 50: rill.runtime.v1.PutFileAndReconcileResponse
-	(*DeleteFileAndReconcileRequest)(nil),  // 51: rill.runtime.v1.DeleteFileAndReconcileRequest
-	(*DeleteFileAndReconcileResponse)(nil), // 52: rill.runtime.v1.DeleteFileAndReconcileResponse
-	(*RenameFileAndReconcileRequest)(nil),  // 53: rill.runtime.v1.RenameFileAndReconcileRequest
-	(*RenameFileAndReconcileResponse)(nil), // 54: rill.runtime.v1.RenameFileAndReconcileResponse
-	(*RefreshAndReconcileRequest)(nil),     // 55: rill.runtime.v1.RefreshAndReconcileRequest
-	(*RefreshAndReconcileResponse)(nil),    // 56: rill.runtime.v1.RefreshAndReconcileResponse
-	(*Connector)(nil),                      // 57: rill.runtime.v1.Connector
-	(*ListConnectorsRequest)(nil),          // 58: rill.runtime.v1.ListConnectorsRequest
-	(*ListConnectorsResponse)(nil),         // 59: rill.runtime.v1.ListConnectorsResponse
-	nil,                                    // 60: rill.runtime.v1.Instance.VariablesEntry
-	nil,                                    // 61: rill.runtime.v1.Instance.ProjectVariablesEntry
-	nil,                                    // 62: rill.runtime.v1.CreateInstanceRequest.VariablesEntry
-	nil,                                    // 63: rill.runtime.v1.CreateInstanceRequest.AnnotationsEntry
-	nil,                                    // 64: rill.runtime.v1.EditInstanceVariablesRequest.VariablesEntry
-	(*ReconcileError_CharLocation)(nil),    // 65: rill.runtime.v1.ReconcileError.CharLocation
-	(*Connector_Property)(nil),             // 66: rill.runtime.v1.Connector.Property
-	(*timestamppb.Timestamp)(nil),          // 67: google.protobuf.Timestamp
-	(*Table)(nil),                          // 68: rill.runtime.v1.Table
-	(*Source)(nil),                         // 69: rill.runtime.v1.Source
-	(*Model)(nil),                          // 70: rill.runtime.v1.Model
-	(*MetricsView)(nil),                    // 71: rill.runtime.v1.MetricsView
-	(ObjectType)(0),                        // 72: rill.runtime.v1.ObjectType
+	(*ConnectorDef)(nil),                   // 6: rill.runtime.v1.ConnectorDef
+	(*ListInstancesRequest)(nil),           // 7: rill.runtime.v1.ListInstancesRequest
+	(*ListInstancesResponse)(nil),          // 8: rill.runtime.v1.ListInstancesResponse
+	(*GetInstanceRequest)(nil),             // 9: rill.runtime.v1.GetInstanceRequest
+	(*GetInstanceResponse)(nil),            // 10: rill.runtime.v1.GetInstanceResponse
+	(*CreateInstanceRequest)(nil),          // 11: rill.runtime.v1.CreateInstanceRequest
+	(*CreateInstanceResponse)(nil),         // 12: rill.runtime.v1.CreateInstanceResponse
+	(*DeleteInstanceRequest)(nil),          // 13: rill.runtime.v1.DeleteInstanceRequest
+	(*DeleteInstanceResponse)(nil),         // 14: rill.runtime.v1.DeleteInstanceResponse
+	(*EditInstanceRequest)(nil),            // 15: rill.runtime.v1.EditInstanceRequest
+	(*EditInstanceResponse)(nil),           // 16: rill.runtime.v1.EditInstanceResponse
+	(*EditInstanceVariablesRequest)(nil),   // 17: rill.runtime.v1.EditInstanceVariablesRequest
+	(*EditInstanceVariablesResponse)(nil),  // 18: rill.runtime.v1.EditInstanceVariablesResponse
+	(*ListFilesRequest)(nil),               // 19: rill.runtime.v1.ListFilesRequest
+	(*ListFilesResponse)(nil),              // 20: rill.runtime.v1.ListFilesResponse
+	(*WatchFilesRequest)(nil),              // 21: rill.runtime.v1.WatchFilesRequest
+	(*WatchFilesResponse)(nil),             // 22: rill.runtime.v1.WatchFilesResponse
+	(*GetFileRequest)(nil),                 // 23: rill.runtime.v1.GetFileRequest
+	(*GetFileResponse)(nil),                // 24: rill.runtime.v1.GetFileResponse
+	(*PutFileRequest)(nil),                 // 25: rill.runtime.v1.PutFileRequest
+	(*PutFileResponse)(nil),                // 26: rill.runtime.v1.PutFileResponse
+	(*DeleteFileRequest)(nil),              // 27: rill.runtime.v1.DeleteFileRequest
+	(*DeleteFileResponse)(nil),             // 28: rill.runtime.v1.DeleteFileResponse
+	(*RenameFileRequest)(nil),              // 29: rill.runtime.v1.RenameFileRequest
+	(*RenameFileResponse)(nil),             // 30: rill.runtime.v1.RenameFileResponse
+	(*Example)(nil),                        // 31: rill.runtime.v1.Example
+	(*ListExamplesRequest)(nil),            // 32: rill.runtime.v1.ListExamplesRequest
+	(*ListExamplesResponse)(nil),           // 33: rill.runtime.v1.ListExamplesResponse
+	(*UnpackExampleRequest)(nil),           // 34: rill.runtime.v1.UnpackExampleRequest
+	(*UnpackExampleResponse)(nil),          // 35: rill.runtime.v1.UnpackExampleResponse
+	(*UnpackEmptyRequest)(nil),             // 36: rill.runtime.v1.UnpackEmptyRequest
+	(*UnpackEmptyResponse)(nil),            // 37: rill.runtime.v1.UnpackEmptyResponse
+	(*CatalogEntry)(nil),                   // 38: rill.runtime.v1.CatalogEntry
+	(*ListCatalogEntriesRequest)(nil),      // 39: rill.runtime.v1.ListCatalogEntriesRequest
+	(*ListCatalogEntriesResponse)(nil),     // 40: rill.runtime.v1.ListCatalogEntriesResponse
+	(*GetCatalogEntryRequest)(nil),         // 41: rill.runtime.v1.GetCatalogEntryRequest
+	(*GetCatalogEntryResponse)(nil),        // 42: rill.runtime.v1.GetCatalogEntryResponse
+	(*TriggerRefreshRequest)(nil),          // 43: rill.runtime.v1.TriggerRefreshRequest
+	(*TriggerRefreshResponse)(nil),         // 44: rill.runtime.v1.TriggerRefreshResponse
+	(*TriggerSyncRequest)(nil),             // 45: rill.runtime.v1.TriggerSyncRequest
+	(*TriggerSyncResponse)(nil),            // 46: rill.runtime.v1.TriggerSyncResponse
+	(*ReconcileRequest)(nil),               // 47: rill.runtime.v1.ReconcileRequest
+	(*ReconcileResponse)(nil),              // 48: rill.runtime.v1.ReconcileResponse
+	(*ReconcileError)(nil),                 // 49: rill.runtime.v1.ReconcileError
+	(*PutFileAndReconcileRequest)(nil),     // 50: rill.runtime.v1.PutFileAndReconcileRequest
+	(*PutFileAndReconcileResponse)(nil),    // 51: rill.runtime.v1.PutFileAndReconcileResponse
+	(*DeleteFileAndReconcileRequest)(nil),  // 52: rill.runtime.v1.DeleteFileAndReconcileRequest
+	(*DeleteFileAndReconcileResponse)(nil), // 53: rill.runtime.v1.DeleteFileAndReconcileResponse
+	(*RenameFileAndReconcileRequest)(nil),  // 54: rill.runtime.v1.RenameFileAndReconcileRequest
+	(*RenameFileAndReconcileResponse)(nil), // 55: rill.runtime.v1.RenameFileAndReconcileResponse
+	(*RefreshAndReconcileRequest)(nil),     // 56: rill.runtime.v1.RefreshAndReconcileRequest
+	(*RefreshAndReconcileResponse)(nil),    // 57: rill.runtime.v1.RefreshAndReconcileResponse
+	(*Connector)(nil),                      // 58: rill.runtime.v1.Connector
+	(*ListConnectorsRequest)(nil),          // 59: rill.runtime.v1.ListConnectorsRequest
+	(*ListConnectorsResponse)(nil),         // 60: rill.runtime.v1.ListConnectorsResponse
+	nil,                                    // 61: rill.runtime.v1.Instance.VariablesEntry
+	nil,                                    // 62: rill.runtime.v1.Instance.ProjectVariablesEntry
+	nil,                                    // 63: rill.runtime.v1.ConnectorDef.ConfigsEntry
+	nil,                                    // 64: rill.runtime.v1.CreateInstanceRequest.VariablesEntry
+	nil,                                    // 65: rill.runtime.v1.CreateInstanceRequest.AnnotationsEntry
+	nil,                                    // 66: rill.runtime.v1.EditInstanceVariablesRequest.VariablesEntry
+	(*ReconcileError_CharLocation)(nil),    // 67: rill.runtime.v1.ReconcileError.CharLocation
+	(*Connector_Property)(nil),             // 68: rill.runtime.v1.Connector.Property
+	(*timestamppb.Timestamp)(nil),          // 69: google.protobuf.Timestamp
+	(*Table)(nil),                          // 70: rill.runtime.v1.Table
+	(*Source)(nil),                         // 71: rill.runtime.v1.Source
+	(*Model)(nil),                          // 72: rill.runtime.v1.Model
+	(*MetricsView)(nil),                    // 73: rill.runtime.v1.MetricsView
+	(ObjectType)(0),                        // 74: rill.runtime.v1.ObjectType
 }
 var file_rill_runtime_v1_api_proto_depIdxs = []int32{
-	67, // 0: rill.runtime.v1.PingResponse.time:type_name -> google.protobuf.Timestamp
-	60, // 1: rill.runtime.v1.Instance.variables:type_name -> rill.runtime.v1.Instance.VariablesEntry
-	61, // 2: rill.runtime.v1.Instance.project_variables:type_name -> rill.runtime.v1.Instance.ProjectVariablesEntry
-	5,  // 3: rill.runtime.v1.ListInstancesResponse.instances:type_name -> rill.runtime.v1.Instance
-	5,  // 4: rill.runtime.v1.GetInstanceResponse.instance:type_name -> rill.runtime.v1.Instance
-	62, // 5: rill.runtime.v1.CreateInstanceRequest.variables:type_name -> rill.runtime.v1.CreateInstanceRequest.VariablesEntry
-	63, // 6: rill.runtime.v1.CreateInstanceRequest.annotations:type_name -> rill.runtime.v1.CreateInstanceRequest.AnnotationsEntry
-	5,  // 7: rill.runtime.v1.CreateInstanceResponse.instance:type_name -> rill.runtime.v1.Instance
-	5,  // 8: rill.runtime.v1.EditInstanceResponse.instance:type_name -> rill.runtime.v1.Instance
-	64, // 9: rill.runtime.v1.EditInstanceVariablesRequest.variables:type_name -> rill.runtime.v1.EditInstanceVariablesRequest.VariablesEntry
-	5,  // 10: rill.runtime.v1.EditInstanceVariablesResponse.instance:type_name -> rill.runtime.v1.Instance
-	0,  // 11: rill.runtime.v1.WatchFilesResponse.event:type_name -> rill.runtime.v1.FileEvent
-	67, // 12: rill.runtime.v1.GetFileResponse.updated_on:type_name -> google.protobuf.Timestamp
-	30, // 13: rill.runtime.v1.ListExamplesResponse.examples:type_name -> rill.runtime.v1.Example
-	68, // 14: rill.runtime.v1.CatalogEntry.table:type_name -> rill.runtime.v1.Table
-	69, // 15: rill.runtime.v1.CatalogEntry.source:type_name -> rill.runtime.v1.Source
-	70, // 16: rill.runtime.v1.CatalogEntry.model:type_name -> rill.runtime.v1.Model
-	71, // 17: rill.runtime.v1.CatalogEntry.metrics_view:type_name -> rill.runtime.v1.MetricsView
-	67, // 18: rill.runtime.v1.CatalogEntry.created_on:type_name -> google.protobuf.Timestamp
-	67, // 19: rill.runtime.v1.CatalogEntry.updated_on:type_name -> google.protobuf.Timestamp
-	67, // 20: rill.runtime.v1.CatalogEntry.refreshed_on:type_name -> google.protobuf.Timestamp
-	72, // 21: rill.runtime.v1.ListCatalogEntriesRequest.type:type_name -> rill.runtime.v1.ObjectType
-	37, // 22: rill.runtime.v1.ListCatalogEntriesResponse.entries:type_name -> rill.runtime.v1.CatalogEntry
-	37, // 23: rill.runtime.v1.GetCatalogEntryResponse.entry:type_name -> rill.runtime.v1.CatalogEntry
-	48, // 24: rill.runtime.v1.ReconcileResponse.errors:type_name -> rill.runtime.v1.ReconcileError
-	1,  // 25: rill.runtime.v1.ReconcileError.code:type_name -> rill.runtime.v1.ReconcileError.Code
-	65, // 26: rill.runtime.v1.ReconcileError.start_location:type_name -> rill.runtime.v1.ReconcileError.CharLocation
-	65, // 27: rill.runtime.v1.ReconcileError.end_location:type_name -> rill.runtime.v1.ReconcileError.CharLocation
-	48, // 28: rill.runtime.v1.PutFileAndReconcileResponse.errors:type_name -> rill.runtime.v1.ReconcileError
-	48, // 29: rill.runtime.v1.DeleteFileAndReconcileResponse.errors:type_name -> rill.runtime.v1.ReconcileError
-	48, // 30: rill.runtime.v1.RenameFileAndReconcileResponse.errors:type_name -> rill.runtime.v1.ReconcileError
-	48, // 31: rill.runtime.v1.RefreshAndReconcileResponse.errors:type_name -> rill.runtime.v1.ReconcileError
-	66, // 32: rill.runtime.v1.Connector.properties:type_name -> rill.runtime.v1.Connector.Property
-	57, // 33: rill.runtime.v1.ListConnectorsResponse.connectors:type_name -> rill.runtime.v1.Connector
-	2,  // 34: rill.runtime.v1.Connector.Property.type:type_name -> rill.runtime.v1.Connector.Property.Type
-	3,  // 35: rill.runtime.v1.RuntimeService.Ping:input_type -> rill.runtime.v1.PingRequest
-	6,  // 36: rill.runtime.v1.RuntimeService.ListInstances:input_type -> rill.runtime.v1.ListInstancesRequest
-	8,  // 37: rill.runtime.v1.RuntimeService.GetInstance:input_type -> rill.runtime.v1.GetInstanceRequest
-	10, // 38: rill.runtime.v1.RuntimeService.CreateInstance:input_type -> rill.runtime.v1.CreateInstanceRequest
-	14, // 39: rill.runtime.v1.RuntimeService.EditInstance:input_type -> rill.runtime.v1.EditInstanceRequest
-	16, // 40: rill.runtime.v1.RuntimeService.EditInstanceVariables:input_type -> rill.runtime.v1.EditInstanceVariablesRequest
-	12, // 41: rill.runtime.v1.RuntimeService.DeleteInstance:input_type -> rill.runtime.v1.DeleteInstanceRequest
-	18, // 42: rill.runtime.v1.RuntimeService.ListFiles:input_type -> rill.runtime.v1.ListFilesRequest
-	20, // 43: rill.runtime.v1.RuntimeService.WatchFiles:input_type -> rill.runtime.v1.WatchFilesRequest
-	22, // 44: rill.runtime.v1.RuntimeService.GetFile:input_type -> rill.runtime.v1.GetFileRequest
-	24, // 45: rill.runtime.v1.RuntimeService.PutFile:input_type -> rill.runtime.v1.PutFileRequest
-	26, // 46: rill.runtime.v1.RuntimeService.DeleteFile:input_type -> rill.runtime.v1.DeleteFileRequest
-	28, // 47: rill.runtime.v1.RuntimeService.RenameFile:input_type -> rill.runtime.v1.RenameFileRequest
-	31, // 48: rill.runtime.v1.RuntimeService.ListExamples:input_type -> rill.runtime.v1.ListExamplesRequest
-	33, // 49: rill.runtime.v1.RuntimeService.UnpackExample:input_type -> rill.runtime.v1.UnpackExampleRequest
-	35, // 50: rill.runtime.v1.RuntimeService.UnpackEmpty:input_type -> rill.runtime.v1.UnpackEmptyRequest
-	38, // 51: rill.runtime.v1.RuntimeService.ListCatalogEntries:input_type -> rill.runtime.v1.ListCatalogEntriesRequest
-	40, // 52: rill.runtime.v1.RuntimeService.GetCatalogEntry:input_type -> rill.runtime.v1.GetCatalogEntryRequest
-	42, // 53: rill.runtime.v1.RuntimeService.TriggerRefresh:input_type -> rill.runtime.v1.TriggerRefreshRequest
-	44, // 54: rill.runtime.v1.RuntimeService.TriggerSync:input_type -> rill.runtime.v1.TriggerSyncRequest
-	46, // 55: rill.runtime.v1.RuntimeService.Reconcile:input_type -> rill.runtime.v1.ReconcileRequest
-	49, // 56: rill.runtime.v1.RuntimeService.PutFileAndReconcile:input_type -> rill.runtime.v1.PutFileAndReconcileRequest
-	51, // 57: rill.runtime.v1.RuntimeService.DeleteFileAndReconcile:input_type -> rill.runtime.v1.DeleteFileAndReconcileRequest
-	53, // 58: rill.runtime.v1.RuntimeService.RenameFileAndReconcile:input_type -> rill.runtime.v1.RenameFileAndReconcileRequest
-	55, // 59: rill.runtime.v1.RuntimeService.RefreshAndReconcile:input_type -> rill.runtime.v1.RefreshAndReconcileRequest
-	58, // 60: rill.runtime.v1.RuntimeService.ListConnectors:input_type -> rill.runtime.v1.ListConnectorsRequest
-	4,  // 61: rill.runtime.v1.RuntimeService.Ping:output_type -> rill.runtime.v1.PingResponse
-	7,  // 62: rill.runtime.v1.RuntimeService.ListInstances:output_type -> rill.runtime.v1.ListInstancesResponse
-	9,  // 63: rill.runtime.v1.RuntimeService.GetInstance:output_type -> rill.runtime.v1.GetInstanceResponse
-	11, // 64: rill.runtime.v1.RuntimeService.CreateInstance:output_type -> rill.runtime.v1.CreateInstanceResponse
-	15, // 65: rill.runtime.v1.RuntimeService.EditInstance:output_type -> rill.runtime.v1.EditInstanceResponse
-	17, // 66: rill.runtime.v1.RuntimeService.EditInstanceVariables:output_type -> rill.runtime.v1.EditInstanceVariablesResponse
-	13, // 67: rill.runtime.v1.RuntimeService.DeleteInstance:output_type -> rill.runtime.v1.DeleteInstanceResponse
-	19, // 68: rill.runtime.v1.RuntimeService.ListFiles:output_type -> rill.runtime.v1.ListFilesResponse
-	21, // 69: rill.runtime.v1.RuntimeService.WatchFiles:output_type -> rill.runtime.v1.WatchFilesResponse
-	23, // 70: rill.runtime.v1.RuntimeService.GetFile:output_type -> rill.runtime.v1.GetFileResponse
-	25, // 71: rill.runtime.v1.RuntimeService.PutFile:output_type -> rill.runtime.v1.PutFileResponse
-	27, // 72: rill.runtime.v1.RuntimeService.DeleteFile:output_type -> rill.runtime.v1.DeleteFileResponse
-	29, // 73: rill.runtime.v1.RuntimeService.RenameFile:output_type -> rill.runtime.v1.RenameFileResponse
-	32, // 74: rill.runtime.v1.RuntimeService.ListExamples:output_type -> rill.runtime.v1.ListExamplesResponse
-	34, // 75: rill.runtime.v1.RuntimeService.UnpackExample:output_type -> rill.runtime.v1.UnpackExampleResponse
-	36, // 76: rill.runtime.v1.RuntimeService.UnpackEmpty:output_type -> rill.runtime.v1.UnpackEmptyResponse
-	39, // 77: rill.runtime.v1.RuntimeService.ListCatalogEntries:output_type -> rill.runtime.v1.ListCatalogEntriesResponse
-	41, // 78: rill.runtime.v1.RuntimeService.GetCatalogEntry:output_type -> rill.runtime.v1.GetCatalogEntryResponse
-	43, // 79: rill.runtime.v1.RuntimeService.TriggerRefresh:output_type -> rill.runtime.v1.TriggerRefreshResponse
-	45, // 80: rill.runtime.v1.RuntimeService.TriggerSync:output_type -> rill.runtime.v1.TriggerSyncResponse
-	47, // 81: rill.runtime.v1.RuntimeService.Reconcile:output_type -> rill.runtime.v1.ReconcileResponse
-	50, // 82: rill.runtime.v1.RuntimeService.PutFileAndReconcile:output_type -> rill.runtime.v1.PutFileAndReconcileResponse
-	52, // 83: rill.runtime.v1.RuntimeService.DeleteFileAndReconcile:output_type -> rill.runtime.v1.DeleteFileAndReconcileResponse
-	54, // 84: rill.runtime.v1.RuntimeService.RenameFileAndReconcile:output_type -> rill.runtime.v1.RenameFileAndReconcileResponse
-	56, // 85: rill.runtime.v1.RuntimeService.RefreshAndReconcile:output_type -> rill.runtime.v1.RefreshAndReconcileResponse
-	59, // 86: rill.runtime.v1.RuntimeService.ListConnectors:output_type -> rill.runtime.v1.ListConnectorsResponse
-	61, // [61:87] is the sub-list for method output_type
-	35, // [35:61] is the sub-list for method input_type
-	35, // [35:35] is the sub-list for extension type_name
-	35, // [35:35] is the sub-list for extension extendee
-	0,  // [0:35] is the sub-list for field type_name
+	69, // 0: rill.runtime.v1.PingResponse.time:type_name -> google.protobuf.Timestamp
+	61, // 1: rill.runtime.v1.Instance.variables:type_name -> rill.runtime.v1.Instance.VariablesEntry
+	62, // 2: rill.runtime.v1.Instance.project_variables:type_name -> rill.runtime.v1.Instance.ProjectVariablesEntry
+	6,  // 3: rill.runtime.v1.Instance.connectors:type_name -> rill.runtime.v1.ConnectorDef
+	63, // 4: rill.runtime.v1.ConnectorDef.configs:type_name -> rill.runtime.v1.ConnectorDef.ConfigsEntry
+	5,  // 5: rill.runtime.v1.ListInstancesResponse.instances:type_name -> rill.runtime.v1.Instance
+	5,  // 6: rill.runtime.v1.GetInstanceResponse.instance:type_name -> rill.runtime.v1.Instance
+	64, // 7: rill.runtime.v1.CreateInstanceRequest.variables:type_name -> rill.runtime.v1.CreateInstanceRequest.VariablesEntry
+	65, // 8: rill.runtime.v1.CreateInstanceRequest.annotations:type_name -> rill.runtime.v1.CreateInstanceRequest.AnnotationsEntry
+	6,  // 9: rill.runtime.v1.CreateInstanceRequest.connectors:type_name -> rill.runtime.v1.ConnectorDef
+	5,  // 10: rill.runtime.v1.CreateInstanceResponse.instance:type_name -> rill.runtime.v1.Instance
+	6,  // 11: rill.runtime.v1.EditInstanceRequest.connectors:type_name -> rill.runtime.v1.ConnectorDef
+	5,  // 12: rill.runtime.v1.EditInstanceResponse.instance:type_name -> rill.runtime.v1.Instance
+	66, // 13: rill.runtime.v1.EditInstanceVariablesRequest.variables:type_name -> rill.runtime.v1.EditInstanceVariablesRequest.VariablesEntry
+	5,  // 14: rill.runtime.v1.EditInstanceVariablesResponse.instance:type_name -> rill.runtime.v1.Instance
+	0,  // 15: rill.runtime.v1.WatchFilesResponse.event:type_name -> rill.runtime.v1.FileEvent
+	69, // 16: rill.runtime.v1.GetFileResponse.updated_on:type_name -> google.protobuf.Timestamp
+	31, // 17: rill.runtime.v1.ListExamplesResponse.examples:type_name -> rill.runtime.v1.Example
+	70, // 18: rill.runtime.v1.CatalogEntry.table:type_name -> rill.runtime.v1.Table
+	71, // 19: rill.runtime.v1.CatalogEntry.source:type_name -> rill.runtime.v1.Source
+	72, // 20: rill.runtime.v1.CatalogEntry.model:type_name -> rill.runtime.v1.Model
+	73, // 21: rill.runtime.v1.CatalogEntry.metrics_view:type_name -> rill.runtime.v1.MetricsView
+	69, // 22: rill.runtime.v1.CatalogEntry.created_on:type_name -> google.protobuf.Timestamp
+	69, // 23: rill.runtime.v1.CatalogEntry.updated_on:type_name -> google.protobuf.Timestamp
+	69, // 24: rill.runtime.v1.CatalogEntry.refreshed_on:type_name -> google.protobuf.Timestamp
+	74, // 25: rill.runtime.v1.ListCatalogEntriesRequest.type:type_name -> rill.runtime.v1.ObjectType
+	38, // 26: rill.runtime.v1.ListCatalogEntriesResponse.entries:type_name -> rill.runtime.v1.CatalogEntry
+	38, // 27: rill.runtime.v1.GetCatalogEntryResponse.entry:type_name -> rill.runtime.v1.CatalogEntry
+	49, // 28: rill.runtime.v1.ReconcileResponse.errors:type_name -> rill.runtime.v1.ReconcileError
+	1,  // 29: rill.runtime.v1.ReconcileError.code:type_name -> rill.runtime.v1.ReconcileError.Code
+	67, // 30: rill.runtime.v1.ReconcileError.start_location:type_name -> rill.runtime.v1.ReconcileError.CharLocation
+	67, // 31: rill.runtime.v1.ReconcileError.end_location:type_name -> rill.runtime.v1.ReconcileError.CharLocation
+	49, // 32: rill.runtime.v1.PutFileAndReconcileResponse.errors:type_name -> rill.runtime.v1.ReconcileError
+	49, // 33: rill.runtime.v1.DeleteFileAndReconcileResponse.errors:type_name -> rill.runtime.v1.ReconcileError
+	49, // 34: rill.runtime.v1.RenameFileAndReconcileResponse.errors:type_name -> rill.runtime.v1.ReconcileError
+	49, // 35: rill.runtime.v1.RefreshAndReconcileResponse.errors:type_name -> rill.runtime.v1.ReconcileError
+	68, // 36: rill.runtime.v1.Connector.properties:type_name -> rill.runtime.v1.Connector.Property
+	58, // 37: rill.runtime.v1.ListConnectorsResponse.connectors:type_name -> rill.runtime.v1.Connector
+	2,  // 38: rill.runtime.v1.Connector.Property.type:type_name -> rill.runtime.v1.Connector.Property.Type
+	3,  // 39: rill.runtime.v1.RuntimeService.Ping:input_type -> rill.runtime.v1.PingRequest
+	7,  // 40: rill.runtime.v1.RuntimeService.ListInstances:input_type -> rill.runtime.v1.ListInstancesRequest
+	9,  // 41: rill.runtime.v1.RuntimeService.GetInstance:input_type -> rill.runtime.v1.GetInstanceRequest
+	11, // 42: rill.runtime.v1.RuntimeService.CreateInstance:input_type -> rill.runtime.v1.CreateInstanceRequest
+	15, // 43: rill.runtime.v1.RuntimeService.EditInstance:input_type -> rill.runtime.v1.EditInstanceRequest
+	17, // 44: rill.runtime.v1.RuntimeService.EditInstanceVariables:input_type -> rill.runtime.v1.EditInstanceVariablesRequest
+	13, // 45: rill.runtime.v1.RuntimeService.DeleteInstance:input_type -> rill.runtime.v1.DeleteInstanceRequest
+	19, // 46: rill.runtime.v1.RuntimeService.ListFiles:input_type -> rill.runtime.v1.ListFilesRequest
+	21, // 47: rill.runtime.v1.RuntimeService.WatchFiles:input_type -> rill.runtime.v1.WatchFilesRequest
+	23, // 48: rill.runtime.v1.RuntimeService.GetFile:input_type -> rill.runtime.v1.GetFileRequest
+	25, // 49: rill.runtime.v1.RuntimeService.PutFile:input_type -> rill.runtime.v1.PutFileRequest
+	27, // 50: rill.runtime.v1.RuntimeService.DeleteFile:input_type -> rill.runtime.v1.DeleteFileRequest
+	29, // 51: rill.runtime.v1.RuntimeService.RenameFile:input_type -> rill.runtime.v1.RenameFileRequest
+	32, // 52: rill.runtime.v1.RuntimeService.ListExamples:input_type -> rill.runtime.v1.ListExamplesRequest
+	34, // 53: rill.runtime.v1.RuntimeService.UnpackExample:input_type -> rill.runtime.v1.UnpackExampleRequest
+	36, // 54: rill.runtime.v1.RuntimeService.UnpackEmpty:input_type -> rill.runtime.v1.UnpackEmptyRequest
+	39, // 55: rill.runtime.v1.RuntimeService.ListCatalogEntries:input_type -> rill.runtime.v1.ListCatalogEntriesRequest
+	41, // 56: rill.runtime.v1.RuntimeService.GetCatalogEntry:input_type -> rill.runtime.v1.GetCatalogEntryRequest
+	43, // 57: rill.runtime.v1.RuntimeService.TriggerRefresh:input_type -> rill.runtime.v1.TriggerRefreshRequest
+	45, // 58: rill.runtime.v1.RuntimeService.TriggerSync:input_type -> rill.runtime.v1.TriggerSyncRequest
+	47, // 59: rill.runtime.v1.RuntimeService.Reconcile:input_type -> rill.runtime.v1.ReconcileRequest
+	50, // 60: rill.runtime.v1.RuntimeService.PutFileAndReconcile:input_type -> rill.runtime.v1.PutFileAndReconcileRequest
+	52, // 61: rill.runtime.v1.RuntimeService.DeleteFileAndReconcile:input_type -> rill.runtime.v1.DeleteFileAndReconcileRequest
+	54, // 62: rill.runtime.v1.RuntimeService.RenameFileAndReconcile:input_type -> rill.runtime.v1.RenameFileAndReconcileRequest
+	56, // 63: rill.runtime.v1.RuntimeService.RefreshAndReconcile:input_type -> rill.runtime.v1.RefreshAndReconcileRequest
+	59, // 64: rill.runtime.v1.RuntimeService.ListConnectors:input_type -> rill.runtime.v1.ListConnectorsRequest
+	4,  // 65: rill.runtime.v1.RuntimeService.Ping:output_type -> rill.runtime.v1.PingResponse
+	8,  // 66: rill.runtime.v1.RuntimeService.ListInstances:output_type -> rill.runtime.v1.ListInstancesResponse
+	10, // 67: rill.runtime.v1.RuntimeService.GetInstance:output_type -> rill.runtime.v1.GetInstanceResponse
+	12, // 68: rill.runtime.v1.RuntimeService.CreateInstance:output_type -> rill.runtime.v1.CreateInstanceResponse
+	16, // 69: rill.runtime.v1.RuntimeService.EditInstance:output_type -> rill.runtime.v1.EditInstanceResponse
+	18, // 70: rill.runtime.v1.RuntimeService.EditInstanceVariables:output_type -> rill.runtime.v1.EditInstanceVariablesResponse
+	14, // 71: rill.runtime.v1.RuntimeService.DeleteInstance:output_type -> rill.runtime.v1.DeleteInstanceResponse
+	20, // 72: rill.runtime.v1.RuntimeService.ListFiles:output_type -> rill.runtime.v1.ListFilesResponse
+	22, // 73: rill.runtime.v1.RuntimeService.WatchFiles:output_type -> rill.runtime.v1.WatchFilesResponse
+	24, // 74: rill.runtime.v1.RuntimeService.GetFile:output_type -> rill.runtime.v1.GetFileResponse
+	26, // 75: rill.runtime.v1.RuntimeService.PutFile:output_type -> rill.runtime.v1.PutFileResponse
+	28, // 76: rill.runtime.v1.RuntimeService.DeleteFile:output_type -> rill.runtime.v1.DeleteFileResponse
+	30, // 77: rill.runtime.v1.RuntimeService.RenameFile:output_type -> rill.runtime.v1.RenameFileResponse
+	33, // 78: rill.runtime.v1.RuntimeService.ListExamples:output_type -> rill.runtime.v1.ListExamplesResponse
+	35, // 79: rill.runtime.v1.RuntimeService.UnpackExample:output_type -> rill.runtime.v1.UnpackExampleResponse
+	37, // 80: rill.runtime.v1.RuntimeService.UnpackEmpty:output_type -> rill.runtime.v1.UnpackEmptyResponse
+	40, // 81: rill.runtime.v1.RuntimeService.ListCatalogEntries:output_type -> rill.runtime.v1.ListCatalogEntriesResponse
+	42, // 82: rill.runtime.v1.RuntimeService.GetCatalogEntry:output_type -> rill.runtime.v1.GetCatalogEntryResponse
+	44, // 83: rill.runtime.v1.RuntimeService.TriggerRefresh:output_type -> rill.runtime.v1.TriggerRefreshResponse
+	46, // 84: rill.runtime.v1.RuntimeService.TriggerSync:output_type -> rill.runtime.v1.TriggerSyncResponse
+	48, // 85: rill.runtime.v1.RuntimeService.Reconcile:output_type -> rill.runtime.v1.ReconcileResponse
+	51, // 86: rill.runtime.v1.RuntimeService.PutFileAndReconcile:output_type -> rill.runtime.v1.PutFileAndReconcileResponse
+	53, // 87: rill.runtime.v1.RuntimeService.DeleteFileAndReconcile:output_type -> rill.runtime.v1.DeleteFileAndReconcileResponse
+	55, // 88: rill.runtime.v1.RuntimeService.RenameFileAndReconcile:output_type -> rill.runtime.v1.RenameFileAndReconcileResponse
+	57, // 89: rill.runtime.v1.RuntimeService.RefreshAndReconcile:output_type -> rill.runtime.v1.RefreshAndReconcileResponse
+	60, // 90: rill.runtime.v1.RuntimeService.ListConnectors:output_type -> rill.runtime.v1.ListConnectorsResponse
+	65, // [65:91] is the sub-list for method output_type
+	39, // [39:65] is the sub-list for method input_type
+	39, // [39:39] is the sub-list for extension type_name
+	39, // [39:39] is the sub-list for extension extendee
+	0,  // [0:39] is the sub-list for field type_name
 }
 
 func init() { file_rill_runtime_v1_api_proto_init() }
@@ -4942,7 +5078,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ListInstancesRequest); i {
+			switch v := v.(*ConnectorDef); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4954,7 +5090,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ListInstancesResponse); i {
+			switch v := v.(*ListInstancesRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4966,7 +5102,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetInstanceRequest); i {
+			switch v := v.(*ListInstancesResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4978,7 +5114,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetInstanceResponse); i {
+			switch v := v.(*GetInstanceRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4990,7 +5126,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CreateInstanceRequest); i {
+			switch v := v.(*GetInstanceResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5002,7 +5138,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CreateInstanceResponse); i {
+			switch v := v.(*CreateInstanceRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5014,7 +5150,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DeleteInstanceRequest); i {
+			switch v := v.(*CreateInstanceResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5026,7 +5162,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DeleteInstanceResponse); i {
+			switch v := v.(*DeleteInstanceRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5038,7 +5174,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*EditInstanceRequest); i {
+			switch v := v.(*DeleteInstanceResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5050,7 +5186,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*EditInstanceResponse); i {
+			switch v := v.(*EditInstanceRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5062,7 +5198,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*EditInstanceVariablesRequest); i {
+			switch v := v.(*EditInstanceResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5074,7 +5210,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*EditInstanceVariablesResponse); i {
+			switch v := v.(*EditInstanceVariablesRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5086,7 +5222,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ListFilesRequest); i {
+			switch v := v.(*EditInstanceVariablesResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5098,7 +5234,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ListFilesResponse); i {
+			switch v := v.(*ListFilesRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5110,7 +5246,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*WatchFilesRequest); i {
+			switch v := v.(*ListFilesResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5122,7 +5258,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*WatchFilesResponse); i {
+			switch v := v.(*WatchFilesRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5134,7 +5270,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[19].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetFileRequest); i {
+			switch v := v.(*WatchFilesResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5146,7 +5282,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[20].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetFileResponse); i {
+			switch v := v.(*GetFileRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5158,7 +5294,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[21].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PutFileRequest); i {
+			switch v := v.(*GetFileResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5170,7 +5306,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[22].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PutFileResponse); i {
+			switch v := v.(*PutFileRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5182,7 +5318,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[23].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DeleteFileRequest); i {
+			switch v := v.(*PutFileResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5194,7 +5330,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[24].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DeleteFileResponse); i {
+			switch v := v.(*DeleteFileRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5206,7 +5342,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[25].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RenameFileRequest); i {
+			switch v := v.(*DeleteFileResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5218,7 +5354,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[26].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RenameFileResponse); i {
+			switch v := v.(*RenameFileRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5230,7 +5366,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[27].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Example); i {
+			switch v := v.(*RenameFileResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5242,7 +5378,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[28].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ListExamplesRequest); i {
+			switch v := v.(*Example); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5254,7 +5390,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[29].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ListExamplesResponse); i {
+			switch v := v.(*ListExamplesRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5266,7 +5402,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[30].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*UnpackExampleRequest); i {
+			switch v := v.(*ListExamplesResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5278,7 +5414,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[31].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*UnpackExampleResponse); i {
+			switch v := v.(*UnpackExampleRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5290,7 +5426,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[32].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*UnpackEmptyRequest); i {
+			switch v := v.(*UnpackExampleResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5302,7 +5438,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[33].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*UnpackEmptyResponse); i {
+			switch v := v.(*UnpackEmptyRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5314,7 +5450,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[34].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CatalogEntry); i {
+			switch v := v.(*UnpackEmptyResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5326,7 +5462,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[35].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ListCatalogEntriesRequest); i {
+			switch v := v.(*CatalogEntry); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5338,7 +5474,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[36].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ListCatalogEntriesResponse); i {
+			switch v := v.(*ListCatalogEntriesRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5350,7 +5486,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[37].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetCatalogEntryRequest); i {
+			switch v := v.(*ListCatalogEntriesResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5362,7 +5498,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[38].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetCatalogEntryResponse); i {
+			switch v := v.(*GetCatalogEntryRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5374,7 +5510,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[39].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TriggerRefreshRequest); i {
+			switch v := v.(*GetCatalogEntryResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5386,7 +5522,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[40].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TriggerRefreshResponse); i {
+			switch v := v.(*TriggerRefreshRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5398,7 +5534,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[41].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TriggerSyncRequest); i {
+			switch v := v.(*TriggerRefreshResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5410,7 +5546,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[42].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TriggerSyncResponse); i {
+			switch v := v.(*TriggerSyncRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5422,7 +5558,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[43].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReconcileRequest); i {
+			switch v := v.(*TriggerSyncResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5434,7 +5570,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[44].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReconcileResponse); i {
+			switch v := v.(*ReconcileRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5446,7 +5582,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[45].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReconcileError); i {
+			switch v := v.(*ReconcileResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5458,7 +5594,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[46].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PutFileAndReconcileRequest); i {
+			switch v := v.(*ReconcileError); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5470,7 +5606,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[47].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PutFileAndReconcileResponse); i {
+			switch v := v.(*PutFileAndReconcileRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5482,7 +5618,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[48].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DeleteFileAndReconcileRequest); i {
+			switch v := v.(*PutFileAndReconcileResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5494,7 +5630,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[49].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DeleteFileAndReconcileResponse); i {
+			switch v := v.(*DeleteFileAndReconcileRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5506,7 +5642,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[50].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RenameFileAndReconcileRequest); i {
+			switch v := v.(*DeleteFileAndReconcileResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5518,7 +5654,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[51].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RenameFileAndReconcileResponse); i {
+			switch v := v.(*RenameFileAndReconcileRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5530,7 +5666,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[52].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RefreshAndReconcileRequest); i {
+			switch v := v.(*RenameFileAndReconcileResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5542,7 +5678,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[53].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RefreshAndReconcileResponse); i {
+			switch v := v.(*RefreshAndReconcileRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5554,7 +5690,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[54].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Connector); i {
+			switch v := v.(*RefreshAndReconcileResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5566,7 +5702,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[55].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ListConnectorsRequest); i {
+			switch v := v.(*Connector); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5578,6 +5714,18 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 		file_rill_runtime_v1_api_proto_msgTypes[56].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ListConnectorsRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_rill_runtime_v1_api_proto_msgTypes[57].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ListConnectorsResponse); i {
 			case 0:
 				return &v.state
@@ -5589,7 +5737,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[62].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[64].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ReconcileError_CharLocation); i {
 			case 0:
 				return &v.state
@@ -5601,7 +5749,7 @@ func file_rill_runtime_v1_api_proto_init() {
 				return nil
 			}
 		}
-		file_rill_runtime_v1_api_proto_msgTypes[63].Exporter = func(v interface{}, i int) interface{} {
+		file_rill_runtime_v1_api_proto_msgTypes[65].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Connector_Property); i {
 			case 0:
 				return &v.state
@@ -5614,8 +5762,8 @@ func file_rill_runtime_v1_api_proto_init() {
 			}
 		}
 	}
-	file_rill_runtime_v1_api_proto_msgTypes[11].OneofWrappers = []interface{}{}
-	file_rill_runtime_v1_api_proto_msgTypes[34].OneofWrappers = []interface{}{
+	file_rill_runtime_v1_api_proto_msgTypes[12].OneofWrappers = []interface{}{}
+	file_rill_runtime_v1_api_proto_msgTypes[35].OneofWrappers = []interface{}{
 		(*CatalogEntry_Table)(nil),
 		(*CatalogEntry_Source)(nil),
 		(*CatalogEntry_Model)(nil),
@@ -5627,7 +5775,7 @@ func file_rill_runtime_v1_api_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_rill_runtime_v1_api_proto_rawDesc,
 			NumEnums:      3,
-			NumMessages:   64,
+			NumMessages:   66,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

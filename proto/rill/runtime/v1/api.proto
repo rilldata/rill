@@ -228,12 +228,12 @@ message Instance {
     ]
   }];
   // DSN for connection to OLAP
-  string olap_dsn = 3;
+  string olap_dsn = 3 [deprecated=true];
   // Driver for reading/editing code artifacts (options: file, metastore, github).
   // This enables virtualizing a file system in a cloud setting.
   string repo_driver = 4 [(validate.rules).string = {in: ["file", "metastore", "github"]}];
   // DSN for connecting to repo
-  string repo_dsn = 5;
+  string repo_dsn = 5 [deprecated=true];
   // If true, the runtime will store the instance's catalog in its OLAP store instead
   // of in the runtime's metadata store. Currently only supported for the duckdb driver.
   bool embed_catalog = 6;
@@ -243,6 +243,17 @@ message Instance {
   map<string, string> project_variables = 8;
   // ingestion limit across all sources, 0 means no limit
   int64 ingestion_limit_bytes = 9;
+  // bare minimum connectors required by the instance. 
+  repeated ConnectorDef connectors = 10;
+}
+ 
+message ConnectorDef {
+  // Type of the connector. One of the infra driver supported.
+  string type = 1;
+  // Name of the connector
+  string name = 2;
+  // Configs for the connector
+  map<string, string> configs = 3;
 }
 
 // Request message for RuntimeService.ListInstances
@@ -280,13 +291,14 @@ message CreateInstanceRequest {
       "druid"
     ]
   }];
-  string olap_dsn = 3;
+  string olap_dsn = 3 [deprecated=true];
   string repo_driver = 4 [(validate.rules).string = {in: ["file", "metastore", "github"]}];
-  string repo_dsn = 5;
+  string repo_dsn = 5 [deprecated=true];
   bool embed_catalog = 6;
   map<string, string> variables = 7;
   int64 ingestion_limit_bytes = 8;
   map<string, string> annotations = 9;
+  repeated ConnectorDef connectors = 10;
 }
 
 // Response message for RuntimeService.CreateInstance
@@ -313,7 +325,7 @@ message EditInstanceRequest {
       "druid"
     ]
   }];
-  optional string olap_dsn = 3;
+  optional string olap_dsn = 3 [deprecated=true];
   optional string repo_driver = 4 [(validate.rules).string = {
     in: [
       "file",
@@ -321,9 +333,10 @@ message EditInstanceRequest {
       "github"
     ]
   }];
-  optional string repo_dsn = 5;
+  optional string repo_dsn = 5 [deprecated=true];
   optional bool embed_catalog = 6;
   optional int64 ingestion_limit_bytes = 8;
+  repeated ConnectorDef connectors = 9;
 }
 
 // Response message for RuntimeService.EditInstance

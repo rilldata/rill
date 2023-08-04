@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
@@ -25,52 +24,53 @@ type Options struct {
 	AllowHostAccess     bool
 	SafeSourceRefresh   bool
 	// GlobalDrivers are drivers whose handles are shared with all instances
-	GlobalDrivers []*rillv1.ConnectorDef
+	GlobalDrivers []*Connector
 	// PrivateDrivers are drivers whose handles are private to an instance
-	PrivateDrivers []*rillv1.ConnectorDef
+	PrivateDrivers []*Connector
+}
+
+type Connector struct {
+	Type    string
+	Name    string
+	Configs map[string]string
 }
 
 // ConnectorDefByName return the connector definition and whether it should be shared or not
-func (o *Options) ConnectorDefByName(name string) (*rillv1.ConnectorDef, bool, error) {
+func (o *Options) ConnectorDefByName(name string) (*Connector, bool, error) {
 	for _, c := range o.GlobalDrivers {
 		if c.Name == name {
 			return c, true, nil
 		}
 	}
-	for _, c := range o.PrivateDrivers {
-		if c.Name == name {
-			return c, false, nil
-		}
-	}
 	return nil, false, fmt.Errorf("connector %s doesn't exist", name)
 }
 
-func (o *Options) OLAPDef(dsn string) (*rillv1.ConnectorDef, bool, error) {
+func (o *Options) OLAPDef(dsn string) (*Connector, bool, error) {
 	c, shared, err := o.ConnectorDefByName(_olapDriverName)
 	if err != nil {
 		return nil, false, fmt.Errorf("dev error, olap connector doesn't exist")
 	}
 	// TODO :: remove this hack and pass repodsn and olapdsn as variables in form connector.repo.xxxx
-	dup := &rillv1.ConnectorDef{Name: c.Name, Type: c.Type, Defaults: maps.Clone(c.Defaults)}
-	if dup.Defaults == nil {
-		dup.Defaults = make(map[string]string)
+	dup := &Connector{Name: c.Name, Type: c.Type, Configs: maps.Clone(c.Configs)}
+	if dup.Configs == nil {
+		dup.Configs = make(map[string]string)
 	}
-	dup.Defaults["dsn"] = dsn
+	dup.Configs["dsn"] = dsn
 	return dup, shared, nil
 }
 
-func (o *Options) RepoDef(dsn string) (*rillv1.ConnectorDef, bool, error) {
+func (o *Options) RepoDef(dsn string) (*Connector, bool, error) {
 	c, shared, err := o.ConnectorDefByName(_olapDriverName)
 	if err != nil {
 		return nil, false, fmt.Errorf("dev error, repo connector doesn't exist")
 	}
 
 	// TODO :: remove this hack and pass repodsn and olapdsn as variables in form connector.repo.xxxx
-	dup := &rillv1.ConnectorDef{Name: c.Name, Type: c.Type, Defaults: maps.Clone(c.Defaults)}
-	if dup.Defaults == nil {
-		dup.Defaults = make(map[string]string)
+	dup := &Connector{Name: c.Name, Type: c.Type, Configs: maps.Clone(c.Configs)}
+	if dup.Configs == nil {
+		dup.Configs = make(map[string]string)
 	}
-	dup.Defaults["dsn"] = dsn
+	dup.Configs["dsn"] = dsn
 	return dup, shared, nil
 }
 

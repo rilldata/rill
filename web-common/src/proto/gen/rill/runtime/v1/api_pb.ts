@@ -145,7 +145,8 @@ export class Instance extends Message<Instance> {
   /**
    * DSN for connection to OLAP
    *
-   * @generated from field: string olap_dsn = 3;
+   * @generated from field: string olap_dsn = 3 [deprecated = true];
+   * @deprecated
    */
   olapDsn = "";
 
@@ -160,7 +161,8 @@ export class Instance extends Message<Instance> {
   /**
    * DSN for connecting to repo
    *
-   * @generated from field: string repo_dsn = 5;
+   * @generated from field: string repo_dsn = 5 [deprecated = true];
+   * @deprecated
    */
   repoDsn = "";
 
@@ -193,6 +195,13 @@ export class Instance extends Message<Instance> {
    */
   ingestionLimitBytes = protoInt64.zero;
 
+  /**
+   * bare minimum connectors required by the instance. 
+   *
+   * @generated from field: repeated rill.runtime.v1.ConnectorDef connectors = 10;
+   */
+  connectors: ConnectorDef[] = [];
+
   constructor(data?: PartialMessage<Instance>) {
     super();
     proto3.util.initPartial(data, this);
@@ -210,6 +219,7 @@ export class Instance extends Message<Instance> {
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 8, name: "project_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 9, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 10, name: "connectors", kind: "message", T: ConnectorDef, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Instance {
@@ -226,6 +236,61 @@ export class Instance extends Message<Instance> {
 
   static equals(a: Instance | PlainMessage<Instance> | undefined, b: Instance | PlainMessage<Instance> | undefined): boolean {
     return proto3.util.equals(Instance, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ConnectorDef
+ */
+export class ConnectorDef extends Message<ConnectorDef> {
+  /**
+   * Type of the connector. One of the infra driver supported.
+   *
+   * @generated from field: string type = 1;
+   */
+  type = "";
+
+  /**
+   * Name of the connector
+   *
+   * @generated from field: string name = 2;
+   */
+  name = "";
+
+  /**
+   * Configs for the connector
+   *
+   * @generated from field: map<string, string> configs = 3;
+   */
+  configs: { [key: string]: string } = {};
+
+  constructor(data?: PartialMessage<ConnectorDef>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ConnectorDef";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "configs", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorDef {
+    return new ConnectorDef().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ConnectorDef {
+    return new ConnectorDef().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ConnectorDef {
+    return new ConnectorDef().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ConnectorDef | PlainMessage<ConnectorDef> | undefined, b: ConnectorDef | PlainMessage<ConnectorDef> | undefined): boolean {
+    return proto3.util.equals(ConnectorDef, a, b);
   }
 }
 
@@ -415,7 +480,8 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
   olapDriver = "";
 
   /**
-   * @generated from field: string olap_dsn = 3;
+   * @generated from field: string olap_dsn = 3 [deprecated = true];
+   * @deprecated
    */
   olapDsn = "";
 
@@ -425,7 +491,8 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
   repoDriver = "";
 
   /**
-   * @generated from field: string repo_dsn = 5;
+   * @generated from field: string repo_dsn = 5 [deprecated = true];
+   * @deprecated
    */
   repoDsn = "";
 
@@ -449,6 +516,11 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
    */
   annotations: { [key: string]: string } = {};
 
+  /**
+   * @generated from field: repeated rill.runtime.v1.ConnectorDef connectors = 10;
+   */
+  connectors: ConnectorDef[] = [];
+
   constructor(data?: PartialMessage<CreateInstanceRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -466,6 +538,7 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 8, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 9, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 10, name: "connectors", kind: "message", T: ConnectorDef, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateInstanceRequest {
@@ -620,7 +693,8 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
   olapDriver?: string;
 
   /**
-   * @generated from field: optional string olap_dsn = 3;
+   * @generated from field: optional string olap_dsn = 3 [deprecated = true];
+   * @deprecated
    */
   olapDsn?: string;
 
@@ -630,7 +704,8 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
   repoDriver?: string;
 
   /**
-   * @generated from field: optional string repo_dsn = 5;
+   * @generated from field: optional string repo_dsn = 5 [deprecated = true];
+   * @deprecated
    */
   repoDsn?: string;
 
@@ -643,6 +718,11 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
    * @generated from field: optional int64 ingestion_limit_bytes = 8;
    */
   ingestionLimitBytes?: bigint;
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.ConnectorDef connectors = 9;
+   */
+  connectors: ConnectorDef[] = [];
 
   constructor(data?: PartialMessage<EditInstanceRequest>) {
     super();
@@ -659,6 +739,7 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
     { no: 5, name: "repo_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 8, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
+    { no: 9, name: "connectors", kind: "message", T: ConnectorDef, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceRequest {

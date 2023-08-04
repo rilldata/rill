@@ -3,6 +3,8 @@ package drivers
 import (
 	"context"
 	"time"
+
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
 // RegistryStore is implemented by drivers capable of storing and looking up instances and repos.
@@ -19,14 +21,10 @@ type RegistryStore interface {
 type Instance struct {
 	// Identifier
 	ID string
-	// Driver to connect to for OLAP (options: duckdb, druid)
+	// Driver name to connect to for OLAP
 	OLAPDriver string
-	// DSN for connection to OLAP
-	OLAPDSN string
-	// Driver for reading/editing code artifacts (options: file, metastore)
+	// Driver name for reading/editing code artifacts
 	RepoDriver string
-	// DSN for connecting to repo
-	RepoDSN string
 	// EmbedCatalog tells the runtime to store the instance's catalog in its OLAP store instead
 	// of in the runtime's metadata store. Currently only supported for the duckdb driver.
 	EmbedCatalog bool `db:"embed_catalog"`
@@ -44,6 +42,8 @@ type Instance struct {
 	IngestionLimitBytes int64 `db:"ingestion_limit_bytes"`
 	// Annotations to enrich activity events (like usage tracking)
 	Annotations map[string]string
+	// Instance specific connectors
+	Connectors []*runtimev1.ConnectorDef
 }
 
 // ResolveVariables returns the final resolved variables

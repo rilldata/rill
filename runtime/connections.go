@@ -16,7 +16,7 @@ func (r *Runtime) newMetaStore(ctx context.Context, instanceID string) (drivers.
 		panic(err)
 	}
 
-	return r.connCache.get(ctx, instanceID, c.Type, c.Defaults, shared)
+	return r.connCache.get(ctx, instanceID, c.Type, c.Configs, shared)
 }
 
 func (r *Runtime) Registry() drivers.RegistryStore {
@@ -53,7 +53,7 @@ func (r *Runtime) AcquireHandle(ctx context.Context, instanceID, connector strin
 	}
 	if c, shared, err := r.opts.ConnectorDefByName(connector); err == nil { // connector found
 		// defined in runtime options
-		return r.connCache.get(ctx, instanceID, c.Type, variables(connector, c.Defaults, instance.ResolveVariables()), shared)
+		return r.connCache.get(ctx, instanceID, c.Type, variables(connector, c.Configs, instance.ResolveVariables()), shared)
 	}
 	// neither defined in rill.yaml nor in runtime options, directly used in source
 	return r.connCache.get(ctx, instanceID, connector, variables(connector, nil, instance.ResolveVariables()), false)
@@ -65,11 +65,11 @@ func (r *Runtime) Repo(ctx context.Context, instanceID string) (drivers.RepoStor
 		return nil, nil, err
 	}
 
-	c, shared, err := r.opts.RepoDef(inst.RepoDSN)
+	c, shared, err := r.RepoDef(inst)
 	if err != nil {
 		return nil, nil, err
 	}
-	conn, release, err := r.connCache.get(ctx, instanceID, inst.RepoDriver, variables(_repoDriverName, c.Defaults, inst.ResolveVariables()), shared)
+	conn, release, err := r.connCache.get(ctx, instanceID, c.Type, variables(inst.RepoDriver, c.Configs, inst.ResolveVariables()), shared)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -90,11 +90,11 @@ func (r *Runtime) OLAP(ctx context.Context, instanceID string) (drivers.OLAPStor
 		return nil, nil, err
 	}
 
-	c, shared, err := r.opts.OLAPDef(inst.OLAPDSN)
+	c, shared, err := r.OLAPDef(inst)
 	if err != nil {
 		return nil, nil, err
 	}
-	conn, release, err := r.connCache.get(ctx, instanceID, inst.OLAPDriver, variables(_olapDriverName, c.Defaults, inst.ResolveVariables()), shared)
+	conn, release, err := r.connCache.get(ctx, instanceID, c.Type, variables(inst.OLAPDriver, c.Configs, inst.ResolveVariables()), shared)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -116,11 +116,11 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 	}
 
 	if inst.EmbedCatalog {
-		c, shared, err := r.opts.OLAPDef(inst.OLAPDSN)
+		c, shared, err := r.OLAPDef(inst)
 		if err != nil {
 			return nil, nil, err
 		}
-		conn, release, err := r.connCache.get(ctx, instanceID, inst.OLAPDriver, variables(_olapDriverName, c.Defaults, inst.ResolveVariables()), shared)
+		conn, release, err := r.connCache.get(ctx, instanceID, c.Type, variables(inst.OLAPDriver, c.Configs, inst.ResolveVariables()), shared)
 		if err != nil {
 			return nil, nil, err
 		}

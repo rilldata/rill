@@ -12,7 +12,6 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -125,8 +124,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				QueryCacheSizeBytes: conf.QueryCacheSizeBytes,
 				AllowHostAccess:     conf.AllowHostAccess,
 				SafeSourceRefresh:   conf.SafeSourceRefresh,
-				GlobalDrivers:       parseConnectorDefs(conf.GlobalDrivers),
-				PrivateDrivers:      parseConnectorDefs(conf.PrivateDrivers),
+				GlobalDrivers:       parse(conf.GlobalDrivers),
 			}
 			rt, err := runtime.New(opts, logger)
 			if err != nil {
@@ -200,8 +198,8 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 	return startCmd
 }
 
-func parseConnectorDefs(s string) []*rillv1.ConnectorDef {
-	var defs []*rillv1.ConnectorDef
+func parse(s string) []*runtime.Connector {
+	var defs []*runtime.Connector
 	err := json.Unmarshal([]byte(s), &defs)
 	if err != nil {
 		panic(err)
