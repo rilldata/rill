@@ -32,6 +32,7 @@
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import MeasureScrub from "@rilldata/web-common/features/dashboards/time-series/MeasureScrub.svelte";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import type { listen_dev } from "svelte/types/runtime/internal/dev";
 
   export let metricViewName: string;
   export let width: number = undefined;
@@ -182,16 +183,23 @@
 
       /***
        * Currently being calculated by checking if the bisected dates match
-       * the existing scrub start/end dates. Although this approach it would be hard to
-       * identify resizing when we have a small grain on a larger time range window
-       * (e.g. 1h on 14D) We can increase the flexibility by adding additional few
-       * pixels on both sides for threshold
+       * the existing scrub start/end dates. Although with this approach it would
+       * be hard to identify resizing when we have a small grain on a larger
+       * time range window (e.g. 1h on 14D) We can increase the flexibility
+       * by adding additional few pixels on both sides for threshold
        */
       isOverStart = scrubStartDate?.getTime() == scrubStart?.getTime();
       isOverEnd = scrubStartDate?.getTime() == scrubEnd?.getTime();
 
       const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
-      isMovingScrub = inBounds(start, end, scrubStartDate);
+
+      /**
+       * We define a moving action when the start date is in middle of
+       * the scrub start and end dates. There is an edge case where we
+       * have a scrub of unit grain length, in that case we don't have
+       * any dates in the middle of the scrub start and end dates.
+       */
+      isMovingScrub = scrubStartDate > start && scrubStartDate < end;
 
       if (isOverStart || isOverEnd) {
         isResizing = true;
@@ -208,8 +216,8 @@
   }
 
   function moveScrub(event) {
-    const stopX = event.detail?.stop?.x;
-    const intermediateScrubVal = getBisectedTimeFromCordinates(
+    let stopX = event.detail?.stop?.x;
+    let intermediateScrubVal = getBisectedTimeFromCordinates(
       stopX,
       $xScale,
       labelAccessor,
@@ -217,17 +225,30 @@
       TIME_GRAIN[timeGrain].label
     );
 
+    // if (intermediateScrubVal < internalXMin) {
+    //   intermediateScrubVal = internalXMin;
+    //   stopX = $xScale(internalXMin);
+    // }
+
     if (hasSubrangeSelected && (isResizing || isMovingScrub)) {
       if (
         isResizing &&
         intermediateScrubVal?.getTime() !== scrubEnd?.getTime() &&
         intermediateScrubVal?.getTime() !== scrubStart?.getTime()
       ) {
+        /**
+         * Adjust the ends of the subrange by dragging either end.
+         * This snaps to the nearest time grain.
+         */
         const newStart = isOverStart ? intermediateScrubVal : scrubStart;
         const newEnd = isOverEnd ? intermediateScrubVal : scrubEnd;
 
         updateScrub(newStart, newEnd, true);
       } else if (!isResizing && isMovingScrub) {
+        /**
+         * Pick up and shift the entire subrange left/right
+         * This snaps to the nearest time grain
+         */
         const startX = event.detail?.start?.x;
         const delta = stopX - startX;
 
@@ -247,7 +268,11 @@
           TIME_GRAIN[timeGrain].label
         );
 
-        if (newStart?.getTime() !== scrubStart?.getTime()) {
+        if (
+          // newStart > internalXMin &&
+          // newEnd > internalXMin &&
+          newStart?.getTime() !== scrubStart?.getTime()
+        ) {
           updateScrub(newStart, newEnd, true);
         }
       }
@@ -259,7 +284,7 @@
     }
   }
 
-  function endScrub(event) {
+  function endScrub() {
     // Remove scrub if start and end are same
     if (hasSubrangeSelected && scrubStart?.getTime() === scrubEnd?.getTime()) {
       resetScrub();
@@ -278,7 +303,7 @@
     updateScrub(scrubStart, scrubEnd, false);
   }
 
-  async function onMouseClick() {
+  function onMouseClick() {
     // skip if still scrubbing
     if (justCreatedScrub || isScrubbing || isResizing) return;
 
@@ -317,7 +342,7 @@
   on:click={() => onMouseClick()}
   on:scrub-start={(e) => startScrub(e)}
   on:scrub-move={(e) => moveScrub(e)}
-  on:scrub-end={(e) => endScrub(e)}
+  on:scrub-end={() => endScrub()}
 >
   <Axis side="right" {numberKind} />
   <Grid />
