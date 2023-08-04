@@ -32,7 +32,6 @@
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import MeasureScrub from "@rilldata/web-common/features/dashboards/time-series/MeasureScrub.svelte";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-  import type { listen_dev } from "svelte/types/runtime/internal/dev";
 
   export let metricViewName: string;
   export let width: number = undefined;

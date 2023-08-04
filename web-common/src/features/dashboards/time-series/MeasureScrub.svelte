@@ -3,8 +3,6 @@
   import { getContext } from "svelte";
   import { type PlotConfig } from "@rilldata/web-common/components/data-graphic/utils";
   import type { Writable } from "svelte/store";
-  import { contexts } from "@rilldata/web-common/components/data-graphic/constants";
-  import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
 
   export let start;
   export let stop;
@@ -15,7 +13,6 @@
   const plotConfig: Writable<PlotConfig> = getContext(
     "rill:data-graphic:plot-config"
   );
-  const xScale = getContext(contexts.scale("x")) as ScaleStore;
 
   const strokeWidth = 1;
   const xLabelBuffer = 8;
