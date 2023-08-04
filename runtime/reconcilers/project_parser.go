@@ -389,7 +389,6 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, owne
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Model{Model: &runtimev1.ModelV2{Spec: def.ModelSpec}}}
 		}
 	case compilerv1.ResourceKindMetricsView:
-		def.MetricsViewSpec.StageChanges = pp.Spec.StageChanges
 		if existing == nil || !equalMetricsViewSpec(existing.GetMetricsView().Spec, def.MetricsViewSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_MetricsView{MetricsView: &runtimev1.MetricsViewV2{Spec: def.MetricsViewSpec}}}
 		}

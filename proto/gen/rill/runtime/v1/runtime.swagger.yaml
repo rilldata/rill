@@ -2810,13 +2810,6 @@ definitions:
   v1DeleteInstanceResponse:
     type: object
     title: Response message for RuntimeService.DeleteInstance
-  v1DependencyError:
-    type: object
-    properties:
-      message:
-        type: string
-      dependency:
-        type: string
   v1EditInstanceResponse:
     type: object
     properties:
@@ -3286,15 +3279,18 @@ definitions:
   v1MetricsViewSpec:
     type: object
     properties:
+      connector:
+        type: string
+        title: Connector containing the table
+      table:
+        type: string
+        title: Name of the table the metrics view is based on
       title:
         type: string
         title: User friendly label for the dashboard
       description:
         type: string
         title: Description of the dashboard
-      model:
-        type: string
-        title: Name of the source or model that the metrics view is based on
       timeDimension:
         type: string
         title: Name of the primary time dimension, used for rendering time series
@@ -3321,16 +3317,11 @@ definitions:
         items:
           type: string
         title: Available time zones list preferred time zones using IANA location identifiers
-      stageChanges:
-        type: boolean
-        title: Fields not derived from code files
   v1MetricsViewState:
     type: object
     properties:
-      validationError:
-        $ref: '#/definitions/v1ValidationError'
-      dependencyError:
-        $ref: '#/definitions/v1DependencyError'
+      validSpec:
+        $ref: '#/definitions/v1MetricsViewSpec'
   v1MetricsViewTimeSeriesRequest:
     type: object
     properties:
@@ -4477,15 +4468,6 @@ definitions:
   v1UnpackExampleResponse:
     type: object
     title: Response message for RuntimeService.UnpackExample
-  v1ValidationError:
-    type: object
-    properties:
-      message:
-        type: string
-      propertyPath:
-        type: array
-        items:
-          type: string
   v1WatchFilesResponse:
     type: object
     properties:

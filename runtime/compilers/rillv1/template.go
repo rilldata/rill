@@ -41,11 +41,12 @@ import (
 
 // TemplateData contains data for resolving a template.
 type TemplateData struct {
-	Claims    map[string]any
-	Variables map[string]string
-	Self      TemplateResource
-	Resolve   func(ref ResourceName) (string, error)
-	Lookup    func(name ResourceName) (TemplateResource, error)
+	Claims     map[string]any
+	Variables  map[string]string
+	ExtraProps map[string]any
+	Self       TemplateResource
+	Resolve    func(ref ResourceName) (string, error)
+	Lookup     func(name ResourceName) (TemplateResource, error)
 }
 
 // TemplateResource contains data for a resource for injection into a template.
@@ -217,6 +218,11 @@ func ResolveTemplate(tmpl string, data TemplateData) (string, error) {
 		"meta":   data.Self.Meta,
 		"spec":   data.Self.Spec,
 		"state":  data.Self.State,
+	}
+
+	// Add extra props
+	for k, v := range data.ExtraProps {
+		dataMap[k] = v
 	}
 
 	// Resolve template

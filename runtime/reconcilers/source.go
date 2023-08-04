@@ -410,11 +410,3 @@ func driversSink(conn drivers.Connection, tableName string) (drivers.Sink, error
 		return nil, fmt.Errorf("sink connector %q not supported", conn.Driver())
 	}
 }
-
-/*
-Features in old migrator not yet addressed:
-- parsing ExtractPolicy
-- rewriting source if `sql` field is set (mergeFromParsedQuery)
-- opening srcConnector with correct variables (connectorVariables)
-- adding source name to logger, and propagating the controller logger to the connection/transporter
-*/

@@ -862,74 +862,74 @@ export class MetricsViewV2 extends Message<MetricsViewV2> {
  */
 export class MetricsViewSpec extends Message<MetricsViewSpec> {
   /**
+   * Connector containing the table
+   *
+   * @generated from field: string connector = 1;
+   */
+  connector = "";
+
+  /**
+   * Name of the table the metrics view is based on
+   *
+   * @generated from field: string table = 2;
+   */
+  table = "";
+
+  /**
    * User friendly label for the dashboard
    *
-   * @generated from field: string title = 1;
+   * @generated from field: string title = 3;
    */
   title = "";
 
   /**
    * Description of the dashboard
    *
-   * @generated from field: string description = 2;
+   * @generated from field: string description = 4;
    */
   description = "";
 
   /**
-   * Name of the source or model that the metrics view is based on
-   *
-   * @generated from field: string model = 3;
-   */
-  model = "";
-
-  /**
    * Name of the primary time dimension, used for rendering time series
    *
-   * @generated from field: string time_dimension = 4;
+   * @generated from field: string time_dimension = 5;
    */
   timeDimension = "";
 
   /**
    * Dimensions in the metrics view
    *
-   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.DimensionV2 dimensions = 5;
+   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.DimensionV2 dimensions = 6;
    */
   dimensions: MetricsViewSpec_DimensionV2[] = [];
 
   /**
    * Measures in the metrics view
    *
-   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.MeasureV2 measures = 6;
+   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.MeasureV2 measures = 7;
    */
   measures: MetricsViewSpec_MeasureV2[] = [];
 
   /**
    * Smallest time grain to show in the dashboard
    *
-   * @generated from field: rill.runtime.v1.TimeGrain smallest_time_grain = 7;
+   * @generated from field: rill.runtime.v1.TimeGrain smallest_time_grain = 8;
    */
   smallestTimeGrain = TimeGrain.UNSPECIFIED;
 
   /**
    * Default time range for the dashboard. It should be a valid ISO 8601 duration string.
    *
-   * @generated from field: string default_time_range = 8;
+   * @generated from field: string default_time_range = 9;
    */
   defaultTimeRange = "";
 
   /**
    * Available time zones list preferred time zones using IANA location identifiers
    *
-   * @generated from field: repeated string available_time_zones = 9;
+   * @generated from field: repeated string available_time_zones = 10;
    */
   availableTimeZones: string[] = [];
-
-  /**
-   * Fields not derived from code files
-   *
-   * @generated from field: bool stage_changes = 10;
-   */
-  stageChanges = false;
 
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
@@ -939,16 +939,16 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.MetricsViewSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "dimensions", kind: "message", T: MetricsViewSpec_DimensionV2, repeated: true },
-    { no: 6, name: "measures", kind: "message", T: MetricsViewSpec_MeasureV2, repeated: true },
-    { no: 7, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
-    { no: 8, name: "default_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 9, name: "available_time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 10, name: "stage_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "dimensions", kind: "message", T: MetricsViewSpec_DimensionV2, repeated: true },
+    { no: 7, name: "measures", kind: "message", T: MetricsViewSpec_MeasureV2, repeated: true },
+    { no: 8, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
+    { no: 9, name: "default_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "available_time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {
@@ -1099,14 +1099,9 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
  */
 export class MetricsViewState extends Message<MetricsViewState> {
   /**
-   * @generated from field: rill.runtime.v1.ValidationError validation_error = 2;
+   * @generated from field: rill.runtime.v1.MetricsViewSpec valid_spec = 1;
    */
-  validationError?: ValidationError;
-
-  /**
-   * @generated from field: rill.runtime.v1.DependencyError dependency_error = 3;
-   */
-  dependencyError?: DependencyError;
+  validSpec?: MetricsViewSpec;
 
   constructor(data?: PartialMessage<MetricsViewState>) {
     super();
@@ -1116,8 +1111,7 @@ export class MetricsViewState extends Message<MetricsViewState> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.MetricsViewState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 2, name: "validation_error", kind: "message", T: ValidationError },
-    { no: 3, name: "dependency_error", kind: "message", T: DependencyError },
+    { no: 1, name: "valid_spec", kind: "message", T: MetricsViewSpec },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewState {

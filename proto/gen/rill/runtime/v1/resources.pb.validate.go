@@ -2445,11 +2445,13 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for Connector
+
+	// no validation rules for Table
+
 	// no validation rules for Title
 
 	// no validation rules for Description
-
-	// no validation rules for Model
 
 	// no validation rules for TimeDimension
 
@@ -2524,8 +2526,6 @@ func (m *MetricsViewSpec) validate(all bool) error {
 	// no validation rules for SmallestTimeGrain
 
 	// no validation rules for DefaultTimeRange
-
-	// no validation rules for StageChanges
 
 	if len(errors) > 0 {
 		return MetricsViewSpecMultiError(errors)
@@ -2628,11 +2628,11 @@ func (m *MetricsViewState) validate(all bool) error {
 	var errors []error
 
 	if all {
-		switch v := interface{}(m.GetValidationError()).(type) {
+		switch v := interface{}(m.GetValidSpec()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, MetricsViewStateValidationError{
-					field:  "ValidationError",
+					field:  "ValidSpec",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -2640,45 +2640,16 @@ func (m *MetricsViewState) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, MetricsViewStateValidationError{
-					field:  "ValidationError",
+					field:  "ValidSpec",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetValidationError()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetValidSpec()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return MetricsViewStateValidationError{
-				field:  "ValidationError",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if all {
-		switch v := interface{}(m.GetDependencyError()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, MetricsViewStateValidationError{
-					field:  "DependencyError",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, MetricsViewStateValidationError{
-					field:  "DependencyError",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetDependencyError()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return MetricsViewStateValidationError{
-				field:  "DependencyError",
+				field:  "ValidSpec",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}

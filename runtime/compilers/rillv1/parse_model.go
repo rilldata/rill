@@ -128,6 +128,8 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		node.SQL = sql
 	}
 
+	// NOTE: After calling upsertResource, an error must not be returned. Any validation should be done before calling it.
+
 	// Add the embedded sources
 	for name, spec := range embeddedSources {
 		r := p.upsertResource(ResourceKindSource, name.Name, node.Paths)

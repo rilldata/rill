@@ -401,11 +401,6 @@ export interface V1WatchFilesResponse {
   path?: string;
 }
 
-export interface V1ValidationError {
-  message?: string;
-  propertyPath?: string[];
-}
-
 export interface V1UnpackExampleResponse {
   [key: string]: any;
 }
@@ -1068,15 +1063,11 @@ export interface V1MetricsViewTimeSeriesRequest {
   priority?: number;
 }
 
-export interface V1MetricsViewState {
-  validationError?: V1ValidationError;
-  dependencyError?: V1DependencyError;
-}
-
 export interface V1MetricsViewSpec {
+  connector?: string;
+  table?: string;
   title?: string;
   description?: string;
-  model?: string;
   timeDimension?: string;
   dimensions?: MetricsViewSpecDimensionV2[];
   measures?: MetricsViewSpecMeasureV2[];
@@ -1084,7 +1075,10 @@ export interface V1MetricsViewSpec {
   /** Default time range for the dashboard. It should be a valid ISO 8601 duration string. */
   defaultTimeRange?: string;
   availableTimeZones?: string[];
-  stageChanges?: boolean;
+}
+
+export interface V1MetricsViewState {
+  validSpec?: V1MetricsViewSpec;
 }
 
 export interface V1MetricsViewSort {
@@ -1371,11 +1365,6 @@ export interface V1EditInstanceVariablesResponse {
 
 export interface V1EditInstanceResponse {
   instance?: V1Instance;
-}
-
-export interface V1DependencyError {
-  message?: string;
-  dependency?: string;
 }
 
 export interface V1DeleteInstanceResponse {
