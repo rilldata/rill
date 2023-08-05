@@ -5,6 +5,7 @@
   import type { Writable } from "svelte/store";
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import { contexts } from "@rilldata/web-common/components/data-graphic/constants";
+  import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
 
   export let start;
   export let stop;
