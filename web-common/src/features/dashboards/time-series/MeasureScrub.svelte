@@ -3,6 +3,8 @@
   import { getContext } from "svelte";
   import { type PlotConfig } from "@rilldata/web-common/components/data-graphic/utils";
   import type { Writable } from "svelte/store";
+  import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
+  import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
 
   export let start;
   export let stop;
@@ -19,6 +21,12 @@
   const yLabelBuffer = 10;
   const y1 = $plotConfig.plotTop + $plotConfig.top + 5;
   const y2 = $plotConfig.plotBottom - $plotConfig.bottom - 1;
+
+  let showContextMenu = false;
+  let contextMenuOpen = false;
+  function onContextMenu() {
+    showContextMenu = true;
+  }
 </script>
 
 {#if start && stop}
@@ -71,6 +79,7 @@
     </g>
     <g opacity={isScrubbing ? "0.4" : "0.3"}>
       <rect
+        on:contextmenu|preventDefault={onContextMenu}
         class:rect-shadow={isScrubbing}
         x={Math.min(xStart, xEnd)}
         y={y1}
@@ -81,6 +90,32 @@
     </g>
   </WithGraphicContexts>
 {/if}
+
+<div>
+  <!-- FIX ME: Unable to add menu on top of SVG  -->
+  {#if showContextMenu}
+    <!-- context menu -->
+    <WithTogglableFloatingElement
+      location="right"
+      alignment="start"
+      distance={16}
+      let:toggleFloatingElement
+      bind:active={contextMenuOpen}
+    >
+      <Menu
+        maxWidth="300px"
+        on:click-outside={toggleFloatingElement}
+        on:escape={toggleFloatingElement}
+        on:item-select={toggleFloatingElement}
+        slot="floating-element"
+      >
+        <MenuItem on:select={() => console.log("zoom")}
+          >Zoom to subrange</MenuItem
+        >
+      </Menu>
+    </WithTogglableFloatingElement>
+  {/if}
+</div>
 
 <defs>
   <linearGradient id="scrubbing-gradient" gradientUnits="userSpaceOnUse">
