@@ -538,18 +538,34 @@ export function useDashboardStore(
  * time range
  */
 
+let lastScrubRange = { start: null, end: null };
+
 export function useFetchTimeRange(name: string) {
   return derived(metricsExplorerStore, ($store) => {
     const entity = $store.entities[name];
-    if (entity?.selectedScrubRange && !entity.selectedScrubRange?.isScrubbing) {
+    if (entity?.selectedScrubRange?.isScrubbing) {
+      // Use last scrub range before scrubbing started
+      if (lastScrubRange.start && lastScrubRange.end) {
+        return lastScrubRange;
+      } else {
+        return {
+          start: entity.selectedTimeRange?.start,
+          end: entity.selectedTimeRange?.end,
+        };
+      }
+    } else if (entity?.selectedScrubRange) {
       const { start, end } = getOrderedStartEnd(
         entity.selectedScrubRange?.start,
         entity.selectedScrubRange?.end
       );
-      return {
+
+      // Update last scrub range
+      lastScrubRange = {
         start,
         end,
       };
+
+      return lastScrubRange;
     } else {
       return {
         start: entity.selectedTimeRange?.start,
@@ -562,11 +578,25 @@ export function useFetchTimeRange(name: string) {
 export function useComparisonRange(name: string) {
   return derived(metricsExplorerStore, ($store) => {
     const entity = $store.entities[name];
-    if (
-      entity?.selectedScrubRange &&
-      !entity.selectedScrubRange?.isScrubbing &&
-      entity.showComparison
-    ) {
+
+    if (!entity?.showComparison) {
+      return {
+        start: undefined,
+        end: undefined,
+      };
+    } else if (entity?.selectedScrubRange?.isScrubbing) {
+      if (lastScrubRange.start && lastScrubRange.end) {
+        const comparisonRange = getComparisonRange(
+          lastScrubRange.start,
+          lastScrubRange.end,
+          entity?.selectedComparisonTimeRange?.name as TimeComparisonOption
+        );
+        return {
+          start: comparisonRange?.start?.toISOString(),
+          end: comparisonRange?.end?.toISOString(),
+        };
+      }
+    } else if (entity?.selectedScrubRange) {
       const { start, end } = getOrderedStartEnd(
         entity.selectedScrubRange?.start,
         entity.selectedScrubRange?.end

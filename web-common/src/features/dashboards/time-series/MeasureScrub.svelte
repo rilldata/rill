@@ -1,10 +1,10 @@
 <script lang="ts">
   import WithGraphicContexts from "@rilldata/web-common/components/data-graphic/functional-components/WithGraphicContexts.svelte";
   import { getContext } from "svelte";
-  import { type PlotConfig } from "@rilldata/web-common/components/data-graphic/utils";
+  import type { PlotConfig } from "@rilldata/web-common/components/data-graphic/utils";
   import type { Writable } from "svelte/store";
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
-  import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
+  import { contexts } from "@rilldata/web-common/components/data-graphic/constants";
 
   export let start;
   export let stop;
@@ -12,9 +12,7 @@
   export let showLabels = false;
   export let mouseoverTimeFormat;
 
-  const plotConfig: Writable<PlotConfig> = getContext(
-    "rill:data-graphic:plot-config"
-  );
+  const plotConfig: Writable<PlotConfig> = getContext(contexts.config);
 
   const strokeWidth = 1;
   const xLabelBuffer = 8;
