@@ -595,6 +595,11 @@ export function useComparisonRange(name: string) {
           start: comparisonRange?.start?.toISOString(),
           end: comparisonRange?.end?.toISOString(),
         };
+      } else {
+        return {
+          start: entity.selectedComparisonTimeRange?.start?.toISOString(),
+          end: entity.selectedComparisonTimeRange?.end?.toISOString(),
+        };
       }
     } else if (entity?.selectedScrubRange) {
       const { start, end } = getOrderedStartEnd(
