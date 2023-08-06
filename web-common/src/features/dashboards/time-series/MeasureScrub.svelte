@@ -96,40 +96,43 @@
         height={y2 - y1}
         fill="url('#scrubbing-gradient')"
       />
+      <foreignObject
+        x={Math.min(xStart, xEnd) + 20}
+        y={y1 + 20}
+        width="300"
+        height="160"
+      >
+        <div on:contextmenu|preventDefault={() => onContextMenu()}>
+          <!-- FIX ME: Unable to add menu on top of SVG  -->
+          {#if showContextMenu}
+            <!-- context menu -->
+            <WithTogglableFloatingElement
+              location="right"
+              alignment="start"
+              distance={16}
+              let:toggleFloatingElement
+              bind:active={contextMenuOpen}
+            >
+              <Menu
+                maxWidth="300px"
+                on:click-outside={toggleFloatingElement}
+                on:escape={toggleFloatingElement}
+                on:item-select={toggleFloatingElement}
+                slot="floating-element"
+              >
+                <MenuItem on:select={() => console.log("zoom")}
+                  >Zoom to subrange</MenuItem
+                >
+              </Menu>
+            </WithTogglableFloatingElement>
+          {/if}
+        </div>
+      </foreignObject>
     </g>
   </WithGraphicContexts>
 {/if}
 
-<svelte:window
-  on:contextmenu|preventDefault={onContextMenu}
-  on:keydown|preventDefault={onKeyDown}
-/>
-
-<div>
-  <!-- FIX ME: Unable to add menu on top of SVG  -->
-  {#if showContextMenu}
-    <!-- context menu -->
-    <WithTogglableFloatingElement
-      location="right"
-      alignment="start"
-      distance={16}
-      let:toggleFloatingElement
-      bind:active={contextMenuOpen}
-    >
-      <Menu
-        maxWidth="300px"
-        on:click-outside={toggleFloatingElement}
-        on:escape={toggleFloatingElement}
-        on:item-select={toggleFloatingElement}
-        slot="floating-element"
-      >
-        <MenuItem on:select={() => console.log("zoom")}
-          >Zoom to subrange</MenuItem
-        >
-      </Menu>
-    </WithTogglableFloatingElement>
-  {/if}
-</div>
+<svelte:window on:keydown|preventDefault={onKeyDown} />
 
 <defs>
   <linearGradient id="scrubbing-gradient" gradientUnits="userSpaceOnUse">
