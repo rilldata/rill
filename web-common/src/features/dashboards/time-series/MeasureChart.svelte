@@ -87,6 +87,11 @@
       ? "hsla(225, 20%, 80%, .2)"
       : "hsla(217,70%, 80%, .4)";
 
+  $: cursorClass = isMovingScrub
+    ? "cursor-grabbing"
+    : isScrubbing
+    ? "cursor-ew-resize"
+    : "";
   $: [xExtentMin, xExtentMax] = extent(data, (d) => d[xAccessor]);
   $: [yExtentMin, yExtentMax] = extent(data, (d) => d[yAccessor]);
   let comparisonExtents;
@@ -314,7 +319,7 @@
   bind:hovered
   let:config
   let:yScale
-  customClass={isScrubbing ? "cursor-ew-resize" : ""}
+  customClass={cursorClass}
   yMinTweenProps={tweenProps}
   yMaxTweenProps={tweenProps}
   xMaxTweenProps={tweenProps}
