@@ -149,6 +149,17 @@
     metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
   }
 
+  function zoomScrub() {
+    const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
+    metricsExplorerStore.setSelectedTimeRange(metricViewName, {
+      name: TimeRangePreset.CUSTOM,
+      start,
+      end,
+    });
+
+    resetScrub();
+  }
+
   function updateScrub(start, end, isScrubbing) {
     const adjustedStart = start ? localToTimeZoneOffset(start, zone) : start;
     const adjustedEnd = end ? localToTimeZoneOffset(end, zone) : end;
@@ -430,6 +441,8 @@
       stop={scrubEnd}
       {isScrubbing}
       {mouseoverTimeFormat}
+      on:zoom={() => zoomScrub()}
+      on:reset={() => resetScrub()}
     />
   {/if}
 </SimpleDataGraphic>
