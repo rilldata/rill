@@ -3,6 +3,8 @@
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onDestroy } from "svelte";
+  import { getStateManagers } from "../state-managers/state-managers";
+  import { metricsExplorerStore } from "../dashboard-stores";
 
   export let metricViewName: string;
 
@@ -14,11 +16,17 @@
     unsubscribe = useDashboardUrlSync(metricViewName, metricsViewQuery);
   }
 
+  $: if ($metricsViewQuery.data) {
+    metricsExplorerStore.sync(metricViewName, $metricsViewQuery.data);
+  }
+
+  const { dashboardStore } = getStateManagers();
+
   onDestroy(() => {
     if (unsubscribe) unsubscribe();
   });
 </script>
 
-{#if $metricsViewQuery.data}
+{#if $dashboardStore}
   <slot />
 {/if}

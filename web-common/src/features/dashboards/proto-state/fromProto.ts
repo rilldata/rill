@@ -1,16 +1,33 @@
 import type { Timestamp } from "@bufbuild/protobuf";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
 import type { MetricsViewFilter_Cond } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
 import {
   DashboardState,
+  DashboardState_DashboardLeaderboardContextColumn,
   DashboardTimeRange,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   V1MetricsView,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
+
+// TODO: make a follow up PR to use the one from the proto directly
+const LeaderboardContextColumnReverseMap: Record<
+  DashboardState_DashboardLeaderboardContextColumn,
+  LeaderboardContextColumn
+> = {
+  [DashboardState_DashboardLeaderboardContextColumn.UNSPECIFIED]:
+    LeaderboardContextColumn.HIDDEN,
+  [DashboardState_DashboardLeaderboardContextColumn.PERCENT]:
+    LeaderboardContextColumn.PERCENT,
+  [DashboardState_DashboardLeaderboardContextColumn.DELTA_CHANGE]:
+    LeaderboardContextColumn.DELTA_CHANGE,
+  [DashboardState_DashboardLeaderboardContextColumn.HIDDEN]:
+    LeaderboardContextColumn.HIDDEN,
+};
 
 export function getDashboardStateFromUrl(
   urlState: string,
@@ -59,6 +76,10 @@ export function getDashboardStateFromProto(
     entity.selectedDimensionName = dashboard.selectedDimension;
   }
 
+  if (dashboard.selectedTimezone) {
+    entity.selectedTimezone = dashboard.selectedTimezone;
+  }
+
   if (dashboard.allMeasuresVisible) {
     entity.allMeasuresVisible = true;
     entity.visibleMeasureKeys = new Set(
@@ -79,7 +100,10 @@ export function getDashboardStateFromProto(
     entity.visibleDimensionKeys = new Set(dashboard.visibleDimensions);
   }
 
-  entity.showPercentOfTotal = Boolean(dashboard.showPercentOfTotal);
+  if (dashboard.leaderboardContextColumn !== undefined) {
+    entity.leaderboardContextColumn =
+      LeaderboardContextColumnReverseMap[dashboard.leaderboardContextColumn];
+  }
 
   return entity;
 }

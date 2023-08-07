@@ -8,6 +8,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
+  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import {
     getFilterForDimension,
     useMetaDimension,
@@ -25,10 +26,9 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import { getFilterForComparsion } from "../dimension-table/dimension-table-utils";
-  import type { NicelyFormattedTypes } from "../humanize-numbers";
-  import DimensionLeaderboardEntrySet from "./DimensionLeaderboardEntrySet.svelte";
+  import type { FormatPreset } from "../humanize-numbers";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
-  import LeaderboardList from "./LeaderboardList.svelte";
+  import { prepareLeaderboardItemData } from "./leaderboard-utils";
   import LeaderboardListItem from "./LeaderboardListItem.svelte";
 
   export let metricViewName: string;
@@ -40,7 +40,7 @@
   export let referenceValue: number;
   export let unfilteredTotal: number;
 
-  export let formatPreset: NicelyFormattedTypes;
+  export let formatPreset: FormatPreset;
   export let isSummableMeasure = false;
 
   let slice = 7;
@@ -140,7 +140,7 @@
     }
   );
 
-  let values = [];
+  let values: { value: number; label: string | number }[] = [];
   let comparisonValues = [];
 
   /** replace data after fetched. */
@@ -174,8 +174,14 @@
     });
 
   // Compose the comparison /toplist query
-  $: showTimeComparison = $dashboardStore?.showComparison;
-  $: showPercentOfTotal = $dashboardStore?.showPercentOfTotal;
+  $: showTimeComparison =
+    $dashboardStore?.leaderboardContextColumn ===
+      LeaderboardContextColumn.DELTA_CHANGE && $dashboardStore?.showComparison;
+  $: showPercentOfTotal =
+    $dashboardStore?.leaderboardContextColumn ===
+    LeaderboardContextColumn.PERCENT;
+
+  $: showContext = $dashboardStore?.leaderboardContextColumn;
 
   // add all sliced and active values to the include filter.
   $: currentVisibleValues =
@@ -231,6 +237,20 @@
   }
 
   let hovered: boolean;
+
+  $: comparisonMap = new Map(comparisonValues?.map((v) => [v.label, v.value]));
+
+  $: aboveTheFoldItems = prepareLeaderboardItemData(
+    values.slice(0, slice),
+    activeValues,
+    comparisonMap
+  );
+
+  $: belowTheFoldItems = prepareLeaderboardItemData(
+    selectedValuesThatAreBelowTheFold,
+    activeValues,
+    comparisonMap
+  );
 </script>
 
 {#if topListQuery}
@@ -251,41 +271,41 @@
       on:click={() => selectDimension(dimensionName)}
     />
     {#if values}
-      <LeaderboardList>
+      <div class="rounded-b border-gray-200 surface text-gray-800">
         <!-- place the leaderboard entries that are above the fold here -->
-        <DimensionLeaderboardEntrySet
-          {formatPreset}
-          loading={$topListQuery?.isFetching}
-          values={values.slice(0, slice)}
-          {comparisonValues}
-          {showTimeComparison}
-          {showPercentOfTotal}
-          {activeValues}
-          {filterExcludeMode}
-          {atLeastOneActive}
-          {referenceValue}
-          {unfilteredTotal}
-          {isSummableMeasure}
-          on:select-item
-        />
+        {#each aboveTheFoldItems as itemData (itemData.label)}
+          <LeaderboardListItem
+            {itemData}
+            {showContext}
+            {atLeastOneActive}
+            {filterExcludeMode}
+            {unfilteredTotal}
+            {isSummableMeasure}
+            {referenceValue}
+            {formatPreset}
+            on:click
+            on:keydown
+            on:select-item
+          />
+        {/each}
         <!-- place the selected values that are not above the fold here -->
         {#if selectedValuesThatAreBelowTheFold?.length}
           <hr />
-          <DimensionLeaderboardEntrySet
-            {formatPreset}
-            loading={$topListQuery?.isFetching}
-            values={selectedValuesThatAreBelowTheFold}
-            {comparisonValues}
-            {showTimeComparison}
-            {showPercentOfTotal}
-            {activeValues}
-            {filterExcludeMode}
-            {atLeastOneActive}
-            {referenceValue}
-            {unfilteredTotal}
-            {isSummableMeasure}
-            on:select-item
-          />
+          {#each belowTheFoldItems as itemData (itemData.label)}
+            <LeaderboardListItem
+              {itemData}
+              {showContext}
+              {atLeastOneActive}
+              {filterExcludeMode}
+              {isSummableMeasure}
+              {referenceValue}
+              {formatPreset}
+              on:click
+              on:keydown
+              on:select-item
+            />
+          {/each}
+
           <hr />
         {/if}
         {#if $topListQuery?.isError}
@@ -297,22 +317,21 @@
             no available values
           </div>
         {/if}
-
         {#if values.length > slice}
           <Tooltip location="right">
-            <LeaderboardListItem
-              value={0}
-              color="=ui-label"
+            <button
               on:click={() => selectDimension(dimensionName)}
+              class="block flex-row w-full text-left transition-color ui-copy-muted"
+              style:padding-left="30px"
             >
-              <div class="ui-copy-muted" slot="title">(Expand Table)</div>
-            </LeaderboardListItem>
+              (Expand Table)
+            </button>
             <TooltipContent slot="tooltip-content"
               >Expand dimension to see more values</TooltipContent
             >
           </Tooltip>
         {/if}
-      </LeaderboardList>
+      </div>
     {/if}
   </div>
 {/if}

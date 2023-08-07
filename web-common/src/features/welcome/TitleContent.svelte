@@ -3,7 +3,7 @@
   import RillLogoSquareNegative from "@rilldata/web-common/components/icons/RillLogoSquareNegative.svelte";
   import RadixH1 from "@rilldata/web-common/components/typography/RadixH1.svelte";
   import Subheading from "@rilldata/web-common/components/typography/Subheading.svelte";
-  import AddSourceModal from "@rilldata/web-common/features/sources/add-source/AddSourceModal.svelte";
+  import AddSourceModal from "@rilldata/web-common/features/sources/modal/AddSourceModal.svelte";
   import { behaviourEvent } from "../../metrics/initMetrics";
   import {
     BehaviourEventAction,

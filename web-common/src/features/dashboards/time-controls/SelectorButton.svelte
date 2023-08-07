@@ -4,10 +4,12 @@
 
   export let active = false;
   export let disabled = false;
+  export let label: string | undefined = undefined;
 </script>
 
 <button
   {disabled}
+  aria-label={label}
   class:bg-gray-200={active}
   class="px-3 py-2 rounded grid gap-x-2 {!disabled
     ? 'hover:bg-gray-200'

@@ -11,6 +11,76 @@ consumes:
 produces:
   - application/json
 paths:
+  /v1/bigquery/datasets:
+    get:
+      summary: BigQueryListDatasets list all datasets in a bigquery project
+      operationId: ConnectorService_BigQueryListDatasets
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1BigQueryListDatasetsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
+  /v1/bigquery/tables:
+    get:
+      summary: BigQueryListTables list all tables in a bigquery project:dataset
+      operationId: ConnectorService_BigQueryListTables
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1BigQueryListTablesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
+        - name: dataset
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
   /v1/connectors/meta:
     get:
       summary: |-
@@ -82,6 +152,14 @@ paths:
           in: path
           required: true
           type: string
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
         - name: pageSize
           in: query
           required: false
@@ -123,6 +201,14 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
         - name: pageSize
           in: query
           required: false
@@ -147,6 +233,15 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
       tags:
         - ConnectorService
   /v1/instances:
@@ -1588,19 +1683,28 @@ paths:
           type: string
       tags:
         - RuntimeService
-  /v1/md/tables:
+  /v1/olap/tables:
     get:
-      summary: MotherduckListTables list all tables across all databases on motherduck
-      operationId: ConnectorService_MotherduckListTables
+      summary: OLAPListTables list all tables across all databases on motherduck
+      operationId: ConnectorService_OLAPListTables
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1MotherduckListTablesResponse'
+            $ref: '#/definitions/v1OLAPListTablesResponse'
         default:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
       tags:
         - ConnectorService
   /v1/ping:
@@ -1700,6 +1804,14 @@ paths:
           in: path
           required: true
           type: string
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
       tags:
         - ConnectorService
   /v1/s3/bucket/{bucket}/objects:
@@ -1719,6 +1831,14 @@ paths:
         - name: bucket
           in: path
           required: true
+          type: string
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
           type: string
         - name: pageSize
           in: query
@@ -1761,6 +1881,14 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
         - name: pageSize
           in: query
           required: false
@@ -1785,6 +1913,15 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
       tags:
         - ConnectorService
 definitions:
@@ -2022,6 +2159,24 @@ definitions:
         $ref: '#/definitions/v1MapType'
         title: If code is CODE_MAP, map_type specifies the map's key and value types
     title: Type represents a data type in a schema
+  v1BigQueryListDatasetsResponse:
+    type: object
+    properties:
+      nextPageToken:
+        type: string
+      names:
+        type: array
+        items:
+          type: string
+  v1BigQueryListTablesResponse:
+    type: object
+    properties:
+      nextPageToken:
+        type: string
+      names:
+        type: array
+        items:
+          type: string
   v1CatalogEntry:
     type: object
     properties:
@@ -2324,6 +2479,10 @@ definitions:
       ingestionLimitBytes:
         type: string
         format: int64
+      annotations:
+        type: object
+        additionalProperties:
+          type: string
     description: |-
       Request message for RuntimeService.CreateInstance.
       See message Instance for field descriptions.
@@ -2418,7 +2577,6 @@ definitions:
       - FILE_EVENT_UNSPECIFIED
       - FILE_EVENT_WRITE
       - FILE_EVENT_DELETE
-      - FILE_EVENT_RENAME
     default: FILE_EVENT_UNSPECIFIED
     description: FileEvent describes a file change.
   v1GCSGetCredentialsInfoResponse:
@@ -2959,14 +3117,6 @@ definitions:
         type: boolean
         title: To materialize model or not
     title: Model is the internal representation of a model definition
-  v1MotherduckListTablesResponse:
-    type: object
-    properties:
-      tables:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1TableInfo'
   v1NumericHistogramBins:
     type: object
     properties:
@@ -3020,6 +3170,14 @@ definitions:
     description: |-
       Response for QueryService.ColumnNumericHistogram, QueryService.ColumnDescriptiveStatistics and QueryService.ColumnCardinality.
       Message will have either numericHistogramBins, numericStatistics or numericOutliers set.
+  v1OLAPListTablesResponse:
+    type: object
+    properties:
+      tables:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1TableInfo'
   v1ObjectType:
     type: string
     enum:

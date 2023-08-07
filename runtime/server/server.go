@@ -14,12 +14,14 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -50,6 +52,8 @@ type Server struct {
 	logger  *zap.Logger
 	aud     *auth.Audience
 	limiter ratelimit.Limiter
+	// activity is used for usage tracking
+	activity activity.Client
 }
 
 var (
@@ -60,12 +64,13 @@ var (
 
 // NewServer creates a new runtime server.
 // The provided ctx is used for the lifetime of the server for background refresh of the JWKS that is used to validate auth tokens.
-func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *zap.Logger, limiter ratelimit.Limiter) (*Server, error) {
+func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *zap.Logger, limiter ratelimit.Limiter, activityClient activity.Client) (*Server, error) {
 	srv := &Server{
-		opts:    opts,
-		runtime: rt,
-		logger:  logger,
-		limiter: limiter,
+		opts:     opts,
+		runtime:  rt,
+		logger:   logger,
+		limiter:  limiter,
+		activity: activityClient,
 	}
 
 	if opts.AuthEnable {
@@ -87,7 +92,9 @@ func (s *Server) Close() error {
 		s.aud.Close()
 	}
 
-	return nil
+	err := s.activity.Close()
+
+	return err
 }
 
 // Ping implements RuntimeService
@@ -109,6 +116,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			errorMappingStreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
 			auth.StreamServerInterceptor(s.aud),
+			middleware.ActivityStreamServerInterceptor(s.activity),
 			grpc_auth.StreamServerInterceptor(s.checkRateLimit),
 		),
 		grpc.ChainUnaryInterceptor(
@@ -118,6 +126,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			errorMappingUnaryServerInterceptor(),
 			grpc_validator.UnaryServerInterceptor(),
 			auth.UnaryServerInterceptor(s.aud),
+			middleware.ActivityUnaryServerInterceptor(s.activity),
 			grpc_auth.UnaryServerInterceptor(s.checkRateLimit),
 		),
 	)
@@ -305,4 +314,16 @@ func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
 	}
 
 	return ctx, nil
+}
+
+func (s *Server) addInstanceRequestAttributes(ctx context.Context, instanceID string) {
+	instance, err := s.runtime.FindInstance(ctx, instanceID)
+
+	if err == nil && instance != nil {
+		var attrs []attribute.KeyValue
+		for k, v := range instance.Annotations {
+			attrs = append(attrs, attribute.String(k, v))
+		}
+		observability.AddRequestAttributes(ctx, attrs...)
+	}
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/cmd/project"
 	"github.com/rilldata/rill/cli/cmd/runtime"
+	"github.com/rilldata/rill/cli/cmd/service"
 	"github.com/rilldata/rill/cli/cmd/start"
 	"github.com/rilldata/rill/cli/cmd/sudo"
 	"github.com/rilldata/rill/cli/cmd/user"
@@ -144,6 +145,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 		auth.LoginCmd(cfg),
 		auth.LogoutCmd(cfg),
 		sudo.SudoCmd(cfg),
+		service.ServiceCmd(cfg),
 	}
 	for _, cmd := range adminCmds {
 		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the admin API")

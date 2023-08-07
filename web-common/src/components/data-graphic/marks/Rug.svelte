@@ -51,7 +51,7 @@
       ? $config.bodyBottom - size
       : $config.top})"
   >
-    <WithSimpleLinearScale domain={[0, 1]} range={[0.2, 0.65]} clamp let:scale>
+    <WithSimpleLinearScale domain={[0, 1]} range={[0.2, 0.65]} let:scale>
       {#each counts as countSet, i}
         <g>
           <path

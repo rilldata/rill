@@ -1,34 +1,84 @@
 <script lang="ts">
   import { ConnectedPreviewTable } from "@rilldata/web-common/components/preview-table";
-  import { createRuntimeServiceGetCatalogEntry } from "../../../runtime-client";
+  import { getContext } from "svelte";
+  import type { Writable } from "svelte/store";
+  import HorizontalSplitter from "../../../layout/workspace/HorizontalSplitter.svelte";
+  import { createRuntimeServiceGetFile } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import SourceWorkspaceErrorStates from "./SourceWorkspaceErrorStates.svelte";
+  import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
+  import {
+    fileArtifactsStore,
+    getFileArtifactReconciliationErrors,
+  } from "../../entity-management/file-artifacts-store";
+  import { EntityType } from "../../entity-management/types";
+  import SourceEditor from "../editor/SourceEditor.svelte";
+  import ErrorPane from "../errors/ErrorPane.svelte";
+  import { useIsSourceUnsaved } from "../selectors";
+  import { useSourceStore } from "../sources-store";
 
   export let sourceName: string;
 
-  $: getSource = createRuntimeServiceGetCatalogEntry(
-    $runtime?.instanceId,
-    sourceName
+  const sourceStore = useSourceStore(sourceName);
+
+  $: file = createRuntimeServiceGetFile(
+    $runtime.instanceId,
+    getFilePathFromNameAndType(sourceName, EntityType.Table),
+    {
+      query: {
+        // this will ensure that any changes done outside our app is pulled in.
+        refetchOnWindowFocus: true,
+      },
+    }
   );
-  $: isValidSource = $getSource?.data?.entry;
+
+  $: yaml = $file.data?.blob || "";
+
+  $: reconciliationErrors = getFileArtifactReconciliationErrors(
+    $fileArtifactsStore,
+    `${sourceName}.yaml`
+  );
+
+  // Layout state
+  const outputPosition = getContext(
+    "rill:app:output-height-tween"
+  ) as Writable<number>;
+  const outputVisibilityTween = getContext(
+    "rill:app:output-visibility-tween"
+  ) as Writable<number>;
+  // track innerHeight to calculate the size of the editor element.
+  let innerHeight: number;
+
+  $: isSourceUnsavedQuery = useIsSourceUnsaved(
+    $runtime.instanceId,
+    sourceName,
+    $sourceStore.clientYAML
+  );
+  $: isSourceUnsaved = $isSourceUnsavedQuery.data;
 </script>
 
-<div
-  class="grid pb-3"
-  style:grid-template-rows="max-content auto"
-  style:height="100vh"
->
-  {#if isValidSource}
+<svelte:window bind:innerHeight />
+
+<div class="h-full pb-3">
+  <div
+    class="p-5"
+    style:height="calc({innerHeight}px - {$outputPosition *
+      $outputVisibilityTween}px - var(--header-height))"
+  >
+    <SourceEditor {sourceName} {yaml} />
+  </div>
+  <HorizontalSplitter />
+  <div class="p-5" style:height="{$outputPosition}px">
     <div
-      style:overflow="auto"
-      style:height="calc(100vh - var(--header-height) - 2rem)"
-      class="m-4 border border-gray-300 rounded"
+      class="h-full border border-gray-300 rounded overflow-auto {isSourceUnsaved &&
+        'brightness-90'} transition duration-200"
     >
-      {#key sourceName}
-        <ConnectedPreviewTable objectName={sourceName} />
-      {/key}
+      {#if !reconciliationErrors || reconciliationErrors.length === 0}
+        {#key sourceName}
+          <ConnectedPreviewTable objectName={sourceName} />
+        {/key}
+      {:else}
+        <ErrorPane {sourceName} error={reconciliationErrors[0]} />
+      {/if}
     </div>
-  {:else}
-    <SourceWorkspaceErrorStates {sourceName} />
-  {/if}
+  </div>
 </div>
