@@ -64,7 +64,11 @@ export interface MetricsExplorerEntity {
   dimensionFilterExcludeMode: Map<string, boolean>;
   // user selected time range
   selectedTimeRange?: DashboardTimeControls;
+
+  // user selected scrub range
   selectedScrubRange?: ScrubRange;
+  lastDefinedScrubRange?: ScrubRange;
+
   selectedComparisonTimeRange?: DashboardTimeControls;
 
   // user selected timezone
@@ -326,6 +330,16 @@ const metricViewReducers = {
 
   setSelectedScrubRange(name: string, scrubRange: ScrubRange) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
+      if (scrubRange === undefined) {
+        metricsExplorer.lastDefinedScrubRange = undefined;
+      } else if (
+        !scrubRange.isScrubbing &&
+        scrubRange?.start &&
+        scrubRange?.end
+      ) {
+        metricsExplorer.lastDefinedScrubRange = scrubRange;
+      }
+
       metricsExplorer.selectedScrubRange = scrubRange;
     });
   },
@@ -538,34 +552,17 @@ export function useDashboardStore(
  * time range
  */
 
-let lastScrubRange = { start: null, end: null };
-
 export function useFetchTimeRange(name: string) {
   return derived(metricsExplorerStore, ($store) => {
     const entity = $store.entities[name];
-    if (entity?.selectedScrubRange?.isScrubbing) {
+    if (entity?.lastDefinedScrubRange) {
       // Use last scrub range before scrubbing started
-      if (lastScrubRange.start && lastScrubRange.end) {
-        return lastScrubRange;
-      } else {
-        return {
-          start: entity.selectedTimeRange?.start,
-          end: entity.selectedTimeRange?.end,
-        };
-      }
-    } else if (entity?.selectedScrubRange) {
       const { start, end } = getOrderedStartEnd(
-        entity.selectedScrubRange?.start,
-        entity.selectedScrubRange?.end
+        entity.lastDefinedScrubRange?.start,
+        entity.lastDefinedScrubRange?.end
       );
 
-      // Update last scrub range
-      lastScrubRange = {
-        start,
-        end,
-      };
-
-      return lastScrubRange;
+      return { start, end };
     } else {
       return {
         start: entity.selectedTimeRange?.start,
@@ -584,27 +581,10 @@ export function useComparisonRange(name: string) {
         start: undefined,
         end: undefined,
       };
-    } else if (entity?.selectedScrubRange?.isScrubbing) {
-      if (lastScrubRange.start && lastScrubRange.end) {
-        const comparisonRange = getComparisonRange(
-          lastScrubRange.start,
-          lastScrubRange.end,
-          entity?.selectedComparisonTimeRange?.name as TimeComparisonOption
-        );
-        return {
-          start: comparisonRange?.start?.toISOString(),
-          end: comparisonRange?.end?.toISOString(),
-        };
-      } else {
-        return {
-          start: entity.selectedComparisonTimeRange?.start?.toISOString(),
-          end: entity.selectedComparisonTimeRange?.end?.toISOString(),
-        };
-      }
-    } else if (entity?.selectedScrubRange) {
+    } else if (entity?.lastDefinedScrubRange) {
       const { start, end } = getOrderedStartEnd(
-        entity.selectedScrubRange?.start,
-        entity.selectedScrubRange?.end
+        entity.lastDefinedScrubRange?.start,
+        entity.lastDefinedScrubRange?.end
       );
 
       const comparisonRange = getComparisonRange(
