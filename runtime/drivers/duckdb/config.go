@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+
+	"github.com/rilldata/rill/runtime/pkg/activity"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 const poolSizeKey = "rill_pool_size"
@@ -16,9 +19,13 @@ type config struct {
 	PoolSize int
 	// DBFilePath is the path where database is stored
 	DBFilePath string
+	// Activity dimensions
+	ActivityDims []attribute.KeyValue
+	// Activity client
+	Activity activity.Client
 }
 
-func newConfig(dsn string) (*config, error) {
+func newConfig(dsn string, activityDims []attribute.KeyValue, client activity.Client) (*config, error) {
 	// Parse DSN as URL
 	uri, err := url.Parse(dsn)
 	if err != nil {
@@ -50,9 +57,11 @@ func newConfig(dsn string) (*config, error) {
 
 	// Return config
 	cfg := &config{
-		DSN:        dsn,
-		PoolSize:   poolSize,
-		DBFilePath: uri.Path,
+		DSN:          dsn,
+		PoolSize:     poolSize,
+		DBFilePath:   uri.Path,
+		ActivityDims: activityDims,
+		Activity:     client,
 	}
 	return cfg, nil
 }

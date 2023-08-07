@@ -117,35 +117,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				}
 			}()
 
-			// Init runtime
-			opts := &runtime.Options{
-				ConnectionCacheSize: conf.ConnectionCacheSize,
-				MetastoreDriver:     conf.MetastoreDriver,
-				MetastoreDSN:        conf.MetastoreURL,
-				QueryCacheSizeBytes: conf.QueryCacheSizeBytes,
-				AllowHostAccess:     conf.AllowHostAccess,
-				SafeSourceRefresh:   conf.SafeSourceRefresh,
-			}
-			rt, err := runtime.New(opts, logger)
-			if err != nil {
-				logger.Fatal("error: could not create runtime", zap.Error(err))
-			}
-			defer rt.Close()
-
-			// Create ctx that cancels on termination signals
-			ctx := graceful.WithCancelOnTerminate(context.Background())
-
-			var limiter ratelimit.Limiter
-			if conf.RedisURL == "" {
-				limiter = ratelimit.NewNoop()
-			} else {
-				opts, err := redis.ParseURL(conf.RedisURL)
-				if err != nil {
-					logger.Fatal("failed to parse redis url", zap.Error(err))
-				}
-				limiter = ratelimit.NewRedis(redis.NewClient(opts))
-			}
-
+			// Init activity client and sink to collect and emit activity events
 			var sink activity.Sink
 			switch conf.ActivitySinkType {
 			case "", "noop":
@@ -165,6 +137,35 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				Logger:     logger,
 			}
 			activityClient := activity.NewBufferedClient(activityOpts)
+
+			// Init runtime
+			opts := &runtime.Options{
+				ConnectionCacheSize: conf.ConnectionCacheSize,
+				MetastoreDriver:     conf.MetastoreDriver,
+				MetastoreDSN:        conf.MetastoreURL,
+				QueryCacheSizeBytes: conf.QueryCacheSizeBytes,
+				AllowHostAccess:     conf.AllowHostAccess,
+				SafeSourceRefresh:   conf.SafeSourceRefresh,
+			}
+			rt, err := runtime.New(opts, logger, activityClient)
+			if err != nil {
+				logger.Fatal("error: could not create runtime", zap.Error(err))
+			}
+			defer rt.Close()
+
+			// Create ctx that cancels on termination signals
+			ctx := graceful.WithCancelOnTerminate(context.Background())
+
+			var limiter ratelimit.Limiter
+			if conf.RedisURL == "" {
+				limiter = ratelimit.NewNoop()
+			} else {
+				opts, err := redis.ParseURL(conf.RedisURL)
+				if err != nil {
+					logger.Fatal("failed to parse redis url", zap.Error(err))
+				}
+				limiter = ratelimit.NewRedis(redis.NewClient(opts))
+			}
 
 			// Init server
 			srvOpts := &server.Options{

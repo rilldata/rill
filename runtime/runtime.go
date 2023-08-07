@@ -7,6 +7,7 @@ import (
 	"math"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
 )
 
@@ -28,7 +29,7 @@ type Runtime struct {
 	queryCache         *queryCache
 }
 
-func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
+func New(opts *Options, logger *zap.Logger, client activity.Client) (*Runtime, error) {
 	// Open metadata db connection
 	metastore, err := drivers.Open(opts.MetastoreDriver, map[string]any{"dsn": opts.MetastoreDSN}, logger)
 	if err != nil {
@@ -49,7 +50,7 @@ func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 		opts:               opts,
 		metastore:          metastore,
 		logger:             logger,
-		connCache:          newConnectionCache(opts.ConnectionCacheSize, logger),
+		connCache:          newConnectionCache(opts.ConnectionCacheSize, logger, client),
 		migrationMetaCache: newMigrationMetaCache(math.MaxInt),
 		queryCache:         newQueryCache(opts.QueryCacheSizeBytes),
 	}, nil

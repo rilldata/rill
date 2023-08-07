@@ -8,6 +8,7 @@ import (
 
 	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/services/catalog"
 	"go.uber.org/zap"
@@ -20,13 +21,14 @@ const _migrateTimeout = 30 * time.Second
 // cache for instance specific connections only
 // all instance specific connections should be opened via connection cache only
 type connectionCache struct {
-	cache  *simplelru.LRU
-	lock   sync.Mutex
-	closed bool
-	logger *zap.Logger
+	cache    *simplelru.LRU
+	lock     sync.Mutex
+	closed   bool
+	logger   *zap.Logger
+	activity activity.Client
 }
 
-func newConnectionCache(size int, logger *zap.Logger) *connectionCache {
+func newConnectionCache(size int, logger *zap.Logger, client activity.Client) *connectionCache {
 	cache, err := simplelru.NewLRU(size, func(key interface{}, value interface{}) {
 		// close the evicted connection
 		if err := value.(drivers.Connection).Close(); err != nil {
@@ -36,7 +38,7 @@ func newConnectionCache(size int, logger *zap.Logger) *connectionCache {
 	if err != nil {
 		panic(err)
 	}
-	return &connectionCache{cache: cache, logger: logger}
+	return &connectionCache{cache: cache, logger: logger, activity: client}
 }
 
 func (c *connectionCache) Close() error {
@@ -81,7 +83,12 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver, dsn strin
 		if instanceID != "default" {
 			logger = c.logger.With(zap.String("instance_id", instanceID), zap.String("driver", driver))
 		}
-		conn, err := drivers.Open(driver, map[string]any{"dsn": dsn}, logger)
+		config := map[string]any{
+			"dsn":          dsn,
+			"activity":     c.activity,
+			"activityDims": activity.GetDimsFromContext(ctx),
+		}
+		conn, err := drivers.Open(driver, config, logger)
 		if err != nil {
 			return nil, err
 		}

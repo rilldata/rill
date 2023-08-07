@@ -5,15 +5,20 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/duckdb/transporter"
+	activity "github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
 )
@@ -56,7 +61,25 @@ func (d Driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connect
 		return nil, fmt.Errorf("require dsn to open duckdb connection")
 	}
 
-	cfg, err := newConfig(dsn)
+	var activityDims []attribute.KeyValue
+	activityDimsAny := config["activityDims"]
+	if activityDimsAny != nil {
+		if value, ok := activityDimsAny.(*[]attribute.KeyValue); !ok {
+			return nil, fmt.Errorf("couldn't cast activity dimensions")
+		} else if value != nil {
+			activityDims = *value
+		}
+	}
+
+	var client activity.Client
+	clientAny := config["activity"]
+	if clientAny != nil {
+		if client, ok = clientAny.(activity.Client); !ok {
+			return nil, fmt.Errorf("couldn't cast activity client")
+		}
+	}
+
+	cfg, err := newConfig(dsn, activityDims, client)
 	if err != nil {
 		return nil, err
 	}
@@ -67,6 +90,7 @@ func (d Driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connect
 		olapSemSize = 1
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
 	c := &connection{
 		config:       cfg,
 		logger:       logger,
@@ -75,6 +99,8 @@ func (d Driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connect
 		dbCond:       sync.NewCond(&sync.Mutex{}),
 		driverConfig: config,
 		driverName:   d.name,
+		ctx:          ctx,
+		cancel:       cancel,
 	}
 
 	// Open the DB
@@ -94,6 +120,8 @@ func (d Driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connect
 		return nil, err
 	}
 
+	go c.scheduleStatCollection()
+
 	return c, nil
 }
 
@@ -103,7 +131,7 @@ func (d Driver) Drop(config map[string]any, logger *zap.Logger) error {
 		return fmt.Errorf("require dsn to drop duckdb connection")
 	}
 
-	cfg, err := newConfig(dsn)
+	cfg, err := newConfig(dsn, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -152,6 +180,9 @@ type connection struct {
 	dbCond      *sync.Cond
 	dbReopen    bool
 	dbErr       error
+	statTicker  *time.Ticker
+	ctx         context.Context
+	cancel      context.CancelFunc
 }
 
 // Driver implements drivers.Connection.
@@ -166,6 +197,7 @@ func (c *connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
+	c.cancel()
 	return c.db.Close()
 }
 
@@ -408,4 +440,125 @@ func (c *connection) checkErr(err error) error {
 		}
 	}
 	return err
+}
+
+func (c *connection) scheduleStatCollection() {
+	if c.config.Activity == nil {
+		// Activity client isn't set, there is no need to report stats
+		return
+	}
+
+	c.statTicker = time.NewTicker(time.Minute)
+	for {
+		select {
+		case <-c.statTicker.C:
+			var stat dbStat
+			err := func() error {
+				conn, release, err := c.acquireMetaConn(c.ctx)
+				if err != nil {
+					return err
+				}
+				defer func() { _ = release() }()
+				err = conn.GetContext(c.ctx, &stat, "CALL pragma_database_size()")
+				return err
+			}()
+			if err != nil {
+				c.logger.Error("couldn't query DuckDB stats", zap.Error(err))
+				continue
+			}
+
+			commonDims := []attribute.KeyValue{
+				attribute.String("olap.db.name", stat.DatabaseName),
+				attribute.Int64("olap.block.size", stat.BlockSize),
+			}
+			commonDims = append(commonDims, c.config.ActivityDims...)
+
+			dbSize, err := humanReadableSizeToBytes(stat.DatabaseSize)
+			if err != nil {
+				c.logger.Error("couldn't convert duckdb size to bytes", zap.Error(err))
+			} else {
+				c.config.Activity.Emit(c.ctx, "olap_db_size_bytes", dbSize, commonDims...)
+			}
+
+			walSize, err := humanReadableSizeToBytes(stat.WalSize)
+			if err != nil {
+				c.logger.Error("couldn't convert duckdb wal size to bytes", zap.Error(err))
+			} else {
+				c.config.Activity.Emit(c.ctx, "olap_wal_size_bytes", walSize, commonDims...)
+			}
+
+			memoryUsage, err := humanReadableSizeToBytes(stat.MemoryUsage)
+			if err != nil {
+				c.logger.Error("couldn't convert duckdb memory usage to bytes", zap.Error(err))
+			} else {
+				c.config.Activity.Emit(c.ctx, "olap_memory_usage_bytes", memoryUsage, commonDims...)
+			}
+
+			memoryLimit, err := humanReadableSizeToBytes(stat.MemoryLimit)
+			if err != nil {
+				c.logger.Error("couldn't convert duckdb memory limit to bytes", zap.Error(err))
+			} else {
+				c.config.Activity.Emit(c.ctx, "olap_memory_limit_bytes", memoryLimit, commonDims...)
+			}
+
+			c.config.Activity.Emit(c.ctx, "olap_block_size_bytes", float64(stat.BlockSize), commonDims...)
+			c.config.Activity.Emit(c.ctx, "olap_total_blocks", float64(stat.TotalBlocks), commonDims...)
+			c.config.Activity.Emit(c.ctx, "olap_free_blocks", float64(stat.FreeBlocks), commonDims...)
+			c.config.Activity.Emit(c.ctx, "olap_used_blocks", float64(stat.UsedBlocks), commonDims...)
+
+		case <-c.ctx.Done():
+			c.statTicker.Stop()
+			return
+		}
+	}
+}
+
+// Reversed logic of StringUtil::BytesToHumanReadableString
+// see https://github.com/cran/duckdb/blob/master/src/duckdb/src/common/string_util.cpp#L157
+// Examples: 1 bytes, 2 bytes, 1KB, 1MB, 1TB, 1PB
+func humanReadableSizeToBytes(sizeStr string) (float64, error) {
+	var multiplier float64
+
+	re := regexp.MustCompile(`^([\d.]+)\s*(\S+)$`)
+	match := re.FindStringSubmatch(sizeStr)
+
+	if match == nil {
+		return 0, fmt.Errorf("invalid size format: '%s'", sizeStr)
+	}
+
+	sizeFloat, err := strconv.ParseFloat(match[1], 64)
+	if err != nil {
+		return 0, err
+	}
+
+	switch match[2] {
+	case "byte", "bytes":
+		multiplier = 1
+	case "KB":
+		multiplier = 1000
+	case "MB":
+		multiplier = 1000 * 1000
+	case "GB":
+		multiplier = 1000 * 1000 * 1000
+	case "TB":
+		multiplier = 1000 * 1000 * 1000 * 1000
+	case "PB":
+		multiplier = 1000 * 1000 * 1000 * 1000 * 1000
+	default:
+		return 0, fmt.Errorf("unknown size unit '%s' in '%s'", match[2], sizeStr)
+	}
+
+	return sizeFloat * multiplier, nil
+}
+
+type dbStat struct {
+	DatabaseName string `db:"database_name"`
+	DatabaseSize string `db:"database_size"`
+	BlockSize    int64  `db:"block_size"`
+	TotalBlocks  int64  `db:"total_blocks"`
+	UsedBlocks   int64  `db:"used_blocks"`
+	FreeBlocks   int64  `db:"free_blocks"`
+	WalSize      string `db:"wal_size"`
+	MemoryUsage  string `db:"memory_usage"`
+	MemoryLimit  string `db:"memory_limit"`
 }
