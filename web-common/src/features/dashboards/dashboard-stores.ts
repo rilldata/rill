@@ -594,7 +594,6 @@ export function useComparisonRange(name: string) {
         start,
         end
       );
-      console.log(start.toISOString(), end.toISOString(), comparisonRange);
 
       return {
         start: comparisonRange?.start?.toISOString(),
