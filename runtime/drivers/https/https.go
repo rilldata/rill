@@ -35,7 +35,7 @@ var spec = drivers.Spec{
 
 type driver struct{}
 
-func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(config map[string]any, shared bool, logger *zap.Logger) (drivers.Handle, error) {
 	conn := &connection{
 		config: config,
 		logger: logger,
@@ -97,17 +97,17 @@ func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 }
 
 // Catalog implements drivers.Connection.
-func (c *connection) AsCatalogStore() (drivers.CatalogStore, bool) {
+func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // Repo implements drivers.Connection.
-func (c *connection) AsRepoStore() (drivers.RepoStore, bool) {
+func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
 
 // OLAP implements drivers.Connection.
-func (c *connection) AsOLAP() (drivers.OLAPStore, bool) {
+func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 

@@ -46,7 +46,7 @@ func (r *Runtime) Reconcile(ctx context.Context, instanceID string, changedPaths
 	}
 	defer cat.Close()
 
-	err = cat.Repo.Sync(ctx, instanceID)
+	err = cat.Repo.Sync(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (r *Runtime) RefreshSource(ctx context.Context, instanceID, name string) er
 	}
 	defer cat.Close()
 
-	err = cat.Repo.Sync(ctx, instanceID)
+	err = cat.Repo.Sync(ctx)
 	if err != nil {
 		return err
 	}
@@ -152,7 +152,7 @@ func (r *Runtime) SyncExistingTables(ctx context.Context, instanceID string) err
 			tbl := obj.GetTable()
 			if !proto.Equal(t.Schema, tbl.Schema) {
 				tbl.Schema = t.Schema
-				err := cat.Catalog.UpdateEntry(ctx, instanceID, obj)
+				err := cat.Catalog.UpdateEntry(ctx, obj)
 				if err != nil {
 					return err
 				}
@@ -160,7 +160,7 @@ func (r *Runtime) SyncExistingTables(ctx context.Context, instanceID string) err
 			}
 		} else if !ok {
 			// If we haven't seen this table before, add it
-			err := cat.Catalog.CreateEntry(ctx, instanceID, &drivers.CatalogEntry{
+			err := cat.Catalog.CreateEntry(ctx, &drivers.CatalogEntry{
 				Name: t.Name,
 				Type: drivers.ObjectTypeTable,
 				Object: &runtimev1.Table{
@@ -182,7 +182,7 @@ func (r *Runtime) SyncExistingTables(ctx context.Context, instanceID string) err
 	for name, seen := range objSeen {
 		obj := objMap[name]
 		if !seen && obj.Type == drivers.ObjectTypeTable && !obj.GetTable().Managed {
-			err := cat.Catalog.DeleteEntry(ctx, instanceID, name)
+			err := cat.Catalog.DeleteEntry(ctx, name)
 			if err != nil {
 				return err
 			}

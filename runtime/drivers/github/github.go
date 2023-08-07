@@ -46,7 +46,7 @@ func init() {
 
 type driver struct{}
 
-func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(config map[string]any, shared bool, logger *zap.Logger) (drivers.Handle, error) {
 	dsnStr, ok := config["dsn"].(string)
 	if !ok {
 		return nil, fmt.Errorf("require dsn to open github connection")
@@ -80,6 +80,7 @@ func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Handle,
 		tempdir:      tempdir,
 		projectdir:   projectDir,
 		singleflight: &singleflight.Group{},
+		shared:       shared,
 	}, nil
 }
 
@@ -98,6 +99,7 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source
 type connection struct {
 	config              map[string]any
 	dsn                 DSN
+	shared              bool
 	tempdir             string // tempdir path should be absolute
 	projectdir          string
 	cloneURLWithToken   string
@@ -127,17 +129,20 @@ func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 }
 
 // Catalog implements drivers.Connection.
-func (c *connection) AsCatalogStore() (drivers.CatalogStore, bool) {
+func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // Repo implements drivers.Connection.
-func (c *connection) AsRepoStore() (drivers.RepoStore, bool) {
+func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
+	if c.shared {
+		return nil, false
+	}
 	return c, true
 }
 
 // OLAP implements drivers.Connection.
-func (c *connection) AsOLAP() (drivers.OLAPStore, bool) {
+func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 

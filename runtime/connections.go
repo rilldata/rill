@@ -64,7 +64,7 @@ func (r *Runtime) Repo(ctx context.Context, instanceID string) (drivers.RepoStor
 		return nil, nil, err
 	}
 
-	repo, ok := conn.AsRepoStore()
+	repo, ok := conn.AsRepoStore(instanceID)
 	if !ok {
 		release()
 		// Verified as repo when instance is created, so this should never happen
@@ -89,7 +89,7 @@ func (r *Runtime) OLAP(ctx context.Context, instanceID string) (drivers.OLAPStor
 		return nil, nil, err
 	}
 
-	olap, ok := conn.AsOLAP()
+	olap, ok := conn.AsOLAP(instanceID)
 	if !ok {
 		release()
 		// Verified as OLAP when instance is created, so this should never happen
@@ -115,7 +115,7 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 			return nil, nil, err
 		}
 
-		store, ok := conn.AsCatalogStore()
+		store, ok := conn.AsCatalogStore(instanceID)
 		if !ok {
 			release()
 			// Verified as CatalogStore when instance is created, so this should never happen
@@ -125,7 +125,7 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 		return store, release, nil
 	}
 
-	store, ok := r.metastore.AsCatalogStore()
+	store, ok := r.metastore.AsCatalogStore(instanceID)
 	if !ok {
 		return nil, nil, fmt.Errorf("metastore cannot serve as catalog")
 	}

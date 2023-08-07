@@ -87,13 +87,13 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, zap.NewNop())
+	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, false, zap.NewNop())
 	require.NoError(t, err)
-	olap, _ := conn.AsOLAP()
+	olap, _ := conn.AsOLAP("")
 
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathRel}, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathRel}, false, zap.NewNop())
 	require.NoError(t, err)
-	repo, _ := fileStore.AsRepoStore()
+	repo, _ := fileStore.AsRepoStore("")
 
 	m := migrator.Migrators[drivers.ObjectTypeSource]
 	opts := migrator.Options{InstanceEnv: map[string]string{"allow_host_access": "true"}, IngestStorageLimitInBytes: 1024 * 1024 * 1024}
@@ -149,13 +149,13 @@ func TestConnectorWithoutRootAccess(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, zap.NewNop())
+	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, false, zap.NewNop())
 	require.NoError(t, err)
-	olap, _ := conn.AsOLAP()
+	olap, _ := conn.AsOLAP("")
 
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathRel}, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathRel}, false, zap.NewNop())
 	require.NoError(t, err)
-	repo, _ := fileStore.AsRepoStore()
+	repo, _ := fileStore.AsRepoStore("")
 
 	m := migrator.Migrators[drivers.ObjectTypeSource]
 	opts := migrator.Options{InstanceEnv: map[string]string{"allow_host_access": "false"}, IngestStorageLimitInBytes: 1024 * 1024 * 1024}
@@ -200,15 +200,15 @@ func TestCSVDelimiter(t *testing.T) {
 	testDelimiterCsvPath := filepath.Join(testdataPathAbs, "test-delimiter.csv")
 
 	ctx := context.Background()
-	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, zap.NewNop())
+	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, false, zap.NewNop())
 	require.NoError(t, err)
 	defer conn.Close()
-	olap, _ := conn.AsOLAP()
+	olap, _ := conn.AsOLAP("")
 
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathAbs}, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathAbs}, false, zap.NewNop())
 	require.NoError(t, err)
 	defer fileStore.Close()
-	repo, _ := fileStore.AsRepoStore()
+	repo, _ := fileStore.AsRepoStore("")
 
 	m := migrator.Migrators[drivers.ObjectTypeSource]
 	opts := migrator.Options{InstanceEnv: map[string]string{"allow_host_access": "false"}, IngestStorageLimitInBytes: 1024 * 1024 * 1024}
@@ -242,9 +242,9 @@ func TestCSVDelimiter(t *testing.T) {
 
 func TestFileFormatAndDelimiter(t *testing.T) {
 	ctx := context.Background()
-	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, zap.NewNop())
+	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, false, zap.NewNop())
 	require.NoError(t, err)
-	olap, _ := conn.AsOLAP()
+	olap, _ := conn.AsOLAP("")
 
 	testdataPathAbs, err := filepath.Abs("../../../../../web-local/test/data")
 	require.NoError(t, err)
@@ -739,9 +739,9 @@ func TestPropertiesEquals(t *testing.T) {
 
 func TestSqlIngestionWithFiltersAndColumns(t *testing.T) {
 	ctx := context.Background()
-	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, zap.NewNop())
+	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, false, zap.NewNop())
 	require.NoError(t, err)
-	olap, _ := conn.AsOLAP()
+	olap, _ := conn.AsOLAP("")
 	m := migrator.Migrators[drivers.ObjectTypeSource]
 	opts := migrator.Options{InstanceEnv: map[string]string{"allow_host_access": "true"}, IngestStorageLimitInBytes: 1024 * 1024 * 1024}
 
@@ -814,16 +814,16 @@ func createFilePath(t *testing.T, dirPath string, fileName string) string {
 }
 
 func runOLAPStore(t *testing.T) drivers.OLAPStore {
-	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, zap.NewNop())
+	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, false, zap.NewNop())
 	require.NoError(t, err)
-	olap, canServe := conn.AsOLAP()
+	olap, canServe := conn.AsOLAP("")
 	require.True(t, canServe)
 	return olap
 }
 
 func runRepoStore(t *testing.T, testdataPathAbs string) drivers.RepoStore {
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathAbs}, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathAbs}, false, zap.NewNop())
 	require.NoError(t, err)
-	repo, _ := fileStore.AsRepoStore()
+	repo, _ := fileStore.AsRepoStore("")
 	return repo
 }

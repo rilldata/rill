@@ -134,7 +134,7 @@ type Parser struct {
 
 // ParseRillYAML parses only the project's rill.yaml (or rill.yml) file.
 func ParseRillYAML(ctx context.Context, repo drivers.RepoStore, instanceID string) (*RillYAML, error) {
-	paths, err := repo.ListRecursive(ctx, instanceID, "rill.{yaml,yml}")
+	paths, err := repo.ListRecursive(ctx, "rill.{yaml,yml}")
 	if err != nil {
 		return nil, fmt.Errorf("could not list project files: %w", err)
 	}
@@ -162,7 +162,7 @@ func Parse(ctx context.Context, repo drivers.RepoStore, instanceID string, duckD
 		resourcesForUnspecifiedRef: make(map[string][]*Resource),
 	}
 
-	paths, err := p.Repo.ListRecursive(ctx, p.InstanceID, "**/*.{sql,yaml,yml}")
+	paths, err := p.Repo.ListRecursive(ctx, "**/*.{sql,yaml,yml}")
 	if err != nil {
 		return nil, fmt.Errorf("could not list project files: %w", err)
 	}
@@ -224,7 +224,7 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 		}
 
 		// If a file exists at path, add it to the parse list
-		_, err := p.Repo.Stat(ctx, p.InstanceID, path)
+		_, err := p.Repo.Stat(ctx, path)
 		if err == nil {
 			parsePaths = append(parsePaths, path)
 		} else if !os.IsNotExist(err) {
@@ -423,7 +423,7 @@ func (p *Parser) parseStemPaths(ctx context.Context, paths []string) error {
 	var yaml, yamlPath, sql, sqlPath string
 	for _, path := range paths {
 		// Load contents
-		data, err := p.Repo.Get(ctx, p.InstanceID, path)
+		data, err := p.Repo.Get(ctx, path)
 		if err != nil {
 			if os.IsNotExist(err) {
 				// This is a dirty parse where a file disappeared during parsing.

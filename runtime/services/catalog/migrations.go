@@ -348,7 +348,7 @@ func (s *Service) runMigrationItems(
 			var err error
 			if shouldDelete {
 				// remove entity from catalog and OLAP if it failed validation or during migration
-				err = s.Catalog.DeleteEntry(ctx, s.InstID, item.Name)
+				err = s.Catalog.DeleteEntry(ctx, item.Name)
 				if err != nil {
 					// shouldn't ideally happen
 					result.Errors = append(result.Errors, &runtimev1.ReconcileError{
@@ -422,15 +422,15 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 	if err != nil {
 		return err
 	}
-	_, err = s.Catalog.FindEntry(ctx, s.InstID, item.Name)
+	_, err = s.Catalog.FindEntry(ctx, item.Name)
 	// create or updated
 	if err != nil {
 		if !errors.Is(err, drivers.ErrNotFound) {
 			return err
 		}
-		return s.Catalog.CreateEntry(ctx, s.InstID, catalog)
+		return s.Catalog.CreateEntry(ctx, catalog)
 	}
-	return s.Catalog.UpdateEntry(ctx, s.InstID, catalog)
+	return s.Catalog.UpdateEntry(ctx, catalog)
 }
 
 func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error {
@@ -453,7 +453,7 @@ func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error 
 
 	// delete the old catalog object
 	// TODO: do we need a rename here?
-	err = s.Catalog.DeleteEntry(ctx, s.InstID, item.FromName)
+	err = s.Catalog.DeleteEntry(ctx, item.FromName)
 	if err != nil {
 		return err
 	}
@@ -462,7 +462,7 @@ func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error 
 	if err != nil {
 		return err
 	}
-	return s.Catalog.CreateEntry(ctx, s.InstID, catalog)
+	return s.Catalog.CreateEntry(ctx, catalog)
 }
 
 func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error {
@@ -500,7 +500,7 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 	if err != nil {
 		return err
 	}
-	return s.Catalog.UpdateEntry(ctx, s.InstID, catalog)
+	return s.Catalog.UpdateEntry(ctx, catalog)
 }
 
 func (s *Service) deleteInStore(ctx context.Context, item *MigrationItem) error {
@@ -515,13 +515,13 @@ func (s *Service) deleteInStore(ctx context.Context, item *MigrationItem) error 
 	}
 
 	// delete from catalog store
-	return s.Catalog.DeleteEntry(ctx, s.InstID, item.Name)
+	return s.Catalog.DeleteEntry(ctx, item.Name)
 }
 
 func (s *Service) updateCatalogObject(ctx context.Context, item *MigrationItem) (*drivers.CatalogEntry, error) {
 	// get artifact stats
 	// stat will not succeed for embedded entries
-	repoStat, _ := s.Repo.Stat(ctx, s.InstID, item.Path)
+	repoStat, _ := s.Repo.Stat(ctx, item.Path)
 
 	// convert protobuf to database object
 	catalogEntry := item.CatalogInFile
@@ -590,7 +590,7 @@ func (s *Service) getSourceIngestionLimit(ctx context.Context, inst *drivers.Ins
 	}
 
 	var sizeSoFar int64
-	entries, err := s.Catalog.FindEntries(ctx, s.InstID, drivers.ObjectTypeSource)
+	entries, err := s.Catalog.FindEntries(ctx, drivers.ObjectTypeSource)
 	if err != nil {
 		return 0, err
 	}

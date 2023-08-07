@@ -375,7 +375,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 			// ingest some data
 			require.NoError(t, svc.Olap.Exec(ctx, &drivers.Statement{Query: "CREATE TABLE data(id INTEGER, name VARCHAR)"}))
 			require.NoError(t, svc.Olap.Exec(ctx, &drivers.Statement{Query: "INSERT INTO data VALUES (1, 'Mark'), (2, 'Hannes')"}))
-			require.NoError(t, svc.Catalog.CreateEntry(ctx, "", &drivers.CatalogEntry{
+			require.NoError(t, svc.Catalog.CreateEntry(ctx, &drivers.CatalogEntry{
 				Name: "data",
 				Type: drivers.ObjectTypeTable,
 				Object: &runtimev1.Table{
@@ -383,7 +383,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 					Managed: true,
 				},
 			}))
-			require.ErrorContains(t, svc.Catalog.CreateEntry(ctx, "", &drivers.CatalogEntry{
+			require.ErrorContains(t, svc.Catalog.CreateEntry(ctx, &drivers.CatalogEntry{
 				Name: "data",
 				Type: drivers.ObjectTypeModel,
 				Object: &runtimev1.Model{

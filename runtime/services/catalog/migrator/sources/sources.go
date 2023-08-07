@@ -211,7 +211,7 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 	} else {
 		var err error
 		variables := convertLower(opts.InstanceEnv)
-		srcConnector, err = drivers.Open(apiSource.Connector, connectorVariables(apiSource, variables, repo.Root()), logger)
+		srcConnector, err = drivers.Open(apiSource.Connector, connectorVariables(apiSource, variables, repo.Root()), false, logger)
 		if err != nil {
 			return fmt.Errorf("failed to open driver %w", err)
 		}
@@ -253,7 +253,7 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 			case <-ctxWithTimeout.Done():
 				return
 			case <-ticker.C:
-				olap, _ := olapConnection.AsOLAP()
+				olap, _ := olapConnection.AsOLAP("") // todo :: check this
 				if size, ok := olap.EstimateSize(); ok && size > ingestionLimit {
 					limitExceeded = true
 					cancel()

@@ -57,7 +57,7 @@ env:
 
 func putRepo(t testing.TB, repo drivers.RepoStore, files map[string]string) {
 	for path, data := range files {
-		err := repo.Put(context.Background(), "", path, strings.NewReader(data))
+		err := repo.Put(context.Background(), path, strings.NewReader(data))
 		require.NoError(t, err)
 	}
 }

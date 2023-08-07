@@ -21,7 +21,7 @@ func TestWatch(t *testing.T) {
 
 	ch := make(chan drivers.WatchEvent, 10)
 	go func() {
-		err := c.Watch(ctx, "", func(es []drivers.WatchEvent) {
+		err := c.Watch(ctx, func(es []drivers.WatchEvent) {
 			for _, e := range es {
 				ch <- e
 			}

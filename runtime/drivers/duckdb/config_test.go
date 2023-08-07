@@ -30,10 +30,10 @@ func TestConfig(t *testing.T) {
 	require.Equal(t, 10, cfg.PoolSize)
 	require.Equal(t, "path/to/duck.db", cfg.DBFilePath)
 
-	cfg, err = newConfig("path/to/duck.db?rill_pool_size=abc&hello=world")
+	_, err = newConfig("path/to/duck.db?rill_pool_size=abc&hello=world")
 	require.Error(t, err)
 
-	cfg, err = newConfig("path/to/duck.db?rill_pool_size=0&hello=world")
+	_, err = newConfig("path/to/duck.db?rill_pool_size=0&hello=world")
 	require.Error(t, err)
 
 	cfg, err = newConfig("duck.db")

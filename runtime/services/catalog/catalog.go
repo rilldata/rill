@@ -51,7 +51,7 @@ func NewService(
 }
 
 func (s *Service) FindEntries(ctx context.Context, typ drivers.ObjectType) ([]*drivers.CatalogEntry, error) {
-	entries, err := s.Catalog.FindEntries(ctx, s.InstID, typ)
+	entries, err := s.Catalog.FindEntries(ctx, typ)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func (s *Service) FindEntries(ctx context.Context, typ drivers.ObjectType) ([]*d
 }
 
 func (s *Service) FindEntry(ctx context.Context, name string) (*drivers.CatalogEntry, error) {
-	entry, err := s.Catalog.FindEntry(ctx, s.InstID, name)
+	entry, err := s.Catalog.FindEntry(ctx, name)
 	if err != nil {
 		return nil, err
 	}

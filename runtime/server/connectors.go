@@ -191,7 +191,7 @@ func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTabl
 	}
 	defer release()
 
-	olap, _ := conn.AsOLAP()
+	olap, _ := conn.AsOLAP(req.InstanceId)
 	tables, err := olap.InformationSchema().All(ctx)
 	if err != nil {
 		return nil, err

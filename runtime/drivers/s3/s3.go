@@ -85,7 +85,7 @@ type configProperties struct {
 }
 
 // Open implements drivers.Driver
-func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(config map[string]any, shared bool, logger *zap.Logger) (drivers.Handle, error) {
 	conf := &configProperties{}
 	err := mapstructure.Decode(config, conf)
 	if err != nil {
@@ -118,7 +118,7 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source
 		return false, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	c, err := d.Open(map[string]any{}, logger)
+	c, err := d.Open(map[string]any{}, false, logger)
 	if err != nil {
 		return false, err
 	}
@@ -164,17 +164,17 @@ func (c *Connection) AsRegistry() (drivers.RegistryStore, bool) {
 }
 
 // Catalog implements drivers.Connection.
-func (c *Connection) AsCatalogStore() (drivers.CatalogStore, bool) {
+func (c *Connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // Repo implements drivers.Connection.
-func (c *Connection) AsRepoStore() (drivers.RepoStore, bool) {
+func (c *Connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
 
 // OLAP implements drivers.Connection.
-func (c *Connection) AsOLAP() (drivers.OLAPStore, bool) {
+func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 

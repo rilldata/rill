@@ -98,7 +98,7 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver string, co
 	if !ok { // not in use
 		value, found := c.lruCache.Get(key)
 		if !found { // not opened
-			handle, err := c.openAndMigrate(ctx, instanceID, driver, config)
+			handle, err := c.openAndMigrate(ctx, instanceID, driver, shared, config)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -130,12 +130,12 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver string, co
 	}, nil
 }
 
-func (c *connectionCache) openAndMigrate(ctx context.Context, instanceID, driver string, config map[string]any) (drivers.Handle, error) {
+func (c *connectionCache) openAndMigrate(ctx context.Context, instanceID, driver string, shared bool, config map[string]any) (drivers.Handle, error) {
 	logger := c.logger
 	if instanceID != "default" {
 		logger = c.logger.With(zap.String("instance_id", instanceID), zap.String("driver", driver))
 	}
-	handle, err := drivers.Open(driver, config, logger)
+	handle, err := drivers.Open(driver, config, shared, logger)
 	if err != nil {
 		return nil, err
 	}
