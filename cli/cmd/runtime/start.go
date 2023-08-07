@@ -69,7 +69,6 @@ type Config struct {
 	// Kafka topic of an activity client's sink
 	ActivitySinkKafkaTopic string `default:"" split_words:"true"`
 	GlobalDrivers          string `split_words:"true"`
-	PrivateDrivers         string `split_words:"true"`
 }
 
 // StartCmd starts a stand-alone runtime server. It only allows configuration using environment variables.
@@ -201,6 +200,9 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 }
 
 func parse(s string) []*runtime.Connector {
+	if len(s) == 0 {
+		return make([]*runtime.Connector, 0)
+	}
 	var defs []*runtime.Connector
 	err := json.Unmarshal([]byte(s), &defs)
 	if err != nil {

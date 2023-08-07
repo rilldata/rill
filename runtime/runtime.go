@@ -28,16 +28,6 @@ type Connector struct {
 	Configs map[string]string
 }
 
-// ConnectorDefByName return the connector definition and whether it should be shared or not
-func (o *Options) ConnectorDefByName(name string) (*Connector, bool, error) {
-	for _, c := range o.GlobalDrivers {
-		if c.Name == name {
-			return c, true, nil
-		}
-	}
-	return nil, false, fmt.Errorf("connector %s doesn't exist", name)
-}
-
 type Runtime struct {
 	opts               *Options
 	metastore          drivers.Handle

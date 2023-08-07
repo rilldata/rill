@@ -10,12 +10,12 @@ import (
 )
 
 func (r *Runtime) newMetaStore(ctx context.Context, instanceID string) (drivers.Handle, func(), error) {
-	c, shared, err := r.opts.ConnectorDefByName(r.opts.MetastoreDriver)
+	c, err := r.ConnectorDefByName(r.opts.MetastoreDriver)
 	if err != nil {
 		panic(err)
 	}
 
-	return r.connCache.get(ctx, instanceID, c.Type, r.variables(r.opts.MetastoreDriver, c.Configs, nil), shared)
+	return r.connCache.get(ctx, instanceID, c.Type, r.variables(r.opts.MetastoreDriver, c.Configs, nil), true)
 }
 
 func (r *Runtime) Registry() drivers.RegistryStore {
@@ -41,9 +41,9 @@ func (r *Runtime) AcquireHandle(ctx context.Context, instanceID, connector strin
 			}
 		}
 	}
-	if c, shared, err := r.opts.ConnectorDefByName(connector); err == nil { // connector found
+	if c, err := r.ConnectorDefByName(connector); err == nil { // connector found
 		// defined in runtime options
-		return r.connCache.get(ctx, instanceID, c.Type, r.variables(connector, c.Configs, instance.ResolveVariables()), shared)
+		return r.connCache.get(ctx, instanceID, c.Type, r.variables(connector, c.Configs, instance.ResolveVariables()), true)
 	}
 	// neither defined in rill.yaml nor in runtime options, directly used in source
 	return r.connCache.get(ctx, instanceID, connector, r.variables(connector, nil, instance.ResolveVariables()), false)
@@ -182,4 +182,13 @@ func (r *Runtime) variables(name string, def, variables map[string]string) map[s
 	}
 	vars["allow_host_access"] = r.opts.AllowHostAccess
 	return vars
+}
+
+func (r *Runtime) ConnectorDefByName(name string) (*Connector, error) {
+	for _, c := range r.opts.GlobalDrivers {
+		if c.Name == name {
+			return c, nil
+		}
+	}
+	return nil, fmt.Errorf("connector %s doesn't exist", name)
 }

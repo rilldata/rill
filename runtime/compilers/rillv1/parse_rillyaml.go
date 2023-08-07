@@ -64,7 +64,7 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 
 	for i, c := range tmp.Connectors {
 		if _reservedConnectorNames[c.Name] {
-			return fmt.Errorf("%s are reserved connector name", maps.Keys(_reservedConnectorNames))
+			return fmt.Errorf("%s are reserved connector names", maps.Keys(_reservedConnectorNames))
 		}
 		res.Connectors[i] = &ConnectorDef{
 			Type:     c.Type,

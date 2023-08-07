@@ -55,7 +55,7 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) er
 	}
 
 	// this is a hack to set variables and pass to connectors
-	// ideally the runtime should propagate this flag to connectors.Env
+	// remove this once sources start calling runtime.AcquireHandle in all cases
 	if inst.Variables == nil {
 		inst.Variables = make(map[string]string)
 	}
@@ -244,7 +244,7 @@ func (r *Runtime) OLAPDef(inst *drivers.Instance) (*runtimev1.ConnectorDef, bool
 			return c, false, nil
 		}
 	}
-	if c, _, err := r.opts.ConnectorDefByName(inst.OLAPDriver); err == nil {
+	if c, err := r.ConnectorDefByName(inst.OLAPDriver); err == nil {
 		return &runtimev1.ConnectorDef{Name: c.Name, Type: c.Type, Configs: c.Configs}, true, nil
 	}
 	return nil, false, fmt.Errorf("dev error, olap connector doesn't exist")
@@ -256,7 +256,7 @@ func (r *Runtime) RepoDef(inst *drivers.Instance) (*runtimev1.ConnectorDef, bool
 			return c, false, nil
 		}
 	}
-	if c, _, err := r.opts.ConnectorDefByName(inst.RepoDriver); err == nil {
+	if c, err := r.ConnectorDefByName(inst.RepoDriver); err == nil {
 		return &runtimev1.ConnectorDef{Name: c.Name, Type: c.Type, Configs: c.Configs}, true, nil
 	}
 	return nil, false, fmt.Errorf("dev error, repo connector doesn't exist")

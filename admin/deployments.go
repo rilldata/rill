@@ -163,6 +163,9 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 	connectors := res.Instance.Connectors
 	for _, c := range connectors {
 		if c.Name == "repo" {
+			if c.Configs == nil {
+				c.Configs = make(map[string]string)
+			}
 			c.Configs["dsn"] = repoDSN
 			c.Type = repoDriver
 		}
