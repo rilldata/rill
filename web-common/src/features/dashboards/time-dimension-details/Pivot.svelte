@@ -100,6 +100,7 @@
     class="border-collapse"
     style={`height: ${totalVerticalSize}px; max-height: ${totalVerticalSize}px; width: ${totalHorizontalSize}px; max-width: ${totalHorizontalSize}px; overflow: none; table-layout: fixed`}
   >
+
     <thead class="sticky top-0 z-10">
       <PivotVirtualRow element="th" {paddingLeft} {paddingRight}>
         <svelte:fragment slot="pre">
