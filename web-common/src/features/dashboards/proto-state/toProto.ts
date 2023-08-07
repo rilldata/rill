@@ -65,8 +65,8 @@ export function getProtoFromDashboardState(
     );
   }
   state.showComparison = metrics.showComparison;
-  if (metrics.selectedScrubRange && !metrics.selectedScrubRange?.isScrubbing) {
-    state.scrubRange = toTimeRangeProto(metrics.selectedScrubRange);
+  if (metrics.lastDefinedScrubRange) {
+    state.scrubRange = toTimeRangeProto(metrics.lastDefinedScrubRange);
   }
   if (metrics.selectedTimezone) {
     state.selectedTimezone = metrics.selectedTimezone;

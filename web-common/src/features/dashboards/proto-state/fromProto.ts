@@ -76,6 +76,9 @@ export function getDashboardStateFromProto(
     entity.selectedScrubRange = fromTimeRangeProto(
       dashboard.scrubRange
     ) as ScrubRange;
+    entity.lastDefinedScrubRange = fromTimeRangeProto(
+      dashboard.scrubRange
+    ) as ScrubRange;
   }
 
   if (dashboard.leaderboardMeasure) {
