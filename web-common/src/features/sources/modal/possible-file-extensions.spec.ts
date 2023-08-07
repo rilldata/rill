@@ -1,5 +1,5 @@
+import { fileHasValidExtension } from "@rilldata/web-common/features/sources/modal/possible-file-extensions";
 import { describe, expect, it } from "vitest";
-import { fileHasValidExtension } from "@rilldata/web-common/features/sources/add-source/possible-file-extensions";
 
 describe("fileHasValidExtension", () => {
   describe("positive cases", () => {

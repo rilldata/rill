@@ -1,6 +1,10 @@
 <script lang="ts">
+  import { beforeNavigate } from "$app/navigation";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import {
+    featureFlags,
+    retainFeaturesFlags,
+  } from "@rilldata/web-common/features/feature-flags";
   import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
   import {
     QueryCache,
@@ -32,6 +36,8 @@
     // Set read-only mode so that the user can't edit the dashboard
     readOnly: true,
   });
+
+  beforeNavigate(retainFeaturesFlags);
 </script>
 
 <svelte:head>

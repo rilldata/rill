@@ -1,5 +1,5 @@
 import type { Reference } from "@rilldata/web-common/features/models/utils/get-table-references";
-import { humanReadableErrorMessage } from "@rilldata/web-common/features/sources/add-source/errors";
+import { humanReadableErrorMessage } from "@rilldata/web-common/features/sources/modal/errors";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type {
   V1CatalogEntry,
