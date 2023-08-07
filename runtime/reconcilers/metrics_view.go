@@ -74,9 +74,12 @@ func (r *MetricsViewReconciler) validate(ctx context.Context, mv *runtimev1.Metr
 
 	// Check time dimension exists
 	if mv.TimeDimension != "" {
-		_, ok := fields[strings.ToLower(mv.TimeDimension)]
+		f, ok := fields[strings.ToLower(mv.TimeDimension)]
 		if !ok {
 			return fmt.Errorf("timeseries %q is not a column in table %q", mv.TimeDimension, mv.Table)
+		}
+		if f.Type.Code != runtimev1.Type_CODE_TIMESTAMP && f.Type.Code != runtimev1.Type_CODE_DATE {
+			return fmt.Errorf("timeseries %q is not a TIMESTAMP column", mv.TimeDimension)
 		}
 	}
 
