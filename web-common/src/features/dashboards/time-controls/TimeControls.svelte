@@ -181,6 +181,9 @@
   );
 
   function onSelectTimeRange(name: TimeRangeType, start: Date, end: Date) {
+    // Reset scrub when range changes
+    metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
+
     baseTimeRange = {
       name,
       start: new Date(start),
@@ -198,28 +201,25 @@
       // reset the comparison range
       {}
     );
-
-    // Reset scrub when range changes
-    metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
   }
 
   function onSelectTimeGrain(timeGrain: V1TimeGrain) {
+    // Reset scrub when grain changes
+    metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
+
     makeTimeSeriesTimeRangeAndUpdateAppState(
       baseTimeRange,
       timeGrain,
       $dashboardStore?.selectedComparisonTimeRange
     );
-
-    // Reset scrub when grain changes
-    metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
   }
 
   function onSelectTimeZone(timeZone: string) {
-    metricsExplorerStore.setTimeZone(metricViewName, timeZone);
-    localUserPreferences.set({ timeZone });
-
     // Reset scrub when timezone changes
     metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
+
+    metricsExplorerStore.setTimeZone(metricViewName, timeZone);
+    localUserPreferences.set({ timeZone });
   }
 
   function onSelectComparisonRange(
