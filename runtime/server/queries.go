@@ -18,7 +18,7 @@ import (
 
 var mutex sync.Mutex
 
-func UnmarshalJSON(sql []byte) (*jsonvalue.V, error) {
+func unmarshalJSON(sql []byte) (*jsonvalue.V, error) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -127,7 +127,7 @@ func ensureLimits(ctx context.Context, olap drivers.OLAPStore, inputSQL string, 
 
 	r.Close()
 
-	v, err := UnmarshalJSON(serializedSQL)
+	v, err := unmarshalJSON(serializedSQL)
 	if err != nil {
 		return "", err
 	}
@@ -253,7 +253,7 @@ func replaceOrUpdateLimitTo(root *jsonvalue.V, limit int) error {
 }
 
 func createConstantLimit(limit int) (*jsonvalue.V, error) {
-	return UnmarshalJSON([]byte(fmt.Sprintf(`
+	return unmarshalJSON([]byte(fmt.Sprintf(`
 	{
 	   "class":"CONSTANT",
 	   "type":"VALUE_CONSTANT",
@@ -271,7 +271,7 @@ func createConstantLimit(limit int) (*jsonvalue.V, error) {
 }
 
 func createLimitModifier(limit int) (*jsonvalue.V, error) {
-	return UnmarshalJSON([]byte(fmt.Sprintf(`
+	return unmarshalJSON([]byte(fmt.Sprintf(`
 {
 	"type":"LIMIT_MODIFIER",
 	"limit":{
