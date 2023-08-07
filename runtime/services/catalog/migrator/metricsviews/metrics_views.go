@@ -75,7 +75,6 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 		if f.Type.Code != runtimev1.Type_CODE_TIMESTAMP && f.Type.Code != runtimev1.Type_CODE_DATE {
 			return migrator.CreateValidationError(catalog.Path, fmt.Sprintf("timeseries %q is not a TIMESTAMP column", mv.TimeDimension))
 		}
-
 	}
 
 	var validationErrors []*runtimev1.ReconcileError
