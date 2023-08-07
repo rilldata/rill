@@ -6,11 +6,10 @@ import {
   getMapFromArray,
   removeIfExists,
 } from "@rilldata/web-common/lib/arrayUtils";
-import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
+import { getComparionRangeForScrub } from "@rilldata/web-common/lib/time/comparisons";
 import type {
   DashboardTimeControls,
   ScrubRange,
-  TimeComparisonOption,
 } from "@rilldata/web-common/lib/time/types";
 import type {
   V1MetricsView,
@@ -587,11 +586,16 @@ export function useComparisonRange(name: string) {
         entity.lastDefinedScrubRange?.end
       );
 
-      const comparisonRange = getComparisonRange(
+      const comparisonRange = getComparionRangeForScrub(
+        entity.selectedTimeRange?.start,
+        entity.selectedTimeRange?.end,
+        entity.selectedComparisonTimeRange?.start,
+        entity.selectedComparisonTimeRange?.end,
         start,
-        end,
-        entity?.selectedComparisonTimeRange?.name as TimeComparisonOption
+        end
       );
+      console.log(start.toISOString(), end.toISOString(), comparisonRange);
+
       return {
         start: comparisonRange?.start?.toISOString(),
         end: comparisonRange?.end?.toISOString(),
