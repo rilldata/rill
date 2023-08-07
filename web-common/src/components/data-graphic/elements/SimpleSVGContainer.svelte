@@ -24,7 +24,6 @@ to the props.
     startEventName: "scrub-start",
     moveEventName: "scrub-move",
     endEventName: "scrub-end",
-    startPredicate: (e: MouseEvent) => e.shiftKey,
   });
 
   // pull out the scrub action to be attached to the svg element

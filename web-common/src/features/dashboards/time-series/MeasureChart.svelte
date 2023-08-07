@@ -175,16 +175,16 @@
     });
   }
   function startScrub(event) {
-    const startX = event.detail?.start?.x;
-    const scrubStartDate = getBisectedTimeFromCordinates(
-      startX,
-      $xScale,
-      labelAccessor,
-      data,
-      TIME_GRAIN[timeGrain].label
-    );
-
     if (hasSubrangeSelected) {
+      const startX = event.detail?.start?.x;
+      const scrubStartDate = getBisectedTimeFromCordinates(
+        startX,
+        $xScale,
+        labelAccessor,
+        data,
+        TIME_GRAIN[timeGrain].label
+      );
+
       // check if we are scrubbing on the edges of scrub rect
 
       /***
@@ -218,10 +218,19 @@
         return;
       }
     }
-    updateScrub(scrubStartDate, undefined, true);
+    // updateScrub(scrubStartDate, undefined, true);
   }
 
   function moveScrub(event) {
+    const startX = event.detail?.start?.x;
+    const scrubStartDate = getBisectedTimeFromCordinates(
+      startX,
+      $xScale,
+      labelAccessor,
+      data,
+      TIME_GRAIN[timeGrain].label
+    );
+
     let stopX = event.detail?.stop?.x;
     let intermediateScrubVal = getBisectedTimeFromCordinates(
       stopX,
@@ -277,8 +286,11 @@
       }
     } else {
       // Only make state changes when the bisected value changes
-      if (intermediateScrubVal?.getTime() !== scrubEnd?.getTime()) {
-        updateScrub(scrubStart, intermediateScrubVal, true);
+      if (
+        scrubStartDate?.getTime() !== scrubStart?.getTime() ||
+        intermediateScrubVal?.getTime() !== scrubEnd?.getTime()
+      ) {
+        updateScrub(scrubStartDate, intermediateScrubVal, true);
       }
     }
   }
