@@ -610,7 +610,7 @@ func TestAdmin_RBAC(t *testing.T) {
 				Name: orgName,
 			})
 			if err != nil {
-				require.Equal(t, codes.FailedPrecondition, status.Code(err))
+				require.Equal(t, codes.FailedPrecondition, status.Code(err), "error is: %v", err)
 				require.ErrorContains(t, err, "quota exceeded")
 				break
 			}
