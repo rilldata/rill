@@ -93,6 +93,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	}
 
 	names := make(map[string]bool)
+	columns := make(map[string]bool)
 	for i, dim := range tmp.Dimensions {
 		if dim.Ignore {
 			continue
@@ -117,6 +118,12 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			return fmt.Errorf("found duplicate dimension or measure name %q", dim.Name)
 		}
 		names[lower] = true
+
+		lower = strings.ToLower(dim.Column)
+		if ok := columns[lower]; ok {
+			return fmt.Errorf("found duplicate dimension column name %q", dim.Column)
+		}
+		columns[lower] = true
 	}
 
 	measureCount := 0
@@ -137,6 +144,10 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			return fmt.Errorf("found duplicate dimension or measure name %q", measure.Name)
 		}
 		names[lower] = true
+
+		if ok := columns[lower]; ok {
+			return fmt.Errorf("measure name %q coincides with a dimension column name", measure.Name)
+		}
 	}
 	if measureCount == 0 {
 		return fmt.Errorf("must define at least one measure")
