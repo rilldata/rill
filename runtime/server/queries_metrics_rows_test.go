@@ -2,18 +2,21 @@ package server
 
 import (
 	"bytes"
-	"fmt"
-	"strings"
+	"os"
 	"testing"
 
+	"github.com/apache/arrow/go/v11/arrow"
+	"github.com/apache/arrow/go/v11/arrow/array"
+	"github.com/apache/arrow/go/v11/arrow/memory"
+	"github.com/apache/arrow/go/v11/parquet"
+
+	"github.com/apache/arrow/go/v11/parquet/file"
+	"github.com/apache/arrow/go/v11/parquet/pqarrow"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/stretchr/testify/require"
-	"github.com/xitongsys/parquet-go-source/buffer"
 
-	"github.com/xitongsys/parquet-go/parquet"
-	"github.com/xitongsys/parquet-go/reader"
 	"github.com/xuri/excelize/v2"
 )
 
@@ -97,6 +100,10 @@ func TestServer_MetricsViewRows_export(t *testing.T) {
 	require.Equal(t, []string{"2022-01-02T11:58:12.475Z", "Yahoo", "yahoo.com", "2", "4", "1", "cars", "1", "1"}, rows[2][2:])
 }
 
+func getColumnChunk(tbl arrow.Table, col int) arrow.Array {
+	return tbl.Column(col).Data().Chunk(0)
+}
+
 func TestServer_MetricsViewRows_parquet_export(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
@@ -114,65 +121,154 @@ func TestServer_MetricsViewRows_parquet_export(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	fw := buffer.NewBufferFileFromBytes(buf.Bytes())
+	f, err := os.CreateTemp("", "test-export-*")
+	require.NoError(t, err)
+	defer os.Remove(f.Name())
+	defer f.Close()
 
-	reader, err := reader.NewParquetReader(fw, nil, 1)
+	f.Write(buf.Bytes())
+	mem := memory.NewCheckedAllocator(memory.DefaultAllocator)
+	rdr, err := file.OpenParquetFile(f.Name(), false, file.WithReadProps(parquet.NewReaderProperties(mem)))
+	require.NoError(t, err)
+	defer rdr.Close()
 
+	arrowRdr, err := pqarrow.NewFileReader(rdr, pqarrow.ArrowReadProperties{}, mem)
+	require.NoError(t, err)
+	tbl, err := arrowRdr.ReadTable(ctx)
 	require.NoError(t, err)
 
-	values := make(map[string]interface{})
-	for k, columnBuffer := range reader.ColumnBuffers {
-		table, _ := columnBuffer.ReadRows(1)
-		v := table.Values[0]
-		splits := strings.Split(k, "\x01")
-		k = strings.ToLower(splits[len(splits)-1])
-		values[k] = v
-		fmt.Printf("%s %v\n", k, v)
-		require.NotNil(t, v)
-	}
+	/*
+	   -1::INT1 as tint1,
+	   -2::INT2 as tint2,
+	   -4::INT4 as tint4,
+	   -8::INT8 as tint8,
+	   1::UTINYINT as tuint1,
+	   2::USMALLINT as tuint2,
+	   4::UINTEGER as tuint4,
+	   8::UBIGINT as tuint8,
+	   1::HUGEINT as thugeint,
+	   4::FLOAT4 as tfloat4,
+	   8::FLOAT8 as tfloat8,
+	   1::DECIMAL(18,3) as tdecimal,
+	   TRUE as tbool,
+	   ['a','b'] as tlist,
+	   map {'f1' : 1, 'f2': 2} as tmap,
+	   {'f1' : 1, 'f2': { 'f3': 3 }} as tstruct,
+	   TIMESTAMP '2023-01-01' as timestamp,
+	   uuid() as tuuid
+	*/
+	index := 0
+	flds := arrowRdr.Manifest.Fields
+	require.Equal(t, "timestamp__day", flds[index].Field.Name)
+	require.Equal(t, arrow.STRING, flds[index].Field.Type.ID())
+	td := getColumnChunk(tbl, index).(*array.String)
+	require.Equal(t, "2023-01-01T00:00:00Z", td.Value(0))
+	index++
 
-	require.Equal(t, true, values["tbool"])
-	require.Equal(t, int32(-1), values["tint1"])
-	require.Equal(t, int32(-2), values["tint2"])
-	require.Equal(t, int32(-4), values["tint4"])
-	require.Equal(t, int64(-8), values["tint8"])
-	require.Equal(t, int32(1), values["tuint1"])
-	require.Equal(t, int32(2), values["tuint2"])
-	require.Equal(t, int32(4), values["tuint4"])
-	require.Equal(t, int64(8), values["tuint8"])
-	require.Equal(t, float64(1.0), values["thugeint"])
-	require.Equal(t, float32(4.0), values["tfloat4"])
-	require.Equal(t, float64(8.0), values["tfloat8"])
-	require.Equal(t, float64(1.0), values["tdecimal"])
-	require.Equal(t, "2023-01-01T00:00:00Z", values["timestamp"])
-	require.Equal(t, `["a","b"]`, values["tlist"])
-	require.Equal(t, `{"f1":1,"f2":2}`, values["tmap"])
-	require.Equal(t, `{"f1":1,"f2":{"f3":3}}`, values["tstruct"])
+	require.Equal(t, "tint1", flds[index].Field.Name)
+	require.Equal(t, arrow.INT8, flds[index].Field.Type.ID())
+	tint1 := getColumnChunk(tbl, index).(*array.Int8)
+	require.Equal(t, int8(-1), tint1.Value(0))
+	index++
 
-	schema := reader.Footer.Schema
-	meta := make(map[string]*parquet.SchemaElement)
-	for _, elem := range schema {
-		meta[strings.ToLower(elem.GetName())] = elem
-	}
+	require.Equal(t, "tint2", flds[index].Field.Name)
+	require.Equal(t, arrow.INT16, flds[index].Field.Type.ID())
+	tint2 := getColumnChunk(tbl, index).(*array.Int16)
+	require.Equal(t, int16(-2), tint2.Value(0))
+	index++
 
-	require.Equal(t, "BOOLEAN", meta["tbool"].Type.String())
-	require.Equal(t, "IntType({BitWidth:8 IsSigned:true})", meta["tint1"].GetLogicalType().GetINTEGER().String())
-	require.Equal(t, "IntType({BitWidth:16 IsSigned:true})", meta["tint2"].GetLogicalType().GetINTEGER().String())
-	require.Equal(t, "IntType({BitWidth:32 IsSigned:true})", meta["tint4"].GetLogicalType().GetINTEGER().String())
-	require.Equal(t, "IntType({BitWidth:64 IsSigned:true})", meta["tint8"].GetLogicalType().GetINTEGER().String())
-	require.Equal(t, "IntType({BitWidth:8 IsSigned:false})", meta["tuint1"].GetLogicalType().GetINTEGER().String())
-	require.Equal(t, "IntType({BitWidth:16 IsSigned:false})", meta["tuint2"].GetLogicalType().GetINTEGER().String())
-	require.Equal(t, "IntType({BitWidth:32 IsSigned:false})", meta["tuint4"].GetLogicalType().GetINTEGER().String())
-	require.Equal(t, "IntType({BitWidth:64 IsSigned:false})", meta["tuint8"].GetLogicalType().GetINTEGER().String())
-	require.Equal(t, "DOUBLE", meta["thugeint"].Type.String())
-	require.Equal(t, "FLOAT", meta["tfloat4"].Type.String())
-	require.Equal(t, "DOUBLE", meta["tfloat8"].Type.String())
-	require.Equal(t, "DOUBLE", meta["tdecimal"].Type.String())
-	require.Equal(t, "BYTE_ARRAY", meta["timestamp"].Type.String())
-	require.Equal(t, "BYTE_ARRAY", meta["tlist"].Type.String())
-	require.Equal(t, "BYTE_ARRAY", meta["tmap"].Type.String())
-	require.Equal(t, "BYTE_ARRAY", meta["tstruct"].Type.String())
-	require.Equal(t, "BYTE_ARRAY", meta["tuuid"].Type.String())
+	require.Equal(t, "tint4", flds[index].Field.Name)
+	require.Equal(t, arrow.INT32, flds[index].Field.Type.ID())
+	tint4 := getColumnChunk(tbl, index).(*array.Int32)
+	require.Equal(t, int32(-4), tint4.Value(0))
+	index++
 
-	reader.ReadStop()
+	require.Equal(t, "tint8", flds[index].Field.Name)
+	require.Equal(t, arrow.INT64, flds[index].Field.Type.ID())
+	tint8 := getColumnChunk(tbl, index).(*array.Int64)
+	require.Equal(t, int64(-8), tint8.Value(0))
+	index++
+
+	require.Equal(t, "tuint1", flds[index].Field.Name)
+	require.Equal(t, arrow.UINT8, flds[index].Field.Type.ID())
+	tuint1 := getColumnChunk(tbl, index).(*array.Uint8)
+	require.Equal(t, uint8(1), tuint1.Value(0))
+	index++
+
+	require.Equal(t, "tuint2", flds[index].Field.Name)
+	require.Equal(t, arrow.UINT16, flds[index].Field.Type.ID())
+	tuint2 := getColumnChunk(tbl, index).(*array.Uint16)
+	require.Equal(t, uint16(2), tuint2.Value(0))
+	index++
+
+	require.Equal(t, "tuint4", flds[index].Field.Name)
+	require.Equal(t, arrow.UINT32, flds[index].Field.Type.ID())
+	tuint4 := getColumnChunk(tbl, index).(*array.Uint32)
+	require.Equal(t, uint32(4), tuint4.Value(0))
+	index++
+
+	require.Equal(t, "tuint8", flds[index].Field.Name)
+	require.Equal(t, arrow.UINT64, flds[index].Field.Type.ID())
+	tuint8 := getColumnChunk(tbl, index).(*array.Uint64)
+	require.Equal(t, uint64(8), tuint8.Value(0))
+	index++
+
+	require.Equal(t, "thugeint", flds[index].Field.Name)
+	require.Equal(t, arrow.FLOAT64, flds[index].Field.Type.ID())
+	thugeint := getColumnChunk(tbl, index).(*array.Float64)
+	require.Equal(t, float64(1), thugeint.Value(0))
+	index++
+
+	require.Equal(t, "tfloat4", flds[index].Field.Name)
+	require.Equal(t, arrow.FLOAT32, flds[index].Field.Type.ID())
+	tfloat4 := getColumnChunk(tbl, index).(*array.Float32)
+	require.Equal(t, float32(4), tfloat4.Value(0))
+	index++
+
+	require.Equal(t, "tfloat8", flds[index].Field.Name)
+	require.Equal(t, arrow.FLOAT64, flds[index].Field.Type.ID())
+	tfloat8 := getColumnChunk(tbl, index).(*array.Float64)
+	require.Equal(t, float64(8), tfloat8.Value(0))
+	index++
+
+	require.Equal(t, "tdecimal", flds[index].Field.Name)
+	require.Equal(t, arrow.FLOAT64, flds[index].Field.Type.ID())
+	tdecimal := getColumnChunk(tbl, index).(*array.Float64)
+	require.Equal(t, float64(1), tdecimal.Value(0))
+	index++
+
+	require.Equal(t, "tbool", flds[index].Field.Name)
+	require.Equal(t, arrow.BOOL, flds[index].Field.Type.ID())
+	tbool := getColumnChunk(tbl, index).(*array.Boolean)
+	require.Equal(t, true, tbool.Value(0))
+	index++
+
+	require.Equal(t, "tlist", flds[index].Field.Name)
+	require.Equal(t, arrow.STRING, flds[index].Field.Type.ID())
+	tlist := getColumnChunk(tbl, index).(*array.String)
+	require.Equal(t, `["a","b"]`, tlist.Value(0))
+	index++
+
+	require.Equal(t, "tmap", flds[index].Field.Name)
+	require.Equal(t, arrow.STRING, flds[index].Field.Type.ID())
+	tmap := getColumnChunk(tbl, index).(*array.String)
+	require.Equal(t, `{"f1":1,"f2":2}`, tmap.Value(0))
+	index++
+
+	require.Equal(t, "tstruct", flds[index].Field.Name)
+	require.Equal(t, arrow.STRING, flds[index].Field.Type.ID())
+	tstruct := getColumnChunk(tbl, index).(*array.String)
+	require.Equal(t, `{"f1":1,"f2":{"f3":3}}`, tstruct.Value(0))
+	index++
+
+	require.Equal(t, "timestamp", flds[index].Field.Name)
+	require.Equal(t, arrow.STRING, flds[index].Field.Type.ID())
+	ttimestamp := getColumnChunk(tbl, index).(*array.String)
+	require.True(t, len(ttimestamp.Value(0)) > 0)
+	index++
+
+	require.Equal(t, "tuuid", flds[index].Field.Name)
+	require.Equal(t, arrow.STRING, flds[index].Field.Type.ID())
+	tuuid := getColumnChunk(tbl, index).(*array.String)
+	require.True(t, len(tuuid.Value(0)) > 0)
 }

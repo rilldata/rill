@@ -7,15 +7,14 @@ import (
 	"io"
 	"strings"
 
-	"github.com/apache/arrow/go/arrow"
-	"github.com/apache/arrow/go/arrow/array"
-	"github.com/apache/arrow/go/arrow/memory"
+	"github.com/apache/arrow/go/v11/arrow"
+	"github.com/apache/arrow/go/v11/arrow/array"
+	"github.com/apache/arrow/go/v11/arrow/memory"
+	"github.com/apache/arrow/go/v11/parquet/pqarrow"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
-	"github.com/xitongsys/parquet-go-source/buffer"
-	parquetwriter "github.com/xitongsys/parquet-go/writer"
 	"github.com/xuri/excelize/v2"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -415,36 +414,41 @@ func writeParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, 
 	for _, f := range meta {
 		arrowField := arrow.Field{}
 		arrowField.Name = f.Name
-		switch f.Type {
-		case "CODE_BOOL":
+		typeCode := runtimev1.Type_Code(runtimev1.Type_Code_value[f.Type])
+		switch typeCode {
+		case runtimev1.Type_CODE_BOOL:
 			arrowField.Type = arrow.FixedWidthTypes.Boolean
-		case "CODE_INT8":
+		case runtimev1.Type_CODE_INT8:
 			arrowField.Type = arrow.PrimitiveTypes.Int8
-		case "CODE_INT16":
+		case runtimev1.Type_CODE_INT16:
 			arrowField.Type = arrow.PrimitiveTypes.Int16
-		case "CODE_INT32":
+		case runtimev1.Type_CODE_INT32:
 			arrowField.Type = arrow.PrimitiveTypes.Int32
-		case "CODE_INT64":
+		case runtimev1.Type_CODE_INT64:
 			arrowField.Type = arrow.PrimitiveTypes.Int64
-		case "CODE_INT128":
+		case runtimev1.Type_CODE_INT128:
 			arrowField.Type = arrow.PrimitiveTypes.Float64
-		case "CODE_UINT8":
+		case runtimev1.Type_CODE_UINT8:
 			arrowField.Type = arrow.PrimitiveTypes.Uint8
-		case "CODE_UINT16":
+		case runtimev1.Type_CODE_UINT16:
 			arrowField.Type = arrow.PrimitiveTypes.Uint16
-		case "CODE_UINT32":
+		case runtimev1.Type_CODE_UINT32:
 			arrowField.Type = arrow.PrimitiveTypes.Uint32
-		case "CODE_UINT64":
+		case runtimev1.Type_CODE_UINT64:
 			arrowField.Type = arrow.PrimitiveTypes.Uint64
-		case "CODE_DECIMAL":
+		case runtimev1.Type_CODE_DECIMAL:
 			arrowField.Type = arrow.PrimitiveTypes.Float64
-		case "CODE_FLOAT32":
+		case runtimev1.Type_CODE_FLOAT32:
 			arrowField.Type = arrow.PrimitiveTypes.Float32
-		case "CODE_FLOAT64":
+		case runtimev1.Type_CODE_FLOAT64:
 			arrowField.Type = arrow.PrimitiveTypes.Float64
-		case "CODE_STRUCT", "CODE_UUID", "CODE_ARRAY", "CODE_TIMESTAMP", "CODE_TIME", "CODE_DATE", "CODE_STRING", "CODE_MAP":
+		case runtimev1.Type_CODE_STRUCT, runtimev1.Type_CODE_UUID, runtimev1.Type_CODE_ARRAY, runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_MAP:
 			arrowField.Type = arrow.BinaryTypes.String
-		case "CODE_BYTES":
+		case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_TIME, runtimev1.Type_CODE_DATE:
+			// arrowField.Type = arrow.FixedWidthTypes.Timestamp_us // todo
+			arrowField.Type = arrow.BinaryTypes.String
+
+		case runtimev1.Type_CODE_BYTES:
 			arrowField.Type = arrow.BinaryTypes.Binary
 		}
 		fields = append(fields, arrowField)
@@ -457,34 +461,40 @@ func writeParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, 
 	for _, s := range data {
 		for idx, t := range meta {
 			v := s.Fields[t.Name]
-			switch t.Type {
-			case "CODE_BOOL":
+			typeCode := runtimev1.Type_Code(runtimev1.Type_Code_value[t.Type])
+			switch typeCode {
+			case runtimev1.Type_CODE_BOOL:
 				recordBuilder.Field(idx).(*array.BooleanBuilder).Append(v.GetBoolValue())
-			case "CODE_INT8":
+			case runtimev1.Type_CODE_INT8:
 				recordBuilder.Field(idx).(*array.Int8Builder).Append(int8(v.GetNumberValue()))
-			case "CODE_INT16":
+			case runtimev1.Type_CODE_INT16:
 				recordBuilder.Field(idx).(*array.Int16Builder).Append(int16(v.GetNumberValue()))
-			case "CODE_INT32":
+			case runtimev1.Type_CODE_INT32:
 				recordBuilder.Field(idx).(*array.Int32Builder).Append(int32(v.GetNumberValue()))
-			case "CODE_INT64":
+			case runtimev1.Type_CODE_INT64:
 				recordBuilder.Field(idx).(*array.Int64Builder).Append(int64(v.GetNumberValue()))
-			case "CODE_UINT8":
+			case runtimev1.Type_CODE_UINT8:
 				recordBuilder.Field(idx).(*array.Uint8Builder).Append(uint8(v.GetNumberValue()))
-			case "CODE_UINT16":
+			case runtimev1.Type_CODE_UINT16:
 				recordBuilder.Field(idx).(*array.Uint16Builder).Append(uint16(v.GetNumberValue()))
-			case "CODE_UINT32":
+			case runtimev1.Type_CODE_UINT32:
 				recordBuilder.Field(idx).(*array.Uint32Builder).Append(uint32(v.GetNumberValue()))
-			case "CODE_UINT64":
+			case runtimev1.Type_CODE_UINT64:
 				recordBuilder.Field(idx).(*array.Uint64Builder).Append(uint64(v.GetNumberValue()))
-			case "CODE_INT128":
+			case runtimev1.Type_CODE_INT128:
 				recordBuilder.Field(idx).(*array.Float64Builder).Append((v.GetNumberValue()))
-			case "CODE_FLOAT32":
+			case runtimev1.Type_CODE_FLOAT32:
 				recordBuilder.Field(idx).(*array.Float32Builder).Append(float32(v.GetNumberValue()))
-			case "CODE_FLOAT64", "CODE_DECIMAL":
+			case runtimev1.Type_CODE_FLOAT64, runtimev1.Type_CODE_DECIMAL:
 				recordBuilder.Field(idx).(*array.Float64Builder).Append(v.GetNumberValue())
-			case "CODE_STRING", "CODE_UUID", "CODE_TIMESTAMP":
+			case runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_UUID:
 				recordBuilder.Field(idx).(*array.StringBuilder).Append(v.GetStringValue())
-			case "CODE_ARRAY", "CODE_MAP", "CODE_STRUCT":
+			case runtimev1.Type_CODE_TIMESTAMP:
+				// array.Timestamp
+				// recordBuilder.Field(idx).(*array.TimestampBuilder).Append(arrow.TimestampFromString(v.GetStringValue(), time.Microsecond)) // todo
+				recordBuilder.Field(idx).(*array.StringBuilder).Append(v.GetStringValue())
+
+			case runtimev1.Type_CODE_ARRAY, runtimev1.Type_CODE_MAP, runtimev1.Type_CODE_STRUCT:
 				bts, err := protojson.Marshal(v)
 				if err != nil {
 					return err
@@ -495,21 +505,14 @@ func writeParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, 
 		}
 	}
 
-	rec := recordBuilder.NewRecord()
-	bufferFile := buffer.NewBufferFile()
-	arrowWriter, err := parquetwriter.NewArrowWriter(schema, bufferFile, 1)
+	parquetwriter, err := pqarrow.NewFileWriter(schema, ioWriter, nil, pqarrow.ArrowWriterProperties{})
 	if err != nil {
 		return err
 	}
 
-	if err := arrowWriter.WriteArrow(rec); err != nil {
-		return err
-	}
+	defer parquetwriter.Close()
 
-	if err := arrowWriter.WriteStop(); err != nil {
-		return err
-	}
-
-	_, err = ioWriter.Write(bufferFile.Bytes())
+	rec := recordBuilder.NewRecord()
+	err = parquetwriter.Write(rec)
 	return err
 }
