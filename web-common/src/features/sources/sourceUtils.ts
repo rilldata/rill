@@ -43,19 +43,26 @@ export function compileCreateSourceYAML(
 
 function buildDuckDbQuery(path: string): string {
   const extension = extractFileExtension(path as string);
-  if (containsAny(extension, [".csv", ".tsv", ".txt"])) {
+  if (extensionContainsParts(extension, [".csv", ".tsv", ".txt"])) {
     return `select * from read_csv_auto('${path}')`;
-  } else if (containsAny(extension, [".parquet"])) {
+  } else if (extensionContainsParts(extension, [".parquet"])) {
     return `select * from read_parquet('${path}')`;
-  } else if (containsAny(extension, [".json", ".ndjson"])) {
-    return `select * from read_json('${path}',auto_detect=true,format='auto')`;
+  } else if (extensionContainsParts(extension, [".json", ".ndjson"])) {
+    return `select * from read_json('${path}', auto_detect=true, format='auto')`;
   }
-  return `select * from '${path}'`;
+
+  throw new Error(`Unsupported extension ${extension} for ${path}`);
 }
 
-function containsAny(fullExtensions: string, extensions: Array<string>) {
-  for (const extension of extensions) {
-    if (fullExtensions.indexOf(extension) >= 0) return true;
+/**
+ * Checks if a file extension '.v1.parquet.gz' contains parts like '.parquet'
+ */
+function extensionContainsParts(
+  fileExtension: string,
+  extensionParts: Array<string>
+) {
+  for (const extension of extensionParts) {
+    if (fileExtension.indexOf(extension) >= 0) return true;
   }
   return false;
 }
