@@ -16,10 +16,6 @@
     unsubscribe = useDashboardUrlSync(metricViewName, metricsViewQuery);
   }
 
-  $: if ($metricsViewQuery.data) {
-    metricsExplorerStore.sync(metricViewName, $metricsViewQuery.data);
-  }
-
   const { dashboardStore } = getStateManagers();
 
   onDestroy(() => {

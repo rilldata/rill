@@ -112,20 +112,39 @@ export function clearMetricsExplorerStore() {
   metricsExplorerStore.remove(AD_BIDS_MIRROR_NAME);
 }
 
-export function createAdBidsInStore() {
-  metricsExplorerStore.sync(AD_BIDS_NAME, {
-    name: "AdBids",
-    measures: AD_BIDS_INIT_MEASURES,
-    dimensions: AD_BIDS_INIT_DIMENSIONS,
-  });
-  // clear everything if already created
-  metricsExplorerStore.clearFilters(AD_BIDS_NAME);
-  metricsExplorerStore.setSelectedTimeRange(AD_BIDS_NAME, {
-    name: TimeRangePreset.ALL_TIME,
-    interval: V1TimeGrain.TIME_GRAIN_MINUTE,
-    start: TestTimeConstants.LAST_DAY,
-    end: TestTimeConstants.NOW,
-  });
+export function initAdBidsInStore() {
+  metricsExplorerStore.init(
+    AD_BIDS_NAME,
+    {
+      name: "AdBids",
+      measures: AD_BIDS_INIT_MEASURES,
+      dimensions: AD_BIDS_INIT_DIMENSIONS,
+    },
+    {
+      timeRangeSummary: {
+        min: TestTimeConstants.LAST_DAY.toISOString(),
+        max: TestTimeConstants.NOW.toISOString(),
+        interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
+      },
+    }
+  );
+}
+export function initAdBidsMirrorInStore() {
+  metricsExplorerStore.init(
+    AD_BIDS_MIRROR_NAME,
+    {
+      name: AD_BIDS_MIRROR_NAME,
+      measures: AD_BIDS_INIT_MEASURES,
+      dimensions: AD_BIDS_INIT_DIMENSIONS,
+    },
+    {
+      timeRangeSummary: {
+        min: TestTimeConstants.LAST_DAY.toISOString(),
+        max: TestTimeConstants.NOW.toISOString(),
+        interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
+      },
+    }
+  );
 }
 
 export function createAdBidsMirrorInStore(metrics: V1MetricsView) {
@@ -192,9 +211,9 @@ export function assertMetricsView(
   },
   timeRange: DashboardTimeControls = {
     name: TimeRangePreset.ALL_TIME,
-    interval: V1TimeGrain.TIME_GRAIN_MINUTE,
+    interval: V1TimeGrain.TIME_GRAIN_HOUR,
     start: TestTimeConstants.LAST_DAY,
-    end: TestTimeConstants.NOW,
+    end: new Date(TestTimeConstants.NOW.getTime() + 1),
   },
   selectedMeasure = AD_BIDS_IMPRESSIONS_MEASURE
 ) {
@@ -260,7 +279,7 @@ export const AD_BIDS_CLEARED_FILTER = {
 // parsed time controls won't have start & end
 export const ALL_TIME_PARSED_TEST_CONTROLS = {
   name: TimeRangePreset.ALL_TIME,
-  interval: V1TimeGrain.TIME_GRAIN_MINUTE,
+  interval: V1TimeGrain.TIME_GRAIN_HOUR,
 } as DashboardTimeControls;
 
 export const LAST_6_HOURS_TEST_CONTROLS = {

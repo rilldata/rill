@@ -2,11 +2,12 @@ import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/d
 import {
   AD_BIDS_NAME,
   AD_BIDS_PUBLISHER_DIMENSION,
-  clearMetricsExplorerStore,
-  createAdBidsInStore,
+  initAdBidsInStore,
   createMetricsMetaQueryMock,
+  initAdBidsMirrorInStore,
 } from "@rilldata/web-common/features/dashboards/dashboard-stores-test-data";
 import { useDashboardUrlSync } from "@rilldata/web-common/features/dashboards/proto-state/dashboard-url-state";
+import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import type { Page } from "@sveltejs/kit";
 import { get, Readable, writable } from "svelte/store";
 import {
@@ -35,19 +36,18 @@ vi.mock("$app/stores", () => {
 describe("useDashboardUrlSync", () => {
   beforeAll(() => {
     createPageMock();
+    initLocalUserPreferenceStore(AD_BIDS_NAME);
   });
 
   beforeEach(() => {
-    clearMetricsExplorerStore();
+    initAdBidsInStore();
+    initAdBidsMirrorInStore();
   });
 
   it("Changes from dashboard", async () => {
     const metaMock = createMetricsMetaQueryMock();
-    createAdBidsInStore();
     const unsubscribe = useDashboardUrlSync(AD_BIDS_NAME, metaMock);
-    // needed to set the defaults correctly
-    metricsExplorerStore.displayComparison(AD_BIDS_NAME, true);
-    metricsExplorerStore.allDefaultsSelected(AD_BIDS_NAME);
+    await new Promise((resolve) => setTimeout(resolve, 10));
 
     expect(pageMock.gotoSpy).toBeCalledTimes(0);
 
@@ -57,9 +57,7 @@ describe("useDashboardUrlSync", () => {
       "Google"
     );
     await new Promise((resolve) => setTimeout(resolve, 10));
-    expect(get(pageMock).url.searchParams.get("state")).toEqual(
-      get(metricsExplorerStore).entities[AD_BIDS_NAME].proto
-    );
+    assertUrlState(get(metricsExplorerStore).entities[AD_BIDS_NAME].proto);
     const protoWithFilter =
       get(metricsExplorerStore).entities[AD_BIDS_NAME].proto;
     expect(pageMock.gotoSpy).toBeCalledTimes(1);
@@ -76,9 +74,7 @@ describe("useDashboardUrlSync", () => {
 
     pageMock.updateState(protoWithFilter);
     await new Promise((resolve) => setTimeout(resolve, 10));
-    expect(get(pageMock).url.searchParams.get("state")).toEqual(
-      get(metricsExplorerStore).entities[AD_BIDS_NAME].proto
-    );
+    assertUrlState(get(metricsExplorerStore).entities[AD_BIDS_NAME].proto);
     expect(get(metricsExplorerStore).entities[AD_BIDS_NAME].filters).toEqual({
       include: [
         {
@@ -124,4 +120,11 @@ function createPageMock() {
     });
   };
   pageMock.gotoSpy = vi.spyOn(pageMock, "goto");
+}
+
+function assertUrlState(expected: string) {
+  const actual = decodeURIComponent(
+    get(pageMock).url.searchParams.get("state")
+  );
+  expect(actual).toEqual(expected);
 }

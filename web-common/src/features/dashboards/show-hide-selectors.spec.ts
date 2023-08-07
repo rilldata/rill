@@ -17,26 +17,36 @@ import {
   AD_BIDS_WITH_THREE_DIMENSIONS,
   AD_BIDS_WITH_THREE_MEASURES,
   assertVisiblePartsOfMetricsView,
-  createAdBidsInStore,
+  initAdBidsInStore,
   createAdBidsMirrorInStore,
   createMetricsMetaQueryMock,
+  initAdBidsMirrorInStore,
 } from "@rilldata/web-common/features/dashboards/dashboard-stores-test-data";
 import {
   createShowHideDimensionsStore,
   createShowHideMeasuresStore,
 } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
+import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
-import { describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 describe("Show/Hide Selectors", () => {
+  beforeAll(() => {
+    initLocalUserPreferenceStore(AD_BIDS_NAME);
+  });
+
+  beforeEach(() => {
+    initAdBidsInStore();
+    initAdBidsMirrorInStore();
+  });
+
   describe("Show/Hide measures", () => {
     it("Toggle individual visibility", () => {
       const mock = createMetricsMetaQueryMock(false);
       const showHideMeasure = createShowHideMeasuresStore(AD_BIDS_NAME, mock);
       expect(get(showHideMeasure).selectedItems).toEqual([]);
 
-      createAdBidsInStore();
       mock.setMeasures(AD_BIDS_INIT_MEASURES);
       assertVisiblePartsWithMirroring(
         get(mock).data,
@@ -80,7 +90,6 @@ describe("Show/Hide Selectors", () => {
     it("Toggle all visibility", () => {
       const mock = createMetricsMetaQueryMock(false);
       const showHideMeasure = createShowHideMeasuresStore(AD_BIDS_NAME, mock);
-      createAdBidsInStore();
       mock.setMeasures(AD_BIDS_INIT_MEASURES);
       expect(get(showHideMeasure).selectedItems).toEqual([true, true]);
 
@@ -108,7 +117,6 @@ describe("Show/Hide Selectors", () => {
     it("Meta query updates", () => {
       const mock = createMetricsMetaQueryMock(false);
       const showHideMeasure = createShowHideMeasuresStore(AD_BIDS_NAME, mock);
-      createAdBidsInStore();
       mock.setMeasures(AD_BIDS_INIT_MEASURES);
       expect(get(showHideMeasure).selectedItems).toEqual([true, true]);
 
@@ -135,7 +143,6 @@ describe("Show/Hide Selectors", () => {
     it("Meta query updates with new measure and some measures selected", () => {
       const mock = createMetricsMetaQueryMock(false);
       const showHideMeasure = createShowHideMeasuresStore(AD_BIDS_NAME, mock);
-      createAdBidsInStore();
       mock.setMeasures(AD_BIDS_INIT_MEASURES);
       expect(get(showHideMeasure).selectedItems).toEqual([true, true]);
 
@@ -163,7 +170,6 @@ describe("Show/Hide Selectors", () => {
       const mock = createMetricsMetaQueryMock(false);
       const showHideMeasure = createShowHideMeasuresStore(AD_BIDS_NAME, mock);
       showHideMeasure.setAllToVisible();
-      createAdBidsInStore();
       mock.setMeasures(AD_BIDS_INIT_MEASURES);
       expect(get(showHideMeasure).selectedItems).toEqual([true, true]);
 
@@ -198,7 +204,6 @@ describe("Show/Hide Selectors", () => {
       );
       expect(get(showHideDimensions).selectedItems).toEqual([]);
 
-      createAdBidsInStore();
       mock.setDimensions(AD_BIDS_INIT_DIMENSIONS);
       assertVisiblePartsWithMirroring(get(mock).data, undefined, [
         AD_BIDS_PUBLISHER_DIMENSION,
@@ -241,7 +246,6 @@ describe("Show/Hide Selectors", () => {
         AD_BIDS_NAME,
         mock
       );
-      createAdBidsInStore();
       mock.setDimensions(AD_BIDS_INIT_DIMENSIONS);
       expect(get(showHideDimensions).selectedItems).toEqual([true, true]);
 
@@ -269,7 +273,6 @@ describe("Show/Hide Selectors", () => {
         AD_BIDS_NAME,
         mock
       );
-      createAdBidsInStore();
       mock.setDimensions(AD_BIDS_INIT_DIMENSIONS);
       expect(get(showHideDimensions).selectedItems).toEqual([true, true]);
 
@@ -296,7 +299,6 @@ describe("Show/Hide Selectors", () => {
         AD_BIDS_NAME,
         mock
       );
-      createAdBidsInStore();
       mock.setDimensions(AD_BIDS_INIT_DIMENSIONS);
       expect(get(showHideDimensions).selectedItems).toEqual([true, true]);
 
@@ -329,7 +331,6 @@ describe("Show/Hide Selectors", () => {
         mock
       );
       showHideDimensions.setAllToVisible();
-      createAdBidsInStore();
       mock.setDimensions(AD_BIDS_INIT_DIMENSIONS);
       expect(get(showHideDimensions).selectedItems).toEqual([true, true]);
 

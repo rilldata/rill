@@ -69,8 +69,17 @@ export function useDashboardUrlSync(
 ) {
   const dashboardUrlState = useDashboardUrlState(metricViewName);
   let lastKnownProto: string;
+  let isInit = false;
   return dashboardUrlState.subscribe((state) => {
     if (state.urlName !== metricViewName) return;
+    if (!state.proto) {
+      isInit = true;
+      return;
+    }
+    if (isInit && state.proto === state.defaultProto) {
+      lastKnownProto = state.proto;
+      isInit = false;
+    }
 
     if (state.proto !== lastKnownProto) {
       // changed when filters etc are changed on the dashboard
