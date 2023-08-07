@@ -221,6 +221,7 @@
         on:select={() => zoomScrub(toggleFloatingElement)}
       >
         <span> Zoom to subrange </span>
+        <span slot="right">Z</span>
       </MenuItem>
       <Divider />
     {/if}
