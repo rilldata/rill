@@ -200,7 +200,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 }
 
 func parse(s string) []*runtime.Connector {
-	if len(s) == 0 {
+	if s == "" {
 		return make([]*runtime.Connector, 0)
 	}
 	var defs []*runtime.Connector
