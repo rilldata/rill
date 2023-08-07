@@ -119,7 +119,7 @@ func (s *Service) ValidateAuthToken(ctx context.Context, token string) (AuthToke
 			return nil, fmt.Errorf("invalid auth token")
 		}
 
-		s.Used.UserTokens(parsed.ID.String())
+		s.Used.UserToken(uat.ID)
 		s.Used.User(uat.UserID)
 
 		return &userAuthToken{model: uat, token: parsed}, nil
@@ -137,7 +137,7 @@ func (s *Service) ValidateAuthToken(ctx context.Context, token string) (AuthToke
 			return nil, fmt.Errorf("invalid auth token")
 		}
 
-		s.Used.ServiceTokens(parsed.ID.String())
+		s.Used.ServiceToken(sat.ID)
 
 		return &serviceAuthToken{model: sat, token: parsed}, nil
 	default:
