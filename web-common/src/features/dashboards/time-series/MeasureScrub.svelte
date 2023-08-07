@@ -87,7 +87,7 @@
         stroke-width={strokeWidth}
       />
     </g>
-    <g opacity={isScrubbing ? "0.4" : "0.3"}>
+    <g opacity={isScrubbing ? "0.4" : "0.2"}>
       <rect
         class:rect-shadow={isScrubbing}
         x={Math.min(xStart, xEnd)}

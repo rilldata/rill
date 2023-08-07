@@ -7,7 +7,10 @@
     Axis,
     Grid,
   } from "@rilldata/web-common/components/data-graphic/guides";
-  import { ChunkedLine } from "@rilldata/web-common/components/data-graphic/marks";
+  import {
+    ClippedChunkedLine,
+    ChunkedLine,
+  } from "@rilldata/web-common/components/data-graphic/marks";
   import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { previousValueStore } from "@rilldata/web-common/lib/store-utils";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
@@ -374,6 +377,19 @@
       {xAccessor}
       {yAccessor}
     />
+    {#if hasSubrangeSelected}
+      <ClippedChunkedLine
+        start={Math.min(scrubStart, scrubEnd)}
+        end={Math.max(scrubStart, scrubEnd)}
+        lineColor="hsla(217,60%, 55%, 1)"
+        areaColor="hsla(217,70%, 80%, .4)"
+        delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
+        duration={$timeRangeKey !== $previousTimeRangeKey ? 0 : 200}
+        {data}
+        {xAccessor}
+        {yAccessor}
+      />
+    {/if}
     <!-- {/key} -->
     <line
       x1={config.plotLeft}
