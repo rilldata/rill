@@ -3,44 +3,40 @@
   import Pivot from "./Pivot.svelte";
   import TimeDimensionDetailsTableCell from "./TimeDimensionDetailsTableCell.svelte";
   import TimeDimensionDetailsTableHeaderCell from "./TimeDimensionDetailsTableHeaderCell.svelte";
-  import { writable } from "svelte/store";
+  import { createTimeDimensionDetailsStore } from "./time-dimension-details-store";
 
-  let store = writable<{
-    highlightedCol: number | null;
-    highlightedRow: number | null;
-    scrubbedCols: [number, number] | null;
-  }>({
-    highlightedCol: null,
-    highlightedRow: null,
-    scrubbedCols: [8, 12],
-  });
+  // Store of state to share between line chart and table
+  let store = createTimeDimensionDetailsStore();
 
   // Mock state for now
+  const FIXED_COL_CT = 6;
   let state = {
     getRowSize: () => 35,
-    getColumnWidth: (idx: number) => (idx < 6 ? 60 : 100),
+    getColumnWidth: (idx: number) => (idx < FIXED_COL_CT ? 60 : 100),
     renderCell: (rowIdx, colIdx) =>
       flexRender(TimeDimensionDetailsTableCell, {
         rowIdx,
         colIdx,
         store,
-        fixed: colIdx < 6,
+        fixed: colIdx < FIXED_COL_CT,
+        lastFixed: colIdx === FIXED_COL_CT - 1,
       }),
-    renderHeaderCell: (rowIdx, colIdx) => flexRender(TimeDimensionDetailsTableHeaderCell, {
-      rowIdx,
-      colIdx,
-      store,
-      fixed: colIdx < 6
-    })
+    renderHeaderCell: (rowIdx, colIdx) =>
+      flexRender(TimeDimensionDetailsTableHeaderCell, {
+        rowIdx,
+        colIdx,
+        store,
+        fixed: colIdx < FIXED_COL_CT,
+        lastFixed: colIdx === FIXED_COL_CT - 1,
+      }),
   };
-
 
   // Mock data that is fetched from backend
   let data = {
     data: [],
     metadata: {
       rowCt: 1000,
-      fixedColumnCt: 6,
+      fixedColumnCt: FIXED_COL_CT,
       pivotColumnCt: 100,
     },
   };
@@ -56,17 +52,13 @@
 
     data.data.push(row);
   }
-
-  const handleEvt = (evt) =>
-    ($store.highlightedCol = parseInt(evt.target.value));
-  const handleRow = (evt) =>
-    ($store.highlightedRow = parseInt(evt.target.value));
 </script>
 
-<!-- @ts-ignore -->
-<input class="border" on:input={handleRow} />
-<input class="border" on:input={handleEvt} />
-
+<h1>Store</h1>
+<pre>
+  {JSON.stringify($store, null, 2)}
+</pre>
+<h1>Table</h1>
 <Pivot
   height={400}
   rowCt={data.metadata.rowCt}

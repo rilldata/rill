@@ -1,18 +1,20 @@
 <script lang="ts">
   import type { Writable } from "svelte/store";
+  import type { TimeDimensionDetailsStore } from "./time-dimension-details-store";
 
   export let rowIdx: number;
   export let colIdx: number;
   export let fixed: boolean;
-  export let store: Writable<{
-    highlightedCol: number | null;
-    highlightedRow: number | null;
-    scrubbedCols: [number, number] | null;
-  }>;
+  export let lastFixed: boolean;
+  export let store: Writable<TimeDimensionDetailsStore>;
 
   let _class = "";
   $: {
     _class = "h-full ";
+    if (fixed) _class += ` z-2`;
+    if (lastFixed) _class += ` right-shadow`;
+
+    // Determine background color based on store
     const isRowHighlighted = $store.highlightedRow === rowIdx;
     const isColHighlighted = $store.highlightedCol === colIdx;
     const isHighlighted = isRowHighlighted || isColHighlighted;
@@ -23,44 +25,37 @@
       colIdx <= $store.scrubbedCols.at(1);
 
     let bgColors = {
-        fixed: {
-            base: "bg-slate-50",
-            highlighted: "bg-slate-100",
-            doubleHighlighted: "bg-slate-200"
-        },
-        scrubbed: {
-            base: "bg-blue-50",
-            highlighted: "bg-blue-100",
-            doubleHighlighted: "bg-blue-200"
-        },
-        default: {
-            base: "bg-white",
-            highlighted: "bg-gray-100",
-            doubleHighlighted: "bg-gray-200"
-        }
-    }
-    
+      fixed: {
+        base: "bg-slate-50",
+        highlighted: "bg-slate-100",
+        doubleHighlighted: "bg-slate-200",
+      },
+      scrubbed: {
+        base: "bg-blue-50",
+        highlighted: "bg-blue-100",
+        doubleHighlighted: "bg-blue-200",
+      },
+      default: {
+        base: "bg-white",
+        highlighted: "bg-gray-100",
+        doubleHighlighted: "bg-gray-200",
+      },
+    };
+
+    // Choose palette based on type of cell state
     let palette = bgColors.default;
     if (fixed) palette = bgColors.fixed;
     else if (isScrubbed) palette = bgColors.scrubbed;
 
+    // Choose color within palette based on highlighted state
     let colorName = palette.base;
-    if(isDoubleHighlighted) colorName = palette.doubleHighlighted;
-    else if(isHighlighted) colorName = palette.highlighted;
+    if (isDoubleHighlighted) colorName = palette.doubleHighlighted;
+    else if (isHighlighted) colorName = palette.highlighted;
     _class += ` ${colorName}`;
-
-    if (fixed) _class += ` z-2`;
-
-    // TODO: clean this up
-    if(colIdx === 5) _class += ` right-shadow`
   }
 
   const handleMouseEnter = () => {
-    if (rowIdx < 0) {
-      $store.highlightedRow = null;
-    } else {
-      $store.highlightedRow = rowIdx;
-    }
+    $store.highlightedRow = rowIdx;
     $store.highlightedCol = colIdx;
   };
   const handleMouseLeave = () => {
@@ -88,15 +83,14 @@
 {/if}
 
 <style>
-
-    .right-shadow:after {
-        content: "";
-        width: 1px;
-        height: 100%;
-        position: absolute;
-        top: 0px;
-        right: 0px;
-        background: #e5e7eb;
-        filter: drop-shadow(3px 0px 3px rgb(0 0 0 / 0.27))
-    }
+  .right-shadow:after {
+    content: "";
+    width: 1px;
+    height: 100%;
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    background: #e5e7eb;
+    filter: drop-shadow(3px 0px 3px rgb(0 0 0 / 0.27));
+  }
 </style>
