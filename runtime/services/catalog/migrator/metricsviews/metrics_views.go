@@ -75,8 +75,20 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 
 	var validationErrors []*runtimev1.ReconcileError
 
+	columnNames := make(map[string]bool)
 	dimensionNames := make(map[string]bool)
 	for i, dimension := range mv.Dimensions {
+		if _, ok := columnNames[strings.ToLower(dimension.Column)]; ok {
+			validationErrors = append(validationErrors, &runtimev1.ReconcileError{
+				Code:         runtimev1.ReconcileError_CODE_VALIDATION,
+				FilePath:     catalog.Path,
+				Message:      fmt.Sprintf("duplicate dimension column %q", dimension.Column),
+				PropertyPath: []string{"Dimensions", strconv.Itoa(i)},
+			})
+			continue
+		}
+		columnNames[strings.ToLower(dimension.Column)] = true
+
 		if _, ok := dimensionNames[strings.ToLower(dimension.Name)]; ok {
 			validationErrors = append(validationErrors, &runtimev1.ReconcileError{
 				Code:         runtimev1.ReconcileError_CODE_VALIDATION,
@@ -100,7 +112,8 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 
 	measureNames := make(map[string]bool)
 	for i, measure := range mv.Measures {
-		if _, ok := measureNames[strings.ToLower(measure.Name)]; ok {
+		lower := strings.ToLower(measure.Name)
+		if _, ok := measureNames[lower]; ok {
 			validationErrors = append(validationErrors, &runtimev1.ReconcileError{
 				Code:         runtimev1.ReconcileError_CODE_VALIDATION,
 				FilePath:     catalog.Path,
@@ -109,7 +122,17 @@ func (m *metricsViewMigrator) Validate(ctx context.Context, olap drivers.OLAPSto
 			})
 			continue
 		}
-		measureNames[strings.ToLower(measure.Name)] = true
+		measureNames[lower] = true
+
+		if _, ok := columnNames[lower]; ok {
+			validationErrors = append(validationErrors, &runtimev1.ReconcileError{
+				Code:         runtimev1.ReconcileError_CODE_VALIDATION,
+				FilePath:     catalog.Path,
+				Message:      fmt.Sprintf("measure name %q coincides with a dimension column", measure.Name),
+				PropertyPath: []string{"Dimensions", strconv.Itoa(i)},
+			})
+			continue
+		}
 
 		err := validateMeasure(ctx, olap, model, measure)
 		if err != nil {
