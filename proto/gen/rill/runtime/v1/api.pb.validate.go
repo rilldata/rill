@@ -297,31 +297,9 @@ func (m *Instance) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if _, ok := _Instance_OlapDriver_InLookup[m.GetOlapDriver()]; !ok {
-		err := InstanceValidationError{
-			field:  "OlapDriver",
-			reason: "value must be in list [duckdb druid]",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for OlapDriver
 
-	// no validation rules for OlapDsn
-
-	if _, ok := _Instance_RepoDriver_InLookup[m.GetRepoDriver()]; !ok {
-		err := InstanceValidationError{
-			field:  "RepoDriver",
-			reason: "value must be in list [file metastore github]",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	// no validation rules for RepoDsn
+	// no validation rules for RepoDriver
 
 	// no validation rules for EmbedCatalog
 
@@ -443,17 +421,6 @@ var _ interface {
 } = InstanceValidationError{}
 
 var _Instance_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
-
-var _Instance_OlapDriver_InLookup = map[string]struct{}{
-	"duckdb": {},
-	"druid":  {},
-}
-
-var _Instance_RepoDriver_InLookup = map[string]struct{}{
-	"file":      {},
-	"metastore": {},
-	"github":    {},
-}
 
 // Validate checks the field values on ConnectorDef with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
@@ -1087,31 +1054,9 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	}
 
-	if _, ok := _CreateInstanceRequest_OlapDriver_InLookup[m.GetOlapDriver()]; !ok {
-		err := CreateInstanceRequestValidationError{
-			field:  "OlapDriver",
-			reason: "value must be in list [duckdb druid]",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for OlapDriver
 
-	// no validation rules for OlapDsn
-
-	if _, ok := _CreateInstanceRequest_RepoDriver_InLookup[m.GetRepoDriver()]; !ok {
-		err := CreateInstanceRequestValidationError{
-			field:  "RepoDriver",
-			reason: "value must be in list [file metastore github]",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	// no validation rules for RepoDsn
+	// no validation rules for RepoDriver
 
 	// no validation rules for EmbedCatalog
 
@@ -1236,17 +1181,6 @@ var _ interface {
 } = CreateInstanceRequestValidationError{}
 
 var _CreateInstanceRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
-
-var _CreateInstanceRequest_OlapDriver_InLookup = map[string]struct{}{
-	"duckdb": {},
-	"druid":  {},
-}
-
-var _CreateInstanceRequest_RepoDriver_InLookup = map[string]struct{}{
-	"file":      {},
-	"metastore": {},
-	"github":    {},
-}
 
 // Validate checks the field values on CreateInstanceResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -1666,41 +1600,11 @@ func (m *EditInstanceRequest) validate(all bool) error {
 	}
 
 	if m.OlapDriver != nil {
-
-		if _, ok := _EditInstanceRequest_OlapDriver_InLookup[m.GetOlapDriver()]; !ok {
-			err := EditInstanceRequestValidationError{
-				field:  "OlapDriver",
-				reason: "value must be in list [duckdb druid]",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-	}
-
-	if m.OlapDsn != nil {
-		// no validation rules for OlapDsn
+		// no validation rules for OlapDriver
 	}
 
 	if m.RepoDriver != nil {
-
-		if _, ok := _EditInstanceRequest_RepoDriver_InLookup[m.GetRepoDriver()]; !ok {
-			err := EditInstanceRequestValidationError{
-				field:  "RepoDriver",
-				reason: "value must be in list [file metastore github]",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-	}
-
-	if m.RepoDsn != nil {
-		// no validation rules for RepoDsn
+		// no validation rules for RepoDriver
 	}
 
 	if m.EmbedCatalog != nil {
@@ -1792,17 +1696,6 @@ var _ interface {
 } = EditInstanceRequestValidationError{}
 
 var _EditInstanceRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
-
-var _EditInstanceRequest_OlapDriver_InLookup = map[string]struct{}{
-	"duckdb": {},
-	"druid":  {},
-}
-
-var _EditInstanceRequest_RepoDriver_InLookup = map[string]struct{}{
-	"file":      {},
-	"metastore": {},
-	"github":    {},
-}
 
 // Validate checks the field values on EditInstanceResponse with the rules
 // defined in the proto definition for this message. If any rules are

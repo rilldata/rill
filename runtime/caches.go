@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -75,7 +76,7 @@ func (c *connectionCache) Close() error {
 	return firstErr
 }
 
-func (c *connectionCache) get(ctx context.Context, instanceID, driver string, config map[string]string, shared bool) (drivers.Handle, func(), error) {
+func (c *connectionCache) get(ctx context.Context, instanceID, driver string, config map[string]any, shared bool) (drivers.Handle, func(), error) {
 	// TODO: This locks for all instances for the duration of Open and Migrate.
 	// Adapt to lock only on the lookup, and then on the individual instance's Open and Migrate.
 
@@ -129,12 +130,12 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver string, co
 	}, nil
 }
 
-func (c *connectionCache) openAndMigrate(ctx context.Context, instanceID, driver string, config map[string]string) (drivers.Handle, error) {
+func (c *connectionCache) openAndMigrate(ctx context.Context, instanceID, driver string, config map[string]any) (drivers.Handle, error) {
 	logger := c.logger
 	if instanceID != "default" {
 		logger = c.logger.With(zap.String("instance_id", instanceID), zap.String("driver", driver))
 	}
-	handle, err := drivers.Open(driver, convert(config), logger)
+	handle, err := drivers.Open(driver, config, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +152,7 @@ func (c *connectionCache) openAndMigrate(ctx context.Context, instanceID, driver
 }
 
 // evict removes the connection from cache and closes the connection
-func (c *connectionCache) evict(ctx context.Context, instanceID, driver string, config map[string]string) bool {
+func (c *connectionCache) evict(ctx context.Context, instanceID, driver string, config map[string]any) bool {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -207,22 +208,14 @@ func (c *migrationMetaCache) evict(ctx context.Context, instID string) {
 	c.cache.Remove(instID)
 }
 
-func convert(m map[string]string) map[string]any {
-	res := make(map[string]any, len(m))
-	for key, value := range m {
-		res[key] = value
-	}
-	return res
-}
-
-func generateKey(m map[string]string) string {
+func generateKey(m map[string]any) string {
 	sb := strings.Builder{}
 	keys := maps.Keys(m)
 	slices.Sort(keys)
 	for _, key := range keys {
 		sb.WriteString(key)
 		sb.WriteString(":")
-		sb.WriteString(m[key])
+		sb.WriteString(fmt.Sprint(m[key]))
 		sb.WriteString(" ")
 	}
 	return sb.String()

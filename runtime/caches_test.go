@@ -17,17 +17,17 @@ func TestConnectionCache(t *testing.T) {
 	id := uuid.NewString()
 
 	c := newConnectionCache(10, zap.NewNop())
-	conn1, release, err := c.get(ctx, id, "sqlite", map[string]string{"dsn": ":memory:"}, false)
+	conn1, release, err := c.get(ctx, id, "sqlite", map[string]any{"dsn": ":memory:"}, false)
 	require.NoError(t, err)
 	release()
 	require.NotNil(t, conn1)
 
-	conn2, release, err := c.get(ctx, id, "sqlite", map[string]string{"dsn": ":memory:"}, false)
+	conn2, release, err := c.get(ctx, id, "sqlite", map[string]any{"dsn": ":memory:"}, false)
 	require.NoError(t, err)
 	release()
 	require.NotNil(t, conn2)
 
-	conn3, release, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]string{"dsn": ":memory:"}, false)
+	conn3, release, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:"}, false)
 	require.NoError(t, err)
 	release()
 	require.NotNil(t, conn3)
@@ -41,17 +41,17 @@ func TestConnectionCacheWithAllShared(t *testing.T) {
 	id := uuid.NewString()
 
 	c := newConnectionCache(1, zap.NewNop())
-	conn1, release, err := c.get(ctx, id, "sqlite", map[string]string{"dsn": ":memory:"}, true)
+	conn1, release, err := c.get(ctx, id, "sqlite", map[string]any{"dsn": ":memory:"}, true)
 	require.NoError(t, err)
 	require.NotNil(t, conn1)
 	defer release()
 
-	conn2, release, err := c.get(ctx, id, "sqlite", map[string]string{"dsn": ":memory:"}, true)
+	conn2, release, err := c.get(ctx, id, "sqlite", map[string]any{"dsn": ":memory:"}, true)
 	require.NoError(t, err)
 	require.NotNil(t, conn2)
 	defer release()
 
-	conn3, release, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]string{"dsn": ":memory:"}, true)
+	conn3, release, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:"}, true)
 	require.NoError(t, err)
 	require.NotNil(t, conn3)
 	defer release()
@@ -66,15 +66,15 @@ func TestConnectionCacheWithAllOpen(t *testing.T) {
 	ctx := context.Background()
 
 	c := newConnectionCache(1, zap.NewNop())
-	conn1, r1, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]string{"dsn": ":memory:"}, false)
+	conn1, r1, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:"}, false)
 	require.NoError(t, err)
 	require.NotNil(t, conn1)
 
-	conn2, r2, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]string{"dsn": ":memory:"}, false)
+	conn2, r2, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:"}, false)
 	require.NoError(t, err)
 	require.NotNil(t, conn2)
 
-	conn3, r3, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]string{"dsn": ":memory:"}, false)
+	conn3, r3, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:"}, false)
 	require.NoError(t, err)
 	require.NotNil(t, conn3)
 
@@ -103,7 +103,7 @@ func TestConnectionCacheParallel(t *testing.T) {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				conn, _, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]string{"dsn": ":memory:"}, false)
+				conn, _, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:"}, false)
 				require.NoError(t, err)
 				require.NotNil(t, conn)
 				time.Sleep(100 * time.Millisecond)
@@ -116,7 +116,7 @@ func TestConnectionCacheParallel(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			conn, r, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]string{"dsn": ":memory:"}, false)
+			conn, r, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:"}, false)
 			defer r()
 			require.NoError(t, err)
 			require.NotNil(t, conn)
@@ -136,15 +136,15 @@ func TestConnectionCacheMultipleConfigs(t *testing.T) {
 
 	c := newConnectionCache(10, zap.NewNop())
 	defer c.Close()
-	conn1, r1, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]string{"dsn": ":memory:", "host": "localhost:8080", "allow_host_access": "true"}, true)
+	conn1, r1, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:", "host": "localhost:8080", "allow_host_access": "true"}, true)
 	require.NoError(t, err)
 	require.NotNil(t, conn1)
 
-	conn2, r2, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]string{"dsn": ":memory:", "host": "localhost:8080", "allow_host_access": "true"}, true)
+	conn2, r2, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:", "host": "localhost:8080", "allow_host_access": "true"}, true)
 	require.NoError(t, err)
 	require.NotNil(t, conn2)
 
-	conn3, r3, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]string{"dsn": ":memory:", "host": "localhost:8080", "allow_host_access": "true"}, true)
+	conn3, r3, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:", "host": "localhost:8080", "allow_host_access": "true"}, true)
 	require.NoError(t, err)
 	require.NotNil(t, conn3)
 

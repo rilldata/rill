@@ -395,11 +395,7 @@ paths:
             properties:
               olapDriver:
                 type: string
-              olapDsn:
-                type: string
               repoDriver:
-                type: string
-              repoDsn:
                 type: string
               embedCatalog:
                 type: boolean
@@ -2483,11 +2479,7 @@ definitions:
         type: string
       olapDriver:
         type: string
-      olapDsn:
-        type: string
       repoDriver:
-        type: string
-      repoDsn:
         type: string
       embedCatalog:
         type: boolean
@@ -2687,17 +2679,11 @@ definitions:
       olapDriver:
         type: string
         title: 'Driver to connect to for OLAP (options: duckdb, druid)'
-      olapDsn:
-        type: string
-        title: DSN for connection to OLAP
       repoDriver:
         type: string
         description: |-
           Driver for reading/editing code artifacts (options: file, metastore, github).
           This enables virtualizing a file system in a cloud setting.
-      repoDsn:
-        type: string
-        title: DSN for connecting to repo
       embedCatalog:
         type: boolean
         description: |-

@@ -310,8 +310,8 @@ func TestRuntime_EditInstance(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, inst.ID, newInst.ID)
 			require.Equal(t, tt.savedInst.OLAPDriver, newInst.OLAPDriver)
-			require.True(t, equal(inst.Connectors[0], newInst.Connectors[0]))
-			require.True(t, equal(inst.Connectors[1], newInst.Connectors[1]))
+			require.True(t, equal(tt.savedInst.Connectors[0], newInst.Connectors[0]))
+			require.True(t, equal(tt.savedInst.Connectors[1], newInst.Connectors[1]))
 			require.Equal(t, tt.savedInst.RepoDriver, newInst.RepoDriver)
 			require.Equal(t, tt.savedInst.EmbedCatalog, newInst.EmbedCatalog)
 			require.Greater(t, time.Since(newInst.CreatedOn), time.Since(newInst.UpdatedOn))
@@ -319,10 +319,10 @@ func TestRuntime_EditInstance(t *testing.T) {
 
 			// verify older olap connection is closed and cache updated if olap changed
 			c, _, _ := rt.OLAPDef(inst)
-			_, ok := rt.connCache.cache[inst.ID+c.Type+generateKey(variables(inst.OLAPDriver, c.Configs, inst.ResolveVariables()))]
+			_, ok := rt.connCache.cache[inst.ID+c.Type+generateKey(rt.variables(inst.OLAPDriver, c.Configs, inst.ResolveVariables()))]
 			require.Equal(t, !tt.clearCache, ok)
 			c, _, _ = rt.RepoDef(inst)
-			_, ok = rt.connCache.cache[inst.ID+c.Type+generateKey(variables(inst.OLAPDriver, c.Configs, inst.ResolveVariables()))]
+			_, ok = rt.connCache.cache[inst.ID+c.Type+generateKey(rt.variables(inst.OLAPDriver, c.Configs, inst.ResolveVariables()))]
 			require.Equal(t, !tt.clearCache, ok)
 			_, ok = rt.migrationMetaCache.cache.Get(inst.ID)
 			require.Equal(t, !tt.clearCache, ok)
@@ -458,7 +458,7 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 
 	// Close OLAP connection
 	c, _, _ := rt.OLAPDef(inst)
-	evicted := rt.connCache.evict(ctx, inst.ID, c.Type, variables("olap", c.Configs, inst.ResolveVariables()))
+	evicted := rt.connCache.evict(ctx, inst.ID, c.Type, rt.variables("olap", c.Configs, inst.ResolveVariables()))
 	require.True(t, evicted)
 
 	// Corrupt database file
@@ -490,6 +490,7 @@ func NewTestRunTime(t *testing.T) *Runtime {
 
 	opts := &Options{
 		ConnectionCacheSize: 100,
+		MetastoreDriver:     "metastore",
 		QueryCacheSizeBytes: int64(datasize.MB) * 100,
 		AllowHostAccess:     true,
 		GlobalDrivers:       globalConnectors,

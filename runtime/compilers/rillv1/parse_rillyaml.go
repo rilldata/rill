@@ -4,8 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
 )
+
+var _reservedConnectorNames = map[string]bool{"olap": true, "repo": true, "metastore": true}
 
 // RillYAML is the parsed contents of rill.yaml
 type RillYAML struct {
@@ -60,6 +63,9 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	}
 
 	for i, c := range tmp.Connectors {
+		if _reservedConnectorNames[c.Name] {
+			return fmt.Errorf("%s are reserved connector name", maps.Keys(_reservedConnectorNames))
+		}
 		res.Connectors[i] = &ConnectorDef{
 			Type:     c.Type,
 			Name:     c.Name,

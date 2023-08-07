@@ -96,7 +96,7 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 	// Drop the underlying data store
 	if dropDB {
 		c, shared, _ := r.OLAPDef(inst)
-		vars := variables(inst.OLAPDriver, c.Configs, inst.ResolveVariables())
+		vars := r.variables(inst.OLAPDriver, c.Configs, inst.ResolveVariables())
 		conn, release, err := r.connCache.get(ctx, instanceID, c.Type, vars, shared)
 		if err == nil {
 			release()
@@ -108,7 +108,7 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 			r.logger.Error("delete instance: error getting connection", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 		}
 
-		err = drivers.Drop(c.Type, convert(vars), r.logger)
+		err = drivers.Drop(c.Type, vars, r.logger)
 		if err != nil {
 			r.logger.Error("could not drop database", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 		}
@@ -196,9 +196,9 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 func (r *Runtime) evictCaches(ctx context.Context, inst *drivers.Instance) {
 	// evict and close exisiting connection
 	c, _, _ := r.OLAPDef(inst)
-	r.connCache.evict(ctx, inst.ID, c.Type, variables(inst.OLAPDriver, c.Configs, inst.ResolveVariables()))
+	r.connCache.evict(ctx, inst.ID, c.Type, r.variables(inst.OLAPDriver, c.Configs, inst.ResolveVariables()))
 	c, _, _ = r.RepoDef(inst)
-	r.connCache.evict(ctx, inst.ID, c.Type, variables(inst.RepoDriver, c.Configs, inst.ResolveVariables()))
+	r.connCache.evict(ctx, inst.ID, c.Type, r.variables(inst.RepoDriver, c.Configs, inst.ResolveVariables()))
 
 	// evict catalog cache
 	r.migrationMetaCache.evict(ctx, inst.ID)
@@ -210,7 +210,7 @@ func (r *Runtime) checkRepoConnection(inst *drivers.Instance) (drivers.Handle, d
 	if err != nil {
 		return nil, nil, err
 	}
-	repo, err := drivers.Open(c.Type, convert(variables(c.Name, c.Configs, inst.ResolveVariables())), r.logger)
+	repo, err := drivers.Open(c.Type, r.variables(c.Name, c.Configs, inst.ResolveVariables()), r.logger)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -227,7 +227,7 @@ func (r *Runtime) checkOlapConnection(inst *drivers.Instance) (drivers.Handle, d
 	if err != nil {
 		return nil, nil, err
 	}
-	olap, err := drivers.Open(c.Type, convert(variables(c.Name, c.Configs, inst.ResolveVariables())), r.logger)
+	olap, err := drivers.Open(c.Type, r.variables(c.Name, c.Configs, inst.ResolveVariables()), r.logger)
 	if err != nil {
 		return nil, nil, err
 	}

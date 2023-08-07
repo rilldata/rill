@@ -143,28 +143,12 @@ export class Instance extends Message<Instance> {
   olapDriver = "";
 
   /**
-   * DSN for connection to OLAP
-   *
-   * @generated from field: string olap_dsn = 3 [deprecated = true];
-   * @deprecated
-   */
-  olapDsn = "";
-
-  /**
    * Driver for reading/editing code artifacts (options: file, metastore, github).
    * This enables virtualizing a file system in a cloud setting.
    *
    * @generated from field: string repo_driver = 4;
    */
   repoDriver = "";
-
-  /**
-   * DSN for connecting to repo
-   *
-   * @generated from field: string repo_dsn = 5 [deprecated = true];
-   * @deprecated
-   */
-  repoDsn = "";
 
   /**
    * If true, the runtime will store the instance's catalog in its OLAP store instead
@@ -212,9 +196,7 @@ export class Instance extends Message<Instance> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "repo_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "repo_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 8, name: "project_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
@@ -480,21 +462,9 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
   olapDriver = "";
 
   /**
-   * @generated from field: string olap_dsn = 3 [deprecated = true];
-   * @deprecated
-   */
-  olapDsn = "";
-
-  /**
    * @generated from field: string repo_driver = 4;
    */
   repoDriver = "";
-
-  /**
-   * @generated from field: string repo_dsn = 5 [deprecated = true];
-   * @deprecated
-   */
-  repoDsn = "";
 
   /**
    * @generated from field: bool embed_catalog = 6;
@@ -531,9 +501,7 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "repo_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "repo_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 8, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
@@ -693,21 +661,9 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
   olapDriver?: string;
 
   /**
-   * @generated from field: optional string olap_dsn = 3 [deprecated = true];
-   * @deprecated
-   */
-  olapDsn?: string;
-
-  /**
    * @generated from field: optional string repo_driver = 4;
    */
   repoDriver?: string;
-
-  /**
-   * @generated from field: optional string repo_dsn = 5 [deprecated = true];
-   * @deprecated
-   */
-  repoDsn?: string;
 
   /**
    * @generated from field: optional bool embed_catalog = 6;
@@ -734,9 +690,7 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 3, name: "olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 4, name: "repo_driver", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 5, name: "repo_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 8, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 9, name: "connectors", kind: "message", T: ConnectorDef, repeated: true },

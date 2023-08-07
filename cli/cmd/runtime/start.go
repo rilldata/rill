@@ -44,6 +44,7 @@ type Config struct {
 	LogLevel            zapcore.Level          `default:"info" split_words:"true"`
 	MetricsExporter     observability.Exporter `default:"prometheus" split_words:"true"`
 	TracesExporter      observability.Exporter `default:"" split_words:"true"`
+	MetastoreDriver     string                 `default:"metastore" split_words:"true"`
 	AllowedOrigins      []string               `default:"*" split_words:"true"`
 	AuthEnable          bool                   `default:"false" split_words:"true"`
 	AuthIssuerURL       string                 `default:"" split_words:"true"`
@@ -121,6 +122,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			// Init runtime
 			opts := &runtime.Options{
 				ConnectionCacheSize: conf.ConnectionCacheSize,
+				MetastoreDriver:     conf.MetastoreDriver,
 				QueryCacheSizeBytes: conf.QueryCacheSizeBytes,
 				AllowHostAccess:     conf.AllowHostAccess,
 				SafeSourceRefresh:   conf.SafeSourceRefresh,

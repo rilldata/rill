@@ -9,6 +9,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/arrayutil"
@@ -102,7 +103,7 @@ func (s *Service) Reconcile(ctx context.Context, conf ReconcileConfig) (*Reconci
 		}
 
 		// set project variables from rill.yaml in instance
-		if err := s.setProjectVariables(ctx); err != nil {
+		if err := s.setProjectConnectorsAndVariables(ctx); err != nil {
 			return nil, err
 		}
 	}
@@ -605,7 +606,7 @@ func (s *Service) getSourceIngestionLimit(ctx context.Context, inst *drivers.Ins
 	return limitInBytes, nil
 }
 
-func (s *Service) setProjectVariables(ctx context.Context) error {
+func (s *Service) setProjectConnectorsAndVariables(ctx context.Context) error {
 	c := rillv1beta.New(s.Repo, s.InstID)
 	proj, err := c.ProjectConfig(ctx)
 	if err != nil {
@@ -616,7 +617,27 @@ func (s *Service) setProjectVariables(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
 	inst.ProjectVariables = proj.Variables
+
+	// rill parsed parsing with new parser
+	parsed, err := rillv1.ParseRillYAML(ctx, s.Repo, s.InstID)
+	if err != nil {
+		return err
+	}
+	rillYAML := &drivers.RillYAML{
+		Connectors:       make([]*runtimev1.ConnectorDef, len(parsed.Connectors)),
+		ProjectVariables: make(map[string]string, len(parsed.Variables)),
+	}
+	for i, c := range parsed.Connectors {
+		rillYAML.Connectors[i] = &runtimev1.ConnectorDef{
+			Type:    c.Type,
+			Name:    c.Name,
+			Configs: c.Defaults,
+		}
+	}
+	for _, v := range parsed.Variables {
+		rillYAML.ProjectVariables[v.Name] = v.Default
+	}
+	inst.RillYAML = rillYAML
 	return s.RegistryStore.EditInstance(ctx, inst)
 }

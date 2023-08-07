@@ -44,6 +44,15 @@ type Instance struct {
 	Annotations map[string]string
 	// Instance specific connectors
 	Connectors []*runtimev1.ConnectorDef
+	// RillYAML is the project's parsed rill yaml
+	// Its just a cache and can be reproduced from rill.yaml
+	// TODO :: deprecate ProjectVariables once completely moved to v1 parsing
+	RillYAML *RillYAML `db:"rill_yaml"`
+}
+
+type RillYAML struct {
+	Connectors       []*runtimev1.ConnectorDef
+	ProjectVariables map[string]string
 }
 
 // ResolveVariables returns the final resolved variables

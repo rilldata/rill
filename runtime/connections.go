@@ -5,18 +5,17 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog"
 )
 
 func (r *Runtime) newMetaStore(ctx context.Context, instanceID string) (drivers.Handle, func(), error) {
-	c, shared, err := r.opts.ConnectorDefByName(_metastoreDriverName)
+	c, shared, err := r.opts.ConnectorDefByName(r.opts.MetastoreDriver)
 	if err != nil {
 		panic(err)
 	}
 
-	return r.connCache.get(ctx, instanceID, c.Type, c.Configs, shared)
+	return r.connCache.get(ctx, instanceID, c.Type, r.variables(r.opts.MetastoreDriver, c.Configs, nil), shared)
 }
 
 func (r *Runtime) Registry() drivers.RegistryStore {
@@ -29,34 +28,25 @@ func (r *Runtime) Registry() drivers.RegistryStore {
 }
 
 func (r *Runtime) AcquireHandle(ctx context.Context, instanceID, connector string) (drivers.Handle, func(), error) {
-	repo, release, err := r.Repo(ctx, instanceID)
-	if err != nil {
-		return nil, nil, err
-	}
-	defer release()
-
-	// TODO :: parse it and keep a cache in instance to avoid reparsing
-	yaml, err := rillv1.ParseRillYAML(ctx, repo, instanceID)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	instance, err := r.FindInstance(ctx, instanceID)
 	if err != nil {
 		return nil, nil, err
 	}
-	// defined in rill.yaml
-	for _, c := range yaml.Connectors {
-		if c.Name == connector {
-			return r.connCache.get(ctx, instanceID, c.Type, variables(connector, c.Defaults, instance.ResolveVariables()), false)
+
+	if instance.RillYAML != nil {
+		// defined in rill.yaml
+		for _, c := range instance.RillYAML.Connectors {
+			if c.Name == connector {
+				return r.connCache.get(ctx, instanceID, c.Type, r.variables(connector, c.Configs, instance.ResolveVariables()), false)
+			}
 		}
 	}
 	if c, shared, err := r.opts.ConnectorDefByName(connector); err == nil { // connector found
 		// defined in runtime options
-		return r.connCache.get(ctx, instanceID, c.Type, variables(connector, c.Configs, instance.ResolveVariables()), shared)
+		return r.connCache.get(ctx, instanceID, c.Type, r.variables(connector, c.Configs, instance.ResolveVariables()), shared)
 	}
 	// neither defined in rill.yaml nor in runtime options, directly used in source
-	return r.connCache.get(ctx, instanceID, connector, variables(connector, nil, instance.ResolveVariables()), false)
+	return r.connCache.get(ctx, instanceID, connector, r.variables(connector, nil, instance.ResolveVariables()), false)
 }
 
 func (r *Runtime) Repo(ctx context.Context, instanceID string) (drivers.RepoStore, func(), error) {
@@ -69,7 +59,7 @@ func (r *Runtime) Repo(ctx context.Context, instanceID string) (drivers.RepoStor
 	if err != nil {
 		return nil, nil, err
 	}
-	conn, release, err := r.connCache.get(ctx, instanceID, c.Type, variables(inst.RepoDriver, c.Configs, inst.ResolveVariables()), shared)
+	conn, release, err := r.connCache.get(ctx, instanceID, c.Type, r.variables(inst.RepoDriver, c.Configs, inst.ResolveVariables()), shared)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -94,7 +84,7 @@ func (r *Runtime) OLAP(ctx context.Context, instanceID string) (drivers.OLAPStor
 	if err != nil {
 		return nil, nil, err
 	}
-	conn, release, err := r.connCache.get(ctx, instanceID, c.Type, variables(inst.OLAPDriver, c.Configs, inst.ResolveVariables()), shared)
+	conn, release, err := r.connCache.get(ctx, instanceID, c.Type, r.variables(inst.OLAPDriver, c.Configs, inst.ResolveVariables()), shared)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -120,7 +110,7 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 		if err != nil {
 			return nil, nil, err
 		}
-		conn, release, err := r.connCache.get(ctx, instanceID, c.Type, variables(inst.OLAPDriver, c.Configs, inst.ResolveVariables()), shared)
+		conn, release, err := r.connCache.get(ctx, instanceID, c.Type, r.variables(inst.OLAPDriver, c.Configs, inst.ResolveVariables()), shared)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -173,8 +163,9 @@ func (r *Runtime) NewCatalogService(ctx context.Context, instanceID string) (*ca
 	return catalog.NewService(catalogStore, repoStore, olapStore, registry, instanceID, r.logger, migrationMetadata, releaseFunc), nil
 }
 
-func variables(name string, def, variables map[string]string) map[string]string {
-	vars := make(map[string]string, 0)
+// TODO :: these can also be generated during reconcile itself ?
+func (r *Runtime) variables(name string, def, variables map[string]string) map[string]any {
+	vars := make(map[string]any, 0)
 	for key, value := range def {
 		vars[strings.ToLower(key)] = value
 	}
@@ -189,5 +180,6 @@ func variables(name string, def, variables map[string]string) map[string]string 
 			vars[strings.ToLower(after)] = value
 		}
 	}
+	vars["allow_host_access"] = r.opts.AllowHostAccess
 	return vars
 }

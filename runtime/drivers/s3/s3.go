@@ -87,8 +87,7 @@ type configProperties struct {
 // Open implements drivers.Driver
 func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Handle, error) {
 	conf := &configProperties{}
-	// TODO :: variables everywhere seems to be taking the form map[string]string use same in Open
-	err := mapstructure.WeakDecode(config, conf)
+	err := mapstructure.Decode(config, conf)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +149,7 @@ func (c *Connection) Driver() string {
 // Config implements drivers.Connection.
 func (c *Connection) Config() map[string]any {
 	m := make(map[string]any, 0)
-	err := mapstructure.WeakDecode(c.config, &m)
+	err := mapstructure.Decode(c.config, &m)
 	if err != nil {
 		panic(err)
 	}

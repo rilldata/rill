@@ -8,18 +8,11 @@ import (
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"go.uber.org/zap"
-	"golang.org/x/exp/maps"
-)
-
-const (
-	// may be use __system__ prefix ?
-	_metastoreDriverName = "metastore"
-	_repoDriverName      = "repo"
-	_olapDriverName      = "olap"
 )
 
 type Options struct {
 	ConnectionCacheSize int
+	MetastoreDriver     string
 	QueryCacheSizeBytes int64
 	AllowHostAccess     bool
 	SafeSourceRefresh   bool
@@ -43,35 +36,6 @@ func (o *Options) ConnectorDefByName(name string) (*Connector, bool, error) {
 		}
 	}
 	return nil, false, fmt.Errorf("connector %s doesn't exist", name)
-}
-
-func (o *Options) OLAPDef(dsn string) (*Connector, bool, error) {
-	c, shared, err := o.ConnectorDefByName(_olapDriverName)
-	if err != nil {
-		return nil, false, fmt.Errorf("dev error, olap connector doesn't exist")
-	}
-	// TODO :: remove this hack and pass repodsn and olapdsn as variables in form connector.repo.xxxx
-	dup := &Connector{Name: c.Name, Type: c.Type, Configs: maps.Clone(c.Configs)}
-	if dup.Configs == nil {
-		dup.Configs = make(map[string]string)
-	}
-	dup.Configs["dsn"] = dsn
-	return dup, shared, nil
-}
-
-func (o *Options) RepoDef(dsn string) (*Connector, bool, error) {
-	c, shared, err := o.ConnectorDefByName(_olapDriverName)
-	if err != nil {
-		return nil, false, fmt.Errorf("dev error, repo connector doesn't exist")
-	}
-
-	// TODO :: remove this hack and pass repodsn and olapdsn as variables in form connector.repo.xxxx
-	dup := &Connector{Name: c.Name, Type: c.Type, Configs: maps.Clone(c.Configs)}
-	if dup.Configs == nil {
-		dup.Configs = make(map[string]string)
-	}
-	dup.Configs["dsn"] = dsn
-	return dup, shared, nil
 }
 
 type Runtime struct {

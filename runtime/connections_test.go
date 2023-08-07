@@ -7,6 +7,7 @@ import (
 
 	"github.com/rilldata/rill/runtime/drivers"
 	_ "github.com/rilldata/rill/runtime/drivers/s3"
+	"github.com/rilldata/rill/runtime/services/catalog"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
@@ -18,7 +19,7 @@ func TestAcquireHandle(t *testing.T) {
 	// set some env variable in instance
 	inst, err := rt.FindInstance(ctx, id)
 	require.NoError(t, err)
-	inst.ProjectVariables = map[string]string{"aws_secret_access_key": "yyyy"}
+	inst.Variables = map[string]string{"aws_secret_access_key": "yyyy"}
 	require.NoError(t, rt.EditInstance(ctx, inst))
 
 	repo, _, err := rt.Repo(ctx, id)
@@ -41,11 +42,16 @@ env:
 `,
 	})
 
+	svc, err := rt.NewCatalogService(ctx, inst.ID)
+	require.NoError(t, err)
+	svc.Reconcile(ctx, catalog.ReconcileConfig{ChangedPaths: []string{"rill.yaml"}})
+	require.NoError(t, err)
+
 	handle, _, err := rt.AcquireHandle(ctx, id, "my-s3")
 	require.NoError(t, err)
 	config := handle.Config()
-	require.True(t, config["aws_access_key_id"] == "us-east-1")
-	require.True(t, config["aws_secret_access_key"] == "yyyy")
+	require.True(t, config["aws_access_key_id"].(string) == "us-east-1")
+	require.True(t, config["aws_secret_access_key"].(string) == "yyyy")
 	require.True(t, config["allow_host_access"].(bool))
 }
 

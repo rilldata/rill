@@ -221,19 +221,10 @@ message Instance {
   // Identifier (UUID)
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   // Driver to connect to for OLAP (options: duckdb, druid)
-  string olap_driver = 2 [(validate.rules).string = {
-    in: [
-      "duckdb",
-      "druid"
-    ]
-  }];
-  // DSN for connection to OLAP
-  string olap_dsn = 3 [deprecated=true];
+  string olap_driver = 2;
   // Driver for reading/editing code artifacts (options: file, metastore, github).
   // This enables virtualizing a file system in a cloud setting.
-  string repo_driver = 4 [(validate.rules).string = {in: ["file", "metastore", "github"]}];
-  // DSN for connecting to repo
-  string repo_dsn = 5 [deprecated=true];
+  string repo_driver = 4;
   // If true, the runtime will store the instance's catalog in its OLAP store instead
   // of in the runtime's metadata store. Currently only supported for the duckdb driver.
   bool embed_catalog = 6;
@@ -285,15 +276,8 @@ message CreateInstanceRequest {
     ignore_empty: true,
     pattern: "^[_\\-a-zA-Z0-9]+$"
   }];
-  string olap_driver = 2 [(validate.rules).string = {
-    in: [
-      "duckdb",
-      "druid"
-    ]
-  }];
-  string olap_dsn = 3 [deprecated=true];
-  string repo_driver = 4 [(validate.rules).string = {in: ["file", "metastore", "github"]}];
-  string repo_dsn = 5 [deprecated=true];
+  string olap_driver = 2;
+  string repo_driver = 4;
   bool embed_catalog = 6;
   map<string, string> variables = 7;
   int64 ingestion_limit_bytes = 8;
@@ -319,21 +303,8 @@ message DeleteInstanceResponse {}
 // See message Instance for field descriptions.
 message EditInstanceRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  optional string olap_driver = 2 [(validate.rules).string = {
-    in: [
-      "duckdb",
-      "druid"
-    ]
-  }];
-  optional string olap_dsn = 3 [deprecated=true];
-  optional string repo_driver = 4 [(validate.rules).string = {
-    in: [
-      "file",
-      "metastore",
-      "github"
-    ]
-  }];
-  optional string repo_dsn = 5 [deprecated=true];
+  optional string olap_driver = 2;
+  optional string repo_driver = 4;
   optional bool embed_catalog = 6;
   optional int64 ingestion_limit_bytes = 8;
   repeated ConnectorDef connectors = 9;
