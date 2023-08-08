@@ -19,13 +19,14 @@ type config struct {
 	PoolSize int
 	// DBFilePath is the path where database is stored
 	DBFilePath string
-	// Activity dimensions
-	ActivityDims []attribute.KeyValue
 	// Activity client
 	Activity activity.Client
+	// Activity dimensions
+	ActivityDims []attribute.KeyValue
 }
 
-func newConfig(dsn string, activityDims []attribute.KeyValue, client activity.Client) (*config, error) {
+// activityDims and client are allowed to be nil, in this case DuckDB stats are not emitted
+func newConfig(dsn string, client activity.Client, activityDims []attribute.KeyValue) (*config, error) {
 	// Parse DSN as URL
 	uri, err := url.Parse(dsn)
 	if err != nil {
@@ -60,8 +61,8 @@ func newConfig(dsn string, activityDims []attribute.KeyValue, client activity.Cl
 		DSN:          dsn,
 		PoolSize:     poolSize,
 		DBFilePath:   uri.Path,
-		ActivityDims: activityDims,
 		Activity:     client,
+		ActivityDims: activityDims,
 	}
 	return cfg, nil
 }

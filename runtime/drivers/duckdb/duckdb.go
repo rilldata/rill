@@ -79,7 +79,7 @@ func (d Driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connect
 		}
 	}
 
-	cfg, err := newConfig(dsn, activityDims, client)
+	cfg, err := newConfig(dsn, client, activityDims)
 	if err != nil {
 		return nil, err
 	}

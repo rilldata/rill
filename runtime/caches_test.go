@@ -8,13 +8,14 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 )
 
 func TestConnectionCache(t *testing.T) {
 	ctx := context.Background()
 	id := uuid.NewString()
 
-	c := newConnectionCache(10, zap.NewNop())
+	c := newConnectionCache(10, zap.NewNop(), activity.NewNoopClient())
 	conn1, err := c.get(ctx, id, "sqlite", ":memory:")
 	require.NoError(t, err)
 	require.NotNil(t, conn1)
