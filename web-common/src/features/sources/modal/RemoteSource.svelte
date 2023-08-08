@@ -122,10 +122,10 @@
           })
         );
 
-        const yaml = compileCreateSourceYAML(formValues, connector.name);
-
         waitingOnSourceImport = true;
         try {
+          const yaml = compileCreateSourceYAML(formValues, connector.name);
+
           const errors = await createSource(
             queryClient,
             runtimeInstanceId,
