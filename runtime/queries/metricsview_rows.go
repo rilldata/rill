@@ -102,64 +102,42 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	return nil
 }
 
-type GeneralExport struct {
-	query      *MetricsViewRows
-	olap       drivers.OLAPStore
-	mv         *runtimev1.MetricsView
-	opts       *runtime.ExportOptions
-	w          io.Writer
-	rt         *runtime.Runtime
-	instanceID string
-	ctx        context.Context
-}
-
-func (e GeneralExport) export() error {
-	err := e.query.Resolve(e.ctx, e.rt, e.instanceID, e.opts.Priority)
+func generalExport(query *MetricsViewRows, olap drivers.OLAPStore, mv *runtimev1.MetricsView, opts *runtime.ExportOptions, w io.Writer, rt *runtime.Runtime, instanceID string, ctx context.Context) error {
+	err := query.Resolve(ctx, rt, instanceID, opts.Priority)
 	if err != nil {
 		return err
 	}
 
-	if e.opts.PreWriteHook != nil {
-		err = e.opts.PreWriteHook(e.query.generateFilename(e.mv))
+	if opts.PreWriteHook != nil {
+		err = opts.PreWriteHook(query.generateFilename(mv))
 		if err != nil {
 			return err
 		}
 	}
 
-	switch e.opts.Format {
+	switch opts.Format {
 	case runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED:
 		return fmt.Errorf("unspecified format")
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		return writeCSV(e.query.Result.Meta, e.query.Result.Data, e.w)
+		return writeCSV(query.Result.Meta, query.Result.Data, w)
 	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		return writeXLSX(e.query.Result.Meta, e.query.Result.Data, e.w)
+		return writeXLSX(query.Result.Meta, query.Result.Data, w)
 	}
 
 	return nil
 }
 
-type DuckDBCopyExport struct {
-	query      *MetricsViewRows
-	olap       drivers.OLAPStore
-	mv         *runtimev1.MetricsView
-	opts       *runtime.ExportOptions
-	w          io.Writer
-	rt         *runtime.Runtime
-	instanceID string
-	ctx        context.Context
-}
-
-func (e DuckDBCopyExport) export() error {
-	if e.mv.TimeDimension == "" && (e.query.TimeStart != nil || e.query.TimeEnd != nil) {
-		return fmt.Errorf("metrics view '%s' does not have a time dimension", e.query.MetricsViewName)
+func duckDBCopyExport(query *MetricsViewRows, olap drivers.OLAPStore, mv *runtimev1.MetricsView, opts *runtime.ExportOptions, w io.Writer, rt *runtime.Runtime, instanceID string, ctx context.Context) error {
+	if mv.TimeDimension == "" && (query.TimeStart != nil || query.TimeEnd != nil) {
+		return fmt.Errorf("metrics view '%s' does not have a time dimension", query.MetricsViewName)
 	}
 
-	timeRollupColumnName, err := e.query.resolveTimeRollupColumnName(e.ctx, e.rt, e.instanceID, e.opts.Priority, e.mv)
+	timeRollupColumnName, err := query.resolveTimeRollupColumnName(ctx, rt, instanceID, opts.Priority, mv)
 	if err != nil {
 		return err
 	}
 
-	sql, args, err := e.query.buildMetricsRowsSQL(e.mv, e.olap.Dialect(), timeRollupColumnName)
+	sql, args, err := query.buildMetricsRowsSQL(mv, olap.Dialect(), timeRollupColumnName)
 	if err != nil {
 		return err
 	}
@@ -167,10 +145,10 @@ func (e DuckDBCopyExport) export() error {
 	temporaryFilename := "export_" + uuid.New().String()
 	sql = fmt.Sprintf("COPY (%s) TO %s", sql, temporaryFilename)
 
-	rows, err := e.olap.Execute(e.ctx, &drivers.Statement{
+	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:            sql,
 		Args:             args,
-		Priority:         e.opts.Priority,
+		Priority:         opts.Priority,
 		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
@@ -180,8 +158,8 @@ func (e DuckDBCopyExport) export() error {
 	defer rows.Close()
 	defer os.Remove(temporaryFilename)
 
-	if e.opts.PreWriteHook != nil {
-		err = e.opts.PreWriteHook(e.query.generateFilename(e.mv))
+	if opts.PreWriteHook != nil {
+		err = opts.PreWriteHook(query.generateFilename(mv))
 		if err != nil {
 			return err
 		}
@@ -194,7 +172,7 @@ func (e DuckDBCopyExport) export() error {
 
 	defer f.Close()
 
-	_, err = io.Copy(e.w, f)
+	_, err = io.Copy(w, f)
 	return err
 }
 
@@ -209,41 +187,21 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 		return err
 	}
 
-	ge := GeneralExport{
-		query:      q,
-		ctx:        ctx,
-		mv:         mv,
-		olap:       olap,
-		rt:         rt,
-		instanceID: instanceID,
-		w:          w,
-		opts:       opts,
-	}
-	ddbe := DuckDBCopyExport{
-		query:      q,
-		ctx:        ctx,
-		mv:         mv,
-		olap:       olap,
-		rt:         rt,
-		instanceID: instanceID,
-		w:          w,
-		opts:       opts,
-	}
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
 		if opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV {
-			ddbe.export()
+			if err := duckDBCopyExport(q, olap, mv, opts, w, rt, instanceID, ctx); err != nil {
+				return err
+			}
 		} else {
-			err = ge.export()
-			if err != nil {
+			if err := generalExport(q, olap, mv, opts, w, rt, instanceID, ctx); err != nil {
 				return err
 			}
 		}
 	case drivers.DialectDruid:
-		if err := ge.export(); err != nil {
+		if err := generalExport(q, olap, mv, opts, w, rt, instanceID, ctx); err != nil {
 			return err
 		}
-
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
