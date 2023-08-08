@@ -237,6 +237,13 @@ export function assertVisiblePartsOfMetricsView(
     );
 }
 
+export function resetDashboardStore() {
+  metricsExplorerStore.remove(AD_BIDS_NAME);
+  metricsExplorerStore.remove(AD_BIDS_MIRROR_NAME);
+  initAdBidsInStore();
+  initAdBidsMirrorInStore();
+}
+
 export const AD_BIDS_BASE_FILTER = {
   include: [
     {

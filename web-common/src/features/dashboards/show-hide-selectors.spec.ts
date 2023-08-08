@@ -17,10 +17,9 @@ import {
   AD_BIDS_WITH_THREE_DIMENSIONS,
   AD_BIDS_WITH_THREE_MEASURES,
   assertVisiblePartsOfMetricsView,
-  initAdBidsInStore,
   createAdBidsMirrorInStore,
   createMetricsMetaQueryMock,
-  initAdBidsMirrorInStore,
+  resetDashboardStore,
 } from "@rilldata/web-common/features/dashboards/dashboard-stores-test-data";
 import {
   createShowHideDimensionsStore,
@@ -37,8 +36,7 @@ describe("Show/Hide Selectors", () => {
   });
 
   beforeEach(() => {
-    initAdBidsInStore();
-    initAdBidsMirrorInStore();
+    resetDashboardStore();
   });
 
   describe("Show/Hide measures", () => {
@@ -169,7 +167,6 @@ describe("Show/Hide Selectors", () => {
     it("Meta query updates with new measure and all measures selected", () => {
       const mock = createMetricsMetaQueryMock(false);
       const showHideMeasure = createShowHideMeasuresStore(AD_BIDS_NAME, mock);
-      showHideMeasure.setAllToVisible();
       mock.setMeasures(AD_BIDS_INIT_MEASURES);
       expect(get(showHideMeasure).selectedItems).toEqual([true, true]);
 
@@ -330,7 +327,6 @@ describe("Show/Hide Selectors", () => {
         AD_BIDS_NAME,
         mock
       );
-      showHideDimensions.setAllToVisible();
       mock.setDimensions(AD_BIDS_INIT_DIMENSIONS);
       expect(get(showHideDimensions).selectedItems).toEqual([true, true]);
 

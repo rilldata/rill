@@ -15,15 +15,13 @@ import {
   LAST_6_HOURS_TEST_CONTROLS,
   LAST_6_HOURS_TEST_PARSED_CONTROLS,
   assertMetricsView,
-  clearMetricsExplorerStore,
-  initAdBidsInStore,
   createAdBidsMirrorInStore,
   createMetricsMetaQueryMock,
-  initAdBidsMirrorInStore,
+  resetDashboardStore,
 } from "@rilldata/web-common/features/dashboards/dashboard-stores-test-data";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { get } from "svelte/store";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 describe("dashboard-stores", () => {
   beforeAll(() => {
@@ -31,8 +29,7 @@ describe("dashboard-stores", () => {
   });
 
   beforeEach(() => {
-    initAdBidsInStore();
-    initAdBidsMirrorInStore();
+    resetDashboardStore();
   });
 
   it("Toggle filters", () => {
