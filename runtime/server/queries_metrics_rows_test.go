@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -247,19 +248,19 @@ func TestServer_MetricsViewRows_parquet_export(t *testing.T) {
 	require.Equal(t, "tlist", flds[index].Field.Name)
 	require.Equal(t, arrow.STRING, flds[index].Field.Type.ID())
 	tlist := getColumnChunk(tbl, index).(*array.String)
-	require.Equal(t, `["a","b"]`, tlist.Value(0))
+	require.Equal(t, `["a","b"]`, strings.ReplaceAll(tlist.Value(0), " ", ""))
 	index++
 
 	require.Equal(t, "tmap", flds[index].Field.Name)
 	require.Equal(t, arrow.STRING, flds[index].Field.Type.ID())
 	tmap := getColumnChunk(tbl, index).(*array.String)
-	require.Equal(t, `{"f1":1,"f2":2}`, tmap.Value(0))
+	require.Equal(t, `{"f1":1,"f2":2}`, strings.ReplaceAll(tmap.Value(0), " ", ""))
 	index++
 
 	require.Equal(t, "tstruct", flds[index].Field.Name)
 	require.Equal(t, arrow.STRING, flds[index].Field.Type.ID())
 	tstruct := getColumnChunk(tbl, index).(*array.String)
-	require.Equal(t, `{"f1":1,"f2":{"f3":3}}`, tstruct.Value(0))
+	require.Equal(t, `{"f1":1,"f2":{"f3":3}}`, strings.ReplaceAll(tstruct.Value(0), " ", ""))
 	index++
 
 	require.Equal(t, "timestamp", flds[index].Field.Name)
