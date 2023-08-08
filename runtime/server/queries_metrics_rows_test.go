@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/apache/arrow/go/v11/arrow"
 	"github.com/apache/arrow/go/v11/arrow/array"
@@ -160,9 +161,9 @@ func TestServer_MetricsViewRows_parquet_export(t *testing.T) {
 	index := 0
 	flds := arrowRdr.Manifest.Fields
 	require.Equal(t, "timestamp__day", flds[index].Field.Name)
-	require.Equal(t, arrow.STRING, flds[index].Field.Type.ID())
-	td := getColumnChunk(tbl, index).(*array.String)
-	require.Equal(t, "2023-01-01T00:00:00Z", td.Value(0))
+	require.Equal(t, arrow.TIMESTAMP, flds[index].Field.Type.ID())
+	td := getColumnChunk(tbl, index).(*array.Timestamp)
+	require.Equal(t, "2023-01-01T00:00:00Z", td.Value(0).ToTime(arrow.Microsecond).Format(time.RFC3339))
 	index++
 
 	require.Equal(t, "tint1", flds[index].Field.Name)
@@ -262,9 +263,21 @@ func TestServer_MetricsViewRows_parquet_export(t *testing.T) {
 	index++
 
 	require.Equal(t, "timestamp", flds[index].Field.Name)
-	require.Equal(t, arrow.STRING, flds[index].Field.Type.ID())
-	ttimestamp := getColumnChunk(tbl, index).(*array.String)
-	require.True(t, len(ttimestamp.Value(0)) > 0)
+	require.Equal(t, arrow.TIMESTAMP, flds[index].Field.Type.ID())
+	ttimestamp := getColumnChunk(tbl, index).(*array.Timestamp)
+	require.Equal(t, "2023-01-01T00:00:00Z", ttimestamp.Value(0).ToTime(arrow.Microsecond).Format(time.RFC3339))
+	index++
+
+	require.Equal(t, "ttime", flds[index].Field.Name)
+	require.Equal(t, arrow.TIMESTAMP, flds[index].Field.Type.ID())
+	ttime := getColumnChunk(tbl, index).(*array.Timestamp)
+	require.Equal(t, "12:00:00", ttime.Value(0).ToTime(arrow.Microsecond).Format(time.TimeOnly))
+	index++
+
+	require.Equal(t, "tdate", flds[index].Field.Name)
+	require.Equal(t, arrow.TIMESTAMP, flds[index].Field.Type.ID())
+	ttimestamp = getColumnChunk(tbl, index).(*array.Timestamp)
+	require.Equal(t, "2023-01-02T00:00:00Z", ttimestamp.Value(0).ToTime(arrow.Microsecond).Format(time.RFC3339))
 	index++
 
 	require.Equal(t, "tuuid", flds[index].Field.Name)

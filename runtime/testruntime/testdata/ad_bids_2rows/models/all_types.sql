@@ -16,4 +16,6 @@ SELECT
     map {'f1' : 1, 'f2': 2} as tmap,
     {'f1' : 1, 'f2': { 'f3': 3 }} as tstruct,
     TIMESTAMP '2023-01-01' as timestamp,
+    TIME '12:00:00' as ttime,
+    DATE '2023-01-02' as tdate,
     uuid() as tuuid

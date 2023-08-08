@@ -11,7 +11,6 @@ require (
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/XSAM/otelsql v0.23.0
 	github.com/alicebob/miniredis v2.5.0+incompatible
-	github.com/apache/arrow/go/arrow v0.0.0-20200730104253-651201b0f516
 	github.com/apache/arrow/go/v11 v11.0.0
 	github.com/apache/calcite-avatica-go/v5 v5.2.0
 	github.com/aws/aws-sdk-go v1.44.268
@@ -55,8 +54,6 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.3
 	github.com/testcontainers/testcontainers-go v0.19.0
-	github.com/xitongsys/parquet-go v1.6.2
-	github.com/xitongsys/parquet-go-source v0.0.0-20230607234618-40034c8066df
 	github.com/xuri/excelize/v2 v2.7.1
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.42.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.42.0

@@ -444,10 +444,8 @@ func writeParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, 
 			arrowField.Type = arrow.PrimitiveTypes.Float64
 		case runtimev1.Type_CODE_STRUCT, runtimev1.Type_CODE_UUID, runtimev1.Type_CODE_ARRAY, runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_MAP:
 			arrowField.Type = arrow.BinaryTypes.String
-		case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_TIME, runtimev1.Type_CODE_DATE:
-			// arrowField.Type = arrow.FixedWidthTypes.Timestamp_us // todo
-			arrowField.Type = arrow.BinaryTypes.String
-
+		case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIME:
+			arrowField.Type = arrow.FixedWidthTypes.Timestamp_us
 		case runtimev1.Type_CODE_BYTES:
 			arrowField.Type = arrow.BinaryTypes.Binary
 		}
@@ -489,11 +487,13 @@ func writeParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, 
 				recordBuilder.Field(idx).(*array.Float64Builder).Append(v.GetNumberValue())
 			case runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_UUID:
 				recordBuilder.Field(idx).(*array.StringBuilder).Append(v.GetStringValue())
-			case runtimev1.Type_CODE_TIMESTAMP:
-				// array.Timestamp
-				// recordBuilder.Field(idx).(*array.TimestampBuilder).Append(arrow.TimestampFromString(v.GetStringValue(), time.Microsecond)) // todo
-				recordBuilder.Field(idx).(*array.StringBuilder).Append(v.GetStringValue())
+			case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIME:
+				tmp, err := arrow.TimestampFromString(v.GetStringValue(), arrow.Microsecond)
+				if err != nil {
+					return err
+				}
 
+				recordBuilder.Field(idx).(*array.TimestampBuilder).Append(tmp)
 			case runtimev1.Type_CODE_ARRAY, runtimev1.Type_CODE_MAP, runtimev1.Type_CODE_STRUCT:
 				bts, err := protojson.Marshal(v)
 				if err != nil {
