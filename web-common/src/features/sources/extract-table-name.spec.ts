@@ -5,7 +5,7 @@ import {
 } from "@rilldata/web-common/features/sources/extract-table-name";
 import { describe, it, expect } from "vitest";
 
-function getVariations(
+function generateTestCases(
   fileName: string,
   expectedFileName: string,
   expectedExtension: string
@@ -24,19 +24,23 @@ function getVariations(
     path,
   }));
 }
-const Variations = [
-  ...getVariations("22-02-10.parquet", "_22_02_10", ".parquet"),
-  ...getVariations("-22-02-11.parquet", "_22_02_11", ".parquet"),
-  ...getVariations("_22-02-12.parquet", "_22_02_12", ".parquet"),
-  ...getVariations("table.parquet", "table", ".parquet"),
-  ...getVariations("table.v1.parquet", "table_v1", ".v1.parquet"),
-  ...getVariations("table", "table", ""),
-  ...getVariations("table.v1.parquet.gz", "table_v1_parquet", ".v1.parquet.gz"),
+const TestCases = [
+  ...generateTestCases("22-02-10.parquet", "_22_02_10", ".parquet"),
+  ...generateTestCases("-22-02-11.parquet", "_22_02_11", ".parquet"),
+  ...generateTestCases("_22-02-12.parquet", "_22_02_12", ".parquet"),
+  ...generateTestCases("table.parquet", "table", ".parquet"),
+  ...generateTestCases("table.v1.parquet", "table_v1", ".v1.parquet"),
+  ...generateTestCases("table", "table", ""),
+  ...generateTestCases(
+    "table.v1.parquet.gz",
+    "table_v1_parquet",
+    ".v1.parquet.gz"
+  ),
 ];
 
 describe("extract-table-name", () => {
   describe("should extract and sanitise table name", () => {
-    for (const variation of Variations) {
+    for (const variation of TestCases) {
       it(variation.title, () => {
         expect(sanitizeEntityName(extractTableName(variation.path))).toBe(
           variation.expectedFileName
@@ -46,7 +50,7 @@ describe("extract-table-name", () => {
   });
 
   describe("should extract extension", () => {
-    for (const variation of Variations) {
+    for (const variation of TestCases) {
       it(variation.title, () => {
         expect(extractFileExtension(variation.path)).toBe(
           variation.expectedExtension

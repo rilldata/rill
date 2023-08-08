@@ -44,7 +44,7 @@ export function compileCreateSourceYAML(
 function buildDuckDbQuery(path: string): string {
   const extension = extractFileExtension(path as string);
   if (extensionContainsParts(extension, [".csv", ".tsv", ".txt"])) {
-    return `select * from read_csv_auto('${path}')`;
+    return `select * from read_csv('${path}', auto_detect=true, ignore_errors=1, header=true)`;
   } else if (extensionContainsParts(extension, [".parquet"])) {
     return `select * from read_parquet('${path}')`;
   } else if (extensionContainsParts(extension, [".json", ".ndjson"])) {
@@ -62,7 +62,7 @@ function extensionContainsParts(
   extensionParts: Array<string>
 ) {
   for (const extension of extensionParts) {
-    if (fileExtension.indexOf(extension) >= 0) return true;
+    if (fileExtension.includes(extension)) return true;
   }
   return false;
 }
