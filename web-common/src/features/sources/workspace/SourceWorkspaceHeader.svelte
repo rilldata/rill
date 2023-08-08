@@ -69,9 +69,6 @@
     getFilePathFromNameAndType(sourceName, EntityType.Table)
   );
 
-  let headerWidth;
-  $: isHeaderWidthSmall = headerWidth < 800;
-
   let entry: V1CatalogEntry;
   let source: V1Source;
   $: entry = $getSource?.data?.entry;
@@ -195,14 +192,17 @@
     );
     hasReconciliationErrors = reconciliationErrors?.length > 0;
   }
+
+  function isHeaderWidthSmall(width: number) {
+    return width < 800;
+  }
 </script>
 
 <div class="grid items-center" style:grid-template-columns="auto max-content">
   <WorkspaceHeader
     {...{ titleInput: sourceName, onChangeCallback }}
     appRunning={$appQueryStatusStore}
-    let:width
-    width={headerWidth}
+    let:width={headerWidth}
   >
     <svelte:fragment slot="workspace-controls">
       {#if $refreshSourceMutation.isLoading}
@@ -230,10 +230,12 @@
           type="secondary"
           disabled={!isSourceUnsaved}
         >
-          <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}>
+          <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall(headerWidth)}>
             <UndoIcon size="14px" />
           </IconSpaceFixer>
-          Revert changes
+          <ResponsiveButtonText collapse={isHeaderWidthSmall(headerWidth)}>
+            Revert changes
+          </ResponsiveButtonText>
         </Button>
         <Button
           label={isSourceUnsaved ? "Save and refresh" : "Refresh"}
@@ -243,10 +245,10 @@
               : onRefreshClick(sourceName)}
           type={isSourceUnsaved ? "primary" : "secondary"}
         >
-          <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}>
+          <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall(headerWidth)}>
             <RefreshIcon size="14px" />
           </IconSpaceFixer>
-          <ResponsiveButtonText collapse={isHeaderWidthSmall}>
+          <ResponsiveButtonText collapse={isHeaderWidthSmall(headerWidth)}>
             <div class="flex">
               {#if isSourceUnsaved}<div
                   class="pr-1"
@@ -262,8 +264,10 @@
           on:click={handleCreateModelFromSource}
           disabled={isSourceUnsaved || hasReconciliationErrors}
         >
-          Create model
-          <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}>
+          <ResponsiveButtonText collapse={isHeaderWidthSmall(headerWidth)}>
+            Create model
+          </ResponsiveButtonText>
+          <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall(headerWidth)}>
             <EnterIcon size="14px" />
           </IconSpaceFixer>
         </Button>
