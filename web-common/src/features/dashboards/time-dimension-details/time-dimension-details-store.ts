@@ -8,7 +8,7 @@ export type TimeDimensionDetailsStore = {
 
 export function createTimeDimensionDetailsStore() {
   // Store of state to share between line chart and table
-  let store = writable<TimeDimensionDetailsStore>({
+  const store = writable<TimeDimensionDetailsStore>({
     highlightedCol: null,
     highlightedRow: null,
     scrubbedCols: [8, 12],
