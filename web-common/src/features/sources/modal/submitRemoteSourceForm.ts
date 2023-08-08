@@ -1,7 +1,5 @@
-import { goto } from "$app/navigation";
 import type { QueryClient } from "@tanstack/query-core";
 import { get } from "svelte/store";
-import { notifications } from "../../../components/notifications";
 import { appScreen } from "../../../layout/app-store";
 import { behaviourEvent } from "../../../metrics/initMetrics";
 import {
@@ -21,7 +19,6 @@ import { fileArtifactsStore } from "../../entity-management/file-artifacts-store
 import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitializedV2 } from "../../welcome/is-project-initialized";
-import { createModelFromSourceV2 } from "../createModel";
 import {
   compileCreateSourceYAML,
   emitSourceErrorTelemetry,
@@ -88,12 +85,10 @@ export async function submitRemoteSourceForm(
   invalidateAfterReconcile(queryClient, instanceId, resp);
   fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
 
-  // Navigate according to failure or success
+  // Emit telemetry
   const hasSourceYAMLErrors = resp.errors.length > 0;
   if (hasSourceYAMLErrors) {
     // Error
-
-    // Emit telemetry
     const sourceError = getSourceError(resp.errors, values.sourceName);
     emitSourceErrorTelemetry(
       MetricsEventSpace.Modal,
@@ -102,13 +97,8 @@ export async function submitRemoteSourceForm(
       connectorToSourceConnectionType[connectorName],
       formValues?.uri || ""
     );
-
-    // Show the source YAML editor
-    goto(`/source/${values.sourceName}`);
   } else {
     // Success
-
-    // Emit telemetry
     emitSourceSuccessTelemetry(
       MetricsEventSpace.Modal,
       get(appScreen),
@@ -116,19 +106,5 @@ export async function submitRemoteSourceForm(
       connectorToSourceConnectionType[connectorName],
       formValues?.uri
     );
-
-    // Create a `select *` model
-    const newModelName = await createModelFromSourceV2(
-      queryClient,
-      values.sourceName
-    );
-
-    // Navigate to new model
-    goto(`/model/${newModelName}?focus`);
-
-    // Show toast message
-    notifications.send({
-      message: `Data source imported. Start modeling it here.`,
-    });
   }
 }

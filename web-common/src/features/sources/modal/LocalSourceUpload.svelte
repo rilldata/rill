@@ -14,7 +14,6 @@
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
-  import { notifications } from "../../../components/notifications";
   import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { SourceConnectionType } from "../../../metrics/service/SourceEventTypes";
@@ -22,7 +21,6 @@
   import { useModelNames } from "../../models/selectors";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
   import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
-  import { createModelFromSourceV2 } from "../createModel";
   import {
     compileCreateSourceYAML,
     emitSourceErrorTelemetry,
@@ -95,13 +93,10 @@
       overlay.set(null);
       dispatch("close");
 
+      // Emit telemetry
       const sourceError = getSourceError(errors, tableName);
       if ($createSourceMutation.isError || sourceError) {
         // Error
-        // Navigate to source page
-        goto(`/source/${tableName}`);
-
-        // Telemetry
         emitSourceErrorTelemetry(
           MetricsEventSpace.Modal,
           $appScreen,
@@ -111,21 +106,6 @@
         );
       } else {
         // Success
-        // Create a `select *` model
-        const newModelName = await createModelFromSourceV2(
-          queryClient,
-          tableName
-        );
-
-        // Navigate to new model
-        goto(`/model/${newModelName}?focus`);
-
-        // Show toast message
-        notifications.send({
-          message: `Data source imported. Start modeling it here.`,
-        });
-
-        // Telemetry
         emitSourceSuccessTelemetry(
           MetricsEventSpace.Modal,
           $appScreen,
@@ -134,6 +114,9 @@
           filePath
         );
       }
+
+      // Navigate to source page
+      goto(`/source/${tableName}`);
     }
   }
 </script>

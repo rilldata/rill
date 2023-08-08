@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
   import InformationalField from "@rilldata/web-common/components/forms/InformationalField.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
@@ -51,6 +52,7 @@
           overlay.set({ title: `Importing ${values.sourceName}` });
           try {
             await submitRemoteSourceForm(queryClient, connector.name, values);
+            goto(`/source/${values.sourceName}`);
             dispatch("close");
           } catch (e) {
             rpcError = e?.response?.data;
