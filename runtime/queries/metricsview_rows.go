@@ -143,7 +143,7 @@ func duckDBCopyExport(query *MetricsViewRows, olap drivers.OLAPStore, mv *runtim
 	}
 
 	temporaryFilename := "export_" + uuid.New().String()
-	sql = fmt.Sprintf("COPY (%s) TO %s", sql, temporaryFilename)
+	sql = fmt.Sprintf("COPY (%s) TO '%s'", sql, temporaryFilename)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:            sql,

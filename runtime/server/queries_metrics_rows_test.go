@@ -64,7 +64,7 @@ func TestServer_MetricsViewRows_Granularity_Kathmandu(t *testing.T) {
 	require.Equal(t, "2022-01-01T14:15:00Z", tr.Data[0].Fields["timestamp__hour"].GetStringValue())
 }
 
-func TestServer_MetricsViewRows_export(t *testing.T) {
+func TestServer_MetricsViewRows_export_xlsx(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
@@ -89,4 +89,24 @@ func TestServer_MetricsViewRows_export(t *testing.T) {
 	require.Equal(t, []string{"timestamp", "publisher", "domain", "bid_price", "volume", "impressions", "ad words", "clicks", "numeric_dim", "device"}, rows[0][2:])
 	require.Equal(t, []string{"2022-01-01T14:49:50.459Z", "", "msn.com", "2", "4", "2", "cars", "", "1", "iphone"}, rows[1][2:])
 	require.Equal(t, []string{"2022-01-02T11:58:12.475Z", "Yahoo", "yahoo.com", "2", "4", "1", "cars", "1", "1"}, rows[2][2:])
+}
+
+func TestServer_MetricsViewRows_export_csv(t *testing.T) {
+	t.Parallel()
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	ctx := testCtx()
+	q := &queries.MetricsViewRows{
+		MetricsViewName: "ad_bids_metrics",
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+	}
+
+	var buf bytes.Buffer
+
+	err := q.Export(ctx, server.runtime, instanceId, &buf, &runtime.ExportOptions{
+		Format: runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
+	})
+	require.NoError(t, err)
+
+	require.True(t, len(buf.Bytes()) > 0)
 }
