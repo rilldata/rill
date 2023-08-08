@@ -469,7 +469,6 @@ func (c *connection) scheduleStatCollection() {
 
 			commonDims := []attribute.KeyValue{
 				attribute.String("olap.db.name", stat.DatabaseName),
-				attribute.Int64("olap.block.size", stat.BlockSize),
 			}
 			commonDims = append(commonDims, c.config.ActivityDims...)
 
