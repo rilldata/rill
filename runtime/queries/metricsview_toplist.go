@@ -98,7 +98,7 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 }
 
 func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
-	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
+	olap, err := rt.OLAP(ctx, instanceID)
 	if err != nil {
 		return err
 	}
@@ -108,13 +108,47 @@ func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, in
 		return err
 	}
 
-	filename := strings.ReplaceAll(mv.Model, `"`, `_`)
-	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
-		filename += "_filtered"
+	switch olap.Dialect() {
+	case drivers.DialectDuckDB:
+		if opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV {
+			if mv.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
+				return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
+			}
+
+			sql, args, err := q.buildMetricsTopListSQL(mv, olap.Dialect())
+			if err != nil {
+				return err
+			}
+
+			filename := q.generateFilename(mv)
+			if err := duckDBCopyExport(sql, args, filename, olap, mv, opts, w, rt, instanceID, ctx); err != nil {
+				return err
+			}
+		} else {
+			if err := q.generalExport(olap, mv, opts, w, rt, instanceID, ctx); err != nil {
+				return err
+			}
+		}
+	case drivers.DialectDruid:
+		if err := q.generalExport(olap, mv, opts, w, rt, instanceID, ctx); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
+	}
+
+	return nil
+
+}
+
+func (query *MetricsViewToplist) generalExport(olap drivers.OLAPStore, mv *runtimev1.MetricsView, opts *runtime.ExportOptions, w io.Writer, rt *runtime.Runtime, instanceID string, ctx context.Context) error {
+	err := query.Resolve(ctx, rt, instanceID, opts.Priority)
+	if err != nil {
+		return err
 	}
 
 	if opts.PreWriteHook != nil {
-		err = opts.PreWriteHook(filename)
+		err = opts.PreWriteHook(query.generateFilename(mv))
 		if err != nil {
 			return err
 		}
@@ -124,12 +158,20 @@ func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, in
 	case runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED:
 		return fmt.Errorf("unspecified format")
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		return writeCSV(q.Result.Meta, q.Result.Data, w)
+		return writeCSV(query.Result.Meta, query.Result.Data, w)
 	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		return writeXLSX(q.Result.Meta, q.Result.Data, w)
+		return writeXLSX(query.Result.Meta, query.Result.Data, w)
 	}
 
 	return nil
+}
+
+func (q *MetricsViewToplist) generateFilename(mv *runtimev1.MetricsView) string {
+	filename := strings.ReplaceAll(mv.Model, `"`, `_`)
+	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
+		filename += "_filtered"
+	}
+	return filename
 }
 
 func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect) (string, []any, error) {

@@ -102,7 +102,7 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	return nil
 }
 
-func generalExport(query *MetricsViewRows, olap drivers.OLAPStore, mv *runtimev1.MetricsView, opts *runtime.ExportOptions, w io.Writer, rt *runtime.Runtime, instanceID string, ctx context.Context) error {
+func (query *MetricsViewRows) generalExport(olap drivers.OLAPStore, mv *runtimev1.MetricsView, opts *runtime.ExportOptions, w io.Writer, rt *runtime.Runtime, instanceID string, ctx context.Context) error {
 	err := query.Resolve(ctx, rt, instanceID, opts.Priority)
 	if err != nil {
 		return err
@@ -127,21 +127,7 @@ func generalExport(query *MetricsViewRows, olap drivers.OLAPStore, mv *runtimev1
 	return nil
 }
 
-func duckDBCopyExport(query *MetricsViewRows, olap drivers.OLAPStore, mv *runtimev1.MetricsView, opts *runtime.ExportOptions, w io.Writer, rt *runtime.Runtime, instanceID string, ctx context.Context) error {
-	if mv.TimeDimension == "" && (query.TimeStart != nil || query.TimeEnd != nil) {
-		return fmt.Errorf("metrics view '%s' does not have a time dimension", query.MetricsViewName)
-	}
-
-	timeRollupColumnName, err := query.resolveTimeRollupColumnName(ctx, rt, instanceID, opts.Priority, mv)
-	if err != nil {
-		return err
-	}
-
-	sql, args, err := query.buildMetricsRowsSQL(mv, olap.Dialect(), timeRollupColumnName)
-	if err != nil {
-		return err
-	}
-
+func duckDBCopyExport(sql string, args []any, filename string, olap drivers.OLAPStore, mv *runtimev1.MetricsView, opts *runtime.ExportOptions, w io.Writer, rt *runtime.Runtime, instanceID string, ctx context.Context) error {
 	temporaryFilename := "export_" + uuid.New().String()
 	sql = fmt.Sprintf("COPY (%s) TO '%s'", sql, temporaryFilename)
 
@@ -159,7 +145,7 @@ func duckDBCopyExport(query *MetricsViewRows, olap drivers.OLAPStore, mv *runtim
 	defer os.Remove(temporaryFilename)
 
 	if opts.PreWriteHook != nil {
-		err = opts.PreWriteHook(query.generateFilename(mv))
+		err = opts.PreWriteHook(filename)
 		if err != nil {
 			return err
 		}
@@ -190,16 +176,31 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
 		if opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV {
-			if err := duckDBCopyExport(q, olap, mv, opts, w, rt, instanceID, ctx); err != nil {
+			if mv.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
+				return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
+			}
+
+			timeRollupColumnName, err := q.resolveTimeRollupColumnName(ctx, rt, instanceID, opts.Priority, mv)
+			if err != nil {
+				return err
+			}
+
+			sql, args, err := q.buildMetricsRowsSQL(mv, olap.Dialect(), timeRollupColumnName)
+			if err != nil {
+				return err
+			}
+
+			filename := q.generateFilename(mv)
+			if err := duckDBCopyExport(sql, args, filename, olap, mv, opts, w, rt, instanceID, ctx); err != nil {
 				return err
 			}
 		} else {
-			if err := generalExport(q, olap, mv, opts, w, rt, instanceID, ctx); err != nil {
+			if err := q.generalExport(olap, mv, opts, w, rt, instanceID, ctx); err != nil {
 				return err
 			}
 		}
 	case drivers.DialectDruid:
-		if err := generalExport(q, olap, mv, opts, w, rt, instanceID, ctx); err != nil {
+		if err := q.generalExport(olap, mv, opts, w, rt, instanceID, ctx); err != nil {
 			return err
 		}
 	default:
