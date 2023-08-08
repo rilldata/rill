@@ -24,6 +24,8 @@
   import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { fade } from "svelte/transition";
+  import EnterIcon from "../../../components/icons/EnterIcon.svelte";
+  import UndoIcon from "../../../components/icons/UndoIcon.svelte";
   import { WorkspaceHeader } from "../../../layout/workspace";
   import { behaviourEvent } from "../../../metrics/initMetrics";
   import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
@@ -228,6 +230,9 @@
           type="secondary"
           disabled={!isSourceUnsaved}
         >
+          <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}>
+            <UndoIcon size="14px" />
+          </IconSpaceFixer>
           Revert changes
         </Button>
         <Button
@@ -256,8 +261,12 @@
         <Button
           on:click={handleCreateModelFromSource}
           disabled={isSourceUnsaved || hasReconciliationErrors}
-          >Create model</Button
         >
+          Create model
+          <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}>
+            <EnterIcon size="14px" />
+          </IconSpaceFixer>
+        </Button>
       </PanelCTA>
     </svelte:fragment>
   </WorkspaceHeader>
