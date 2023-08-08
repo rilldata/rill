@@ -25,14 +25,25 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { fade } from "svelte/transition";
   import { WorkspaceHeader } from "../../../layout/workspace";
+  import { behaviourEvent } from "../../../metrics/initMetrics";
+  import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "../../../metrics/service/MetricsTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { renameFileArtifact } from "../../entity-management/actions";
   import {
     getFilePathFromNameAndType,
     getRouteFromName,
   } from "../../entity-management/entity-mappers";
+  import {
+    fileArtifactsStore,
+    getFileArtifactReconciliationErrors,
+  } from "../../entity-management/file-artifacts-store";
   import { isDuplicateName } from "../../entity-management/name-utils";
   import { useAllNames } from "../../entity-management/selectors";
+  import { createModelFromSourceV2 } from "../createModel";
   import { refreshSource } from "../refreshSource";
   import { saveAndRefresh } from "../saveAndRefresh";
   import { useIsSourceUnsaved } from "../selectors";
@@ -161,6 +172,27 @@
     $sourceStore.clientYAML
   );
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;
+
+  const handleCreateModelFromSource = async () => {
+    const modelName = await createModelFromSourceV2(queryClient, sourceName);
+    goto(`/model/${modelName}`);
+    behaviourEvent.fireNavigationEvent(
+      modelName,
+      BehaviourEventMedium.Button,
+      MetricsEventSpace.RightPanel,
+      MetricsEventScreenName.Source,
+      MetricsEventScreenName.Model
+    );
+  };
+
+  let hasReconciliationErrors: boolean;
+  $: {
+    const reconciliationErrors = getFileArtifactReconciliationErrors(
+      $fileArtifactsStore,
+      `${sourceName}.yaml`
+    );
+    hasReconciliationErrors = reconciliationErrors?.length > 0;
+  }
 </script>
 
 <div class="grid items-center" style:grid-template-columns="auto max-content">
@@ -204,7 +236,7 @@
             isSourceUnsaved
               ? onSaveAndRefreshClick(sourceName)
               : onRefreshClick(sourceName)}
-          type="primary"
+          type={isSourceUnsaved ? "primary" : "secondary"}
         >
           <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}>
             <RefreshIcon size="14px" />
@@ -221,6 +253,11 @@
             </div>
           </ResponsiveButtonText>
         </Button>
+        <Button
+          on:click={handleCreateModelFromSource}
+          disabled={isSourceUnsaved || hasReconciliationErrors}
+          >Create model</Button
+        >
       </PanelCTA>
     </svelte:fragment>
   </WorkspaceHeader>
