@@ -5,10 +5,12 @@ import (
 	"fmt"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/bigquery"
 	"github.com/rilldata/rill/runtime/drivers/gcs"
 	"github.com/rilldata/rill/runtime/drivers/s3"
+	"golang.org/x/exp/maps"
 )
 
 // ListConnectors implements RuntimeService.
@@ -58,6 +60,42 @@ func (s *Server) ListConnectors(ctx context.Context, req *runtimev1.ListConnecto
 	}
 
 	return &runtimev1.ListConnectorsResponse{Connectors: pbs}, nil
+}
+
+func (s *Server) ScanConnectors(ctx context.Context, req *runtimev1.ScanConnectorsRequest) (*runtimev1.ScanConnectorsResponse, error) {
+	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	p, err := rillv1.Parse(ctx, repo, req.InstanceId, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	connectors, err := p.AnalyzeConnectors(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	cMap := make(map[string]*runtimev1.ScannedConnector, len(connectors))
+	for _, connector := range connectors {
+		cMap[connector.Name] = &runtimev1.ScannedConnector{
+			Name:               connector.Name,
+			Type:               connector.Driver,
+			HasAnonymousAccess: connector.AnonymousAccess,
+		}
+		cMap[connector.Name].Variables = make([]string, len(connector.Spec.ConfigProperties))
+		for j := 0; j < len(connector.Spec.ConfigProperties); j++ {
+			p := connector.Spec.ConfigProperties[j]
+			cMap[connector.Name].Variables[j] = fmt.Sprintf("connector.%s.%s", connector.Name, p.Key)
+		}
+	}
+	return &runtimev1.ScanConnectorsResponse{
+		Connectors:          maps.Values(cMap),
+		ExistingCredentials: p.EnvVariables,
+	}, nil
 }
 
 func (s *Server) S3ListBuckets(ctx context.Context, req *runtimev1.S3ListBucketsRequest) (*runtimev1.S3ListBucketsResponse, error) {

@@ -121,9 +121,10 @@ type Parser struct {
 	DuckDBConnectors []string
 
 	// Output
-	RillYAML  *RillYAML
-	Resources map[ResourceName]*Resource
-	Errors    []*runtimev1.ParseError
+	RillYAML     *RillYAML
+	Resources    map[ResourceName]*Resource
+	Errors       []*runtimev1.ParseError
+	EnvVariables map[string]string
 
 	// Internal state
 	resourcesForPath           map[string][]*Resource // Reverse index of Resource.Paths
@@ -169,6 +170,11 @@ func Parse(ctx context.Context, repo drivers.RepoStore, instanceID string, duckD
 
 	err = p.parsePaths(ctx, paths)
 	if err != nil {
+		return nil, err
+	}
+
+	// parse .env file separately
+	if err := p.parseDotEnv(ctx); err != nil {
 		return nil, err
 	}
 

@@ -321,6 +321,10 @@ export type ConnectorServiceGCSListObjectsParams = {
   delimiter?: string;
 };
 
+export type ConnectorServiceScanConnectorsParams = {
+  instanceId?: string;
+};
+
 export type ConnectorServiceBigQueryListTablesParams = {
   instanceId?: string;
   connector?: string;
@@ -508,6 +512,22 @@ export interface V1Source {
   timeoutSeconds?: number;
 }
 
+export interface V1ScannedConnector {
+  name?: string;
+  type?: string;
+  variables?: string[];
+  hasAnonymousAccess?: boolean;
+}
+
+export type V1ScanConnectorsResponseExistingCredentials = {
+  [key: string]: string;
+};
+
+export interface V1ScanConnectorsResponse {
+  connectors?: V1ScannedConnector[];
+  existingCredentials?: V1ScanConnectorsResponseExistingCredentials;
+}
+
 export interface V1S3Object {
   name?: string;
   modifiedOn?: string;
@@ -555,6 +575,16 @@ export interface V1RenameFileAndReconcileRequest {
   /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
   dry?: boolean;
   strict?: boolean;
+}
+
+export interface V1RefreshAndReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
 }
 
 export interface V1RefreshAndReconcileRequest {
@@ -617,16 +647,6 @@ Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: V1ReconcileErrorCharLocation;
   endLocation?: V1ReconcileErrorCharLocation;
-}
-
-export interface V1RefreshAndReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
 }
 
 export type V1QueryResponseDataItem = { [key: string]: any };
@@ -863,10 +883,6 @@ export interface V1MetricsViewComparisonValue {
   deltaRel?: unknown;
 }
 
-export interface V1MetricsViewComparisonToplistResponse {
-  rows?: V1MetricsViewComparisonRow[];
-}
-
 export type V1MetricsViewComparisonSortType =
   (typeof V1MetricsViewComparisonSortType)[keyof typeof V1MetricsViewComparisonSortType];
 
@@ -910,6 +926,10 @@ export interface V1MetricsViewComparisonRow {
   measureValues?: V1MetricsViewComparisonValue[];
 }
 
+export interface V1MetricsViewComparisonToplistResponse {
+  rows?: V1MetricsViewComparisonRow[];
+}
+
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
@@ -939,6 +959,11 @@ export interface V1MetricsView {
 export interface V1MapType {
   keyType?: Runtimev1Type;
   valueType?: Runtimev1Type;
+}
+
+export interface V1ListInstancesResponse {
+  instances?: V1Instance[];
+  nextPageToken?: string;
 }
 
 export interface V1ListFilesResponse {
@@ -983,11 +1008,6 @@ of in the runtime's metadata store. Currently only supported for the duckdb driv
   ingestionLimitBytes?: string;
   /** bare minimum connectors required by the instance. */
   connectors?: V1ConnectorDef[];
-}
-
-export interface V1ListInstancesResponse {
-  instances?: V1Instance[];
-  nextPageToken?: string;
 }
 
 export interface V1InlineMeasure {

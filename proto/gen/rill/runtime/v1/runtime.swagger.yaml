@@ -98,6 +98,29 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - RuntimeService
+  /v1/connectors/scan:
+    get:
+      summary: |-
+        ScanConnectors scans the artifacts for connectors and returns information about
+        the connectors referenced in the artifacts. The information includes name,type and
+        credentials for the connector.
+      operationId: ConnectorService_ScanConnectors
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ScanConnectorsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
   /v1/delete-and-reconcile:
     post:
       summary: DeleteFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
@@ -3585,6 +3608,33 @@ definitions:
         format: int64
       isDir:
         type: boolean
+  v1ScanConnectorsResponse:
+    type: object
+    properties:
+      connectors:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ScannedConnector'
+      existingCredentials:
+        type: object
+        additionalProperties:
+          type: string
+        title: credentials already present in env file
+  v1ScannedConnector:
+    type: object
+    properties:
+      name:
+        type: string
+      type:
+        type: string
+      variables:
+        type: array
+        items:
+          type: string
+      hasAnonymousAccess:
+        type: boolean
+        title: reports whether access is present without any credentials
   v1Source:
     type: object
     properties:
