@@ -31,10 +31,6 @@
     getFilePathFromNameAndType,
     getRouteFromName,
   } from "../../entity-management/entity-mappers";
-  import {
-    fileArtifactsStore,
-    getFileArtifactReconciliationErrors,
-  } from "../../entity-management/file-artifacts-store";
   import { isDuplicateName } from "../../entity-management/name-utils";
   import { useAllNames } from "../../entity-management/selectors";
   import { refreshSource } from "../refreshSource";
@@ -165,11 +161,6 @@
     $sourceStore.clientYAML
   );
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;
-
-  $: reconciliationErrors = getFileArtifactReconciliationErrors(
-    $fileArtifactsStore,
-    `${sourceName}.yaml`
-  );
 </script>
 
 <div class="grid items-center" style:grid-template-columns="auto max-content">
@@ -214,7 +205,6 @@
               ? onSaveAndRefreshClick(sourceName)
               : onRefreshClick(sourceName)}
           type="primary"
-          disabled={!isSourceUnsaved && reconciliationErrors?.length > 0}
         >
           <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}>
             <RefreshIcon size="14px" />
