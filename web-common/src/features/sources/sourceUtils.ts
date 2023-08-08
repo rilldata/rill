@@ -25,8 +25,7 @@ export function compileCreateSourceYAML(
     case "s3":
     case "gcs":
     case "https":
-      // Local file needs rewrite for files uploaded.
-      // case "local_file":
+    case "local_file":
       connectorName = "duckdb";
       values.sql = buildDuckDbQuery(values.path as string);
       delete values.path;
