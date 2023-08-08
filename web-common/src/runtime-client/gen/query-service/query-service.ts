@@ -27,6 +27,8 @@ import type {
   QueryServiceMetricsViewComparisonToplistBody,
   V1MetricsViewRowsResponse,
   QueryServiceMetricsViewRowsBody,
+  V1MetricsViewTimeRangeResponse,
+  QueryServiceMetricsViewTimeRangeBody,
   V1MetricsViewTimeSeriesResponse,
   QueryServiceMetricsViewTimeSeriesBody,
   V1MetricsViewToplistResponse,
@@ -649,6 +651,94 @@ export const createQueryServiceMetricsViewRows = <
   return query;
 };
 
+/**
+ * @summary MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
+ */
+export const queryServiceMetricsViewTimeRange = (
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewTimeRangeBody: QueryServiceMetricsViewTimeRangeBody
+) => {
+  return httpClient<V1MetricsViewTimeRangeResponse>({
+    url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/time-range-summary`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceMetricsViewTimeRangeBody,
+  });
+};
+
+export const getQueryServiceMetricsViewTimeRangeMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof queryServiceMetricsViewTimeRange>>,
+    TError,
+    {
+      instanceId: string;
+      metricsViewName: string;
+      data: QueryServiceMetricsViewTimeRangeBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof queryServiceMetricsViewTimeRange>>,
+  TError,
+  {
+    instanceId: string;
+    metricsViewName: string;
+    data: QueryServiceMetricsViewTimeRangeBody;
+  },
+  TContext
+> => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof queryServiceMetricsViewTimeRange>>,
+    {
+      instanceId: string;
+      metricsViewName: string;
+      data: QueryServiceMetricsViewTimeRangeBody;
+    }
+  > = (props) => {
+    const { instanceId, metricsViewName, data } = props ?? {};
+
+    return queryServiceMetricsViewTimeRange(instanceId, metricsViewName, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type QueryServiceMetricsViewTimeRangeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceMetricsViewTimeRange>>
+>;
+export type QueryServiceMetricsViewTimeRangeMutationBody =
+  QueryServiceMetricsViewTimeRangeBody;
+export type QueryServiceMetricsViewTimeRangeMutationError = RpcStatus;
+
+/**
+ * @summary MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
+ */
+export const createQueryServiceMetricsViewTimeRange = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof queryServiceMetricsViewTimeRange>>,
+    TError,
+    {
+      instanceId: string;
+      metricsViewName: string;
+      data: QueryServiceMetricsViewTimeRangeBody;
+    },
+    TContext
+  >;
+}) => {
+  const mutationOptions =
+    getQueryServiceMetricsViewTimeRangeMutationOptions(options);
+
+  return createMutation(mutationOptions);
+};
 /**
  * @summary MetricsViewTimeSeries returns time series for the measures in the metrics view.
 It's a convenience API for querying a metrics view.

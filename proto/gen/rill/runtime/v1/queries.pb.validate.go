@@ -4025,6 +4025,256 @@ var _ interface {
 	ErrorName() string
 } = InlineMeasureValidationError{}
 
+// Validate checks the field values on MetricsViewTimeRangeRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MetricsViewTimeRangeRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MetricsViewTimeRangeRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// MetricsViewTimeRangeRequestMultiError, or nil if none found.
+func (m *MetricsViewTimeRangeRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsViewTimeRangeRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	if utf8.RuneCountInString(m.GetMetricsViewName()) < 1 {
+		err := MetricsViewTimeRangeRequestValidationError{
+			field:  "MetricsViewName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Priority
+
+	if len(errors) > 0 {
+		return MetricsViewTimeRangeRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsViewTimeRangeRequestMultiError is an error wrapping multiple
+// validation errors returned by MetricsViewTimeRangeRequest.ValidateAll() if
+// the designated constraints aren't met.
+type MetricsViewTimeRangeRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsViewTimeRangeRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsViewTimeRangeRequestMultiError) AllErrors() []error { return m }
+
+// MetricsViewTimeRangeRequestValidationError is the validation error returned
+// by MetricsViewTimeRangeRequest.Validate if the designated constraints
+// aren't met.
+type MetricsViewTimeRangeRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsViewTimeRangeRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MetricsViewTimeRangeRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MetricsViewTimeRangeRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MetricsViewTimeRangeRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsViewTimeRangeRequestValidationError) ErrorName() string {
+	return "MetricsViewTimeRangeRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsViewTimeRangeRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsViewTimeRangeRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsViewTimeRangeRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsViewTimeRangeRequestValidationError{}
+
+// Validate checks the field values on MetricsViewTimeRangeResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MetricsViewTimeRangeResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MetricsViewTimeRangeResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// MetricsViewTimeRangeResponseMultiError, or nil if none found.
+func (m *MetricsViewTimeRangeResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsViewTimeRangeResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetTimeRangeSummary()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewTimeRangeResponseValidationError{
+					field:  "TimeRangeSummary",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewTimeRangeResponseValidationError{
+					field:  "TimeRangeSummary",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTimeRangeSummary()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewTimeRangeResponseValidationError{
+				field:  "TimeRangeSummary",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return MetricsViewTimeRangeResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsViewTimeRangeResponseMultiError is an error wrapping multiple
+// validation errors returned by MetricsViewTimeRangeResponse.ValidateAll() if
+// the designated constraints aren't met.
+type MetricsViewTimeRangeResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsViewTimeRangeResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsViewTimeRangeResponseMultiError) AllErrors() []error { return m }
+
+// MetricsViewTimeRangeResponseValidationError is the validation error returned
+// by MetricsViewTimeRangeResponse.Validate if the designated constraints
+// aren't met.
+type MetricsViewTimeRangeResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsViewTimeRangeResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MetricsViewTimeRangeResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MetricsViewTimeRangeResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MetricsViewTimeRangeResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsViewTimeRangeResponseValidationError) ErrorName() string {
+	return "MetricsViewTimeRangeResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsViewTimeRangeResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsViewTimeRangeResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsViewTimeRangeResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsViewTimeRangeResponseValidationError{}
+
 // Validate checks the field values on ColumnRollupIntervalRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
