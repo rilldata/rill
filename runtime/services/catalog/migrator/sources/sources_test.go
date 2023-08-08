@@ -69,6 +69,9 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 		{"duckdb", "", map[string]any{
 			"sql": fmt.Sprintf(`select * from read_csv_auto('%s')`, filepath.Join(testdataPathAbs, "AdBids.csv")),
 		}},
+		{"duckdb", "", map[string]any{
+			"sql": `select * from read_csv_auto('./AdBids.csv')`,
+		}},
 		// something wrong with this particular file. duckdb fails to extract
 		// TODO: move the generator to go and fix the parquet file
 		//{"local_file", testdataPath + "AdBids.parquet.gz", nil},

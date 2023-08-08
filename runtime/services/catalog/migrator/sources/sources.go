@@ -11,6 +11,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -197,7 +198,7 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 	var err error
 	// TODO: this should go in the parser in the new reconcile
 	if apiSource.Connector == "duckdb" {
-		err = mergeFromParsedQuery(apiSource)
+		err = mergeFromParsedQuery(apiSource, convertLower(opts.InstanceEnv), repo.Root())
 		if err != nil {
 			return err
 		}
@@ -268,7 +269,7 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 	return err
 }
 
-func mergeFromParsedQuery(apiSource *runtimev1.Source) error {
+func mergeFromParsedQuery(apiSource *runtimev1.Source, env map[string]string, repoRoot string) error {
 	props := apiSource.Properties.AsMap()
 	query, ok := props["sql"]
 	if !ok {
@@ -302,11 +303,15 @@ func mergeFromParsedQuery(apiSource *runtimev1.Source) error {
 		return errors.New("unknown source")
 	}
 	if c == "local_file" {
-		return nil
+		queryStr, err = rewriteLocalRelativePath(ast, repoRoot, strings.EqualFold(env["allow_host_access"], "true"))
+		if err != nil {
+			return err
+		}
+	} else {
+		apiSource.Connector = c
+		props["path"] = p
 	}
 
-	apiSource.Connector = c
-	props["path"] = p
 	props["sql"] = queryStr
 
 	pbProps, err := structpb.NewStruct(props)
@@ -315,6 +320,39 @@ func mergeFromParsedQuery(apiSource *runtimev1.Source) error {
 	}
 	apiSource.Properties = pbProps
 	return nil
+}
+
+func rewriteLocalRelativePath(ast *duckdbsql.AST, repoRoot string, allowRootAccess bool) (string, error) {
+	var resolveErr error
+	err := ast.RewriteTableRefs(func(table *duckdbsql.TableRef) (*duckdbsql.TableRef, bool) {
+		newPaths := make([]string, 0)
+		for _, p := range table.Paths {
+			if strings.Contains(p, "/") {
+				p, err := fileutil.ResolveLocalPath(p, repoRoot, allowRootAccess)
+				if err != nil {
+					resolveErr = err
+					return nil, false
+				}
+				newPaths = append(newPaths, p)
+			} else {
+				newPaths = append(newPaths, p)
+			}
+		}
+
+		return &duckdbsql.TableRef{
+			Function:   table.Function,
+			Paths:      newPaths,
+			Properties: table.Properties,
+		}, true
+	})
+	if resolveErr != nil {
+		return "", resolveErr
+	}
+	if err != nil {
+		return "", err
+	}
+
+	return ast.Format()
 }
 
 type progress struct {
