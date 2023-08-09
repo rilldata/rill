@@ -109,5 +109,8 @@
         isCurrentPage={isDashboardPage}
       />
     {/if}
+    {#if $page.route.id.endsWith("/-/logs")}
+      <div class="ml-2 border rounded py-1 px-2 font-medium">Logs</div>
+    {/if}
   </ol>
 </nav>
