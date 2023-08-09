@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/services/catalog"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
 
@@ -65,7 +66,7 @@ func (c *connectionCache) Close() error {
 	return firstErr
 }
 
-func (c *connectionCache) get(ctx context.Context, instanceID, driver, dsn string) (drivers.Connection, error) {
+func (c *connectionCache) get(ctx context.Context, instanceID, driver, dsn string, activityDims []attribute.KeyValue) (drivers.Connection, error) {
 	// TODO: This locks for all instances for the duration of Open and Migrate.
 	// Adapt to lock only on the lookup, and then on the individual instance's Open and Migrate.
 
@@ -86,7 +87,7 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver, dsn strin
 		config := map[string]any{
 			"dsn":          dsn,
 			"activity":     c.activity,
-			"activityDims": activity.GetDimsFromContext(ctx),
+			"activityDims": activityDims,
 		}
 		conn, err := drivers.Open(driver, config, logger)
 		if err != nil {

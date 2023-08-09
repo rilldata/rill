@@ -72,10 +72,8 @@ func (d Driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connect
 	var activityDims []attribute.KeyValue
 	activityDimsAny := config["activityDims"]
 	if activityDimsAny != nil {
-		if value, ok := activityDimsAny.(*[]attribute.KeyValue); !ok {
+		if activityDims, ok = activityDimsAny.([]attribute.KeyValue); !ok {
 			return nil, fmt.Errorf("couldn't cast activity dimensions")
-		} else if value != nil { // activityDimsAny might be non-nil, but it may hold a reference == nil
-			activityDims = *value
 		}
 	}
 
@@ -120,7 +118,7 @@ func (d Driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connect
 		return nil, err
 	}
 
-	go c.scheduleStatCollection()
+	go c.periodicallyEmitStats(time.Minute)
 
 	return c, nil
 }
@@ -181,8 +179,9 @@ type connection struct {
 	dbReopen    bool
 	dbErr       error
 	statTicker  *time.Ticker
-	ctx         context.Context
-	cancel      context.CancelFunc
+	// Cancellable context to control internal processes like emitting the stats
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 // Driver implements drivers.Connection.
@@ -442,17 +441,19 @@ func (c *connection) checkErr(err error) error {
 	return err
 }
 
-func (c *connection) scheduleStatCollection() {
+// Periodically collects stats using pragma_database_size() and emits as activity events
+func (c *connection) periodicallyEmitStats(d time.Duration) {
 	if c.config.Activity == nil {
 		// Activity client isn't set, there is no need to report stats
 		return
 	}
 
-	c.statTicker = time.NewTicker(time.Minute)
+	c.statTicker = time.NewTicker(d)
 	for {
 		select {
 		case <-c.statTicker.C:
 			var stat dbStat
+			// Obtain a connection, query, release
 			err := func() error {
 				conn, release, err := c.acquireMetaConn(c.ctx)
 				if err != nil {
@@ -467,6 +468,7 @@ func (c *connection) scheduleStatCollection() {
 				continue
 			}
 
+			// Emit collected stats as activity events
 			commonDims := []attribute.KeyValue{
 				attribute.String("olap.db.name", stat.DatabaseName),
 			}

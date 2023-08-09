@@ -8,6 +8,7 @@ import (
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
 
@@ -92,7 +93,7 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 
 	// Drop the underlying data store
 	if dropDB {
-		conn, err := r.connCache.get(ctx, instanceID, inst.OLAPDriver, inst.OLAPDSN)
+		conn, err := r.connCache.get(ctx, instanceID, inst.OLAPDriver, inst.OLAPDSN, instanceAnnotationsToAttribs(inst))
 		if err == nil {
 			err = conn.Close()
 			if err != nil {
@@ -142,7 +143,7 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 
 	// 2. Check that it's a driver that supports embedded catalogs
 	if inst.EmbedCatalog {
-		olapConn, err := r.connCache.get(ctx, inst.ID, inst.OLAPDriver, inst.OLAPDSN)
+		olapConn, err := r.connCache.get(ctx, inst.ID, inst.OLAPDriver, inst.OLAPDSN, instanceAnnotationsToAttribs(inst))
 		if err != nil {
 			return err
 		}
@@ -193,6 +194,26 @@ func (r *Runtime) evictCaches(ctx context.Context, inst *drivers.Instance) {
 	// evict catalog cache
 	r.migrationMetaCache.evict(ctx, inst.ID)
 	// query cache can't be evicted since key is a combination of instance ID and other parameters
+}
+
+// GetInstanceAttributes fetches an instance and converts its annotations to attributes
+// nil is returned if an error occurred or instance was not found
+func (r *Runtime) GetInstanceAttributes(ctx context.Context, instanceID string) []attribute.KeyValue {
+	instance, err := r.FindInstance(ctx, instanceID)
+
+	if err == nil && instance != nil {
+		return instanceAnnotationsToAttribs(instance)
+	}
+
+	return nil
+}
+
+func instanceAnnotationsToAttribs(instance *drivers.Instance) []attribute.KeyValue {
+	attrs := []attribute.KeyValue{attribute.String("instance_id", instance.ID)}
+	for k, v := range instance.Annotations {
+		attrs = append(attrs, attribute.String(k, v))
+	}
+	return attrs
 }
 
 func (r *Runtime) checkRepoConnection(inst *drivers.Instance) (drivers.Connection, drivers.RepoStore, error) {
