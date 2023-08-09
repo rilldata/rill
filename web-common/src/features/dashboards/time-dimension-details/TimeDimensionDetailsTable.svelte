@@ -4,6 +4,7 @@
   import TimeDimensionDetailsTableCell from "./TimeDimensionDetailsTableCell.svelte";
   import TimeDimensionDetailsTableHeaderCell from "./TimeDimensionDetailsTableHeaderCell.svelte";
   import { createTimeDimensionDetailsStore } from "./time-dimension-details-store";
+  import { getBlock } from "./data";
 
   // Store of state to share between line chart and table
   let store = createTimeDimensionDetailsStore();
@@ -52,11 +53,26 @@
 
     data.data.push(row);
   }
+
+  let virtualRange = [0, 0];
+  const handleVirtualRange = (e) => {
+    virtualRange = [e.detail.start, e.detail.end];
+  };
+  $: block = getBlock(100, virtualRange[0], virtualRange[1]);
+
+  // Feed block into data fetching query
+
+  // Provide that query into cells somehow for looking up their data?
+
+  // What do they do when their data isn't there?
+
+  // Block needs to include reference for its offset so cell can index it properly
 </script>
 
 <h1>Store</h1>
 <pre>
   {JSON.stringify($store, null, 2)}
+  block: {block}
 </pre>
 <h1>Table</h1>
 <Pivot
@@ -68,4 +84,5 @@
   getRowSize={state.getRowSize}
   renderCell={state.renderCell}
   renderHeaderCell={state.renderHeaderCell}
+  on:virtualRange={handleVirtualRange}
 />
