@@ -178,7 +178,6 @@ type connection struct {
 	dbCond      *sync.Cond
 	dbReopen    bool
 	dbErr       error
-	statTicker  *time.Ticker
 	// Cancellable context to control internal processes like emitting the stats
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -448,10 +447,10 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 		return
 	}
 
-	c.statTicker = time.NewTicker(d)
+	statTicker := time.NewTicker(d)
 	for {
 		select {
-		case <-c.statTicker.C:
+		case <-statTicker.C:
 			var stat dbStat
 			// Obtain a connection, query, release
 			err := func() error {
@@ -508,7 +507,7 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 			c.config.Activity.Emit(c.ctx, "olap_used_blocks", float64(stat.UsedBlocks), commonDims...)
 
 		case <-c.ctx.Done():
-			c.statTicker.Stop()
+			statTicker.Stop()
 			return
 		}
 	}
