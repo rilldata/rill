@@ -61,21 +61,21 @@ func (d Driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connect
 		return nil, fmt.Errorf("require dsn to open duckdb connection")
 	}
 
-	var activityDims []attribute.KeyValue
-	activityDimsAny := config["activityDims"]
-	if activityDimsAny != nil {
-		if value, ok := activityDimsAny.(*[]attribute.KeyValue); !ok {
-			return nil, fmt.Errorf("couldn't cast activity dimensions")
-		} else if value != nil {
-			activityDims = *value
-		}
-	}
-
 	var client activity.Client
 	clientAny := config["activity"]
 	if clientAny != nil {
 		if client, ok = clientAny.(activity.Client); !ok {
 			return nil, fmt.Errorf("couldn't cast activity client")
+		}
+	}
+
+	var activityDims []attribute.KeyValue
+	activityDimsAny := config["activityDims"]
+	if activityDimsAny != nil {
+		if value, ok := activityDimsAny.(*[]attribute.KeyValue); !ok {
+			return nil, fmt.Errorf("couldn't cast activity dimensions")
+		} else if value != nil { // activityDimsAny might be non-nil, but it may hold a reference == nil
+			activityDims = *value
 		}
 	}
 
