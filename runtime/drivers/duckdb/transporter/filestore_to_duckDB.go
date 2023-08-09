@@ -3,9 +3,11 @@ package transporter
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 )
 
@@ -50,6 +52,11 @@ func (t *fileStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source,
 	}
 	p.Target(size, drivers.ProgressUnitByte)
 
+	sql, hasSQL := src.Properties["sql"].(string)
+	if hasSQL {
+		return t.ingestDuckDBSQL(ctx, sql, localPaths, fSink, p)
+	}
+
 	var format string
 	if val, ok := src.Properties["format"].(string); ok {
 		format = fmt.Sprintf(".%s", val)
@@ -75,6 +82,31 @@ func (t *fileStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source,
 	if err != nil {
 		return err
 	}
+	p.Observe(size, drivers.ProgressUnitByte)
+	return nil
+}
+
+func (t *fileStoreToDuckDB) ingestDuckDBSQL(
+	ctx context.Context,
+	originalSQL string,
+	allFiles []string,
+	dbSink *drivers.DatabaseSink,
+	p drivers.Progress,
+) error {
+	sql, err := rewriteASTForPaths(originalSQL, allFiles)
+	if err != nil {
+		return err
+	}
+
+	st := time.Now()
+	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s);", dbSink.Table, sql)
+	err = t.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
+	if err != nil {
+		return err
+	}
+
+	size := fileSize(allFiles)
+	t.logger.Info("ingested files", zap.Strings("files", allFiles), zap.Int64("bytes_ingested", size), zap.Duration("duration", time.Since(st)), observability.ZapCtx(ctx))
 	p.Observe(size, drivers.ProgressUnitByte)
 	return nil
 }

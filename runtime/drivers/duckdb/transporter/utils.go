@@ -1,10 +1,13 @@
 package transporter
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 )
 
 func sourceReader(paths []string, format string, ingestionProps map[string]any) (string, error) {
@@ -177,4 +180,42 @@ func safeName(name string) string {
 		return name
 	}
 	return quoteName(escapeDoubleQuotes(name))
+}
+
+func rewriteASTForPaths(originalSQL string, filePaths []string) (string, error) {
+	ast, err := duckdbsql.Parse(originalSQL)
+	if err != nil {
+		return "", err
+	}
+
+	// Validate the sql is supported for sources
+	refs := ast.GetTableRefs()
+	if len(refs) != 1 {
+		return "", errors.New("sql source should have exactly one table reference")
+	}
+	ref := refs[0]
+
+	if len(ref.Paths) == 0 {
+		return "", errors.New("only read_* functions with a single path is supported")
+	}
+	if len(ref.Paths) > 1 {
+		return "", errors.New("invalid source, only a single path for source is supported")
+	}
+
+	err = ast.RewriteTableRefs(func(table *duckdbsql.TableRef) (*duckdbsql.TableRef, bool) {
+		return &duckdbsql.TableRef{
+			Paths:      filePaths,
+			Function:   table.Function,
+			Properties: table.Properties,
+		}, true
+	})
+	if err != nil {
+		return "", err
+	}
+	sql, err := ast.Format()
+	if err != nil {
+		return "", err
+	}
+
+	return sql, nil
 }

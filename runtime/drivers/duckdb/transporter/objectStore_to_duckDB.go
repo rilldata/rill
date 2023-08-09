@@ -2,13 +2,11 @@ package transporter
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
@@ -287,37 +285,7 @@ func (t *objectStoreToDuckDB) ingestDuckDBSQL(
 		allFiles = append(allFiles, files...)
 	}
 
-	ast, err := duckdbsql.Parse(originalSQL)
-	if err != nil {
-		return err
-	}
-
-	// Validate the sql is supported for sources
-	// TODO: find a good common place for this validation and avoid code duplication here and in sources packages as well
-	refs := ast.GetTableRefs()
-	if len(refs) != 1 {
-		return errors.New("sql source should have exactly one table reference")
-	}
-	ref := refs[0]
-
-	if len(ref.Paths) == 0 {
-		return errors.New("only read_* functions with a single path is supported")
-	}
-	if len(ref.Paths) > 1 {
-		return errors.New("invalid source, only a single path for source is supported")
-	}
-
-	err = ast.RewriteTableRefs(func(table *duckdbsql.TableRef) (*duckdbsql.TableRef, bool) {
-		return &duckdbsql.TableRef{
-			Paths:      allFiles,
-			Function:   table.Function,
-			Properties: table.Properties,
-		}, true
-	})
-	if err != nil {
-		return err
-	}
-	sql, err := ast.Format()
+	sql, err := rewriteASTForPaths(originalSQL, allFiles)
 	if err != nil {
 		return err
 	}
