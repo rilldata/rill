@@ -6,9 +6,9 @@ import (
 
 	"github.com/google/uuid"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"github.com/rilldata/rill/runtime/pkg/activity"
 )
 
 func TestConnectionCache(t *testing.T) {

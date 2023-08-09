@@ -3,7 +3,9 @@ package duckdb
 import (
 	"testing"
 
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 func TestConfig(t *testing.T) {
@@ -43,4 +45,11 @@ func TestConfig(t *testing.T) {
 	cfg, err = newConfig("duck.db?rill_pool_size=10", nil, nil)
 	require.NoError(t, err)
 	require.Equal(t, "duck.db", cfg.DBFilePath)
+
+	client := activity.NewNoopClient()
+	activityDims := []attribute.KeyValue{attribute.String("key", "value")}
+	cfg, err = newConfig("path/to/duck.db", client, activityDims)
+	require.NoError(t, err)
+	require.Equal(t, client, cfg.Activity)
+	require.Equal(t, activityDims, cfg.ActivityDims)
 }
