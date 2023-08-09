@@ -302,12 +302,15 @@ func mergeFromParsedQuery(apiSource *runtimev1.Source, env map[string]string, re
 	if !ok {
 		return errors.New("unknown source")
 	}
-	if c == "local_file" {
+	switch c {
+	case "https":
+		return nil
+	case "local_file":
 		queryStr, err = rewriteLocalRelativePath(ast, repoRoot, strings.EqualFold(env["allow_host_access"], "true"))
 		if err != nil {
 			return err
 		}
-	} else {
+	default:
 		apiSource.Connector = c
 		props["path"] = p
 	}
