@@ -625,7 +625,7 @@ measures:
 	require.Equal(t, "duplicate measure name", result.Errors[0].Message)
 
 	time.Sleep(time.Millisecond * 10)
-	err = s.Repo.Put(context.Background(), s.InstID, AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
+	err = s.Repo.Put(context.Background(), AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
 timeseries: timestamp
 smallest_time_grain: 
 dimensions:
@@ -645,7 +645,7 @@ measures:
 	require.Equal(t, `duplicate dimension column "publisher"`, result.Errors[0].Message)
 
 	time.Sleep(time.Millisecond * 10)
-	err = s.Repo.Put(context.Background(), s.InstID, AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
+	err = s.Repo.Put(context.Background(), AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
 timeseries: timestamp
 smallest_time_grain: 
 dimensions:
