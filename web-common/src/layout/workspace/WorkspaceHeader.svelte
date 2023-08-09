@@ -47,11 +47,7 @@
 
   $: applicationStatus = appRunning ? EntityStatus.Running : EntityStatus.Idle;
 
-  $: inputSize =
-    Math.max((editingTitle ? titleInputValue : titleInput)?.length || 0, 5) + 1;
-
   $: width = $observedNode?.getBoundingClientRect()?.width;
-  $: console.log("width", width);
 </script>
 
 <svelte:window on:keydown={onKeydown} />
