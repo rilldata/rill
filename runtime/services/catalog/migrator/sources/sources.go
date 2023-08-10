@@ -66,12 +66,12 @@ func (m *sourceMigrator) Update(ctx context.Context,
 		}
 		defer func() { _ = tx.Rollback() }()
 
-		_, err = tx.ExecContext(ctx, "DROP TABLE IF EXISTS %s", apiSource.Name)
+		_, err = tx.ExecContext(ctx, fmt.Sprintf("DROP TABLE IF EXISTS %s", apiSource.Name))
 		if err != nil {
 			return err
 		}
 
-		_, err = tx.ExecContext(ctx, "ALTER TABLE %s RENAME TO %s", tempName, apiSource.Name)
+		_, err = tx.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %s RENAME TO %s", tempName, apiSource.Name))
 		if err != nil {
 			return err
 		}
