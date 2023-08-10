@@ -4,7 +4,7 @@
   import TimeDimensionDetailsTableCell from "./TimeDimensionDetailsTableCell.svelte";
   import TimeDimensionDetailsTableHeaderCell from "./TimeDimensionDetailsTableHeaderCell.svelte";
   import { createTimeDimensionDetailsStore } from "./time-dimension-details-store";
-  import { data, fetchData } from "./mock-data";
+  import { data } from "./mock-data";
 
   // Mock data that is fetched from backend
   const FIXED_COL_CT = data.metadata.fixedColumnCt;
