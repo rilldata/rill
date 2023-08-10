@@ -1,11 +1,16 @@
 package server
 
 import (
+	"bytes"
 	"fmt"
+	"strings"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/queries"
 	"github.com/stretchr/testify/require"
+	"github.com/xuri/excelize/v2"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -613,4 +618,53 @@ func TestServer_Timeseries_1day_Count(t *testing.T) {
 	results := response.Data
 	require.Equal(t, 2, len(results))
 	require.Equal(t, 1.0, results[0].Records.Fields["count"].GetNumberValue())
+}
+
+func TestServer_MetricsViewTimeseries_export_xlsx(t *testing.T) {
+	t.Parallel()
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	ctx := testCtx()
+	q := &queries.MetricsViewTimeSeries{
+		MetricsViewName: "ad_bids_metrics",
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		MeasureNames:    []string{"measure_0"},
+	}
+
+	var buf bytes.Buffer
+
+	err := q.Export(ctx, server.runtime, instanceId, &buf, &runtime.ExportOptions{
+		Format: runtimev1.ExportFormat_EXPORT_FORMAT_XLSX,
+	})
+	require.NoError(t, err)
+
+	file, err := excelize.OpenReader(&buf)
+	rows, err := file.GetRows("Sheet1")
+	require.NoError(t, err)
+
+	require.Equal(t, 3, len(rows))
+	require.Equal(t, 2, len(rows[0]))
+	require.Equal(t, 2, len(rows[1]))
+	require.Equal(t, 2, len(rows[2]))
+}
+
+func TestServer_MetricsViewTimeseries_export_csv(t *testing.T) {
+	t.Parallel()
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	ctx := testCtx()
+	q := &queries.MetricsViewTimeSeries{
+		MetricsViewName: "ad_bids_metrics",
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		MeasureNames:    []string{"measure_0"},
+	}
+
+	var buf bytes.Buffer
+
+	err := q.Export(ctx, server.runtime, instanceId, &buf, &runtime.ExportOptions{
+		Format: runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
+	})
+	require.NoError(t, err)
+
+	require.Equal(t, 3, strings.Count(string(buf.Bytes()), "\n"))
 }

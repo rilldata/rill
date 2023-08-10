@@ -75,7 +75,7 @@ func TestServer_MetricsViewRows_Granularity_Kathmandu(t *testing.T) {
 	require.Equal(t, "2022-01-01T14:15:00Z", tr.Data[0].Fields["timestamp__hour"].GetStringValue())
 }
 
-func TestServer_MetricsViewRows_export(t *testing.T) {
+func TestServer_MetricsViewRows_export_xlsx(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 

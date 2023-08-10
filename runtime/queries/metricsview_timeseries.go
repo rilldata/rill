@@ -2,17 +2,21 @@ package queries
 
 import (
 	"context"
+	// "encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
 	"time"
 
+	// "github.com/xuri/excelize/v2"
+
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"golang.org/x/exp/slices"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -87,8 +91,53 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 }
 
-func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
-	return ErrExportNotSupported
+func (query *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
+	err := query.Resolve(ctx, rt, instanceID, opts.Priority)
+	if err != nil {
+		return err
+	}
+
+	mv, err := lookupMetricsView(ctx, rt, instanceID, query.MetricsViewName)
+	if err != nil {
+		return err
+	}
+
+	if opts.PreWriteHook != nil {
+		err = opts.PreWriteHook(query.generateFilename(mv))
+		if err != nil {
+			return err
+		}
+	}
+
+	tmp := make([]*structpb.Struct, 0, len(query.Result.Data))
+	meta := append([]*runtimev1.MetricsViewColumn{{
+		Name: mv.TimeDimension,
+	}}, query.Result.Meta...)
+	for _, dt := range query.Result.Data {
+		dt.Records.Fields[mv.TimeDimension] = structpb.NewStringValue(dt.Ts.AsTime().Format(time.RFC3339Nano))
+		tmp = append(tmp, dt.Records)
+	}
+
+	switch opts.Format {
+	case runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED:
+		return fmt.Errorf("unspecified format")
+	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
+		return writeCSV(meta, tmp, w)
+	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
+		return writeXLSX(meta, tmp, w)
+	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
+		return writeParquet(meta, tmp, w)
+	}
+
+	return nil
+}
+
+func (q *MetricsViewTimeSeries) generateFilename(mv *runtimev1.MetricsView) string {
+	filename := strings.ReplaceAll(mv.Model, `"`, `_`)
+	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
+		filename += "_filtered"
+	}
+	return filename
 }
 
 func (q *MetricsViewTimeSeries) resolveDuckDB(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsView, priority int) error {
