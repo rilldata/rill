@@ -2,6 +2,8 @@ package queries
 
 import (
 	"context"
+	"database/sql"
+	"database/sql/driver"
 	"fmt"
 	"io"
 
@@ -56,7 +58,7 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	return olap.WithConnection(ctx, priority, func(ctx context.Context, ensuredCtx context.Context) error {
+	return olap.WithConnection(ctx, priority, func(ctx context.Context, ensuredCtx context.Context, _ *sql.Conn, _ driver.Conn) error {
 		// views return duplicate column names, so we need to create a temporary table
 		temporaryTableName := tempName("profile_columns_")
 		err = olap.Exec(ctx, &drivers.Statement{

@@ -2,6 +2,7 @@ package transporter
 
 import (
 	"context"
+	"database/sql"
 	"database/sql/driver"
 	"errors"
 	"fmt"
@@ -68,20 +69,7 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, 
 		return err
 	}
 
-	return s.to.WithRaw(ctx, 1, func(driverConn any) error {
-		var conn driver.Conn
-		// we are wrapping connections with otel connections
-		// appender need duckdb driver connection
-		if c, ok := driverConn.(rawer); ok {
-			conn = c.Raw()
-		} else {
-			conn = driverConn.(driver.Conn)
-		}
-
-		if err != nil {
-			return err
-		}
-
+	return s.to.WithConnection(ctx, 1, func(ctx, ensuredCtx context.Context, _ *sql.Conn, conn driver.Conn) error {
 		a, err := duckdb.NewAppenderFromConn(conn, "", dbSink.Table)
 		if err != nil {
 			return err
@@ -191,8 +179,4 @@ func pbTypeToDuckDB(code runtimev1.Type_Code) (string, error) {
 	default:
 		return "", fmt.Errorf("unknown type_code %s", code)
 	}
-}
-
-type rawer interface {
-	Raw() driver.Conn
 }

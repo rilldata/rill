@@ -2,6 +2,7 @@ package duckdb
 
 import (
 	"context"
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"os"
@@ -43,10 +44,25 @@ func (c *connection) WithConnection(ctx context.Context, priority int, fn driver
 	}
 	defer func() { _ = release() }()
 
-	// Call fn with connection embedded in context
-	wrappedCtx := contextWithConn(ctx, conn)
-	ensuredCtx := contextWithConn(context.Background(), conn)
-	return fn(wrappedCtx, ensuredCtx)
+	// Get database/sql/driver connection
+	return conn.Raw(func(raw any) error {
+		// Since we wrap connections with otelsql, we need to unwrap it.
+		// For details, see: https://github.com/XSAM/otelsql/issues/98
+		if c, ok := raw.(interface{ Raw() driver.Conn }); ok {
+			raw = c.Raw()
+		}
+
+		// This is currently guaranteed, but adding check to be safe
+		driverConn, ok := raw.(driver.Conn)
+		if !ok {
+			return fmt.Errorf("internal: did not obtain a driver.Conn")
+		}
+
+		// Call fn with connection embedded in context
+		wrappedCtx := contextWithConn(ctx, conn)
+		ensuredCtx := contextWithConn(context.Background(), conn)
+		return fn(wrappedCtx, ensuredCtx, conn.Conn, driverConn)
+	})
 }
 
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
@@ -169,17 +185,6 @@ func (c *connection) EstimateSize() (int64, bool) {
 	dbWalPath := fmt.Sprintf("%s.wal", path)
 	paths = append(paths, path, dbWalPath)
 	return fileSize(paths), true
-}
-
-func (c *connection) WithRaw(ctx context.Context, priority int, fn drivers.WithRawFunc) error {
-	// Acquire connection
-	conn, release, err := c.acquireOLAPConn(ctx, priority)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = release() }()
-
-	return conn.Raw(fn)
 }
 
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {

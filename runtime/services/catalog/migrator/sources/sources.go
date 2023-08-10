@@ -2,6 +2,8 @@ package sources
 
 import (
 	"context"
+	"database/sql"
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"reflect"
@@ -58,55 +60,25 @@ func (m *sourceMigrator) Update(ctx context.Context,
 		return err
 	}
 
-	tempNameOrig := fmt.Sprintf("__rill_temp_orig_%s", apiSource.Name)
-	// drop the temp for original if exists
-	err = olap.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s", tempNameOrig),
-		Priority: 100,
-	})
-	if err != nil {
-		return err
-	}
-	// rename the original to temp original table
-	err = olap.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("ALTER TABLE %s RENAME TO %s", apiSource.Name, tempNameOrig),
-		Priority: 100,
-	})
-	if err != nil {
-		return err
-	}
+	return olap.WithConnection(ctx, 100, func(ctx, ensuredCtx context.Context, conn *sql.Conn, _ driver.Conn) error {
+		tx, err := conn.BeginTx(ctx, nil)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = tx.Rollback() }()
 
-	// finally rename the new temp table to actual table
-	err = olap.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("ALTER TABLE %s RENAME TO %s", tempName, apiSource.Name),
-		Priority: 100,
+		_, err = tx.ExecContext(ctx, "DROP TABLE IF EXISTS %s", apiSource.Name)
+		if err != nil {
+			return err
+		}
+
+		_, err = tx.ExecContext(ctx, "ALTER TABLE %s RENAME TO %s", tempName, apiSource.Name)
+		if err != nil {
+			return err
+		}
+
+		return tx.Commit()
 	})
-	if err != nil {
-		// revert the original table
-		_ = olap.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("ALTER TABLE %s RENAME TO %s", apiSource.Name, tempNameOrig),
-			Priority: 100,
-		})
-
-		// cleanup of temp table
-		_ = olap.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s", tempName),
-			Priority: 100,
-		})
-		// original error is more important that the error from drop of temp table
-		return err
-	}
-
-	// cleanup the backup of original
-	err = olap.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("DROP TABLE %s", tempNameOrig),
-		Priority: 100,
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (m *sourceMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalogObj *drivers.CatalogEntry) error {
