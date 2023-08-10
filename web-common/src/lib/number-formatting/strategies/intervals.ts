@@ -120,7 +120,7 @@ export function formatMsToDuckDbIntervalString(
     [months, timeUnits.mon],
     [days, timeUnits.d],
   ].reduce((acc, [value, unit]) => {
-    if (value > 0) {
+    if ((value as number) > 0) {
       acc += `${neg}${value}${unit} `;
     }
     return acc;
@@ -151,7 +151,7 @@ function formatUnitsHMS(
     [s, timeUnits.s],
     [ms, timeUnits.ms],
   ].reduce((acc, [value, unit]) => {
-    if (value > 0) {
+    if ((value as number) > 0) {
       acc += `${neg}${value}${unit} `;
     }
     return acc;
