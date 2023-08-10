@@ -2,10 +2,14 @@ package org
 
 import (
 	"context"
+	"net/http"
 
+	// "connectrpc.com/connect"
+	"github.com/bufbuild/connect-go"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/proto/gen/rill/admin/v1/adminv1connect"
 	"github.com/spf13/cobra"
 )
 
@@ -35,15 +39,12 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 			// server.URL,
 			// )
 
-			// client1 := adminv1connect.NewAdminServiceClient(http.DefaultClient, cfg.AdminURL)
+			client1 := adminv1connect.NewAdminServiceClient(http.DefaultClient, cfg.AdminURL)
 
-			// client.ConnectClient.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
-
-			// res1, err := client1.ListOrganizations(context.Background(), connect.NewRequest(&adminv1.ListOrganizationsRequest{}))
-			// res1, err := adminv1connect.AdminServiceClient.ListOrganizations(context.Background(), connect.NewRequest(&adminv1.ListOrganizationsRequest{}))
-			// if err != nil {
-			// 	return err
-			// }
+			res1, err := client1.ListOrganizations(context.Background(), connect.NewRequest(&adminv1.ListOrganizationsRequest{}))
+			if err != nil {
+				return err
+			}
 
 			if len(res.Organizations) == 0 {
 				cmdutil.PrintlnWarn("No orgs found")
@@ -51,7 +52,7 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			cmdutil.PrintlnSuccess("Organizations list")
-			cmdutil.TablePrinter(toTable(res.Organizations, cfg.Org))
+			cmdutil.TablePrinter(toTable(res1.Msg.Organizations, cfg.Org))
 			return nil
 		},
 	}

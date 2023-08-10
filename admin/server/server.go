@@ -29,6 +29,8 @@ import (
 	"github.com/rs/cors"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.uber.org/zap"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -75,7 +77,7 @@ type Server struct {
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
 
-var _ adminv1connect.AdminServiceHandler = (*Server)(nil)
+// var _ adminv1connect.AdminServiceHandler = (*Server)(nil)
 
 func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, limiter ratelimit.Limiter, opts *Options) (*Server, error) {
 	externalURL, err := url.Parse(opts.ExternalURL)
@@ -140,9 +142,18 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 		),
 	)
 
+	mux := http.NewServeMux()
+	path, handler := adminv1connect.NewAdminServiceHandler(adminv1connect.UnimplementedAdminServiceHandler{})
+	mux.Handle(path, handler)
+
 	adminv1.RegisterAdminServiceServer(server, s)
 	s.logger.Sugar().Infof("serving admin gRPC on port:%v", s.opts.GRPCPort)
-	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
+	return http.ListenAndServe(
+		fmt.Sprintf(":%d", s.opts.GRPCPort),
+		// Use h2c so we can serve HTTP/2 without TLS.
+		h2c.NewHandler(mux, &http2.Server{}),
+	)
+	// return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
 
 // Starts the HTTP server.
