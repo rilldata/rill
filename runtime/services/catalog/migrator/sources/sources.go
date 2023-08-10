@@ -11,6 +11,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -144,13 +145,23 @@ func (m *sourceMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, c
 }
 
 func (m *sourceMigrator) IsEqual(ctx context.Context, cat1, cat2 *drivers.CatalogEntry) bool {
-	if cat1.GetSource().Connector != cat2.GetSource().Connector {
+	// TODO: This is hopefully not needed in the new reconcile where parse and changing of connector happens before equals is called
+	isSQLSource := cat1.GetSource().Connector == "duckdb" && (cat2.GetSource().Connector == "s3" || cat2.GetSource().Connector == "gcs")
+
+	if !isSQLSource && cat1.GetSource().Connector != cat2.GetSource().Connector {
 		return false
 	}
 	if !comparePolicy(cat1.GetSource().GetPolicy(), cat2.GetSource().GetPolicy()) {
 		return false
 	}
-	return equal(cat1.GetSource().Properties.AsMap(), cat2.GetSource().Properties.AsMap())
+
+	map2 := cat2.GetSource().Properties.AsMap()
+	if isSQLSource {
+		delete(map2, "path")
+		return equal(cat1.GetSource().Properties.AsMap(), map2)
+	}
+
+	return equal(cat1.GetSource().Properties.AsMap(), map2)
 }
 
 func comparePolicy(p1, p2 *runtimev1.Source_ExtractPolicy) bool {
@@ -197,7 +208,7 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 	var err error
 	// TODO: this should go in the parser in the new reconcile
 	if apiSource.Connector == "duckdb" {
-		err = mergeFromParsedQuery(apiSource)
+		err = mergeFromParsedQuery(apiSource, convertLower(opts.InstanceEnv), repo.Root())
 		if err != nil {
 			return err
 		}
@@ -268,7 +279,7 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 	return err
 }
 
-func mergeFromParsedQuery(apiSource *runtimev1.Source) error {
+func mergeFromParsedQuery(apiSource *runtimev1.Source, env map[string]string, repoRoot string) error {
 	props := apiSource.Properties.AsMap()
 	query, ok := props["sql"]
 	if !ok {
@@ -301,12 +312,19 @@ func mergeFromParsedQuery(apiSource *runtimev1.Source) error {
 	if !ok {
 		return errors.New("unknown source")
 	}
-	if c == "local_file" {
+	switch c {
+	case "local_file":
+		queryStr, err = rewriteLocalRelativePath(ast, repoRoot, strings.EqualFold(env["allow_host_access"], "true"))
+		if err != nil {
+			return err
+		}
+	case "s3", "gcs":
+		apiSource.Connector = c
+		props["path"] = p
+	default:
 		return nil
 	}
 
-	apiSource.Connector = c
-	props["path"] = p
 	props["sql"] = queryStr
 
 	pbProps, err := structpb.NewStruct(props)
@@ -315,6 +333,35 @@ func mergeFromParsedQuery(apiSource *runtimev1.Source) error {
 	}
 	apiSource.Properties = pbProps
 	return nil
+}
+
+func rewriteLocalRelativePath(ast *duckdbsql.AST, repoRoot string, allowRootAccess bool) (string, error) {
+	var resolveErr error
+	err := ast.RewriteTableRefs(func(table *duckdbsql.TableRef) (*duckdbsql.TableRef, bool) {
+		newPaths := make([]string, 0)
+		for _, p := range table.Paths {
+			lp, err := fileutil.ResolveLocalPath(p, repoRoot, allowRootAccess)
+			if err != nil {
+				resolveErr = err
+				return nil, false
+			}
+			newPaths = append(newPaths, lp)
+		}
+
+		return &duckdbsql.TableRef{
+			Function:   table.Function,
+			Paths:      newPaths,
+			Properties: table.Properties,
+		}, true
+	})
+	if resolveErr != nil {
+		return "", resolveErr
+	}
+	if err != nil {
+		return "", err
+	}
+
+	return ast.Format()
 }
 
 type progress struct {
