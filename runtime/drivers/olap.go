@@ -3,7 +3,6 @@ package drivers
 import (
 	"context"
 	"database/sql"
-	"database/sql/driver"
 	"errors"
 	"time"
 
@@ -18,7 +17,7 @@ var ErrUnsupportedConnector = errors.New("drivers: connector not supported")
 // It also provides pointers to the actual database/sql and database/sql/driver connections.
 // It's called with two contexts: wrappedCtx wraps the input context (including cancellation),
 // and ensuredCtx wraps a background context (ensuring it can never be cancelled).
-type WithConnectionFunc func(wrappedCtx context.Context, ensuredCtx context.Context, conn *sql.Conn, raw driver.Conn) error
+type WithConnectionFunc func(wrappedCtx context.Context, ensuredCtx context.Context, conn *sql.Conn) error
 
 // OLAPStore is implemented by drivers that are capable of storing, transforming and serving analytical queries.
 type OLAPStore interface {

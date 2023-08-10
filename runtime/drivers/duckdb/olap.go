@@ -2,7 +2,6 @@ package duckdb
 
 import (
 	"context"
-	"database/sql/driver"
 	"errors"
 	"fmt"
 	"os"
@@ -44,25 +43,10 @@ func (c *connection) WithConnection(ctx context.Context, priority int, fn driver
 	}
 	defer func() { _ = release() }()
 
-	// Get database/sql/driver connection
-	return conn.Raw(func(raw any) error {
-		// Since we wrap connections with otelsql, we need to unwrap it.
-		// For details, see: https://github.com/XSAM/otelsql/issues/98
-		if c, ok := raw.(interface{ Raw() driver.Conn }); ok {
-			raw = c.Raw()
-		}
-
-		// This is currently guaranteed, but adding check to be safe
-		driverConn, ok := raw.(driver.Conn)
-		if !ok {
-			return fmt.Errorf("internal: did not obtain a driver.Conn")
-		}
-
-		// Call fn with connection embedded in context
-		wrappedCtx := contextWithConn(ctx, conn)
-		ensuredCtx := contextWithConn(context.Background(), conn)
-		return fn(wrappedCtx, ensuredCtx, conn.Conn, driverConn)
-	})
+	// Call fn with connection embedded in context
+	wrappedCtx := contextWithConn(ctx, conn)
+	ensuredCtx := contextWithConn(context.Background(), conn)
+	return fn(wrappedCtx, ensuredCtx, conn.Conn)
 }
 
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {

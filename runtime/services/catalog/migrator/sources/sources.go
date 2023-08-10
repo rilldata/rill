@@ -3,7 +3,6 @@ package sources
 import (
 	"context"
 	"database/sql"
-	"database/sql/driver"
 	"errors"
 	"fmt"
 	"reflect"
@@ -60,7 +59,7 @@ func (m *sourceMigrator) Update(ctx context.Context,
 		return err
 	}
 
-	return olap.WithConnection(ctx, 100, func(ctx, ensuredCtx context.Context, conn *sql.Conn, _ driver.Conn) error {
+	return olap.WithConnection(ctx, 100, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
 		tx, err := conn.BeginTx(ctx, nil)
 		if err != nil {
 			return err

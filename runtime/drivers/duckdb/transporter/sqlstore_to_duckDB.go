@@ -69,45 +69,47 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, 
 		return err
 	}
 
-	return s.to.WithConnection(ctx, 1, func(ctx, ensuredCtx context.Context, _ *sql.Conn, conn driver.Conn) error {
-		a, err := duckdb.NewAppenderFromConn(conn, "", dbSink.Table)
-		if err != nil {
-			return err
-		}
-		defer a.Close()
+	return s.to.WithConnection(ctx, 1, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
+		return rawConn(conn, func(conn driver.Conn) error {
+			a, err := duckdb.NewAppenderFromConn(conn, "", dbSink.Table)
+			if err != nil {
+				return err
+			}
+			defer a.Close()
 
-		for num := 0; ; num++ {
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			default:
-				if num == _batchSize {
-					p.Observe(_batchSize, drivers.ProgressUnitRecord)
-					num = 0
-					if err := a.Flush(); err != nil {
+			for num := 0; ; num++ {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				default:
+					if num == _batchSize {
+						p.Observe(_batchSize, drivers.ProgressUnitRecord)
+						num = 0
+						if err := a.Flush(); err != nil {
+							return err
+						}
+					}
+
+					row, err := iter.Next(ctx)
+					if err != nil {
+						if errors.Is(err, drivers.ErrIteratorDone) {
+							p.Observe(int64(num), drivers.ProgressUnitRecord)
+							return nil
+						}
+						return err
+					}
+
+					colValues := make([]driver.Value, len(row))
+					for i, col := range row {
+						colValues[i] = driver.Value(col)
+					}
+
+					if err := a.AppendRowArray(colValues); err != nil {
 						return err
 					}
 				}
-
-				row, err := iter.Next(ctx)
-				if err != nil {
-					if errors.Is(err, drivers.ErrIteratorDone) {
-						p.Observe(int64(num), drivers.ProgressUnitRecord)
-						return nil
-					}
-					return err
-				}
-
-				colValues := make([]driver.Value, len(row))
-				for i, col := range row {
-					colValues[i] = driver.Value(col)
-				}
-
-				if err := a.AppendRowArray(colValues); err != nil {
-					return err
-				}
 			}
-		}
+		})
 	})
 }
 
