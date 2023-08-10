@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Writable } from "svelte/store";
-  import { createQuery } from "@tanstack/svelte-query";
+  import { createQuery, CreateQueryResult } from "@tanstack/svelte-query";
   import type { TimeDimensionDetailsStore } from "./time-dimension-details-store";
   import { getBlock } from "./util";
   import { fetchData } from "./mock-data";
@@ -18,7 +18,7 @@
   const cellQuery = createQuery({
     queryKey: ["time-dimension-details", block[0], block[1]],
     queryFn: fetchData(block, 1000),
-  });
+  }) as CreateQueryResult<{ block: number[]; data: { d: string }[][] }>;
 
   $: {
     if (
