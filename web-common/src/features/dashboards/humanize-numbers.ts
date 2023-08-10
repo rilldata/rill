@@ -7,7 +7,10 @@ import {
   FormatterFactoryOptions,
   NumberKind,
 } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
-import { formatMsInterval } from "@rilldata/web-common/lib/number-formatting/strategies/intervals";
+import {
+  formatMsInterval,
+  formatMsToDuckDbIntervalString,
+} from "@rilldata/web-common/lib/number-formatting/strategies/intervals";
 import { PerRangeFormatter } from "@rilldata/web-common/lib/number-formatting/strategies/per-range";
 
 const shortHandSymbols = ["Q", "T", "B", "M", "k", "none"] as const;
@@ -124,6 +127,22 @@ export function humanizeDataType(
     };
   }
   return humanizedFormatterFactory([value], innerOptions).stringFormat(value);
+}
+
+/**
+ * This function is intended to provide a lossless
+ * humanized string representation of a number in cases
+ * where a raw number will be meaningless to the user.
+ */
+export function humanizeDataTypeExpanded(
+  value: unknown,
+  type: FormatPreset,
+  options?: FormatterFactoryOptions
+): string {
+  if (type === FormatPreset.INTERVAL) {
+    return formatMsToDuckDbIntervalString(value as number);
+  }
+  return value.toString();
 }
 
 /** This function is used primarily in the leaderboard and the detail tables. */

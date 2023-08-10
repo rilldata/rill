@@ -14,7 +14,10 @@
     formatMeasurePercentageDifference,
     humanizeDataType,
     FormatPreset,
+    humanizeDataTypeExpanded,
   } from "../humanize-numbers";
+  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import FormattedDataType from "@rilldata/web-common/components/data-types/FormattedDataType.svelte";
 
   export let value: number;
   export let comparisonOption: TimeComparisonOption = undefined;
@@ -76,7 +79,10 @@
               </WithTween>
             </div>
             <TooltipContent slot="tooltip-content">
-              the aggregate value over the current time period
+              {humanizeDataTypeExpanded(value, formatPresetEnum)}
+              <TooltipDescription>
+                the aggregate value over the current time period
+              </TooltipDescription>
             </TooltipContent>
           </Tooltip>
           {#if showComparison}
