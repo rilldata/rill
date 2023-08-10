@@ -27,6 +27,8 @@ import type {
   QueryServiceMetricsViewComparisonToplistBody,
   V1MetricsViewRowsResponse,
   QueryServiceMetricsViewRowsBody,
+  V1MetricsViewTimeRangeResponse,
+  QueryServiceMetricsViewTimeRangeBody,
   V1MetricsViewTimeSeriesResponse,
   QueryServiceMetricsViewTimeSeriesBody,
   V1MetricsViewToplistResponse,
@@ -636,6 +638,118 @@ export const createQueryServiceMetricsViewRows = <
     instanceId,
     metricsViewName,
     queryServiceMetricsViewRowsBody,
+    options
+  );
+
+  const query = createQuery(queryOptions) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+};
+
+/**
+ * @summary MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
+ */
+export const queryServiceMetricsViewTimeRange = (
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewTimeRangeBody: QueryServiceMetricsViewTimeRangeBody
+) => {
+  return httpClient<V1MetricsViewTimeRangeResponse>({
+    url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/time-range-summary`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceMetricsViewTimeRangeBody,
+  });
+};
+
+export const getQueryServiceMetricsViewTimeRangeQueryKey = (
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewTimeRangeBody: QueryServiceMetricsViewTimeRangeBody
+) =>
+  [
+    `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/time-range-summary`,
+    queryServiceMetricsViewTimeRangeBody,
+  ] as const;
+
+export const getQueryServiceMetricsViewTimeRangeQueryOptions = <
+  TData = Awaited<ReturnType<typeof queryServiceMetricsViewTimeRange>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewTimeRangeBody: QueryServiceMetricsViewTimeRangeBody,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof queryServiceMetricsViewTimeRange>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryOptions<
+  Awaited<ReturnType<typeof queryServiceMetricsViewTimeRange>>,
+  TError,
+  TData
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getQueryServiceMetricsViewTimeRangeQueryKey(
+      instanceId,
+      metricsViewName,
+      queryServiceMetricsViewTimeRangeBody
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof queryServiceMetricsViewTimeRange>>
+  > = () =>
+    queryServiceMetricsViewTimeRange(
+      instanceId,
+      metricsViewName,
+      queryServiceMetricsViewTimeRangeBody
+    );
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(instanceId && metricsViewName),
+    ...queryOptions,
+  };
+};
+
+export type QueryServiceMetricsViewTimeRangeQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceMetricsViewTimeRange>>
+>;
+export type QueryServiceMetricsViewTimeRangeQueryError = RpcStatus;
+
+/**
+ * @summary MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
+ */
+export const createQueryServiceMetricsViewTimeRange = <
+  TData = Awaited<ReturnType<typeof queryServiceMetricsViewTimeRange>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewTimeRangeBody: QueryServiceMetricsViewTimeRangeBody,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof queryServiceMetricsViewTimeRange>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const queryOptions = getQueryServiceMetricsViewTimeRangeQueryOptions(
+    instanceId,
+    metricsViewName,
+    queryServiceMetricsViewTimeRangeBody,
     options
   );
 

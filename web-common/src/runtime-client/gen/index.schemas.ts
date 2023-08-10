@@ -168,6 +168,10 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
   priority?: number;
 };
 
+export type QueryServiceMetricsViewTimeRangeBody = {
+  priority?: number;
+};
+
 export type QueryServiceMetricsViewRowsBody = {
   timeStart?: string;
   timeEnd?: string;
@@ -802,9 +806,33 @@ export interface V1MetricsViewTimeSeriesResponse {
   data?: V1TimeSeriesValue[];
 }
 
+export interface V1MetricsViewTimeSeriesRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
+  filter?: V1MetricsViewFilter;
+  timeZone?: string;
+  priority?: number;
+}
+
+export interface V1MetricsViewTimeRangeResponse {
+  timeRangeSummary?: V1TimeRangeSummary;
+}
+
 export interface V1MetricsViewSort {
   name?: string;
   ascending?: boolean;
+}
+
+export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
+
+export interface V1MetricsViewFilter {
+  include?: MetricsViewFilterCond[];
+  exclude?: MetricsViewFilterCond[];
 }
 
 export interface V1MetricsViewToplistRequest {
@@ -819,26 +847,6 @@ export interface V1MetricsViewToplistRequest {
   offset?: string;
   sort?: V1MetricsViewSort[];
   filter?: V1MetricsViewFilter;
-  priority?: number;
-}
-
-export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
-
-export interface V1MetricsViewFilter {
-  include?: MetricsViewFilterCond[];
-  exclude?: MetricsViewFilterCond[];
-}
-
-export interface V1MetricsViewTimeSeriesRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  timeGranularity?: V1TimeGrain;
-  filter?: V1MetricsViewFilter;
-  timeZone?: string;
   priority?: number;
 }
 
@@ -864,6 +872,10 @@ export interface V1MetricsViewComparisonValue {
   deltaRel?: unknown;
 }
 
+export interface V1MetricsViewComparisonToplistResponse {
+  rows?: V1MetricsViewComparisonRow[];
+}
+
 export type V1MetricsViewComparisonSortType =
   (typeof V1MetricsViewComparisonSortType)[keyof typeof V1MetricsViewComparisonSortType];
 
@@ -887,28 +899,9 @@ export interface V1MetricsViewComparisonSort {
   type?: V1MetricsViewComparisonSortType;
 }
 
-export interface V1MetricsViewComparisonToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  baseTimeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  sort?: V1MetricsViewComparisonSort[];
-  filter?: V1MetricsViewFilter;
-  limit?: string;
-  offset?: string;
-  priority?: number;
-}
-
 export interface V1MetricsViewComparisonRow {
   dimensionValue?: unknown;
   measureValues?: V1MetricsViewComparisonValue[];
-}
-
-export interface V1MetricsViewComparisonToplistResponse {
-  rows?: V1MetricsViewComparisonRow[];
 }
 
 export interface V1MetricsViewColumn {
@@ -994,6 +987,21 @@ of in the runtime's metadata store. Currently only supported for the duckdb driv
 export interface V1InlineMeasure {
   name?: string;
   expression?: string;
+}
+
+export interface V1MetricsViewComparisonToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  baseTimeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  sort?: V1MetricsViewComparisonSort[];
+  filter?: V1MetricsViewFilter;
+  limit?: string;
+  offset?: string;
+  priority?: number;
 }
 
 export type V1HistogramMethod =
