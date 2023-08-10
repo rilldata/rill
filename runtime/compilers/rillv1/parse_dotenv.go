@@ -2,6 +2,7 @@ package rillv1
 
 import (
 	"context"
+	"os"
 
 	"github.com/joho/godotenv"
 )
@@ -10,6 +11,9 @@ import (
 func (p *Parser) parseDotEnv(ctx context.Context) error {
 	data, err := p.Repo.Get(ctx, ".env")
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
 		return err
 	}
 	envMap, err := godotenv.Unmarshal(data)
