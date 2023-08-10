@@ -212,6 +212,7 @@ enum ExportFormat {
   EXPORT_FORMAT_UNSPECIFIED = 0;
   EXPORT_FORMAT_CSV = 1;
   EXPORT_FORMAT_XLSX = 2;
+  EXPORT_FORMAT_PARQUET = 3;
 }
 
 // **********
