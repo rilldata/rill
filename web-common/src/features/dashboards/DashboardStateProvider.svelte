@@ -31,4 +31,6 @@
   }
 </script>
 
-<slot />
+{#if metricViewName in $metricsExplorerStore.entities}
+  <slot />
+{/if}
