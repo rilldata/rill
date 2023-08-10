@@ -619,6 +619,11 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
   // Add a time comparison
   await page.getByLabel("Select time range").click();
   await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
+  // Wait for menu to close
+  await expect(
+    page.getByRole("menuitem", { name: "Last 6 Hours" })
+  ).not.toBeVisible();
+
   // check that the percent of total button remains pressed after adding a time comparison
   await expect(
     page.getByRole("button", { name: "Toggle percent of total" })
