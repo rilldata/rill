@@ -4,13 +4,15 @@
   import TimeDimensionDetailsTableCell from "./TimeDimensionDetailsTableCell.svelte";
   import TimeDimensionDetailsTableHeaderCell from "./TimeDimensionDetailsTableHeaderCell.svelte";
   import { createTimeDimensionDetailsStore } from "./time-dimension-details-store";
-  import { getBlock } from "./data";
+  import { data, fetchData } from "./mock-data";
+
+  // Mock data that is fetched from backend
+  const FIXED_COL_CT = data.metadata.fixedColumnCt;
 
   // Store of state to share between line chart and table
   let store = createTimeDimensionDetailsStore();
 
   // Mock state for now
-  const FIXED_COL_CT = 6;
   let state = {
     getRowSize: () => 35,
     getColumnWidth: (idx: number) => (idx < FIXED_COL_CT ? 60 : 100),
@@ -31,48 +33,11 @@
         lastFixed: colIdx === FIXED_COL_CT - 1,
       }),
   };
-
-  // Mock data that is fetched from backend
-  let data = {
-    data: [],
-    metadata: {
-      rowCt: 1000,
-      fixedColumnCt: FIXED_COL_CT,
-      pivotColumnCt: 100,
-    },
-  };
-  for (let r = 0; r < data.metadata.rowCt; r++) {
-    const row = new Array(
-      data.metadata.fixedColumnCt + data.metadata.pivotColumnCt
-    )
-      .fill(0)
-      .map((d, i) => ({
-        row: r,
-        col: i,
-      }));
-
-    data.data.push(row);
-  }
-
-  let virtualRange = [0, 0];
-  const handleVirtualRange = (e) => {
-    virtualRange = [e.detail.start, e.detail.end];
-  };
-  $: block = getBlock(100, virtualRange[0], virtualRange[1]);
-
-  // Feed block into data fetching query
-
-  // Provide that query into cells somehow for looking up their data?
-
-  // What do they do when their data isn't there?
-
-  // Block needs to include reference for its offset so cell can index it properly
 </script>
 
 <h1>Store</h1>
 <pre>
   {JSON.stringify($store, null, 2)}
-  block: {block}
 </pre>
 <h1>Table</h1>
 <Pivot
@@ -84,5 +49,4 @@
   getRowSize={state.getRowSize}
   renderCell={state.renderCell}
   renderHeaderCell={state.renderHeaderCell}
-  on:virtualRange={handleVirtualRange}
 />

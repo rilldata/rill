@@ -1,6 +1,6 @@
 // given area, return block to fetch
 export const getBlock = (blockSize: number, start: number, end: number) => {
-  // If distance is bigger than possible block, error?
+  // If distance is bigger than possible block, throw an error
   if (end - start > blockSize) {
     throw new Error("Range is too big");
   }
