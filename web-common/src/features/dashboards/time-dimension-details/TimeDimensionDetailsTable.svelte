@@ -12,10 +12,13 @@
   // Store of state to share between line chart and table
   let store = createTimeDimensionDetailsStore();
 
+  // TODO: make this dynamic based on the dimension and measure being rendered
+  const columnWidths = [120, 126, 64, 64, 64];
+
   // Mock state for now
   let state = {
     getRowSize: () => 35,
-    getColumnWidth: (idx: number) => (idx < FIXED_COL_CT ? 60 : 100),
+    getColumnWidth: (idx: number) => columnWidths[idx] ?? 60,
     renderCell: (rowIdx, colIdx) =>
       flexRender(TimeDimensionDetailsTableCell, {
         rowIdx,
@@ -31,6 +34,7 @@
         store,
         fixed: colIdx < FIXED_COL_CT,
         lastFixed: colIdx === FIXED_COL_CT - 1,
+        headers: data.headers,
       }),
   };
 </script>

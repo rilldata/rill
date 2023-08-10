@@ -4,6 +4,7 @@
   import type { TimeDimensionDetailsStore } from "./time-dimension-details-store";
   import { getBlock } from "./util";
   import { fetchData } from "./mock-data";
+  import Cell from "@rilldata/web-common/components/virtualized-table/core/Cell.svelte";
 
   export let rowIdx: number;
   export let colIdx: number;
@@ -33,7 +34,7 @@
 
   let _class = "";
   $: {
-    _class = "h-full ";
+    _class = "h-full flex items-center px-2";
     if (fixed) _class += ` z-2`;
     if (lastFixed) _class += ` right-shadow`;
 
@@ -85,25 +86,18 @@
     $store.highlightedCol = null;
     $store.highlightedRow = null;
   };
+
+  let cellRenderer = () => cellData?.d;
 </script>
 
-{#if rowIdx === -1}
-  <div
-    class={_class}
-    on:mouseenter={handleMouseEnter}
-    on:mouseleave={handleMouseLeave}
-  >
-    Column {colIdx}
-  </div>
-{:else}
-  <div
-    class={_class}
-    on:mouseenter={handleMouseEnter}
-    on:mouseleave={handleMouseLeave}
-  >
-    {cellData?.d}
-  </div>
-{/if}
+<div
+  class={_class}
+  on:mouseenter={handleMouseEnter}
+  on:mouseleave={handleMouseLeave}
+>
+  <!-- {cellRenderer()} -->
+  {cellData?.d}
+</div>
 
 <style>
   .right-shadow:after {
