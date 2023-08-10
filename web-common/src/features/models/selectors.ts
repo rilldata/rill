@@ -2,8 +2,12 @@ import {
   createRuntimeServiceGetCatalogEntry,
   createRuntimeServiceGetFile,
   createRuntimeServiceListFiles,
+  getRuntimeServiceListFilesQueryKey,
+  runtimeServiceListFiles,
   StructTypeField,
+  V1ListFilesResponse,
 } from "@rilldata/web-common/runtime-client";
+import type { QueryClient } from "@tanstack/query-core";
 import { TIMESTAMPS } from "../../lib/duckdb-data-types";
 
 export function useModelNames(instanceId: string) {
@@ -26,6 +30,28 @@ export function useModelNames(instanceId: string) {
       },
     }
   );
+}
+
+export async function getModelNames(
+  queryClient: QueryClient,
+  instanceId: string
+) {
+  const files = await queryClient.fetchQuery<V1ListFilesResponse>({
+    queryKey: getRuntimeServiceListFilesQueryKey(instanceId, {
+      glob: "{sources,models,dashboards}/*.{yaml,sql}",
+    }),
+    queryFn: () => {
+      return runtimeServiceListFiles(instanceId, {
+        glob: "{sources,models,dashboards}/*.{yaml,sql}",
+      });
+    },
+  });
+  const modelNames = files.paths
+    ?.filter((path) => path.includes("models/"))
+    .map((path) => path.replace("/models/", "").replace(".sql", ""))
+    // sort alphabetically case-insensitive
+    .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+  return modelNames;
 }
 
 export function useModelFileIsEmpty(instanceId, modelName) {
