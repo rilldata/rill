@@ -8,7 +8,6 @@ import {
   AD_BIDS_DOMAIN_DIMENSION,
   AD_BIDS_EXCLUDE_FILTER,
   AD_BIDS_INIT,
-  AD_BIDS_INIT_MEASURES,
   AD_BIDS_MIRROR_NAME,
   AD_BIDS_NAME,
   AD_BIDS_PUBLISHER_DIMENSION,
@@ -20,8 +19,6 @@ import {
 import { useDashboardUrlSync } from "@rilldata/web-common/features/dashboards/proto-state/dashboard-url-state";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { Page } from "@sveltejs/kit";
 import { get, Readable, writable } from "svelte/store";
 import {
