@@ -1,4 +1,8 @@
-import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+import {
+  MetricsExplorerEntity,
+  metricsExplorerStore,
+} from "@rilldata/web-common/features/dashboards/dashboard-stores";
+import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
@@ -76,7 +80,24 @@ export const TestTimeConstants = {
   LAST_18_HOURS: new Date(Date.now() - Hour * 18),
   LAST_DAY: new Date(Date.now() - Hour * 24),
 };
+export const AD_BIDS_DEFAULT_TIME_RANGE = {
+  name: TimeRangePreset.ALL_TIME,
+  interval: V1TimeGrain.TIME_GRAIN_HOUR,
+  start: TestTimeConstants.LAST_DAY,
+  end: new Date(TestTimeConstants.NOW.getTime() + 1),
+};
+export const AD_BIDS_DEFAULT_URL_TIME_RANGE = {
+  name: TimeRangePreset.ALL_TIME,
+  interval: V1TimeGrain.TIME_GRAIN_HOUR,
+  start: undefined,
+  end: undefined,
+};
 
+export const AD_BIDS_INIT = {
+  name: "AdBids",
+  measures: AD_BIDS_INIT_MEASURES,
+  dimensions: AD_BIDS_INIT_DIMENSIONS,
+};
 export const AD_BIDS_WITH_DELETED_MEASURE = {
   name: "AdBids",
   measures: [
@@ -107,27 +128,21 @@ export const AD_BIDS_WITH_THREE_DIMENSIONS = {
   dimensions: AD_BIDS_THREE_DIMENSIONS,
 };
 
-export function clearMetricsExplorerStore() {
+export function resetDashboardStore() {
   metricsExplorerStore.remove(AD_BIDS_NAME);
   metricsExplorerStore.remove(AD_BIDS_MIRROR_NAME);
+  initAdBidsInStore();
+  initAdBidsMirrorInStore();
 }
 
 export function initAdBidsInStore() {
-  metricsExplorerStore.init(
-    AD_BIDS_NAME,
-    {
-      name: "AdBids",
-      measures: AD_BIDS_INIT_MEASURES,
-      dimensions: AD_BIDS_INIT_DIMENSIONS,
+  metricsExplorerStore.init(AD_BIDS_NAME, AD_BIDS_INIT, {
+    timeRangeSummary: {
+      min: TestTimeConstants.LAST_DAY.toISOString(),
+      max: TestTimeConstants.NOW.toISOString(),
+      interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
     },
-    {
-      timeRangeSummary: {
-        min: TestTimeConstants.LAST_DAY.toISOString(),
-        max: TestTimeConstants.NOW.toISOString(),
-        interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
-      },
-    }
-  );
+  });
 }
 export function initAdBidsMirrorInStore() {
   metricsExplorerStore.init(
@@ -145,6 +160,34 @@ export function initAdBidsMirrorInStore() {
       },
     }
   );
+}
+
+export function createDashboardState(
+  name: string,
+  metrics: V1MetricsView,
+  filters: V1MetricsViewFilter = {
+    include: [],
+    exclude: [],
+  },
+  timeRange: DashboardTimeControls = AD_BIDS_DEFAULT_TIME_RANGE
+): MetricsExplorerEntity {
+  return {
+    name,
+
+    selectedMeasureNames: [],
+    visibleDimensionKeys: new Set(metrics.dimensions.map((d) => d.name)),
+    allDimensionsVisible: true,
+    visibleMeasureKeys: new Set(metrics.measures.map((m) => m.name)),
+    allMeasuresVisible: true,
+
+    filters,
+    dimensionFilterExcludeMode: new Map(),
+
+    leaderboardMeasureName: metrics.measures[0]?.name,
+    leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
+
+    selectedTimeRange: timeRange,
+  };
 }
 
 export function createAdBidsMirrorInStore(metrics: V1MetricsView) {
@@ -209,12 +252,7 @@ export function assertMetricsView(
     include: [],
     exclude: [],
   },
-  timeRange: DashboardTimeControls = {
-    name: TimeRangePreset.ALL_TIME,
-    interval: V1TimeGrain.TIME_GRAIN_HOUR,
-    start: TestTimeConstants.LAST_DAY,
-    end: new Date(TestTimeConstants.NOW.getTime() + 1),
-  },
+  timeRange: DashboardTimeControls = AD_BIDS_DEFAULT_TIME_RANGE,
   selectedMeasure = AD_BIDS_IMPRESSIONS_MEASURE
 ) {
   const metricsView = get(metricsExplorerStore).entities[name];
@@ -235,13 +273,6 @@ export function assertVisiblePartsOfMetricsView(
     expect([...metricsView.visibleDimensionKeys].sort()).toEqual(
       dimensions.sort()
     );
-}
-
-export function resetDashboardStore() {
-  metricsExplorerStore.remove(AD_BIDS_NAME);
-  metricsExplorerStore.remove(AD_BIDS_MIRROR_NAME);
-  initAdBidsInStore();
-  initAdBidsMirrorInStore();
 }
 
 export const AD_BIDS_BASE_FILTER = {

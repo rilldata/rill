@@ -68,23 +68,9 @@ export function useDashboardUrlSync(
   metaQuery: CreateQueryResult<V1MetricsView>
 ) {
   const dashboardUrlState = useDashboardUrlState(metricViewName);
-  let lastKnownProto: string;
-  let isInit = false;
+  let lastKnownProto = get(dashboardUrlState)?.defaultProto;
   return dashboardUrlState.subscribe((state) => {
-    if (state.urlName !== metricViewName) return;
-    if (!state.proto) {
-      // state.proto && state.defaultProto will be undefined when the state is not created yet.
-      // so we need to short the function to avoid running `syncFromUrl`.
-      isInit = true;
-      return;
-    }
-    // once the state is created we can set `lastKnownProto` to `state.proto`
-    // the `state.proto === state.defaultProto` check is here just to make sure this absolutely is run just after creating the store.
-    // also the place where we create a dashboard store we set the initial `state.proto` to `state.defaultProto`
-    if (isInit && state.proto === state.defaultProto) {
-      lastKnownProto = state.proto;
-    }
-    isInit = false;
+    if (state.urlName !== metricViewName || !state.proto) return;
 
     if (state.proto !== lastKnownProto) {
       // changed when filters etc are changed on the dashboard

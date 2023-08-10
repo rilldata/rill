@@ -1,13 +1,27 @@
-import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import {
+  MetricsExplorerEntity,
+  metricsExplorerStore,
+} from "@rilldata/web-common/features/dashboards/dashboard-stores";
+import {
+  AD_BIDS_DEFAULT_TIME_RANGE,
+  AD_BIDS_DEFAULT_URL_TIME_RANGE,
+  AD_BIDS_DOMAIN_DIMENSION,
+  AD_BIDS_EXCLUDE_FILTER,
+  AD_BIDS_INIT,
+  AD_BIDS_INIT_MEASURES,
+  AD_BIDS_MIRROR_NAME,
   AD_BIDS_NAME,
   AD_BIDS_PUBLISHER_DIMENSION,
-  initAdBidsInStore,
+  assertMetricsView,
+  createDashboardState,
   createMetricsMetaQueryMock,
-  initAdBidsMirrorInStore,
+  resetDashboardStore,
 } from "@rilldata/web-common/features/dashboards/dashboard-stores-test-data";
 import { useDashboardUrlSync } from "@rilldata/web-common/features/dashboards/proto-state/dashboard-url-state";
+import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
+import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { Page } from "@sveltejs/kit";
 import { get, Readable, writable } from "svelte/store";
 import {
@@ -40,14 +54,15 @@ describe("useDashboardUrlSync", () => {
   });
 
   beforeEach(() => {
-    initAdBidsInStore();
-    initAdBidsMirrorInStore();
+    resetDashboardStore();
+    pageMock.goto("/dashboard/AdBids");
+    pageMock.gotoSpy.mockClear();
   });
 
   it("Changes from dashboard", async () => {
     const metaMock = createMetricsMetaQueryMock();
     const unsubscribe = useDashboardUrlSync(AD_BIDS_NAME, metaMock);
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    await wait();
 
     expect(pageMock.gotoSpy).toBeCalledTimes(0);
 
@@ -56,7 +71,7 @@ describe("useDashboardUrlSync", () => {
       AD_BIDS_PUBLISHER_DIMENSION,
       "Google"
     );
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    await wait();
     assertUrlState(get(metricsExplorerStore).entities[AD_BIDS_NAME].proto);
     const protoWithFilter =
       get(metricsExplorerStore).entities[AD_BIDS_NAME].proto;
@@ -73,7 +88,7 @@ describe("useDashboardUrlSync", () => {
     expect(pageMock.gotoSpy).toBeCalledTimes(2);
 
     pageMock.updateState(protoWithFilter);
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    await wait();
     assertUrlState(get(metricsExplorerStore).entities[AD_BIDS_NAME].proto);
     expect(get(metricsExplorerStore).entities[AD_BIDS_NAME].filters).toEqual({
       include: [
@@ -87,6 +102,118 @@ describe("useDashboardUrlSync", () => {
     expect(pageMock.gotoSpy).toBeCalledTimes(2);
 
     unsubscribe();
+  });
+
+  it("Init load from url", async () => {
+    gotoDashboardState(
+      createDashboardState(AD_BIDS_NAME, AD_BIDS_INIT, AD_BIDS_EXCLUDE_FILTER)
+    );
+    const metaMock = createMetricsMetaQueryMock();
+    const unsubscribe = useDashboardUrlSync(AD_BIDS_NAME, metaMock);
+    await wait();
+
+    assertUrlState(get(metricsExplorerStore).entities[AD_BIDS_NAME].proto);
+    assertMetricsView(
+      AD_BIDS_NAME,
+      AD_BIDS_EXCLUDE_FILTER,
+      AD_BIDS_DEFAULT_URL_TIME_RANGE
+    );
+
+    unsubscribe();
+  });
+
+  it("Changing active dashboard", async () => {
+    const metaMock = createMetricsMetaQueryMock();
+    let unsubscribe1 = useDashboardUrlSync(AD_BIDS_NAME, metaMock);
+    let unsubscribe2 = useDashboardUrlSync(AD_BIDS_MIRROR_NAME, metaMock);
+    await wait();
+
+    metricsExplorerStore.toggleFilter(
+      AD_BIDS_NAME,
+      AD_BIDS_PUBLISHER_DIMENSION,
+      "Google"
+    );
+    await wait();
+    assertUrlState(get(metricsExplorerStore).entities[AD_BIDS_NAME].proto);
+    assertMetricsView(
+      AD_BIDS_NAME,
+      {
+        include: [
+          {
+            name: AD_BIDS_PUBLISHER_DIMENSION,
+            in: ["Google"],
+          },
+        ],
+        exclude: [],
+      },
+      AD_BIDS_DEFAULT_TIME_RANGE
+    );
+
+    unsubscribe1();
+    pageMock.goto("/dashboard/AdBids_mirror");
+    await wait();
+    metricsExplorerStore.toggleFilter(
+      AD_BIDS_MIRROR_NAME,
+      AD_BIDS_DOMAIN_DIMENSION,
+      "www.google.com"
+    );
+    await wait();
+    assertUrlState(
+      get(metricsExplorerStore).entities[AD_BIDS_MIRROR_NAME].proto
+    );
+    assertMetricsView(
+      AD_BIDS_MIRROR_NAME,
+      {
+        include: [
+          {
+            name: AD_BIDS_DOMAIN_DIMENSION,
+            in: ["www.google.com"],
+          },
+        ],
+        exclude: [],
+      },
+      AD_BIDS_DEFAULT_TIME_RANGE
+    );
+
+    // Going back to AdBids should retain the selected filters
+    unsubscribe2();
+    pageMock.goto("/dashboard/AdBids");
+    unsubscribe1 = useDashboardUrlSync(AD_BIDS_NAME, metaMock);
+    await wait();
+    assertMetricsView(
+      AD_BIDS_NAME,
+      {
+        include: [
+          {
+            name: AD_BIDS_PUBLISHER_DIMENSION,
+            in: ["Google"],
+          },
+        ],
+        exclude: [],
+      },
+      AD_BIDS_DEFAULT_TIME_RANGE
+    );
+
+    // Going back to AdBids_mirror should retain the selected filters
+    pageMock.goto("/dashboard/AdBids_mirror");
+    unsubscribe2 = useDashboardUrlSync(AD_BIDS_NAME, metaMock);
+    await wait();
+    assertMetricsView(
+      AD_BIDS_MIRROR_NAME,
+      {
+        include: [
+          {
+            name: AD_BIDS_DOMAIN_DIMENSION,
+            in: ["www.google.com"],
+          },
+        ],
+        exclude: [],
+      },
+      AD_BIDS_DEFAULT_TIME_RANGE
+    );
+
+    unsubscribe1();
+    unsubscribe2();
   });
 });
 
@@ -127,4 +254,16 @@ function assertUrlState(expected: string) {
     get(pageMock).url.searchParams.get("state")
   );
   expect(actual).toEqual(expected);
+}
+
+function wait() {
+  return new Promise((resolve) => setTimeout(resolve, 10));
+}
+
+function gotoDashboardState(state: MetricsExplorerEntity) {
+  pageMock.goto(
+    `/dashboard/${state.name}?state=${encodeURIComponent(
+      getProtoFromDashboardState(state)
+    )}`
+  );
 }
