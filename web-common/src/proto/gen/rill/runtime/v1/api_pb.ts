@@ -644,6 +644,11 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
    */
   ingestionLimitBytes?: bigint;
 
+  /**
+   * @generated from field: map<string, string> annotations = 9;
+   */
+  annotations: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<EditInstanceRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -659,6 +664,7 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
     { no: 5, name: "repo_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 8, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
+    { no: 9, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceRequest {

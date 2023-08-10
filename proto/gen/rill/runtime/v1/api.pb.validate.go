@@ -1458,6 +1458,8 @@ func (m *EditInstanceRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for Annotations
+
 	if m.OlapDriver != nil {
 
 		if _, ok := _EditInstanceRequest_OlapDriver_InLookup[m.GetOlapDriver()]; !ok {

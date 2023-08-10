@@ -114,6 +114,11 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		return nil, err
 	}
 
+	annotations := req.Annotations
+	if len(annotations) == 0 {
+		annotations = oldInst.Annotations
+	}
+
 	inst := &drivers.Instance{
 		ID:                  req.InstanceId,
 		OLAPDriver:          valOrDefault(req.OlapDriver, oldInst.OLAPDriver),
@@ -123,7 +128,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		EmbedCatalog:        valOrDefault(req.EmbedCatalog, oldInst.EmbedCatalog),
 		Variables:           oldInst.Variables,
 		IngestionLimitBytes: valOrDefault(req.IngestionLimitBytes, oldInst.IngestionLimitBytes),
-		Annotations:         oldInst.Annotations,
+		Annotations:         annotations,
 	}
 
 	err = s.runtime.EditInstance(ctx, inst)

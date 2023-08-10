@@ -270,6 +270,10 @@ export type RuntimeServiceListCatalogEntriesParams = {
   type?: RuntimeServiceListCatalogEntriesType;
 };
 
+export type RuntimeServiceEditInstanceBodyAnnotations = {
+  [key: string]: string;
+};
+
 /**
  * Request message for RuntimeService.EditInstance.
 See message Instance for field descriptions.
@@ -281,6 +285,7 @@ export type RuntimeServiceEditInstanceBody = {
   repoDsn?: string;
   embedCatalog?: boolean;
   ingestionLimitBytes?: string;
+  annotations?: RuntimeServiceEditInstanceBodyAnnotations;
 };
 
 export type RuntimeServiceEditInstanceVariablesBodyVariables = {

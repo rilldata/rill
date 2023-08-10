@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
 func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganizationsRequest) (*adminv1.ListOrganizationsResponse, error) {
@@ -184,6 +185,47 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// Iterate over organization projects, find corresponding deployments and update instance annotations
+	for {
+		afterProjectName := ""
+		projects, err := s.admin.DB.FindProjectsForOrganization(ctx, org.ID, afterProjectName, 10)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(projects) == 0 {
+			break
+		}
+
+		for _, project := range projects {
+			ds, err := s.admin.DB.FindDeploymentsForProject(ctx, project.ID)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, d := range ds {
+				rt, err := s.admin.OpenRuntimeClientForDeployment(d)
+				if err != nil {
+					return nil, err
+				}
+
+				_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
+					Annotations: map[string]string{
+						"organization_id":   org.ID,
+						"organization_name": org.Name,
+						"project_id":        project.ID,
+						"project_name":      project.Name,
+					},
+				})
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			afterProjectName = project.Name
+		}
 	}
 
 	return &adminv1.UpdateOrganizationResponse{

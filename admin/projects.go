@@ -343,7 +343,7 @@ func (s *Service) triggerReconcile(ctx context.Context, depl *database.Deploymen
 		return err
 	}
 
-	rt, err := s.openRuntimeClientForDeployment(depl)
+	rt, err := s.OpenRuntimeClientForDeployment(depl)
 	if err != nil {
 		return s.endReconcile(ctx, depl, nil, err)
 	}
@@ -357,7 +357,7 @@ func (s *Service) triggerReconcile(ctx context.Context, depl *database.Deploymen
 func (s *Service) TriggerRefreshSources(ctx context.Context, depl *database.Deployment, sources []string) error {
 	// check if provided sources are exists in catalog
 	if len(sources) > 0 {
-		rt, err := s.openRuntimeClientForDeployment(depl)
+		rt, err := s.OpenRuntimeClientForDeployment(depl)
 		if err != nil {
 			return err
 		}
@@ -404,7 +404,7 @@ func (s *Service) triggerRefreshSources(ctx context.Context, depl *database.Depl
 		return err
 	}
 
-	rt, err := s.openRuntimeClientForDeployment(depl)
+	rt, err := s.OpenRuntimeClientForDeployment(depl)
 	if err != nil {
 		return s.endReconcile(ctx, depl, nil, err)
 	}
