@@ -6,6 +6,7 @@ export enum QueryRequestType {
   MetricsViewTimeSeries = "timeseries",
   MetricsViewTotals = "totals",
   MetricsViewRows = "rows",
+  MetricsViewTimeRange = "time-range-summary",
   ColumnRollupInterval = "rollup-interval",
   ColumnTopK = "topk",
   ColumnNullCount = "null-count",
