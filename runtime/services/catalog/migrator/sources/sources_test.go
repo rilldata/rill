@@ -740,6 +740,69 @@ func TestPropertiesEquals(t *testing.T) {
 	require.False(t, m.IsEqual(ctx, &drivers.CatalogEntry{Object: s6}, &drivers.CatalogEntry{Object: s7}))
 }
 
+func TestPropertiesEqualsSQLSources(t *testing.T) {
+	s1 := &runtimev1.Source{
+		Name:      "s1",
+		Connector: "duckdb",
+		Properties: newStruct(t, map[string]any{
+			"sql": "select * from read_csv('s3://path/to/data.csv')",
+			"a":   1,
+			"b":   "s",
+		}),
+	}
+
+	s2 := &runtimev1.Source{
+		Name:      "s2",
+		Connector: "s3",
+		Properties: newStruct(t, map[string]any{
+			"sql":  "select * from read_csv('s3://path/to/data.csv')",
+			"path": "s3://path/to/data.csv",
+			"a":    1,
+			"b":    "s",
+		}),
+	}
+
+	s3 := &runtimev1.Source{
+		Name:      "s3",
+		Connector: "s3",
+		Properties: newStruct(t, map[string]any{
+			"sql":  "select * from read_csv('s3://path/to/data1.csv')",
+			"path": "s3://path/to/data1.csv",
+			"a":    1,
+			"b":    "s",
+		}),
+	}
+
+	s4 := &runtimev1.Source{
+		Name:      "s4",
+		Connector: "s3",
+		Properties: newStruct(t, map[string]any{
+			"sql":  "select * from read_csv('s3://path/to/data.csv')",
+			"path": "s3://path/to/data.csv",
+			"a":    2,
+			"b":    "s1",
+		}),
+	}
+
+	s5 := &runtimev1.Source{
+		Name:      "s5",
+		Connector: "motherduck",
+		Properties: newStruct(t, map[string]any{
+			"sql": "select * from read_csv('s3://path/to/data.csv')",
+			"a":   1,
+			"b":   "s",
+		}),
+	}
+
+	m := migrator.Migrators[drivers.ObjectTypeSource]
+	ctx := context.Background()
+
+	require.True(t, m.IsEqual(ctx, &drivers.CatalogEntry{Object: s1}, &drivers.CatalogEntry{Object: s2}))
+	require.False(t, m.IsEqual(ctx, &drivers.CatalogEntry{Object: s1}, &drivers.CatalogEntry{Object: s3}))
+	require.False(t, m.IsEqual(ctx, &drivers.CatalogEntry{Object: s1}, &drivers.CatalogEntry{Object: s4}))
+	require.False(t, m.IsEqual(ctx, &drivers.CatalogEntry{Object: s1}, &drivers.CatalogEntry{Object: s5}))
+}
+
 func TestSqlIngestionWithFiltersAndColumns(t *testing.T) {
 	ctx := context.Background()
 	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, zap.NewNop())

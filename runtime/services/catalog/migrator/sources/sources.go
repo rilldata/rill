@@ -145,13 +145,23 @@ func (m *sourceMigrator) Validate(ctx context.Context, olap drivers.OLAPStore, c
 }
 
 func (m *sourceMigrator) IsEqual(ctx context.Context, cat1, cat2 *drivers.CatalogEntry) bool {
-	if cat1.GetSource().Connector != cat2.GetSource().Connector {
+	// TODO: This is hopefully not needed in the new reconcile where parse and changing of connector happens before equals is called
+	isSQLSource := cat1.GetSource().Connector == "duckdb" && (cat2.GetSource().Connector == "s3" || cat2.GetSource().Connector == "gcs")
+
+	if !isSQLSource && cat1.GetSource().Connector != cat2.GetSource().Connector {
 		return false
 	}
 	if !comparePolicy(cat1.GetSource().GetPolicy(), cat2.GetSource().GetPolicy()) {
 		return false
 	}
-	return equal(cat1.GetSource().Properties.AsMap(), cat2.GetSource().Properties.AsMap())
+
+	map2 := cat2.GetSource().Properties.AsMap()
+	if isSQLSource {
+		delete(map2, "path")
+		return equal(cat1.GetSource().Properties.AsMap(), map2)
+	}
+
+	return equal(cat1.GetSource().Properties.AsMap(), map2)
 }
 
 func comparePolicy(p1, p2 *runtimev1.Source_ExtractPolicy) bool {
