@@ -136,8 +136,7 @@ export function humanizeDataType(
  */
 export function humanizeDataTypeExpanded(
   value: unknown,
-  type: FormatPreset,
-  options?: FormatterFactoryOptions
+  type: FormatPreset
 ): string {
   if (type === FormatPreset.INTERVAL) {
     return formatMsToDuckDbIntervalString(value as number);

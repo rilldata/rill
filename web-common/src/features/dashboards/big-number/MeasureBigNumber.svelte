@@ -16,8 +16,6 @@
     FormatPreset,
     humanizeDataTypeExpanded,
   } from "../humanize-numbers";
-  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import FormattedDataType from "@rilldata/web-common/components/data-types/FormattedDataType.svelte";
 
   export let value: number;
   export let comparisonOption: TimeComparisonOption = undefined;
