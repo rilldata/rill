@@ -2,7 +2,7 @@ version: v1
 managed:
   enabled: true
   go_package_prefix:
-    default: github.com/rilldata/rill
+    default: github.com/rilldata/rill/proto/gen
     except:
       - buf.build/googleapis/googleapis
       - buf.build/envoyproxy/protoc-gen-validate
@@ -15,6 +15,9 @@ plugins:
     out: gen
     opt:
       - paths=source_relative
+  - plugin: connect-go
+    out: gen
+    opt: paths=source_relative
   - plugin: buf.build/grpc-ecosystem/gateway
     out: gen
     opt:

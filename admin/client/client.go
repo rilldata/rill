@@ -3,9 +3,11 @@ package client
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/url"
 
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/proto/gen/rill/admin/v1/adminv1connect"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -16,7 +18,8 @@ import (
 // It's a thin wrapper around the generated gRPC client for proto/rill/admin/v1.
 type Client struct {
 	adminv1.AdminServiceClient
-	conn *grpc.ClientConn
+	ConnectClient adminv1connect.AdminServiceClient
+	conn          *grpc.ClientConn
 }
 
 // New creates a new Client and opens a connection. You must call Close() when done with the client.
@@ -52,8 +55,11 @@ func New(adminHost, bearerToken, userAgent string) (*Client, error) {
 		return nil, err
 	}
 
+	// adminv1connect.NewAdminServiceHandler(adminv1connect.UnimplementedAdminServiceHandler{})
+	client := adminv1connect.NewAdminServiceClient(http.DefaultClient, adminHost)
 	return &Client{
 		AdminServiceClient: adminv1.NewAdminServiceClient(conn),
+		ConnectClient:      client,
 		conn:               conn,
 	}, nil
 }

@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	cloud.google.com/go/storage v1.30.1
+	connectrpc.com/connect v1.11.0
 	github.com/AlecAivazis/survey/v2 v2.3.6
 	github.com/Andrew-M-C/go.jsonvalue v1.3.4
 	github.com/Masterminds/sprig/v3 v3.2.3
@@ -18,6 +19,7 @@ require (
 	github.com/bmatcuk/doublestar/v4 v4.6.0
 	github.com/bradleyfalzon/ghinstallation/v2 v2.4.0
 	github.com/briandowns/spinner v1.23.0
+	github.com/bufbuild/connect-go v1.10.0
 	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
 	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/coreos/go-oidc/v3 v3.6.0
@@ -77,7 +79,7 @@ require (
 	google.golang.org/api v0.124.0
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1
 	google.golang.org/grpc v1.55.0
-	google.golang.org/protobuf v1.30.0
+	google.golang.org/protobuf v1.31.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/square/go-jose.v2 v2.6.0
 	gopkg.in/yaml.v2 v2.4.0

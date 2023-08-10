@@ -20,6 +20,7 @@ import (
 	"github.com/rilldata/rill/admin/server/auth"
 	"github.com/rilldata/rill/admin/server/cookies"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/proto/gen/rill/admin/v1/adminv1connect"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -73,6 +74,8 @@ type Server struct {
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
+
+var _ adminv1connect.AdminServiceHandler = (*Server)(nil)
 
 func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, limiter ratelimit.Limiter, opts *Options) (*Server, error) {
 	externalURL, err := url.Parse(opts.ExternalURL)

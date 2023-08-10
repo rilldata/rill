@@ -21,10 +21,29 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
+			// result, err := client.Say(context.Background(), connect.NewRequest(&elizav1.SayRequest{
+			// 	Sentence: "Hello",
+			// }))
+
 			res, err := client.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
 			if err != nil {
 				return err
 			}
+
+			// 	connectClient := elizav1connect.NewElizaServiceClient(
+			// server.Client(),
+			// server.URL,
+			// )
+
+			// client1 := adminv1connect.NewAdminServiceClient(http.DefaultClient, cfg.AdminURL)
+
+			// client.ConnectClient.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
+
+			// res1, err := client1.ListOrganizations(context.Background(), connect.NewRequest(&adminv1.ListOrganizationsRequest{}))
+			// res1, err := adminv1connect.AdminServiceClient.ListOrganizations(context.Background(), connect.NewRequest(&adminv1.ListOrganizationsRequest{}))
+			// if err != nil {
+			// 	return err
+			// }
 
 			if len(res.Organizations) == 0 {
 				cmdutil.PrintlnWarn("No orgs found")

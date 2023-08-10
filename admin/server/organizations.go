@@ -6,6 +6,7 @@ import (
 	"math"
 	"strings"
 
+	"connectrpc.com/connect"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/email"
 	"github.com/rilldata/rill/admin/pkg/publicemail"
@@ -17,6 +18,37 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+func (s *Server) ListOrganizations1(ctx context.Context, req *connect.Request[adminv1.ListOrganizationsRequest]) (*connect.Response[adminv1.ListOrganizationsResponse], error) {
+	// Check the request is made by an authenticated user
+	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+	}
+
+	token, err := unmarshalPageToken(req.Msg.PageToken)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	pageSize := validPageSize(req.Msg.PageSize)
+
+	orgs, err := s.admin.DB.FindOrganizationsForUser(ctx, claims.OwnerID(), token.Val, pageSize)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	nextToken := ""
+	if len(orgs) >= pageSize {
+		nextToken = marshalPageToken(orgs[len(orgs)-1].Name)
+	}
+
+	pbs := make([]*adminv1.Organization, len(orgs))
+	for i, org := range orgs {
+		pbs[i] = organizationToDTO(org)
+	}
+
+	return connect.NewResponse(&adminv1.ListOrganizationsResponse{Organizations: pbs, NextPageToken: nextToken}), nil
+}
 
 func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganizationsRequest) (*adminv1.ListOrganizationsResponse, error) {
 	// Check the request is made by an authenticated user
