@@ -303,16 +303,16 @@ func mergeFromParsedQuery(apiSource *runtimev1.Source, env map[string]string, re
 		return errors.New("unknown source")
 	}
 	switch c {
-	case "https":
-		return nil
 	case "local_file":
 		queryStr, err = rewriteLocalRelativePath(ast, repoRoot, strings.EqualFold(env["allow_host_access"], "true"))
 		if err != nil {
 			return err
 		}
-	default:
+	case "s3", "gcs":
 		apiSource.Connector = c
 		props["path"] = p
+	default:
+		return nil
 	}
 
 	props["sql"] = queryStr
@@ -330,16 +330,12 @@ func rewriteLocalRelativePath(ast *duckdbsql.AST, repoRoot string, allowRootAcce
 	err := ast.RewriteTableRefs(func(table *duckdbsql.TableRef) (*duckdbsql.TableRef, bool) {
 		newPaths := make([]string, 0)
 		for _, p := range table.Paths {
-			if strings.Contains(p, "/") {
-				p, err := fileutil.ResolveLocalPath(p, repoRoot, allowRootAccess)
-				if err != nil {
-					resolveErr = err
-					return nil, false
-				}
-				newPaths = append(newPaths, p)
-			} else {
-				newPaths = append(newPaths, p)
+			lp, err := fileutil.ResolveLocalPath(p, repoRoot, allowRootAccess)
+			if err != nil {
+				resolveErr = err
+				return nil, false
 			}
+			newPaths = append(newPaths, lp)
 		}
 
 		return &duckdbsql.TableRef{
