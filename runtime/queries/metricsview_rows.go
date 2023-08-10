@@ -131,6 +131,8 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 		return writeCSV(q.Result.Meta, q.Result.Data, w)
 	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
 		return writeXLSX(q.Result.Meta, q.Result.Data, w)
+	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
+		return writeParquet(q.Result.Meta, q.Result.Data, w)
 	}
 
 	return nil

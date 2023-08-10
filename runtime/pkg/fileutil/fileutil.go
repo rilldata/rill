@@ -146,6 +146,24 @@ func ExpandHome(path string) (string, error) {
 	return filepath.Join(usr.HomeDir, path[1:]), nil
 }
 
+func ResolveLocalPath(path, root string, allowHostAccess bool) (string, error) {
+	path, err := ExpandHome(path)
+	if err != nil {
+		return "", err
+	}
+
+	finalPath := path
+	if !filepath.IsAbs(path) {
+		finalPath = filepath.Join(root, path)
+	}
+
+	if !allowHostAccess && !strings.HasPrefix(finalPath, root) {
+		// path is outside the repo root
+		return "", fmt.Errorf("path is outside repo root")
+	}
+	return finalPath, nil
+}
+
 // OpenTempFileInDir opens a temp file in given dir
 // If dir doesn't exist it creates full dir path (recursively if required)
 func OpenTempFileInDir(dir, filePath string) (*os.File, error) {

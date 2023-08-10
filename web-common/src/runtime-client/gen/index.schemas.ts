@@ -168,6 +168,10 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
   priority?: number;
 };
 
+export type QueryServiceMetricsViewTimeRangeBody = {
+  priority?: number;
+};
+
 export type QueryServiceMetricsViewRowsBody = {
   timeStart?: string;
   timeEnd?: string;
@@ -801,9 +805,33 @@ export interface V1MetricsViewTimeSeriesResponse {
   data?: V1TimeSeriesValue[];
 }
 
+export interface V1MetricsViewTimeSeriesRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
+  filter?: V1MetricsViewFilter;
+  timeZone?: string;
+  priority?: number;
+}
+
+export interface V1MetricsViewTimeRangeResponse {
+  timeRangeSummary?: V1TimeRangeSummary;
+}
+
 export interface V1MetricsViewSort {
   name?: string;
   ascending?: boolean;
+}
+
+export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
+
+export interface V1MetricsViewFilter {
+  include?: MetricsViewFilterCond[];
+  exclude?: MetricsViewFilterCond[];
 }
 
 export interface V1MetricsViewToplistRequest {
@@ -818,26 +846,6 @@ export interface V1MetricsViewToplistRequest {
   offset?: string;
   sort?: V1MetricsViewSort[];
   filter?: V1MetricsViewFilter;
-  priority?: number;
-}
-
-export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
-
-export interface V1MetricsViewFilter {
-  include?: MetricsViewFilterCond[];
-  exclude?: MetricsViewFilterCond[];
-}
-
-export interface V1MetricsViewTimeSeriesRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  timeGranularity?: V1TimeGrain;
-  filter?: V1MetricsViewFilter;
-  timeZone?: string;
   priority?: number;
 }
 
@@ -888,21 +896,6 @@ export interface V1MetricsViewComparisonSort {
   measureName?: string;
   ascending?: boolean;
   type?: V1MetricsViewComparisonSortType;
-}
-
-export interface V1MetricsViewComparisonToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  baseTimeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  sort?: V1MetricsViewComparisonSort[];
-  filter?: V1MetricsViewFilter;
-  limit?: string;
-  offset?: string;
-  priority?: number;
 }
 
 export interface V1MetricsViewComparisonRow {
@@ -995,6 +988,21 @@ export interface V1InlineMeasure {
   expression?: string;
 }
 
+export interface V1MetricsViewComparisonToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  baseTimeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  sort?: V1MetricsViewComparisonSort[];
+  filter?: V1MetricsViewFilter;
+  limit?: string;
+  offset?: string;
+  priority?: number;
+}
+
 export type V1HistogramMethod =
   (typeof V1HistogramMethod)[keyof typeof V1HistogramMethod];
 
@@ -1064,6 +1072,7 @@ export const V1ExportFormat = {
   EXPORT_FORMAT_UNSPECIFIED: "EXPORT_FORMAT_UNSPECIFIED",
   EXPORT_FORMAT_CSV: "EXPORT_FORMAT_CSV",
   EXPORT_FORMAT_XLSX: "EXPORT_FORMAT_XLSX",
+  EXPORT_FORMAT_PARQUET: "EXPORT_FORMAT_PARQUET",
 } as const;
 
 /**
