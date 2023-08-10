@@ -1477,6 +1477,92 @@ export class InlineMeasure extends Message<InlineMeasure> {
 }
 
 /**
+ * @generated from message rill.runtime.v1.MetricsViewTimeRangeRequest
+ */
+export class MetricsViewTimeRangeRequest extends Message<MetricsViewTimeRangeRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string metrics_view_name = 2;
+   */
+  metricsViewName = "";
+
+  /**
+   * @generated from field: int32 priority = 3;
+   */
+  priority = 0;
+
+  constructor(data?: PartialMessage<MetricsViewTimeRangeRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewTimeRangeRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeRangeRequest {
+    return new MetricsViewTimeRangeRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewTimeRangeRequest {
+    return new MetricsViewTimeRangeRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewTimeRangeRequest {
+    return new MetricsViewTimeRangeRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewTimeRangeRequest | PlainMessage<MetricsViewTimeRangeRequest> | undefined, b: MetricsViewTimeRangeRequest | PlainMessage<MetricsViewTimeRangeRequest> | undefined): boolean {
+    return proto3.util.equals(MetricsViewTimeRangeRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewTimeRangeResponse
+ */
+export class MetricsViewTimeRangeResponse extends Message<MetricsViewTimeRangeResponse> {
+  /**
+   * @generated from field: rill.runtime.v1.TimeRangeSummary time_range_summary = 1;
+   */
+  timeRangeSummary?: TimeRangeSummary;
+
+  constructor(data?: PartialMessage<MetricsViewTimeRangeResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewTimeRangeResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "time_range_summary", kind: "message", T: TimeRangeSummary },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeRangeResponse {
+    return new MetricsViewTimeRangeResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewTimeRangeResponse {
+    return new MetricsViewTimeRangeResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewTimeRangeResponse {
+    return new MetricsViewTimeRangeResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewTimeRangeResponse | PlainMessage<MetricsViewTimeRangeResponse> | undefined, b: MetricsViewTimeRangeResponse | PlainMessage<MetricsViewTimeRangeResponse> | undefined): boolean {
+    return proto3.util.equals(MetricsViewTimeRangeResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.ColumnRollupIntervalRequest
  */
 export class ColumnRollupIntervalRequest extends Message<ColumnRollupIntervalRequest> {

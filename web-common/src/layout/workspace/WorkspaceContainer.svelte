@@ -1,6 +1,5 @@
 <script lang="ts">
   import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
-  import type { LayoutElement } from "@rilldata/web-local/lib/types";
   import { getContext, setContext } from "svelte";
   import { tweened } from "svelte/motion";
   import type { Writable } from "svelte/store";
@@ -12,6 +11,7 @@
     SURFACE_SLIDE_EASING,
   } from "../config";
   import Inspector from "./Inspector.svelte";
+  import type { LayoutElement } from "./types";
 
   export let assetID;
   export let inspector = true;

@@ -69,6 +69,9 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 		{"duckdb", "", map[string]any{
 			"sql": fmt.Sprintf(`select * from read_csv_auto('%s')`, filepath.Join(testdataPathAbs, "AdBids.csv")),
 		}},
+		{"duckdb", "", map[string]any{
+			"sql": `select * from read_csv_auto('./AdBids.csv')`,
+		}},
 		// something wrong with this particular file. duckdb fails to extract
 		// TODO: move the generator to go and fix the parquet file
 		//{"local_file", testdataPath + "AdBids.parquet.gz", nil},
@@ -735,6 +738,69 @@ func TestPropertiesEquals(t *testing.T) {
 	// s6 and s7 should not be equal
 	require.False(t, m.IsEqual(ctx, &drivers.CatalogEntry{Object: s7}, &drivers.CatalogEntry{Object: s6}))
 	require.False(t, m.IsEqual(ctx, &drivers.CatalogEntry{Object: s6}, &drivers.CatalogEntry{Object: s7}))
+}
+
+func TestPropertiesEqualsSQLSources(t *testing.T) {
+	s1 := &runtimev1.Source{
+		Name:      "s1",
+		Connector: "duckdb",
+		Properties: newStruct(t, map[string]any{
+			"sql": "select * from read_csv('s3://path/to/data.csv')",
+			"a":   1,
+			"b":   "s",
+		}),
+	}
+
+	s2 := &runtimev1.Source{
+		Name:      "s2",
+		Connector: "s3",
+		Properties: newStruct(t, map[string]any{
+			"sql":  "select * from read_csv('s3://path/to/data.csv')",
+			"path": "s3://path/to/data.csv",
+			"a":    1,
+			"b":    "s",
+		}),
+	}
+
+	s3 := &runtimev1.Source{
+		Name:      "s3",
+		Connector: "s3",
+		Properties: newStruct(t, map[string]any{
+			"sql":  "select * from read_csv('s3://path/to/data1.csv')",
+			"path": "s3://path/to/data1.csv",
+			"a":    1,
+			"b":    "s",
+		}),
+	}
+
+	s4 := &runtimev1.Source{
+		Name:      "s4",
+		Connector: "s3",
+		Properties: newStruct(t, map[string]any{
+			"sql":  "select * from read_csv('s3://path/to/data.csv')",
+			"path": "s3://path/to/data.csv",
+			"a":    2,
+			"b":    "s1",
+		}),
+	}
+
+	s5 := &runtimev1.Source{
+		Name:      "s5",
+		Connector: "motherduck",
+		Properties: newStruct(t, map[string]any{
+			"sql": "select * from read_csv('s3://path/to/data.csv')",
+			"a":   1,
+			"b":   "s",
+		}),
+	}
+
+	m := migrator.Migrators[drivers.ObjectTypeSource]
+	ctx := context.Background()
+
+	require.True(t, m.IsEqual(ctx, &drivers.CatalogEntry{Object: s1}, &drivers.CatalogEntry{Object: s2}))
+	require.False(t, m.IsEqual(ctx, &drivers.CatalogEntry{Object: s1}, &drivers.CatalogEntry{Object: s3}))
+	require.False(t, m.IsEqual(ctx, &drivers.CatalogEntry{Object: s1}, &drivers.CatalogEntry{Object: s4}))
+	require.False(t, m.IsEqual(ctx, &drivers.CatalogEntry{Object: s1}, &drivers.CatalogEntry{Object: s5}))
 }
 
 func TestSqlIngestionWithFiltersAndColumns(t *testing.T) {

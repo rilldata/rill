@@ -47,3 +47,14 @@ export async function deleteEntity(page: Page, name: string) {
     clickMenuButton(page, "Delete"),
   ]);
 }
+
+export async function updateCodeEditor(page: Page, code: string) {
+  await page.locator(".cm-line").first().click();
+  if (process.platform === "darwin") {
+    await page.keyboard.press("Meta+A");
+  } else {
+    await page.keyboard.press("Control+A");
+  }
+  await page.keyboard.press("Delete");
+  await page.keyboard.insertText(code);
+}

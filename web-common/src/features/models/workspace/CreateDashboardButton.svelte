@@ -26,10 +26,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { getName } from "../../entity-management/name-utils";
-  import {
-    addQuickMetricsToDashboardYAML,
-    initBlankDashboardYAML,
-  } from "../../metrics-views/metrics-internal-store";
+  import { generateDashboardYAMLForModel } from "../../metrics-views/metrics-internal-store";
 
   export let modelName: string;
   export let hasError = false;
@@ -53,10 +50,9 @@
       `${modelName}_dashboard`,
       $dashboardNames.data
     );
-    const blankDashboardYAML = initBlankDashboardYAML(newDashboardName);
-    const fullDashboardYAML = addQuickMetricsToDashboardYAML(
-      blankDashboardYAML,
-      model
+    const dashboardYAML = generateDashboardYAMLForModel(
+      model,
+      newDashboardName
     );
 
     $createFileMutation.mutate(
@@ -67,7 +63,7 @@
             newDashboardName,
             EntityType.MetricsDefinition
           ),
-          blob: fullDashboardYAML,
+          blob: dashboardYAML,
           create: true,
           createOnly: true,
           strict: false,

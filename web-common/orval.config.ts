@@ -63,6 +63,11 @@ export default defineConfig({
               useQuery: true,
             },
           },
+          QueryService_MetricsViewTimeRange: {
+            query: {
+              useQuery: true,
+            },
+          },
         },
       },
     },

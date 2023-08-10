@@ -7,6 +7,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/google/uuid"
 	"github.com/marcboeker/go-duckdb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -96,6 +97,14 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 			return nil, err
 		}
 		return structpb.NewStructValue(v2), nil
+	case []byte:
+		if t != nil && t.Code == runtimev1.Type_CODE_UUID {
+			uid, err := uuid.FromBytes(v)
+			if err == nil {
+				return structpb.NewStringValue(uid.String()), nil
+			}
+		}
+		return structpb.NewValue(v)
 	default:
 		// Default handling for basic types (ints, string, etc.)
 		return structpb.NewValue(v)

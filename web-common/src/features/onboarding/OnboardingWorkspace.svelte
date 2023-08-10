@@ -1,5 +1,5 @@
 <script lang="ts">
-  import AddSourceModal from "@rilldata/web-common/features/sources/add-source/AddSourceModal.svelte";
+  import AddSourceModal from "@rilldata/web-common/features/sources/modal/AddSourceModal.svelte";
   import Button from "../../components/button/Button.svelte";
   import Add from "../../components/icons/Add.svelte";
   import { WorkspaceContainer } from "../../layout/workspace";

@@ -981,6 +981,39 @@ paths:
             title: Request message for QueryService.MetricsViewRows
       tags:
         - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/time-range-summary:
+    post:
+      summary: MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
+      operationId: QueryService_MetricsViewTimeRange
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewTimeRangeResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsViewName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              priority:
+                type: integer
+                format: int32
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/timeseries:
     post:
       summary: |-
@@ -2960,6 +2993,11 @@ definitions:
       ascending:
         type: boolean
     title: Sort clause for metrics view requests
+  v1MetricsViewTimeRangeResponse:
+    type: object
+    properties:
+      timeRangeSummary:
+        $ref: '#/definitions/v1TimeRangeSummary'
   v1MetricsViewTimeSeriesRequest:
     type: object
     properties:

@@ -67,5 +67,5 @@
 </svelte:head>
 
 {#if $fileQuery.data && yaml !== undefined}
-  <MetricsWorkspace metricsDefName={metricViewName} {nonStandardError} />
+  <MetricsWorkspace metricsDefName={metricViewName} />
 {/if}
