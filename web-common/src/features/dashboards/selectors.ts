@@ -2,10 +2,10 @@ import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   V1MetricsView,
   V1MetricsViewFilter,
-  createQueryServiceColumnTimeRange,
   createRuntimeServiceGetCatalogEntry,
   createRuntimeServiceListCatalogEntries,
   createRuntimeServiceListFiles,
+  createQueryServiceMetricsViewTimeRange,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryOptions } from "@tanstack/svelte-query";
 
@@ -55,20 +55,17 @@ export const useModelHasTimeSeries = (
 
 export function useModelAllTimeRange(
   instanceId: string,
-  modelName: string,
-  timeDimension: string,
+  metricsViewName: string,
   options?: {
     query?: CreateQueryOptions;
   }
 ) {
   const { query: queryOptions } = options ?? {};
 
-  return createQueryServiceColumnTimeRange(
+  return createQueryServiceMetricsViewTimeRange(
     instanceId,
-    modelName,
-    {
-      columnName: timeDimension,
-    },
+    metricsViewName,
+    {},
     {
       query: {
         select: (data) => {

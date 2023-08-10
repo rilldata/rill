@@ -48,8 +48,7 @@
 
   $: allTimeRangeQuery = useModelAllTimeRange(
     $runtime.instanceId,
-    $metaQuery.data.model,
-    $metaQuery.data.timeDimension,
+    metricViewName,
     {
       query: {
         enabled: !!$metaQuery.data.timeDimension,

@@ -11,10 +11,7 @@ import {
   CreateMutationOptions,
   MutationFunction,
 } from "@tanstack/svelte-query";
-import {
-  addQuickMetricsToDashboardYAML,
-  initBlankDashboardYAML,
-} from "../metrics-views/metrics-internal-store";
+import { generateDashboardYAMLForModel } from "../metrics-views/metrics-internal-store";
 
 export interface CreateDashboardFromSourceRequest {
   instanceId: string;
@@ -61,10 +58,9 @@ export const useCreateDashboardFromSource = <
       data.instanceId,
       data.newModelName
     );
-    const blankDashboardYAML = initBlankDashboardYAML(data.newDashboardName);
-    const fullDashboardYAML = addQuickMetricsToDashboardYAML(
-      blankDashboardYAML,
-      model.entry.model
+    const dashboardYAML = generateDashboardYAMLForModel(
+      model.entry.model,
+      data.newDashboardName
     );
 
     const response = await runtimeServicePutFileAndReconcile({
@@ -73,7 +69,7 @@ export const useCreateDashboardFromSource = <
         data.newDashboardName,
         EntityType.MetricsDefinition
       ),
-      blob: fullDashboardYAML,
+      blob: dashboardYAML,
       create: true,
       createOnly: true,
       strict: false,

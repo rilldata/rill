@@ -81,8 +81,7 @@
   ) {
     allTimeRangeQuery = useModelAllTimeRange(
       $runtime.instanceId,
-      $metricsViewQuery.data.entry.metricsView.model,
-      $metricsViewQuery.data.entry.metricsView.timeDimension,
+      metricViewName,
       {
         query: {
           enabled: !!hasTimeSeries,

@@ -9,6 +9,7 @@
   export let getColumnWidth: (idx: number) => number;
   export let getRowSize: (idx: number) => number;
   export let renderCell: (rowIdx: number, colIdx: number) => any;
+  export let renderHeaderCell: (rowIdx: number, colIdx: number) => any;
   export let height: number;
 
   function range(n: number) {
@@ -99,18 +100,15 @@
     class="border-collapse"
     style={`height: ${totalVerticalSize}px; max-height: ${totalVerticalSize}px; width: ${totalHorizontalSize}px; max-width: ${totalHorizontalSize}px; overflow: none; table-layout: fixed`}
   >
-    <thead class="sticky top-0 bg-gray-100 z-10">
+    <thead class="sticky top-0 z-10">
       <PivotVirtualRow element="th" {paddingLeft} {paddingRight}>
         <svelte:fragment slot="pre">
           {#each fixedVirtualColumns as column (column.index)}
             <PivotCell
               rowIdx={-1}
-              class={isFixedColumn(column.index)
-                ? "bg-gray-200 text-left"
-                : "text-left"}
               fixed={isFixedColumn(column.index)}
               element="th"
-              {renderCell}
+              renderCell={renderHeaderCell}
               item={column}
             />
           {/each}
@@ -119,12 +117,9 @@
           {#each nonfixedVirtualColumns as column (column.index)}
             <PivotCell
               rowIdx={-1}
-              class={isFixedColumn(column.index)
-                ? "bg-gray-200 text-left"
-                : "text-left"}
               fixed={isFixedColumn(column.index)}
               element="th"
-              {renderCell}
+              renderCell={renderHeaderCell}
               item={column}
             />
           {/each}
@@ -165,7 +160,6 @@
               <PivotCell
                 rowIdx={row.index}
                 rowHeight={getRowSize(row.index)}
-                class={isFixedColumn(column.index) ? "bg-gray-100" : ""}
                 fixed
                 {renderCell}
                 item={column}
@@ -177,7 +171,6 @@
               <PivotCell
                 rowIdx={row.index}
                 rowHeight={getRowSize(row.index)}
-                class={isFixedColumn(column.index) ? "bg-gray-100" : ""}
                 {renderCell}
                 item={column}
               />
