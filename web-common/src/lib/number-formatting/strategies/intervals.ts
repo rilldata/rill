@@ -1,5 +1,6 @@
 import type { Interval } from "@rilldata/web-common/lib/duckdb-data-types";
 
+const MS_PER_MICRO = 0.001;
 const MS_PER_SEC = 1000;
 const MS_PER_MIN = 60 * MS_PER_SEC;
 const MS_PER_HOUR = 60 * MS_PER_MIN;
@@ -195,7 +196,7 @@ function duckdbIntervalToMs(interval: Interval): number {
   return (
     (interval?.months ?? 0) * MS_PER_MONTH +
     (interval?.days ?? 0) * MS_PER_DAY +
-    (interval?.micros ?? 0) / 1000
+    (interval?.micros ?? 0) * MS_PER_MICRO
   );
 }
 
@@ -205,11 +206,12 @@ function duckdbIntervalToMs(interval: Interval): number {
  * into a _humanized_ string that can be parsed by a
  * duckdb INTERVAL constructor.
  *
- * NOTE: this has not been tested for round-trip correctness,
- * and may be lossy
+ * NOTE: will be lossy and incorrect in many cases
+ * that include a "months" component in the raw interval.
+ * It is only intended to be used for approximate dispaly purposes.
  */
 export function formatDuckdbIntervalHumane(interval: Interval): string {
-  return formatMsToDuckDbIntervalString(duckdbIntervalToMs(interval));
+  return "~" + formatMsToDuckDbIntervalString(duckdbIntervalToMs(interval));
 }
 
 /**

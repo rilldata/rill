@@ -1,5 +1,5 @@
 <script>
-  import { formatDataType } from "../../lib/formatters";
+  import { formatDuckdbIntervalLossless } from "@rilldata/web-common/lib/number-formatting/strategies/intervals";
   import Base from "./Base.svelte";
   export let isNull = false;
   export let inTable = false;
@@ -14,6 +14,6 @@
   {dark}
 >
   <slot name="value">
-    {formatDataType(value, type)}
+    {formatDuckdbIntervalLossless(value)}
   </slot>
 </Base>
