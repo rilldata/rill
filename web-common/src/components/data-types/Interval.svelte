@@ -14,6 +14,6 @@
   {dark}
 >
   <slot name="value">
-    {formatDuckdbIntervalLossless(value)}
+    {value ? formatDuckdbIntervalLossless(value) : ""}
   </slot>
 </Base>
