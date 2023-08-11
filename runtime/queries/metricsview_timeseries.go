@@ -2,14 +2,11 @@ package queries
 
 import (
 	"context"
-	// "encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
 	"time"
-
-	// "github.com/xuri/excelize/v2"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -91,29 +88,29 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 }
 
-func (query *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
-	err := query.Resolve(ctx, rt, instanceID, opts.Priority)
+func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
+	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
 	if err != nil {
 		return err
 	}
 
-	mv, err := lookupMetricsView(ctx, rt, instanceID, query.MetricsViewName)
+	mv, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
 	if err != nil {
 		return err
 	}
 
 	if opts.PreWriteHook != nil {
-		err = opts.PreWriteHook(query.generateFilename(mv))
+		err = opts.PreWriteHook(q.generateFilename(mv))
 		if err != nil {
 			return err
 		}
 	}
 
-	tmp := make([]*structpb.Struct, 0, len(query.Result.Data))
+	tmp := make([]*structpb.Struct, 0, len(q.Result.Data))
 	meta := append([]*runtimev1.MetricsViewColumn{{
 		Name: mv.TimeDimension,
-	}}, query.Result.Meta...)
-	for _, dt := range query.Result.Data {
+	}}, q.Result.Meta...)
+	for _, dt := range q.Result.Data {
 		dt.Records.Fields[mv.TimeDimension] = structpb.NewStringValue(dt.Ts.AsTime().Format(time.RFC3339Nano))
 		tmp = append(tmp, dt.Records)
 	}
