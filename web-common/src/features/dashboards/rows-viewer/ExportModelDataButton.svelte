@@ -51,18 +51,26 @@
     <MenuItem
       on:select={() => {
         toggleFloatingElement();
-        handleExportMetrics("EXPORT_FORMAT_XLSX");
-      }}
-    >
-      Export as XLSX
-    </MenuItem>
-    <MenuItem
-      on:select={() => {
-        toggleFloatingElement();
         handleExportMetrics("EXPORT_FORMAT_CSV");
       }}
     >
       Export as CSV
+    </MenuItem>
+    <MenuItem
+      on:select={() => {
+        toggleFloatingElement();
+        handleExportMetrics("EXPORT_FORMAT_PARQUET");
+      }}
+    >
+      Export as Parquet
+    </MenuItem>
+    <MenuItem
+      on:select={() => {
+        toggleFloatingElement();
+        handleExportMetrics("EXPORT_FORMAT_XLSX");
+      }}
+    >
+      Export as XLSX
     </MenuItem>
   </Menu>
 </WithTogglableFloatingElement>

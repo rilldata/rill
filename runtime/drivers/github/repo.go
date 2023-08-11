@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	doublestar "github.com/bmatcuk/doublestar/v4"
+	"github.com/go-git/go-git/v5"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
@@ -23,6 +24,30 @@ func (c *connection) Driver() string {
 // Root implements drivers.RepoStore.
 func (c *connection) Root() string {
 	return c.projectdir
+}
+
+// CommitHash implements drivers.RepoStore.
+func (c *connection) CommitHash(ctx context.Context, instID string) (string, error) {
+	err := c.cloneOrPull(ctx, true)
+	if err != nil {
+		return "", err
+	}
+
+	repo, err := git.PlainOpen(c.tempdir)
+	if err != nil {
+		return "", err
+	}
+
+	ref, err := repo.Head()
+	if err != nil {
+		return "", err
+	}
+
+	if ref.Hash().IsZero() {
+		return "", nil
+	}
+
+	return ref.Hash().String(), nil
 }
 
 // ListRecursive implements drivers.RepoStore.

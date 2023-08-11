@@ -19,10 +19,6 @@ func (m *mockSQLStore) Query(ctx context.Context, props map[string]any, qry stri
 	return &mockRowIterator{}, nil
 }
 
-func (m *mockSQLStore) WithRaw(ctx context.Context, priority int, fn func(any) error) error {
-	return nil
-}
-
 // Mock Iterator implementation for testing
 type mockRowIterator struct {
 	count int

@@ -14,18 +14,23 @@ func TokenCmd(cfg *config.Config) *cobra.Command {
 		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
 	}
 
-	tokenCmd.AddCommand(IssueCmd(cfg))
 	tokenCmd.AddCommand(ListCmd(cfg))
+	tokenCmd.AddCommand(IssueCmd(cfg))
 	tokenCmd.AddCommand(RevokeCmd(cfg))
 
 	return tokenCmd
 }
 
 func toRow(s *adminv1.ServiceToken) *token {
+	var expiresOn string
+	if !s.ExpiresOn.AsTime().IsZero() {
+		expiresOn = s.ExpiresOn.AsTime().Format(cmdutil.TSFormatLayout)
+	}
+
 	return &token{
 		ID:        s.Id,
 		CreatedOn: s.CreatedOn.AsTime().Format(cmdutil.TSFormatLayout),
-		ExpiresOn: s.ExpiresOn.AsTime().Format(cmdutil.TSFormatLayout),
+		ExpiresOn: expiresOn,
 	}
 }
 
