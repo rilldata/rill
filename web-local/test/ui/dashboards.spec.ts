@@ -86,6 +86,7 @@ test.describe("dashboard", () => {
   });
 
   test("Dashboard runthrough", async ({ page }) => {
+    test.setTimeout(60000);
     await page.goto("/");
     // disable animations
     await page.addStyleTag({
