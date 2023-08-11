@@ -42,10 +42,7 @@
   );
   $: isProjectPage = $page.route.id === "/[organization]/[project]";
 
-  $: dashboardListItems = useDashboardListItems(
-    instanceId,
-    $projectDeploymentStatus.data
-  );
+  $: dashboardListItems = useDashboardListItems(instanceId);
   $: currentDashboard = $dashboardListItems?.items?.find(
     (listing) => listing.name === $page.params.dashboard
   );
