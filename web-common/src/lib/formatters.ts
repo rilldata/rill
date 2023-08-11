@@ -92,14 +92,14 @@ export function microsToTimestring(microseconds: number) {
   // start with hours/
   const sign = Math.sign(microseconds);
   const micros = Math.abs(microseconds);
-  const hours = ~~(micros / 1000 / 1000 / 60 / 60);
+  const hours = Math.trunc(micros / 1000 / 1000 / 60 / 60);
   let remaining = micros - hours * 1000 * 1000 * 60 * 60;
-  const minutes = ~~(remaining / 1000 / 1000 / 60);
+  const minutes = Math.trunc(remaining / 1000 / 1000 / 60);
   //const seconds = (remaining - (minutes * 1000 * 1000 * 60)) / 1000 / 1000;
   remaining -= minutes * 1000 * 1000 * 60;
-  const seconds = ~~(remaining / 1000 / 1000);
+  const seconds = Math.trunc(remaining / 1000 / 1000);
   remaining -= seconds * 1000 * 1000;
-  const ms = ~~(remaining / 1000);
+  const ms = Math.trunc(remaining / 1000);
   if (hours === 0 && minutes === 0 && seconds === 0 && ms > 0) {
     return `${sign == 1 ? "" : "-"}${ms}ms`;
   }
@@ -145,7 +145,7 @@ export function formatCompactInteger(n: number) {
   let fmt: (number) => string;
   if (n <= 1000) {
     fmt = formatInteger;
-    return fmt(~~n);
+    return fmt(Math.trunc(n));
   } else {
     fmt = format(".3s");
     return fmt(n);

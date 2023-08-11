@@ -5,6 +5,8 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { parse } from "yaml";
+import { getFilePathFromNameAndType } from "../entity-management/entity-mappers";
+import { EntityType } from "../entity-management/types";
 
 /**
  * Calls {@link createRuntimeServiceListFiles} using glob to select only sources.
@@ -56,6 +58,26 @@ export function useEmbeddedSources(instanceId: string) {
           data?.entries?.filter(
             (catalog) => catalog.embedded && catalog.source
           ) ?? [],
+      },
+    }
+  );
+}
+
+export function useIsSourceUnsaved(
+  instanceId: string,
+  sourceName: string,
+  // Include clientYAML in the function call to force the selector to recompute when it changes
+  clientYAML: string
+) {
+  return createRuntimeServiceGetFile(
+    instanceId,
+    getFilePathFromNameAndType(sourceName, EntityType.Table),
+    {
+      query: {
+        select: (data) => {
+          const serverYAML = data.blob;
+          return clientYAML !== serverYAML;
+        },
       },
     }
   );

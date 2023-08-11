@@ -14,8 +14,8 @@
     BehaviourEventMedium,
   } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
-  import LocalSource from "./LocalSource.svelte";
-  import RemoteSource from "./RemoteSource.svelte";
+  import LocalSourceUpload from "./LocalSourceUpload.svelte";
+  import RemoteSourceForm from "./RemoteSourceForm.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -73,6 +73,7 @@
   size="md"
   useContentForMinSize
   yFixed
+  focusTriggerOnClose={false}
 >
   <div slot="title">
     <TabGroup
@@ -92,11 +93,11 @@
   <div class="flex-grow overflow-y-auto">
     {#if selectedConnector?.name === "gcs" || selectedConnector?.name === "s3" || selectedConnector?.name === "https" || selectedConnector?.name === "motherduck" || selectedConnector?.name === "bigquery"}
       {#key selectedConnector}
-        <RemoteSource connector={selectedConnector} on:close />
+        <RemoteSourceForm connector={selectedConnector} on:close />
       {/key}
     {/if}
     {#if selectedConnector?.name === "local_file"}
-      <LocalSource on:close />
+      <LocalSourceUpload on:close />
     {/if}
   </div>
 </Dialog>

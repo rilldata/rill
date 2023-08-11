@@ -61,7 +61,10 @@ export function runtimeErrorToLine(message: string, yaml: string): LineStatus {
   return { line: null, message, level: "error" };
 }
 
-export function mapRuntimeErrorsToLines(errors, yaml: string): LineStatus[] {
+export function mapReconciliationErrorsToLines(
+  errors,
+  yaml: string
+): LineStatus[] {
   if (!errors) return [];
   return errors
     .map((error) => {

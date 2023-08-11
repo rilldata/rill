@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	jsonvalue "github.com/Andrew-M-C/go.jsonvalue"
@@ -14,6 +15,15 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 )
+
+var mutex sync.Mutex
+
+func unmarshalJSON(sql []byte) (*jsonvalue.V, error) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	return jsonvalue.Unmarshal(sql)
+}
 
 // Query implements QueryService.
 func (s *Server) Query(ctx context.Context, req *runtimev1.QueryRequest) (*runtimev1.QueryResponse, error) {
@@ -117,7 +127,7 @@ func ensureLimits(ctx context.Context, olap drivers.OLAPStore, inputSQL string, 
 
 	r.Close()
 
-	v, err := jsonvalue.Unmarshal(serializedSQL)
+	v, err := unmarshalJSON(serializedSQL)
 	if err != nil {
 		return "", err
 	}
@@ -243,7 +253,7 @@ func replaceOrUpdateLimitTo(root *jsonvalue.V, limit int) error {
 }
 
 func createConstantLimit(limit int) (*jsonvalue.V, error) {
-	v, err := jsonvalue.Unmarshal([]byte(fmt.Sprintf(`
+	return unmarshalJSON([]byte(fmt.Sprintf(`
 	{
 	   "class":"CONSTANT",
 	   "type":"VALUE_CONSTANT",
@@ -258,11 +268,10 @@ func createConstantLimit(limit int) (*jsonvalue.V, error) {
 	   }
 	}
 `, limit)))
-	return v, err
 }
 
 func createLimitModifier(limit int) (*jsonvalue.V, error) {
-	v, err := jsonvalue.Unmarshal([]byte(fmt.Sprintf(`
+	return unmarshalJSON([]byte(fmt.Sprintf(`
 {
 	"type":"LIMIT_MODIFIER",
 	"limit":{
@@ -281,5 +290,4 @@ func createLimitModifier(limit int) (*jsonvalue.V, error) {
 	"offset":null
  }
 `, limit)))
-	return v, err
 }

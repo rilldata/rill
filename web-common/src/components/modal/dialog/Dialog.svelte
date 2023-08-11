@@ -14,6 +14,7 @@
   export let showCancel = true;
   export let disabled = false;
   export let useContentForMinSize = false;
+  export let focusTriggerOnClose = true;
 
   const dispatch = createEventDispatcher();
 
@@ -50,7 +51,7 @@
   }
 </script>
 
-<ModalContainer on:cancel>
+<ModalContainer on:cancel {focusTriggerOnClose}>
   <div
     class="grid place-items-center w-screen h-screen"
     on:click|self={() => {
