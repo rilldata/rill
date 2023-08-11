@@ -44,7 +44,7 @@ type Config struct {
 	LogLevel            zapcore.Level          `default:"info" split_words:"true"`
 	MetricsExporter     observability.Exporter `default:"prometheus" split_words:"true"`
 	TracesExporter      observability.Exporter `default:"" split_words:"true"`
-	MetastoreDriver     string                 `default:"metastore" split_words:"true"`
+	MetastoreDriver     string                 `default:"sqlite" split_words:"true"`
 	MetastoreURL        string                 `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
 	AllowedOrigins      []string               `default:"*" split_words:"true"`
 	AuthEnable          bool                   `default:"false" split_words:"true"`

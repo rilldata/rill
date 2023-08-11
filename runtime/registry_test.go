@@ -490,7 +490,7 @@ func NewTestRunTime(t *testing.T) *Runtime {
 
 	opts := &Options{
 		ConnectionCacheSize: 100,
-		MetastoreDriver:     "metastore",
+		MetastoreDriver:     "sqlite",
 		QueryCacheSizeBytes: int64(datasize.MB) * 100,
 		AllowHostAccess:     true,
 		SystemConnectors:    globalConnectors,

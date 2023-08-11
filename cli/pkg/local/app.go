@@ -88,7 +88,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 
 	rtOpts := &runtime.Options{
 		ConnectionCacheSize: 100,
-		MetastoreDriver:     "metastore",
+		MetastoreDriver:     "sqlite",
 		QueryCacheSizeBytes: int64(datasize.MB * 100),
 		AllowHostAccess:     true,
 		SystemConnectors:    systemConnectors,

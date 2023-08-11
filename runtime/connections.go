@@ -26,7 +26,7 @@ func (r *Runtime) AcquireHandle(ctx context.Context, instanceID, connector strin
 		return nil, nil, err
 	}
 
-	if c, err := r.connectorDef(instance, connector); err != nil {
+	if c, err := r.connectorDef(instance, connector); err == nil {
 		return r.connCache.get(ctx, instanceID, c.Type, r.connectorConfig(connector, c.Config, instance.ResolveVariables()), false)
 	}
 
