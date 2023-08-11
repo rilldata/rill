@@ -37,6 +37,43 @@ export type ConnectorServiceOLAPListTablesParams = {
   connector?: string;
 };
 
+export type RuntimeServiceCreateTriggerBody = {
+  pullTriggerSpec?: V1PullTriggerSpec;
+  refreshTriggerSpec?: V1RefreshTriggerSpec;
+};
+
+export type RuntimeServiceWatchResources200 = {
+  result?: V1WatchResourcesResponse;
+  error?: RpcStatus;
+};
+
+export type RuntimeServiceWatchResourcesParams = {
+  "refFilter.kind"?: string;
+  "refFilter.name"?: string;
+  "prefixFilter.kind"?: string;
+  "prefixFilter.name"?: string;
+  /**
+   * This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
+   */
+  annotationsFilter?: string;
+};
+
+export type RuntimeServiceListResourcesParams = {
+  "refFilter.kind"?: string;
+  "refFilter.name"?: string;
+  "prefixFilter.kind"?: string;
+  "prefixFilter.name"?: string;
+  /**
+   * This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
+   */
+  annotationsFilter?: string;
+};
+
+export type RuntimeServiceGetResourceParams = {
+  "name.kind"?: string;
+  "name.name"?: string;
+};
+
 export type RuntimeServiceReconcileBody = {
   /** Changed paths provides a way to "hint" what files have changed in the repo, enabling
 reconciliation to execute faster by not scanning all code artifacts for changes. */
@@ -218,6 +255,19 @@ export type QueryServiceColumnCardinalityParams = {
   priority?: number;
 };
 
+export type RuntimeServiceWatchLogs200 = {
+  result?: V1WatchLogsResponse;
+  error?: RpcStatus;
+};
+
+export type RuntimeServiceWatchLogsParams = {
+  replay?: boolean;
+};
+
+export type RuntimeServiceGetLogsParams = {
+  ascending?: boolean;
+};
+
 export type RuntimeServiceWatchFiles200 = {
   result?: V1WatchFilesResponse;
   error?: RpcStatus;
@@ -341,6 +391,15 @@ export type ConnectorServiceBigQueryListDatasetsParams = {
   pageToken?: string;
 };
 
+export interface V1WatchResourcesResponse {
+  resource?: V1Resource;
+  event?: V1ResourceEvent;
+}
+
+export interface V1WatchLogsResponse {
+  logs?: V1Log[];
+}
+
 export interface V1WatchFilesResponse {
   event?: V1FileEvent;
   path?: string;
@@ -408,12 +467,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -446,6 +499,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export type V1TableRowsResponseDataItem = { [key: string]: any };
 
@@ -502,6 +561,31 @@ scanning the database's information schema. */
   managed?: boolean;
 }
 
+export interface V1SourceState {
+  connector?: string;
+  table?: string;
+  specHash?: string;
+  refreshedOn?: string;
+}
+
+export type V1SourceSpecProperties = { [key: string]: any };
+
+export interface V1SourceSpec {
+  sourceConnector?: string;
+  sinkConnector?: string;
+  properties?: V1SourceSpecProperties;
+  refreshSchedule?: V1Schedule;
+  timeoutSeconds?: number;
+  stageChanges?: boolean;
+  streamIngestion?: boolean;
+  trigger?: boolean;
+}
+
+export interface V1SourceV2 {
+  spec?: V1SourceSpec;
+  state?: V1SourceState;
+}
+
 export type V1SourceProperties = { [key: string]: any };
 
 export interface V1Source {
@@ -511,6 +595,11 @@ export interface V1Source {
   schema?: V1StructType;
   policy?: SourceExtractPolicy;
   timeoutSeconds?: number;
+}
+
+export interface V1Schedule {
+  cron?: string;
+  tickerSeconds?: number;
 }
 
 export interface V1S3Object {
@@ -539,6 +628,53 @@ export interface V1S3GetBucketMetadataResponse {
   region?: string;
 }
 
+export interface V1ResourceName {
+  kind?: string;
+  name?: string;
+}
+
+export interface V1ResourceMeta {
+  name?: V1ResourceName;
+  refs?: V1ResourceName[];
+  owner?: V1ResourceName;
+  filePaths?: string[];
+  deleted?: boolean;
+  renamedFrom?: V1ResourceName;
+  reconcileError?: string;
+  version?: string;
+  metaVersion?: string;
+  specVersion?: string;
+  stateVersion?: string;
+  createdOn?: string;
+  specUpdatedOn?: string;
+  stateUpdatedOn?: string;
+  deletedOn?: string;
+}
+
+export type V1ResourceEvent =
+  (typeof V1ResourceEvent)[keyof typeof V1ResourceEvent];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ResourceEvent = {
+  RESOURCE_EVENT_UNSPECIFIED: "RESOURCE_EVENT_UNSPECIFIED",
+  RESOURCE_EVENT_ADDED: "RESOURCE_EVENT_ADDED",
+  RESOURCE_EVENT_UPDATED_SPEC: "RESOURCE_EVENT_UPDATED_SPEC",
+  RESOURCE_EVENT_UPDATED_STATE: "RESOURCE_EVENT_UPDATED_STATE",
+  RESOURCE_EVENT_DELETED: "RESOURCE_EVENT_DELETED",
+} as const;
+
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  migration?: V1Migration;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+}
+
 export interface V1RenameFileResponse {
   [key: string]: any;
 }
@@ -562,15 +698,20 @@ export interface V1RenameFileAndReconcileRequest {
   strict?: boolean;
 }
 
-export interface V1RefreshAndReconcileRequest {
-  instanceId?: string;
-  path?: string;
-  /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
-  dry?: boolean;
-  strict?: boolean;
+export interface V1RefreshTriggerState {
+  [key: string]: any;
 }
 
-export interface V1ReconcileResponse {
+export interface V1RefreshTriggerSpec {
+  onlyNames?: V1ResourceName[];
+}
+
+export interface V1RefreshTrigger {
+  spec?: V1RefreshTriggerSpec;
+  state?: V1RefreshTriggerState;
+}
+
+export interface V1RefreshAndReconcileResponse {
   /** Errors encountered during reconciliation. If strict = false, any path in
 affected_paths without an error can be assumed to have been reconciled succesfully. */
   errors?: V1ReconcileError[];
@@ -578,6 +719,14 @@ affected_paths without an error can be assumed to have been reconciled succesful
 executing the reconciliation. If changed_paths was empty, this will include all
 code artifacts in the repo. */
   affectedPaths?: string[];
+}
+
+export interface V1RefreshAndReconcileRequest {
+  instanceId?: string;
+  path?: string;
+  /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
+  dry?: boolean;
+  strict?: boolean;
 }
 
 /**
@@ -624,7 +773,7 @@ Only applicable if file_path is set. */
   endLocation?: V1ReconcileErrorCharLocation;
 }
 
-export interface V1RefreshAndReconcileResponse {
+export interface V1ReconcileResponse {
   /** Errors encountered during reconciliation. If strict = false, any path in
 affected_paths without an error can be assumed to have been reconciled succesfully. */
   errors?: V1ReconcileError[];
@@ -714,6 +863,40 @@ It should only be set when create = true. */
   strict?: boolean;
 }
 
+export interface V1PullTriggerState {
+  [key: string]: any;
+}
+
+export interface V1PullTriggerSpec {
+  [key: string]: any;
+}
+
+export interface V1PullTrigger {
+  spec?: V1PullTriggerSpec;
+  state?: V1PullTriggerState;
+}
+
+export interface V1ProjectParserState {
+  parseErrors?: V1ParseError[];
+  currentCommitSha?: string;
+  changedPaths?: string[];
+}
+
+export interface V1ProjectParserSpec {
+  compiler?: string;
+  watch?: boolean;
+  stageChanges?: boolean;
+  sourceStreamIngestion?: boolean;
+  modelDefaultMaterialize?: boolean;
+  modelMaterializeDelaySeconds?: number;
+  duckdbConnectors?: string[];
+}
+
+export interface V1ProjectParser {
+  spec?: V1ProjectParserSpec;
+  state?: V1ProjectParserState;
+}
+
 export interface V1ProfileColumn {
   name?: string;
   type?: string;
@@ -723,6 +906,12 @@ export interface V1ProfileColumn {
 export interface V1PingResponse {
   version?: string;
   time?: string;
+}
+
+export interface V1ParseError {
+  message?: string;
+  filePath?: string;
+  startLocation?: Runtimev1CharLocation;
 }
 
 export type V1ObjectType = (typeof V1ObjectType)[keyof typeof V1ObjectType];
@@ -768,12 +957,56 @@ export interface V1NumericSummary {
   numericOutliers?: V1NumericOutliers;
 }
 
+export interface V1ModelState {
+  connector?: string;
+  table?: string;
+  specHash?: string;
+  refreshedOn?: string;
+}
+
+export interface V1ModelSpec {
+  connector?: string;
+  sql?: string;
+  materialize?: boolean;
+  refreshSchedule?: V1Schedule;
+  timeoutSeconds?: number;
+  usesTemplating?: boolean;
+  stageChanges?: boolean;
+  materializeDelaySeconds?: number;
+  trigger?: boolean;
+}
+
+export interface V1ModelV2 {
+  spec?: V1ModelSpec;
+  state?: V1ModelState;
+}
+
 export interface V1Model {
   name?: string;
   sql?: string;
   dialect?: ModelDialect;
   schema?: V1StructType;
   materialize?: boolean;
+}
+
+export interface V1MigrationState {
+  version?: number;
+}
+
+export interface V1MigrationSpec {
+  connector?: string;
+  sql?: string;
+  version?: number;
+}
+
+export interface V1Migration {
+  spec?: V1MigrationSpec;
+  state?: V1MigrationState;
+}
+
+export interface V1MetricsViewV2 {
+  spec?: V1MetricsViewSpec;
+  state?: V1MetricsViewState;
 }
 
 export type V1MetricsViewTotalsResponseData = { [key: string]: any };
@@ -801,26 +1034,46 @@ export interface V1MetricsViewToplistResponse {
   data?: V1MetricsViewToplistResponseDataItem[];
 }
 
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  filter?: V1MetricsViewFilter;
+  priority?: number;
+}
+
 export interface V1MetricsViewTimeSeriesResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1TimeSeriesValue[];
 }
 
-export interface V1MetricsViewTimeSeriesRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  timeGranularity?: V1TimeGrain;
-  filter?: V1MetricsViewFilter;
-  timeZone?: string;
-  priority?: number;
-}
-
 export interface V1MetricsViewTimeRangeResponse {
   timeRangeSummary?: V1TimeRangeSummary;
+}
+
+export interface V1MetricsViewSpec {
+  connector?: string;
+  table?: string;
+  title?: string;
+  description?: string;
+  timeDimension?: string;
+  dimensions?: MetricsViewSpecDimensionV2[];
+  measures?: MetricsViewSpecMeasureV2[];
+  smallestTimeGrain?: V1TimeGrain;
+  /** Default time range for the dashboard. It should be a valid ISO 8601 duration string. */
+  defaultTimeRange?: string;
+  availableTimeZones?: string[];
+}
+
+export interface V1MetricsViewState {
+  validSpec?: V1MetricsViewSpec;
 }
 
 export interface V1MetricsViewSort {
@@ -835,18 +1088,16 @@ export interface V1MetricsViewFilter {
   exclude?: MetricsViewFilterCond[];
 }
 
-export interface V1MetricsViewToplistRequest {
+export interface V1MetricsViewTimeSeriesRequest {
   instanceId?: string;
   metricsViewName?: string;
-  dimensionName?: string;
   measureNames?: string[];
   inlineMeasures?: V1InlineMeasure[];
   timeStart?: string;
   timeEnd?: string;
-  limit?: string;
-  offset?: string;
-  sort?: V1MetricsViewSort[];
+  timeGranularity?: V1TimeGrain;
   filter?: V1MetricsViewFilter;
+  timeZone?: string;
   priority?: number;
 }
 
@@ -899,6 +1150,21 @@ export interface V1MetricsViewComparisonSort {
   type?: V1MetricsViewComparisonSortType;
 }
 
+export interface V1MetricsViewComparisonToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  baseTimeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  sort?: V1MetricsViewComparisonSort[];
+  filter?: V1MetricsViewFilter;
+  limit?: string;
+  offset?: string;
+  priority?: number;
+}
+
 export interface V1MetricsViewComparisonRow {
   dimensionValue?: unknown;
   measureValues?: V1MetricsViewComparisonValue[];
@@ -933,6 +1199,30 @@ export interface V1MetricsView {
 export interface V1MapType {
   keyType?: Runtimev1Type;
   valueType?: Runtimev1Type;
+}
+
+export type V1LogLevel = (typeof V1LogLevel)[keyof typeof V1LogLevel];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1LogLevel = {
+  LOG_LEVEL_UNSPECIFIED: "LOG_LEVEL_UNSPECIFIED",
+  LOG_LEVEL_DEBUG: "LOG_LEVEL_DEBUG",
+  LOG_LEVEL_INFO: "LOG_LEVEL_INFO",
+  LOG_LEVEL_WARN: "LOG_LEVEL_WARN",
+  LOG_LEVEL_ERROR: "LOG_LEVEL_ERROR",
+} as const;
+
+export type V1LogPayload = { [key: string]: any };
+
+export interface V1Log {
+  level?: V1LogLevel;
+  time?: string;
+  message?: string;
+  payload?: V1LogPayload;
+}
+
+export interface V1ListResourcesResponse {
+  resources?: V1Resource[];
 }
 
 export interface V1ListInstancesResponse {
@@ -989,21 +1279,6 @@ export interface V1InlineMeasure {
   expression?: string;
 }
 
-export interface V1MetricsViewComparisonToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  baseTimeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  sort?: V1MetricsViewComparisonSort[];
-  filter?: V1MetricsViewFilter;
-  limit?: string;
-  offset?: string;
-  priority?: number;
-}
-
 export type V1HistogramMethod =
   (typeof V1HistogramMethod)[keyof typeof V1HistogramMethod];
 
@@ -1013,6 +1288,14 @@ export const V1HistogramMethod = {
   HISTOGRAM_METHOD_FD: "HISTOGRAM_METHOD_FD",
   HISTOGRAM_METHOD_DIAGNOSTIC: "HISTOGRAM_METHOD_DIAGNOSTIC",
 } as const;
+
+export interface V1GetResourceResponse {
+  resource?: V1Resource;
+}
+
+export interface V1GetLogsResponse {
+  logs?: V1Log[];
+}
 
 export interface V1GetInstanceResponse {
   instance?: V1Instance;
@@ -1117,6 +1400,10 @@ export interface V1DeleteFileAndReconcileRequest {
   /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
   dry?: boolean;
   strict?: boolean;
+}
+
+export interface V1CreateTriggerResponse {
+  [key: string]: any;
 }
 
 export interface V1CreateInstanceResponse {
@@ -1301,6 +1588,36 @@ export interface V1CatalogEntry {
   refreshedOn?: string;
 }
 
+export interface V1BucketPlannerState {
+  region?: string;
+}
+
+export interface V1BucketPlannerSpec {
+  extractPolicy?: V1BucketExtractPolicy;
+}
+
+export interface V1BucketPlanner {
+  spec?: V1BucketPlannerSpec;
+  state?: V1BucketPlannerState;
+}
+
+export type V1BucketExtractPolicyStrategy =
+  (typeof V1BucketExtractPolicyStrategy)[keyof typeof V1BucketExtractPolicyStrategy];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1BucketExtractPolicyStrategy = {
+  STRATEGY_UNSPECIFIED: "STRATEGY_UNSPECIFIED",
+  STRATEGY_HEAD: "STRATEGY_HEAD",
+  STRATEGY_TAIL: "STRATEGY_TAIL",
+} as const;
+
+export interface V1BucketExtractPolicy {
+  rowsStrategy?: V1BucketExtractPolicyStrategy;
+  rowsLimitBytes?: string;
+  filesStrategy?: V1BucketExtractPolicyStrategy;
+  filesLimit?: string;
+}
+
 export interface V1BigQueryListTablesResponse {
   nextPageToken?: string;
   names?: string[];
@@ -1317,6 +1634,10 @@ export interface Runtimev1Type {
   arrayElementType?: Runtimev1Type;
   structType?: V1StructType;
   mapType?: V1MapType;
+}
+
+export interface Runtimev1CharLocation {
+  line?: number;
 }
 
 export interface RpcStatus {
@@ -1402,6 +1723,22 @@ export const ModelDialect = {
   DIALECT_UNSPECIFIED: "DIALECT_UNSPECIFIED",
   DIALECT_DUCKDB: "DIALECT_DUCKDB",
 } as const;
+
+export interface MetricsViewSpecMeasureV2 {
+  name?: string;
+  expression?: string;
+  label?: string;
+  description?: string;
+  format?: string;
+  validPercentOfTotal?: boolean;
+}
+
+export interface MetricsViewSpecDimensionV2 {
+  name?: string;
+  column?: string;
+  label?: string;
+  description?: string;
+}
 
 export interface MetricsViewMeasure {
   name?: string;
