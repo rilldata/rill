@@ -12,8 +12,8 @@
   import type { Tweened } from "svelte/motion";
   import type { Writable } from "svelte/store";
   import SourceUnsavedIndicator from "../../features/sources/editor/SourceUnsavedIndicator.svelte";
-  import WorkspaceHeaderStatusSpinner from "./WorkspaceHeaderStatusSpinner.svelte";
   import type { LayoutElement } from "./types";
+  import WorkspaceHeaderStatusSpinner from "./WorkspaceHeaderStatusSpinner.svelte";
 
   export let onChangeCallback;
   export let titleInput;
@@ -46,9 +46,6 @@
   }
 
   $: applicationStatus = appRunning ? EntityStatus.Running : EntityStatus.Idle;
-
-  $: inputSize =
-    Math.max((editingTitle ? titleInputValue : titleInput)?.length || 0, 5) + 1;
 
   $: width = $observedNode?.getBoundingClientRect()?.width;
 </script>

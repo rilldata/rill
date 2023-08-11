@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import Overlay from "@rilldata/web-common/components/overlay/Overlay.svelte";
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
   import {
@@ -6,22 +7,22 @@
     createRuntimeServiceUnpackEmpty,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { appScreen } from "../../../layout/app-store";
+  import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
+  import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
+  import { SourceConnectionType } from "../../../metrics/service/SourceEventTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useModelNames } from "../../models/selectors";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
   import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
   import {
     compileCreateSourceYAML,
-    getSourceError,
     emitSourceErrorTelemetry,
     emitSourceSuccessTelemetry,
+    getSourceError,
   } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { uploadTableFiles } from "./file-upload";
-  import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
-  import { SourceConnectionType } from "../../../metrics/service/SourceEventTypes";
-  import { appScreen } from "../../../layout/app-store";
-  import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
 
   export let showDropOverlay: boolean;
 
@@ -73,8 +74,10 @@
           $createSourceMutation
         );
 
+        // Emit telemetry
         const sourceError = getSourceError(errors, tableName);
-        if (createSourceMutationError.isError || sourceError) {
+        if ($createSourceMutation.isError || sourceError) {
+          // Error
           emitSourceErrorTelemetry(
             MetricsEventSpace.Workspace,
             $appScreen,
@@ -83,6 +86,7 @@
             filePath
           );
         } else {
+          // Success
           emitSourceSuccessTelemetry(
             MetricsEventSpace.Workspace,
             $appScreen,
@@ -94,6 +98,9 @@
       } catch (err) {
         console.error(err);
       }
+
+      // Navigate to source page
+      goto(`/source/${tableName}`);
     }
   };
 </script>

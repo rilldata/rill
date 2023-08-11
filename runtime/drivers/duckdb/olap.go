@@ -46,7 +46,7 @@ func (c *connection) WithConnection(ctx context.Context, priority int, fn driver
 	// Call fn with connection embedded in context
 	wrappedCtx := contextWithConn(ctx, conn)
 	ensuredCtx := contextWithConn(context.Background(), conn)
-	return fn(wrappedCtx, ensuredCtx)
+	return fn(wrappedCtx, ensuredCtx, conn.Conn)
 }
 
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
@@ -169,17 +169,6 @@ func (c *connection) EstimateSize() (int64, bool) {
 	dbWalPath := fmt.Sprintf("%s.wal", path)
 	paths = append(paths, path, dbWalPath)
 	return fileSize(paths), true
-}
-
-func (c *connection) WithRaw(ctx context.Context, priority int, fn drivers.WithRawFunc) error {
-	// Acquire connection
-	conn, release, err := c.acquireOLAPConn(ctx, priority)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = release() }()
-
-	return conn.Raw(fn)
 }
 
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {

@@ -66,7 +66,7 @@ export async function saveAndRefresh(
     );
   } else {
     emitSourceSuccessTelemetry(
-      MetricsEventSpace.Modal,
+      MetricsEventSpace.RightPanel,
       get(appScreen),
       BehaviourEventMedium.Button,
       yamlObj?.type || "",
