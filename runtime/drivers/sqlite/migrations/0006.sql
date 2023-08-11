@@ -6,12 +6,12 @@ SET
 	json_replace('{"type":"%s","name":"repo","configs":{"dsn":"%s"}}',
 	'$.type',
 	repo_driver,
-	'$.configs.dsn',
+	'$.config.dsn',
 	repo_dsn),
 	json_replace('{"type":"%s","name":"olap","configs":{"dsn":"%s"}}',
 	'$.type',
 	olap_driver,
-	'$.configs.dsn',
+	'$.config.dsn',
 	olap_dsn));
 UPDATE instances SET olap_driver = 'olap';
 UPDATE instances SET repo_driver = 'repo';

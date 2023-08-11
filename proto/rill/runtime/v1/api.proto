@@ -243,8 +243,8 @@ message ConnectorDef {
   string type = 1;
   // Name of the connector
   string name = 2;
-  // Configs for the connector
-  map<string, string> configs = 3;
+  // Config for the connector
+  map<string, string> config = 3;
 }
 
 // Request message for RuntimeService.ListInstances

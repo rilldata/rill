@@ -35,14 +35,14 @@ func TestRuntime_EditInstance(t *testing.T) {
 				Variables:    map[string]string{"connectors.s3.region": "us-east-1"},
 				Connectors: []*runtimev1.ConnectorDef{
 					{
-						Type:    "file",
-						Name:    "repo",
-						Configs: map[string]string{"dsn": repodsn},
+						Type:   "file",
+						Name:   "repo",
+						Config: map[string]string{"dsn": repodsn},
 					},
 					{
-						Type:    "duckdb",
-						Name:    "olap",
-						Configs: map[string]string{"dsn": ""},
+						Type:   "duckdb",
+						Name:   "olap",
+						Config: map[string]string{"dsn": ""},
 					},
 				},
 			},
@@ -53,14 +53,14 @@ func TestRuntime_EditInstance(t *testing.T) {
 				Variables:    map[string]string{"connectors.s3.region": "us-east-1", "allow_host_access": "true"},
 				Connectors: []*runtimev1.ConnectorDef{
 					{
-						Type:    "file",
-						Name:    "repo",
-						Configs: map[string]string{"dsn": repodsn},
+						Type:   "file",
+						Name:   "repo",
+						Config: map[string]string{"dsn": repodsn},
 					},
 					{
-						Type:    "duckdb",
-						Name:    "olap",
-						Configs: map[string]string{"dsn": ""},
+						Type:   "duckdb",
+						Name:   "olap",
+						Config: map[string]string{"dsn": ""},
 					},
 				},
 			},
@@ -74,14 +74,14 @@ func TestRuntime_EditInstance(t *testing.T) {
 				Variables:    map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.ConnectorDef{
 					{
-						Type:    "file",
-						Name:    "repo1",
-						Configs: map[string]string{"dsn": repodsn},
+						Type:   "file",
+						Name:   "repo1",
+						Config: map[string]string{"dsn": repodsn},
 					},
 					{
-						Type:    "duckdb",
-						Name:    "olap1",
-						Configs: map[string]string{"dsn": ""},
+						Type:   "duckdb",
+						Name:   "olap1",
+						Config: map[string]string{"dsn": ""},
 					},
 				},
 			},
@@ -92,14 +92,14 @@ func TestRuntime_EditInstance(t *testing.T) {
 				Variables:    map[string]string{"host": "localhost", "allow_host_access": "true"},
 				Connectors: []*runtimev1.ConnectorDef{
 					{
-						Type:    "file",
-						Name:    "repo1",
-						Configs: map[string]string{"dsn": repodsn},
+						Type:   "file",
+						Name:   "repo1",
+						Config: map[string]string{"dsn": repodsn},
 					},
 					{
-						Type:    "duckdb",
-						Name:    "olap1",
-						Configs: map[string]string{"dsn": ""},
+						Type:   "duckdb",
+						Name:   "olap1",
+						Config: map[string]string{"dsn": ""},
 					},
 				},
 			},
@@ -114,14 +114,14 @@ func TestRuntime_EditInstance(t *testing.T) {
 				Variables:    map[string]string{"connectors.s3.region": "us-east-1"},
 				Connectors: []*runtimev1.ConnectorDef{
 					{
-						Type:    "file",
-						Name:    "repo",
-						Configs: map[string]string{"dsn": repodsn},
+						Type:   "file",
+						Name:   "repo",
+						Config: map[string]string{"dsn": repodsn},
 					},
 					{
-						Type:    "duckdb",
-						Name:    "olap",
-						Configs: map[string]string{"dsn": ""},
+						Type:   "duckdb",
+						Name:   "olap",
+						Config: map[string]string{"dsn": ""},
 					},
 				},
 			},
@@ -132,14 +132,14 @@ func TestRuntime_EditInstance(t *testing.T) {
 				Variables:    map[string]string{"connectors.s3.region": "us-east-1", "allow_host_access": "true"},
 				Connectors: []*runtimev1.ConnectorDef{
 					{
-						Type:    "file",
-						Name:    "repo",
-						Configs: map[string]string{"dsn": repodsn},
+						Type:   "file",
+						Name:   "repo",
+						Config: map[string]string{"dsn": repodsn},
 					},
 					{
-						Type:    "duckdb",
-						Name:    "olap",
-						Configs: map[string]string{"dsn": ""},
+						Type:   "duckdb",
+						Name:   "olap",
+						Config: map[string]string{"dsn": ""},
 					},
 				},
 			},
@@ -153,14 +153,14 @@ func TestRuntime_EditInstance(t *testing.T) {
 				Variables:    map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.ConnectorDef{
 					{
-						Type:    "file",
-						Name:    "repo",
-						Configs: map[string]string{"dsn": repodsn},
+						Type:   "file",
+						Name:   "repo",
+						Config: map[string]string{"dsn": repodsn},
 					},
 					{
-						Type:    "duckdb",
-						Name:    "olap",
-						Configs: map[string]string{"dsn": "?access_mode=read_write"},
+						Type:   "duckdb",
+						Name:   "olap",
+						Config: map[string]string{"dsn": "?access_mode=read_write"},
 					},
 				},
 			},
@@ -171,14 +171,14 @@ func TestRuntime_EditInstance(t *testing.T) {
 				Variables:    map[string]string{"host": "localhost", "allow_host_access": "true"},
 				Connectors: []*runtimev1.ConnectorDef{
 					{
-						Type:    "file",
-						Name:    "repo",
-						Configs: map[string]string{"dsn": repodsn},
+						Type:   "file",
+						Name:   "repo",
+						Config: map[string]string{"dsn": repodsn},
 					},
 					{
-						Type:    "duckdb",
-						Name:    "olap",
-						Configs: map[string]string{"dsn": "?access_mode=read_write"},
+						Type:   "duckdb",
+						Name:   "olap",
+						Config: map[string]string{"dsn": "?access_mode=read_write"},
 					},
 				},
 			},
@@ -193,14 +193,14 @@ func TestRuntime_EditInstance(t *testing.T) {
 				Variables:    map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.ConnectorDef{
 					{
-						Type:    "file",
-						Name:    "repo",
-						Configs: map[string]string{"dsn": newRepodsn},
+						Type:   "file",
+						Name:   "repo",
+						Config: map[string]string{"dsn": newRepodsn},
 					},
 					{
-						Type:    "duckdb",
-						Name:    "olap",
-						Configs: map[string]string{"dsn": ""},
+						Type:   "duckdb",
+						Name:   "olap",
+						Config: map[string]string{"dsn": ""},
 					},
 				},
 			},
@@ -211,14 +211,14 @@ func TestRuntime_EditInstance(t *testing.T) {
 				Variables:    map[string]string{"host": "localhost", "allow_host_access": "true"},
 				Connectors: []*runtimev1.ConnectorDef{
 					{
-						Type:    "file",
-						Name:    "repo",
-						Configs: map[string]string{"dsn": newRepodsn},
+						Type:   "file",
+						Name:   "repo",
+						Config: map[string]string{"dsn": newRepodsn},
 					},
 					{
-						Type:    "duckdb",
-						Name:    "olap",
-						Configs: map[string]string{"dsn": ""},
+						Type:   "duckdb",
+						Name:   "olap",
+						Config: map[string]string{"dsn": ""},
 					},
 				},
 			},
@@ -233,14 +233,14 @@ func TestRuntime_EditInstance(t *testing.T) {
 				Variables:    map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.ConnectorDef{
 					{
-						Type:    "file",
-						Name:    "repo",
-						Configs: map[string]string{"dsn": repodsn},
+						Type:   "file",
+						Name:   "repo",
+						Config: map[string]string{"dsn": repodsn},
 					},
 					{
-						Type:    "duckdb",
-						Name:    "olap",
-						Configs: map[string]string{"dsn": ""},
+						Type:   "duckdb",
+						Name:   "olap",
+						Config: map[string]string{"dsn": ""},
 					},
 				},
 			},
@@ -255,14 +255,14 @@ func TestRuntime_EditInstance(t *testing.T) {
 				Variables:    map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.ConnectorDef{
 					{
-						Type:    "file",
-						Name:    "repo",
-						Configs: map[string]string{"dsn": repodsn},
+						Type:   "file",
+						Name:   "repo",
+						Config: map[string]string{"dsn": repodsn},
 					},
 					{
-						Type:    "duckdb",
-						Name:    "olap",
-						Configs: map[string]string{"dsn": ""},
+						Type:   "duckdb",
+						Name:   "olap",
+						Config: map[string]string{"dsn": ""},
 					},
 				},
 			},
@@ -279,14 +279,14 @@ func TestRuntime_EditInstance(t *testing.T) {
 				EmbedCatalog: true,
 				Connectors: []*runtimev1.ConnectorDef{
 					{
-						Type:    "file",
-						Name:    "repo",
-						Configs: map[string]string{"dsn": repodsn},
+						Type:   "file",
+						Name:   "repo",
+						Config: map[string]string{"dsn": repodsn},
 					},
 					{
-						Type:    "duckdb",
-						Name:    "olap",
-						Configs: map[string]string{"dsn": ""},
+						Type:   "duckdb",
+						Name:   "olap",
+						Config: map[string]string{"dsn": ""},
 					},
 				},
 			}
@@ -318,11 +318,11 @@ func TestRuntime_EditInstance(t *testing.T) {
 			require.Equal(t, tt.savedInst.Variables, newInst.Variables)
 
 			// verify older olap connection is closed and cache updated if olap changed
-			c, _, _ := rt.OLAPDef(inst)
-			_, ok := rt.connCache.cache[inst.ID+c.Type+generateKey(rt.variables(inst.OLAPDriver, c.Configs, inst.ResolveVariables()))]
+			c, _ := rt.connectorDef(inst, inst.OLAPDriver)
+			_, ok := rt.connCache.cache[inst.ID+c.Type+generateKey(rt.connectorConfig(inst.OLAPDriver, c.Config, inst.ResolveVariables()))]
 			require.Equal(t, !tt.clearCache, ok)
-			c, _, _ = rt.RepoDef(inst)
-			_, ok = rt.connCache.cache[inst.ID+c.Type+generateKey(rt.variables(inst.OLAPDriver, c.Configs, inst.ResolveVariables()))]
+			c, _ = rt.connectorDef(inst, inst.RepoDriver)
+			_, ok = rt.connCache.cache[inst.ID+c.Type+generateKey(rt.connectorConfig(inst.RepoDriver, c.Config, inst.ResolveVariables()))]
 			require.Equal(t, !tt.clearCache, ok)
 			_, ok = rt.migrationMetaCache.cache.Get(inst.ID)
 			require.Equal(t, !tt.clearCache, ok)
@@ -356,14 +356,14 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 				EmbedCatalog: true,
 				Connectors: []*runtimev1.ConnectorDef{
 					{
-						Type:    "file",
-						Name:    "repo",
-						Configs: map[string]string{"dsn": repodsn},
+						Type:   "file",
+						Name:   "repo",
+						Config: map[string]string{"dsn": repodsn},
 					},
 					{
-						Type:    "duckdb",
-						Name:    "olap",
-						Configs: map[string]string{"dsn": dbFile},
+						Type:   "duckdb",
+						Name:   "olap",
+						Config: map[string]string{"dsn": dbFile},
 					},
 				},
 			}
@@ -435,14 +435,14 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 		EmbedCatalog: true,
 		Connectors: []*runtimev1.ConnectorDef{
 			{
-				Type:    "file",
-				Name:    "repo",
-				Configs: map[string]string{"dsn": t.TempDir()},
+				Type:   "file",
+				Name:   "repo",
+				Config: map[string]string{"dsn": t.TempDir()},
 			},
 			{
-				Type:    "duckdb",
-				Name:    "olap",
-				Configs: map[string]string{"dsn": dbpath},
+				Type:   "duckdb",
+				Name:   "olap",
+				Config: map[string]string{"dsn": dbpath},
 			},
 		},
 	}
@@ -457,8 +457,8 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 	require.NoError(t, err)
 
 	// Close OLAP connection
-	c, _, _ := rt.OLAPDef(inst)
-	evicted := rt.connCache.evict(ctx, inst.ID, c.Type, rt.variables("olap", c.Configs, inst.ResolveVariables()))
+	c, _ := rt.connectorDef(inst, inst.OLAPDriver)
+	evicted := rt.connCache.evict(ctx, inst.ID, c.Type, rt.connectorConfig("olap", c.Config, inst.ResolveVariables()))
 	require.True(t, evicted)
 
 	// Corrupt database file
@@ -478,13 +478,13 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 
 // New returns a runtime configured for use in tests.
 func NewTestRunTime(t *testing.T) *Runtime {
-	globalConnectors := []*Connector{
+	globalConnectors := []*runtimev1.ConnectorDef{
 		{
 			Type: "sqlite",
 			Name: "metastore",
 			// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
 			// "cache=shared" is needed to prevent threading problems.
-			Configs: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
+			Config: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
 		},
 	}
 
@@ -493,7 +493,7 @@ func NewTestRunTime(t *testing.T) *Runtime {
 		MetastoreDriver:     "metastore",
 		QueryCacheSizeBytes: int64(datasize.MB) * 100,
 		AllowHostAccess:     true,
-		GlobalDrivers:       globalConnectors,
+		SystemConnectors:    globalConnectors,
 	}
 	rt, err := New(opts, zap.NewNop())
 	t.Cleanup(func() {

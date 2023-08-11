@@ -95,8 +95,10 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver string, co
 		key = instanceID + driver + generateKey(config)
 	}
 	conn, ok := c.cache[key]
+	var found bool
 	if !ok { // not in use
-		value, found := c.lruCache.Get(key)
+		var value interface{}
+		value, found = c.lruCache.Get(key)
 		if !found { // not opened
 			handle, err := c.openAndMigrate(ctx, instanceID, driver, shared, config)
 			if err != nil {
@@ -110,9 +112,12 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver string, co
 
 	// increase reference
 	conn.ref++
-	// transfer from lru to in-use cache
+	if found {
+		// remove from lru-cache
+		c.lruCache.Remove(key)
+	}
+	// set in in-use cache
 	c.cache[key] = conn
-	c.lruCache.Remove(key)
 	if len(c.cache)+c.lruCache.Len() > c.size {
 		c.logger.Warn("number of in-use connections and open connections exceed total configured size", zap.Int("in-use", len(c.cache)), zap.Int("open", c.lruCache.Len()))
 	}

@@ -542,16 +542,6 @@ export interface V1RenameFileResponse {
   [key: string]: any;
 }
 
-export interface V1RenameFileAndReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-}
-
 export interface V1RenameFileAndReconcileRequest {
   instanceId?: string;
   fromPath?: string;
@@ -561,15 +551,7 @@ export interface V1RenameFileAndReconcileRequest {
   strict?: boolean;
 }
 
-export interface V1RefreshAndReconcileRequest {
-  instanceId?: string;
-  path?: string;
-  /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
-  dry?: boolean;
-  strict?: boolean;
-}
-
-export interface V1ReconcileResponse {
+export interface V1RefreshAndReconcileResponse {
   /** Errors encountered during reconciliation. If strict = false, any path in
 affected_paths without an error can be assumed to have been reconciled succesfully. */
   errors?: V1ReconcileError[];
@@ -577,6 +559,14 @@ affected_paths without an error can be assumed to have been reconciled succesful
 executing the reconciliation. If changed_paths was empty, this will include all
 code artifacts in the repo. */
   affectedPaths?: string[];
+}
+
+export interface V1RefreshAndReconcileRequest {
+  instanceId?: string;
+  path?: string;
+  /** If true, will save the file and validate it and related file artifacts, but not actually execute any migrations. */
+  dry?: boolean;
+  strict?: boolean;
 }
 
 /**
@@ -623,7 +613,17 @@ Only applicable if file_path is set. */
   endLocation?: V1ReconcileErrorCharLocation;
 }
 
-export interface V1RefreshAndReconcileResponse {
+export interface V1RenameFileAndReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
+}
+
+export interface V1ReconcileResponse {
   /** Errors encountered during reconciliation. If strict = false, any path in
 affected_paths without an error can be assumed to have been reconciled succesfully. */
   errors?: V1ReconcileError[];
@@ -898,6 +898,21 @@ export interface V1MetricsViewComparisonSort {
   type?: V1MetricsViewComparisonSortType;
 }
 
+export interface V1MetricsViewComparisonToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  baseTimeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  sort?: V1MetricsViewComparisonSort[];
+  filter?: V1MetricsViewFilter;
+  limit?: string;
+  offset?: string;
+  priority?: number;
+}
+
 export interface V1MetricsViewComparisonRow {
   dimensionValue?: unknown;
   measureValues?: V1MetricsViewComparisonValue[];
@@ -986,21 +1001,6 @@ export interface V1ListInstancesResponse {
 export interface V1InlineMeasure {
   name?: string;
   expression?: string;
-}
-
-export interface V1MetricsViewComparisonToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  baseTimeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  sort?: V1MetricsViewComparisonSort[];
-  filter?: V1MetricsViewFilter;
-  limit?: string;
-  offset?: string;
-  priority?: number;
 }
 
 export type V1HistogramMethod =
@@ -1141,13 +1141,13 @@ export interface V1CreateInstanceRequest {
   connectors?: V1ConnectorDef[];
 }
 
-export type V1ConnectorDefConfigs = { [key: string]: string };
+export type V1ConnectorDefConfig = { [key: string]: string };
 
 export interface V1ConnectorDef {
   /** Type of the connector. One of the infra driver supported. */
   type?: string;
   name?: string;
-  configs?: V1ConnectorDefConfigs;
+  config?: V1ConnectorDefConfig;
 }
 
 /**

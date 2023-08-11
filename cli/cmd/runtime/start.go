@@ -2,7 +2,6 @@ package runtime
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -11,6 +10,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"github.com/redis/go-redis/v9"
 	"github.com/rilldata/rill/cli/pkg/config"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
@@ -45,6 +45,7 @@ type Config struct {
 	MetricsExporter     observability.Exporter `default:"prometheus" split_words:"true"`
 	TracesExporter      observability.Exporter `default:"" split_words:"true"`
 	MetastoreDriver     string                 `default:"metastore" split_words:"true"`
+	MetastoreURL        string                 `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
 	AllowedOrigins      []string               `default:"*" split_words:"true"`
 	AuthEnable          bool                   `default:"false" split_words:"true"`
 	AuthIssuerURL       string                 `default:"" split_words:"true"`
@@ -68,7 +69,6 @@ type Config struct {
 	ActivitySinkKafkaBrokers string `default:"" split_words:"true"`
 	// Kafka topic of an activity client's sink
 	ActivitySinkKafkaTopic string `default:"" split_words:"true"`
-	GlobalDrivers          string `split_words:"true"`
 }
 
 // StartCmd starts a stand-alone runtime server. It only allows configuration using environment variables.
@@ -125,7 +125,13 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				QueryCacheSizeBytes: conf.QueryCacheSizeBytes,
 				AllowHostAccess:     conf.AllowHostAccess,
 				SafeSourceRefresh:   conf.SafeSourceRefresh,
-				GlobalDrivers:       parse(conf.GlobalDrivers),
+				SystemConnectors: []*runtimev1.ConnectorDef{
+					{
+						Type:   conf.MetastoreDriver,
+						Name:   "metastore",
+						Config: map[string]string{"dsn": conf.MetastoreURL},
+					},
+				},
 			}
 			rt, err := runtime.New(opts, logger)
 			if err != nil {
@@ -197,17 +203,4 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 		},
 	}
 	return startCmd
-}
-
-func parse(s string) []*runtime.Connector {
-	if s == "" {
-		return make([]*runtime.Connector, 0)
-	}
-	var defs []*runtime.Connector
-	err := json.Unmarshal([]byte(s), &defs)
-	if err != nil {
-		panic(err)
-	}
-
-	return defs
 }

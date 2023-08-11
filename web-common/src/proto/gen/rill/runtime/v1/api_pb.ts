@@ -240,11 +240,11 @@ export class ConnectorDef extends Message<ConnectorDef> {
   name = "";
 
   /**
-   * Configs for the connector
+   * Config for the connector
    *
-   * @generated from field: map<string, string> configs = 3;
+   * @generated from field: map<string, string> config = 3;
    */
-  configs: { [key: string]: string } = {};
+  config: { [key: string]: string } = {};
 
   constructor(data?: PartialMessage<ConnectorDef>) {
     super();
@@ -256,7 +256,7 @@ export class ConnectorDef extends Message<ConnectorDef> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "configs", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 3, name: "config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorDef {

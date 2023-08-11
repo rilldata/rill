@@ -448,7 +448,7 @@ func (m *ConnectorDef) validate(all bool) error {
 
 	// no validation rules for Name
 
-	// no validation rules for Configs
+	// no validation rules for Config
 
 	if len(errors) > 0 {
 		return ConnectorDefMultiError(errors)

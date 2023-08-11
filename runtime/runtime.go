@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"go.uber.org/zap"
 )
@@ -16,18 +17,9 @@ type Options struct {
 	QueryCacheSizeBytes int64
 	AllowHostAccess     bool
 	SafeSourceRefresh   bool
-	// GlobalDrivers are drivers whose handles are shared with all instances
-	GlobalDrivers []*Connector
-	// PrivateDrivers are drivers whose handles are private to an instance
-	PrivateDrivers []*Connector
+	// SystemConnectors are drivers whose handles are shared with all instances
+	SystemConnectors []*runtimev1.ConnectorDef
 }
-
-type Connector struct {
-	Type    string
-	Name    string
-	Configs map[string]string
-}
-
 type Runtime struct {
 	opts               *Options
 	metastore          drivers.Handle
@@ -45,7 +37,7 @@ func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 		migrationMetaCache: newMigrationMetaCache(math.MaxInt),
 		queryCache:         newQueryCache(opts.QueryCacheSizeBytes),
 	}
-	store, _, err := rt.newMetaStore(context.Background(), "")
+	store, _, err := rt.AcquireGlobalHandle(context.Background(), opts.MetastoreDriver)
 	if err != nil {
 		return nil, err
 	}

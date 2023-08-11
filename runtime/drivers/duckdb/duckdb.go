@@ -51,6 +51,9 @@ type Driver struct {
 }
 
 func (d Driver) Open(config map[string]any, shared bool, logger *zap.Logger) (drivers.Handle, error) {
+	if shared {
+		return nil, fmt.Errorf("duckdb driver can't be shared")
+	}
 	dsn, ok := config["dsn"].(string)
 	if !ok {
 		return nil, fmt.Errorf("require dsn to open duckdb connection")

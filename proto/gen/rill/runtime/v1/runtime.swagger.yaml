@@ -2500,11 +2500,11 @@ definitions:
       name:
         type: string
         title: Name of the connector
-      configs:
+      config:
         type: object
         additionalProperties:
           type: string
-        title: Configs for the connector
+        title: Config for the connector
   v1CreateInstanceRequest:
     type: object
     properties:

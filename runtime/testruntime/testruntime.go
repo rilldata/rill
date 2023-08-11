@@ -31,13 +31,13 @@ type TestingT interface {
 
 // New returns a runtime configured for use in tests.
 func New(t TestingT) *runtime.Runtime {
-	globalDrivers := []*runtime.Connector{
+	systemConnectors := []*runtimev1.ConnectorDef{
 		{
 			Type: "sqlite",
 			Name: "metastore",
 			// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
 			// "cache=shared" is needed to prevent threading problems.
-			Configs: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
+			Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
 		},
 	}
 	opts := &runtime.Options{
@@ -45,7 +45,7 @@ func New(t TestingT) *runtime.Runtime {
 		MetastoreDriver:     "metastore",
 		QueryCacheSizeBytes: int64(datasize.MB * 100),
 		AllowHostAccess:     true,
-		GlobalDrivers:       globalDrivers,
+		SystemConnectors:    systemConnectors,
 	}
 	rt, err := runtime.New(opts, zap.NewNop())
 	require.NoError(t, err)
@@ -66,14 +66,14 @@ func NewInstance(t TestingT) (*runtime.Runtime, string) {
 		EmbedCatalog: true,
 		Connectors: []*runtimev1.ConnectorDef{
 			{
-				Type:    "file",
-				Name:    "repo",
-				Configs: map[string]string{"dsn": t.TempDir()},
+				Type:   "file",
+				Name:   "repo",
+				Config: map[string]string{"dsn": t.TempDir()},
 			},
 			{
-				Type:    "duckdb",
-				Name:    "olap",
-				Configs: map[string]string{"dsn": ""},
+				Type:   "duckdb",
+				Name:   "olap",
+				Config: map[string]string{"dsn": ""},
 			},
 		},
 	}
@@ -118,14 +118,14 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 		EmbedCatalog: true,
 		Connectors: []*runtimev1.ConnectorDef{
 			{
-				Type:    "file",
-				Name:    "repo",
-				Configs: map[string]string{"dsn": filepath.Join(currentFile, "..", "testdata", name)},
+				Type:   "file",
+				Name:   "repo",
+				Config: map[string]string{"dsn": filepath.Join(currentFile, "..", "testdata", name)},
 			},
 			{
-				Type:    "duckdb",
-				Name:    "olap",
-				Configs: map[string]string{"dsn": "?access_mode=read_write"},
+				Type:   "duckdb",
+				Name:   "olap",
+				Config: map[string]string{"dsn": "?access_mode=read_write"},
 			},
 		},
 	}

@@ -23,14 +23,14 @@ func (r *Runtime) FindInstance(ctx context.Context, instanceID string) (*drivers
 
 func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) error {
 	// Check OLAP connection
-	olap, _, err := r.checkOlapConnection(inst)
+	olap, _, err := r.checkOlapConnection(ctx, inst)
 	if err != nil {
 		return err
 	}
 	defer olap.Close()
 
 	// Check repo connection
-	repo, _, err := r.checkRepoConnection(inst)
+	repo, _, err := r.checkRepoConnection(ctx, inst)
 	if err != nil {
 		return err
 	}
@@ -95,9 +95,9 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 
 	// Drop the underlying data store
 	if dropDB {
-		c, shared, _ := r.OLAPDef(inst)
-		vars := r.variables(inst.OLAPDriver, c.Configs, inst.ResolveVariables())
-		conn, release, err := r.connCache.get(ctx, instanceID, c.Type, vars, shared)
+		c, _ := r.connectorDef(inst, inst.OLAPDriver)
+		vars := r.connectorConfig(inst.OLAPDriver, c.Config, inst.ResolveVariables())
+		conn, release, err := r.connCache.get(ctx, instanceID, c.Type, vars, false)
 		if err == nil {
 			release()
 			err = conn.Close()
@@ -131,10 +131,10 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 
 	evict := false
 	// 1. changes in olap driver or olap dsn
-	if r.olapChanged(olderInstance, inst) {
+	if r.olapChanged(ctx, olderInstance, inst) {
 		evict = true
 		// Check OLAP connection
-		olap, _, err := r.checkOlapConnection(inst)
+		olap, _, err := r.checkOlapConnection(ctx, inst)
 		if err != nil {
 			return err
 		}
@@ -149,7 +149,7 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 
 	// 2. Check that it's a driver that supports embedded catalogs
 	if inst.EmbedCatalog {
-		olapConn, _, err := r.checkOlapConnection(inst)
+		olapConn, _, err := r.checkOlapConnection(ctx, inst)
 		if err != nil {
 			return err
 		}
@@ -161,10 +161,10 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 	}
 
 	// 3. changes in repo driver or repo dsn
-	if r.repoChanged(olderInstance, inst) {
+	if r.repoChanged(ctx, olderInstance, inst) {
 		evict = true
 		// Check repo connection
-		repo, _, err := r.checkRepoConnection(inst)
+		repo, _, err := r.checkRepoConnection(ctx, inst)
 		if err != nil {
 			return err
 		}
@@ -192,25 +192,24 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 	return r.Registry().EditInstance(ctx, inst)
 }
 
-// TODO :: this is a rudimentary solution and ideally should be done in some producer/consumer pattern
 func (r *Runtime) evictCaches(ctx context.Context, inst *drivers.Instance) {
 	// evict and close exisiting connection
-	c, _, _ := r.OLAPDef(inst)
-	r.connCache.evict(ctx, inst.ID, c.Type, r.variables(inst.OLAPDriver, c.Configs, inst.ResolveVariables()))
-	c, _, _ = r.RepoDef(inst)
-	r.connCache.evict(ctx, inst.ID, c.Type, r.variables(inst.RepoDriver, c.Configs, inst.ResolveVariables()))
+	c, _ := r.connectorDef(inst, inst.OLAPDriver)
+	r.connCache.evict(ctx, inst.ID, c.Type, r.connectorConfig(inst.OLAPDriver, c.Config, inst.ResolveVariables()))
+	c, _ = r.connectorDef(inst, inst.RepoDriver)
+	r.connCache.evict(ctx, inst.ID, c.Type, r.connectorConfig(inst.RepoDriver, c.Config, inst.ResolveVariables()))
 
 	// evict catalog cache
 	r.migrationMetaCache.evict(ctx, inst.ID)
 	// query cache can't be evicted since key is a combination of instance ID and other parameters
 }
 
-func (r *Runtime) checkRepoConnection(inst *drivers.Instance) (drivers.Handle, drivers.RepoStore, error) {
-	c, shared, err := r.RepoDef(inst)
+func (r *Runtime) checkRepoConnection(ctx context.Context, inst *drivers.Instance) (drivers.Handle, drivers.RepoStore, error) {
+	c, err := r.connectorDef(inst, inst.RepoDriver)
 	if err != nil {
 		return nil, nil, err
 	}
-	repo, err := drivers.Open(c.Type, r.variables(c.Name, c.Configs, inst.ResolveVariables()), shared, r.logger)
+	repo, err := drivers.Open(c.Type, r.connectorConfig(c.Name, c.Config, inst.ResolveVariables()), false, r.logger)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -222,12 +221,12 @@ func (r *Runtime) checkRepoConnection(inst *drivers.Instance) (drivers.Handle, d
 	return repo, repoStore, nil
 }
 
-func (r *Runtime) checkOlapConnection(inst *drivers.Instance) (drivers.Handle, drivers.OLAPStore, error) {
-	c, shared, err := r.OLAPDef(inst)
+func (r *Runtime) checkOlapConnection(ctx context.Context, inst *drivers.Instance) (drivers.Handle, drivers.OLAPStore, error) {
+	c, err := r.connectorDef(inst, inst.OLAPDriver)
 	if err != nil {
 		return nil, nil, err
 	}
-	olap, err := drivers.Open(c.Type, r.variables(c.Name, c.Configs, inst.ResolveVariables()), shared, r.logger)
+	olap, err := drivers.Open(c.Type, r.connectorConfig(c.Name, c.Config, inst.ResolveVariables()), false, r.logger)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -238,45 +237,21 @@ func (r *Runtime) checkOlapConnection(inst *drivers.Instance) (drivers.Handle, d
 	return olap, olapStore, nil
 }
 
-func (r *Runtime) OLAPDef(inst *drivers.Instance) (*runtimev1.ConnectorDef, bool, error) {
-	for _, c := range inst.Connectors {
-		if c.Name == inst.OLAPDriver {
-			return c, false, nil
-		}
-	}
-	if c, err := r.ConnectorDefByName(inst.OLAPDriver); err == nil {
-		return &runtimev1.ConnectorDef{Name: c.Name, Type: c.Type, Configs: c.Configs}, true, nil
-	}
-	return nil, false, fmt.Errorf("dev error, olap connector doesn't exist")
+func (r *Runtime) repoChanged(ctx context.Context, a, b *drivers.Instance) bool {
+	o1, _ := r.connectorDef(a, a.RepoDriver)
+	o2, _ := r.connectorDef(b, b.RepoDriver)
+	return a.RepoDriver != b.RepoDriver || !equal(o1, o2)
 }
 
-func (r *Runtime) RepoDef(inst *drivers.Instance) (*runtimev1.ConnectorDef, bool, error) {
-	for _, c := range inst.Connectors {
-		if c.Name == inst.RepoDriver {
-			return c, false, nil
-		}
-	}
-	if c, err := r.ConnectorDefByName(inst.RepoDriver); err == nil {
-		return &runtimev1.ConnectorDef{Name: c.Name, Type: c.Type, Configs: c.Configs}, true, nil
-	}
-	return nil, false, fmt.Errorf("dev error, repo connector doesn't exist")
-}
-
-func (r *Runtime) repoChanged(a, b *drivers.Instance) bool {
-	o1, s1, _ := r.RepoDef(a)
-	o2, s2, _ := r.RepoDef(b)
-	return a.RepoDriver != b.RepoDriver || s1 != s2 || !equal(o1, o2)
-}
-
-func (r *Runtime) olapChanged(a, b *drivers.Instance) bool {
-	o1, s1, _ := r.OLAPDef(a)
-	o2, s2, _ := r.OLAPDef(b)
-	return a.OLAPDriver != b.OLAPDriver || s1 != s2 || !equal(o1, o2)
+func (r *Runtime) olapChanged(ctx context.Context, a, b *drivers.Instance) bool {
+	o1, _ := r.connectorDef(a, a.OLAPDriver)
+	o2, _ := r.connectorDef(b, b.OLAPDriver)
+	return a.OLAPDriver != b.OLAPDriver || !equal(o1, o2)
 }
 
 func equal(a, b *runtimev1.ConnectorDef) bool {
 	if (a != nil) != (b != nil) {
 		return false
 	}
-	return a.Name == b.Name && a.Type == b.Type && maps.Equal(a.Configs, b.Configs)
+	return a.Name == b.Name && a.Type == b.Type && maps.Equal(a.Config, b.Config)
 }

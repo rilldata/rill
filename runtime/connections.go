@@ -5,17 +5,33 @@ import (
 	"fmt"
 	"strings"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/services/catalog"
 )
 
-func (r *Runtime) newMetaStore(ctx context.Context, instanceID string) (drivers.Handle, func(), error) {
-	c, err := r.ConnectorDefByName(r.opts.MetastoreDriver)
+func (r *Runtime) AcquireGlobalHandle(ctx context.Context, connector string) (drivers.Handle, func(), error) {
+	for _, c := range r.opts.SystemConnectors {
+		if c.Name == connector {
+			return r.connCache.get(ctx, "", c.Type, r.connectorConfig(r.opts.MetastoreDriver, c.Config, nil), true)
+		}
+	}
+	return nil, nil, fmt.Errorf("connector %s doesn't exist", connector)
+}
+
+// AcquireHandle returns instance specific handle
+func (r *Runtime) AcquireHandle(ctx context.Context, instanceID, connector string) (drivers.Handle, func(), error) {
+	instance, err := r.FindInstance(ctx, instanceID)
 	if err != nil {
-		panic(err)
+		return nil, nil, err
 	}
 
-	return r.connCache.get(ctx, instanceID, c.Type, r.variables(r.opts.MetastoreDriver, c.Configs, nil), true)
+	if c, err := r.connectorDef(instance, connector); err != nil {
+		return r.connCache.get(ctx, instanceID, c.Type, r.connectorConfig(connector, c.Config, instance.ResolveVariables()), false)
+	}
+
+	// neither defined in rill.yaml nor set in instance, directly used in source
+	return r.connCache.get(ctx, instanceID, connector, r.connectorConfig(connector, nil, instance.ResolveVariables()), false)
 }
 
 func (r *Runtime) Registry() drivers.RegistryStore {
@@ -27,39 +43,13 @@ func (r *Runtime) Registry() drivers.RegistryStore {
 	return registry
 }
 
-func (r *Runtime) AcquireHandle(ctx context.Context, instanceID, connector string) (drivers.Handle, func(), error) {
-	instance, err := r.FindInstance(ctx, instanceID)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if instance.RillYAML != nil {
-		// defined in rill.yaml
-		for _, c := range instance.RillYAML.Connectors {
-			if c.Name == connector {
-				return r.connCache.get(ctx, instanceID, c.Type, r.variables(connector, c.Configs, instance.ResolveVariables()), false)
-			}
-		}
-	}
-	if c, err := r.ConnectorDefByName(connector); err == nil { // connector found
-		// defined in runtime options
-		return r.connCache.get(ctx, instanceID, c.Type, r.variables(connector, c.Configs, instance.ResolveVariables()), true)
-	}
-	// neither defined in rill.yaml nor in runtime options, directly used in source
-	return r.connCache.get(ctx, instanceID, connector, r.variables(connector, nil, instance.ResolveVariables()), false)
-}
-
 func (r *Runtime) Repo(ctx context.Context, instanceID string) (drivers.RepoStore, func(), error) {
 	inst, err := r.FindInstance(ctx, instanceID)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	c, shared, err := r.RepoDef(inst)
-	if err != nil {
-		return nil, nil, err
-	}
-	conn, release, err := r.connCache.get(ctx, instanceID, c.Type, r.variables(inst.RepoDriver, c.Configs, inst.ResolveVariables()), shared)
+	conn, release, err := r.AcquireHandle(ctx, instanceID, inst.RepoDriver)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -80,11 +70,7 @@ func (r *Runtime) OLAP(ctx context.Context, instanceID string) (drivers.OLAPStor
 		return nil, nil, err
 	}
 
-	c, shared, err := r.OLAPDef(inst)
-	if err != nil {
-		return nil, nil, err
-	}
-	conn, release, err := r.connCache.get(ctx, instanceID, c.Type, r.variables(inst.OLAPDriver, c.Configs, inst.ResolveVariables()), shared)
+	conn, release, err := r.AcquireHandle(ctx, instanceID, inst.OLAPDriver)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -106,11 +92,11 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 	}
 
 	if inst.EmbedCatalog {
-		c, shared, err := r.OLAPDef(inst)
+		c, err := r.connectorDef(inst, inst.OLAPDriver)
 		if err != nil {
 			return nil, nil, err
 		}
-		conn, release, err := r.connCache.get(ctx, instanceID, c.Type, r.variables(inst.OLAPDriver, c.Configs, inst.ResolveVariables()), shared)
+		conn, release, err := r.connCache.get(ctx, instanceID, c.Type, r.connectorConfig(inst.OLAPDriver, c.Config, inst.ResolveVariables()), false)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -163,8 +149,27 @@ func (r *Runtime) NewCatalogService(ctx context.Context, instanceID string) (*ca
 	return catalog.NewService(catalogStore, repoStore, olapStore, registry, instanceID, r.logger, migrationMetadata, releaseFunc), nil
 }
 
+func (r *Runtime) connectorDef(inst *drivers.Instance, name string) (*runtimev1.ConnectorDef, error) {
+	for _, c := range inst.Connectors {
+		// set in instance
+		if c.Name == name {
+			return c, nil
+		}
+	}
+
+	if inst.RillYAML != nil {
+		// defined in rill.yaml
+		for _, c := range inst.RillYAML.Connectors {
+			if c.Name == name {
+				return c, nil
+			}
+		}
+	}
+	return nil, fmt.Errorf("connector %s doesn't exist", name)
+}
+
 // TODO :: these can also be generated during reconcile itself ?
-func (r *Runtime) variables(name string, def, variables map[string]string) map[string]any {
+func (r *Runtime) connectorConfig(name string, def, variables map[string]string) map[string]any {
 	vars := make(map[string]any, 0)
 	for key, value := range def {
 		vars[strings.ToLower(key)] = value
@@ -182,13 +187,4 @@ func (r *Runtime) variables(name string, def, variables map[string]string) map[s
 	}
 	vars["allow_host_access"] = r.opts.AllowHostAccess
 	return vars
-}
-
-func (r *Runtime) ConnectorDefByName(name string) (*Connector, error) {
-	for _, c := range r.opts.GlobalDrivers {
-		if c.Name == name {
-			return c, nil
-		}
-	}
-	return nil, fmt.Errorf("connector %s doesn't exist", name)
 }

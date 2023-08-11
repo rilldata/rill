@@ -97,6 +97,9 @@ type configProperties struct {
 }
 
 func (d driver) Open(config map[string]any, shared bool, logger *zap.Logger) (drivers.Handle, error) {
+	if shared {
+		return nil, fmt.Errorf("gcs driver can't be shared")
+	}
 	conf := &configProperties{}
 	err := mapstructure.Decode(config, conf)
 	if err != nil {

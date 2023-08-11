@@ -630,9 +630,9 @@ func (s *Service) setProjectConnectorsAndVariables(ctx context.Context) error {
 	}
 	for i, c := range parsed.Connectors {
 		rillYAML.Connectors[i] = &runtimev1.ConnectorDef{
-			Type:    c.Type,
-			Name:    c.Name,
-			Configs: c.Defaults,
+			Type:   c.Type,
+			Name:   c.Name,
+			Config: c.Defaults,
 		}
 	}
 	for _, v := range parsed.Variables {
