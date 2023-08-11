@@ -39,17 +39,17 @@ for (let r = 0; r < data.metadata.rowCt; r++) {
       cell.d = `Value A${r}`;
     }
     if (i === 1) {
-      cell.d = (Math.random() * 1000).toFixed(2);
+      cell.d = Math.random() * 1000;
       cell.spark = [10, 30, 20, 50, 30, 60, 80, 100, 70];
     }
     if (i === 2) {
-      cell.d = (Math.random() * 100).toFixed(2) + "%";
+      cell.d = Math.random() * 100;
     }
     if (i === 3) {
-      cell.d = "$" + (Math.random() * 10).toFixed(2);
+      cell.d = "$" + Math.random() * 10;
     }
     if (i === 4) {
-      cell.d = (Math.random() * 100 - 50).toFixed(2) + "%";
+      cell.d = Math.random() * 100 - 50;
     }
 
     row[i] = cell;
@@ -57,7 +57,7 @@ for (let r = 0; r < data.metadata.rowCt; r++) {
 
   for (let i = data.metadata.fixedColumnCt; i < row.length; i++) {
     row[i] = {
-      d: (Math.random() * 10).toFixed(2),
+      d: Math.random() * 10,
     };
   }
 

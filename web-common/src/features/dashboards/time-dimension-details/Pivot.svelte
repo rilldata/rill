@@ -56,7 +56,7 @@
     count: colCt,
     getScrollElement: () => container,
     estimateSize: getColumnWidth,
-    overscan: 5,
+    overscan: 20,
   });
 
   let totalHorizontalSize = 0;

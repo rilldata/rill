@@ -17,7 +17,7 @@
 
   // Mock state for now
   let state = {
-    getRowSize: () => 35,
+    getRowSize: () => 24,
     getColumnWidth: (idx: number) => columnWidths[idx] ?? 60,
     renderCell: (rowIdx, colIdx) =>
       flexRender(TimeDimensionDetailsTableCell, {

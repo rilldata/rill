@@ -4,7 +4,8 @@
   import type { TimeDimensionDetailsStore } from "./time-dimension-details-store";
   import { getBlock } from "./util";
   import { fetchData } from "./mock-data";
-  import Cell from "@rilldata/web-common/components/virtualized-table/core/Cell.svelte";
+  import { flexRender } from "@tanstack/svelte-table";
+  import FormattedNumberCell from "./FormattedNumberCell.svelte";
 
   export let rowIdx: number;
   export let colIdx: number;
@@ -12,13 +13,14 @@
   export let lastFixed: boolean;
   export let store: Writable<TimeDimensionDetailsStore>;
   // If the current data block has this cell, get the data. Otherwise for now assume "loading" state (can handle errors later)
-  let cellData = { d: "..." };
+  let cellData = { d: "...", isLoading: true };
   let block = getBlock(100, rowIdx, rowIdx);
   $: block = getBlock(100, rowIdx, rowIdx);
 
   const cellQuery = createQuery({
     queryKey: ["time-dimension-details", block[0], block[1]],
     queryFn: fetchData(block, 1000),
+    // enabled: false,
   }) as CreateQueryResult<{ block: number[]; data: { d: string }[][] }>;
 
   $: {
@@ -29,7 +31,7 @@
     ) {
       cellData =
         $cellQuery.data.data[rowIdx - $cellQuery.data.block[0]][colIdx];
-    } else cellData = { d: "..." };
+    } else cellData = { d: "...", isLoading: true };
   }
 
   let _class = "";
@@ -87,7 +89,13 @@
     $store.highlightedRow = null;
   };
 
-  let cellRenderer = () => cellData?.d;
+  let cellRenderer: any = null;
+  $: {
+    // Nonfixed columns are pivot values
+    if (false && !fixed) {
+      cellRenderer = () => flexRender(FormattedNumberCell, { cell: cellData });
+    } else cellRenderer = null;
+  }
 </script>
 
 <div
@@ -95,8 +103,11 @@
   on:mouseenter={handleMouseEnter}
   on:mouseleave={handleMouseLeave}
 >
-  <!-- {cellRenderer()} -->
-  {cellData?.d}
+  {#if !fixed && !cellData.isLoading}
+    <FormattedNumberCell cell={cellData} />
+  {:else}
+    {cellData?.d}
+  {/if}
 </div>
 
 <style>
