@@ -406,7 +406,7 @@ paths:
                 type: array
                 items:
                   type: object
-                  $ref: '#/definitions/v1ConnectorDef'
+                  $ref: '#/definitions/v1Connector'
             description: |-
               Request message for RuntimeService.EditInstance.
               See message Instance for field descriptions.
@@ -1970,7 +1970,7 @@ definitions:
       sqlName:
         type: string
         title: optional user defined metadata
-  ConnectorProperty:
+  ConnectorSpecProperty:
     type: object
     properties:
       key:
@@ -1986,7 +1986,7 @@ definitions:
         type: string
         title: Placeholder value for use in UIs
       type:
-        $ref: '#/definitions/ConnectorPropertyType'
+        $ref: '#/definitions/ConnectorSpecPropertyType'
         title: The type expected for this property
       nullable:
         type: boolean
@@ -1998,7 +1998,7 @@ definitions:
         type: string
         title: Link to documentation for this property
     title: Property represents one of the connector's config properties
-  ConnectorPropertyType:
+  ConnectorSpecPropertyType:
     type: string
     enum:
       - TYPE_UNSPECIFIED
@@ -2473,6 +2473,20 @@ definitions:
   v1Connector:
     type: object
     properties:
+      type:
+        type: string
+        description: Type of the connector. One of the infra driver supported.
+      name:
+        type: string
+        title: Name of the connector
+      config:
+        type: object
+        additionalProperties:
+          type: string
+        title: Config for the connector
+  v1ConnectorSpec:
+    type: object
+    properties:
       name:
         type: string
         title: Name is the name of the connector (e.g. "CREATE SOURCE foo WITH connector = 'name'")
@@ -2486,25 +2500,11 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/ConnectorProperty'
+          $ref: '#/definitions/ConnectorSpecProperty'
         title: Properties accepted by the connector
     description: |-
-      Connector represents a connector available in the runtime.
+      ConnectorSpec represents a connector available in the runtime.
       It should not be confused with a source.
-  v1ConnectorDef:
-    type: object
-    properties:
-      type:
-        type: string
-        description: Type of the connector. One of the infra driver supported.
-      name:
-        type: string
-        title: Name of the connector
-      config:
-        type: object
-        additionalProperties:
-          type: string
-        title: Config for the connector
   v1CreateInstanceRequest:
     type: object
     properties:
@@ -2531,7 +2531,7 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1ConnectorDef'
+          $ref: '#/definitions/v1Connector'
     description: |-
       Request message for RuntimeService.CreateInstance.
       See message Instance for field descriptions.
@@ -2741,7 +2741,7 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1ConnectorDef'
+          $ref: '#/definitions/v1Connector'
         description: bare minimum connectors required by the instance.
     description: |-
       Instance represents a single data project, meaning one set of code artifacts,
@@ -2766,7 +2766,7 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1Connector'
+          $ref: '#/definitions/v1ConnectorSpec'
     title: Response message for RuntimeService.ListConnectors
   v1ListExamplesResponse:
     type: object

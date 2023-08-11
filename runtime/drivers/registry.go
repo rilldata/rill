@@ -34,25 +34,18 @@ type Instance struct {
 	UpdatedOn time.Time `db:"updated_on"`
 	// Variables contains user-provided variables
 	Variables map[string]string `db:"variables"`
+	// Instance specific connectors
+	Connectors []*runtimev1.Connector `db:"connectors"`
 	// ProjectVariables contains default variables from rill.yaml
 	// (NOTE: This can always be reproduced from rill.yaml, so it's really just a handy cache of the values.)
 	ProjectVariables map[string]string `db:"project_variables"`
+	// ProjectVariables contains default connectors from rill.yaml
+	ProjectConnectors []*runtimev1.Connector `db:"project_connectors"`
 	// IngestionLimitBytes is total data allowed to ingest across all sources
 	// 0 means there is no limit
 	IngestionLimitBytes int64 `db:"ingestion_limit_bytes"`
 	// Annotations to enrich activity events (like usage tracking)
 	Annotations map[string]string
-	// Instance specific connectors
-	Connectors []*runtimev1.ConnectorDef
-	// RillYAML is the project's parsed rill yaml
-	// Its just a cache and can be reproduced from rill.yaml
-	// TODO :: deprecate ProjectVariables once completely moved to v1 parsing
-	RillYAML *RillYAML `db:"rill_yaml"`
-}
-
-type RillYAML struct {
-	Connectors       []*runtimev1.ConnectorDef
-	ProjectVariables map[string]string
 }
 
 // ResolveVariables returns the final resolved variables

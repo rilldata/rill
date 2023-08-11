@@ -33,7 +33,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				RepoDriver:   "repo",
 				EmbedCatalog: true,
 				Variables:    map[string]string{"connectors.s3.region": "us-east-1"},
-				Connectors: []*runtimev1.ConnectorDef{
+				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
 						Name:   "repo",
@@ -51,7 +51,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				RepoDriver:   "repo",
 				EmbedCatalog: true,
 				Variables:    map[string]string{"connectors.s3.region": "us-east-1", "allow_host_access": "true"},
-				Connectors: []*runtimev1.ConnectorDef{
+				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
 						Name:   "repo",
@@ -72,7 +72,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				RepoDriver:   "repo1",
 				EmbedCatalog: true,
 				Variables:    map[string]string{"host": "localhost"},
-				Connectors: []*runtimev1.ConnectorDef{
+				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
 						Name:   "repo1",
@@ -90,7 +90,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				RepoDriver:   "repo1",
 				EmbedCatalog: true,
 				Variables:    map[string]string{"host": "localhost", "allow_host_access": "true"},
-				Connectors: []*runtimev1.ConnectorDef{
+				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
 						Name:   "repo1",
@@ -112,7 +112,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				RepoDriver:   "repo",
 				EmbedCatalog: false,
 				Variables:    map[string]string{"connectors.s3.region": "us-east-1"},
-				Connectors: []*runtimev1.ConnectorDef{
+				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
 						Name:   "repo",
@@ -130,7 +130,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				RepoDriver:   "repo",
 				EmbedCatalog: false,
 				Variables:    map[string]string{"connectors.s3.region": "us-east-1", "allow_host_access": "true"},
-				Connectors: []*runtimev1.ConnectorDef{
+				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
 						Name:   "repo",
@@ -151,7 +151,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				RepoDriver:   "repo",
 				EmbedCatalog: false,
 				Variables:    map[string]string{"host": "localhost"},
-				Connectors: []*runtimev1.ConnectorDef{
+				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
 						Name:   "repo",
@@ -169,7 +169,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				RepoDriver:   "repo",
 				EmbedCatalog: false,
 				Variables:    map[string]string{"host": "localhost", "allow_host_access": "true"},
-				Connectors: []*runtimev1.ConnectorDef{
+				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
 						Name:   "repo",
@@ -191,7 +191,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				RepoDriver:   "repo",
 				EmbedCatalog: false,
 				Variables:    map[string]string{"host": "localhost"},
-				Connectors: []*runtimev1.ConnectorDef{
+				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
 						Name:   "repo",
@@ -209,7 +209,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				RepoDriver:   "repo",
 				EmbedCatalog: false,
 				Variables:    map[string]string{"host": "localhost", "allow_host_access": "true"},
-				Connectors: []*runtimev1.ConnectorDef{
+				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
 						Name:   "repo",
@@ -231,7 +231,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				RepoDriver:   "repo",
 				EmbedCatalog: false,
 				Variables:    map[string]string{"host": "localhost"},
-				Connectors: []*runtimev1.ConnectorDef{
+				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
 						Name:   "repo",
@@ -253,7 +253,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				RepoDriver:   "repo1",
 				EmbedCatalog: false,
 				Variables:    map[string]string{"host": "localhost"},
-				Connectors: []*runtimev1.ConnectorDef{
+				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
 						Name:   "repo",
@@ -277,7 +277,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				OLAPDriver:   "olap",
 				RepoDriver:   "repo",
 				EmbedCatalog: true,
-				Connectors: []*runtimev1.ConnectorDef{
+				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
 						Name:   "repo",
@@ -354,7 +354,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 				OLAPDriver:   "olap",
 				RepoDriver:   "repo",
 				EmbedCatalog: true,
-				Connectors: []*runtimev1.ConnectorDef{
+				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
 						Name:   "repo",
@@ -433,7 +433,7 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 		OLAPDriver:   "olap",
 		RepoDriver:   "repo",
 		EmbedCatalog: true,
-		Connectors: []*runtimev1.ConnectorDef{
+		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",
 				Name:   "repo",
@@ -478,7 +478,7 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 
 // New returns a runtime configured for use in tests.
 func NewTestRunTime(t *testing.T) *Runtime {
-	globalConnectors := []*runtimev1.ConnectorDef{
+	globalConnectors := []*runtimev1.Connector{
 		{
 			Type: "sqlite",
 			Name: "metastore",

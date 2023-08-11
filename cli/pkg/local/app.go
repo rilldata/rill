@@ -78,7 +78,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 	}
 
 	// Create a local runtime with an in-memory metastore
-	systemConnectors := []*runtimev1.ConnectorDef{
+	systemConnectors := []*runtimev1.Connector{
 		{
 			Type:   "sqlite",
 			Name:   "metastore",
@@ -126,7 +126,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 		RepoDriver:   "repo",
 		EmbedCatalog: olapDriver == "duckdb",
 		Variables:    parsedVariables,
-		Connectors: []*runtimev1.ConnectorDef{
+		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",
 				Name:   "repo",

@@ -18,7 +18,7 @@ type Options struct {
 	AllowHostAccess     bool
 	SafeSourceRefresh   bool
 	// SystemConnectors are drivers whose handles are shared with all instances
-	SystemConnectors []*runtimev1.ConnectorDef
+	SystemConnectors []*runtimev1.Connector
 }
 type Runtime struct {
 	opts               *Options

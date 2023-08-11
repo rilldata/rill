@@ -125,7 +125,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				QueryCacheSizeBytes: conf.QueryCacheSizeBytes,
 				AllowHostAccess:     conf.AllowHostAccess,
 				SafeSourceRefresh:   conf.SafeSourceRefresh,
-				SystemConnectors: []*runtimev1.ConnectorDef{
+				SystemConnectors: []*runtimev1.Connector{
 					{
 						Type:   conf.MetastoreDriver,
 						Name:   "metastore",

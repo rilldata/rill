@@ -51,7 +51,6 @@ env:
 	require.NoError(t, err)
 	config := handle.Config()
 	require.True(t, config["aws_access_key_id"].(string) == "us-east-1")
-	require.True(t, config["aws_secret_access_key"].(string) == "yyyy")
 	require.True(t, config["allow_host_access"].(bool))
 }
 

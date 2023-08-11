@@ -31,7 +31,7 @@ type TestingT interface {
 
 // New returns a runtime configured for use in tests.
 func New(t TestingT) *runtime.Runtime {
-	systemConnectors := []*runtimev1.ConnectorDef{
+	systemConnectors := []*runtimev1.Connector{
 		{
 			Type: "sqlite",
 			Name: "metastore",
@@ -64,7 +64,7 @@ func NewInstance(t TestingT) (*runtime.Runtime, string) {
 		OLAPDriver:   "olap",
 		RepoDriver:   "repo",
 		EmbedCatalog: true,
-		Connectors: []*runtimev1.ConnectorDef{
+		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",
 				Name:   "repo",
@@ -116,7 +116,7 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 		OLAPDriver:   "olap",
 		RepoDriver:   "repo",
 		EmbedCatalog: true,
-		Connectors: []*runtimev1.ConnectorDef{
+		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",
 				Name:   "repo",

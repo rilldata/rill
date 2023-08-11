@@ -182,9 +182,9 @@ export class Instance extends Message<Instance> {
   /**
    * bare minimum connectors required by the instance. 
    *
-   * @generated from field: repeated rill.runtime.v1.ConnectorDef connectors = 10;
+   * @generated from field: repeated rill.runtime.v1.Connector connectors = 10;
    */
-  connectors: ConnectorDef[] = [];
+  connectors: Connector[] = [];
 
   constructor(data?: PartialMessage<Instance>) {
     super();
@@ -201,7 +201,7 @@ export class Instance extends Message<Instance> {
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 8, name: "project_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 9, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 10, name: "connectors", kind: "message", T: ConnectorDef, repeated: true },
+    { no: 10, name: "connectors", kind: "message", T: Connector, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Instance {
@@ -222,9 +222,9 @@ export class Instance extends Message<Instance> {
 }
 
 /**
- * @generated from message rill.runtime.v1.ConnectorDef
+ * @generated from message rill.runtime.v1.Connector
  */
-export class ConnectorDef extends Message<ConnectorDef> {
+export class Connector extends Message<Connector> {
   /**
    * Type of the connector. One of the infra driver supported.
    *
@@ -246,33 +246,33 @@ export class ConnectorDef extends Message<ConnectorDef> {
    */
   config: { [key: string]: string } = {};
 
-  constructor(data?: PartialMessage<ConnectorDef>) {
+  constructor(data?: PartialMessage<Connector>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.ConnectorDef";
+  static readonly typeName = "rill.runtime.v1.Connector";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorDef {
-    return new ConnectorDef().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Connector {
+    return new Connector().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ConnectorDef {
-    return new ConnectorDef().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Connector {
+    return new Connector().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ConnectorDef {
-    return new ConnectorDef().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Connector {
+    return new Connector().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ConnectorDef | PlainMessage<ConnectorDef> | undefined, b: ConnectorDef | PlainMessage<ConnectorDef> | undefined): boolean {
-    return proto3.util.equals(ConnectorDef, a, b);
+  static equals(a: Connector | PlainMessage<Connector> | undefined, b: Connector | PlainMessage<Connector> | undefined): boolean {
+    return proto3.util.equals(Connector, a, b);
   }
 }
 
@@ -487,9 +487,9 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
   annotations: { [key: string]: string } = {};
 
   /**
-   * @generated from field: repeated rill.runtime.v1.ConnectorDef connectors = 10;
+   * @generated from field: repeated rill.runtime.v1.Connector connectors = 10;
    */
-  connectors: ConnectorDef[] = [];
+  connectors: Connector[] = [];
 
   constructor(data?: PartialMessage<CreateInstanceRequest>) {
     super();
@@ -506,7 +506,7 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 8, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 9, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 10, name: "connectors", kind: "message", T: ConnectorDef, repeated: true },
+    { no: 10, name: "connectors", kind: "message", T: Connector, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateInstanceRequest {
@@ -676,9 +676,9 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
   ingestionLimitBytes?: bigint;
 
   /**
-   * @generated from field: repeated rill.runtime.v1.ConnectorDef connectors = 9;
+   * @generated from field: repeated rill.runtime.v1.Connector connectors = 9;
    */
-  connectors: ConnectorDef[] = [];
+  connectors: Connector[] = [];
 
   constructor(data?: PartialMessage<EditInstanceRequest>) {
     super();
@@ -693,7 +693,7 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
     { no: 4, name: "repo_driver", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 8, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
-    { no: 9, name: "connectors", kind: "message", T: ConnectorDef, repeated: true },
+    { no: 9, name: "connectors", kind: "message", T: Connector, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceRequest {
@@ -2944,12 +2944,12 @@ export class RefreshAndReconcileResponse extends Message<RefreshAndReconcileResp
 }
 
 /**
- * Connector represents a connector available in the runtime.
+ * ConnectorSpec represents a connector available in the runtime.
  * It should not be confused with a source.
  *
- * @generated from message rill.runtime.v1.Connector
+ * @generated from message rill.runtime.v1.ConnectorSpec
  */
-export class Connector extends Message<Connector> {
+export class ConnectorSpec extends Message<ConnectorSpec> {
   /**
    * Name is the name of the connector (e.g. "CREATE SOURCE foo WITH connector = 'name'")
    *
@@ -2974,47 +2974,47 @@ export class Connector extends Message<Connector> {
   /**
    * Properties accepted by the connector
    *
-   * @generated from field: repeated rill.runtime.v1.Connector.Property properties = 4;
+   * @generated from field: repeated rill.runtime.v1.ConnectorSpec.Property properties = 4;
    */
-  properties: Connector_Property[] = [];
+  properties: ConnectorSpec_Property[] = [];
 
-  constructor(data?: PartialMessage<Connector>) {
+  constructor(data?: PartialMessage<ConnectorSpec>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.Connector";
+  static readonly typeName = "rill.runtime.v1.ConnectorSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "properties", kind: "message", T: Connector_Property, repeated: true },
+    { no: 4, name: "properties", kind: "message", T: ConnectorSpec_Property, repeated: true },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Connector {
-    return new Connector().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorSpec {
+    return new ConnectorSpec().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Connector {
-    return new Connector().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ConnectorSpec {
+    return new ConnectorSpec().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Connector {
-    return new Connector().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ConnectorSpec {
+    return new ConnectorSpec().fromJsonString(jsonString, options);
   }
 
-  static equals(a: Connector | PlainMessage<Connector> | undefined, b: Connector | PlainMessage<Connector> | undefined): boolean {
-    return proto3.util.equals(Connector, a, b);
+  static equals(a: ConnectorSpec | PlainMessage<ConnectorSpec> | undefined, b: ConnectorSpec | PlainMessage<ConnectorSpec> | undefined): boolean {
+    return proto3.util.equals(ConnectorSpec, a, b);
   }
 }
 
 /**
  * Property represents one of the connector's config properties
  *
- * @generated from message rill.runtime.v1.Connector.Property
+ * @generated from message rill.runtime.v1.ConnectorSpec.Property
  */
-export class Connector_Property extends Message<Connector_Property> {
+export class ConnectorSpec_Property extends Message<ConnectorSpec_Property> {
   /**
    * The property key
    *
@@ -3046,9 +3046,9 @@ export class Connector_Property extends Message<Connector_Property> {
   /**
    * The type expected for this property
    *
-   * @generated from field: rill.runtime.v1.Connector.Property.Type type = 5;
+   * @generated from field: rill.runtime.v1.ConnectorSpec.Property.Type type = 5;
    */
-  type = Connector_Property_Type.UNSPECIFIED;
+  type = ConnectorSpec_Property_Type.UNSPECIFIED;
 
   /**
    * Nullable is true if the field is optional
@@ -3071,47 +3071,47 @@ export class Connector_Property extends Message<Connector_Property> {
    */
   href = "";
 
-  constructor(data?: PartialMessage<Connector_Property>) {
+  constructor(data?: PartialMessage<ConnectorSpec_Property>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.Connector.Property";
+  static readonly typeName = "rill.runtime.v1.ConnectorSpec.Property";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "placeholder", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "type", kind: "enum", T: proto3.getEnumType(Connector_Property_Type) },
+    { no: 5, name: "type", kind: "enum", T: proto3.getEnumType(ConnectorSpec_Property_Type) },
     { no: 6, name: "nullable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "hint", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "href", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Connector_Property {
-    return new Connector_Property().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorSpec_Property {
+    return new ConnectorSpec_Property().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Connector_Property {
-    return new Connector_Property().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ConnectorSpec_Property {
+    return new ConnectorSpec_Property().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Connector_Property {
-    return new Connector_Property().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ConnectorSpec_Property {
+    return new ConnectorSpec_Property().fromJsonString(jsonString, options);
   }
 
-  static equals(a: Connector_Property | PlainMessage<Connector_Property> | undefined, b: Connector_Property | PlainMessage<Connector_Property> | undefined): boolean {
-    return proto3.util.equals(Connector_Property, a, b);
+  static equals(a: ConnectorSpec_Property | PlainMessage<ConnectorSpec_Property> | undefined, b: ConnectorSpec_Property | PlainMessage<ConnectorSpec_Property> | undefined): boolean {
+    return proto3.util.equals(ConnectorSpec_Property, a, b);
   }
 }
 
 /**
  * Type represents the field type
  *
- * @generated from enum rill.runtime.v1.Connector.Property.Type
+ * @generated from enum rill.runtime.v1.ConnectorSpec.Property.Type
  */
-export enum Connector_Property_Type {
+export enum ConnectorSpec_Property_Type {
   /**
    * @generated from enum value: TYPE_UNSPECIFIED = 0;
    */
@@ -3137,8 +3137,8 @@ export enum Connector_Property_Type {
    */
   INFORMATIONAL = 4,
 }
-// Retrieve enum metadata with: proto3.getEnumType(Connector_Property_Type)
-proto3.util.setEnumType(Connector_Property_Type, "rill.runtime.v1.Connector.Property.Type", [
+// Retrieve enum metadata with: proto3.getEnumType(ConnectorSpec_Property_Type)
+proto3.util.setEnumType(ConnectorSpec_Property_Type, "rill.runtime.v1.ConnectorSpec.Property.Type", [
   { no: 0, name: "TYPE_UNSPECIFIED" },
   { no: 1, name: "TYPE_STRING" },
   { no: 2, name: "TYPE_NUMBER" },
@@ -3186,9 +3186,9 @@ export class ListConnectorsRequest extends Message<ListConnectorsRequest> {
  */
 export class ListConnectorsResponse extends Message<ListConnectorsResponse> {
   /**
-   * @generated from field: repeated rill.runtime.v1.Connector connectors = 1;
+   * @generated from field: repeated rill.runtime.v1.ConnectorSpec connectors = 1;
    */
-  connectors: Connector[] = [];
+  connectors: ConnectorSpec[] = [];
 
   constructor(data?: PartialMessage<ListConnectorsResponse>) {
     super();
@@ -3198,7 +3198,7 @@ export class ListConnectorsResponse extends Message<ListConnectorsResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.ListConnectorsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "connectors", kind: "message", T: Connector, repeated: true },
+    { no: 1, name: "connectors", kind: "message", T: ConnectorSpec, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListConnectorsResponse {

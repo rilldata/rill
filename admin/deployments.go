@@ -93,7 +93,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 			"organization_id": opts.OrganizationID,
 			"project_id":      opts.ProjectID,
 		},
-		Connectors: []*runtimev1.ConnectorDef{
+		Connectors: []*runtimev1.Connector{
 			{
 				Name:   "olap",
 				Type:   olapDriver,

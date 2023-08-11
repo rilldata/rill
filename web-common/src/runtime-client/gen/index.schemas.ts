@@ -279,7 +279,7 @@ export type RuntimeServiceEditInstanceBody = {
   repoDriver?: string;
   embedCatalog?: boolean;
   ingestionLimitBytes?: string;
-  connectors?: V1ConnectorDef[];
+  connectors?: V1Connector[];
 };
 
 export type RuntimeServiceEditInstanceVariablesBodyVariables = {
@@ -958,7 +958,7 @@ export interface V1ListExamplesResponse {
 }
 
 export interface V1ListConnectorsResponse {
-  connectors?: V1Connector[];
+  connectors?: V1ConnectorSpec[];
 }
 
 export interface V1ListCatalogEntriesResponse {
@@ -990,7 +990,7 @@ of in the runtime's metadata store. Currently only supported for the duckdb driv
   projectVariables?: V1InstanceProjectVariables;
   ingestionLimitBytes?: string;
   /** bare minimum connectors required by the instance. */
-  connectors?: V1ConnectorDef[];
+  connectors?: V1Connector[];
 }
 
 export interface V1ListInstancesResponse {
@@ -1138,27 +1138,27 @@ export interface V1CreateInstanceRequest {
   variables?: V1CreateInstanceRequestVariables;
   ingestionLimitBytes?: string;
   annotations?: V1CreateInstanceRequestAnnotations;
-  connectors?: V1ConnectorDef[];
-}
-
-export type V1ConnectorDefConfig = { [key: string]: string };
-
-export interface V1ConnectorDef {
-  /** Type of the connector. One of the infra driver supported. */
-  type?: string;
-  name?: string;
-  config?: V1ConnectorDefConfig;
+  connectors?: V1Connector[];
 }
 
 /**
- * Connector represents a connector available in the runtime.
+ * ConnectorSpec represents a connector available in the runtime.
 It should not be confused with a source.
  */
-export interface V1Connector {
+export interface V1ConnectorSpec {
   name?: string;
   displayName?: string;
   description?: string;
-  properties?: ConnectorProperty[];
+  properties?: ConnectorSpecProperty[];
+}
+
+export type V1ConnectorConfig = { [key: string]: string };
+
+export interface V1Connector {
+  /** Type of the connector. One of the infra driver supported. */
+  type?: string;
+  name?: string;
+  config?: V1ConnectorConfig;
 }
 
 export interface V1ColumnTopKResponse {
@@ -1432,11 +1432,11 @@ export interface MetricsViewDimension {
   column?: string;
 }
 
-export type ConnectorPropertyType =
-  (typeof ConnectorPropertyType)[keyof typeof ConnectorPropertyType];
+export type ConnectorSpecPropertyType =
+  (typeof ConnectorSpecPropertyType)[keyof typeof ConnectorSpecPropertyType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const ConnectorPropertyType = {
+export const ConnectorSpecPropertyType = {
   TYPE_UNSPECIFIED: "TYPE_UNSPECIFIED",
   TYPE_STRING: "TYPE_STRING",
   TYPE_NUMBER: "TYPE_NUMBER",
@@ -1444,12 +1444,12 @@ export const ConnectorPropertyType = {
   TYPE_INFORMATIONAL: "TYPE_INFORMATIONAL",
 } as const;
 
-export interface ConnectorProperty {
+export interface ConnectorSpecProperty {
   key?: string;
   displayName?: string;
   description?: string;
   placeholder?: string;
-  type?: ConnectorPropertyType;
+  type?: ConnectorSpecPropertyType;
   nullable?: boolean;
   hint?: string;
   href?: string;

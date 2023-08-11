@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
 )
 
@@ -64,7 +63,7 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 
 	for i, c := range tmp.Connectors {
 		if _reservedConnectorNames[c.Name] {
-			return fmt.Errorf("%s are reserved connector names", maps.Keys(_reservedConnectorNames))
+			return fmt.Errorf("connector name %q is reserved", c.Name)
 		}
 		res.Connectors[i] = &ConnectorDef{
 			Type:     c.Type,

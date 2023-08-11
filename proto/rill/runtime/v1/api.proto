@@ -235,10 +235,10 @@ message Instance {
   // ingestion limit across all sources, 0 means no limit
   int64 ingestion_limit_bytes = 9;
   // bare minimum connectors required by the instance. 
-  repeated ConnectorDef connectors = 10;
+  repeated Connector connectors = 10;
 }
  
-message ConnectorDef {
+message Connector {
   // Type of the connector. One of the infra driver supported.
   string type = 1;
   // Name of the connector
@@ -282,7 +282,7 @@ message CreateInstanceRequest {
   map<string, string> variables = 7;
   int64 ingestion_limit_bytes = 8;
   map<string, string> annotations = 9;
-  repeated ConnectorDef connectors = 10;
+  repeated Connector connectors = 10;
 }
 
 // Response message for RuntimeService.CreateInstance
@@ -307,7 +307,7 @@ message EditInstanceRequest {
   optional string repo_driver = 4;
   optional bool embed_catalog = 6;
   optional int64 ingestion_limit_bytes = 8;
-  repeated ConnectorDef connectors = 9;
+  repeated Connector connectors = 9;
 }
 
 // Response message for RuntimeService.EditInstance
@@ -694,9 +694,9 @@ message RefreshAndReconcileResponse {
 // Connectors
 // **********
 
-// Connector represents a connector available in the runtime.
+// ConnectorSpec represents a connector available in the runtime.
 // It should not be confused with a source.
-message Connector {
+message ConnectorSpec {
   // Property represents one of the connector's config properties
   message Property {
     // Type represents the field type
@@ -739,5 +739,5 @@ message ListConnectorsRequest {}
 
 // Response message for RuntimeService.ListConnectors
 message ListConnectorsResponse {
-  repeated Connector connectors = 1;
+  repeated ConnectorSpec connectors = 1;
 }

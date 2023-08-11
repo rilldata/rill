@@ -34,6 +34,29 @@ func (r *Runtime) AcquireHandle(ctx context.Context, instanceID, connector strin
 	return r.connCache.get(ctx, instanceID, connector, r.connectorConfig(connector, nil, instance.ResolveVariables()), false)
 }
 
+// FlushHandle flushes the db handle for the specific connector from the cache
+func (r *Runtime) FlushHandle(ctx context.Context, instanceID, connector string, drop bool) error {
+	instance, err := r.FindInstance(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+
+	var driverType string
+	var connectorConfig map[string]any
+	if c, err := r.connectorDef(instance, connector); err == nil {
+		driverType = c.Type
+		connectorConfig = r.connectorConfig(connector, c.Config, instance.ResolveVariables())
+	} else {
+		driverType = connector
+		connectorConfig = r.connectorConfig(connector, nil, instance.ResolveVariables())
+	}
+	r.connCache.evict(ctx, instanceID, driverType, connectorConfig)
+	if drop {
+		return drivers.Drop(driverType, connectorConfig, r.logger)
+	}
+	return nil
+}
+
 func (r *Runtime) Registry() drivers.RegistryStore {
 	registry, ok := r.metastore.AsRegistry()
 	if !ok {
@@ -149,7 +172,7 @@ func (r *Runtime) NewCatalogService(ctx context.Context, instanceID string) (*ca
 	return catalog.NewService(catalogStore, repoStore, olapStore, registry, instanceID, r.logger, migrationMetadata, releaseFunc), nil
 }
 
-func (r *Runtime) connectorDef(inst *drivers.Instance, name string) (*runtimev1.ConnectorDef, error) {
+func (r *Runtime) connectorDef(inst *drivers.Instance, name string) (*runtimev1.Connector, error) {
 	for _, c := range inst.Connectors {
 		// set in instance
 		if c.Name == name {
@@ -157,12 +180,10 @@ func (r *Runtime) connectorDef(inst *drivers.Instance, name string) (*runtimev1.
 		}
 	}
 
-	if inst.RillYAML != nil {
-		// defined in rill.yaml
-		for _, c := range inst.RillYAML.Connectors {
-			if c.Name == name {
-				return c, nil
-			}
+	// defined in rill.yaml
+	for _, c := range inst.ProjectConnectors {
+		if c.Name == name {
+			return c, nil
 		}
 	}
 	return nil, fmt.Errorf("connector %s doesn't exist", name)
@@ -176,10 +197,9 @@ func (r *Runtime) connectorConfig(name string, def, variables map[string]string)
 	}
 
 	// connector variables are of format connector.name.var
-	// there could also be other variables like allow_host_access, region etc which are global for all connectors
 	prefix := fmt.Sprintf("connector.%s.", name)
 	for key, value := range variables {
-		if !strings.HasPrefix(key, "connector.") { // global variable
+		if strings.EqualFold(key, "allow_host_access") { // global variable
 			vars[strings.ToLower(key)] = value
 		} else if after, found := strings.CutPrefix(key, prefix); found { // connector specific variable
 			vars[strings.ToLower(after)] = value
