@@ -9,7 +9,7 @@
     ConnectorSpecProperty,
     ConnectorSpecPropertyType,
     RpcStatus,
-    V1Connector,
+    V1ConnectorSpec,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
@@ -22,7 +22,7 @@
   import { submitRemoteSourceForm } from "./submitRemoteSourceForm";
   import { getYupSchema, toYupFriendlyKey } from "./yupSchemas";
 
-  export let connector: V1Connector;
+  export let connector: V1ConnectorSpec;
 
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
@@ -39,7 +39,7 @@
   let handleSubmit: (event: Event) => any;
   let isSubmitting: Writable<boolean>;
 
-  function onConnectorChange(connector: V1Connector) {
+  function onConnectorChange(connector: V1ConnectorSpec) {
     yupSchema = getYupSchema(connector);
 
     ({ form, touched, errors, handleChange, handleSubmit, isSubmitting } =
