@@ -6,8 +6,8 @@
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import DialogFooter from "@rilldata/web-common/components/modal/dialog/DialogFooter.svelte";
   import {
-    ConnectorProperty,
-    ConnectorPropertyType,
+    ConnectorSpecProperty,
+    ConnectorSpecPropertyType,
     RpcStatus,
     V1Connector,
   } from "@rilldata/web-common/runtime-client";
@@ -27,7 +27,7 @@
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
-  let connectorProperties: ConnectorProperty[];
+  let connectorProperties: ConnectorSpecProperty[];
   let yupSchema: yup.AnyObjectSchema;
   let rpcError: RpcStatus = null;
 
@@ -69,7 +69,7 @@
         displayName: "Source name",
         description: "The name of the source",
         placeholder: "my_new_source",
-        type: ConnectorPropertyType.TYPE_STRING,
+        type: ConnectorSpecPropertyType.TYPE_STRING,
         nullable: false,
       },
       ...connector.properties.slice(1),
@@ -118,7 +118,7 @@
       {@const label =
         property.displayName + (property.nullable ? " (optional)" : "")}
       <div class="py-2">
-        {#if property.type === ConnectorPropertyType.TYPE_STRING}
+        {#if property.type === ConnectorSpecPropertyType.TYPE_STRING}
           <Input
             id={toYupFriendlyKey(property.key)}
             {label}
@@ -129,7 +129,7 @@
             on:input={onStringInputChange}
             on:change={handleChange}
           />
-        {:else if property.type === ConnectorPropertyType.TYPE_BOOLEAN}
+        {:else if property.type === ConnectorSpecPropertyType.TYPE_BOOLEAN}
           <label for={property.key} class="flex items-center">
             <input
               id={property.key}
@@ -139,7 +139,7 @@
             />
             <span class="ml-2 text-sm">{label}</span>
           </label>
-        {:else if property.type === ConnectorPropertyType.TYPE_INFORMATIONAL}
+        {:else if property.type === ConnectorSpecPropertyType.TYPE_INFORMATIONAL}
           <InformationalField
             description={property.description}
             hint={property.hint}
