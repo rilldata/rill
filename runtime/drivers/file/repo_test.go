@@ -51,16 +51,29 @@ func TestWatch(t *testing.T) {
 	time.Sleep(2 * time.Second) // Ensure Watcher picks up events
 
 	// Consume events
-	var events []drivers.WatchEvent
+	var res []drivers.WatchEvent
 	done := false
 	for !done {
 		select {
 		case e := <-ch:
-			events = append(events, e)
+			res = append(res, e)
 		default:
 			done = true
 		}
 	}
+
+	// Deduplicate events (sometimes writes appear twice)
+	var events []drivers.WatchEvent
+	for i, e := range res {
+		if i != 0 {
+			prev := res[i-1]
+			if e == prev {
+				continue
+			}
+		}
+		events = append(events, e)
+	}
+
 	require.Len(t, events, 5)
 
 	require.Equal(t, 5, len(events), "%v", events)
