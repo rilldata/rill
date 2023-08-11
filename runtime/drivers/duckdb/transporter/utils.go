@@ -113,7 +113,7 @@ func schemaRelaxationProperty(prop map[string]interface{}) (bool, error) {
 
 	// set default values
 	if !defined {
-		allowSchemaRelaxation = true
+		allowSchemaRelaxation = false
 	}
 
 	return allowSchemaRelaxation, nil
