@@ -587,6 +587,10 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
   // click back to "All time" to clear the time comparison
   await page.getByLabel("Select time range").click();
   await page.getByRole("menuitem", { name: "All Time" }).click();
+  // Wait for menu to close
+  await expect(
+    page.getByRole("menuitem", { name: "Last 6 Hours" })
+  ).not.toBeVisible();
   // Check that time comparison context column is hidden
   await expect(page.getByText(comparisonColumnRegex)).not.toBeVisible();
   await expect(page.getByText("Facebook 19.3k")).toBeVisible();
@@ -688,6 +692,10 @@ async function runThroughEmptyMetricsFlows(page) {
   // select the first menu item.
   await page.getByText("metrics configuration from an existing model").click();
   await page.getByRole("menuitem").getByText("AdBids_model").click();
+  // Wait for menu to close
+  await expect(
+    page.getByRole("menuitem", { name: "Last 6 Hours" })
+  ).not.toBeVisible();
 
   // let's check the inspector.
   await expect(await page.getByText("Model summary")).toBeVisible();
