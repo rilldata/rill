@@ -14,10 +14,10 @@
   const defaultArgs = {
     displayName: "Leaderboard Name",
     dimensionDescription: "dimension description",
-    isFetching: true,
+    isFetching: false,
     hovered: false,
-    showTimeComparison: true,
-    showPercentOfTotal: true,
+    showTimeComparison: false,
+    showPercentOfTotal: false,
     filterExcludeMode: false,
     // referenceValue: 400,
     // unfilteredTotal: 1000,
