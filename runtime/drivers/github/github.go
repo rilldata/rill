@@ -232,6 +232,13 @@ func (c *connection) pullUnsafe(ctx context.Context) error {
 	})
 	if errors.Is(err, git.NoErrAlreadyUpToDate) {
 		return nil
+	} else if errors.Is(err, git.ErrNonFastForwardUpdate) {
+		err = wt.Reset(&git.ResetOptions{
+			Mode: git.HardReset,
+		})
+		if err != nil {
+			return err
+		}
 	} else if err != nil {
 		return err
 	}
