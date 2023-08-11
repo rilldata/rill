@@ -2,6 +2,7 @@ package reconcilers
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -115,7 +116,7 @@ func olapRenameTable(ctx context.Context, c *runtime.Controller, connector, oldN
 	}
 
 	// TODO: Use a transaction?
-	return olap.WithConnection(ctx, 100, func(ctx context.Context, ensuredCtx context.Context) error {
+	return olap.WithConnection(ctx, 100, func(ctx context.Context, ensuredCtx context.Context, conn *sql.Conn) error {
 		// Renaming a table to the same name with different casing is not supported. Workaround by renaming to a temporary name first.
 		if strings.EqualFold(oldName, newName) {
 			tmp := "__rill_tmp_rename_%s_" + typ + newName
