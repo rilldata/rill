@@ -104,7 +104,7 @@ export async function submitRemoteSourceForm(
       get(appScreen),
       BehaviourEventMedium.Button,
       connectorToSourceConnectionType[connectorName],
-      formValues?.uri
+      formValues?.uri || ""
     );
   }
 }
