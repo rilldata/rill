@@ -238,7 +238,12 @@ func (c *connection) pullUnsafe(ctx context.Context) error {
 			return err
 		}
 
-		rev, err := repo.ResolveRevision(plumbing.Revision("remotes/origin/" + head.Name().Short()))
+		branch, err := repo.Branch(head.Name().Short())
+		if err != nil {
+			return err
+		}
+
+		rev, err := repo.ResolveRevision(plumbing.Revision(fmt.Sprintf("remotes/%s/%s", branch.Remote, head.Name().Short())))
 		if err != nil {
 			return err
 		}
