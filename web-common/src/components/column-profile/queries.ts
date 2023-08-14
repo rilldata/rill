@@ -12,7 +12,12 @@ import {
   V1ProfileColumn,
   V1TableColumnsResponse,
 } from "@rilldata/web-common/runtime-client";
-import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
+import { BatchedRequest } from "@rilldata/web-common/runtime-client/batched-request";
+import {
+  getPriority,
+  getPriorityForColumn,
+  QueryPriorities,
+} from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
 import type { QueryObserverResult } from "@tanstack/query-core";
 import { derived, Readable, writable } from "svelte/store";
 
@@ -33,7 +38,8 @@ export function getSummaries(
   profileColumnResponse: QueryObserverResult<V1TableColumnsResponse>
 ): Readable<Array<ColumnSummary>> {
   if (!profileColumnResponse && !profileColumnResponse?.data) return;
-  return derived(
+  const batchedRequest = new BatchedRequest();
+  const store = derived(
     profileColumnResponse.data.profileColumns.map((column) => {
       return derived(
         [
@@ -46,6 +52,26 @@ export function getSummaries(
               query: {
                 keepPreviousData: true,
                 enabled: !profileColumnResponse.isFetching,
+                queryFn: ({ signal }) => {
+                  return new Promise((resolve, reject) => {
+                    batchedRequest.add(
+                      {
+                        columnNullCountRequest: {
+                          instanceId,
+                          tableName: objectName,
+                          columnName: column.name,
+                        },
+                      },
+                      getPriority("null-count"),
+                      (data) => {
+                        console.log("createQueryServiceColumnNullCount", data);
+                        resolve(data?.columnNullCountResponse);
+                      },
+                      reject,
+                      signal
+                    );
+                  });
+                },
               },
             }
           ),
@@ -57,6 +83,23 @@ export function getSummaries(
               query: {
                 keepPreviousData: true,
                 enabled: !profileColumnResponse.isFetching,
+                queryFn: ({ signal }) => {
+                  return new Promise((resolve, reject) => {
+                    batchedRequest.add(
+                      {
+                        columnCardinalityRequest: {
+                          instanceId,
+                          tableName: objectName,
+                          columnName: column.name,
+                        },
+                      },
+                      getPriority("column-cardinality"),
+                      (data) => resolve(data.columnCardinalityResponse),
+                      reject,
+                      signal
+                    );
+                  });
+                },
               },
             }
           ),
@@ -79,6 +122,12 @@ export function getSummaries(
       return combos;
     }
   );
+
+  if (!profileColumnResponse.isFetching) {
+    setTimeout(() => batchedRequest.send(instanceId));
+  }
+
+  return store;
 }
 
 export function getNullPercentage(
@@ -95,7 +144,7 @@ export function getNullPercentage(
     },
     {
       query: {
-        enabled,
+        enabled: false,
       },
     }
   );
@@ -129,7 +178,7 @@ export function getCountDistinct(
     objectName,
     { columnName },
     {
-      query: { enabled },
+      query: { enabled: false },
     }
   );
 
