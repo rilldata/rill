@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createVirtualizer, VirtualItem } from "@tanstack/svelte-virtual";
+  import { createEventDispatcher } from "svelte";
   import PivotVirtualRow from "./PivotVirtualRow.svelte";
   import PivotCell from "./PivotCell.svelte";
 
@@ -28,14 +29,26 @@
   let totalVerticalSize = 0;
   let paddingTop = 0;
   let paddingBottom = 0;
+  let virtualStart;
+  let virtualEnd;
   $: {
     virtualRows = $rowVirtualizer?.getVirtualItems() ?? [];
     totalVerticalSize = $rowVirtualizer?.getTotalSize() ?? 0;
+    virtualStart = virtualRows?.[0]?.index || 0;
+    virtualEnd = virtualRows?.at(-1)?.index || 0;
     paddingTop = virtualRows?.length > 0 ? virtualRows?.[0]?.start || 0 : 0;
     paddingBottom =
       virtualRows?.length > 0
         ? totalVerticalSize - (virtualRows?.at(-1)?.end || 0)
         : 0;
+  }
+
+  const dispatch = createEventDispatcher();
+  $: {
+    dispatch("virtualRange", {
+      start: virtualStart,
+      end: virtualEnd,
+    });
   }
 
   $: columnVirtualizer = createVirtualizer({
