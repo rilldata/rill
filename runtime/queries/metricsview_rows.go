@@ -5,11 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 	"strconv"
 	"strings"
 
-	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -115,7 +113,7 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
-		if opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV {
+		if opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV || opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET {
 			if mv.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
 				return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 			}
@@ -131,7 +129,7 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 			}
 
 			filename := q.generateFilename(mv)
-			if err := duckDBCopyExport(ctx, sql, args, filename, olap, mv, opts, w, rt, instanceID); err != nil {
+			if err := duckDBCopyExport(ctx, sql, args, filename, olap, mv, opts, w, rt, instanceID, opts.Format); err != nil {
 				return err
 			}
 		} else {
@@ -175,49 +173,6 @@ func (q *MetricsViewRows) generalExport(ctx context.Context, olap drivers.OLAPSt
 	}
 
 	return nil
-}
-
-func duckDBCopyExport(ctx context.Context, sql string, args []any, filename string, olap drivers.OLAPStore, mv *runtimev1.MetricsView, opts *runtime.ExportOptions, w io.Writer, rt *runtime.Runtime, instanceID string) error {
-	temporaryFilename := "export_" + uuid.New().String()
-	sql = fmt.Sprintf("COPY (%s) TO '%s'", sql, temporaryFilename)
-
-	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:            sql,
-		Args:             args,
-		Priority:         opts.Priority,
-		ExecutionTimeout: defaultExecutionTimeout,
-	})
-	if err != nil {
-		return err
-	}
-
-	defer rows.Close()
-	defer os.Remove(temporaryFilename)
-
-	if opts.PreWriteHook != nil {
-		err = opts.PreWriteHook(filename)
-		if err != nil {
-			return err
-		}
-	}
-
-	f, err := os.Open(temporaryFilename)
-	if err != nil {
-		return err
-	}
-
-	defer f.Close()
-
-	_, err = io.Copy(w, f)
-	return err
-}
-
-func (q *MetricsViewRows) generateFilename(mv *runtimev1.MetricsView) string {
-	filename := strings.ReplaceAll(mv.Model, `"`, `_`)
-	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
-		filename += "_filtered"
-	}
-	return filename
 }
 
 // resolveTimeRollupColumnName infers a column name for time rollup values.

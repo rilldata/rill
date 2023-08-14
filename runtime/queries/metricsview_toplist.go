@@ -110,7 +110,7 @@ func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, in
 
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
-		if opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV {
+		if opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV || opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET {
 			if mv.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
 				return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 			}
@@ -121,7 +121,7 @@ func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, in
 			}
 
 			filename := q.generateFilename(mv)
-			if err := duckDBCopyExport(ctx, sql, args, filename, olap, mv, opts, w, rt, instanceID); err != nil {
+			if err := duckDBCopyExport(ctx, sql, args, filename, olap, mv, opts, w, rt, instanceID, opts.Format); err != nil {
 				return err
 			}
 		} else {

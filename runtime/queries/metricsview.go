@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
+	"github.com/google/uuid"
 	"io"
+	"os"
 	"strings"
 
 	"github.com/apache/arrow/go/v11/arrow"
@@ -515,4 +517,55 @@ func writeParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, 
 	rec := recordBuilder.NewRecord()
 	err = parquetwriter.Write(rec)
 	return err
+}
+
+func duckDBCopyExport(ctx context.Context, sql string, args []any, filename string, olap drivers.OLAPStore, mv *runtimev1.MetricsView, opts *runtime.ExportOptions, w io.Writer, rt *runtime.Runtime, instanceID string, exportFormat runtimev1.ExportFormat) error {
+	var extension string
+	switch exportFormat {
+	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
+		extension = "parquet"
+	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
+		extension = "csv"
+	}
+
+	temporaryFilename := "export_" + uuid.New().String()
+	sql = fmt.Sprintf("COPY (%s) TO '%s.%s'", sql, temporaryFilename, extension)
+
+	rows, err := olap.Execute(ctx, &drivers.Statement{
+		Query:            sql,
+		Args:             args,
+		Priority:         opts.Priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+	})
+	if err != nil {
+		return err
+	}
+
+	defer rows.Close()
+	defer os.Remove(temporaryFilename)
+
+	if opts.PreWriteHook != nil {
+		err = opts.PreWriteHook(filename)
+		if err != nil {
+			return err
+		}
+	}
+
+	f, err := os.Open(temporaryFilename)
+	if err != nil {
+		return err
+	}
+
+	defer f.Close()
+
+	_, err = io.Copy(w, f)
+	return err
+}
+
+func (q *MetricsViewRows) generateFilename(mv *runtimev1.MetricsView) string {
+	filename := strings.ReplaceAll(mv.Model, `"`, `_`)
+	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
+		filename += "_filtered"
+	}
+	return filename
 }
