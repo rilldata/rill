@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/bufbuild/connect-go"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/queries"
@@ -17,30 +18,30 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*runtimev1.ExportResponse, error) {
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+func (s *Server) Export(ctx context.Context, req *connect.Request[runtimev1.ExportRequest]) (*connect.Response[runtimev1.ExportResponse], error) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.ReadMetrics) {
 		return nil, ErrForbidden
 	}
 
 	if s.opts.DownloadRowLimit != nil {
-		if req.Limit == nil {
-			req.Limit = s.opts.DownloadRowLimit
+		if req.Msg.Limit == nil {
+			req.Msg.Limit = s.opts.DownloadRowLimit
 		}
-		if *req.Limit > *s.opts.DownloadRowLimit {
+		if *req.Msg.Limit > *s.opts.DownloadRowLimit {
 			return nil, status.Errorf(codes.InvalidArgument, "limit must be less than or equal to %d", *s.opts.DownloadRowLimit)
 		}
 	}
 
-	r, err := proto.Marshal(req)
+	r, err := proto.Marshal(req.Msg)
 	if err != nil {
 		return nil, err
 	}
 
 	out := fmt.Sprintf("/v1/download?%s=%s", "request", base64.URLEncoding.EncodeToString(r))
 
-	return &runtimev1.ExportResponse{
+	return connect.NewResponse(&runtimev1.ExportResponse{
 		DownloadUrlPath: out,
-	}, nil
+	}), nil
 }
 
 func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {

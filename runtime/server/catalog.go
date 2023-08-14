@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bufbuild/connect-go"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -16,19 +17,19 @@ import (
 )
 
 // ListCatalogEntries implements RuntimeService.
-func (s *Server) ListCatalogEntries(ctx context.Context, req *runtimev1.ListCatalogEntriesRequest) (*runtimev1.ListCatalogEntriesResponse, error) {
+func (s *Server) ListCatalogEntries(ctx context.Context, req *connect.Request[runtimev1.ListCatalogEntriesRequest]) (*connect.Response[runtimev1.ListCatalogEntriesResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.type", req.Type.String()),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
+		attribute.String("args.type", req.Msg.Type.String()),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.ReadObjects) {
 		return nil, ErrForbidden
 	}
 
-	entries, err := s.runtime.ListCatalogEntries(ctx, req.InstanceId, pbToObjectType(req.Type))
+	entries, err := s.runtime.ListCatalogEntries(ctx, req.Msg.InstanceId, pbToObjectType(req.Msg.Type))
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
@@ -42,23 +43,23 @@ func (s *Server) ListCatalogEntries(ctx context.Context, req *runtimev1.ListCata
 		}
 	}
 
-	return &runtimev1.ListCatalogEntriesResponse{Entries: pbs}, nil
+	return connect.NewResponse(&runtimev1.ListCatalogEntriesResponse{Entries: pbs}), nil
 }
 
 // GetCatalogEntry implements RuntimeService.
-func (s *Server) GetCatalogEntry(ctx context.Context, req *runtimev1.GetCatalogEntryRequest) (*runtimev1.GetCatalogEntryResponse, error) {
+func (s *Server) GetCatalogEntry(ctx context.Context, req *connect.Request[runtimev1.GetCatalogEntryRequest]) (*connect.Response[runtimev1.GetCatalogEntryResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.name", req.Name),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
+		attribute.String("args.name", req.Msg.Name),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.ReadObjects) {
 		return nil, ErrForbidden
 	}
 
-	entry, err := s.runtime.GetCatalogEntry(ctx, req.InstanceId, req.Name)
+	entry, err := s.runtime.GetCatalogEntry(ctx, req.Msg.InstanceId, req.Msg.Name)
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
@@ -68,182 +69,182 @@ func (s *Server) GetCatalogEntry(ctx context.Context, req *runtimev1.GetCatalogE
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
-	return &runtimev1.GetCatalogEntryResponse{Entry: pb}, nil
+	return connect.NewResponse(&runtimev1.GetCatalogEntryResponse{Entry: pb}), nil
 }
 
 // Reconcile implements RuntimeService.
-func (s *Server) Reconcile(ctx context.Context, req *runtimev1.ReconcileRequest) (*runtimev1.ReconcileResponse, error) {
+func (s *Server) Reconcile(ctx context.Context, req *connect.Request[runtimev1.ReconcileRequest]) (*connect.Response[runtimev1.ReconcileResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditInstance) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.EditInstance) {
 		return nil, ErrForbidden
 	}
 
-	res, err := s.runtime.Reconcile(ctx, req.InstanceId, req.ChangedPaths, req.ForcedPaths, req.Dry, req.Strict)
+	res, err := s.runtime.Reconcile(ctx, req.Msg.InstanceId, req.Msg.ChangedPaths, req.Msg.ForcedPaths, req.Msg.Dry, req.Msg.Strict)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &runtimev1.ReconcileResponse{
+	return connect.NewResponse(&runtimev1.ReconcileResponse{
 		Errors:        res.Errors,
 		AffectedPaths: res.AffectedPaths,
-	}, nil
+	}), nil
 }
 
 // PutFileAndReconcile implements RuntimeService.
-func (s *Server) PutFileAndReconcile(ctx context.Context, req *runtimev1.PutFileAndReconcileRequest) (*runtimev1.PutFileAndReconcileResponse, error) {
+func (s *Server) PutFileAndReconcile(ctx context.Context, req *connect.Request[runtimev1.PutFileAndReconcileRequest]) (*connect.Response[runtimev1.PutFileAndReconcileResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
 	claims := auth.GetClaims(ctx)
-	if !claims.CanInstance(req.InstanceId, auth.EditRepo) || !claims.CanInstance(req.InstanceId, auth.EditInstance) {
+	if !claims.CanInstance(req.Msg.InstanceId, auth.EditRepo) || !claims.CanInstance(req.Msg.InstanceId, auth.EditInstance) {
 		return nil, ErrForbidden
 	}
 
-	err := s.runtime.PutFile(ctx, req.InstanceId, req.Path, strings.NewReader(req.Blob), req.Create, req.CreateOnly)
+	err := s.runtime.PutFile(ctx, req.Msg.InstanceId, req.Msg.Path, strings.NewReader(req.Msg.Blob), req.Msg.Create, req.Msg.CreateOnly)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	changedPaths := []string{req.Path}
-	res, err := s.runtime.Reconcile(ctx, req.InstanceId, changedPaths, nil, req.Dry, req.Strict)
+	changedPaths := []string{req.Msg.Path}
+	res, err := s.runtime.Reconcile(ctx, req.Msg.InstanceId, changedPaths, nil, req.Msg.Dry, req.Msg.Strict)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &runtimev1.PutFileAndReconcileResponse{
+	return connect.NewResponse(&runtimev1.PutFileAndReconcileResponse{
 		Errors:        res.Errors,
 		AffectedPaths: res.AffectedPaths,
-	}, nil
+	}), nil
 }
 
 // RenameFileAndReconcile implements RuntimeService.
-func (s *Server) RenameFileAndReconcile(ctx context.Context, req *runtimev1.RenameFileAndReconcileRequest) (*runtimev1.RenameFileAndReconcileResponse, error) {
+func (s *Server) RenameFileAndReconcile(ctx context.Context, req *connect.Request[runtimev1.RenameFileAndReconcileRequest]) (*connect.Response[runtimev1.RenameFileAndReconcileResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
 	claims := auth.GetClaims(ctx)
-	if !claims.CanInstance(req.InstanceId, auth.EditRepo) || !claims.CanInstance(req.InstanceId, auth.EditInstance) {
+	if !claims.CanInstance(req.Msg.InstanceId, auth.EditRepo) || !claims.CanInstance(req.Msg.InstanceId, auth.EditInstance) {
 		return nil, ErrForbidden
 	}
 
-	err := s.runtime.RenameFile(ctx, req.InstanceId, req.FromPath, req.ToPath)
+	err := s.runtime.RenameFile(ctx, req.Msg.InstanceId, req.Msg.FromPath, req.Msg.ToPath)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	changedPaths := []string{req.FromPath, req.ToPath}
-	res, err := s.runtime.Reconcile(ctx, req.InstanceId, changedPaths, nil, req.Dry, req.Strict)
+	changedPaths := []string{req.Msg.FromPath, req.Msg.ToPath}
+	res, err := s.runtime.Reconcile(ctx, req.Msg.InstanceId, changedPaths, nil, req.Msg.Dry, req.Msg.Strict)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &runtimev1.RenameFileAndReconcileResponse{
+	return connect.NewResponse(&runtimev1.RenameFileAndReconcileResponse{
 		Errors:        res.Errors,
 		AffectedPaths: res.AffectedPaths,
-	}, nil
+	}), nil
 }
 
 // DeleteFileAndReconcile implements RuntimeService.
-func (s *Server) DeleteFileAndReconcile(ctx context.Context, req *runtimev1.DeleteFileAndReconcileRequest) (*runtimev1.DeleteFileAndReconcileResponse, error) {
+func (s *Server) DeleteFileAndReconcile(ctx context.Context, req *connect.Request[runtimev1.DeleteFileAndReconcileRequest]) (*connect.Response[runtimev1.DeleteFileAndReconcileResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
 	claims := auth.GetClaims(ctx)
-	if !claims.CanInstance(req.InstanceId, auth.EditRepo) || !claims.CanInstance(req.InstanceId, auth.EditInstance) {
+	if !claims.CanInstance(req.Msg.InstanceId, auth.EditRepo) || !claims.CanInstance(req.Msg.InstanceId, auth.EditInstance) {
 		return nil, ErrForbidden
 	}
 
-	err := s.runtime.DeleteFile(ctx, req.InstanceId, req.Path)
+	err := s.runtime.DeleteFile(ctx, req.Msg.InstanceId, req.Msg.Path)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	changedPaths := []string{req.Path}
-	res, err := s.runtime.Reconcile(ctx, req.InstanceId, changedPaths, nil, req.Dry, req.Strict)
+	changedPaths := []string{req.Msg.Path}
+	res, err := s.runtime.Reconcile(ctx, req.Msg.InstanceId, changedPaths, nil, req.Msg.Dry, req.Msg.Strict)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &runtimev1.DeleteFileAndReconcileResponse{
+	return connect.NewResponse(&runtimev1.DeleteFileAndReconcileResponse{
 		Errors:        res.Errors,
 		AffectedPaths: res.AffectedPaths,
-	}, nil
+	}), nil
 }
 
 // RefreshAndReconcile implements RuntimeService.
-func (s *Server) RefreshAndReconcile(ctx context.Context, req *runtimev1.RefreshAndReconcileRequest) (*runtimev1.RefreshAndReconcileResponse, error) {
+func (s *Server) RefreshAndReconcile(ctx context.Context, req *connect.Request[runtimev1.RefreshAndReconcileRequest]) (*connect.Response[runtimev1.RefreshAndReconcileResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditInstance) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.EditInstance) {
 		return nil, ErrForbidden
 	}
 
-	changedPaths := []string{req.Path}
-	res, err := s.runtime.Reconcile(ctx, req.InstanceId, changedPaths, changedPaths, req.Dry, req.Strict)
+	changedPaths := []string{req.Msg.Path}
+	res, err := s.runtime.Reconcile(ctx, req.Msg.InstanceId, changedPaths, changedPaths, req.Msg.Dry, req.Msg.Strict)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &runtimev1.RefreshAndReconcileResponse{
+	return connect.NewResponse(&runtimev1.RefreshAndReconcileResponse{
 		Errors:        res.Errors,
 		AffectedPaths: res.AffectedPaths,
-	}, nil
+	}), nil
 }
 
 // TriggerRefresh implements RuntimeService.
-func (s *Server) TriggerRefresh(ctx context.Context, req *runtimev1.TriggerRefreshRequest) (*runtimev1.TriggerRefreshResponse, error) {
+func (s *Server) TriggerRefresh(ctx context.Context, req *connect.Request[runtimev1.TriggerRefreshRequest]) (*connect.Response[runtimev1.TriggerRefreshResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditInstance) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.EditInstance) {
 		return nil, ErrForbidden
 	}
 
-	err := s.runtime.RefreshSource(ctx, req.InstanceId, req.Name)
+	err := s.runtime.RefreshSource(ctx, req.Msg.InstanceId, req.Msg.Name)
 	if err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
-	return &runtimev1.TriggerRefreshResponse{}, nil
+	return connect.NewResponse(&runtimev1.TriggerRefreshResponse{}), nil
 }
 
 // TriggerSync implements RuntimeService.
-func (s *Server) TriggerSync(ctx context.Context, req *runtimev1.TriggerSyncRequest) (*runtimev1.TriggerSyncResponse, error) {
+func (s *Server) TriggerSync(ctx context.Context, req *connect.Request[runtimev1.TriggerSyncRequest]) (*connect.Response[runtimev1.TriggerSyncResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
-	err := s.runtime.SyncExistingTables(ctx, req.InstanceId)
+	err := s.runtime.SyncExistingTables(ctx, req.Msg.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
 	// Done
 	// TODO: This should return stats about synced tables. However, it will be refactored into reconcile, so no need to fix this now.
-	return &runtimev1.TriggerSyncResponse{}, nil
+	return connect.NewResponse(&runtimev1.TriggerSyncResponse{}), nil
 }
 
 func pbToObjectType(in runtimev1.ObjectType) drivers.ObjectType {

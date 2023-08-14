@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bufbuild/connect-go"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/queries"
@@ -13,218 +14,218 @@ import (
 )
 
 // MetricsViewToplist implements QueryService.
-func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsViewToplistRequest) (*runtimev1.MetricsViewToplistResponse, error) {
+func (s *Server) MetricsViewToplist(ctx context.Context, req *connect.Request[runtimev1.MetricsViewToplistRequest]) (*connect.Response[runtimev1.MetricsViewToplistResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.metric_view", req.MetricsViewName),
-		attribute.String("args.dimension", req.DimensionName),
-		attribute.StringSlice("args.measures", req.MeasureNames),
-		attribute.Int64("args.limit", req.Limit),
-		attribute.Int64("args.offset", req.Offset),
-		attribute.Int("args.priority", int(req.Priority)),
-		attribute.String("args.time_start", safeTimeStr(req.TimeStart)),
-		attribute.String("args.time_end", safeTimeStr(req.TimeEnd)),
-		attribute.StringSlice("args.sort.names", marshalMetricsViewSort(req.Sort)),
-		attribute.StringSlice("args.inline_measures", marshalInlineMeasure(req.InlineMeasures)),
-		attribute.Int("args.filter_count", filterCount(req.Filter)),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
+		attribute.String("args.metric_view", req.Msg.MetricsViewName),
+		attribute.String("args.dimension", req.Msg.DimensionName),
+		attribute.StringSlice("args.measures", req.Msg.MeasureNames),
+		attribute.Int64("args.limit", req.Msg.Limit),
+		attribute.Int64("args.offset", req.Msg.Offset),
+		attribute.Int("args.priority", int(req.Msg.Priority)),
+		attribute.String("args.time_start", safeTimeStr(req.Msg.TimeStart)),
+		attribute.String("args.time_end", safeTimeStr(req.Msg.TimeEnd)),
+		attribute.StringSlice("args.sort.names", marshalMetricsViewSort(req.Msg.Sort)),
+		attribute.StringSlice("args.inline_measures", marshalInlineMeasure(req.Msg.InlineMeasures)),
+		attribute.Int("args.filter_count", filterCount(req.Msg.Filter)),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.ReadMetrics) {
 		return nil, ErrForbidden
 	}
 
-	err := validateInlineMeasures(req.InlineMeasures)
+	err := validateInlineMeasures(req.Msg.InlineMeasures)
 	if err != nil {
 		return nil, err
 	}
 
 	q := &queries.MetricsViewToplist{
-		MetricsViewName: req.MetricsViewName,
-		DimensionName:   req.DimensionName,
-		MeasureNames:    req.MeasureNames,
-		InlineMeasures:  req.InlineMeasures,
-		TimeStart:       req.TimeStart,
-		TimeEnd:         req.TimeEnd,
-		Limit:           &req.Limit,
-		Offset:          req.Offset,
-		Sort:            req.Sort,
-		Filter:          req.Filter,
+		MetricsViewName: req.Msg.MetricsViewName,
+		DimensionName:   req.Msg.DimensionName,
+		MeasureNames:    req.Msg.MeasureNames,
+		InlineMeasures:  req.Msg.InlineMeasures,
+		TimeStart:       req.Msg.TimeStart,
+		TimeEnd:         req.Msg.TimeEnd,
+		Limit:           &req.Msg.Limit,
+		Offset:          req.Msg.Offset,
+		Sort:            req.Msg.Sort,
+		Filter:          req.Msg.Filter,
 	}
-	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err = s.runtime.Query(ctx, req.Msg.InstanceId, q, int(req.Msg.Priority))
 	if err != nil {
 		return nil, err
 	}
 
-	return q.Result, nil
+	return connect.NewResponse(q.Result), nil
 }
 
 // MetricsViewComparisonToplist implements QueryService.
-func (s *Server) MetricsViewComparisonToplist(ctx context.Context, req *runtimev1.MetricsViewComparisonToplistRequest) (*runtimev1.MetricsViewComparisonToplistResponse, error) {
+func (s *Server) MetricsViewComparisonToplist(ctx context.Context, req *connect.Request[runtimev1.MetricsViewComparisonToplistRequest]) (*connect.Response[runtimev1.MetricsViewComparisonToplistResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.metric_view", req.MetricsViewName),
-		attribute.String("args.dimension", req.DimensionName),
-		attribute.StringSlice("args.measures", req.MeasureNames),
-		attribute.StringSlice("args.inline_measures.names", marshalInlineMeasure(req.InlineMeasures)),
-		attribute.StringSlice("args.sort.names", marshalMetricsViewComparisonSort(req.Sort)),
-		attribute.Int("args.filter_count", filterCount(req.Filter)),
-		attribute.Int64("args.limit", req.Limit),
-		attribute.Int64("args.offset", req.Offset),
-		attribute.Int("args.priority", int(req.Priority)),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
+		attribute.String("args.metric_view", req.Msg.MetricsViewName),
+		attribute.String("args.dimension", req.Msg.DimensionName),
+		attribute.StringSlice("args.measures", req.Msg.MeasureNames),
+		attribute.StringSlice("args.inline_measures.names", marshalInlineMeasure(req.Msg.InlineMeasures)),
+		attribute.StringSlice("args.sort.names", marshalMetricsViewComparisonSort(req.Msg.Sort)),
+		attribute.Int("args.filter_count", filterCount(req.Msg.Filter)),
+		attribute.Int64("args.limit", req.Msg.Limit),
+		attribute.Int64("args.offset", req.Msg.Offset),
+		attribute.Int("args.priority", int(req.Msg.Priority)),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
-	if req.BaseTimeRange != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.base_time_range.start", safeTimeStr(req.BaseTimeRange.Start)))
-		observability.AddRequestAttributes(ctx, attribute.String("args.base_time_range.end", safeTimeStr(req.BaseTimeRange.End)))
+	if req.Msg.BaseTimeRange != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.base_time_range.start", safeTimeStr(req.Msg.BaseTimeRange.Start)))
+		observability.AddRequestAttributes(ctx, attribute.String("args.base_time_range.end", safeTimeStr(req.Msg.BaseTimeRange.End)))
 	}
-	if req.ComparisonTimeRange != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.comparison_time_range.start", safeTimeStr(req.ComparisonTimeRange.Start)))
-		observability.AddRequestAttributes(ctx, attribute.String("args.comparison_time_range.end", safeTimeStr(req.ComparisonTimeRange.End)))
+	if req.Msg.ComparisonTimeRange != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.comparison_time_range.start", safeTimeStr(req.Msg.ComparisonTimeRange.Start)))
+		observability.AddRequestAttributes(ctx, attribute.String("args.comparison_time_range.end", safeTimeStr(req.Msg.ComparisonTimeRange.End)))
 	}
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.ReadMetrics) {
 		return nil, ErrForbidden
 	}
 
-	err := validateInlineMeasures(req.InlineMeasures)
+	err := validateInlineMeasures(req.Msg.InlineMeasures)
 	if err != nil {
 		return nil, err
 	}
 
 	q := &queries.MetricsViewComparisonToplist{
-		MetricsViewName:     req.MetricsViewName,
-		DimensionName:       req.DimensionName,
-		MeasureNames:        req.MeasureNames,
-		InlineMeasures:      req.InlineMeasures,
-		BaseTimeRange:       req.BaseTimeRange,
-		ComparisonTimeRange: req.ComparisonTimeRange,
-		Limit:               req.Limit,
-		Offset:              req.Offset,
-		Sort:                req.Sort,
-		Filter:              req.Filter,
+		MetricsViewName:     req.Msg.MetricsViewName,
+		DimensionName:       req.Msg.DimensionName,
+		MeasureNames:        req.Msg.MeasureNames,
+		InlineMeasures:      req.Msg.InlineMeasures,
+		BaseTimeRange:       req.Msg.BaseTimeRange,
+		ComparisonTimeRange: req.Msg.ComparisonTimeRange,
+		Limit:               req.Msg.Limit,
+		Offset:              req.Msg.Offset,
+		Sort:                req.Msg.Sort,
+		Filter:              req.Msg.Filter,
 	}
-	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err = s.runtime.Query(ctx, req.Msg.InstanceId, q, int(req.Msg.Priority))
 	if err != nil {
 		return nil, err
 	}
 
-	return q.Result, nil
+	return connect.NewResponse(q.Result), nil
 }
 
 // MetricsViewTimeSeries implements QueryService.
-func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.MetricsViewTimeSeriesRequest) (*runtimev1.MetricsViewTimeSeriesResponse, error) {
+func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *connect.Request[runtimev1.MetricsViewTimeSeriesRequest]) (*connect.Response[runtimev1.MetricsViewTimeSeriesResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.metric_view", req.MetricsViewName),
-		attribute.StringSlice("args.measures", req.MeasureNames),
-		attribute.StringSlice("args.inline_measures.names", marshalInlineMeasure(req.InlineMeasures)),
-		attribute.String("args.time_start", safeTimeStr(req.TimeStart)),
-		attribute.String("args.time_end", safeTimeStr(req.TimeEnd)),
-		attribute.String("args.time_granularity", req.TimeGranularity.String()),
-		attribute.Int("args.filter_count", filterCount(req.Filter)),
-		attribute.Int("args.priority", int(req.Priority)),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
+		attribute.String("args.metric_view", req.Msg.MetricsViewName),
+		attribute.StringSlice("args.measures", req.Msg.MeasureNames),
+		attribute.StringSlice("args.inline_measures.names", marshalInlineMeasure(req.Msg.InlineMeasures)),
+		attribute.String("args.time_start", safeTimeStr(req.Msg.TimeStart)),
+		attribute.String("args.time_end", safeTimeStr(req.Msg.TimeEnd)),
+		attribute.String("args.time_granularity", req.Msg.TimeGranularity.String()),
+		attribute.Int("args.filter_count", filterCount(req.Msg.Filter)),
+		attribute.Int("args.priority", int(req.Msg.Priority)),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.ReadMetrics) {
 		return nil, ErrForbidden
 	}
 
-	err := validateInlineMeasures(req.InlineMeasures)
+	err := validateInlineMeasures(req.Msg.InlineMeasures)
 	if err != nil {
 		return nil, err
 	}
 
 	q := &queries.MetricsViewTimeSeries{
-		MetricsViewName: req.MetricsViewName,
-		MeasureNames:    req.MeasureNames,
-		InlineMeasures:  req.InlineMeasures,
-		TimeStart:       req.TimeStart,
-		TimeEnd:         req.TimeEnd,
-		TimeGranularity: req.TimeGranularity,
-		Filter:          req.Filter,
-		TimeZone:        req.TimeZone,
+		MetricsViewName: req.Msg.MetricsViewName,
+		MeasureNames:    req.Msg.MeasureNames,
+		InlineMeasures:  req.Msg.InlineMeasures,
+		TimeStart:       req.Msg.TimeStart,
+		TimeEnd:         req.Msg.TimeEnd,
+		TimeGranularity: req.Msg.TimeGranularity,
+		Filter:          req.Msg.Filter,
+		TimeZone:        req.Msg.TimeZone,
 	}
-	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err = s.runtime.Query(ctx, req.Msg.InstanceId, q, int(req.Msg.Priority))
 	if err != nil {
 		return nil, err
 	}
-	return q.Result, nil
+	return connect.NewResponse(q.Result), nil
 }
 
 // MetricsViewTotals implements QueryService.
-func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsViewTotalsRequest) (*runtimev1.MetricsViewTotalsResponse, error) {
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+func (s *Server) MetricsViewTotals(ctx context.Context, req *connect.Request[runtimev1.MetricsViewTotalsRequest]) (*connect.Response[runtimev1.MetricsViewTotalsResponse], error) {
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.ReadMetrics) {
 		return nil, ErrForbidden
 	}
 
-	err := validateInlineMeasures(req.InlineMeasures)
+	err := validateInlineMeasures(req.Msg.InlineMeasures)
 	if err != nil {
 		return nil, err
 	}
 
 	q := &queries.MetricsViewTotals{
-		MetricsViewName: req.MetricsViewName,
-		MeasureNames:    req.MeasureNames,
-		InlineMeasures:  req.InlineMeasures,
-		TimeStart:       req.TimeStart,
-		TimeEnd:         req.TimeEnd,
-		Filter:          req.Filter,
+		MetricsViewName: req.Msg.MetricsViewName,
+		MeasureNames:    req.Msg.MeasureNames,
+		InlineMeasures:  req.Msg.InlineMeasures,
+		TimeStart:       req.Msg.TimeStart,
+		TimeEnd:         req.Msg.TimeEnd,
+		Filter:          req.Msg.Filter,
 	}
-	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err = s.runtime.Query(ctx, req.Msg.InstanceId, q, int(req.Msg.Priority))
 	if err != nil {
 		return nil, err
 	}
-	return q.Result, nil
+	return connect.NewResponse(q.Result), nil
 }
 
 // MetricsViewRows implements QueryService.
-func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsViewRowsRequest) (*runtimev1.MetricsViewRowsResponse, error) {
+func (s *Server) MetricsViewRows(ctx context.Context, req *connect.Request[runtimev1.MetricsViewRowsRequest]) (*connect.Response[runtimev1.MetricsViewRowsResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.metric_view", req.MetricsViewName),
-		attribute.String("args.time_start", safeTimeStr(req.TimeStart)),
-		attribute.String("args.time_end", safeTimeStr(req.TimeEnd)),
-		attribute.String("args.time_granularity", req.TimeGranularity.String()),
-		attribute.Int("args.filter_count", filterCount(req.Filter)),
-		attribute.StringSlice("args.sort.names", marshalMetricsViewSort(req.Sort)),
-		attribute.Int("args.limit", int(req.Limit)),
-		attribute.Int64("args.offset", req.Offset),
-		attribute.Int("args.priority", int(req.Priority)),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
+		attribute.String("args.metric_view", req.Msg.MetricsViewName),
+		attribute.String("args.time_start", safeTimeStr(req.Msg.TimeStart)),
+		attribute.String("args.time_end", safeTimeStr(req.Msg.TimeEnd)),
+		attribute.String("args.time_granularity", req.Msg.TimeGranularity.String()),
+		attribute.Int("args.filter_count", filterCount(req.Msg.Filter)),
+		attribute.StringSlice("args.sort.names", marshalMetricsViewSort(req.Msg.Sort)),
+		attribute.Int("args.limit", int(req.Msg.Limit)),
+		attribute.Int64("args.offset", req.Msg.Offset),
+		attribute.Int("args.priority", int(req.Msg.Priority)),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.ReadMetrics) {
 		return nil, ErrForbidden
 	}
 
-	limit := int64(req.Limit)
+	limit := int64(req.Msg.Limit)
 
 	q := &queries.MetricsViewRows{
-		MetricsViewName: req.MetricsViewName,
-		TimeStart:       req.TimeStart,
-		TimeEnd:         req.TimeEnd,
-		TimeGranularity: req.TimeGranularity,
-		Filter:          req.Filter,
-		Sort:            req.Sort,
+		MetricsViewName: req.Msg.MetricsViewName,
+		TimeStart:       req.Msg.TimeStart,
+		TimeEnd:         req.Msg.TimeEnd,
+		TimeGranularity: req.Msg.TimeGranularity,
+		Filter:          req.Msg.Filter,
+		Sort:            req.Msg.Sort,
 		Limit:           &limit,
-		Offset:          req.Offset,
-		TimeZone:        req.TimeZone,
+		Offset:          req.Msg.Offset,
+		TimeZone:        req.Msg.TimeZone,
 	}
-	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err := s.runtime.Query(ctx, req.Msg.InstanceId, q, int(req.Msg.Priority))
 	if err != nil {
 		return nil, err
 	}
 
-	return q.Result, nil
+	return connect.NewResponse(q.Result), nil
 }
 
 // validateInlineMeasures checks that the inline measures are allowed.

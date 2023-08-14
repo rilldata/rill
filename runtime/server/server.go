@@ -8,15 +8,20 @@ import (
 	"strings"
 	"time"
 
-	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
-	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
+	"github.com/bufbuild/connect-go"
+	// grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	// grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/proto/gen/rill/runtime/v1/runtimev1connect"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
-	"github.com/rilldata/rill/runtime/pkg/middleware"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
+
+	// "github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -57,9 +62,14 @@ type Server struct {
 }
 
 var (
-	_ runtimev1.RuntimeServiceServer   = (*Server)(nil)
-	_ runtimev1.QueryServiceServer     = (*Server)(nil)
-	_ runtimev1.ConnectorServiceServer = (*Server)(nil)
+	// _ runtimev1.RuntimeServiceServer   = (*Server)(nil)
+	// _ runtimev1.QueryServiceServer     = (*Server)(nil)
+	// _ runtimev1.ConnectorServiceServer = (*Server)(nil)
+
+	// _ adminv1connect.AdminServiceHandler = (*Server)(nil)
+	_ runtimev1connect.RuntimeServiceHandler   = (*Server)(nil)
+	_ runtimev1connect.QueryServiceHandler     = (*Server)(nil)
+	_ runtimev1connect.ConnectorServiceHandler = (*Server)(nil)
 )
 
 // NewServer creates a new runtime server.
@@ -98,44 +108,74 @@ func (s *Server) Close() error {
 }
 
 // Ping implements RuntimeService
-func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtimev1.PingResponse, error) {
+func (s *Server) Ping(ctx context.Context, req *connect.Request[runtimev1.PingRequest]) (*connect.Response[runtimev1.PingResponse], error) {
 	resp := &runtimev1.PingResponse{
 		Version: "", // TODO: Return version
 		Time:    timestamppb.New(time.Now()),
 	}
-	return resp, nil
+	return connect.NewResponse(resp), nil
 }
 
 // ServeGRPC Starts the gRPC server.
 func (s *Server) ServeGRPC(ctx context.Context) error {
-	server := grpc.NewServer(
-		grpc.ChainStreamInterceptor(
-			middleware.TimeoutStreamServerInterceptor(timeoutSelector),
-			observability.TracingStreamServerInterceptor(),
-			observability.LoggingStreamServerInterceptor(s.logger),
-			errorMappingStreamServerInterceptor(),
-			grpc_validator.StreamServerInterceptor(),
-			auth.StreamServerInterceptor(s.aud),
-			middleware.ActivityStreamServerInterceptor(s.activity),
-			grpc_auth.StreamServerInterceptor(s.checkRateLimit),
-		),
-		grpc.ChainUnaryInterceptor(
-			middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
-			observability.TracingUnaryServerInterceptor(),
-			observability.LoggingUnaryServerInterceptor(s.logger),
-			errorMappingUnaryServerInterceptor(),
-			grpc_validator.UnaryServerInterceptor(),
-			auth.UnaryServerInterceptor(s.aud),
-			middleware.ActivityUnaryServerInterceptor(s.activity),
-			grpc_auth.UnaryServerInterceptor(s.checkRateLimit),
-		),
-	)
+	// server := grpc.NewServer(
+	// 	grpc.ChainStreamInterceptor(
+	// 		middleware.TimeoutStreamServerInterceptor(timeoutSelector),
+	// 		observability.TracingStreamServerInterceptor(),
+	// 		observability.LoggingStreamServerInterceptor(s.logger),
+	// 		errorMappingStreamServerInterceptor(),
+	// 		grpc_validator.StreamServerInterceptor(),
+	// 		auth.StreamServerInterceptor(s.aud),
+	// 		middleware.ActivityStreamServerInterceptor(s.activity),
+	// 		grpc_auth.StreamServerInterceptor(s.checkRateLimit),
+	// 	),
+	// 	grpc.ChainUnaryInterceptor(
+	// 		middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
+	// 		observability.TracingUnaryServerInterceptor(),
+	// 		observability.LoggingUnaryServerInterceptor(s.logger),
+	// 		errorMappingUnaryServerInterceptor(),
+	// 		grpc_validator.UnaryServerInterceptor(),
+	// 		auth.UnaryServerInterceptor(s.aud),
+	// 		middleware.ActivityUnaryServerInterceptor(s.activity),
+	// 		grpc_auth.UnaryServerInterceptor(s.checkRateLimit),
+	// 	),
+	// )
 
-	runtimev1.RegisterRuntimeServiceServer(server, s)
-	runtimev1.RegisterQueryServiceServer(server, s)
-	runtimev1.RegisterConnectorServiceServer(server, s)
-	s.logger.Named("console").Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
-	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
+	srv := &Server{}
+
+	mux := http.NewServeMux()
+	path, handler := runtimev1connect.NewRuntimeServiceHandler(srv)
+	path1, handler1 := runtimev1connect.NewQueryServiceHandler(srv)
+	path2, handler2 := runtimev1connect.NewConnectorServiceHandler(srv)
+	mux.Handle(path, handler)
+	mux.Handle(path1, handler1)
+	mux.Handle(path2, handler2)
+
+	// adminv1.RegisterAdminServiceServer(server, s)
+	s.logger.Sugar().Infof("serving admin gRPC on port:%v", s.opts.GRPCPort)
+
+	cctx, cancel := context.WithCancel(ctx)
+	var serveErr error
+	go func() {
+		serveErr = http.ListenAndServe(
+			fmt.Sprintf(":%d", s.opts.GRPCPort),
+			// Use h2c so we can serve HTTP/2 without TLS.
+			h2c.NewHandler(mux, &http2.Server{}),
+		)
+		cancel()
+	}()
+
+	<-cctx.Done()
+	if serveErr == nil {
+		cancel()
+	}
+
+	return serveErr
+	// runtimev1.RegisterRuntimeServiceServer(server, s)
+	// runtimev1.RegisterQueryServiceServer(server, s)
+	// runtimev1.RegisterConnectorServiceServer(server, s)
+	// s.logger.Named("console").Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
+	// return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
 
 // Starts the HTTP server.

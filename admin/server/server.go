@@ -9,9 +9,10 @@ import (
 	"strings"
 	"time"
 
-	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	"github.com/bufbuild/connect-go"
+	// grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
-	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
+	// grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/hashicorp/go-version"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -22,7 +23,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/proto/gen/rill/admin/v1/adminv1connect"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
-	"github.com/rilldata/rill/runtime/pkg/middleware"
+
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
@@ -75,9 +76,9 @@ type Server struct {
 	limiter       ratelimit.Limiter
 }
 
-var _ adminv1.AdminServiceServer = (*Server)(nil)
+// var _ adminv1.AdminServiceServer = (*Server)(nil)
 
-// var _ adminv1connect.AdminServiceHandler = (*Server)(nil)
+var _ adminv1connect.AdminServiceHandler = (*Server)(nil)
 
 func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, limiter ratelimit.Limiter, opts *Options) (*Server, error) {
 	externalURL, err := url.Parse(opts.ExternalURL)
@@ -119,40 +120,63 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 
 // ServeGRPC Starts the gRPC server.
 func (s *Server) ServeGRPC(ctx context.Context) error {
-	server := grpc.NewServer(
-		grpc.ChainStreamInterceptor(
-			middleware.TimeoutStreamServerInterceptor(timeoutSelector),
-			observability.TracingStreamServerInterceptor(),
-			observability.LoggingStreamServerInterceptor(s.logger),
-			errorMappingStreamServerInterceptor(),
-			grpc_auth.StreamServerInterceptor(checkUserAgent),
-			grpc_validator.StreamServerInterceptor(),
-			s.authenticator.StreamServerInterceptor(),
-			grpc_auth.StreamServerInterceptor(s.checkRateLimit),
-		),
-		grpc.ChainUnaryInterceptor(
-			middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
-			observability.TracingUnaryServerInterceptor(),
-			observability.LoggingUnaryServerInterceptor(s.logger),
-			errorMappingUnaryServerInterceptor(),
-			grpc_auth.UnaryServerInterceptor(checkUserAgent),
-			grpc_validator.UnaryServerInterceptor(),
-			s.authenticator.UnaryServerInterceptor(),
-			grpc_auth.UnaryServerInterceptor(s.checkRateLimit),
-		),
-	)
+	// server := grpc.NewServer(
+	// 	grpc.ChainStreamInterceptor(
+	// 		middleware.TimeoutStreamServerInterceptor(timeoutSelector),
+	// 		observability.TracingStreamServerInterceptor(),
+	// 		observability.LoggingStreamServerInterceptor(s.logger),
+	// 		errorMappingStreamServerInterceptor(),
+	// 		grpc_auth.StreamServerInterceptor(checkUserAgent),
+	// 		grpc_validator.StreamServerInterceptor(),
+	// 		s.authenticator.StreamServerInterceptor(),
+	// 		grpc_auth.StreamServerInterceptor(s.checkRateLimit),
+	// 	),
+	// 	grpc.ChainUnaryInterceptor(
+	// 		middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
+	// 		observability.TracingUnaryServerInterceptor(),
+	// 		observability.LoggingUnaryServerInterceptor(s.logger),
+	// 		errorMappingUnaryServerInterceptor(),
+	// 		grpc_auth.UnaryServerInterceptor(checkUserAgent),
+	// 		grpc_validator.UnaryServerInterceptor(),
+	// 		s.authenticator.UnaryServerInterceptor(),
+	// 		grpc_auth.UnaryServerInterceptor(s.checkRateLimit),
+	// 	),
+	// )
+
+	interceptors := connect.WithInterceptors(s.authenticator.UnaryServerInterceptor1(),)
+
+	srv := &Server{}
 
 	mux := http.NewServeMux()
-	path, handler := adminv1connect.NewAdminServiceHandler(adminv1connect.UnimplementedAdminServiceHandler{})
+	path, handler := adminv1connect.NewAdminServiceHandler(srv, interceptors)
 	mux.Handle(path, handler)
 
-	adminv1.RegisterAdminServiceServer(server, s)
+	// adminv1.RegisterAdminServiceServer(server, s)
 	s.logger.Sugar().Infof("serving admin gRPC on port:%v", s.opts.GRPCPort)
-	return http.ListenAndServe(
-		fmt.Sprintf(":%d", s.opts.GRPCPort),
-		// Use h2c so we can serve HTTP/2 without TLS.
-		h2c.NewHandler(mux, &http2.Server{}),
-	)
+
+	cctx, cancel := context.WithCancel(ctx)
+	var serveErr error
+	go func() {
+		serveErr = http.ListenAndServe(
+			fmt.Sprintf(":%d", s.opts.GRPCPort),
+			// Use h2c so we can serve HTTP/2 without TLS.
+			h2c.NewHandler(mux, &http2.Server{}),
+		)
+		cancel()
+	}()
+
+	<-cctx.Done()
+	if serveErr == nil {
+		cancel()
+	}
+
+	return serveErr
+	// return http.ListenAndServe(
+	// 	fmt.Sprintf(":%d", s.opts.GRPCPort),
+	// 	// Use h2c so we can serve HTTP/2 without TLS.
+	// 	h2c.NewHandler(mux, &http2.Server{}),
+	// )
+
 	// return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
 
@@ -253,12 +277,12 @@ func HTTPErrorHandler(ctx context.Context, mux *gateway.ServeMux, marshaler gate
 }
 
 // Ping implements AdminService
-func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.PingResponse, error) {
+func (s *Server) Ping(ctx context.Context, req *connect.Request[adminv1.PingRequest]) (*connect.Response[adminv1.PingResponse], error) {
 	resp := &adminv1.PingResponse{
 		Version: "", // TODO: Return version
 		Time:    timestamppb.New(time.Now()),
 	}
-	return resp, nil
+	return connect.NewResponse(resp), nil
 }
 
 func timeoutSelector(fullMethodName string) time.Duration {

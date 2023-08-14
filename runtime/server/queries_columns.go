@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 
+	"github.com/bufbuild/connect-go"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/queries"
@@ -12,116 +13,116 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (s *Server) ColumnTopK(ctx context.Context, req *runtimev1.ColumnTopKRequest) (*runtimev1.ColumnTopKResponse, error) {
+func (s *Server) ColumnTopK(ctx context.Context, req *connect.Request[runtimev1.ColumnTopKRequest]) (*connect.Response[runtimev1.ColumnTopKResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.table", req.TableName),
-		attribute.String("args.column", req.ColumnName),
-		attribute.Int("args.k", int(req.K)),
-		attribute.Int("args.priority", int(req.Priority)),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
+		attribute.String("args.table", req.Msg.TableName),
+		attribute.String("args.column", req.Msg.ColumnName),
+		attribute.Int("args.k", int(req.Msg.K)),
+		attribute.Int("args.priority", int(req.Msg.Priority)),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
 
 	agg := "count(*)"
-	if req.Agg != "" {
-		agg = req.Agg
+	if req.Msg.Agg != "" {
+		agg = req.Msg.Agg
 	}
 
 	k := 50
-	if req.K != 0 {
-		k = int(req.K)
+	if req.Msg.K != 0 {
+		k = int(req.Msg.K)
 	}
 
 	q := &queries.ColumnTopK{
-		TableName:  req.TableName,
-		ColumnName: req.ColumnName,
+		TableName:  req.Msg.TableName,
+		ColumnName: req.Msg.ColumnName,
 		Agg:        agg,
 		K:          k,
 	}
 
-	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err := s.runtime.Query(ctx, req.Msg.InstanceId, q, int(req.Msg.Priority))
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
-	return &runtimev1.ColumnTopKResponse{
+	return connect.NewResponse(&runtimev1.ColumnTopKResponse{
 		CategoricalSummary: &runtimev1.CategoricalSummary{
 			Case: &runtimev1.CategoricalSummary_TopK{
 				TopK: q.Result,
 			},
 		},
-	}, nil
+	}), nil
 }
 
-func (s *Server) ColumnNullCount(ctx context.Context, req *runtimev1.ColumnNullCountRequest) (*runtimev1.ColumnNullCountResponse, error) {
+func (s *Server) ColumnNullCount(ctx context.Context, req *connect.Request[runtimev1.ColumnNullCountRequest]) (*connect.Response[runtimev1.ColumnNullCountResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.table", req.TableName),
-		attribute.String("args.column", req.ColumnName),
-		attribute.Int("args.priority", int(req.Priority)),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
+		attribute.String("args.table", req.Msg.TableName),
+		attribute.String("args.column", req.Msg.ColumnName),
+		attribute.Int("args.priority", int(req.Msg.Priority)),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
 
 	q := &queries.ColumnNullCount{
-		TableName:  req.TableName,
-		ColumnName: req.ColumnName,
+		TableName:  req.Msg.TableName,
+		ColumnName: req.Msg.ColumnName,
 	}
 
-	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err := s.runtime.Query(ctx, req.Msg.InstanceId, q, int(req.Msg.Priority))
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
-	return &runtimev1.ColumnNullCountResponse{
+	return connect.NewResponse(&runtimev1.ColumnNullCountResponse{
 		Count: q.Result,
-	}, nil
+	}), nil
 }
 
-func (s *Server) ColumnDescriptiveStatistics(ctx context.Context, req *runtimev1.ColumnDescriptiveStatisticsRequest) (*runtimev1.ColumnDescriptiveStatisticsResponse, error) {
+func (s *Server) ColumnDescriptiveStatistics(ctx context.Context, req *connect.Request[runtimev1.ColumnDescriptiveStatisticsRequest]) (*connect.Response[runtimev1.ColumnDescriptiveStatisticsResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.table", req.TableName),
-		attribute.String("args.column", req.ColumnName),
-		attribute.Int("args.priority", int(req.Priority)),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
+		attribute.String("args.table", req.Msg.TableName),
+		attribute.String("args.column", req.Msg.ColumnName),
+		attribute.Int("args.priority", int(req.Msg.Priority)),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
 
 	q := &queries.ColumnDescriptiveStatistics{
-		TableName:  req.TableName,
-		ColumnName: req.ColumnName,
+		TableName:  req.Msg.TableName,
+		ColumnName: req.Msg.ColumnName,
 	}
-	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err := s.runtime.Query(ctx, req.Msg.InstanceId, q, int(req.Msg.Priority))
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	// ColumnDescriptiveStatistics may return an empty result
 	if q.Result == nil {
-		return &runtimev1.ColumnDescriptiveStatisticsResponse{}, nil
+		return connect.NewResponse(&runtimev1.ColumnDescriptiveStatisticsResponse{}), nil
 	}
 
-	return &runtimev1.ColumnDescriptiveStatisticsResponse{
+	return connect.NewResponse(&runtimev1.ColumnDescriptiveStatisticsResponse{
 		NumericSummary: &runtimev1.NumericSummary{
 			Case: &runtimev1.NumericSummary_NumericStatistics{
 				NumericStatistics: q.Result,
 			},
 		},
-	}, nil
+	}), nil
 }
 
 /**
@@ -150,61 +151,61 @@ func (s *Server) ColumnDescriptiveStatistics(ctx context.Context, req *runtimev1
  * we've thrown at it.
  */
 
-func (s *Server) ColumnTimeGrain(ctx context.Context, req *runtimev1.ColumnTimeGrainRequest) (*runtimev1.ColumnTimeGrainResponse, error) {
+func (s *Server) ColumnTimeGrain(ctx context.Context, req *connect.Request[runtimev1.ColumnTimeGrainRequest]) (*connect.Response[runtimev1.ColumnTimeGrainResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.table", req.TableName),
-		attribute.String("args.column", req.ColumnName),
-		attribute.Int("args.priority", int(req.Priority)),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
+		attribute.String("args.table", req.Msg.TableName),
+		attribute.String("args.column", req.Msg.ColumnName),
+		attribute.Int("args.priority", int(req.Msg.Priority)),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
 
 	q := &queries.ColumnTimeGrain{
-		TableName:  req.TableName,
-		ColumnName: req.ColumnName,
+		TableName:  req.Msg.TableName,
+		ColumnName: req.Msg.ColumnName,
 	}
-	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err := s.runtime.Query(ctx, req.Msg.InstanceId, q, int(req.Msg.Priority))
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
-	return &runtimev1.ColumnTimeGrainResponse{
+	return connect.NewResponse(&runtimev1.ColumnTimeGrainResponse{
 		TimeGrain: q.Result,
-	}, nil
+	}), nil
 }
 
-func (s *Server) ColumnNumericHistogram(ctx context.Context, req *runtimev1.ColumnNumericHistogramRequest) (*runtimev1.ColumnNumericHistogramResponse, error) {
+func (s *Server) ColumnNumericHistogram(ctx context.Context, req *connect.Request[runtimev1.ColumnNumericHistogramRequest]) (*connect.Response[runtimev1.ColumnNumericHistogramResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.table", req.TableName),
-		attribute.String("args.column", req.ColumnName),
-		attribute.String("args.histogram", req.HistogramMethod.String()),
-		attribute.Int("args.priority", int(req.Priority)),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
+		attribute.String("args.table", req.Msg.TableName),
+		attribute.String("args.column", req.Msg.ColumnName),
+		attribute.String("args.histogram", req.Msg.HistogramMethod.String()),
+		attribute.Int("args.priority", int(req.Msg.Priority)),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
 
 	q := &queries.ColumnNumericHistogram{
-		TableName:  req.TableName,
-		ColumnName: req.ColumnName,
-		Method:     req.HistogramMethod,
+		TableName:  req.Msg.TableName,
+		ColumnName: req.Msg.ColumnName,
+		Method:     req.Msg.HistogramMethod,
 	}
-	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err := s.runtime.Query(ctx, req.Msg.InstanceId, q, int(req.Msg.Priority))
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	// NOTE: q.Result may be nil if there were no bins. The below will output it as an empty histogram.
 
-	return &runtimev1.ColumnNumericHistogramResponse{
+	return connect.NewResponse(&runtimev1.ColumnNumericHistogramResponse{
 		NumericSummary: &runtimev1.NumericSummary{
 			Case: &runtimev1.NumericSummary_NumericHistogramBins{
 				NumericHistogramBins: &runtimev1.NumericHistogramBins{
@@ -212,32 +213,32 @@ func (s *Server) ColumnNumericHistogram(ctx context.Context, req *runtimev1.Colu
 				},
 			},
 		},
-	}, nil
+	}), nil
 }
 
-func (s *Server) ColumnRugHistogram(ctx context.Context, req *runtimev1.ColumnRugHistogramRequest) (*runtimev1.ColumnRugHistogramResponse, error) {
+func (s *Server) ColumnRugHistogram(ctx context.Context, req *connect.Request[runtimev1.ColumnRugHistogramRequest]) (*connect.Response[runtimev1.ColumnRugHistogramResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.table", req.TableName),
-		attribute.String("args.column", req.ColumnName),
-		attribute.Int("args.priority", int(req.Priority)),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
+		attribute.String("args.table", req.Msg.TableName),
+		attribute.String("args.column", req.Msg.ColumnName),
+		attribute.Int("args.priority", int(req.Msg.Priority)),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
 
 	q := &queries.ColumnRugHistogram{
-		TableName:  req.TableName,
-		ColumnName: req.ColumnName,
+		TableName:  req.Msg.TableName,
+		ColumnName: req.Msg.ColumnName,
 	}
-	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err := s.runtime.Query(ctx, req.Msg.InstanceId, q, int(req.Msg.Priority))
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
-	return &runtimev1.ColumnRugHistogramResponse{
+	return connect.NewResponse(&runtimev1.ColumnRugHistogramResponse{
 		NumericSummary: &runtimev1.NumericSummary{
 			Case: &runtimev1.NumericSummary_NumericOutliers{
 				NumericOutliers: &runtimev1.NumericOutliers{
@@ -245,63 +246,63 @@ func (s *Server) ColumnRugHistogram(ctx context.Context, req *runtimev1.ColumnRu
 				},
 			},
 		},
-	}, nil
+	}), nil
 }
 
-func (s *Server) ColumnTimeRange(ctx context.Context, req *runtimev1.ColumnTimeRangeRequest) (*runtimev1.ColumnTimeRangeResponse, error) {
+func (s *Server) ColumnTimeRange(ctx context.Context, req *connect.Request[runtimev1.ColumnTimeRangeRequest]) (*connect.Response[runtimev1.ColumnTimeRangeResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.table", req.TableName),
-		attribute.String("args.column", req.ColumnName),
-		attribute.Int("args.priority", int(req.Priority)),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
+		attribute.String("args.table", req.Msg.TableName),
+		attribute.String("args.column", req.Msg.ColumnName),
+		attribute.Int("args.priority", int(req.Msg.Priority)),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
 
 	q := &queries.ColumnTimeRange{
-		TableName:  req.TableName,
-		ColumnName: req.ColumnName,
+		TableName:  req.Msg.TableName,
+		ColumnName: req.Msg.ColumnName,
 	}
-	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err := s.runtime.Query(ctx, req.Msg.InstanceId, q, int(req.Msg.Priority))
 	if err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
-	return &runtimev1.ColumnTimeRangeResponse{
+	return connect.NewResponse(&runtimev1.ColumnTimeRangeResponse{
 		TimeRangeSummary: q.Result,
-	}, nil
+	}), nil
 }
 
-func (s *Server) ColumnCardinality(ctx context.Context, req *runtimev1.ColumnCardinalityRequest) (*runtimev1.ColumnCardinalityResponse, error) {
+func (s *Server) ColumnCardinality(ctx context.Context, req *connect.Request[runtimev1.ColumnCardinalityRequest]) (*connect.Response[runtimev1.ColumnCardinalityResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.table", req.TableName),
-		attribute.String("args.column", req.ColumnName),
-		attribute.Int("args.priority", int(req.Priority)),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
+		attribute.String("args.table", req.Msg.TableName),
+		attribute.String("args.column", req.Msg.ColumnName),
+		attribute.Int("args.priority", int(req.Msg.Priority)),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadProfiling) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.ReadProfiling) {
 		return nil, ErrForbidden
 	}
 
 	q := &queries.ColumnCardinality{
-		TableName:  req.TableName,
-		ColumnName: req.ColumnName,
+		TableName:  req.Msg.TableName,
+		ColumnName: req.Msg.ColumnName,
 	}
-	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err := s.runtime.Query(ctx, req.Msg.InstanceId, q, int(req.Msg.Priority))
 	if err != nil {
 		return nil, err
 	}
-	return &runtimev1.ColumnCardinalityResponse{
+	return connect.NewResponse(&runtimev1.ColumnCardinalityResponse{
 		CategoricalSummary: &runtimev1.CategoricalSummary{
 			Case: &runtimev1.CategoricalSummary_Cardinality{
 				Cardinality: q.Result,
 			},
 		},
-	}, nil
+	}), nil
 }

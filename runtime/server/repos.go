@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/bufbuild/connect-go"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -19,54 +20,53 @@ import (
 )
 
 // ListFiles implements RuntimeService.
-func (s *Server) ListFiles(ctx context.Context, req *runtimev1.ListFilesRequest) (*runtimev1.ListFilesResponse, error) {
+func (s *Server) ListFiles(ctx context.Context, req *connect.Request[runtimev1.ListFilesRequest]) (*connect.Response[runtimev1.ListFilesResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.glob", req.Glob),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
+		attribute.String("args.glob", req.Msg.Glob),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadRepo) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.ReadRepo) {
 		return nil, ErrForbidden
 	}
 
-	glob := req.Glob
+	glob := req.Msg.Glob
 	if glob == "" {
 		glob = "**"
 	}
 
-	paths, err := s.runtime.ListFiles(ctx, req.InstanceId, glob)
+	paths, err := s.runtime.ListFiles(ctx, req.Msg.InstanceId, glob)
 	if err != nil {
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
-
-	return &runtimev1.ListFilesResponse{Paths: paths}, nil
+	return connect.NewResponse(&runtimev1.ListFilesResponse{Paths: paths}), nil
 }
 
 // WatchFiles implements RuntimeService.
-func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, ss runtimev1.RuntimeService_WatchFilesServer) error {
-	observability.AddRequestAttributes(ss.Context(),
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.Bool("args.replay", req.Replay),
+func (s *Server) WatchFiles(ctx context.Context, req *connect.Request[runtimev1.WatchFilesRequest], ss *connect.ServerStream[runtimev1.WatchFilesResponse]) error {	
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.Msg.InstanceId),
+		attribute.Bool("args.replay", req.Msg.Replay),
 	)
 
-	if !auth.GetClaims(ss.Context()).CanInstance(req.InstanceId, auth.ReadRepo) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.ReadRepo) {
 		return ErrForbidden
 	}
 
-	repo, err := s.runtime.Repo(ss.Context(), req.InstanceId)
+	repo, err := s.runtime.Repo(ctx, req.Msg.InstanceId)
 	if err != nil {
 		return err
 	}
 
-	if req.Replay {
-		paths, err := repo.ListRecursive(ss.Context(), req.InstanceId, "**")
+	if req.Msg.Replay {
+		paths, err := repo.ListRecursive(ctx, req.Msg.InstanceId, "**")
 		if err != nil {
 			return err
 		}
 		for _, p := range paths {
-			err = ss.Send(&runtimev1.WatchFilesResponse{
+			err = ss.Conn().Send(&runtimev1.WatchFilesResponse{
 				Event: runtimev1.FileEvent_FILE_EVENT_WRITE,
 				Path:  p,
 			})
@@ -76,10 +76,10 @@ func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, ss runtimev1.Runti
 		}
 	}
 
-	return repo.Watch(ss.Context(), "", func(events []drivers.WatchEvent) {
+	return repo.Watch(ctx, "", func(events []drivers.WatchEvent) {
 		for _, event := range events {
 			if !event.Dir {
-				err := ss.Send(&runtimev1.WatchFilesResponse{
+				err := ss.Conn().Send(&runtimev1.WatchFilesResponse{
 					Event: event.Type,
 					Path:  event.Path,
 				})
@@ -92,90 +92,90 @@ func (s *Server) WatchFiles(req *runtimev1.WatchFilesRequest, ss runtimev1.Runti
 }
 
 // GetFile implements RuntimeService.
-func (s *Server) GetFile(ctx context.Context, req *runtimev1.GetFileRequest) (*runtimev1.GetFileResponse, error) {
+func (s *Server) GetFile(ctx context.Context, req *connect.Request[runtimev1.GetFileRequest]) (*connect.Response[runtimev1.GetFileResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.path", req.Path),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
+		attribute.String("args.path", req.Msg.Path),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadRepo) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.ReadRepo) {
 		return nil, ErrForbidden
 	}
 
-	blob, lastUpdated, err := s.runtime.GetFile(ctx, req.InstanceId, req.Path)
+	blob, lastUpdated, err := s.runtime.GetFile(ctx, req.Msg.InstanceId, req.Msg.Path)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &runtimev1.GetFileResponse{Blob: blob, UpdatedOn: timestamppb.New(lastUpdated)}, nil
+	return connect.NewResponse(&runtimev1.GetFileResponse{Blob: blob, UpdatedOn: timestamppb.New(lastUpdated)}), nil
 }
 
 // PutFile implements RuntimeService.
-func (s *Server) PutFile(ctx context.Context, req *runtimev1.PutFileRequest) (*runtimev1.PutFileResponse, error) {
+func (s *Server) PutFile(ctx context.Context, req *connect.Request[runtimev1.PutFileRequest]) (*connect.Response[runtimev1.PutFileResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.path", req.Path),
-		attribute.Bool("args.create", req.Create),
-		attribute.Bool("args.create_only", req.CreateOnly),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
+		attribute.String("args.path", req.Msg.Path),
+		attribute.Bool("args.create", req.Msg.Create),
+		attribute.Bool("args.create_only", req.Msg.CreateOnly),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.EditRepo) {
 		return nil, ErrForbidden
 	}
 
-	err := s.runtime.PutFile(ctx, req.InstanceId, req.Path, strings.NewReader(req.Blob), req.Create, req.CreateOnly)
+	err := s.runtime.PutFile(ctx, req.Msg.InstanceId, req.Msg.Path, strings.NewReader(req.Msg.Blob), req.Msg.Create, req.Msg.CreateOnly)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &runtimev1.PutFileResponse{}, nil
+	return connect.NewResponse(&runtimev1.PutFileResponse{}), nil
 }
 
 // DeleteFile implements RuntimeService.
-func (s *Server) DeleteFile(ctx context.Context, req *runtimev1.DeleteFileRequest) (*runtimev1.DeleteFileResponse, error) {
+func (s *Server) DeleteFile(ctx context.Context, req *connect.Request[runtimev1.DeleteFileRequest]) (*connect.Response[runtimev1.DeleteFileResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.path", req.Path),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
+		attribute.String("args.path", req.Msg.Path),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.EditRepo) {
 		return nil, ErrForbidden
 	}
 
-	err := s.runtime.DeleteFile(ctx, req.InstanceId, req.Path)
+	err := s.runtime.DeleteFile(ctx, req.Msg.InstanceId, req.Msg.Path)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &runtimev1.DeleteFileResponse{}, nil
+	return connect.NewResponse(&runtimev1.DeleteFileResponse{}), nil
 }
 
 // RenameFile implements RuntimeService.
-func (s *Server) RenameFile(ctx context.Context, req *runtimev1.RenameFileRequest) (*runtimev1.RenameFileResponse, error) {
+func (s *Server) RenameFile(ctx context.Context, req *connect.Request[runtimev1.RenameFileRequest]) (*connect.Response[runtimev1.RenameFileResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.from_path", req.FromPath),
-		attribute.String("args.to_path", req.ToPath),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
+		attribute.String("args.from_path", req.Msg.FromPath),
+		attribute.String("args.to_path", req.Msg.ToPath),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.EditRepo) {
 		return nil, ErrForbidden
 	}
 
-	err := s.runtime.RenameFile(ctx, req.InstanceId, req.FromPath, req.ToPath)
+	err := s.runtime.RenameFile(ctx, req.Msg.InstanceId, req.Msg.FromPath, req.Msg.ToPath)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &runtimev1.RenameFileResponse{}, nil
+	return connect.NewResponse(&runtimev1.RenameFileResponse{}), nil
 }
 
 // UploadMultipartFile implements the same functionality as PutFile, but for multipart HTTP upload.

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bufbuild/connect-go"
 	jsonvalue "github.com/Andrew-M-C/go.jsonvalue"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -16,22 +17,22 @@ import (
 )
 
 // Query implements QueryService.
-func (s *Server) Query(ctx context.Context, req *runtimev1.QueryRequest) (*runtimev1.QueryResponse, error) {
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadOLAP) {
+func (s *Server) Query(ctx context.Context, req *connect.Request[runtimev1.QueryRequest]) (*connect.Response[runtimev1.QueryResponse], error) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.ReadOLAP) {
 		return nil, ErrForbidden
 	}
 
-	args := make([]any, len(req.Args))
-	for i, arg := range req.Args {
+	args := make([]any, len(req.Msg.Args))
+	for i, arg := range req.Msg.Args {
 		args[i] = arg.AsInterface()
 	}
 
-	olap, err := s.runtime.OLAP(ctx, req.InstanceId)
+	olap, err := s.runtime.OLAP(ctx, req.Msg.InstanceId)
 	if err != nil {
 		return nil, err
 	}
 
-	transformedSQL, err := ensureLimits(ctx, olap, req.Sql, int(req.Limit))
+	transformedSQL, err := ensureLimits(ctx, olap, req.Msg.Sql, int(req.Msg.Limit))
 	if err != nil {
 		return nil, err
 	}
@@ -39,8 +40,8 @@ func (s *Server) Query(ctx context.Context, req *runtimev1.QueryRequest) (*runti
 	res, err := olap.Execute(ctx, &drivers.Statement{
 		Query:            transformedSQL,
 		Args:             args,
-		DryRun:           req.DryRun,
-		Priority:         int(req.Priority),
+		DryRun:           req.Msg.DryRun,
+		Priority:         int(req.Msg.Priority),
 		ExecutionTimeout: 2 * time.Minute,
 	})
 	if err != nil {
@@ -49,9 +50,9 @@ func (s *Server) Query(ctx context.Context, req *runtimev1.QueryRequest) (*runti
 	}
 
 	// NOTE: Currently, query returns nil res for successful dry-run queries
-	if req.DryRun {
+	if req.Msg.DryRun {
 		// TODO: Return a meta object for dry-run queries
-		return &runtimev1.QueryResponse{}, nil
+		return connect.NewResponse(&runtimev1.QueryResponse{}), nil
 	}
 
 	defer res.Close()
@@ -66,7 +67,7 @@ func (s *Server) Query(ctx context.Context, req *runtimev1.QueryRequest) (*runti
 		Data: data,
 	}
 
-	return resp, nil
+	return connect.NewResponse(resp), nil
 }
 
 func rowsToData(rows *drivers.Result) ([]*structpb.Struct, error) {

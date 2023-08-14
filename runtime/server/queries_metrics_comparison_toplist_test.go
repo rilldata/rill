@@ -5,6 +5,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"testing"
 
+	"github.com/bufbuild/connect-go"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/testruntime"
@@ -59,7 +60,7 @@ func TestServer_MetricsViewComparisonToplist(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), connect.NewRequest(&runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "ad words",
@@ -79,9 +80,9 @@ func TestServer_MetricsViewComparisonToplist(t *testing.T) {
 				Ascending:   true,
 			},
 		},
-	})
+	}))
 
-	rows := tr.Rows
+	rows := tr.Msg.Rows
 	require.NoError(t, err)
 	require.Equal(t, 1, len(rows))
 	require.Equal(t, "cars", rows[0].DimensionValue.GetStringValue())
@@ -104,7 +105,7 @@ func TestServer_MetricsViewComparisonToplist_inline_measures(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), connect.NewRequest(&runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "ad words",
@@ -130,9 +131,9 @@ func TestServer_MetricsViewComparisonToplist_inline_measures(t *testing.T) {
 				Ascending:   true,
 			},
 		},
-	})
+	}))
 
-	rows := tr.Rows
+	rows := tr.Msg.Rows
 	require.NoError(t, err)
 	require.Equal(t, 1, len(rows))
 	require.Equal(t, "cars", rows[0].DimensionValue.GetStringValue())
@@ -154,7 +155,7 @@ func TestServer_MetricsViewComparisonToplist_nulls(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), connect.NewRequest(&runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "domain",
@@ -174,9 +175,9 @@ func TestServer_MetricsViewComparisonToplist_nulls(t *testing.T) {
 				Ascending:   true,
 			},
 		},
-	})
+	}))
 
-	rows := tr.Rows
+	rows := tr.Msg.Rows
 	require.NoError(t, err)
 	require.Equal(t, 2, len(rows))
 
@@ -214,7 +215,7 @@ func TestServer_MetricsViewComparisonToplist_sort_by_base(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), connect.NewRequest(&runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_mini_metrics",
 		DimensionName:   "domain",
@@ -234,9 +235,9 @@ func TestServer_MetricsViewComparisonToplist_sort_by_base(t *testing.T) {
 				Ascending:   false,
 			},
 		},
-	})
+	}))
 
-	rows := tr.Rows
+	rows := tr.Msg.Rows
 	require.NoError(t, err)
 	require.Equal(t, 2, len(rows))
 
@@ -265,7 +266,7 @@ func TestServer_MetricsViewComparisonToplist_sort_by_comparison(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), connect.NewRequest(&runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_mini_metrics",
 		DimensionName:   "domain",
@@ -285,9 +286,9 @@ func TestServer_MetricsViewComparisonToplist_sort_by_comparison(t *testing.T) {
 				Ascending:   false,
 			},
 		},
-	})
+	}))
 
-	rows := tr.Rows
+	rows := tr.Msg.Rows
 	require.NoError(t, err)
 	require.Equal(t, 2, len(rows))
 
@@ -317,7 +318,7 @@ func TestServer_MetricsViewComparisonToplist_sort_by_abs_delta(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), connect.NewRequest(&runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_mini_metrics",
 		DimensionName:   "domain",
@@ -337,9 +338,9 @@ func TestServer_MetricsViewComparisonToplist_sort_by_abs_delta(t *testing.T) {
 				Ascending:   false,
 			},
 		},
-	})
+	}))
 
-	rows := tr.Rows
+	rows := tr.Msg.Rows
 	require.NoError(t, err)
 	require.Equal(t, 2, len(rows))
 
@@ -368,7 +369,7 @@ func TestServer_MetricsViewComparisonToplist_sort_by_rel_delta(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), connect.NewRequest(&runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_mini_metrics",
 		DimensionName:   "domain",
@@ -388,9 +389,9 @@ func TestServer_MetricsViewComparisonToplist_sort_by_rel_delta(t *testing.T) {
 				Ascending:   false,
 			},
 		},
-	})
+	}))
 
-	rows := tr.Rows
+	rows := tr.Msg.Rows
 	require.NoError(t, err)
 	require.Equal(t, 2, len(rows))
 
@@ -411,7 +412,7 @@ func TestServer_MetricsViewComparisonToplist_sort_error(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	_, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	_, err := server.MetricsViewComparisonToplist(testCtx(), connect.NewRequest(&runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_mini_metrics",
 		DimensionName:   "domain",
@@ -431,7 +432,7 @@ func TestServer_MetricsViewComparisonToplist_sort_error(t *testing.T) {
 				Ascending:   false,
 			},
 		},
-	})
+	}))
 	require.Error(t, err)
 }
 
@@ -447,7 +448,7 @@ func TestServer_MetricsViewComparisonToplist_sort_by_delta_limit_1(t *testing.T)
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), connect.NewRequest(&runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_mini_metrics",
 		DimensionName:   "domain",
@@ -468,9 +469,9 @@ func TestServer_MetricsViewComparisonToplist_sort_by_delta_limit_1(t *testing.T)
 			},
 		},
 		Limit: 1,
-	})
+	}))
 
-	rows := tr.Rows
+	rows := tr.Msg.Rows
 	require.NoError(t, err)
 	require.Equal(t, 1, len(rows))
 
@@ -485,7 +486,7 @@ func TestServer_MetricsViewComparisonToplist_sort_by_base_limit_1(t *testing.T) 
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), connect.NewRequest(&runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_mini_metrics",
 		DimensionName:   "domain",
@@ -506,9 +507,9 @@ func TestServer_MetricsViewComparisonToplist_sort_by_base_limit_1(t *testing.T) 
 			},
 		},
 		Limit: 1,
-	})
+	}))
 
-	rows := tr.Rows
+	rows := tr.Msg.Rows
 	require.NoError(t, err)
 	require.Equal(t, 1, len(rows))
 
@@ -523,7 +524,7 @@ func TestServer_MetricsViewComparisonToplist_sort_by_base_filter(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), connect.NewRequest(&runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_mini_metrics",
 		DimensionName:   "domain",
@@ -551,9 +552,9 @@ func TestServer_MetricsViewComparisonToplist_sort_by_base_filter(t *testing.T) {
 				},
 			},
 		},
-	})
+	}))
 
-	rows := tr.Rows
+	rows := tr.Msg.Rows
 	require.NoError(t, err)
 	require.Equal(t, 1, len(rows))
 
@@ -585,7 +586,7 @@ func TestServer_MetricsViewComparisonToplist_2_measures(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), connect.NewRequest(&runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_mini_metrics",
 		DimensionName:   "domain",
@@ -605,9 +606,9 @@ func TestServer_MetricsViewComparisonToplist_2_measures(t *testing.T) {
 				Ascending:   false,
 			},
 		},
-	})
+	}))
 
-	rows := tr.Rows
+	rows := tr.Msg.Rows
 	require.NoError(t, err)
 	require.Equal(t, 2, len(rows))
 
@@ -659,7 +660,7 @@ func TestServer_MetricsViewComparisonToplist_no_comparison(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), connect.NewRequest(&runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "domain",
@@ -670,25 +671,25 @@ func TestServer_MetricsViewComparisonToplist_no_comparison(t *testing.T) {
 				Ascending:   false,
 			},
 		},
-	})
+	}))
 	require.NoError(t, err)
-	require.Equal(t, 2, len(tr.Rows))
+	require.Equal(t, 2, len(tr.Msg.Rows))
 
-	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
-	require.Equal(t, 1, len(tr.Rows[1].MeasureValues))
+	require.Equal(t, 1, len(tr.Msg.Rows[0].MeasureValues))
+	require.Equal(t, 1, len(tr.Msg.Rows[1].MeasureValues))
 
-	require.Equal(t, "msn.com", tr.Rows[0].DimensionValue.GetStringValue())
-	require.Equal(t, 2.0, tr.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
+	require.Equal(t, "msn.com", tr.Msg.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, 2.0, tr.Msg.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
 
-	require.Equal(t, "yahoo.com", tr.Rows[1].DimensionValue.GetStringValue())
-	require.Equal(t, 1.0, tr.Rows[1].MeasureValues[0].BaseValue.GetNumberValue())
+	require.Equal(t, "yahoo.com", tr.Msg.Rows[1].DimensionValue.GetStringValue())
+	require.Equal(t, 1.0, tr.Msg.Rows[1].MeasureValues[0].BaseValue.GetNumberValue())
 }
 
 func TestServer_MetricsViewComparisonToplist_no_comparison_quotes(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), connect.NewRequest(&runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "ad words",
@@ -698,40 +699,40 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_quotes(t *testing.T) 
 				MeasureName: "measure_0",
 			},
 		},
-	})
+	}))
 	require.NoError(t, err)
-	require.Equal(t, 1, len(tr.Rows))
+	require.Equal(t, 1, len(tr.Msg.Rows))
 
-	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
+	require.Equal(t, 1, len(tr.Msg.Rows[0].MeasureValues))
 
-	require.Equal(t, "cars", tr.Rows[0].DimensionValue.GetStringValue())
-	require.Equal(t, 2.0, tr.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
+	require.Equal(t, "cars", tr.Msg.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, 2.0, tr.Msg.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
 }
 
 func TestServer_MetricsViewComparisonToplist_no_comparison_numeric_dim(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), connect.NewRequest(&runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "numeric_dim",
 		MeasureNames:    []string{"measure_0"},
-	})
+	}))
 
 	require.NoError(t, err)
-	require.Equal(t, 1, len(tr.Rows))
-	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
+	require.Equal(t, 1, len(tr.Msg.Rows))
+	require.Equal(t, 1, len(tr.Msg.Rows[0].MeasureValues))
 
-	require.Equal(t, float64(1), tr.Rows[0].DimensionValue.GetNumberValue())
-	require.Equal(t, 2.0, tr.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
+	require.Equal(t, float64(1), tr.Msg.Rows[0].DimensionValue.GetNumberValue())
+	require.Equal(t, 2.0, tr.Msg.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
 }
 
 func Ignore_TestServer_MetricsViewComparisonToplist_no_comparison_HugeInt(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), connect.NewRequest(&runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "id",
@@ -741,25 +742,25 @@ func Ignore_TestServer_MetricsViewComparisonToplist_no_comparison_HugeInt(t *tes
 				MeasureName: "measure_2",
 			},
 		},
-	})
+	}))
 	require.NoError(t, err)
-	require.Equal(t, 2, len(tr.Rows))
+	require.Equal(t, 2, len(tr.Msg.Rows))
 
-	require.Equal(t, 2, len(tr.Rows[0].MeasureValues))
-	require.Equal(t, 2, len(tr.Rows[1].MeasureValues))
+	require.Equal(t, 2, len(tr.Msg.Rows[0].MeasureValues))
+	require.Equal(t, 2, len(tr.Msg.Rows[1].MeasureValues))
 
-	require.Equal(t, "170141183460469231731687303715884105727", tr.Rows[0].DimensionValue.GetStringValue())
-	require.Equal(t, 1.0, tr.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
+	require.Equal(t, "170141183460469231731687303715884105727", tr.Msg.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, 1.0, tr.Msg.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
 
-	require.Equal(t, "170141183460469231731687303715884105726", tr.Rows[1].DimensionValue.GetStringValue())
-	require.Equal(t, 2.0, tr.Rows[1].MeasureValues[0].BaseValue.GetNumberValue())
+	require.Equal(t, "170141183460469231731687303715884105726", tr.Msg.Rows[1].DimensionValue.GetStringValue())
+	require.Equal(t, 2.0, tr.Msg.Rows[1].MeasureValues[0].BaseValue.GetNumberValue())
 }
 
 func TestServer_MetricsViewComparisonToplist_no_comparison_asc(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), connect.NewRequest(&runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "domain",
@@ -770,25 +771,25 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_asc(t *testing.T) {
 				Ascending:   true,
 			},
 		},
-	})
+	}))
 	require.NoError(t, err)
-	require.Equal(t, 2, len(tr.Rows))
+	require.Equal(t, 2, len(tr.Msg.Rows))
 
-	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
-	require.Equal(t, 1, len(tr.Rows[1].MeasureValues))
+	require.Equal(t, 1, len(tr.Msg.Rows[0].MeasureValues))
+	require.Equal(t, 1, len(tr.Msg.Rows[1].MeasureValues))
 
-	require.Equal(t, "yahoo.com", tr.Rows[0].DimensionValue.GetStringValue())
-	require.Equal(t, 1.0, tr.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
+	require.Equal(t, "yahoo.com", tr.Msg.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, 1.0, tr.Msg.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
 
-	require.Equal(t, "msn.com", tr.Rows[1].DimensionValue.GetStringValue())
-	require.Equal(t, 2.0, tr.Rows[1].MeasureValues[0].BaseValue.GetNumberValue())
+	require.Equal(t, "msn.com", tr.Msg.Rows[1].DimensionValue.GetStringValue())
+	require.Equal(t, 2.0, tr.Msg.Rows[1].MeasureValues[0].BaseValue.GetNumberValue())
 }
 
 func TestServer_MetricsViewComparisonToplist_no_comparison_nulls_last(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), connect.NewRequest(&runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "domain",
@@ -799,20 +800,20 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_nulls_last(t *testing
 				Ascending:   true,
 			},
 		},
-	})
+	}))
 	require.NoError(t, err)
-	require.Equal(t, 2, len(tr.Rows))
+	require.Equal(t, 2, len(tr.Msg.Rows))
 
-	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
-	require.Equal(t, 1, len(tr.Rows[1].MeasureValues))
+	require.Equal(t, 1, len(tr.Msg.Rows[0].MeasureValues))
+	require.Equal(t, 1, len(tr.Msg.Rows[1].MeasureValues))
 
-	require.Equal(t, "yahoo.com", tr.Rows[0].DimensionValue.GetStringValue())
-	require.Equal(t, 1.0, tr.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
+	require.Equal(t, "yahoo.com", tr.Msg.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, 1.0, tr.Msg.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
 
-	require.Equal(t, "msn.com", tr.Rows[1].DimensionValue.GetStringValue())
-	require.Equal(t, structpb.NullValue(0), tr.Rows[1].MeasureValues[0].BaseValue.GetNullValue())
+	require.Equal(t, "msn.com", tr.Msg.Rows[1].DimensionValue.GetStringValue())
+	require.Equal(t, structpb.NullValue(0), tr.Msg.Rows[1].MeasureValues[0].BaseValue.GetNullValue())
 
-	tr, err = server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err = server.MetricsViewComparisonToplist(testCtx(), connect.NewRequest(&runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "domain",
@@ -823,26 +824,26 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_nulls_last(t *testing
 				Ascending:   false,
 			},
 		},
-	})
+	}))
 
 	require.NoError(t, err)
-	require.Equal(t, 2, len(tr.Rows))
+	require.Equal(t, 2, len(tr.Msg.Rows))
 
-	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
-	require.Equal(t, 1, len(tr.Rows[1].MeasureValues))
+	require.Equal(t, 1, len(tr.Msg.Rows[0].MeasureValues))
+	require.Equal(t, 1, len(tr.Msg.Rows[1].MeasureValues))
 
-	require.Equal(t, "yahoo.com", tr.Rows[0].DimensionValue.GetStringValue())
-	require.Equal(t, 1.0, tr.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
+	require.Equal(t, "yahoo.com", tr.Msg.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, 1.0, tr.Msg.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
 
-	require.Equal(t, "msn.com", tr.Rows[1].DimensionValue.GetStringValue())
-	require.Equal(t, structpb.NullValue(0), tr.Rows[1].MeasureValues[0].BaseValue.GetNullValue())
+	require.Equal(t, "msn.com", tr.Msg.Rows[1].DimensionValue.GetStringValue())
+	require.Equal(t, structpb.NullValue(0), tr.Msg.Rows[1].MeasureValues[0].BaseValue.GetNullValue())
 }
 
 func TestServer_MetricsViewComparisonToplist_no_comparison_asc_limit(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), connect.NewRequest(&runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "domain",
@@ -854,20 +855,20 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_asc_limit(t *testing.
 			},
 		},
 		Limit: 1,
-	})
+	}))
 	require.NoError(t, err)
-	require.Equal(t, 1, len(tr.Rows))
-	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
+	require.Equal(t, 1, len(tr.Msg.Rows))
+	require.Equal(t, 1, len(tr.Msg.Rows[0].MeasureValues))
 
-	require.Equal(t, "yahoo.com", tr.Rows[0].DimensionValue.GetStringValue())
-	require.Equal(t, 1.0, tr.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
+	require.Equal(t, "yahoo.com", tr.Msg.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, 1.0, tr.Msg.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
 }
 
 func TestServer_MetricsViewComparisonToplist_no_comparison_2measures(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), connect.NewRequest(&runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "domain",
@@ -882,25 +883,25 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_2measures(t *testing.
 				Ascending:   true,
 			},
 		},
-	})
+	}))
 	require.NoError(t, err)
-	require.Equal(t, 2, len(tr.Rows))
-	require.Equal(t, 2, len(tr.Rows[0].MeasureValues))
+	require.Equal(t, 2, len(tr.Msg.Rows))
+	require.Equal(t, 2, len(tr.Msg.Rows[0].MeasureValues))
 
-	require.Equal(t, "yahoo.com", tr.Rows[0].DimensionValue.GetStringValue())
-	require.Equal(t, 1.0, tr.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
-	require.Equal(t, 1.0, tr.Rows[0].MeasureValues[1].BaseValue.GetNumberValue())
+	require.Equal(t, "yahoo.com", tr.Msg.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, 1.0, tr.Msg.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
+	require.Equal(t, 1.0, tr.Msg.Rows[0].MeasureValues[1].BaseValue.GetNumberValue())
 
-	require.Equal(t, "msn.com", tr.Rows[1].DimensionValue.GetStringValue())
-	require.Equal(t, 1.0, tr.Rows[1].MeasureValues[0].BaseValue.GetNumberValue())
-	require.Equal(t, 2.0, tr.Rows[1].MeasureValues[1].BaseValue.GetNumberValue())
+	require.Equal(t, "msn.com", tr.Msg.Rows[1].DimensionValue.GetStringValue())
+	require.Equal(t, 1.0, tr.Msg.Rows[1].MeasureValues[0].BaseValue.GetNumberValue())
+	require.Equal(t, 2.0, tr.Msg.Rows[1].MeasureValues[1].BaseValue.GetNumberValue())
 }
 
 func TestServer_MetricsViewComparisonToplist_no_comparison_complete_source_sanity_test(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparisonToplist(testCtx(), connect.NewRequest(&runtimev1.MetricsViewComparisonToplistRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
@@ -921,8 +922,8 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_complete_source_sanit
 				},
 			},
 		},
-	})
+	}))
 	require.NoError(t, err)
-	require.True(t, len(tr.Rows) > 1)
-	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
+	require.True(t, len(tr.Msg.Rows) > 1)
+	require.Equal(t, 1, len(tr.Msg.Rows[0].MeasureValues))
 }

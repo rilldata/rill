@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/bufbuild/connect-go"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/queries"
@@ -15,13 +16,13 @@ func TestServer_MetricsViewRows(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewRows(testCtx(), &runtimev1.MetricsViewRowsRequest{
+	tr, err := server.MetricsViewRows(testCtx(), connect.NewRequest(&runtimev1.MetricsViewRowsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
-	})
+	}))
 	require.NoError(t, err)
-	require.Equal(t, 2, len(tr.Data))
-	require.Equal(t, 11, len(tr.Meta))
+	require.Equal(t, 2, len(tr.Msg.Data))
+	require.Equal(t, 11, len(tr.Msg.Meta))
 
 }
 
@@ -29,15 +30,15 @@ func TestServer_MetricsViewRows_Granularity(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewRows(testCtx(), &runtimev1.MetricsViewRowsRequest{
+	tr, err := server.MetricsViewRows(testCtx(), connect.NewRequest(&runtimev1.MetricsViewRowsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
-	})
+	}))
 	require.NoError(t, err)
-	require.Equal(t, 2, len(tr.Data))
-	require.Equal(t, 12, len(tr.Meta))
-	require.Equal(t, "timestamp__day", tr.Meta[0].Name)
+	require.Equal(t, 2, len(tr.Msg.Data))
+	require.Equal(t, 12, len(tr.Msg.Meta))
+	require.Equal(t, "timestamp__day", tr.Msg.Meta[0].Name)
 }
 
 /*
@@ -50,18 +51,18 @@ func TestServer_MetricsViewRows_Granularity_Kathmandu(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewRows(testCtx(), &runtimev1.MetricsViewRowsRequest{
+	tr, err := server.MetricsViewRows(testCtx(), connect.NewRequest(&runtimev1.MetricsViewRowsRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
 		TimeStart:       parseTimeToProtoTimeStamps(t, "2022-01-01T14:15:00Z"),
 		TimeEnd:         parseTimeToProtoTimeStamps(t, "2022-01-01T15:15:00Z"),
 		TimeZone:        "Asia/Kathmandu",
-	})
+	}))
 	require.NoError(t, err)
-	require.Equal(t, 1, len(tr.Data))
-	require.Equal(t, "timestamp__hour", tr.Meta[0].Name)
-	require.Equal(t, "2022-01-01T14:15:00Z", tr.Data[0].Fields["timestamp__hour"].GetStringValue())
+	require.Equal(t, 1, len(tr.Msg.Data))
+	require.Equal(t, "timestamp__hour", tr.Msg.Meta[0].Name)
+	require.Equal(t, "2022-01-01T14:15:00Z", tr.Msg.Data[0].Fields["timestamp__hour"].GetStringValue())
 }
 
 func TestServer_MetricsViewRows_export(t *testing.T) {

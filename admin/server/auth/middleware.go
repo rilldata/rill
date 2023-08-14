@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/bufbuild/connect-go"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
@@ -44,6 +45,35 @@ func (a *Authenticator) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 
 		return handler(newCtx, req)
 	}
+}
+
+func (a *Authenticator) UnaryServerInterceptor1() connect.Interceptor {
+	interceptor := func(next connect.UnaryFunc) connect.UnaryFunc {
+    return connect.UnaryFunc(func(
+      ctx context.Context,
+      req connect.AnyRequest,
+    ) (connect.AnyResponse, error) {
+      if req.Spec().IsClient {
+        // Send a token with client requests.
+        // req.Header().Set(tokenHeader, "sample")
+		authHeader := metautils.ExtractIncoming(ctx).Get("authorization")
+		newCtx, err := a.parseClaimsFromBearer(ctx, authHeader)
+			if err != nil {
+			return nil, status.Error(codes.Unauthenticated, err.Error())
+		}
+		return next(newCtx, req)
+      } else if metautils.ExtractIncoming(ctx).Get("authorization") == "" {
+        // Check token in handlers.
+        return nil, connect.NewError(
+          connect.CodeUnauthenticated,
+          errors.New("no token provided"),
+        )
+      }
+      return next(ctx, req)
+    })
+  }
+  return connect.UnaryInterceptorFunc(interceptor)
+
 }
 
 // StreamServerInterceptor is the streaming variant of UnaryServerInterceptor.

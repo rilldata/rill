@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	// "connectrpc.com/connect"
 	"github.com/bufbuild/connect-go"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
@@ -29,10 +28,10 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 			// 	Sentence: "Hello",
 			// }))
 
-			res, err := client.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
-			if err != nil {
-				return err
-			}
+			// res, err := client.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
+			// if err != nil {
+			// 	return err
+			// }
 
 			// 	connectClient := elizav1connect.NewElizaServiceClient(
 			// server.Client(),
@@ -46,7 +45,7 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			if len(res.Organizations) == 0 {
+			if len(res1.Msg.Organizations) == 0 {
 				cmdutil.PrintlnWarn("No orgs found")
 				return nil
 			}

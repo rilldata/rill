@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/bufbuild/connect-go"
 	"cloud.google.com/go/storage"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"gocloud.dev/blob"
@@ -16,7 +17,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (c *Connection) ListBuckets(ctx context.Context, req *runtimev1.GCSListBucketsRequest) ([]string, string, error) {
+func (c *Connection) ListBuckets(ctx context.Context, req *connect.Request[runtimev1.GCSListBucketsRequest]) ([]string, string, error) {
 	credentials, err := c.resolvedCredentials(ctx)
 	if err != nil {
 		return nil, "", err
@@ -33,11 +34,11 @@ func (c *Connection) ListBuckets(ctx context.Context, req *runtimev1.GCSListBuck
 		return nil, "", err
 	}
 
-	pageSize := int(req.PageSize)
+	pageSize := int(req.Msg.PageSize)
 	if pageSize == 0 {
 		pageSize = defaultPageSize
 	}
-	pager := iterator.NewPager(client.Buckets(ctx, projectID), pageSize, req.PageToken)
+	pager := iterator.NewPager(client.Buckets(ctx, projectID), pageSize, req.Msg.PageToken)
 	buckets := make([]*storage.BucketAttrs, 0)
 	next, err := pager.NextPage(&buckets)
 	if err != nil {
@@ -51,38 +52,38 @@ func (c *Connection) ListBuckets(ctx context.Context, req *runtimev1.GCSListBuck
 	return names, next, nil
 }
 
-func (c *Connection) ListObjects(ctx context.Context, req *runtimev1.GCSListObjectsRequest) ([]*runtimev1.GCSObject, string, error) {
+func (c *Connection) ListObjects(ctx context.Context, req *connect.Request[runtimev1.GCSListObjectsRequest]) ([]*runtimev1.GCSObject, string, error) {
 	client, err := c.createClient(ctx)
 	if err != nil {
 		return nil, "", err
 	}
 
-	bucket, err := gcsblob.OpenBucket(ctx, client, req.Bucket, nil)
+	bucket, err := gcsblob.OpenBucket(ctx, client, req.Msg.Bucket, nil)
 	if err != nil {
 		return nil, "", err
 	}
 	defer bucket.Close()
 
-	pageSize := int(req.PageSize)
+	pageSize := int(req.Msg.PageSize)
 	if pageSize == 0 {
 		pageSize = defaultPageSize
 	}
 
 	var pageToken []byte
-	if req.PageToken == "" {
+	if req.Msg.PageToken == "" {
 		pageToken = blob.FirstPageToken
 	} else {
-		pageToken = []byte(req.PageToken)
+		pageToken = []byte(req.Msg.PageToken)
 	}
 
 	objects, nextToken, err := bucket.ListPage(ctx, pageToken, pageSize, &blob.ListOptions{
-		Prefix:    req.Prefix,
-		Delimiter: req.Delimiter,
+		Prefix:    req.Msg.Prefix,
+		Delimiter: req.Msg.Delimiter,
 		BeforeList: func(as func(interface{}) bool) error {
 			var q *storage.Query
 			if as(&q) {
-				q.StartOffset = req.StartOffset
-				q.EndOffset = req.EndOffset
+				q.StartOffset = req.Msg.StartOffset
+				q.EndOffset = req.Msg.EndOffset
 			} else {
 				panic("Listobjects failed")
 			}

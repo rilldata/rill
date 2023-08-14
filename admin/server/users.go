@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/bufbuild/connect-go"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -19,7 +20,7 @@ import (
 	_ "time/tzdata"
 )
 
-func (s *Server) ListSuperusers(ctx context.Context, req *adminv1.ListSuperusersRequest) (*adminv1.ListSuperusersResponse, error) {
+func (s *Server) ListSuperusers(ctx context.Context, req *connect.Request[adminv1.ListSuperusersRequest]) (*connect.Response[adminv1.ListSuperusersResponse], error) {
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
 		return nil, status.Error(codes.PermissionDenied, "only superusers can list superusers")
@@ -35,12 +36,12 @@ func (s *Server) ListSuperusers(ctx context.Context, req *adminv1.ListSuperusers
 		dtos[i] = userToPB(user)
 	}
 
-	return &adminv1.ListSuperusersResponse{Users: dtos}, nil
+	return connect.NewResponse(&adminv1.ListSuperusersResponse{Users: dtos}), nil
 }
 
-func (s *Server) SetSuperuser(ctx context.Context, req *adminv1.SetSuperuserRequest) (*adminv1.SetSuperuserResponse, error) {
+func (s *Server) SetSuperuser(ctx context.Context, req *connect.Request[adminv1.SetSuperuserRequest]) (*connect.Response[adminv1.SetSuperuserResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.Bool("args.superuser", req.Superuser),
+		attribute.Bool("args.superuser", req.Msg.Superuser),
 	)
 
 	claims := auth.GetClaims(ctx)
@@ -48,35 +49,35 @@ func (s *Server) SetSuperuser(ctx context.Context, req *adminv1.SetSuperuserRequ
 		return nil, status.Error(codes.PermissionDenied, "only superusers can add/remove superuser")
 	}
 
-	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Msg.Email)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return nil, fmt.Errorf("user not found for email id %s", req.Email)
+			return nil, fmt.Errorf("user not found for email id %s", req.Msg.Email)
 		}
 		return nil, err
 	}
 
-	err = s.admin.DB.UpdateSuperuser(ctx, user.ID, req.Superuser)
+	err = s.admin.DB.UpdateSuperuser(ctx, user.ID, req.Msg.Superuser)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.SetSuperuserResponse{}, nil
+	return connect.NewResponse(&adminv1.SetSuperuserResponse{}), nil
 }
 
-func (s *Server) SearchUsers(ctx context.Context, req *adminv1.SearchUsersRequest) (*adminv1.SearchUsersResponse, error) {
+func (s *Server) SearchUsers(ctx context.Context, req *connect.Request[adminv1.SearchUsersRequest]) (*connect.Response[adminv1.SearchUsersResponse], error) {
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
 		return nil, status.Error(codes.PermissionDenied, "only superusers can search users by email")
 	}
 
-	token, err := unmarshalPageToken(req.PageToken)
+	token, err := unmarshalPageToken(req.Msg.PageToken)
 	if err != nil {
 		return nil, err
 	}
-	pageSize := validPageSize(req.PageSize)
+	pageSize := validPageSize(req.Msg.PageSize)
 
-	users, err := s.admin.DB.FindUsersByEmailPattern(ctx, req.EmailPattern, token.Val, pageSize)
+	users, err := s.admin.DB.FindUsersByEmailPattern(ctx, req.Msg.EmailPattern, token.Val, pageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -91,17 +92,17 @@ func (s *Server) SearchUsers(ctx context.Context, req *adminv1.SearchUsersReques
 		dtos[i] = userToPB(user)
 	}
 
-	return &adminv1.SearchUsersResponse{
+	return connect.NewResponse(&adminv1.SearchUsersResponse{
 		Users:         dtos,
 		NextPageToken: nextToken,
-	}, nil
+	}), nil
 }
 
-func (s *Server) GetCurrentUser(ctx context.Context, req *adminv1.GetCurrentUserRequest) (*adminv1.GetCurrentUserResponse, error) {
+func (s *Server) GetCurrentUser(ctx context.Context, req *connect.Request[adminv1.GetCurrentUserRequest]) (*connect.Response[adminv1.GetCurrentUserResponse], error) {
 	// Return an empty result if not authenticated.
 	claims := auth.GetClaims(ctx)
 	if claims.OwnerType() == auth.OwnerTypeAnon {
-		return &adminv1.GetCurrentUserResponse{}, nil
+		return connect.NewResponse(&adminv1.GetCurrentUserResponse{}), nil
 	}
 
 	// Error if authenticated as anything other than a user
@@ -115,15 +116,15 @@ func (s *Server) GetCurrentUser(ctx context.Context, req *adminv1.GetCurrentUser
 		return nil, err
 	}
 
-	return &adminv1.GetCurrentUserResponse{
+	return connect.NewResponse(&adminv1.GetCurrentUserResponse{
 		User: userToPB(u),
 		Preferences: &adminv1.UserPreferences{
 			TimeZone: &u.PreferenceTimeZone,
 		},
-	}, nil
+	}), nil
 }
 
-func (s *Server) UpdateUserPreferences(ctx context.Context, req *adminv1.UpdateUserPreferencesRequest) (*adminv1.UpdateUserPreferencesResponse, error) {
+func (s *Server) UpdateUserPreferences(ctx context.Context, req *connect.Request[adminv1.UpdateUserPreferencesRequest]) (*connect.Response[adminv1.UpdateUserPreferencesResponse], error) {
 	claims := auth.GetClaims(ctx)
 
 	// Error if authenticated as anything other than a user
@@ -131,13 +132,13 @@ func (s *Server) UpdateUserPreferences(ctx context.Context, req *adminv1.UpdateU
 		return nil, fmt.Errorf("not authenticated as a user")
 	}
 
-	if req.Preferences.TimeZone != nil {
-		_, err := time.LoadLocation(*req.Preferences.TimeZone)
+	if req.Msg.Preferences.TimeZone != nil {
+		_, err := time.LoadLocation(*req.Msg.Preferences.TimeZone)
 		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid time zone: %s", *req.Preferences.TimeZone))
+			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid time zone: %s", *req.Msg.Preferences.TimeZone))
 		}
 
-		observability.AddRequestAttributes(ctx, attribute.String("preferences_time_zone", *req.Preferences.TimeZone))
+		observability.AddRequestAttributes(ctx, attribute.String("preferences_time_zone", *req.Msg.Preferences.TimeZone))
 	}
 
 	// Owner is a user
@@ -152,23 +153,23 @@ func (s *Server) UpdateUserPreferences(ctx context.Context, req *adminv1.UpdateU
 		PhotoURL:            user.PhotoURL,
 		GithubUsername:      user.GithubUsername,
 		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
-		PreferenceTimeZone:  valOrDefault(req.Preferences.TimeZone, user.PreferenceTimeZone),
+		PreferenceTimeZone:  valOrDefault(req.Msg.Preferences.TimeZone, user.PreferenceTimeZone),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &adminv1.UpdateUserPreferencesResponse{
+	return connect.NewResponse(&adminv1.UpdateUserPreferencesResponse{
 		Preferences: &adminv1.UserPreferences{
 			TimeZone: &updatedUser.PreferenceTimeZone,
 		},
-	}, nil
+	}), nil
 }
 
 // IssueRepresentativeAuthToken returns the temporary auth token for representing email
-func (s *Server) IssueRepresentativeAuthToken(ctx context.Context, req *adminv1.IssueRepresentativeAuthTokenRequest) (*adminv1.IssueRepresentativeAuthTokenResponse, error) {
+func (s *Server) IssueRepresentativeAuthToken(ctx context.Context, req *connect.Request[adminv1.IssueRepresentativeAuthTokenRequest]) (*connect.Response[adminv1.IssueRepresentativeAuthTokenResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.Int64("args.ttl_minutes", req.TtlMinutes),
+		attribute.Int64("args.ttl_minutes", req.Msg.TtlMinutes),
 	)
 
 	claims := auth.GetClaims(ctx)
@@ -182,12 +183,12 @@ func (s *Server) IssueRepresentativeAuthToken(ctx context.Context, req *adminv1.
 		return nil, fmt.Errorf("not authenticated as a user")
 	}
 
-	u, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	u, err := s.admin.DB.FindUserByEmail(ctx, req.Msg.Email)
 	if err != nil {
 		return nil, err
 	}
 
-	ttl := time.Duration(req.TtlMinutes) * time.Minute
+	ttl := time.Duration(req.Msg.TtlMinutes) * time.Minute
 	displayName := fmt.Sprintf("Support for %s", u.Email)
 
 	token, err := s.admin.IssueUserAuthToken(ctx, claims.OwnerID(), database.AuthClientIDRillSupport, displayName, &u.ID, &ttl)
@@ -195,13 +196,13 @@ func (s *Server) IssueRepresentativeAuthToken(ctx context.Context, req *adminv1.
 		return nil, err
 	}
 
-	return &adminv1.IssueRepresentativeAuthTokenResponse{
+	return connect.NewResponse(&adminv1.IssueRepresentativeAuthTokenResponse{
 		Token: token.Token().String(),
-	}, nil
+	}), nil
 }
 
 // RevokeCurrentAuthToken revokes the current auth token
-func (s *Server) RevokeCurrentAuthToken(ctx context.Context, req *adminv1.RevokeCurrentAuthTokenRequest) (*adminv1.RevokeCurrentAuthTokenResponse, error) {
+func (s *Server) RevokeCurrentAuthToken(ctx context.Context, req *connect.Request[adminv1.RevokeCurrentAuthTokenRequest]) (*connect.Response[adminv1.RevokeCurrentAuthTokenResponse], error) {
 	claims := auth.GetClaims(ctx)
 	if claims == nil {
 		return nil, status.Error(codes.Unauthenticated, "not authenticated")
@@ -218,19 +219,19 @@ func (s *Server) RevokeCurrentAuthToken(ctx context.Context, req *adminv1.Revoke
 		return nil, err
 	}
 
-	return &adminv1.RevokeCurrentAuthTokenResponse{
+	return connect.NewResponse(&adminv1.RevokeCurrentAuthTokenResponse{
 		TokenId: tokenID,
-	}, nil
+	}), nil
 }
 
-func (s *Server) SudoGetResource(ctx context.Context, req *adminv1.SudoGetResourceRequest) (*adminv1.SudoGetResourceResponse, error) {
+func (s *Server) SudoGetResource(ctx context.Context, req *connect.Request[adminv1.SudoGetResourceRequest]) (*connect.Response[adminv1.SudoGetResourceResponse], error) {
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
 		return nil, status.Error(codes.PermissionDenied, "only superusers can lookup resource")
 	}
 
 	res := &adminv1.SudoGetResourceResponse{}
-	switch id := req.Id.(type) {
+	switch id := req.Msg.Id.(type) {
 	case *adminv1.SudoGetResourceRequest_UserId:
 		user, err := s.admin.DB.FindUser(ctx, id.UserId)
 		if err != nil {
@@ -269,27 +270,27 @@ func (s *Server) SudoGetResource(ctx context.Context, req *adminv1.SudoGetResour
 		return nil, status.Errorf(codes.Internal, "unexpected resource type %T", id)
 	}
 
-	return res, nil
+	return connect.NewResponse(res), nil
 }
 
-func (s *Server) GetUser(ctx context.Context, req *adminv1.GetUserRequest) (*adminv1.GetUserResponse, error) {
+func (s *Server) GetUser(ctx context.Context, req *connect.Request[adminv1.GetUserRequest]) (*connect.Response[adminv1.GetUserResponse], error) {
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
 		return nil, status.Error(codes.PermissionDenied, "only superusers can get user")
 	}
 
-	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Msg.Email)
 	if err != nil {
 		return nil, err
 	}
 
-	return &adminv1.GetUserResponse{User: userToPB(user)}, nil
+	return connect.NewResponse(&adminv1.GetUserResponse{User: userToPB(user)}), nil
 }
 
-func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpdateUserQuotasRequest) (*adminv1.SudoUpdateUserQuotasResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.email", req.Email))
-	if req.SingleuserOrgs != nil {
-		observability.AddRequestAttributes(ctx, attribute.Int("args.singleuser_orgs", int(*req.SingleuserOrgs)))
+func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *connect.Request[adminv1.SudoUpdateUserQuotasRequest]) (*connect.Response[adminv1.SudoUpdateUserQuotasResponse], error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.email", req.Msg.Email))
+	if req.Msg.SingleuserOrgs != nil {
+		observability.AddRequestAttributes(ctx, attribute.Int("args.singleuser_orgs", int(*req.Msg.SingleuserOrgs)))
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -297,7 +298,7 @@ func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpda
 		return nil, status.Error(codes.PermissionDenied, "only superusers can manage quotas")
 	}
 
-	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Msg.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -307,14 +308,14 @@ func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpda
 		DisplayName:         user.DisplayName,
 		PhotoURL:            user.PhotoURL,
 		GithubUsername:      user.GithubUsername,
-		QuotaSingleuserOrgs: int(valOrDefault(req.SingleuserOrgs, uint32(user.QuotaSingleuserOrgs))),
+		QuotaSingleuserOrgs: int(valOrDefault(req.Msg.SingleuserOrgs, uint32(user.QuotaSingleuserOrgs))),
 		PreferenceTimeZone:  user.PreferenceTimeZone,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &adminv1.SudoUpdateUserQuotasResponse{User: userToPB(updatedUser)}, nil
+	return connect.NewResponse(&adminv1.SudoUpdateUserQuotasResponse{User: userToPB(updatedUser)}), nil
 }
 
 func userToPB(u *database.User) *adminv1.User {

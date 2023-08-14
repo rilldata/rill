@@ -53,7 +53,7 @@ func TestServer_PutFileAndReconcile(t *testing.T) {
 		Path:       sourcePath,
 	})
 	require.NoError(t, err)
-	require.Len(t, refreshResp.Errors, 0)
+	require.Len(t, refreshResp.Msg.Errors, 0)
 	require.Equal(t, sourcePath, resp.AffectedPaths[0])
 
 	// rename

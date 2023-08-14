@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"path/filepath"
 
+	"github.com/bufbuild/connect-go"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/pkg/examples"
@@ -15,7 +16,7 @@ import (
 )
 
 // ListExamples returns a list of embedded examples
-func (s *Server) ListExamples(ctx context.Context, req *runtimev1.ListExamplesRequest) (*runtimev1.ListExamplesResponse, error) {
+func (s *Server) ListExamples(ctx context.Context, req *connect.Request[runtimev1.ListExamplesRequest]) (*connect.Response[runtimev1.ListExamplesResponse], error) {
 	list, err := examples.List()
 	if err != nil {
 		return nil, err
@@ -30,37 +31,37 @@ func (s *Server) ListExamples(ctx context.Context, req *runtimev1.ListExamplesRe
 		}
 	}
 
-	return &runtimev1.ListExamplesResponse{
+	return connect.NewResponse(&runtimev1.ListExamplesResponse{
 		Examples: resp,
-	}, nil
+	}), nil
 }
 
-func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExampleRequest) (*runtimev1.UnpackExampleResponse, error) {
+func (s *Server) UnpackExample(ctx context.Context, req *connect.Request[runtimev1.UnpackExampleRequest]) (*connect.Response[runtimev1.UnpackExampleResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.name", req.Name),
-		attribute.Bool("args.force", req.Force),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
+		attribute.String("args.name", req.Msg.Name),
+		attribute.Bool("args.force", req.Msg.Force),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.EditRepo) {
 		return nil, ErrForbidden
 	}
 
-	repo, err := s.runtime.Repo(ctx, req.InstanceId)
+	repo, err := s.runtime.Repo(ctx, req.Msg.InstanceId)
 	if err != nil {
 		return nil, err
 	}
 
-	exampleFS, err := examples.Get(req.Name)
+	exampleFS, err := examples.Get(req.Msg.Name)
 	if err != nil {
 		return nil, err
 	}
 
 	existingPaths := make(map[string]bool)
-	if !req.Force {
-		paths, err := repo.ListRecursive(ctx, req.InstanceId, "**")
+	if !req.Msg.Force {
+		paths, err := repo.ListRecursive(ctx, req.Msg.InstanceId, "**")
 		if err != nil {
 			return nil, err
 		}
@@ -100,44 +101,44 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 			}
 			defer file.Close()
 
-			return repo.Put(ctx, req.InstanceId, path, file)
+			return repo.Put(ctx, req.Msg.InstanceId, path, file)
 		}()
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return &runtimev1.UnpackExampleResponse{}, nil
+	return connect.NewResponse(&runtimev1.UnpackExampleResponse{}), nil
 }
 
-func (s *Server) UnpackEmpty(ctx context.Context, req *runtimev1.UnpackEmptyRequest) (*runtimev1.UnpackEmptyResponse, error) {
+func (s *Server) UnpackEmpty(ctx context.Context, req *connect.Request[runtimev1.UnpackEmptyRequest]) (*connect.Response[runtimev1.UnpackEmptyResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.title", req.Title),
-		attribute.Bool("args.force", req.Force),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
+		attribute.String("args.title", req.Msg.Title),
+		attribute.Bool("args.force", req.Msg.Force),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditRepo) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.EditRepo) {
 		return nil, ErrForbidden
 	}
 
-	repo, err := s.runtime.Repo(ctx, req.InstanceId)
+	repo, err := s.runtime.Repo(ctx, req.Msg.InstanceId)
 	if err != nil {
 		return nil, err
 	}
 
-	c := rillv1beta.New(repo, req.InstanceId)
-	if c.IsInit(ctx) && !req.Force {
+	c := rillv1beta.New(repo, req.Msg.InstanceId)
+	if c.IsInit(ctx) && !req.Msg.Force {
 		return nil, fmt.Errorf("a Rill project already exists")
 	}
 
 	// Init empty project
-	err = c.InitEmpty(ctx, req.Title)
+	err = c.InitEmpty(ctx, req.Msg.Title)
 	if err != nil {
 		return nil, err
 	}
 
-	return &runtimev1.UnpackEmptyResponse{}, nil
+	return connect.NewResponse(&runtimev1.UnpackEmptyResponse{}), nil
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/bufbuild/connect-go"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -59,26 +60,26 @@ func (c *Connection) ListBuckets(ctx context.Context) ([]string, error) {
 	return buckets, nil
 }
 
-func (c *Connection) ListObjects(ctx context.Context, req *runtimev1.S3ListObjectsRequest) ([]*runtimev1.S3Object, string, error) {
+func (c *Connection) ListObjects(ctx context.Context, req *connect.Request[runtimev1.S3ListObjectsRequest]) ([]*runtimev1.S3Object, string, error) {
 	creds, err := c.getCredentials()
 	if err != nil {
 		return nil, "", err
 	}
 
-	bucket, err := c.openBucket(ctx, &sourceProperties{AWSRegion: req.Region}, req.Bucket, creds)
+	bucket, err := c.openBucket(ctx, &sourceProperties{AWSRegion: req.Msg.Region}, req.Msg.Bucket, creds)
 	if err != nil {
 		return nil, "", err
 	}
 	defer bucket.Close()
 
 	var pageToken []byte
-	if req.PageToken == "" {
+	if req.Msg.PageToken == "" {
 		pageToken = blob.FirstPageToken
 	} else {
-		pageToken = []byte(req.PageToken)
+		pageToken = []byte(req.Msg.PageToken)
 	}
 
-	pageSize := int(req.PageSize)
+	pageSize := int(req.Msg.PageSize)
 	if pageSize == 0 {
 		pageSize = defaultPageSize
 	}
@@ -92,9 +93,9 @@ func (c *Connection) ListObjects(ctx context.Context, req *runtimev1.S3ListObjec
 		if (failureErr.StatusCode() == http.StatusForbidden || failureErr.StatusCode() == http.StatusBadRequest) && creds != credentials.AnonymousCredentials {
 			// try again with anonymous credentials
 			creds = credentials.AnonymousCredentials
-			bucketObj, bucketErr := c.openBucket(ctx, &sourceProperties{AWSRegion: req.Region}, req.Bucket, creds)
+			bucketObj, bucketErr := c.openBucket(ctx, &sourceProperties{AWSRegion: req.Msg.Region}, req.Msg.Bucket, creds)
 			if bucketErr != nil {
-				return nil, "", fmt.Errorf("failed to open bucket %q, %w", req.Bucket, bucketErr)
+				return nil, "", fmt.Errorf("failed to open bucket %q, %w", req.Msg.Bucket, bucketErr)
 			}
 			objects, nextToken, err = fetchObjects(ctx, bucketObj, pageToken, pageSize, req)
 		}
@@ -115,13 +116,13 @@ func (c *Connection) ListObjects(ctx context.Context, req *runtimev1.S3ListObjec
 	return s3Objects, string(nextToken), nil
 }
 
-func (c *Connection) GetBucketMetadata(ctx context.Context, req *runtimev1.S3GetBucketMetadataRequest) (string, error) {
+func (c *Connection) GetBucketMetadata(ctx context.Context, req *connect.Request[runtimev1.S3GetBucketMetadataRequest]) (string, error) {
 	creds, err := c.getCredentials()
 	if err != nil {
 		return "", err
 	}
 
-	sess, err := c.getAwsSessionConfig(ctx, &sourceProperties{}, req.Bucket, creds)
+	sess, err := c.getAwsSessionConfig(ctx, &sourceProperties{}, req.Msg.Bucket, creds)
 	if err != nil {
 		return "", err
 	}
@@ -149,17 +150,17 @@ func (c *Connection) GetCredentialsInfo(ctx context.Context) (provider string, e
 	return val.ProviderName, true, nil
 }
 
-func fetchObjects(ctx context.Context, bucket *blob.Bucket, pageToken []byte, pageSize int, req *runtimev1.S3ListObjectsRequest) ([]*blob.ListObject, []byte, error) {
+func fetchObjects(ctx context.Context, bucket *blob.Bucket, pageToken []byte, pageSize int, req *connect.Request[runtimev1.S3ListObjectsRequest]) ([]*blob.ListObject, []byte, error) {
 	objects, nextToken, err := bucket.ListPage(ctx, pageToken, pageSize, &blob.ListOptions{
-		Prefix:    req.Prefix,
-		Delimiter: req.Delimiter,
+		Prefix:    req.Msg.Prefix,
+		Delimiter: req.Msg.Delimiter,
 		BeforeList: func(as func(interface{}) bool) error {
-			if req.StartAfter == "" {
+			if req.Msg.StartAfter == "" {
 				return nil
 			}
 			var q *s3.ListObjectsV2Input
 			if as(&q) {
-				q.StartAfter = &req.StartAfter
+				q.StartAfter = &req.Msg.StartAfter
 			}
 			return nil
 		},
