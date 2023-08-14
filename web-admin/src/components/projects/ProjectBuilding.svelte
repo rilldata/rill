@@ -1,14 +1,24 @@
 <script lang="ts">
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { goto } from "$app/navigation";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaNeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import AccessControls from "../access-controls/AccessControls.svelte";
 
   export let organization: string;
   export let project: string;
+
+  function handleViewProjectLogs() {
+    goto(`/${organization}/${project}/-/logs`);
+  }
+
+  function handleViewProject() {
+    goto(`/${organization}/${project}`);
+  }
 </script>
 
 <CtaLayoutContainer>
@@ -24,13 +34,18 @@
     <CtaHeader variant="bold"
       >Hang tight! We're building your dashboard...</CtaHeader
     >
-    <CtaButton
-      variant="primary-outline"
-      on:click={() => {
-        window.location.href = `/${organization}/${project}`;
-      }}
-      >View project status
-    </CtaButton>
+    <AccessControls {organization} {project}>
+      <svelte:fragment slot="manage-project">
+        <CtaButton variant="primary-outline" on:click={handleViewProjectLogs}
+          >View project logs
+        </CtaButton>
+      </svelte:fragment>
+      <svelte:fragment slot="read-project">
+        <CtaButton variant="primary-outline" on:click={handleViewProject}
+          >View project
+        </CtaButton>
+      </svelte:fragment>
+    </AccessControls>
     <CtaNeedHelp />
   </CtaContentContainer>
 </CtaLayoutContainer>
