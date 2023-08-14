@@ -1,11 +1,5 @@
 import { SourceErrorCodes } from "../../../metrics/service/SourceEventTypes";
 
-export function niceDuckdbUnicodeError(message: string) {
-  const r =
-    /(?:at line )([0-9]+)(?: in column "")(.*)(?:"": Invalid unicode \(byte sequence mismatch\) detected in CSV file)/gm;
-  const information = [...message.matchAll(r)][0];
-  return `Invalid unicode detected in CSV file at line ${information[1]} in column "${information[2]}".`;
-}
 export function hasDuckDBUnicodeError(message: string) {
   return message.match(
     /Invalid unicode \(byte sequence mismatch\) detected in CSV file./
@@ -79,12 +73,6 @@ export function humanReadableErrorMessage(
       // DuckDB errors
       if (serverError.match(/expected \d* values per row, but got \d*/)) {
         return "Malformed CSV file: number of columns does not match header.";
-      } else if (
-        serverError.match(/Catalog Error: Table with name .* does not exist/)
-      ) {
-        return "We had trouble ingesting your data. Please see the docs for common issues. If you're still stuck, don't hesitate to reach out on Discord.";
-      } else if (hasDuckDBUnicodeError(serverError)) {
-        return niceDuckdbUnicodeError(serverError);
       }
 
       // Fallback to raw server error

@@ -5,7 +5,6 @@ import {
   Value,
 } from "@bufbuild/protobuf";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import {
   DashboardTimeControls,
@@ -64,7 +63,7 @@ export function getProtoFromDashboardState(
       metrics.selectedComparisonTimeRange
     );
   }
-  state.showComparison = metrics.showComparison;
+  state.showComparison = Boolean(metrics.showComparison);
   if (metrics.selectedTimezone) {
     state.selectedTimezone = metrics.selectedTimezone;
   }

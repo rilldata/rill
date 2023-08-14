@@ -19,8 +19,7 @@ export type StateManagers = {
   queryClient: QueryClient;
   setMetricsViewName: (s: string) => void;
   updateDashboard: (
-    callback: (metricsExplorer: MetricsExplorerEntity) => void,
-    absenceCallback?: () => MetricsExplorerEntity
+    callback: (metricsExplorer: MetricsExplorerEntity) => void
   ) => void;
 };
 
@@ -47,12 +46,11 @@ export function createStateManagers({
   );
 
   const updateDashboard = (
-    callback: (metricsExplorer: MetricsExplorerEntity) => void,
-    absenceCallback?: () => MetricsExplorerEntity
+    callback: (metricsExplorer: MetricsExplorerEntity) => void
   ) => {
     const name = get(dashboardStore).name;
     // TODO: Remove dependency on MetricsExplorerStore singleton and its exports
-    updateMetricsExplorerByName(name, callback, absenceCallback);
+    updateMetricsExplorerByName(name, callback);
   };
 
   return {

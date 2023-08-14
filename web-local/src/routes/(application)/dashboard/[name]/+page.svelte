@@ -14,7 +14,8 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { error } from "@sveltejs/kit";
   import { CATALOG_ENTRY_NOT_FOUND } from "../../../../lib/errors/messages";
-  import DashboardStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardStateProvider.svelte";
+  import DashboardStateProvider from "@rilldata/web-common/features/dashboards/DashboardStateProvider.svelte";
+  import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
 
   $: metricViewName = $page.params.name;
@@ -70,7 +71,9 @@
     <StateManagersProvider metricsViewName={metricViewName} slot="body">
       {#key metricViewName}
         <DashboardStateProvider {metricViewName}>
-          <Dashboard {metricViewName} hasTitle />
+          <DashboardURLStateProvider {metricViewName}>
+            <Dashboard {metricViewName} hasTitle />
+          </DashboardURLStateProvider>
         </DashboardStateProvider>
       {/key}
     </StateManagersProvider>
