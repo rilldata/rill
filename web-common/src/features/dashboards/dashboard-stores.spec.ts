@@ -15,22 +15,25 @@ import {
   LAST_6_HOURS_TEST_CONTROLS,
   LAST_6_HOURS_TEST_PARSED_CONTROLS,
   assertMetricsView,
-  clearMetricsExplorerStore,
-  createAdBidsInStore,
   createAdBidsMirrorInStore,
   createMetricsMetaQueryMock,
+  resetDashboardStore,
 } from "@rilldata/web-common/features/dashboards/dashboard-stores-test-data";
+import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { get } from "svelte/store";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 describe("dashboard-stores", () => {
+  beforeAll(() => {
+    initLocalUserPreferenceStore(AD_BIDS_NAME);
+  });
+
   beforeEach(() => {
-    clearMetricsExplorerStore();
+    resetDashboardStore();
   });
 
   it("Toggle filters", () => {
     const mock = createMetricsMetaQueryMock();
-    createAdBidsInStore();
     assertMetricsView(AD_BIDS_NAME);
 
     // add filters
@@ -105,7 +108,6 @@ describe("dashboard-stores", () => {
 
   it("Update time selections", () => {
     const mock = createMetricsMetaQueryMock();
-    createAdBidsInStore();
     assertMetricsView(AD_BIDS_NAME);
 
     // select a different time
@@ -139,7 +141,6 @@ describe("dashboard-stores", () => {
 
   it("Select different measure", () => {
     const mock = createMetricsMetaQueryMock();
-    createAdBidsInStore();
     assertMetricsView(AD_BIDS_NAME);
 
     // select a different leaderboard measure
@@ -167,7 +168,6 @@ describe("dashboard-stores", () => {
   describe("Restore invalid state", () => {
     it("Restore invalid filter", () => {
       const mock = createMetricsMetaQueryMock();
-      createAdBidsInStore();
       metricsExplorerStore.toggleFilter(
         AD_BIDS_NAME,
         AD_BIDS_PUBLISHER_DIMENSION,
@@ -204,7 +204,6 @@ describe("dashboard-stores", () => {
 
     it("Restore invalid leaderboard measure", () => {
       const mock = createMetricsMetaQueryMock();
-      createAdBidsInStore();
       metricsExplorerStore.setLeaderboardMeasureName(
         AD_BIDS_NAME,
         AD_BIDS_BID_PRICE_MEASURE
@@ -236,7 +235,6 @@ describe("dashboard-stores", () => {
 
     it("Restore invalid selected dimension", () => {
       const mock = createMetricsMetaQueryMock();
-      createAdBidsInStore();
       metricsExplorerStore.setMetricDimensionName(
         AD_BIDS_NAME,
         AD_BIDS_DOMAIN_DIMENSION
