@@ -129,16 +129,16 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 			}
 
 			filename := q.generateFilename(mv)
-			if err := duckDBCopyExport(ctx, sql, args, filename, olap, mv, opts, w, rt, instanceID, opts.Format); err != nil {
+			if err := duckDBCopyExport(ctx, rt, instanceID, w, opts, sql, args, filename, olap, mv, opts.Format); err != nil {
 				return err
 			}
 		} else {
-			if err := q.generalExport(ctx, olap, mv, opts, w, rt, instanceID); err != nil {
+			if err := q.generalExport(ctx, rt, instanceID, w, opts, olap, mv); err != nil {
 				return err
 			}
 		}
 	case drivers.DialectDruid:
-		if err := q.generalExport(ctx, olap, mv, opts, w, rt, instanceID); err != nil {
+		if err := q.generalExport(ctx, rt, instanceID, w, opts, olap, mv); err != nil {
 			return err
 		}
 	default:
@@ -148,7 +148,7 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 	return nil
 }
 
-func (q *MetricsViewRows) generalExport(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsView, opts *runtime.ExportOptions, w io.Writer, rt *runtime.Runtime, instanceID string) error {
+func (q *MetricsViewRows) generalExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions, olap drivers.OLAPStore, mv *runtimev1.MetricsView) error {
 	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
 	if err != nil {
 		return err
