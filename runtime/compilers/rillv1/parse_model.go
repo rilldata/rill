@@ -186,23 +186,7 @@ func parseEmbeddedSource(t *duckdbsql.TableRef, sinkConnector string) (ResourceN
 		return ResourceName{}, nil, false
 	}
 
-	// NOTE: Using url.Parse is a little hacky. The first path component will be parsed as the host (so don't rely on uri.Path!)
-	uri, err := url.Parse(path)
-	if err != nil {
-		return ResourceName{}, nil, false
-	}
-
-	// Applying some heuristics to determine if it's a path or just a table name.
-	// If not a function and no protocol is in the path, we'll assume it's just a table name.
-	if t.Function == "" && uri.Scheme == "" {
-		return ResourceName{}, nil, false
-	}
-
-	if uri.Scheme == "" {
-		uri.Scheme = "local_file"
-	}
-
-	_, ok := drivers.Connectors[uri.Scheme]
+	conn, ok := parseEmbeddedSourceConnector(path, t)
 	if !ok {
 		return ResourceName{}, nil, false
 	}
@@ -237,7 +221,7 @@ func parseEmbeddedSource(t *duckdbsql.TableRef, sinkConnector string) (ResourceN
 	}
 
 	spec := &runtimev1.SourceSpec{}
-	spec.SourceConnector = uri.Scheme
+	spec.SourceConnector = conn
 	spec.SinkConnector = sinkConnector
 	spec.Properties = propsPB
 
@@ -258,4 +242,29 @@ func parseEmbeddedSource(t *duckdbsql.TableRef, sinkConnector string) (ResourceN
 	name := ResourceName{Kind: ResourceKindSource, Name: "embed_" + hex.EncodeToString(hash.Sum(nil))}
 
 	return name, spec, true
+}
+
+func parseEmbeddedSourceConnector(path string, t *duckdbsql.TableRef) (string, bool) {
+	// NOTE: Using url.Parse is a little hacky. The first path component will be parsed as the host (so don't rely on uri.Path!)
+	uri, err := url.Parse(path)
+	if err != nil {
+		return "", false
+	}
+
+	// Applying some heuristics to determine if it's a path or just a table name.
+	// If not a function and no protocol is in the path, we'll assume it's just a table name.
+	if t.Function == "" && uri.Scheme == "" {
+		return "", false
+	}
+
+	if uri.Scheme == "" {
+		uri.Scheme = "local_file"
+	}
+
+	_, ok := drivers.Connectors[uri.Scheme]
+	if !ok {
+		return "", false
+	}
+
+	return uri.Scheme, true
 }

@@ -8,6 +8,8 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/robfig/cron/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -15,17 +17,27 @@ import (
 // sourceYAML is the raw structure of a Source resource defined in YAML (does not include common fields)
 type sourceYAML struct {
 	commonYAML `yaml:",inline" mapstructure:",squash"` // Only to avoid loading common fields into Properties
-	Type       string                                  `yaml:"type"` // Backwards compatibility
-	Timeout    string                                  `yaml:"timeout"`
-	Refresh    *scheduleYAML                           `yaml:"refresh"`
-	Properties map[string]any                          `yaml:",inline" mapstructure:",remain"`
+	Type       string         `yaml:"type"`            // Backwards compatibility
+	Timeout    string         `yaml:"timeout"`
+	Refresh    *scheduleYAML  `yaml:"refresh"`
+	Properties map[string]any `yaml:",inline" mapstructure:",remain"`
 }
 
 // parseSource parses a source definition and adds the resulting resource to p.Resources.
 func (p *Parser) parseSource(ctx context.Context, node *Node) error {
+	sqlProps := make(map[string]any)
 	// If the source has SQL and hasn't specified a connector, we treat it as a model
-	if node.SQL != "" && node.Connector == "" {
-		return p.parseModel(ctx, node)
+	if node.SQL != "" && (node.Connector == "" || node.Connector == "duckdb") {
+		var ok bool
+		var err error
+		sqlProps, ok, err = p.parseSQLSource(node)
+		if err != nil {
+			return err
+		}
+		// if cannot make this as sql source then treat as model
+		if !ok {
+			return p.parseModel(ctx, node)
+		}
 	}
 
 	// Parse YAML
@@ -48,6 +60,10 @@ func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 			tmp.Properties = map[string]any{}
 		}
 		tmp.Properties["sql"] = strings.TrimSpace(node.SQL)
+	}
+	// merge with sql sources props
+	for k, v := range sqlProps {
+		tmp.Properties[k] = v
 	}
 
 	// Parse timeout
@@ -95,6 +111,80 @@ func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 	}
 
 	return nil
+}
+
+func (p *Parser) parseSQLSource(node *Node) (map[string]any, bool, error) {
+	ast, err := duckdbsql.Parse(node.SQL)
+	if err != nil {
+		return nil, false, err
+	}
+
+	refs := ast.GetTableRefs()
+	if len(refs) != 1 {
+		return nil, false, nil
+	}
+	ref := refs[0]
+
+	if len(ref.Paths) == 0 {
+		return nil, false, nil
+	}
+	if len(ref.Paths) > 1 {
+		return nil, false, nil
+	}
+
+	conn, ok := parseEmbeddedSourceConnector(ref.Paths[0], ref)
+	if !ok {
+		return nil, false, nil
+	}
+
+	props := make(map[string]any)
+
+	switch conn {
+	case "local_file":
+		// TODO: get allow_root_access from env
+		queryStr, err := rewriteLocalRelativePath(ast, p.Repo.Root(), false)
+		if err != nil {
+			return nil, false, err
+		}
+		node.Connector = "duckdb"
+		props["sql"] = queryStr
+	case "s3", "gcs":
+		node.Connector = conn
+		props["path"] = ref.Paths[0]
+	default:
+		return nil, false, nil
+	}
+
+	return props, true, nil
+}
+
+func rewriteLocalRelativePath(ast *duckdbsql.AST, repoRoot string, allowRootAccess bool) (string, error) {
+	var resolveErr error
+	err := ast.RewriteTableRefs(func(table *duckdbsql.TableRef) (*duckdbsql.TableRef, bool) {
+		newPaths := make([]string, 0)
+		for _, p := range table.Paths {
+			lp, err := fileutil.ResolveLocalPath(p, repoRoot, allowRootAccess)
+			if err != nil {
+				resolveErr = err
+				return nil, false
+			}
+			newPaths = append(newPaths, lp)
+		}
+
+		return &duckdbsql.TableRef{
+			Function:   table.Function,
+			Paths:      newPaths,
+			Properties: table.Properties,
+		}, true
+	})
+	if resolveErr != nil {
+		return "", resolveErr
+	}
+	if err != nil {
+		return "", err
+	}
+
+	return ast.Format()
 }
 
 // scheduleYAML is the raw structure of a refresh schedule clause defined in YAML.

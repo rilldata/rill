@@ -582,6 +582,63 @@ SELECT * FROM m2
 	require.ElementsMatch(t, []ResourceName{m1.Name}, diff.Deleted)
 }
 
+func TestSQLSources(t *testing.T) {
+	files := map[string]string{
+		`rill.yaml`: ``,
+		`sources/s1.sql`: `
+SELECT * FROM read_csv('s3://bucket/path.csv')
+`,
+		`sources/s2.yaml`: `
+type: "duckdb"
+sql: SELECT * FROM read_csv('s3://bucket/path.csv')
+`,
+		`sources/s3.sql`: `
+select * from read_csv('data/file.csv')
+`,
+	}
+	repo := makeRepo(t, files)
+	s1 := &Resource{
+		Name:  ResourceName{Kind: ResourceKindSource, Name: "s1"},
+		Refs:  []ResourceName{},
+		Paths: []string{"/sources/s1.sql"},
+		SourceSpec: &runtimev1.SourceSpec{
+			SourceConnector: "s3",
+			Properties: must(structpb.NewStruct(map[string]any{
+				"path": "s3://bucket/path.csv",
+				"sql":  `SELECT * FROM read_csv('s3://bucket/path.csv')`,
+			})),
+		},
+	}
+	s2 := &Resource{
+		Name:  ResourceName{Kind: ResourceKindSource, Name: "s2"},
+		Refs:  []ResourceName{},
+		Paths: []string{"/sources/s2.yaml"},
+		SourceSpec: &runtimev1.SourceSpec{
+			SourceConnector: "s3",
+			Properties: must(structpb.NewStruct(map[string]any{
+				"path": "s3://bucket/path.csv",
+				"sql":  `SELECT * FROM read_csv('s3://bucket/path.csv')`,
+			})),
+		},
+	}
+	s3 := &Resource{
+		Name:  ResourceName{Kind: ResourceKindSource, Name: "s3"},
+		Refs:  []ResourceName{},
+		Paths: []string{"/sources/s3.sql"},
+		SourceSpec: &runtimev1.SourceSpec{
+			SourceConnector: "duckdb",
+			Properties: must(structpb.NewStruct(map[string]any{
+				"sql": fmt.Sprintf(`SELECT * FROM read_csv(main.list_value('%s/data/file.csv'))`, repo.Root()),
+			})),
+		},
+	}
+
+	ctx := context.Background()
+	p, err := Parse(ctx, repo, "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{s1, s2, s3}, nil)
+}
+
 func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {
 	// Check resources
 	gotResources := maps.Clone(p.Resources)
