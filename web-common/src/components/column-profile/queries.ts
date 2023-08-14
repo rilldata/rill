@@ -12,12 +12,6 @@ import {
   V1ProfileColumn,
   V1TableColumnsResponse,
 } from "@rilldata/web-common/runtime-client";
-import { BatchedRequest } from "@rilldata/web-common/runtime-client/batched-request";
-import {
-  getPriority,
-  getPriorityForColumn,
-  QueryPriorities,
-} from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
 import type { QueryObserverResult } from "@tanstack/query-core";
 import { derived, Readable, writable } from "svelte/store";
 
@@ -38,8 +32,7 @@ export function getSummaries(
   profileColumnResponse: QueryObserverResult<V1TableColumnsResponse>
 ): Readable<Array<ColumnSummary>> {
   if (!profileColumnResponse && !profileColumnResponse?.data) return;
-  const batchedRequest = new BatchedRequest();
-  const store = derived(
+  return derived(
     profileColumnResponse.data.profileColumns.map((column) => {
       return derived(
         [
@@ -51,27 +44,7 @@ export function getSummaries(
             {
               query: {
                 keepPreviousData: true,
-                enabled: !profileColumnResponse.isFetching,
-                queryFn: ({ signal }) => {
-                  return new Promise((resolve, reject) => {
-                    batchedRequest.add(
-                      {
-                        columnNullCountRequest: {
-                          instanceId,
-                          tableName: objectName,
-                          columnName: column.name,
-                        },
-                      },
-                      getPriority("null-count"),
-                      (data) => {
-                        console.log("createQueryServiceColumnNullCount", data);
-                        resolve(data?.columnNullCountResponse);
-                      },
-                      reject,
-                      signal
-                    );
-                  });
-                },
+                enabled: false,
               },
             }
           ),
@@ -82,24 +55,7 @@ export function getSummaries(
             {
               query: {
                 keepPreviousData: true,
-                enabled: !profileColumnResponse.isFetching,
-                queryFn: ({ signal }) => {
-                  return new Promise((resolve, reject) => {
-                    batchedRequest.add(
-                      {
-                        columnCardinalityRequest: {
-                          instanceId,
-                          tableName: objectName,
-                          columnName: column.name,
-                        },
-                      },
-                      getPriority("column-cardinality"),
-                      (data) => resolve(data.columnCardinalityResponse),
-                      reject,
-                      signal
-                    );
-                  });
-                },
+                enabled: false,
               },
             }
           ),
@@ -122,19 +78,12 @@ export function getSummaries(
       return combos;
     }
   );
-
-  if (!profileColumnResponse.isFetching) {
-    setTimeout(() => batchedRequest.send(instanceId));
-  }
-
-  return store;
 }
 
 export function getNullPercentage(
   instanceId: string,
   objectName: string,
-  columnName: string,
-  enabled = true
+  columnName: string
 ) {
   const nullQuery = createQueryServiceColumnNullCount(
     instanceId,
@@ -154,7 +103,7 @@ export function getNullPercentage(
     {},
     {
       query: {
-        enabled,
+        enabled: false,
       },
     }
   );
@@ -170,8 +119,7 @@ export function getNullPercentage(
 export function getCountDistinct(
   instanceId: string,
   objectName: string,
-  columnName: string,
-  enabled = true
+  columnName: string
 ) {
   const cardinalityQuery = createQueryServiceColumnCardinality(
     instanceId,
@@ -187,7 +135,7 @@ export function getCountDistinct(
     objectName,
     {},
     {
-      query: { enabled },
+      query: { enabled: false },
     }
   );
 
@@ -206,9 +154,7 @@ export function getCountDistinct(
 export function getTopK(
   instanceId: string,
   objectName: string,
-  columnName: string,
-  enabled = true,
-  active = false
+  columnName: string
 ) {
   const topKQuery = createQueryServiceColumnTopK(
     instanceId,
@@ -217,11 +163,10 @@ export function getTopK(
       columnName: columnName,
       agg: "count(*)",
       k: 75,
-      priority: getPriorityForColumn("topk", active),
     },
     {
       query: {
-        enabled,
+        enabled: false,
       },
     }
   );
@@ -233,9 +178,7 @@ export function getTopK(
 export function getTimeSeriesAndSpark(
   instanceId: string,
   objectName: string,
-  columnName: string,
-  enabled = true,
-  active = false
+  columnName: string
 ) {
   const query = createQueryServiceColumnTimeSeries(
     instanceId,
@@ -243,36 +186,28 @@ export function getTimeSeriesAndSpark(
     // FIXME: convert pixel back to number once the API
     {
       timestampColumnName: columnName,
-      measures: [
-        {
-          expression: "count(*)",
-        },
-      ],
+      measures: [{ expression: "count(*)" }],
       pixels: 92,
-      priority: getPriorityForColumn("timeseries", active),
     },
     {
-      query: { enabled },
+      query: { enabled: false },
     }
   );
   const estimatedInterval = createQueryServiceColumnRollupInterval(
     instanceId,
     objectName,
-    { columnName, priority: getPriorityForColumn("rollup-interval", active) },
+    { columnName },
     {
-      query: { enabled },
+      query: { enabled: false },
     }
   );
 
   const smallestTimeGrain = createQueryServiceColumnTimeGrain(
     instanceId,
     objectName,
+    { columnName },
     {
-      columnName,
-      priority: getPriorityForColumn("smallest-time-grain", active),
-    },
-    {
-      query: { enabled },
+      query: { enabled: false },
     }
   );
 
@@ -310,9 +245,7 @@ export function getNumericHistogram(
   instanceId: string,
   objectName: string,
   columnName: string,
-  histogramMethod: QueryServiceColumnNumericHistogramHistogramMethod,
-  enabled = true,
-  active = false
+  histogramMethod: QueryServiceColumnNumericHistogramHistogramMethod
 ) {
   return createQueryServiceColumnNumericHistogram(
     instanceId,
@@ -320,14 +253,13 @@ export function getNumericHistogram(
     {
       columnName,
       histogramMethod,
-      priority: getPriorityForColumn("numeric-histogram", active),
     },
     {
       query: {
         select(query) {
           return query?.numericSummary?.numericHistogramBins?.bins;
         },
-        enabled,
+        enabled: false,
       },
     }
   );

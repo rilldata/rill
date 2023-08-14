@@ -14,6 +14,15 @@ export type BatchRequest = {
 };
 export class BatchedRequest {
   private requests = new Array<BatchRequest>();
+  private expectedRequests = 0;
+
+  public get ready() {
+    return this.expectedRequests === this.requests.length;
+  }
+
+  public register() {
+    this.expectedRequests++;
+  }
 
   public add(
     request: V1QueryBatchEntry,

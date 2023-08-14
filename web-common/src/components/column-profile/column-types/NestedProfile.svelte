@@ -34,26 +34,15 @@
 
   let active = false;
 
-  $: nulls = getNullPercentage(
-    $runtime?.instanceId,
-    objectName,
-    columnName,
-    enableProfiling
-  );
+  $: nulls = getNullPercentage($runtime?.instanceId, objectName, columnName);
 
   $: columnCardinality = getCountDistinct(
     $runtime?.instanceId,
     objectName,
-    columnName,
-    enableProfiling
+    columnName
   );
 
-  $: topK = getTopK(
-    $runtime?.instanceId,
-    objectName,
-    columnName,
-    enableProfiling
-  );
+  $: topK = getTopK($runtime?.instanceId, objectName, columnName);
 
   function toggleColumnProfile() {
     active = !active;

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { batchedProfileQuery } from "@rilldata/web-common/components/column-profile/batched-profile-query";
   import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-common/layout/config";
   import {
     createQueryServiceTableColumns,
@@ -6,6 +7,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { NATIVE_SELECT } from "@rilldata/web-local/lib/util/component-classes";
   import { onMount } from "svelte";
+  import type { Readable } from "svelte/store";
   import { runtime } from "../../runtime-client/runtime-store";
   import { getColumnType } from "./column-types";
   import { getSummaries } from "./queries";
@@ -48,10 +50,16 @@
   );
 
   let nestedColumnProfileQuery;
+  let batchedQuery: Readable<boolean>;
   $: if ($profileColumns?.data?.profileColumns) {
     nestedColumnProfileQuery = getSummaries(
       objectName,
       $runtime?.instanceId,
+      $profileColumns
+    );
+    batchedQuery = batchedProfileQuery(
+      $runtime?.instanceId,
+      objectName,
       $profileColumns
     );
   }
@@ -67,6 +75,9 @@
     sortedProfile = profile;
   }
 </script>
+
+<!-- Dummy read to force rendering -->
+{#if $batchedQuery}<div class="hidden" />{/if}
 
 <!-- pl-16 -->
 <div

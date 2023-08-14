@@ -41,20 +41,13 @@
 
   let active = false;
 
-  $: nulls = getNullPercentage(
-    $runtime?.instanceId,
-    objectName,
-    columnName,
-    enableProfiling
-  );
+  $: nulls = getNullPercentage($runtime?.instanceId, objectName, columnName);
 
   $: diagnosticHistogram = getNumericHistogram(
     $runtime?.instanceId,
     objectName,
     columnName,
-    QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_DIAGNOSTIC,
-    enableProfiling,
-    active
+    QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_DIAGNOSTIC
   );
   let fdHistogram;
   $: if (isFloat(type)) {
@@ -62,9 +55,7 @@
       $runtime?.instanceId,
       objectName,
       columnName,
-      QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
-      enableProfiling,
-      active
+      QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD
     );
   }
 
@@ -84,34 +75,26 @@
   $: rug = createQueryServiceColumnRugHistogram(
     $runtime?.instanceId,
     objectName,
-    { columnName, priority: getPriorityForColumn("rug-histogram", active) },
+    { columnName },
     {
       query: {
         select($query) {
           return $query?.numericSummary?.numericOutliers?.outliers;
         },
-        enabled: enableProfiling,
+        enabled: false,
       },
     }
   );
-  $: topK = getTopK(
-    $runtime?.instanceId,
-    objectName,
-    columnName,
-    enableProfiling
-  );
+  $: topK = getTopK($runtime?.instanceId, objectName, columnName);
 
   $: summary = derived(
     createQueryServiceColumnDescriptiveStatistics(
       $runtime?.instanceId,
       objectName,
-      {
-        columnName: columnName,
-        priority: getPriorityForColumn("descriptive-statistics", active),
-      },
+      { columnName: columnName },
       {
         query: {
-          enabled: enableProfiling,
+          enabled: false,
         },
       }
     ),
