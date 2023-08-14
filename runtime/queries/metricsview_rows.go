@@ -102,14 +102,14 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	return nil
 }
 
-func (query *MetricsViewRows) generalExport(olap drivers.OLAPStore, mv *runtimev1.MetricsView, opts *runtime.ExportOptions, w io.Writer, rt *runtime.Runtime, instanceID string, ctx context.Context) error {
-	err := query.Resolve(ctx, rt, instanceID, opts.Priority)
+func (q *MetricsViewRows) generalExport(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsView, opts *runtime.ExportOptions, w io.Writer, rt *runtime.Runtime, instanceID string) error {
+	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
 	if err != nil {
 		return err
 	}
 
 	if opts.PreWriteHook != nil {
-		err = opts.PreWriteHook(query.generateFilename(mv))
+		err = opts.PreWriteHook(q.generateFilename(mv))
 		if err != nil {
 			return err
 		}
@@ -119,15 +119,15 @@ func (query *MetricsViewRows) generalExport(olap drivers.OLAPStore, mv *runtimev
 	case runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED:
 		return fmt.Errorf("unspecified format")
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		return writeCSV(query.Result.Meta, query.Result.Data, w)
+		return writeCSV(q.Result.Meta, q.Result.Data, w)
 	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		return writeXLSX(query.Result.Meta, query.Result.Data, w)
+		return writeXLSX(q.Result.Meta, q.Result.Data, w)
 	}
 
 	return nil
 }
 
-func duckDBCopyExport(sql string, args []any, filename string, olap drivers.OLAPStore, mv *runtimev1.MetricsView, opts *runtime.ExportOptions, w io.Writer, rt *runtime.Runtime, instanceID string, ctx context.Context) error {
+func duckDBCopyExport(ctx context.Context, sql string, args []any, filename string, olap drivers.OLAPStore, mv *runtimev1.MetricsView, opts *runtime.ExportOptions, w io.Writer, rt *runtime.Runtime, instanceID string) error {
 	temporaryFilename := "export_" + uuid.New().String()
 	sql = fmt.Sprintf("COPY (%s) TO '%s'", sql, temporaryFilename)
 
@@ -191,16 +191,16 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 			}
 
 			filename := q.generateFilename(mv)
-			if err := duckDBCopyExport(sql, args, filename, olap, mv, opts, w, rt, instanceID, ctx); err != nil {
+			if err := duckDBCopyExport(ctx, sql, args, filename, olap, mv, opts, w, rt, instanceID); err != nil {
 				return err
 			}
 		} else {
-			if err := q.generalExport(olap, mv, opts, w, rt, instanceID, ctx); err != nil {
+			if err := q.generalExport(ctx, olap, mv, opts, w, rt, instanceID); err != nil {
 				return err
 			}
 		}
 	case drivers.DialectDruid:
-		if err := q.generalExport(olap, mv, opts, w, rt, instanceID, ctx); err != nil {
+		if err := q.generalExport(ctx, olap, mv, opts, w, rt, instanceID); err != nil {
 			return err
 		}
 	default:
