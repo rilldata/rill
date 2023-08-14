@@ -162,6 +162,16 @@ test.describe("dashboard", () => {
     const xlsxRegex = /^AdBids_model_filtered_.*\.xlsx$/;
     expect(xlsxRegex.test(downloadXLSX.suggestedFilename())).toBe(true);
 
+    // Download the data as Parquet
+    // Start waiting for download before clicking. Note no await.
+    const downloadParquetPromise = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Export model data" }).click();
+    await page.getByText("Export as Parquet").click();
+    const downloadParquet = await downloadParquetPromise;
+    await downloadParquet.path();
+    const parquetRegex = /^AdBids_model_filtered_.*\.parquet$/;
+    expect(parquetRegex.test(downloadParquet.suggestedFilename())).toBe(true);
+
     // Turn off comparison
     await page
       .getByRole("button", { name: "Comparing to last period" })
