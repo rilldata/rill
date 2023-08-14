@@ -69,6 +69,26 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 
 	var q runtime.Query
 	switch v := request.Request.(type) {
+	case *runtimev1.ExportRequest_MetricsViewAggregationRequest:
+		r := v.MetricsViewAggregationRequest
+		err := validateInlineMeasures(r.InlineMeasureDefinitions)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		q = &queries.MetricsViewAggregation{
+			MetricsView:              r.MetricsView,
+			Dimensions:               r.Dimensions,
+			Measures:                 r.Measures,
+			InlineMeasureDefinitions: r.InlineMeasureDefinitions,
+			TimeStart:                r.TimeStart,
+			TimeEnd:                  r.TimeEnd,
+			TimeGranularity:          r.TimeGranularity,
+			TimeZone:                 r.TimeZone,
+			Filter:                   r.Filter,
+			Sort:                     r.Sort,
+			Limit:                    request.Limit,
+		}
 	case *runtimev1.ExportRequest_MetricsViewToplistRequest:
 		r := v.MetricsViewToplistRequest
 		err := validateInlineMeasures(r.InlineMeasures)

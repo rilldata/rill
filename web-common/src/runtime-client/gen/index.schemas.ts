@@ -234,9 +234,25 @@ export type QueryServiceMetricsViewComparisonToplistBody = {
   priority?: number;
 };
 
+export type QueryServiceMetricsViewAggregationBody = {
+  dimensions?: string[];
+  measures?: string[];
+  inlineMeasureDefinitions?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
+  timeZone?: string;
+  filter?: V1MetricsViewFilter;
+  sort?: V1MetricsViewSort[];
+  limit?: string;
+  offset?: string;
+  priority?: number;
+};
+
 export type QueryServiceExportBody = {
   limit?: string;
   format?: V1ExportFormat;
+  metricsViewAggregationRequest?: V1MetricsViewAggregationRequest;
   metricsViewToplistRequest?: V1MetricsViewToplistRequest;
   metricsViewRowsRequest?: V1MetricsViewRowsRequest;
 };
@@ -467,6 +483,12 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -499,12 +521,6 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
-
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
 
 export type V1TableRowsResponseDataItem = { [key: string]: any };
 
@@ -729,6 +745,16 @@ export interface V1RefreshAndReconcileRequest {
   strict?: boolean;
 }
 
+export interface V1ReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
+}
+
 /**
  * - CODE_UNSPECIFIED: Unspecified error
  - CODE_SYNTAX: Code artifact failed to parse
@@ -771,16 +797,6 @@ Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: V1ReconcileErrorCharLocation;
   endLocation?: V1ReconcileErrorCharLocation;
-}
-
-export interface V1ReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
 }
 
 export type V1QueryResponseDataItem = { [key: string]: any };
@@ -876,12 +892,6 @@ export interface V1PullTrigger {
   state?: V1PullTriggerState;
 }
 
-export interface V1ProjectParserState {
-  parseErrors?: V1ParseError[];
-  currentCommitSha?: string;
-  changedPaths?: string[];
-}
-
 export interface V1ProjectParserSpec {
   compiler?: string;
   watch?: boolean;
@@ -912,6 +922,12 @@ export interface V1ParseError {
   message?: string;
   filePath?: string;
   startLocation?: Runtimev1CharLocation;
+}
+
+export interface V1ProjectParserState {
+  parseErrors?: V1ParseError[];
+  currentCommitSha?: string;
+  changedPaths?: string[];
 }
 
 export type V1ObjectType = (typeof V1ObjectType)[keyof typeof V1ObjectType];
@@ -1004,11 +1020,6 @@ export interface V1Migration {
   state?: V1MigrationState;
 }
 
-export interface V1MetricsViewV2 {
-  spec?: V1MetricsViewSpec;
-  state?: V1MetricsViewState;
-}
-
 export type V1MetricsViewTotalsResponseData = { [key: string]: any };
 
 export interface V1MetricsViewTotalsResponse {
@@ -1032,21 +1043,6 @@ export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
 export interface V1MetricsViewToplistResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1MetricsViewToplistResponseDataItem[];
-}
-
-export interface V1MetricsViewToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  limit?: string;
-  offset?: string;
-  sort?: V1MetricsViewSort[];
-  filter?: V1MetricsViewFilter;
-  priority?: number;
 }
 
 export interface V1MetricsViewTimeSeriesResponse {
@@ -1076,6 +1072,11 @@ export interface V1MetricsViewState {
   validSpec?: V1MetricsViewSpec;
 }
 
+export interface V1MetricsViewV2 {
+  spec?: V1MetricsViewSpec;
+  state?: V1MetricsViewState;
+}
+
 export interface V1MetricsViewSort {
   name?: string;
   ascending?: boolean;
@@ -1086,6 +1087,21 @@ export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
+}
+
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  filter?: V1MetricsViewFilter;
+  priority?: number;
 }
 
 export interface V1MetricsViewTimeSeriesRequest {
@@ -1121,10 +1137,6 @@ export interface V1MetricsViewComparisonValue {
   comparisonValue?: unknown;
   deltaAbs?: unknown;
   deltaRel?: unknown;
-}
-
-export interface V1MetricsViewComparisonToplistResponse {
-  rows?: V1MetricsViewComparisonRow[];
 }
 
 export type V1MetricsViewComparisonSortType =
@@ -1170,6 +1182,10 @@ export interface V1MetricsViewComparisonRow {
   measureValues?: V1MetricsViewComparisonValue[];
 }
 
+export interface V1MetricsViewComparisonToplistResponse {
+  rows?: V1MetricsViewComparisonRow[];
+}
+
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
@@ -1179,6 +1195,30 @@ export interface V1MetricsViewColumn {
 export interface V1MetricsViewRowsResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1MetricsViewRowsResponseDataItem[];
+}
+
+export type V1MetricsViewAggregationResponseDataItem = { [key: string]: any };
+
+export interface V1MetricsViewAggregationResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewAggregationResponseDataItem[];
+}
+
+export interface V1MetricsViewAggregationRequest {
+  instanceId?: string;
+  metricsView?: string;
+  dimensions?: string[];
+  measures?: string[];
+  inlineMeasureDefinitions?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
+  timeZone?: string;
+  filter?: V1MetricsViewFilter;
+  sort?: V1MetricsViewSort[];
+  limit?: string;
+  offset?: string;
+  priority?: number;
 }
 
 export interface V1MetricsView {

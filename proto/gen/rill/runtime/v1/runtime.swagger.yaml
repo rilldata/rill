@@ -910,11 +910,83 @@ paths:
                 format: int64
               format:
                 $ref: '#/definitions/v1ExportFormat'
+              metricsViewAggregationRequest:
+                $ref: '#/definitions/v1MetricsViewAggregationRequest'
               metricsViewToplistRequest:
                 $ref: '#/definitions/v1MetricsViewToplistRequest'
               metricsViewRowsRequest:
                 $ref: '#/definitions/v1MetricsViewRowsRequest'
             title: Request message for QueryService.Export
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsView}/aggregation:
+    post:
+      summary: MetricsViewAggregation is a generic API for running group-by queries against a metrics view.
+      operationId: QueryService_MetricsViewAggregation
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewAggregationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsView
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              dimensions:
+                type: array
+                items:
+                  type: string
+              measures:
+                type: array
+                items:
+                  type: string
+              inlineMeasureDefinitions:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1InlineMeasure'
+              timeStart:
+                type: string
+                format: date-time
+              timeEnd:
+                type: string
+                format: date-time
+              timeGranularity:
+                $ref: '#/definitions/v1TimeGrain'
+              timeZone:
+                type: string
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
+              sort:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewSort'
+              limit:
+                type: string
+                format: int64
+              offset:
+                type: string
+                format: int64
+              priority:
+                type: integer
+                format: int32
+            title: Request message for QueryService.MetricsViewAggregation
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
@@ -3147,6 +3219,66 @@ definitions:
           type: string
         description: Available time zones list preferred time zones using IANA location identifiers.
     title: Metrics view is the internal representation of a metrics view definition
+  v1MetricsViewAggregationRequest:
+    type: object
+    properties:
+      instanceId:
+        type: string
+      metricsView:
+        type: string
+      dimensions:
+        type: array
+        items:
+          type: string
+      measures:
+        type: array
+        items:
+          type: string
+      inlineMeasureDefinitions:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1InlineMeasure'
+      timeStart:
+        type: string
+        format: date-time
+      timeEnd:
+        type: string
+        format: date-time
+      timeGranularity:
+        $ref: '#/definitions/v1TimeGrain'
+      timeZone:
+        type: string
+      filter:
+        $ref: '#/definitions/v1MetricsViewFilter'
+      sort:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewSort'
+      limit:
+        type: string
+        format: int64
+      offset:
+        type: string
+        format: int64
+      priority:
+        type: integer
+        format: int32
+    title: Request message for QueryService.MetricsViewAggregation
+  v1MetricsViewAggregationResponse:
+    type: object
+    properties:
+      meta:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewColumn'
+      data:
+        type: array
+        items:
+          type: object
+    title: Response message for QueryService.MetricsViewAggregation
   v1MetricsViewColumn:
     type: object
     properties:

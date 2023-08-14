@@ -27,6 +27,14 @@ service QueryService {
 
   // Explore APIs
 
+  // MetricsViewAggregation is a generic API for running group-by queries against a metrics view.
+  rpc MetricsViewAggregation(MetricsViewAggregationRequest) returns (MetricsViewAggregationResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view}/aggregation",
+      body: "*"
+    };
+  }
+
   // MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
   // It's a convenience API for querying a metrics view.
   rpc MetricsViewToplist(MetricsViewToplistRequest) returns (MetricsViewToplistResponse) {
@@ -197,6 +205,7 @@ message ExportRequest {
   optional int64 limit = 2;
   ExportFormat format = 3;
   oneof request {
+    MetricsViewAggregationRequest metrics_view_aggregation_request = 6;
     MetricsViewToplistRequest metrics_view_toplist_request = 4;
     MetricsViewRowsRequest metrics_view_rows_request = 5;
   }
@@ -218,6 +227,30 @@ enum ExportFormat {
 // **********
 // Explore APIs
 // **********
+
+// Request message for QueryService.MetricsViewAggregation
+message MetricsViewAggregationRequest {
+  string instance_id = 1;
+  string metrics_view = 2 [(validate.rules).string.min_len = 1];
+  repeated string dimensions = 3;
+  repeated string measures = 4;
+  repeated InlineMeasure inline_measure_definitions = 5;
+  google.protobuf.Timestamp time_start = 6;
+  google.protobuf.Timestamp time_end = 7;
+  TimeGrain time_granularity = 8;
+  string time_zone = 9;
+  MetricsViewFilter filter = 10;
+  repeated MetricsViewSort sort = 11;
+  int64 limit = 12 [(validate.rules).int64.gte = 0];
+  int64 offset = 13 [(validate.rules).int64.gte = 0];
+  int32 priority = 14;
+}
+
+// Response message for QueryService.MetricsViewAggregation
+message MetricsViewAggregationResponse {
+  repeated MetricsViewColumn meta = 1;
+  repeated google.protobuf.Struct data = 2;
+}
 
 // Request message for QueryService.MetricsViewToplist
 message MetricsViewToplistRequest {

@@ -388,6 +388,47 @@ func (m *ExportRequest) validate(all bool) error {
 	// no validation rules for Format
 
 	switch v := m.Request.(type) {
+	case *ExportRequest_MetricsViewAggregationRequest:
+		if v == nil {
+			err := ExportRequestValidationError{
+				field:  "Request",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetMetricsViewAggregationRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ExportRequestValidationError{
+						field:  "MetricsViewAggregationRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ExportRequestValidationError{
+						field:  "MetricsViewAggregationRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetMetricsViewAggregationRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ExportRequestValidationError{
+					field:  "MetricsViewAggregationRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	case *ExportRequest_MetricsViewToplistRequest:
 		if v == nil {
 			err := ExportRequestValidationError{
@@ -657,6 +698,476 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ExportResponseValidationError{}
+
+// Validate checks the field values on MetricsViewAggregationRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MetricsViewAggregationRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MetricsViewAggregationRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// MetricsViewAggregationRequestMultiError, or nil if none found.
+func (m *MetricsViewAggregationRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsViewAggregationRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	if utf8.RuneCountInString(m.GetMetricsView()) < 1 {
+		err := MetricsViewAggregationRequestValidationError{
+			field:  "MetricsView",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	for idx, item := range m.GetInlineMeasureDefinitions() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewAggregationRequestValidationError{
+						field:  fmt.Sprintf("InlineMeasureDefinitions[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewAggregationRequestValidationError{
+						field:  fmt.Sprintf("InlineMeasureDefinitions[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewAggregationRequestValidationError{
+					field:  fmt.Sprintf("InlineMeasureDefinitions[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if all {
+		switch v := interface{}(m.GetTimeStart()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewAggregationRequestValidationError{
+					field:  "TimeStart",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewAggregationRequestValidationError{
+					field:  "TimeStart",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTimeStart()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewAggregationRequestValidationError{
+				field:  "TimeStart",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetTimeEnd()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewAggregationRequestValidationError{
+					field:  "TimeEnd",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewAggregationRequestValidationError{
+					field:  "TimeEnd",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTimeEnd()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewAggregationRequestValidationError{
+				field:  "TimeEnd",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for TimeGranularity
+
+	// no validation rules for TimeZone
+
+	if all {
+		switch v := interface{}(m.GetFilter()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewAggregationRequestValidationError{
+					field:  "Filter",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewAggregationRequestValidationError{
+					field:  "Filter",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFilter()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewAggregationRequestValidationError{
+				field:  "Filter",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	for idx, item := range m.GetSort() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewAggregationRequestValidationError{
+						field:  fmt.Sprintf("Sort[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewAggregationRequestValidationError{
+						field:  fmt.Sprintf("Sort[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewAggregationRequestValidationError{
+					field:  fmt.Sprintf("Sort[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if m.GetLimit() < 0 {
+		err := MetricsViewAggregationRequestValidationError{
+			field:  "Limit",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetOffset() < 0 {
+		err := MetricsViewAggregationRequestValidationError{
+			field:  "Offset",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Priority
+
+	if len(errors) > 0 {
+		return MetricsViewAggregationRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsViewAggregationRequestMultiError is an error wrapping multiple
+// validation errors returned by MetricsViewAggregationRequest.ValidateAll()
+// if the designated constraints aren't met.
+type MetricsViewAggregationRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsViewAggregationRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsViewAggregationRequestMultiError) AllErrors() []error { return m }
+
+// MetricsViewAggregationRequestValidationError is the validation error
+// returned by MetricsViewAggregationRequest.Validate if the designated
+// constraints aren't met.
+type MetricsViewAggregationRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsViewAggregationRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MetricsViewAggregationRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MetricsViewAggregationRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MetricsViewAggregationRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsViewAggregationRequestValidationError) ErrorName() string {
+	return "MetricsViewAggregationRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsViewAggregationRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsViewAggregationRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsViewAggregationRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsViewAggregationRequestValidationError{}
+
+// Validate checks the field values on MetricsViewAggregationResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MetricsViewAggregationResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MetricsViewAggregationResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// MetricsViewAggregationResponseMultiError, or nil if none found.
+func (m *MetricsViewAggregationResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsViewAggregationResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetMeta() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewAggregationResponseValidationError{
+						field:  fmt.Sprintf("Meta[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewAggregationResponseValidationError{
+						field:  fmt.Sprintf("Meta[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewAggregationResponseValidationError{
+					field:  fmt.Sprintf("Meta[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	for idx, item := range m.GetData() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewAggregationResponseValidationError{
+						field:  fmt.Sprintf("Data[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewAggregationResponseValidationError{
+						field:  fmt.Sprintf("Data[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewAggregationResponseValidationError{
+					field:  fmt.Sprintf("Data[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return MetricsViewAggregationResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsViewAggregationResponseMultiError is an error wrapping multiple
+// validation errors returned by MetricsViewAggregationResponse.ValidateAll()
+// if the designated constraints aren't met.
+type MetricsViewAggregationResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsViewAggregationResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsViewAggregationResponseMultiError) AllErrors() []error { return m }
+
+// MetricsViewAggregationResponseValidationError is the validation error
+// returned by MetricsViewAggregationResponse.Validate if the designated
+// constraints aren't met.
+type MetricsViewAggregationResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsViewAggregationResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MetricsViewAggregationResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MetricsViewAggregationResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MetricsViewAggregationResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsViewAggregationResponseValidationError) ErrorName() string {
+	return "MetricsViewAggregationResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsViewAggregationResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsViewAggregationResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsViewAggregationResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsViewAggregationResponseValidationError{}
 
 // Validate checks the field values on MetricsViewToplistRequest with the rules
 // defined in the proto definition for this message. If any rules are

@@ -260,6 +260,12 @@ export class ExportRequest extends Message<ExportRequest> {
    */
   request: {
     /**
+     * @generated from field: rill.runtime.v1.MetricsViewAggregationRequest metrics_view_aggregation_request = 6;
+     */
+    value: MetricsViewAggregationRequest;
+    case: "metricsViewAggregationRequest";
+  } | {
+    /**
      * @generated from field: rill.runtime.v1.MetricsViewToplistRequest metrics_view_toplist_request = 4;
      */
     value: MetricsViewToplistRequest;
@@ -283,6 +289,7 @@ export class ExportRequest extends Message<ExportRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 3, name: "format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
+    { no: 6, name: "metrics_view_aggregation_request", kind: "message", T: MetricsViewAggregationRequest, oneof: "request" },
     { no: 4, name: "metrics_view_toplist_request", kind: "message", T: MetricsViewToplistRequest, oneof: "request" },
     { no: 5, name: "metrics_view_rows_request", kind: "message", T: MetricsViewRowsRequest, oneof: "request" },
   ]);
@@ -340,6 +347,168 @@ export class ExportResponse extends Message<ExportResponse> {
 
   static equals(a: ExportResponse | PlainMessage<ExportResponse> | undefined, b: ExportResponse | PlainMessage<ExportResponse> | undefined): boolean {
     return proto3.util.equals(ExportResponse, a, b);
+  }
+}
+
+/**
+ * Request message for QueryService.MetricsViewAggregation
+ *
+ * @generated from message rill.runtime.v1.MetricsViewAggregationRequest
+ */
+export class MetricsViewAggregationRequest extends Message<MetricsViewAggregationRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string metrics_view = 2;
+   */
+  metricsView = "";
+
+  /**
+   * @generated from field: repeated string dimensions = 3;
+   */
+  dimensions: string[] = [];
+
+  /**
+   * @generated from field: repeated string measures = 4;
+   */
+  measures: string[] = [];
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.InlineMeasure inline_measure_definitions = 5;
+   */
+  inlineMeasureDefinitions: InlineMeasure[] = [];
+
+  /**
+   * @generated from field: google.protobuf.Timestamp time_start = 6;
+   */
+  timeStart?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp time_end = 7;
+   */
+  timeEnd?: Timestamp;
+
+  /**
+   * @generated from field: rill.runtime.v1.TimeGrain time_granularity = 8;
+   */
+  timeGranularity = TimeGrain.UNSPECIFIED;
+
+  /**
+   * @generated from field: string time_zone = 9;
+   */
+  timeZone = "";
+
+  /**
+   * @generated from field: rill.runtime.v1.MetricsViewFilter filter = 10;
+   */
+  filter?: MetricsViewFilter;
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.MetricsViewSort sort = 11;
+   */
+  sort: MetricsViewSort[] = [];
+
+  /**
+   * @generated from field: int64 limit = 12;
+   */
+  limit = protoInt64.zero;
+
+  /**
+   * @generated from field: int64 offset = 13;
+   */
+  offset = protoInt64.zero;
+
+  /**
+   * @generated from field: int32 priority = 14;
+   */
+  priority = 0;
+
+  constructor(data?: PartialMessage<MetricsViewAggregationRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewAggregationRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 5, name: "inline_measure_definitions", kind: "message", T: InlineMeasure, repeated: true },
+    { no: 6, name: "time_start", kind: "message", T: Timestamp },
+    { no: 7, name: "time_end", kind: "message", T: Timestamp },
+    { no: 8, name: "time_granularity", kind: "enum", T: proto3.getEnumType(TimeGrain) },
+    { no: 9, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "filter", kind: "message", T: MetricsViewFilter },
+    { no: 11, name: "sort", kind: "message", T: MetricsViewSort, repeated: true },
+    { no: 12, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 13, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 14, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationRequest {
+    return new MetricsViewAggregationRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAggregationRequest {
+    return new MetricsViewAggregationRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAggregationRequest {
+    return new MetricsViewAggregationRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewAggregationRequest | PlainMessage<MetricsViewAggregationRequest> | undefined, b: MetricsViewAggregationRequest | PlainMessage<MetricsViewAggregationRequest> | undefined): boolean {
+    return proto3.util.equals(MetricsViewAggregationRequest, a, b);
+  }
+}
+
+/**
+ * Response message for QueryService.MetricsViewAggregation
+ *
+ * @generated from message rill.runtime.v1.MetricsViewAggregationResponse
+ */
+export class MetricsViewAggregationResponse extends Message<MetricsViewAggregationResponse> {
+  /**
+   * @generated from field: repeated rill.runtime.v1.MetricsViewColumn meta = 1;
+   */
+  meta: MetricsViewColumn[] = [];
+
+  /**
+   * @generated from field: repeated google.protobuf.Struct data = 2;
+   */
+  data: Struct[] = [];
+
+  constructor(data?: PartialMessage<MetricsViewAggregationResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewAggregationResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "meta", kind: "message", T: MetricsViewColumn, repeated: true },
+    { no: 2, name: "data", kind: "message", T: Struct, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationResponse {
+    return new MetricsViewAggregationResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAggregationResponse {
+    return new MetricsViewAggregationResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAggregationResponse {
+    return new MetricsViewAggregationResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewAggregationResponse | PlainMessage<MetricsViewAggregationResponse> | undefined, b: MetricsViewAggregationResponse | PlainMessage<MetricsViewAggregationResponse> | undefined): boolean {
+    return proto3.util.equals(MetricsViewAggregationResponse, a, b);
   }
 }
 

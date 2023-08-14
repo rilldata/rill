@@ -12,6 +12,57 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
+// MetricsViewAggregation implements QueryService.
+func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.MetricsViewAggregationRequest) (*runtimev1.MetricsViewAggregationResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.metric_view", req.MetricsView),
+		attribute.StringSlice("args.dimensions", req.Dimensions),
+		attribute.StringSlice("args.measures", req.Measures),
+		attribute.StringSlice("args.inline_measure_definitions", marshalInlineMeasure(req.InlineMeasureDefinitions)),
+		attribute.String("args.time_start", safeTimeStr(req.TimeStart)),
+		attribute.String("args.time_end", safeTimeStr(req.TimeEnd)),
+		attribute.String("args.time_granularity", req.TimeGranularity.String()),
+		attribute.String("args.time_zone", req.TimeZone),
+		attribute.Int("args.filter_count", filterCount(req.Filter)),
+		attribute.StringSlice("args.sort.names", marshalMetricsViewSort(req.Sort)),
+		attribute.Int64("args.limit", req.Limit),
+		attribute.Int64("args.offset", req.Offset),
+		attribute.Int("args.priority", int(req.Priority)),
+	)
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+		return nil, ErrForbidden
+	}
+
+	err := validateInlineMeasures(req.InlineMeasureDefinitions)
+	if err != nil {
+		return nil, err
+	}
+
+	q := &queries.MetricsViewAggregation{
+		MetricsView:              req.MetricsView,
+		Dimensions:               req.Dimensions,
+		Measures:                 req.Measures,
+		InlineMeasureDefinitions: req.InlineMeasureDefinitions,
+		TimeStart:                req.TimeStart,
+		TimeEnd:                  req.TimeEnd,
+		TimeGranularity:          req.TimeGranularity,
+		TimeZone:                 req.TimeZone,
+		Filter:                   req.Filter,
+		Sort:                     req.Sort,
+		Limit:                    &req.Limit,
+		Offset:                   req.Offset,
+	}
+	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	if err != nil {
+		return nil, err
+	}
+
+	return q.Result, nil
+}
+
 // MetricsViewToplist implements QueryService.
 func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsViewToplistRequest) (*runtimev1.MetricsViewToplistResponse, error) {
 	observability.AddRequestAttributes(ctx,
