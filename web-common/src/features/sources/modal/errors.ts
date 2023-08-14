@@ -73,10 +73,6 @@ export function humanReadableErrorMessage(
       // DuckDB errors
       if (serverError.match(/expected \d* values per row, but got \d*/)) {
         return "Malformed CSV file: number of columns does not match header.";
-      } else if (
-        serverError.match(/Catalog Error: Table with name .* does not exist/)
-      ) {
-        return "We had trouble ingesting your data. Please see the docs for common issues. If you're still stuck, don't hesitate to reach out on Discord.";
       }
 
       // Fallback to raw server error
