@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/rilldata/rill/runtime/pkg/activity"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 const poolSizeKey = "rill_pool_size"
@@ -21,12 +20,10 @@ type config struct {
 	DBFilePath string
 	// Activity client
 	Activity activity.Client
-	// Activity dimensions
-	ActivityDims []attribute.KeyValue
 }
 
 // activityDims and client are allowed to be nil, in this case DuckDB stats are not emitted
-func newConfig(dsn string, client activity.Client, activityDims []attribute.KeyValue) (*config, error) {
+func newConfig(dsn string, client activity.Client) (*config, error) {
 	// Parse DSN as URL
 	uri, err := url.Parse(dsn)
 	if err != nil {
@@ -58,11 +55,10 @@ func newConfig(dsn string, client activity.Client, activityDims []attribute.KeyV
 
 	// Return config
 	cfg := &config{
-		DSN:          dsn,
-		PoolSize:     poolSize,
-		DBFilePath:   uri.Path,
-		Activity:     client,
-		ActivityDims: activityDims,
+		DSN:        dsn,
+		PoolSize:   poolSize,
+		DBFilePath: uri.Path,
+		Activity:   client,
 	}
 	return cfg, nil
 }

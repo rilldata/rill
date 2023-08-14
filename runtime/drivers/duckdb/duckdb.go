@@ -61,6 +61,7 @@ func (d Driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connect
 		return nil, fmt.Errorf("require dsn to open duckdb connection")
 	}
 
+	// TODO: expect the activity is passed as a func parameter, similar to the logger (see caches.go)
 	var client activity.Client
 	clientAny := config["activity"]
 	if clientAny != nil {
@@ -69,15 +70,7 @@ func (d Driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connect
 		}
 	}
 
-	var activityDims []attribute.KeyValue
-	activityDimsAny := config["activityDims"]
-	if activityDimsAny != nil {
-		if activityDims, ok = activityDimsAny.([]attribute.KeyValue); !ok {
-			return nil, fmt.Errorf("couldn't cast activity dimensions")
-		}
-	}
-
-	cfg, err := newConfig(dsn, client, activityDims)
+	cfg, err := newConfig(dsn, client)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +122,7 @@ func (d Driver) Drop(config map[string]any, logger *zap.Logger) error {
 		return fmt.Errorf("require dsn to drop duckdb connection")
 	}
 
-	cfg, err := newConfig(dsn, nil, nil)
+	cfg, err := newConfig(dsn, nil)
 	if err != nil {
 		return err
 	}
@@ -471,40 +464,42 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 			commonDims := []attribute.KeyValue{
 				attribute.String("olap.db.name", stat.DatabaseName),
 			}
-			commonDims = append(commonDims, c.config.ActivityDims...)
 
 			dbSize, err := humanReadableSizeToBytes(stat.DatabaseSize)
 			if err != nil {
 				c.logger.Error("couldn't convert duckdb size to bytes", zap.Error(err))
 			} else {
-				c.config.Activity.Emit(c.ctx, "olap_db_size_bytes", dbSize, commonDims...)
+				c.config.Activity.Emit(c.ctx, "duckdb_size_bytes", dbSize, commonDims...)
 			}
 
 			walSize, err := humanReadableSizeToBytes(stat.WalSize)
 			if err != nil {
 				c.logger.Error("couldn't convert duckdb wal size to bytes", zap.Error(err))
 			} else {
-				c.config.Activity.Emit(c.ctx, "olap_wal_size_bytes", walSize, commonDims...)
+				c.config.Activity.Emit(c.ctx, "duckdb_wal_size_bytes", walSize, commonDims...)
 			}
 
 			memoryUsage, err := humanReadableSizeToBytes(stat.MemoryUsage)
 			if err != nil {
 				c.logger.Error("couldn't convert duckdb memory usage to bytes", zap.Error(err))
 			} else {
-				c.config.Activity.Emit(c.ctx, "olap_memory_usage_bytes", memoryUsage, commonDims...)
+				c.config.Activity.Emit(c.ctx, "duckdb_memory_usage_bytes", memoryUsage, commonDims...)
 			}
 
 			memoryLimit, err := humanReadableSizeToBytes(stat.MemoryLimit)
 			if err != nil {
 				c.logger.Error("couldn't convert duckdb memory limit to bytes", zap.Error(err))
 			} else {
-				c.config.Activity.Emit(c.ctx, "olap_memory_limit_bytes", memoryLimit, commonDims...)
+				c.config.Activity.Emit(c.ctx, "duckdb_memory_limit_bytes", memoryLimit, commonDims...)
 			}
 
-			c.config.Activity.Emit(c.ctx, "olap_block_size_bytes", float64(stat.BlockSize), commonDims...)
-			c.config.Activity.Emit(c.ctx, "olap_total_blocks", float64(stat.TotalBlocks), commonDims...)
-			c.config.Activity.Emit(c.ctx, "olap_free_blocks", float64(stat.FreeBlocks), commonDims...)
-			c.config.Activity.Emit(c.ctx, "olap_used_blocks", float64(stat.UsedBlocks), commonDims...)
+			c.config.Activity.Emit(c.ctx, "duckdb_block_size_bytes", float64(stat.BlockSize), commonDims...)
+			c.config.Activity.Emit(c.ctx, "duckdb_total_blocks", float64(stat.TotalBlocks), commonDims...)
+			c.config.Activity.Emit(c.ctx, "duckdb_free_blocks", float64(stat.FreeBlocks), commonDims...)
+			c.config.Activity.Emit(c.ctx, "duckdb_used_blocks", float64(stat.UsedBlocks), commonDims...)
+
+			estimatedDBSize, _ := c.EstimateSize()
+			c.config.Activity.Emit(c.ctx, "duckdb_estimated_size_bytes", float64(estimatedDBSize))
 
 		case <-c.ctx.Done():
 			statTicker.Stop()
@@ -513,14 +508,16 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 	}
 }
 
+// Regex to parse human-readable size returned by DuckDB
+var humanReadableSizeRegex = regexp.MustCompile(`^([\d.]+)\s*(\S+)$`)
+
 // Reversed logic of StringUtil::BytesToHumanReadableString
 // see https://github.com/cran/duckdb/blob/master/src/duckdb/src/common/string_util.cpp#L157
 // Examples: 1 bytes, 2 bytes, 1KB, 1MB, 1TB, 1PB
 func humanReadableSizeToBytes(sizeStr string) (float64, error) {
 	var multiplier float64
 
-	re := regexp.MustCompile(`^([\d.]+)\s*(\S+)$`)
-	match := re.FindStringSubmatch(sizeStr)
+	match := humanReadableSizeRegex.FindStringSubmatch(sizeStr)
 
 	if match == nil {
 		return 0, fmt.Errorf("invalid size format: '%s'", sizeStr)

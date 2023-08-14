@@ -200,16 +200,16 @@ func (r *Runtime) evictCaches(ctx context.Context, inst *drivers.Instance) {
 // nil is returned if an error occurred or instance was not found
 func (r *Runtime) GetInstanceAttributes(ctx context.Context, instanceID string) []attribute.KeyValue {
 	instance, err := r.FindInstance(ctx, instanceID)
-
-	if err == nil && instance != nil {
-		return instanceAnnotationsToAttribs(instance)
+	if err != nil {
+		return nil
 	}
 
-	return nil
+	return instanceAnnotationsToAttribs(instance)
 }
 
 func instanceAnnotationsToAttribs(instance *drivers.Instance) []attribute.KeyValue {
-	attrs := []attribute.KeyValue{attribute.String("instance_id", instance.ID)}
+	attrs := make([]attribute.KeyValue, 0, len(instance.Annotations)+1)
+	attrs = append(attrs, attribute.String("instance_id", instance.ID))
 	for k, v := range instance.Annotations {
 		attrs = append(attrs, attribute.String(k, v))
 	}

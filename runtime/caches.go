@@ -84,10 +84,16 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver, dsn strin
 		if instanceID != "default" {
 			logger = c.logger.With(zap.String("instance_id", instanceID), zap.String("driver", driver))
 		}
+
+		activityClient := c.activity
+		if activityClient != nil {
+			activityClient = activityClient.With(activityDims...)
+		}
+
 		config := map[string]any{
-			"dsn":          dsn,
-			"activity":     c.activity,
-			"activityDims": activityDims,
+			"dsn": dsn,
+			// TODO: remove activity from the config and pass it as a func parameter, similar to the logger
+			"activity": activityClient,
 		}
 		conn, err := drivers.Open(driver, config, logger)
 		if err != nil {
