@@ -64,5 +64,13 @@
     >
       Export as CSV
     </MenuItem>
+    <MenuItem
+            on:select={() => {
+        toggleFloatingElement();
+        handleExportMetrics("EXPORT_FORMAT_PARQUET");
+      }}
+    >
+      Export as Parquet
+    </MenuItem>
   </Menu>
 </WithTogglableFloatingElement>
