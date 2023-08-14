@@ -21,7 +21,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
 
-	// Load infra drivers and connectors for runtime
+	// Load connectors and reconcilers for runtime
 	_ "github.com/rilldata/rill/runtime/drivers/bigquery"
 	_ "github.com/rilldata/rill/runtime/drivers/druid"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
@@ -32,6 +32,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
 	_ "github.com/rilldata/rill/runtime/drivers/s3"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
+	_ "github.com/rilldata/rill/runtime/reconcilers"
 )
 
 // Config describes runtime server config derived from environment variables.

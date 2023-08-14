@@ -81,8 +81,7 @@
   ) {
     allTimeRangeQuery = useModelAllTimeRange(
       $runtime.instanceId,
-      $metricsViewQuery.data.entry.metricsView.model,
-      $metricsViewQuery.data.entry.metricsView.timeDimension,
+      metricViewName,
       {
         query: {
           enabled: !!hasTimeSeries,
@@ -112,40 +111,12 @@
   $: if (allTimeRange && allTimeRange?.start && isDashboardDefined) {
     const selectedTimeRange = $dashboardStore?.selectedTimeRange;
 
-    if (!selectedTimeRange) {
-      setDefaultTimeControls(allTimeRange);
-    } else {
+    if (selectedTimeRange) {
       setTimeControlsFromUrl(allTimeRange);
     }
   }
 
-  function setDefaultTimeControls(allTimeRange: DashboardTimeControls) {
-    const defaultIANA = $localUserPreferences.timeZone;
-    metricsExplorerStore.setTimeZone(metricViewName, defaultIANA);
-
-    baseTimeRange = convertTimeRangePreset(
-      defaultTimeRange,
-      allTimeRange.start,
-      allTimeRange.end,
-      defaultIANA
-    ) || { ...allTimeRange, end: new Date(allTimeRange.end.getTime() + 1) };
-
-    const timeGrain = getDefaultTimeGrain(
-      baseTimeRange.start,
-      baseTimeRange.end
-    );
-    makeTimeSeriesTimeRangeAndUpdateAppState(
-      baseTimeRange,
-      timeGrain.grain,
-      {}
-    );
-
-    metricsExplorerStore.allDefaultsSelected(metricViewName);
-  }
-
   function setTimeControlsFromUrl(allTimeRange: TimeRange) {
-    metricsExplorerStore.allDefaultsSelected(metricViewName);
-
     if ($dashboardStore?.selectedTimeRange.name === TimeRangePreset.CUSTOM) {
       /** set the time range to the fixed custom time range */
       baseTimeRange = {

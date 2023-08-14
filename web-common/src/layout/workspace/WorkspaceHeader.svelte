@@ -1,9 +1,5 @@
 <script lang="ts">
-  import type { LayoutElement } from "@rilldata/web-local/lib/types";
-  import { getContext } from "svelte";
-  import type { Tweened } from "svelte/motion";
-  import type { Writable } from "svelte/store";
-
+  import { page } from "$app/stores";
   import { IconButton } from "@rilldata/web-common/components/button";
   import HideRightSidebar from "@rilldata/web-common/components/icons/HideRightSidebar.svelte";
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
@@ -11,6 +7,12 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
+  import { dynamicTextInputWidth } from "@rilldata/web-common/lib/actions/dynamic-text-input-width";
+  import { getContext } from "svelte";
+  import type { Tweened } from "svelte/motion";
+  import type { Writable } from "svelte/store";
+  import SourceUnsavedIndicator from "../../features/sources/editor/SourceUnsavedIndicator.svelte";
+  import type { LayoutElement } from "./types";
   import WorkspaceHeaderStatusSpinner from "./WorkspaceHeaderStatusSpinner.svelte";
 
   export let onChangeCallback;
@@ -44,9 +46,6 @@
   }
 
   $: applicationStatus = appRunning ? EntityStatus.Running : EntityStatus.Idle;
-
-  $: inputSize =
-    Math.max((editingTitle ? titleInputValue : titleInput)?.length || 0, 5) + 1;
 
   $: width = $observedNode?.getBoundingClientRect()?.width;
 </script>
@@ -94,13 +93,17 @@
               editingTitle = false;
             }}
             value={titleInput}
-            size={inputSize}
+            use:dynamicTextInputWidth
             on:change={onChangeCallback}
           />
           <TooltipContent slot="tooltip-content">
             <div class="flex items-center gap-x-2">Edit</div>
           </TooltipContent>
         </Tooltip>
+
+        {#if $page.url.pathname.startsWith("/source")}
+          <SourceUnsavedIndicator sourceName={titleInput} />
+        {/if}
       </h1>
     {/if}
   </div>

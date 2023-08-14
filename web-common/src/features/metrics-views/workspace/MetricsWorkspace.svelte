@@ -1,8 +1,8 @@
 <script lang="ts">
   import { WorkspaceContainer } from "../../../layout/workspace";
-  import MetricsWorkspaceHeader from "./MetricsWorkspaceHeader.svelte";
   import MetricsEditor from "./editor/MetricsEditor.svelte";
   import MetricsInspector from "./inspector/MetricsInspector.svelte";
+  import MetricsWorkspaceHeader from "./MetricsWorkspaceHeader.svelte";
 
   export let metricsDefName: string;
 </script>

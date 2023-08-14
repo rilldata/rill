@@ -5,13 +5,13 @@
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
   import {
-    DashboardListItem,
     getDashboardsForProject,
     useDashboardListItems,
   } from "@rilldata/web-admin/components/projects/dashboards";
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/components/projects/invalidations";
   import { useProjectDeploymentStatus } from "@rilldata/web-admin/components/projects/selectors";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
+  import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import {
     getRuntimeServiceListCatalogEntriesQueryKey,
     getRuntimeServiceListFilesQueryKey,
@@ -21,8 +21,8 @@
   import { errorStore } from "../../../../components/errors/error-store";
   import ProjectBuilding from "../../../../components/projects/ProjectBuilding.svelte";
   import ProjectErrored from "../../../../components/projects/ProjectErrored.svelte";
-  import DashboardStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardStateProvider.svelte";
-  import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
+  import DashboardStateProvider from "@rilldata/web-common/features/dashboards/DashboardStateProvider.svelte";
+  import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
 
   const queryClient = useQueryClient();
 
@@ -33,20 +33,23 @@
   $: dashboardName = $page.params.dashboard;
 
   $: project = createAdminServiceGetProject(orgName, projectName);
-  // Poll specifically for the project's deployment status
-  $: projectDeploymentStatus = useProjectDeploymentStatus(orgName, projectName); // polls
 
-  let isProjectBuilding: boolean;
+  $: projectDeploymentStatus = useProjectDeploymentStatus(orgName, projectName); // polls
+  $: isProjectPending =
+    $projectDeploymentStatus.data ===
+    V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING;
+  $: isProjectReconciling =
+    $projectDeploymentStatus.data ===
+    V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING;
+  $: isProjectErrored =
+    $projectDeploymentStatus.data ===
+    V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR;
+
   let isProjectOK: boolean;
 
   $: if ($projectDeploymentStatus.data) {
     const projectWasNotOk = !isProjectOK;
 
-    isProjectBuilding =
-      $projectDeploymentStatus.data ===
-        V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
-      $projectDeploymentStatus.data ===
-        V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING;
     isProjectOK =
       $projectDeploymentStatus.data === V1DeploymentStatus.DEPLOYMENT_STATUS_OK;
 
@@ -74,24 +77,21 @@
   }
 
   // We avoid calling `GetCatalogEntry` to check for dashboard validity because that would trigger a 404 page.
-  $: dashboardListItems = useDashboardListItems(
-    instanceId,
-    $projectDeploymentStatus.data
+  $: dashboardListItems = useDashboardListItems(instanceId);
+  $: currentDashboard = $dashboardListItems?.items?.find(
+    (listing) => listing.name === $page.params.dashboard
   );
-  let currentDashboard: DashboardListItem;
-  $: if ($dashboardListItems.isSuccess) {
-    currentDashboard = $dashboardListItems?.items?.find(
-      (listing) => listing.name === $page.params.dashboard
-    );
+  $: isDashboardOK = currentDashboard?.isValid;
+  $: isDashboardErrored = !!currentDashboard && !currentDashboard.isValid;
+  $: isDashboardNotFound = $dashboardListItems?.isSuccess && !currentDashboard;
 
-    // If no dashboard is found, show a 404 page
-    if (!currentDashboard) {
-      errorStore.set({
-        statusCode: 404,
-        header: "Dashboard not found",
-        body: `The dashboard you requested could not be found. Please check that you have provided a valid dashboard name.`,
-      });
-    }
+  // If no dashboard is found, show a 404 page
+  if ((isProjectOK || isProjectErrored) && isDashboardNotFound) {
+    errorStore.set({
+      statusCode: 404,
+      header: "Dashboard not found",
+      body: `The dashboard you requested could not be found. Please check that you have provided a valid dashboard name.`,
+    });
   }
 </script>
 
@@ -99,22 +99,25 @@
   <title>{dashboardName} - Rill</title>
 </svelte:head>
 
-{#if isProjectBuilding}
+<!-- Note: Project and dashboard states might appear to diverge. A project could be errored 
+  because dashboard #1 is errored, but dashboard #2 could be OK.  -->
+
+{#if isProjectPending || (isProjectReconciling && isDashboardNotFound)}
   <ProjectBuilding organization={orgName} project={projectName} />
-{:else if !currentDashboard}
-  <!-- show nothing -->
-{:else if currentDashboard && !currentDashboard.isValid}
-  <ProjectErrored organization={orgName} project={projectName} />
-{:else}
+{:else if isDashboardOK}
   <StateManagersProvider metricsViewName={dashboardName}>
     {#key dashboardName}
       <DashboardStateProvider metricViewName={dashboardName}>
-        <Dashboard
-          leftMargin={"48px"}
-          hasTitle={false}
-          metricViewName={dashboardName}
-        />
+        <DashboardURLStateProvider metricViewName={dashboardName}>
+          <Dashboard
+            leftMargin={"48px"}
+            hasTitle={false}
+            metricViewName={dashboardName}
+          />
+        </DashboardURLStateProvider>
       </DashboardStateProvider>
     {/key}
   </StateManagersProvider>
+{:else if isDashboardErrored}
+  <ProjectErrored organization={orgName} project={projectName} />
 {/if}

@@ -119,6 +119,9 @@ func (s *Service) ValidateAuthToken(ctx context.Context, token string) (AuthToke
 			return nil, fmt.Errorf("invalid auth token")
 		}
 
+		s.Used.UserToken(uat.ID)
+		s.Used.User(uat.UserID)
+
 		return &userAuthToken{model: uat, token: parsed}, nil
 	case authtoken.TypeService:
 		sat, err := s.DB.FindServiceAuthToken(ctx, parsed.ID.String())
@@ -133,6 +136,8 @@ func (s *Service) ValidateAuthToken(ctx context.Context, token string) (AuthToke
 		if !bytes.Equal(sat.SecretHash, parsed.SecretHash()) {
 			return nil, fmt.Errorf("invalid auth token")
 		}
+
+		s.Used.ServiceToken(sat.ID)
 
 		return &serviceAuthToken{model: sat, token: parsed}, nil
 	default:

@@ -47,6 +47,12 @@ export class Resource extends Message<Resource> {
     case: "metricsView";
   } | {
     /**
+     * @generated from field: rill.runtime.v1.Migration migration = 9;
+     */
+    value: Migration;
+    case: "migration";
+  } | {
+    /**
      * @generated from field: rill.runtime.v1.PullTrigger pull_trigger = 6;
      */
     value: PullTrigger;
@@ -78,6 +84,7 @@ export class Resource extends Message<Resource> {
     { no: 3, name: "source", kind: "message", T: SourceV2, oneof: "resource" },
     { no: 4, name: "model", kind: "message", T: ModelV2, oneof: "resource" },
     { no: 5, name: "metrics_view", kind: "message", T: MetricsViewV2, oneof: "resource" },
+    { no: 9, name: "migration", kind: "message", T: Migration, oneof: "resource" },
     { no: 6, name: "pull_trigger", kind: "message", T: PullTrigger, oneof: "resource" },
     { no: 7, name: "refresh_trigger", kind: "message", T: RefreshTrigger, oneof: "resource" },
     { no: 8, name: "bucket_planner", kind: "message", T: BucketPlanner, oneof: "resource" },
@@ -115,9 +122,39 @@ export class ResourceMeta extends Message<ResourceMeta> {
   refs: ResourceName[] = [];
 
   /**
-   * @generated from field: map<string, string> annotations = 3;
+   * @generated from field: optional rill.runtime.v1.ResourceName owner = 3;
    */
-  annotations: { [key: string]: string } = {};
+  owner?: ResourceName;
+
+  /**
+   * @generated from field: repeated string file_paths = 4;
+   */
+  filePaths: string[] = [];
+
+  /**
+   * @generated from field: bool deleted = 7;
+   */
+  deleted = false;
+
+  /**
+   * @generated from field: optional rill.runtime.v1.ResourceName renamed_from = 13;
+   */
+  renamedFrom?: ResourceName;
+
+  /**
+   * @generated from field: string reconcile_error = 8;
+   */
+  reconcileError = "";
+
+  /**
+   * @generated from field: int64 version = 15;
+   */
+  version = protoInt64.zero;
+
+  /**
+   * @generated from field: int64 meta_version = 14;
+   */
+  metaVersion = protoInt64.zero;
 
   /**
    * @generated from field: int64 spec_version = 5;
@@ -128,16 +165,6 @@ export class ResourceMeta extends Message<ResourceMeta> {
    * @generated from field: int64 state_version = 6;
    */
   stateVersion = protoInt64.zero;
-
-  /**
-   * @generated from field: bool deleted = 7;
-   */
-  deleted = false;
-
-  /**
-   * @generated from field: string reconcile_error = 8;
-   */
-  reconcileError = "";
 
   /**
    * @generated from field: google.protobuf.Timestamp created_on = 9;
@@ -169,11 +196,15 @@ export class ResourceMeta extends Message<ResourceMeta> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "message", T: ResourceName },
     { no: 2, name: "refs", kind: "message", T: ResourceName, repeated: true },
-    { no: 3, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 3, name: "owner", kind: "message", T: ResourceName, opt: true },
+    { no: 4, name: "file_paths", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 7, name: "deleted", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 13, name: "renamed_from", kind: "message", T: ResourceName, opt: true },
+    { no: 8, name: "reconcile_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 15, name: "version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 14, name: "meta_version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 5, name: "spec_version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 6, name: "state_version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 7, name: "deleted", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 8, name: "reconcile_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "created_on", kind: "message", T: Timestamp },
     { no: 10, name: "spec_updated_on", kind: "message", T: Timestamp },
     { no: 11, name: "state_updated_on", kind: "message", T: Timestamp },
@@ -302,27 +333,39 @@ export class ProjectParserSpec extends Message<ProjectParserSpec> {
   watch = false;
 
   /**
-   * atomic makes the project parser stage all changes before committing them
+   * stage_changes sets stage_changes on created sources and models 
    *
-   * @generated from field: bool atomic = 3;
+   * @generated from field: bool stage_changes = 3;
    */
-  atomic = false;
+  stageChanges = false;
 
   /**
-   * materialize_model_default sets a default for whether or not to materialize a model, if not explicitly set in the model
+   * stream_source_ingestion
    *
-   * @generated from field: bool materialize_model_default = 4;
+   * @generated from field: bool source_stream_ingestion = 4;
    */
-  materializeModelDefault = false;
+  sourceStreamIngestion = false;
+
+  /**
+   * model_default_materialize sets a default for whether or not to materialize a model, if not explicitly set in the model
+   *
+   * @generated from field: bool model_default_materialize = 5;
+   */
+  modelDefaultMaterialize = false;
 
   /**
    * materialize_model_delay_seconds makes the project parser delay materialization of updated models
    *
-   * bool simulate_streaming_ingestion = 6;
-   *
-   * @generated from field: uint32 materialize_model_delay_seconds = 5;
+   * @generated from field: uint32 model_materialize_delay_seconds = 6;
    */
-  materializeModelDelaySeconds = 0;
+  modelMaterializeDelaySeconds = 0;
+
+  /**
+   * duckdb_connectors is a list of connectors that use DuckDB
+   *
+   * @generated from field: repeated string duckdb_connectors = 7;
+   */
+  duckdbConnectors: string[] = [];
 
   constructor(data?: PartialMessage<ProjectParserSpec>) {
     super();
@@ -334,9 +377,11 @@ export class ProjectParserSpec extends Message<ProjectParserSpec> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "compiler", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "watch", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 3, name: "atomic", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 4, name: "materialize_model_default", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 5, name: "materialize_model_delay_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 3, name: "stage_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "source_stream_ingestion", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "model_default_materialize", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "model_materialize_delay_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 7, name: "duckdb_connectors", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectParserSpec {
@@ -477,6 +522,23 @@ export class SourceSpec extends Message<SourceSpec> {
    */
   timeoutSeconds = 0;
 
+  /**
+   * Fields not derived from code files
+   *
+   * @generated from field: bool stage_changes = 7;
+   */
+  stageChanges = false;
+
+  /**
+   * @generated from field: bool stream_ingestion = 8;
+   */
+  streamIngestion = false;
+
+  /**
+   * @generated from field: bool trigger = 9;
+   */
+  trigger = false;
+
   constructor(data?: PartialMessage<SourceSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -490,6 +552,9 @@ export class SourceSpec extends Message<SourceSpec> {
     { no: 3, name: "properties", kind: "message", T: Struct },
     { no: 5, name: "refresh_schedule", kind: "message", T: Schedule },
     { no: 6, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 7, name: "stage_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "stream_ingestion", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SourceSpec {
@@ -514,24 +579,24 @@ export class SourceSpec extends Message<SourceSpec> {
  */
 export class SourceState extends Message<SourceState> {
   /**
-   * @generated from field: string table_name = 1;
+   * @generated from field: string connector = 1;
    */
-  tableName = "";
+  connector = "";
 
   /**
-   * @generated from field: string stage_table_name = 2;
+   * @generated from field: string table = 2;
    */
-  stageTableName = "";
+  table = "";
 
   /**
-   * @generated from field: rill.runtime.v1.ValidationError validation_error = 3;
+   * @generated from field: string spec_hash = 3;
    */
-  validationError?: ValidationError;
+  specHash = "";
 
   /**
-   * @generated from field: rill.runtime.v1.ExecutionError execution_error = 4;
+   * @generated from field: google.protobuf.Timestamp refreshed_on = 4;
    */
-  executionError?: ExecutionError;
+  refreshedOn?: Timestamp;
 
   constructor(data?: PartialMessage<SourceState>) {
     super();
@@ -541,10 +606,10 @@ export class SourceState extends Message<SourceState> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.SourceState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "stage_table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "validation_error", kind: "message", T: ValidationError },
-    { no: 4, name: "execution_error", kind: "message", T: ExecutionError },
+    { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "spec_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "refreshed_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SourceState {
@@ -622,9 +687,9 @@ export class ModelSpec extends Message<ModelSpec> {
   sql = "";
 
   /**
-   * @generated from field: bool derive_metrics_view = 3;
+   * @generated from field: optional bool materialize = 3;
    */
-  deriveMetricsView = false;
+  materialize?: boolean;
 
   /**
    * @generated from field: rill.runtime.v1.Schedule refresh_schedule = 4;
@@ -632,19 +697,31 @@ export class ModelSpec extends Message<ModelSpec> {
   refreshSchedule?: Schedule;
 
   /**
-   * @generated from field: uint32 timeout_seconds = 6;
+   * @generated from field: uint32 timeout_seconds = 5;
    */
   timeoutSeconds = 0;
 
   /**
-   * @generated from field: optional bool materialize = 7;
-   */
-  materialize?: boolean;
-
-  /**
-   * @generated from field: bool uses_templating = 8;
+   * @generated from field: bool uses_templating = 6;
    */
   usesTemplating = false;
+
+  /**
+   * Fields not derived from code files
+   *
+   * @generated from field: bool stage_changes = 7;
+   */
+  stageChanges = false;
+
+  /**
+   * @generated from field: uint32 materialize_delay_seconds = 8;
+   */
+  materializeDelaySeconds = 0;
+
+  /**
+   * @generated from field: bool trigger = 9;
+   */
+  trigger = false;
 
   constructor(data?: PartialMessage<ModelSpec>) {
     super();
@@ -656,11 +733,13 @@ export class ModelSpec extends Message<ModelSpec> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "derive_metrics_view", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "materialize", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 4, name: "refresh_schedule", kind: "message", T: Schedule },
-    { no: 6, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 7, name: "materialize", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
-    { no: 8, name: "uses_templating", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 6, name: "uses_templating", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "stage_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "materialize_delay_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelSpec {
@@ -685,29 +764,24 @@ export class ModelSpec extends Message<ModelSpec> {
  */
 export class ModelState extends Message<ModelState> {
   /**
-   * @generated from field: string table_name = 1;
+   * @generated from field: string connector = 1;
    */
-  tableName = "";
+  connector = "";
 
   /**
-   * @generated from field: string stage_table_name = 2;
+   * @generated from field: string table = 2;
    */
-  stageTableName = "";
+  table = "";
 
   /**
-   * @generated from field: rill.runtime.v1.ValidationError validation_error = 3;
+   * @generated from field: string spec_hash = 3;
    */
-  validationError?: ValidationError;
+  specHash = "";
 
   /**
-   * @generated from field: rill.runtime.v1.ExecutionError execution_error = 4;
+   * @generated from field: google.protobuf.Timestamp refreshed_on = 4;
    */
-  executionError?: ExecutionError;
-
-  /**
-   * @generated from field: rill.runtime.v1.DependencyError dependency_error = 5;
-   */
-  dependencyError?: DependencyError;
+  refreshedOn?: Timestamp;
 
   constructor(data?: PartialMessage<ModelState>) {
     super();
@@ -717,11 +791,10 @@ export class ModelState extends Message<ModelState> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.ModelState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "stage_table_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "validation_error", kind: "message", T: ValidationError },
-    { no: 4, name: "execution_error", kind: "message", T: ExecutionError },
-    { no: 5, name: "dependency_error", kind: "message", T: DependencyError },
+    { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "spec_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "refreshed_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelState {
@@ -789,65 +862,72 @@ export class MetricsViewV2 extends Message<MetricsViewV2> {
  */
 export class MetricsViewSpec extends Message<MetricsViewSpec> {
   /**
+   * Connector containing the table
+   *
+   * @generated from field: string connector = 1;
+   */
+  connector = "";
+
+  /**
+   * Name of the table the metrics view is based on
+   *
+   * @generated from field: string table = 2;
+   */
+  table = "";
+
+  /**
    * User friendly label for the dashboard
    *
-   * @generated from field: string title = 1;
+   * @generated from field: string title = 3;
    */
   title = "";
 
   /**
    * Description of the dashboard
    *
-   * @generated from field: string description = 2;
+   * @generated from field: string description = 4;
    */
   description = "";
 
   /**
-   * Name of the source or model that the metrics view is based on
-   *
-   * @generated from field: string model = 3;
-   */
-  model = "";
-
-  /**
    * Name of the primary time dimension, used for rendering time series
    *
-   * @generated from field: string time_dimension = 4;
+   * @generated from field: string time_dimension = 5;
    */
   timeDimension = "";
 
   /**
    * Dimensions in the metrics view
    *
-   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.DimensionV2 dimensions = 5;
+   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.DimensionV2 dimensions = 6;
    */
   dimensions: MetricsViewSpec_DimensionV2[] = [];
 
   /**
    * Measures in the metrics view
    *
-   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.MeasureV2 measures = 6;
+   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.MeasureV2 measures = 7;
    */
   measures: MetricsViewSpec_MeasureV2[] = [];
 
   /**
    * Smallest time grain to show in the dashboard
    *
-   * @generated from field: rill.runtime.v1.TimeGrain smallest_time_grain = 7;
+   * @generated from field: rill.runtime.v1.TimeGrain smallest_time_grain = 8;
    */
   smallestTimeGrain = TimeGrain.UNSPECIFIED;
 
   /**
    * Default time range for the dashboard. It should be a valid ISO 8601 duration string.
    *
-   * @generated from field: string default_time_range = 8;
+   * @generated from field: string default_time_range = 9;
    */
   defaultTimeRange = "";
 
   /**
    * Available time zones list preferred time zones using IANA location identifiers
    *
-   * @generated from field: repeated string available_time_zones = 9;
+   * @generated from field: repeated string available_time_zones = 10;
    */
   availableTimeZones: string[] = [];
 
@@ -859,15 +939,16 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.MetricsViewSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "dimensions", kind: "message", T: MetricsViewSpec_DimensionV2, repeated: true },
-    { no: 6, name: "measures", kind: "message", T: MetricsViewSpec_MeasureV2, repeated: true },
-    { no: 7, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
-    { no: 8, name: "default_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 9, name: "available_time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "dimensions", kind: "message", T: MetricsViewSpec_DimensionV2, repeated: true },
+    { no: 7, name: "measures", kind: "message", T: MetricsViewSpec_MeasureV2, repeated: true },
+    { no: 8, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
+    { no: 9, name: "default_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "available_time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {
@@ -1018,14 +1099,9 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
  */
 export class MetricsViewState extends Message<MetricsViewState> {
   /**
-   * @generated from field: rill.runtime.v1.ValidationError validation_error = 1;
+   * @generated from field: rill.runtime.v1.MetricsViewSpec valid_spec = 1;
    */
-  validationError?: ValidationError;
-
-  /**
-   * @generated from field: rill.runtime.v1.DependencyError dependency_error = 2;
-   */
-  dependencyError?: DependencyError;
+  validSpec?: MetricsViewSpec;
 
   constructor(data?: PartialMessage<MetricsViewState>) {
     super();
@@ -1035,8 +1111,7 @@ export class MetricsViewState extends Message<MetricsViewState> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.MetricsViewState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "validation_error", kind: "message", T: ValidationError },
-    { no: 2, name: "dependency_error", kind: "message", T: DependencyError },
+    { no: 1, name: "valid_spec", kind: "message", T: MetricsViewSpec },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewState {
@@ -1232,16 +1307,6 @@ export class PullTrigger extends Message<PullTrigger> {
  * @generated from message rill.runtime.v1.PullTriggerSpec
  */
 export class PullTriggerSpec extends Message<PullTriggerSpec> {
-  /**
-   * @generated from field: repeated string only_paths = 1;
-   */
-  onlyPaths: string[] = [];
-
-  /**
-   * @generated from field: bool refresh_sources = 2;
-   */
-  refreshSources = false;
-
   constructor(data?: PartialMessage<PullTriggerSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1250,8 +1315,6 @@ export class PullTriggerSpec extends Message<PullTriggerSpec> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.PullTriggerSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "only_paths", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 2, name: "refresh_sources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PullTriggerSpec {
@@ -1350,14 +1413,9 @@ export class RefreshTrigger extends Message<RefreshTrigger> {
  */
 export class RefreshTriggerSpec extends Message<RefreshTriggerSpec> {
   /**
-   * @generated from field: string only_names = 1;
+   * @generated from field: repeated rill.runtime.v1.ResourceName only_names = 1;
    */
-  onlyNames = "";
-
-  /**
-   * @generated from field: bool reset_increments = 2;
-   */
-  resetIncrements = false;
+  onlyNames: ResourceName[] = [];
 
   constructor(data?: PartialMessage<RefreshTriggerSpec>) {
     super();
@@ -1367,8 +1425,7 @@ export class RefreshTriggerSpec extends Message<RefreshTriggerSpec> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.RefreshTriggerSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "only_names", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "reset_increments", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 1, name: "only_names", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RefreshTriggerSpec {

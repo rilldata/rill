@@ -141,9 +141,9 @@
 <!-- container for the metrics leaderboard components and controls -->
 <div
   bind:this={leaderboardContainer}
+  class="flex flex-col overflow-hidden"
   style:height="calc(100vh - 130px - 4rem)"
   style:min-width="365px"
-  class="flex flex-col overflow-hidden"
 >
   <div
     class="grid grid-auto-cols justify-between grid-flow-col items-center pl-1 pb-3 flex-grow-0"

@@ -1,15 +1,21 @@
+import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
+import { getLocalUserPreferences } from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
   getMapFromArray,
   removeIfExists,
 } from "@rilldata/web-common/lib/arrayUtils";
+import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
+import { convertTimeRangePreset } from "@rilldata/web-common/lib/time/ranges";
+import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import type {
+  V1ColumnTimeRangeResponse,
   V1MetricsView,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
-import { Readable, Writable, derived, writable } from "svelte/store";
+import { derived, get, Readable, Writable, writable } from "svelte/store";
 
 export interface LeaderboardValue {
   value: number;
@@ -58,13 +64,18 @@ export interface MetricsExplorerEntity {
   // user selected time range
   selectedTimeRange?: DashboardTimeControls;
   selectedComparisonTimeRange?: DashboardTimeControls;
+
   // user selected timezone
   selectedTimezone?: string;
-  // flag to show/hide comparison based on user preference
+
+  // flag to show/hide time comparison based on user preference.
+  // This controls whether a time comparison is shown in e.g.
+  // the line charts and bignums.
+  // It does NOT affect the leaderboard context column.
   showComparison?: boolean;
 
-  // flag to show/hide the percent of total column
-  showPercentOfTotal?: boolean;
+  // state of context column in the leaderboard
+  leaderboardContextColumn: LeaderboardContextColumn;
 
   // user selected dimension
   selectedDimensionName?: string;
@@ -72,9 +83,6 @@ export interface MetricsExplorerEntity {
   proto?: string;
   // proto for the default set of selections
   defaultProto?: string;
-  // marks that defaults have been selected
-  // TODO: move default selection to a common place and avoid this
-  defaultsSelected?: boolean;
 }
 
 export interface MetricsExplorerStoreType {
@@ -86,24 +94,14 @@ const { update, subscribe } = writable({
 
 function updateMetricsExplorerProto(metricsExplorer: MetricsExplorerEntity) {
   metricsExplorer.proto = getProtoFromDashboardState(metricsExplorer);
-  if (!metricsExplorer.defaultsSelected) {
-    metricsExplorer.defaultProto = metricsExplorer.proto;
-  }
 }
 
 export const updateMetricsExplorerByName = (
   name: string,
-  callback: (metricsExplorer: MetricsExplorerEntity) => void,
-  absenceCallback?: () => MetricsExplorerEntity
+  callback: (metricsExplorer: MetricsExplorerEntity) => void
 ) => {
   update((state) => {
     if (!state.entities[name]) {
-      if (absenceCallback) {
-        state.entities[name] = absenceCallback();
-      }
-      if (state.entities[name]) {
-        updateMetricsExplorerProto(state.entities[name]);
-      }
       return state;
     }
 
@@ -221,53 +219,24 @@ function syncDimensions(
 }
 
 const metricViewReducers = {
-  syncFromUrl(name: string, urlState: string, metricsView: V1MetricsView) {
-    if (!urlState || !metricsView) return;
-    // not all data for MetricsExplorerEntity will be filled out here.
-    // Hence, it is a Partial<MetricsExplorerEntity>
-    const partial = getDashboardStateFromUrl(urlState, metricsView);
-    if (!partial) return;
+  init(
+    name: string,
+    metricsView: V1MetricsView,
+    fullTimeRange: V1ColumnTimeRangeResponse
+  ) {
+    update((state) => {
+      if (state.entities[name]) return state;
 
-    updateMetricsExplorerByName(
-      name,
-      (metricsExplorer) => {
-        for (const key in partial) {
-          metricsExplorer[key] = partial[key];
-        }
-        metricsExplorer.dimensionFilterExcludeMode =
-          includeExcludeModeFromFilters(partial.filters);
-        metricsExplorer.defaultsSelected = true;
-      },
-      () => ({
-        name,
-        selectedMeasureNames: [],
-        visibleMeasureKeys: new Set(),
-        allMeasuresVisible: false,
-        visibleDimensionKeys: new Set(),
-        allDimensionsVisible: false,
-        leaderboardMeasureName: "",
-        filters: {},
-        dimensionFilterExcludeMode: includeExcludeModeFromFilters(
-          partial.filters
-        ),
-        defaultsSelected: true,
-        ...partial,
-      })
-    );
-  },
+      const timeZone = get(getLocalUserPreferences()).timeZone;
+      const timeRange = convertTimeRangePreset(
+        TimeRangePreset.ALL_TIME,
+        new Date(fullTimeRange.timeRangeSummary.min),
+        new Date(fullTimeRange.timeRangeSummary.max),
+        timeZone
+      );
+      const timeGrain = getDefaultTimeGrain(timeRange.start, timeRange.end);
 
-  sync(name: string, metricsView: V1MetricsView) {
-    if (!name || !metricsView || !metricsView.measures) return;
-    updateMetricsExplorerByName(
-      name,
-      (metricsExplorer) => {
-        // remove references to non existent measures
-        syncMeasures(metricsView, metricsExplorer);
-
-        // remove references to non existent dimensions
-        syncDimensions(metricsView, metricsExplorer);
-      },
-      () => ({
+      state.entities[name] = {
         name,
         selectedMeasureNames: metricsView.measures.map(
           (measure) => measure.name
@@ -287,8 +256,46 @@ const metricViewReducers = {
           exclude: [],
         },
         dimensionFilterExcludeMode: new Map(),
-      })
-    );
+        leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
+
+        selectedTimezone: timeZone,
+        selectedTimeRange: {
+          ...timeRange,
+          interval: timeGrain.grain,
+        },
+      };
+
+      updateMetricsExplorerProto(state.entities[name]);
+      state.entities[name].defaultProto = state.entities[name].proto;
+      return state;
+    });
+  },
+
+  syncFromUrl(name: string, urlState: string, metricsView: V1MetricsView) {
+    if (!urlState || !metricsView) return;
+    // not all data for MetricsExplorerEntity will be filled out here.
+    // Hence, it is a Partial<MetricsExplorerEntity>
+    const partial = getDashboardStateFromUrl(urlState, metricsView);
+    if (!partial) return;
+
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      for (const key in partial) {
+        metricsExplorer[key] = partial[key];
+      }
+      metricsExplorer.dimensionFilterExcludeMode =
+        includeExcludeModeFromFilters(partial.filters);
+    });
+  },
+
+  sync(name: string, metricsView: V1MetricsView) {
+    if (!name || !metricsView || !metricsView.measures) return;
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      // remove references to non existent measures
+      syncMeasures(metricsView, metricsExplorer);
+
+      // remove references to non existent dimensions
+      syncDimensions(metricsView, metricsExplorer);
+    });
   },
 
   setLeaderboardMeasureName(name: string, measureName: string) {
@@ -333,18 +340,51 @@ const metricViewReducers = {
   displayComparison(name: string, showComparison: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.showComparison = showComparison;
-      if (metricsExplorer.showPercentOfTotal === true && showComparison) {
-        metricsExplorer.showPercentOfTotal = false;
+      // if setting showComparison===true and not currently
+      //  showing any context column, then show DELTA_CHANGE
+      if (
+        showComparison &&
+        metricsExplorer.leaderboardContextColumn ===
+          LeaderboardContextColumn.HIDDEN
+      ) {
+        metricsExplorer.leaderboardContextColumn =
+          LeaderboardContextColumn.DELTA_CHANGE;
+      }
+
+      // if setting showComparison===false and currently
+      //  showing DELTA_CHANGE, then hide context column
+      if (
+        !showComparison &&
+        metricsExplorer.leaderboardContextColumn ===
+          LeaderboardContextColumn.DELTA_CHANGE
+      ) {
+        metricsExplorer.leaderboardContextColumn =
+          LeaderboardContextColumn.HIDDEN;
       }
     });
   },
 
-  displayPercentOfTotal(name: string, showPct: boolean) {
+  displayDeltaChange(name: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.showPercentOfTotal = showPct;
-      if (metricsExplorer.showComparison === true && showPct) {
-        metricsExplorer.showComparison = false;
-      }
+      // NOTE: only show delta change if comparison is enabled
+      if (metricsExplorer.showComparison === false) return;
+
+      metricsExplorer.leaderboardContextColumn =
+        LeaderboardContextColumn.DELTA_CHANGE;
+    });
+  },
+
+  displayPercentOfTotal(name: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.leaderboardContextColumn =
+        LeaderboardContextColumn.PERCENT;
+    });
+  },
+
+  hideContextColumn(name: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.leaderboardContextColumn =
+        LeaderboardContextColumn.HIDDEN;
     });
   },
 
@@ -446,12 +486,6 @@ const metricViewReducers = {
         otherFilterEntryIndex,
         1
       );
-    });
-  },
-
-  allDefaultsSelected(name: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.defaultsSelected = true;
     });
   },
 

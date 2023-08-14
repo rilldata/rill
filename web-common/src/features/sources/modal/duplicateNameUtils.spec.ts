@@ -1,8 +1,8 @@
-import { describe, it, expect } from "vitest";
 import {
   duplicateNameChecker,
   incrementedNameGetter,
-} from "@rilldata/web-common/features/sources/add-source/duplicateNameUtils";
+} from "@rilldata/web-common/features/sources/modal/duplicateNameUtils";
+import { describe, expect, it } from "vitest";
 
 function testDuplicateNameChecker(
   name: string,

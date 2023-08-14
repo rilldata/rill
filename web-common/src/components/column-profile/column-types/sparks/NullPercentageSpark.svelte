@@ -35,9 +35,6 @@
       >
     </BarAndLabel>
     <TooltipContent slot="tooltip-content">
-      <svelte:fragment slot="title">
-        what percentage of values are null?
-      </svelte:fragment>
       {#if nullCount > 0}
         {singleDigitPercentage(percentage)} of the values are null
       {:else}
