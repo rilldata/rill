@@ -528,8 +528,8 @@ func duckDBCopyExport(ctx context.Context, rt *runtime.Runtime, instanceID strin
 		extension = "csv"
 	}
 
-	temporaryFilename := "export_" + uuid.New().String()
-	sql = fmt.Sprintf("COPY (%s) TO '%s.%s'", sql, temporaryFilename, extension)
+	temporaryFilename := "export_" + uuid.New().String() + "." + extension
+	sql = fmt.Sprintf("COPY (%s) TO '%s'", sql, temporaryFilename)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:            sql,
