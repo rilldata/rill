@@ -462,7 +462,7 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 
 			// Emit collected stats as activity events
 			commonDims := []attribute.KeyValue{
-				attribute.String("olap.db.name", stat.DatabaseName),
+				attribute.String("duckdb.name", stat.DatabaseName),
 			}
 
 			dbSize, err := humanReadableSizeToBytes(stat.DatabaseSize)
