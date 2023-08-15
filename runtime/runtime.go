@@ -13,7 +13,7 @@ import (
 
 type Options struct {
 	ConnectionCacheSize int
-	MetastoreDriver     string
+	MetastoreConnector  string
 	QueryCacheSizeBytes int64
 	AllowHostAccess     bool
 	SafeSourceRefresh   bool

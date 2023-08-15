@@ -13,7 +13,7 @@ import (
 func (r *Runtime) AcquireSystemHandle(ctx context.Context, connector string) (drivers.Handle, func(), error) {
 	for _, c := range r.opts.SystemConnectors {
 		if c.Name == connector {
-			return r.connCache.get(ctx, "", c.Type, r.connectorConfig(r.opts.MetastoreDriver, c.Config, nil), true)
+			return r.connCache.get(ctx, "", c.Type, r.connectorConfig(r.opts.MetastoreConnector, c.Config, nil), true)
 		}
 	}
 	return nil, nil, fmt.Errorf("connector %s doesn't exist", connector)

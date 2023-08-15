@@ -122,7 +122,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			// Init runtime
 			opts := &runtime.Options{
 				ConnectionCacheSize: conf.ConnectionCacheSize,
-				MetastoreDriver:     conf.MetastoreDriver,
+				MetastoreConnector:  "metastore",
 				QueryCacheSizeBytes: conf.QueryCacheSizeBytes,
 				AllowHostAccess:     conf.AllowHostAccess,
 				SafeSourceRefresh:   conf.SafeSourceRefresh,
