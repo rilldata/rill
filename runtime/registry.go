@@ -71,7 +71,7 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 
 	// Drop the underlying data store
 	if dropDB {
-		err = r.FlushHandle(ctx, instanceID, inst.OLAPDriver, true)
+		err = r.EvictHandle(ctx, instanceID, inst.OLAPDriver, true)
 		if err != nil {
 			r.logger.Error("could not drop database", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 		}
@@ -116,8 +116,8 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 
 func (r *Runtime) evictCaches(ctx context.Context, inst *drivers.Instance) {
 	// evict and close instance connections
-	_ = r.FlushHandle(ctx, inst.ID, inst.OLAPDriver, false)
-	_ = r.FlushHandle(ctx, inst.ID, inst.RepoDriver, false)
+	_ = r.EvictHandle(ctx, inst.ID, inst.OLAPDriver, false)
+	_ = r.EvictHandle(ctx, inst.ID, inst.RepoDriver, false)
 	// evict catalog cache
 	r.migrationMetaCache.evict(ctx, inst.ID)
 	// query cache can't be evicted since key is a combination of instance ID and other parameters

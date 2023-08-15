@@ -10,7 +10,7 @@ import (
 	"github.com/rilldata/rill/runtime/services/catalog"
 )
 
-func (r *Runtime) AcquireGlobalHandle(ctx context.Context, connector string) (drivers.Handle, func(), error) {
+func (r *Runtime) AcquireSystemHandle(ctx context.Context, connector string) (drivers.Handle, func(), error) {
 	for _, c := range r.opts.SystemConnectors {
 		if c.Name == connector {
 			return r.connCache.get(ctx, "", c.Type, r.connectorConfig(r.opts.MetastoreDriver, c.Config, nil), true)
@@ -34,8 +34,8 @@ func (r *Runtime) AcquireHandle(ctx context.Context, instanceID, connector strin
 	return r.connCache.get(ctx, instanceID, connector, r.connectorConfig(connector, nil, instance.ResolveVariables()), false)
 }
 
-// FlushHandle flushes the db handle for the specific connector from the cache
-func (r *Runtime) FlushHandle(ctx context.Context, instanceID, connector string, drop bool) error {
+// EvictHandle flushes the db handle for the specific connector from the cache
+func (r *Runtime) EvictHandle(ctx context.Context, instanceID, connector string, drop bool) error {
 	instance, err := r.FindInstance(ctx, instanceID)
 	if err != nil {
 		return err
