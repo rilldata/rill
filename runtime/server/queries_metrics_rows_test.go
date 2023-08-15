@@ -250,9 +250,6 @@ func TestServer_MetricsViewRows_parquet_export(t *testing.T) {
 	strList := tlist.ListValues().(*array.String)
 	require.Equal(t, "a", strList.Value(0))
 	require.Equal(t, "b", strList.Value(1))
-
-	// strList := tlist.ListValues().(*array.String)
-	// require.Equal(t, `[a,b]`, tlist.String())
 	index++
 
 	require.Equal(t, "tmap", flds[index].Field.Name)
