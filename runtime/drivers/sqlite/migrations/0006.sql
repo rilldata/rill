@@ -4,12 +4,12 @@ UPDATE
 	instances
 SET
 	connectors = format('[%s, %s]',
-	json_replace('{"type":"%s","name":"repo","configs":{"dsn":"%s"}}',
+	json_replace('{"type":"%s","name":"repo","config":{"dsn":"%s"}}',
 	'$.type',
 	repo_driver,
 	'$.config.dsn',
 	repo_dsn),
-	json_replace('{"type":"%s","name":"olap","configs":{"dsn":"%s"}}',
+	json_replace('{"type":"%s","name":"olap","config":{"dsn":"%s"}}',
 	'$.type',
 	olap_driver,
 	'$.config.dsn',
