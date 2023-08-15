@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
-	"strings"
+	"regexp"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -314,13 +314,16 @@ func (s *Server) MetricsViewTimeRange(ctx context.Context, req *runtimev1.Metric
 	return q.Result, nil
 }
 
+// inlineMeasureRegexp is used by validateInlineMeasures.
+var inlineMeasureRegexp = regexp.MustCompile(`(?i)^COUNT\((DISTINCT)? *.+\)$`)
+
 // validateInlineMeasures checks that the inline measures are allowed.
 // This is to prevent injection of arbitrary SQL from clients with only ReadMetrics access.
 // In the future, we should consider allowing arbitrary expressions from people with wider access.
-// Currently, only COUNT(*) is allowed.
+// Currently, only COUNT(*) and COUNT(DISTINCT name) is allowed.
 func validateInlineMeasures(ms []*runtimev1.InlineMeasure) error {
 	for _, im := range ms {
-		if !strings.EqualFold(im.Expression, "COUNT(*)") {
+		if !inlineMeasureRegexp.MatchString(im.Expression) {
 			return fmt.Errorf("illegal inline measure expression: %q", im.Expression)
 		}
 	}
