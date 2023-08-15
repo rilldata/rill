@@ -1,14 +1,16 @@
 <script lang="ts">
   import { createVirtualizer, VirtualItem } from "@tanstack/svelte-virtual";
+  import type { SvelteComponent } from "svelte";
 
   export let rowCt: number;
   export let colCt: number;
   export let fixedColCt: number;
   export let getColumnWidth: (idx: number) => number;
   export let getRowSize: (idx: number) => number;
-  export let cellComponent;
-  export let headerComponent;
+  export let cellComponent: typeof SvelteComponent;
+  export let headerComponent: typeof SvelteComponent;
   export let height: number;
+  export let headerHeight: number;
 
   function range(n: number) {
     return new Array(n).fill(0).map((d, i) => i);
@@ -61,11 +63,12 @@
   }
 
   const isFixedColumn = (idx: number) => idx < fixedColCt;
-  const getCellWrapperStyle = (row: VirtualItem, col: VirtualItem) => {
-    let style = `display: inline-block; top: 0; left: 0; width: ${col.size}px; height: ${row.size}px; transform: translateX(${col.start}px);`;
+  const getCellWrapperStyle = (row: Partial<VirtualItem>, col: VirtualItem) => {
+    let style = `display: inline-block; width: ${col.size}px; height: ${row.size}px;`;
     if (isFixedColumn(col.index))
       style += `position: sticky; left: ${col.start}px; top: 0px; z-index: 2; transform: translateX(0px);`;
-    else style += `position: absolute; left: 0px`;
+    else
+      style += `position: absolute; top: 0; left: 0;  transform: translateX(${col.start}px);`;
     return style;
   };
 </script>
@@ -79,10 +82,10 @@
     style={`height: ${$rowVirtualizer?.getTotalSize()}px; width: ${$columnVirtualizer?.getTotalSize()}px; position: relative;`}
   >
     <div
-      style={`position: sticky; background: #ccc; z-index: 2; top: 0; left: 0; height: 24px;`}
+      style={`position: sticky; z-index: 2; top: 0; left: 0; height: ${headerHeight}px; display: flex;`}
     >
       {#each columnsToRender as col (col.index)}
-        <div style={getCellWrapperStyle({ size: 24 }, col)}>
+        <div style={getCellWrapperStyle({ size: headerHeight }, col)}>
           <svelte:component
             this={headerComponent}
             colIdx={col.index}
@@ -95,7 +98,7 @@
     </div>
     {#each $rowVirtualizer.getVirtualItems() as row (row.index)}
       <div
-        style={`position: absolute; top: 24; left: 0; width: 100%; height: ${row.size}px; transform: translateY(${row.start}px);`}
+        style={`position: absolute; top: ${headerHeight}; left: 0; width: 100%; height: ${row.size}px; transform: translateY(${row.start}px);`}
       >
         {#each columnsToRender as col (col.index)}
           <div style={getCellWrapperStyle(row, col)}>

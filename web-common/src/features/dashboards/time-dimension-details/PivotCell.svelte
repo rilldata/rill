@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { VirtualItem } from "@tanstack/svelte-virtual";
+  import type { SvelteComponent } from "svelte";
 
   export let fixed = false;
   export let element = "td";
@@ -8,7 +9,7 @@
   export let rowHeight: number | undefined = undefined;
   let _class = "";
   export { _class as class };
-  export let component;
+  export let component: typeof SvelteComponent;
 
   let style = "";
   $: {

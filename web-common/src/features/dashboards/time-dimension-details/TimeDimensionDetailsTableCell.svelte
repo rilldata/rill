@@ -1,27 +1,23 @@
 <script lang="ts">
-  import type { Writable } from "svelte/store";
   import { createQuery, CreateQueryResult } from "@tanstack/svelte-query";
-  import type { TimeDimensionDetailsStore } from "./time-dimension-details-store";
   import { getBlock } from "./util";
-  import { fetchData } from "./mock-data";
+  import { fetchData, TCellData } from "./mock-data";
   import FormattedNumberCell from "./FormattedNumberCell.svelte";
-  import { getContext } from "svelte";
+  import type { SvelteComponent } from "svelte";
+  import DimensionCell from "./DimensionCell.svelte";
+  import { useTDTContext } from "./context";
 
   export let rowIdx: number;
   export let colIdx: number;
-  const { store } = getContext<{
-    headers: string[];
-    store: Writable<TimeDimensionDetailsStore>;
-  }>("tdt-store");
   export let fixed = false;
   export let lastFixed = false;
+
+  const { store } = useTDTContext();
   // If the current data block has this cell, get the data. Otherwise for now assume "loading" state (can handle errors later)
-  let cellData: {
-    text?: string;
-    value?: number;
-    sparkline?: number[];
-    isLoading?: boolean;
-  } = { text: "...", isLoading: true };
+  let cellData: TCellData & { isLoading?: boolean } = {
+    text: "...",
+    isLoading: true,
+  };
   let block = getBlock(100, rowIdx, rowIdx);
   $: block = getBlock(100, rowIdx, rowIdx);
 
@@ -80,7 +76,8 @@
 
     // Choose palette based on type of cell state
     let palette = bgColors.default;
-    if (fixed) palette = bgColors.fixed;
+    if (colIdx === 0) palette = bgColors.default;
+    else if (fixed) palette = bgColors.fixed;
     else if (isScrubbed) palette = bgColors.scrubbed;
 
     // Choose color within palette based on highlighted state
@@ -99,16 +96,31 @@
     $store.highlightedRow = null;
   };
 
-  let cellComponent;
+  let cellComponent: typeof SvelteComponent;
   let cellComponentDefaultProps = {};
   $: {
-    if (!fixed) {
-      cellComponent = FormattedNumberCell;
+    // Dimension cell
+    if (colIdx === 0) {
+      cellComponent = DimensionCell;
       cellComponentDefaultProps = {};
-    } else if ([1, 2, 3, 4].includes(colIdx)) {
+    }
+    // Measure cell and delta cell
+    else if ([1, 3].includes(colIdx)) {
       cellComponent = FormattedNumberCell;
-      cellComponentDefaultProps = { negClass: "text-red-500" };
-    } else {
+      cellComponentDefaultProps = { negClass: "text-red-500", format: "0.2f" };
+    }
+    // Percent of total and delta percent cell
+    else if ([2, 4].includes(colIdx)) {
+      cellComponent = FormattedNumberCell;
+      cellComponentDefaultProps = { negClass: "text-red-500", format: "0.1%" };
+    }
+    // Pivotted measure cells
+    else if (!fixed) {
+      cellComponent = FormattedNumberCell;
+      cellComponentDefaultProps = { format: "0.2f" };
+    }
+    // No match
+    else {
       cellComponent = null;
       cellComponentDefaultProps = {};
     }

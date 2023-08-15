@@ -1,22 +1,21 @@
 <script lang="ts">
-  import type { Writable } from "svelte/store";
-  import type { TimeDimensionDetailsStore } from "./time-dimension-details-store";
-  import { getContext } from "svelte";
+  import { useTDTContext } from "./context";
 
   export const rowIdx: number = -1;
   export let colIdx: number;
   export let fixed = false;
   export let lastFixed = false;
-  const { store, headers } = getContext<{
-    headers: { title: string }[];
-    store: Writable<TimeDimensionDetailsStore>;
-  }>("tdt-store");
+
+  const { store, headers } = useTDTContext();
 
   let _class = "";
   $: {
-    _class = "h-full bg-white border-b text-left px-2 flex items-center";
+    _class =
+      "h-full w-full bg-white border-b px-2 flex items-center overflow-hidden";
     if (fixed) _class += ` z-2`;
     if (lastFixed) _class += ` right-shadow`;
+    if (colIdx > 0) _class += ` justify-end font-medium`;
+    else _class += ` justify-start font-bold`;
   }
 
   const handleMouseEnter = () => {
@@ -34,7 +33,11 @@
   on:mouseenter={handleMouseEnter}
   on:mouseleave={handleMouseLeave}
 >
-  {header.title}
+  {#if header.component}
+    <svelte:component this={header.component} />
+  {:else}
+    {header.title}
+  {/if}
 </div>
 
 <style>

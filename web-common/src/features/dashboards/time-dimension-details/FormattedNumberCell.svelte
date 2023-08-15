@@ -1,7 +1,12 @@
 <script lang="ts">
-  export let cell: any;
+  import { format as d3format } from "d3-format";
+  import type { TCellData } from "./mock-data";
+  export let cell: TCellData;
   export let posClass: string = undefined;
   export let negClass: string = undefined;
+  export let format: string = "";
+
+  $: applyFormat = d3format(format);
 
   let _class = "";
   $: {
@@ -16,5 +21,5 @@
 </script>
 
 <div class={_class}>
-  {cell.value.toFixed(2)}
+  {applyFormat(cell.value)}
 </div>

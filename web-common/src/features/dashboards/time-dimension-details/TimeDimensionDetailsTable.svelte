@@ -4,12 +4,12 @@
   import TimeDimensionDetailsTableHeaderCell from "./TimeDimensionDetailsTableHeaderCell.svelte";
   import { createTimeDimensionDetailsStore } from "./time-dimension-details-store";
   import { data } from "./mock-data";
-  import { setContext } from "svelte";
+  import { createTDTContext } from "./context";
 
   // Store of state to share between line chart and table
   let store = createTimeDimensionDetailsStore();
 
-  setContext("tdt-store", {
+  createTDTContext({
     store,
     headers: data.headers,
   });
@@ -38,4 +38,5 @@
   getRowSize={state.getRowSize}
   cellComponent={TimeDimensionDetailsTableCell}
   headerComponent={TimeDimensionDetailsTableHeaderCell}
+  headerHeight={36}
 />
