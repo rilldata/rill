@@ -4,23 +4,30 @@
   import type { TimeDimensionDetailsStore } from "./time-dimension-details-store";
   import { getBlock } from "./util";
   import { fetchData } from "./mock-data";
-  import { flexRender } from "@tanstack/svelte-table";
   import FormattedNumberCell from "./FormattedNumberCell.svelte";
+  import { getContext } from "svelte";
 
   export let rowIdx: number;
   export let colIdx: number;
-  export let fixed: boolean;
-  export let lastFixed: boolean;
-  export let store: Writable<TimeDimensionDetailsStore>;
+  const { store } = getContext<{
+    headers: string[];
+    store: Writable<TimeDimensionDetailsStore>;
+  }>("tdt-store");
+  export let fixed = false;
+  export let lastFixed = false;
   // If the current data block has this cell, get the data. Otherwise for now assume "loading" state (can handle errors later)
-  let cellData = { d: "...", isLoading: true };
+  let cellData: {
+    text?: string;
+    value?: number;
+    sparkline?: number[];
+    isLoading?: boolean;
+  } = { text: "...", isLoading: true };
   let block = getBlock(100, rowIdx, rowIdx);
   $: block = getBlock(100, rowIdx, rowIdx);
 
   const cellQuery = createQuery({
     queryKey: ["time-dimension-details", block[0], block[1]],
     queryFn: fetchData(block, 1000),
-    // enabled: false,
   }) as CreateQueryResult<{ block: number[]; data: { d: string }[][] }>;
 
   $: {
@@ -31,7 +38,7 @@
     ) {
       cellData =
         $cellQuery.data.data[rowIdx - $cellQuery.data.block[0]][colIdx];
-    } else cellData = { d: "...", isLoading: true };
+    } else cellData = { text: "...", isLoading: true };
   }
 
   let _class = "";
@@ -88,14 +95,6 @@
     $store.highlightedCol = null;
     $store.highlightedRow = null;
   };
-
-  let cellRenderer: any = null;
-  $: {
-    // Nonfixed columns are pivot values
-    if (false && !fixed) {
-      cellRenderer = () => flexRender(FormattedNumberCell, { cell: cellData });
-    } else cellRenderer = null;
-  }
 </script>
 
 <div
@@ -106,7 +105,7 @@
   {#if !fixed && !cellData.isLoading}
     <FormattedNumberCell cell={cellData} />
   {:else}
-    {cellData?.d}
+    {cellData?.text ?? cellData?.value}
   {/if}
 </div>
 
