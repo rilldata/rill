@@ -21,10 +21,7 @@ import (
 )
 
 type createDeploymentOptions struct {
-	OrganizationID       string
-	OrganizationName     string
 	ProjectID            string
-	ProjectName          string
 	Region               string
 	GithubURL            *string
 	GithubInstallationID *int64
@@ -34,6 +31,7 @@ type createDeploymentOptions struct {
 	ProdOLAPDriver       string
 	ProdOLAPDSN          string
 	ProdSlots            int
+	Annotations          map[string]string
 }
 
 func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOptions) (*database.Deployment, error) {
@@ -93,12 +91,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		EmbedCatalog:        embedCatalog,
 		Variables:           opts.ProdVariables,
 		IngestionLimitBytes: ingestionLimit,
-		Annotations: map[string]string{
-			"organization_id":   opts.OrganizationID,
-			"organization_name": opts.OrganizationName,
-			"project_id":        opts.ProjectID,
-			"project_name":      opts.ProjectName,
-		},
+		Annotations:         opts.Annotations,
 	})
 	if err != nil {
 		return nil, err
@@ -322,4 +315,13 @@ func githubRepoInfoForRuntime(githubURL string, installationID int64, subPath, b
 	}
 
 	return "github", string(dsn), nil
+}
+
+func deploymentAnnotations(org *database.Organization, proj *database.Project) map[string]string {
+	return map[string]string{
+		"organization_id":   org.ID,
+		"organization_name": org.Name,
+		"project_id":        proj.ID,
+		"project_name":      proj.Name,
+	}
 }

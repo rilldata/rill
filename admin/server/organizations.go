@@ -173,8 +173,9 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		return nil, status.Error(codes.PermissionDenied, "not allowed to update org")
 	}
 
+	orgName := valOrDefault(req.NewName, org.Name)
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-		Name:                    valOrDefault(req.NewName, org.Name),
+		Name:                    orgName,
 		Description:             valOrDefault(req.Description, org.Description),
 		QuotaProjects:           org.QuotaProjects,
 		QuotaDeployments:        org.QuotaDeployments,
@@ -186,30 +187,10 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Iterate over organization's projects, and push updated annotations to deployments
-	afterProjectName := ""
-	for {
-		projects, err := s.admin.DB.FindProjectsForOrganization(ctx, org.ID, afterProjectName, 10)
+	if orgName != org.Name {
+		err := s.admin.UpdateOrgDeploymentAnnotations(ctx, org)
 		if err != nil {
 			return nil, err
-		}
-
-		if len(projects) == 0 {
-			break
-		}
-
-		for _, project := range projects {
-			err := s.admin.UpdateProjectAnnotations(ctx, project, map[string]string{
-				"organization_id":   org.ID,
-				"organization_name": org.Name,
-				"project_id":        project.ID,
-				"project_name":      project.Name,
-			})
-			if err != nil {
-				return nil, err
-			}
-
-			afterProjectName = project.Name
 		}
 	}
 

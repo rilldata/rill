@@ -68,10 +68,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 	// Provision prod deployment.
 	// Start using original context again since transaction in txCtx is done.
 	depl, err := s.createDeployment(ctx, &createDeploymentOptions{
-		OrganizationID:       proj.OrganizationID,
-		OrganizationName:     org.Name,
 		ProjectID:            proj.ID,
-		ProjectName:          proj.Name,
 		Region:               proj.Region,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
@@ -81,6 +78,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		ProdOLAPDriver:       proj.ProdOLAPDriver,
 		ProdOLAPDSN:          proj.ProdOLAPDSN,
 		ProdSlots:            proj.ProdSlots,
+		Annotations:          deploymentAnnotations(org, proj),
 	})
 	if err != nil {
 		err2 := s.DB.DeleteProject(ctx, proj.ID)
@@ -162,10 +160,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 		}
 
 		depl, err := s.createDeployment(ctx, &createDeploymentOptions{
-			OrganizationID:       proj.OrganizationID,
-			OrganizationName:     org.Name,
 			ProjectID:            proj.ID,
-			ProjectName:          proj.Name,
 			Subpath:              proj.Subpath,
 			ProdOLAPDriver:       proj.ProdOLAPDriver,
 			ProdOLAPDSN:          proj.ProdOLAPDSN,
@@ -175,6 +170,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 			ProdBranch:           opts.ProdBranch,
 			ProdVariables:        opts.ProdVariables,
 			ProdSlots:            opts.ProdSlots,
+			Annotations:          deploymentAnnotations(org, proj),
 		})
 		if err != nil {
 			return nil, err
@@ -256,9 +252,39 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, proj *database.Pro
 	return s.DB.UpdateProjectVariables(ctx, proj.ID, variables)
 }
 
-// UpdateProjectAnnotations pushes the updated annotations to deployments.
+// UpdateOrgDeploymentAnnotations iterates over projects of the given org and updates annotations of corresponding deployments
 // NOTE : this does not trigger reconcile.
-func (s *Service) UpdateProjectAnnotations(ctx context.Context, proj *database.Project, annotations map[string]string) error {
+func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *database.Organization) error {
+	limit := 10
+	afterProjectName := ""
+	for {
+		projects, err := s.DB.FindProjectsForOrganization(ctx, org.ID, afterProjectName, limit)
+		if err != nil {
+			return err
+		}
+
+		for _, project := range projects {
+			err := s.UpdateDeploymentAnnotations(ctx, org, project)
+			if err != nil {
+				return err
+			}
+
+			afterProjectName = project.Name
+		}
+
+		if len(projects) < limit {
+			break
+		}
+	}
+
+	return nil
+}
+
+// UpdateDeploymentAnnotations pushes the updated annotations to deployments.
+// NOTE : this does not trigger reconcile.
+func (s *Service) UpdateDeploymentAnnotations(ctx context.Context, org *database.Organization, proj *database.Project) error {
+	annotations := deploymentAnnotations(org, proj)
+
 	ds, err := s.DB.FindDeploymentsForProject(ctx, proj.ID)
 	if err != nil {
 		return err
@@ -283,10 +309,7 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 
 	// Provision new deployment
 	newDepl, err := s.createDeployment(ctx, &createDeploymentOptions{
-		OrganizationID:       proj.OrganizationID,
-		OrganizationName:     org.Name,
 		ProjectID:            proj.ID,
-		ProjectName:          proj.Name,
 		Region:               proj.Region,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
@@ -296,6 +319,7 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 		ProdOLAPDriver:       proj.ProdOLAPDriver,
 		ProdOLAPDSN:          proj.ProdOLAPDSN,
 		ProdSlots:            proj.ProdSlots,
+		Annotations:          deploymentAnnotations(org, proj),
 	})
 	if err != nil {
 		return err
