@@ -4,7 +4,7 @@ import { get } from "svelte/store";
 export function getUrlForPath(path: string, retainParams = ["features"]): URL {
   const url = get(page).url;
   if (!path.startsWith("/")) path = "/" + path;
-  const newUrl = new URL(`http://${url.host}${path}`);
+  const newUrl = new URL(`${url.protocol}//${url.host}${path}`);
 
   for (const param of retainParams) {
     if (!url.searchParams.has(param)) continue;

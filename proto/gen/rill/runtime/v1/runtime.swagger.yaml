@@ -736,6 +736,60 @@ paths:
           type: boolean
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/logs:
+    get:
+      summary: GetLogs returns recent logs from a controller
+      operationId: RuntimeService_GetLogs
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetLogsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: ascending
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/logs/watch:
+    get:
+      summary: WatchLogs streams new logs emitted from a controller
+      operationId: RuntimeService_WatchLogs
+      responses:
+        "200":
+          description: A successful response.(streaming responses)
+          schema:
+            type: object
+            properties:
+              result:
+                $ref: '#/definitions/v1WatchLogsResponse'
+              error:
+                $ref: '#/definitions/rpcStatus'
+            title: Stream result of v1WatchLogsResponse
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: replay
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
     get:
       summary: Get cardinality for a column
@@ -1698,6 +1752,122 @@ paths:
             title: Request message for RuntimeService.Reconcile
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/resource:
+    get:
+      summary: GetResource looks up a specific catalog resource
+      operationId: RuntimeService_GetResource
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetResourceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: name.kind
+          in: query
+          required: false
+          type: string
+        - name: name.name
+          in: query
+          required: false
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/resources:
+    get:
+      summary: ListResources lists the resources stored in the catalog
+      operationId: RuntimeService_ListResources
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListResourcesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: refFilter.kind
+          in: query
+          required: false
+          type: string
+        - name: refFilter.name
+          in: query
+          required: false
+          type: string
+        - name: prefixFilter.kind
+          in: query
+          required: false
+          type: string
+        - name: prefixFilter.name
+          in: query
+          required: false
+          type: string
+        - name: annotationsFilter
+          description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
+          in: query
+          required: false
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/resources/-/watch:
+    get:
+      summary: WatchResources streams updates to catalog resources (including creation and deletion events)
+      operationId: RuntimeService_WatchResources
+      responses:
+        "200":
+          description: A successful response.(streaming responses)
+          schema:
+            type: object
+            properties:
+              result:
+                $ref: '#/definitions/v1WatchResourcesResponse'
+              error:
+                $ref: '#/definitions/rpcStatus'
+            title: Stream result of v1WatchResourcesResponse
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: refFilter.kind
+          in: query
+          required: false
+          type: string
+        - name: refFilter.name
+          in: query
+          required: false
+          type: string
+        - name: prefixFilter.kind
+          in: query
+          required: false
+          type: string
+        - name: prefixFilter.name
+          in: query
+          required: false
+          type: string
+        - name: annotationsFilter
+          description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
+          in: query
+          required: false
+          type: string
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/sync:
     post:
       summary: |-
@@ -1718,6 +1888,38 @@ paths:
           in: path
           required: true
           type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/trigger:
+    post:
+      summary: |-
+        CreateTrigger creates a trigger in the catalog.
+        Triggers are ephemeral resources that will be cleaned up by the controller.
+      operationId: RuntimeService_CreateTrigger
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateTriggerResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              pullTriggerSpec:
+                $ref: '#/definitions/v1PullTriggerSpec'
+              refreshTriggerSpec:
+                $ref: '#/definitions/v1RefreshTriggerSpec'
       tags:
         - RuntimeService
   /v1/olap/tables:
@@ -2051,6 +2253,34 @@ definitions:
       validPercentOfTotal:
         type: boolean
     title: Measures are aggregated computed values
+  MetricsViewSpecDimensionV2:
+    type: object
+    properties:
+      name:
+        type: string
+      column:
+        type: string
+      label:
+        type: string
+      description:
+        type: string
+    title: Dimensions are columns to filter and group by
+  MetricsViewSpecMeasureV2:
+    type: object
+    properties:
+      name:
+        type: string
+      expression:
+        type: string
+      label:
+        type: string
+      description:
+        type: string
+      format:
+        type: string
+      validPercentOfTotal:
+        type: boolean
+    title: Measures are aggregated computed values
   ModelDialect:
     type: string
     enum:
@@ -2177,6 +2407,12 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/protobufAny'
+  runtimev1CharLocation:
+    type: object
+    properties:
+      line:
+        type: integer
+        format: int64
   runtimev1Type:
     type: object
     properties:
@@ -2214,6 +2450,43 @@ definitions:
         type: array
         items:
           type: string
+  v1BucketExtractPolicy:
+    type: object
+    properties:
+      rowsStrategy:
+        $ref: '#/definitions/v1BucketExtractPolicyStrategy'
+      rowsLimitBytes:
+        type: string
+        format: uint64
+      filesStrategy:
+        $ref: '#/definitions/v1BucketExtractPolicyStrategy'
+      filesLimit:
+        type: string
+        format: uint64
+  v1BucketExtractPolicyStrategy:
+    type: string
+    enum:
+      - STRATEGY_UNSPECIFIED
+      - STRATEGY_HEAD
+      - STRATEGY_TAIL
+    default: STRATEGY_UNSPECIFIED
+  v1BucketPlanner:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1BucketPlannerSpec'
+      state:
+        $ref: '#/definitions/v1BucketPlannerState'
+  v1BucketPlannerSpec:
+    type: object
+    properties:
+      extractPolicy:
+        $ref: '#/definitions/v1BucketExtractPolicy'
+  v1BucketPlannerState:
+    type: object
+    properties:
+      region:
+        type: string
   v1CatalogEntry:
     type: object
     properties:
@@ -2529,6 +2802,8 @@ definitions:
       instance:
         $ref: '#/definitions/v1Instance'
     title: Response message for RuntimeService.CreateInstance
+  v1CreateTriggerResponse:
+    type: object
   v1DeleteFileAndReconcileRequest:
     type: object
     properties:
@@ -2677,6 +2952,19 @@ definitions:
       instance:
         $ref: '#/definitions/v1Instance'
     title: Response message for RuntimeService.GetInstance
+  v1GetLogsResponse:
+    type: object
+    properties:
+      logs:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Log'
+  v1GetResourceResponse:
+    type: object
+    properties:
+      resource:
+        $ref: '#/definitions/v1Resource'
   v1HistogramMethod:
     type: string
     enum:
@@ -2784,6 +3072,35 @@ definitions:
       nextPageToken:
         type: string
     title: Response message for RuntimeService.ListInstances
+  v1ListResourcesResponse:
+    type: object
+    properties:
+      resources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Resource'
+  v1Log:
+    type: object
+    properties:
+      level:
+        $ref: '#/definitions/v1LogLevel'
+      time:
+        type: string
+        format: date-time
+      message:
+        type: string
+      payload:
+        type: object
+  v1LogLevel:
+    type: string
+    enum:
+      - LOG_LEVEL_UNSPECIFIED
+      - LOG_LEVEL_DEBUG
+      - LOG_LEVEL_INFO
+      - LOG_LEVEL_WARN
+      - LOG_LEVEL_ERROR
+    default: LOG_LEVEL_UNSPECIFIED
   v1MapType:
     type: object
     properties:
@@ -2997,6 +3314,52 @@ definitions:
       ascending:
         type: boolean
     title: Sort clause for metrics view requests
+  v1MetricsViewSpec:
+    type: object
+    properties:
+      connector:
+        type: string
+        title: Connector containing the table
+      table:
+        type: string
+        title: Name of the table the metrics view is based on
+      title:
+        type: string
+        title: User friendly label for the dashboard
+      description:
+        type: string
+        title: Description of the dashboard
+      timeDimension:
+        type: string
+        title: Name of the primary time dimension, used for rendering time series
+      dimensions:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSpecDimensionV2'
+        title: Dimensions in the metrics view
+      measures:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSpecMeasureV2'
+        title: Measures in the metrics view
+      smallestTimeGrain:
+        $ref: '#/definitions/v1TimeGrain'
+        title: Smallest time grain to show in the dashboard
+      defaultTimeRange:
+        type: string
+        description: Default time range for the dashboard. It should be a valid ISO 8601 duration string.
+      availableTimeZones:
+        type: array
+        items:
+          type: string
+        title: Available time zones list preferred time zones using IANA location identifiers
+  v1MetricsViewState:
+    type: object
+    properties:
+      validSpec:
+        $ref: '#/definitions/v1MetricsViewSpec'
   v1MetricsViewTimeRangeResponse:
     type: object
     properties:
@@ -3141,6 +3504,36 @@ definitions:
       data:
         type: object
     title: Response message for QueryService.MetricsViewTotals
+  v1MetricsViewV2:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1MetricsViewSpec'
+      state:
+        $ref: '#/definitions/v1MetricsViewState'
+  v1Migration:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1MigrationSpec'
+      state:
+        $ref: '#/definitions/v1MigrationState'
+  v1MigrationSpec:
+    type: object
+    properties:
+      connector:
+        type: string
+      sql:
+        type: string
+      version:
+        type: integer
+        format: int64
+  v1MigrationState:
+    type: object
+    properties:
+      version:
+        type: integer
+        format: int64
   v1Model:
     type: object
     properties:
@@ -3160,6 +3553,49 @@ definitions:
         type: boolean
         title: To materialize model or not
     title: Model is the internal representation of a model definition
+  v1ModelSpec:
+    type: object
+    properties:
+      connector:
+        type: string
+      sql:
+        type: string
+      materialize:
+        type: boolean
+      refreshSchedule:
+        $ref: '#/definitions/v1Schedule'
+      timeoutSeconds:
+        type: integer
+        format: int64
+      usesTemplating:
+        type: boolean
+      stageChanges:
+        type: boolean
+        title: Fields not derived from code files
+      materializeDelaySeconds:
+        type: integer
+        format: int64
+      trigger:
+        type: boolean
+  v1ModelState:
+    type: object
+    properties:
+      connector:
+        type: string
+      table:
+        type: string
+      specHash:
+        type: string
+      refreshedOn:
+        type: string
+        format: date-time
+  v1ModelV2:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1ModelSpec'
+      state:
+        $ref: '#/definitions/v1ModelState'
   v1NumericHistogramBins:
     type: object
     properties:
@@ -3231,6 +3667,15 @@ definitions:
       - OBJECT_TYPE_METRICS_VIEW
     default: OBJECT_TYPE_UNSPECIFIED
     title: ObjectType represents the different kinds of catalog objects
+  v1ParseError:
+    type: object
+    properties:
+      message:
+        type: string
+      filePath:
+        type: string
+      startLocation:
+        $ref: '#/definitions/runtimev1CharLocation'
   v1PingResponse:
     type: object
     properties:
@@ -3252,6 +3697,65 @@ definitions:
       largestStringLength:
         type: integer
         format: int32
+  v1ProjectParser:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1ProjectParserSpec'
+      state:
+        $ref: '#/definitions/v1ProjectParserState'
+  v1ProjectParserSpec:
+    type: object
+    properties:
+      compiler:
+        type: string
+        title: compiler identifies the project parser to use
+      watch:
+        type: boolean
+        title: watch makes the project parser watch for and incrementally parse changed files
+      stageChanges:
+        type: boolean
+        title: stage_changes sets stage_changes on created sources and models
+      sourceStreamIngestion:
+        type: boolean
+        title: stream_source_ingestion
+      modelDefaultMaterialize:
+        type: boolean
+        title: model_default_materialize sets a default for whether or not to materialize a model, if not explicitly set in the model
+      modelMaterializeDelaySeconds:
+        type: integer
+        format: int64
+        title: materialize_model_delay_seconds makes the project parser delay materialization of updated models
+      duckdbConnectors:
+        type: array
+        items:
+          type: string
+        title: duckdb_connectors is a list of connectors that use DuckDB
+  v1ProjectParserState:
+    type: object
+    properties:
+      parseErrors:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ParseError'
+      currentCommitSha:
+        type: string
+      changedPaths:
+        type: array
+        items:
+          type: string
+  v1PullTrigger:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1PullTriggerSpec'
+      state:
+        $ref: '#/definitions/v1PullTriggerState'
+  v1PullTriggerSpec:
+    type: object
+  v1PullTriggerState:
+    type: object
   v1PutFileAndReconcileRequest:
     type: object
     properties:
@@ -3525,6 +4029,23 @@ definitions:
           affected_paths lists all the file artifact paths that were considered while
           executing the reconciliation. If changed_paths was empty, this will include all
           code artifacts in the repo.
+  v1RefreshTrigger:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1RefreshTriggerSpec'
+      state:
+        $ref: '#/definitions/v1RefreshTriggerState'
+  v1RefreshTriggerSpec:
+    type: object
+    properties:
+      onlyNames:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
+  v1RefreshTriggerState:
+    type: object
   v1RenameFileAndReconcileRequest:
     type: object
     properties:
@@ -3568,6 +4089,90 @@ definitions:
   v1RenameFileResponse:
     type: object
     title: Response message for RuntimeService.RenameFile
+  v1Resource:
+    type: object
+    properties:
+      meta:
+        $ref: '#/definitions/v1ResourceMeta'
+      projectParser:
+        $ref: '#/definitions/v1ProjectParser'
+        description: Well-known types only, for now. If required, we can add support for a google.protobuf.Any later.
+      source:
+        $ref: '#/definitions/v1SourceV2'
+      model:
+        $ref: '#/definitions/v1ModelV2'
+      metricsView:
+        $ref: '#/definitions/v1MetricsViewV2'
+      migration:
+        $ref: '#/definitions/v1Migration'
+      pullTrigger:
+        $ref: '#/definitions/v1PullTrigger'
+      refreshTrigger:
+        $ref: '#/definitions/v1RefreshTrigger'
+      bucketPlanner:
+        $ref: '#/definitions/v1BucketPlanner'
+  v1ResourceEvent:
+    type: string
+    enum:
+      - RESOURCE_EVENT_UNSPECIFIED
+      - RESOURCE_EVENT_ADDED
+      - RESOURCE_EVENT_UPDATED_SPEC
+      - RESOURCE_EVENT_UPDATED_STATE
+      - RESOURCE_EVENT_DELETED
+    default: RESOURCE_EVENT_UNSPECIFIED
+  v1ResourceMeta:
+    type: object
+    properties:
+      name:
+        $ref: '#/definitions/v1ResourceName'
+      refs:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
+      owner:
+        $ref: '#/definitions/v1ResourceName'
+      filePaths:
+        type: array
+        items:
+          type: string
+      deleted:
+        type: boolean
+      renamedFrom:
+        $ref: '#/definitions/v1ResourceName'
+      reconcileError:
+        type: string
+      version:
+        type: string
+        format: int64
+      metaVersion:
+        type: string
+        format: int64
+      specVersion:
+        type: string
+        format: int64
+      stateVersion:
+        type: string
+        format: int64
+      createdOn:
+        type: string
+        format: date-time
+      specUpdatedOn:
+        type: string
+        format: date-time
+      stateUpdatedOn:
+        type: string
+        format: date-time
+      deletedOn:
+        type: string
+        format: date-time
+  v1ResourceName:
+    type: object
+    properties:
+      kind:
+        type: string
+      name:
+        type: string
   v1S3GetBucketMetadataResponse:
     type: object
     properties:
@@ -3612,6 +4217,14 @@ definitions:
         format: int64
       isDir:
         type: boolean
+  v1Schedule:
+    type: object
+    properties:
+      cron:
+        type: string
+      tickerSeconds:
+        type: integer
+        format: int64
   v1Source:
     type: object
     properties:
@@ -3635,6 +4248,46 @@ definitions:
         format: int32
         title: timeout for source ingestion in seconds
     title: Source is the internal representation of a source definition
+  v1SourceSpec:
+    type: object
+    properties:
+      sourceConnector:
+        type: string
+      sinkConnector:
+        type: string
+      properties:
+        type: object
+      refreshSchedule:
+        $ref: '#/definitions/v1Schedule'
+      timeoutSeconds:
+        type: integer
+        format: int64
+      stageChanges:
+        type: boolean
+        title: Fields not derived from code files
+      streamIngestion:
+        type: boolean
+      trigger:
+        type: boolean
+  v1SourceState:
+    type: object
+    properties:
+      connector:
+        type: string
+      table:
+        type: string
+      specHash:
+        type: string
+      refreshedOn:
+        type: string
+        format: date-time
+  v1SourceV2:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1SourceSpec'
+      state:
+        $ref: '#/definitions/v1SourceState'
   v1StructType:
     type: object
     properties:
@@ -3866,3 +4519,18 @@ definitions:
       path:
         type: string
     title: Response message for RuntimeService.WatchFiles
+  v1WatchLogsResponse:
+    type: object
+    properties:
+      logs:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Log'
+  v1WatchResourcesResponse:
+    type: object
+    properties:
+      resource:
+        $ref: '#/definitions/v1Resource'
+      event:
+        $ref: '#/definitions/v1ResourceEvent'

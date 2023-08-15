@@ -1,6 +1,8 @@
 package service
 
 import (
+	"fmt"
+
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -19,7 +21,7 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			res, err := client.CreateService(cmd.Context(), &adminv1.CreateServiceRequest{
+			res1, err := client.CreateService(cmd.Context(), &adminv1.CreateServiceRequest{
 				Name:             args[0],
 				OrganizationName: cfg.Org,
 			})
@@ -27,8 +29,16 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.PrintlnSuccess("Created service")
-			cmdutil.TablePrinter(toRow(res.Service))
+			res2, err := client.IssueServiceAuthToken(cmd.Context(), &adminv1.IssueServiceAuthTokenRequest{
+				OrganizationName: cfg.Org,
+				ServiceName:      res1.Service.Name,
+			})
+			if err != nil {
+				return err
+			}
+
+			fmt.Printf("Created service %q in org %q.\n", res1.Service.Name, res1.Service.OrgName)
+			fmt.Printf("Access token: %s\n", res2.Token)
 
 			return nil
 		},

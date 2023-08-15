@@ -4,7 +4,6 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onDestroy } from "svelte";
   import { getStateManagers } from "../state-managers/state-managers";
-  import { metricsExplorerStore } from "../dashboard-stores";
 
   export let metricViewName: string;
 
@@ -14,10 +13,6 @@
     // unsubscribe any previous subscription. this can happen when metricViewName changes and hence the metricsViewQuery
     if (unsubscribe) unsubscribe();
     unsubscribe = useDashboardUrlSync(metricViewName, metricsViewQuery);
-  }
-
-  $: if ($metricsViewQuery.data) {
-    metricsExplorerStore.sync(metricViewName, $metricsViewQuery.data);
   }
 
   const { dashboardStore } = getStateManagers();

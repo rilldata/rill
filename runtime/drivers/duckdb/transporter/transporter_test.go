@@ -164,7 +164,9 @@ mum,8.2`)
 					Properties: map[string]any{"sql": "select * from read_csv_auto('path',union_by_name=true,sample_size=200000)"},
 				}
 			} else {
-				src = &drivers.BucketSource{}
+				src = &drivers.BucketSource{
+					Properties: map[string]any{"allow_schema_relaxation": true},
+				}
 			}
 
 			err = tr.Transfer(ctx, src, &drivers.DatabaseSink{Table: test.name}, drivers.NewTransferOpts(),
@@ -312,9 +314,7 @@ mum,8.2`)
 					Properties: map[string]any{"sql": "select * from read_csv_auto('path')"},
 				}
 			} else {
-				src = &drivers.BucketSource{
-					Properties: map[string]any{"allow_schema_relaxation": false},
-				}
+				src = &drivers.BucketSource{}
 			}
 
 			err = tr.Transfer(ctx, src, &drivers.DatabaseSink{Table: test.name},
@@ -416,7 +416,9 @@ func TestIterativeParquetIngestionWithVariableSchema(t *testing.T) {
 					Properties: map[string]any{"sql": "select * from read_parquet('path',union_by_name=true,hive_partitioning=true)"},
 				}
 			} else {
-				src = &drivers.BucketSource{}
+				src = &drivers.BucketSource{
+					Properties: map[string]any{"allow_schema_relaxation": true},
+				}
 			}
 
 			err := tr.Transfer(ctx, src, &drivers.DatabaseSink{Table: test.name},
@@ -560,7 +562,9 @@ func TestIterativeJSONIngestionWithVariableSchema(t *testing.T) {
 					Properties: map[string]any{"sql": "select * from read_json('path',format='auto',union_by_name=true,auto_detect=true,sample_size=200000)"},
 				}
 			} else {
-				src = &drivers.BucketSource{}
+				src = &drivers.BucketSource{
+					Properties: map[string]any{"allow_schema_relaxation": true},
+				}
 			}
 
 			err := tr.Transfer(ctx, src, &drivers.DatabaseSink{Table: test.name},
