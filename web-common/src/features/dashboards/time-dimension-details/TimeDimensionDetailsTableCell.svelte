@@ -96,6 +96,8 @@
     $store.highlightedRow = null;
   };
 
+  // TODO: with real data, this should be dependent on selected metric
+  const format = "0.2f";
   let cellComponent: typeof SvelteComponent;
   let cellComponentDefaultProps = {};
   $: {
@@ -107,7 +109,7 @@
     // Measure cell and delta cell
     else if ([1, 3].includes(colIdx)) {
       cellComponent = FormattedNumberCell;
-      cellComponentDefaultProps = { negClass: "text-red-500", format: "0.2f" };
+      cellComponentDefaultProps = { negClass: "text-red-500", format };
     }
     // Percent of total and delta percent cell
     else if ([2, 4].includes(colIdx)) {
@@ -117,7 +119,7 @@
     // Pivotted measure cells
     else if (!fixed) {
       cellComponent = FormattedNumberCell;
-      cellComponentDefaultProps = { format: "0.2f" };
+      cellComponentDefaultProps = { format };
     }
     // No match
     else {

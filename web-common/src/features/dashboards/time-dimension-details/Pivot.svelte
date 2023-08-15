@@ -77,7 +77,6 @@
   bind:this={container}
   role="grid"
   style={`height: ${height}px; overflow: auto;`}
-  class="border"
 >
   <div
     style={`height: ${$rowVirtualizer?.getTotalSize()}px; width: ${$columnVirtualizer?.getTotalSize()}px; position: relative;`}
