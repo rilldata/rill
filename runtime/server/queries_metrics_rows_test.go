@@ -3,7 +3,6 @@ package server
 import (
 	"bytes"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -234,9 +233,9 @@ func TestServer_MetricsViewRows_parquet_export(t *testing.T) {
 	index++
 
 	require.Equal(t, "tdecimal", flds[index].Field.Name)
-	require.Equal(t, arrow.FLOAT64, flds[index].Field.Type.ID())
-	tdecimal := getColumnChunk(tbl, index).(*array.Float64)
-	require.Equal(t, float64(1), tdecimal.Value(0))
+	require.Equal(t, arrow.DECIMAL128, flds[index].Field.Type.ID())
+	tdecimal := getColumnChunk(tbl, index).(*array.Decimal128)
+	require.Equal(t, float32(1), tdecimal.Value(0).ToFloat32(3))
 	index++
 
 	require.Equal(t, "tbool", flds[index].Field.Name)
@@ -246,21 +245,35 @@ func TestServer_MetricsViewRows_parquet_export(t *testing.T) {
 	index++
 
 	require.Equal(t, "tlist", flds[index].Field.Name)
-	require.Equal(t, arrow.STRING, flds[index].Field.Type.ID())
-	tlist := getColumnChunk(tbl, index).(*array.String)
-	require.Equal(t, `["a","b"]`, strings.ReplaceAll(tlist.Value(0), " ", ""))
+	require.Equal(t, arrow.LIST, flds[index].Field.Type.ID())
+	tlist := getColumnChunk(tbl, index).(*array.List)
+	strList := tlist.ListValues().(*array.String)
+	require.Equal(t, "a", strList.Value(0))
+	require.Equal(t, "b", strList.Value(1))
+
+	// strList := tlist.ListValues().(*array.String)
+	// require.Equal(t, `[a,b]`, tlist.String())
 	index++
 
 	require.Equal(t, "tmap", flds[index].Field.Name)
-	require.Equal(t, arrow.STRING, flds[index].Field.Type.ID())
-	tmap := getColumnChunk(tbl, index).(*array.String)
-	require.Equal(t, `{"f1":1,"f2":2}`, strings.ReplaceAll(tmap.Value(0), " ", ""))
+	require.Equal(t, arrow.MAP, flds[index].Field.Type.ID())
+	tmap := getColumnChunk(tbl, index).(*array.Map)
+	keys := tmap.Keys().(*array.String)
+	values := tmap.Items().(*array.Int32)
+	require.Equal(t, "f1", keys.Value(0))
+	require.Equal(t, "f2", keys.Value(1))
+	require.Equal(t, int32(1), values.Value(0))
+	require.Equal(t, int32(2), values.Value(1))
 	index++
 
 	require.Equal(t, "tstruct", flds[index].Field.Name)
-	require.Equal(t, arrow.STRING, flds[index].Field.Type.ID())
-	tstruct := getColumnChunk(tbl, index).(*array.String)
-	require.Equal(t, `{"f1":1,"f2":{"f3":3}}`, strings.ReplaceAll(tstruct.Value(0), " ", ""))
+	require.Equal(t, arrow.STRUCT, flds[index].Field.Type.ID())
+	tstruct := getColumnChunk(tbl, index).(*array.Struct)
+	fields := tstruct.Field(0).(*array.Int32)
+	require.Equal(t, int32(1), fields.Value(0))
+	substruct := tstruct.Field(1).(*array.Struct)
+	subfield := substruct.Field(0).(*array.Int32)
+	require.Equal(t, int32(3), subfield.Value(0))
 	index++
 
 	require.Equal(t, "timestamp", flds[index].Field.Name)
@@ -270,20 +283,20 @@ func TestServer_MetricsViewRows_parquet_export(t *testing.T) {
 	index++
 
 	require.Equal(t, "ttime", flds[index].Field.Name)
-	require.Equal(t, arrow.TIMESTAMP, flds[index].Field.Type.ID())
-	ttime := getColumnChunk(tbl, index).(*array.Timestamp)
+	require.Equal(t, arrow.TIME64, flds[index].Field.Type.ID())
+	ttime := getColumnChunk(tbl, index).(*array.Time64)
 	require.Equal(t, "12:00:00", ttime.Value(0).ToTime(arrow.Microsecond).Format(time.TimeOnly))
 	index++
 
 	require.Equal(t, "tdate", flds[index].Field.Name)
-	require.Equal(t, arrow.TIMESTAMP, flds[index].Field.Type.ID())
-	ttimestamp = getColumnChunk(tbl, index).(*array.Timestamp)
-	require.Equal(t, "2023-01-02T00:00:00Z", ttimestamp.Value(0).ToTime(arrow.Microsecond).Format(time.RFC3339))
+	require.Equal(t, arrow.DATE32, flds[index].Field.Type.ID())
+	tdate := getColumnChunk(tbl, index).(*array.Date32)
+	require.Equal(t, "2023-01-02", tdate.Value(0).FormattedString())
 	index++
 
 	require.Equal(t, "tuuid", flds[index].Field.Name)
-	require.Equal(t, arrow.STRING, flds[index].Field.Type.ID())
-	tuuid := getColumnChunk(tbl, index).(*array.String)
+	require.Equal(t, arrow.FIXED_SIZE_BINARY, flds[index].Field.Type.ID())
+	tuuid := getColumnChunk(tbl, index).(*array.FixedSizeBinary)
 	require.True(t, len(tuuid.Value(0)) > 0)
 }
 
