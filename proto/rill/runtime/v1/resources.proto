@@ -13,6 +13,7 @@ message Resource {
     SourceV2 source = 3;
     ModelV2 model = 4;
     MetricsViewV2 metrics_view = 5;
+    Migration migration = 9;
     PullTrigger pull_trigger = 6;
     RefreshTrigger refresh_trigger = 7;
     BucketPlanner bucket_planner = 8;
@@ -22,11 +23,15 @@ message Resource {
 message ResourceMeta {
   ResourceName name = 1;
   repeated ResourceName refs = 2;
-  map<string, string> annotations = 3;
+  optional ResourceName owner = 3;
+  repeated string file_paths = 4;
+  bool deleted = 7;
+  optional ResourceName renamed_from = 13;
+  string reconcile_error = 8;
+  int64 version = 15;
+  int64 meta_version = 14;
   int64 spec_version = 5;
   int64 state_version = 6;
-  bool deleted = 7;
-  string reconcile_error = 8;
   google.protobuf.Timestamp created_on = 9;
   google.protobuf.Timestamp spec_updated_on = 10;
   google.protobuf.Timestamp state_updated_on = 11;
@@ -48,13 +53,16 @@ message ProjectParserSpec {
   string compiler = 1;
   // watch makes the project parser watch for and incrementally parse changed files
   bool watch = 2;
-  // atomic makes the project parser stage all changes before committing them
-  bool atomic = 3;
-  // materialize_model_default sets a default for whether or not to materialize a model, if not explicitly set in the model
-  bool materialize_model_default = 4;
+  // stage_changes sets stage_changes on created sources and models 
+  bool stage_changes = 3;
+  // stream_source_ingestion
+  bool source_stream_ingestion = 4;
+  // model_default_materialize sets a default for whether or not to materialize a model, if not explicitly set in the model
+  bool model_default_materialize = 5;
   // materialize_model_delay_seconds makes the project parser delay materialization of updated models
-  uint32 materialize_model_delay_seconds = 5;
-  // bool simulate_streaming_ingestion = 6;
+  uint32 model_materialize_delay_seconds = 6;
+  // duckdb_connectors is a list of connectors that use DuckDB
+  repeated string duckdb_connectors = 7;
 }
 
 message ProjectParserState {
@@ -74,13 +82,17 @@ message SourceSpec {
   google.protobuf.Struct properties = 3;
   Schedule refresh_schedule = 5;
   uint32 timeout_seconds = 6;
+  // Fields not derived from code files
+  bool stage_changes = 7;
+  bool stream_ingestion = 8;
+  bool trigger = 9;
 }
 
 message SourceState {
-  string table_name = 1;
-  string stage_table_name = 2;
-  ValidationError validation_error = 3;
-  ExecutionError execution_error = 4;
+  string connector = 1;
+  string table = 2;
+  string spec_hash = 3;
+  google.protobuf.Timestamp refreshed_on = 4;
 }
 
 message ModelV2 {
@@ -91,19 +103,21 @@ message ModelV2 {
 message ModelSpec {
   string connector = 1;
   string sql = 2;
-  bool derive_metrics_view = 3;
+  optional bool materialize = 3;
   Schedule refresh_schedule = 4;
-  uint32 timeout_seconds = 6;
-  optional bool materialize = 7;
-  bool uses_templating = 8;
+  uint32 timeout_seconds = 5;
+  bool uses_templating = 6;
+  // Fields not derived from code files
+  bool stage_changes = 7;
+  uint32 materialize_delay_seconds = 8;
+  bool trigger = 9;
 }
 
 message ModelState {
-  string table_name = 1;
-  string stage_table_name = 2;
-  ValidationError validation_error = 3;
-  ExecutionError execution_error = 4;
-  DependencyError dependency_error = 5;
+  string connector = 1;
+  string table = 2;
+  string spec_hash = 3;
+  google.protobuf.Timestamp refreshed_on = 4;
 }
 
 message MetricsViewV2 {
@@ -128,29 +142,30 @@ message MetricsViewSpec {
     string format = 5;
     bool valid_percent_of_total = 6;
   }
+  // Connector containing the table
+  string connector = 1;
+  // Name of the table the metrics view is based on
+  string table = 2;
   // User friendly label for the dashboard
-  string title = 1;
+  string title = 3;
   // Description of the dashboard
-  string description = 2;
-  // Name of the source or model that the metrics view is based on
-  string model = 3;
+  string description = 4;
   // Name of the primary time dimension, used for rendering time series
-  string time_dimension = 4;
+  string time_dimension = 5;
   // Dimensions in the metrics view
-  repeated DimensionV2 dimensions = 5;
+  repeated DimensionV2 dimensions = 6;
   // Measures in the metrics view
-  repeated MeasureV2 measures = 6;
+  repeated MeasureV2 measures = 7;
   // Smallest time grain to show in the dashboard
-  TimeGrain smallest_time_grain = 7;
+  TimeGrain smallest_time_grain = 8;
   // Default time range for the dashboard. It should be a valid ISO 8601 duration string.
-  string default_time_range = 8;
+  string default_time_range = 9;
   // Available time zones list preferred time zones using IANA location identifiers
-  repeated string available_time_zones = 9;
+  repeated string available_time_zones = 10;
 }
 
 message MetricsViewState {
-  ValidationError validation_error = 1;
-  DependencyError dependency_error = 2;
+  MetricsViewSpec valid_spec = 1;
 }
 
 message Migration {
@@ -173,10 +188,7 @@ message PullTrigger {
   PullTriggerState state = 2;
 }
 
-message PullTriggerSpec {
-  repeated string only_paths = 1;
-  bool refresh_sources = 2;
-}
+message PullTriggerSpec {}
 
 message PullTriggerState {}
 
@@ -186,8 +198,7 @@ message RefreshTrigger {
 }
 
 message RefreshTriggerSpec {
-  string only_names = 1;
-  bool reset_increments = 2;
+  repeated ResourceName only_names = 1;
 }
 
 message RefreshTriggerState {}

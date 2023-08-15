@@ -2,8 +2,10 @@ syntax = "proto3";
 package rill.runtime.v1;
 
 import "google/api/annotations.proto";
+import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "rill/runtime/v1/catalog.proto";
+import "rill/runtime/v1/resources.proto";
 import "validate/validate.proto";
 
 // RuntimeService is a data infrastructure proxy and orchestrator based on Rill SQL.
@@ -117,7 +119,45 @@ service RuntimeService {
       body: "*"
     };
   }
+
+  // Controller
   
+  // GetLogs returns recent logs from a controller
+  rpc GetLogs(GetLogsRequest) returns (GetLogsResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/logs"};
+  }
+
+  // WatchLogs streams new logs emitted from a controller
+  rpc WatchLogs(WatchLogsRequest) returns (stream WatchLogsResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/logs/watch"};
+  }
+
+  // ListResources lists the resources stored in the catalog
+  rpc ListResources(ListResourcesRequest) returns (ListResourcesResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/resources"};
+  }
+  
+  // WatchResources streams updates to catalog resources (including creation and deletion events)
+  rpc WatchResources(WatchResourcesRequest) returns (stream WatchResourcesResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/resources/-/watch"};
+  }
+  
+  // GetResource looks up a specific catalog resource
+  rpc GetResource(GetResourceRequest) returns (GetResourceResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/resource"};
+  }
+  
+  // CreateTrigger creates a trigger in the catalog.
+  // Triggers are ephemeral resources that will be cleaned up by the controller.
+  rpc CreateTrigger(CreateTriggerRequest) returns (CreateTriggerResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/trigger",
+      body: "*"
+    };
+  }
+
+  // DEPRECATE:
+
   // Catalog
 
   // ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
@@ -442,6 +482,93 @@ message UnpackEmptyRequest {
 
 // Response message for RuntimeService.UnpackEmpty
 message UnpackEmptyResponse {}
+
+// **********
+// Controller
+// **********
+
+message Log {
+  LogLevel level = 1;
+  google.protobuf.Timestamp time = 2;
+  string message = 3;
+  google.protobuf.Struct payload = 4;
+}
+
+enum LogLevel {
+  LOG_LEVEL_UNSPECIFIED = 0;
+  LOG_LEVEL_DEBUG = 4;
+  LOG_LEVEL_INFO = 8;
+  LOG_LEVEL_WARN = 12;
+  LOG_LEVEL_ERROR = 16;
+}
+
+enum ResourceEvent {
+  RESOURCE_EVENT_UNSPECIFIED = 0;
+  RESOURCE_EVENT_ADDED = 1;
+  RESOURCE_EVENT_UPDATED_SPEC = 2;
+  RESOURCE_EVENT_UPDATED_STATE = 3;
+  RESOURCE_EVENT_DELETED = 4;
+}
+
+message GetLogsRequest {
+  string instance_id = 1;
+  bool ascending = 2;
+}
+
+message GetLogsResponse {
+  repeated Log logs = 1;
+}
+
+message WatchLogsRequest {
+  string instance_id = 1;
+  bool replay = 2;
+}
+
+message WatchLogsResponse {
+  repeated Log logs = 1;
+}
+
+message ListResourcesRequest {
+  string instance_id = 1;
+  ResourceName ref_filter = 2;
+  ResourceName prefix_filter = 3;
+  map<string, string> annotations_filter = 4;
+}
+
+message ListResourcesResponse {
+  repeated Resource resources = 1;
+}
+
+message WatchResourcesRequest {
+  string instance_id = 1;
+  ResourceName ref_filter = 2;
+  ResourceName prefix_filter = 3;
+  map<string, string> annotations_filter = 4;
+}
+
+message WatchResourcesResponse {
+  Resource resource = 1;
+  ResourceEvent event = 2;
+}
+
+message GetResourceRequest {
+  string instance_id = 1;
+  ResourceName name = 2;
+}
+
+message GetResourceResponse {
+  Resource resource = 1;
+}
+
+message CreateTriggerRequest {
+  string instance_id = 1;
+  oneof trigger {
+    PullTriggerSpec pull_trigger_spec = 2;
+    RefreshTriggerSpec refresh_trigger_spec = 3;
+  }
+}
+
+message CreateTriggerResponse {}
 
 // **********
 // Catalog

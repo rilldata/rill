@@ -31,6 +31,8 @@ func TestInformationSchemaAll(t *testing.T) {
 	require.Equal(t, runtimev1.Type_CODE_STRING, tables[1].Schema.Fields[0].Type.Code)
 	require.Equal(t, "baz", tables[1].Schema.Fields[1].Name)
 	require.Equal(t, runtimev1.Type_CODE_INT32, tables[1].Schema.Fields[1].Type.Code)
+
+	require.Equal(t, true, tables[2].View)
 }
 
 func TestInformationSchemaLookup(t *testing.T) {

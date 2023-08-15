@@ -11,7 +11,6 @@
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/components/projects/invalidations";
   import { useProjectDeploymentStatus } from "@rilldata/web-admin/components/projects/selectors";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
-  import DashboardStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardStateProvider.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import {
     getRuntimeServiceListCatalogEntriesQueryKey,
@@ -22,6 +21,8 @@
   import { errorStore } from "../../../../components/errors/error-store";
   import ProjectBuilding from "../../../../components/projects/ProjectBuilding.svelte";
   import ProjectErrored from "../../../../components/projects/ProjectErrored.svelte";
+  import DashboardStateProvider from "@rilldata/web-common/features/dashboards/DashboardStateProvider.svelte";
+  import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
 
   const queryClient = useQueryClient();
 
@@ -107,11 +108,13 @@
   <StateManagersProvider metricsViewName={dashboardName}>
     {#key dashboardName}
       <DashboardStateProvider metricViewName={dashboardName}>
-        <Dashboard
-          leftMargin={"48px"}
-          hasTitle={false}
-          metricViewName={dashboardName}
-        />
+        <DashboardURLStateProvider metricViewName={dashboardName}>
+          <Dashboard
+            leftMargin={"48px"}
+            hasTitle={false}
+            metricViewName={dashboardName}
+          />
+        </DashboardURLStateProvider>
       </DashboardStateProvider>
     {/key}
   </StateManagersProvider>
