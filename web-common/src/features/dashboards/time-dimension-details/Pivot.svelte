@@ -75,6 +75,7 @@
 
 <div
   bind:this={container}
+  role="grid"
   style={`height: ${height}px; overflow: auto;`}
   class="border"
 >
@@ -82,10 +83,14 @@
     style={`height: ${$rowVirtualizer?.getTotalSize()}px; width: ${$columnVirtualizer?.getTotalSize()}px; position: relative;`}
   >
     <div
+      role="row"
       style={`position: sticky; z-index: 2; top: 0; left: 0; height: ${headerHeight}px; display: flex;`}
     >
       {#each columnsToRender as col (col.index)}
-        <div style={getCellWrapperStyle({ size: headerHeight }, col)}>
+        <div
+          role="cell"
+          style={getCellWrapperStyle({ size: headerHeight }, col)}
+        >
           <svelte:component
             this={headerComponent}
             colIdx={col.index}
@@ -98,10 +103,11 @@
     </div>
     {#each $rowVirtualizer.getVirtualItems() as row (row.index)}
       <div
+        role="row"
         style={`position: absolute; top: ${headerHeight}; left: 0; width: 100%; height: ${row.size}px; transform: translateY(${row.start}px);`}
       >
         {#each columnsToRender as col (col.index)}
-          <div style={getCellWrapperStyle(row, col)}>
+          <div role="cell" style={getCellWrapperStyle(row, col)}>
             <svelte:component
               this={cellComponent}
               colIdx={col.index}
