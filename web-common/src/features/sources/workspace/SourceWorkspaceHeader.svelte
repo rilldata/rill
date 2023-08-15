@@ -24,7 +24,15 @@
   import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { fade } from "svelte/transition";
+  import EnterIcon from "../../../components/icons/EnterIcon.svelte";
+  import UndoIcon from "../../../components/icons/UndoIcon.svelte";
   import { WorkspaceHeader } from "../../../layout/workspace";
+  import { behaviourEvent } from "../../../metrics/initMetrics";
+  import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "../../../metrics/service/MetricsTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { renameFileArtifact } from "../../entity-management/actions";
   import {
@@ -37,6 +45,7 @@
   } from "../../entity-management/file-artifacts-store";
   import { isDuplicateName } from "../../entity-management/name-utils";
   import { useAllNames } from "../../entity-management/selectors";
+  import { createModelFromSourceV2 } from "../createModel";
   import { refreshSource } from "../refreshSource";
   import { saveAndRefresh } from "../saveAndRefresh";
   import { useIsSourceUnsaved } from "../selectors";
@@ -59,9 +68,6 @@
     runtimeInstanceId,
     getFilePathFromNameAndType(sourceName, EntityType.Table)
   );
-
-  let headerWidth;
-  $: isHeaderWidthSmall = headerWidth < 800;
 
   let entry: V1CatalogEntry;
   let source: V1Source;
@@ -166,18 +172,37 @@
   );
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;
 
-  $: reconciliationErrors = getFileArtifactReconciliationErrors(
-    $fileArtifactsStore,
-    `${sourceName}.yaml`
-  );
+  const handleCreateModelFromSource = async () => {
+    const modelName = await createModelFromSourceV2(queryClient, sourceName);
+    goto(`/model/${modelName}`);
+    behaviourEvent.fireNavigationEvent(
+      modelName,
+      BehaviourEventMedium.Button,
+      MetricsEventSpace.RightPanel,
+      MetricsEventScreenName.Source,
+      MetricsEventScreenName.Model
+    );
+  };
+
+  let hasReconciliationErrors: boolean;
+  $: {
+    const reconciliationErrors = getFileArtifactReconciliationErrors(
+      $fileArtifactsStore,
+      `${sourceName}.yaml`
+    );
+    hasReconciliationErrors = reconciliationErrors?.length > 0;
+  }
+
+  function isHeaderWidthSmall(width: number) {
+    return width < 800;
+  }
 </script>
 
 <div class="grid items-center" style:grid-template-columns="auto max-content">
   <WorkspaceHeader
     {...{ titleInput: sourceName, onChangeCallback }}
     appRunning={$appQueryStatusStore}
-    let:width
-    width={headerWidth}
+    let:width={headerWidth}
   >
     <svelte:fragment slot="workspace-controls">
       {#if $refreshSourceMutation.isLoading}
@@ -205,7 +230,12 @@
           type="secondary"
           disabled={!isSourceUnsaved}
         >
-          Revert changes
+          <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall(headerWidth)}>
+            <UndoIcon size="14px" />
+          </IconSpaceFixer>
+          <ResponsiveButtonText collapse={isHeaderWidthSmall(headerWidth)}>
+            Revert changes
+          </ResponsiveButtonText>
         </Button>
         <Button
           label={isSourceUnsaved ? "Save and refresh" : "Refresh"}
@@ -213,13 +243,12 @@
             isSourceUnsaved
               ? onSaveAndRefreshClick(sourceName)
               : onRefreshClick(sourceName)}
-          type="primary"
-          disabled={!isSourceUnsaved && reconciliationErrors?.length > 0}
+          type={isSourceUnsaved ? "primary" : "secondary"}
         >
-          <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}>
+          <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall(headerWidth)}>
             <RefreshIcon size="14px" />
           </IconSpaceFixer>
-          <ResponsiveButtonText collapse={isHeaderWidthSmall}>
+          <ResponsiveButtonText collapse={isHeaderWidthSmall(headerWidth)}>
             <div class="flex">
               {#if isSourceUnsaved}<div
                   class="pr-1"
@@ -230,6 +259,17 @@
               {#if !isSourceUnsaved}R{:else}r{/if}efresh
             </div>
           </ResponsiveButtonText>
+        </Button>
+        <Button
+          on:click={handleCreateModelFromSource}
+          disabled={isSourceUnsaved || hasReconciliationErrors}
+        >
+          <ResponsiveButtonText collapse={isHeaderWidthSmall(headerWidth)}>
+            Create model
+          </ResponsiveButtonText>
+          <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall(headerWidth)}>
+            <EnterIcon size="14px" />
+          </IconSpaceFixer>
         </Button>
       </PanelCTA>
     </svelte:fragment>

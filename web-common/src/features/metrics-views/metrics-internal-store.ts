@@ -1,8 +1,8 @@
 import { CATEGORICALS } from "@rilldata/web-common/lib/duckdb-data-types";
-import type { V1Model } from "@rilldata/web-common/runtime-client";
-import { parseDocument } from "yaml";
-import { selectTimestampColumnFromSchema } from "./column-selectors";
 import { DEFAULT_TIMEZONES } from "@rilldata/web-common/lib/time/config";
+import type { V1Model } from "@rilldata/web-common/runtime-client";
+import { Document, parseDocument } from "yaml";
+import { selectTimestampColumnFromSchema } from "./column-selectors";
 
 export interface MetricsConfig extends MetricsParams {
   measures: MeasureEntity[];
@@ -36,7 +36,7 @@ export interface DimensionEntity {
 
 const capitalize = (s) => s && s[0].toUpperCase() + s.slice(1);
 
-export function initBlankDashboardYAML(dashboardName: string) {
+export function initBlankDashboardYAML(dashboardTitle: string) {
   const metricsTemplate = `
 # Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
@@ -59,12 +59,21 @@ available_time_zones:
   - "America/New_York"
 `;
   const template = parseDocument(metricsTemplate);
-  template.set("title", dashboardName);
+  template.set("title", dashboardTitle);
   return template.toString();
 }
 
-export function addQuickMetricsToDashboardYAML(yaml: string, model: V1Model) {
-  const doc = parseDocument(yaml);
+export function generateDashboardYAMLForModel(
+  model: V1Model,
+  dashboardTitle = ""
+) {
+  const doc = new Document();
+
+  doc.commentBefore = ` Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.`;
+
+  if (dashboardTitle) {
+    doc.set("title", dashboardTitle);
+  }
   doc.set("model", model.name);
 
   const timestampColumns = selectTimestampColumnFromSchema(model?.schema);
@@ -103,7 +112,5 @@ export function addQuickMetricsToDashboardYAML(yaml: string, model: V1Model) {
 
   doc.set("available_time_zones", DEFAULT_TIMEZONES);
 
-  return `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
-
-${doc.toString({ collectionStyle: "block" })}`;
+  return doc.toString({ collectionStyle: "block" });
 }

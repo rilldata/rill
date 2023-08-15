@@ -14,7 +14,6 @@
     useMetaDimension,
     useMetaMeasure,
     useMetaQuery,
-    useModelAllTimeRange,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import {
@@ -49,17 +48,6 @@
 
   $: dashboardStore = useDashboardStore(metricViewName);
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
-
-  $: allTimeRangeQuery = useModelAllTimeRange(
-    $runtime.instanceId,
-    $metaQuery.data.model,
-    $metaQuery.data.timeDimension,
-    {
-      query: {
-        enabled: !!$metaQuery.data.timeDimension,
-      },
-    }
-  );
 
   let filterExcludeMode: boolean;
   $: filterExcludeMode =
