@@ -1,16 +1,18 @@
 <script lang="ts">
-  import { flexRender } from "@tanstack/svelte-table";
   import Pivot from "./Pivot.svelte";
   import TimeDimensionDetailsTableCell from "./TimeDimensionDetailsTableCell.svelte";
   import TimeDimensionDetailsTableHeaderCell from "./TimeDimensionDetailsTableHeaderCell.svelte";
   import { createTimeDimensionDetailsStore } from "./time-dimension-details-store";
   import { data } from "./mock-data";
-
-  // Mock data that is fetched from backend
-  const FIXED_COL_CT = data.metadata.fixedColumnCt;
+  import { setContext } from "svelte";
 
   // Store of state to share between line chart and table
   let store = createTimeDimensionDetailsStore();
+
+  setContext("tdt-store", {
+    store,
+    headers: data.headers,
+  });
 
   // TODO: make this dynamic based on the dimension and measure being rendered
   const columnWidths = [120, 126, 64, 64, 64];
@@ -19,23 +21,6 @@
   let state = {
     getRowSize: () => 24,
     getColumnWidth: (idx: number) => columnWidths[idx] ?? 60,
-    renderCell: (rowIdx, colIdx) =>
-      flexRender(TimeDimensionDetailsTableCell, {
-        rowIdx,
-        colIdx,
-        store,
-        fixed: colIdx < FIXED_COL_CT,
-        lastFixed: colIdx === FIXED_COL_CT - 1,
-      }),
-    renderHeaderCell: (rowIdx, colIdx) =>
-      flexRender(TimeDimensionDetailsTableHeaderCell, {
-        rowIdx,
-        colIdx,
-        store,
-        fixed: colIdx < FIXED_COL_CT,
-        lastFixed: colIdx === FIXED_COL_CT - 1,
-        headers: data.headers,
-      }),
   };
 </script>
 
@@ -51,6 +36,6 @@
   fixedColCt={data.metadata.fixedColumnCt}
   getColumnWidth={state.getColumnWidth}
   getRowSize={state.getRowSize}
-  renderCell={state.renderCell}
-  renderHeaderCell={state.renderHeaderCell}
+  cellComponent={TimeDimensionDetailsTableCell}
+  headerComponent={TimeDimensionDetailsTableHeaderCell}
 />

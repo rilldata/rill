@@ -1,16 +1,13 @@
 <script lang="ts">
   import { createVirtualizer, VirtualItem } from "@tanstack/svelte-virtual";
-  import { createEventDispatcher } from "svelte";
-  import PivotVirtualRow from "./PivotVirtualRow.svelte";
-  import PivotCell from "./PivotCell.svelte";
 
   export let rowCt: number;
   export let colCt: number;
   export let fixedColCt: number;
   export let getColumnWidth: (idx: number) => number;
   export let getRowSize: (idx: number) => number;
-  export let renderCell: (rowIdx: number, colIdx: number) => any;
-  export let renderHeaderCell: (rowIdx: number, colIdx: number) => any;
+  export let cellComponent;
+  export let headerComponent;
   export let height: number;
 
   function range(n: number) {
@@ -25,51 +22,20 @@
     overscan: 10,
   });
 
-  let virtualRows: VirtualItem[] = [];
-  let totalVerticalSize = 0;
-  let paddingTop = 0;
-  let paddingBottom = 0;
-  let virtualStart;
-  let virtualEnd;
-  $: {
-    virtualRows = $rowVirtualizer?.getVirtualItems() ?? [];
-    totalVerticalSize = $rowVirtualizer?.getTotalSize() ?? 0;
-    virtualStart = virtualRows?.[0]?.index || 0;
-    virtualEnd = virtualRows?.at(-1)?.index || 0;
-    paddingTop = virtualRows?.length > 0 ? virtualRows?.[0]?.start || 0 : 0;
-    paddingBottom =
-      virtualRows?.length > 0
-        ? totalVerticalSize - (virtualRows?.at(-1)?.end || 0)
-        : 0;
-  }
-
-  const dispatch = createEventDispatcher();
-  $: {
-    dispatch("virtualRange", {
-      start: virtualStart,
-      end: virtualEnd,
-    });
-  }
-
   $: columnVirtualizer = createVirtualizer({
     horizontal: true,
     count: colCt,
     getScrollElement: () => container,
     estimateSize: getColumnWidth,
-    overscan: 20,
+    overscan: 10,
   });
 
-  let totalHorizontalSize = 0;
-  let paddingLeft = 0;
-  let paddingRight = 0;
-  let fixedVirtualColumns: VirtualItem[] = [];
-  let nonfixedVirtualColumns: VirtualItem[] = [];
+  let columnsToRender: VirtualItem[] = [];
   $: {
     const virtualColumns = $columnVirtualizer?.getVirtualItems() ?? [];
-    totalHorizontalSize = $columnVirtualizer?.getTotalSize() ?? 0;
 
     // Manually calculate fixed virtual column set as they may not be in current virtualized item set
-    fixedVirtualColumns = range(fixedColCt).reduce((arr, idx) => {
+    const fixedVirtualColumns = range(fixedColCt).reduce((arr, idx) => {
       const start = arr[idx - 1]?.end ?? 0;
       const size = getColumnWidth(idx);
       const end = start + getColumnWidth(idx);
@@ -87,21 +53,21 @@
     }, []);
 
     // If current virtual column set has fixed columns, remove them since we will use our measurements
-    nonfixedVirtualColumns = virtualColumns.filter(
+    const nonfixedVirtualColumns = virtualColumns.filter(
       (c) => c.index >= fixedColCt
     );
 
-    const fullPaddingLeft =
-      virtualColumns?.length > 0 ? virtualColumns?.[0]?.start || 0 : 0;
-    // Adjust padding left for fixed virtual columns if needed
-    paddingLeft = Math.max(0, fullPaddingLeft - fixedVirtualColumns.at(-1).end);
-    paddingRight =
-      virtualColumns?.length > 0
-        ? totalHorizontalSize - (virtualColumns?.at(-1)?.end || 0)
-        : 0;
+    columnsToRender = fixedVirtualColumns.concat(nonfixedVirtualColumns);
   }
 
   const isFixedColumn = (idx: number) => idx < fixedColCt;
+  const getCellWrapperStyle = (row: VirtualItem, col: VirtualItem) => {
+    let style = `display: inline-block; top: 0; left: 0; width: ${col.size}px; height: ${row.size}px; transform: translateX(${col.start}px);`;
+    if (isFixedColumn(col.index))
+      style += `position: sticky; left: ${col.start}px; top: 0px; z-index: 2; transform: translateX(0px);`;
+    else style += `position: absolute; left: 0px`;
+    return style;
+  };
 </script>
 
 <div
@@ -109,114 +75,40 @@
   style={`height: ${height}px; overflow: auto;`}
   class="border"
 >
-  <table
-    class="border-collapse"
-    style={`height: ${totalVerticalSize}px; max-height: ${totalVerticalSize}px; width: ${totalHorizontalSize}px; max-width: ${totalHorizontalSize}px; overflow: none; table-layout: fixed`}
+  <div
+    style={`height: ${$rowVirtualizer?.getTotalSize()}px; width: ${$columnVirtualizer?.getTotalSize()}px; position: relative;`}
   >
-    <thead class="sticky top-0 z-10">
-      <PivotVirtualRow element="th" {paddingLeft} {paddingRight}>
-        <svelte:fragment slot="pre">
-          {#each fixedVirtualColumns as column (column.index)}
-            <PivotCell
-              rowIdx={-1}
-              fixed={isFixedColumn(column.index)}
-              element="th"
-              renderCell={renderHeaderCell}
-              item={column}
-            />
-          {/each}
-        </svelte:fragment>
-        <svelte:fragment slot="body">
-          {#each nonfixedVirtualColumns as column (column.index)}
-            <PivotCell
-              rowIdx={-1}
-              fixed={isFixedColumn(column.index)}
-              element="th"
-              renderCell={renderHeaderCell}
-              item={column}
-            />
-          {/each}
-        </svelte:fragment>
-      </PivotVirtualRow>
-    </thead>
-    <tbody>
-      <!-- Virtual top padding row -->
-      {#if paddingTop > 0}
-        <PivotVirtualRow {paddingLeft} {paddingRight}>
-          <svelte:fragment slot="pre">
-            {#each fixedVirtualColumns as column (column.index)}
-              <PivotCell
-                rowIdx={-1}
-                rowHeight={paddingTop}
-                fixed
-                renderCell={() => ""}
-                item={column}
-              />
-            {/each}
-          </svelte:fragment>
-          <svelte:fragment slot="body">
-            {#each nonfixedVirtualColumns as column (column.index)}
-              <PivotCell
-                rowIdx={-1}
-                rowHeight={paddingTop}
-                renderCell={() => ""}
-                item={column}
-              />
-            {/each}
-          </svelte:fragment>
-        </PivotVirtualRow>
-      {/if}
-      {#each virtualRows as row (row.index)}
-        <PivotVirtualRow {paddingLeft} {paddingRight}>
-          <svelte:fragment slot="pre">
-            {#each fixedVirtualColumns as column (column.index)}
-              <PivotCell
-                rowIdx={row.index}
-                rowHeight={getRowSize(row.index)}
-                fixed
-                {renderCell}
-                item={column}
-              />
-            {/each}
-          </svelte:fragment>
-          <svelte:fragment slot="body">
-            {#each nonfixedVirtualColumns as column (column.index)}
-              <PivotCell
-                rowIdx={row.index}
-                rowHeight={getRowSize(row.index)}
-                {renderCell}
-                item={column}
-              />
-            {/each}
-          </svelte:fragment>
-        </PivotVirtualRow>
+    <div
+      style={`position: sticky; background: #ccc; z-index: 2; top: 0; left: 0; height: 24px;`}
+    >
+      {#each columnsToRender as col (col.index)}
+        <div style={getCellWrapperStyle({ size: 24 }, col)}>
+          <svelte:component
+            this={headerComponent}
+            colIdx={col.index}
+            rowIdx={-1}
+            fixed={isFixedColumn(col.index)}
+            lastFixed={col.index === fixedColCt - 1}
+          />
+        </div>
       {/each}
-      <!-- Virtual bottom padding row -->
-      {#if paddingBottom > 0}
-        <PivotVirtualRow {paddingLeft} {paddingRight}>
-          <svelte:fragment slot="pre">
-            {#each fixedVirtualColumns as column (column.index)}
-              <PivotCell
-                rowIdx={-1}
-                rowHeight={paddingBottom}
-                fixed
-                renderCell={() => ""}
-                item={column}
-              />
-            {/each}
-          </svelte:fragment>
-          <svelte:fragment slot="body">
-            {#each nonfixedVirtualColumns as column (column.index)}
-              <PivotCell
-                rowIdx={-1}
-                rowHeight={paddingBottom}
-                renderCell={() => ""}
-                item={column}
-              />
-            {/each}
-          </svelte:fragment>
-        </PivotVirtualRow>
-      {/if}
-    </tbody>
-  </table>
+    </div>
+    {#each $rowVirtualizer.getVirtualItems() as row (row.index)}
+      <div
+        style={`position: absolute; top: 24; left: 0; width: 100%; height: ${row.size}px; transform: translateY(${row.start}px);`}
+      >
+        {#each columnsToRender as col (col.index)}
+          <div style={getCellWrapperStyle(row, col)}>
+            <svelte:component
+              this={cellComponent}
+              colIdx={col.index}
+              rowIdx={row.index}
+              fixed={isFixedColumn(col.index)}
+              lastFixed={col.index === fixedColCt - 1}
+            />
+          </div>
+        {/each}
+      </div>
+    {/each}
+  </div>
 </div>

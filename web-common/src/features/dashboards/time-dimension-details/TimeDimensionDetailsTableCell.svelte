@@ -28,7 +28,10 @@
   const cellQuery = createQuery({
     queryKey: ["time-dimension-details", block[0], block[1]],
     queryFn: fetchData(block, 1000),
-  }) as CreateQueryResult<{ block: number[]; data: { d: string }[][] }>;
+  }) as CreateQueryResult<{
+    block: number[];
+    data: { text?: string; value?: number; sparkline?: number[] }[][];
+  }>;
 
   $: {
     if (
@@ -95,6 +98,21 @@
     $store.highlightedCol = null;
     $store.highlightedRow = null;
   };
+
+  let cellComponent;
+  let cellComponentDefaultProps = {};
+  $: {
+    if (!fixed) {
+      cellComponent = FormattedNumberCell;
+      cellComponentDefaultProps = {};
+    } else if ([1, 2, 3, 4].includes(colIdx)) {
+      cellComponent = FormattedNumberCell;
+      cellComponentDefaultProps = { negClass: "text-red-500" };
+    } else {
+      cellComponent = null;
+      cellComponentDefaultProps = {};
+    }
+  }
 </script>
 
 <div
@@ -102,8 +120,12 @@
   on:mouseenter={handleMouseEnter}
   on:mouseleave={handleMouseLeave}
 >
-  {#if !fixed && !cellData.isLoading}
-    <FormattedNumberCell cell={cellData} />
+  {#if cellComponent && !cellData.isLoading}
+    <svelte:component
+      this={cellComponent}
+      {...cellComponentDefaultProps}
+      cell={cellData}
+    />
   {:else}
     {cellData?.text ?? cellData?.value}
   {/if}
