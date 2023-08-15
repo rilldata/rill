@@ -143,7 +143,9 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 // UpdateProject updates a project and any impacted deployments.
 // It runs a reconcile if deployment parameters (like branch or variables) have been changed and reconcileDeployment is set.
 func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions) (*database.Project, error) {
-	if proj.Region != opts.Region || proj.ProdSlots != opts.ProdSlots { // require new deployments
+	requireNewDeployments := proj.Region != opts.Region || proj.ProdSlots != opts.ProdSlots
+
+	if requireNewDeployments {
 		s.logger.Info("recreating deployment", observability.ZapCtx(ctx))
 		var oldDepl *database.Deployment
 		var err error
@@ -223,9 +225,23 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 		}
 	}
 
+	projNameUpdated := proj.Name != opts.Name
+
 	proj, err := s.DB.UpdateProject(ctx, proj.ID, opts)
 	if err != nil {
 		return nil, err
+	}
+
+	if !requireNewDeployments && !impactsDeployments && projNameUpdated {
+		org, err := s.DB.FindOrganization(ctx, proj.OrganizationID)
+		if err != nil {
+			return nil, err
+		}
+
+		err = s.UpdateDeploymentAnnotations(ctx, org, proj)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return proj, nil
