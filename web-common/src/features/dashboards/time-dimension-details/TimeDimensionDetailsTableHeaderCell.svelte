@@ -1,7 +1,7 @@
 <script lang="ts">
   import { useTDTContext } from "./context";
 
-  export const rowIdx: number = -1;
+  export const rowIdx = -1;
   export let colIdx: number;
   export let fixed = false;
   export let lastFixed = false;

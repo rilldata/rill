@@ -1,5 +1,4 @@
 import Delta from "@rilldata/web-common/components/icons/Delta.svelte";
-import DeltaChange from "../dimension-table/DeltaChange.svelte";
 import PercentOfTotal from "../dimension-table/PercentOfTotal.svelte";
 import DeltaChangePercentage from "../dimension-table/DeltaChangePercentage.svelte";
 import type { SvelteComponent } from "svelte";

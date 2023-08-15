@@ -4,7 +4,7 @@
   export let cell: TCellData;
   export let posClass: string = undefined;
   export let negClass: string = undefined;
-  export let format: string = "";
+  export let format = "";
 
   $: applyFormat = d3format(format);
 
