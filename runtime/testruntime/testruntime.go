@@ -47,7 +47,7 @@ func New(t TestingT) *runtime.Runtime {
 		AllowHostAccess:     true,
 		SystemConnectors:    systemConnectors,
 	}
-	rt, err := runtime.New(opts, zap.NewNop())
+	rt, err := runtime.New(opts, zap.NewNop(), nil)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		rt.Close()

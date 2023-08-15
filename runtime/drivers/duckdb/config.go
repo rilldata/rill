@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+
+	"github.com/rilldata/rill/runtime/pkg/activity"
 )
 
 const poolSizeKey = "rill_pool_size"
@@ -16,9 +18,12 @@ type config struct {
 	PoolSize int
 	// DBFilePath is the path where database is stored
 	DBFilePath string
+	// Activity client
+	Activity activity.Client
 }
 
-func newConfig(dsn string) (*config, error) {
+// activityDims and client are allowed to be nil, in this case DuckDB stats are not emitted
+func newConfig(dsn string, client activity.Client) (*config, error) {
 	// Parse DSN as URL
 	uri, err := url.Parse(dsn)
 	if err != nil {
@@ -53,6 +58,7 @@ func newConfig(dsn string) (*config, error) {
 		DSN:        dsn,
 		PoolSize:   poolSize,
 		DBFilePath: uri.Path,
+		Activity:   client,
 	}
 	return cfg, nil
 }

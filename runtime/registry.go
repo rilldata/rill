@@ -9,6 +9,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 )
@@ -123,6 +124,17 @@ func (r *Runtime) evictCaches(ctx context.Context, inst *drivers.Instance) {
 	// query cache can't be evicted since key is a combination of instance ID and other parameters
 }
 
+// GetInstanceAttributes fetches an instance and converts its annotations to attributes
+// nil is returned if an error occurred or instance was not found
+func (r *Runtime) GetInstanceAttributes(ctx context.Context, instanceID string) []attribute.KeyValue {
+	instance, err := r.FindInstance(ctx, instanceID)
+	if err != nil {
+		return nil
+	}
+
+	return instanceAnnotationsToAttribs(instance)
+}
+
 func (r *Runtime) repoChanged(ctx context.Context, a, b *drivers.Instance) bool {
 	o1, _ := r.connectorDef(a, a.RepoDriver)
 	o2, _ := r.connectorDef(b, b.RepoDriver)
@@ -140,4 +152,13 @@ func equal(a, b *runtimev1.Connector) bool {
 		return false
 	}
 	return a.Name == b.Name && a.Type == b.Type && maps.Equal(a.Config, b.Config)
+}
+
+func instanceAnnotationsToAttribs(instance *drivers.Instance) []attribute.KeyValue {
+	attrs := make([]attribute.KeyValue, 0, len(instance.Annotations)+1)
+	attrs = append(attrs, attribute.String("instance_id", instance.ID))
+	for k, v := range instance.Annotations {
+		attrs = append(attrs, attribute.String(k, v))
+	}
+	return attrs
 }

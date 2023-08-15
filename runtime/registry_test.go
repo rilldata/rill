@@ -495,7 +495,7 @@ func NewTestRunTime(t *testing.T) *Runtime {
 		AllowHostAccess:     true,
 		SystemConnectors:    globalConnectors,
 	}
-	rt, err := New(opts, zap.NewNop())
+	rt, err := New(opts, zap.NewNop(), nil)
 	t.Cleanup(func() {
 		rt.Close()
 	})

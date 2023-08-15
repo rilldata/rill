@@ -13,7 +13,7 @@ import (
 func (r *Runtime) AcquireSystemHandle(ctx context.Context, connector string) (drivers.Handle, func(), error) {
 	for _, c := range r.opts.SystemConnectors {
 		if c.Name == connector {
-			return r.connCache.get(ctx, "", c.Type, r.connectorConfig(c.Name, c.Config, nil), true)
+			return r.connCache.get(ctx, "", c.Type, r.connectorConfig(c.Name, c.Config, nil), true, nil)
 		}
 	}
 	return nil, nil, fmt.Errorf("connector %s doesn't exist", connector)
@@ -27,11 +27,11 @@ func (r *Runtime) AcquireHandle(ctx context.Context, instanceID, connector strin
 	}
 
 	if c, err := r.connectorDef(instance, connector); err == nil {
-		return r.connCache.get(ctx, instanceID, c.Type, r.connectorConfig(connector, c.Config, instance.ResolveVariables()), false)
+		return r.connCache.get(ctx, instanceID, c.Type, r.connectorConfig(connector, c.Config, instance.ResolveVariables()), false, instanceAnnotationsToAttribs(instance))
 	}
 
 	// neither defined in rill.yaml nor set in instance, directly used in source
-	return r.connCache.get(ctx, instanceID, connector, r.connectorConfig(connector, nil, instance.ResolveVariables()), false)
+	return r.connCache.get(ctx, instanceID, connector, r.connectorConfig(connector, nil, instance.ResolveVariables()), false, instanceAnnotationsToAttribs(instance))
 }
 
 // EvictHandle flushes the db handle for the specific connector from the cache
@@ -115,11 +115,7 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 	}
 
 	if inst.EmbedCatalog {
-		c, err := r.connectorDef(inst, inst.OLAPDriver)
-		if err != nil {
-			return nil, nil, err
-		}
-		conn, release, err := r.connCache.get(ctx, instanceID, c.Type, r.connectorConfig(inst.OLAPDriver, c.Config, inst.ResolveVariables()), false)
+		conn, release, err := r.AcquireHandle(ctx, instanceID, inst.OLAPDriver)
 		if err != nil {
 			return nil, nil, err
 		}

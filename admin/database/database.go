@@ -124,6 +124,7 @@ type DB interface {
 	InsertService(ctx context.Context, opts *InsertServiceOptions) (*Service, error)
 	DeleteService(ctx context.Context, id string) error
 	UpdateService(ctx context.Context, id string, opts *UpdateServiceOptions) (*Service, error)
+	UpdateServiceActiveOn(ctx context.Context, ids []string) error
 
 	FindServiceAuthTokens(ctx context.Context, serviceID string) ([]*ServiceAuthToken, error)
 	FindServiceAuthToken(ctx context.Context, id string) (*ServiceAuthToken, error)
@@ -388,6 +389,7 @@ type Service struct {
 	Name      string    `validate:"slug"`
 	CreatedOn time.Time `db:"created_on"`
 	UpdatedOn time.Time `db:"updated_on"`
+	ActiveOn  time.Time `db:"active_on"`
 }
 
 // InsertServiceOptions defines options for inserting a new service

@@ -10,8 +10,10 @@ import (
 
 	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/services/catalog"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
@@ -29,6 +31,7 @@ type connectionCache struct {
 	closed   bool
 	logger   *zap.Logger
 	size     int
+	activity activity.Client
 }
 
 type connWithRef struct {
@@ -36,7 +39,7 @@ type connWithRef struct {
 	ref int
 }
 
-func newConnectionCache(size int, logger *zap.Logger) *connectionCache {
+func newConnectionCache(size int, logger *zap.Logger, client activity.Client) *connectionCache {
 	cache, err := simplelru.NewLRU(size, func(key interface{}, value interface{}) {
 		// close the evicted connection
 		if value.(*connWithRef).ref != 0 { // the callback also gets called when removing items manually i.e. transferring to in-use cache
@@ -49,7 +52,13 @@ func newConnectionCache(size int, logger *zap.Logger) *connectionCache {
 	if err != nil {
 		panic(err)
 	}
-	return &connectionCache{lruCache: cache, cache: make(map[string]*connWithRef), logger: logger, size: size}
+	return &connectionCache{
+		lruCache: cache,
+		cache:    make(map[string]*connWithRef),
+		logger:   logger,
+		size:     size,
+		activity: client,
+	}
 }
 
 func (c *connectionCache) Close() error {
@@ -76,7 +85,7 @@ func (c *connectionCache) Close() error {
 	return firstErr
 }
 
-func (c *connectionCache) get(ctx context.Context, instanceID, driver string, config map[string]any, shared bool) (drivers.Handle, func(), error) {
+func (c *connectionCache) get(ctx context.Context, instanceID, driver string, config map[string]any, shared bool, activityDims []attribute.KeyValue) (drivers.Handle, func(), error) {
 	// TODO: This locks for all instances for the duration of Open and Migrate.
 	// Adapt to lock only on the lookup, and then on the individual instance's Open and Migrate.
 
@@ -100,6 +109,17 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver string, co
 		var value interface{}
 		value, found = c.lruCache.Get(key)
 		if !found { // not opened
+			// not keeping activityClient in cache key
+			activityClient := c.activity
+			if activityClient != nil {
+				activityClient = activityClient.With(activityDims...)
+			}
+
+			if config == nil {
+				config = make(map[string]any)
+			}
+			// TODO: remove activity from the config and pass it as a func parameter, similar to the logger
+			config["activity"] = activityClient
 			handle, err := c.openAndMigrate(ctx, instanceID, driver, shared, config)
 			if err != nil {
 				return nil, nil, err
