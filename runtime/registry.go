@@ -170,8 +170,10 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 		}
 	}
 
+	annotationsChanged := !mapsEqual(olderInstance.Annotations, inst.Annotations)
+
 	// evict caches if connections need to be updated
-	if olapChanged || repoChanged {
+	if olapChanged || repoChanged || annotationsChanged {
 		r.evictCaches(ctx, olderInstance)
 	}
 
@@ -239,4 +241,20 @@ func (r *Runtime) checkOlapConnection(inst *drivers.Instance) (drivers.Connectio
 		return nil, nil, fmt.Errorf("not a valid OLAP driver: '%s'", inst.OLAPDriver)
 	}
 	return olap, olapStore, nil
+}
+
+func mapsEqual(a, b map[string]string) bool {
+	// Check if lengths are the same
+	if len(a) != len(b) {
+		return false
+	}
+
+	// Check if all keys and values in 'a' are the same in 'b'
+	for k, v := range a {
+		if vb, ok := b[k]; !ok || v != vb {
+			return false
+		}
+	}
+
+	return true
 }
