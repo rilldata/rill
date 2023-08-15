@@ -256,6 +256,24 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, proj *database.Pro
 	return s.DB.UpdateProjectVariables(ctx, proj.ID, variables)
 }
 
+// UpdateProjectAnnotations pushes the updated annotations to deployments.
+// NOTE : this does not trigger reconcile.
+func (s *Service) UpdateProjectAnnotations(ctx context.Context, proj *database.Project, annotations map[string]string) error {
+	ds, err := s.DB.FindDeploymentsForProject(ctx, proj.ID)
+	if err != nil {
+		return err
+	}
+
+	for _, d := range ds {
+		err := s.updateDeplAnnotations(ctx, d, annotations)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // TriggerRedeploy de-provisions and re-provisions a project's prod deployment.
 func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, prevDepl *database.Deployment) error {
 	org, err := s.DB.FindOrganization(ctx, proj.OrganizationID)
@@ -343,7 +361,7 @@ func (s *Service) triggerReconcile(ctx context.Context, depl *database.Deploymen
 		return err
 	}
 
-	rt, err := s.OpenRuntimeClientForDeployment(depl)
+	rt, err := s.openRuntimeClientForDeployment(depl)
 	if err != nil {
 		return s.endReconcile(ctx, depl, nil, err)
 	}
@@ -357,7 +375,7 @@ func (s *Service) triggerReconcile(ctx context.Context, depl *database.Deploymen
 func (s *Service) TriggerRefreshSources(ctx context.Context, depl *database.Deployment, sources []string) error {
 	// check if provided sources are exists in catalog
 	if len(sources) > 0 {
-		rt, err := s.OpenRuntimeClientForDeployment(depl)
+		rt, err := s.openRuntimeClientForDeployment(depl)
 		if err != nil {
 			return err
 		}
@@ -404,7 +422,7 @@ func (s *Service) triggerRefreshSources(ctx context.Context, depl *database.Depl
 		return err
 	}
 
-	rt, err := s.OpenRuntimeClientForDeployment(depl)
+	rt, err := s.openRuntimeClientForDeployment(depl)
 	if err != nil {
 		return s.endReconcile(ctx, depl, nil, err)
 	}

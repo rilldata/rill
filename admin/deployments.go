@@ -144,7 +144,7 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 		return err
 	}
 
-	rt, err := s.OpenRuntimeClientForDeployment(depl)
+	rt, err := s.openRuntimeClientForDeployment(depl)
 	if err != nil {
 		return err
 	}
@@ -235,7 +235,7 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 }
 
 func (s *Service) updateDeplVariables(ctx context.Context, depl *database.Deployment, variables map[string]string) error {
-	rt, err := s.OpenRuntimeClientForDeployment(depl)
+	rt, err := s.openRuntimeClientForDeployment(depl)
 	if err != nil {
 		return err
 	}
@@ -248,9 +248,23 @@ func (s *Service) updateDeplVariables(ctx context.Context, depl *database.Deploy
 	return err
 }
 
+func (s *Service) updateDeplAnnotations(ctx context.Context, depl *database.Deployment, annotations map[string]string) error {
+	rt, err := s.openRuntimeClientForDeployment(depl)
+	if err != nil {
+		return err
+	}
+	defer rt.Close()
+
+	_, err = rt.EditInstanceAnnotations(ctx, &runtimev1.EditInstanceAnnotationsRequest{
+		InstanceId:  depl.RuntimeInstanceID,
+		Annotations: annotations,
+	})
+	return err
+}
+
 func (s *Service) teardownDeployment(ctx context.Context, proj *database.Project, depl *database.Deployment) error {
 	// Connect to the deployment's runtime
-	rt, err := s.OpenRuntimeClientForDeployment(depl)
+	rt, err := s.openRuntimeClientForDeployment(depl)
 	if err != nil {
 		return err
 	}
@@ -274,7 +288,7 @@ func (s *Service) teardownDeployment(ctx context.Context, proj *database.Project
 	return nil
 }
 
-func (s *Service) OpenRuntimeClientForDeployment(d *database.Deployment) (*client.Client, error) {
+func (s *Service) openRuntimeClientForDeployment(d *database.Deployment) (*client.Client, error) {
 	return s.openRuntimeClient(d.RuntimeHost, d.RuntimeAudience)
 }
 
