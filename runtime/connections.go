@@ -23,7 +23,7 @@ func (r *Runtime) Repo(ctx context.Context, instanceID string) (drivers.RepoStor
 		return nil, err
 	}
 
-	conn, err := r.connCache.get(ctx, instanceID, inst.RepoDriver, inst.RepoDSN)
+	conn, err := r.connCache.get(ctx, instanceID, inst.RepoDriver, inst.RepoDSN, instanceAnnotationsToAttribs(inst))
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func (r *Runtime) OLAP(ctx context.Context, instanceID string) (drivers.OLAPStor
 		return nil, err
 	}
 
-	conn, err := r.connCache.get(ctx, instanceID, inst.OLAPDriver, inst.OLAPDSN)
+	conn, err := r.connCache.get(ctx, instanceID, inst.OLAPDriver, inst.OLAPDSN, instanceAnnotationsToAttribs(inst))
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 	}
 
 	if inst.EmbedCatalog {
-		conn, err := r.connCache.get(ctx, inst.ID, inst.OLAPDriver, inst.OLAPDSN)
+		conn, err := r.connCache.get(ctx, inst.ID, inst.OLAPDriver, inst.OLAPDSN, instanceAnnotationsToAttribs(inst))
 		if err != nil {
 			return nil, err
 		}

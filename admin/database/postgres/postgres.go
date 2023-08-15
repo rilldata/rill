@@ -734,6 +734,15 @@ func (c *connection) UpdateService(ctx context.Context, id string, opts *databas
 	return res, nil
 }
 
+// UpdateServiceActiceOn updates a service's active_on timestamp.
+func (c *connection) UpdateServiceActiveOn(ctx context.Context, ids []string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE service SET active_on=now() WHERE id=ANY($1)", ids)
+	if err != nil {
+		return parseErr("service", err)
+	}
+	return nil
+}
+
 // DeleteService deletes a service.
 func (c *connection) DeleteService(ctx context.Context, id string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM service WHERE id=$1", id)

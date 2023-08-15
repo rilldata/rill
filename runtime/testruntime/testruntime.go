@@ -39,7 +39,7 @@ func New(t TestingT) *runtime.Runtime {
 		QueryCacheSizeBytes: int64(datasize.MB * 100),
 		AllowHostAccess:     true,
 	}
-	rt, err := runtime.New(opts, zap.NewNop())
+	rt, err := runtime.New(opts, zap.NewNop(), nil)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		rt.Close()
