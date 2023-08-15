@@ -167,6 +167,14 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, owner *ru
 		}
 	}
 
+	// Update state from .env
+	if diff == nil || diff.ModifiedDotEnv {
+		err := r.reconcileDotEnv(ctx, parser)
+		if err != nil {
+			return err
+		}
+	}
+
 	// Update parse errors
 	pp := owner.GetProjectParser()
 	pp.State.ParseErrors = parser.Errors
@@ -214,6 +222,21 @@ func (r *ProjectParserReconciler) reconcileRillYAML(ctx context.Context, parser 
 	}
 
 	return nil
+}
+
+// reconcileRillYAML updates instance config derived from rill.yaml
+func (r *ProjectParserReconciler) reconcileDotEnv(ctx context.Context, parser *compilerv1.Parser) error {
+	inst, err := r.C.Runtime.FindInstance(ctx, r.C.InstanceID)
+	if err != nil {
+		return err
+	}
+
+	// not resetting entire variables since variable can also be set via edit instance api
+	for k, v := range parser.DotEnv {
+		inst.Variables[k] = v
+	}
+
+	return r.C.Runtime.EditInstance(ctx, inst)
 }
 
 // reconcileResources creates, updates and deletes resources as necessary to match the parser's output with the current resources in the catalog.

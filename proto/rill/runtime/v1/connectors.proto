@@ -211,12 +211,10 @@ message ScanConnectorsRequest {
 
 message ScanConnectorsResponse {
   repeated ScannedConnector connectors = 1;
-  map<string, string> existing_credentials = 2; // credentials already present in env file
 }
 
 message ScannedConnector {
   string name = 1;
   string type = 2;
-  repeated string variables = 3;
-  bool has_anonymous_access = 4; // reports whether access is present without any credentials
+  bool has_anonymous_access = 3; // reports whether access is present without any credentials
 }

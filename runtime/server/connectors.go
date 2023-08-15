@@ -86,15 +86,9 @@ func (s *Server) ScanConnectors(ctx context.Context, req *runtimev1.ScanConnecto
 			Type:               connector.Driver,
 			HasAnonymousAccess: connector.AnonymousAccess,
 		}
-		cMap[connector.Name].Variables = make([]string, len(connector.Spec.ConfigProperties))
-		for j := 0; j < len(connector.Spec.ConfigProperties); j++ {
-			p := connector.Spec.ConfigProperties[j]
-			cMap[connector.Name].Variables[j] = fmt.Sprintf("connector.%s.%s", connector.Name, p.Key)
-		}
 	}
 	return &runtimev1.ScanConnectorsResponse{
-		Connectors:          maps.Values(cMap),
-		ExistingCredentials: p.EnvVariables,
+		Connectors: maps.Values(cMap),
 	}, nil
 }
 

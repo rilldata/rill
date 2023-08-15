@@ -470,12 +470,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -508,6 +502,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export type V1TableRowsResponseDataItem = { [key: string]: any };
 
@@ -578,6 +578,17 @@ export interface V1SourceV2 {
 
 export type V1SourceSpecProperties = { [key: string]: any };
 
+export interface V1SourceSpec {
+  sourceConnector?: string;
+  sinkConnector?: string;
+  properties?: V1SourceSpecProperties;
+  refreshSchedule?: V1Schedule;
+  timeoutSeconds?: number;
+  stageChanges?: boolean;
+  streamIngestion?: boolean;
+  trigger?: boolean;
+}
+
 export type V1SourceProperties = { [key: string]: any };
 
 export interface V1Source {
@@ -594,31 +605,14 @@ export interface V1Schedule {
   tickerSeconds?: number;
 }
 
-export interface V1SourceSpec {
-  sourceConnector?: string;
-  sinkConnector?: string;
-  properties?: V1SourceSpecProperties;
-  refreshSchedule?: V1Schedule;
-  timeoutSeconds?: number;
-  stageChanges?: boolean;
-  streamIngestion?: boolean;
-  trigger?: boolean;
-}
-
 export interface V1ScannedConnector {
   name?: string;
   type?: string;
-  variables?: string[];
   hasAnonymousAccess?: boolean;
 }
 
-export type V1ScanConnectorsResponseExistingCredentials = {
-  [key: string]: string;
-};
-
 export interface V1ScanConnectorsResponse {
   connectors?: V1ScannedConnector[];
-  existingCredentials?: V1ScanConnectorsResponseExistingCredentials;
 }
 
 export interface V1S3Object {

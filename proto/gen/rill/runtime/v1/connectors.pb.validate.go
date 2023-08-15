@@ -2917,8 +2917,6 @@ func (m *ScanConnectorsResponse) validate(all bool) error {
 
 	}
 
-	// no validation rules for ExistingCredentials
-
 	if len(errors) > 0 {
 		return ScanConnectorsResponseMultiError(errors)
 	}

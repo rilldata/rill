@@ -108,6 +108,7 @@ type Diff struct {
 	Added            []ResourceName
 	Modified         []ResourceName
 	ModifiedRillYAML bool
+	ModifiedDotEnv   bool
 	Deleted          []ResourceName
 }
 
@@ -173,11 +174,6 @@ func Parse(ctx context.Context, repo drivers.RepoStore, instanceID string, duckD
 		return nil, err
 	}
 
-	// parse .env file separately
-	if err := p.parseDotEnv(ctx); err != nil {
-		return nil, err
-	}
-
 	// Infer unspecified refs for all inserted resources
 	for _, r := range p.insertedResources {
 		p.inferUnspecifiedRefs(r)
@@ -214,6 +210,7 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	var deletedResources []*Resource   // Resources deleted in Phase 1 (some may be added back in Phase 2)
 	checkPaths := slices.Clone(paths)  // Paths we should visit in the loop
 	seenPaths := make(map[string]bool) // Paths already visited by the loop
+	modifiedDotEnv := false            // whether .env file was modified
 	for i := 0; i < len(checkPaths); i++ {
 		// Don't check the same path twice
 		path := normalizePath(checkPaths[i])
@@ -222,10 +219,11 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 		}
 		seenPaths[path] = true
 
-		// Skip files that aren't SQL or YAML
+		// Skip files that aren't SQL or YAML or .env file
 		isSQL := strings.HasSuffix(path, ".sql")
 		isYAML := strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")
-		if !isSQL && !isYAML {
+		isDotEnv := strings.EqualFold(path, "/.env")
+		if !isSQL && !isYAML && !isDotEnv {
 			continue
 		}
 
@@ -237,9 +235,12 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 			return nil, fmt.Errorf("unexpected file stat error: %w", err)
 		}
 
-		// Check if path is rill.yaml and clear it (so we can re-parse it)
+		// Check if path is rill.yaml or .env and clear it (so we can re-parse it)
 		if path == "/rill.yaml" || path == "/rill.yml" {
 			p.RillYAML = nil
+		} else if path == "/.env" {
+			modifiedDotEnv = true
+			p.DotEnv = nil
 		}
 
 		// Since .sql and .yaml files provide context for each other, if one was modified, we need to reparse both.
@@ -324,7 +325,7 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	}
 
 	// Phase 3: Build the diff using p.insertedResources, p.updatedResources and deletedResources
-	diff := &Diff{ModifiedRillYAML: modifiedRillYAML}
+	diff := &Diff{ModifiedRillYAML: modifiedRillYAML, ModifiedDotEnv: modifiedDotEnv}
 	for _, resource := range p.insertedResources {
 		addedBack := false
 		for _, deleted := range deletedResources {
@@ -446,6 +447,14 @@ func (p *Parser) parseStemPaths(ctx context.Context, paths []string) error {
 				FilePath: path,
 			})
 			continue
+		}
+
+		// parse .env file separately
+		if path == "/.env" {
+			if err := p.parseDotEnv(ctx, path); err != nil {
+				p.addParseError(path, err)
+				continue
+			}
 		}
 
 		// Assign to correct variable
