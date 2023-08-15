@@ -37,7 +37,7 @@ func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
 		migrationMetaCache: newMigrationMetaCache(math.MaxInt),
 		queryCache:         newQueryCache(opts.QueryCacheSizeBytes),
 	}
-	store, _, err := rt.AcquireSystemHandle(context.Background(), "metastore")
+	store, _, err := rt.AcquireSystemHandle(context.Background(), opts.MetastoreConnector)
 	if err != nil {
 		return nil, err
 	}
