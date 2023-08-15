@@ -11,12 +11,12 @@ import (
 	"github.com/rilldata/rill/admin/pkg/publicemail"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
 func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganizationsRequest) (*adminv1.ListOrganizationsResponse, error) {
@@ -188,8 +188,8 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	}
 
 	// Iterate over organization projects, find corresponding deployments and update instance annotations
+	afterProjectName := ""
 	for {
-		afterProjectName := ""
 		projects, err := s.admin.DB.FindProjectsForOrganization(ctx, org.ID, afterProjectName, 10)
 		if err != nil {
 			return nil, err
