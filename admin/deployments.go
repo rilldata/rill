@@ -93,16 +93,16 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 			"organization_id": opts.OrganizationID,
 			"project_id":      opts.ProjectID,
 		},
-		Connectors: []*runtimev1.ConnectorDef{
+		Connectors: []*runtimev1.Connector{
 			{
-				Name:    "olap",
-				Type:    olapDriver,
-				Configs: map[string]string{"dsn": olapDSN},
+				Name:   "olap",
+				Type:   olapDriver,
+				Config: map[string]string{"dsn": olapDSN},
 			},
 			{
-				Name:    "repo",
-				Type:    repoDriver,
-				Configs: map[string]string{"dsn": repoDSN},
+				Name:   "repo",
+				Type:   repoDriver,
+				Config: map[string]string{"dsn": repoDSN},
 			},
 		},
 	})
@@ -163,10 +163,10 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 	connectors := res.Instance.Connectors
 	for _, c := range connectors {
 		if c.Name == "repo" {
-			if c.Configs == nil {
-				c.Configs = make(map[string]string)
+			if c.Config == nil {
+				c.Config = make(map[string]string)
 			}
-			c.Configs["dsn"] = repoDSN
+			c.Config["dsn"] = repoDSN
 			c.Type = repoDriver
 		}
 	}

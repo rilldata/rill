@@ -15,30 +15,30 @@ import (
 
 // ListConnectors implements RuntimeService.
 func (s *Server) ListConnectors(ctx context.Context, req *runtimev1.ListConnectorsRequest) (*runtimev1.ListConnectorsResponse, error) {
-	var pbs []*runtimev1.Connector
+	var pbs []*runtimev1.ConnectorSpec
 	for name, connector := range drivers.Connectors {
 		// Build protobufs for properties
 		srcProps := connector.Spec().SourceProperties
-		propPBs := make([]*runtimev1.Connector_Property, len(srcProps))
+		propPBs := make([]*runtimev1.ConnectorSpec_Property, len(srcProps))
 		for j := range connector.Spec().SourceProperties {
 			propSchema := srcProps[j]
 			// Get type
-			var t runtimev1.Connector_Property_Type
+			var t runtimev1.ConnectorSpec_Property_Type
 			switch propSchema.Type {
 			case drivers.StringPropertyType:
-				t = runtimev1.Connector_Property_TYPE_STRING
+				t = runtimev1.ConnectorSpec_Property_TYPE_STRING
 			case drivers.NumberPropertyType:
-				t = runtimev1.Connector_Property_TYPE_NUMBER
+				t = runtimev1.ConnectorSpec_Property_TYPE_NUMBER
 			case drivers.BooleanPropertyType:
-				t = runtimev1.Connector_Property_TYPE_BOOLEAN
+				t = runtimev1.ConnectorSpec_Property_TYPE_BOOLEAN
 			case drivers.InformationalPropertyType:
-				t = runtimev1.Connector_Property_TYPE_INFORMATIONAL
+				t = runtimev1.ConnectorSpec_Property_TYPE_INFORMATIONAL
 			default:
 				panic(fmt.Errorf("property type '%v' not handled", propSchema.Type))
 			}
 
 			// Add protobuf for property
-			propPBs[j] = &runtimev1.Connector_Property{
+			propPBs[j] = &runtimev1.ConnectorSpec_Property{
 				Key:         propSchema.Key,
 				DisplayName: propSchema.DisplayName,
 				Description: propSchema.Description,
@@ -51,7 +51,7 @@ func (s *Server) ListConnectors(ctx context.Context, req *runtimev1.ListConnecto
 		}
 
 		// Add connector
-		pbs = append(pbs, &runtimev1.Connector{
+		pbs = append(pbs, &runtimev1.ConnectorSpec{
 			Name:        name,
 			DisplayName: connector.Spec().DisplayName,
 			Description: connector.Spec().Description,

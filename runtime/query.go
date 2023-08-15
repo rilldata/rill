@@ -65,7 +65,7 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 	if err != nil {
 		return err
 	}
-	c, _, _ := r.OLAPDef(inst)
+	c, _ := r.connectorDef(inst, inst.OLAPDriver)
 	if c.Type == "druid" {
 		return query.Resolve(ctx, r, instanceID, priority)
 	}

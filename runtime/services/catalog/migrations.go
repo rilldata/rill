@@ -617,6 +617,7 @@ func (s *Service) setProjectConnectorsAndVariables(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	// set project variables
 	inst.ProjectVariables = proj.Variables
 
 	// rill parsed parsing with new parser
@@ -624,20 +625,15 @@ func (s *Service) setProjectConnectorsAndVariables(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	rillYAML := &drivers.RillYAML{
-		Connectors:       make([]*runtimev1.ConnectorDef, len(parsed.Connectors)),
-		ProjectVariables: make(map[string]string, len(parsed.Variables)),
-	}
+
+	// set project connectors
+	inst.ProjectConnectors = make([]*runtimev1.Connector, len(parsed.Connectors))
 	for i, c := range parsed.Connectors {
-		rillYAML.Connectors[i] = &runtimev1.ConnectorDef{
-			Type:    c.Type,
-			Name:    c.Name,
-			Configs: c.Defaults,
+		inst.ProjectConnectors[i] = &runtimev1.Connector{
+			Type:   c.Type,
+			Name:   c.Name,
+			Config: c.Defaults,
 		}
 	}
-	for _, v := range parsed.Variables {
-		rillYAML.ProjectVariables[v.Name] = v.Default
-	}
-	inst.RillYAML = rillYAML
 	return s.RegistryStore.EditInstance(ctx, inst)
 }

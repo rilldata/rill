@@ -1,6 +1,6 @@
 Each driver in the package can implement one or more of following interfaces:
 
-Following interfaces are system interfaces and is present for all instances. Depending on cloud/local these can be shared with all instances or private to an instance as well. Check `runtime.Options.GlobalDrivers` and `runtime.Options.LocalDrivers`.
+Following interfaces are system interfaces and is present for all instances. Depending on cloud/local these can be shared with all instances or private to an instance as well. Global connectors are passed as runtime configs. Instance specific connectors are set in instance while creating instance.
 - **OLAPStore** for storing data and running analytical queries
 - **CatalogStore** for storing sources, models and metrics views, including metadata like last refresh time
 - **RepoStore** for storing code artifacts (this is essentially a file system shim)

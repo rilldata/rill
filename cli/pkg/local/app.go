@@ -78,20 +78,20 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 	}
 
 	// Create a local runtime with an in-memory metastore
-	globalDrivers := []*runtime.Connector{
+	systemConnectors := []*runtimev1.Connector{
 		{
-			Type:    "sqlite",
-			Name:    "metastore",
-			Configs: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
+			Type:   "sqlite",
+			Name:   "metastore",
+			Config: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
 		},
 	}
 
 	rtOpts := &runtime.Options{
 		ConnectionCacheSize: 100,
-		MetastoreDriver:     "metastore",
+		MetastoreDriver:     "sqlite",
 		QueryCacheSizeBytes: int64(datasize.MB * 100),
 		AllowHostAccess:     true,
-		GlobalDrivers:       globalDrivers,
+		SystemConnectors:    systemConnectors,
 	}
 	rt, err := runtime.New(rtOpts, logger)
 	if err != nil {
@@ -126,16 +126,16 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 		RepoDriver:   "repo",
 		EmbedCatalog: olapDriver == "duckdb",
 		Variables:    parsedVariables,
-		Connectors: []*runtimev1.ConnectorDef{
+		Connectors: []*runtimev1.Connector{
 			{
-				Type:    "file",
-				Name:    "repo",
-				Configs: map[string]string{"dsn": projectPath},
+				Type:   "file",
+				Name:   "repo",
+				Config: map[string]string{"dsn": projectPath},
 			},
 			{
-				Type:    olapDriver,
-				Name:    "olap",
-				Configs: map[string]string{"dsn": olapDSN},
+				Type:   olapDriver,
+				Name:   "olap",
+				Config: map[string]string{"dsn": olapDSN},
 			},
 		},
 	}

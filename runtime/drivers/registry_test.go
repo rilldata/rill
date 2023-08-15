@@ -18,16 +18,16 @@ func testRegistry(t *testing.T, reg drivers.RegistryStore) {
 		RepoDriver:          "repo",
 		EmbedCatalog:        true,
 		IngestionLimitBytes: 102345,
-		Connectors: []*runtimev1.ConnectorDef{
+		Connectors: []*runtimev1.Connector{
 			{
-				Type:    "file",
-				Name:    "repo",
-				Configs: map[string]string{"dsn": "."},
+				Type:   "file",
+				Name:   "repo",
+				Config: map[string]string{"dsn": "."},
 			},
 			{
-				Type:    "duckdb",
-				Name:    "olap",
-				Configs: map[string]string{"dsn": ":memory:"},
+				Type:   "duckdb",
+				Name:   "olap",
+				Config: map[string]string{"dsn": ":memory:"},
 			},
 		},
 	}

@@ -26,6 +26,11 @@ func (c *connection) Root() string {
 	return c.root
 }
 
+// CommitHash implements drivers.RepoStore.
+func (c *connection) CommitHash(ctx context.Context) (string, error) {
+	return "", nil
+}
+
 // ListRecursive implements drivers.RepoStore.
 func (c *connection) ListRecursive(ctx context.Context, glob string) ([]string, error) {
 	// Check that folder hasn't been moved

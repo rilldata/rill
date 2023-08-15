@@ -98,7 +98,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		return nil
 	}
 
-	return olap.WithConnection(ctx, priority, func(ctx context.Context, ensuredCtx context.Context) error {
+	return olap.WithConnection(ctx, priority, func(ctx context.Context, ensuredCtx context.Context, _ *sql.Conn) error {
 		filter, args, err := buildFilterClauseForMetricsViewFilter(q.MetricsView, q.MetricsViewFilter, olap.Dialect())
 		if err != nil {
 			return err

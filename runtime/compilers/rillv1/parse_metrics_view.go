@@ -18,6 +18,7 @@ type metricsViewYAML struct {
 	DisplayName        string           `yaml:"display_name"` // Backwards compatibility
 	Description        string           `yaml:"description"`
 	Model              string           `yaml:"model"`
+	Table              string           `yaml:"table"`
 	TimeDimension      string           `yaml:"timeseries"`
 	SmallestTimeGrain  string           `yaml:"smallest_time_grain"`
 	DefaultTimeRange   string           `yaml:"default_time_range"`
@@ -60,6 +61,18 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		tmp.Title = tmp.DisplayName
 	}
 
+	var table string
+	if tmp.Table == "" {
+		table = tmp.Model
+	} else if tmp.Model == "" {
+		table = tmp.Table
+	} else {
+		return fmt.Errorf(`cannot set both the "model" field and the "table" field`)
+	}
+	if table == "" {
+		return fmt.Errorf(`must set a value for either the "model" field or the "table" field`)
+	}
+
 	smallestTimeGrain, err := parseTimeGrain(tmp.SmallestTimeGrain)
 	if err != nil {
 		return fmt.Errorf(`invalid "smallest_time_grain": %w`, err)
@@ -79,19 +92,8 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		}
 	}
 
-	node.Refs = append(node.Refs, ResourceName{Name: tmp.Model})
-
-	r := p.upsertResource(ResourceKindMetricsView, node.Name, node.Paths, node.Refs...)
-	spec := r.MetricsViewSpec
-
-	spec.Title = tmp.Title
-	spec.Description = tmp.Description
-	spec.Model = tmp.Model
-	spec.TimeDimension = tmp.TimeDimension
-	spec.SmallestTimeGrain = smallestTimeGrain
-	spec.DefaultTimeRange = tmp.DefaultTimeRange
-	spec.AvailableTimeZones = tmp.AvailableTimeZones
-
+	names := make(map[string]bool)
+	columns := make(map[string]bool)
 	for i, dim := range tmp.Dimensions {
 		if dim.Ignore {
 			continue
@@ -111,6 +113,66 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			}
 		}
 
+		lower := strings.ToLower(dim.Name)
+		if ok := names[lower]; ok {
+			return fmt.Errorf("found duplicate dimension or measure name %q", dim.Name)
+		}
+		names[lower] = true
+
+		lower = strings.ToLower(dim.Column)
+		if ok := columns[lower]; ok {
+			return fmt.Errorf("found duplicate dimension column name %q", dim.Column)
+		}
+		columns[lower] = true
+	}
+
+	measureCount := 0
+	for i, measure := range tmp.Measures {
+		if measure.Ignore {
+			continue
+		}
+
+		measureCount++
+
+		// Backwards compatibility
+		if measure.Name == "" {
+			measure.Name = fmt.Sprintf("measure_%d", i)
+		}
+
+		lower := strings.ToLower(measure.Name)
+		if ok := names[lower]; ok {
+			return fmt.Errorf("found duplicate dimension or measure name %q", measure.Name)
+		}
+		names[lower] = true
+
+		if ok := columns[lower]; ok {
+			return fmt.Errorf("measure name %q coincides with a dimension column name", measure.Name)
+		}
+	}
+	if measureCount == 0 {
+		return fmt.Errorf("must define at least one measure")
+	}
+
+	node.Refs = append(node.Refs, ResourceName{Name: table})
+
+	// NOTE: After calling upsertResource, an error must not be returned. Any validation should be done before calling it.
+	r := p.upsertResource(ResourceKindMetricsView, node.Name, node.Paths, node.Refs...)
+	spec := r.MetricsViewSpec
+
+	spec.Connector = node.Connector
+	spec.Table = table
+	spec.Title = tmp.Title
+	spec.Description = tmp.Description
+	spec.TimeDimension = tmp.TimeDimension
+	spec.SmallestTimeGrain = smallestTimeGrain
+	spec.DefaultTimeRange = tmp.DefaultTimeRange
+	spec.AvailableTimeZones = tmp.AvailableTimeZones
+
+	for _, dim := range tmp.Dimensions {
+		if dim.Ignore {
+			continue
+		}
+
 		spec.Dimensions = append(spec.Dimensions, &runtimev1.MetricsViewSpec_DimensionV2{
 			Name:        dim.Name,
 			Column:      dim.Column,
@@ -119,14 +181,9 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		})
 	}
 
-	for i, measure := range tmp.Measures {
+	for _, measure := range tmp.Measures {
 		if measure.Ignore {
 			continue
-		}
-
-		// Backwards compatibility
-		if measure.Name == "" {
-			measure.Name = fmt.Sprintf("measure_%d", i)
 		}
 
 		spec.Measures = append(spec.Measures, &runtimev1.MetricsViewSpec_MeasureV2{

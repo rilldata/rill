@@ -161,7 +161,7 @@ SELECT * FROM {{ ref "m2" }}
 			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m2"}},
 			Paths: []string{"/dashboards/d1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
-				Model: "m2",
+				Table: "m2",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
 					{Name: "a"},
 				},

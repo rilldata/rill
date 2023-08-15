@@ -2,6 +2,7 @@ package duckdb
 
 import (
 	"context"
+	"database/sql"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -163,7 +164,7 @@ func TestFatalErrConcurrent(t *testing.T) {
 			LEFT JOIN d ON b.b12 = d.d1
 			WHERE d.d2 IN ('');
 		`
-		err1 = olap.WithConnection(context.Background(), 0, func(ctx, ensuredCtx context.Context) error {
+		err1 = olap.WithConnection(context.Background(), 0, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
 			time.Sleep(500 * time.Millisecond)
 			return olap.Exec(ctx, &drivers.Statement{Query: qry})
 		})
@@ -176,7 +177,7 @@ func TestFatalErrConcurrent(t *testing.T) {
 	var err2 error
 	go func() {
 		qry := `SELECT * FROM a;`
-		err2 = olap.WithConnection(context.Background(), 0, func(ctx, ensuredCtx context.Context) error {
+		err2 = olap.WithConnection(context.Background(), 0, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
 			time.Sleep(1000 * time.Millisecond)
 			return olap.Exec(ctx, &drivers.Statement{Query: qry})
 		})
@@ -190,7 +191,7 @@ func TestFatalErrConcurrent(t *testing.T) {
 	go func() {
 		time.Sleep(250 * time.Millisecond)
 		qry := `SELECT * FROM a;`
-		err3 = olap.WithConnection(context.Background(), 0, func(ctx, ensuredCtx context.Context) error {
+		err3 = olap.WithConnection(context.Background(), 0, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
 			return olap.Exec(ctx, &drivers.Statement{Query: qry})
 		})
 		wg.Done()

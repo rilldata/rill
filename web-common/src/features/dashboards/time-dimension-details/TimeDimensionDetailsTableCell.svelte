@@ -1,12 +1,35 @@
 <script lang="ts">
   import type { Writable } from "svelte/store";
+  import { createQuery, CreateQueryResult } from "@tanstack/svelte-query";
   import type { TimeDimensionDetailsStore } from "./time-dimension-details-store";
+  import { getBlock } from "./util";
+  import { fetchData } from "./mock-data";
 
   export let rowIdx: number;
   export let colIdx: number;
   export let fixed: boolean;
   export let lastFixed: boolean;
   export let store: Writable<TimeDimensionDetailsStore>;
+  // If the current data block has this cell, get the data. Otherwise for now assume "loading" state (can handle errors later)
+  let cellData = { d: "..." };
+  let block = getBlock(100, rowIdx, rowIdx);
+  $: block = getBlock(100, rowIdx, rowIdx);
+
+  const cellQuery = createQuery({
+    queryKey: ["time-dimension-details", block[0], block[1]],
+    queryFn: fetchData(block, 1000),
+  }) as CreateQueryResult<{ block: number[]; data: { d: string }[][] }>;
+
+  $: {
+    if (
+      $cellQuery.data &&
+      rowIdx >= $cellQuery.data.block[0] &&
+      rowIdx < $cellQuery.data.block[1]
+    ) {
+      cellData =
+        $cellQuery.data.data[rowIdx - $cellQuery.data.block[0]][colIdx];
+    } else cellData = { d: "..." };
+  }
 
   let _class = "";
   $: {
@@ -78,7 +101,7 @@
     on:mouseenter={handleMouseEnter}
     on:mouseleave={handleMouseLeave}
   >
-    cell {rowIdx},{colIdx}
+    {cellData?.d}
   </div>
 {/if}
 
