@@ -305,7 +305,7 @@ func NewTestRunTime(t *testing.T) *Runtime {
 		QueryCacheSizeBytes: int64(datasize.MB) * 100,
 		AllowHostAccess:     true,
 	}
-	rt, err := New(opts, zap.NewNop())
+	rt, err := New(opts, zap.NewNop(), nil)
 	t.Cleanup(func() {
 		rt.Close()
 	})
