@@ -121,10 +121,10 @@ type Parser struct {
 	DuckDBConnectors []string
 
 	// Output
-	RillYAML     *RillYAML
-	Resources    map[ResourceName]*Resource
-	Errors       []*runtimev1.ParseError
-	EnvVariables map[string]string
+	RillYAML  *RillYAML
+	DotEnv    map[string]string
+	Resources map[ResourceName]*Resource
+	Errors    []*runtimev1.ParseError
 
 	// Internal state
 	resourcesForPath           map[string][]*Resource // Reverse index of Resource.Paths

@@ -21,6 +21,6 @@ func (p *Parser) parseDotEnv(ctx context.Context) error {
 		return err
 	}
 
-	p.EnvVariables = envMap
+	p.DotEnv = envMap
 	return nil
 }
