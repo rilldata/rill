@@ -757,6 +757,11 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
    */
   connectors: Connector[] = [];
 
+  /**
+   * @generated from field: map<string, string> annotations = 10;
+   */
+  annotations: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<EditInstanceRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -771,6 +776,7 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 8, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 9, name: "connectors", kind: "message", T: Connector, repeated: true },
+    { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceRequest {
@@ -910,6 +916,90 @@ export class EditInstanceVariablesResponse extends Message<EditInstanceVariables
 
   static equals(a: EditInstanceVariablesResponse | PlainMessage<EditInstanceVariablesResponse> | undefined, b: EditInstanceVariablesResponse | PlainMessage<EditInstanceVariablesResponse> | undefined): boolean {
     return proto3.util.equals(EditInstanceVariablesResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.EditInstanceAnnotations.
+ *
+ * @generated from message rill.runtime.v1.EditInstanceAnnotationsRequest
+ */
+export class EditInstanceAnnotationsRequest extends Message<EditInstanceAnnotationsRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: map<string, string> annotations = 2;
+   */
+  annotations: { [key: string]: string } = {};
+
+  constructor(data?: PartialMessage<EditInstanceAnnotationsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.EditInstanceAnnotationsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceAnnotationsRequest {
+    return new EditInstanceAnnotationsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EditInstanceAnnotationsRequest {
+    return new EditInstanceAnnotationsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EditInstanceAnnotationsRequest {
+    return new EditInstanceAnnotationsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: EditInstanceAnnotationsRequest | PlainMessage<EditInstanceAnnotationsRequest> | undefined, b: EditInstanceAnnotationsRequest | PlainMessage<EditInstanceAnnotationsRequest> | undefined): boolean {
+    return proto3.util.equals(EditInstanceAnnotationsRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.EditInstanceAnnotations
+ *
+ * @generated from message rill.runtime.v1.EditInstanceAnnotationsResponse
+ */
+export class EditInstanceAnnotationsResponse extends Message<EditInstanceAnnotationsResponse> {
+  /**
+   * @generated from field: rill.runtime.v1.Instance instance = 1;
+   */
+  instance?: Instance;
+
+  constructor(data?: PartialMessage<EditInstanceAnnotationsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.EditInstanceAnnotationsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance", kind: "message", T: Instance },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceAnnotationsResponse {
+    return new EditInstanceAnnotationsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EditInstanceAnnotationsResponse {
+    return new EditInstanceAnnotationsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EditInstanceAnnotationsResponse {
+    return new EditInstanceAnnotationsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: EditInstanceAnnotationsResponse | PlainMessage<EditInstanceAnnotationsResponse> | undefined, b: EditInstanceAnnotationsResponse | PlainMessage<EditInstanceAnnotationsResponse> | undefined): boolean {
+    return proto3.util.equals(EditInstanceAnnotationsResponse, a, b);
   }
 }
 
