@@ -5,9 +5,8 @@
     createAdminServiceGetOrganization,
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
-  import ProjectList from "../../components/home/ProjectList.svelte";
-  import OrganizationAccessControls from "../../components/organizations/OrganizationAccessControls.svelte";
-  import ShareOrganizationCTA from "../../components/organizations/ShareOrganizationCTA.svelte";
+  import OrganizationHero from "../../components/organizations/OrganizationHero.svelte";
+  import ProjectList from "../../components/projects/ProjectList.svelte";
 
   $: orgName = $page.params.organization;
 
@@ -24,33 +23,22 @@
 {#if $org.data && $org.data.organization && $projs.data}
   <VerticalScrollContainer>
     <section
-      class="flex flex-col mx-8 my-8 sm:my-16 sm:mx-16 lg:mx-32 lg:my-24 2xl:mx-64 mx-auto"
+      class="mx-8 my-8 sm:my-16 sm:mx-16 lg:mx-32 lg:my-24 2xl:mx-64 mx-auto flex flex-col gap-y-4"
     >
-      <div class="flex flex-row gap-x-7 flex-wrap">
-        <div class="md:w-1/2 flex flex-col">
-          <span class="text-base leading-6 font-light mb-1 text-gray-700"
-            >{orgName}</span
-          >
-          {#if $projs.data.projects?.length === 0}
-            <span
-              >This organization has no projects yet. <a
-                href="https://docs.rilldata.com/get-started"
-                target="_blank"
-                rel="noreferrer">See docs</a
-              ></span
-            >
-          {:else}
-            <div class="py-2 px-1.5">
-              <ProjectList organization={$page.params.organization} />
-            </div>
-          {/if}
+      <OrganizationHero organization={orgName} />
+      {#if $projs.data.projects?.length === 0}
+        <span
+          >This organization has no projects yet. <a
+            href="https://docs.rilldata.com/get-started"
+            target="_blank"
+            rel="noreferrer">See docs</a
+          ></span
+        >
+      {:else}
+        <div class="py-2 px-1.5">
+          <ProjectList organization={$page.params.organization} />
         </div>
-        <OrganizationAccessControls organization={$page.params.organization}>
-          <svelte:fragment slot="manage-org-members">
-            <ShareOrganizationCTA organization={$page.params.organization} />
-          </svelte:fragment>
-        </OrganizationAccessControls>
-      </div>
+      {/if}
     </section>
   </VerticalScrollContainer>
 {/if}
