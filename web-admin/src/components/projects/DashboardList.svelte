@@ -36,7 +36,7 @@
 {#if dashboardListItems?.length === 0}
   <p class="text-gray-500 text-xs">This project has no dashboards yet.</p>
 {:else if dashboardListItems?.length > 0}
-  <ol class="flex flex-col gap-y-4 w-fit max-w-full xl:max-w-[1200px]">
+  <ol class="flex flex-col gap-y-4 w-fit max-w-full 2xl:max-w-[1200px]">
     {#each dashboardListItems as dashboardListItem}
       <li
         class="h-[52px] flex items-center gap-x-2 border rounded w-full text-xs font-medium leading-4 break-all"
@@ -57,9 +57,11 @@
             <DashboardIcon size={"14px"} />
           </div>
 
-          <div class="flex items-center gap-x-10 w-full">
+          <div
+            class="flex items-center gap-x-10 w-full max-w-[calc(100%-2rem)]"
+          >
             <!-- Name -->
-            <span class="text-sm font-medium whitespace-nowrap truncate">
+            <span class="text-sm font-medium truncate">
               {dashboardListItem?.title || dashboardListItem.name}
             </span>
 
@@ -88,8 +90,9 @@
 
             <!-- Description -->
             {#if dashboardListItem.description}
+              <!-- Note: line-clamp-2 uses `display: -webkit-box;` which overrides the `hidden` class -->
               <span
-                class="text-gray-800 text-xs font-light break-normal line-clamp-2"
+                class="text-gray-800 text-xs font-light break-normal hidden md:line-clamp-2"
                 >{dashboardListItem.description}</span
               >
             {/if}
