@@ -74,17 +74,18 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	}
 
 	// Get and sync repo
-	repo, err := r.C.Runtime.Repo(ctx, r.C.InstanceID)
+	repo, release, err := r.C.Runtime.Repo(ctx, r.C.InstanceID)
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to access repo: %w", err)}
 	}
-	err = repo.Sync(ctx, r.C.InstanceID)
+	defer release()
+	err = repo.Sync(ctx)
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to sync repo: %w", err)}
 	}
 
 	// Update commit sha
-	hash, err := repo.CommitHash(ctx, r.C.InstanceID)
+	hash, err := repo.CommitHash(ctx)
 	if err != nil {
 		// Not worth failing the reconcile for this. On error, it'll just set CurrentCommitSha to "".
 		r.C.Logger.Error("failed to get commit hash", slog.String("err", err.Error()))
@@ -119,7 +120,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	// If pp.Spec is changed, the controller will cancel the context and call Reconcile again.
 	var reparseErr error
 	ctx, cancel := context.WithCancel(ctx)
-	err = repo.Watch(ctx, r.C.InstanceID, func(events []drivers.WatchEvent) {
+	err = repo.Watch(ctx, func(events []drivers.WatchEvent) {
 		// Get changed paths that are not directories
 		changedPaths := make([]string, 0, len(events))
 		for _, e := range events {

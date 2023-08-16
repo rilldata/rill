@@ -34,6 +34,7 @@ A simple composable container for SVG-based data graphics.
 
   export let mouseoverValue = undefined;
   export let hovered = undefined;
+  export let customClass = "";
 
   /** this makes a wide variety of normal events, such as on:click, available
    * to the consumer
@@ -41,7 +42,7 @@ A simple composable container for SVG-based data graphics.
   // const forwardAll = forwardEvents(getComponent(), []);
 </script>
 
-<div>
+<div class={customClass}>
   <GraphicContext
     {width}
     {height}
@@ -76,6 +77,7 @@ A simple composable container for SVG-based data graphics.
       on:scrub-start
       on:scrub-move
       on:scrub-end
+      on:click
     >
       <slot {xScale} {yScale} {mouseoverValue} {config} {hovered} />
     </SimpleSVGContainer>
