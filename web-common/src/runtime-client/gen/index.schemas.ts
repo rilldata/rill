@@ -326,11 +326,10 @@ See message Instance for field descriptions.
  */
 export type RuntimeServiceEditInstanceBody = {
   olapDriver?: string;
-  olapDsn?: string;
   repoDriver?: string;
-  repoDsn?: string;
   embedCatalog?: boolean;
   ingestionLimitBytes?: string;
+  connectors?: V1Connector[];
 };
 
 export type RuntimeServiceEditInstanceVariablesBodyVariables = {
@@ -467,6 +466,12 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -499,12 +504,6 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
-
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
 
 export type V1TableRowsResponseDataItem = { [key: string]: any };
 
@@ -876,12 +875,6 @@ export interface V1PullTrigger {
   state?: V1PullTriggerState;
 }
 
-export interface V1ProjectParserState {
-  parseErrors?: V1ParseError[];
-  currentCommitSha?: string;
-  changedPaths?: string[];
-}
-
 export interface V1ProjectParserSpec {
   compiler?: string;
   watch?: boolean;
@@ -912,6 +905,12 @@ export interface V1ParseError {
   message?: string;
   filePath?: string;
   startLocation?: Runtimev1CharLocation;
+}
+
+export interface V1ProjectParserState {
+  parseErrors?: V1ParseError[];
+  currentCommitSha?: string;
+  changedPaths?: string[];
 }
 
 export type V1ObjectType = (typeof V1ObjectType)[keyof typeof V1ObjectType];
@@ -1054,6 +1053,19 @@ export interface V1MetricsViewTimeSeriesResponse {
   data?: V1TimeSeriesValue[];
 }
 
+export interface V1MetricsViewTimeSeriesRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
+  filter?: V1MetricsViewFilter;
+  timeZone?: string;
+  priority?: number;
+}
+
 export interface V1MetricsViewTimeRangeResponse {
   timeRangeSummary?: V1TimeRangeSummary;
 }
@@ -1088,19 +1100,6 @@ export interface V1MetricsViewFilter {
   exclude?: MetricsViewFilterCond[];
 }
 
-export interface V1MetricsViewTimeSeriesRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  timeGranularity?: V1TimeGrain;
-  filter?: V1MetricsViewFilter;
-  timeZone?: string;
-  priority?: number;
-}
-
 export interface V1MetricsViewRowsRequest {
   instanceId?: string;
   metricsViewName?: string;
@@ -1121,10 +1120,6 @@ export interface V1MetricsViewComparisonValue {
   comparisonValue?: unknown;
   deltaAbs?: unknown;
   deltaRel?: unknown;
-}
-
-export interface V1MetricsViewComparisonToplistResponse {
-  rows?: V1MetricsViewComparisonRow[];
 }
 
 export type V1MetricsViewComparisonSortType =
@@ -1168,6 +1163,10 @@ export interface V1MetricsViewComparisonToplistRequest {
 export interface V1MetricsViewComparisonRow {
   dimensionValue?: unknown;
   measureValues?: V1MetricsViewComparisonValue[];
+}
+
+export interface V1MetricsViewComparisonToplistResponse {
+  rows?: V1MetricsViewComparisonRow[];
 }
 
 export interface V1MetricsViewColumn {
@@ -1239,7 +1238,7 @@ export interface V1ListExamplesResponse {
 }
 
 export interface V1ListConnectorsResponse {
-  connectors?: V1Connector[];
+  connectors?: V1ConnectorSpec[];
 }
 
 export interface V1ListCatalogEntriesResponse {
@@ -1261,17 +1260,17 @@ just a single instance.
 export interface V1Instance {
   instanceId?: string;
   olapDriver?: string;
-  olapDsn?: string;
   /** Driver for reading/editing code artifacts (options: file, metastore, github).
 This enables virtualizing a file system in a cloud setting. */
   repoDriver?: string;
-  repoDsn?: string;
   /** If true, the runtime will store the instance's catalog in its OLAP store instead
 of in the runtime's metadata store. Currently only supported for the duckdb driver. */
   embedCatalog?: boolean;
   variables?: V1InstanceVariables;
   projectVariables?: V1InstanceProjectVariables;
   ingestionLimitBytes?: string;
+  /** bare minimum connectors required by the instance. */
+  connectors?: V1Connector[];
 }
 
 export interface V1InlineMeasure {
@@ -1421,24 +1420,32 @@ See message Instance for field descriptions.
 export interface V1CreateInstanceRequest {
   instanceId?: string;
   olapDriver?: string;
-  olapDsn?: string;
   repoDriver?: string;
-  repoDsn?: string;
   embedCatalog?: boolean;
   variables?: V1CreateInstanceRequestVariables;
   ingestionLimitBytes?: string;
   annotations?: V1CreateInstanceRequestAnnotations;
+  connectors?: V1Connector[];
 }
 
 /**
- * Connector represents a connector available in the runtime.
+ * ConnectorSpec represents a connector available in the runtime.
 It should not be confused with a source.
  */
-export interface V1Connector {
+export interface V1ConnectorSpec {
   name?: string;
   displayName?: string;
   description?: string;
-  properties?: ConnectorProperty[];
+  properties?: ConnectorSpecProperty[];
+}
+
+export type V1ConnectorConfig = { [key: string]: string };
+
+export interface V1Connector {
+  /** Type of the connector. One of the infra driver supported. */
+  type?: string;
+  name?: string;
+  config?: V1ConnectorConfig;
 }
 
 export interface V1ColumnTopKResponse {
@@ -1762,11 +1769,11 @@ export interface MetricsViewDimension {
   column?: string;
 }
 
-export type ConnectorPropertyType =
-  (typeof ConnectorPropertyType)[keyof typeof ConnectorPropertyType];
+export type ConnectorSpecPropertyType =
+  (typeof ConnectorSpecPropertyType)[keyof typeof ConnectorSpecPropertyType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const ConnectorPropertyType = {
+export const ConnectorSpecPropertyType = {
   TYPE_UNSPECIFIED: "TYPE_UNSPECIFIED",
   TYPE_STRING: "TYPE_STRING",
   TYPE_NUMBER: "TYPE_NUMBER",
@@ -1774,12 +1781,12 @@ export const ConnectorPropertyType = {
   TYPE_INFORMATIONAL: "TYPE_INFORMATIONAL",
 } as const;
 
-export interface ConnectorProperty {
+export interface ConnectorSpecProperty {
   key?: string;
   displayName?: string;
   description?: string;
   placeholder?: string;
-  type?: ConnectorPropertyType;
+  type?: ConnectorSpecPropertyType;
   nullable?: boolean;
   hint?: string;
   href?: string;

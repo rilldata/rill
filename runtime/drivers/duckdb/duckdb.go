@@ -55,7 +55,10 @@ type Driver struct {
 	name string
 }
 
-func (d Driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connection, error) {
+func (d Driver) Open(config map[string]any, shared bool, logger *zap.Logger) (drivers.Handle, error) {
+	if shared {
+		return nil, fmt.Errorf("duckdb driver can't be shared")
+	}
 	dsn, ok := config["dsn"].(string)
 	if !ok {
 		return nil, fmt.Errorf("require dsn to open duckdb connection")
@@ -90,6 +93,7 @@ func (d Driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connect
 		dbCond:       sync.NewCond(&sync.Mutex{}),
 		driverConfig: config,
 		driverName:   d.name,
+		shared:       shared,
 		ctx:          ctx,
 		cancel:       cancel,
 	}
@@ -171,6 +175,7 @@ type connection struct {
 	dbCond      *sync.Cond
 	dbReopen    bool
 	dbErr       error
+	shared      bool
 	// Cancellable context to control internal processes like emitting the stats
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -198,17 +203,25 @@ func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 }
 
 // AsCatalogStore Catalog implements drivers.Connection.
-func (c *connection) AsCatalogStore() (drivers.CatalogStore, bool) {
+func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
+	if c.shared {
+		// duckdb catalog is instance specific
+		return nil, false
+	}
 	return c, true
 }
 
 // AsRepoStore Repo implements drivers.Connection.
-func (c *connection) AsRepoStore() (drivers.RepoStore, bool) {
+func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
 
 // AsOLAP OLAP implements drivers.Connection.
-func (c *connection) AsOLAP() (drivers.OLAPStore, bool) {
+func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+	if c.shared {
+		// duckdb olap is instance specific
+		return nil, false
+	}
 	return c, true
 }
 
@@ -224,8 +237,8 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 }
 
 // AsTransporter implements drivers.Connection.
-func (c *connection) AsTransporter(from, to drivers.Connection) (drivers.Transporter, bool) {
-	olap, _ := to.AsOLAP()
+func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
+	olap, _ := to.AsOLAP("") // if c == to, connection is instance specific
 	if c == to {
 		if from == to {
 			return transporter.NewDuckDBToDuckDB(olap, c.logger), true

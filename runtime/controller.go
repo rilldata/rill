@@ -185,7 +185,7 @@ func (c *Controller) Retrigger(ctx context.Context, name *runtimev1.ResourceName
 	panic("not implemented")
 }
 
-func (c *Controller) AcquireConn(ctx context.Context, connector string) (drivers.Connection, func(), error) {
+func (c *Controller) AcquireConn(ctx context.Context, connector string) (drivers.Handle, func(), error) {
 	panic("not implemented")
 }
 
@@ -195,7 +195,7 @@ func (c *Controller) AcquireOLAP(ctx context.Context, connector string) (drivers
 		return nil, nil, err
 	}
 
-	olap, ok := conn.AsOLAP()
+	olap, ok := conn.AsOLAP(c.InstanceID)
 	if !ok {
 		release()
 		return nil, nil, fmt.Errorf("connector %q is not an OLAP", connector)

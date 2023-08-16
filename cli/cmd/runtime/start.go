@@ -10,6 +10,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"github.com/redis/go-redis/v9"
 	"github.com/rilldata/rill/cli/pkg/config"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
@@ -44,7 +45,7 @@ type Config struct {
 	LogLevel            zapcore.Level          `default:"info" split_words:"true"`
 	MetricsExporter     observability.Exporter `default:"prometheus" split_words:"true"`
 	TracesExporter      observability.Exporter `default:"" split_words:"true"`
-	MetastoreDriver     string                 `default:"sqlite"`
+	MetastoreDriver     string                 `default:"sqlite" split_words:"true"`
 	MetastoreURL        string                 `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
 	AllowedOrigins      []string               `default:"*" split_words:"true"`
 	AuthEnable          bool                   `default:"false" split_words:"true"`
@@ -142,11 +143,17 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			// Init runtime
 			opts := &runtime.Options{
 				ConnectionCacheSize: conf.ConnectionCacheSize,
-				MetastoreDriver:     conf.MetastoreDriver,
-				MetastoreDSN:        conf.MetastoreURL,
+				MetastoreConnector:  "metastore",
 				QueryCacheSizeBytes: conf.QueryCacheSizeBytes,
 				AllowHostAccess:     conf.AllowHostAccess,
 				SafeSourceRefresh:   conf.SafeSourceRefresh,
+				SystemConnectors: []*runtimev1.Connector{
+					{
+						Type:   conf.MetastoreDriver,
+						Name:   "metastore",
+						Config: map[string]string{"dsn": conf.MetastoreURL},
+					},
+				},
 			}
 			rt, err := runtime.New(opts, logger, activityClient)
 			if err != nil {

@@ -50,6 +50,7 @@ func TestEmbeddedSourcesHappyPath(t *testing.T) {
 
 			// delete on of the models
 			err = os.Remove(path.Join(dir, AdBidsNewModelPath))
+			require.NoError(t, err)
 			time.Sleep(10 * time.Millisecond)
 			result, err = s.Reconcile(context.Background(), tt.config)
 			require.NoError(t, err)
@@ -58,6 +59,7 @@ func TestEmbeddedSourcesHappyPath(t *testing.T) {
 
 			// delete the other model
 			err = os.Remove(path.Join(dir, AdBidsModelRepoPath))
+			require.NoError(t, err)
 			time.Sleep(10 * time.Millisecond)
 			result, err = s.Reconcile(context.Background(), tt.config)
 			require.NoError(t, err)
@@ -220,7 +222,7 @@ func TestEmbeddedSourceOnNewService(t *testing.T) {
 	err := os.Remove(path.Join(dir, AdBidsNewModelPath))
 	require.NoError(t, err)
 	// create another copy
-	sc, result = copyService(t, s)
+	_, result = copyService(t, s)
 	testutils.AssertMigration(
 		t,
 		result,
@@ -375,7 +377,7 @@ func addEmbeddedNewModel(t *testing.T, s *catalog.Service) {
 }
 
 func copyService(t *testing.T, s *catalog.Service) (*catalog.Service, *catalog.ReconcileResult) {
-	sc := catalog.NewService(s.Catalog, s.Repo, s.Olap, s.RegistryStore, s.InstID, nil, catalog.NewMigrationMeta())
+	sc := catalog.NewService(s.Catalog, s.Repo, s.Olap, s.RegistryStore, s.InstID, nil, catalog.NewMigrationMeta(), func() {})
 	result, err := sc.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	require.NoError(t, err)
 	return sc, result
