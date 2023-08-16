@@ -2,7 +2,9 @@ package user
 
 import (
 	"context"
+	"strings"
 
+	adminclient "github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -11,6 +13,8 @@ import (
 
 func ListCmd(cfg *config.Config) *cobra.Command {
 	var projectName string
+	var pageSize uint32
+	var pageToken string
 
 	listCmd := &cobra.Command{
 		Use:   "list",
@@ -23,42 +27,52 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 			defer client.Close()
 
 			if projectName != "" {
-				members, err := client.ListProjectMembers(context.Background(), &adminv1.ListProjectMembersRequest{
-					Organization: cfg.Org,
-					Project:      projectName,
-				})
-				if err != nil {
-					return err
+				if strings.HasPrefix(pageToken, "usr") {
+					err = listProjectMembers(cmd, client, cfg.Org, projectName, strings.TrimPrefix(pageToken, "usr"), pageSize)
+					if err != nil {
+						return err
+					}
+				} else if strings.HasPrefix(pageToken, "inv") {
+					err = listProjectInvites(cmd, client, cfg.Org, projectName, strings.TrimPrefix(pageToken, "inv"), pageSize)
+					if err != nil {
+						return err
+					}
+				} else {
+					err = listProjectMembers(cmd, client, cfg.Org, projectName, pageToken, pageSize)
+					if err != nil {
+						return err
+					}
+
+					err = listProjectInvites(cmd, client, cfg.Org, projectName, pageToken, pageSize)
+					if err != nil {
+						return err
+					}
 				}
 
-				invites, err := client.ListProjectInvites(context.Background(), &adminv1.ListProjectInvitesRequest{
-					Organization: cfg.Org,
-					Project:      projectName,
-				})
-				if err != nil {
-					return err
-				}
-
-				cmdutil.PrintMembers(members.Members)
-				cmdutil.PrintInvites(invites.Invites)
 				// TODO: user groups
 			} else {
-				members, err := client.ListOrganizationMembers(context.Background(), &adminv1.ListOrganizationMembersRequest{
-					Organization: cfg.Org,
-				})
-				if err != nil {
-					return err
+				if strings.HasPrefix(pageToken, "usr") {
+					err = listOrgMembers(cmd, client, cfg.Org, strings.TrimPrefix(pageToken, "usr"), pageSize)
+					if err != nil {
+						return err
+					}
+				} else if strings.HasPrefix(pageToken, "inv") {
+					err = listOrgInvites(cmd, client, cfg.Org, strings.TrimPrefix(pageToken, "inv"), pageSize)
+					if err != nil {
+						return err
+					}
+				} else {
+					err = listOrgMembers(cmd, client, cfg.Org, pageToken, pageSize)
+					if err != nil {
+						return err
+					}
+
+					err = listOrgInvites(cmd, client, cfg.Org, pageToken, pageSize)
+					if err != nil {
+						return err
+					}
 				}
 
-				invites, err := client.ListOrganizationInvites(context.Background(), &adminv1.ListOrganizationInvitesRequest{
-					Organization: cfg.Org,
-				})
-				if err != nil {
-					return err
-				}
-
-				cmdutil.PrintMembers(members.Members)
-				cmdutil.PrintInvites(invites.Invites)
 				// TODO: user groups
 			}
 
@@ -68,6 +82,91 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 
 	listCmd.Flags().StringVar(&cfg.Org, "org", cfg.Org, "Organization")
 	listCmd.Flags().StringVar(&projectName, "project", "", "Project")
+	listCmd.Flags().Uint32Var(&pageSize, "page-size", 50, "Number of users to return per page")
+	listCmd.Flags().StringVar(&pageToken, "page-token", "", "Pagination token")
 
 	return listCmd
+}
+
+func listProjectMembers(cmd *cobra.Command, client *adminclient.Client, org, project, pageToken string, pageSize uint32) error {
+	members, err := client.ListProjectMembers(context.Background(), &adminv1.ListProjectMembersRequest{
+		Organization: org,
+		Project:      project,
+		PageSize:     pageSize,
+		PageToken:    pageToken,
+	})
+	if err != nil {
+		return err
+	}
+
+	cmdutil.PrintMembers(members.Members)
+	if members.NextPageToken != "" {
+		cmd.Println()
+		cmd.Printf("Next page token: usr%s\n", members.NextPageToken)
+	}
+
+	return nil
+}
+
+func listProjectInvites(cmd *cobra.Command, client *adminclient.Client, org, project, pageToken string, pageSize uint32) error {
+	invites, err := client.ListProjectInvites(context.Background(), &adminv1.ListProjectInvitesRequest{
+		Organization: org,
+		Project:      project,
+		PageSize:     pageSize,
+		PageToken:    pageToken,
+	})
+	if err != nil {
+		return err
+	}
+	// If page token is empty, user is running the command first time and we print separator
+	if len(invites.Invites) > 0 && pageToken == "" {
+		cmd.Println()
+	}
+	cmdutil.PrintInvites(invites.Invites)
+	if invites.NextPageToken != "" {
+		cmd.Println()
+		cmd.Printf("Next page token: inv%s\n", invites.NextPageToken)
+	}
+
+	return nil
+}
+
+func listOrgMembers(cmd *cobra.Command, client *adminclient.Client, org, pageToken string, pageSize uint32) error {
+	members, err := client.ListOrganizationMembers(context.Background(), &adminv1.ListOrganizationMembersRequest{
+		Organization: org,
+		PageSize:     pageSize,
+		PageToken:    pageToken,
+	})
+	if err != nil {
+		return err
+	}
+
+	cmdutil.PrintMembers(members.Members)
+	if members.NextPageToken != "" {
+		cmd.Println()
+		cmd.Printf("Next page token: usr%s\n", members.NextPageToken)
+	}
+	return nil
+}
+
+func listOrgInvites(cmd *cobra.Command, client *adminclient.Client, org, pageToken string, pageSize uint32) error {
+	invites, err := client.ListOrganizationInvites(context.Background(), &adminv1.ListOrganizationInvitesRequest{
+		Organization: org,
+		PageSize:     pageSize,
+		PageToken:    pageToken,
+	})
+	if err != nil {
+		return err
+	}
+	// If page token is empty, user is running the command first time and we print separator
+	if len(invites.Invites) > 0 && pageToken == "" {
+		cmd.Println()
+	}
+	cmdutil.PrintInvites(invites.Invites)
+	if invites.NextPageToken != "" {
+		cmd.Println()
+		cmd.Printf("Next page token: inv%s\n", invites.NextPageToken)
+	}
+
+	return nil
 }
