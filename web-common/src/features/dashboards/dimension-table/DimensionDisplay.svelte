@@ -22,6 +22,7 @@
     MetricsViewDimension,
     MetricsViewFilterCond,
     MetricsViewMeasure,
+    V1MetricsViewToplistResponseDataItem,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -227,7 +228,7 @@
     });
   }
 
-  let values = [];
+  let values: V1MetricsViewToplistResponseDataItem[] = [];
   let columns = [];
   let measureNames = [];
 
