@@ -9,6 +9,8 @@
   import LeaderboardOptionsMenu from "../leaderboard/LeaderboardOptionsMenu.svelte";
   import Delta from "@rilldata/web-common/components/icons/Delta.svelte";
   import PieChart from "@rilldata/web-common/components/icons/PieChart.svelte";
+  import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
+  import { CONTEXT_COLUMN_WIDTH } from "./leaderboard-utils";
 
   export let displayName: string;
   export let isFetching: boolean;
@@ -16,11 +18,13 @@
   export let hovered: boolean;
   export let showTimeComparison: boolean;
   export let showPercentOfTotal: boolean;
+  export let sortDescending: boolean;
 
   export let filterExcludeMode: boolean;
 
   let optionsMenuActive = false;
 
+  $: arrowTransform = sortDescending ? "scale(1 1)" : "scale(1 -1)";
   $: iconShown = showTimeComparison
     ? "delta"
     : showPercentOfTotal
@@ -92,11 +96,22 @@
         </TooltipContent>
       </Tooltip>
     </div>
-    <div class="shrink flex flex-row items-center">
-      {#if iconShown === "delta"}
-        <Delta /> %
-      {:else if iconShown === "pie"}
-        <PieChart /> %
+    <div class="shrink flex flex-row items-center gap-x-4">
+      <div class="shrink flex flex-row items-center">
+        # <ArrowDown transform={arrowTransform} />
+      </div>
+
+      {#if iconShown}
+        <div
+          class="shrink flex flex-row items-center justify-end"
+          style:width={CONTEXT_COLUMN_WIDTH + "px"}
+        >
+          {#if iconShown === "delta"}
+            <Delta /> %
+          {:else if iconShown === "pie"}
+            <PieChart /> %
+          {/if}
+        </div>
       {/if}
     </div>
   </button>

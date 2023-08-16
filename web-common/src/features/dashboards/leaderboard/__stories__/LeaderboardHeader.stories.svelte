@@ -19,6 +19,7 @@
     showTimeComparison: false,
     showPercentOfTotal: false,
     filterExcludeMode: false,
+    sortDescending: true,
     // referenceValue: 400,
     // unfilteredTotal: 1000,
     // formatPreset: "humanize",
@@ -42,6 +43,11 @@
       },
     },
     isSummableMeasure: {
+      control: {
+        type: "boolean",
+      },
+    },
+    sortDescending: {
       control: {
         type: "boolean",
       },

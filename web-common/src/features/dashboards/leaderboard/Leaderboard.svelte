@@ -23,6 +23,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import {
+    SortDirection,
     metricsExplorerStore,
     useComparisonRange,
     useDashboardStore,
@@ -106,6 +107,7 @@
 
   $: timeStart = $fetchTimeStore?.start?.toISOString();
   $: timeEnd = $fetchTimeStore?.end?.toISOString();
+  $: sortAscending = $dashboardStore.sortDirection === SortDirection.ASC;
   $: topListQuery = createQueryServiceMetricsViewToplist(
     $runtime.instanceId,
     metricViewName,
@@ -120,7 +122,7 @@
       sort: [
         {
           name: measure?.name,
-          ascending: false,
+          ascending: sortAscending,
         },
       ],
     },
