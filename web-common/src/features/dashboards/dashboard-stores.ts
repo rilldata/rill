@@ -1,11 +1,13 @@
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
+import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
 import { getLocalUserPreferences } from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
   getMapFromArray,
   removeIfExists,
 } from "@rilldata/web-common/lib/arrayUtils";
+import { getComparionRangeForScrub } from "@rilldata/web-common/lib/time/comparisons";
 import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
 import { convertTimeRangePreset } from "@rilldata/web-common/lib/time/ranges";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
@@ -63,6 +65,11 @@ export interface MetricsExplorerEntity {
   dimensionFilterExcludeMode: Map<string, boolean>;
   // user selected time range
   selectedTimeRange?: DashboardTimeControls;
+
+  // user selected scrub range
+  selectedScrubRange?: ScrubRange;
+  lastDefinedScrubRange?: ScrubRange;
+
   selectedComparisonTimeRange?: DashboardTimeControls;
 
   // user selected timezone
@@ -320,6 +327,22 @@ const metricViewReducers = {
     });
   },
 
+  setSelectedScrubRange(name: string, scrubRange: ScrubRange) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      if (scrubRange === undefined) {
+        metricsExplorer.lastDefinedScrubRange = undefined;
+      } else if (
+        !scrubRange.isScrubbing &&
+        scrubRange?.start &&
+        scrubRange?.end
+      ) {
+        metricsExplorer.lastDefinedScrubRange = scrubRange;
+      }
+
+      metricsExplorer.selectedScrubRange = scrubRange;
+    });
+  },
+
   setMetricDimensionName(name: string, dimensionName: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.selectedDimensionName = dimensionName;
@@ -512,6 +535,70 @@ export function useDashboardStore(
 ): Readable<MetricsExplorerEntity> {
   return derived(metricsExplorerStore, ($store) => {
     return $store.entities[name];
+  });
+}
+
+/***
+ * Dervied stores to get time range and comparison range to be
+ * used for fetching data. If we have a scrub range and
+ * isScrubbing is false, use that, otherwise use the selected
+ * time range
+ */
+
+export function useFetchTimeRange(name: string) {
+  return derived(metricsExplorerStore, ($store) => {
+    const entity = $store.entities[name];
+    if (entity?.lastDefinedScrubRange) {
+      // Use last scrub range before scrubbing started
+      const { start, end } = getOrderedStartEnd(
+        entity.lastDefinedScrubRange?.start,
+        entity.lastDefinedScrubRange?.end
+      );
+
+      return { start, end };
+    } else {
+      return {
+        start: entity.selectedTimeRange?.start,
+        end: entity.selectedTimeRange?.end,
+      };
+    }
+  });
+}
+
+export function useComparisonRange(name: string) {
+  return derived(metricsExplorerStore, ($store) => {
+    const entity = $store.entities[name];
+
+    if (!entity?.showComparison) {
+      return {
+        start: undefined,
+        end: undefined,
+      };
+    } else if (entity?.lastDefinedScrubRange) {
+      const { start, end } = getOrderedStartEnd(
+        entity.lastDefinedScrubRange?.start,
+        entity.lastDefinedScrubRange?.end
+      );
+
+      const comparisonRange = getComparionRangeForScrub(
+        entity.selectedTimeRange?.start,
+        entity.selectedTimeRange?.end,
+        entity.selectedComparisonTimeRange?.start,
+        entity.selectedComparisonTimeRange?.end,
+        start,
+        end
+      );
+
+      return {
+        start: comparisonRange?.start?.toISOString(),
+        end: comparisonRange?.end?.toISOString(),
+      };
+    } else {
+      return {
+        start: entity.selectedComparisonTimeRange?.start?.toISOString(),
+        end: entity.selectedComparisonTimeRange?.end?.toISOString(),
+      };
+    }
   });
 }
 

@@ -152,6 +152,9 @@
   );
 
   function onSelectTimeRange(name: TimeRangeType, start: Date, end: Date) {
+    // Reset scrub when range changes
+    metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
+
     baseTimeRange = {
       name,
       start: new Date(start),
@@ -172,6 +175,9 @@
   }
 
   function onSelectTimeGrain(timeGrain: V1TimeGrain) {
+    // Reset scrub when grain changes
+    metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
+
     makeTimeSeriesTimeRangeAndUpdateAppState(
       baseTimeRange,
       timeGrain,
@@ -180,6 +186,9 @@
   }
 
   function onSelectTimeZone(timeZone: string) {
+    // Reset scrub when timezone changes
+    metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
+
     metricsExplorerStore.setTimeZone(metricViewName, timeZone);
     localUserPreferences.set({ timeZone });
   }
@@ -322,6 +331,9 @@
       selectedRange={$dashboardStore?.selectedTimeRange}
       on:select-time-range={(e) =>
         onSelectTimeRange(e.detail.name, e.detail.start, e.detail.end)}
+      on:remove-scrub={() => {
+        metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
+      }}
     />
     <TimeZoneSelector
       on:select-time-zone={(e) => onSelectTimeZone(e.detail.timeZone)}
