@@ -9,10 +9,7 @@
     getComparisonRange,
     getTimeComparisonParametersForComponent,
   } from "@rilldata/web-common/lib/time/comparisons";
-  import {
-    DEFAULT_TIMEZONES,
-    DEFAULT_TIME_RANGES,
-  } from "@rilldata/web-common/lib/time/config";
+  import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
   import {
     checkValidTimeGrain,
     getDefaultTimeGrain,
