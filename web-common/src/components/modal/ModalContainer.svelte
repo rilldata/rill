@@ -2,9 +2,11 @@
   import { createEventDispatcher, onDestroy } from "svelte";
   import { fly } from "svelte/transition";
   import Portal from "../Portal.svelte";
-  import Overlay from "./Overlay.svelte";
   import Modal from "./modal";
+  import Overlay from "./Overlay.svelte";
   import { lockBodyScrolling, unlockBodyScrolling } from "./scroll";
+
+  export let focusTriggerOnClose = true;
 
   const dispatch = createEventDispatcher();
 
@@ -56,7 +58,7 @@
     if (!modal) return;
     modal.deactivate();
     unlockBodyScrolling(container);
-    if (typeof originalTrigger?.focus === "function") {
+    if (focusTriggerOnClose && typeof originalTrigger?.focus === "function") {
       setTimeout(() => originalTrigger.focus());
     }
   });

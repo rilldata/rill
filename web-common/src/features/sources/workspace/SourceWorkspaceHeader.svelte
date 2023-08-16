@@ -2,142 +2,82 @@
   import { goto } from "$app/navigation";
   import {
     Button,
-    IconButton,
     IconSpaceFixer,
   } from "@rilldata/web-common/components/button";
-  import Add from "@rilldata/web-common/components/icons/Add.svelte";
-  import Import from "@rilldata/web-common/components/icons/Import.svelte";
-  import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
-  import Source from "@rilldata/web-common/components/icons/Source.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
-  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
-  import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
-  import {
-    MetricsEventScreenName,
-    MetricsEventSpace,
-  } from "@rilldata/web-common/metrics/service/MetricsTypes";
+  import { slideRight } from "@rilldata/web-common/lib/transitions";
   import {
     createRuntimeServiceGetCatalogEntry,
+    createRuntimeServiceGetFile,
     createRuntimeServicePutFileAndReconcile,
     createRuntimeServiceRefreshAndReconcile,
     createRuntimeServiceRenameFileAndReconcile,
     getRuntimeServiceGetCatalogEntryQueryKey,
     V1CatalogEntry,
-    V1ReconcileResponse,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
   import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
-  import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { fade } from "svelte/transition";
+  import EnterIcon from "../../../components/icons/EnterIcon.svelte";
+  import UndoIcon from "../../../components/icons/UndoIcon.svelte";
   import { WorkspaceHeader } from "../../../layout/workspace";
+  import { behaviourEvent } from "../../../metrics/initMetrics";
+  import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
+  import {
+    MetricsEventScreenName,
+    MetricsEventSpace,
+  } from "../../../metrics/service/MetricsTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { renameFileArtifact } from "../../entity-management/actions";
-  import { getRouteFromName } from "../../entity-management/entity-mappers";
-  import { getName, isDuplicateName } from "../../entity-management/name-utils";
+  import {
+    getFilePathFromNameAndType,
+    getRouteFromName,
+  } from "../../entity-management/entity-mappers";
+  import {
+    fileArtifactsStore,
+    getFileArtifactReconciliationErrors,
+  } from "../../entity-management/file-artifacts-store";
+  import { isDuplicateName } from "../../entity-management/name-utils";
   import { useAllNames } from "../../entity-management/selectors";
-  import { useModelNames } from "../../models/selectors";
-  import { useCreateDashboardFromSource } from "../createDashboard";
-  import { createModelFromSource } from "../createModel";
+  import { createModelFromSourceV2 } from "../createModel";
   import { refreshSource } from "../refreshSource";
+  import { saveAndRefresh } from "../saveAndRefresh";
+  import { useIsSourceUnsaved } from "../selectors";
+  import { useSourceStore } from "../sources-store";
 
   export let sourceName: string;
 
   const queryClient = useQueryClient();
 
   const renameSource = createRuntimeServiceRenameFileAndReconcile();
-
-  $: runtimeInstanceId = $runtime.instanceId;
   const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
   const createSource = createRuntimeServicePutFileAndReconcile();
 
+  $: runtimeInstanceId = $runtime.instanceId;
   $: getSource = createRuntimeServiceGetCatalogEntry(
     runtimeInstanceId,
     sourceName
   );
-
-  let headerWidth;
-  $: isHeaderWidthSmall = headerWidth < 800;
+  $: file = createRuntimeServiceGetFile(
+    runtimeInstanceId,
+    getFilePathFromNameAndType(sourceName, EntityType.Table)
+  );
 
   let entry: V1CatalogEntry;
   let source: V1Source;
   $: entry = $getSource?.data?.entry;
   $: source = entry?.source;
 
-  $: modelNames = useModelNames(runtimeInstanceId);
-  $: dashboardNames = useDashboardNames(runtimeInstanceId);
-  const createModelMutation = createRuntimeServicePutFileAndReconcile();
-  const createDashboardFromSourceMutation = useCreateDashboardFromSource();
-
   let connector: string;
-  $: connector = $getSource.data?.entry?.source.connector as string;
+  $: connector = $getSource.data?.entry?.source?.connector as string;
 
   $: allNamesQuery = useAllNames(runtimeInstanceId);
-
-  const handleCreateModelFromSource = async () => {
-    const modelName = await createModelFromSource(
-      queryClient,
-      runtimeInstanceId,
-      $modelNames.data,
-      sourceName,
-      sourceName,
-      $createModelMutation
-    );
-    behaviourEvent.fireNavigationEvent(
-      modelName,
-      BehaviourEventMedium.Button,
-      MetricsEventSpace.RightPanel,
-      MetricsEventScreenName.Source,
-      MetricsEventScreenName.Model
-    );
-  };
-
-  const handleCreateDashboardFromSource = (sourceName: string) => {
-    overlay.set({
-      title: "Creating a dashboard for " + sourceName,
-    });
-    const newModelName = getName(`${sourceName}_model`, $modelNames.data);
-    const newDashboardName = getName(
-      `${sourceName}_dashboard`,
-      $dashboardNames.data
-    );
-    $createDashboardFromSourceMutation.mutate(
-      {
-        data: {
-          instanceId: $runtime.instanceId,
-          sourceName,
-          newModelName,
-          newDashboardName,
-        },
-      },
-      {
-        onSuccess: async (resp: V1ReconcileResponse) => {
-          fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-          goto(`/dashboard/${newDashboardName}`);
-          behaviourEvent.fireNavigationEvent(
-            newDashboardName,
-            BehaviourEventMedium.Button,
-            MetricsEventSpace.RightPanel,
-            MetricsEventScreenName.Source,
-            MetricsEventScreenName.Dashboard
-          );
-          return invalidateAfterReconcile(queryClient, runtimeInstanceId, resp);
-        },
-        onSettled: () => {
-          overlay.set(null);
-        },
-      }
-    );
-  };
 
   const onChangeCallback = async (e) => {
     if (!e.target.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
@@ -173,6 +113,16 @@
     } catch (err) {
       console.error(err.response.data.message);
     }
+  };
+
+  function onRevertChanges() {
+    sourceStore.set({ clientYAML: $file.data?.blob || "" });
+  }
+
+  const onSaveAndRefreshClick = async (tableName: string) => {
+    overlay.set({ title: `Importing ${tableName}.yaml` });
+    await saveAndRefresh(queryClient, tableName, $sourceStore.clientYAML);
+    overlay.set(null);
   };
 
   const onRefreshClick = async (tableName: string) => {
@@ -212,18 +162,48 @@
       minute: "numeric",
     });
   }
+
+  const sourceStore = useSourceStore(sourceName);
+
+  $: isSourceUnsavedQuery = useIsSourceUnsaved(
+    $runtime.instanceId,
+    sourceName,
+    $sourceStore.clientYAML
+  );
+  $: isSourceUnsaved = $isSourceUnsavedQuery.data;
+
+  const handleCreateModelFromSource = async () => {
+    const modelName = await createModelFromSourceV2(queryClient, sourceName);
+    goto(`/model/${modelName}`);
+    behaviourEvent.fireNavigationEvent(
+      modelName,
+      BehaviourEventMedium.Button,
+      MetricsEventSpace.RightPanel,
+      MetricsEventScreenName.Source,
+      MetricsEventScreenName.Model
+    );
+  };
+
+  let hasReconciliationErrors: boolean;
+  $: {
+    const reconciliationErrors = getFileArtifactReconciliationErrors(
+      $fileArtifactsStore,
+      `${sourceName}.yaml`
+    );
+    hasReconciliationErrors = reconciliationErrors?.length > 0;
+  }
+
+  function isHeaderWidthSmall(width: number) {
+    return width < 800;
+  }
 </script>
 
 <div class="grid items-center" style:grid-template-columns="auto max-content">
   <WorkspaceHeader
     {...{ titleInput: sourceName, onChangeCallback }}
     appRunning={$appQueryStatusStore}
-    let:width
-    width={headerWidth}
+    let:width={headerWidth}
   >
-    <svelte:fragment slot="icon">
-      <Source />
-    </svelte:fragment>
     <svelte:fragment slot="workspace-controls">
       {#if $refreshSourceMutation.isLoading}
         Refreshing...
@@ -240,62 +220,57 @@
               )}
             </div>
           {/if}
-          {#if connector === "file"}
-            <Tooltip location="bottom" distance={8}>
-              <div style="transformY(-1px)">
-                <IconButton on:click={() => onRefreshClick(sourceName)}>
-                  <Import size="15px" />
-                </IconButton>
-              </div>
-              <TooltipContent slot="tooltip-content">
-                Import local file to refresh source
-              </TooltipContent>
-            </Tooltip>
-          {:else}
-            <Tooltip location="bottom" distance={8}>
-              <IconButton on:click={() => onRefreshClick(sourceName)}>
-                <RefreshIcon size="15px" />
-              </IconButton>
-              <TooltipContent slot="tooltip-content">
-                Refresh the source data
-              </TooltipContent>
-            </Tooltip>
-          {/if}
         </div>
       {/if}
     </svelte:fragment>
     <svelte:fragment slot="cta">
       <PanelCTA side="right">
-        <Tooltip distance={16} location="left">
-          <Button on:click={handleCreateModelFromSource} type="secondary">
-            <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}
-              ><Model size="12px" /></IconSpaceFixer
-            >
-            <ResponsiveButtonText collapse={isHeaderWidthSmall}>
-              Create Model
-            </ResponsiveButtonText>
-          </Button>
-          <TooltipContent slot="tooltip-content">
-            Model this source with SQL
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip alignment="right" distance={16} location="bottom">
-          <Button
-            on:click={() => handleCreateDashboardFromSource(sourceName)}
-            type="primary"
-          >
-            <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall}
-              ><Add /></IconSpaceFixer
-            >
-
-            <ResponsiveButtonText collapse={isHeaderWidthSmall}>
-              Create Dashboard
-            </ResponsiveButtonText>
-          </Button>
-          <TooltipContent slot="tooltip-content">
-            Create a dashboard for this source
-          </TooltipContent>
-        </Tooltip>
+        <Button
+          on:click={() => onRevertChanges()}
+          type="secondary"
+          disabled={!isSourceUnsaved}
+        >
+          <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall(headerWidth)}>
+            <UndoIcon size="14px" />
+          </IconSpaceFixer>
+          <ResponsiveButtonText collapse={isHeaderWidthSmall(headerWidth)}>
+            Revert changes
+          </ResponsiveButtonText>
+        </Button>
+        <Button
+          label={isSourceUnsaved ? "Save and refresh" : "Refresh"}
+          on:click={() =>
+            isSourceUnsaved
+              ? onSaveAndRefreshClick(sourceName)
+              : onRefreshClick(sourceName)}
+          type={isSourceUnsaved ? "primary" : "secondary"}
+        >
+          <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall(headerWidth)}>
+            <RefreshIcon size="14px" />
+          </IconSpaceFixer>
+          <ResponsiveButtonText collapse={isHeaderWidthSmall(headerWidth)}>
+            <div class="flex">
+              {#if isSourceUnsaved}<div
+                  class="pr-1"
+                  transition:slideRight={{ duration: 250 }}
+                >
+                  Save and
+                </div>{/if}
+              {#if !isSourceUnsaved}R{:else}r{/if}efresh
+            </div>
+          </ResponsiveButtonText>
+        </Button>
+        <Button
+          on:click={handleCreateModelFromSource}
+          disabled={isSourceUnsaved || hasReconciliationErrors}
+        >
+          <ResponsiveButtonText collapse={isHeaderWidthSmall(headerWidth)}>
+            Create model
+          </ResponsiveButtonText>
+          <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall(headerWidth)}>
+            <EnterIcon size="14px" />
+          </IconSpaceFixer>
+        </Button>
       </PanelCTA>
     </svelte:fragment>
   </WorkspaceHeader>

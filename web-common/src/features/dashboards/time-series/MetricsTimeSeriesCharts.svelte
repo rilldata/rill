@@ -6,7 +6,7 @@
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import {
     humanizeDataType,
-    NicelyFormattedTypes,
+    FormatPreset,
     nicelyFormattedTypesToNumberKind,
   } from "@rilldata/web-common/features/dashboards/humanize-numbers";
   import {
@@ -48,8 +48,7 @@
 
   $: allTimeRangeQuery = useModelAllTimeRange(
     $runtime.instanceId,
-    $metaQuery.data.model,
-    $metaQuery.data.timeDimension,
+    metricViewName,
     {
       query: {
         enabled: !!$metaQuery.data.timeDimension,
@@ -235,7 +234,7 @@
 </script>
 
 <TimeSeriesChartContainer end={endValue} start={startValue} {workspaceWidth}>
-  <div class="bg-white sticky top-0" style="z-index:100">
+  <div class="bg-white sticky top-0 flex" style="z-index:100">
     <SeachableFilterButton
       label="Measures"
       on:deselect-all={setAllMeasuresNotVisible}
@@ -246,19 +245,23 @@
       tooltipText="Choose measures to display"
     />
   </div>
-  <div class="bg-white sticky left-0 top-0">
+  <div
+    class="bg-white sticky left-0 top-0 overflow-visible"
+    style="z-index:101"
+  >
     <div style:height="20px" style:padding-left="24px" />
     <!-- top axis element -->
     <div />
     {#if $dashboardStore?.selectedTimeRange}
       <SimpleDataGraphic
-        height={32}
-        top={34}
+        height={26}
+        overflowHidden={false}
+        top={29}
         bottom={0}
         xMin={startValue}
         xMax={endValue}
       >
-        <Axis superlabel side="top" />
+        <Axis superlabel side="top" placement="start" />
       </SimpleDataGraphic>
     {/if}
   </div>
@@ -275,7 +278,7 @@
           ? (bigNum - comparisonValue) / comparisonValue
           : undefined}
       {@const formatPreset =
-        NicelyFormattedTypes[measure?.format] || NicelyFormattedTypes.HUMANIZE}
+        FormatPreset[measure?.format] || FormatPreset.HUMANIZE}
       <!-- FIXME: I can't select a time series by measure id. -->
       <MeasureBigNumber
         value={bigNum}
@@ -319,7 +322,7 @@
             }}
             numberKind={nicelyFormattedTypesToNumberKind(measure?.format)}
             mouseoverFormat={(value) =>
-              formatPreset === NicelyFormattedTypes.NONE
+              formatPreset === FormatPreset.NONE
                 ? `${value}`
                 : humanizeDataType(value, measure?.format)}
           />

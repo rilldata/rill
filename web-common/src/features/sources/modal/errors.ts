@@ -86,6 +86,8 @@ export function humanReadableErrorMessage(
       } else if (hasDuckDBUnicodeError(serverError)) {
         return niceDuckdbUnicodeError(serverError);
       }
+
+      // Fallback to raw server error
       return serverError;
     }
     default:

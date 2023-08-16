@@ -24,11 +24,7 @@
   // This method has to be here since we cannot have async-await in reactive statement to set dashboardListItems
   async function updateDashboardsForProject(projectData: V1GetProjectResponse) {
     const status = projectData.prodDeployment.status;
-    if (
-      status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
-      status === V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING
-    )
-      return;
+    if (status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING) return;
 
     dashboardListItems = await getDashboardsForProject(projectData);
   }

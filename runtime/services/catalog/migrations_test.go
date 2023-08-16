@@ -623,6 +623,44 @@ measures:
 	// duplicate measure names throws error
 	testutils.AssertMigration(t, result, 1, 0, 0, 0, []string{AdBidsDashboardRepoPath})
 	require.Equal(t, "duplicate measure name: imp", result.Errors[0].Message)
+
+	time.Sleep(time.Millisecond * 10)
+	err = s.Repo.Put(context.Background(), s.InstID, AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
+timeseries: timestamp
+smallest_time_grain: 
+dimensions:
+- name: A
+  column: publisher
+- name: B
+  column: publisher
+measures:
+- expression: count(*)
+  name: imp
+`))
+	require.NoError(t, err)
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	// duplicate measure names throws error
+	testutils.AssertMigration(t, result, 1, 0, 0, 0, []string{AdBidsDashboardRepoPath})
+	require.Equal(t, `duplicate dimension column "publisher"`, result.Errors[0].Message)
+
+	time.Sleep(time.Millisecond * 10)
+	err = s.Repo.Put(context.Background(), s.InstID, AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model
+timeseries: timestamp
+smallest_time_grain: 
+dimensions:
+- name: A
+  column: publisher
+measures:
+- expression: count(*)
+  name: publisher
+`))
+	require.NoError(t, err)
+	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
+	require.NoError(t, err)
+	// duplicate measure names throws error
+	testutils.AssertMigration(t, result, 1, 0, 0, 0, []string{AdBidsDashboardRepoPath})
+	require.Equal(t, `measure name "publisher" coincides with a dimension column`, result.Errors[0].Message)
 }
 
 func TestInvalidFiles(t *testing.T) {

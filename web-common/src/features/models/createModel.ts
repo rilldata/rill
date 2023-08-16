@@ -22,7 +22,6 @@ export async function createModel(
       instanceId,
       path: getFilePathFromNameAndType(newModelName, EntityType.Model),
       blob: sql,
-      syncFromUrl: true,
       createOnly: true,
       strict: true,
     },

@@ -81,6 +81,7 @@ func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 	}
 
 	// Upsert source (in practice, this will always be an insert)
+	// NOTE: After calling upsertResource, an error must not be returned. Any validation should be done before calling it.
 	r := p.upsertResource(ResourceKindSource, node.Name, node.Paths, node.Refs...)
 	r.SourceSpec.Properties = mergeStructPB(r.SourceSpec.Properties, props)
 	if node.Connector != "" {

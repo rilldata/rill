@@ -2,6 +2,7 @@ package transporter
 
 import (
 	"context"
+	"database/sql"
 	"database/sql/driver"
 	"errors"
 	"fmt"
@@ -68,58 +69,47 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, 
 		return err
 	}
 
-	return s.to.WithRaw(ctx, 1, func(driverConn any) error {
-		var conn driver.Conn
-		// we are wrapping connections with otel connections
-		// appender need duckdb driver connection
-		if c, ok := driverConn.(rawer); ok {
-			conn = c.Raw()
-		} else {
-			conn = driverConn.(driver.Conn)
-		}
+	return s.to.WithConnection(ctx, 1, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
+		return rawConn(conn, func(conn driver.Conn) error {
+			a, err := duckdb.NewAppenderFromConn(conn, "", dbSink.Table)
+			if err != nil {
+				return err
+			}
+			defer a.Close()
 
-		if err != nil {
-			return err
-		}
+			for num := 0; ; num++ {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				default:
+					if num == _batchSize {
+						p.Observe(_batchSize, drivers.ProgressUnitRecord)
+						num = 0
+						if err := a.Flush(); err != nil {
+							return err
+						}
+					}
 
-		a, err := duckdb.NewAppenderFromConn(conn, "", dbSink.Table)
-		if err != nil {
-			return err
-		}
-		defer a.Close()
+					row, err := iter.Next(ctx)
+					if err != nil {
+						if errors.Is(err, drivers.ErrIteratorDone) {
+							p.Observe(int64(num), drivers.ProgressUnitRecord)
+							return nil
+						}
+						return err
+					}
 
-		for num := 0; ; num++ {
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			default:
-				if num == _batchSize {
-					p.Observe(_batchSize, drivers.ProgressUnitRecord)
-					num = 0
-					if err := a.Flush(); err != nil {
+					colValues := make([]driver.Value, len(row))
+					for i, col := range row {
+						colValues[i] = driver.Value(col)
+					}
+
+					if err := a.AppendRowArray(colValues); err != nil {
 						return err
 					}
 				}
-
-				row, err := iter.Next(ctx)
-				if err != nil {
-					if errors.Is(err, drivers.ErrIteratorDone) {
-						p.Observe(int64(num), drivers.ProgressUnitRecord)
-						return nil
-					}
-					return err
-				}
-
-				colValues := make([]driver.Value, len(row))
-				for i, col := range row {
-					colValues[i] = driver.Value(col)
-				}
-
-				if err := a.AppendRowArray(colValues); err != nil {
-					return err
-				}
 			}
-		}
+		})
 	})
 }
 
@@ -191,8 +181,4 @@ func pbTypeToDuckDB(code runtimev1.Type_Code) (string, error) {
 	default:
 		return "", fmt.Errorf("unknown type_code %s", code)
 	}
-}
-
-type rawer interface {
-	Raw() driver.Conn
 }

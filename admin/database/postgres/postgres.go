@@ -567,6 +567,14 @@ func (c *connection) UpdateUser(ctx context.Context, id string, opts *database.U
 	return res, nil
 }
 
+func (c *connection) UpdateUserActiveOn(ctx context.Context, ids []string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE users SET active_on=now() WHERE id=ANY($1)", ids)
+	if err != nil {
+		return parseErr("user", err)
+	}
+	return nil
+}
+
 func (c *connection) CheckUserIsAnOrganizationMember(ctx context.Context, userID, orgID string) (bool, error) {
 	var res bool
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT EXISTS (SELECT 1 FROM users_orgs_roles WHERE user_id=$1 AND org_id=$2)", userID, orgID).Scan(&res)
@@ -637,6 +645,14 @@ func (c *connection) InsertUserAuthToken(ctx context.Context, opts *database.Ins
 		return nil, parseErr("auth token", err)
 	}
 	return res, nil
+}
+
+func (c *connection) UpdateUserAuthTokenUsedOn(ctx context.Context, ids []string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE user_auth_tokens SET used_on=now() WHERE id=ANY($1)", ids)
+	if err != nil {
+		return parseErr("auth token", err)
+	}
+	return nil
 }
 
 func (c *connection) DeleteUserAuthToken(ctx context.Context, id string) error {
@@ -760,6 +776,14 @@ func (c *connection) InsertServiceAuthToken(ctx context.Context, opts *database.
 		return nil, parseErr("service auth token", err)
 	}
 	return res, nil
+}
+
+func (c *connection) UpdateServiceAuthTokenUsedOn(ctx context.Context, ids []string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE service_auth_tokens SET used_on=now() WHERE id=ANY($1)", ids)
+	if err != nil {
+		return parseErr("service auth token", err)
+	}
+	return nil
 }
 
 // DeleteServiceAuthToken deletes a service auth token.

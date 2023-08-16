@@ -102,7 +102,6 @@
             width={rect?.width - 56 || 400}
             mouseover={true}
             height={timestampDetailHeight}
-            {type}
             data={$timeSeries?.data}
             spark={$timeSeries?.spark}
             rollupTimeGrain={$timeSeries?.estimatedRollupInterval?.interval}

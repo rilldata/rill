@@ -4,7 +4,7 @@ import { EntityType } from "@rilldata/web-common/features/entity-management/type
 import {
   openFileUploadDialog,
   uploadFile,
-} from "@rilldata/web-common/features/sources/add-source/file-upload";
+} from "@rilldata/web-common/features/sources/modal/file-upload";
 import { compileCreateSourceYAML } from "@rilldata/web-common/features/sources/sourceUtils";
 import { overlay } from "@rilldata/web-common/layout/overlay-store";
 import type {
@@ -81,7 +81,6 @@ export async function refreshSource(
       instanceId,
       path: artifactPath,
       blob: yaml,
-      syncFromUrl: true,
       strict: true,
     },
   });
