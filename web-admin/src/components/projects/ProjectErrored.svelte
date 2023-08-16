@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
-  import AccessControls from "../access-controls/AccessControls.svelte";
+  import ProjectAccessControls from "./ProjectAccessControls.svelte";
 
   export let organization: string;
   export let project: string;
@@ -23,17 +23,17 @@
       Sorry, your dashboard isn't working right now!
     </h1>
     <p class="text-gray-500 text-base">
-      <AccessControls {organization} {project}>
+      <ProjectAccessControls {organization} {project}>
         <svelte:fragment slot="manage-project">
           View project logs for errors that may help you find a fix.
         </svelte:fragment>
         <svelte:fragment slot="read-project">
           Contact your organization's admin for help.
         </svelte:fragment>
-      </AccessControls>
+      </ProjectAccessControls>
     </p>
   </div>
-  <AccessControls {organization} {project}>
+  <ProjectAccessControls {organization} {project}>
     <svelte:fragment slot="manage-project">
       <CtaButton variant="primary-outline" on:click={handleViewProjectLogs}
         >View project logs
@@ -44,7 +44,7 @@
         >View project
       </CtaButton>
     </svelte:fragment>
-  </AccessControls>
+  </ProjectAccessControls>
   <p class="text-gray-500">
     Need help? Reach out to us on <a href="http://bit.ly/3jg4IsF">Discord</a>
   </p>
