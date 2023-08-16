@@ -38,12 +38,13 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 						return err
 					}
 				} else {
-					err = listProjectMembers(cmd, client, cfg.Org, projectName, strings.TrimPrefix(pageToken, "usr"), pageSize)
+					err = listProjectMembers(cmd, client, cfg.Org, projectName, pageToken, pageSize)
 					if err != nil {
 						return err
 					}
 
-					err = listProjectInvites(cmd, client, cfg.Org, projectName, strings.TrimPrefix(pageToken, "inv"), pageSize)
+					cmd.Println()
+					err = listProjectInvites(cmd, client, cfg.Org, projectName, pageToken, pageSize)
 					if err != nil {
 						return err
 					}
@@ -62,12 +63,13 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 						return err
 					}
 				} else {
-					err = listOrgMembers(cmd, client, cfg.Org, strings.TrimPrefix(pageToken, "usr"), pageSize)
+					err = listOrgMembers(cmd, client, cfg.Org, pageToken, pageSize)
 					if err != nil {
 						return err
 					}
 
-					err = listOrgInvites(cmd, client, cfg.Org, strings.TrimPrefix(pageToken, "inv"), pageSize)
+					cmd.Println()
+					err = listOrgInvites(cmd, client, cfg.Org, pageToken, pageSize)
 					if err != nil {
 						return err
 					}
@@ -102,7 +104,7 @@ func listProjectMembers(cmd *cobra.Command, client *adminclient.Client, org, pro
 	cmdutil.PrintMembers(members.Members)
 	if members.NextPageToken != "" {
 		cmd.Println()
-		cmd.Printf("Next page token for members: usr%s\n", members.NextPageToken)
+		cmd.Printf("Next page token: usr%s\n", members.NextPageToken)
 	}
 
 	return nil
@@ -122,7 +124,7 @@ func listProjectInvites(cmd *cobra.Command, client *adminclient.Client, org, pro
 	cmdutil.PrintInvites(invites.Invites)
 	if invites.NextPageToken != "" {
 		cmd.Println()
-		cmd.Printf("Next page token for invites: inv%s\n", invites.NextPageToken)
+		cmd.Printf("Next page token: inv%s\n", invites.NextPageToken)
 	}
 
 	return nil
@@ -141,7 +143,7 @@ func listOrgMembers(cmd *cobra.Command, client *adminclient.Client, org, pageTok
 	cmdutil.PrintMembers(members.Members)
 	if members.NextPageToken != "" {
 		cmd.Println()
-		cmd.Printf("Next page token for members: usr%s\n", members.NextPageToken)
+		cmd.Printf("Next page token: usr%s\n", members.NextPageToken)
 	}
 	return nil
 }
@@ -159,7 +161,7 @@ func listOrgInvites(cmd *cobra.Command, client *adminclient.Client, org, pageTok
 	cmdutil.PrintInvites(invites.Invites)
 	if invites.NextPageToken != "" {
 		cmd.Println()
-		cmd.Printf("Next page token for invites: inv%s\n", invites.NextPageToken)
+		cmd.Printf("Next page token: inv%s\n", invites.NextPageToken)
 	}
 
 	return nil
