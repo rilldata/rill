@@ -12,7 +12,7 @@
     V1DeploymentStatus,
     V1GetProjectResponse,
   } from "../../client";
-  import AccessControls from "../access-controls/AccessControls.svelte";
+  import ProjectAccessControls from "./ProjectAccessControls.svelte";
 
   export let organization: string;
   export let project: string;
@@ -67,7 +67,7 @@
             {#if !dashboardListItem.isValid}
               <Tooltip distance={8} location="right">
                 <TooltipContent slot="tooltip-content">
-                  <AccessControls {organization} {project}>
+                  <ProjectAccessControls {organization} {project}>
                     <svelte:fragment slot="manage-project">
                       <span class="text-xs">
                         This dashboard has an error. Please check the project
@@ -80,7 +80,7 @@
                         administrator.
                       </span>
                     </svelte:fragment>
-                  </AccessControls>
+                  </ProjectAccessControls>
                 </TooltipContent>
                 <Tag>Error</Tag>
               </Tooltip>

@@ -7,7 +7,7 @@
   import CtaNeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import AccessControls from "../access-controls/AccessControls.svelte";
+  import ProjectAccessControls from "./ProjectAccessControls.svelte";
 
   export let organization: string;
   export let project: string;
@@ -34,7 +34,7 @@
     <CtaHeader variant="bold"
       >Hang tight! We're building your dashboard...</CtaHeader
     >
-    <AccessControls {organization} {project}>
+    <ProjectAccessControls {organization} {project}>
       <svelte:fragment slot="manage-project">
         <CtaButton variant="primary-outline" on:click={handleViewProjectLogs}
           >View project logs
@@ -45,7 +45,7 @@
           >View project
         </CtaButton>
       </svelte:fragment>
-    </AccessControls>
+    </ProjectAccessControls>
     <CtaNeedHelp />
   </CtaContentContainer>
 </CtaLayoutContainer>
