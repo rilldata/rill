@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createAdminServiceListProjectsForOrganization } from "../../client";
   import DashboardList from "./DashboardList.svelte";
-  import DeploymentStatusChip from "./DeploymentStatusChip.svelte";
+  import ProjectDeploymentStatusChip from "./ProjectDeploymentStatusChip.svelte";
 
   export let organization: string;
 
@@ -11,22 +11,24 @@
 {#if $projs.data && $projs.data.projects?.length === 0}
   <p class="text-gray-500 text-xs">This organization has no projects yet.</p>
 {:else if $projs.data && $projs.data.projects?.length > 0}
-  <ol class="space-y-3 px-3 border-l border-gray-300">
+  <ol class="space-y-3">
     {#each $projs.data.projects as proj}
       <li>
         <a
           class="flex max-w-fit items-center gap-x-1 mb-1 hover:underline hover:text-gray-700"
           href="{organization}/{proj.name}"
         >
-          <DeploymentStatusChip {organization} project={proj.name} iconOnly />
+          <ProjectDeploymentStatusChip
+            {organization}
+            project={proj.name}
+            iconOnly
+          />
           <h3 class="text-gray-500 font-semibold text-[10px]">
             {proj.name.toUpperCase()}
           </h3>
         </a>
 
-        <div class="ml-4">
-          <DashboardList {organization} project={proj.name} />
-        </div>
+        <DashboardList {organization} project={proj.name} />
       </li>
     {/each}
   </ol>

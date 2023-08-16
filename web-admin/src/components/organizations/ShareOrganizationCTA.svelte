@@ -6,7 +6,7 @@
   const addUserCommand = `rill user add --org ${organization} --role viewer`;
 </script>
 
-<div class="flex flex-col mt-10">
+<div class="flex flex-col">
   <span class="uppercase text-gray-500 font-semibold text-[10px] leading-4"
     >Share</span
   >

@@ -1,13 +1,12 @@
 <script lang="ts">
+  import VerticalScrollContainer from "@rilldata/web-common/layout/VerticalScrollContainer.svelte";
   import {
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizations,
   } from "../client";
   import AuthRedirect from "../components/authentication/AuthRedirect.svelte";
-  import OrganizationList from "../components/home/OrganizationList.svelte";
   import WelcomeMessage from "../components/home/WelcomeMessage.svelte";
-
-  import VerticalScrollContainer from "@rilldata/web-common/layout/VerticalScrollContainer.svelte";
+  import OrganizationList from "../components/organizations/OrganizationList.svelte";
 
   const user = createAdminServiceGetCurrentUser();
   const orgs = createAdminServiceListOrganizations();
