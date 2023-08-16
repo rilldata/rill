@@ -222,19 +222,27 @@ const metricViewReducers = {
   init(
     name: string,
     metricsView: V1MetricsView,
-    fullTimeRange: V1ColumnTimeRangeResponse
+    fullTimeRange: V1ColumnTimeRangeResponse | undefined
   ) {
     update((state) => {
       if (state.entities[name]) return state;
 
-      const timeZone = get(getLocalUserPreferences()).timeZone;
-      const timeRange = convertTimeRangePreset(
-        TimeRangePreset.ALL_TIME,
-        new Date(fullTimeRange.timeRangeSummary.min),
-        new Date(fullTimeRange.timeRangeSummary.max),
-        timeZone
-      );
-      const timeGrain = getDefaultTimeGrain(timeRange.start, timeRange.end);
+      const timeSelections: Partial<MetricsExplorerEntity> = {};
+      if (fullTimeRange) {
+        const timeZone = get(getLocalUserPreferences()).timeZone;
+        const timeRange = convertTimeRangePreset(
+          TimeRangePreset.ALL_TIME,
+          new Date(fullTimeRange.timeRangeSummary.min),
+          new Date(fullTimeRange.timeRangeSummary.max),
+          timeZone
+        );
+        const timeGrain = getDefaultTimeGrain(timeRange.start, timeRange.end);
+        timeSelections.selectedTimezone = timeZone;
+        timeSelections.selectedTimeRange = {
+          ...timeRange,
+          interval: timeGrain.grain,
+        };
+      }
 
       state.entities[name] = {
         name,
@@ -258,11 +266,7 @@ const metricViewReducers = {
         dimensionFilterExcludeMode: new Map(),
         leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
 
-        selectedTimezone: timeZone,
-        selectedTimeRange: {
-          ...timeRange,
-          interval: timeGrain.grain,
-        },
+        ...timeSelections,
       };
 
       updateMetricsExplorerProto(state.entities[name]);
