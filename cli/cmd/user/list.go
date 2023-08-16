@@ -11,6 +11,8 @@ import (
 
 func ListCmd(cfg *config.Config) *cobra.Command {
 	var projectName string
+	var pageSize uint32
+	var pageToken string
 
 	listCmd := &cobra.Command{
 		Use:   "list",
@@ -26,6 +28,8 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 				members, err := client.ListProjectMembers(context.Background(), &adminv1.ListProjectMembersRequest{
 					Organization: cfg.Org,
 					Project:      projectName,
+					PageSize:     pageSize,
+					PageToken:    pageToken,
 				})
 				if err != nil {
 					return err
@@ -34,17 +38,31 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 				invites, err := client.ListProjectInvites(context.Background(), &adminv1.ListProjectInvitesRequest{
 					Organization: cfg.Org,
 					Project:      projectName,
+					PageSize:     pageSize,
+					PageToken:    pageToken,
 				})
 				if err != nil {
 					return err
 				}
 
 				cmdutil.PrintMembers(members.Members)
+				if members.NextPageToken != "" {
+					cmd.Println()
+					cmd.Printf("Next page token: %s\n", members.NextPageToken)
+				}
+
 				cmdutil.PrintInvites(invites.Invites)
+				if invites.NextPageToken != "" {
+					cmd.Println()
+					cmd.Printf("Next page token: %s\n", invites.NextPageToken)
+				}
+
 				// TODO: user groups
 			} else {
 				members, err := client.ListOrganizationMembers(context.Background(), &adminv1.ListOrganizationMembersRequest{
 					Organization: cfg.Org,
+					PageSize:     pageSize,
+					PageToken:    pageToken,
 				})
 				if err != nil {
 					return err
@@ -52,13 +70,24 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 
 				invites, err := client.ListOrganizationInvites(context.Background(), &adminv1.ListOrganizationInvitesRequest{
 					Organization: cfg.Org,
+					PageSize:     pageSize,
+					PageToken:    pageToken,
 				})
 				if err != nil {
 					return err
 				}
 
 				cmdutil.PrintMembers(members.Members)
+				if members.NextPageToken != "" {
+					cmd.Println()
+					cmd.Printf("Next page token: %s\n", members.NextPageToken)
+				}
+
 				cmdutil.PrintInvites(invites.Invites)
+				if invites.NextPageToken != "" {
+					cmd.Println()
+					cmd.Printf("Next page token: %s\n", invites.NextPageToken)
+				}
 				// TODO: user groups
 			}
 
@@ -68,6 +97,8 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 
 	listCmd.Flags().StringVar(&cfg.Org, "org", cfg.Org, "Organization")
 	listCmd.Flags().StringVar(&projectName, "project", "", "Project")
+	listCmd.Flags().Uint32Var(&pageSize, "page-size", 50, "Number of users to return per page")
+	listCmd.Flags().StringVar(&pageToken, "page-token", "", "Pagination token")
 
 	return listCmd
 }
