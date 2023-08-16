@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"testing"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
@@ -583,9 +583,9 @@ func getColumnTestServerWithModel(t *testing.T, sql string, expectation int) (*S
 	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
-	olap, err := rt.OLAP(testCtx(), instanceID)
+	olap, release, err := rt.OLAP(testCtx(), instanceID)
 	require.NoError(t, err)
-
+	defer release()
 	res, err := olap.Execute(testCtx(), &drivers.Statement{Query: "SELECT count(*) FROM test"})
 	require.NoError(t, err)
 	defer res.Close()

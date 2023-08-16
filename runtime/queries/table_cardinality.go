@@ -46,10 +46,11 @@ func (q *TableCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		safeName(q.TableName),
 	)
 
-	olap, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID)
 	if err != nil {
 		return err
 	}
+	defer release()
 
 	if olap.Dialect() != drivers.DialectDuckDB {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())

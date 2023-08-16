@@ -13,7 +13,6 @@
     getFilterForDimension,
     useMetaDimension,
     useMetaMeasure,
-    useMetaQuery,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import {
@@ -23,7 +22,12 @@
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
+  import {
+    metricsExplorerStore,
+    useComparisonRange,
+    useDashboardStore,
+    useFetchTimeRange,
+  } from "../dashboard-stores";
   import { getFilterForComparsion } from "../dimension-table/dimension-table-utils";
   import type { FormatPreset } from "../humanize-numbers";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
@@ -47,7 +51,8 @@
   const queryClient = useQueryClient();
 
   $: dashboardStore = useDashboardStore(metricViewName);
-  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
+  $: fetchTimeStore = useFetchTimeRange(metricViewName);
+  $: comparisonStore = useComparisonRange(metricViewName);
 
   let filterExcludeMode: boolean;
   $: filterExcludeMode =
@@ -99,8 +104,8 @@
     metricsExplorerStore.setMetricDimensionName(metricViewName, dimensionName);
   }
 
-  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
-  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
+  $: timeStart = $fetchTimeStore?.start?.toISOString();
+  $: timeEnd = $fetchTimeStore?.end?.toISOString();
   $: topListQuery = createQueryServiceMetricsViewToplist(
     $runtime.instanceId,
     metricViewName,
@@ -182,10 +187,8 @@
     dimensionName,
     currentVisibleValues
   );
-  $: comparisonTimeStart =
-    $dashboardStore?.selectedComparisonTimeRange?.start?.toISOString();
-  $: comparisonTimeEnd =
-    $dashboardStore?.selectedComparisonTimeRange?.end?.toISOString();
+  $: comparisonTimeStart = $comparisonStore?.start;
+  $: comparisonTimeEnd = $comparisonStore?.end;
   $: comparisonTopListQuery = createQueryServiceMetricsViewToplist(
     $runtime.instanceId,
     metricViewName,

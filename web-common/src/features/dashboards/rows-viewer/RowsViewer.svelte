@@ -5,7 +5,7 @@
     createQueryServiceMetricsViewRows,
     createQueryServiceTableColumns,
   } from "@rilldata/web-common/runtime-client";
-  import { useDashboardStore } from "../dashboard-stores";
+  import { useDashboardStore, useFetchTimeRange } from "../dashboard-stores";
   import PreviewTable from "@rilldata/web-common/components/preview-table/PreviewTable.svelte";
   import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
   import { writable } from "svelte/store";
@@ -16,6 +16,7 @@
   const FALLBACK_SAMPLE_SIZE = 1000;
 
   $: dashboardStore = useDashboardStore(metricViewName);
+  $: fetchTimeStore = useFetchTimeRange(metricViewName);
 
   $: modelName = useMetaQuery<string>(
     $runtime.instanceId,
@@ -31,8 +32,8 @@
   );
   $: hasTimeSeries = $metricTimeSeries.data;
 
-  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
-  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
+  $: timeStart = $fetchTimeStore?.start?.toISOString();
+  $: timeEnd = $fetchTimeStore?.end?.toISOString();
 
   let limit = writable(SAMPLE_SIZE);
 
