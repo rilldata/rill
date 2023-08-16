@@ -9,10 +9,7 @@
     getComparisonRange,
     getTimeComparisonParametersForComponent,
   } from "@rilldata/web-common/lib/time/comparisons";
-  import {
-    DEFAULT_TIMEZONES,
-    DEFAULT_TIME_RANGES,
-  } from "@rilldata/web-common/lib/time/config";
+  import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
   import {
     checkValidTimeGrain,
     getDefaultTimeGrain,
@@ -98,10 +95,16 @@
     availableTimeZones =
       $metricsViewQuery?.data?.entry?.metricsView?.availableTimeZones;
 
-    // For legacy dashboards, we need to set the available time
-    // zones to the default if they are not defined.
+    /**
+     * Remove the timezone selector if no timezone key is present
+     * or the available timezone list is empty. Set the default
+     * timezone to UTC in such cases.
+     *
+     */
+
     if (!availableTimeZones?.length) {
-      availableTimeZones = DEFAULT_TIMEZONES;
+      metricsExplorerStore.setTimeZone(metricViewName, "Etc/UTC");
+      localUserPreferences.set({ timeZone: "Etc/UTC" });
     }
   }
   $: allTimeRange = $allTimeRangeQuery?.data as TimeRange;
@@ -335,12 +338,14 @@
         metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
       }}
     />
-    <TimeZoneSelector
-      on:select-time-zone={(e) => onSelectTimeZone(e.detail.timeZone)}
-      {metricViewName}
-      {availableTimeZones}
-      now={allTimeRange?.end}
-    />
+    {#if availableTimeZones?.length}
+      <TimeZoneSelector
+        on:select-time-zone={(e) => onSelectTimeZone(e.detail.timeZone)}
+        {metricViewName}
+        {availableTimeZones}
+        now={allTimeRange?.end}
+      />
+    {/if}
     <TimeComparisonSelector
       on:select-comparison={(e) => {
         onSelectComparisonRange(e.detail.name, e.detail.start, e.detail.end);
