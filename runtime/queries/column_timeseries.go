@@ -253,7 +253,7 @@ func (q *ColumnTimeseries) Export(ctx context.Context, rt *runtime.Runtime, inst
 	return ErrExportNotSupported
 }
 
-func resolveNormaliseTimeRange(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, tableName string, timestampColumnName string, timeRange *runtimev1.TimeSeriesTimeRange) (*runtimev1.TimeSeriesTimeRange, error) {
+func resolveNormaliseTimeRange(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, tableName, timestampColumnName string, timeRange *runtimev1.TimeSeriesTimeRange) (*runtimev1.TimeSeriesTimeRange, error) {
 	ct := &ColumnTimeseries{
 		TableName:           tableName,
 		TimestampColumnName: timestampColumnName,
