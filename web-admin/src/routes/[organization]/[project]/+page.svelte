@@ -1,10 +1,8 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import VerticalScrollContainer from "@rilldata/web-common/layout/VerticalScrollContainer.svelte";
-  import ProjectDashboards from "../../../components/projects/ProjectDashboards.svelte";
-  import ProjectDeploymentStatus from "../../../components/projects/ProjectDeploymentStatus.svelte";
-  import ProjectGithubConnection from "../../../components/projects/ProjectGithubConnection.svelte";
-  import ShareProjectCta from "../../../components/projects/ShareProjectCTA.svelte";
+  import DashboardList from "../../../components/projects/DashboardList.svelte";
+  import ProjectHero from "../../../components/projects/ProjectHero.svelte";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -14,20 +12,10 @@
   <title>{project} overview - Rill</title>
 </svelte:head>
 <VerticalScrollContainer>
-  <div class="flex flex-col items-center">
-    <div
-      class="flex flex-row border-b border-gray-200 w-full px-12 py-5 gap-x-10"
-    >
-      <div class="flex flex-col space-y-4 w-[340px]">
-        <ProjectDeploymentStatus {organization} {project} />
-        <ProjectGithubConnection {organization} {project} />
-      </div>
-      <div class="w-[340px]">
-        <ProjectDashboards {organization} {project} />
-      </div>
-      <div class="flex">
-        <ShareProjectCta {organization} {project} />
-      </div>
-    </div>
+  <div
+    class="mx-8 my-8 sm:my-16 sm:mx-16 lg:mx-32 lg:my-24 2xl:mx-40 flex flex-col gap-y-4"
+  >
+    <ProjectHero {organization} {project} />
+    <DashboardList {organization} {project} />
   </div>
 </VerticalScrollContainer>
