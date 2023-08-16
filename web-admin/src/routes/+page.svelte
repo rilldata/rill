@@ -1,5 +1,4 @@
 <script lang="ts">
-  import HomeShareCTA from "@rilldata/web-admin/components/home/HomeShareCTA.svelte";
   import {
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizations,
@@ -32,23 +31,16 @@
       <h1 class="text-4xl leading-10 font-light mb-2">
         Hi {getFirstNameFromDisplayName($user.data.user.displayName)}!
       </h1>
-      <div class="flex flex-row gap-x-7 flex-wrap">
-        <div class="md:w-1/2">
-          {#if $orgs.isSuccess}
-            {#if !hasAnOrganization}
-              <WelcomeMessage />
-            {:else}
-              <h3 class="text-base leading-6 font-normal text-gray-500 mb-3">
-                Check out your dashboards below.
-              </h3>
-              <OrganizationList />
-            {/if}
-          {/if}
-        </div>
-        {#if hasAnOrganization}
-          <HomeShareCTA />
+      {#if $orgs.isSuccess}
+        {#if !hasAnOrganization}
+          <WelcomeMessage />
+        {:else}
+          <h3 class="text-base leading-6 font-normal text-gray-500 mb-3">
+            Check out your dashboards below.
+          </h3>
+          <OrganizationList />
         {/if}
-      </div>
+      {/if}
     </section>
   </VerticalScrollContainer>
 </AuthRedirect>
