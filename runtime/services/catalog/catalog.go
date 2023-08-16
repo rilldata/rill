@@ -18,7 +18,8 @@ type Service struct {
 	InstID        string
 	logger        *zap.Logger
 
-	Meta *MigrationMeta
+	Meta        *MigrationMeta
+	releaseFunc func()
 }
 
 func NewService(
@@ -29,6 +30,7 @@ func NewService(
 	instID string,
 	logger *zap.Logger,
 	m *MigrationMeta,
+	release func(),
 ) *Service {
 	if logger == nil {
 		logger = zap.NewNop()
@@ -44,11 +46,12 @@ func NewService(
 		InstID:        instID,
 		logger:        logger,
 		Meta:          m,
+		releaseFunc:   release,
 	}
 }
 
 func (s *Service) FindEntries(ctx context.Context, typ drivers.ObjectType) ([]*drivers.CatalogEntry, error) {
-	entries, err := s.Catalog.FindEntries(ctx, s.InstID, typ)
+	entries, err := s.Catalog.FindEntries(ctx, typ)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +66,7 @@ func (s *Service) FindEntries(ctx context.Context, typ drivers.ObjectType) ([]*d
 }
 
 func (s *Service) FindEntry(ctx context.Context, name string) (*drivers.CatalogEntry, error) {
-	entry, err := s.Catalog.FindEntry(ctx, s.InstID, name)
+	entry, err := s.Catalog.FindEntry(ctx, name)
 	if err != nil {
 		return nil, err
 	}
@@ -73,6 +76,10 @@ func (s *Service) FindEntry(ctx context.Context, name string) (*drivers.CatalogE
 		s.Meta.fillDAGInEntry(entry)
 	}
 	return entry, nil
+}
+
+func (s *Service) Close() {
+	s.releaseFunc()
 }
 
 type MigrationMeta struct {

@@ -126,10 +126,11 @@ func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap d
 }
 
 func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID)
 	if err != nil {
 		return err
 	}
+	defer release()
 
 	if olap.Dialect() != drivers.DialectDuckDB {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
@@ -237,10 +238,11 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 }
 
 func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID)
 	if err != nil {
 		return err
 	}
+	defer release()
 
 	if olap.Dialect() != drivers.DialectDuckDB {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())

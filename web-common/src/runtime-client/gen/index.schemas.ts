@@ -320,28 +320,16 @@ export type RuntimeServiceListCatalogEntriesParams = {
   type?: RuntimeServiceListCatalogEntriesType;
 };
 
-export type RuntimeServiceEditInstanceAnnotationsBodyAnnotations = {
-  [key: string]: string;
-};
-
-/**
- * Request message for RuntimeService.EditInstanceAnnotations.
- */
-export type RuntimeServiceEditInstanceAnnotationsBody = {
-  annotations?: RuntimeServiceEditInstanceAnnotationsBodyAnnotations;
-};
-
 /**
  * Request message for RuntimeService.EditInstance.
 See message Instance for field descriptions.
  */
 export type RuntimeServiceEditInstanceBody = {
   olapDriver?: string;
-  olapDsn?: string;
   repoDriver?: string;
-  repoDsn?: string;
   embedCatalog?: boolean;
   ingestionLimitBytes?: string;
+  connectors?: V1Connector[];
 };
 
 export type RuntimeServiceEditInstanceVariablesBodyVariables = {
@@ -740,16 +728,6 @@ export interface V1RefreshAndReconcileRequest {
   strict?: boolean;
 }
 
-export interface V1ReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-}
-
 /**
  * - CODE_UNSPECIFIED: Unspecified error
  - CODE_SYNTAX: Code artifact failed to parse
@@ -792,6 +770,16 @@ Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: V1ReconcileErrorCharLocation;
   endLocation?: V1ReconcileErrorCharLocation;
+}
+
+export interface V1ReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
 }
 
 export type V1QueryResponseDataItem = { [key: string]: any };
@@ -887,12 +875,6 @@ export interface V1PullTrigger {
   state?: V1PullTriggerState;
 }
 
-export interface V1ProjectParserState {
-  parseErrors?: V1ParseError[];
-  currentCommitSha?: string;
-  changedPaths?: string[];
-}
-
 export interface V1ProjectParserSpec {
   compiler?: string;
   watch?: boolean;
@@ -923,6 +905,12 @@ export interface V1ParseError {
   message?: string;
   filePath?: string;
   startLocation?: Runtimev1CharLocation;
+}
+
+export interface V1ProjectParserState {
+  parseErrors?: V1ParseError[];
+  currentCommitSha?: string;
+  changedPaths?: string[];
 }
 
 export type V1ObjectType = (typeof V1ObjectType)[keyof typeof V1ObjectType];
@@ -1045,6 +1033,21 @@ export interface V1MetricsViewToplistResponse {
   data?: V1MetricsViewToplistResponseDataItem[];
 }
 
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  filter?: V1MetricsViewFilter;
+  priority?: number;
+}
+
 export interface V1MetricsViewTimeSeriesResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1TimeSeriesValue[];
@@ -1092,29 +1095,9 @@ export interface V1MetricsViewSort {
 
 export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
 
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
-}
-
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
-}
-
-export interface V1MetricsViewToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  limit?: string;
-  offset?: string;
-  sort?: V1MetricsViewSort[];
-  filter?: V1MetricsViewFilter;
-  priority?: number;
 }
 
 export interface V1MetricsViewRowsRequest {
@@ -1137,10 +1120,6 @@ export interface V1MetricsViewComparisonValue {
   comparisonValue?: unknown;
   deltaAbs?: unknown;
   deltaRel?: unknown;
-}
-
-export interface V1MetricsViewComparisonToplistResponse {
-  rows?: V1MetricsViewComparisonRow[];
 }
 
 export type V1MetricsViewComparisonSortType =
@@ -1186,10 +1165,19 @@ export interface V1MetricsViewComparisonRow {
   measureValues?: V1MetricsViewComparisonValue[];
 }
 
+export interface V1MetricsViewComparisonToplistResponse {
+  rows?: V1MetricsViewComparisonRow[];
+}
+
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
   nullable?: boolean;
+}
+
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
 }
 
 export interface V1MetricsView {
@@ -1250,7 +1238,7 @@ export interface V1ListExamplesResponse {
 }
 
 export interface V1ListConnectorsResponse {
-  connectors?: V1Connector[];
+  connectors?: V1ConnectorSpec[];
 }
 
 export interface V1ListCatalogEntriesResponse {
@@ -1272,17 +1260,17 @@ just a single instance.
 export interface V1Instance {
   instanceId?: string;
   olapDriver?: string;
-  olapDsn?: string;
   /** Driver for reading/editing code artifacts (options: file, metastore, github).
 This enables virtualizing a file system in a cloud setting. */
   repoDriver?: string;
-  repoDsn?: string;
   /** If true, the runtime will store the instance's catalog in its OLAP store instead
 of in the runtime's metadata store. Currently only supported for the duckdb driver. */
   embedCatalog?: boolean;
   variables?: V1InstanceVariables;
   projectVariables?: V1InstanceProjectVariables;
   ingestionLimitBytes?: string;
+  /** bare minimum connectors required by the instance. */
+  connectors?: V1Connector[];
 }
 
 export interface V1InlineMeasure {
@@ -1387,10 +1375,6 @@ export interface V1EditInstanceResponse {
   instance?: V1Instance;
 }
 
-export interface V1EditInstanceAnnotationsResponse {
-  instance?: V1Instance;
-}
-
 export interface V1DeleteInstanceResponse {
   [key: string]: any;
 }
@@ -1436,24 +1420,32 @@ See message Instance for field descriptions.
 export interface V1CreateInstanceRequest {
   instanceId?: string;
   olapDriver?: string;
-  olapDsn?: string;
   repoDriver?: string;
-  repoDsn?: string;
   embedCatalog?: boolean;
   variables?: V1CreateInstanceRequestVariables;
   ingestionLimitBytes?: string;
   annotations?: V1CreateInstanceRequestAnnotations;
+  connectors?: V1Connector[];
 }
 
 /**
- * Connector represents a connector available in the runtime.
+ * ConnectorSpec represents a connector available in the runtime.
 It should not be confused with a source.
  */
-export interface V1Connector {
+export interface V1ConnectorSpec {
   name?: string;
   displayName?: string;
   description?: string;
-  properties?: ConnectorProperty[];
+  properties?: ConnectorSpecProperty[];
+}
+
+export type V1ConnectorConfig = { [key: string]: string };
+
+export interface V1Connector {
+  /** Type of the connector. One of the infra driver supported. */
+  type?: string;
+  name?: string;
+  config?: V1ConnectorConfig;
 }
 
 export interface V1ColumnTopKResponse {
@@ -1777,11 +1769,11 @@ export interface MetricsViewDimension {
   column?: string;
 }
 
-export type ConnectorPropertyType =
-  (typeof ConnectorPropertyType)[keyof typeof ConnectorPropertyType];
+export type ConnectorSpecPropertyType =
+  (typeof ConnectorSpecPropertyType)[keyof typeof ConnectorSpecPropertyType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const ConnectorPropertyType = {
+export const ConnectorSpecPropertyType = {
   TYPE_UNSPECIFIED: "TYPE_UNSPECIFIED",
   TYPE_STRING: "TYPE_STRING",
   TYPE_NUMBER: "TYPE_NUMBER",
@@ -1789,12 +1781,12 @@ export const ConnectorPropertyType = {
   TYPE_INFORMATIONAL: "TYPE_INFORMATIONAL",
 } as const;
 
-export interface ConnectorProperty {
+export interface ConnectorSpecProperty {
   key?: string;
   displayName?: string;
   description?: string;
   placeholder?: string;
-  type?: ConnectorPropertyType;
+  type?: ConnectorSpecPropertyType;
   nullable?: boolean;
   hint?: string;
   href?: string;

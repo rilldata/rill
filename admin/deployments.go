@@ -84,14 +84,24 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
 		InstanceId:          instanceID,
-		OlapDriver:          olapDriver,
-		OlapDsn:             olapDSN,
-		RepoDriver:          repoDriver,
-		RepoDsn:             repoDSN,
+		OlapDriver:          "olap",
+		RepoDriver:          "repo",
 		EmbedCatalog:        embedCatalog,
 		Variables:           opts.ProdVariables,
 		IngestionLimitBytes: ingestionLimit,
 		Annotations:         opts.Annotations,
+		Connectors: []*runtimev1.Connector{
+			{
+				Name:   "olap",
+				Type:   olapDriver,
+				Config: map[string]string{"dsn": olapDSN},
+			},
+			{
+				Name:   "repo",
+				Type:   repoDriver,
+				Config: map[string]string{"dsn": repoDSN},
+			},
+		},
 	})
 	if err != nil {
 		return nil, err
@@ -143,10 +153,24 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 	}
 	defer rt.Close()
 
+	res, err := rt.GetInstance(ctx, &runtimev1.GetInstanceRequest{InstanceId: depl.RuntimeInstanceID})
+	if err != nil {
+		return err
+	}
+	connectors := res.Instance.Connectors
+	for _, c := range connectors {
+		if c.Name == "repo" {
+			if c.Config == nil {
+				c.Config = make(map[string]string)
+			}
+			c.Config["dsn"] = repoDSN
+			c.Type = repoDriver
+		}
+	}
+
 	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
 		InstanceId: depl.RuntimeInstanceID,
-		RepoDriver: &repoDriver,
-		RepoDsn:    &repoDSN,
+		Connectors: connectors,
 	})
 	if err != nil {
 		return err

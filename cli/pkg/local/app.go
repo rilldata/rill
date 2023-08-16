@@ -17,6 +17,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/update"
 	"github.com/rilldata/rill/cli/pkg/variable"
 	"github.com/rilldata/rill/cli/pkg/web"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -78,12 +79,20 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 	}
 
 	// Create a local runtime with an in-memory metastore
+	systemConnectors := []*runtimev1.Connector{
+		{
+			Type:   "sqlite",
+			Name:   "metastore",
+			Config: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
+		},
+	}
+
 	rtOpts := &runtime.Options{
 		ConnectionCacheSize: 100,
-		MetastoreDriver:     "sqlite",
-		MetastoreDSN:        "file:rill?mode=memory&cache=shared",
+		MetastoreConnector:  "metastore",
 		QueryCacheSizeBytes: int64(datasize.MB * 100),
 		AllowHostAccess:     true,
+		SystemConnectors:    systemConnectors,
 	}
 	rt, err := runtime.New(rtOpts, logger, client)
 	if err != nil {
@@ -114,12 +123,22 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 	inst := &drivers.Instance{
 		ID:           DefaultInstanceID,
 		Annotations:  map[string]string{},
-		OLAPDriver:   olapDriver,
-		OLAPDSN:      olapDSN,
-		RepoDriver:   "file",
-		RepoDSN:      projectPath,
+		OLAPDriver:   "olap",
+		RepoDriver:   "repo",
 		EmbedCatalog: olapDriver == "duckdb",
 		Variables:    parsedVariables,
+		Connectors: []*runtimev1.Connector{
+			{
+				Type:   "file",
+				Name:   "repo",
+				Config: map[string]string{"dsn": projectPath},
+			},
+			{
+				Type:   olapDriver,
+				Name:   "olap",
+				Config: map[string]string{"dsn": olapDSN},
+			},
+		},
 	}
 	err = rt.CreateInstance(ctx, inst)
 	if err != nil {
@@ -157,10 +176,11 @@ func (a *App) Close() error {
 }
 
 func (a *App) IsProjectInit() bool {
-	repo, err := a.Runtime.Repo(a.Context, a.Instance.ID)
+	repo, release, err := a.Runtime.Repo(a.Context, a.Instance.ID)
 	if err != nil {
 		panic(err) // checks in New should ensure it never happens
 	}
+	defer release()
 
 	c := rillv1beta.New(repo, a.Instance.ID)
 	return c.IsInit(a.Context)
