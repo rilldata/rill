@@ -36,7 +36,7 @@
 {#if dashboardListItems?.length === 0}
   <p class="text-gray-500 text-xs">This project has no dashboards yet.</p>
 {:else if dashboardListItems?.length > 0}
-  <ol class="flex flex-col gap-y-4 w-fit max-w-full 2xl:max-w-[1200px]">
+  <ol class="flex flex-col gap-y-4 max-w-full 2xl:max-w-[1200px]">
     {#each dashboardListItems as dashboardListItem}
       <li class="w-full h-[52px] border rounded">
         <svelte:element
@@ -55,11 +55,12 @@
             <DashboardIcon size={"14px"} />
           </div>
 
-          <div
-            class="flex items-center gap-x-10 w-full max-w-[calc(100%-2rem)]"
-          >
+          <div class="flex items-center gap-x-10">
             <!-- Name -->
-            <span class="text-sm font-medium truncate">
+            <span
+              class="text-sm font-medium w-[250px] shrink-0 truncate"
+              title={dashboardListItem?.title || dashboardListItem.name}
+            >
               {dashboardListItem?.title || dashboardListItem.name}
             </span>
 
@@ -90,7 +91,7 @@
             {#if dashboardListItem.description}
               <!-- Note: line-clamp-2 uses `display: -webkit-box;` which overrides the `hidden` class -->
               <span
-                class="text-gray-800 text-xs font-light break-normal hidden md:line-clamp-2"
+                class="text-gray-800 text-xs font-light break-normal hidden sm:line-clamp-2"
                 >{dashboardListItem.description}</span
               >
             {/if}
