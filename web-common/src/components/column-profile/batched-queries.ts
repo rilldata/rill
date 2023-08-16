@@ -8,7 +8,6 @@ import {
   createQueryServiceColumnTimeGrain,
   createQueryServiceColumnTimeSeries,
   createQueryServiceColumnTopK,
-  createQueryServiceTableCardinality,
   QueryServiceColumnNumericHistogramHistogramMethod,
   V1QueryBatchEntry,
   V1QueryBatchResponse,
@@ -301,33 +300,6 @@ export function createBatchedColumnDescriptiveStatisticsQuery(
   );
 }
 
-export function createBatchedTableCardinalityQuery(
-  instanceId: string,
-  tableName: string,
-  batchedRequest: BatchedRequest
-) {
-  return createQueryServiceTableCardinality(
-    instanceId,
-    tableName,
-    {},
-    {
-      query: {
-        queryFn: wrapQueryFunction(
-          batchedRequest,
-          {
-            tableCardinalityRequest: {
-              instanceId,
-              tableName,
-            },
-          },
-          "table-cardinality",
-          "tableCardinalityResponse"
-        ),
-      },
-    }
-  );
-}
-
 function wrapQueryFunction(
   batchedRequest: BatchedRequest,
   request: V1QueryBatchEntry,
@@ -338,7 +310,7 @@ function wrapQueryFunction(
   return ({ signal }) => {
     return new Promise((resolve, reject) => {
       const priority = getPriority(type);
-      batchedRequest[Object.keys(batchedRequest)[0]].priority = priority;
+      request[Object.keys(request)[0]].priority = priority;
       batchedRequest.add(
         request,
         priority,

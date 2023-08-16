@@ -14,7 +14,6 @@
   import { defaultSort, sortByName, sortByNullity } from "./utils";
 
   export let containerWidth = 0;
-  // const queryClient = useQueryClient();
   export let objectName: string;
   export let indentLevel = 0;
 
@@ -49,17 +48,20 @@
     }
   );
 
-  let nestedColumnProfileQuery;
   let batchedQuery: Readable<boolean>;
+  $: if ($profileColumns) {
+    batchedQuery = batchedProfileQuery(
+      $runtime?.instanceId,
+      objectName,
+      $profileColumns
+    );
+  }
+
+  let nestedColumnProfileQuery;
   $: if ($profileColumns?.data?.profileColumns) {
     nestedColumnProfileQuery = getSummaries(
       objectName,
       $runtime?.instanceId,
-      $profileColumns
-    );
-    batchedQuery = batchedProfileQuery(
-      $runtime?.instanceId,
-      objectName,
       $profileColumns
     );
   }

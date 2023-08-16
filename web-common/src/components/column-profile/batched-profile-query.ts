@@ -8,7 +8,6 @@ import {
   createBatchedColumnTimeSeriesQuery,
   createBatchedColumnTopKQuery,
   createBatchedServiceColumnRollupIntervalQuery,
-  createBatchedTableCardinalityQuery,
 } from "@rilldata/web-common/components/column-profile/batched-queries";
 import {
   CATEGORICALS,
@@ -36,9 +35,6 @@ export function batchedProfileQuery(
 
   const batchedRequest = new BatchedRequest();
   const stores = new Array<CreateQueryResult>();
-  stores.push(
-    createBatchedTableCardinalityQuery(instanceId, tableName, batchedRequest)
-  );
   for (const column of profileColumnResponse.data.profileColumns) {
     stores.push(
       createBatchedColumnNullCount(

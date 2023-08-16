@@ -17,7 +17,7 @@ export class BatchedRequest {
   private expectedRequests = 0;
 
   public get ready() {
-    return this.expectedRequests === this.requests.length;
+    return this.expectedRequests >= this.requests.length;
   }
 
   public register() {

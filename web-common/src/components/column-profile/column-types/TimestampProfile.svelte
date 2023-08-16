@@ -35,13 +35,15 @@
   $: nullPercentage = getNullPercentage(
     $runtime?.instanceId,
     objectName,
-    columnName
+    columnName,
+    enableProfiling
   );
 
   $: timeSeries = getTimeSeriesAndSpark(
     $runtime?.instanceId,
     objectName,
-    columnName
+    columnName,
+    enableProfiling
   );
 
   function toggleColumnProfile() {

@@ -5,20 +5,16 @@
     INTERVALS,
     isFloat,
   } from "@rilldata/web-common/lib/duckdb-data-types";
-  import {
-    QueryServiceColumnNumericHistogramHistogramMethod,
-    createQueryServiceColumnDescriptiveStatistics,
-    createQueryServiceColumnRugHistogram,
-  } from "@rilldata/web-common/runtime-client";
-  import { getPriorityForColumn } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
-  import { derived } from "svelte/store";
+  import { QueryServiceColumnNumericHistogramHistogramMethod } from "@rilldata/web-common/runtime-client";
   import { httpRequestQueue } from "../../../runtime-client/http-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import ColumnProfileIcon from "../ColumnProfileIcon.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
   import {
+    getDescriptiveStatistics,
     getNullPercentage,
     getNumericHistogram,
+    getRugHistogram,
     getTopK,
     isFetching,
   } from "../queries";
@@ -41,13 +37,19 @@
 
   let active = false;
 
-  $: nulls = getNullPercentage($runtime?.instanceId, objectName, columnName);
+  $: nulls = getNullPercentage(
+    $runtime?.instanceId,
+    objectName,
+    columnName,
+    enableProfiling
+  );
 
   $: diagnosticHistogram = getNumericHistogram(
     $runtime?.instanceId,
     objectName,
     columnName,
-    QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_DIAGNOSTIC
+    QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_DIAGNOSTIC,
+    enableProfiling
   );
   let fdHistogram;
   $: if (isFloat(type)) {
@@ -55,7 +57,8 @@
       $runtime?.instanceId,
       objectName,
       columnName,
-      QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD
+      QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
+      enableProfiling
     );
   }
 
@@ -72,35 +75,24 @@
       )
     : $diagnosticHistogram?.data;
 
-  $: rug = createQueryServiceColumnRugHistogram(
+  $: rug = getRugHistogram(
     $runtime?.instanceId,
     objectName,
-    { columnName },
-    {
-      query: {
-        select($query) {
-          return $query?.numericSummary?.numericOutliers?.outliers;
-        },
-        enabled: false,
-      },
-    }
+    columnName,
+    enableProfiling
   );
-  $: topK = getTopK($runtime?.instanceId, objectName, columnName);
+  $: topK = getTopK(
+    $runtime?.instanceId,
+    objectName,
+    columnName,
+    enableProfiling
+  );
 
-  $: summary = derived(
-    createQueryServiceColumnDescriptiveStatistics(
-      $runtime?.instanceId,
-      objectName,
-      { columnName: columnName },
-      {
-        query: {
-          enabled: false,
-        },
-      }
-    ),
-    ($query) => {
-      return $query?.data?.numericSummary?.numericStatistics;
-    }
+  $: summary = getDescriptiveStatistics(
+    $runtime?.instanceId,
+    objectName,
+    columnName,
+    enableProfiling
   );
 
   function toggleColumnProfile() {

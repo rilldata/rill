@@ -1,9 +1,11 @@
 import { convertTimestampPreview } from "@rilldata/web-common/lib/convertTimestampPreview";
 import {
   createQueryServiceColumnCardinality,
+  createQueryServiceColumnDescriptiveStatistics,
   createQueryServiceColumnNullCount,
   createQueryServiceColumnNumericHistogram,
   createQueryServiceColumnRollupInterval,
+  createQueryServiceColumnRugHistogram,
   createQueryServiceColumnTimeGrain,
   createQueryServiceColumnTimeSeries,
   createQueryServiceColumnTopK,
@@ -12,6 +14,7 @@ import {
   V1ProfileColumn,
   V1TableColumnsResponse,
 } from "@rilldata/web-common/runtime-client";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryObserverResult } from "@tanstack/query-core";
 import { derived, Readable, writable } from "svelte/store";
 
@@ -44,7 +47,7 @@ export function getSummaries(
             {
               query: {
                 keepPreviousData: true,
-                enabled: false,
+                enabled: !profileColumnResponse.isFetching,
               },
             }
           ),
@@ -55,7 +58,7 @@ export function getSummaries(
             {
               query: {
                 keepPreviousData: true,
-                enabled: false,
+                enabled: !profileColumnResponse.isFetching,
               },
             }
           ),
@@ -83,7 +86,8 @@ export function getSummaries(
 export function getNullPercentage(
   instanceId: string,
   objectName: string,
-  columnName: string
+  columnName: string,
+  enabled: boolean
 ) {
   const nullQuery = createQueryServiceColumnNullCount(
     instanceId,
@@ -93,7 +97,7 @@ export function getNullPercentage(
     },
     {
       query: {
-        enabled: false,
+        enabled,
       },
     }
   );
@@ -103,7 +107,7 @@ export function getNullPercentage(
     {},
     {
       query: {
-        enabled: false,
+        enabled,
       },
     }
   );
@@ -119,14 +123,15 @@ export function getNullPercentage(
 export function getCountDistinct(
   instanceId: string,
   objectName: string,
-  columnName: string
+  columnName: string,
+  enabled: boolean
 ) {
   const cardinalityQuery = createQueryServiceColumnCardinality(
     instanceId,
     objectName,
     { columnName },
     {
-      query: { enabled: false },
+      query: { enabled },
     }
   );
 
@@ -135,7 +140,7 @@ export function getCountDistinct(
     objectName,
     {},
     {
-      query: { enabled: false },
+      query: { enabled },
     }
   );
 
@@ -154,7 +159,8 @@ export function getCountDistinct(
 export function getTopK(
   instanceId: string,
   objectName: string,
-  columnName: string
+  columnName: string,
+  enabled: boolean
 ) {
   const topKQuery = createQueryServiceColumnTopK(
     instanceId,
@@ -165,9 +171,7 @@ export function getTopK(
       k: 75,
     },
     {
-      query: {
-        enabled: false,
-      },
+      query: { enabled },
     }
   );
   return derived(topKQuery, ($topKQuery) => {
@@ -178,7 +182,8 @@ export function getTopK(
 export function getTimeSeriesAndSpark(
   instanceId: string,
   objectName: string,
-  columnName: string
+  columnName: string,
+  enabled: boolean
 ) {
   const query = createQueryServiceColumnTimeSeries(
     instanceId,
@@ -190,7 +195,7 @@ export function getTimeSeriesAndSpark(
       pixels: 92,
     },
     {
-      query: { enabled: false },
+      query: { enabled },
     }
   );
   const estimatedInterval = createQueryServiceColumnRollupInterval(
@@ -198,7 +203,7 @@ export function getTimeSeriesAndSpark(
     objectName,
     { columnName },
     {
-      query: { enabled: false },
+      query: { enabled },
     }
   );
 
@@ -207,7 +212,7 @@ export function getTimeSeriesAndSpark(
     objectName,
     { columnName },
     {
-      query: { enabled: false },
+      query: { enabled },
     }
   );
 
@@ -245,7 +250,8 @@ export function getNumericHistogram(
   instanceId: string,
   objectName: string,
   columnName: string,
-  histogramMethod: QueryServiceColumnNumericHistogramHistogramMethod
+  histogramMethod: QueryServiceColumnNumericHistogramHistogramMethod,
+  enabled: boolean
 ) {
   return createQueryServiceColumnNumericHistogram(
     instanceId,
@@ -259,8 +265,50 @@ export function getNumericHistogram(
         select(query) {
           return query?.numericSummary?.numericHistogramBins?.bins;
         },
-        enabled: false,
+        enabled,
       },
+    }
+  );
+}
+
+export function getRugHistogram(
+  instanceId: string,
+  objectName: string,
+  columnName: string,
+  enabled: boolean
+) {
+  return createQueryServiceColumnRugHistogram(
+    instanceId,
+    objectName,
+    { columnName },
+    {
+      query: {
+        select(data) {
+          return data?.numericSummary?.numericOutliers?.outliers;
+        },
+        enabled,
+      },
+    }
+  );
+}
+
+export function getDescriptiveStatistics(
+  instanceId: string,
+  objectName: string,
+  columnName: string,
+  enabled: boolean
+) {
+  return derived(
+    createQueryServiceColumnDescriptiveStatistics(
+      instanceId,
+      objectName,
+      { columnName },
+      {
+        query: { enabled },
+      }
+    ),
+    (q) => {
+      return q?.data?.numericSummary?.numericStatistics;
     }
   );
 }
