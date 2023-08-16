@@ -2,7 +2,6 @@
   import { page } from "$app/stores";
   import VerticalScrollContainer from "@rilldata/web-common/layout/VerticalScrollContainer.svelte";
   import ProjectDashboards from "../../../components/projects/ProjectDashboards.svelte";
-  import ProjectDeploymentLogs from "../../../components/projects/ProjectDeploymentLogs.svelte";
   import ProjectDeploymentStatus from "../../../components/projects/ProjectDeploymentStatus.svelte";
   import ProjectGithubConnection from "../../../components/projects/ProjectGithubConnection.svelte";
   import ShareProjectCta from "../../../components/projects/ShareProjectCTA.svelte";
@@ -30,6 +29,5 @@
         <ShareProjectCta {organization} {project} />
       </div>
     </div>
-    <ProjectDeploymentLogs {organization} {project} />
   </div>
 </VerticalScrollContainer>

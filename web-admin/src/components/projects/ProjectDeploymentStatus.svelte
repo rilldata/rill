@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { createAdminServiceGetProject } from "../../client";
   import DeploymentStatusChip from "../home/DeploymentStatusChip.svelte";
 
@@ -6,6 +8,10 @@
   export let project: string;
 
   $: proj = createAdminServiceGetProject(organization, project);
+
+  function handleViewLogs() {
+    goto(`/${organization}/${project}/-/logs`);
+  }
 </script>
 
 <div class="flex flex-col gap-y-1">
@@ -28,4 +34,7 @@
       )}
     </span>
   {/if}
+  <div>
+    <Button type="secondary" on:click={handleViewLogs}>View logs</Button>
+  </div>
 </div>
