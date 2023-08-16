@@ -93,6 +93,13 @@ export class DashboardState extends Message<DashboardState> {
    */
   selectedTimezone?: string;
 
+  /**
+   * Scrub time range
+   *
+   * @generated from field: optional rill.ui.v1.DashboardTimeRange scrub_range = 14;
+   */
+  scrubRange?: DashboardTimeRange;
+
   constructor(data?: PartialMessage<DashboardState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -114,6 +121,7 @@ export class DashboardState extends Message<DashboardState> {
     { no: 11, name: "all_dimensions_visible", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 12, name: "leaderboard_context_column", kind: "enum", T: proto3.getEnumType(DashboardState_DashboardLeaderboardContextColumn), opt: true },
     { no: 13, name: "selected_timezone", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 14, name: "scrub_range", kind: "message", T: DashboardTimeRange, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardState {

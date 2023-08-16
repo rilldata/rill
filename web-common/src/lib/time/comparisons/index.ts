@@ -1,5 +1,5 @@
 import { Duration, Interval } from "luxon";
-import { transformDate } from "../transforms";
+import { getTimeWidth, transformDate } from "../transforms";
 import {
   RelativeTimeTransformation,
   TimeComparisonOption,
@@ -46,6 +46,35 @@ export function getComparisonRange(
     start: transformDate(start, [transform]),
     end: transformDate(end, [transform]),
   };
+}
+
+/**
+ * get the comparison range for a scrub such that
+ * it aligns with the scrub start and end.
+ */
+export function getComparionRangeForScrub(
+  start: Date,
+  end: Date,
+  comparisonStart: Date,
+  comparisonEnd: Date,
+  scrubStart: Date,
+  scrubEnd: Date
+) {
+  // validate if selected range and comparison range are of equal width
+  if (
+    getTimeWidth(start, end) !== getTimeWidth(comparisonStart, comparisonEnd)
+  ) {
+    // TODO: Have better handling on uneven widths caused by custom comparisons
+    return { start: comparisonStart, end: comparisonEnd };
+  } else {
+    const startMOffset = getTimeWidth(start, scrubStart);
+    const endMOffset = getTimeWidth(scrubEnd, end);
+
+    return {
+      start: new Date(comparisonStart.getTime() + startMOffset),
+      end: new Date(comparisonEnd.getTime() - endMOffset),
+    };
+  }
 }
 
 // Returns true if the comparison range is inside the bounds.

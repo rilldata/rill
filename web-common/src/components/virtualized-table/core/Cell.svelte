@@ -9,13 +9,8 @@
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
   import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
-  import {
-    INTERVALS,
-    isNested,
-    STRING_LIKES,
-    TIMESTAMPS,
-  } from "@rilldata/web-common/lib/duckdb-data-types";
-  import { formatDataType } from "@rilldata/web-common/lib/formatters";
+  import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
+  import { formatDataTypeAsDuckDbQueryString } from "@rilldata/web-common/lib/formatters";
   import { createEventDispatcher, getContext } from "svelte";
   import BarAndLabel from "../../BarAndLabel.svelte";
   import type { VirtualizedTableConfig } from "../types";
@@ -100,6 +95,13 @@
     : rowSelected
     ? "font-normal ui-copy-strong"
     : "font-normal ui-copy";
+
+  const shiftClick = async () => {
+    let exportedValue = formatDataTypeAsDuckDbQueryString(value, type);
+    await navigator.clipboard.writeText(exportedValue);
+    notifications.send({ message: `copied value to clipboard` });
+    // update this to set the active animation in the tooltip text
+  };
 </script>
 
 <Tooltip location="top" distance={16} suppress={suppressTooltip}>
@@ -137,17 +139,7 @@
           text-left w-full text-ellipsis overflow-x-hidden whitespace-nowrap
           "
         use:shiftClickAction
-        on:shift-click={async () => {
-          let exportedValue = value;
-          if (INTERVALS.has(type) || isNested(type)) {
-            exportedValue = formatDataType(value, type);
-          } else if (TIMESTAMPS.has(type)) {
-            exportedValue = `TIMESTAMP '${value}'`;
-          }
-          await navigator.clipboard.writeText(exportedValue);
-          notifications.send({ message: `copied value to clipboard` });
-          // update this to set the active animation in the tooltip text
-        }}
+        on:shift-click={shiftClick}
         aria-label={label}
       >
         <FormattedDataType

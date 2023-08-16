@@ -14,6 +14,7 @@
     formatMeasurePercentageDifference,
     humanizeDataType,
     FormatPreset,
+    humanizeDataTypeExpanded,
   } from "../humanize-numbers";
 
   export let value: number;
@@ -76,7 +77,10 @@
               </WithTween>
             </div>
             <TooltipContent slot="tooltip-content">
-              the aggregate value over the current time period
+              {humanizeDataTypeExpanded(value, formatPresetEnum)}
+              <TooltipDescription>
+                the aggregate value over the current time period
+              </TooltipDescription>
             </TooltipContent>
           </Tooltip>
           {#if showComparison}
