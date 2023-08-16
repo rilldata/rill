@@ -38,9 +38,7 @@
 {:else if dashboardListItems?.length > 0}
   <ol class="flex flex-col gap-y-4 w-fit max-w-full 2xl:max-w-[1200px]">
     {#each dashboardListItems as dashboardListItem}
-      <li
-        class="h-[52px] flex items-center gap-x-2 border rounded w-full text-xs font-medium leading-4 break-all"
-      >
+      <li class="w-full h-[52px] border rounded">
         <svelte:element
           this={dashboardListItem.isValid ? "a" : "div"}
           href={dashboardListItem.isValid
