@@ -60,7 +60,7 @@
           <div class="flex items-center gap-x-10 w-full">
             <!-- Name -->
             <span class="text-sm font-medium whitespace-nowrap truncate">
-              {dashboardListItem?.title || dashboardListItem.name + " "}
+              {dashboardListItem?.title || dashboardListItem.name}
             </span>
 
             <!-- Error tag -->
