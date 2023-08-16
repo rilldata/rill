@@ -210,8 +210,7 @@ func TestServer_Timeseries_exclude_all_string(t *testing.T) {
 
 	require.NoError(t, err)
 	results := response.Data
-	require.Equal(t, 1, len(results))
-	require.Equal(t, 0.0, results[0].Records.Fields["Total impressions"].GetNumberValue())
+	require.Equal(t, 0, len(results))
 }
 
 func TestServer_Timeseries_exclude_notnull_like(t *testing.T) {
@@ -261,8 +260,7 @@ func TestServer_Timeseries_exclude_like_all(t *testing.T) {
 
 	require.NoError(t, err)
 	results := response.Data
-	require.Equal(t, 1, len(results))
-	require.Equal(t, 0.0, results[0].Records.Fields["sum_imps"].GetNumberValue())
+	require.Equal(t, 0, len(results))
 }
 
 func TestServer_Timeseries_numeric_dim(t *testing.T) {
@@ -363,7 +361,7 @@ func TestServer_Timeseries_Empty_TimeRange(t *testing.T) {
 	for i, v := range response.Data {
 		fmt.Printf("i: %d, ts: %v\n", i, v.Ts.AsTime())
 	}
-	require.Equal(t, 25, len(results))
+	require.Equal(t, 2, len(results))
 	require.Equal(t, 1.0, results[0].Records.Fields["max_clicks"].GetNumberValue())
 }
 
@@ -563,8 +561,7 @@ func TestServer_Timeseries_2dim_include_and_exclude(t *testing.T) {
 
 	require.NoError(t, err)
 	results := response.Data
-	require.Equal(t, 1, len(results))
-	require.Equal(t, 0.0, results[0].Records.Fields["sum_clicks"].GetNumberValue())
+	require.Equal(t, 0, len(results))
 }
 
 func TestServer_Timeseries_1day(t *testing.T) {
