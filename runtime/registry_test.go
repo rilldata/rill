@@ -225,6 +225,52 @@ func TestRuntime_EditInstance(t *testing.T) {
 			clearCache: true,
 		},
 		{
+			name: "edit annotations",
+			inst: &drivers.Instance{
+				OLAPDriver:   "olap",
+				RepoDriver:   "repo",
+				EmbedCatalog: false,
+				Variables:    map[string]string{"host": "localhost"},
+				Connectors: []*runtimev1.Connector{
+					{
+						Type:   "file",
+						Name:   "repo",
+						Config: map[string]string{"dsn": newRepodsn},
+					},
+					{
+						Type:   "duckdb",
+						Name:   "olap",
+						Config: map[string]string{"dsn": ""},
+					},
+				},
+				Annotations: map[string]string{
+					"organization_name" : "org_name",
+				},
+			},
+			savedInst: &drivers.Instance{
+				OLAPDriver:   "olap",
+				RepoDriver:   "repo",
+				EmbedCatalog: false,
+				Variables:    map[string]string{"host": "localhost", "allow_host_access": "true"},
+				Connectors: []*runtimev1.Connector{
+					{
+						Type:   "file",
+						Name:   "repo",
+						Config: map[string]string{"dsn": newRepodsn},
+					},
+					{
+						Type:   "duckdb",
+						Name:   "olap",
+						Config: map[string]string{"dsn": ""},
+					},
+				},
+				Annotations: map[string]string{
+					"organization_name" : "org_name",
+				},
+			},
+			clearCache: true,
+		},
+		{
 			name: "invalid olap driver",
 			inst: &drivers.Instance{
 				OLAPDriver:   "olap1",

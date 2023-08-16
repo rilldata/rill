@@ -100,10 +100,8 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 		return err
 	}
 
-	annotationsChanged := !mapsEqual(olderInstance.Annotations, inst.Annotations)
-
 	// evict caches if connections need to be updated
-	if r.olapChanged(ctx, olderInstance, inst) || r.repoChanged(ctx, olderInstance, inst) || annotationsChanged {
+	if r.olapChanged(ctx, olderInstance, inst) || r.repoChanged(ctx, olderInstance, inst) || r.annotationsChanged(ctx, olderInstance, inst) {
 		r.evictCaches(ctx, olderInstance)
 	}
 
@@ -149,6 +147,10 @@ func (r *Runtime) olapChanged(ctx context.Context, a, b *drivers.Instance) bool 
 	return a.OLAPDriver != b.OLAPDriver || !equal(o1, o2)
 }
 
+func (r *Runtime) annotationsChanged(ctx context.Context, a, b *drivers.Instance) bool {
+	return !maps.Equal(a.Annotations, b.Annotations)
+}
+
 func equal(a, b *runtimev1.Connector) bool {
 	if (a != nil) != (b != nil) {
 		return false
@@ -163,20 +165,4 @@ func instanceAnnotationsToAttribs(instance *drivers.Instance) []attribute.KeyVal
 		attrs = append(attrs, attribute.String(k, v))
 	}
 	return attrs
-}
-
-func mapsEqual(a, b map[string]string) bool {
-	// Check if lengths are the same
-	if len(a) != len(b) {
-		return false
-	}
-
-	// Check if all keys and values in 'a' are the same in 'b'
-	for k, v := range a {
-		if vb, ok := b[k]; !ok || v != vb {
-			return false
-		}
-	}
-
-	return true
 }

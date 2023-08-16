@@ -320,6 +320,17 @@ export type RuntimeServiceListCatalogEntriesParams = {
   type?: RuntimeServiceListCatalogEntriesType;
 };
 
+export type RuntimeServiceEditInstanceAnnotationsBodyAnnotations = {
+  [key: string]: string;
+};
+
+/**
+ * Request message for RuntimeService.EditInstanceAnnotations.
+ */
+export type RuntimeServiceEditInstanceAnnotationsBody = {
+  annotations?: RuntimeServiceEditInstanceAnnotationsBodyAnnotations;
+};
+
 /**
  * Request message for RuntimeService.EditInstance.
 See message Instance for field descriptions.
@@ -466,12 +477,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -504,6 +509,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export type V1TableRowsResponseDataItem = { [key: string]: any };
 
@@ -567,6 +578,11 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
+export interface V1SourceV2 {
+  spec?: V1SourceSpec;
+  state?: V1SourceState;
+}
+
 export type V1SourceSpecProperties = { [key: string]: any };
 
 export interface V1SourceSpec {
@@ -578,11 +594,6 @@ export interface V1SourceSpec {
   stageChanges?: boolean;
   streamIngestion?: boolean;
   trigger?: boolean;
-}
-
-export interface V1SourceV2 {
-  spec?: V1SourceSpec;
-  state?: V1SourceState;
 }
 
 export type V1SourceProperties = { [key: string]: any };
@@ -728,6 +739,16 @@ export interface V1RefreshAndReconcileRequest {
   strict?: boolean;
 }
 
+export interface V1ReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
+}
+
 /**
  * - CODE_UNSPECIFIED: Unspecified error
  - CODE_SYNTAX: Code artifact failed to parse
@@ -770,16 +791,6 @@ Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: V1ReconcileErrorCharLocation;
   endLocation?: V1ReconcileErrorCharLocation;
-}
-
-export interface V1ReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
 }
 
 export type V1QueryResponseDataItem = { [key: string]: any };
@@ -1053,19 +1064,6 @@ export interface V1MetricsViewTimeSeriesResponse {
   data?: V1TimeSeriesValue[];
 }
 
-export interface V1MetricsViewTimeSeriesRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  timeGranularity?: V1TimeGrain;
-  filter?: V1MetricsViewFilter;
-  timeZone?: string;
-  priority?: number;
-}
-
 export interface V1MetricsViewTimeRangeResponse {
   timeRangeSummary?: V1TimeRangeSummary;
 }
@@ -1095,9 +1093,27 @@ export interface V1MetricsViewSort {
 
 export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
 
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
+}
+
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
+}
+
+export interface V1MetricsViewTimeSeriesRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
+  filter?: V1MetricsViewFilter;
+  timeZone?: string;
+  priority?: number;
 }
 
 export interface V1MetricsViewRowsRequest {
@@ -1173,11 +1189,6 @@ export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
   nullable?: boolean;
-}
-
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
 }
 
 export interface V1MetricsView {
@@ -1372,6 +1383,10 @@ export interface V1EditInstanceVariablesResponse {
 }
 
 export interface V1EditInstanceResponse {
+  instance?: V1Instance;
+}
+
+export interface V1EditInstanceAnnotationsResponse {
   instance?: V1Instance;
 }
 

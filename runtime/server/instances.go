@@ -192,9 +192,7 @@ func (s *Server) EditInstanceAnnotations(ctx context.Context, req *runtimev1.Edi
 	inst := &drivers.Instance{
 		ID:                  req.InstanceId,
 		OLAPDriver:          oldInst.OLAPDriver,
-		OLAPDSN:             oldInst.OLAPDSN,
 		RepoDriver:          oldInst.RepoDriver,
-		RepoDSN:             oldInst.RepoDSN,
 		EmbedCatalog:        oldInst.EmbedCatalog,
 		IngestionLimitBytes: oldInst.IngestionLimitBytes,
 		Variables:           oldInst.Variables,
