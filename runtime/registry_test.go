@@ -244,7 +244,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					},
 				},
 				Annotations: map[string]string{
-					"organization_name" : "org_name",
+					"organization_name": "org_name",
 				},
 			},
 			savedInst: &drivers.Instance{
@@ -265,7 +265,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					},
 				},
 				Annotations: map[string]string{
-					"organization_name" : "org_name",
+					"organization_name": "org_name",
 				},
 			},
 			clearCache: true,
