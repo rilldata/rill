@@ -5,8 +5,9 @@
     createAdminServiceGetOrganization,
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
-  import HomeShareCta from "../../components/home/HomeShareCTA.svelte";
   import ProjectList from "../../components/home/ProjectList.svelte";
+  import OrganizationAccessControls from "../../components/organizations/OrganizationAccessControls.svelte";
+  import ShareOrganizationCTA from "../../components/organizations/ShareOrganizationCTA.svelte";
 
   $: orgName = $page.params.organization;
 
@@ -44,7 +45,11 @@
             </div>
           {/if}
         </div>
-        <HomeShareCta />
+        <OrganizationAccessControls organization={$page.params.organization}>
+          <svelte:fragment slot="manage-org-members">
+            <ShareOrganizationCTA organization={$page.params.organization} />
+          </svelte:fragment>
+        </OrganizationAccessControls>
       </div>
     </section>
   </VerticalScrollContainer>
