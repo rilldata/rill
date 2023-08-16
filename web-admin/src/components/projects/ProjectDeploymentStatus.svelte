@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { createAdminServiceGetProject } from "../../client";
-  import DeploymentStatusChip from "../home/DeploymentStatusChip.svelte";
+  import ProjectDeploymentStatusChip from "./ProjectDeploymentStatusChip.svelte";
 
   export let organization: string;
   export let project: string;
@@ -20,7 +20,7 @@
       >Project status</span
     >
     <div>
-      <DeploymentStatusChip {organization} {project} />
+      <ProjectDeploymentStatusChip {organization} {project} />
     </div>
     {#if $proj && $proj.data && $proj.data.prodDeployment}
       <span class="text-gray-500 text-[11px] leading-4">
