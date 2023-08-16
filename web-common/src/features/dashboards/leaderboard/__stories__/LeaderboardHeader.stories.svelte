@@ -3,13 +3,6 @@
 
   import { action } from "@storybook/addon-actions";
   import LeaderboardHeader from "../LeaderboardHeader.svelte";
-  // import { FormatPreset } from "../../humanize-numbers";
-
-  // const atLeastOneActive = true;
-  // const filterExcludeMode = true;
-  // const isSummableMeasure = true;
-  // const referenceValue = 400;
-  // const formatPreset = "humanize";
 
   const defaultArgs = {
     displayName: "Leaderboard Name",
@@ -20,9 +13,6 @@
     showPercentOfTotal: false,
     filterExcludeMode: false,
     sortDescending: true,
-    // referenceValue: 400,
-    // unfilteredTotal: 1000,
-    // formatPreset: "humanize",
   };
 </script>
 
