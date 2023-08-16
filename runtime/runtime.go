@@ -8,12 +8,13 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
 )
 
 type Options struct {
 	ConnectionCacheSize int
-	MetastoreDriver     string
+	MetastoreConnector  string
 	QueryCacheSizeBytes int64
 	AllowHostAccess     bool
 	SafeSourceRefresh   bool
@@ -29,15 +30,15 @@ type Runtime struct {
 	queryCache         *queryCache
 }
 
-func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
+func New(opts *Options, logger *zap.Logger, client activity.Client) (*Runtime, error) {
 	rt := &Runtime{
 		opts:               opts,
 		logger:             logger,
-		connCache:          newConnectionCache(opts.ConnectionCacheSize, logger),
+		connCache:          newConnectionCache(opts.ConnectionCacheSize, logger, client),
 		migrationMetaCache: newMigrationMetaCache(math.MaxInt),
 		queryCache:         newQueryCache(opts.QueryCacheSizeBytes),
 	}
-	store, _, err := rt.AcquireSystemHandle(context.Background(), "metastore")
+	store, _, err := rt.AcquireSystemHandle(context.Background(), opts.MetastoreConnector)
 	if err != nil {
 		return nil, err
 	}

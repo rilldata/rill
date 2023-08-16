@@ -490,12 +490,12 @@ func NewTestRunTime(t *testing.T) *Runtime {
 
 	opts := &Options{
 		ConnectionCacheSize: 100,
-		MetastoreDriver:     "sqlite",
+		MetastoreConnector:  "metastore",
 		QueryCacheSizeBytes: int64(datasize.MB) * 100,
 		AllowHostAccess:     true,
 		SystemConnectors:    globalConnectors,
 	}
-	rt, err := New(opts, zap.NewNop())
+	rt, err := New(opts, zap.NewNop(), nil)
 	t.Cleanup(func() {
 		rt.Close()
 	})

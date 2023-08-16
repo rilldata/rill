@@ -42,12 +42,12 @@ func New(t TestingT) *runtime.Runtime {
 	}
 	opts := &runtime.Options{
 		ConnectionCacheSize: 100,
-		MetastoreDriver:     "sqlite",
+		MetastoreConnector:  "metastore",
 		QueryCacheSizeBytes: int64(datasize.MB * 100),
 		AllowHostAccess:     true,
 		SystemConnectors:    systemConnectors,
 	}
-	rt, err := runtime.New(opts, zap.NewNop())
+	rt, err := runtime.New(opts, zap.NewNop(), nil)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		rt.Close()

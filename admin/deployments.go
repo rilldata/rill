@@ -173,7 +173,6 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 
 	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
 		InstanceId: depl.RuntimeInstanceID,
-		RepoDriver: &repoDriver,
 		Connectors: connectors,
 	})
 	if err != nil {

@@ -62,9 +62,10 @@ type App struct {
 	ProjectPath           string
 	observabilityShutdown observability.ShutdownFunc
 	loggerCleanUp         func()
+	activity              activity.Client
 }
 
-func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string) (*App, error) {
+func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string, client activity.Client) (*App, error) {
 	logger, cleanupFn := initLogger(verbose, logFormat)
 	// Init Prometheus telemetry
 	shutdown, err := observability.Start(ctx, logger, &observability.Options{
@@ -88,12 +89,12 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 
 	rtOpts := &runtime.Options{
 		ConnectionCacheSize: 100,
-		MetastoreDriver:     "sqlite",
+		MetastoreConnector:  "metastore",
 		QueryCacheSizeBytes: int64(datasize.MB * 100),
 		AllowHostAccess:     true,
 		SystemConnectors:    systemConnectors,
 	}
-	rt, err := runtime.New(rtOpts, logger)
+	rt, err := runtime.New(rtOpts, logger, client)
 	if err != nil {
 		return nil, err
 	}
@@ -156,6 +157,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 		ProjectPath:           projectPath,
 		observabilityShutdown: shutdown,
 		loggerCleanUp:         cleanupFn,
+		activity:              client,
 	}
 	return app, nil
 }
@@ -275,7 +277,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		AllowedOrigins:  []string{"*"},
 		ServePrometheus: true,
 	}
-	runtimeServer, err := runtimeserver.NewServer(ctx, opts, a.Runtime, serverLogger, ratelimit.NewNoop(), activity.NewNoopClient())
+	runtimeServer, err := runtimeserver.NewServer(ctx, opts, a.Runtime, serverLogger, ratelimit.NewNoop(), a.activity)
 	if err != nil {
 		return err
 	}

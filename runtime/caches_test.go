@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -16,18 +17,18 @@ func TestConnectionCache(t *testing.T) {
 	ctx := context.Background()
 	id := uuid.NewString()
 
-	c := newConnectionCache(10, zap.NewNop())
-	conn1, release, err := c.get(ctx, id, "sqlite", map[string]any{"dsn": ":memory:"}, false)
+	c := newConnectionCache(10, zap.NewNop(), activity.NewNoopClient())
+	conn1, release, err := c.get(ctx, id, "sqlite", map[string]any{"dsn": ":memory:"}, false, nil)
 	require.NoError(t, err)
 	release()
 	require.NotNil(t, conn1)
 
-	conn2, release, err := c.get(ctx, id, "sqlite", map[string]any{"dsn": ":memory:"}, false)
+	conn2, release, err := c.get(ctx, id, "sqlite", map[string]any{"dsn": ":memory:"}, false, nil)
 	require.NoError(t, err)
 	release()
 	require.NotNil(t, conn2)
 
-	conn3, release, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:"}, false)
+	conn3, release, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:"}, false, nil)
 	require.NoError(t, err)
 	release()
 	require.NotNil(t, conn3)
@@ -40,18 +41,18 @@ func TestConnectionCacheWithAllShared(t *testing.T) {
 	ctx := context.Background()
 	id := uuid.NewString()
 
-	c := newConnectionCache(1, zap.NewNop())
-	conn1, release, err := c.get(ctx, id, "sqlite", map[string]any{"dsn": ":memory:"}, true)
+	c := newConnectionCache(1, zap.NewNop(), activity.NewNoopClient())
+	conn1, release, err := c.get(ctx, id, "sqlite", map[string]any{"dsn": ":memory:"}, true, nil)
 	require.NoError(t, err)
 	require.NotNil(t, conn1)
 	defer release()
 
-	conn2, release, err := c.get(ctx, id, "sqlite", map[string]any{"dsn": ":memory:"}, true)
+	conn2, release, err := c.get(ctx, id, "sqlite", map[string]any{"dsn": ":memory:"}, true, nil)
 	require.NoError(t, err)
 	require.NotNil(t, conn2)
 	defer release()
 
-	conn3, release, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:"}, true)
+	conn3, release, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:"}, true, nil)
 	require.NoError(t, err)
 	require.NotNil(t, conn3)
 	defer release()
@@ -65,16 +66,16 @@ func TestConnectionCacheWithAllShared(t *testing.T) {
 func TestConnectionCacheWithAllOpen(t *testing.T) {
 	ctx := context.Background()
 
-	c := newConnectionCache(1, zap.NewNop())
-	conn1, r1, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:"}, false)
+	c := newConnectionCache(1, zap.NewNop(), activity.NewNoopClient())
+	conn1, r1, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:"}, false, nil)
 	require.NoError(t, err)
 	require.NotNil(t, conn1)
 
-	conn2, r2, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:"}, false)
+	conn2, r2, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:"}, false, nil)
 	require.NoError(t, err)
 	require.NotNil(t, conn2)
 
-	conn3, r3, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:"}, false)
+	conn3, r3, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:"}, false, nil)
 	require.NoError(t, err)
 	require.NotNil(t, conn3)
 
@@ -93,7 +94,7 @@ func TestConnectionCacheWithAllOpen(t *testing.T) {
 func TestConnectionCacheParallel(t *testing.T) {
 	ctx := context.Background()
 
-	c := newConnectionCache(5, zap.NewNop())
+	c := newConnectionCache(5, zap.NewNop(), activity.NewNoopClient())
 	defer c.Close()
 
 	var wg sync.WaitGroup
@@ -103,7 +104,7 @@ func TestConnectionCacheParallel(t *testing.T) {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				conn, _, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:"}, false)
+				conn, _, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:"}, false, nil)
 				require.NoError(t, err)
 				require.NotNil(t, conn)
 				time.Sleep(100 * time.Millisecond)
@@ -116,7 +117,7 @@ func TestConnectionCacheParallel(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			conn, r, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:"}, false)
+			conn, r, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:"}, false, nil)
 			defer r()
 			require.NoError(t, err)
 			require.NotNil(t, conn)
@@ -134,17 +135,17 @@ func TestConnectionCacheParallel(t *testing.T) {
 func TestConnectionCacheMultipleConfigs(t *testing.T) {
 	ctx := context.Background()
 
-	c := newConnectionCache(10, zap.NewNop())
+	c := newConnectionCache(10, zap.NewNop(), activity.NewNoopClient())
 	defer c.Close()
-	conn1, r1, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:", "host": "localhost:8080", "allow_host_access": "true"}, true)
+	conn1, r1, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:", "host": "localhost:8080", "allow_host_access": "true"}, true, nil)
 	require.NoError(t, err)
 	require.NotNil(t, conn1)
 
-	conn2, r2, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:", "host": "localhost:8080", "allow_host_access": "true"}, true)
+	conn2, r2, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:", "host": "localhost:8080", "allow_host_access": "true"}, true, nil)
 	require.NoError(t, err)
 	require.NotNil(t, conn2)
 
-	conn3, r3, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:", "host": "localhost:8080", "allow_host_access": "true"}, true)
+	conn3, r3, err := c.get(ctx, uuid.NewString(), "sqlite", map[string]any{"dsn": ":memory:", "host": "localhost:8080", "allow_host_access": "true"}, true, nil)
 	require.NoError(t, err)
 	require.NotNil(t, conn3)
 
