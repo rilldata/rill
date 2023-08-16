@@ -47,7 +47,6 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 					if err != nil {
 						return err
 					}
-
 				}
 
 				// TODO: user groups
@@ -107,7 +106,6 @@ func listProjectMembers(cmd *cobra.Command, client *adminclient.Client, org, pro
 	}
 
 	return nil
-
 }
 
 func listProjectInvites(cmd *cobra.Command, client *adminclient.Client, org, project, pageToken string, pageSize uint32) error {
