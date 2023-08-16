@@ -43,7 +43,6 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 						return err
 					}
 
-					cmd.Println()
 					err = listProjectInvites(cmd, client, cfg.Org, projectName, pageToken, pageSize)
 					if err != nil {
 						return err
@@ -68,7 +67,6 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 						return err
 					}
 
-					cmd.Println()
 					err = listOrgInvites(cmd, client, cfg.Org, pageToken, pageSize)
 					if err != nil {
 						return err
@@ -120,7 +118,10 @@ func listProjectInvites(cmd *cobra.Command, client *adminclient.Client, org, pro
 	if err != nil {
 		return err
 	}
-
+	// If page token is empty, user is running the command first time and we print separator
+	if len(invites.Invites) > 0 && pageToken == "" {
+		cmd.Println()
+	}
 	cmdutil.PrintInvites(invites.Invites)
 	if invites.NextPageToken != "" {
 		cmd.Println()
@@ -157,7 +158,10 @@ func listOrgInvites(cmd *cobra.Command, client *adminclient.Client, org, pageTok
 	if err != nil {
 		return err
 	}
-
+	// If page token is empty, user is running the command first time and we print separator
+	if len(invites.Invites) > 0 && pageToken == "" {
+		cmd.Println()
+	}
 	cmdutil.PrintInvites(invites.Invites)
 	if invites.NextPageToken != "" {
 		cmd.Println()
