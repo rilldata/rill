@@ -28,7 +28,7 @@
           View project logs for errors that may help you find a fix.
         </svelte:fragment>
         <svelte:fragment slot="read-project">
-          Contact your organization's admin for help.
+          Contact your project's admin for help.
         </svelte:fragment>
       </ProjectAccessControls>
     </p>
