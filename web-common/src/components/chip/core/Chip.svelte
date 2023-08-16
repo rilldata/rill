@@ -30,7 +30,7 @@
   const dispatch = createEventDispatcher();
 </script>
 
-<div transition:slideRight|local={{ duration: 150 }}>
+<div in:slideRight|local={{ duration: 150 }}>
   <button
     on:click
     class="

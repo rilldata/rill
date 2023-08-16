@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/spf13/cobra"
 )
 
@@ -84,7 +85,9 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 				return fmt.Errorf("invalid log format %q", logFormat)
 			}
 
-			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, olapDriver, olapDSN, projectPath, parsedLogFormat, variables)
+			client := activity.NewNoopClient()
+
+			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, olapDriver, olapDSN, projectPath, parsedLogFormat, variables, client)
 			if err != nil {
 				return err
 			}
