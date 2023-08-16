@@ -11,7 +11,6 @@
     useMetaDimension,
     useMetaMeasure,
     useMetaQuery,
-    useModelAllTimeRange,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
@@ -133,17 +132,6 @@
           !!filterSet &&
           !!sortByColumn &&
           !!sortDirection,
-      },
-    }
-  );
-
-  $: allTimeRangeQuery = useModelAllTimeRange(
-    $runtime.instanceId,
-    $metaQuery.data.model,
-    $metaQuery.data.timeDimension,
-    {
-      query: {
-        enabled: !!$metaQuery.data.timeDimension,
       },
     }
   );

@@ -74,13 +74,12 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 	inst := &drivers.Instance{
 		ID:                  req.InstanceId,
 		OLAPDriver:          req.OlapDriver,
-		OLAPDSN:             req.OlapDsn,
 		RepoDriver:          req.RepoDriver,
-		RepoDSN:             req.RepoDsn,
 		EmbedCatalog:        req.EmbedCatalog,
 		Variables:           req.Variables,
 		IngestionLimitBytes: req.IngestionLimitBytes,
 		Annotations:         req.Annotations,
+		Connectors:          req.Connectors,
 	}
 
 	err := s.runtime.CreateInstance(ctx, inst)
@@ -117,13 +116,16 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 	inst := &drivers.Instance{
 		ID:                  req.InstanceId,
 		OLAPDriver:          valOrDefault(req.OlapDriver, oldInst.OLAPDriver),
-		OLAPDSN:             valOrDefault(req.OlapDsn, oldInst.OLAPDSN),
 		RepoDriver:          valOrDefault(req.RepoDriver, oldInst.RepoDriver),
-		RepoDSN:             valOrDefault(req.RepoDsn, oldInst.RepoDSN),
 		EmbedCatalog:        valOrDefault(req.EmbedCatalog, oldInst.EmbedCatalog),
 		Variables:           oldInst.Variables,
 		IngestionLimitBytes: valOrDefault(req.IngestionLimitBytes, oldInst.IngestionLimitBytes),
 		Annotations:         oldInst.Annotations,
+	}
+	if len(req.Connectors) == 0 {
+		inst.Connectors = oldInst.Connectors
+	} else {
+		inst.Connectors = req.Connectors
 	}
 
 	err = s.runtime.EditInstance(ctx, inst)
@@ -154,13 +156,12 @@ func (s *Server) EditInstanceVariables(ctx context.Context, req *runtimev1.EditI
 	inst := &drivers.Instance{
 		ID:                  req.InstanceId,
 		OLAPDriver:          oldInst.OLAPDriver,
-		OLAPDSN:             oldInst.OLAPDSN,
 		RepoDriver:          oldInst.RepoDriver,
-		RepoDSN:             oldInst.RepoDSN,
 		EmbedCatalog:        oldInst.EmbedCatalog,
 		IngestionLimitBytes: oldInst.IngestionLimitBytes,
 		Variables:           req.Variables,
 		Annotations:         oldInst.Annotations,
+		Connectors:          oldInst.Connectors,
 	}
 
 	err = s.runtime.EditInstance(ctx, inst)
@@ -198,13 +199,12 @@ func instanceToPB(inst *drivers.Instance) *runtimev1.Instance {
 	return &runtimev1.Instance{
 		InstanceId:          inst.ID,
 		OlapDriver:          inst.OLAPDriver,
-		OlapDsn:             inst.OLAPDSN,
 		RepoDriver:          inst.RepoDriver,
-		RepoDsn:             inst.RepoDSN,
 		EmbedCatalog:        inst.EmbedCatalog,
 		Variables:           inst.Variables,
 		ProjectVariables:    inst.ProjectVariables,
 		IngestionLimitBytes: inst.IngestionLimitBytes,
+		Connectors:          inst.Connectors,
 	}
 }
 

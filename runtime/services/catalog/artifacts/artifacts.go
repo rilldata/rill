@@ -42,7 +42,7 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, registryStore driver
 		return nil, fmt.Errorf("no artifact found for %s", extension)
 	}
 
-	blob, err := repoStore.Get(ctx, instID, filePath)
+	blob, err := repoStore.Get(ctx, filePath)
 	if err != nil {
 		return nil, ErrFileRead
 	}
@@ -100,7 +100,7 @@ func Write(ctx context.Context, repoStore drivers.RepoStore, instID string, cata
 		return err
 	}
 
-	return repoStore.Put(ctx, instID, catalog.Path, strings.NewReader(blob))
+	return repoStore.Put(ctx, catalog.Path, strings.NewReader(blob))
 }
 
 var regex = regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]*$")

@@ -86,7 +86,17 @@ test.describe("dashboard", () => {
   });
 
   test("Dashboard runthrough", async ({ page }) => {
+    test.setTimeout(60000);
     await page.goto("/");
+    // disable animations
+    await page.addStyleTag({
+      content: `
+        *, *::before, *::after {
+          animation-duration: 0s !important;
+          transition-duration: 0s !important;
+        }
+      `,
+    });
     await createAdBidsModel(page);
     await createDashboardFromModel(page, "AdBids_model");
 
@@ -101,12 +111,9 @@ test.describe("dashboard", () => {
     await page.getByRole("menuitem", { name: "day" }).click();
 
     // Change the time range
-    await page.getByLabel("Select time range").click();
-    await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
-    // Wait for menu to close
-    await expect(
-      page.getByRole("menuitem", { name: "Last 6 Hours" })
-    ).not.toBeVisible();
+    await interactWithTimeRangeMenu(page, async () => {
+      await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
+    });
 
     // Change time zone to UTC
     await page.getByLabel("Timezone selector").click();
@@ -155,6 +162,16 @@ test.describe("dashboard", () => {
     const xlsxRegex = /^AdBids_model_filtered_.*\.xlsx$/;
     expect(xlsxRegex.test(downloadXLSX.suggestedFilename())).toBe(true);
 
+    // Download the data as Parquet
+    // Start waiting for download before clicking. Note no await.
+    const downloadParquetPromise = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Export model data" }).click();
+    await page.getByText("Export as Parquet").click();
+    const downloadParquet = await downloadParquetPromise;
+    await downloadParquet.path();
+    const parquetRegex = /^AdBids_model_filtered_.*\.parquet$/;
+    expect(parquetRegex.test(downloadParquet.suggestedFilename())).toBe(true);
+
     // Turn off comparison
     await page
       .getByRole("button", { name: "Comparing to last period" })
@@ -188,23 +205,26 @@ test.describe("dashboard", () => {
     await expect(page.getByLabel("Time comparison selector")).not.toBeVisible();
 
     // Switch to a custom time range
-    await page.getByLabel("Select time range").click();
+    await interactWithTimeRangeMenu(page, async () => {
+      const timeRangeMenu = page.getByRole("menu", {
+        name: "Time range selector",
+      });
 
-    const timeRangeMenu = page.getByRole("menu", {
-      name: "Time range selector",
+      await timeRangeMenu
+        .getByRole("menuitem", { name: "Custom range" })
+        .click();
+      await timeRangeMenu.getByLabel("Start date").fill("2022-02-01");
+      await timeRangeMenu.getByLabel("Start date").blur();
+      await timeRangeMenu.getByRole("button", { name: "Apply" }).click();
     });
-
-    await timeRangeMenu.getByRole("menuitem", { name: "Custom range" }).click();
-    await timeRangeMenu.getByLabel("Start date").fill("2022-02-01");
-    await timeRangeMenu.getByLabel("Start date").blur();
-    await timeRangeMenu.getByRole("button", { name: "Apply" }).click();
 
     // Check number
     await expect(page.getByText("Total records 65.1k")).toBeVisible();
 
     // Flip back to All Time
-    await page.getByLabel("Select time range").click();
-    await page.getByRole("menuitem", { name: "All Time" }).click();
+    await interactWithTimeRangeMenu(page, async () => {
+      await page.getByRole("menuitem", { name: "All Time" }).click();
+    });
 
     // Check number
     await expect(
@@ -384,7 +404,7 @@ test.describe("dashboard", () => {
         label: Domain
         column: domain
         description: ""
-
+        
         `;
 
     await updateCodeEditor(page, docWithIncompleteMeasure);
@@ -394,29 +414,29 @@ test.describe("dashboard", () => {
 
     const docWithCompleteMeasure = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-    title: "AdBids_model_dashboard_rename"
-    model: "AdBids_model"
-    default_time_range: ""
-    smallest_time_grain: "week"
-    timeseries: "timestamp"
-    measures:
-      - label: Total rows
-        expression: count(*)
-        name: total_rows
-        description: Total number of records present
-      - label: Avg Bid Price
-        expression: avg(bid_price)
-        name: avg_bid_price
-        format_preset: currency_usd
-    dimensions:
-      - name: publisher
-        label: Publisher
-        column: publisher
-        description: ""
-      - name: domain
-        label: Domain Name
-        column: domain
-        description: ""
+title: "AdBids_model_dashboard_rename"
+model: "AdBids_model"
+default_time_range: ""
+smallest_time_grain: "week"
+timeseries: "timestamp"
+measures:
+  - label: Total rows
+    expression: count(*)
+    name: total_rows
+    description: Total number of records present
+  - label: Avg Bid Price
+    expression: avg(bid_price)
+    name: avg_bid_price
+    format_preset: currency_usd
+dimensions:
+  - name: publisher
+    label: Publisher
+    column: publisher
+    description: ""
+  - name: domain
+    label: Domain Name
+    column: domain
+    description: ""
         `;
 
     await updateCodeEditor(page, docWithCompleteMeasure);
@@ -539,8 +559,9 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
   await page.getByRole("button", { name: "Go to dashboard" }).click();
 
   // make sure "All time" is selected to clear any time comparison
-  await page.getByLabel("Select time range").click();
-  await page.getByRole("menuitem", { name: "All Time" }).click();
+  await interactWithTimeRangeMenu(page, async () => {
+    await page.getByRole("menuitem", { name: "All Time" }).click();
+  });
 
   // Check "toggle percent change" button is disabled since there is no time comparison
   await expect(
@@ -552,8 +573,9 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
   ).toBeDisabled();
 
   // Select a time range, which should automatically enable a time comparison (including context column)
-  await page.getByLabel("Select time range").click();
-  await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
+  await interactWithTimeRangeMenu(page, async () => {
+    await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
+  });
 
   // This regex matches a line that:
   // - starts with "Facebook"
@@ -585,8 +607,10 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
   await expect(page.getByText(comparisonColumnRegex)).toBeVisible();
 
   // click back to "All time" to clear the time comparison
-  await page.getByLabel("Select time range").click();
-  await page.getByRole("menuitem", { name: "All Time" }).click();
+  await interactWithTimeRangeMenu(page, async () => {
+    await page.getByRole("menuitem", { name: "All Time" }).click();
+  });
+
   // Check that time comparison context column is hidden
   await expect(page.getByText(comparisonColumnRegex)).not.toBeVisible();
   await expect(page.getByText("Facebook 19.3k")).toBeVisible();
@@ -617,8 +641,10 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
   await expect(page.getByText("Facebook $57.8k 19%")).toBeVisible();
 
   // Add a time comparison
-  await page.getByLabel("Select time range").click();
-  await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
+  await interactWithTimeRangeMenu(page, async () => {
+    await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
+  });
+
   // check that the percent of total button remains pressed after adding a time comparison
   await expect(
     page.getByRole("button", { name: "Toggle percent of total" })
@@ -683,6 +709,10 @@ async function runThroughEmptyMetricsFlows(page) {
   // select the first menu item.
   await page.getByText("metrics configuration from an existing model").click();
   await page.getByRole("menuitem").getByText("AdBids_model").click();
+  // Wait for menu to close
+  await expect(
+    page.getByRole("menuitem", { name: "Last 6 Hours" })
+  ).not.toBeVisible();
 
   // let's check the inspector.
   await expect(await page.getByText("Model summary")).toBeVisible();
@@ -702,4 +732,19 @@ async function runThroughEmptyMetricsFlows(page) {
 
   // go back to the metrics page.
   await page.getByRole("button", { name: "Edit metrics" }).click();
+}
+
+// Helper that opens the time range menu, calls your interactions, and then waits until the menu closes
+async function interactWithTimeRangeMenu(
+  page: Page,
+  cb: () => void | Promise<void>
+) {
+  // Open the menu
+  await page.getByLabel("Select time range").click();
+  // Run the defined interactions
+  await cb();
+  // Wait for menu to close
+  await expect(
+    page.getByRole("menu", { name: "Time range selector" })
+  ).not.toBeVisible();
 }

@@ -51,7 +51,6 @@ A slot is provided to change the text within the button.
   {location}
   {alignment}
   {distance}
-  {disabled}
   {multiSelect}
   on:select={(event) => {
     if (!multiSelect) selection = event.detail;

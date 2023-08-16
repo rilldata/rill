@@ -29,10 +29,7 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
   import { getName } from "../../entity-management/name-utils";
-  import {
-    addQuickMetricsToDashboardYAML,
-    initBlankDashboardYAML,
-  } from "../../metrics-views/metrics-internal-store";
+  import { generateDashboardYAMLForModel } from "../../metrics-views/metrics-internal-store";
   import { useModelNames } from "../selectors";
 
   export let modelName: string;
@@ -64,10 +61,9 @@
       `${modelName}_dashboard`,
       $dashboardNames.data
     );
-    const blankDashboardYAML = initBlankDashboardYAML(newDashboardName);
-    const fullDashboardYAML = addQuickMetricsToDashboardYAML(
-      blankDashboardYAML,
-      model
+    const dashboardYAML = generateDashboardYAMLForModel(
+      model,
+      newDashboardName
     );
     $createFileMutation.mutate(
       {
@@ -77,7 +73,7 @@
             newDashboardName,
             EntityType.MetricsDefinition
           ),
-          blob: fullDashboardYAML,
+          blob: dashboardYAML,
           create: true,
           createOnly: true,
           strict: false,

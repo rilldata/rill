@@ -2,20 +2,22 @@ import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboar
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
+import { getLocalUserPreferences } from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
   getMapFromArray,
   removeIfExists,
 } from "@rilldata/web-common/lib/arrayUtils";
 import { getComparionRangeForScrub } from "@rilldata/web-common/lib/time/comparisons";
+import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
+import { convertTimeRangePreset } from "@rilldata/web-common/lib/time/ranges";
+import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import type {
-  DashboardTimeControls,
-  ScrubRange,
-} from "@rilldata/web-common/lib/time/types";
-import type {
+  V1ColumnTimeRangeResponse,
   V1MetricsView,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
-import { derived, Readable, Writable, writable } from "svelte/store";
+import { derived, get, Readable, Writable, writable } from "svelte/store";
 
 export interface LeaderboardValue {
   value: number;
@@ -88,9 +90,6 @@ export interface MetricsExplorerEntity {
   proto?: string;
   // proto for the default set of selections
   defaultProto?: string;
-  // marks that defaults have been selected
-  // TODO: move default selection to a common place and avoid this
-  defaultsSelected?: boolean;
 }
 
 export interface MetricsExplorerStoreType {
@@ -102,24 +101,14 @@ const { update, subscribe } = writable({
 
 function updateMetricsExplorerProto(metricsExplorer: MetricsExplorerEntity) {
   metricsExplorer.proto = getProtoFromDashboardState(metricsExplorer);
-  if (!metricsExplorer.defaultsSelected) {
-    metricsExplorer.defaultProto = metricsExplorer.proto;
-  }
 }
 
 export const updateMetricsExplorerByName = (
   name: string,
-  callback: (metricsExplorer: MetricsExplorerEntity) => void,
-  absenceCallback?: () => MetricsExplorerEntity
+  callback: (metricsExplorer: MetricsExplorerEntity) => void
 ) => {
   update((state) => {
     if (!state.entities[name]) {
-      if (absenceCallback) {
-        state.entities[name] = absenceCallback();
-      }
-      if (state.entities[name]) {
-        updateMetricsExplorerProto(state.entities[name]);
-      }
       return state;
     }
 
@@ -237,54 +226,24 @@ function syncDimensions(
 }
 
 const metricViewReducers = {
-  syncFromUrl(name: string, urlState: string, metricsView: V1MetricsView) {
-    if (!urlState || !metricsView) return;
-    // not all data for MetricsExplorerEntity will be filled out here.
-    // Hence, it is a Partial<MetricsExplorerEntity>
-    const partial = getDashboardStateFromUrl(urlState, metricsView);
-    if (!partial) return;
+  init(
+    name: string,
+    metricsView: V1MetricsView,
+    fullTimeRange: V1ColumnTimeRangeResponse
+  ) {
+    update((state) => {
+      if (state.entities[name]) return state;
 
-    updateMetricsExplorerByName(
-      name,
-      (metricsExplorer) => {
-        for (const key in partial) {
-          metricsExplorer[key] = partial[key];
-        }
-        metricsExplorer.dimensionFilterExcludeMode =
-          includeExcludeModeFromFilters(partial.filters);
-        metricsExplorer.defaultsSelected = true;
-      },
-      () => ({
-        name,
-        selectedMeasureNames: [],
-        visibleMeasureKeys: new Set(),
-        allMeasuresVisible: false,
-        visibleDimensionKeys: new Set(),
-        allDimensionsVisible: false,
-        leaderboardMeasureName: "",
-        filters: {},
-        dimensionFilterExcludeMode: includeExcludeModeFromFilters(
-          partial.filters
-        ),
-        leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
-        defaultsSelected: true,
-        ...partial,
-      })
-    );
-  },
+      const timeZone = get(getLocalUserPreferences()).timeZone;
+      const timeRange = convertTimeRangePreset(
+        TimeRangePreset.ALL_TIME,
+        new Date(fullTimeRange.timeRangeSummary.min),
+        new Date(fullTimeRange.timeRangeSummary.max),
+        timeZone
+      );
+      const timeGrain = getDefaultTimeGrain(timeRange.start, timeRange.end);
 
-  sync(name: string, metricsView: V1MetricsView) {
-    if (!name || !metricsView || !metricsView.measures) return;
-    updateMetricsExplorerByName(
-      name,
-      (metricsExplorer) => {
-        // remove references to non existent measures
-        syncMeasures(metricsView, metricsExplorer);
-
-        // remove references to non existent dimensions
-        syncDimensions(metricsView, metricsExplorer);
-      },
-      () => ({
+      state.entities[name] = {
         name,
         selectedMeasureNames: metricsView.measures.map(
           (measure) => measure.name
@@ -305,8 +264,45 @@ const metricViewReducers = {
         },
         dimensionFilterExcludeMode: new Map(),
         leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
-      })
-    );
+
+        selectedTimezone: timeZone,
+        selectedTimeRange: {
+          ...timeRange,
+          interval: timeGrain.grain,
+        },
+      };
+
+      updateMetricsExplorerProto(state.entities[name]);
+      state.entities[name].defaultProto = state.entities[name].proto;
+      return state;
+    });
+  },
+
+  syncFromUrl(name: string, urlState: string, metricsView: V1MetricsView) {
+    if (!urlState || !metricsView) return;
+    // not all data for MetricsExplorerEntity will be filled out here.
+    // Hence, it is a Partial<MetricsExplorerEntity>
+    const partial = getDashboardStateFromUrl(urlState, metricsView);
+    if (!partial) return;
+
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      for (const key in partial) {
+        metricsExplorer[key] = partial[key];
+      }
+      metricsExplorer.dimensionFilterExcludeMode =
+        includeExcludeModeFromFilters(partial.filters);
+    });
+  },
+
+  sync(name: string, metricsView: V1MetricsView) {
+    if (!name || !metricsView || !metricsView.measures) return;
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      // remove references to non existent measures
+      syncMeasures(metricsView, metricsExplorer);
+
+      // remove references to non existent dimensions
+      syncDimensions(metricsView, metricsExplorer);
+    });
   },
 
   setLeaderboardMeasureName(name: string, measureName: string) {
@@ -513,12 +509,6 @@ const metricViewReducers = {
         otherFilterEntryIndex,
         1
       );
-    });
-  },
-
-  allDefaultsSelected(name: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.defaultsSelected = true;
     });
   },
 

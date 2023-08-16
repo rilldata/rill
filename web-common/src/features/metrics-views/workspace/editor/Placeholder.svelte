@@ -6,7 +6,7 @@
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
-    addQuickMetricsToDashboardYAML,
+    generateDashboardYAMLForModel,
     initBlankDashboardYAML,
   } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
   import { useModelNames } from "@rilldata/web-common/features/models/selectors";
@@ -31,22 +31,17 @@
     "inline hover:font-semibold underline underline-offset-2";
 
   // FIXME: shouldn't these be generalized and used everywhere?
-  async function onAutogenerateConfigFromModel(
-    modelName: string,
-    str = undefined
-  ) {
-    if (str === undefined) {
-      const model = await queryClient.fetchQuery<V1GetCatalogEntryResponse>({
-        queryKey: getRuntimeServiceGetCatalogEntryQueryKey(
-          $runtime?.instanceId,
-          modelName
-        ),
-        queryFn: () =>
-          runtimeServiceGetCatalogEntry($runtime?.instanceId, modelName),
-      });
+  async function onAutogenerateConfigFromModel(modelName: string) {
+    const model = await queryClient.fetchQuery<V1GetCatalogEntryResponse>({
+      queryKey: getRuntimeServiceGetCatalogEntryQueryKey(
+        $runtime?.instanceId,
+        modelName
+      ),
+      queryFn: () =>
+        runtimeServiceGetCatalogEntry($runtime?.instanceId, modelName),
+    });
 
-      str = addQuickMetricsToDashboardYAML("", model?.entry?.model);
-    }
+    const dashboardYAML = generateDashboardYAMLForModel(model?.entry?.model);
 
     const response = await runtimeServicePutFileAndReconcile({
       instanceId: $runtime.instanceId,
@@ -54,7 +49,7 @@
         metricsName,
         EntityType.MetricsDefinition
       ),
-      blob: str,
+      blob: dashboardYAML,
       create: true,
       createOnly: true,
       strict: false,
@@ -66,7 +61,7 @@
       changes: {
         from: 0,
         to: view.state.doc.length,
-        insert: str,
+        insert: dashboardYAML,
       },
       // tell the editor that this is a transaction that should _not_ be
       // debounced. This tells the binder to delay dispatching out of the editor component

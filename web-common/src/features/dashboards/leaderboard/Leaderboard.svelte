@@ -111,7 +111,7 @@
     metricViewName,
     {
       dimensionName: dimensionName,
-      measureNames: [measure.name],
+      measureNames: [measure?.name],
       timeStart: hasTimeSeries ? timeStart : undefined,
       timeEnd: hasTimeSeries ? timeEnd : undefined,
       filter: filterForDimension,
@@ -119,7 +119,7 @@
       offset: "0",
       sort: [
         {
-          name: measure.name,
+          name: measure?.name,
           ascending: false,
         },
       ],
@@ -194,7 +194,7 @@
     metricViewName,
     {
       dimensionName: dimensionName,
-      measureNames: [measure.name],
+      measureNames: [measure?.name],
       timeStart: comparisonTimeStart,
       timeEnd: comparisonTimeEnd,
       filter: updatedFilters,
@@ -202,7 +202,7 @@
       offset: "0",
       sort: [
         {
-          name: measure.name,
+          name: measure?.name,
           ascending: false,
         },
       ],

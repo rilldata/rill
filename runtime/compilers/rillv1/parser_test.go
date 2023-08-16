@@ -161,7 +161,7 @@ SELECT * FROM {{ ref "m2" }}
 			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m2"}},
 			Paths: []string{"/dashboards/d1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
-				Model: "m2",
+				Table: "m2",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
 					{Name: "a"},
 				},
@@ -636,10 +636,10 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 
 func makeRepo(t testing.TB, files map[string]string) drivers.RepoStore {
 	root := t.TempDir()
-	handle, err := drivers.Open("file", map[string]any{"dsn": root}, zap.NewNop())
+	handle, err := drivers.Open("file", map[string]any{"dsn": root}, false, zap.NewNop())
 	require.NoError(t, err)
 
-	repo, ok := handle.AsRepoStore()
+	repo, ok := handle.AsRepoStore("")
 	require.True(t, ok)
 
 	putRepo(t, repo, files)
@@ -649,14 +649,14 @@ func makeRepo(t testing.TB, files map[string]string) drivers.RepoStore {
 
 func putRepo(t testing.TB, repo drivers.RepoStore, files map[string]string) {
 	for path, data := range files {
-		err := repo.Put(context.Background(), "", path, strings.NewReader(data))
+		err := repo.Put(context.Background(), path, strings.NewReader(data))
 		require.NoError(t, err)
 	}
 }
 
 func deleteRepo(t testing.TB, repo drivers.RepoStore, files ...string) {
 	for _, path := range files {
-		err := repo.Delete(context.Background(), "", path)
+		err := repo.Delete(context.Background(), path)
 		require.NoError(t, err)
 	}
 }

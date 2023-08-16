@@ -52,7 +52,7 @@
   <div class="border-t border-gray-300" />
   <div class="absolute right-1/2 left-1/2 top-1/2 bottom-1/2">
     <div
-      class="border-gray-400 border bg-white rounded h-1 w-8 absolute -translate-y-1/2"
+      class="border-gray-400 border bg-white rounded h-1 w-8 absolute -translate-x-1/2 -translate-y-1/2"
     />
   </div>
 </div>

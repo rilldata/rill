@@ -22,7 +22,7 @@ func (s *Service) getMigrationMap(ctx context.Context, conf ReconcileConfig) (ma
 		}
 	} else {
 		var err error
-		repoPaths, err = s.Repo.ListRecursive(ctx, s.InstID, "{sources,models,dashboards}/*.{sql,yaml,yml}")
+		repoPaths, err = s.Repo.ListRecursive(ctx, "{sources,models,dashboards}/*.{sql,yaml,yml}")
 		if err != nil {
 			return nil, nil, err
 		}
@@ -36,7 +36,7 @@ func (s *Service) getMigrationMap(ctx context.Context, conf ReconcileConfig) (ma
 	storeObjectsMap := make(map[string]*drivers.CatalogEntry)
 	storeObjectsPathMap := make(map[string]*drivers.CatalogEntry)
 	storeObjectsConsumed := make(map[string]bool)
-	storeObjects, err := s.Catalog.FindEntries(ctx, s.InstID, drivers.ObjectTypeUnspecified)
+	storeObjects, err := s.Catalog.FindEntries(ctx, drivers.ObjectTypeUnspecified)
 	if err != nil {
 		return nil, nil, err
 	}

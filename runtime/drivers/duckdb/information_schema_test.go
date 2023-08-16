@@ -11,7 +11,7 @@ import (
 
 func TestInformationSchemaAll(t *testing.T) {
 	conn := prepareConn(t)
-	olap, _ := conn.AsOLAP()
+	olap, _ := conn.AsOLAP("")
 
 	err := olap.Exec(context.Background(), &drivers.Statement{
 		Query: "CREATE VIEW model as (select 1, 2, 3)",
@@ -31,11 +31,13 @@ func TestInformationSchemaAll(t *testing.T) {
 	require.Equal(t, runtimev1.Type_CODE_STRING, tables[1].Schema.Fields[0].Type.Code)
 	require.Equal(t, "baz", tables[1].Schema.Fields[1].Name)
 	require.Equal(t, runtimev1.Type_CODE_INT32, tables[1].Schema.Fields[1].Type.Code)
+
+	require.Equal(t, true, tables[2].View)
 }
 
 func TestInformationSchemaLookup(t *testing.T) {
 	conn := prepareConn(t)
-	olap, _ := conn.AsOLAP()
+	olap, _ := conn.AsOLAP("")
 	ctx := context.Background()
 
 	err := olap.Exec(ctx, &drivers.Statement{
