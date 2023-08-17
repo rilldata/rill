@@ -25,7 +25,15 @@
   $: isTableFiltered = $store.filteredValues.length > 0;
   $: isCellInFilter = $store.filteredValues.includes(rowDimension);
 
-  const cellQuery = createQuery({
+  let cellQuery = createQuery({
+    queryKey: ["time-dimension-details", block[0], block[1]],
+    queryFn: fetchData(block, 1000),
+  }) as CreateQueryResult<{
+    block: number[];
+    data: { text?: string; value?: number; sparkline?: number[] }[][];
+  }>;
+
+  $: cellQuery = createQuery({
     queryKey: ["time-dimension-details", block[0], block[1]],
     queryFn: fetchData(block, 1000),
   }) as CreateQueryResult<{
@@ -122,12 +130,12 @@
   };
 </script>
 
-<button
-  class={_class}
-  on:mouseenter={handleMouseEnter}
+<!-- 
+   on:mouseenter={handleMouseEnter}
   on:mouseleave={handleMouseLeave}
   on:click={handleClick}
->
+ -->
+<button class={_class}>
   {#if cellComponent && !cellData.isLoading}
     <svelte:component
       this={cellComponent}
