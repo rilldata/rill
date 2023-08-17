@@ -38,8 +38,8 @@ const LeaderboardContextColumnMap: Record<
 > = {
   [LeaderboardContextColumn.PERCENT]:
     DashboardState_LeaderboardContextColumn.PERCENT,
-  [LeaderboardContextColumn.DELTA_CHANGE]:
-    DashboardState_LeaderboardContextColumn.DELTA_CHANGE,
+  [LeaderboardContextColumn.DELTA_PCT]:
+    DashboardState_LeaderboardContextColumn.DELTA_ABSOLUTE,
   [LeaderboardContextColumn.HIDDEN]:
     DashboardState_LeaderboardContextColumn.HIDDEN,
 };

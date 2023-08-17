@@ -105,13 +105,16 @@
     metricsExplorerStore.setMetricDimensionName(metricViewName, dimensionName);
   }
 
-  function toggleSortDirection() {
-    metricsExplorerStore.toggleSortDirection(metricViewName);
+  function toggleSort(evt) {
+    console.log("toggleSort", evt.detail);
+    metricsExplorerStore.toggleSort(metricViewName, evt.detail);
   }
 
   $: timeStart = $fetchTimeStore?.start?.toISOString();
   $: timeEnd = $fetchTimeStore?.end?.toISOString();
   $: sortAscending = $dashboardStore.sortDirection === SortDirection.ASCENDING;
+  $: sortType = $dashboardStore.dashboardSortType;
+
   $: topListQuery = createQueryServiceMetricsViewToplist(
     $runtime.instanceId,
     metricViewName,
@@ -175,7 +178,7 @@
   $: contextColumn = $dashboardStore?.leaderboardContextColumn;
   // Compose the comparison /toplist query
   $: showTimeComparison =
-    (contextColumn === LeaderboardContextColumn.DELTA_CHANGE ||
+    (contextColumn === LeaderboardContextColumn.DELTA_PCT ||
       contextColumn === LeaderboardContextColumn.DELTA_ABSOLUTE) &&
     $dashboardStore?.showComparison;
 
@@ -267,9 +270,10 @@
       {filterExcludeMode}
       {hovered}
       {sortAscending}
+      {sortType}
       dimensionDescription={dimension?.description}
       on:open-dimension-details={() => selectDimension(dimensionName)}
-      on:toggle-sort-direction={toggleSortDirection}
+      on:toggle-sort={toggleSort}
     />
     {#if values}
       <div class="rounded-b border-gray-200 surface text-gray-800">

@@ -27,7 +27,7 @@
 
     if (key === LeaderboardContextColumn.HIDDEN) {
       metricsExplorerStore.hideContextColumn(metricViewName);
-    } else if (key === LeaderboardContextColumn.DELTA_CHANGE) {
+    } else if (key === LeaderboardContextColumn.DELTA_PCT) {
       metricsExplorerStore.displayDeltaChange(metricViewName);
     } else if (key === LeaderboardContextColumn.PERCENT) {
       metricsExplorerStore.displayPercentOfTotal(metricViewName);
@@ -45,7 +45,7 @@
     },
     {
       main: "Percent change",
-      key: LeaderboardContextColumn.DELTA_CHANGE,
+      key: LeaderboardContextColumn.DELTA_PCT,
       disabled:
         !hasTimeSeries ||
         !metricsExplorer.showComparison ||

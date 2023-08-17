@@ -354,12 +354,32 @@ const metricViewReducers = {
     });
   },
 
-  toggleSortDirection(name: string) {
+  toggleSort(name: string, sortType?: SortType) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.sortDirection =
-        metricsExplorer.sortDirection === SortDirection.ASCENDING
-          ? SortDirection.DESCENDING
-          : SortDirection.ASCENDING;
+      // if sortType is not provided,  or if it is provided
+      // and is the same as the current sort type,
+      // then just toggle the current sort direction
+      console.log(
+        "sortType",
+        sortType,
+        "dashbord",
+        metricsExplorer.dashboardSortType
+      );
+      if (
+        sortType === undefined ||
+        metricsExplorer.dashboardSortType === sortType
+      ) {
+        metricsExplorer.sortDirection =
+          metricsExplorer.sortDirection === SortDirection.ASCENDING
+            ? SortDirection.DESCENDING
+            : SortDirection.ASCENDING;
+      } else {
+        // if the sortType is different from the current sort type,
+        //  then update the sort type and set the sort direction
+        // to descending
+        metricsExplorer.dashboardSortType = sortType;
+        metricsExplorer.sortDirection = SortDirection.DESCENDING;
+      }
     });
   },
 
@@ -416,22 +436,22 @@ const metricViewReducers = {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.showComparison = showComparison;
       // if setting showComparison===true and not currently
-      //  showing any context column, then show DELTA_CHANGE
+      //  showing any context column, then show DELTA_ABSOLUTE
       if (
         showComparison &&
         metricsExplorer.leaderboardContextColumn ===
           LeaderboardContextColumn.HIDDEN
       ) {
         metricsExplorer.leaderboardContextColumn =
-          LeaderboardContextColumn.DELTA_CHANGE;
+          LeaderboardContextColumn.DELTA_PCT;
       }
 
       // if setting showComparison===false and currently
-      //  showing DELTA_CHANGE, then hide context column
+      //  showing DELTA_ABSOLUTE, then hide context column
       if (
         !showComparison &&
         metricsExplorer.leaderboardContextColumn ===
-          LeaderboardContextColumn.DELTA_CHANGE
+          LeaderboardContextColumn.DELTA_PCT
       ) {
         metricsExplorer.leaderboardContextColumn =
           LeaderboardContextColumn.HIDDEN;
@@ -445,7 +465,7 @@ const metricViewReducers = {
       if (metricsExplorer.showComparison === false) return;
 
       metricsExplorer.leaderboardContextColumn =
-        LeaderboardContextColumn.DELTA_CHANGE;
+        LeaderboardContextColumn.DELTA_PCT;
     });
   },
 

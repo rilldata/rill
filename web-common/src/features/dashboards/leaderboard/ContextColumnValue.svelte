@@ -9,15 +9,10 @@
   $: neg = formattedValue[0] === "-";
   $: noData = formattedValue === "" || !formattedValue;
   $: customStyle = neg ? "text-red-500" : noData ? "opacity-50 italic" : "";
-  $: {
-    if (showContext === LeaderboardContextColumn.DELTA_ABSOLUTE) {
-      console.log({ formattedValue, neg, noData });
-    }
-  }
   $: width = contextColumnWidth(showContext);
 </script>
 
-{#if showContext === LeaderboardContextColumn.DELTA_CHANGE || showContext === LeaderboardContextColumn.PERCENT}
+{#if showContext === LeaderboardContextColumn.DELTA_PCT || showContext === LeaderboardContextColumn.PERCENT}
   <div style:width>
     <PercentageChange value={formattedValue} />
   </div>

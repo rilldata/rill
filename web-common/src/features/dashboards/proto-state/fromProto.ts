@@ -26,8 +26,8 @@ const LeaderboardContextColumnReverseMap: Record<
     LeaderboardContextColumn.HIDDEN,
   [DashboardState_LeaderboardContextColumn.PERCENT]:
     LeaderboardContextColumn.PERCENT,
-  [DashboardState_LeaderboardContextColumn.DELTA_CHANGE]:
-    LeaderboardContextColumn.DELTA_CHANGE,
+  [DashboardState_LeaderboardContextColumn.DELTA_ABSOLUTE]:
+    LeaderboardContextColumn.DELTA_PCT,
   [DashboardState_LeaderboardContextColumn.HIDDEN]:
     LeaderboardContextColumn.HIDDEN,
 };
