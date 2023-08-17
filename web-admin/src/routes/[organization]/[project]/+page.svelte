@@ -4,12 +4,14 @@
   import { createAdminServiceGetProject } from "../../../client";
   import DashboardList from "../../../components/projects/DashboardList.svelte";
   import ProjectHero from "../../../components/projects/ProjectHero.svelte";
+  import RedeployProjectCta from "../../../components/projects/RedeployProjectCTA.svelte";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
   $: proj = createAdminServiceGetProject(organization, project);
   $: isProjectDeployed = $proj?.data && $proj.data.prodDeployment;
+  $: isProjectHibernating = $proj?.data && !$proj.data.prodDeployment;
 </script>
 
 <svelte:head>
@@ -25,6 +27,8 @@
         >Check out your dashboards below.</span
       >
       <DashboardList {organization} {project} />
+    {:else if isProjectHibernating}
+      <RedeployProjectCta {organization} {project} />
     {/if}
   </div>
 </VerticalScrollContainer>
