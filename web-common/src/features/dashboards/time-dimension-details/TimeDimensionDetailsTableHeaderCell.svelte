@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { FILTER_OVERFLOW_WIDTH } from "./constants";
   import { useTDTContext } from "./context";
 
   export const rowIdx = -1;
@@ -37,6 +38,13 @@
     <svelte:component this={header.component} />
   {:else}
     {header.title}
+  {/if}
+  {#if colIdx === 0}
+    <!-- Placeholder for table padding to fit the overflowing checkboxes from dimension cells. This will hide column labels that horizontally scroll to the left -->
+    <div
+      style={`left: -${FILTER_OVERFLOW_WIDTH}px; width: ${FILTER_OVERFLOW_WIDTH}px;`}
+      class="absolute top-0 h-full bg-white z-10 flex items-center justify-center bg-white border-b"
+    />
   {/if}
 </div>
 

@@ -5,10 +5,17 @@
   } from "./time-dimension-details-store";
   import { useTDTContext } from "./context";
   import type { TCellData } from "./mock-data";
+  import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import {
+    FILTER_OVERFLOW_WIDTH,
+    HEADER_HEIGHT,
+    ROW_HEIGHT,
+  } from "./constants";
 
   export let cell: TCellData;
+  export let isInFilter: boolean;
 
-  let _class = "w-full h-full flex items-center justify-between ";
+  let _class = "w-full h-full flex items-center justify-between";
   const { store } = useTDTContext();
 
   let dotClass = "";
@@ -32,13 +39,23 @@
       return state;
     });
   };
+  // Position the filter check/X outside of the dimension value cell
+  const filterOverflowStyle = `left: -${FILTER_OVERFLOW_WIDTH}px; width: ${FILTER_OVERFLOW_WIDTH}px;`;
 </script>
 
 <div class={_class}>
+  <div
+    style={filterOverflowStyle}
+    class="absolute top-0 bg-white h-full flex items-center justify-center z-10"
+  >
+    {#if isInFilter}
+      <Check size="20px" />
+    {/if}
+  </div>
   {cell.text}
   <button
     class="h-full w-4 flex items-center justify-center cursor-pointer group"
-    on:click={handleDotClick}
+    on:click|preventDefault|stopPropagation={handleDotClick}
   >
     <div class={dotClass} />
   </button>

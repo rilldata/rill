@@ -11,6 +11,8 @@
   export let headerComponent: typeof SvelteComponent;
   export let height: number;
   export let headerHeight: number;
+  export let headerStyle = "";
+  export let bodyStyle = "";
 
   function range(n: number) {
     return new Array(n).fill(0).map((d, i) => i);
@@ -32,12 +34,14 @@
     overscan: 10,
   });
 
+  let fixedColumnsToRender: VirtualItem[] = [];
+  let nonFixedColumnsToRender: VirtualItem[] = [];
   let columnsToRender: VirtualItem[] = [];
   $: {
     const virtualColumns = $columnVirtualizer?.getVirtualItems() ?? [];
 
     // Manually calculate fixed virtual column set as they may not be in current virtualized item set
-    const fixedVirtualColumns = range(fixedColCt).reduce((arr, idx) => {
+    fixedColumnsToRender = range(fixedColCt).reduce((arr, idx) => {
       const start = arr[idx - 1]?.end ?? 0;
       const size = getColumnWidth(idx);
       const end = start + getColumnWidth(idx);
@@ -55,11 +59,11 @@
     }, []);
 
     // If current virtual column set has fixed columns, remove them since we will use our measurements
-    const nonfixedVirtualColumns = virtualColumns.filter(
+    nonFixedColumnsToRender = virtualColumns.filter(
       (c) => c.index >= fixedColCt
     );
 
-    columnsToRender = fixedVirtualColumns.concat(nonfixedVirtualColumns);
+    columnsToRender = fixedColumnsToRender.concat(nonFixedColumnsToRender);
   }
 
   const isFixedColumn = (idx: number) => idx < fixedColCt;
@@ -71,21 +75,22 @@
       style += `position: absolute; top: 0; left: 0;  transform: translateX(${col.start}px);`;
     return style;
   };
+
+  // Sync header scroll with body virtual scroll
+  let scrollLeft = 0;
+  const handleScroll = (evt) => {
+    scrollLeft = evt.target.scrollLeft;
+  };
 </script>
 
-<div
-  bind:this={container}
-  role="grid"
-  style={`height: ${height}px; overflow: auto;`}
->
+<div role="grid" class="overflow-hidden" style={headerStyle}>
   <div
-    style={`height: ${$rowVirtualizer?.getTotalSize()}px; width: ${$columnVirtualizer?.getTotalSize()}px; position: relative;`}
+    role="row"
+    class="sticky z-10 top-0 left-0 flex"
+    style={`height: ${headerHeight}px;`}
   >
-    <div
-      role="row"
-      style={`position: sticky; z-index: 2; top: 0; left: 0; height: ${headerHeight}px; display: flex;`}
-    >
-      {#each columnsToRender as col (col.index)}
+    <div role="presentation" class="flex">
+      {#each fixedColumnsToRender as col (col.index)}
         <div
           role="cell"
           style={getCellWrapperStyle({ size: headerHeight }, col)}
@@ -100,10 +105,44 @@
         </div>
       {/each}
     </div>
+    <div
+      role="presentation"
+      class="absolute left-0"
+      style={`transform: translate3d(${-scrollLeft}px, 0px, 0px)`}
+    >
+      {#each nonFixedColumnsToRender as col (col.index)}
+        <div
+          role="cell"
+          style={getCellWrapperStyle({ size: headerHeight }, col)}
+        >
+          <svelte:component
+            this={headerComponent}
+            colIdx={col.index}
+            rowIdx={-1}
+            fixed={isFixedColumn(col.index)}
+            lastFixed={col.index === fixedColCt - 1}
+          />
+        </div>
+      {/each}
+    </div>
+  </div>
+</div>
+<div
+  bind:this={container}
+  role="grid"
+  class="overflow-auto"
+  style={`height: ${height}px; ${bodyStyle}`}
+  on:scroll={handleScroll}
+>
+  <div
+    class="relative"
+    style={`height: ${$rowVirtualizer?.getTotalSize()}px; width: ${$columnVirtualizer?.getTotalSize()}px;`}
+  >
     {#each $rowVirtualizer.getVirtualItems() as row (row.index)}
       <div
         role="row"
-        style={`position: absolute; top: ${headerHeight}; left: 0; width: 100%; height: ${row.size}px; transform: translateY(${row.start}px);`}
+        class="absolute left-0 w-full flex"
+        style={`height: ${row.size}px; transform: translateY(${row.start}px);`}
       >
         {#each columnsToRender as col (col.index)}
           <div role="cell" style={getCellWrapperStyle(row, col)}>

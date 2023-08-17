@@ -2,10 +2,10 @@
   import { createQuery, CreateQueryResult } from "@tanstack/svelte-query";
   import { getBlock } from "./util";
   import { fetchData, TCellData } from "./mock-data";
-  import FormattedNumberCell from "./FormattedNumberCell.svelte";
   import type { SvelteComponent } from "svelte";
-  import DimensionCell from "./DimensionCell.svelte";
   import { useTDTContext } from "./context";
+  import { toggleFilter } from "./time-dimension-details-store";
+  import { getCellComponent } from "./cell-renderings";
 
   export let rowIdx: number;
   export let colIdx: number;
@@ -20,6 +20,10 @@
   };
   let block = getBlock(100, rowIdx, rowIdx);
   $: block = getBlock(100, rowIdx, rowIdx);
+
+  let rowDimension = "";
+  $: isTableFiltered = $store.filteredValues.length > 0;
+  $: isCellInFilter = $store.filteredValues.includes(rowDimension);
 
   const cellQuery = createQuery({
     queryKey: ["time-dimension-details", block[0], block[1]],
@@ -37,12 +41,14 @@
     ) {
       cellData =
         $cellQuery.data.data[rowIdx - $cellQuery.data.block[0]][colIdx];
+      rowDimension =
+        $cellQuery.data.data[rowIdx - $cellQuery.data.block[0]][0].text;
     } else cellData = { text: "...", isLoading: true };
   }
 
   let _class = "";
   $: {
-    _class = "h-full flex items-center px-2";
+    _class = "h-full w-full flex items-center px-2";
     if (fixed) _class += ` z-2`;
     if (lastFixed) _class += ` right-shadow`;
 
@@ -85,6 +91,9 @@
     if (isDoubleHighlighted) colorName = palette.doubleHighlighted;
     else if (isHighlighted) colorName = palette.highlighted;
     _class += ` ${colorName}`;
+
+    // Filter states
+    if (isTableFiltered && !isCellInFilter) _class += ` ui-copy-disabled-faint`;
   }
 
   const handleMouseEnter = () => {
@@ -101,49 +110,37 @@
   let cellComponent: typeof SvelteComponent;
   let cellComponentDefaultProps = {};
   $: {
-    // Dimension cell
-    if (colIdx === 0) {
-      cellComponent = DimensionCell;
-      cellComponentDefaultProps = {};
-    }
-    // Measure cell and delta cell
-    else if ([1, 3].includes(colIdx)) {
-      cellComponent = FormattedNumberCell;
-      cellComponentDefaultProps = { negClass: "text-red-500", format };
-    }
-    // Percent of total and delta percent cell
-    else if ([2, 4].includes(colIdx)) {
-      cellComponent = FormattedNumberCell;
-      cellComponentDefaultProps = { negClass: "text-red-500", format: "0.1%" };
-    }
-    // Pivotted measure cells
-    else if (!fixed) {
-      cellComponent = FormattedNumberCell;
-      cellComponentDefaultProps = { format };
-    }
-    // No match
-    else {
-      cellComponent = null;
-      cellComponentDefaultProps = {};
-    }
+    ({ cellComponent, cellComponentDefaultProps } = getCellComponent(
+      colIdx,
+      format
+    ));
   }
+  const handleClick = () => {
+    store.update((state) => {
+      toggleFilter(state, rowDimension);
+      return state;
+    });
+  };
 </script>
 
-<div
+<button
   class={_class}
   on:mouseenter={handleMouseEnter}
   on:mouseleave={handleMouseLeave}
+  on:click={handleClick}
 >
   {#if cellComponent && !cellData.isLoading}
     <svelte:component
       this={cellComponent}
       {...cellComponentDefaultProps}
       cell={cellData}
+      isInFilter={isTableFiltered && isCellInFilter}
+      isOutOfFilter={isTableFiltered && !isCellInFilter}
     />
   {:else}
     {cellData?.text ?? cellData?.value}
   {/if}
-</div>
+</button>
 
 <style>
   .right-shadow:after {
