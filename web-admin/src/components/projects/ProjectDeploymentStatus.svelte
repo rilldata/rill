@@ -8,6 +8,7 @@
   export let project: string;
 
   $: proj = createAdminServiceGetProject(organization, project);
+  $: isProjectDeployed = $proj?.data && $proj.data.prodDeployment;
 
   function handleViewLogs() {
     goto(`/${organization}/${project}/-/logs`);
@@ -36,7 +37,9 @@
       </span>
     {/if}
   </div>
-  <div>
-    <Button type="secondary" on:click={handleViewLogs}>View logs</Button>
-  </div>
+  {#if isProjectDeployed}
+    <div>
+      <Button type="secondary" on:click={handleViewLogs}>View logs</Button>
+    </div>
+  {/if}
 </div>
