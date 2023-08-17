@@ -21,7 +21,6 @@ import (
 )
 
 type createDeploymentOptions struct {
-	OrganizationID       string
 	ProjectID            string
 	Region               string
 	GithubURL            *string
@@ -32,6 +31,7 @@ type createDeploymentOptions struct {
 	ProdOLAPDriver       string
 	ProdOLAPDSN          string
 	ProdSlots            int
+	Annotations          deploymentAnnotations
 }
 
 func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOptions) (*database.Deployment, error) {
@@ -89,10 +89,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		EmbedCatalog:        embedCatalog,
 		Variables:           opts.ProdVariables,
 		IngestionLimitBytes: ingestionLimit,
-		Annotations: map[string]string{
-			"organization_id": opts.OrganizationID,
-			"project_id":      opts.ProjectID,
-		},
+		Annotations:         opts.Annotations.toMap(),
 		Connectors: []*runtimev1.Connector{
 			{
 				Name:   "olap",
@@ -138,6 +135,7 @@ type updateDeploymentOptions struct {
 	Subpath              string
 	Branch               string
 	Variables            map[string]string
+	Annotations          *deploymentAnnotations
 }
 
 func (s *Service) updateDeployment(ctx context.Context, depl *database.Deployment, opts *updateDeploymentOptions) error {
@@ -171,9 +169,14 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 		}
 	}
 
+	var annotations map[string]string
+	if opts.Annotations != nil { // annotations changed
+		annotations = opts.Annotations.toMap()
+	}
 	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
-		InstanceId: depl.RuntimeInstanceID,
-		Connectors: connectors,
+		InstanceId:  depl.RuntimeInstanceID,
+		Connectors:  connectors,
+		Annotations: annotations,
 	})
 	if err != nil {
 		return err
@@ -268,6 +271,20 @@ func (s *Service) updateDeplVariables(ctx context.Context, depl *database.Deploy
 	return err
 }
 
+func (s *Service) updateDeplAnnotations(ctx context.Context, depl *database.Deployment, annotations deploymentAnnotations) error {
+	rt, err := s.openRuntimeClientForDeployment(depl)
+	if err != nil {
+		return err
+	}
+	defer rt.Close()
+
+	_, err = rt.EditInstanceAnnotations(ctx, &runtimev1.EditInstanceAnnotationsRequest{
+		InstanceId:  depl.RuntimeInstanceID,
+		Annotations: annotations.toMap(),
+	})
+	return err
+}
+
 func (s *Service) teardownDeployment(ctx context.Context, proj *database.Project, depl *database.Deployment) error {
 	// Connect to the deployment's runtime
 	rt, err := s.openRuntimeClientForDeployment(depl)
@@ -328,4 +345,29 @@ func githubRepoInfoForRuntime(githubURL string, installationID int64, subPath, b
 	}
 
 	return "github", string(dsn), nil
+}
+
+type deploymentAnnotations struct {
+	orgID    string
+	orgName  string
+	projID   string
+	projName string
+}
+
+func newDeploymentAnnotations(org *database.Organization, proj *database.Project) deploymentAnnotations {
+	return deploymentAnnotations{
+		orgID:    org.ID,
+		orgName:  org.Name,
+		projID:   proj.ID,
+		projName: proj.Name,
+	}
+}
+
+func (da *deploymentAnnotations) toMap() map[string]string {
+	return map[string]string{
+		"organization_id":   da.orgID,
+		"organization_name": da.orgName,
+		"project_id":        da.projID,
+		"project_name":      da.projName,
+	}
 }

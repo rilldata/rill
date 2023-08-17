@@ -113,6 +113,11 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		return nil, err
 	}
 
+	annotations := req.Annotations
+	if len(annotations) == 0 { // annotations not changed
+		annotations = oldInst.Annotations
+	}
+
 	inst := &drivers.Instance{
 		ID:                  req.InstanceId,
 		OLAPDriver:          valOrDefault(req.OlapDriver, oldInst.OLAPDriver),
@@ -120,7 +125,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		EmbedCatalog:        valOrDefault(req.EmbedCatalog, oldInst.EmbedCatalog),
 		Variables:           oldInst.Variables,
 		IngestionLimitBytes: valOrDefault(req.IngestionLimitBytes, oldInst.IngestionLimitBytes),
-		Annotations:         oldInst.Annotations,
+		Annotations:         annotations,
 	}
 	if len(req.Connectors) == 0 {
 		inst.Connectors = oldInst.Connectors
@@ -170,6 +175,41 @@ func (s *Server) EditInstanceVariables(ctx context.Context, req *runtimev1.EditI
 	}
 
 	return &runtimev1.EditInstanceVariablesResponse{
+		Instance: instanceToPB(inst),
+	}, nil
+}
+
+// EditInstanceAnnotations implements RuntimeService.
+func (s *Server) EditInstanceAnnotations(ctx context.Context, req *runtimev1.EditInstanceAnnotationsRequest) (*runtimev1.EditInstanceAnnotationsResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.instance_id", req.InstanceId))
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
+	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
+		return nil, ErrForbidden
+	}
+
+	oldInst, err := s.runtime.FindInstance(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+
+	inst := &drivers.Instance{
+		ID:                  req.InstanceId,
+		OLAPDriver:          oldInst.OLAPDriver,
+		RepoDriver:          oldInst.RepoDriver,
+		EmbedCatalog:        oldInst.EmbedCatalog,
+		IngestionLimitBytes: oldInst.IngestionLimitBytes,
+		Variables:           oldInst.Variables,
+		Annotations:         req.Annotations,
+	}
+
+	err = s.runtime.EditInstance(ctx, inst)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &runtimev1.EditInstanceAnnotationsResponse{
 		Instance: instanceToPB(inst),
 	}, nil
 }
