@@ -22,8 +22,8 @@
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import { SortDirection } from "../proto-state/derived-types";
   import {
-    SortDirection,
     metricsExplorerStore,
     useComparisonRange,
     useDashboardStore,
@@ -178,7 +178,7 @@
   $: contextColumn = $dashboardStore?.leaderboardContextColumn;
   // Compose the comparison /toplist query
   $: showTimeComparison =
-    (contextColumn === LeaderboardContextColumn.DELTA_PCT ||
+    (contextColumn === LeaderboardContextColumn.DELTA_PERCENT ||
       contextColumn === LeaderboardContextColumn.DELTA_ABSOLUTE) &&
     $dashboardStore?.showComparison;
 
