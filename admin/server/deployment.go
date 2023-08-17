@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/bufbuild/connect-go"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -14,12 +13,12 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (s *Server) TriggerReconcile(ctx context.Context, req *connect.Request[adminv1.TriggerReconcileRequest]) (*connect.Response[adminv1.TriggerReconcileResponse], error) {
+func (s *Server) TriggerReconcile(ctx context.Context, req *adminv1.TriggerReconcileRequest) (*adminv1.TriggerReconcileResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.deployment_id", req.Msg.DeploymentId),
+		attribute.String("args.deployment_id", req.DeploymentId),
 	)
 
-	depl, err := s.admin.DB.FindDeployment(ctx, req.Msg.DeploymentId)
+	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -39,16 +38,16 @@ func (s *Server) TriggerReconcile(ctx context.Context, req *connect.Request[admi
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return connect.NewResponse(&adminv1.TriggerReconcileResponse{}), nil
+	return &adminv1.TriggerReconcileResponse{}, nil
 }
 
-func (s *Server) TriggerRefreshSources(ctx context.Context, req *connect.Request[adminv1.TriggerRefreshSourcesRequest]) (*connect.Response[adminv1.TriggerRefreshSourcesResponse], error) {
+func (s *Server) TriggerRefreshSources(ctx context.Context, req *adminv1.TriggerRefreshSourcesRequest) (*adminv1.TriggerRefreshSourcesResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.deployment_id", req.Msg.DeploymentId),
-		attribute.StringSlice("args.sources", req.Msg.Sources),
+		attribute.String("args.deployment_id", req.DeploymentId),
+		attribute.StringSlice("args.sources", req.Sources),
 	)
 
-	depl, err := s.admin.DB.FindDeployment(ctx, req.Msg.DeploymentId)
+	depl, err := s.admin.DB.FindDeployment(ctx, req.DeploymentId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -63,12 +62,12 @@ func (s *Server) TriggerRefreshSources(ctx context.Context, req *connect.Request
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
 	}
 
-	err = s.admin.TriggerRefreshSources(ctx, depl, req.Msg.Sources)
+	err = s.admin.TriggerRefreshSources(ctx, depl, req.Sources)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return connect.NewResponse(&adminv1.TriggerRefreshSourcesResponse{}), nil
+	return &adminv1.TriggerRefreshSourcesResponse{}, nil
 }
 
 func (s *Server) triggerRefreshSourcesInternal(w http.ResponseWriter, r *http.Request) {
@@ -103,19 +102,19 @@ func (s *Server) triggerRefreshSourcesInternal(w http.ResponseWriter, r *http.Re
 	}
 }
 
-func (s *Server) TriggerRedeploy(ctx context.Context, req *connect.Request[adminv1.TriggerRedeployRequest]) (*connect.Response[adminv1.TriggerRedeployResponse], error) {
+func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedeployRequest) (*adminv1.TriggerRedeployResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Msg.Organization),
-		attribute.String("args.project", req.Msg.Project),
-		attribute.String("args.deployment_id", req.Msg.DeploymentId),
+		attribute.String("args.organization", req.Organization),
+		attribute.String("args.project", req.Project),
+		attribute.String("args.deployment_id", req.DeploymentId),
 	)
 
 	// For backwards compatibility, this RPC supports passing either DeploymentId or Organization+Project names
 	var proj *database.Project
 	var depl *database.Deployment
-	if req.Msg.DeploymentId != "" {
+	if req.DeploymentId != "" {
 		var err error
-		depl, err = s.admin.DB.FindDeployment(ctx, req.Msg.DeploymentId)
+		depl, err = s.admin.DB.FindDeployment(ctx, req.DeploymentId)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -126,7 +125,7 @@ func (s *Server) TriggerRedeploy(ctx context.Context, req *connect.Request[admin
 		}
 	} else {
 		var err error
-		proj, err = s.admin.DB.FindProjectByName(ctx, req.Msg.Organization, req.Msg.Project)
+		proj, err = s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -149,5 +148,5 @@ func (s *Server) TriggerRedeploy(ctx context.Context, req *connect.Request[admin
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return connect.NewResponse(&adminv1.TriggerRedeployResponse{}), nil
+	return &adminv1.TriggerRedeployResponse{}, nil
 }

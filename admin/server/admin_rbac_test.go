@@ -123,7 +123,7 @@ func TestAdmin_RBAC(t *testing.T) {
 		grpc.ChainUnaryInterceptor(
 			server.authenticator.UnaryServerInterceptor(),
 		))
-	// adminv1.RegisterAdminServiceServer(s, &server)
+	adminv1.RegisterAdminServiceServer(s, &server)
 
 	defer s.Stop()
 
