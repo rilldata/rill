@@ -13,7 +13,11 @@ export function getFormatterValueForPercDiff(numerator, denominator) {
 
 export type LeaderboardItemData = {
   label: string | number;
+  // main value to be shown in the leaderboard
   value: number;
+  // the comparison value, which may be either the previous value
+  // (used to calculate the absolute or percentage change) or
+  // the measure total (used to calculate the percentage of total)
   comparisonValue: number;
   // selection is not enough to determine if the item is included
   // or excluded; for that we need to know the leaderboard's

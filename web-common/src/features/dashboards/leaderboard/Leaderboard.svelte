@@ -166,10 +166,13 @@
       return b.value - a.value;
     });
 
+  $: contextColumn = $dashboardStore?.leaderboardContextColumn;
   // Compose the comparison /toplist query
   $: showTimeComparison =
-    $dashboardStore?.leaderboardContextColumn ===
-      LeaderboardContextColumn.DELTA_CHANGE && $dashboardStore?.showComparison;
+    (contextColumn === LeaderboardContextColumn.DELTA_CHANGE ||
+      contextColumn === LeaderboardContextColumn.DELTA_ABSOLUTE) &&
+    $dashboardStore?.showComparison;
+
   $: showPercentOfTotal =
     $dashboardStore?.leaderboardContextColumn ===
     LeaderboardContextColumn.PERCENT;
@@ -251,8 +254,7 @@
     on:mouseleave={() => (hovered = false)}
   >
     <LeaderboardHeader
-      {showTimeComparison}
-      {showPercentOfTotal}
+      {contextColumn}
       isFetching={$topListQuery.isFetching}
       {displayName}
       on:toggle-filter-mode={toggleFilterMode}

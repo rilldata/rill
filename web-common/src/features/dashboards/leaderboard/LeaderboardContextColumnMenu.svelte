@@ -31,6 +31,8 @@
       metricsExplorerStore.displayDeltaChange(metricViewName);
     } else if (key === LeaderboardContextColumn.PERCENT) {
       metricsExplorerStore.displayPercentOfTotal(metricViewName);
+    } else if (key === LeaderboardContextColumn.DELTA_ABSOLUTE) {
+      metricsExplorerStore.displayDeltaAbsolute(metricViewName);
     }
   };
 
@@ -44,6 +46,14 @@
     {
       main: "Percent change",
       key: LeaderboardContextColumn.DELTA_CHANGE,
+      disabled:
+        !hasTimeSeries ||
+        !metricsExplorer.showComparison ||
+        metricsExplorer.selectedComparisonTimeRange === undefined,
+    },
+    {
+      main: "Absolute change",
+      key: LeaderboardContextColumn.DELTA_ABSOLUTE,
       disabled:
         !hasTimeSeries ||
         !metricsExplorer.showComparison ||

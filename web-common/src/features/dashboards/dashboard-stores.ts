@@ -405,6 +405,16 @@ const metricViewReducers = {
     });
   },
 
+  displayDeltaAbsolute(name: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      // NOTE: only show delta absolute if comparison is enabled
+      if (metricsExplorer.showComparison === false) return;
+
+      metricsExplorer.leaderboardContextColumn =
+        LeaderboardContextColumn.DELTA_ABSOLUTE;
+    });
+  },
+
   displayPercentOfTotal(name: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.leaderboardContextColumn =

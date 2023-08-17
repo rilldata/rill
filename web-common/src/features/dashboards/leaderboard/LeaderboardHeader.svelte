@@ -9,23 +9,17 @@
   import LeaderboardOptionsMenu from "../leaderboard/LeaderboardOptionsMenu.svelte";
   import Delta from "@rilldata/web-common/components/icons/Delta.svelte";
   import PieChart from "@rilldata/web-common/components/icons/PieChart.svelte";
+  import { LeaderboardContextColumn } from "../leaderboard-context-column";
 
   export let displayName: string;
   export let isFetching: boolean;
   export let dimensionDescription: string;
   export let hovered: boolean;
-  export let showTimeComparison: boolean;
-  export let showPercentOfTotal: boolean;
+  export let contextColumn: LeaderboardContextColumn;
 
   export let filterExcludeMode: boolean;
 
   let optionsMenuActive = false;
-
-  $: iconShown = showTimeComparison
-    ? "delta"
-    : showPercentOfTotal
-    ? "pie"
-    : null;
 </script>
 
 <div class="flex flex-row items-center">
@@ -93,9 +87,11 @@
       </Tooltip>
     </div>
     <div class="shrink flex flex-row items-center">
-      {#if iconShown === "delta"}
+      {#if contextColumn === LeaderboardContextColumn.DELTA_CHANGE}
         <Delta /> %
-      {:else if iconShown === "pie"}
+      {:else if contextColumn === LeaderboardContextColumn.DELTA_ABSOLUTE}
+        <Delta />
+      {:else if contextColumn === LeaderboardContextColumn.PERCENT}
         <PieChart /> %
       {/if}
     </div>
