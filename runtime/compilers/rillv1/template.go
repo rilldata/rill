@@ -33,7 +33,7 @@ import (
 //     ref [`kind`] `name`: register a dependency at parse-time, resolve it to a name at resolve time (parse time and resolve time)
 //     lookup [`kind`] `name`: lookup another resource (resolve time)
 //     .env.name: access a variable (resolve time)
-//     .claims.attribute: access an attribute from auth claims (resolve time)
+//     .user.attribute: access an attribute from auth claims (resolve time)
 //     .meta: access the current resource's metadata (resolve time)
 //     .spec: access the current resource's spec (resolve time)
 //     .state: access the current resource's state (resolve time)
@@ -42,7 +42,7 @@ import (
 
 // TemplateData contains data for resolving a template.
 type TemplateData struct {
-	Claims     map[string]any
+	User       map[string]any
 	Variables  map[string]string
 	ExtraProps map[string]any
 	Self       TemplateResource
@@ -131,11 +131,11 @@ func AnalyzeTemplate(tmpl string) (*TemplateMetadata, error) {
 
 	// Build template data
 	dataMap := map[string]interface{}{
-		"claims": map[string]any{},
-		"env":    map[string]any{},
-		"meta":   map[string]any{},
-		"spec":   map[string]any{},
-		"state":  map[string]any{},
+		"user":  map[string]any{},
+		"env":   map[string]any{},
+		"meta":  map[string]any{},
+		"spec":  map[string]any{},
+		"state": map[string]any{},
 	}
 
 	// Resolve template
@@ -214,11 +214,11 @@ func ResolveTemplate(tmpl string, data TemplateData) (string, error) {
 
 	// Build template data
 	dataMap := map[string]interface{}{
-		"claims": data.Claims,
-		"env":    data.Variables,
-		"meta":   data.Self.Meta,
-		"spec":   data.Self.Spec,
-		"state":  data.Self.State,
+		"user":  data.User,
+		"env":   data.Variables,
+		"meta":  data.Self.Meta,
+		"spec":  data.Self.Spec,
+		"state": data.Self.State,
 	}
 
 	// Add extra props

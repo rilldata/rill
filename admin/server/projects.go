@@ -144,6 +144,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			"email":  user.Email,
 			"domain": user.Email[strings.LastIndex(user.Email, "@")+1:],
 			"groups": groupNames,
+			"admin":  permissions.ManageProject,
 		}
 	}
 

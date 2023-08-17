@@ -71,7 +71,7 @@ func (p *policyEngine) resolveMetricsViewPolicy(attributes map[string]any, insta
 	}
 
 	resolved := &ResolvedMetricsViewPolicy{}
-	templateData := &rillv1.TemplateData{Claims: attributes}
+	templateData := &rillv1.TemplateData{User: attributes}
 
 	if mv.Policy.HasAccess != "" {
 		hasAccess, err := rillv1.ResolveTemplate(mv.Policy.HasAccess, *templateData)
