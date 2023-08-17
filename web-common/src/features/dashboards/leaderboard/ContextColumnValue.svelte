@@ -2,6 +2,7 @@
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import PercentageChange from "../../../components/data-types/PercentageChange.svelte";
   import { FormattedDataType } from "@rilldata/web-common/components/data-types";
+  import { contextColumnWidth } from "./leaderboard-utils";
 
   export let formattedValue: string;
   export let showContext: LeaderboardContextColumn;
@@ -13,14 +14,15 @@
       console.log({ formattedValue, neg, noData });
     }
   }
+  $: width = contextColumnWidth(showContext);
 </script>
 
 {#if showContext === LeaderboardContextColumn.DELTA_CHANGE || showContext === LeaderboardContextColumn.PERCENT}
-  <div style:width="44px">
+  <div style:width>
     <PercentageChange value={formattedValue} />
   </div>
 {:else if showContext === LeaderboardContextColumn.DELTA_ABSOLUTE}
-  <div style:width="54px">
+  <div style:width>
     {#if noData}
       <span class="opacity-50 italic" style:font-size=".925em">no data</span>
     {:else}

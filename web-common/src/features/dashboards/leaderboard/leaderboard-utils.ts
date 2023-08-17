@@ -79,4 +79,16 @@ export function formatContextColumnValue(
   }
   return formattedValue;
 }
-export const CONTEXT_COLUMN_WIDTH = 44;
+export const contextColumnWidth = (
+  contextType: LeaderboardContextColumn
+): string => {
+  if (contextType === LeaderboardContextColumn.DELTA_CHANGE) {
+    return "44px";
+  } else if (contextType === LeaderboardContextColumn.PERCENT) {
+    return "44px";
+  } else if (contextType === LeaderboardContextColumn.DELTA_ABSOLUTE) {
+    return "56px";
+  } else {
+    return "0px";
+  }
+};

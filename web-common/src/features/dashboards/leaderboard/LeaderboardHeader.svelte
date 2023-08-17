@@ -11,7 +11,7 @@
   import PieChart from "@rilldata/web-common/components/icons/PieChart.svelte";
   import { LeaderboardContextColumn } from "../leaderboard-context-column";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
-  import { CONTEXT_COLUMN_WIDTH } from "./leaderboard-utils";
+  import { contextColumnWidth } from "./leaderboard-utils";
   import { createEventDispatcher } from "svelte";
 
   export let displayName: string;
@@ -100,24 +100,26 @@
     <div class="shrink flex flex-row items-center gap-x-4">
       <button
         on:click={() => dispatch("toggle-sort-direction")}
-        class="shrink flex flex-row items-center"
+        class="shrink flex flex-row items-center justify-end"
         aria-label="Toggle sort order for all leaderboards"
       >
         # <ArrowDown transform={arrowTransform} />
       </button>
 
-      <div
-        class="shrink flex flex-row items-center"
-        style:width={CONTEXT_COLUMN_WIDTH + "px"}
-      >
-        {#if contextColumn === LeaderboardContextColumn.DELTA_CHANGE}
-          <Delta /> %
-        {:else if contextColumn === LeaderboardContextColumn.DELTA_ABSOLUTE}
-          <Delta />
-        {:else if contextColumn === LeaderboardContextColumn.PERCENT}
-          <PieChart /> %
-        {/if}
-      </div>
+      {#if contextColumn !== LeaderboardContextColumn.HIDDEN}
+        <div
+          class="shrink flex flex-row items-center justify-end"
+          style:width={contextColumnWidth(contextColumn)}
+        >
+          {#if contextColumn === LeaderboardContextColumn.DELTA_CHANGE}
+            <Delta /> %
+          {:else if contextColumn === LeaderboardContextColumn.DELTA_ABSOLUTE}
+            <Delta />
+          {:else if contextColumn === LeaderboardContextColumn.PERCENT}
+            <PieChart /> %
+          {/if}
+        </div>
+      {/if}
     </div>
   </div>
 </div>
