@@ -2527,6 +2527,35 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	// no validation rules for DefaultTimeRange
 
+	if all {
+		switch v := interface{}(m.GetPolicy()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewSpecValidationError{
+					field:  "Policy",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewSpecValidationError{
+					field:  "Policy",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetPolicy()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewSpecValidationError{
+				field:  "Policy",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return MetricsViewSpecMultiError(errors)
 	}
@@ -5223,3 +5252,287 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MetricsViewSpec_MeasureV2ValidationError{}
+
+// Validate checks the field values on MetricsViewSpec_PolicyV2 with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MetricsViewSpec_PolicyV2) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MetricsViewSpec_PolicyV2 with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// MetricsViewSpec_PolicyV2MultiError, or nil if none found.
+func (m *MetricsViewSpec_PolicyV2) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsViewSpec_PolicyV2) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for HasAccess
+
+	// no validation rules for Filter
+
+	for idx, item := range m.GetInclude() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewSpec_PolicyV2ValidationError{
+						field:  fmt.Sprintf("Include[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewSpec_PolicyV2ValidationError{
+						field:  fmt.Sprintf("Include[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewSpec_PolicyV2ValidationError{
+					field:  fmt.Sprintf("Include[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	for idx, item := range m.GetExclude() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewSpec_PolicyV2ValidationError{
+						field:  fmt.Sprintf("Exclude[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewSpec_PolicyV2ValidationError{
+						field:  fmt.Sprintf("Exclude[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewSpec_PolicyV2ValidationError{
+					field:  fmt.Sprintf("Exclude[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return MetricsViewSpec_PolicyV2MultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsViewSpec_PolicyV2MultiError is an error wrapping multiple validation
+// errors returned by MetricsViewSpec_PolicyV2.ValidateAll() if the designated
+// constraints aren't met.
+type MetricsViewSpec_PolicyV2MultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsViewSpec_PolicyV2MultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsViewSpec_PolicyV2MultiError) AllErrors() []error { return m }
+
+// MetricsViewSpec_PolicyV2ValidationError is the validation error returned by
+// MetricsViewSpec_PolicyV2.Validate if the designated constraints aren't met.
+type MetricsViewSpec_PolicyV2ValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsViewSpec_PolicyV2ValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MetricsViewSpec_PolicyV2ValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MetricsViewSpec_PolicyV2ValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MetricsViewSpec_PolicyV2ValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsViewSpec_PolicyV2ValidationError) ErrorName() string {
+	return "MetricsViewSpec_PolicyV2ValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsViewSpec_PolicyV2ValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsViewSpec_PolicyV2.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsViewSpec_PolicyV2ValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsViewSpec_PolicyV2ValidationError{}
+
+// Validate checks the field values on
+// MetricsViewSpec_PolicyV2_FieldConditionV2 with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *MetricsViewSpec_PolicyV2_FieldConditionV2) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// MetricsViewSpec_PolicyV2_FieldConditionV2 with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// MetricsViewSpec_PolicyV2_FieldConditionV2MultiError, or nil if none found.
+func (m *MetricsViewSpec_PolicyV2_FieldConditionV2) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsViewSpec_PolicyV2_FieldConditionV2) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	// no validation rules for Condition
+
+	if len(errors) > 0 {
+		return MetricsViewSpec_PolicyV2_FieldConditionV2MultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsViewSpec_PolicyV2_FieldConditionV2MultiError is an error wrapping
+// multiple validation errors returned by
+// MetricsViewSpec_PolicyV2_FieldConditionV2.ValidateAll() if the designated
+// constraints aren't met.
+type MetricsViewSpec_PolicyV2_FieldConditionV2MultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsViewSpec_PolicyV2_FieldConditionV2MultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsViewSpec_PolicyV2_FieldConditionV2MultiError) AllErrors() []error { return m }
+
+// MetricsViewSpec_PolicyV2_FieldConditionV2ValidationError is the validation
+// error returned by MetricsViewSpec_PolicyV2_FieldConditionV2.Validate if the
+// designated constraints aren't met.
+type MetricsViewSpec_PolicyV2_FieldConditionV2ValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsViewSpec_PolicyV2_FieldConditionV2ValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MetricsViewSpec_PolicyV2_FieldConditionV2ValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MetricsViewSpec_PolicyV2_FieldConditionV2ValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MetricsViewSpec_PolicyV2_FieldConditionV2ValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsViewSpec_PolicyV2_FieldConditionV2ValidationError) ErrorName() string {
+	return "MetricsViewSpec_PolicyV2_FieldConditionV2ValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsViewSpec_PolicyV2_FieldConditionV2ValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsViewSpec_PolicyV2_FieldConditionV2.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsViewSpec_PolicyV2_FieldConditionV2ValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsViewSpec_PolicyV2_FieldConditionV2ValidationError{}

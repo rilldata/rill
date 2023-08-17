@@ -1,7 +1,7 @@
 ---
 title: How to install Rill
 sidebar_label: Install  
-sidebar_position: 11
+sidebar_position: 10
 ---
 
 import Tabs from '@theme/Tabs';

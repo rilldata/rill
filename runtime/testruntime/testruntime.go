@@ -41,11 +41,12 @@ func New(t TestingT) *runtime.Runtime {
 		},
 	}
 	opts := &runtime.Options{
-		ConnectionCacheSize: 100,
-		MetastoreConnector:  "metastore",
-		QueryCacheSizeBytes: int64(datasize.MB * 100),
-		AllowHostAccess:     true,
-		SystemConnectors:    systemConnectors,
+		ConnectionCacheSize:   100,
+		MetastoreConnector:    "metastore",
+		QueryCacheSizeBytes:   int64(datasize.MB * 100),
+		AllowHostAccess:       true,
+		SystemConnectors:      systemConnectors,
+		PolicyEngineCacheSize: 100,
 	}
 	rt, err := runtime.New(opts, zap.NewNop(), nil)
 	require.NoError(t, err)
