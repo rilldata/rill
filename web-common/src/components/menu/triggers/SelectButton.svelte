@@ -9,6 +9,7 @@
   export let activeTailwindClasses: string = undefined;
   export let active = false;
   export let level: undefined | "error" = undefined;
+  // used as aria-label
   export let label: undefined | string = undefined;
 
   let childRequestedTooltipSuppression;
