@@ -6,11 +6,7 @@
   import { useTDDContext } from "./context";
   import type { TCellData } from "./mock-data";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
-  import {
-    FILTER_OVERFLOW_WIDTH,
-    HEADER_HEIGHT,
-    ROW_HEIGHT,
-  } from "./constants";
+  import { FILTER_OVERFLOW_WIDTH } from "./constants";
 
   export let cell: TCellData;
   export let isInFilter: boolean;
