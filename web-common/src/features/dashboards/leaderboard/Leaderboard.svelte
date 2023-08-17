@@ -15,7 +15,6 @@
     useMetaMeasure,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
-  import { DashboardState_LeaderboardSortDirection } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
   import {
     createQueryServiceMetricsViewToplist,
     MetricsViewDimension,
@@ -24,6 +23,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import {
+    SortDirection,
     metricsExplorerStore,
     useComparisonRange,
     useDashboardStore,
@@ -111,9 +111,7 @@
 
   $: timeStart = $fetchTimeStore?.start?.toISOString();
   $: timeEnd = $fetchTimeStore?.end?.toISOString();
-  $: sortAscending =
-    $dashboardStore.sortDirection ===
-    DashboardState_LeaderboardSortDirection.ASCENDING;
+  $: sortAscending = $dashboardStore.sortDirection === SortDirection.ASCENDING;
   $: topListQuery = createQueryServiceMetricsViewToplist(
     $runtime.instanceId,
     metricViewName,

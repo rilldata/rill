@@ -16,8 +16,8 @@ import {
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
-  DashboardState_LeaderboardSortDirection,
-  DashboardState_LeaderboardSortType,
+  DashboardState_LeaderboardSortDirection as SortDirection,
+  DashboardState_LeaderboardSortType as SortType,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   V1ColumnTimeRangeResponse,
@@ -25,6 +25,9 @@ import type {
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
 import { derived, get, Readable, Writable, writable } from "svelte/store";
+
+export { SortType as SortType };
+export { SortDirection as SortDirection };
 
 export interface LeaderboardValue {
   value: number;
@@ -74,10 +77,10 @@ export interface MetricsExplorerEntity {
 
   // This is the sort type that will be used for the leaderboard
   // and dimension detail table. See SortType for more details.
-  dashboardSortType: DashboardState_LeaderboardSortType;
+  dashboardSortType: SortType;
   // This is the sort direction that will be used for the leaderboard
   // and dimension detail table.
-  sortDirection: DashboardState_LeaderboardSortDirection;
+  sortDirection: SortDirection;
 
   filters: V1MetricsViewFilter;
   // stores whether a dimension is in include/exclude filter mode
@@ -292,8 +295,8 @@ const metricViewReducers = {
         },
         dimensionFilterExcludeMode: new Map(),
         leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
-        dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
-        sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
+        dashboardSortType: SortType.VALUE,
+        sortDirection: SortDirection.DESCENDING,
 
         ...timeSelections,
         showComparison: false,
@@ -340,32 +343,26 @@ const metricViewReducers = {
 
   setSortDescending(name: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.sortDirection =
-        DashboardState_LeaderboardSortDirection.DESCENDING;
+      metricsExplorer.sortDirection = SortDirection.DESCENDING;
     });
   },
 
   setSortAscending(name: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.sortDirection =
-        DashboardState_LeaderboardSortDirection.ASCENDING;
+      metricsExplorer.sortDirection = SortDirection.ASCENDING;
     });
   },
 
   toggleSortDirection(name: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.sortDirection =
-        metricsExplorer.sortDirection ===
-        DashboardState_LeaderboardSortDirection.ASCENDING
-          ? DashboardState_LeaderboardSortDirection.DESCENDING
-          : DashboardState_LeaderboardSortDirection.ASCENDING;
+        metricsExplorer.sortDirection === SortDirection.ASCENDING
+          ? SortDirection.DESCENDING
+          : SortDirection.ASCENDING;
     });
   },
 
-  setSortDirection(
-    name: string,
-    direction: DashboardState_LeaderboardSortDirection
-  ) {
+  setSortDirection(name: string, direction: SortDirection) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.sortDirection = direction;
     });
