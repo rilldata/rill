@@ -238,9 +238,14 @@ export const prettyFormatTimeRange = (
 
   let inclusiveEndDate;
 
+  let timeString = "";
+
+  const startTime = start.toLocaleTimeString(undefined, { timeZone });
+  const endTime = end.toLocaleTimeString(undefined, { timeZone });
+
   if (isAllTime) {
     inclusiveEndDate = new Date(end);
-  } else {
+  } else if (startTime === "12:00:00 am" && endTime === "12:00:00 am") {
     // beyond this point, we're dealing with time ranges that are full day periods
     // since time range is exclusive at the end, we need to subtract a day
     inclusiveEndDate = new Date(
@@ -255,6 +260,23 @@ export const prettyFormatTimeRange = (
     endDate = inclusiveEndDateWithTimeZone.day;
     endMonth = inclusiveEndDateWithTimeZone.month;
     endYear = inclusiveEndDateWithTimeZone.year;
+  } else {
+    // display full time when the hours are not at 00:00
+    timeString = `(${start
+      .toLocaleString(undefined, {
+        hour12: true,
+        hour: "numeric",
+        minute: "numeric",
+        timeZone,
+      })
+      .replace(/\s/g, "")}-${end
+      .toLocaleString(undefined, {
+        hour12: true,
+        hour: "numeric",
+        minute: "numeric",
+        timeZone,
+      })
+      .replace(/\s/g, "")})`;
   }
 
   // month is the same
@@ -262,7 +284,7 @@ export const prettyFormatTimeRange = (
     return `${start.toLocaleDateString(undefined, {
       month: "short",
       timeZone,
-    })} ${startDate}-${endDate}, ${startYear}`;
+    })} ${startDate}-${endDate}, ${startYear} ${timeString}`;
   }
 
   // year is the same
@@ -275,7 +297,7 @@ export const prettyFormatTimeRange = (
       month: "short",
       day: "numeric",
       timeZone,
-    })}, ${startYear}`;
+    })}, ${startYear} ${timeString}`;
   }
   // year is different
   const dateFormatOptions: Intl.DateTimeFormatOptions = {
