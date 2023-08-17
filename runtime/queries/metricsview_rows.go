@@ -102,7 +102,7 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 }
 
 func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
-	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
+	olap, err := rt.OLAP(ctx, instanceID)
 	if err != nil {
 		return err
 	}
@@ -112,13 +112,51 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 		return err
 	}
 
-	filename := strings.ReplaceAll(mv.Model, `"`, `_`)
-	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
-		filename += "_filtered"
+	switch olap.Dialect() {
+	case drivers.DialectDuckDB:
+		if opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV || opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET {
+			if mv.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
+				return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
+			}
+
+			timeRollupColumnName, err := q.resolveTimeRollupColumnName(ctx, rt, instanceID, opts.Priority, mv)
+			if err != nil {
+				return err
+			}
+
+			sql, args, err := q.buildMetricsRowsSQL(mv, olap.Dialect(), timeRollupColumnName)
+			if err != nil {
+				return err
+			}
+
+			filename := q.generateFilename(mv)
+			if err := duckDBCopyExport(ctx, rt, instanceID, w, opts, sql, args, filename, olap, mv, opts.Format); err != nil {
+				return err
+			}
+		} else {
+			if err := q.generalExport(ctx, rt, instanceID, w, opts, olap, mv); err != nil {
+				return err
+			}
+		}
+	case drivers.DialectDruid:
+		if err := q.generalExport(ctx, rt, instanceID, w, opts, olap, mv); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
+	}
+
+	return nil
+}
+
+func (q *MetricsViewRows) generalExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions, olap drivers.OLAPStore, mv *runtimev1.MetricsView) error {
+	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
+	if err != nil {
+		return err
 	}
 
 	if opts.PreWriteHook != nil {
-		err = opts.PreWriteHook(filename)
+		err = opts.PreWriteHook(q.generateFilename(mv))
 		if err != nil {
 			return err
 		}
