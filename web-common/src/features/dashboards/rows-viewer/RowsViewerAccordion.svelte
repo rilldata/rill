@@ -51,9 +51,9 @@
 
   let timeEnd: string;
   $: {
-    let maybeEnd = $timeControlsStore.selectedTimeRange?.end;
+    let maybeEnd = $timeControlsStore.timeEnd;
     if (maybeEnd) {
-      timeEnd = new Date(maybeEnd.valueOf() + 1).toISOString();
+      timeEnd = new Date(new Date(maybeEnd).valueOf() + 1).toISOString();
     }
   }
 
