@@ -29,12 +29,13 @@ func TestResolveMetricsView(t *testing.T) {
 					"email":  "test@rilldata.com",
 					"domain": "rilldata.com",
 					"groups": []interface{}{"test"},
+					"admin":  true,
 				},
 				mv: &runtimev1.MetricsView{
 					Name: "test_domain",
 					Policy: &runtimev1.MetricsView_Policy{
-						HasAccess: "'{{.claims.domain}}' == 'rilldata.com'",
-						Filter:    "WHERE domain = '{{.claims.domain}}'",
+						HasAccess: "{{.user.admin}}",
+						Filter:    "WHERE domain = '{{.user.domain}}'",
 						Include:   nil,
 						Exclude:   nil,
 					},
@@ -56,12 +57,13 @@ func TestResolveMetricsView(t *testing.T) {
 					"email":  "test@rilldata.com",
 					"domain": "rilldata.com",
 					"groups": []interface{}{"test"},
+					"admin":  true,
 				},
 				mv: &runtimev1.MetricsView{
 					Name: "test_group",
 					Policy: &runtimev1.MetricsView_Policy{
-						HasAccess: "'{{.claims.domain}}' == 'rilldata.com'",
-						Filter:    "WHERE groups IN ('{{ .claims.groups | join \"', '\" }}')",
+						HasAccess: "'{{.user.domain}}' == 'rilldata.com'",
+						Filter:    "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
 						Include:   nil,
 						Exclude:   nil,
 					},
@@ -83,12 +85,13 @@ func TestResolveMetricsView(t *testing.T) {
 					"email":  "test@rilldata.com",
 					"domain": "rilldata.com",
 					"groups": []interface{}{"g1", "g2"},
+					"admin":  true,
 				},
 				mv: &runtimev1.MetricsView{
 					Name: "test_groups",
 					Policy: &runtimev1.MetricsView_Policy{
-						HasAccess: "'{{.claims.domain}}' == 'rilldata.com'",
-						Filter:    "WHERE groups IN ('{{ .claims.groups | join \"', '\" }}')",
+						HasAccess: "'{{.user.domain}}' == 'rilldata.com'",
+						Filter:    "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
 						Include:   nil,
 						Exclude:   nil,
 					},
@@ -110,19 +113,20 @@ func TestResolveMetricsView(t *testing.T) {
 					"email":  "test@rilldata.com",
 					"domain": "rilldata.com",
 					"groups": nil,
+					"admin":  false,
 				},
 				mv: &runtimev1.MetricsView{
 					Name: "test_no_groups",
 					Policy: &runtimev1.MetricsView_Policy{
-						HasAccess: "'{{.claims.domain}}' == 'rilldata.com'",
-						Filter:    "WHERE groups IN ('{{ .claims.groups | join \"', '\" }}')",
+						HasAccess: "{{.user.admin}}",
+						Filter:    "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
 						Include:   nil,
 						Exclude:   nil,
 					},
 				},
 			},
 			want: &ResolvedMetricsViewPolicy{
-				HasAccess: true,
+				HasAccess: false,
 				Filter:    "WHERE groups IN ('')",
 				Include:   nil,
 				Exclude:   nil,
@@ -137,20 +141,25 @@ func TestResolveMetricsView(t *testing.T) {
 					"email":  "test@rilldata.com",
 					"domain": "rilldata.com",
 					"groups": []interface{}{"all"},
+					"admin":  true,
 				},
 				mv: &runtimev1.MetricsView{
 					Name: "test_include",
 					Policy: &runtimev1.MetricsView_Policy{
-						HasAccess: "'{{.claims.domain}}' == 'rilldata.com'",
-						Filter:    "WHERE groups IN ('{{ .claims.groups | join \"', '\" }}')",
+						HasAccess: "'{{.user.domain}}' == 'rilldata.com'",
+						Filter:    "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
 						Include: []*runtimev1.MetricsView_Policy_FieldCondition{
 							{
 								Name:      "col1",
-								Condition: "'{{.claims.domain}}' == 'test.com'",
+								Condition: "'{{.user.domain}}' == 'test.com'",
 							},
 							{
 								Name:      "col2",
-								Condition: "'{{.claims.domain}}' == 'rilldata.com'",
+								Condition: "'{{.user.domain}}' == 'rilldata.com'",
+							},
+							{
+								Name:      "col3",
+								Condition: "{{.user.admin}}",
 							},
 						},
 						Exclude: nil,
@@ -160,7 +169,7 @@ func TestResolveMetricsView(t *testing.T) {
 			want: &ResolvedMetricsViewPolicy{
 				HasAccess: true,
 				Filter:    "WHERE groups IN ('all')",
-				Include:   []string{"col2"},
+				Include:   []string{"col2", "col3"},
 				Exclude:   nil,
 			},
 			wantErr: false,
@@ -173,12 +182,13 @@ func TestResolveMetricsView(t *testing.T) {
 					"email":  "test@rilldata.com",
 					"domain": "rilldata.com",
 					"groups": []interface{}{"all"},
+					"admin":  true,
 				},
 				mv: &runtimev1.MetricsView{
 					Name: "test_include_empty_condition",
 					Policy: &runtimev1.MetricsView_Policy{
-						HasAccess: "'{{.claims.domain}}' == 'rilldata.com'",
-						Filter:    "WHERE groups IN ('{{ .claims.groups | join \"', '\" }}')",
+						HasAccess: "'{{.user.domain}}' == 'rilldata.com'",
+						Filter:    "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
 						Include: []*runtimev1.MetricsView_Policy_FieldCondition{
 							{
 								Name:      "col1",
@@ -186,7 +196,7 @@ func TestResolveMetricsView(t *testing.T) {
 							},
 							{
 								Name:      "col2",
-								Condition: "'{{.claims.domain}}' == 'rilldata.com'",
+								Condition: "'{{.user.domain}}' == 'rilldata.com'",
 							},
 						},
 						Exclude: nil,
@@ -210,21 +220,22 @@ func TestResolveMetricsView(t *testing.T) {
 					"email":  "test@rilldata.com",
 					"domain": "rilldata.com",
 					"groups": []interface{}{"all"},
+					"admin":  true,
 				},
 				mv: &runtimev1.MetricsView{
 					Name: "test_include_empty_condition",
 					Policy: &runtimev1.MetricsView_Policy{
-						HasAccess: "'{{.claims.domain}}' == 'rilldata.com'",
-						Filter:    "WHERE groups IN ('{{ .claims.groups | join \"', '\" }}')",
+						HasAccess: "'{{.user.domain}}' == 'rilldata.com'",
+						Filter:    "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
 						Include:   nil,
 						Exclude: []*runtimev1.MetricsView_Policy_FieldCondition{
 							{
 								Name:      "col1",
-								Condition: "'{{.claims.domain}}' == 'test.com'",
+								Condition: "'{{.user.domain}}' == 'test.com'",
 							},
 							{
 								Name:      "col2",
-								Condition: "'{{.claims.domain}}' == 'rilldata.com'",
+								Condition: "'{{.user.domain}}' == 'rilldata.com'",
 							},
 						},
 					},
@@ -246,6 +257,7 @@ func TestResolveMetricsView(t *testing.T) {
 					"email":  "test@rilldata.com",
 					"domain": "rilldata.com",
 					"groups": []interface{}{"all"},
+					"admin":  true,
 				},
 				mv: &runtimev1.MetricsView{
 					Name:   "test_empty_policy",
@@ -268,6 +280,7 @@ func TestResolveMetricsView(t *testing.T) {
 					"email":  "test@rilldata.com",
 					"domain": "rilldata.com",
 					"groups": []interface{}{"all"},
+					"admin":  true,
 				},
 				mv: &runtimev1.MetricsView{
 					Name:   "test_nil_policy",
@@ -284,8 +297,8 @@ func TestResolveMetricsView(t *testing.T) {
 				mv: &runtimev1.MetricsView{
 					Name: "test",
 					Policy: &runtimev1.MetricsView_Policy{
-						HasAccess: "'{{.claims.domain}}' == 'rilldata.com'",
-						Filter:    "WHERE domain = '{{.claims.domain}}'",
+						HasAccess: "'{{.user.domain}}' == 'rilldata.com'",
+						Filter:    "WHERE domain = '{{.user.domain}}'",
 						Include:   nil,
 						Exclude:   nil,
 					},
