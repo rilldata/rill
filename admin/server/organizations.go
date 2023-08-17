@@ -36,6 +36,7 @@ func (s *Server) ListOrganizations(ctx context.Context, req *adminv1.ListOrganiz
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	nextToken := ""
+
 	if len(orgs) >= pageSize {
 		nextToken = marshalPageToken(orgs[len(orgs)-1].Name)
 	}
@@ -241,6 +242,7 @@ func (s *Server) ListOrganizationInvites(ctx context.Context, req *adminv1.ListO
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+
 	claims := auth.GetClaims(ctx)
 	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrgMembers {
 		return nil, status.Error(codes.PermissionDenied, "not authorized to read org members")
