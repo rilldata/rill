@@ -2,7 +2,6 @@ package server
 
 import (
 	"bytes"
-	"fmt"
 	"strings"
 	"testing"
 
@@ -336,33 +335,6 @@ func TestServer_Timeseries_numeric_dim_and_null(t *testing.T) {
 	results := response.Data
 	require.Equal(t, 1, len(results))
 	require.Equal(t, 2.0, results[0].Records.Fields["count"].GetNumberValue())
-}
-
-func TestServer_Timeseries_Empty_TimeRange(t *testing.T) {
-	t.Parallel()
-	server, instanceID := getMetricsTestServer(t, "timeseries")
-
-	response, err := server.MetricsViewTimeSeries(testCtx(), &runtimev1.MetricsViewTimeSeriesRequest{
-		InstanceId:      instanceID,
-		MetricsViewName: "timeseries",
-		MeasureNames:    []string{"max_clicks"},
-		Filter: &runtimev1.MetricsViewFilter{
-			Include: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "device",
-					In:   []*structpb.Value{structpb.NewStringValue("android"), structpb.NewStringValue("iphone")},
-				},
-			},
-		},
-	})
-
-	require.NoError(t, err)
-	results := response.Data
-	for i, v := range response.Data {
-		fmt.Printf("i: %d, ts: %v\n", i, v.Ts.AsTime())
-	}
-	require.Equal(t, 2, len(results))
-	require.Equal(t, 1.0, results[0].Records.Fields["max_clicks"].GetNumberValue())
 }
 
 func TestServer_Timeseries_2measures(t *testing.T) {

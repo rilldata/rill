@@ -78,21 +78,6 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		return err
 	}
 
-	tr := &runtimev1.TimeSeriesTimeRange{
-		Start:    q.TimeStart,
-		End:      q.TimeEnd,
-		Interval: q.TimeGranularity,
-	}
-
-	ntr, err := resolveNormaliseTimeRange(ctx, rt, instanceID, priority, mv.Model, mv.TimeDimension, tr)
-	if err != nil {
-		return err
-	}
-
-	q.TimeStart = ntr.Start
-	q.TimeEnd = ntr.End
-	q.TimeGranularity = ntr.Interval
-
 	sql, tsAlias, args, err := q.buildMetricsTimeseriesSQL(olap, mv)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
