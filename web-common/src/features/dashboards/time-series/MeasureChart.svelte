@@ -153,14 +153,14 @@
   }
 
   function zoomScrub() {
+    resetScrub();
+
     const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
     metricsExplorerStore.setSelectedTimeRange(metricViewName, {
       name: TimeRangePreset.CUSTOM,
       start,
       end,
     });
-
-    resetScrub();
   }
 
   function updateScrub(start, end, isScrubbing) {
