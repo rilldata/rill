@@ -99,7 +99,7 @@
             this={headerComponent}
             colIdx={col.index}
             rowIdx={-1}
-            fixed={isFixedColumn(col.index)}
+            fixed={true}
             lastFixed={col.index === fixedColCt - 1}
           />
         </div>
@@ -119,8 +119,8 @@
             this={headerComponent}
             colIdx={col.index}
             rowIdx={-1}
-            fixed={isFixedColumn(col.index)}
-            lastFixed={col.index === fixedColCt - 1}
+            fixed={false}
+            lastFixed={false}
           />
         </div>
       {/each}

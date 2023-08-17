@@ -13,7 +13,7 @@
   $: {
     _class =
       "h-full w-full bg-white border-b px-2 flex items-center overflow-hidden";
-    if (fixed) _class += ` z-2`;
+    if (fixed) _class += ` z-10`;
     if (lastFixed) _class += ` right-shadow`;
     if (colIdx > 0) _class += ` justify-end font-medium`;
     else _class += ` justify-start font-bold`;

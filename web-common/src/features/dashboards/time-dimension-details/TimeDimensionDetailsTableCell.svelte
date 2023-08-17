@@ -49,7 +49,7 @@
   let _class = "";
   $: {
     _class = "h-full w-full flex items-center px-2";
-    if (fixed) _class += ` z-2`;
+    if (fixed) _class += ` z-10`;
     if (lastFixed) _class += ` right-shadow`;
 
     // Determine background color based on store
@@ -82,8 +82,7 @@
 
     // Choose palette based on type of cell state
     let palette = bgColors.default;
-    if (colIdx === 0) palette = bgColors.default;
-    else if (fixed) palette = bgColors.fixed;
+    if (fixed && colIdx !== 0) palette = bgColors.fixed;
     else if (isScrubbed) palette = bgColors.scrubbed;
 
     // Choose color within palette based on highlighted state
