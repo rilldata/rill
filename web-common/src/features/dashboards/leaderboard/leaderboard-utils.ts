@@ -1,5 +1,10 @@
 import { PERC_DIFF } from "../../../components/data-types/type-utils";
-import { formatMeasurePercentageDifference } from "../humanize-numbers";
+import {
+  FormatPreset,
+  formatMeasurePercentageDifference,
+  humanizeDataType,
+} from "../humanize-numbers";
+import { LeaderboardContextColumn } from "../leaderboard-context-column";
 
 export function getFormatterValueForPercDiff(numerator, denominator) {
   if (denominator === 0) return PERC_DIFF.PREV_VALUE_ZERO;
@@ -41,4 +46,36 @@ export function prepareLeaderboardItemData(
       comparisonValue,
     };
   });
+}
+
+/**
+ * Returns the formatted value for the context column
+ * given the
+ * accounting for the context column type.
+ */
+export function formatContextColumnValue(
+  itemData: LeaderboardItemData,
+  unfilteredTotal: number,
+  contextType: LeaderboardContextColumn,
+  formatPreset: FormatPreset
+): string {
+  const { value, comparisonValue } = itemData;
+  let formattedValue = "";
+
+  if (contextType === LeaderboardContextColumn.DELTA_CHANGE) {
+    formattedValue = getFormatterValueForPercDiff(
+      value && comparisonValue ? value - comparisonValue : null,
+      comparisonValue
+    );
+  } else if (contextType === LeaderboardContextColumn.PERCENT) {
+    formattedValue = getFormatterValueForPercDiff(value, unfilteredTotal);
+  } else if (contextType === LeaderboardContextColumn.DELTA_ABSOLUTE) {
+    formattedValue = humanizeDataType(
+      value && comparisonValue ? value - comparisonValue : null,
+      formatPreset
+    );
+  } else {
+    formattedValue = "";
+  }
+  return formattedValue;
 }
