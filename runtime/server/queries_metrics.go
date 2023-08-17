@@ -238,6 +238,31 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 	return q.Result, nil
 }
 
+// MetricsViewTimeRange implements QueryService.
+func (s *Server) MetricsViewTimeRange(ctx context.Context, req *runtimev1.MetricsViewTimeRangeRequest) (*runtimev1.MetricsViewTimeRangeResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.metric_view", req.MetricsViewName),
+		attribute.Int("args.priority", int(req.Priority)),
+	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+		return nil, ErrForbidden
+	}
+
+	q := &queries.MetricsViewTimeRange{
+		MetricsViewName: req.MetricsViewName,
+	}
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	if err != nil {
+		return nil, err
+	}
+
+	return q.Result, nil
+}
+
 // validateInlineMeasures checks that the inline measures are allowed.
 // This is to prevent injection of arbitrary SQL from clients with only ReadMetrics access.
 // In the future, we should consider allowing arbitrary expressions from people with wider access.

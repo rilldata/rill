@@ -5,8 +5,15 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 
+	"github.com/apache/arrow/go/v11/arrow"
+	"github.com/apache/arrow/go/v11/arrow/array"
+	"github.com/apache/arrow/go/v11/arrow/memory"
+	"github.com/apache/arrow/go/v11/parquet/pqarrow"
+	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -403,4 +410,163 @@ func writeXLSX(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, wri
 	err = f.Write(writer)
 
 	return err
+}
+
+func writeParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, ioWriter io.Writer) error {
+	fields := make([]arrow.Field, 0, len(meta))
+	for _, f := range meta {
+		arrowField := arrow.Field{}
+		arrowField.Name = f.Name
+		typeCode := runtimev1.Type_Code(runtimev1.Type_Code_value[f.Type])
+		switch typeCode {
+		case runtimev1.Type_CODE_BOOL:
+			arrowField.Type = arrow.FixedWidthTypes.Boolean
+		case runtimev1.Type_CODE_INT8:
+			arrowField.Type = arrow.PrimitiveTypes.Int8
+		case runtimev1.Type_CODE_INT16:
+			arrowField.Type = arrow.PrimitiveTypes.Int16
+		case runtimev1.Type_CODE_INT32:
+			arrowField.Type = arrow.PrimitiveTypes.Int32
+		case runtimev1.Type_CODE_INT64:
+			arrowField.Type = arrow.PrimitiveTypes.Int64
+		case runtimev1.Type_CODE_INT128:
+			arrowField.Type = arrow.PrimitiveTypes.Float64
+		case runtimev1.Type_CODE_UINT8:
+			arrowField.Type = arrow.PrimitiveTypes.Uint8
+		case runtimev1.Type_CODE_UINT16:
+			arrowField.Type = arrow.PrimitiveTypes.Uint16
+		case runtimev1.Type_CODE_UINT32:
+			arrowField.Type = arrow.PrimitiveTypes.Uint32
+		case runtimev1.Type_CODE_UINT64:
+			arrowField.Type = arrow.PrimitiveTypes.Uint64
+		case runtimev1.Type_CODE_DECIMAL:
+			arrowField.Type = arrow.PrimitiveTypes.Float64
+		case runtimev1.Type_CODE_FLOAT32:
+			arrowField.Type = arrow.PrimitiveTypes.Float32
+		case runtimev1.Type_CODE_FLOAT64:
+			arrowField.Type = arrow.PrimitiveTypes.Float64
+		case runtimev1.Type_CODE_STRUCT, runtimev1.Type_CODE_UUID, runtimev1.Type_CODE_ARRAY, runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_MAP:
+			arrowField.Type = arrow.BinaryTypes.String
+		case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIME:
+			arrowField.Type = arrow.FixedWidthTypes.Timestamp_us
+		case runtimev1.Type_CODE_BYTES:
+			arrowField.Type = arrow.BinaryTypes.Binary
+		}
+		fields = append(fields, arrowField)
+	}
+	schema := arrow.NewSchema(fields, nil)
+
+	mem := memory.NewCheckedAllocator(memory.NewGoAllocator())
+	recordBuilder := array.NewRecordBuilder(mem, schema)
+	defer recordBuilder.Release()
+	for _, s := range data {
+		for idx, t := range meta {
+			v := s.Fields[t.Name]
+			typeCode := runtimev1.Type_Code(runtimev1.Type_Code_value[t.Type])
+			switch typeCode {
+			case runtimev1.Type_CODE_BOOL:
+				recordBuilder.Field(idx).(*array.BooleanBuilder).Append(v.GetBoolValue())
+			case runtimev1.Type_CODE_INT8:
+				recordBuilder.Field(idx).(*array.Int8Builder).Append(int8(v.GetNumberValue()))
+			case runtimev1.Type_CODE_INT16:
+				recordBuilder.Field(idx).(*array.Int16Builder).Append(int16(v.GetNumberValue()))
+			case runtimev1.Type_CODE_INT32:
+				recordBuilder.Field(idx).(*array.Int32Builder).Append(int32(v.GetNumberValue()))
+			case runtimev1.Type_CODE_INT64:
+				recordBuilder.Field(idx).(*array.Int64Builder).Append(int64(v.GetNumberValue()))
+			case runtimev1.Type_CODE_UINT8:
+				recordBuilder.Field(idx).(*array.Uint8Builder).Append(uint8(v.GetNumberValue()))
+			case runtimev1.Type_CODE_UINT16:
+				recordBuilder.Field(idx).(*array.Uint16Builder).Append(uint16(v.GetNumberValue()))
+			case runtimev1.Type_CODE_UINT32:
+				recordBuilder.Field(idx).(*array.Uint32Builder).Append(uint32(v.GetNumberValue()))
+			case runtimev1.Type_CODE_UINT64:
+				recordBuilder.Field(idx).(*array.Uint64Builder).Append(uint64(v.GetNumberValue()))
+			case runtimev1.Type_CODE_INT128:
+				recordBuilder.Field(idx).(*array.Float64Builder).Append((v.GetNumberValue()))
+			case runtimev1.Type_CODE_FLOAT32:
+				recordBuilder.Field(idx).(*array.Float32Builder).Append(float32(v.GetNumberValue()))
+			case runtimev1.Type_CODE_FLOAT64, runtimev1.Type_CODE_DECIMAL:
+				recordBuilder.Field(idx).(*array.Float64Builder).Append(v.GetNumberValue())
+			case runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_UUID:
+				recordBuilder.Field(idx).(*array.StringBuilder).Append(v.GetStringValue())
+			case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIME:
+				tmp, err := arrow.TimestampFromString(v.GetStringValue(), arrow.Microsecond)
+				if err != nil {
+					return err
+				}
+
+				recordBuilder.Field(idx).(*array.TimestampBuilder).Append(tmp)
+			case runtimev1.Type_CODE_ARRAY, runtimev1.Type_CODE_MAP, runtimev1.Type_CODE_STRUCT:
+				bts, err := protojson.Marshal(v)
+				if err != nil {
+					return err
+				}
+
+				recordBuilder.Field(idx).(*array.StringBuilder).Append(string(bts))
+			}
+		}
+	}
+
+	parquetwriter, err := pqarrow.NewFileWriter(schema, ioWriter, nil, pqarrow.ArrowWriterProperties{})
+	if err != nil {
+		return err
+	}
+
+	defer parquetwriter.Close()
+
+	rec := recordBuilder.NewRecord()
+	err = parquetwriter.Write(rec)
+	return err
+}
+
+func duckDBCopyExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions, sql string, args []any, filename string, olap drivers.OLAPStore, mv *runtimev1.MetricsView, exportFormat runtimev1.ExportFormat) error {
+	var extension string
+	switch exportFormat {
+	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
+		extension = "parquet"
+	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
+		extension = "csv"
+	}
+
+	tmpPath := fmt.Sprintf("export_%s.%s", uuid.New().String(), extension)
+	tmpPath = filepath.Join(os.TempDir(), tmpPath)
+	defer os.Remove(tmpPath)
+
+	sql = fmt.Sprintf("COPY (%s) TO '%s'", sql, tmpPath)
+
+	rows, err := olap.Execute(ctx, &drivers.Statement{
+		Query:            sql,
+		Args:             args,
+		Priority:         opts.Priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+	})
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	if opts.PreWriteHook != nil {
+		err = opts.PreWriteHook(filename)
+		if err != nil {
+			return err
+		}
+	}
+
+	f, err := os.Open(tmpPath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = io.Copy(w, f)
+	return err
+}
+
+func (q *MetricsViewRows) generateFilename(mv *runtimev1.MetricsView) string {
+	filename := strings.ReplaceAll(mv.Model, `"`, `_`)
+	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
+		filename += "_filtered"
+	}
+	return filename
 }

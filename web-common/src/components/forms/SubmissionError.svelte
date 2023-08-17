@@ -10,7 +10,7 @@
   >
     <AlertTriangle size="16px" />
     <p class="ml-2">
-      {message}
+      {@html message}
     </p>
   </div>
 </div>

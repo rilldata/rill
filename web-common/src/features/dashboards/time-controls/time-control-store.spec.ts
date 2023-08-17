@@ -2,6 +2,7 @@ import { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/da
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import {
   AD_BIDS_INIT,
+  AD_BIDS_INIT_WITH_TIME,
   AD_BIDS_NAME,
   AD_BIDS_SOURCE_NAME,
   AD_BIDS_TIMESTAMP_DIMENSION,
@@ -31,10 +32,7 @@ describe("time-control-store", () => {
 
   it("Switching from no timestamp column to having one", async () => {
     const { unmount, queryClient, timeControlsStore } =
-      initTimeControlStoreTest({
-        ...AD_BIDS_INIT,
-        timeDimension: "",
-      });
+      initTimeControlStoreTest(AD_BIDS_INIT);
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     const state = get(timeControlsStore);
@@ -42,7 +40,7 @@ describe("time-control-store", () => {
     expect(state.ready).toBeTruthy();
     assertStartAndEnd(state, undefined, undefined, undefined, undefined);
 
-    dashboardFetchMocks.mockMetricsView(AD_BIDS_NAME, AD_BIDS_INIT);
+    dashboardFetchMocks.mockMetricsView(AD_BIDS_NAME, AD_BIDS_INIT_WITH_TIME);
     dashboardFetchMocks.mockTimeRangeSummary(
       AD_BIDS_SOURCE_NAME,
       AD_BIDS_TIMESTAMP_DIMENSION,
@@ -97,8 +95,9 @@ describe("time-control-store", () => {
         max: "2022-03-31",
       }
     );
-    const { unmount, timeControlsStore } =
-      initTimeControlStoreTest(AD_BIDS_INIT);
+    const { unmount, timeControlsStore } = initTimeControlStoreTest(
+      AD_BIDS_INIT_WITH_TIME
+    );
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     metricsExplorerStore.setSelectedTimeRange(AD_BIDS_NAME, {
@@ -166,8 +165,9 @@ describe("time-control-store", () => {
         max: "2022-03-31",
       }
     );
-    const { unmount, timeControlsStore } =
-      initTimeControlStoreTest(AD_BIDS_INIT);
+    const { unmount, timeControlsStore } = initTimeControlStoreTest(
+      AD_BIDS_INIT_WITH_TIME
+    );
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     metricsExplorerStore.displayComparison(AD_BIDS_NAME, true);

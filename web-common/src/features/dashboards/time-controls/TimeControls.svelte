@@ -7,7 +7,6 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { getAvailableComparisonsForTimeRange } from "@rilldata/web-common/lib/time/comparisons";
-  import { DEFAULT_TIMEZONES } from "@rilldata/web-common/lib/time/config";
   import {
     getDefaultTimeGrain,
     getAllowedTimeGrains,
@@ -60,10 +59,16 @@
   ) {
     availableTimeZones = $metaQuery?.data?.availableTimeZones;
 
-    // For legacy dashboards, we need to set the available time
-    // zones to the default if they are not defined.
+    /**
+     * Remove the timezone selector if no timezone key is present
+     * or the available timezone list is empty. Set the default
+     * timezone to UTC in such cases.
+     *
+     */
+
     if (!availableTimeZones?.length) {
-      availableTimeZones = DEFAULT_TIMEZONES;
+      metricsExplorerStore.setTimeZone(metricViewName, "Etc/UTC");
+      localUserPreferences.set({ timeZone: "Etc/UTC" });
     }
   }
 
@@ -76,6 +81,9 @@
   );
 
   function onSelectTimeRange(name: TimeRangeType, start: Date, end: Date) {
+    // Reset scrub when range changes
+    metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
+
     baseTimeRange = {
       name,
       start: new Date(start),
@@ -96,6 +104,9 @@
   }
 
   function onSelectTimeGrain(timeGrain: V1TimeGrain) {
+    // Reset scrub when grain changes
+    metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
+
     makeTimeSeriesTimeRangeAndUpdateAppState(
       baseTimeRange,
       timeGrain,
@@ -104,6 +115,9 @@
   }
 
   function onSelectTimeZone(timeZone: string) {
+    // Reset scrub when timezone changes
+    metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
+
     metricsExplorerStore.setTimeZone(metricViewName, timeZone);
     localUserPreferences.set({ timeZone });
   }
@@ -171,13 +185,18 @@
       selectedRange={$timeControlsStore?.selectedTimeRange}
       on:select-time-range={(e) =>
         onSelectTimeRange(e.detail.name, e.detail.start, e.detail.end)}
+      on:remove-scrub={() => {
+        metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
+      }}
     />
-    <TimeZoneSelector
-      on:select-time-zone={(e) => onSelectTimeZone(e.detail.timeZone)}
-      {metricViewName}
-      {availableTimeZones}
-      now={allTimeRange?.end}
-    />
+    {#if availableTimeZones?.length}
+      <TimeZoneSelector
+        on:select-time-zone={(e) => onSelectTimeZone(e.detail.timeZone)}
+        {metricViewName}
+        {availableTimeZones}
+        now={allTimeRange?.end}
+      />
+    {/if}
     <TimeComparisonSelector
       on:select-comparison={(e) => {
         onSelectComparisonRange(e.detail.name, e.detail.start, e.detail.end);

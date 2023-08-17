@@ -1,16 +1,16 @@
-import { V1DeploymentStatus } from "@rilldata/web-admin/client";
 import type { V1GetProjectResponse } from "@rilldata/web-admin/client";
+import type { V1CatalogEntry } from "@rilldata/web-common/runtime-client";
 import {
   createRuntimeServiceListCatalogEntries,
   createRuntimeServiceListFiles,
 } from "@rilldata/web-common/runtime-client";
-import type { V1CatalogEntry } from "@rilldata/web-common/runtime-client";
 import Axios from "axios";
-import { derived, Readable } from "svelte/store";
+import { Readable, derived } from "svelte/store";
 
 export interface DashboardListItem {
   name: string;
   title?: string;
+  description?: string;
   isValid: boolean;
 }
 
@@ -72,11 +72,13 @@ export function getDashboardListItemsFromFilesAndCatalogEntries(
       (entry: V1CatalogEntry) => entry.path === path
     );
     const title = catalogEntry?.metricsView?.label;
+    const description = catalogEntry?.metricsView?.description;
     // invalid dashboards are not in the catalog
     const isValid = !!catalogEntry;
     return {
       name,
       title,
+      description,
       isValid,
     };
   });
@@ -84,45 +86,18 @@ export function getDashboardListItemsFromFilesAndCatalogEntries(
   return dashboardListings;
 }
 
-export function useDashboardListItems(
-  instanceId: string,
-  projectStatus: V1DeploymentStatus
-): Readable<{
+export function useDashboardListItems(instanceId: string): Readable<{
   items: DashboardListItem[];
   isSuccess: boolean;
 }> {
-  const hasProjectStatus = !!projectStatus;
-  const isProfiling =
-    hasProjectStatus &&
-    (projectStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING ||
-      projectStatus === V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING);
-
   return derived(
     [
-      createRuntimeServiceListFiles(
-        instanceId,
-        {
-          glob: "dashboards/*.yaml",
-        },
-        {
-          query: {
-            placeholderData: undefined,
-            enabled: !isProfiling && hasProjectStatus && !!instanceId,
-          },
-        }
-      ),
-      createRuntimeServiceListCatalogEntries(
-        instanceId,
-        {
-          type: "OBJECT_TYPE_METRICS_VIEW",
-        },
-        {
-          query: {
-            placeholderData: undefined,
-            enabled: !isProfiling && hasProjectStatus && !!instanceId,
-          },
-        }
-      ),
+      createRuntimeServiceListFiles(instanceId, {
+        glob: "dashboards/*.yaml",
+      }),
+      createRuntimeServiceListCatalogEntries(instanceId, {
+        type: "OBJECT_TYPE_METRICS_VIEW",
+      }),
     ],
     ([dashboardFiles, dashboardCatalogEntries]) => {
       if (!dashboardFiles.isSuccess || !dashboardCatalogEntries.isSuccess)

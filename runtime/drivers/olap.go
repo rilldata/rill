@@ -2,6 +2,7 @@ package drivers
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"time"
 
@@ -13,19 +14,15 @@ import (
 var ErrUnsupportedConnector = errors.New("drivers: connector not supported")
 
 // WithConnectionFunc is a callback function that provides a context to be used in further OLAP store calls to enforce affinity to a single connection.
+// It also provides pointers to the actual database/sql and database/sql/driver connections.
 // It's called with two contexts: wrappedCtx wraps the input context (including cancellation),
 // and ensuredCtx wraps a background context (ensuring it can never be cancelled).
-type WithConnectionFunc func(wrappedCtx context.Context, ensuredCtx context.Context) error
-
-// WithRawFunc is a callback function that exposes the underlying driver connection.
-// The driverConn must not be used outside of this function.
-type WithRawFunc func(driverConn any) error
+type WithConnectionFunc func(wrappedCtx context.Context, ensuredCtx context.Context, conn *sql.Conn) error
 
 // OLAPStore is implemented by drivers that are capable of storing, transforming and serving analytical queries.
 type OLAPStore interface {
 	Dialect() Dialect
 	WithConnection(ctx context.Context, priority int, fn WithConnectionFunc) error
-	WithRaw(ctx context.Context, priority int, fn WithRawFunc) error
 	Exec(ctx context.Context, stmt *Statement) error
 	Execute(ctx context.Context, stmt *Statement) (*Result, error)
 	InformationSchema() InformationSchema
@@ -84,6 +81,7 @@ type Table struct {
 	Database       string
 	DatabaseSchema string
 	Name           string
+	View           bool
 	Schema         *runtimev1.StructType
 }
 

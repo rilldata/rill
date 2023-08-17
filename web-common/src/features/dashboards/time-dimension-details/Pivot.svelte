@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createVirtualizer, VirtualItem } from "@tanstack/svelte-virtual";
+  import { createEventDispatcher } from "svelte";
   import PivotVirtualRow from "./PivotVirtualRow.svelte";
   import PivotCell from "./PivotCell.svelte";
 
@@ -9,6 +10,7 @@
   export let getColumnWidth: (idx: number) => number;
   export let getRowSize: (idx: number) => number;
   export let renderCell: (rowIdx: number, colIdx: number) => any;
+  export let renderHeaderCell: (rowIdx: number, colIdx: number) => any;
   export let height: number;
 
   function range(n: number) {
@@ -27,14 +29,26 @@
   let totalVerticalSize = 0;
   let paddingTop = 0;
   let paddingBottom = 0;
+  let virtualStart;
+  let virtualEnd;
   $: {
     virtualRows = $rowVirtualizer?.getVirtualItems() ?? [];
     totalVerticalSize = $rowVirtualizer?.getTotalSize() ?? 0;
+    virtualStart = virtualRows?.[0]?.index || 0;
+    virtualEnd = virtualRows?.at(-1)?.index || 0;
     paddingTop = virtualRows?.length > 0 ? virtualRows?.[0]?.start || 0 : 0;
     paddingBottom =
       virtualRows?.length > 0
         ? totalVerticalSize - (virtualRows?.at(-1)?.end || 0)
         : 0;
+  }
+
+  const dispatch = createEventDispatcher();
+  $: {
+    dispatch("virtualRange", {
+      start: virtualStart,
+      end: virtualEnd,
+    });
   }
 
   $: columnVirtualizer = createVirtualizer({
@@ -99,18 +113,15 @@
     class="border-collapse"
     style={`height: ${totalVerticalSize}px; max-height: ${totalVerticalSize}px; width: ${totalHorizontalSize}px; max-width: ${totalHorizontalSize}px; overflow: none; table-layout: fixed`}
   >
-    <thead class="sticky top-0 bg-gray-100 z-10">
+    <thead class="sticky top-0 z-10">
       <PivotVirtualRow element="th" {paddingLeft} {paddingRight}>
         <svelte:fragment slot="pre">
           {#each fixedVirtualColumns as column (column.index)}
             <PivotCell
               rowIdx={-1}
-              class={isFixedColumn(column.index)
-                ? "bg-gray-200 text-left"
-                : "text-left"}
               fixed={isFixedColumn(column.index)}
               element="th"
-              {renderCell}
+              renderCell={renderHeaderCell}
               item={column}
             />
           {/each}
@@ -119,12 +130,9 @@
           {#each nonfixedVirtualColumns as column (column.index)}
             <PivotCell
               rowIdx={-1}
-              class={isFixedColumn(column.index)
-                ? "bg-gray-200 text-left"
-                : "text-left"}
               fixed={isFixedColumn(column.index)}
               element="th"
-              {renderCell}
+              renderCell={renderHeaderCell}
               item={column}
             />
           {/each}
@@ -165,7 +173,6 @@
               <PivotCell
                 rowIdx={row.index}
                 rowHeight={getRowSize(row.index)}
-                class={isFixedColumn(column.index) ? "bg-gray-100" : ""}
                 fixed
                 {renderCell}
                 item={column}
@@ -177,7 +184,6 @@
               <PivotCell
                 rowIdx={row.index}
                 rowHeight={getRowSize(row.index)}
-                class={isFixedColumn(column.index) ? "bg-gray-100" : ""}
                 {renderCell}
                 item={column}
               />

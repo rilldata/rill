@@ -2,6 +2,7 @@ package transporter
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"os"
 	"strings"
@@ -12,13 +13,13 @@ import (
 
 type motherduckToDuckDB struct {
 	to     drivers.OLAPStore
-	from   drivers.Connection
+	from   drivers.Handle
 	logger *zap.Logger
 }
 
 var _ drivers.Transporter = &motherduckToDuckDB{}
 
-func NewMotherduckToDuckDB(from drivers.Connection, to drivers.OLAPStore, logger *zap.Logger) drivers.Transporter {
+func NewMotherduckToDuckDB(from drivers.Handle, to drivers.OLAPStore, logger *zap.Logger) drivers.Transporter {
 	return &motherduckToDuckDB{
 		to:     to,
 		from:   from,
@@ -38,7 +39,7 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, source drivers.Source
 	}
 
 	config := t.from.Config()
-	err := t.to.WithConnection(ctx, 1, func(ctx, ensuredCtx context.Context) error {
+	err := t.to.WithConnection(ctx, 1, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
 		res, err := t.to.Execute(ctx, &drivers.Statement{Query: "SELECT current_database();"})
 		if err != nil {
 			return err

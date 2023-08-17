@@ -218,8 +218,9 @@ func TestServer_RangeSanity(t *testing.T) {
 	t.Parallel()
 	server, instanceID := getTimeseriesTestServer(t)
 
-	olap, err := server.runtime.OLAP(testCtx(), instanceID)
+	olap, release, err := server.runtime.OLAP(testCtx(), instanceID)
 	require.NoError(t, err)
+	defer release()
 
 	result, err := olap.Execute(testCtx(), &drivers.Statement{
 		Query: "select min(time) min, max(time) max, max(time)-min(time) as r from timeseries",

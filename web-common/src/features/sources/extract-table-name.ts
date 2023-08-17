@@ -22,8 +22,8 @@ export function extractTableName(filePath: string): string {
 
 export function extractFileExtension(filePath: string): string {
   const fileName = filePath.split(FILE_PATH_SPLIT_REGEX).slice(-1)[0];
-  const lastIndexOfDot = fileName.lastIndexOf(".");
-  return lastIndexOfDot >= 0 ? fileName.substring(lastIndexOfDot + 1) : "";
+  const lastIndexOfDot = fileName.indexOf(".");
+  return lastIndexOfDot >= 0 ? fileName.substring(lastIndexOfDot) : "";
 }
 
 export function sanitizeEntityName(entityName: string): string {

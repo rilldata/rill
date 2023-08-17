@@ -28,6 +28,7 @@
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   import { prepareTimeSeries } from "./utils";
+  import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
 
   export let metricViewName;
   export let workspaceWidth: number;
@@ -146,6 +147,8 @@
 
   // formattedData adjusts the data to account for Javascript's handling of timezones
   let formattedData;
+  let scrubStart;
+  let scrubEnd;
   $: if (dataCopy && dataCopy?.length) {
     formattedData = prepareTimeSeries(
       dataCopy,
@@ -153,10 +156,19 @@
       TIME_GRAIN[interval].duration,
       $dashboardStore.selectedTimezone
     );
+
+    // adjust scrub values for Javascript's timezone changes
+    scrubStart = adjustOffsetForZone(
+      $dashboardStore?.selectedScrubRange?.start,
+      $dashboardStore?.selectedTimezone
+    );
+    scrubEnd = adjustOffsetForZone(
+      $dashboardStore?.selectedScrubRange?.end,
+      $dashboardStore?.selectedTimezone
+    );
   }
 
   let mouseoverValue = undefined;
-
   let startValue: Date;
   let endValue: Date;
 
@@ -256,11 +268,15 @@
           <div class="p-5"><CrossIcon /></div>
         {:else if formattedData}
           <MeasureChart
+            isScrubbing={$dashboardStore?.selectedScrubRange?.isScrubbing}
+            {scrubStart}
+            {scrubEnd}
             bind:mouseoverValue
+            {metricViewName}
             data={formattedData}
+            zone={$dashboardStore?.selectedTimezone}
             xAccessor="ts_position"
             labelAccessor="ts"
-            zone={$dashboardStore?.selectedTimezone}
             timeGrain={interval}
             yAccessor={measure.name}
             xMin={startValue}

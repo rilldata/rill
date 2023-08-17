@@ -68,7 +68,6 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 	// Provision prod deployment.
 	// Start using original context again since transaction in txCtx is done.
 	depl, err := s.createDeployment(ctx, &createDeploymentOptions{
-		OrganizationID:       proj.OrganizationID,
 		ProjectID:            proj.ID,
 		Region:               proj.Region,
 		GithubURL:            proj.GithubURL,
@@ -79,6 +78,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		ProdOLAPDriver:       proj.ProdOLAPDriver,
 		ProdOLAPDSN:          proj.ProdOLAPDSN,
 		ProdSlots:            proj.ProdSlots,
+		Annotations:          newDeploymentAnnotations(org, proj),
 	})
 	if err != nil {
 		err2 := s.DB.DeleteProject(ctx, proj.ID)
@@ -154,8 +154,12 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 			}
 		}
 
+		org, err := s.DB.FindOrganization(ctx, proj.OrganizationID)
+		if err != nil {
+			return nil, err
+		}
+
 		depl, err := s.createDeployment(ctx, &createDeploymentOptions{
-			OrganizationID:       proj.OrganizationID,
 			ProjectID:            proj.ID,
 			Subpath:              proj.Subpath,
 			ProdOLAPDriver:       proj.ProdOLAPDriver,
@@ -166,6 +170,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 			ProdBranch:           opts.ProdBranch,
 			ProdVariables:        opts.ProdVariables,
 			ProdSlots:            opts.ProdSlots,
+			Annotations:          newDeploymentAnnotations(org, proj),
 		})
 		if err != nil {
 			return nil, err
@@ -190,6 +195,24 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 		return res, nil
 	}
 
+	projNameChanged := proj.Name != opts.Name
+	var deplAnnotations *deploymentAnnotations
+
+	if projNameChanged {
+		// Regenerate deployment annotations
+		org, err := s.DB.FindOrganization(ctx, proj.OrganizationID)
+		if err != nil {
+			return nil, err
+		}
+
+		deplAnnotations = &deploymentAnnotations{
+			orgID:    org.ID,
+			orgName:  org.Name,
+			projID:   proj.ID,
+			projName: opts.Name, // Project name changed
+		}
+	}
+
 	impactsDeployments := (proj.ProdBranch != opts.ProdBranch ||
 		!reflect.DeepEqual(proj.GithubURL, opts.GithubURL) ||
 		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID))
@@ -210,11 +233,17 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 				Subpath:              proj.Subpath,
 				Branch:               opts.ProdBranch,
 				Variables:            opts.ProdVariables,
+				Annotations:          deplAnnotations,
 			})
 			if err != nil {
 				// TODO: This may leave things in an inconsistent state. (Although presently, there's almost never multiple deployments.)
 				return nil, err
 			}
+		}
+	} else if projNameChanged {
+		err := s.UpdateDeploymentAnnotations(ctx, proj.ID, *deplAnnotations)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -247,11 +276,67 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, proj *database.Pro
 	return s.DB.UpdateProjectVariables(ctx, proj.ID, variables)
 }
 
+// UpdateOrgDeploymentAnnotations iterates over projects of the given org and
+// updates annotations of corresponding deployments with the new organization name
+// NOTE : this does not trigger reconcile.
+func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, orgID, orgNewName string) error {
+	limit := 10
+	afterProjectName := ""
+	for {
+		projects, err := s.DB.FindProjectsForOrganization(ctx, orgID, afterProjectName, limit)
+		if err != nil {
+			return err
+		}
+
+		for _, project := range projects {
+			err := s.UpdateDeploymentAnnotations(ctx, project.ID, deploymentAnnotations{
+				orgID:    orgID,
+				orgName:  orgNewName,
+				projID:   project.ID,
+				projName: project.Name,
+			})
+			if err != nil {
+				return err
+			}
+
+			afterProjectName = project.Name
+		}
+
+		if len(projects) < limit {
+			break
+		}
+	}
+
+	return nil
+}
+
+// UpdateDeploymentAnnotations pushes the updated annotations to deployments.
+// NOTE : this does not trigger reconcile.
+func (s *Service) UpdateDeploymentAnnotations(ctx context.Context, projID string, annotations deploymentAnnotations) error {
+	ds, err := s.DB.FindDeploymentsForProject(ctx, projID)
+	if err != nil {
+		return err
+	}
+
+	for _, d := range ds {
+		err := s.updateDeplAnnotations(ctx, d, annotations)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // TriggerRedeploy de-provisions and re-provisions a project's prod deployment.
 func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, prevDepl *database.Deployment) error {
+	org, err := s.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return err
+	}
+
 	// Provision new deployment
 	newDepl, err := s.createDeployment(ctx, &createDeploymentOptions{
-		OrganizationID:       proj.OrganizationID,
 		ProjectID:            proj.ID,
 		Region:               proj.Region,
 		GithubURL:            proj.GithubURL,
@@ -262,6 +347,7 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 		ProdOLAPDriver:       proj.ProdOLAPDriver,
 		ProdOLAPDSN:          proj.ProdOLAPDSN,
 		ProdSlots:            proj.ProdSlots,
+		Annotations:          newDeploymentAnnotations(org, proj),
 	})
 	if err != nil {
 		return err

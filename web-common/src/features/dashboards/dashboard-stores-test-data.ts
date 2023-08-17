@@ -1,4 +1,8 @@
-import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+import {
+  MetricsExplorerEntity,
+  metricsExplorerStore,
+} from "@rilldata/web-common/features/dashboards/dashboard-stores";
+import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
@@ -78,12 +82,27 @@ export const TestTimeConstants = {
   LAST_18_HOURS: new Date(Date.now() - Hour * 18),
   LAST_DAY: new Date(Date.now() - Hour * 24),
 };
+export const AD_BIDS_DEFAULT_TIME_RANGE = {
+  name: TimeRangePreset.ALL_TIME,
+  interval: V1TimeGrain.TIME_GRAIN_HOUR,
+  start: TestTimeConstants.LAST_DAY,
+  end: new Date(TestTimeConstants.NOW.getTime() + 1),
+};
+export const AD_BIDS_DEFAULT_URL_TIME_RANGE = {
+  name: TimeRangePreset.ALL_TIME,
+  interval: V1TimeGrain.TIME_GRAIN_HOUR,
+  start: undefined,
+  end: undefined,
+};
 
 export const AD_BIDS_INIT: V1MetricsView = {
   name: "AdBids",
   model: "AdBids_Source",
   measures: AD_BIDS_INIT_MEASURES,
   dimensions: AD_BIDS_INIT_DIMENSIONS,
+};
+export const AD_BIDS_INIT_WITH_TIME: V1MetricsView = {
+  ...AD_BIDS_INIT,
   timeDimension: AD_BIDS_TIMESTAMP_DIMENSION,
 };
 export const AD_BIDS_WITH_DELETED_MEASURE = {
@@ -116,21 +135,66 @@ export const AD_BIDS_WITH_THREE_DIMENSIONS = {
   dimensions: AD_BIDS_THREE_DIMENSIONS,
 };
 
-export function clearMetricsExplorerStore() {
+export function resetDashboardStore() {
   metricsExplorerStore.remove(AD_BIDS_NAME);
   metricsExplorerStore.remove(AD_BIDS_MIRROR_NAME);
+  initAdBidsInStore();
+  initAdBidsMirrorInStore();
 }
 
-export function createAdBidsInStore() {
-  metricsExplorerStore.sync(AD_BIDS_NAME, AD_BIDS_INIT);
-  // clear everything if already created
-  metricsExplorerStore.clearFilters(AD_BIDS_NAME);
-  metricsExplorerStore.setSelectedTimeRange(AD_BIDS_NAME, {
-    name: TimeRangePreset.ALL_TIME,
-    interval: V1TimeGrain.TIME_GRAIN_MINUTE,
-    start: TestTimeConstants.LAST_DAY,
-    end: TestTimeConstants.NOW,
+export function initAdBidsInStore() {
+  metricsExplorerStore.init(AD_BIDS_NAME, AD_BIDS_INIT, {
+    timeRangeSummary: {
+      min: TestTimeConstants.LAST_DAY.toISOString(),
+      max: TestTimeConstants.NOW.toISOString(),
+      interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
+    },
   });
+}
+export function initAdBidsMirrorInStore() {
+  metricsExplorerStore.init(
+    AD_BIDS_MIRROR_NAME,
+    {
+      name: AD_BIDS_MIRROR_NAME,
+      measures: AD_BIDS_INIT_MEASURES,
+      dimensions: AD_BIDS_INIT_DIMENSIONS,
+    },
+    {
+      timeRangeSummary: {
+        min: TestTimeConstants.LAST_DAY.toISOString(),
+        max: TestTimeConstants.NOW.toISOString(),
+        interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
+      },
+    }
+  );
+}
+
+export function createDashboardState(
+  name: string,
+  metrics: V1MetricsView,
+  filters: V1MetricsViewFilter = {
+    include: [],
+    exclude: [],
+  },
+  timeRange: DashboardTimeControls = AD_BIDS_DEFAULT_TIME_RANGE
+): MetricsExplorerEntity {
+  return {
+    name,
+
+    selectedMeasureNames: [],
+    visibleDimensionKeys: new Set(metrics.dimensions.map((d) => d.name)),
+    allDimensionsVisible: true,
+    visibleMeasureKeys: new Set(metrics.measures.map((m) => m.name)),
+    allMeasuresVisible: true,
+
+    filters,
+    dimensionFilterExcludeMode: new Map(),
+
+    leaderboardMeasureName: metrics.measures[0]?.name,
+    leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
+
+    selectedTimeRange: timeRange,
+  };
 }
 
 export function createAdBidsMirrorInStore(metrics: V1MetricsView) {
@@ -189,19 +253,26 @@ export function createMetricsMetaQueryMock(
   return mock;
 }
 
+// Wrapper function to simplify assert call
 export function assertMetricsView(
   name: string,
   filters: V1MetricsViewFilter = {
     include: [],
     exclude: [],
   },
-  timeRange: DashboardTimeControls = {
-    name: TimeRangePreset.ALL_TIME,
-    interval: V1TimeGrain.TIME_GRAIN_MINUTE,
-    start: TestTimeConstants.LAST_DAY,
-    end: TestTimeConstants.NOW,
-  },
+  timeRange: DashboardTimeControls = AD_BIDS_DEFAULT_TIME_RANGE,
   selectedMeasure = AD_BIDS_IMPRESSIONS_MEASURE
+) {
+  assertMetricsViewRaw(name, filters, timeRange, selectedMeasure);
+}
+// Raw assert function without any optional params.
+// This allows us to assert for `undefined`
+// TODO: find a better solution that this hack
+export function assertMetricsViewRaw(
+  name: string,
+  filters: V1MetricsViewFilter,
+  timeRange: DashboardTimeControls,
+  selectedMeasure: string
 ) {
   const metricsView = get(metricsExplorerStore).entities[name];
   expect(metricsView.filters).toEqual(filters);
@@ -265,7 +336,7 @@ export const AD_BIDS_CLEARED_FILTER = {
 // parsed time controls won't have start & end
 export const ALL_TIME_PARSED_TEST_CONTROLS = {
   name: TimeRangePreset.ALL_TIME,
-  interval: V1TimeGrain.TIME_GRAIN_MINUTE,
+  interval: V1TimeGrain.TIME_GRAIN_HOUR,
 } as DashboardTimeControls;
 
 export const LAST_6_HOURS_TEST_CONTROLS = {

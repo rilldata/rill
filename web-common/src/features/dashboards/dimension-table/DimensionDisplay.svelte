@@ -24,7 +24,11 @@
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
+  import {
+    metricsExplorerStore,
+    useDashboardStore,
+    useFetchTimeRange,
+  } from "../dashboard-stores";
   import { humanizeGroupByColumns, FormatPreset } from "../humanize-numbers";
   import {
     computeComparisonValues,
@@ -57,6 +61,7 @@
   $: dimensionColumn = dimension?.column || dimension?.name;
 
   $: dashboardStore = useDashboardStore(metricViewName);
+  $: fetchTimeStore = useFetchTimeRange(metricViewName);
 
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
@@ -137,7 +142,6 @@
 
   // Compose the comparison /toplist query
   $: displayComparison = $timeControlsStore.showComparison;
-
   $: comparisonFilterSet = getFilterForComparisonTable(
     filterForDimension,
     dimensionName,

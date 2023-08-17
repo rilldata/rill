@@ -5,6 +5,8 @@ import {
   RpcStatus,
   V1MetricsViewToplistResponse,
   type V1MetricsView,
+  V1ColumnTimeRangeResponse,
+  createQueryServiceColumnTimeRange,
 } from "@rilldata/web-common/runtime-client";
 import type { StateManagers } from "../state-managers/state-managers";
 import { derived, Readable } from "svelte/store";
@@ -95,3 +97,25 @@ export const getFilterSearchList = (
     }
   );
 };
+
+export function createTimeRangeSummary(
+  ctx: StateManagers
+): CreateQueryResult<V1ColumnTimeRangeResponse> {
+  return derived(
+    [ctx.runtime, useMetaQuery(ctx)],
+    ([runtime, metricsView], set) =>
+      createQueryServiceColumnTimeRange(
+        runtime.instanceId,
+        metricsView.data?.model,
+        {
+          columnName: metricsView.data?.timeDimension,
+        },
+        {
+          query: {
+            enabled: !!metricsView.data?.timeDimension,
+            queryClient: ctx.queryClient,
+          },
+        }
+      ).subscribe(set)
+  );
+}

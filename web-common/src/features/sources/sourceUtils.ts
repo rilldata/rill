@@ -1,14 +1,15 @@
 import type {
-  V1Connector,
+  V1ConnectorSpec,
   V1ReconcileError,
 } from "@rilldata/web-common/runtime-client";
+import { extractFileExtension } from "./extract-table-name";
+import type { SourceConnectionType } from "../../metrics/service/SourceEventTypes";
 import { behaviourEvent, errorEvent } from "../../metrics/initMetrics";
 import type { BehaviourEventMedium } from "../../metrics/service/BehaviourEventTypes";
 import type {
   MetricsEventScreenName,
   MetricsEventSpace,
 } from "../../metrics/service/MetricsTypes";
-import type { SourceConnectionType } from "../../metrics/service/SourceEventTypes";
 import { getFilePathFromNameAndType } from "../entity-management/entity-mappers";
 import { EntityType } from "../entity-management/types";
 import { sanitizeEntityName } from "./extract-table-name";
@@ -20,13 +21,15 @@ export function compileCreateSourceYAML(
 ) {
   const topLineComment = `# Visit https://docs.rilldata.com/reference/project-files/sources to learn more about Rill source files.`;
 
-  if (
-    connectorName !== "local_file" &&
-    connectorName !== "motherduck" &&
-    connectorName !== "bigquery"
-  ) {
-    values.uri = values.path;
-    delete values.path;
+  switch (connectorName) {
+    case "s3":
+    case "gcs":
+    case "https":
+    case "local_file":
+      connectorName = "duckdb";
+      values.sql = buildDuckDbQuery(values.path as string);
+      delete values.path;
+      break;
   }
 
   const compiledKeyValues = Object.entries(values)
@@ -37,7 +40,33 @@ export function compileCreateSourceYAML(
   return `${topLineComment}\n\ntype: "${connectorName}"\n` + compiledKeyValues;
 }
 
-export function inferSourceName(connector: V1Connector, path: string) {
+function buildDuckDbQuery(path: string): string {
+  const extension = extractFileExtension(path as string);
+  if (extensionContainsParts(extension, [".csv", ".tsv", ".txt"])) {
+    return `select * from read_csv('${path}', auto_detect=true, ignore_errors=1, header=true)`;
+  } else if (extensionContainsParts(extension, [".parquet"])) {
+    return `select * from read_parquet('${path}')`;
+  } else if (extensionContainsParts(extension, [".json", ".ndjson"])) {
+    return `select * from read_json('${path}', auto_detect=true, format='auto')`;
+  }
+
+  throw new Error(`Unsupported extension ${extension} for ${path}`);
+}
+
+/**
+ * Checks if a file extension '.v1.parquet.gz' contains parts like '.parquet'
+ */
+function extensionContainsParts(
+  fileExtension: string,
+  extensionParts: Array<string>
+) {
+  for (const extension of extensionParts) {
+    if (fileExtension.includes(extension)) return true;
+  }
+  return false;
+}
+
+export function inferSourceName(connector: V1ConnectorSpec, path: string) {
   if (
     !path ||
     path.endsWith("/") ||
