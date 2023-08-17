@@ -12,8 +12,39 @@ import (
 )
 
 type Client interface {
+	With(dims ...attribute.KeyValue) Client
 	Emit(ctx context.Context, name string, value float64, dims ...attribute.KeyValue)
 	Close() error
+}
+
+// wrappedClient is designed to wrap a client and enrich every emitted event with common dimensions
+type wrappedClient struct {
+	client     Client
+	commonDims []attribute.KeyValue
+}
+
+func newWrappedClient(client Client, commonDims ...attribute.KeyValue) Client {
+	return &wrappedClient{
+		client:     client,
+		commonDims: commonDims,
+	}
+}
+
+func (w *wrappedClient) With(dims ...attribute.KeyValue) Client {
+	dims = append(dims, w.commonDims...)
+	return &wrappedClient{
+		client:     w.client,
+		commonDims: dims,
+	}
+}
+
+func (w *wrappedClient) Emit(ctx context.Context, name string, value float64, dims ...attribute.KeyValue) {
+	dims = append(dims, w.commonDims...)
+	w.client.Emit(ctx, name, value, dims...)
+}
+
+func (w *wrappedClient) Close() error {
+	return w.client.Close()
 }
 
 // bufferedClient collects and periodically sinks Event-s.
@@ -47,6 +78,10 @@ func NewBufferedClient(opts BufferedClientOptions) Client {
 	go client.init()
 
 	return client
+}
+
+func (c *bufferedClient) With(dims ...attribute.KeyValue) Client {
+	return newWrappedClient(c, dims...)
 }
 
 func (c *bufferedClient) Emit(ctx context.Context, name string, value float64, dims ...attribute.KeyValue) {
@@ -147,6 +182,10 @@ type noopClient struct{}
 
 func NewNoopClient() Client {
 	return &noopClient{}
+}
+
+func (n *noopClient) With(_ ...attribute.KeyValue) Client {
+	return n
 }
 
 func (n *noopClient) Emit(_ context.Context, _ string, _ float64, _ ...attribute.KeyValue) {

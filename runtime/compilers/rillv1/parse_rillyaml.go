@@ -7,6 +7,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+var _reservedConnectorNames = map[string]bool{"olap": true, "repo": true, "metastore": true}
+
 // RillYAML is the parsed contents of rill.yaml
 type RillYAML struct {
 	Title       string
@@ -42,7 +44,7 @@ type rillYAML struct {
 
 // parseRillYAML parses rill.yaml
 func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
-	data, err := p.Repo.Get(ctx, p.InstanceID, path)
+	data, err := p.Repo.Get(ctx, path)
 	if err != nil {
 		return fmt.Errorf("error loading %q: %w", path, err)
 	}
@@ -60,6 +62,9 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	}
 
 	for i, c := range tmp.Connectors {
+		if _reservedConnectorNames[c.Name] {
+			return fmt.Errorf("connector name %q is reserved", c.Name)
+		}
 		res.Connectors[i] = &ConnectorDef{
 			Type:     c.Type,
 			Name:     c.Name,

@@ -18,10 +18,10 @@
   const dispatch = createEventDispatcher();
 
   function focusOnRemove() {
-    tooltipSuppression.set(true);
+    if (tooltipSuppression) tooltipSuppression.set(true);
   }
   function blurOnRemove() {
-    tooltipSuppression.set(false);
+    if (tooltipSuppression) tooltipSuppression.set(false);
   }
 </script>
 

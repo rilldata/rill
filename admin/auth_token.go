@@ -138,6 +138,7 @@ func (s *Service) ValidateAuthToken(ctx context.Context, token string) (AuthToke
 		}
 
 		s.Used.ServiceToken(sat.ID)
+		s.Used.Service(sat.ServiceID)
 
 		return &serviceAuthToken{model: sat, token: parsed}, nil
 	default:

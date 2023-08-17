@@ -249,10 +249,12 @@ func (s *Server) RevokeServiceAuthToken(ctx context.Context, req *adminv1.Revoke
 
 func serviceToPB(service *database.Service, orgName string) *adminv1.Service {
 	return &adminv1.Service{
-		Id:      service.ID,
-		Name:    service.Name,
-		OrgId:   service.OrgID,
-		OrgName: orgName,
+		Id:        service.ID,
+		Name:      service.Name,
+		OrgId:     service.OrgID,
+		OrgName:   orgName,
+		CreatedOn: timestamppb.New(service.CreatedOn),
+		UpdatedOn: timestamppb.New(service.UpdatedOn),
 	}
 }
 

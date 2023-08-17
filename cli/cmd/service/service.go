@@ -17,10 +17,10 @@ func ServiceCmd(cfg *config.Config) *cobra.Command {
 	}
 
 	serviceCmd.PersistentFlags().StringVar(&cfg.Org, "org", cfg.Org, "Organization Name")
-	serviceCmd.AddCommand(RenameCmd(cfg))
-	serviceCmd.AddCommand(CreateCmd(cfg))
-	serviceCmd.AddCommand(DeleteCmd(cfg))
 	serviceCmd.AddCommand(ListCmd(cfg))
+	serviceCmd.AddCommand(CreateCmd(cfg))
+	serviceCmd.AddCommand(RenameCmd(cfg))
+	serviceCmd.AddCommand(DeleteCmd(cfg))
 	serviceCmd.AddCommand(token.TokenCmd(cfg))
 
 	return serviceCmd

@@ -292,7 +292,7 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 	// TODO: This code is pretty ugly. We should push storage limit tracking into the underlying driver and transporter.
 	var ingestionLimit *int64
 	var limitExceeded bool
-	if olap, ok := sinkConn.AsOLAP(); ok {
+	if olap, ok := sinkConn.AsOLAP(r.C.InstanceID); ok {
 		// Get storage limit
 		inst, err := r.C.Runtime.FindInstance(ctx, r.C.InstanceID)
 		if err != nil {
@@ -343,7 +343,7 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 	return err
 }
 
-func driversSource(conn drivers.Connection, propsPB *structpb.Struct) (drivers.Source, error) {
+func driversSource(conn drivers.Handle, propsPB *structpb.Struct) (drivers.Source, error) {
 	props := propsPB.AsMap()
 	switch conn.Driver() {
 	case "s3":
@@ -400,7 +400,7 @@ func driversSource(conn drivers.Connection, propsPB *structpb.Struct) (drivers.S
 	}
 }
 
-func driversSink(conn drivers.Connection, tableName string) (drivers.Sink, error) {
+func driversSink(conn drivers.Handle, tableName string) (drivers.Sink, error) {
 	switch conn.Driver() {
 	case "duckdb":
 		return &drivers.DatabaseSink{

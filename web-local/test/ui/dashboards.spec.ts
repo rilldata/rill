@@ -709,6 +709,10 @@ async function runThroughEmptyMetricsFlows(page) {
   // select the first menu item.
   await page.getByText("metrics configuration from an existing model").click();
   await page.getByRole("menuitem").getByText("AdBids_model").click();
+  // Wait for menu to close
+  await expect(
+    page.getByRole("menuitem", { name: "Last 6 Hours" })
+  ).not.toBeVisible();
 
   // let's check the inspector.
   await expect(await page.getByText("Model summary")).toBeVisible();
