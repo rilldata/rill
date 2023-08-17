@@ -10,7 +10,10 @@ import {
 import { getComparionRangeForScrub } from "@rilldata/web-common/lib/time/comparisons";
 import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
 import { convertTimeRangePreset } from "@rilldata/web-common/lib/time/ranges";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import {
+  ScrubRange,
+  TimeRangePreset,
+} from "@rilldata/web-common/lib/time/types";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import type {
   V1ColumnTimeRangeResponse,
@@ -274,6 +277,7 @@ const metricViewReducers = {
         leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
 
         ...timeSelections,
+        showComparison: false,
       };
 
       updateMetricsExplorerProto(state.entities[name]);
