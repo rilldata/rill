@@ -25,19 +25,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.MetricsView, error) {
-	obj, err := rt.GetCatalogEntry(ctx, instanceID, name)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	if obj.GetMetricsView() == nil {
-		return nil, status.Errorf(codes.NotFound, "object named '%s' is not a metrics view", name)
-	}
-
-	return obj.GetMetricsView(), nil
-}
-
 // resolveMeasures returns the selected measures
 func resolveMeasures(mv *runtimev1.MetricsView, inlines []*runtimev1.InlineMeasure, selectedNames []string) ([]*runtimev1.MetricsView_Measure, error) {
 	// Build combined measures
@@ -134,7 +121,7 @@ func structTypeToMetricsViewColumn(v *runtimev1.StructType) []*runtimev1.Metrics
 // buildFilterClauseForMetricsViewFilter builds a SQL string of conditions joined with AND.
 // Unless the result is empty, it is prefixed with "AND".
 // I.e. it has the format "AND (...) AND (...) ...".
-func buildFilterClauseForMetricsViewFilter(mv *runtimev1.MetricsView, filter *runtimev1.MetricsViewFilter, dialect drivers.Dialect) (string, []any, error) {
+func buildFilterClauseForMetricsViewFilter(mv *runtimev1.MetricsView, filter *runtimev1.MetricsViewFilter, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewPolicy) (string, []any, error) {
 	var clauses []string
 	var args []any
 
@@ -154,6 +141,10 @@ func buildFilterClauseForMetricsViewFilter(mv *runtimev1.MetricsView, filter *ru
 		}
 		clauses = append(clauses, clause)
 		args = append(args, clauseArgs...)
+	}
+
+	if policy != nil && policy.Filter != "" {
+		clauses = append(clauses, "AND "+policy.Filter)
 	}
 
 	return strings.Join(clauses, " "), args, nil

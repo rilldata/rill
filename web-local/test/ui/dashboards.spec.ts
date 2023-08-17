@@ -720,6 +720,10 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
   await interactWithTimeRangeMenu(page, async () => {
     await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
   });
+  // Wait for menu to close
+  await expect(
+    page.getByRole("menuitem", { name: "Last 6 Hours" })
+  ).not.toBeVisible();
   // check that the percent of total remains visible,
   // with updated value for the time comparison
   await expect(page.getByText("Facebook $229.26 28%")).toBeVisible();
