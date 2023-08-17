@@ -370,7 +370,6 @@ const metricViewReducers = {
 
   displayComparison(name: string, showComparison: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      console.log("displayComparison", showComparison);
       metricsExplorer.showComparison = showComparison;
       // if setting showComparison===true and not currently
       //  showing any context column, then show DELTA_CHANGE
