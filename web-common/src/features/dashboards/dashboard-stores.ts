@@ -15,19 +15,13 @@ import {
   ScrubRange,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
-import {
-  DashboardState_LeaderboardSortDirection as SortDirection,
-  DashboardState_LeaderboardSortType as SortType,
-} from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   V1ColumnTimeRangeResponse,
   V1MetricsView,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
 import { derived, get, Readable, Writable, writable } from "svelte/store";
-
-export { SortType as SortType };
-export { SortDirection as SortDirection };
+import { SortDirection, SortType } from "./proto-state/derived-types";
 
 export interface LeaderboardValue {
   value: number;
