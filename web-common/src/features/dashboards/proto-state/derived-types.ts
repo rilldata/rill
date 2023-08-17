@@ -8,5 +8,5 @@ import {
   DashboardState_LeaderboardSortType,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 
-export { DashboardState_LeaderboardSortDirection as SortType };
-export { DashboardState_LeaderboardSortType as SortDirection };
+export { DashboardState_LeaderboardSortDirection as SortDirection };
+export { DashboardState_LeaderboardSortType as SortType };
