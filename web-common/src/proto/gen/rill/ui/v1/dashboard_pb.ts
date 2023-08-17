@@ -226,11 +226,7 @@ proto3.util.setEnumType(DashboardState_LeaderboardSortDirection, "rill.ui.v1.Das
  * By default, the leaderboards+table will be sorted by VALUE,
  * using the value of the currently selected dashboard measure.
  *
-<<<<<<< HEAD
- * If DELTA_ABSOLUTE or DELTA_PCT is selected, the
-=======
  * If DELTA_ABSOLUTE or DELTA_PERCENT is selected, the
->>>>>>> leaderboard-sort-toggle
  * leaderboards+table will be sorted by the absolute or percentage
  * delta change of the currently selected dashboard measure.
  *
