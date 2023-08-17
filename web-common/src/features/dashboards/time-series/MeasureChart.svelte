@@ -74,9 +74,7 @@
   let isMovingScrub = false;
   let moveStartDelta = 0;
   let moveEndDelta = 0;
-  let isResizing = false;
-  let isOverStart = false;
-  let isOverEnd = false;
+  let isResizing: "start" | "end" = undefined;
 
   $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
 
@@ -90,11 +88,24 @@
       ? "hsla(225, 20%, 80%, .2)"
       : "hsla(217,70%, 80%, .4)";
 
-  $: cursorClass = isMovingScrub
+  $: scrubStartCords = $xScale(scrubStart);
+  $: scrubEndCords = $xScale(scrubEnd);
+  $: mouseOverCords = $xScale(mouseoverValue?.x);
+  $: isOverStart = Math.abs(mouseOverCords - scrubStartCords) <= 5;
+  $: isOverEnd = Math.abs(mouseOverCords - scrubEndCords) <= 5;
+  $: isInsideScrub = Boolean(
+    mouseOverCords > Math.min(scrubStartCords, scrubEndCords) + 5 &&
+      mouseOverCords < Math.max(scrubStartCords, scrubEndCords) - 5
+  );
+
+  $: cursorClass = isInsideScrub
+    ? "cursor-grab"
+    : isMovingScrub
     ? "cursor-grabbing"
-    : isScrubbing
+    : isScrubbing || isOverStart || isOverEnd
     ? "cursor-ew-resize"
     : "";
+
   $: [xExtentMin, xExtentMax] = extent(data, (d) => d[xAccessor]);
   $: [yExtentMin, yExtentMax] = extent(data, (d) => d[yAccessor]);
   let comparisonExtents;
@@ -177,48 +188,19 @@
   function startScrub(event) {
     if (hasSubrangeSelected) {
       const startX = event.detail?.start?.x;
-      const scrubStartDate = getBisectedTimeFromCordinates(
-        startX,
-        $xScale,
-        labelAccessor,
-        data,
-        TIME_GRAIN[timeGrain].label
-      );
-
       // check if we are scrubbing on the edges of scrub rect
-
-      /***
-       * Currently being calculated by checking if the bisected dates match
-       * the existing scrub start/end dates. Although with this approach it would
-       * be hard to identify resizing when we have a small grain on a larger
-       * time range window (e.g. 1h on 14D) We can increase the flexibility
-       * by adding additional few pixels on both sides for threshold
-       */
-      isOverStart = scrubStartDate?.getTime() == scrubStart?.getTime();
-      isOverEnd = scrubStartDate?.getTime() == scrubEnd?.getTime();
-
-      const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
-
-      /**
-       * We define a moving action when the start date is in middle of
-       * the scrub start and end dates. There is an edge case where we
-       * have a scrub of unit grain length, in that case we don't have
-       * any dates in the middle of the scrub start and end dates.
-       */
-      isMovingScrub = scrubStartDate > start && scrubStartDate < end;
-
       if (isOverStart || isOverEnd) {
-        isResizing = true;
+        isResizing = isOverStart ? "start" : "end";
         updateScrub(scrubStart, scrubEnd, true);
         return;
-      } else if (isMovingScrub) {
+      } else if (isInsideScrub) {
+        isMovingScrub = true;
         moveStartDelta = startX - $xScale(scrubStart);
         moveEndDelta = startX - $xScale(scrubEnd);
 
         return;
       }
     }
-    // updateScrub(scrubStartDate, undefined, true);
   }
 
   function moveScrub(event) {
@@ -250,8 +232,9 @@
          * Adjust the ends of the subrange by dragging either end.
          * This snaps to the nearest time grain.
          */
-        const newStart = isOverStart ? intermediateScrubVal : scrubStart;
-        const newEnd = isOverEnd ? intermediateScrubVal : scrubEnd;
+        const newStart =
+          isResizing === "start" ? intermediateScrubVal : scrubStart;
+        const newEnd = isResizing === "end" ? intermediateScrubVal : scrubEnd;
 
         updateScrub(newStart, newEnd, true);
       } else if (!isResizing && isMovingScrub) {
@@ -302,7 +285,7 @@
       return;
     }
 
-    isResizing = false;
+    isResizing = undefined;
     isMovingScrub = false;
     justCreatedScrub = true;
 
