@@ -173,16 +173,22 @@ export enum DashboardState_LeaderboardContextColumn {
   DELTA_PERCENT = 2,
 
   /**
-   * @generated from enum value: LEADERBOARD_CONTEXT_COLUMN_HIDDEN = 3;
+   * @generated from enum value: LEADERBOARD_CONTEXT_COLUMN_DELTA_ABSOLUTE = 3;
    */
-  HIDDEN = 3,
+  DELTA_ABSOLUTE = 3,
+
+  /**
+   * @generated from enum value: LEADERBOARD_CONTEXT_COLUMN_HIDDEN = 4;
+   */
+  HIDDEN = 4,
 }
 // Retrieve enum metadata with: proto3.getEnumType(DashboardState_LeaderboardContextColumn)
 proto3.util.setEnumType(DashboardState_LeaderboardContextColumn, "rill.ui.v1.DashboardState.LeaderboardContextColumn", [
   { no: 0, name: "LEADERBOARD_CONTEXT_COLUMN_UNSPECIFIED" },
   { no: 1, name: "LEADERBOARD_CONTEXT_COLUMN_PERCENT" },
   { no: 2, name: "LEADERBOARD_CONTEXT_COLUMN_DELTA_PERCENT" },
-  { no: 3, name: "LEADERBOARD_CONTEXT_COLUMN_HIDDEN" },
+  { no: 3, name: "LEADERBOARD_CONTEXT_COLUMN_DELTA_ABSOLUTE" },
+  { no: 4, name: "LEADERBOARD_CONTEXT_COLUMN_HIDDEN" },
 ]);
 
 /**
@@ -212,7 +218,7 @@ proto3.util.setEnumType(DashboardState_LeaderboardSortDirection, "rill.ui.v1.Das
 ]);
 
 /**
- *
+ * *
  * SortType is used to determine how to sort the leaderboard
  * and dimension detail table, as well as where to place the
  * sort arrow.
@@ -220,7 +226,7 @@ proto3.util.setEnumType(DashboardState_LeaderboardSortDirection, "rill.ui.v1.Das
  * By default, the leaderboards+table will be sorted by VALUE,
  * using the value of the currently selected dashboard measure.
  *
- * If DELTA_PERCENT or DELTA_PCT is selected, the
+ * If DELTA_ABSOLUTE or DELTA_PERCENT is selected, the
  * leaderboards+table will be sorted by the absolute or percentage
  * delta change of the currently selected dashboard measure.
  *
@@ -253,28 +259,28 @@ export enum DashboardState_LeaderboardSortType {
   DIMENSION = 2,
 
   /**
-   * @generated from enum value: LEADERBOARD_SORT_TYPE_DELTA_PERCENT = 3;
+   * @generated from enum value: LEADERBOARD_SORT_TYPE_PERCENT = 3;
    */
-  DELTA_PERCENT = 3,
+  PERCENT = 3,
 
   /**
-   * @generated from enum value: LEADERBOARD_SORT_TYPE_DELTA_PCT = 4;
+   * @generated from enum value: LEADERBOARD_SORT_TYPE_DELTA_PERCENT = 4;
    */
-  DELTA_PCT = 4,
+  DELTA_PERCENT = 4,
 
   /**
-   * @generated from enum value: LEADERBOARD_SORT_TYPE_PERCENT = 5;
+   * @generated from enum value: LEADERBOARD_SORT_TYPE_DELTA_ABSOLUTE = 5;
    */
-  PERCENT = 5,
+  DELTA_ABSOLUTE = 5,
 }
 // Retrieve enum metadata with: proto3.getEnumType(DashboardState_LeaderboardSortType)
 proto3.util.setEnumType(DashboardState_LeaderboardSortType, "rill.ui.v1.DashboardState.LeaderboardSortType", [
   { no: 0, name: "LEADERBOARD_SORT_TYPE_UNSPECIFIED" },
   { no: 1, name: "LEADERBOARD_SORT_TYPE_VALUE" },
   { no: 2, name: "LEADERBOARD_SORT_TYPE_DIMENSION" },
-  { no: 3, name: "LEADERBOARD_SORT_TYPE_DELTA_PERCENT" },
-  { no: 4, name: "LEADERBOARD_SORT_TYPE_DELTA_PCT" },
-  { no: 5, name: "LEADERBOARD_SORT_TYPE_PERCENT" },
+  { no: 3, name: "LEADERBOARD_SORT_TYPE_PERCENT" },
+  { no: 4, name: "LEADERBOARD_SORT_TYPE_DELTA_PERCENT" },
+  { no: 5, name: "LEADERBOARD_SORT_TYPE_DELTA_ABSOLUTE" },
 ]);
 
 /**
