@@ -573,7 +573,11 @@ export function useComparisonRange(name: string) {
   return derived(metricsExplorerStore, ($store) => {
     const entity = $store.entities[name];
 
-    if (!entity?.showComparison) {
+    if (
+      !entity?.showComparison ||
+      !entity.selectedComparisonTimeRange?.start ||
+      !entity.selectedComparisonTimeRange?.end
+    ) {
       return {
         start: undefined,
         end: undefined,
