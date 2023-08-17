@@ -4,7 +4,7 @@
   import TimeDimensionDetailsTableHeaderCell from "./TimeDimensionDetailsTableHeaderCell.svelte";
   import { createTimeDimensionDetailsStore } from "./time-dimension-details-store";
   import { data } from "./mock-data";
-  import { createTDTContext } from "./context";
+  import { createTDDContext } from "./context";
   import {
     FILTER_OVERFLOW_WIDTH,
     HEADER_HEIGHT,
@@ -14,7 +14,7 @@
   // Store of state to share between line chart and table
   let store = createTimeDimensionDetailsStore();
 
-  createTDTContext({
+  createTDDContext({
     store,
     headers: data.headers,
   });

@@ -1,13 +1,13 @@
 <script lang="ts">
   import { FILTER_OVERFLOW_WIDTH } from "./constants";
-  import { useTDTContext } from "./context";
+  import { useTDDContext } from "./context";
 
   export const rowIdx = -1;
   export let colIdx: number;
   export let fixed = false;
   export let lastFixed = false;
 
-  const { store, headers } = useTDTContext();
+  const { store, headers } = useTDDContext();
 
   let _class = "";
   $: {

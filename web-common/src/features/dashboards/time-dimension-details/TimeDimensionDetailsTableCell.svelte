@@ -3,7 +3,7 @@
   import { getBlock } from "./util";
   import { fetchData, TCellData } from "./mock-data";
   import type { SvelteComponent } from "svelte";
-  import { useTDTContext } from "./context";
+  import { useTDDContext } from "./context";
   import { toggleFilter } from "./time-dimension-details-store";
   import { getCellComponent } from "./cell-renderings";
 
@@ -12,7 +12,7 @@
   export let fixed = false;
   export let lastFixed = false;
 
-  const { store } = useTDTContext();
+  const { store } = useTDDContext();
   // If the current data block has this cell, get the data. Otherwise for now assume "loading" state (can handle errors later)
   let cellData: TCellData & { isLoading?: boolean } = {
     text: "...",

@@ -3,7 +3,7 @@
     getVisibleDimensionColor,
     toggleVisibleDimensions,
   } from "./time-dimension-details-store";
-  import { useTDTContext } from "./context";
+  import { useTDDContext } from "./context";
   import type { TCellData } from "./mock-data";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import {
@@ -16,7 +16,7 @@
   export let isInFilter: boolean;
 
   let _class = "w-full h-full flex items-center justify-between";
-  const { store } = useTDTContext();
+  const { store } = useTDDContext();
 
   let dotClass = "";
   $: {
