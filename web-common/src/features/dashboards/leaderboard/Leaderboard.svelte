@@ -23,6 +23,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import {
+    SortDirection,
     metricsExplorerStore,
     useComparisonRange,
     useDashboardStore,
@@ -104,8 +105,13 @@
     metricsExplorerStore.setMetricDimensionName(metricViewName, dimensionName);
   }
 
+  function toggleSortDirection() {
+    metricsExplorerStore.toggleSortDirection(metricViewName);
+  }
+
   $: timeStart = $fetchTimeStore?.start?.toISOString();
   $: timeEnd = $fetchTimeStore?.end?.toISOString();
+  $: sortAscending = $dashboardStore.sortDirection === SortDirection.ASCENDING;
   $: topListQuery = createQueryServiceMetricsViewToplist(
     $runtime.instanceId,
     metricViewName,
@@ -120,7 +126,7 @@
       sort: [
         {
           name: measure?.name,
-          ascending: false,
+          ascending: sortAscending,
         },
       ],
     },
@@ -260,8 +266,10 @@
       on:toggle-filter-mode={toggleFilterMode}
       {filterExcludeMode}
       {hovered}
+      {sortAscending}
       dimensionDescription={dimension?.description}
-      on:click={() => selectDimension(dimensionName)}
+      on:open-dimension-details={() => selectDimension(dimensionName)}
+      on:toggle-sort-direction={toggleSortDirection}
     />
     {#if values}
       <div class="rounded-b border-gray-200 surface text-gray-800">
@@ -313,7 +321,7 @@
         {#if values.length > slice}
           <Tooltip location="right">
             <button
-              on:click={() => selectDimension(dimensionName)}
+              on:open-dimension-details={() => selectDimension(dimensionName)}
               class="block flex-row w-full text-left transition-color ui-copy-muted"
               style:padding-left="30px"
             >

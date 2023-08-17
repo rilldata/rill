@@ -79,3 +79,4 @@ export function formatContextColumnValue(
   }
   return formattedValue;
 }
+export const CONTEXT_COLUMN_WIDTH = 44;
