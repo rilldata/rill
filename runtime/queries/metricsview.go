@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/apache/arrow/go/v11/arrow"
@@ -528,8 +529,11 @@ func duckDBCopyExport(ctx context.Context, rt *runtime.Runtime, instanceID strin
 		extension = "csv"
 	}
 
-	temporaryFilename := "export_" + uuid.New().String() + "." + extension
-	sql = fmt.Sprintf("COPY (%s) TO '%s'", sql, temporaryFilename)
+	tmpPath := fmt.Sprintf("export_%s.%s", uuid.New().String(), extension)
+	tmpPath = filepath.Join(os.TempDir(), tmpPath)
+	defer os.Remove(tmpPath)
+
+	sql = fmt.Sprintf("COPY (%s) TO '%s'", sql, tmpPath)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:            sql,
@@ -540,9 +544,7 @@ func duckDBCopyExport(ctx context.Context, rt *runtime.Runtime, instanceID strin
 	if err != nil {
 		return err
 	}
-
 	defer rows.Close()
-	defer os.Remove(temporaryFilename)
 
 	if opts.PreWriteHook != nil {
 		err = opts.PreWriteHook(filename)
@@ -551,11 +553,10 @@ func duckDBCopyExport(ctx context.Context, rt *runtime.Runtime, instanceID strin
 		}
 	}
 
-	f, err := os.Open(temporaryFilename)
+	f, err := os.Open(tmpPath)
 	if err != nil {
 		return err
 	}
-
 	defer f.Close()
 
 	_, err = io.Copy(w, f)
