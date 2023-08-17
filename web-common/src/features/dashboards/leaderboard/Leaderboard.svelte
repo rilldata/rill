@@ -175,7 +175,7 @@
   // Compose the comparison /toplist query
   $: showTimeComparison =
     $dashboardStore?.leaderboardContextColumn ===
-      LeaderboardContextColumn.DELTA_CHANGE && $dashboardStore?.showComparison;
+      LeaderboardContextColumn.DELTA_PERCENT && $dashboardStore?.showComparison;
   $: showPercentOfTotal =
     $dashboardStore?.leaderboardContextColumn ===
     LeaderboardContextColumn.PERCENT;

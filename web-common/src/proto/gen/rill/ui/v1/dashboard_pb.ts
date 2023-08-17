@@ -168,9 +168,9 @@ export enum DashboardState_LeaderboardContextColumn {
   PERCENT = 1,
 
   /**
-   * @generated from enum value: LEADERBOARD_CONTEXT_COLUMN_DELTA_CHANGE = 2;
+   * @generated from enum value: LEADERBOARD_CONTEXT_COLUMN_DELTA_PERCENT = 2;
    */
-  DELTA_CHANGE = 2,
+  DELTA_PERCENT = 2,
 
   /**
    * @generated from enum value: LEADERBOARD_CONTEXT_COLUMN_HIDDEN = 3;
@@ -181,7 +181,7 @@ export enum DashboardState_LeaderboardContextColumn {
 proto3.util.setEnumType(DashboardState_LeaderboardContextColumn, "rill.ui.v1.DashboardState.LeaderboardContextColumn", [
   { no: 0, name: "LEADERBOARD_CONTEXT_COLUMN_UNSPECIFIED" },
   { no: 1, name: "LEADERBOARD_CONTEXT_COLUMN_PERCENT" },
-  { no: 2, name: "LEADERBOARD_CONTEXT_COLUMN_DELTA_CHANGE" },
+  { no: 2, name: "LEADERBOARD_CONTEXT_COLUMN_DELTA_PERCENT" },
   { no: 3, name: "LEADERBOARD_CONTEXT_COLUMN_HIDDEN" },
 ]);
 
@@ -220,7 +220,7 @@ proto3.util.setEnumType(DashboardState_LeaderboardSortDirection, "rill.ui.v1.Das
  * By default, the leaderboards+table will be sorted by VALUE,
  * using the value of the currently selected dashboard measure.
  *
- * If DELTA_CHANGE or DELTA_PCT is selected, the
+ * If DELTA_PERCENT or DELTA_PCT is selected, the
  * leaderboards+table will be sorted by the absolute or percentage
  * delta change of the currently selected dashboard measure.
  *
@@ -253,9 +253,9 @@ export enum DashboardState_LeaderboardSortType {
   DIMENSION = 2,
 
   /**
-   * @generated from enum value: LEADERBOARD_SORT_TYPE_DELTA_CHANGE = 3;
+   * @generated from enum value: LEADERBOARD_SORT_TYPE_DELTA_PERCENT = 3;
    */
-  DELTA_CHANGE = 3,
+  DELTA_PERCENT = 3,
 
   /**
    * @generated from enum value: LEADERBOARD_SORT_TYPE_DELTA_PCT = 4;
@@ -272,7 +272,7 @@ proto3.util.setEnumType(DashboardState_LeaderboardSortType, "rill.ui.v1.Dashboar
   { no: 0, name: "LEADERBOARD_SORT_TYPE_UNSPECIFIED" },
   { no: 1, name: "LEADERBOARD_SORT_TYPE_VALUE" },
   { no: 2, name: "LEADERBOARD_SORT_TYPE_DIMENSION" },
-  { no: 3, name: "LEADERBOARD_SORT_TYPE_DELTA_CHANGE" },
+  { no: 3, name: "LEADERBOARD_SORT_TYPE_DELTA_PERCENT" },
   { no: 4, name: "LEADERBOARD_SORT_TYPE_DELTA_PCT" },
   { no: 5, name: "LEADERBOARD_SORT_TYPE_PERCENT" },
 ]);

@@ -10,7 +10,8 @@ message DashboardState {
   enum LeaderboardContextColumn {
     LEADERBOARD_CONTEXT_COLUMN_UNSPECIFIED=0;
     LEADERBOARD_CONTEXT_COLUMN_PERCENT = 1;
-    LEADERBOARD_CONTEXT_COLUMN_DELTA_CHANGE = 2;
+    LEADERBOARD_CONTEXT_COLUMN_DELTA_PERCENT = 2;
+    LEADERBOARD_CONTEXT_COLUMN_DELTA_ABSOLUTE = 2;
     LEADERBOARD_CONTEXT_COLUMN_HIDDEN = 3;
   }
 
@@ -28,7 +29,7 @@ message DashboardState {
    * By default, the leaderboards+table will be sorted by VALUE,
    * using the value of the currently selected dashboard measure.
    *
-   * If DELTA_CHANGE or DELTA_PCT is selected, the
+   * If DELTA_ABSOLUTE or DELTA_PERCENT is selected, the
    * leaderboards+table will be sorted by the absolute or percentage
    * delta change of the currently selected dashboard measure.
    *
@@ -46,9 +47,9 @@ message DashboardState {
     LEADERBOARD_SORT_TYPE_UNSPECIFIED = 0;
     LEADERBOARD_SORT_TYPE_VALUE = 1;
     LEADERBOARD_SORT_TYPE_DIMENSION = 2;
-    LEADERBOARD_SORT_TYPE_DELTA_CHANGE = 3;
-    LEADERBOARD_SORT_TYPE_DELTA_PCT = 4;
-    LEADERBOARD_SORT_TYPE_PERCENT = 5;
+    LEADERBOARD_SORT_TYPE_PERCENT = 3;
+    LEADERBOARD_SORT_TYPE_DELTA_PERCENT = 4;
+    LEADERBOARD_SORT_TYPE_DELTA_ABSOLUTE = 5;
   }
 
   // Selected time range

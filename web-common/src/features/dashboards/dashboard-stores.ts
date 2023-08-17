@@ -415,22 +415,22 @@ const metricViewReducers = {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.showComparison = showComparison;
       // if setting showComparison===true and not currently
-      //  showing any context column, then show DELTA_CHANGE
+      //  showing any context column, then show DELTA_PERCENT
       if (
         showComparison &&
         metricsExplorer.leaderboardContextColumn ===
           LeaderboardContextColumn.HIDDEN
       ) {
         metricsExplorer.leaderboardContextColumn =
-          LeaderboardContextColumn.DELTA_CHANGE;
+          LeaderboardContextColumn.DELTA_PERCENT;
       }
 
       // if setting showComparison===false and currently
-      //  showing DELTA_CHANGE, then hide context column
+      //  showing DELTA_PERCENT, then hide context column
       if (
         !showComparison &&
         metricsExplorer.leaderboardContextColumn ===
-          LeaderboardContextColumn.DELTA_CHANGE
+          LeaderboardContextColumn.DELTA_PERCENT
       ) {
         metricsExplorer.leaderboardContextColumn =
           LeaderboardContextColumn.HIDDEN;
@@ -444,7 +444,7 @@ const metricViewReducers = {
       if (metricsExplorer.showComparison === false) return;
 
       metricsExplorer.leaderboardContextColumn =
-        LeaderboardContextColumn.DELTA_CHANGE;
+        LeaderboardContextColumn.DELTA_PERCENT;
     });
   },
 

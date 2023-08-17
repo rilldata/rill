@@ -53,7 +53,7 @@
   $: formattedValue = humanizeDataType(measureValue, formatPreset);
 
   $: percentChangeFormatted =
-    showContext === LeaderboardContextColumn.DELTA_CHANGE
+    showContext === LeaderboardContextColumn.DELTA_PERCENT
       ? getFormatterValueForPercDiff(
           measureValue && comparisonValue
             ? measureValue - comparisonValue
