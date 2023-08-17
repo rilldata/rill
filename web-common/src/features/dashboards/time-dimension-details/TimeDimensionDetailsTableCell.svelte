@@ -15,11 +15,7 @@
   const { store } = useTDDContext();
   // If the current data block has this cell, get the data. Otherwise for now assume "loading" state (can handle errors later)
   let cellData: TCellData & { isLoading?: boolean } = {
-    text: "...",
     isLoading: true,
-  };
-  let block = getBlock(100, rowIdx, rowIdx);
-  $: block = getBlock(100, rowIdx, rowIdx);
 
   let rowDimension = "";
   $: isTableFiltered = $store.filteredValues.length > 0;
@@ -141,9 +137,6 @@
     {cellData?.text ?? cellData?.value}
   {/if}
 </button>
-
-<style>
-  .right-shadow:after {
     content: "";
     width: 1px;
     height: 100%;

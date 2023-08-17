@@ -297,31 +297,9 @@ func (m *Instance) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if _, ok := _Instance_OlapDriver_InLookup[m.GetOlapDriver()]; !ok {
-		err := InstanceValidationError{
-			field:  "OlapDriver",
-			reason: "value must be in list [duckdb druid]",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for OlapDriver
 
-	// no validation rules for OlapDsn
-
-	if _, ok := _Instance_RepoDriver_InLookup[m.GetRepoDriver()]; !ok {
-		err := InstanceValidationError{
-			field:  "RepoDriver",
-			reason: "value must be in list [file metastore github]",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	// no validation rules for RepoDsn
+	// no validation rules for RepoDriver
 
 	// no validation rules for EmbedCatalog
 
@@ -330,6 +308,40 @@ func (m *Instance) validate(all bool) error {
 	// no validation rules for ProjectVariables
 
 	// no validation rules for IngestionLimitBytes
+
+	for idx, item := range m.GetConnectors() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, InstanceValidationError{
+						field:  fmt.Sprintf("Connectors[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, InstanceValidationError{
+						field:  fmt.Sprintf("Connectors[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return InstanceValidationError{
+					field:  fmt.Sprintf("Connectors[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	if len(errors) > 0 {
 		return InstanceMultiError(errors)
@@ -410,16 +422,110 @@ var _ interface {
 
 var _Instance_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
 
-var _Instance_OlapDriver_InLookup = map[string]struct{}{
-	"duckdb": {},
-	"druid":  {},
+// Validate checks the field values on Connector with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *Connector) Validate() error {
+	return m.validate(false)
 }
 
-var _Instance_RepoDriver_InLookup = map[string]struct{}{
-	"file":      {},
-	"metastore": {},
-	"github":    {},
+// ValidateAll checks the field values on Connector with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ConnectorMultiError, or nil
+// if none found.
+func (m *Connector) ValidateAll() error {
+	return m.validate(true)
 }
+
+func (m *Connector) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Type
+
+	// no validation rules for Name
+
+	// no validation rules for Config
+
+	if len(errors) > 0 {
+		return ConnectorMultiError(errors)
+	}
+
+	return nil
+}
+
+// ConnectorMultiError is an error wrapping multiple validation errors returned
+// by Connector.ValidateAll() if the designated constraints aren't met.
+type ConnectorMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ConnectorMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ConnectorMultiError) AllErrors() []error { return m }
+
+// ConnectorValidationError is the validation error returned by
+// Connector.Validate if the designated constraints aren't met.
+type ConnectorValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ConnectorValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ConnectorValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ConnectorValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ConnectorValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ConnectorValidationError) ErrorName() string { return "ConnectorValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ConnectorValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sConnector.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ConnectorValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ConnectorValidationError{}
 
 // Validate checks the field values on ListInstancesRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -948,31 +1054,9 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	}
 
-	if _, ok := _CreateInstanceRequest_OlapDriver_InLookup[m.GetOlapDriver()]; !ok {
-		err := CreateInstanceRequestValidationError{
-			field:  "OlapDriver",
-			reason: "value must be in list [duckdb druid]",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for OlapDriver
 
-	// no validation rules for OlapDsn
-
-	if _, ok := _CreateInstanceRequest_RepoDriver_InLookup[m.GetRepoDriver()]; !ok {
-		err := CreateInstanceRequestValidationError{
-			field:  "RepoDriver",
-			reason: "value must be in list [file metastore github]",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	// no validation rules for RepoDsn
+	// no validation rules for RepoDriver
 
 	// no validation rules for EmbedCatalog
 
@@ -981,6 +1065,40 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 	// no validation rules for IngestionLimitBytes
 
 	// no validation rules for Annotations
+
+	for idx, item := range m.GetConnectors() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, CreateInstanceRequestValidationError{
+						field:  fmt.Sprintf("Connectors[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, CreateInstanceRequestValidationError{
+						field:  fmt.Sprintf("Connectors[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CreateInstanceRequestValidationError{
+					field:  fmt.Sprintf("Connectors[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	if len(errors) > 0 {
 		return CreateInstanceRequestMultiError(errors)
@@ -1063,17 +1181,6 @@ var _ interface {
 } = CreateInstanceRequestValidationError{}
 
 var _CreateInstanceRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
-
-var _CreateInstanceRequest_OlapDriver_InLookup = map[string]struct{}{
-	"duckdb": {},
-	"druid":  {},
-}
-
-var _CreateInstanceRequest_RepoDriver_InLookup = map[string]struct{}{
-	"file":      {},
-	"metastore": {},
-	"github":    {},
-}
 
 // Validate checks the field values on CreateInstanceResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -1458,42 +1565,48 @@ func (m *EditInstanceRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if m.OlapDriver != nil {
+	for idx, item := range m.GetConnectors() {
+		_, _ = idx, item
 
-		if _, ok := _EditInstanceRequest_OlapDriver_InLookup[m.GetOlapDriver()]; !ok {
-			err := EditInstanceRequestValidationError{
-				field:  "OlapDriver",
-				reason: "value must be in list [duckdb druid]",
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, EditInstanceRequestValidationError{
+						field:  fmt.Sprintf("Connectors[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, EditInstanceRequestValidationError{
+						field:  fmt.Sprintf("Connectors[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
 			}
-			if !all {
-				return err
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return EditInstanceRequestValidationError{
+					field:  fmt.Sprintf("Connectors[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
 			}
-			errors = append(errors, err)
 		}
 
 	}
 
-	if m.OlapDsn != nil {
-		// no validation rules for OlapDsn
+	// no validation rules for Annotations
+
+	if m.OlapDriver != nil {
+		// no validation rules for OlapDriver
 	}
 
 	if m.RepoDriver != nil {
-
-		if _, ok := _EditInstanceRequest_RepoDriver_InLookup[m.GetRepoDriver()]; !ok {
-			err := EditInstanceRequestValidationError{
-				field:  "RepoDriver",
-				reason: "value must be in list [file metastore github]",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-	}
-
-	if m.RepoDsn != nil {
-		// no validation rules for RepoDsn
+		// no validation rules for RepoDriver
 	}
 
 	if m.EmbedCatalog != nil {
@@ -1585,17 +1698,6 @@ var _ interface {
 } = EditInstanceRequestValidationError{}
 
 var _EditInstanceRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
-
-var _EditInstanceRequest_OlapDriver_InLookup = map[string]struct{}{
-	"duckdb": {},
-	"druid":  {},
-}
-
-var _EditInstanceRequest_RepoDriver_InLookup = map[string]struct{}{
-	"file":      {},
-	"metastore": {},
-	"github":    {},
-}
 
 // Validate checks the field values on EditInstanceResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -1977,6 +2079,256 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = EditInstanceVariablesResponseValidationError{}
+
+// Validate checks the field values on EditInstanceAnnotationsRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *EditInstanceAnnotationsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on EditInstanceAnnotationsRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// EditInstanceAnnotationsRequestMultiError, or nil if none found.
+func (m *EditInstanceAnnotationsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *EditInstanceAnnotationsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_EditInstanceAnnotationsRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := EditInstanceAnnotationsRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Annotations
+
+	if len(errors) > 0 {
+		return EditInstanceAnnotationsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// EditInstanceAnnotationsRequestMultiError is an error wrapping multiple
+// validation errors returned by EditInstanceAnnotationsRequest.ValidateAll()
+// if the designated constraints aren't met.
+type EditInstanceAnnotationsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m EditInstanceAnnotationsRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m EditInstanceAnnotationsRequestMultiError) AllErrors() []error { return m }
+
+// EditInstanceAnnotationsRequestValidationError is the validation error
+// returned by EditInstanceAnnotationsRequest.Validate if the designated
+// constraints aren't met.
+type EditInstanceAnnotationsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e EditInstanceAnnotationsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e EditInstanceAnnotationsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e EditInstanceAnnotationsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e EditInstanceAnnotationsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e EditInstanceAnnotationsRequestValidationError) ErrorName() string {
+	return "EditInstanceAnnotationsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e EditInstanceAnnotationsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sEditInstanceAnnotationsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = EditInstanceAnnotationsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = EditInstanceAnnotationsRequestValidationError{}
+
+var _EditInstanceAnnotationsRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on EditInstanceAnnotationsResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *EditInstanceAnnotationsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on EditInstanceAnnotationsResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// EditInstanceAnnotationsResponseMultiError, or nil if none found.
+func (m *EditInstanceAnnotationsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *EditInstanceAnnotationsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetInstance()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, EditInstanceAnnotationsResponseValidationError{
+					field:  "Instance",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, EditInstanceAnnotationsResponseValidationError{
+					field:  "Instance",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetInstance()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return EditInstanceAnnotationsResponseValidationError{
+				field:  "Instance",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return EditInstanceAnnotationsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// EditInstanceAnnotationsResponseMultiError is an error wrapping multiple
+// validation errors returned by EditInstanceAnnotationsResponse.ValidateAll()
+// if the designated constraints aren't met.
+type EditInstanceAnnotationsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m EditInstanceAnnotationsResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m EditInstanceAnnotationsResponseMultiError) AllErrors() []error { return m }
+
+// EditInstanceAnnotationsResponseValidationError is the validation error
+// returned by EditInstanceAnnotationsResponse.Validate if the designated
+// constraints aren't met.
+type EditInstanceAnnotationsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e EditInstanceAnnotationsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e EditInstanceAnnotationsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e EditInstanceAnnotationsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e EditInstanceAnnotationsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e EditInstanceAnnotationsResponseValidationError) ErrorName() string {
+	return "EditInstanceAnnotationsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e EditInstanceAnnotationsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sEditInstanceAnnotationsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = EditInstanceAnnotationsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = EditInstanceAnnotationsResponseValidationError{}
 
 // Validate checks the field values on ListFilesRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -8740,22 +9092,22 @@ var _ interface {
 	ErrorName() string
 } = RefreshAndReconcileResponseValidationError{}
 
-// Validate checks the field values on Connector with the rules defined in the
-// proto definition for this message. If any rules are violated, the first
+// Validate checks the field values on ConnectorSpec with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
-func (m *Connector) Validate() error {
+func (m *ConnectorSpec) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on Connector with the rules defined in
-// the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in ConnectorMultiError, or nil
-// if none found.
-func (m *Connector) ValidateAll() error {
+// ValidateAll checks the field values on ConnectorSpec with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ConnectorSpecMultiError, or
+// nil if none found.
+func (m *ConnectorSpec) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *Connector) validate(all bool) error {
+func (m *ConnectorSpec) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -8775,7 +9127,7 @@ func (m *Connector) validate(all bool) error {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ConnectorValidationError{
+					errors = append(errors, ConnectorSpecValidationError{
 						field:  fmt.Sprintf("Properties[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -8783,7 +9135,7 @@ func (m *Connector) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, ConnectorValidationError{
+					errors = append(errors, ConnectorSpecValidationError{
 						field:  fmt.Sprintf("Properties[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -8792,7 +9144,7 @@ func (m *Connector) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return ConnectorValidationError{
+				return ConnectorSpecValidationError{
 					field:  fmt.Sprintf("Properties[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -8803,18 +9155,19 @@ func (m *Connector) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return ConnectorMultiError(errors)
+		return ConnectorSpecMultiError(errors)
 	}
 
 	return nil
 }
 
-// ConnectorMultiError is an error wrapping multiple validation errors returned
-// by Connector.ValidateAll() if the designated constraints aren't met.
-type ConnectorMultiError []error
+// ConnectorSpecMultiError is an error wrapping multiple validation errors
+// returned by ConnectorSpec.ValidateAll() if the designated constraints
+// aren't met.
+type ConnectorSpecMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ConnectorMultiError) Error() string {
+func (m ConnectorSpecMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -8823,11 +9176,11 @@ func (m ConnectorMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ConnectorMultiError) AllErrors() []error { return m }
+func (m ConnectorSpecMultiError) AllErrors() []error { return m }
 
-// ConnectorValidationError is the validation error returned by
-// Connector.Validate if the designated constraints aren't met.
-type ConnectorValidationError struct {
+// ConnectorSpecValidationError is the validation error returned by
+// ConnectorSpec.Validate if the designated constraints aren't met.
+type ConnectorSpecValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -8835,22 +9188,22 @@ type ConnectorValidationError struct {
 }
 
 // Field function returns field value.
-func (e ConnectorValidationError) Field() string { return e.field }
+func (e ConnectorSpecValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ConnectorValidationError) Reason() string { return e.reason }
+func (e ConnectorSpecValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ConnectorValidationError) Cause() error { return e.cause }
+func (e ConnectorSpecValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ConnectorValidationError) Key() bool { return e.key }
+func (e ConnectorSpecValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ConnectorValidationError) ErrorName() string { return "ConnectorValidationError" }
+func (e ConnectorSpecValidationError) ErrorName() string { return "ConnectorSpecValidationError" }
 
 // Error satisfies the builtin error interface
-func (e ConnectorValidationError) Error() string {
+func (e ConnectorSpecValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -8862,14 +9215,14 @@ func (e ConnectorValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sConnector.%s: %s%s",
+		"invalid %sConnectorSpec.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ConnectorValidationError{}
+var _ error = ConnectorSpecValidationError{}
 
 var _ interface {
 	Field() string
@@ -8877,7 +9230,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ConnectorValidationError{}
+} = ConnectorSpecValidationError{}
 
 // Validate checks the field values on ListConnectorsRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -9224,22 +9577,22 @@ var _ interface {
 	ErrorName() string
 } = ReconcileError_CharLocationValidationError{}
 
-// Validate checks the field values on Connector_Property with the rules
+// Validate checks the field values on ConnectorSpec_Property with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *Connector_Property) Validate() error {
+func (m *ConnectorSpec_Property) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on Connector_Property with the rules
+// ValidateAll checks the field values on ConnectorSpec_Property with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// Connector_PropertyMultiError, or nil if none found.
-func (m *Connector_Property) ValidateAll() error {
+// ConnectorSpec_PropertyMultiError, or nil if none found.
+func (m *ConnectorSpec_Property) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *Connector_Property) validate(all bool) error {
+func (m *ConnectorSpec_Property) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -9254,8 +9607,8 @@ func (m *Connector_Property) validate(all bool) error {
 
 	// no validation rules for Placeholder
 
-	if _, ok := Connector_Property_Type_name[int32(m.GetType())]; !ok {
-		err := Connector_PropertyValidationError{
+	if _, ok := ConnectorSpec_Property_Type_name[int32(m.GetType())]; !ok {
+		err := ConnectorSpec_PropertyValidationError{
 			field:  "Type",
 			reason: "value must be one of the defined enum values",
 		}
@@ -9272,19 +9625,19 @@ func (m *Connector_Property) validate(all bool) error {
 	// no validation rules for Href
 
 	if len(errors) > 0 {
-		return Connector_PropertyMultiError(errors)
+		return ConnectorSpec_PropertyMultiError(errors)
 	}
 
 	return nil
 }
 
-// Connector_PropertyMultiError is an error wrapping multiple validation errors
-// returned by Connector_Property.ValidateAll() if the designated constraints
-// aren't met.
-type Connector_PropertyMultiError []error
+// ConnectorSpec_PropertyMultiError is an error wrapping multiple validation
+// errors returned by ConnectorSpec_Property.ValidateAll() if the designated
+// constraints aren't met.
+type ConnectorSpec_PropertyMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m Connector_PropertyMultiError) Error() string {
+func (m ConnectorSpec_PropertyMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -9293,11 +9646,11 @@ func (m Connector_PropertyMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m Connector_PropertyMultiError) AllErrors() []error { return m }
+func (m ConnectorSpec_PropertyMultiError) AllErrors() []error { return m }
 
-// Connector_PropertyValidationError is the validation error returned by
-// Connector_Property.Validate if the designated constraints aren't met.
-type Connector_PropertyValidationError struct {
+// ConnectorSpec_PropertyValidationError is the validation error returned by
+// ConnectorSpec_Property.Validate if the designated constraints aren't met.
+type ConnectorSpec_PropertyValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -9305,24 +9658,24 @@ type Connector_PropertyValidationError struct {
 }
 
 // Field function returns field value.
-func (e Connector_PropertyValidationError) Field() string { return e.field }
+func (e ConnectorSpec_PropertyValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e Connector_PropertyValidationError) Reason() string { return e.reason }
+func (e ConnectorSpec_PropertyValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e Connector_PropertyValidationError) Cause() error { return e.cause }
+func (e ConnectorSpec_PropertyValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e Connector_PropertyValidationError) Key() bool { return e.key }
+func (e ConnectorSpec_PropertyValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e Connector_PropertyValidationError) ErrorName() string {
-	return "Connector_PropertyValidationError"
+func (e ConnectorSpec_PropertyValidationError) ErrorName() string {
+	return "ConnectorSpec_PropertyValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e Connector_PropertyValidationError) Error() string {
+func (e ConnectorSpec_PropertyValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -9334,14 +9687,14 @@ func (e Connector_PropertyValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sConnector_Property.%s: %s%s",
+		"invalid %sConnectorSpec_Property.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = Connector_PropertyValidationError{}
+var _ error = ConnectorSpec_PropertyValidationError{}
 
 var _ interface {
 	Field() string
@@ -9349,4 +9702,4 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = Connector_PropertyValidationError{}
+} = ConnectorSpec_PropertyValidationError{}

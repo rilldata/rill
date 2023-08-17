@@ -116,8 +116,9 @@ func TestTimeseries_SparkOnly(t *testing.T) {
 		Pixels: 2.0,
 	}
 	ctx := context.Background()
-	olap, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID)
 	require.NoError(t, err)
+	defer release()
 	values, err := q.createTimestampRollupReduction(context.Background(), rt, olap, instanceID, 0, "test", "time", "clicks")
 	require.NoError(t, err)
 

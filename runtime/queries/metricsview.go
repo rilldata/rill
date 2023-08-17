@@ -5,12 +5,15 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/apache/arrow/go/v11/arrow"
 	"github.com/apache/arrow/go/v11/arrow/array"
 	"github.com/apache/arrow/go/v11/arrow/memory"
 	"github.com/apache/arrow/go/v11/parquet/pqarrow"
+	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -515,4 +518,55 @@ func writeParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, 
 	rec := recordBuilder.NewRecord()
 	err = parquetwriter.Write(rec)
 	return err
+}
+
+func duckDBCopyExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions, sql string, args []any, filename string, olap drivers.OLAPStore, mv *runtimev1.MetricsView, exportFormat runtimev1.ExportFormat) error {
+	var extension string
+	switch exportFormat {
+	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
+		extension = "parquet"
+	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
+		extension = "csv"
+	}
+
+	tmpPath := fmt.Sprintf("export_%s.%s", uuid.New().String(), extension)
+	tmpPath = filepath.Join(os.TempDir(), tmpPath)
+	defer os.Remove(tmpPath)
+
+	sql = fmt.Sprintf("COPY (%s) TO '%s'", sql, tmpPath)
+
+	rows, err := olap.Execute(ctx, &drivers.Statement{
+		Query:            sql,
+		Args:             args,
+		Priority:         opts.Priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+	})
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	if opts.PreWriteHook != nil {
+		err = opts.PreWriteHook(filename)
+		if err != nil {
+			return err
+		}
+	}
+
+	f, err := os.Open(tmpPath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = io.Copy(w, f)
+	return err
+}
+
+func (q *MetricsViewRows) generateFilename(mv *runtimev1.MetricsView) string {
+	filename := strings.ReplaceAll(mv.Model, `"`, `_`)
+	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
+		filename += "_filtered"
+	}
+	return filename
 }

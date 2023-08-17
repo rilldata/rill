@@ -6,53 +6,50 @@ import (
 	"fmt"
 	"math"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
 )
 
 type Options struct {
 	ConnectionCacheSize int
-	MetastoreDriver     string
-	MetastoreDSN        string
+	MetastoreConnector  string
 	QueryCacheSizeBytes int64
 	AllowHostAccess     bool
 	SafeSourceRefresh   bool
+	// SystemConnectors are drivers whose handles are shared with all instances
+	SystemConnectors []*runtimev1.Connector
 }
-
 type Runtime struct {
 	opts               *Options
-	metastore          drivers.Connection
+	metastore          drivers.Handle
 	logger             *zap.Logger
 	connCache          *connectionCache
 	migrationMetaCache *migrationMetaCache
 	queryCache         *queryCache
 }
 
-func New(opts *Options, logger *zap.Logger) (*Runtime, error) {
-	// Open metadata db connection
-	metastore, err := drivers.Open(opts.MetastoreDriver, map[string]any{"dsn": opts.MetastoreDSN}, logger)
-	if err != nil {
-		return nil, fmt.Errorf("could not connect to metadata db: %w", err)
+func New(opts *Options, logger *zap.Logger, client activity.Client) (*Runtime, error) {
+	rt := &Runtime{
+		opts:               opts,
+		logger:             logger,
+		connCache:          newConnectionCache(opts.ConnectionCacheSize, logger, client),
+		migrationMetaCache: newMigrationMetaCache(math.MaxInt),
+		queryCache:         newQueryCache(opts.QueryCacheSizeBytes),
 	}
-	err = metastore.Migrate(context.Background())
+	store, _, err := rt.AcquireSystemHandle(context.Background(), opts.MetastoreConnector)
 	if err != nil {
-		return nil, fmt.Errorf("metadata db migration: %w", err)
+		return nil, err
 	}
 
 	// Check the metastore is a registry
-	_, ok := metastore.AsRegistry()
+	_, ok := store.AsRegistry()
 	if !ok {
 		return nil, fmt.Errorf("server metastore must be a valid registry")
 	}
-
-	return &Runtime{
-		opts:               opts,
-		metastore:          metastore,
-		logger:             logger,
-		connCache:          newConnectionCache(opts.ConnectionCacheSize, logger),
-		migrationMetaCache: newMigrationMetaCache(math.MaxInt),
-		queryCache:         newQueryCache(opts.QueryCacheSizeBytes),
-	}, nil
+	rt.metastore = store
+	return rt, nil
 }
 
 func (r *Runtime) AllowHostAccess() bool {

@@ -5,7 +5,7 @@
   import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
-  import { useDashboardStore } from "../dashboard-stores";
+  import { useDashboardStore, useFetchTimeRange } from "../dashboard-stores";
   import { useModelHasTimeSeries } from "../selectors";
   import ExportModelDataButton from "./ExportModelDataButton.svelte";
   import { featureFlags } from "../../feature-flags";
@@ -39,6 +39,7 @@
   );
 
   $: dashboardStore = useDashboardStore(metricViewName);
+  $: fetchTimeStore = useFetchTimeRange(metricViewName);
 
   $: metricTimeSeries = useModelHasTimeSeries(
     $runtime.instanceId,
@@ -46,10 +47,10 @@
   );
   $: hasTimeSeries = $metricTimeSeries.data;
 
-  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
+  $: timeStart = $fetchTimeStore?.start?.toISOString();
   let timeEnd;
   $: {
-    let maybeEnd = $dashboardStore?.selectedTimeRange?.end;
+    let maybeEnd = $fetchTimeStore?.end;
     if (maybeEnd) {
       timeEnd = new Date(maybeEnd.valueOf() + 1).toISOString();
     }

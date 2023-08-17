@@ -1,8 +1,19 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
+  import ProjectAccessControls from "./ProjectAccessControls.svelte";
 
   export let organization: string;
   export let project: string;
+
+  function handleViewProjectLogs() {
+    goto(`/${organization}/${project}/-/logs`);
+  }
+
+  function handleViewProject() {
+    goto(`/${organization}/${project}`);
+  }
 </script>
 
 <div class="flex flex-col justify-center items-center h-3/5 space-y-6 m-auto">
@@ -12,16 +23,28 @@
       Sorry, your dashboard isn't working right now!
     </h1>
     <p class="text-gray-500 text-base">
-      View project status for errors or contact your organization's admin.
+      <ProjectAccessControls {organization} {project}>
+        <svelte:fragment slot="manage-project">
+          View project logs for errors that may help you find a fix.
+        </svelte:fragment>
+        <svelte:fragment slot="read-project">
+          Contact your project's admin for help.
+        </svelte:fragment>
+      </ProjectAccessControls>
     </p>
   </div>
-  <button
-    class="border border-blue-300 text-blue-600 w-full h-10 hover:bg-slate-100 hover:border-gray-100 max-w-[400px]"
-    on:click={() => {
-      window.location.href = `/${organization}/${project}`;
-    }}
-    >View project status
-  </button>
+  <ProjectAccessControls {organization} {project}>
+    <svelte:fragment slot="manage-project">
+      <CtaButton variant="primary-outline" on:click={handleViewProjectLogs}
+        >View project logs
+      </CtaButton>
+    </svelte:fragment>
+    <svelte:fragment slot="read-project">
+      <CtaButton variant="primary-outline" on:click={handleViewProject}
+        >View project
+      </CtaButton>
+    </svelte:fragment>
+  </ProjectAccessControls>
   <p class="text-gray-500">
     Need help? Reach out to us on <a href="http://bit.ly/3jg4IsF">Discord</a>
   </p>

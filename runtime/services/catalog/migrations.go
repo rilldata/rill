@@ -9,6 +9,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/arrayutil"
@@ -102,7 +103,7 @@ func (s *Service) Reconcile(ctx context.Context, conf ReconcileConfig) (*Reconci
 		}
 
 		// set project variables from rill.yaml in instance
-		if err := s.setProjectVariables(ctx); err != nil {
+		if err := s.setProjectConnectorsAndVariables(ctx); err != nil {
 			return nil, err
 		}
 	}
@@ -347,7 +348,7 @@ func (s *Service) runMigrationItems(
 			var err error
 			if shouldDelete {
 				// remove entity from catalog and OLAP if it failed validation or during migration
-				err = s.Catalog.DeleteEntry(ctx, s.InstID, item.Name)
+				err = s.Catalog.DeleteEntry(ctx, item.Name)
 				if err != nil {
 					// shouldn't ideally happen
 					result.Errors = append(result.Errors, &runtimev1.ReconcileError{
@@ -421,15 +422,15 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 	if err != nil {
 		return err
 	}
-	_, err = s.Catalog.FindEntry(ctx, s.InstID, item.Name)
+	_, err = s.Catalog.FindEntry(ctx, item.Name)
 	// create or updated
 	if err != nil {
 		if !errors.Is(err, drivers.ErrNotFound) {
 			return err
 		}
-		return s.Catalog.CreateEntry(ctx, s.InstID, catalog)
+		return s.Catalog.CreateEntry(ctx, catalog)
 	}
-	return s.Catalog.UpdateEntry(ctx, s.InstID, catalog)
+	return s.Catalog.UpdateEntry(ctx, catalog)
 }
 
 func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error {
@@ -452,7 +453,7 @@ func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error 
 
 	// delete the old catalog object
 	// TODO: do we need a rename here?
-	err = s.Catalog.DeleteEntry(ctx, s.InstID, item.FromName)
+	err = s.Catalog.DeleteEntry(ctx, item.FromName)
 	if err != nil {
 		return err
 	}
@@ -461,7 +462,7 @@ func (s *Service) renameInStore(ctx context.Context, item *MigrationItem) error 
 	if err != nil {
 		return err
 	}
-	return s.Catalog.CreateEntry(ctx, s.InstID, catalog)
+	return s.Catalog.CreateEntry(ctx, catalog)
 }
 
 func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error {
@@ -499,7 +500,7 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 	if err != nil {
 		return err
 	}
-	return s.Catalog.UpdateEntry(ctx, s.InstID, catalog)
+	return s.Catalog.UpdateEntry(ctx, catalog)
 }
 
 func (s *Service) deleteInStore(ctx context.Context, item *MigrationItem) error {
@@ -514,13 +515,13 @@ func (s *Service) deleteInStore(ctx context.Context, item *MigrationItem) error 
 	}
 
 	// delete from catalog store
-	return s.Catalog.DeleteEntry(ctx, s.InstID, item.Name)
+	return s.Catalog.DeleteEntry(ctx, item.Name)
 }
 
 func (s *Service) updateCatalogObject(ctx context.Context, item *MigrationItem) (*drivers.CatalogEntry, error) {
 	// get artifact stats
 	// stat will not succeed for embedded entries
-	repoStat, _ := s.Repo.Stat(ctx, s.InstID, item.Path)
+	repoStat, _ := s.Repo.Stat(ctx, item.Path)
 
 	// convert protobuf to database object
 	catalogEntry := item.CatalogInFile
@@ -589,7 +590,7 @@ func (s *Service) getSourceIngestionLimit(ctx context.Context, inst *drivers.Ins
 	}
 
 	var sizeSoFar int64
-	entries, err := s.Catalog.FindEntries(ctx, s.InstID, drivers.ObjectTypeSource)
+	entries, err := s.Catalog.FindEntries(ctx, drivers.ObjectTypeSource)
 	if err != nil {
 		return 0, err
 	}
@@ -605,7 +606,7 @@ func (s *Service) getSourceIngestionLimit(ctx context.Context, inst *drivers.Ins
 	return limitInBytes, nil
 }
 
-func (s *Service) setProjectVariables(ctx context.Context) error {
+func (s *Service) setProjectConnectorsAndVariables(ctx context.Context) error {
 	c := rillv1beta.New(s.Repo, s.InstID)
 	proj, err := c.ProjectConfig(ctx)
 	if err != nil {
@@ -616,7 +617,23 @@ func (s *Service) setProjectVariables(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
+	// set project variables
 	inst.ProjectVariables = proj.Variables
+
+	// rill parsed parsing with new parser
+	parsed, err := rillv1.ParseRillYAML(ctx, s.Repo, s.InstID)
+	if err != nil {
+		return err
+	}
+
+	// set project connectors
+	inst.ProjectConnectors = make([]*runtimev1.Connector, len(parsed.Connectors))
+	for i, c := range parsed.Connectors {
+		inst.ProjectConnectors[i] = &runtimev1.Connector{
+			Type:   c.Type,
+			Name:   c.Name,
+			Config: c.Defaults,
+		}
+	}
 	return s.RegistryStore.EditInstance(ctx, inst)
 }
