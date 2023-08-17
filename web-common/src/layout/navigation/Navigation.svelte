@@ -10,6 +10,7 @@
   import { tweened } from "svelte/motion";
   import { Readable, Writable, writable } from "svelte/store";
   import DashboardAssets from "../../features/dashboards/DashboardAssets.svelte";
+  import OtherFiles from "../../features/project/OtherFiles.svelte";
   import { DEFAULT_NAV_WIDTH } from "../config";
   import { drag } from "../drag";
   import Footer from "./Footer.svelte";
@@ -83,6 +84,9 @@
           <ModelAssets />
         {/if}
         <DashboardAssets />
+        {#if isModelerEnabled}
+          <OtherFiles />
+        {/if}
       </div>
       <Footer />
     </div>
