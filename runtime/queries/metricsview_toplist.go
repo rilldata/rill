@@ -99,10 +99,11 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 }
 
 func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
-	olap, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID)
 	if err != nil {
 		return err
 	}
+	defer release()
 
 	mv, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
 	if err != nil {
