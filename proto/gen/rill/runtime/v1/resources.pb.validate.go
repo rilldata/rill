@@ -581,13 +581,7 @@ func (m *ResourceMeta) validate(all bool) error {
 
 	}
 
-	// no validation rules for Deleted
-
-	// no validation rules for ReconcileError
-
 	// no validation rules for Version
-
-	// no validation rules for MetaVersion
 
 	// no validation rules for SpecVersion
 
@@ -680,6 +674,39 @@ func (m *ResourceMeta) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for ReconcileStatus
+
+	// no validation rules for ReconcileError
+
+	if all {
+		switch v := interface{}(m.GetReconcileOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ResourceMetaValidationError{
+					field:  "ReconcileOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ResourceMetaValidationError{
+					field:  "ReconcileOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetReconcileOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ResourceMetaValidationError{
+				field:  "ReconcileOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if m.Owner != nil {
 
 		if all {
@@ -713,39 +740,6 @@ func (m *ResourceMeta) validate(all bool) error {
 
 	}
 
-	if m.RenamedFrom != nil {
-
-		if all {
-			switch v := interface{}(m.GetRenamedFrom()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ResourceMetaValidationError{
-						field:  "RenamedFrom",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, ResourceMetaValidationError{
-						field:  "RenamedFrom",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetRenamedFrom()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return ResourceMetaValidationError{
-					field:  "RenamedFrom",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
 	if m.DeletedOn != nil {
 
 		if all {
@@ -771,6 +765,39 @@ func (m *ResourceMeta) validate(all bool) error {
 			if err := v.Validate(); err != nil {
 				return ResourceMetaValidationError{
 					field:  "DeletedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if m.RenamedFrom != nil {
+
+		if all {
+			switch v := interface{}(m.GetRenamedFrom()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ResourceMetaValidationError{
+						field:  "RenamedFrom",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ResourceMetaValidationError{
+						field:  "RenamedFrom",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetRenamedFrom()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ResourceMetaValidationError{
+					field:  "RenamedFrom",
 					reason: "embedded message failed validation",
 					cause:  err,
 				}

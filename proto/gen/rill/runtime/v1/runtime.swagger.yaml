@@ -4004,6 +4004,14 @@ definitions:
           executing the reconciliation. If changed_paths was empty, this will include all
           code artifacts in the repo.
     title: Response message for RuntimeService.Reconcile
+  v1ReconcileStatus:
+    type: string
+    enum:
+      - RECONCILE_STATUS_UNSPECIFIED
+      - RECONCILE_STATUS_IDLE
+      - RECONCILE_STATUS_PENDING
+      - RECONCILE_STATUS_RUNNING
+    default: RECONCILE_STATUS_UNSPECIFIED
   v1RefreshAndReconcileRequest:
     type: object
     properties:
@@ -4148,16 +4156,7 @@ definitions:
         type: array
         items:
           type: string
-      deleted:
-        type: boolean
-      renamedFrom:
-        $ref: '#/definitions/v1ResourceName'
-      reconcileError:
-        type: string
       version:
-        type: string
-        format: int64
-      metaVersion:
         type: string
         format: int64
       specVersion:
@@ -4178,6 +4177,15 @@ definitions:
       deletedOn:
         type: string
         format: date-time
+      reconcileStatus:
+        $ref: '#/definitions/v1ReconcileStatus'
+      reconcileError:
+        type: string
+      reconcileOn:
+        type: string
+        format: date-time
+      renamedFrom:
+        $ref: '#/definitions/v1ResourceName'
   v1ResourceName:
     type: object
     properties:

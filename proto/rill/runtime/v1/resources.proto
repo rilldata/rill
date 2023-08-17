@@ -5,6 +5,13 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "rill/runtime/v1/time_grain.proto";
 
+enum ReconcileStatus {
+  RECONCILE_STATUS_UNSPECIFIED = 0;
+  RECONCILE_STATUS_IDLE = 1;
+  RECONCILE_STATUS_PENDING = 2;
+  RECONCILE_STATUS_RUNNING = 3;
+}
+
 message Resource {
   ResourceMeta meta = 1;
   oneof resource {
@@ -25,17 +32,17 @@ message ResourceMeta {
   repeated ResourceName refs = 2;
   optional ResourceName owner = 3;
   repeated string file_paths = 4;
-  bool deleted = 7;
-  optional ResourceName renamed_from = 13;
-  string reconcile_error = 8;
   int64 version = 15;
-  int64 meta_version = 14;
   int64 spec_version = 5;
   int64 state_version = 6;
   google.protobuf.Timestamp created_on = 9;
   google.protobuf.Timestamp spec_updated_on = 10;
   google.protobuf.Timestamp state_updated_on = 11;
   optional google.protobuf.Timestamp deleted_on = 12;
+  ReconcileStatus reconcile_status = 16;
+  string reconcile_error = 8;
+  google.protobuf.Timestamp reconcile_on = 17;
+  optional ResourceName renamed_from = 13;
 }
 
 message ResourceName {

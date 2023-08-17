@@ -8,6 +8,38 @@ import { Message, proto3, protoInt64, Struct, Timestamp } from "@bufbuild/protob
 import { TimeGrain } from "./time_grain_pb.js";
 
 /**
+ * @generated from enum rill.runtime.v1.ReconcileStatus
+ */
+export enum ReconcileStatus {
+  /**
+   * @generated from enum value: RECONCILE_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: RECONCILE_STATUS_IDLE = 1;
+   */
+  IDLE = 1,
+
+  /**
+   * @generated from enum value: RECONCILE_STATUS_PENDING = 2;
+   */
+  PENDING = 2,
+
+  /**
+   * @generated from enum value: RECONCILE_STATUS_RUNNING = 3;
+   */
+  RUNNING = 3,
+}
+// Retrieve enum metadata with: proto3.getEnumType(ReconcileStatus)
+proto3.util.setEnumType(ReconcileStatus, "rill.runtime.v1.ReconcileStatus", [
+  { no: 0, name: "RECONCILE_STATUS_UNSPECIFIED" },
+  { no: 1, name: "RECONCILE_STATUS_IDLE" },
+  { no: 2, name: "RECONCILE_STATUS_PENDING" },
+  { no: 3, name: "RECONCILE_STATUS_RUNNING" },
+]);
+
+/**
  * @generated from message rill.runtime.v1.Resource
  */
 export class Resource extends Message<Resource> {
@@ -132,29 +164,9 @@ export class ResourceMeta extends Message<ResourceMeta> {
   filePaths: string[] = [];
 
   /**
-   * @generated from field: bool deleted = 7;
-   */
-  deleted = false;
-
-  /**
-   * @generated from field: optional rill.runtime.v1.ResourceName renamed_from = 13;
-   */
-  renamedFrom?: ResourceName;
-
-  /**
-   * @generated from field: string reconcile_error = 8;
-   */
-  reconcileError = "";
-
-  /**
    * @generated from field: int64 version = 15;
    */
   version = protoInt64.zero;
-
-  /**
-   * @generated from field: int64 meta_version = 14;
-   */
-  metaVersion = protoInt64.zero;
 
   /**
    * @generated from field: int64 spec_version = 5;
@@ -186,6 +198,26 @@ export class ResourceMeta extends Message<ResourceMeta> {
    */
   deletedOn?: Timestamp;
 
+  /**
+   * @generated from field: rill.runtime.v1.ReconcileStatus reconcile_status = 16;
+   */
+  reconcileStatus = ReconcileStatus.UNSPECIFIED;
+
+  /**
+   * @generated from field: string reconcile_error = 8;
+   */
+  reconcileError = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp reconcile_on = 17;
+   */
+  reconcileOn?: Timestamp;
+
+  /**
+   * @generated from field: optional rill.runtime.v1.ResourceName renamed_from = 13;
+   */
+  renamedFrom?: ResourceName;
+
   constructor(data?: PartialMessage<ResourceMeta>) {
     super();
     proto3.util.initPartial(data, this);
@@ -198,17 +230,17 @@ export class ResourceMeta extends Message<ResourceMeta> {
     { no: 2, name: "refs", kind: "message", T: ResourceName, repeated: true },
     { no: 3, name: "owner", kind: "message", T: ResourceName, opt: true },
     { no: 4, name: "file_paths", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 7, name: "deleted", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 13, name: "renamed_from", kind: "message", T: ResourceName, opt: true },
-    { no: 8, name: "reconcile_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 14, name: "meta_version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 5, name: "spec_version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 6, name: "state_version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 9, name: "created_on", kind: "message", T: Timestamp },
     { no: 10, name: "spec_updated_on", kind: "message", T: Timestamp },
     { no: 11, name: "state_updated_on", kind: "message", T: Timestamp },
     { no: 12, name: "deleted_on", kind: "message", T: Timestamp, opt: true },
+    { no: 16, name: "reconcile_status", kind: "enum", T: proto3.getEnumType(ReconcileStatus) },
+    { no: 8, name: "reconcile_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 17, name: "reconcile_on", kind: "message", T: Timestamp },
+    { no: 13, name: "renamed_from", kind: "message", T: ResourceName, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResourceMeta {
