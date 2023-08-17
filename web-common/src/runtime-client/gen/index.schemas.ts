@@ -331,6 +331,10 @@ export type RuntimeServiceEditInstanceAnnotationsBody = {
   annotations?: RuntimeServiceEditInstanceAnnotationsBodyAnnotations;
 };
 
+export type RuntimeServiceEditInstanceBodyAnnotations = {
+  [key: string]: string;
+};
+
 /**
  * Request message for RuntimeService.EditInstance.
 See message Instance for field descriptions.
@@ -341,6 +345,7 @@ export type RuntimeServiceEditInstanceBody = {
   embedCatalog?: boolean;
   ingestionLimitBytes?: string;
   connectors?: V1Connector[];
+  annotations?: RuntimeServiceEditInstanceBodyAnnotations;
 };
 
 export type RuntimeServiceEditInstanceVariablesBodyVariables = {

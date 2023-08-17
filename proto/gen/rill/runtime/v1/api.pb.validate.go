@@ -1599,6 +1599,8 @@ func (m *EditInstanceRequest) validate(all bool) error {
 
 	}
 
+	// no validation rules for Annotations
+
 	if m.OlapDriver != nil {
 		// no validation rules for OlapDriver
 	}

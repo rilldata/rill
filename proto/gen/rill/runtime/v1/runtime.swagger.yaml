@@ -407,6 +407,10 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/v1Connector'
+              annotations:
+                type: object
+                additionalProperties:
+                  type: string
             description: |-
               Request message for RuntimeService.EditInstance.
               See message Instance for field descriptions.

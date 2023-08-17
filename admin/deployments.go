@@ -31,7 +31,7 @@ type createDeploymentOptions struct {
 	ProdOLAPDriver       string
 	ProdOLAPDSN          string
 	ProdSlots            int
-	Annotations          map[string]string
+	Annotations          deploymentAnnotations
 }
 
 func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOptions) (*database.Deployment, error) {
@@ -89,7 +89,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		EmbedCatalog:        embedCatalog,
 		Variables:           opts.ProdVariables,
 		IngestionLimitBytes: ingestionLimit,
-		Annotations:         opts.Annotations,
+		Annotations:         opts.Annotations.toMap(),
 		Connectors: []*runtimev1.Connector{
 			{
 				Name:   "olap",
@@ -135,6 +135,7 @@ type updateDeploymentOptions struct {
 	Subpath              string
 	Branch               string
 	Variables            map[string]string
+	Annotations          *deploymentAnnotations
 }
 
 func (s *Service) updateDeployment(ctx context.Context, depl *database.Deployment, opts *updateDeploymentOptions) error {
@@ -168,9 +169,14 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 		}
 	}
 
+	var annotations map[string]string
+	if opts.Annotations != nil { // annotations changed
+		annotations = opts.Annotations.toMap()
+	}
 	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
-		InstanceId: depl.RuntimeInstanceID,
-		Connectors: connectors,
+		InstanceId:  depl.RuntimeInstanceID,
+		Connectors:  connectors,
+		Annotations: annotations,
 	})
 	if err != nil {
 		return err
@@ -265,7 +271,7 @@ func (s *Service) updateDeplVariables(ctx context.Context, depl *database.Deploy
 	return err
 }
 
-func (s *Service) updateDeplAnnotations(ctx context.Context, depl *database.Deployment, annotations map[string]string) error {
+func (s *Service) updateDeplAnnotations(ctx context.Context, depl *database.Deployment, annotations deploymentAnnotations) error {
 	rt, err := s.openRuntimeClientForDeployment(depl)
 	if err != nil {
 		return err
@@ -274,7 +280,7 @@ func (s *Service) updateDeplAnnotations(ctx context.Context, depl *database.Depl
 
 	_, err = rt.EditInstanceAnnotations(ctx, &runtimev1.EditInstanceAnnotationsRequest{
 		InstanceId:  depl.RuntimeInstanceID,
-		Annotations: annotations,
+		Annotations: annotations.toMap(),
 	})
 	return err
 }
@@ -341,11 +347,27 @@ func githubRepoInfoForRuntime(githubURL string, installationID int64, subPath, b
 	return "github", string(dsn), nil
 }
 
-func deploymentAnnotations(org *database.Organization, proj *database.Project) map[string]string {
+type deploymentAnnotations struct {
+	orgID    string
+	orgName  string
+	projID   string
+	projName string
+}
+
+func newDeploymentAnnotations(org *database.Organization, proj *database.Project) deploymentAnnotations {
+	return deploymentAnnotations{
+		orgID:    org.ID,
+		orgName:  org.Name,
+		projID:   proj.ID,
+		projName: proj.Name,
+	}
+}
+
+func (da *deploymentAnnotations) toMap() map[string]string {
 	return map[string]string{
-		"organization_id":   org.ID,
-		"organization_name": org.Name,
-		"project_id":        proj.ID,
-		"project_name":      proj.Name,
+		"organization_id":   da.orgID,
+		"organization_name": da.orgName,
+		"project_id":        da.projID,
+		"project_name":      da.projName,
 	}
 }
