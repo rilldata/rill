@@ -9,6 +9,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
 	"go.uber.org/zap"
 	"go.uber.org/zap/exp/zapslog"
 	"golang.org/x/exp/slog"
@@ -92,9 +93,19 @@ func NewController(ctx context.Context, rt *Runtime, instanceID string, logger *
 	return c, nil
 }
 
-type taskEntry struct {
-	cancel context.CancelFunc
+type invocation struct {
+	cancel    context.CancelFunc
+	done      chan struct{}
+	postVisit []*runtimev1.ResourceName
 }
+
+var errCyclicDependency = errors.New("cannot be reconciled due to cyclic dependency")
+
+const (
+	deletePriority = 3
+	renamePriority = 2
+	normalPriority = 1
+)
 
 // Run starts and runs the controller's event loop. It returns when ctx is cancelled or an unrecoverable error occurs.
 func (c *Controller) Run(ctx context.Context) error {
@@ -102,12 +113,61 @@ func (c *Controller) Run(ctx context.Context) error {
 		panic("controller is already running")
 	}
 
+	err := c.catalog.checkLeader(ctx)
+	if err != nil {
+		return err
+	}
+
 	// PRINCIPLE: No transitive dependencies can run at the same time
 	// PRINCIPLE: Deps that would create cycles are not added. On each deletion or ref update, all such candidates are re-assessed.
+	// Semantics: Run one reconcile per resource name at a time. On new trigger, cancel the old one then invoke new call.
+	// - Only needs catalog locking for non-self resources
+	// - If A is running
+	// 	- And edits itself: no retrigger
+	// 	- And is edited by other: retrigger
+	// 	- And ref is updated: retrigger
+	// - Must handle panics in reconcilers
 
-	// Make DAG
-	// Enqueue all roots for reconciliation
-	// In catalog, enqueue updated items for reconciliation
+	q := priorityqueue.New[*runtimev1.ResourceName]()
+
+	// Initially, we want to trigger a reconcile on all resources that do not form a cyclic dependency.
+	// This includes triggeren a reconcile on resources with missing references (because acting on missing/errored refs is a reconciler duty).
+	for _, rs := range c.catalog.resources {
+		for _, r := range rs {
+			_, cyclic := c.catalog.cyclic[nameStr(r.Meta.Name)]
+			if cyclic {
+				c.catalog.updateError(r.Meta.Name, errCyclicDependency)
+				continue
+			}
+
+			err = c.catalog.updateStatus(r.Meta.Name, runtimev1.ReconcileStatus_RECONCILE_STATUS_PENDING, nil, nil)
+			if err != nil {
+				return fmt.Errorf("unexpected update status error: %w", err)
+			}
+
+			if r.Meta.DeletedOn != nil {
+				q.Push(r.Meta.Name, deletePriority)
+				continue
+			}
+
+			ps := c.catalog.dag.Parents(r.Meta.Name, true)
+			root := len(ps) == 0 // NOTE: Not a true root, since it may have non-present refs
+			if root {
+				q.Push(r.Meta.Name, normalPriority)
+			}
+		}
+	}
+
+	invocations := make(map[string]*invocation)
+
+	// channel to check a name
+	// - if to delete, cancel any running children, mark them all pending. Do the delete.
+	// - if renamed, cancel any running children, mark them all pending
+	// channel when a name is done
+	// - check all children. If any pending with all parents not pending, put them on the queue.
+	// function: start next
+	// - reads from priority queue
+	// - ensures sequencing: deletes, renames, normal
 
 	triggers := make(chan *runtimev1.ResourceName, 100)
 	completed := make(chan *runtimev1.ResourceName, 100)
@@ -145,35 +205,6 @@ func (c *Controller) Run(ctx context.Context) error {
 
 		}
 	}
-
-	// Make DAG of initial refs
-
-	// Start loop
-
-	// Keep map of tasks (consists of name, ctx with name, cancel func)
-
-	// Keep channel of names to trigger
-
-	// Keep
-
-	// TODO: Load all resources and build DAG of refs
-
-	// TODO: Run event loop: build schedule, linearize and trigger reconcilers on changes
-
-	// Semantics: Run one reconcile per resource name at a time. On new trigger, cancel the old one then invoke new call.
-	// - Only needs catalog locking for non-self resources
-	// - If A is running
-	// 	- And edits itself: no retrigger
-	// 	- And is edited by other: retrigger
-	// 	- And ref is updated: retrigger
-	// - Must handle panics in reconcilers
-
-	// Catalog Notes:
-	// - Cache resources for catalog calls in-memory – make workload write-heavy.
-	// - Allow configurable disk reads/flushes. Enables lightweight/ephemeral state updates, like progress info.
-	// - Reads/writes to DB should transactionally check versions of BOTH the controller and resource. Return ErrInconsistentVersion on failure. (Indicates split-brain.)
-
-	// TODO: Add handling for rapid deletion and creation?
 
 	return c.close(context.Background())
 }
@@ -279,4 +310,22 @@ func (c *Controller) reconciler(resourceKind string) Reconciler {
 	c.reconcilers[resourceKind] = reconciler
 
 	return reconciler
+}
+
+// resourceNameCtxKey is used for storing a resource name in a context.
+type resourceNameCtxKey struct{}
+
+// contextWithResourceName returns a wrapped context that contains a resource name.
+func contextWithResourceName(ctx context.Context, n *runtimev1.ResourceName) context.Context {
+	return context.WithValue(ctx, resourceNameCtxKey{}, n)
+}
+
+// txFromContext retrieves a DB transaction wrapped with contextWithTx.
+// If no transaction is in the context, it returns nil.
+func resourceNameFromContext(ctx context.Context) *runtimev1.ResourceName {
+	n := ctx.Value(resourceNameCtxKey{})
+	if n != nil {
+		return n.(*runtimev1.ResourceName)
+	}
+	return nil
 }

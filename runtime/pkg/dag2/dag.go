@@ -174,6 +174,28 @@ func (d DAG[K, V]) DeepChildren(val V) []V {
 	return children
 }
 
+// VisitRoots recursively visits all vertices connected to the roots.
+// If the visitor function returns true, the visit is stopped.
+func (d DAG[K, V]) VisitRoots(fn func(K, V) bool) {
+	var roots []*vertex[K, V]
+	for _, v := range d.vertices {
+		if !v.present {
+			continue
+		}
+		if len(v.parents) == 0 {
+			roots = append(roots, v)
+		}
+	}
+
+	visited := make(map[K]bool, len(d.vertices))
+	for _, v := range roots {
+		stop := d.visit(v, visited, fn)
+		if stop {
+			return
+		}
+	}
+}
+
 // Visit recursively visits the children of the given value.
 // If the visitor function returns true, the visit is stopped.
 func (d DAG[K, V]) Visit(val V, fn func(K, V) bool) {

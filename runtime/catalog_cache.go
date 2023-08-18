@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -14,8 +15,10 @@ import (
 )
 
 // catalogCache is a catalog proxy that caches and edits resources in-memory. It enables rapid reads and writes to the catalog.
-// Changes to resources are only persisted to the underlying store when flush() is called.
-// It additionally provides various indexes of the resources, such as a DAG and list of deleted resources.
+// It writes changes to resources to the underlying store when flush() or close() is called.
+// It only reads resources from the underlying store on initialization, making the overall workload against the store write-heavy.
+//
+// catalogCache additionally provides various indexes of the resources: a DAG, map of soft-deleted resources, map of renamed resources.
 // It is not thread-safe, but it protects against split-brain scenarios by erroring if the underlying store is mutated by another catalog cache.
 type catalogCache struct {
 	ctrl    *Controller
@@ -33,6 +36,7 @@ type catalogCache struct {
 }
 
 // newCatalogCache initializes and warms a new catalog cache.
+// It resets ephemeral fields to the following defaults: reconcile_status=idle, renamed_from=nil, reconcile_on=nil.
 func newCatalogCache(ctx context.Context, ctrl *Controller, instanceID string) (catalogCache, error) {
 	store, release, err := ctrl.Runtime.Catalog(ctx, instanceID)
 	if err != nil {
@@ -313,6 +317,23 @@ func (c catalogCache) updateDeleted(name *runtimev1.ResourceName) error {
 	r.Meta.SpecUpdatedOn = timestamppb.Now()
 	c.link(r)
 	c.dirty[nameStr(r.Meta.Name)] = r.Meta.Name
+	return nil
+}
+
+// updateStatus updates the ephemeral status fields on a resource.
+// The values of these fields are reset next time a catalog cache is created.
+func (c catalogCache) updateStatus(name *runtimev1.ResourceName, status runtimev1.ReconcileStatus, reconcileOn *time.Time, renamedFrom *runtimev1.ResourceName) error {
+	r, err := c.get(name, true)
+	if err != nil {
+		return err
+	}
+	r.Meta.ReconcileStatus = status
+	if reconcileOn == nil {
+		r.Meta.ReconcileOn = nil
+	} else {
+		r.Meta.ReconcileOn = timestamppb.New(*reconcileOn)
+	}
+	r.Meta.RenamedFrom = renamedFrom
 	return nil
 }
 
