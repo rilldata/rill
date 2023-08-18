@@ -1,24 +1,33 @@
 <script lang="ts">
-  import type { Writable } from "svelte/store";
   import { createQuery, CreateQueryResult } from "@tanstack/svelte-query";
-  import type { TimeDimensionDetailsStore } from "./time-dimension-details-store";
   import { getBlock } from "./util";
-  import { fetchData } from "./mock-data";
+  import { fetchData, TCellData } from "./mock-data";
+  import FormattedNumberCell from "./FormattedNumberCell.svelte";
+  import type { SvelteComponent } from "svelte";
+  import DimensionCell from "./DimensionCell.svelte";
+  import { useTDTContext } from "./context";
 
   export let rowIdx: number;
   export let colIdx: number;
-  export let fixed: boolean;
-  export let lastFixed: boolean;
-  export let store: Writable<TimeDimensionDetailsStore>;
+  export let fixed = false;
+  export let lastFixed = false;
+
+  const { store } = useTDTContext();
   // If the current data block has this cell, get the data. Otherwise for now assume "loading" state (can handle errors later)
-  let cellData = { d: "..." };
+  let cellData: TCellData & { isLoading?: boolean } = {
+    text: "...",
+    isLoading: true,
+  };
   let block = getBlock(100, rowIdx, rowIdx);
   $: block = getBlock(100, rowIdx, rowIdx);
 
   const cellQuery = createQuery({
     queryKey: ["time-dimension-details", block[0], block[1]],
     queryFn: fetchData(block, 1000),
-  }) as CreateQueryResult<{ block: number[]; data: { d: string }[][] }>;
+  }) as CreateQueryResult<{
+    block: number[];
+    data: { text?: string; value?: number; sparkline?: number[] }[][];
+  }>;
 
   $: {
     if (
@@ -28,12 +37,12 @@
     ) {
       cellData =
         $cellQuery.data.data[rowIdx - $cellQuery.data.block[0]][colIdx];
-    } else cellData = { d: "..." };
+    } else cellData = { text: "...", isLoading: true };
   }
 
   let _class = "";
   $: {
-    _class = "h-full ";
+    _class = "h-full flex items-center px-2";
     if (fixed) _class += ` z-2`;
     if (lastFixed) _class += ` right-shadow`;
 
@@ -67,7 +76,8 @@
 
     // Choose palette based on type of cell state
     let palette = bgColors.default;
-    if (fixed) palette = bgColors.fixed;
+    if (colIdx === 0) palette = bgColors.default;
+    else if (fixed) palette = bgColors.fixed;
     else if (isScrubbed) palette = bgColors.scrubbed;
 
     // Choose color within palette based on highlighted state
@@ -85,25 +95,55 @@
     $store.highlightedCol = null;
     $store.highlightedRow = null;
   };
+
+  // TODO: with real data, this should be dependent on selected metric
+  const format = "0.2f";
+  let cellComponent: typeof SvelteComponent;
+  let cellComponentDefaultProps = {};
+  $: {
+    // Dimension cell
+    if (colIdx === 0) {
+      cellComponent = DimensionCell;
+      cellComponentDefaultProps = {};
+    }
+    // Measure cell and delta cell
+    else if ([1, 3].includes(colIdx)) {
+      cellComponent = FormattedNumberCell;
+      cellComponentDefaultProps = { negClass: "text-red-500", format };
+    }
+    // Percent of total and delta percent cell
+    else if ([2, 4].includes(colIdx)) {
+      cellComponent = FormattedNumberCell;
+      cellComponentDefaultProps = { negClass: "text-red-500", format: "0.1%" };
+    }
+    // Pivotted measure cells
+    else if (!fixed) {
+      cellComponent = FormattedNumberCell;
+      cellComponentDefaultProps = { format };
+    }
+    // No match
+    else {
+      cellComponent = null;
+      cellComponentDefaultProps = {};
+    }
+  }
 </script>
 
-{#if rowIdx === -1}
-  <div
-    class={_class}
-    on:mouseenter={handleMouseEnter}
-    on:mouseleave={handleMouseLeave}
-  >
-    Column {colIdx}
-  </div>
-{:else}
-  <div
-    class={_class}
-    on:mouseenter={handleMouseEnter}
-    on:mouseleave={handleMouseLeave}
-  >
-    {cellData?.d}
-  </div>
-{/if}
+<div
+  class={_class}
+  on:mouseenter={handleMouseEnter}
+  on:mouseleave={handleMouseLeave}
+>
+  {#if cellComponent && !cellData.isLoading}
+    <svelte:component
+      this={cellComponent}
+      {...cellComponentDefaultProps}
+      cell={cellData}
+    />
+  {:else}
+    {cellData?.text ?? cellData?.value}
+  {/if}
+</div>
 
 <style>
   .right-shadow:after {

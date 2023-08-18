@@ -1,14 +1,15 @@
 <script lang="ts">
   import type { VirtualItem } from "@tanstack/svelte-virtual";
+  import type { SvelteComponent } from "svelte";
 
   export let fixed = false;
   export let element = "td";
   export let rowIdx: number;
   export let item: VirtualItem;
   export let rowHeight: number | undefined = undefined;
-  export let renderCell: (rowIdx: number, colIdx: number) => any;
   let _class = "";
   export { _class as class };
+  export let component: typeof SvelteComponent;
 
   let style = "";
   $: {
@@ -21,5 +22,5 @@
 </script>
 
 <svelte:element this={element} class={`p-0 ${_class}`} {style}>
-  <svelte:component this={renderCell(rowIdx, item.index)} />
+  <svelte:component this={component} {rowIdx} colIdx={item.index} />
 </svelte:element>
