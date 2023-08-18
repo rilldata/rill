@@ -262,6 +262,8 @@ export const prettyFormatTimeRange = (
     endYear = inclusiveEndDateWithTimeZone.year;
   } else {
     // display full time when the hours are not at 00:00
+    inclusiveEndDate = end;
+
     timeString = `(${start
       .toLocaleString(undefined, {
         hour12: true,
