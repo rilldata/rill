@@ -90,8 +90,8 @@ func (c anonClaims) Attributes() map[string]any {
 	return nil
 }
 
-// devJWTClaims implements Claims and allows all actions.
-// It is used for servers with auth disabled.
+// devJWTClaims implements Claims and allows all actions but have user attributes for access policies.
+// It is used for mimicking user attributes on local when auth is disabled.
 type devJWTClaims struct {
 	jwt.RegisteredClaims
 	Attrs map[string]any `json:"attr,omitempty"`

@@ -30,11 +30,11 @@ import (
 func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.MetricsView, time.Time, error) {
 	obj, err := rt.GetCatalogEntry(ctx, instanceID, name)
 	if err != nil {
-		return nil, time.Now(), status.Error(codes.InvalidArgument, err.Error())
+		return nil, time.Time{}, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	if !obj.IsMetricsView() {
-		return nil, time.Now(), status.Errorf(codes.NotFound, "object named '%s' is not a metrics view", name)
+		return nil, time.Time{}, status.Errorf(codes.NotFound, "object named '%s' is not a metrics view", name)
 	}
 
 	mv := obj.GetMetricsView()

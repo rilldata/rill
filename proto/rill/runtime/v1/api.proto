@@ -899,6 +899,7 @@ message IssueDevJWTRequest {
   string name = 1 [(validate.rules).string.min_len = 1];
   string email = 2 [(validate.rules).string.min_len = 1];
   repeated string groups = 3;
+  bool admin = 4;
 }
 
 // Response message for RuntimeService.IssueDevJWT

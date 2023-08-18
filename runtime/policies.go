@@ -1,8 +1,10 @@
 package runtime
 
 import (
+	"crypto/md5"
+	"encoding/binary"
+	"encoding/hex"
 	"fmt"
-	"hash/maphash"
 	"sync"
 	"time"
 
@@ -40,6 +42,44 @@ type ResolvedMetricsViewPolicy struct {
 	Exclude   []string
 }
 
+func computeCacheKey(instanceID string, mv *runtimev1.MetricsView, lastUpdatedOn time.Time, attributes map[string]any) (string, error) {
+	hash := md5.New()
+	_, err := hash.Write([]byte(instanceID))
+	if err != nil {
+		return "", err
+	}
+	_, err = hash.Write([]byte(mv.Name))
+	if err != nil {
+		return "", err
+	}
+	_, err = hash.Write([]byte(lastUpdatedOn.String()))
+	if err != nil {
+		return "", err
+	}
+	// go through attributes in a deterministic order (alphabetical by keys)
+	if attributes["admin"] != nil {
+		err = binary.Write(hash, binary.BigEndian, attributes["admin"])
+		if err != nil {
+			return "", err
+		}
+	}
+	if attributes["email"] != nil {
+		_, err = hash.Write([]byte(attributes["name"].(string)))
+		if err != nil {
+			return "", err
+		}
+	}
+	if attributes["groups"] != nil {
+		for _, g := range attributes["groups"].([]interface{}) {
+			_, err = hash.Write([]byte(g.(string)))
+			if err != nil {
+				return "", err
+			}
+		}
+	}
+	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
 func (p *policyEngine) resolveMetricsViewPolicy(attributes map[string]any, instanceID string, mv *runtimev1.MetricsView, lastUpdatedOn time.Time) (*ResolvedMetricsViewPolicy, error) {
 	if mv.Policy == nil {
 		return nil, nil
@@ -51,16 +91,10 @@ func (p *policyEngine) resolveMetricsViewPolicy(attributes map[string]any, insta
 		return openPolicy, nil
 	}
 
-	key := fmt.Sprintf("%v:%v:%v", instanceID, mv.Name, lastUpdatedOn)
-	for k, v := range attributes {
-		key += fmt.Sprintf(":%v:%v", k, v)
-	}
-	var h maphash.Hash
-	_, err := h.WriteString(key)
+	cacheKey, err := computeCacheKey(instanceID, mv, lastUpdatedOn, attributes)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to compute cache key: %w", err)
 	}
-	cacheKey := h.Sum64()
 
 	p.lock.Lock()
 	defer p.lock.Unlock()
@@ -71,10 +105,10 @@ func (p *policyEngine) resolveMetricsViewPolicy(attributes map[string]any, insta
 	}
 
 	resolved := &ResolvedMetricsViewPolicy{}
-	templateData := &rillv1.TemplateData{User: attributes}
+	templateData := rillv1.TemplateData{User: attributes}
 
 	if mv.Policy.HasAccess != "" {
-		hasAccess, err := rillv1.ResolveTemplate(mv.Policy.HasAccess, *templateData)
+		hasAccess, err := rillv1.ResolveTemplate(mv.Policy.HasAccess, templateData)
 		if err != nil {
 			return nil, err
 		}
@@ -85,7 +119,7 @@ func (p *policyEngine) resolveMetricsViewPolicy(attributes map[string]any, insta
 	}
 
 	if mv.Policy.Filter != "" {
-		filter, err := rillv1.ResolveTemplate(mv.Policy.Filter, *templateData)
+		filter, err := rillv1.ResolveTemplate(mv.Policy.Filter, templateData)
 		if err != nil {
 			return nil, err
 		}
@@ -93,11 +127,11 @@ func (p *policyEngine) resolveMetricsViewPolicy(attributes map[string]any, insta
 	}
 
 	for _, inc := range mv.Policy.Include {
-		inc.Condition, err = rillv1.ResolveTemplate(inc.Condition, *templateData)
+		cond, err := rillv1.ResolveTemplate(inc.Condition, templateData)
 		if err != nil {
 			return nil, err
 		}
-		incCond, err := rillv1.EvaluateBoolExpression(inc.Condition)
+		incCond, err := rillv1.EvaluateBoolExpression(cond)
 		if err != nil {
 			return nil, err
 		}
@@ -106,11 +140,11 @@ func (p *policyEngine) resolveMetricsViewPolicy(attributes map[string]any, insta
 		}
 	}
 	for _, exc := range mv.Policy.Exclude {
-		exc.Condition, err = rillv1.ResolveTemplate(exc.Condition, *templateData)
+		cond, err := rillv1.ResolveTemplate(exc.Condition, templateData)
 		if err != nil {
 			return nil, err
 		}
-		excCond, err := rillv1.EvaluateBoolExpression(exc.Condition)
+		excCond, err := rillv1.EvaluateBoolExpression(cond)
 		if err != nil {
 			return nil, err
 		}

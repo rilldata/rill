@@ -19,8 +19,6 @@ type ColumnTimeRange struct {
 	TableName  string
 	ColumnName string
 	Result     *runtimev1.TimeRangeSummary
-	// will be empty for profiling queries
-	PolicyFilter string
 }
 
 var _ runtime.Query = &ColumnTimeRange{}
@@ -58,24 +56,19 @@ func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
-		return q.resolveDuckDB(ctx, olap, priority, q.PolicyFilter)
+		return q.resolveDuckDB(ctx, olap, priority)
 	case drivers.DialectDruid:
-		return q.resolveDruid(ctx, olap, priority, q.PolicyFilter)
+		return q.resolveDruid(ctx, olap, priority)
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 }
 
-func (q *ColumnTimeRange) resolveDuckDB(ctx context.Context, olap drivers.OLAPStore, priority int, filter string) error {
-	if filter != "" {
-		filter = fmt.Sprintf(" WHERE %s", filter)
-	}
-
+func (q *ColumnTimeRange) resolveDuckDB(ctx context.Context, olap drivers.OLAPStore, priority int) error {
 	rangeSQL := fmt.Sprintf(
-		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\", max(%[1]s) - min(%[1]s) as \"interval\" FROM %[2]s %[3]s",
+		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\", max(%[1]s) - min(%[1]s) as \"interval\" FROM %[2]s",
 		safeName(q.ColumnName),
 		safeName(q.TableName),
-		filter,
 	)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
@@ -136,20 +129,15 @@ func handleDuckDBInterval(interval any) (*runtimev1.TimeRangeSummary_Interval, e
 	return nil, fmt.Errorf("cannot handle interval type %T", interval)
 }
 
-func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPStore, priority int, filter string) error {
-	if filter != "" {
-		filter = fmt.Sprintf(" WHERE %s", filter)
-	}
-
+func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPStore, priority int) error {
 	var minTime, maxTime time.Time
 	group, ctx := errgroup.WithContext(ctx)
 
 	group.Go(func() error {
 		minSQL := fmt.Sprintf(
-			"SELECT min(%[1]s) as \"min\" FROM %[2]s %[3]s",
+			"SELECT min(%[1]s) as \"min\" FROM %[2]s",
 			safeName(q.ColumnName),
 			safeName(q.TableName),
-			filter,
 		)
 
 		rows, err := olap.Execute(ctx, &drivers.Statement{
@@ -180,10 +168,9 @@ func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPSto
 
 	group.Go(func() error {
 		maxSQL := fmt.Sprintf(
-			"SELECT max(%[1]s) as \"max\" FROM %[2]s %[3]s",
+			"SELECT max(%[1]s) as \"max\" FROM %[2]s",
 			safeName(q.ColumnName),
 			safeName(q.TableName),
-			filter,
 		)
 
 		rows, err := olap.Execute(ctx, &drivers.Statement{

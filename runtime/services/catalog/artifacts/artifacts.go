@@ -83,6 +83,7 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, registryStore driver
 		if err := t.Execute(bw, env); err != nil {
 			return nil, err
 		}
+		blob = bw.String()
 	}
 
 	catalog, err := artifact.DeSerialise(ctx, filePath, blob, materializeDefault)

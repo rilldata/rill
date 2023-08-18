@@ -147,6 +147,10 @@ paths:
           items:
             type: string
           collectionFormat: multi
+        - name: admin
+          in: query
+          required: false
+          type: boolean
       tags:
         - RuntimeService
   /v1/examples:

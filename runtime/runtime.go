@@ -14,14 +14,14 @@ import (
 )
 
 type Options struct {
-	ConnectionCacheSize int
-	MetastoreConnector  string
-	QueryCacheSizeBytes int64
-	AllowHostAccess     bool
-	SafeSourceRefresh   bool
-	// SystemConnectors are drivers whose handles are shared with all instances
-	SystemConnectors      []*runtimev1.Connector
+	ConnectionCacheSize   int
+	MetastoreConnector    string
+	QueryCacheSizeBytes   int64
 	PolicyEngineCacheSize int
+	AllowHostAccess       bool
+	SafeSourceRefresh     bool
+	// SystemConnectors are drivers whose handles are shared with all instances
+	SystemConnectors []*runtimev1.Connector
 }
 type Runtime struct {
 	opts               *Options

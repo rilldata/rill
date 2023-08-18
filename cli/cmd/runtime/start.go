@@ -40,21 +40,22 @@ import (
 // Env var keys must be prefixed with RILL_RUNTIME_ and are converted from snake_case to CamelCase.
 // For example RILL_RUNTIME_HTTP_PORT is mapped to Config.HTTPPort.
 type Config struct {
-	HTTPPort            int                    `default:"8080" split_words:"true"`
-	GRPCPort            int                    `default:"9090" split_words:"true"`
-	LogLevel            zapcore.Level          `default:"info" split_words:"true"`
-	MetricsExporter     observability.Exporter `default:"prometheus" split_words:"true"`
-	TracesExporter      observability.Exporter `default:"" split_words:"true"`
-	MetastoreDriver     string                 `default:"sqlite" split_words:"true"`
-	MetastoreURL        string                 `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
-	AllowedOrigins      []string               `default:"*" split_words:"true"`
-	AuthEnable          bool                   `default:"false" split_words:"true"`
-	AuthIssuerURL       string                 `default:"" split_words:"true"`
-	AuthAudienceURL     string                 `default:"" split_words:"true"`
-	DownloadRowLimit    int64                  `default:"10000" split_words:"true"`
-	SafeSourceRefresh   bool                   `default:"false" split_words:"true"`
-	ConnectionCacheSize int                    `default:"100" split_words:"true"`
-	QueryCacheSizeBytes int64                  `default:"104857600" split_words:"true"` // 100MB by default
+	HTTPPort              int                    `default:"8080" split_words:"true"`
+	GRPCPort              int                    `default:"9090" split_words:"true"`
+	LogLevel              zapcore.Level          `default:"info" split_words:"true"`
+	MetricsExporter       observability.Exporter `default:"prometheus" split_words:"true"`
+	TracesExporter        observability.Exporter `default:"" split_words:"true"`
+	MetastoreDriver       string                 `default:"sqlite" split_words:"true"`
+	MetastoreURL          string                 `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
+	AllowedOrigins        []string               `default:"*" split_words:"true"`
+	AuthEnable            bool                   `default:"false" split_words:"true"`
+	AuthIssuerURL         string                 `default:"" split_words:"true"`
+	AuthAudienceURL       string                 `default:"" split_words:"true"`
+	DownloadRowLimit      int64                  `default:"10000" split_words:"true"`
+	SafeSourceRefresh     bool                   `default:"false" split_words:"true"`
+	ConnectionCacheSize   int                    `default:"100" split_words:"true"`
+	QueryCacheSizeBytes   int64                  `default:"104857600" split_words:"true"` // 100MB by default
+	PolicyEngineCacheSize int                    `default:"1000" split_words:"true"`
 	// AllowHostAccess controls whether instance can use host credentials and
 	// local_file sources can access directory outside repo
 	AllowHostAccess bool `default:"false" split_words:"true"`
@@ -70,7 +71,6 @@ type Config struct {
 	ActivitySinkKafkaBrokers string `default:"" split_words:"true"`
 	// Kafka topic of an activity client's sink
 	ActivitySinkKafkaTopic string `default:"" split_words:"true"`
-	PolicyEngineCacheSize  int    `default:"1000" split_words:"true"`
 }
 
 // StartCmd starts a stand-alone runtime server. It only allows configuration using environment variables.
@@ -143,11 +143,12 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 
 			// Init runtime
 			opts := &runtime.Options{
-				ConnectionCacheSize: conf.ConnectionCacheSize,
-				MetastoreConnector:  "metastore",
-				QueryCacheSizeBytes: conf.QueryCacheSizeBytes,
-				AllowHostAccess:     conf.AllowHostAccess,
-				SafeSourceRefresh:   conf.SafeSourceRefresh,
+				ConnectionCacheSize:   conf.ConnectionCacheSize,
+				MetastoreConnector:    "metastore",
+				QueryCacheSizeBytes:   conf.QueryCacheSizeBytes,
+				PolicyEngineCacheSize: conf.PolicyEngineCacheSize,
+				AllowHostAccess:       conf.AllowHostAccess,
+				SafeSourceRefresh:     conf.SafeSourceRefresh,
 				SystemConnectors: []*runtimev1.Connector{
 					{
 						Type:   conf.MetastoreDriver,
@@ -155,7 +156,6 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 						Config: map[string]string{"dsn": conf.MetastoreURL},
 					},
 				},
-				PolicyEngineCacheSize: conf.PolicyEngineCacheSize,
 			}
 			rt, err := runtime.New(opts, logger, activityClient)
 			if err != nil {

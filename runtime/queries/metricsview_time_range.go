@@ -2,14 +2,19 @@ package queries
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/server/auth"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type MetricsViewTimeRange struct {
@@ -67,18 +72,166 @@ func (q *MetricsViewTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime,
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
-	ctr := &ColumnTimeRange{
-		TableName:    mv.Model,
-		ColumnName:   mv.TimeDimension,
-		PolicyFilter: policyFilter,
-	}
-
-	err = rt.Query(ctx, instanceID, ctr, priority)
+	olap, release, err := rt.OLAP(ctx, instanceID)
 	if err != nil {
 		return err
 	}
+	defer release()
+
+	switch olap.Dialect() {
+	case drivers.DialectDuckDB:
+		return q.resolveDuckDB(ctx, olap, mv.TimeDimension, mv.Model, policyFilter, priority)
+	case drivers.DialectDruid:
+		return q.resolveDruid(ctx, olap, mv.TimeDimension, mv.Model, policyFilter, priority)
+	default:
+		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
+	}
+}
+
+func (q *MetricsViewTimeRange) resolveDuckDB(ctx context.Context, olap drivers.OLAPStore, timeDim, tableName, filter string, priority int) error {
+	if filter != "" {
+		filter = fmt.Sprintf(" WHERE %s", filter)
+	}
+
+	rangeSQL := fmt.Sprintf(
+		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\", max(%[1]s) - min(%[1]s) as \"interval\" FROM %[2]s %[3]s",
+		safeName(timeDim),
+		safeName(tableName),
+		filter,
+	)
+
+	rows, err := olap.Execute(ctx, &drivers.Statement{
+		Query:            rangeSQL,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+	})
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		summary := &runtimev1.TimeRangeSummary{}
+		rowMap := make(map[string]any)
+		err = rows.MapScan(rowMap)
+		if err != nil {
+			return err
+		}
+		if v := rowMap["min"]; v != nil {
+			minTime, ok := v.(time.Time)
+			if !ok {
+				return fmt.Errorf("not a timestamp column")
+			}
+			summary.Min = timestamppb.New(minTime)
+			summary.Max = timestamppb.New(rowMap["max"].(time.Time))
+			summary.Interval, err = handleDuckDBInterval(rowMap["interval"])
+			if err != nil {
+				return err
+			}
+		}
+		q.Result = &runtimev1.MetricsViewTimeRangeResponse{
+			TimeRangeSummary: summary,
+		}
+		return nil
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return err
+	}
+
+	return errors.New("no rows returned")
+}
+
+func (q *MetricsViewTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPStore, timeDim, tableName, filter string, priority int) error {
+	if filter != "" {
+		filter = fmt.Sprintf(" WHERE %s", filter)
+	}
+
+	var minTime, maxTime time.Time
+	group, ctx := errgroup.WithContext(ctx)
+
+	group.Go(func() error {
+		minSQL := fmt.Sprintf(
+			"SELECT min(%[1]s) as \"min\" FROM %[2]s %[3]s",
+			safeName(timeDim),
+			safeName(tableName),
+			filter,
+		)
+
+		rows, err := olap.Execute(ctx, &drivers.Statement{
+			Query:            minSQL,
+			Priority:         priority,
+			ExecutionTimeout: defaultExecutionTimeout,
+		})
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		if rows.Next() {
+			err = rows.Scan(&minTime)
+			if err != nil {
+				return err
+			}
+		} else {
+			err = rows.Err()
+			if err != nil {
+				return err
+			}
+			return errors.New("no rows returned for min time")
+		}
+
+		return nil
+	})
+
+	group.Go(func() error {
+		maxSQL := fmt.Sprintf(
+			"SELECT max(%[1]s) as \"max\" FROM %[2]s %[3]s",
+			safeName(timeDim),
+			safeName(tableName),
+			filter,
+		)
+
+		rows, err := olap.Execute(ctx, &drivers.Statement{
+			Query:            maxSQL,
+			Priority:         priority,
+			ExecutionTimeout: defaultExecutionTimeout,
+		})
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+
+		if rows.Next() {
+			err = rows.Scan(&maxTime)
+			if err != nil {
+				return err
+			}
+		} else {
+			err = rows.Err()
+			if err != nil {
+				return err
+			}
+			return errors.New("no rows returned for max time")
+		}
+
+		return nil
+	})
+
+	err := group.Wait()
+	if err != nil {
+		return err
+	}
+
+	summary := &runtimev1.TimeRangeSummary{}
+	summary.Min = timestamppb.New(minTime)
+	summary.Max = timestamppb.New(maxTime)
+	summary.Interval = &runtimev1.TimeRangeSummary_Interval{
+		Micros: maxTime.Sub(minTime).Microseconds(),
+	}
 	q.Result = &runtimev1.MetricsViewTimeRangeResponse{
-		TimeRangeSummary: ctr.Result,
+		TimeRangeSummary: summary,
 	}
 
 	return nil

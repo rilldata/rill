@@ -87,28 +87,7 @@ func (q *MetricsViewComparisonToplist) Resolve(ctx context.Context, rt *runtime.
 			return status.Error(codes.Unauthenticated, "action not allowed")
 		}
 
-		allowed := false
-		if len(policy.Include) > 0 {
-			for _, include := range policy.Include {
-				if include == q.DimensionName {
-					allowed = true
-					break
-				}
-			}
-		} else if len(policy.Exclude) > 0 {
-			allowed = true
-			for _, exclude := range policy.Exclude {
-				if exclude == q.DimensionName {
-					allowed = false
-					break
-				}
-			}
-		} else {
-			// if no include/exclude is specified, then all dimensions are allowed
-			allowed = true
-		}
-
-		if !allowed {
+		if !checkFieldAccess(q.DimensionName, policy) {
 			return status.Error(codes.Unauthenticated, "action not allowed")
 		}
 	}

@@ -322,10 +322,11 @@ func (s *Server) addInstanceRequestAttributes(ctx context.Context, instanceID st
 
 func (s *Server) IssueDevJWT(ctx context.Context, req *runtimev1.IssueDevJWTRequest) (*runtimev1.IssueDevJWTResponse, error) {
 	attr := map[string]any{
-		"Name":   req.Name,
-		"Email":  req.Email,
-		"Domain": req.Email[strings.LastIndex(req.Email, "@")+1:],
-		"Groups": req.Groups,
+		"name":   req.Name,
+		"email":  req.Email,
+		"domain": req.Email[strings.LastIndex(req.Email, "@")+1:],
+		"groups": req.Groups,
+		"admin":  req.Admin,
 	}
 
 	jwt, err := auth.NewDevToken(attr)

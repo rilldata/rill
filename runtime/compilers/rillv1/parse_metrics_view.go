@@ -106,7 +106,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 
 	if tmp.Policy != nil {
 		if len(tmp.Policy.Include) > 0 && len(tmp.Policy.Exclude) > 0 {
-			return errors.New("invalid 'policy': only one of 'Include' and 'Exclude' can be specified")
+			return errors.New("invalid 'policy': only one of 'include' and 'exclude' can be specified")
 		}
 	}
 

@@ -395,6 +395,7 @@ export type RuntimeServiceIssueDevJWTParams = {
   name?: string;
   email?: string;
   groups?: string[];
+  admin?: boolean;
 };
 
 export type ConnectorServiceBigQueryListTablesParams = {

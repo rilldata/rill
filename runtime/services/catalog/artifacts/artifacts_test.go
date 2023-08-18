@@ -545,7 +545,7 @@ func TestSanitizedName(t *testing.T) {
 	}
 }
 
-/*func TestReadWithEnvVariables(t *testing.T) {
+func TestReadWithEnvVariables(t *testing.T) {
 	repoStore := repoStore(t)
 	registryStore := registryStore(t)
 	tests := []struct {
@@ -631,7 +631,7 @@ region: {{.env.region}}
 			}
 		})
 	}
-}*/
+}
 
 func TestMetricsViewAvailableTimeZones(t *testing.T) {
 	repoStore := repoStore(t)
