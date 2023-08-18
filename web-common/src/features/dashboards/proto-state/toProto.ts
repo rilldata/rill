@@ -65,7 +65,6 @@ export function getProtoFromDashboardState(
     );
   }
   if (metrics.lastDefinedScrubRange) {
-    console.log(metrics.lastDefinedScrubRange);
     state.scrubRange = toScrubProto(metrics.lastDefinedScrubRange);
   }
   state.showComparison = Boolean(metrics.showComparison);
