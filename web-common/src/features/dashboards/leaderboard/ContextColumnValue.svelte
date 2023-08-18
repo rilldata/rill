@@ -15,7 +15,7 @@
   }
 </script>
 
-{#if showContext === LeaderboardContextColumn.DELTA_CHANGE || showContext === LeaderboardContextColumn.PERCENT}
+{#if showContext === LeaderboardContextColumn.DELTA_PERCENT || showContext === LeaderboardContextColumn.PERCENT}
   <div style:width="44px">
     <PercentageChange value={formattedValue} />
   </div>

@@ -105,7 +105,7 @@
         # <ArrowDown transform={arrowTransform} />
       </button>
 
-      {#if contextColumn === LeaderboardContextColumn.DELTA_CHANGE}
+      {#if contextColumn === LeaderboardContextColumn.DELTA_PERCENT}
         <Delta /> %
       {:else if contextColumn === LeaderboardContextColumn.DELTA_ABSOLUTE}
         <Delta />
