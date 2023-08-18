@@ -168,7 +168,6 @@
     const adjustedEnd = end ? localToTimeZoneOffset(end, zone) : end;
 
     metricsExplorerStore.setSelectedScrubRange(metricViewName, {
-      name: TimeRangePreset.CUSTOM,
       start: adjustedStart,
       end: adjustedEnd,
       isScrubbing: isScrubbing,
