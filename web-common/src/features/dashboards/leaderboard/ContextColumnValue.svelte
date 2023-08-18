@@ -8,11 +8,6 @@
   $: neg = formattedValue[0] === "-";
   $: noData = formattedValue === "" || !formattedValue;
   $: customStyle = neg ? "text-red-500" : noData ? "opacity-50 italic" : "";
-  $: {
-    if (showContext === LeaderboardContextColumn.DELTA_ABSOLUTE) {
-      console.log({ formattedValue, neg, noData });
-    }
-  }
 </script>
 
 {#if showContext === LeaderboardContextColumn.DELTA_PERCENT || showContext === LeaderboardContextColumn.PERCENT}
