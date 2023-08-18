@@ -21,13 +21,18 @@
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
+  $: console.log(
+    "leaderboardContextColumn",
+    metricsExplorer?.leaderboardContextColumn
+  );
+
   const handleContextValueButtonGroupClick = (evt) => {
     const value: SelectMenuItem = evt.detail;
     const key = value.key;
 
     if (key === LeaderboardContextColumn.HIDDEN) {
       metricsExplorerStore.hideContextColumn(metricViewName);
-    } else if (key === LeaderboardContextColumn.DELTA_CHANGE) {
+    } else if (key === LeaderboardContextColumn.DELTA_PERCENT) {
       metricsExplorerStore.displayDeltaChange(metricViewName);
     } else if (key === LeaderboardContextColumn.PERCENT) {
       metricsExplorerStore.displayPercentOfTotal(metricViewName);
@@ -45,7 +50,7 @@
     },
     {
       main: "Percent change",
-      key: LeaderboardContextColumn.DELTA_CHANGE,
+      key: LeaderboardContextColumn.DELTA_PERCENT,
       disabled:
         !hasTimeSeries ||
         !metricsExplorer.showComparison ||
@@ -70,6 +75,9 @@
   $: selection = options.find(
     (option) => option.key === metricsExplorer?.leaderboardContextColumn
   );
+  $: console.log("options", options);
+
+  $: console.log("selection", selection);
 </script>
 
 <SelectMenu

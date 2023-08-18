@@ -48,6 +48,8 @@ export function prepareLeaderboardItemData(
   });
 }
 
+export const CONTEXT_COLUMN_WIDTH = 44;
+
 /**
  * Returns the formatted value for the context column
  * given the
@@ -62,7 +64,7 @@ export function formatContextColumnValue(
   const { value, comparisonValue } = itemData;
   let formattedValue = "";
 
-  if (contextType === LeaderboardContextColumn.DELTA_CHANGE) {
+  if (contextType === LeaderboardContextColumn.DELTA_PERCENT) {
     formattedValue = getFormatterValueForPercDiff(
       value && comparisonValue ? value - comparisonValue : null,
       comparisonValue
