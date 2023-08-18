@@ -10,7 +10,6 @@
   import Delta from "@rilldata/web-common/components/icons/Delta.svelte";
   import PieChart from "@rilldata/web-common/components/icons/PieChart.svelte";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
-  import { CONTEXT_COLUMN_WIDTH } from "./leaderboard-utils";
   import { createEventDispatcher } from "svelte";
   import { LeaderboardContextColumn } from "../leaderboard-context-column";
 
@@ -25,6 +24,19 @@
 
   let optionsMenuActive = false;
   const dispatch = createEventDispatcher();
+
+  $: contextColumnWidth = (contextColumn: LeaderboardContextColumn) => {
+    if (contextColumn === LeaderboardContextColumn.HIDDEN) {
+      return "0px";
+    } else if (contextColumn === LeaderboardContextColumn.DELTA_ABSOLUTE) {
+      return "54px";
+    } else if (
+      contextColumn === LeaderboardContextColumn.DELTA_PERCENT ||
+      contextColumn === LeaderboardContextColumn.PERCENT
+    ) {
+      return "44px";
+    }
+  };
 
   $: arrowTransform = sortAscending ? "scale(1 -1)" : "scale(1 1)";
 </script>
@@ -105,12 +117,19 @@
         # <ArrowDown transform={arrowTransform} />
       </button>
 
-      {#if contextColumn === LeaderboardContextColumn.DELTA_PERCENT}
-        <Delta /> %
-      {:else if contextColumn === LeaderboardContextColumn.DELTA_ABSOLUTE}
-        <Delta />
-      {:else if contextColumn === LeaderboardContextColumn.PERCENT}
-        <PieChart /> %
+      {#if contextColumn !== LeaderboardContextColumn.HIDDEN}
+        <div
+          class="shrink flex flex-row items-center justify-end"
+          style:width={contextColumnWidth(contextColumn)}
+        >
+          {#if contextColumn === LeaderboardContextColumn.DELTA_PERCENT}
+            <Delta /> %
+          {:else if contextColumn === LeaderboardContextColumn.DELTA_ABSOLUTE}
+            <Delta />
+          {:else if contextColumn === LeaderboardContextColumn.PERCENT}
+            <PieChart /> %
+          {/if}
+        </div>
       {/if}
     </div>
   </div>

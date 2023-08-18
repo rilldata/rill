@@ -21,7 +21,6 @@
   import { humanizeDataType } from "../humanize-numbers";
   import LongBarZigZag from "./LongBarZigZag.svelte";
   import {
-    CONTEXT_COLUMN_WIDTH,
     LeaderboardItemData,
     formatContextColumnValue,
   } from "./leaderboard-utils";
