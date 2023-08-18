@@ -1,5 +1,5 @@
 ---
-title: CLI usage
+title: CLI Commmands
 sidebar_position: 15
 ---
 ## rill

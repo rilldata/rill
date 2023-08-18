@@ -1,4 +1,4 @@
 position: 20
-label: Develop
-collapsible: false
-collapsed: false
+label: Develop Locally
+collapsible: true
+collapsed: true

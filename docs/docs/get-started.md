@@ -1,12 +1,18 @@
 ---
-title: Get started
-sidebar_label: Get started
+title: Quickstart
+sidebar_label: Quickstart
 sidebar_position: 10
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
-This tutorial is a step by step guide that will help you install Rill, ingest source data, and deploy a dashboard online.
+Rill's BI-as-code approach allows you to build and manage dashboards in a codeful way locally + integrate your analytics into other Git processes.
+This tutorial is a step by step guide that will help you install Rill, ingest sources, model data and deploy a dashboard online.
+
+:::tip Example projects
+If you're looking for a place to get started, check out one of our [example projects](example-projects) which cover a variety of sources and use cases. 
+:::
+
 
 ## Install Rill
 
@@ -28,11 +34,13 @@ The Rill web app runs locally at `http://localhost:9009` and will create code fi
 
 ## Load and transform data
 
-On the welcome screen, initialize an example project or load up Rill with your own data. Use the app to develop data models and dashboards.
+On the welcome screen, initialize an example project or load up Rill with your own data (use local files, cloud storage and/or database connections)
+
+Use the app to transform your data (data models) and quickly generate visualizations (dashboards).
 
 ## Deploy your dashboard
 
-You can deploy any Rill project with a dashboard to an authenticated hosted endpoint:
+Once complete, you can deploy any Rill project with a dashboard to an authenticated hosted endpoint:
 
 1. Create a new Github repository on [https://github.com/new](https://github.com/new) and push your `my-rill-project` directory to it
 2. Setup continuous deployment from Github to Rill Cloud:
