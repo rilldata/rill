@@ -75,9 +75,6 @@
   $: selection = options.find(
     (option) => option.key === metricsExplorer?.leaderboardContextColumn
   );
-  $: console.log("options", options);
-
-  $: console.log("selection", selection);
 </script>
 
 <SelectMenu
