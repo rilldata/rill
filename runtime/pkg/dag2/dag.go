@@ -1,6 +1,8 @@
 package dag2
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // DAG implements a directed acyclic graph.
 // Its implementation tracks unresolved references and resolves them if possible when new vertices are added.
@@ -42,6 +44,7 @@ func (d DAG[K, V]) Add(val V, parentVals ...V) bool {
 
 	// If no parents, no need to link or check for cyclic refs.
 	if len(parentVals) == 0 {
+		d.vertices[k] = v
 		v.present = true
 		return true
 	}
@@ -59,7 +62,7 @@ func (d DAG[K, V]) Add(val V, parentVals ...V) bool {
 		parents[pk] = p
 	}
 
-	// Check for cycles (there may be existing phantom references to it).
+	// Check for cycles (there may be existing non-present references to it).
 	if len(v.children) > 0 {
 		visited := make(map[K]bool, len(v.children))
 		found := d.visit(v, visited, func(ck K, c V) bool {
@@ -111,7 +114,7 @@ func (d DAG[K, V]) Remove(val V) {
 }
 
 // Roots return the vertices that have no parents.
-// Vertices with only phantom references are not returned.
+// Vertices with non-present references are not returned.
 func (d DAG[K, V]) Roots() []V {
 	var roots []V
 	for _, v := range d.vertices {
@@ -126,16 +129,17 @@ func (d DAG[K, V]) Roots() []V {
 }
 
 // Parents returns the parents of the given value.
-func (d DAG[K, V]) Parents(val V) []V {
+// If present is true, only parents that are present are returned.
+func (d DAG[K, V]) Parents(val V, present bool) []V {
 	k := d.hash(val)
 	v, ok := d.vertices[k]
-	if !ok {
+	if !ok || !v.present {
 		panic(fmt.Errorf("dag: vertex not found: %v", val))
 	}
 
 	parents := make([]V, 0, len(v.parents))
 	for _, p := range v.parents {
-		if p.present {
+		if !present || p.present {
 			parents = append(parents, p.val)
 		}
 	}
@@ -147,16 +151,26 @@ func (d DAG[K, V]) Parents(val V) []V {
 func (d DAG[K, V]) Children(val V) []V {
 	k := d.hash(val)
 	v, ok := d.vertices[k]
-	if !ok {
+	if !ok || !v.present {
 		panic(fmt.Errorf("dag: vertex not found: %v", val))
 	}
 
 	children := make([]V, 0, len(v.children))
 	for _, c := range v.children {
-		// Children can't be phantom references.
+		// Children always have present=true.
 		children = append(children, c.val)
 	}
 
+	return children
+}
+
+// DeepChildren returns the recursive children of the given value.
+func (d DAG[K, V]) DeepChildren(val V) []V {
+	var children []V
+	d.Visit(val, func(k K, v V) bool {
+		children = append(children, v)
+		return false
+	})
 	return children
 }
 
@@ -165,7 +179,7 @@ func (d DAG[K, V]) Children(val V) []V {
 func (d DAG[K, V]) Visit(val V, fn func(K, V) bool) {
 	k := d.hash(val)
 	v, ok := d.vertices[k]
-	if !ok {
+	if !ok || !v.present {
 		panic(fmt.Errorf("dag: vertex not found: %v", val))
 	}
 
