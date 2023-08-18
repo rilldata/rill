@@ -141,12 +141,13 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 	// 	),
 	// )
 
-	srv := &Server{}
+	// srv := &Server{}
 
 	mux := http.NewServeMux()
-	path, handler := runtimev1connect.NewRuntimeServiceHandler(srv)
-	path1, handler1 := runtimev1connect.NewQueryServiceHandler(srv)
-	path2, handler2 := runtimev1connect.NewConnectorServiceHandler(srv)
+
+	path, handler := runtimev1connect.NewRuntimeServiceHandler(s)
+	path1, handler1 := runtimev1connect.NewQueryServiceHandler(s)
+	path2, handler2 := runtimev1connect.NewConnectorServiceHandler(s)
 	mux.Handle(path, handler)
 	mux.Handle(path1, handler1)
 	mux.Handle(path2, handler2)

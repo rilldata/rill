@@ -262,6 +262,16 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 
 	// Start the gRPC server
 	group.Go(func() error {
+		// return runtimeServer.ServeGRPC(ctx, func(mux *http.ServeMux) {
+		// 	// Inject local-only endpoints on the server for the local UI and local backend endpoints
+		// 	if enableUI {
+		// 		mux.Handle("/", web.StaticHandler())
+		// 	}
+		// 	mux.Handle("/local/config", a.infoHandler(inf))
+		// 	mux.Handle("/local/version", a.versionHandler())
+		// 	mux.Handle("/local/track", a.trackingHandler(inf))
+		// })
+
 		return runtimeServer.ServeGRPC(ctx)
 	})
 
