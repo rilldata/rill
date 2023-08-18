@@ -149,6 +149,6 @@
   }
 
   g {
-    transition: opacity ease 0.4s;
+    transition: opacity ease 0.3s;
   }
 </style>

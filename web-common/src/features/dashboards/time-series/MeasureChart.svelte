@@ -153,6 +153,7 @@
   }
 
   function zoomScrub() {
+    if (isScrubbing) return;
     resetScrub();
 
     const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
