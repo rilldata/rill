@@ -1,19 +1,18 @@
 ---
-title: rill org list
+title: rill user whitelist list
 ---
-## rill org list
+## rill user whitelist list
 
-List all organizations
+List whitelisted email domains for the org
 
 ```
-rill org list [flags]
+rill user whitelist list [flags]
 ```
 
 ### Flags
 
 ```
-      --page-size uint32    Number of orgs to return per page (default 50)
-      --page-token string   Pagination token
+      --org string   Organization
 ```
 
 ### Global flags
@@ -26,5 +25,5 @@ rill org list [flags]
 
 ### SEE ALSO
 
-* [rill org](org.md)	 - Manage organisations
+* [rill user whitelist](whitelist.md)	 - Whitelist access by email domain
 

@@ -82,9 +82,9 @@ export class DashboardState extends Message<DashboardState> {
   allDimensionsVisible?: boolean;
 
   /**
-   * @generated from field: optional rill.ui.v1.DashboardState.DashboardLeaderboardContextColumn leaderboard_context_column = 12;
+   * @generated from field: optional rill.ui.v1.DashboardState.LeaderboardContextColumn leaderboard_context_column = 12;
    */
-  leaderboardContextColumn?: DashboardState_DashboardLeaderboardContextColumn;
+  leaderboardContextColumn?: DashboardState_LeaderboardContextColumn;
 
   /**
    * Selected timezone for the dashboard
@@ -99,6 +99,16 @@ export class DashboardState extends Message<DashboardState> {
    * @generated from field: optional rill.ui.v1.DashboardTimeRange scrub_range = 14;
    */
   scrubRange?: DashboardTimeRange;
+
+  /**
+   * @generated from field: optional rill.ui.v1.DashboardState.LeaderboardSortDirection leaderboard_sort_direction = 15;
+   */
+  leaderboardSortDirection?: DashboardState_LeaderboardSortDirection;
+
+  /**
+   * @generated from field: optional rill.ui.v1.DashboardState.LeaderboardSortType leaderboard_sort_type = 16;
+   */
+  leaderboardSortType?: DashboardState_LeaderboardSortType;
 
   constructor(data?: PartialMessage<DashboardState>) {
     super();
@@ -119,9 +129,11 @@ export class DashboardState extends Message<DashboardState> {
     { no: 9, name: "all_measures_visible", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 10, name: "visible_dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "all_dimensions_visible", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
-    { no: 12, name: "leaderboard_context_column", kind: "enum", T: proto3.getEnumType(DashboardState_DashboardLeaderboardContextColumn), opt: true },
+    { no: 12, name: "leaderboard_context_column", kind: "enum", T: proto3.getEnumType(DashboardState_LeaderboardContextColumn), opt: true },
     { no: 13, name: "selected_timezone", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 14, name: "scrub_range", kind: "message", T: DashboardTimeRange, opt: true },
+    { no: 15, name: "leaderboard_sort_direction", kind: "enum", T: proto3.getEnumType(DashboardState_LeaderboardSortDirection), opt: true },
+    { no: 16, name: "leaderboard_sort_type", kind: "enum", T: proto3.getEnumType(DashboardState_LeaderboardSortType), opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardState {
@@ -142,35 +154,133 @@ export class DashboardState extends Message<DashboardState> {
 }
 
 /**
- * @generated from enum rill.ui.v1.DashboardState.DashboardLeaderboardContextColumn
+ * @generated from enum rill.ui.v1.DashboardState.LeaderboardContextColumn
  */
-export enum DashboardState_DashboardLeaderboardContextColumn {
+export enum DashboardState_LeaderboardContextColumn {
   /**
-   * @generated from enum value: DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_UNSPECIFIED = 0;
+   * @generated from enum value: LEADERBOARD_CONTEXT_COLUMN_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_PERCENT = 1;
+   * @generated from enum value: LEADERBOARD_CONTEXT_COLUMN_PERCENT = 1;
    */
   PERCENT = 1,
 
   /**
-   * @generated from enum value: DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_DELTA_CHANGE = 2;
+   * @generated from enum value: LEADERBOARD_CONTEXT_COLUMN_DELTA_PERCENT = 2;
    */
-  DELTA_CHANGE = 2,
+  DELTA_PERCENT = 2,
 
   /**
-   * @generated from enum value: DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_HIDDEN = 3;
+   * @generated from enum value: LEADERBOARD_CONTEXT_COLUMN_DELTA_ABSOLUTE = 3;
    */
-  HIDDEN = 3,
+  DELTA_ABSOLUTE = 3,
+
+  /**
+   * @generated from enum value: LEADERBOARD_CONTEXT_COLUMN_HIDDEN = 4;
+   */
+  HIDDEN = 4,
 }
-// Retrieve enum metadata with: proto3.getEnumType(DashboardState_DashboardLeaderboardContextColumn)
-proto3.util.setEnumType(DashboardState_DashboardLeaderboardContextColumn, "rill.ui.v1.DashboardState.DashboardLeaderboardContextColumn", [
-  { no: 0, name: "DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_UNSPECIFIED" },
-  { no: 1, name: "DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_PERCENT" },
-  { no: 2, name: "DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_DELTA_CHANGE" },
-  { no: 3, name: "DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_HIDDEN" },
+// Retrieve enum metadata with: proto3.getEnumType(DashboardState_LeaderboardContextColumn)
+proto3.util.setEnumType(DashboardState_LeaderboardContextColumn, "rill.ui.v1.DashboardState.LeaderboardContextColumn", [
+  { no: 0, name: "LEADERBOARD_CONTEXT_COLUMN_UNSPECIFIED" },
+  { no: 1, name: "LEADERBOARD_CONTEXT_COLUMN_PERCENT" },
+  { no: 2, name: "LEADERBOARD_CONTEXT_COLUMN_DELTA_PERCENT" },
+  { no: 3, name: "LEADERBOARD_CONTEXT_COLUMN_DELTA_ABSOLUTE" },
+  { no: 4, name: "LEADERBOARD_CONTEXT_COLUMN_HIDDEN" },
+]);
+
+/**
+ * @generated from enum rill.ui.v1.DashboardState.LeaderboardSortDirection
+ */
+export enum DashboardState_LeaderboardSortDirection {
+  /**
+   * @generated from enum value: LEADERBOARD_SORT_DIRECTION_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: LEADERBOARD_SORT_DIRECTION_ASCENDING = 1;
+   */
+  ASCENDING = 1,
+
+  /**
+   * @generated from enum value: LEADERBOARD_SORT_DIRECTION_DESCENDING = 2;
+   */
+  DESCENDING = 2,
+}
+// Retrieve enum metadata with: proto3.getEnumType(DashboardState_LeaderboardSortDirection)
+proto3.util.setEnumType(DashboardState_LeaderboardSortDirection, "rill.ui.v1.DashboardState.LeaderboardSortDirection", [
+  { no: 0, name: "LEADERBOARD_SORT_DIRECTION_UNSPECIFIED" },
+  { no: 1, name: "LEADERBOARD_SORT_DIRECTION_ASCENDING" },
+  { no: 2, name: "LEADERBOARD_SORT_DIRECTION_DESCENDING" },
+]);
+
+/**
+ * *
+ * SortType is used to determine how to sort the leaderboard
+ * and dimension detail table, as well as where to place the
+ * sort arrow.
+ *
+ * By default, the leaderboards+table will be sorted by VALUE,
+ * using the value of the currently selected dashboard measure.
+ *
+ * If DELTA_ABSOLUTE or DELTA_PERCENT is selected, the
+ * leaderboards+table will be sorted by the absolute or percentage
+ * delta change of the currently selected dashboard measure.
+ *
+ * If PERCENT is selected, the table will be sorted by the value
+ * of the currently selected dashboard measure, which will return
+ * the same ordering as the percent-of-total sort for measures
+ * with valid percent-of-total. However, the sort arrow will be
+ * placed next to the percent-of-total icon.
+ *
+ * As of 2023-08, DIMENSION is not implemented, but at that time
+ * the plan was to only apply DIMENSTION sort to the dimension
+ * detail table, and not the leaderboards.
+ *
+ * @generated from enum rill.ui.v1.DashboardState.LeaderboardSortType
+ */
+export enum DashboardState_LeaderboardSortType {
+  /**
+   * @generated from enum value: LEADERBOARD_SORT_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: LEADERBOARD_SORT_TYPE_VALUE = 1;
+   */
+  VALUE = 1,
+
+  /**
+   * @generated from enum value: LEADERBOARD_SORT_TYPE_DIMENSION = 2;
+   */
+  DIMENSION = 2,
+
+  /**
+   * @generated from enum value: LEADERBOARD_SORT_TYPE_PERCENT = 3;
+   */
+  PERCENT = 3,
+
+  /**
+   * @generated from enum value: LEADERBOARD_SORT_TYPE_DELTA_PERCENT = 4;
+   */
+  DELTA_PERCENT = 4,
+
+  /**
+   * @generated from enum value: LEADERBOARD_SORT_TYPE_DELTA_ABSOLUTE = 5;
+   */
+  DELTA_ABSOLUTE = 5,
+}
+// Retrieve enum metadata with: proto3.getEnumType(DashboardState_LeaderboardSortType)
+proto3.util.setEnumType(DashboardState_LeaderboardSortType, "rill.ui.v1.DashboardState.LeaderboardSortType", [
+  { no: 0, name: "LEADERBOARD_SORT_TYPE_UNSPECIFIED" },
+  { no: 1, name: "LEADERBOARD_SORT_TYPE_VALUE" },
+  { no: 2, name: "LEADERBOARD_SORT_TYPE_DIMENSION" },
+  { no: 3, name: "LEADERBOARD_SORT_TYPE_PERCENT" },
+  { no: 4, name: "LEADERBOARD_SORT_TYPE_DELTA_PERCENT" },
+  { no: 5, name: "LEADERBOARD_SORT_TYPE_DELTA_ABSOLUTE" },
 ]);
 
 /**
