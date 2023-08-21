@@ -18,6 +18,15 @@ import { get } from "svelte/store";
 
 // invalidation helpers
 
+export function invalidateRillYAML(
+  queryClient: QueryClient,
+  instanceId: string
+) {
+  return queryClient.invalidateQueries(
+    getRuntimeServiceGetFileQueryKey(instanceId, "rill.yaml")
+  );
+}
+
 export function invalidateRuntimeQueries(queryClient: QueryClient) {
   return queryClient.invalidateQueries({
     predicate: (query) =>
