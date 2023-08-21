@@ -164,6 +164,7 @@
   }
 
   function zoomScrub() {
+    if (isScrubbing) return;
     resetScrub();
 
     const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
@@ -179,7 +180,6 @@
     const adjustedEnd = end ? localToTimeZoneOffset(end, zone) : end;
 
     metricsExplorerStore.setSelectedScrubRange(metricViewName, {
-      name: TimeRangePreset.CUSTOM,
       start: adjustedStart,
       end: adjustedEnd,
       isScrubbing: isScrubbing,

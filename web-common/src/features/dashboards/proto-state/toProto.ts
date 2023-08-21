@@ -8,6 +8,7 @@ import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashbo
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import {
   DashboardTimeControls,
+  ScrubRange,
   TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
@@ -64,7 +65,7 @@ export function getProtoFromDashboardState(
     );
   }
   if (metrics.lastDefinedScrubRange) {
-    state.scrubRange = toTimeRangeProto(metrics.lastDefinedScrubRange);
+    state.scrubRange = toScrubProto(metrics.lastDefinedScrubRange);
   }
   state.showComparison = Boolean(metrics.showComparison);
   if (metrics.selectedTimezone) {
@@ -120,6 +121,16 @@ function toTimeRangeProto(range: DashboardTimeControls) {
     timeRangeArgs.timeStart = toTimeProto(range.start);
     timeRangeArgs.timeEnd = toTimeProto(range.end);
   }
+  return new DashboardTimeRange(timeRangeArgs);
+}
+
+function toScrubProto(range: ScrubRange) {
+  const timeRangeArgs: PartialMessage<DashboardTimeRange> = {
+    name: TimeRangePreset.CUSTOM,
+  };
+  timeRangeArgs.timeStart = toTimeProto(range.start);
+  timeRangeArgs.timeEnd = toTimeProto(range.end);
+
   return new DashboardTimeRange(timeRangeArgs);
 }
 
