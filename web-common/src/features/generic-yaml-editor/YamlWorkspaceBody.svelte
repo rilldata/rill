@@ -2,14 +2,14 @@
   import type { EditorView } from "@codemirror/view";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { parse } from "yaml";
+  import YAMLEditor from "../../components/editor/YAMLEditor.svelte";
   import {
     createRuntimeServiceGetFile,
     createRuntimeServicePutFile,
     getRuntimeServiceGetFileQueryKey,
-  } from "../../../runtime-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
-  import YAMLEditor from "../YAMLEditor.svelte";
-  import YamlEditorContainer from "./YamlEditorContainer.svelte";
+  } from "../../runtime-client";
+  import { runtime } from "../../runtime-client/runtime-store";
+  import ErrorPane from "./ErrorPane.svelte";
 
   export let fileName: string;
 
@@ -61,11 +61,25 @@
   }
 </script>
 
-<YamlEditorContainer errorMessage={cleanErrorMessage(errorMessage)}>
-  <YAMLEditor
-    bind:this={editor}
-    bind:view
-    content={$file?.data?.blob || ""}
-    on:update={handleUpdate}
-  />
-</YamlEditorContainer>
+<div
+  class="flex flex-col w-full h-full content-stretch"
+  style:height={"calc(100vh - var(--header-height))"}
+>
+  <div class="grow bg-white overflow-y-auto">
+    <div
+      class="border-white w-full overflow-y-auto"
+      class:border-b-hidden={errorMessage}
+      class:border-red-500={errorMessage}
+    >
+      <YAMLEditor
+        bind:this={editor}
+        bind:view
+        content={$file?.data?.blob || ""}
+        on:update={handleUpdate}
+      />
+    </div>
+  </div>
+  {#if errorMessage}
+    <ErrorPane errorMessage={cleanErrorMessage(errorMessage)} />
+  {/if}
+</div>

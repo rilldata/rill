@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { WorkspaceContainer } from "../../../layout/workspace";
+  import { WorkspaceContainer } from "../../layout/workspace";
   import YamlWorkspaceBody from "./YamlWorkspaceBody.svelte";
   import YamlWorkspaceHeader from "./YamlWorkspaceHeader.svelte";
 

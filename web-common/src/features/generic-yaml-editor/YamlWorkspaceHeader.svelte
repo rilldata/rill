@@ -1,6 +1,6 @@
 <script lang="ts">
   import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
-  import { WorkspaceHeader } from "../../../layout/workspace";
+  import { WorkspaceHeader } from "../../layout/workspace";
 
   export let fileName: string;
 </script>

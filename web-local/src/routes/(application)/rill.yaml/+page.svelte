@@ -1,5 +1,5 @@
 <script>
-  import YamlWorkspace from "@rilldata/web-common/components/editor/workspace/YamlWorkspace.svelte";
+  import YamlWorkspace from "@rilldata/web-common/features/generic-yaml-editor/YamlWorkspace.svelte";
 
   const fileName = "rill.yaml";
 </script>
