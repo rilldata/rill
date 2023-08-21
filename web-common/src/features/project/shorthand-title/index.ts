@@ -8,7 +8,7 @@ const replacePunctuationWithSpace = (str: string) => {
 };
 
 export function shorthandTitle(str: string) {
-  if (!str) return;
+  if (str.length < 2) return str;
   const out = replacePunctuationWithSpace(str)
     .toUpperCase()
     .split(" ")
