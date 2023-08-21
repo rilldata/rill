@@ -4,7 +4,7 @@
   import { parse } from "yaml";
   import {
     createRuntimeServiceGetFile,
-    createRuntimeServicePutFile,
+    createRuntimeServicePutFileAndReconcile,
     getRuntimeServiceGetFileQueryKey,
   } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -17,7 +17,7 @@
   let view: EditorView;
 
   const queryClient = useQueryClient();
-  const putFile = createRuntimeServicePutFile();
+  const saveFile = createRuntimeServicePutFileAndReconcile();
 
   $: file = createRuntimeServiceGetFile($runtime.instanceId, fileName, {
     query: {
@@ -32,11 +32,11 @@
     error = undefined;
     const blob = e.detail.content;
 
-    // Put File
-    $putFile.mutate({
-      instanceId: $runtime.instanceId,
-      path: fileName,
+    // Save File
+    $saveFile.mutate({
       data: {
+        instanceId: $runtime.instanceId,
+        path: fileName,
         blob: blob,
       },
     });
