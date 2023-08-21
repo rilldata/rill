@@ -3,22 +3,18 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { parse } from "yaml";
   import YAMLEditor from "../../components/editor/YAMLEditor.svelte";
-  import {
-    createRuntimeServiceGetFile,
-    createRuntimeServicePutFile,
-    getRuntimeServiceGetFileQueryKey,
-  } from "../../runtime-client";
+  import { createRuntimeServiceGetFile } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
+  import { saveFile } from "./actions";
   import ErrorPane from "./ErrorPane.svelte";
 
   export let fileName: string;
 
   let editor: YAMLEditor;
   let view: EditorView;
-  let errorMessage: string;
+  let error: Error;
 
   const queryClient = useQueryClient();
-  const saveFile = createRuntimeServicePutFile();
 
   $: file = createRuntimeServiceGetFile($runtime.instanceId, fileName, {
     query: {
@@ -29,30 +25,16 @@
 
   async function handleUpdate(e: CustomEvent<{ content: string }>) {
     const blob = e.detail.content;
+    await saveFile(queryClient, fileName, blob);
+    error = validateYAMLAndReturnError(blob);
+  }
 
-    // Save File
-    await $saveFile.mutateAsync({
-      instanceId: $runtime.instanceId,
-      path: fileName,
-      data: {
-        blob: blob,
-      },
-    });
-
-    // Invalidate `GetFile` query
-    queryClient.invalidateQueries(
-      getRuntimeServiceGetFileQueryKey($runtime.instanceId, fileName)
-    );
-
-    // Check for YAML syntax error
+  function validateYAMLAndReturnError(blob: string): Error {
     try {
       parse(blob);
-
-      // No error
-      errorMessage = undefined;
+      return undefined;
     } catch (e) {
-      // Error
-      errorMessage = e.message;
+      return e;
     }
   }
 
@@ -68,8 +50,8 @@
   <div class="grow bg-white overflow-y-auto">
     <div
       class="border-white w-full overflow-y-auto"
-      class:border-b-hidden={errorMessage}
-      class:border-red-500={errorMessage}
+      class:border-b-hidden={error}
+      class:border-red-500={error}
     >
       <YAMLEditor
         bind:this={editor}
@@ -79,7 +61,7 @@
       />
     </div>
   </div>
-  {#if errorMessage}
-    <ErrorPane errorMessage={cleanErrorMessage(errorMessage)} />
+  {#if error}
+    <ErrorPane errorMessage={cleanErrorMessage(error.message)} />
   {/if}
 </div>
