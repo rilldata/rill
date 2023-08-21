@@ -20,7 +20,7 @@
       query: {
         select: (data) => {
           const projectData = parseDocument(data.blob)?.toJS();
-          return projectData.title ?? projectData.name;
+          return projectData?.title ?? projectData?.name;
         },
       },
     }
