@@ -15,6 +15,7 @@
 
   let editor: YAMLEditor;
   let view: EditorView;
+  let errorMessage: string;
 
   const queryClient = useQueryClient();
   const saveFile = createRuntimeServicePutFile();
@@ -26,10 +27,7 @@
     },
   });
 
-  let error;
-
   async function handleUpdate(e: CustomEvent<{ content: string }>) {
-    error = undefined;
     const blob = e.detail.content;
 
     // Save File
@@ -41,21 +39,29 @@
       },
     });
 
-    // Invalidate Get File
+    // Invalidate `GetFile` query
     queryClient.invalidateQueries(
       getRuntimeServiceGetFileQueryKey($runtime.instanceId, fileName)
     );
 
-    // Get YAML syntax errors
+    // Check for YAML syntax error
     try {
       parse(blob);
+
+      // No error
+      errorMessage = undefined;
     } catch (e) {
-      error = e;
+      // Error
+      errorMessage = e.message;
     }
+  }
+
+  function cleanErrorMessage(message: string): string {
+    return message?.replace("YAMLParseError: ", "");
   }
 </script>
 
-<YamlEditorContainer errorMessage={error}>
+<YamlEditorContainer errorMessage={cleanErrorMessage(errorMessage)}>
   <YAMLEditor
     bind:this={editor}
     bind:view
