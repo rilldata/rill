@@ -1,9 +1,11 @@
 <script>
-  import RillYamlWorkspace from "@rilldata/web-common/features/project/RillYamlWorkspace.svelte";
+  import YamlWorkspace from "@rilldata/web-common/components/editor/workspace/YamlWorkspace.svelte";
+
+  const fileName = "rill.yaml";
 </script>
 
 <svelte:head>
-  <title>rill.yaml</title>
+  <title>{fileName}</title>
 </svelte:head>
 
-<RillYamlWorkspace />
+<YamlWorkspace {fileName} />

@@ -1,13 +1,17 @@
 <script lang="ts">
   import type { EditorView } from "@codemirror/view";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import YAMLEditor from "../../components/editor/YAMLEditor.svelte";
+  import { parse } from "yaml";
   import {
     createRuntimeServiceGetFile,
     createRuntimeServicePutFile,
-  } from "../../runtime-client";
-  import { invalidateRillYAML } from "../../runtime-client/invalidation";
-  import { runtime } from "../../runtime-client/runtime-store";
+    getRuntimeServiceGetFileQueryKey,
+  } from "../../../runtime-client";
+  import { runtime } from "../../../runtime-client/runtime-store";
+  import YAMLEditor from "../YAMLEditor.svelte";
+  import YamlEditorContainer from "./YamlEditorContainer.svelte";
+
+  export let fileName: string;
 
   let editor: YAMLEditor;
   let view: EditorView;
@@ -15,38 +19,47 @@
   const queryClient = useQueryClient();
   const putFile = createRuntimeServicePutFile();
 
-  $: file = createRuntimeServiceGetFile($runtime.instanceId, "rill.yaml", {
+  $: file = createRuntimeServiceGetFile($runtime.instanceId, fileName, {
     query: {
       // this will ensure that any changes done outside our app is pulled in.
       refetchOnWindowFocus: true,
     },
   });
 
+  let error;
+
   function handleUpdate(e: CustomEvent<{ content: string }>) {
+    error = undefined;
     const blob = e.detail.content;
 
     // Put File
     $putFile.mutate({
       instanceId: $runtime.instanceId,
-      path: "rill.yaml",
+      path: fileName,
       data: {
         blob: blob,
       },
     });
 
     // Invalidate Get File
-    invalidateRillYAML(queryClient, $runtime.instanceId);
+    queryClient.invalidateQueries(
+      getRuntimeServiceGetFileQueryKey($runtime.instanceId, fileName)
+    );
 
-    // // Clear line errors (it's confusing when they're outdated)
-    // setLineStatuses([], view);
+    // Get YAML syntax errors
+    try {
+      parse(blob);
+    } catch (e) {
+      error = e;
+    }
   }
 </script>
 
-<div class="h-full bg-white overflow-y-auto">
+<YamlEditorContainer errorMessage={error}>
   <YAMLEditor
     bind:this={editor}
     bind:view
     content={$file?.data?.blob || ""}
     on:update={handleUpdate}
   />
-</div>
+</YamlEditorContainer>
