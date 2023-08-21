@@ -19,6 +19,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
+	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/xuri/excelize/v2"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -577,4 +578,21 @@ func (q *MetricsViewRows) generateFilename(mv *runtimev1.MetricsView) string {
 		filename += "_filtered"
 	}
 	return filename
+}
+
+func resolveMVAndPolicy(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsView, *runtime.ResolvedMetricsViewPolicy, error) {
+	mv, lastUpdatedOn, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	resolvedPolicy, err := rt.ResolveMetricsViewPolicy(auth.GetClaims(ctx).Attributes(), instanceID, mv, lastUpdatedOn)
+	if err != nil {
+		return nil, nil, err
+	}
+	if resolvedPolicy != nil && !resolvedPolicy.HasAccess {
+		return nil, nil, status.Error(codes.Unauthenticated, "action not allowed")
+	}
+
+	return mv, resolvedPolicy, nil
 }

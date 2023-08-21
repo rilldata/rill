@@ -2,6 +2,7 @@ package queries
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -10,7 +11,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/server/auth"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -18,14 +18,31 @@ import (
 )
 
 type MetricsViewTimeRange struct {
-	MetricsViewName string
-	Result          *runtimev1.MetricsViewTimeRangeResponse
+	MetricsViewName string                                  `json:"name"`
+	Result          *runtimev1.MetricsViewTimeRangeResponse `json:"_"`
+
+	// These are resolved in ResolveMetricsViewAndKey
+	MetricsView      *runtimev1.MetricsView             `json:"-"`
+	ResolvedMVPolicy *runtime.ResolvedMetricsViewPolicy `json:"policy"`
 }
 
 var _ runtime.Query = &MetricsViewTimeRange{}
 
 func (q *MetricsViewTimeRange) Key() string {
-	return fmt.Sprintf("MetricsViewTimeRange:%s", q.MetricsViewName)
+	panic("use ResolveMetricsViewAndKey instead")
+}
+
+func (q *MetricsViewTimeRange) ResolveMetricsViewAndKey(ctx context.Context, rt *runtime.Runtime, instanceID string) (string, error) {
+	var err error
+	q.MetricsView, q.ResolvedMVPolicy, err = resolveMVAndPolicy(ctx, rt, instanceID, q.MetricsViewName)
+	if err != nil {
+		return "", err
+	}
+	r, err := json.Marshal(q)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("MetricsViewTimeRange:%s", r), nil
 }
 
 func (q *MetricsViewTimeRange) Deps() []string {
@@ -49,26 +66,15 @@ func (q *MetricsViewTimeRange) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	mv, lastUpdatedOn, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
-	if err != nil {
-		return err
-	}
-
 	policyFilter := ""
-	if mv != nil {
-		resolvedMv, err := rt.ResolveMetricsViewPolicy(auth.GetClaims(ctx).Attributes(), instanceID, mv, lastUpdatedOn)
-		if err != nil {
-			return err
+	if q.ResolvedMVPolicy != nil {
+		if !q.ResolvedMVPolicy.HasAccess {
+			return status.Error(codes.Unauthenticated, "action not allowed")
 		}
-		if resolvedMv != nil {
-			if !resolvedMv.HasAccess {
-				return status.Error(codes.Unauthenticated, "action not allowed")
-			}
-			policyFilter = resolvedMv.Filter
-		}
+		policyFilter = q.ResolvedMVPolicy.Filter
 	}
 
-	if mv.TimeDimension == "" {
+	if q.MetricsView.TimeDimension == "" {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
@@ -80,9 +86,9 @@ func (q *MetricsViewTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime,
 
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
-		return q.resolveDuckDB(ctx, olap, mv.TimeDimension, mv.Model, policyFilter, priority)
+		return q.resolveDuckDB(ctx, olap, q.MetricsView.TimeDimension, q.MetricsView.Model, policyFilter, priority)
 	case drivers.DialectDruid:
-		return q.resolveDruid(ctx, olap, mv.TimeDimension, mv.Model, policyFilter, priority)
+		return q.resolveDruid(ctx, olap, q.MetricsView.TimeDimension, q.MetricsView.Model, policyFilter, priority)
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}

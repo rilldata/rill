@@ -11,9 +11,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/server/auth"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -29,16 +26,29 @@ type MetricsViewRows struct {
 	TimeZone        string                       `json:"time_zone,omitempty"`
 
 	Result *runtimev1.MetricsViewRowsResponse `json:"-"`
+
+	// These are resolved in ResolveMetricsViewAndKey
+	MetricsView      *runtimev1.MetricsView             `json:"-"`
+	ResolvedMVPolicy *runtime.ResolvedMetricsViewPolicy `json:"policy"`
 }
 
 var _ runtime.Query = &MetricsViewRows{}
 
 func (q *MetricsViewRows) Key() string {
+	panic("use ResolveMetricsViewAndKey instead")
+}
+
+func (q *MetricsViewRows) ResolveMetricsViewAndKey(ctx context.Context, rt *runtime.Runtime, instanceID string) (string, error) {
+	var err error
+	q.MetricsView, q.ResolvedMVPolicy, err = resolveMVAndPolicy(ctx, rt, instanceID, q.MetricsViewName)
+	if err != nil {
+		return "", err
+	}
 	r, err := json.Marshal(q)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	return fmt.Sprintf("MetricsViewRows:%s", string(r))
+	return fmt.Sprintf("MetricsViewRows:%s", r), nil
 }
 
 func (q *MetricsViewRows) Deps() []string {
@@ -72,30 +82,16 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	mv, lastUpdatedOn, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
-	if err != nil {
-		return err
-	}
-
-	policy, err := rt.ResolveMetricsViewPolicy(auth.GetClaims(ctx).Attributes(), instanceID, mv, lastUpdatedOn)
-	if err != nil {
-		return err
-	}
-
-	if policy != nil && !policy.HasAccess {
-		return status.Error(codes.Unauthenticated, "action not allowed")
-	}
-
-	if mv.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
+	if q.MetricsView.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
-	timeRollupColumnName, err := q.resolveTimeRollupColumnName(ctx, rt, instanceID, priority, mv)
+	timeRollupColumnName, err := q.resolveTimeRollupColumnName(ctx, rt, instanceID, priority, q.MetricsView)
 	if err != nil {
 		return err
 	}
 
-	ql, args, err := q.buildMetricsRowsSQL(mv, olap.Dialect(), timeRollupColumnName, policy)
+	ql, args, err := q.buildMetricsRowsSQL(q.MetricsView, olap.Dialect(), timeRollupColumnName, q.ResolvedMVPolicy)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -114,54 +110,46 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 }
 
 func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
+	var err error
+	q.MetricsView, q.ResolvedMVPolicy, err = resolveMVAndPolicy(ctx, rt, instanceID, q.MetricsViewName)
+	if err != nil {
+		return err
+	}
+
 	olap, release, err := rt.OLAP(ctx, instanceID)
 	if err != nil {
 		return err
 	}
 	defer release()
 
-	mv, lastUpdatedOn, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
-	if err != nil {
-		return err
-	}
-
-	policy, err := rt.ResolveMetricsViewPolicy(auth.GetClaims(ctx).Attributes(), instanceID, mv, lastUpdatedOn)
-	if err != nil {
-		return err
-	}
-
-	if policy != nil && !policy.HasAccess {
-		return status.Error(codes.Unauthenticated, "action not allowed")
-	}
-
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
 		if opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV || opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET {
-			if mv.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
+			if q.MetricsView.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
 				return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 			}
 
-			timeRollupColumnName, err := q.resolveTimeRollupColumnName(ctx, rt, instanceID, opts.Priority, mv)
+			timeRollupColumnName, err := q.resolveTimeRollupColumnName(ctx, rt, instanceID, opts.Priority, q.MetricsView)
 			if err != nil {
 				return err
 			}
 
-			sql, args, err := q.buildMetricsRowsSQL(mv, olap.Dialect(), timeRollupColumnName, policy)
+			sql, args, err := q.buildMetricsRowsSQL(q.MetricsView, olap.Dialect(), timeRollupColumnName, q.ResolvedMVPolicy)
 			if err != nil {
 				return err
 			}
 
-			filename := q.generateFilename(mv)
-			if err := duckDBCopyExport(ctx, rt, instanceID, w, opts, sql, args, filename, olap, mv, opts.Format); err != nil {
+			filename := q.generateFilename(q.MetricsView)
+			if err := duckDBCopyExport(ctx, rt, instanceID, w, opts, sql, args, filename, olap, q.MetricsView, opts.Format); err != nil {
 				return err
 			}
 		} else {
-			if err := q.generalExport(ctx, rt, instanceID, w, opts, olap, mv); err != nil {
+			if err := q.generalExport(ctx, rt, instanceID, w, opts, olap, q.MetricsView); err != nil {
 				return err
 			}
 		}
 	case drivers.DialectDruid:
-		if err := q.generalExport(ctx, rt, instanceID, w, opts, olap, mv); err != nil {
+		if err := q.generalExport(ctx, rt, instanceID, w, opts, olap, q.MetricsView); err != nil {
 			return err
 		}
 	default:

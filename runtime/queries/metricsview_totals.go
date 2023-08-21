@@ -10,9 +10,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/server/auth"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -25,16 +22,29 @@ type MetricsViewTotals struct {
 	Filter          *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
 
 	Result *runtimev1.MetricsViewTotalsResponse `json:"-"`
+
+	// These are resolved in ResolveMetricsView
+	MetricsView      *runtimev1.MetricsView             `json:"-"`
+	ResolvedMVPolicy *runtime.ResolvedMetricsViewPolicy `json:"policy"`
 }
 
 var _ runtime.Query = &MetricsViewTotals{}
 
 func (q *MetricsViewTotals) Key() string {
+	panic("use ResolveMetricsViewAndKey instead")
+}
+
+func (q *MetricsViewTotals) ResolveMetricsViewAndKey(ctx context.Context, rt *runtime.Runtime, instanceID string) (string, error) {
+	var err error
+	q.MetricsView, q.ResolvedMVPolicy, err = resolveMVAndPolicy(ctx, rt, instanceID, q.MetricsViewName)
+	if err != nil {
+		return "", err
+	}
 	r, err := json.Marshal(q)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	return fmt.Sprintf("MetricsViewTotals:%s", string(r))
+	return fmt.Sprintf("MetricsViewTotals:%s", r), nil
 }
 
 func (q *MetricsViewTotals) Deps() []string {
@@ -68,25 +78,11 @@ func (q *MetricsViewTotals) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	mv, lastUpdateOn, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
-	if err != nil {
-		return err
-	}
-
-	policy, err := rt.ResolveMetricsViewPolicy(auth.GetClaims(ctx).Attributes(), instanceID, mv, lastUpdateOn)
-	if err != nil {
-		return err
-	}
-
-	if policy != nil && !policy.HasAccess {
-		return status.Error(codes.Unauthenticated, "action not allowed")
-	}
-
-	if mv.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
+	if q.MetricsView.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
-	ql, args, err := q.buildMetricsTotalsSQL(mv, olap.Dialect(), policy)
+	ql, args, err := q.buildMetricsTotalsSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVPolicy)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}

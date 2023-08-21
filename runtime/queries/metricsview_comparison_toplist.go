@@ -11,7 +11,6 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
-	"github.com/rilldata/rill/runtime/server/auth"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -29,6 +28,10 @@ type MetricsViewComparisonToplist struct {
 	Filter              *runtimev1.MetricsViewFilter           `json:"filter,omitempty"`
 
 	Result *runtimev1.MetricsViewComparisonToplistResponse `json:"-"`
+
+	// These are resolved in ResolveMetricsView
+	MetricsView      *runtimev1.MetricsView             `json:"-"`
+	ResolvedMVPolicy *runtime.ResolvedMetricsViewPolicy `json:"policy"`
 }
 
 var _ runtime.Query = &MetricsViewComparisonToplist{}
@@ -39,6 +42,19 @@ func (q *MetricsViewComparisonToplist) Key() string {
 		panic(err)
 	}
 	return fmt.Sprintf("MetricsViewComparisonToplist:%s", string(r))
+}
+
+func (q *MetricsViewComparisonToplist) ResolveMetricsViewAndKey(ctx context.Context, rt *runtime.Runtime, instanceID string) (string, error) {
+	var err error
+	q.MetricsView, q.ResolvedMVPolicy, err = resolveMVAndPolicy(ctx, rt, instanceID, q.MetricsViewName)
+	if err != nil {
+		return "", err
+	}
+	r, err := json.Marshal(q)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("MetricsViewComparisonToplist:%s", r), nil
 }
 
 func (q *MetricsViewComparisonToplist) Deps() []string {
@@ -72,35 +88,19 @@ func (q *MetricsViewComparisonToplist) Resolve(ctx context.Context, rt *runtime.
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	mv, lastUpdatedOn, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
-	if err != nil {
-		return err
-	}
-
-	policy, err := rt.ResolveMetricsViewPolicy(auth.GetClaims(ctx).Attributes(), instanceID, mv, lastUpdatedOn)
-	if err != nil {
-		return err
-	}
-
-	if policy != nil {
-		if !policy.HasAccess {
-			return status.Error(codes.Unauthenticated, "action not allowed")
-		}
-
-		if !checkFieldAccess(q.DimensionName, policy) {
-			return status.Error(codes.Unauthenticated, "action not allowed")
-		}
-	}
-
-	if mv.TimeDimension == "" && (q.BaseTimeRange != nil || q.ComparisonTimeRange != nil) {
+	if q.MetricsView.TimeDimension == "" && (q.BaseTimeRange != nil || q.ComparisonTimeRange != nil) {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
-	if q.ComparisonTimeRange != nil {
-		return q.executeComparisonToplist(ctx, olap, mv, priority, policy)
+	if !checkFieldAccess(q.DimensionName, q.ResolvedMVPolicy) {
+		return status.Error(codes.Unauthenticated, "action not allowed")
 	}
 
-	return q.executeToplist(ctx, olap, mv, priority, policy)
+	if q.ComparisonTimeRange != nil {
+		return q.executeComparisonToplist(ctx, olap, q.MetricsView, priority, q.ResolvedMVPolicy)
+	}
+
+	return q.executeToplist(ctx, olap, q.MetricsView, priority, q.ResolvedMVPolicy)
 }
 
 func (q *MetricsViewComparisonToplist) executeToplist(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsView, priority int, policy *runtime.ResolvedMetricsViewPolicy) error {

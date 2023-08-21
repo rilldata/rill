@@ -12,10 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
-	"github.com/rilldata/rill/runtime/server/auth"
 	"golang.org/x/exp/slices"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -34,16 +31,29 @@ type MetricsViewTimeSeries struct {
 	TimeZone        string                       `json:"time_zone,omitempty"`
 
 	Result *runtimev1.MetricsViewTimeSeriesResponse `json:"-"`
+
+	// These are resolved in ResolveMetricsViewAndKey
+	MetricsView      *runtimev1.MetricsView             `json:"-"`
+	ResolvedMVPolicy *runtime.ResolvedMetricsViewPolicy `json:"policy"`
 }
 
 var _ runtime.Query = &MetricsViewTimeSeries{}
 
 func (q *MetricsViewTimeSeries) Key() string {
+	panic("use ResolveMetricsViewAndKey instead")
+}
+
+func (q *MetricsViewTimeSeries) ResolveMetricsViewAndKey(ctx context.Context, rt *runtime.Runtime, instanceID string) (string, error) {
+	var err error
+	q.MetricsView, q.ResolvedMVPolicy, err = resolveMVAndPolicy(ctx, rt, instanceID, q.MetricsViewName)
+	if err != nil {
+		return "", err
+	}
 	r, err := json.Marshal(q)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	return fmt.Sprintf("MetricsViewTimeSeries:%s", string(r))
+	return fmt.Sprintf("MetricsViewTimeSeries:%s", r), nil
 }
 
 func (q *MetricsViewTimeSeries) Deps() []string {
@@ -67,21 +77,7 @@ func (q *MetricsViewTimeSeries) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	mv, lastUpdateOn, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
-	if err != nil {
-		return err
-	}
-
-	policy, err := rt.ResolveMetricsViewPolicy(auth.GetClaims(ctx).Attributes(), instanceID, mv, lastUpdateOn)
-	if err != nil {
-		return err
-	}
-
-	if policy != nil && !policy.HasAccess {
-		return status.Error(codes.Unauthenticated, "action not allowed")
-	}
-
-	if mv.TimeDimension == "" {
+	if q.MetricsView.TimeDimension == "" {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
@@ -93,27 +89,28 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
-		return q.resolveDuckDB(ctx, rt, instanceID, mv, priority, policy)
+		return q.resolveDuckDB(ctx, rt, instanceID, q.MetricsView, priority, q.ResolvedMVPolicy)
 	case drivers.DialectDruid:
-		return q.resolveDruid(ctx, olap, mv, priority, policy)
+		return q.resolveDruid(ctx, olap, q.MetricsView, priority, q.ResolvedMVPolicy)
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 }
 
 func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
-	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
+	var err error
+	q.MetricsView, q.ResolvedMVPolicy, err = resolveMVAndPolicy(ctx, rt, instanceID, q.MetricsViewName)
 	if err != nil {
 		return err
 	}
 
-	mv, _, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
+	err = q.Resolve(ctx, rt, instanceID, opts.Priority)
 	if err != nil {
 		return err
 	}
 
 	if opts.PreWriteHook != nil {
-		err = opts.PreWriteHook(q.generateFilename(mv))
+		err = opts.PreWriteHook(q.generateFilename(q.MetricsView))
 		if err != nil {
 			return err
 		}
@@ -121,10 +118,10 @@ func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime,
 
 	tmp := make([]*structpb.Struct, 0, len(q.Result.Data))
 	meta := append([]*runtimev1.MetricsViewColumn{{
-		Name: mv.TimeDimension,
+		Name: q.MetricsView.TimeDimension,
 	}}, q.Result.Meta...)
 	for _, dt := range q.Result.Data {
-		dt.Records.Fields[mv.TimeDimension] = structpb.NewStringValue(dt.Ts.AsTime().Format(time.RFC3339Nano))
+		dt.Records.Fields[q.MetricsView.TimeDimension] = structpb.NewStringValue(dt.Ts.AsTime().Format(time.RFC3339Nano))
 		tmp = append(tmp, dt.Records)
 	}
 

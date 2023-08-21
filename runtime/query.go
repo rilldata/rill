@@ -10,7 +10,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/singleflight"
-	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -53,9 +52,25 @@ type Query interface {
 	Export(ctx context.Context, rt *Runtime, instanceID string, w io.Writer, opts *ExportOptions) error
 }
 
+type MetricViewQuery interface {
+	// ResolveMetricsViewAndKey should resolve MetricsView, its policy and return a cache key that uniquely identifies the query
+	ResolveMetricsViewAndKey(ctx context.Context, rt *Runtime, instanceID string) (string, error)
+}
+
 func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, priority int) error {
+	var qk string
+	var err error
+	// if it's a metrics view query use ResolveMetricsViewAndKey to resolve MV and compute the key
+	if mvq, ok := query.(MetricViewQuery); ok {
+		qk, err = mvq.ResolveMetricsViewAndKey(ctx, r, instanceID)
+		if err != nil {
+			return err
+		}
+	} else {
+		// otherwise we can just use the query key
+		qk = query.Key()
+	}
 	// If key is empty, skip caching
-	qk := query.Key()
 	if qk == "" {
 		return query.Resolve(ctx, r, instanceID, priority)
 	}
@@ -88,18 +103,6 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 			return fmt.Errorf("query dependency %q not found", dep)
 		}
 		depKeys[i] = entry.Name + ":" + entry.RefreshedOn.String()
-		// if catalog entry is a metrics view and it has a policy, we should add user attributes to the cache key
-		if entry.IsMetricsView() {
-			policy := entry.GetMetricsView().Policy
-			if policy != nil {
-				attr := auth.GetClaims(ctx).Attributes()
-				attrKey := ""
-				for k, v := range attr {
-					attrKey += fmt.Sprintf(":%v:%v", k, v)
-				}
-				depKeys[i] += attrKey
-			}
-		}
 	}
 
 	// If there were no known dependencies, skip caching
@@ -111,7 +114,7 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 	depKey := strings.Join(depKeys, ";")
 	key := queryCacheKey{
 		instanceID:    instanceID,
-		queryKey:      query.Key(),
+		queryKey:      qk,
 		dependencyKey: depKey,
 	}.String()
 
