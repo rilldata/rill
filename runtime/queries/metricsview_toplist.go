@@ -10,47 +10,34 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type MetricsViewToplist struct {
-	MetricsViewName string                       `json:"metrics_view_name,omitempty"`
-	DimensionName   string                       `json:"dimension_name,omitempty"`
-	MeasureNames    []string                     `json:"measure_names,omitempty"`
-	InlineMeasures  []*runtimev1.InlineMeasure   `json:"inline_measures,omitempty"`
-	TimeStart       *timestamppb.Timestamp       `json:"time_start,omitempty"`
-	TimeEnd         *timestamppb.Timestamp       `json:"time_end,omitempty"`
-	Limit           *int64                       `json:"limit,omitempty"`
-	Offset          int64                        `json:"offset,omitempty"`
-	Sort            []*runtimev1.MetricsViewSort `json:"sort,omitempty"`
-	Filter          *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
-
-	Result *runtimev1.MetricsViewToplistResponse `json:"-"`
-
-	// These are resolved in ResolveMetricsViewAndKey
+	MetricsViewName  string                             `json:"metrics_view_name,omitempty"`
+	DimensionName    string                             `json:"dimension_name,omitempty"`
+	MeasureNames     []string                           `json:"measure_names,omitempty"`
+	InlineMeasures   []*runtimev1.InlineMeasure         `json:"inline_measures,omitempty"`
+	TimeStart        *timestamppb.Timestamp             `json:"time_start,omitempty"`
+	TimeEnd          *timestamppb.Timestamp             `json:"time_end,omitempty"`
+	Limit            *int64                             `json:"limit,omitempty"`
+	Offset           int64                              `json:"offset,omitempty"`
+	Sort             []*runtimev1.MetricsViewSort       `json:"sort,omitempty"`
+	Filter           *runtimev1.MetricsViewFilter       `json:"filter,omitempty"`
 	MetricsView      *runtimev1.MetricsView             `json:"-"`
 	ResolvedMVPolicy *runtime.ResolvedMetricsViewPolicy `json:"policy"`
+
+	Result *runtimev1.MetricsViewToplistResponse `json:"-"`
 }
 
 var _ runtime.Query = &MetricsViewToplist{}
 
 func (q *MetricsViewToplist) Key() string {
-	panic("use ResolveMetricsViewAndKey instead")
-}
-
-func (q *MetricsViewToplist) ResolveMetricsViewAndKey(ctx context.Context, rt *runtime.Runtime, instanceID string) (string, error) {
-	var err error
-	q.MetricsView, q.ResolvedMVPolicy, err = resolveMVAndPolicy(ctx, rt, instanceID, q.MetricsViewName)
-	if err != nil {
-		return "", err
-	}
 	r, err := json.Marshal(q)
 	if err != nil {
-		return "", err
+		panic(err)
 	}
-	return fmt.Sprintf("MetricsViewToplist:%s", r), nil
+	return fmt.Sprintf("MetricsViewToplist:%s", r)
 }
 
 func (q *MetricsViewToplist) Deps() []string {
@@ -84,10 +71,6 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	if !checkFieldAccess(q.DimensionName, q.ResolvedMVPolicy) {
-		return status.Error(codes.Unauthenticated, "action not allowed")
-	}
-
 	if q.MetricsView.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
@@ -118,15 +101,6 @@ func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, in
 		return err
 	}
 	defer release()
-
-	q.MetricsView, q.ResolvedMVPolicy, err = resolveMVAndPolicy(ctx, rt, instanceID, q.MetricsViewName)
-	if err != nil {
-		return err
-	}
-
-	if !checkFieldAccess(q.DimensionName, q.ResolvedMVPolicy) {
-		return status.Error(codes.Unauthenticated, "action not allowed")
-	}
 
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
@@ -269,30 +243,4 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, d
 	)
 
 	return sql, args, nil
-}
-
-func checkFieldAccess(field string, policy *runtime.ResolvedMetricsViewPolicy) bool {
-	if policy != nil {
-		if !policy.HasAccess {
-			return false
-		}
-
-		if len(policy.Include) > 0 {
-			for _, include := range policy.Include {
-				if include == field {
-					return true
-				}
-			}
-		} else if len(policy.Exclude) > 0 {
-			for _, exclude := range policy.Exclude {
-				if exclude == field {
-					return false
-				}
-			}
-		} else {
-			// if no include/exclude is specified, then all fields are allowed
-			return true
-		}
-	}
-	return true
 }

@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/apache/arrow/go/v11/arrow"
 	"github.com/apache/arrow/go/v11/arrow/array"
@@ -19,29 +18,12 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
-	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/xuri/excelize/v2"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 )
-
-// returns the metrics view and the time the catalog was last updated
-func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.MetricsView, time.Time, error) {
-	obj, err := rt.GetCatalogEntry(ctx, instanceID, name)
-	if err != nil {
-		return nil, time.Time{}, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	if !obj.IsMetricsView() {
-		return nil, time.Time{}, status.Errorf(codes.NotFound, "object named '%s' is not a metrics view", name)
-	}
-
-	mv := obj.GetMetricsView()
-
-	return mv, obj.UpdatedOn, nil
-}
 
 // resolveMeasures returns the selected measures
 func resolveMeasures(mv *runtimev1.MetricsView, inlines []*runtimev1.InlineMeasure, selectedNames []string) ([]*runtimev1.MetricsView_Measure, error) {
@@ -578,21 +560,4 @@ func (q *MetricsViewRows) generateFilename(mv *runtimev1.MetricsView) string {
 		filename += "_filtered"
 	}
 	return filename
-}
-
-func resolveMVAndPolicy(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsView, *runtime.ResolvedMetricsViewPolicy, error) {
-	mv, lastUpdatedOn, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	resolvedPolicy, err := rt.ResolveMetricsViewPolicy(auth.GetClaims(ctx).Attributes(), instanceID, mv, lastUpdatedOn)
-	if err != nil {
-		return nil, nil, err
-	}
-	if resolvedPolicy != nil && !resolvedPolicy.HasAccess {
-		return nil, nil, status.Error(codes.Unauthenticated, "action not allowed")
-	}
-
-	return mv, resolvedPolicy, nil
 }

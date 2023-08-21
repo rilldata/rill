@@ -12,37 +12,25 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type MetricsViewTimeRange struct {
-	MetricsViewName string                                  `json:"name"`
-	Result          *runtimev1.MetricsViewTimeRangeResponse `json:"_"`
-
-	// These are resolved in ResolveMetricsViewAndKey
+	MetricsViewName  string                             `json:"name"`
 	MetricsView      *runtimev1.MetricsView             `json:"-"`
 	ResolvedMVPolicy *runtime.ResolvedMetricsViewPolicy `json:"policy"`
+
+	Result *runtimev1.MetricsViewTimeRangeResponse `json:"_"`
 }
 
 var _ runtime.Query = &MetricsViewTimeRange{}
 
 func (q *MetricsViewTimeRange) Key() string {
-	panic("use ResolveMetricsViewAndKey instead")
-}
-
-func (q *MetricsViewTimeRange) ResolveMetricsViewAndKey(ctx context.Context, rt *runtime.Runtime, instanceID string) (string, error) {
-	var err error
-	q.MetricsView, q.ResolvedMVPolicy, err = resolveMVAndPolicy(ctx, rt, instanceID, q.MetricsViewName)
-	if err != nil {
-		return "", err
-	}
 	r, err := json.Marshal(q)
 	if err != nil {
-		return "", err
+		panic(err)
 	}
-	return fmt.Sprintf("MetricsViewTimeRange:%s", r), nil
+	return fmt.Sprintf("MetricsViewTimeRange:%s", r)
 }
 
 func (q *MetricsViewTimeRange) Deps() []string {
@@ -68,9 +56,6 @@ func (q *MetricsViewTimeRange) UnmarshalResult(v any) error {
 func (q *MetricsViewTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
 	policyFilter := ""
 	if q.ResolvedMVPolicy != nil {
-		if !q.ResolvedMVPolicy.HasAccess {
-			return status.Error(codes.Unauthenticated, "action not allowed")
-		}
 		policyFilter = q.ResolvedMVPolicy.Filter
 	}
 

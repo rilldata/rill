@@ -14,37 +14,26 @@ import (
 )
 
 type MetricsViewTotals struct {
-	MetricsViewName string                       `json:"metrics_view_name,omitempty"`
-	MeasureNames    []string                     `json:"measure_names,omitempty"`
-	InlineMeasures  []*runtimev1.InlineMeasure   `json:"inline_measures,omitempty"`
-	TimeStart       *timestamppb.Timestamp       `json:"time_start,omitempty"`
-	TimeEnd         *timestamppb.Timestamp       `json:"time_end,omitempty"`
-	Filter          *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
-
-	Result *runtimev1.MetricsViewTotalsResponse `json:"-"`
-
-	// These are resolved in ResolveMetricsView
+	MetricsViewName  string                             `json:"metrics_view_name,omitempty"`
+	MeasureNames     []string                           `json:"measure_names,omitempty"`
+	InlineMeasures   []*runtimev1.InlineMeasure         `json:"inline_measures,omitempty"`
+	TimeStart        *timestamppb.Timestamp             `json:"time_start,omitempty"`
+	TimeEnd          *timestamppb.Timestamp             `json:"time_end,omitempty"`
+	Filter           *runtimev1.MetricsViewFilter       `json:"filter,omitempty"`
 	MetricsView      *runtimev1.MetricsView             `json:"-"`
 	ResolvedMVPolicy *runtime.ResolvedMetricsViewPolicy `json:"policy"`
+
+	Result *runtimev1.MetricsViewTotalsResponse `json:"-"`
 }
 
 var _ runtime.Query = &MetricsViewTotals{}
 
 func (q *MetricsViewTotals) Key() string {
-	panic("use ResolveMetricsViewAndKey instead")
-}
-
-func (q *MetricsViewTotals) ResolveMetricsViewAndKey(ctx context.Context, rt *runtime.Runtime, instanceID string) (string, error) {
-	var err error
-	q.MetricsView, q.ResolvedMVPolicy, err = resolveMVAndPolicy(ctx, rt, instanceID, q.MetricsViewName)
-	if err != nil {
-		return "", err
-	}
 	r, err := json.Marshal(q)
 	if err != nil {
-		return "", err
+		panic(err)
 	}
-	return fmt.Sprintf("MetricsViewTotals:%s", r), nil
+	return fmt.Sprintf("MetricsViewTotals:%s", r)
 }
 
 func (q *MetricsViewTotals) Deps() []string {

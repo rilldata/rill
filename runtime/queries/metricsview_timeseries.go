@@ -18,42 +18,31 @@ import (
 )
 
 type MetricsViewTimeSeries struct {
-	MetricsViewName string                       `json:"metrics_view_name,omitempty"`
-	MeasureNames    []string                     `json:"measure_names,omitempty"`
-	InlineMeasures  []*runtimev1.InlineMeasure   `json:"inline_measures,omitempty"`
-	TimeStart       *timestamppb.Timestamp       `json:"time_start,omitempty"`
-	TimeEnd         *timestamppb.Timestamp       `json:"time_end,omitempty"`
-	Limit           int64                        `json:"limit,omitempty"`
-	Offset          int64                        `json:"offset,omitempty"`
-	Sort            []*runtimev1.MetricsViewSort `json:"sort,omitempty"`
-	Filter          *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
-	TimeGranularity runtimev1.TimeGrain          `json:"time_granularity,omitempty"`
-	TimeZone        string                       `json:"time_zone,omitempty"`
-
-	Result *runtimev1.MetricsViewTimeSeriesResponse `json:"-"`
-
-	// These are resolved in ResolveMetricsViewAndKey
+	MetricsViewName  string                             `json:"metrics_view_name,omitempty"`
+	MeasureNames     []string                           `json:"measure_names,omitempty"`
+	InlineMeasures   []*runtimev1.InlineMeasure         `json:"inline_measures,omitempty"`
+	TimeStart        *timestamppb.Timestamp             `json:"time_start,omitempty"`
+	TimeEnd          *timestamppb.Timestamp             `json:"time_end,omitempty"`
+	Limit            int64                              `json:"limit,omitempty"`
+	Offset           int64                              `json:"offset,omitempty"`
+	Sort             []*runtimev1.MetricsViewSort       `json:"sort,omitempty"`
+	Filter           *runtimev1.MetricsViewFilter       `json:"filter,omitempty"`
+	TimeGranularity  runtimev1.TimeGrain                `json:"time_granularity,omitempty"`
+	TimeZone         string                             `json:"time_zone,omitempty"`
 	MetricsView      *runtimev1.MetricsView             `json:"-"`
 	ResolvedMVPolicy *runtime.ResolvedMetricsViewPolicy `json:"policy"`
+
+	Result *runtimev1.MetricsViewTimeSeriesResponse `json:"-"`
 }
 
 var _ runtime.Query = &MetricsViewTimeSeries{}
 
 func (q *MetricsViewTimeSeries) Key() string {
-	panic("use ResolveMetricsViewAndKey instead")
-}
-
-func (q *MetricsViewTimeSeries) ResolveMetricsViewAndKey(ctx context.Context, rt *runtime.Runtime, instanceID string) (string, error) {
-	var err error
-	q.MetricsView, q.ResolvedMVPolicy, err = resolveMVAndPolicy(ctx, rt, instanceID, q.MetricsViewName)
-	if err != nil {
-		return "", err
-	}
 	r, err := json.Marshal(q)
 	if err != nil {
-		return "", err
+		panic(err)
 	}
-	return fmt.Sprintf("MetricsViewTimeSeries:%s", r), nil
+	return fmt.Sprintf("MetricsViewTimeSeries:%s", r)
 }
 
 func (q *MetricsViewTimeSeries) Deps() []string {
@@ -98,13 +87,7 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 }
 
 func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
-	var err error
-	q.MetricsView, q.ResolvedMVPolicy, err = resolveMVAndPolicy(ctx, rt, instanceID, q.MetricsViewName)
-	if err != nil {
-		return err
-	}
-
-	err = q.Resolve(ctx, rt, instanceID, opts.Priority)
+	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
 	if err != nil {
 		return err
 	}

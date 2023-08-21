@@ -15,40 +15,29 @@ import (
 )
 
 type MetricsViewRows struct {
-	MetricsViewName string                       `json:"metrics_view_name,omitempty"`
-	TimeStart       *timestamppb.Timestamp       `json:"time_start,omitempty"`
-	TimeEnd         *timestamppb.Timestamp       `json:"time_end,omitempty"`
-	TimeGranularity runtimev1.TimeGrain          `json:"time_granularity,omitempty"`
-	Filter          *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
-	Sort            []*runtimev1.MetricsViewSort `json:"sort,omitempty"`
-	Limit           *int64                       `json:"limit,omitempty"`
-	Offset          int64                        `json:"offset,omitempty"`
-	TimeZone        string                       `json:"time_zone,omitempty"`
-
-	Result *runtimev1.MetricsViewRowsResponse `json:"-"`
-
-	// These are resolved in ResolveMetricsViewAndKey
+	MetricsViewName  string                             `json:"metrics_view_name,omitempty"`
+	TimeStart        *timestamppb.Timestamp             `json:"time_start,omitempty"`
+	TimeEnd          *timestamppb.Timestamp             `json:"time_end,omitempty"`
+	TimeGranularity  runtimev1.TimeGrain                `json:"time_granularity,omitempty"`
+	Filter           *runtimev1.MetricsViewFilter       `json:"filter,omitempty"`
+	Sort             []*runtimev1.MetricsViewSort       `json:"sort,omitempty"`
+	Limit            *int64                             `json:"limit,omitempty"`
+	Offset           int64                              `json:"offset,omitempty"`
+	TimeZone         string                             `json:"time_zone,omitempty"`
 	MetricsView      *runtimev1.MetricsView             `json:"-"`
 	ResolvedMVPolicy *runtime.ResolvedMetricsViewPolicy `json:"policy"`
+
+	Result *runtimev1.MetricsViewRowsResponse `json:"-"`
 }
 
 var _ runtime.Query = &MetricsViewRows{}
 
 func (q *MetricsViewRows) Key() string {
-	panic("use ResolveMetricsViewAndKey instead")
-}
-
-func (q *MetricsViewRows) ResolveMetricsViewAndKey(ctx context.Context, rt *runtime.Runtime, instanceID string) (string, error) {
-	var err error
-	q.MetricsView, q.ResolvedMVPolicy, err = resolveMVAndPolicy(ctx, rt, instanceID, q.MetricsViewName)
-	if err != nil {
-		return "", err
-	}
 	r, err := json.Marshal(q)
 	if err != nil {
-		return "", err
+		panic(err)
 	}
-	return fmt.Sprintf("MetricsViewRows:%s", r), nil
+	return fmt.Sprintf("MetricsViewRows:%s", r)
 }
 
 func (q *MetricsViewRows) Deps() []string {
@@ -110,12 +99,6 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 }
 
 func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
-	var err error
-	q.MetricsView, q.ResolvedMVPolicy, err = resolveMVAndPolicy(ctx, rt, instanceID, q.MetricsViewName)
-	if err != nil {
-		return err
-	}
-
 	olap, release, err := rt.OLAP(ctx, instanceID)
 	if err != nil {
 		return err

@@ -52,24 +52,8 @@ type Query interface {
 	Export(ctx context.Context, rt *Runtime, instanceID string, w io.Writer, opts *ExportOptions) error
 }
 
-type MetricViewQuery interface {
-	// ResolveMetricsViewAndKey should resolve MetricsView, its policy and return a cache key that uniquely identifies the query
-	ResolveMetricsViewAndKey(ctx context.Context, rt *Runtime, instanceID string) (string, error)
-}
-
 func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, priority int) error {
-	var qk string
-	var err error
-	// if it's a metrics view query use ResolveMetricsViewAndKey to resolve MV and compute the key
-	if mvq, ok := query.(MetricViewQuery); ok {
-		qk, err = mvq.ResolveMetricsViewAndKey(ctx, r, instanceID)
-		if err != nil {
-			return err
-		}
-	} else {
-		// otherwise we can just use the query key
-		qk = query.Key()
-	}
+	qk := query.Key()
 	// If key is empty, skip caching
 	if qk == "" {
 		return query.Resolve(ctx, r, instanceID, priority)

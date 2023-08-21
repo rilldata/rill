@@ -76,8 +76,3 @@ func (e *CatalogEntry) GetMetricsView() *runtimev1.MetricsView {
 	}
 	return obj
 }
-
-func (e *CatalogEntry) IsMetricsView() bool {
-	_, ok := e.Object.(*runtimev1.MetricsView)
-	return ok
-}

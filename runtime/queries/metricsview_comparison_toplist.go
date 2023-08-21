@@ -11,8 +11,6 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type MetricsViewComparisonToplist struct {
@@ -26,12 +24,10 @@ type MetricsViewComparisonToplist struct {
 	Offset              int64                                  `json:"offset,omitempty"`
 	Sort                []*runtimev1.MetricsViewComparisonSort `json:"sort,omitempty"`
 	Filter              *runtimev1.MetricsViewFilter           `json:"filter,omitempty"`
+	MetricsView         *runtimev1.MetricsView                 `json:"-"`
+	ResolvedMVPolicy    *runtime.ResolvedMetricsViewPolicy     `json:"policy"`
 
 	Result *runtimev1.MetricsViewComparisonToplistResponse `json:"-"`
-
-	// These are resolved in ResolveMetricsView
-	MetricsView      *runtimev1.MetricsView             `json:"-"`
-	ResolvedMVPolicy *runtime.ResolvedMetricsViewPolicy `json:"policy"`
 }
 
 var _ runtime.Query = &MetricsViewComparisonToplist{}
@@ -41,20 +37,7 @@ func (q *MetricsViewComparisonToplist) Key() string {
 	if err != nil {
 		panic(err)
 	}
-	return fmt.Sprintf("MetricsViewComparisonToplist:%s", string(r))
-}
-
-func (q *MetricsViewComparisonToplist) ResolveMetricsViewAndKey(ctx context.Context, rt *runtime.Runtime, instanceID string) (string, error) {
-	var err error
-	q.MetricsView, q.ResolvedMVPolicy, err = resolveMVAndPolicy(ctx, rt, instanceID, q.MetricsViewName)
-	if err != nil {
-		return "", err
-	}
-	r, err := json.Marshal(q)
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("MetricsViewComparisonToplist:%s", r), nil
+	return fmt.Sprintf("MetricsViewComparisonToplist:%s", r)
 }
 
 func (q *MetricsViewComparisonToplist) Deps() []string {
@@ -90,10 +73,6 @@ func (q *MetricsViewComparisonToplist) Resolve(ctx context.Context, rt *runtime.
 
 	if q.MetricsView.TimeDimension == "" && (q.BaseTimeRange != nil || q.ComparisonTimeRange != nil) {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
-	}
-
-	if !checkFieldAccess(q.DimensionName, q.ResolvedMVPolicy) {
-		return status.Error(codes.Unauthenticated, "action not allowed")
 	}
 
 	if q.ComparisonTimeRange != nil {

@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -76,27 +77,55 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		mv, policy, err := resolveMVAndPolicy(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName)
+		if err != nil {
+			if errors.Is(err, ErrForbidden) {
+				http.Error(w, "action not allowed", http.StatusUnauthorized)
+				return
+			}
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if !checkFieldAccess(r.DimensionName, policy) {
+			http.Error(w, "action not allowed", http.StatusUnauthorized)
+			return
+		}
+
 		q = &queries.MetricsViewToplist{
-			MetricsViewName: r.MetricsViewName,
-			DimensionName:   r.DimensionName,
-			MeasureNames:    r.MeasureNames,
-			InlineMeasures:  r.InlineMeasures,
-			TimeStart:       r.TimeStart,
-			TimeEnd:         r.TimeEnd,
-			Sort:            r.Sort,
-			Filter:          r.Filter,
-			Limit:           request.Limit,
+			MetricsViewName:  r.MetricsViewName,
+			DimensionName:    r.DimensionName,
+			MeasureNames:     r.MeasureNames,
+			InlineMeasures:   r.InlineMeasures,
+			TimeStart:        r.TimeStart,
+			TimeEnd:          r.TimeEnd,
+			Sort:             r.Sort,
+			Filter:           r.Filter,
+			Limit:            request.Limit,
+			MetricsView:      mv,
+			ResolvedMVPolicy: policy,
 		}
 	case *runtimev1.ExportRequest_MetricsViewRowsRequest:
 		r := v.MetricsViewRowsRequest
+		mv, policy, err := resolveMVAndPolicy(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName)
+		if err != nil {
+			if errors.Is(err, ErrForbidden) {
+				http.Error(w, "action not allowed", http.StatusUnauthorized)
+				return
+			}
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 		q = &queries.MetricsViewRows{
-			MetricsViewName: r.MetricsViewName,
-			TimeStart:       r.TimeStart,
-			TimeEnd:         r.TimeEnd,
-			Filter:          r.Filter,
-			Sort:            r.Sort,
-			Limit:           request.Limit,
-			TimeZone:        r.TimeZone,
+			MetricsViewName:  r.MetricsViewName,
+			TimeStart:        r.TimeStart,
+			TimeEnd:          r.TimeEnd,
+			Filter:           r.Filter,
+			Sort:             r.Sort,
+			Limit:            request.Limit,
+			TimeZone:         r.TimeZone,
+			MetricsView:      mv,
+			ResolvedMVPolicy: policy,
 		}
 	default:
 		http.Error(w, fmt.Sprintf("unsupported request type: %s", reflect.TypeOf(v).Name()), http.StatusBadRequest)
