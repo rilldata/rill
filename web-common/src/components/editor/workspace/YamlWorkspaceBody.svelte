@@ -4,7 +4,7 @@
   import { parse } from "yaml";
   import {
     createRuntimeServiceGetFile,
-    createRuntimeServicePutFileAndReconcile,
+    createRuntimeServicePutFile,
     getRuntimeServiceGetFileQueryKey,
   } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -17,7 +17,7 @@
   let view: EditorView;
 
   const queryClient = useQueryClient();
-  const saveFile = createRuntimeServicePutFileAndReconcile();
+  const saveFile = createRuntimeServicePutFile();
 
   $: file = createRuntimeServiceGetFile($runtime.instanceId, fileName, {
     query: {
@@ -34,9 +34,9 @@
 
     // Save File
     await $saveFile.mutateAsync({
+      instanceId: $runtime.instanceId,
+      path: fileName,
       data: {
-        instanceId: $runtime.instanceId,
-        path: fileName,
         blob: blob,
       },
     });
