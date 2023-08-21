@@ -4,8 +4,8 @@
   import Portal from "@rilldata/web-common/components/Portal.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { ModelAssets } from "@rilldata/web-common/features/models";
+  import ProjectTitle from "@rilldata/web-common/features/project/ProjectTitle.svelte";
   import TableAssets from "@rilldata/web-common/features/sources/navigation/TableAssets.svelte";
-  import ProjectTitle from "@rilldata/web-common/layout/navigation/ProjectTitle.svelte";
   import { getContext } from "svelte";
   import { tweened } from "svelte/motion";
   import { Readable, Writable, writable } from "svelte/store";
