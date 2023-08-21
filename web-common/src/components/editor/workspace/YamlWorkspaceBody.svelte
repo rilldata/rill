@@ -28,12 +28,12 @@
 
   let error;
 
-  function handleUpdate(e: CustomEvent<{ content: string }>) {
+  async function handleUpdate(e: CustomEvent<{ content: string }>) {
     error = undefined;
     const blob = e.detail.content;
 
     // Save File
-    $saveFile.mutate({
+    await $saveFile.mutateAsync({
       data: {
         instanceId: $runtime.instanceId,
         path: fileName,
