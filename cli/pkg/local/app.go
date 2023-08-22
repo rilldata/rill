@@ -88,11 +88,12 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 	}
 
 	rtOpts := &runtime.Options{
-		ConnectionCacheSize: 100,
-		MetastoreConnector:  "metastore",
-		QueryCacheSizeBytes: int64(datasize.MB * 100),
-		AllowHostAccess:     true,
-		SystemConnectors:    systemConnectors,
+		ConnectionCacheSize:   100,
+		MetastoreConnector:    "metastore",
+		QueryCacheSizeBytes:   int64(datasize.MB * 100),
+		AllowHostAccess:       true,
+		SystemConnectors:      systemConnectors,
+		PolicyEngineCacheSize: 1000,
 	}
 	rt, err := runtime.New(rtOpts, logger, client)
 	if err != nil {

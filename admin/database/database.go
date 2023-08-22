@@ -108,6 +108,7 @@ type DB interface {
 	CheckUserIsAnOrganizationMember(ctx context.Context, userID, orgID string) (bool, error)
 
 	InsertUsergroup(ctx context.Context, opts *InsertUsergroupOptions) (*Usergroup, error)
+	FindUsergroupsForUser(ctx context.Context, userID, orgID string) ([]*Usergroup, error)
 	InsertUsergroupMember(ctx context.Context, groupID, userID string) error
 	DeleteUsergroupMember(ctx context.Context, groupID, userID string) error
 

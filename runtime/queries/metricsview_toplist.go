@@ -14,16 +14,18 @@ import (
 )
 
 type MetricsViewToplist struct {
-	MetricsViewName string                       `json:"metrics_view_name,omitempty"`
-	DimensionName   string                       `json:"dimension_name,omitempty"`
-	MeasureNames    []string                     `json:"measure_names,omitempty"`
-	InlineMeasures  []*runtimev1.InlineMeasure   `json:"inline_measures,omitempty"`
-	TimeStart       *timestamppb.Timestamp       `json:"time_start,omitempty"`
-	TimeEnd         *timestamppb.Timestamp       `json:"time_end,omitempty"`
-	Limit           *int64                       `json:"limit,omitempty"`
-	Offset          int64                        `json:"offset,omitempty"`
-	Sort            []*runtimev1.MetricsViewSort `json:"sort,omitempty"`
-	Filter          *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
+	MetricsViewName  string                             `json:"metrics_view_name,omitempty"`
+	DimensionName    string                             `json:"dimension_name,omitempty"`
+	MeasureNames     []string                           `json:"measure_names,omitempty"`
+	InlineMeasures   []*runtimev1.InlineMeasure         `json:"inline_measures,omitempty"`
+	TimeStart        *timestamppb.Timestamp             `json:"time_start,omitempty"`
+	TimeEnd          *timestamppb.Timestamp             `json:"time_end,omitempty"`
+	Limit            *int64                             `json:"limit,omitempty"`
+	Offset           int64                              `json:"offset,omitempty"`
+	Sort             []*runtimev1.MetricsViewSort       `json:"sort,omitempty"`
+	Filter           *runtimev1.MetricsViewFilter       `json:"filter,omitempty"`
+	MetricsView      *runtimev1.MetricsView             `json:"-"`
+	ResolvedMVPolicy *runtime.ResolvedMetricsViewPolicy `json:"policy"`
 
 	Result *runtimev1.MetricsViewToplistResponse `json:"-"`
 }
@@ -35,7 +37,7 @@ func (q *MetricsViewToplist) Key() string {
 	if err != nil {
 		panic(err)
 	}
-	return fmt.Sprintf("MetricsViewToplist:%s", string(r))
+	return fmt.Sprintf("MetricsViewToplist:%s", r)
 }
 
 func (q *MetricsViewToplist) Deps() []string {
@@ -69,17 +71,12 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	mv, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
-	if err != nil {
-		return err
-	}
-
-	if mv.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
+	if q.MetricsView.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
 	// Build query
-	sql, args, err := q.buildMetricsTopListSQL(mv, olap.Dialect())
+	sql, args, err := q.buildMetricsTopListSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVPolicy)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -105,34 +102,29 @@ func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, in
 	}
 	defer release()
 
-	mv, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
-	if err != nil {
-		return err
-	}
-
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
 		if opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV || opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET {
-			if mv.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
+			if q.MetricsView.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
 				return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 			}
 
-			sql, args, err := q.buildMetricsTopListSQL(mv, olap.Dialect())
+			sql, args, err := q.buildMetricsTopListSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVPolicy)
 			if err != nil {
 				return err
 			}
 
-			filename := q.generateFilename(mv)
-			if err := duckDBCopyExport(ctx, rt, instanceID, w, opts, sql, args, filename, olap, mv, opts.Format); err != nil {
+			filename := q.generateFilename(q.MetricsView)
+			if err := duckDBCopyExport(ctx, rt, instanceID, w, opts, sql, args, filename, olap, q.MetricsView, opts.Format); err != nil {
 				return err
 			}
 		} else {
-			if err := q.generalExport(ctx, rt, instanceID, w, opts, olap, mv); err != nil {
+			if err := q.generalExport(ctx, rt, instanceID, w, opts, olap, q.MetricsView); err != nil {
 				return err
 			}
 		}
 	case drivers.DialectDruid:
-		if err := q.generalExport(ctx, rt, instanceID, w, opts, olap, mv); err != nil {
+		if err := q.generalExport(ctx, rt, instanceID, w, opts, olap, q.MetricsView); err != nil {
 			return err
 		}
 	default:
@@ -177,7 +169,7 @@ func (q *MetricsViewToplist) generateFilename(mv *runtimev1.MetricsView) string 
 	return filename
 }
 
-func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect) (string, []any, error) {
+func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewPolicy) (string, []any, error) {
 	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
 	if err != nil {
 		return "", nil, err
@@ -208,7 +200,7 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, d
 	}
 
 	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect)
+		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
 		if err != nil {
 			return "", nil, err
 		}

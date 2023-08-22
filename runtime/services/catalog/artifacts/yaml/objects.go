@@ -66,6 +66,19 @@ type MetricsView struct {
 	AvailableTimeZones []string `yaml:"available_time_zones,omitempty"`
 	Dimensions         []*Dimension
 	Measures           []*Measure
+	Policy             *Policy `yaml:"policy,omitempty"`
+}
+
+type Policy struct {
+	HasAccess string               `yaml:"has_access,omitempty"`
+	Filter    string               `yaml:"filter,omitempty"`
+	Include   []*ConditionalColumn `yaml:"include,omitempty"`
+	Exclude   []*ConditionalColumn `yaml:"exclude,omitempty"`
+}
+
+type ConditionalColumn struct {
+	Name      string
+	Condition string `yaml:"if"`
 }
 
 type Measure struct {
