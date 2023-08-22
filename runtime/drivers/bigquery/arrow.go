@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
 	"sync/atomic"
+	"time"
 
 	"github.com/apache/arrow/go/v11/arrow"
 	"github.com/apache/arrow/go/v11/arrow/array"
@@ -14,6 +16,10 @@ import (
 )
 
 func AsArrowRecordReader(i drivers.RowIterator) (array.RecordReader, error) {
+	tw := time.Now()
+	defer func() {
+		log.Default().Printf("fetching arrow recorder took %v", time.Since(tw).Seconds())
+	}()
 	iter, ok := i.(*rowIterator)
 	if !ok || iter.bqIter.ArrowIterator == nil {
 		return nil, fmt.Errorf("not using storage API")
@@ -49,6 +55,7 @@ type arrowRecordReader struct {
 	arrowSchema *arrow.Schema
 	refCount    int64
 	err         error
+	t           time.Duration
 }
 
 // Retain increases the reference count by 1.
@@ -74,6 +81,7 @@ func (rs *arrowRecordReader) Release() {
 		}
 		rs.records = nil
 	}
+	log.Default().Printf("next took %v\n", rs.t.Seconds())
 }
 
 func (rs *arrowRecordReader) Schema() *arrow.Schema {
@@ -85,6 +93,10 @@ func (rs *arrowRecordReader) Record() arrow.Record {
 }
 
 func (rs *arrowRecordReader) Next() bool {
+	tw := time.Now()
+	defer func() {
+		rs.t += time.Since(tw)
+	}()
 	if rs.err != nil {
 		return false
 	}
