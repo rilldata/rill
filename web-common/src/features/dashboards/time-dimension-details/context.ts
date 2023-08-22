@@ -3,15 +3,15 @@ import { getContext, setContext } from "svelte";
 import type { TimeDimensionDetailsStore } from "./time-dimension-details-store";
 import type { THeaderData } from "./mock-data";
 
-const CONTEXT_KEY = "tdt-store";
+const CONTEXT_KEY = "tdd-store";
 
-type TDTContext = {
+type TDDContext = {
   store: Writable<TimeDimensionDetailsStore>;
   headers: THeaderData[];
 };
-export function createTDTContext(value: TDTContext) {
+export function createTDDContext(value: TDDContext) {
   setContext(CONTEXT_KEY, value);
 }
-export function useTDTContext() {
-  return getContext<TDTContext>(CONTEXT_KEY);
+export function useTDDContext() {
+  return getContext<TDDContext>(CONTEXT_KEY);
 }

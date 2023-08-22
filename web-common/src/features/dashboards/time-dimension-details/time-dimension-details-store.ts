@@ -5,6 +5,9 @@ export type TimeDimensionDetailsStore = {
   highlightedRow: number | null;
   scrubbedCols: [number, number] | null;
   visibleDimensions: string[];
+  // TODO: replace with dashboard store
+  filterMode: "include" | "exclude";
+  filteredValues: string[];
 };
 
 export function createTimeDimensionDetailsStore() {
@@ -14,6 +17,9 @@ export function createTimeDimensionDetailsStore() {
     highlightedRow: null,
     scrubbedCols: [8, 12],
     visibleDimensions: ["Value A1"],
+    // TODO: this will be replaced with dashboard store
+    filterMode: "include",
+    filteredValues: ["Value A1"],
   });
   return store;
 }
@@ -48,4 +54,13 @@ export function getVisibleDimensionColor(
   text: string
 ) {
   return VISIBLE_COLORS[state.visibleDimensions.indexOf(text)] ?? "gray-900";
+}
+
+// TODO: this will be replaced with dashboard store
+export function toggleFilter(state: TimeDimensionDetailsStore, value: string) {
+  if (state.filteredValues.includes(value)) {
+    state.filteredValues = state.filteredValues.filter((d) => d !== value);
+  } else {
+    state.filteredValues.push(value);
+  }
 }

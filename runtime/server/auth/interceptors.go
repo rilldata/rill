@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/golang-jwt/jwt/v4"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -35,7 +36,7 @@ func GetClaims(ctx context.Context) Claims {
 // The claim parsing logic is as follows
 // - When aud is nil, auth is considered disabled. We set a Claims that allows all actions (openClaims).
 // - When aud is not nil, we set a Claims based on a JWT set as a bearer token in the authorization header (jwtClaims).
-// - When aud is not nil and no authoriation header is passed, we set a Claims that denies any action (anonClaims).
+// - When aud is not nil and no authorization header is passed, we set a Claims that denies any action (anonClaims).
 func UnaryServerInterceptor(aud *Audience) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		authHeader := metautils.ExtractIncoming(ctx).Get("authorization")
@@ -95,9 +96,27 @@ func HTTPMiddleware(aud *Audience, next http.Handler) http.Handler {
 }
 
 func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string) (context.Context, error) {
-	// When aud == nil, it means auth is disabled. We set openClaims.
+	// When aud == nil, it means auth is disabled. Additionally, if auth header is not set then we set openClaims.
+	// If auth header is set then that means its running locally with some user context, so we set devJWTClaims.
 	if aud == nil {
-		return context.WithValue(ctx, claimsContextKey{}, openClaims{}), nil
+		if authorizationHeader == "" {
+			claims := openClaims{}
+			return context.WithValue(ctx, claimsContextKey{}, claims), nil
+		}
+		claims := &devJWTClaims{}
+		// Extract bearer token to get dev JWT claims
+		bearerToken := ""
+		if len(authorizationHeader) >= 6 && strings.EqualFold(authorizationHeader[0:6], "bearer") {
+			bearerToken = strings.TrimSpace(authorizationHeader[6:])
+		}
+		if bearerToken == "" {
+			return nil, errors.New("no bearer token found in authorization header")
+		}
+		_, _, err := jwt.NewParser().ParseUnverified(bearerToken, claims)
+		if err != nil {
+			return nil, err
+		}
+		return context.WithValue(ctx, claimsContextKey{}, claims), nil
 	}
 
 	// If authorization header is not set, we set anonClaims.

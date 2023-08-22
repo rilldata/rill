@@ -2,7 +2,7 @@
 title: Glob Patterns
 description: Support for importing data sources using glob patterns
 sidebar_label: Glob patterns
-sidebar_position: 100
+sidebar_position: 11
 ---
 
 Rill supports ingesting data from a group of files using glob patterns in the URI of source files. This allows you to specify a pattern that matches multiple files, making it easier to ingest data from a group of related files. Let's explore how glob patterns work in Rill.

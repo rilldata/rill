@@ -252,6 +252,7 @@ const metricViewReducers = {
           ...timeRange,
           interval: timeGrain.grain,
         };
+        timeSelections.lastDefinedScrubRange = undefined;
       }
 
       state.entities[name] = {
@@ -552,7 +553,10 @@ export function useDashboardStore(
 export function useFetchTimeRange(name: string) {
   return derived(metricsExplorerStore, ($store) => {
     const entity = $store.entities[name];
-    if (entity?.lastDefinedScrubRange) {
+    if (
+      entity?.lastDefinedScrubRange?.start &&
+      entity?.lastDefinedScrubRange?.end
+    ) {
       // Use last scrub range before scrubbing started
       const { start, end } = getOrderedStartEnd(
         entity.lastDefinedScrubRange?.start,
@@ -582,7 +586,10 @@ export function useComparisonRange(name: string) {
         start: undefined,
         end: undefined,
       };
-    } else if (entity?.lastDefinedScrubRange) {
+    } else if (
+      entity?.lastDefinedScrubRange?.start &&
+      entity?.lastDefinedScrubRange?.end
+    ) {
       const { start, end } = getOrderedStartEnd(
         entity.lastDefinedScrubRange?.start,
         entity.lastDefinedScrubRange?.end

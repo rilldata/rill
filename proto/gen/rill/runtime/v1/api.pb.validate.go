@@ -9470,6 +9470,236 @@ var _ interface {
 	ErrorName() string
 } = ListConnectorsResponseValidationError{}
 
+// Validate checks the field values on IssueDevJWTRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *IssueDevJWTRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on IssueDevJWTRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// IssueDevJWTRequestMultiError, or nil if none found.
+func (m *IssueDevJWTRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *IssueDevJWTRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetName()) < 1 {
+		err := IssueDevJWTRequestValidationError{
+			field:  "Name",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetEmail()) < 1 {
+		err := IssueDevJWTRequestValidationError{
+			field:  "Email",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Admin
+
+	if len(errors) > 0 {
+		return IssueDevJWTRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// IssueDevJWTRequestMultiError is an error wrapping multiple validation errors
+// returned by IssueDevJWTRequest.ValidateAll() if the designated constraints
+// aren't met.
+type IssueDevJWTRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m IssueDevJWTRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m IssueDevJWTRequestMultiError) AllErrors() []error { return m }
+
+// IssueDevJWTRequestValidationError is the validation error returned by
+// IssueDevJWTRequest.Validate if the designated constraints aren't met.
+type IssueDevJWTRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e IssueDevJWTRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e IssueDevJWTRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e IssueDevJWTRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e IssueDevJWTRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e IssueDevJWTRequestValidationError) ErrorName() string {
+	return "IssueDevJWTRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e IssueDevJWTRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sIssueDevJWTRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = IssueDevJWTRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = IssueDevJWTRequestValidationError{}
+
+// Validate checks the field values on IssueDevJWTResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *IssueDevJWTResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on IssueDevJWTResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// IssueDevJWTResponseMultiError, or nil if none found.
+func (m *IssueDevJWTResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *IssueDevJWTResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Jwt
+
+	if len(errors) > 0 {
+		return IssueDevJWTResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// IssueDevJWTResponseMultiError is an error wrapping multiple validation
+// errors returned by IssueDevJWTResponse.ValidateAll() if the designated
+// constraints aren't met.
+type IssueDevJWTResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m IssueDevJWTResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m IssueDevJWTResponseMultiError) AllErrors() []error { return m }
+
+// IssueDevJWTResponseValidationError is the validation error returned by
+// IssueDevJWTResponse.Validate if the designated constraints aren't met.
+type IssueDevJWTResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e IssueDevJWTResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e IssueDevJWTResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e IssueDevJWTResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e IssueDevJWTResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e IssueDevJWTResponseValidationError) ErrorName() string {
+	return "IssueDevJWTResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e IssueDevJWTResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sIssueDevJWTResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = IssueDevJWTResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = IssueDevJWTResponseValidationError{}
+
 // Validate checks the field values on ReconcileError_CharLocation with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.

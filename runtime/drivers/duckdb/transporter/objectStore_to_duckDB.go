@@ -150,9 +150,9 @@ func (a *appender) appendData(ctx context.Context, files []string, format string
 
 	var query string
 	if a.allowSchemaRelaxation {
-		query = fmt.Sprintf("INSERT INTO %q BY NAME (SELECT * FROM %s); CHECKPOINT;", a.sink.Table, from)
+		query = fmt.Sprintf("INSERT INTO %q BY NAME (SELECT * FROM %s);", a.sink.Table, from)
 	} else {
-		query = fmt.Sprintf("INSERT INTO %q (SELECT * FROM %s); CHECKPOINT;", a.sink.Table, from)
+		query = fmt.Sprintf("INSERT INTO %q (SELECT * FROM %s);", a.sink.Table, from)
 	}
 	a.logger.Debug("generated query", zap.String("query", query), observability.ZapCtx(ctx))
 	err = a.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
@@ -167,7 +167,7 @@ func (a *appender) appendData(ctx context.Context, files []string, format string
 		return fmt.Errorf("failed to update schema %w", err)
 	}
 
-	query = fmt.Sprintf("INSERT INTO %q BY NAME (SELECT * FROM %s); CHECKPOINT;", a.sink.Table, from)
+	query = fmt.Sprintf("INSERT INTO %q BY NAME (SELECT * FROM %s);", a.sink.Table, from)
 	a.logger.Debug("generated query", zap.String("query", query), observability.ZapCtx(ctx))
 	return a.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
 }
