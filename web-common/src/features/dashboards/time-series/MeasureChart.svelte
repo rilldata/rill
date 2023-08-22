@@ -237,7 +237,10 @@
             area={false}
             lineColor={`hsl(217, 10%, 60%)`}
             delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
-            duration={$timeRangeKey !== $previousTimeRangeKey ? 0 : 200}
+            duration={hasSubrangeSelected ||
+            $timeRangeKey !== $previousTimeRangeKey
+              ? 0
+              : 200}
             {data}
             {xAccessor}
             yAccessor="comparison.{yAccessor}"
@@ -248,7 +251,9 @@
         lineColor={mainLineColor}
         {areaColor}
         delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
-        duration={$timeRangeKey !== $previousTimeRangeKey ? 0 : 200}
+        duration={hasSubrangeSelected || $timeRangeKey !== $previousTimeRangeKey
+          ? 0
+          : 200}
         {data}
         {xAccessor}
         {yAccessor}
@@ -259,8 +264,8 @@
           end={Math.max(scrubStart, scrubEnd)}
           lineColor="hsla(217,60%, 55%, 1)"
           areaColor="hsla(217,70%, 80%, .4)"
-          delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
-          duration={$timeRangeKey !== $previousTimeRangeKey ? 0 : 200}
+          delay={0}
+          duration={0}
           {data}
           {xAccessor}
           {yAccessor}
