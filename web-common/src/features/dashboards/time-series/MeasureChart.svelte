@@ -98,10 +98,10 @@
       mouseOverCords < Math.max(scrubStartCords, scrubEndCords) - 5
   );
 
-  $: cursorClass = isInsideScrub
-    ? "cursor-grab"
-    : isMovingScrub
+  $: cursorClass = isMovingScrub
     ? "cursor-grabbing"
+    : isInsideScrub
+    ? "cursor-grab"
     : isScrubbing || isOverStart || isOverEnd
     ? "cursor-ew-resize"
     : "";
