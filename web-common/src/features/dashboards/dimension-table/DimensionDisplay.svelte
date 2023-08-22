@@ -16,6 +16,7 @@
   import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
   import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
   import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
+  import { DashboardState_LeaderboardSortDirection } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
   import {
     createQueryServiceMetricsViewToplist,
     createQueryServiceMetricsViewTotals,
@@ -27,7 +28,6 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import {
-    SortDirection,
     metricsExplorerStore,
     useDashboardStore,
     useFetchTimeRange,
@@ -98,7 +98,9 @@
     $dashboardStore?.visibleMeasureKeys.has(m.name)
   );
 
-  $: sortAscending = $dashboardStore.sortDirection === SortDirection.ASC;
+  $: sortAscending =
+    $dashboardStore.sortDirection ===
+    DashboardState_LeaderboardSortDirection.ASCENDING;
 
   $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricViewName);
   $: hasTimeSeries = $metricTimeSeries.data;

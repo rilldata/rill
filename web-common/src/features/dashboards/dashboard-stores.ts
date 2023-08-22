@@ -10,11 +10,15 @@ import {
 import { getComparionRangeForScrub } from "@rilldata/web-common/lib/time/comparisons";
 import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
 import { convertTimeRangePreset } from "@rilldata/web-common/lib/time/ranges";
+import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
   ScrubRange,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
+import {
+  DashboardState_LeaderboardSortDirection,
+  DashboardState_LeaderboardSortType,
+} from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   V1ColumnTimeRangeResponse,
   V1MetricsView,
@@ -30,43 +34,6 @@ export interface LeaderboardValue {
 export interface LeaderboardValues {
   values: Array<LeaderboardValue>;
   dimensionName: string;
-}
-
-export enum SortDirection {
-  ASC = "ASCENDING",
-  DESC = "DESCENDING",
-}
-
-/**
- * SortType is used to determine how to sort the leaderboard
- * and dimension detail table, as well as where to place the
- * sort arrow.
- *
- * By default, the leaderboards+table will be sorted by VALUE,
- * using the value of the currently selected dashboard measure.
- *
- * If DELTA_CHANGE or DELTA_PCT is selected, the
- * leaderboards+table will be sorted by the absolute or percentage
- * delta change of the currently selected dashboard measure.
- *
- * If PERCENT is selected, the table will be sorted by the value
- * of the currently selected dashboard measure, which will return
- * the same ordering as the percent-of-total sort for measures
- * with valid percent-of-total. However, the sort arrow will be
- * placed next to the percent-of-total icon.
- *
- * As of 2023-08, DIMENSION is not implemented, but at that time
- * the plan was to only apply DIMENSTION sort to the dimension
- * detail table, and not the leaderboards.
- */
-export enum SortType {
-  VALUE = "VALUE",
-  DIMENSION = "DIMENSION",
-  DELTA_CHANGE = "DELTA_CHANGE",
-  DELTA_PCT = "DELTA_PCT",
-  // Note that PERCENT will return the same ordering as VALUE,
-  // but the sort arrow will be placed differently
-  PERCENT = "PERCENT",
 }
 
 export type ActiveValues = Record<string, Array<[unknown, boolean]>>;
@@ -107,10 +74,10 @@ export interface MetricsExplorerEntity {
 
   // This is the sort type that will be used for the leaderboard
   // and dimension detail table. See SortType for more details.
-  dashboardSortType: SortType;
+  dashboardSortType: DashboardState_LeaderboardSortType;
   // This is the sort direction that will be used for the leaderboard
   // and dimension detail table.
-  sortDirection: SortDirection;
+  sortDirection: DashboardState_LeaderboardSortDirection;
 
   filters: V1MetricsViewFilter;
   // stores whether a dimension is in include/exclude filter mode
@@ -325,8 +292,8 @@ const metricViewReducers = {
         },
         dimensionFilterExcludeMode: new Map(),
         leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
-        dashboardSortType: SortType.VALUE,
-        sortDirection: SortDirection.DESC,
+        dashboardSortType: DashboardState_LeaderboardSortType.VALUE,
+        sortDirection: DashboardState_LeaderboardSortDirection.DESCENDING,
 
         ...timeSelections,
         showComparison: false,
@@ -373,26 +340,32 @@ const metricViewReducers = {
 
   setSortDescending(name: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.sortDirection = SortDirection.DESC;
+      metricsExplorer.sortDirection =
+        DashboardState_LeaderboardSortDirection.DESCENDING;
     });
   },
 
   setSortAscending(name: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.sortDirection = SortDirection.ASC;
+      metricsExplorer.sortDirection =
+        DashboardState_LeaderboardSortDirection.ASCENDING;
     });
   },
 
   toggleSortDirection(name: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.sortDirection =
-        metricsExplorer.sortDirection === SortDirection.ASC
-          ? SortDirection.DESC
-          : SortDirection.ASC;
+        metricsExplorer.sortDirection ===
+        DashboardState_LeaderboardSortDirection.ASCENDING
+          ? DashboardState_LeaderboardSortDirection.DESCENDING
+          : DashboardState_LeaderboardSortDirection.ASCENDING;
     });
   },
 
-  setSortDirection(name: string, direction: SortDirection) {
+  setSortDirection(
+    name: string,
+    direction: DashboardState_LeaderboardSortDirection
+  ) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.sortDirection = direction;
     });
