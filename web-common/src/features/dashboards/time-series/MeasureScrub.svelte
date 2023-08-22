@@ -166,7 +166,18 @@
     }
   }
 
-  export function endScrub() {
+  export function endScrub(e) {
+    // if the mouse leaves the svg area, reset the scrub
+    // check if any parent of explicitOriginalTarget is a svg or not
+    if (
+      e?.explicitOriginalTarget?.nodeName === "#text" ||
+      (e?.explicitOriginalTarget?.nodeName !== "svg" &&
+        !e?.explicitOriginalTarget?.closest("svg"))
+    ) {
+      dispatch("reset");
+      return;
+    }
+
     // Remove scrub if start and end are same
     if (hasSubrangeSelected && start?.getTime() === stop?.getTime()) {
       dispatch("reset");
