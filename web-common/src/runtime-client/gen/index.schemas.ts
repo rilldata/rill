@@ -239,6 +239,7 @@ export type QueryServiceExportBody = {
   format?: V1ExportFormat;
   metricsViewToplistRequest?: V1MetricsViewToplistRequest;
   metricsViewRowsRequest?: V1MetricsViewRowsRequest;
+  metricsViewTimeSeriesRequest?: V1MetricsViewTimeSeriesRequest;
 };
 
 export type QueryServiceColumnDescriptiveStatisticsParams = {

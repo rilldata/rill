@@ -984,6 +984,8 @@ paths:
                 $ref: '#/definitions/v1MetricsViewToplistRequest'
               metricsViewRowsRequest:
                 $ref: '#/definitions/v1MetricsViewRowsRequest'
+              metricsViewTimeSeriesRequest:
+                $ref: '#/definitions/v1MetricsViewTimeSeriesRequest'
             title: Request message for QueryService.Export
       tags:
         - QueryService

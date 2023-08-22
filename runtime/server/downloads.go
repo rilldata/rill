@@ -72,11 +72,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	switch v := request.Request.(type) {
 	case *runtimev1.ExportRequest_MetricsViewToplistRequest:
 		r := v.MetricsViewToplistRequest
-		err := validateInlineMeasures(r.InlineMeasures)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+
 		mv, policy, err := resolveMVAndPolicy(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName)
 		if err != nil {
 			if errors.Is(err, ErrForbidden) {
@@ -88,6 +84,12 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		}
 		if !checkFieldAccess(r.DimensionName, policy) {
 			http.Error(w, "action not allowed", http.StatusUnauthorized)
+			return
+		}
+
+		err = validateInlineMeasures(r.InlineMeasures)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -123,6 +125,37 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			Filter:           r.Filter,
 			Sort:             r.Sort,
 			Limit:            request.Limit,
+			TimeZone:         r.TimeZone,
+			MetricsView:      mv,
+			ResolvedMVPolicy: policy,
+		}
+	case *runtimev1.ExportRequest_MetricsViewTimeSeriesRequest:
+		r := v.MetricsViewTimeSeriesRequest
+
+		mv, policy, err := resolveMVAndPolicy(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName)
+		if err != nil {
+			if errors.Is(err, ErrForbidden) {
+				http.Error(w, "action not allowed", http.StatusUnauthorized)
+				return
+			}
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		err = validateInlineMeasures(r.InlineMeasures)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		q = &queries.MetricsViewTimeSeries{
+			MetricsViewName:  r.MetricsViewName,
+			MeasureNames:     r.MeasureNames,
+			InlineMeasures:   r.InlineMeasures,
+			TimeStart:        r.TimeStart,
+			TimeEnd:          r.TimeEnd,
+			TimeGranularity:  r.TimeGranularity,
+			Filter:           r.Filter,
 			TimeZone:         r.TimeZone,
 			MetricsView:      mv,
 			ResolvedMVPolicy: policy,
