@@ -6,6 +6,8 @@
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import { contexts } from "@rilldata/web-common/components/data-graphic/constants";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
+  import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
+  import { getBisectedTimeFromCordinates } from "@rilldata/web-common/features/dashboards/time-series/utils";
 
   export let start;
   export let stop;
@@ -13,8 +15,24 @@
   export let showLabels = false;
   export let mouseoverTimeFormat;
 
+  export let labelAccessor;
+  export let timeGrainLabel;
+  export let data;
+
+  export let isOverStart;
+  export let isOverEnd;
+  export let isInsideScrub;
+
+  // scrub local control points
+  let justCreatedScrub = false;
+  let moveStartDelta = 0;
+  let moveEndDelta = 0;
+  let isResizing: "start" | "end" = undefined;
+  let isMovingScrub = false;
+
   const dispatch = createEventDispatcher();
   const plotConfig: Writable<PlotConfig> = getContext(contexts.config);
+  const xScale = getContext(contexts.scale("x")) as ScaleStore;
 
   const strokeWidth = 1;
   const xLabelBuffer = 8;
@@ -24,6 +42,153 @@
 
   let showContextMenu = false;
   let contextMenuOpen = false;
+
+  $: hasSubrangeSelected = Boolean(start && stop);
+
+  export let cursorClass = "";
+  $: cursorClass = isMovingScrub
+    ? "cursor-grabbing"
+    : isInsideScrub
+    ? "cursor-grab"
+    : isScrubbing || isOverStart || isOverEnd
+    ? "cursor-ew-resize"
+    : "";
+
+  export let preventScrubReset;
+  $: preventScrubReset = justCreatedScrub || isScrubbing || isResizing;
+
+  export function startScrub(event) {
+    if (hasSubrangeSelected) {
+      const startX = event.detail?.start?.x;
+      // check if we are scrubbing on the edges of scrub rect
+      if (isOverStart || isOverEnd) {
+        isResizing = isOverStart ? "start" : "end";
+        dispatch("update", {
+          start: start,
+          stop: stop,
+          isScrubbing: true,
+        });
+
+        return;
+      } else if (isInsideScrub) {
+        isMovingScrub = true;
+        moveStartDelta = startX - $xScale(start);
+        moveEndDelta = startX - $xScale(stop);
+
+        return;
+      }
+    }
+  }
+
+  export function moveScrub(event) {
+    const startX = event.detail?.start?.x;
+    const scrubStartDate = getBisectedTimeFromCordinates(
+      startX,
+      $xScale,
+      labelAccessor,
+      data,
+      timeGrainLabel
+    );
+
+    let stopX = event.detail?.stop?.x;
+    let intermediateScrubVal = getBisectedTimeFromCordinates(
+      stopX,
+      $xScale,
+      labelAccessor,
+      data,
+      timeGrainLabel
+    );
+
+    if (hasSubrangeSelected && (isResizing || isMovingScrub)) {
+      if (
+        isResizing &&
+        intermediateScrubVal?.getTime() !== stop?.getTime() &&
+        intermediateScrubVal?.getTime() !== start?.getTime()
+      ) {
+        /**
+         * Adjust the ends of the subrange by dragging either end.
+         * This snaps to the nearest time grain.
+         */
+        const newStart = isResizing === "start" ? intermediateScrubVal : start;
+        const newEnd = isResizing === "end" ? intermediateScrubVal : stop;
+
+        dispatch("update", {
+          start: newStart,
+          stop: newEnd,
+          isScrubbing: true,
+        });
+      } else if (!isResizing && isMovingScrub) {
+        /**
+         * Pick up and shift the entire subrange left/right
+         * This snaps to the nearest time grain
+         */
+
+        const startX = event.detail?.start?.x;
+        const delta = stopX - startX;
+
+        const newStart = getBisectedTimeFromCordinates(
+          startX - moveStartDelta + delta,
+          $xScale,
+          labelAccessor,
+          data,
+          timeGrainLabel
+        );
+
+        const newEnd = getBisectedTimeFromCordinates(
+          startX - moveEndDelta + delta,
+          $xScale,
+          labelAccessor,
+          data,
+          timeGrainLabel
+        );
+
+        const insideBounds = $xScale(newStart) >= 0 && $xScale(newEnd) >= 0;
+        if (insideBounds && newStart?.getTime() !== start?.getTime()) {
+          dispatch("update", {
+            start: newStart,
+            stop: newEnd,
+            isScrubbing: true,
+          });
+        }
+      }
+    } else {
+      // Only make state changes when the bisected value changes
+      if (
+        scrubStartDate?.getTime() !== start?.getTime() ||
+        intermediateScrubVal?.getTime() !== stop?.getTime()
+      ) {
+        dispatch("update", {
+          start: scrubStartDate,
+          stop: intermediateScrubVal,
+          isScrubbing: true,
+        });
+      }
+    }
+  }
+
+  export function endScrub() {
+    // Remove scrub if start and end are same
+    if (hasSubrangeSelected && start?.getTime() === stop?.getTime()) {
+      dispatch("reset");
+      return;
+    }
+
+    isResizing = undefined;
+    isMovingScrub = false;
+    justCreatedScrub = true;
+
+    // reset justCreatedScrub after 100 milliseconds
+    setTimeout(() => {
+      justCreatedScrub = false;
+    }, 100);
+
+    dispatch("update", {
+      start,
+      stop,
+      isScrubbing: false,
+    });
+  }
+
   function onContextMenu() {
     showContextMenu = true;
   }
