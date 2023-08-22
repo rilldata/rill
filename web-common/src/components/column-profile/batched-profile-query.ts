@@ -28,7 +28,8 @@ import { derived, readable } from "svelte/store";
 export function batchedProfileQuery(
   instanceId: string,
   tableName: string,
-  profileColumnResponse: QueryObserverResult<V1TableColumnsResponse>
+  profileColumnResponse: QueryObserverResult<V1TableColumnsResponse>,
+  done: () => void
 ) {
   if (!profileColumnResponse?.data || profileColumnResponse.isFetching)
     return readable(false);
@@ -90,9 +91,9 @@ export function batchedProfileQuery(
       );
     }
   }
-  waitUntil(() => batchedRequest.ready).then(() =>
-    batchedRequest.send(instanceId)
-  );
+  waitUntil(() => batchedRequest.ready)
+    .then(() => batchedRequest.send(instanceId))
+    .then(done);
 
   return derived(stores, () => true);
 }

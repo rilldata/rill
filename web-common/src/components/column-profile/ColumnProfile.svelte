@@ -49,11 +49,14 @@
   );
 
   let batchedQuery: Readable<boolean>;
+  let sending = true;
   $: if ($profileColumns) {
+    sending = true;
     batchedQuery = batchedProfileQuery(
       $runtime?.instanceId,
       objectName,
-      $profileColumns
+      $profileColumns,
+      () => (sending = false)
     );
   }
 
@@ -126,7 +129,7 @@
         {hideRight}
         {hideNullPercentage}
         {compact}
-        enableProfiling={!$profileColumns?.isFetching}
+        enableProfiling={sending}
       />
     {/each}
   {/if}
