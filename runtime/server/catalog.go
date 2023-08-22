@@ -36,8 +36,9 @@ func (s *Server) ListCatalogEntries(ctx context.Context, req *runtimev1.ListCata
 	}
 
 	var pbs []*runtimev1.CatalogEntry
-	if req.Type == runtimev1.ObjectType_OBJECT_TYPE_METRICS_VIEW {
-		for _, entry := range entries {
+	for _, entry := range entries {
+		var pb *runtimev1.CatalogEntry
+		if req.Type == runtimev1.ObjectType_OBJECT_TYPE_METRICS_VIEW || entry.IsMetricsView() {
 			mv := entry.GetMetricsView()
 			policy, err := s.runtime.ResolveMetricsViewPolicy(auth.GetClaims(ctx).Attributes(), req.InstanceId, mv, entry.UpdatedOn)
 			if err != nil {
@@ -48,21 +49,17 @@ func (s *Server) ListCatalogEntries(ctx context.Context, req *runtimev1.ListCata
 				continue
 			}
 			newMv := filterDimensions(policy, mv)
-			pb, err := mvCatalogObjectToPB(entry, newMv)
+			pb, err = mvCatalogObjectToPB(entry, newMv)
 			if err != nil {
 				return nil, status.Error(codes.Unknown, err.Error())
 			}
-			pbs = append(pbs, pb)
-		}
-	} else {
-		pbs = make([]*runtimev1.CatalogEntry, len(entries))
-		for i, obj := range entries {
-			var err error
-			pbs[i], err = catalogObjectToPB(obj)
+		} else {
+			pb, err = catalogObjectToPB(entry)
 			if err != nil {
 				return nil, status.Error(codes.Unknown, err.Error())
 			}
 		}
+		pbs = append(pbs, pb)
 	}
 
 	return &runtimev1.ListCatalogEntriesResponse{Entries: pbs}, nil
@@ -87,7 +84,7 @@ func (s *Server) GetCatalogEntry(ctx context.Context, req *runtimev1.GetCatalogE
 	}
 
 	var pb *runtimev1.CatalogEntry
-	if entry.Type == drivers.ObjectTypeMetricsView {
+	if entry.Type == drivers.ObjectTypeMetricsView || entry.IsMetricsView() {
 		mv := entry.GetMetricsView()
 		policy, err := s.runtime.ResolveMetricsViewPolicy(auth.GetClaims(ctx).Attributes(), req.InstanceId, mv, entry.UpdatedOn)
 		if err != nil {
