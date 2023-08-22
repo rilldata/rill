@@ -50,6 +50,9 @@ const (
 	// RuntimeServiceEditInstanceVariablesProcedure is the fully-qualified name of the RuntimeService's
 	// EditInstanceVariables RPC.
 	RuntimeServiceEditInstanceVariablesProcedure = "/rill.runtime.v1.RuntimeService/EditInstanceVariables"
+	// RuntimeServiceEditInstanceAnnotationsProcedure is the fully-qualified name of the
+	// RuntimeService's EditInstanceAnnotations RPC.
+	RuntimeServiceEditInstanceAnnotationsProcedure = "/rill.runtime.v1.RuntimeService/EditInstanceAnnotations"
 	// RuntimeServiceDeleteInstanceProcedure is the fully-qualified name of the RuntimeService's
 	// DeleteInstance RPC.
 	RuntimeServiceDeleteInstanceProcedure = "/rill.runtime.v1.RuntimeService/DeleteInstance"
@@ -78,6 +81,23 @@ const (
 	// RuntimeServiceUnpackEmptyProcedure is the fully-qualified name of the RuntimeService's
 	// UnpackEmpty RPC.
 	RuntimeServiceUnpackEmptyProcedure = "/rill.runtime.v1.RuntimeService/UnpackEmpty"
+	// RuntimeServiceGetLogsProcedure is the fully-qualified name of the RuntimeService's GetLogs RPC.
+	RuntimeServiceGetLogsProcedure = "/rill.runtime.v1.RuntimeService/GetLogs"
+	// RuntimeServiceWatchLogsProcedure is the fully-qualified name of the RuntimeService's WatchLogs
+	// RPC.
+	RuntimeServiceWatchLogsProcedure = "/rill.runtime.v1.RuntimeService/WatchLogs"
+	// RuntimeServiceListResourcesProcedure is the fully-qualified name of the RuntimeService's
+	// ListResources RPC.
+	RuntimeServiceListResourcesProcedure = "/rill.runtime.v1.RuntimeService/ListResources"
+	// RuntimeServiceWatchResourcesProcedure is the fully-qualified name of the RuntimeService's
+	// WatchResources RPC.
+	RuntimeServiceWatchResourcesProcedure = "/rill.runtime.v1.RuntimeService/WatchResources"
+	// RuntimeServiceGetResourceProcedure is the fully-qualified name of the RuntimeService's
+	// GetResource RPC.
+	RuntimeServiceGetResourceProcedure = "/rill.runtime.v1.RuntimeService/GetResource"
+	// RuntimeServiceCreateTriggerProcedure is the fully-qualified name of the RuntimeService's
+	// CreateTrigger RPC.
+	RuntimeServiceCreateTriggerProcedure = "/rill.runtime.v1.RuntimeService/CreateTrigger"
 	// RuntimeServiceListCatalogEntriesProcedure is the fully-qualified name of the RuntimeService's
 	// ListCatalogEntries RPC.
 	RuntimeServiceListCatalogEntriesProcedure = "/rill.runtime.v1.RuntimeService/ListCatalogEntries"
@@ -124,6 +144,8 @@ type RuntimeServiceClient interface {
 	EditInstance(context.Context, *connect_go.Request[v1.EditInstanceRequest]) (*connect_go.Response[v1.EditInstanceResponse], error)
 	// EditInstanceVariables edits the instance variable
 	EditInstanceVariables(context.Context, *connect_go.Request[v1.EditInstanceVariablesRequest]) (*connect_go.Response[v1.EditInstanceVariablesResponse], error)
+	// EditInstanceAnnotations edits the instance annotations
+	EditInstanceAnnotations(context.Context, *connect_go.Request[v1.EditInstanceAnnotationsRequest]) (*connect_go.Response[v1.EditInstanceAnnotationsResponse], error)
 	// DeleteInstance deletes an instance
 	DeleteInstance(context.Context, *connect_go.Request[v1.DeleteInstanceRequest]) (*connect_go.Response[v1.DeleteInstanceResponse], error)
 	// ListFiles lists all the files matching a glob in a repo.
@@ -145,6 +167,19 @@ type RuntimeServiceClient interface {
 	UnpackExample(context.Context, *connect_go.Request[v1.UnpackExampleRequest]) (*connect_go.Response[v1.UnpackExampleResponse], error)
 	// UnpackEmpty unpacks an empty project
 	UnpackEmpty(context.Context, *connect_go.Request[v1.UnpackEmptyRequest]) (*connect_go.Response[v1.UnpackEmptyResponse], error)
+	// GetLogs returns recent logs from a controller
+	GetLogs(context.Context, *connect_go.Request[v1.GetLogsRequest]) (*connect_go.Response[v1.GetLogsResponse], error)
+	// WatchLogs streams new logs emitted from a controller
+	WatchLogs(context.Context, *connect_go.Request[v1.WatchLogsRequest]) (*connect_go.ServerStreamForClient[v1.WatchLogsResponse], error)
+	// ListResources lists the resources stored in the catalog
+	ListResources(context.Context, *connect_go.Request[v1.ListResourcesRequest]) (*connect_go.Response[v1.ListResourcesResponse], error)
+	// WatchResources streams updates to catalog resources (including creation and deletion events)
+	WatchResources(context.Context, *connect_go.Request[v1.WatchResourcesRequest]) (*connect_go.ServerStreamForClient[v1.WatchResourcesResponse], error)
+	// GetResource looks up a specific catalog resource
+	GetResource(context.Context, *connect_go.Request[v1.GetResourceRequest]) (*connect_go.Response[v1.GetResourceResponse], error)
+	// CreateTrigger creates a trigger in the catalog.
+	// Triggers are ephemeral resources that will be cleaned up by the controller.
+	CreateTrigger(context.Context, *connect_go.Request[v1.CreateTriggerRequest]) (*connect_go.Response[v1.CreateTriggerResponse], error)
 	// ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
 	ListCatalogEntries(context.Context, *connect_go.Request[v1.ListCatalogEntriesRequest]) (*connect_go.Response[v1.ListCatalogEntriesResponse], error)
 	// GetCatalogEntry returns information about a specific entry in the catalog
@@ -214,6 +249,11 @@ func NewRuntimeServiceClient(httpClient connect_go.HTTPClient, baseURL string, o
 			baseURL+RuntimeServiceEditInstanceVariablesProcedure,
 			opts...,
 		),
+		editInstanceAnnotations: connect_go.NewClient[v1.EditInstanceAnnotationsRequest, v1.EditInstanceAnnotationsResponse](
+			httpClient,
+			baseURL+RuntimeServiceEditInstanceAnnotationsProcedure,
+			opts...,
+		),
 		deleteInstance: connect_go.NewClient[v1.DeleteInstanceRequest, v1.DeleteInstanceResponse](
 			httpClient,
 			baseURL+RuntimeServiceDeleteInstanceProcedure,
@@ -262,6 +302,36 @@ func NewRuntimeServiceClient(httpClient connect_go.HTTPClient, baseURL string, o
 		unpackEmpty: connect_go.NewClient[v1.UnpackEmptyRequest, v1.UnpackEmptyResponse](
 			httpClient,
 			baseURL+RuntimeServiceUnpackEmptyProcedure,
+			opts...,
+		),
+		getLogs: connect_go.NewClient[v1.GetLogsRequest, v1.GetLogsResponse](
+			httpClient,
+			baseURL+RuntimeServiceGetLogsProcedure,
+			opts...,
+		),
+		watchLogs: connect_go.NewClient[v1.WatchLogsRequest, v1.WatchLogsResponse](
+			httpClient,
+			baseURL+RuntimeServiceWatchLogsProcedure,
+			opts...,
+		),
+		listResources: connect_go.NewClient[v1.ListResourcesRequest, v1.ListResourcesResponse](
+			httpClient,
+			baseURL+RuntimeServiceListResourcesProcedure,
+			opts...,
+		),
+		watchResources: connect_go.NewClient[v1.WatchResourcesRequest, v1.WatchResourcesResponse](
+			httpClient,
+			baseURL+RuntimeServiceWatchResourcesProcedure,
+			opts...,
+		),
+		getResource: connect_go.NewClient[v1.GetResourceRequest, v1.GetResourceResponse](
+			httpClient,
+			baseURL+RuntimeServiceGetResourceProcedure,
+			opts...,
+		),
+		createTrigger: connect_go.NewClient[v1.CreateTriggerRequest, v1.CreateTriggerResponse](
+			httpClient,
+			baseURL+RuntimeServiceCreateTriggerProcedure,
 			opts...,
 		),
 		listCatalogEntries: connect_go.NewClient[v1.ListCatalogEntriesRequest, v1.ListCatalogEntriesResponse](
@@ -319,32 +389,39 @@ func NewRuntimeServiceClient(httpClient connect_go.HTTPClient, baseURL string, o
 
 // runtimeServiceClient implements RuntimeServiceClient.
 type runtimeServiceClient struct {
-	ping                   *connect_go.Client[v1.PingRequest, v1.PingResponse]
-	listInstances          *connect_go.Client[v1.ListInstancesRequest, v1.ListInstancesResponse]
-	getInstance            *connect_go.Client[v1.GetInstanceRequest, v1.GetInstanceResponse]
-	createInstance         *connect_go.Client[v1.CreateInstanceRequest, v1.CreateInstanceResponse]
-	editInstance           *connect_go.Client[v1.EditInstanceRequest, v1.EditInstanceResponse]
-	editInstanceVariables  *connect_go.Client[v1.EditInstanceVariablesRequest, v1.EditInstanceVariablesResponse]
-	deleteInstance         *connect_go.Client[v1.DeleteInstanceRequest, v1.DeleteInstanceResponse]
-	listFiles              *connect_go.Client[v1.ListFilesRequest, v1.ListFilesResponse]
-	watchFiles             *connect_go.Client[v1.WatchFilesRequest, v1.WatchFilesResponse]
-	getFile                *connect_go.Client[v1.GetFileRequest, v1.GetFileResponse]
-	putFile                *connect_go.Client[v1.PutFileRequest, v1.PutFileResponse]
-	deleteFile             *connect_go.Client[v1.DeleteFileRequest, v1.DeleteFileResponse]
-	renameFile             *connect_go.Client[v1.RenameFileRequest, v1.RenameFileResponse]
-	listExamples           *connect_go.Client[v1.ListExamplesRequest, v1.ListExamplesResponse]
-	unpackExample          *connect_go.Client[v1.UnpackExampleRequest, v1.UnpackExampleResponse]
-	unpackEmpty            *connect_go.Client[v1.UnpackEmptyRequest, v1.UnpackEmptyResponse]
-	listCatalogEntries     *connect_go.Client[v1.ListCatalogEntriesRequest, v1.ListCatalogEntriesResponse]
-	getCatalogEntry        *connect_go.Client[v1.GetCatalogEntryRequest, v1.GetCatalogEntryResponse]
-	triggerRefresh         *connect_go.Client[v1.TriggerRefreshRequest, v1.TriggerRefreshResponse]
-	triggerSync            *connect_go.Client[v1.TriggerSyncRequest, v1.TriggerSyncResponse]
-	reconcile              *connect_go.Client[v1.ReconcileRequest, v1.ReconcileResponse]
-	putFileAndReconcile    *connect_go.Client[v1.PutFileAndReconcileRequest, v1.PutFileAndReconcileResponse]
-	deleteFileAndReconcile *connect_go.Client[v1.DeleteFileAndReconcileRequest, v1.DeleteFileAndReconcileResponse]
-	renameFileAndReconcile *connect_go.Client[v1.RenameFileAndReconcileRequest, v1.RenameFileAndReconcileResponse]
-	refreshAndReconcile    *connect_go.Client[v1.RefreshAndReconcileRequest, v1.RefreshAndReconcileResponse]
-	listConnectors         *connect_go.Client[v1.ListConnectorsRequest, v1.ListConnectorsResponse]
+	ping                    *connect_go.Client[v1.PingRequest, v1.PingResponse]
+	listInstances           *connect_go.Client[v1.ListInstancesRequest, v1.ListInstancesResponse]
+	getInstance             *connect_go.Client[v1.GetInstanceRequest, v1.GetInstanceResponse]
+	createInstance          *connect_go.Client[v1.CreateInstanceRequest, v1.CreateInstanceResponse]
+	editInstance            *connect_go.Client[v1.EditInstanceRequest, v1.EditInstanceResponse]
+	editInstanceVariables   *connect_go.Client[v1.EditInstanceVariablesRequest, v1.EditInstanceVariablesResponse]
+	editInstanceAnnotations *connect_go.Client[v1.EditInstanceAnnotationsRequest, v1.EditInstanceAnnotationsResponse]
+	deleteInstance          *connect_go.Client[v1.DeleteInstanceRequest, v1.DeleteInstanceResponse]
+	listFiles               *connect_go.Client[v1.ListFilesRequest, v1.ListFilesResponse]
+	watchFiles              *connect_go.Client[v1.WatchFilesRequest, v1.WatchFilesResponse]
+	getFile                 *connect_go.Client[v1.GetFileRequest, v1.GetFileResponse]
+	putFile                 *connect_go.Client[v1.PutFileRequest, v1.PutFileResponse]
+	deleteFile              *connect_go.Client[v1.DeleteFileRequest, v1.DeleteFileResponse]
+	renameFile              *connect_go.Client[v1.RenameFileRequest, v1.RenameFileResponse]
+	listExamples            *connect_go.Client[v1.ListExamplesRequest, v1.ListExamplesResponse]
+	unpackExample           *connect_go.Client[v1.UnpackExampleRequest, v1.UnpackExampleResponse]
+	unpackEmpty             *connect_go.Client[v1.UnpackEmptyRequest, v1.UnpackEmptyResponse]
+	getLogs                 *connect_go.Client[v1.GetLogsRequest, v1.GetLogsResponse]
+	watchLogs               *connect_go.Client[v1.WatchLogsRequest, v1.WatchLogsResponse]
+	listResources           *connect_go.Client[v1.ListResourcesRequest, v1.ListResourcesResponse]
+	watchResources          *connect_go.Client[v1.WatchResourcesRequest, v1.WatchResourcesResponse]
+	getResource             *connect_go.Client[v1.GetResourceRequest, v1.GetResourceResponse]
+	createTrigger           *connect_go.Client[v1.CreateTriggerRequest, v1.CreateTriggerResponse]
+	listCatalogEntries      *connect_go.Client[v1.ListCatalogEntriesRequest, v1.ListCatalogEntriesResponse]
+	getCatalogEntry         *connect_go.Client[v1.GetCatalogEntryRequest, v1.GetCatalogEntryResponse]
+	triggerRefresh          *connect_go.Client[v1.TriggerRefreshRequest, v1.TriggerRefreshResponse]
+	triggerSync             *connect_go.Client[v1.TriggerSyncRequest, v1.TriggerSyncResponse]
+	reconcile               *connect_go.Client[v1.ReconcileRequest, v1.ReconcileResponse]
+	putFileAndReconcile     *connect_go.Client[v1.PutFileAndReconcileRequest, v1.PutFileAndReconcileResponse]
+	deleteFileAndReconcile  *connect_go.Client[v1.DeleteFileAndReconcileRequest, v1.DeleteFileAndReconcileResponse]
+	renameFileAndReconcile  *connect_go.Client[v1.RenameFileAndReconcileRequest, v1.RenameFileAndReconcileResponse]
+	refreshAndReconcile     *connect_go.Client[v1.RefreshAndReconcileRequest, v1.RefreshAndReconcileResponse]
+	listConnectors          *connect_go.Client[v1.ListConnectorsRequest, v1.ListConnectorsResponse]
 }
 
 // Ping calls rill.runtime.v1.RuntimeService.Ping.
@@ -375,6 +452,11 @@ func (c *runtimeServiceClient) EditInstance(ctx context.Context, req *connect_go
 // EditInstanceVariables calls rill.runtime.v1.RuntimeService.EditInstanceVariables.
 func (c *runtimeServiceClient) EditInstanceVariables(ctx context.Context, req *connect_go.Request[v1.EditInstanceVariablesRequest]) (*connect_go.Response[v1.EditInstanceVariablesResponse], error) {
 	return c.editInstanceVariables.CallUnary(ctx, req)
+}
+
+// EditInstanceAnnotations calls rill.runtime.v1.RuntimeService.EditInstanceAnnotations.
+func (c *runtimeServiceClient) EditInstanceAnnotations(ctx context.Context, req *connect_go.Request[v1.EditInstanceAnnotationsRequest]) (*connect_go.Response[v1.EditInstanceAnnotationsResponse], error) {
+	return c.editInstanceAnnotations.CallUnary(ctx, req)
 }
 
 // DeleteInstance calls rill.runtime.v1.RuntimeService.DeleteInstance.
@@ -425,6 +507,36 @@ func (c *runtimeServiceClient) UnpackExample(ctx context.Context, req *connect_g
 // UnpackEmpty calls rill.runtime.v1.RuntimeService.UnpackEmpty.
 func (c *runtimeServiceClient) UnpackEmpty(ctx context.Context, req *connect_go.Request[v1.UnpackEmptyRequest]) (*connect_go.Response[v1.UnpackEmptyResponse], error) {
 	return c.unpackEmpty.CallUnary(ctx, req)
+}
+
+// GetLogs calls rill.runtime.v1.RuntimeService.GetLogs.
+func (c *runtimeServiceClient) GetLogs(ctx context.Context, req *connect_go.Request[v1.GetLogsRequest]) (*connect_go.Response[v1.GetLogsResponse], error) {
+	return c.getLogs.CallUnary(ctx, req)
+}
+
+// WatchLogs calls rill.runtime.v1.RuntimeService.WatchLogs.
+func (c *runtimeServiceClient) WatchLogs(ctx context.Context, req *connect_go.Request[v1.WatchLogsRequest]) (*connect_go.ServerStreamForClient[v1.WatchLogsResponse], error) {
+	return c.watchLogs.CallServerStream(ctx, req)
+}
+
+// ListResources calls rill.runtime.v1.RuntimeService.ListResources.
+func (c *runtimeServiceClient) ListResources(ctx context.Context, req *connect_go.Request[v1.ListResourcesRequest]) (*connect_go.Response[v1.ListResourcesResponse], error) {
+	return c.listResources.CallUnary(ctx, req)
+}
+
+// WatchResources calls rill.runtime.v1.RuntimeService.WatchResources.
+func (c *runtimeServiceClient) WatchResources(ctx context.Context, req *connect_go.Request[v1.WatchResourcesRequest]) (*connect_go.ServerStreamForClient[v1.WatchResourcesResponse], error) {
+	return c.watchResources.CallServerStream(ctx, req)
+}
+
+// GetResource calls rill.runtime.v1.RuntimeService.GetResource.
+func (c *runtimeServiceClient) GetResource(ctx context.Context, req *connect_go.Request[v1.GetResourceRequest]) (*connect_go.Response[v1.GetResourceResponse], error) {
+	return c.getResource.CallUnary(ctx, req)
+}
+
+// CreateTrigger calls rill.runtime.v1.RuntimeService.CreateTrigger.
+func (c *runtimeServiceClient) CreateTrigger(ctx context.Context, req *connect_go.Request[v1.CreateTriggerRequest]) (*connect_go.Response[v1.CreateTriggerResponse], error) {
+	return c.createTrigger.CallUnary(ctx, req)
 }
 
 // ListCatalogEntries calls rill.runtime.v1.RuntimeService.ListCatalogEntries.
@@ -491,6 +603,8 @@ type RuntimeServiceHandler interface {
 	EditInstance(context.Context, *connect_go.Request[v1.EditInstanceRequest]) (*connect_go.Response[v1.EditInstanceResponse], error)
 	// EditInstanceVariables edits the instance variable
 	EditInstanceVariables(context.Context, *connect_go.Request[v1.EditInstanceVariablesRequest]) (*connect_go.Response[v1.EditInstanceVariablesResponse], error)
+	// EditInstanceAnnotations edits the instance annotations
+	EditInstanceAnnotations(context.Context, *connect_go.Request[v1.EditInstanceAnnotationsRequest]) (*connect_go.Response[v1.EditInstanceAnnotationsResponse], error)
 	// DeleteInstance deletes an instance
 	DeleteInstance(context.Context, *connect_go.Request[v1.DeleteInstanceRequest]) (*connect_go.Response[v1.DeleteInstanceResponse], error)
 	// ListFiles lists all the files matching a glob in a repo.
@@ -512,6 +626,19 @@ type RuntimeServiceHandler interface {
 	UnpackExample(context.Context, *connect_go.Request[v1.UnpackExampleRequest]) (*connect_go.Response[v1.UnpackExampleResponse], error)
 	// UnpackEmpty unpacks an empty project
 	UnpackEmpty(context.Context, *connect_go.Request[v1.UnpackEmptyRequest]) (*connect_go.Response[v1.UnpackEmptyResponse], error)
+	// GetLogs returns recent logs from a controller
+	GetLogs(context.Context, *connect_go.Request[v1.GetLogsRequest]) (*connect_go.Response[v1.GetLogsResponse], error)
+	// WatchLogs streams new logs emitted from a controller
+	WatchLogs(context.Context, *connect_go.Request[v1.WatchLogsRequest], *connect_go.ServerStream[v1.WatchLogsResponse]) error
+	// ListResources lists the resources stored in the catalog
+	ListResources(context.Context, *connect_go.Request[v1.ListResourcesRequest]) (*connect_go.Response[v1.ListResourcesResponse], error)
+	// WatchResources streams updates to catalog resources (including creation and deletion events)
+	WatchResources(context.Context, *connect_go.Request[v1.WatchResourcesRequest], *connect_go.ServerStream[v1.WatchResourcesResponse]) error
+	// GetResource looks up a specific catalog resource
+	GetResource(context.Context, *connect_go.Request[v1.GetResourceRequest]) (*connect_go.Response[v1.GetResourceResponse], error)
+	// CreateTrigger creates a trigger in the catalog.
+	// Triggers are ephemeral resources that will be cleaned up by the controller.
+	CreateTrigger(context.Context, *connect_go.Request[v1.CreateTriggerRequest]) (*connect_go.Response[v1.CreateTriggerResponse], error)
 	// ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
 	ListCatalogEntries(context.Context, *connect_go.Request[v1.ListCatalogEntriesRequest]) (*connect_go.Response[v1.ListCatalogEntriesResponse], error)
 	// GetCatalogEntry returns information about a specific entry in the catalog
@@ -577,6 +704,11 @@ func NewRuntimeServiceHandler(svc RuntimeServiceHandler, opts ...connect_go.Hand
 		svc.EditInstanceVariables,
 		opts...,
 	)
+	runtimeServiceEditInstanceAnnotationsHandler := connect_go.NewUnaryHandler(
+		RuntimeServiceEditInstanceAnnotationsProcedure,
+		svc.EditInstanceAnnotations,
+		opts...,
+	)
 	runtimeServiceDeleteInstanceHandler := connect_go.NewUnaryHandler(
 		RuntimeServiceDeleteInstanceProcedure,
 		svc.DeleteInstance,
@@ -625,6 +757,36 @@ func NewRuntimeServiceHandler(svc RuntimeServiceHandler, opts ...connect_go.Hand
 	runtimeServiceUnpackEmptyHandler := connect_go.NewUnaryHandler(
 		RuntimeServiceUnpackEmptyProcedure,
 		svc.UnpackEmpty,
+		opts...,
+	)
+	runtimeServiceGetLogsHandler := connect_go.NewUnaryHandler(
+		RuntimeServiceGetLogsProcedure,
+		svc.GetLogs,
+		opts...,
+	)
+	runtimeServiceWatchLogsHandler := connect_go.NewServerStreamHandler(
+		RuntimeServiceWatchLogsProcedure,
+		svc.WatchLogs,
+		opts...,
+	)
+	runtimeServiceListResourcesHandler := connect_go.NewUnaryHandler(
+		RuntimeServiceListResourcesProcedure,
+		svc.ListResources,
+		opts...,
+	)
+	runtimeServiceWatchResourcesHandler := connect_go.NewServerStreamHandler(
+		RuntimeServiceWatchResourcesProcedure,
+		svc.WatchResources,
+		opts...,
+	)
+	runtimeServiceGetResourceHandler := connect_go.NewUnaryHandler(
+		RuntimeServiceGetResourceProcedure,
+		svc.GetResource,
+		opts...,
+	)
+	runtimeServiceCreateTriggerHandler := connect_go.NewUnaryHandler(
+		RuntimeServiceCreateTriggerProcedure,
+		svc.CreateTrigger,
 		opts...,
 	)
 	runtimeServiceListCatalogEntriesHandler := connect_go.NewUnaryHandler(
@@ -691,6 +853,8 @@ func NewRuntimeServiceHandler(svc RuntimeServiceHandler, opts ...connect_go.Hand
 			runtimeServiceEditInstanceHandler.ServeHTTP(w, r)
 		case RuntimeServiceEditInstanceVariablesProcedure:
 			runtimeServiceEditInstanceVariablesHandler.ServeHTTP(w, r)
+		case RuntimeServiceEditInstanceAnnotationsProcedure:
+			runtimeServiceEditInstanceAnnotationsHandler.ServeHTTP(w, r)
 		case RuntimeServiceDeleteInstanceProcedure:
 			runtimeServiceDeleteInstanceHandler.ServeHTTP(w, r)
 		case RuntimeServiceListFilesProcedure:
@@ -711,6 +875,18 @@ func NewRuntimeServiceHandler(svc RuntimeServiceHandler, opts ...connect_go.Hand
 			runtimeServiceUnpackExampleHandler.ServeHTTP(w, r)
 		case RuntimeServiceUnpackEmptyProcedure:
 			runtimeServiceUnpackEmptyHandler.ServeHTTP(w, r)
+		case RuntimeServiceGetLogsProcedure:
+			runtimeServiceGetLogsHandler.ServeHTTP(w, r)
+		case RuntimeServiceWatchLogsProcedure:
+			runtimeServiceWatchLogsHandler.ServeHTTP(w, r)
+		case RuntimeServiceListResourcesProcedure:
+			runtimeServiceListResourcesHandler.ServeHTTP(w, r)
+		case RuntimeServiceWatchResourcesProcedure:
+			runtimeServiceWatchResourcesHandler.ServeHTTP(w, r)
+		case RuntimeServiceGetResourceProcedure:
+			runtimeServiceGetResourceHandler.ServeHTTP(w, r)
+		case RuntimeServiceCreateTriggerProcedure:
+			runtimeServiceCreateTriggerHandler.ServeHTTP(w, r)
 		case RuntimeServiceListCatalogEntriesProcedure:
 			runtimeServiceListCatalogEntriesHandler.ServeHTTP(w, r)
 		case RuntimeServiceGetCatalogEntryProcedure:
@@ -764,6 +940,10 @@ func (UnimplementedRuntimeServiceHandler) EditInstanceVariables(context.Context,
 	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("rill.runtime.v1.RuntimeService.EditInstanceVariables is not implemented"))
 }
 
+func (UnimplementedRuntimeServiceHandler) EditInstanceAnnotations(context.Context, *connect_go.Request[v1.EditInstanceAnnotationsRequest]) (*connect_go.Response[v1.EditInstanceAnnotationsResponse], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("rill.runtime.v1.RuntimeService.EditInstanceAnnotations is not implemented"))
+}
+
 func (UnimplementedRuntimeServiceHandler) DeleteInstance(context.Context, *connect_go.Request[v1.DeleteInstanceRequest]) (*connect_go.Response[v1.DeleteInstanceResponse], error) {
 	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("rill.runtime.v1.RuntimeService.DeleteInstance is not implemented"))
 }
@@ -802,6 +982,30 @@ func (UnimplementedRuntimeServiceHandler) UnpackExample(context.Context, *connec
 
 func (UnimplementedRuntimeServiceHandler) UnpackEmpty(context.Context, *connect_go.Request[v1.UnpackEmptyRequest]) (*connect_go.Response[v1.UnpackEmptyResponse], error) {
 	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("rill.runtime.v1.RuntimeService.UnpackEmpty is not implemented"))
+}
+
+func (UnimplementedRuntimeServiceHandler) GetLogs(context.Context, *connect_go.Request[v1.GetLogsRequest]) (*connect_go.Response[v1.GetLogsResponse], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("rill.runtime.v1.RuntimeService.GetLogs is not implemented"))
+}
+
+func (UnimplementedRuntimeServiceHandler) WatchLogs(context.Context, *connect_go.Request[v1.WatchLogsRequest], *connect_go.ServerStream[v1.WatchLogsResponse]) error {
+	return connect_go.NewError(connect_go.CodeUnimplemented, errors.New("rill.runtime.v1.RuntimeService.WatchLogs is not implemented"))
+}
+
+func (UnimplementedRuntimeServiceHandler) ListResources(context.Context, *connect_go.Request[v1.ListResourcesRequest]) (*connect_go.Response[v1.ListResourcesResponse], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("rill.runtime.v1.RuntimeService.ListResources is not implemented"))
+}
+
+func (UnimplementedRuntimeServiceHandler) WatchResources(context.Context, *connect_go.Request[v1.WatchResourcesRequest], *connect_go.ServerStream[v1.WatchResourcesResponse]) error {
+	return connect_go.NewError(connect_go.CodeUnimplemented, errors.New("rill.runtime.v1.RuntimeService.WatchResources is not implemented"))
+}
+
+func (UnimplementedRuntimeServiceHandler) GetResource(context.Context, *connect_go.Request[v1.GetResourceRequest]) (*connect_go.Response[v1.GetResourceResponse], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("rill.runtime.v1.RuntimeService.GetResource is not implemented"))
+}
+
+func (UnimplementedRuntimeServiceHandler) CreateTrigger(context.Context, *connect_go.Request[v1.CreateTriggerRequest]) (*connect_go.Response[v1.CreateTriggerResponse], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("rill.runtime.v1.RuntimeService.CreateTrigger is not implemented"))
 }
 
 func (UnimplementedRuntimeServiceHandler) ListCatalogEntries(context.Context, *connect_go.Request[v1.ListCatalogEntriesRequest]) (*connect_go.Response[v1.ListCatalogEntriesResponse], error) {

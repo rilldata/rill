@@ -52,6 +52,9 @@ const (
 	// QueryServiceMetricsViewRowsProcedure is the fully-qualified name of the QueryService's
 	// MetricsViewRows RPC.
 	QueryServiceMetricsViewRowsProcedure = "/rill.runtime.v1.QueryService/MetricsViewRows"
+	// QueryServiceMetricsViewTimeRangeProcedure is the fully-qualified name of the QueryService's
+	// MetricsViewTimeRange RPC.
+	QueryServiceMetricsViewTimeRangeProcedure = "/rill.runtime.v1.QueryService/MetricsViewTimeRange"
 	// QueryServiceColumnRollupIntervalProcedure is the fully-qualified name of the QueryService's
 	// ColumnRollupInterval RPC.
 	QueryServiceColumnRollupIntervalProcedure = "/rill.runtime.v1.QueryService/ColumnRollupInterval"
@@ -111,6 +114,8 @@ type QueryServiceClient interface {
 	MetricsViewTotals(context.Context, *connect_go.Request[v1.MetricsViewTotalsRequest]) (*connect_go.Response[v1.MetricsViewTotalsResponse], error)
 	// MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
 	MetricsViewRows(context.Context, *connect_go.Request[v1.MetricsViewRowsRequest]) (*connect_go.Response[v1.MetricsViewRowsResponse], error)
+	// MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
+	MetricsViewTimeRange(context.Context, *connect_go.Request[v1.MetricsViewTimeRangeRequest]) (*connect_go.Response[v1.MetricsViewTimeRangeResponse], error)
 	// ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
 	ColumnRollupInterval(context.Context, *connect_go.Request[v1.ColumnRollupIntervalRequest]) (*connect_go.Response[v1.ColumnRollupIntervalResponse], error)
 	// Get TopK elements from a table for a column given an agg function
@@ -185,6 +190,11 @@ func NewQueryServiceClient(httpClient connect_go.HTTPClient, baseURL string, opt
 		metricsViewRows: connect_go.NewClient[v1.MetricsViewRowsRequest, v1.MetricsViewRowsResponse](
 			httpClient,
 			baseURL+QueryServiceMetricsViewRowsProcedure,
+			opts...,
+		),
+		metricsViewTimeRange: connect_go.NewClient[v1.MetricsViewTimeRangeRequest, v1.MetricsViewTimeRangeResponse](
+			httpClient,
+			baseURL+QueryServiceMetricsViewTimeRangeProcedure,
 			opts...,
 		),
 		columnRollupInterval: connect_go.NewClient[v1.ColumnRollupIntervalRequest, v1.ColumnRollupIntervalResponse](
@@ -269,6 +279,7 @@ type queryServiceClient struct {
 	metricsViewTimeSeries        *connect_go.Client[v1.MetricsViewTimeSeriesRequest, v1.MetricsViewTimeSeriesResponse]
 	metricsViewTotals            *connect_go.Client[v1.MetricsViewTotalsRequest, v1.MetricsViewTotalsResponse]
 	metricsViewRows              *connect_go.Client[v1.MetricsViewRowsRequest, v1.MetricsViewRowsResponse]
+	metricsViewTimeRange         *connect_go.Client[v1.MetricsViewTimeRangeRequest, v1.MetricsViewTimeRangeResponse]
 	columnRollupInterval         *connect_go.Client[v1.ColumnRollupIntervalRequest, v1.ColumnRollupIntervalResponse]
 	columnTopK                   *connect_go.Client[v1.ColumnTopKRequest, v1.ColumnTopKResponse]
 	columnNullCount              *connect_go.Client[v1.ColumnNullCountRequest, v1.ColumnNullCountResponse]
@@ -318,6 +329,11 @@ func (c *queryServiceClient) MetricsViewTotals(ctx context.Context, req *connect
 // MetricsViewRows calls rill.runtime.v1.QueryService.MetricsViewRows.
 func (c *queryServiceClient) MetricsViewRows(ctx context.Context, req *connect_go.Request[v1.MetricsViewRowsRequest]) (*connect_go.Response[v1.MetricsViewRowsResponse], error) {
 	return c.metricsViewRows.CallUnary(ctx, req)
+}
+
+// MetricsViewTimeRange calls rill.runtime.v1.QueryService.MetricsViewTimeRange.
+func (c *queryServiceClient) MetricsViewTimeRange(ctx context.Context, req *connect_go.Request[v1.MetricsViewTimeRangeRequest]) (*connect_go.Response[v1.MetricsViewTimeRangeResponse], error) {
+	return c.metricsViewTimeRange.CallUnary(ctx, req)
 }
 
 // ColumnRollupInterval calls rill.runtime.v1.QueryService.ColumnRollupInterval.
@@ -408,6 +424,8 @@ type QueryServiceHandler interface {
 	MetricsViewTotals(context.Context, *connect_go.Request[v1.MetricsViewTotalsRequest]) (*connect_go.Response[v1.MetricsViewTotalsResponse], error)
 	// MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
 	MetricsViewRows(context.Context, *connect_go.Request[v1.MetricsViewRowsRequest]) (*connect_go.Response[v1.MetricsViewRowsResponse], error)
+	// MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
+	MetricsViewTimeRange(context.Context, *connect_go.Request[v1.MetricsViewTimeRangeRequest]) (*connect_go.Response[v1.MetricsViewTimeRangeResponse], error)
 	// ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
 	ColumnRollupInterval(context.Context, *connect_go.Request[v1.ColumnRollupIntervalRequest]) (*connect_go.Response[v1.ColumnRollupIntervalResponse], error)
 	// Get TopK elements from a table for a column given an agg function
@@ -478,6 +496,11 @@ func NewQueryServiceHandler(svc QueryServiceHandler, opts ...connect_go.HandlerO
 	queryServiceMetricsViewRowsHandler := connect_go.NewUnaryHandler(
 		QueryServiceMetricsViewRowsProcedure,
 		svc.MetricsViewRows,
+		opts...,
+	)
+	queryServiceMetricsViewTimeRangeHandler := connect_go.NewUnaryHandler(
+		QueryServiceMetricsViewTimeRangeProcedure,
+		svc.MetricsViewTimeRange,
 		opts...,
 	)
 	queryServiceColumnRollupIntervalHandler := connect_go.NewUnaryHandler(
@@ -566,6 +589,8 @@ func NewQueryServiceHandler(svc QueryServiceHandler, opts ...connect_go.HandlerO
 			queryServiceMetricsViewTotalsHandler.ServeHTTP(w, r)
 		case QueryServiceMetricsViewRowsProcedure:
 			queryServiceMetricsViewRowsHandler.ServeHTTP(w, r)
+		case QueryServiceMetricsViewTimeRangeProcedure:
+			queryServiceMetricsViewTimeRangeHandler.ServeHTTP(w, r)
 		case QueryServiceColumnRollupIntervalProcedure:
 			queryServiceColumnRollupIntervalHandler.ServeHTTP(w, r)
 		case QueryServiceColumnTopKProcedure:
@@ -629,6 +654,10 @@ func (UnimplementedQueryServiceHandler) MetricsViewTotals(context.Context, *conn
 
 func (UnimplementedQueryServiceHandler) MetricsViewRows(context.Context, *connect_go.Request[v1.MetricsViewRowsRequest]) (*connect_go.Response[v1.MetricsViewRowsResponse], error) {
 	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("rill.runtime.v1.QueryService.MetricsViewRows is not implemented"))
+}
+
+func (UnimplementedQueryServiceHandler) MetricsViewTimeRange(context.Context, *connect_go.Request[v1.MetricsViewTimeRangeRequest]) (*connect_go.Response[v1.MetricsViewTimeRangeResponse], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("rill.runtime.v1.QueryService.MetricsViewTimeRange is not implemented"))
 }
 
 func (UnimplementedQueryServiceHandler) ColumnRollupInterval(context.Context, *connect_go.Request[v1.ColumnRollupIntervalRequest]) (*connect_go.Response[v1.ColumnRollupIntervalResponse], error) {

@@ -1,4 +1,5 @@
 import type { ScaleLinear, ScaleTime } from "d3-scale";
+import { bisector } from "d3-array";
 import { area, curveLinear, curveStep, line } from "d3-shape";
 import { getContext } from "svelte";
 import { derived, writable } from "svelte/store";
@@ -111,8 +112,14 @@ export function getTicks(
   axisLength: number,
   isDate: boolean
 ) {
-  const tickCount = ~~(axisLength / (xOrY === "x" ? 150 : 50));
+  const tickCount = Math.trunc(axisLength / (xOrY === "x" ? 100 : 50));
+
   let ticks = scale.ticks(tickCount);
+
+  // Prevent overlapping ticks on X axis
+  if (xOrY === "x" && axisLength / ticks.length < 60) {
+    ticks = scale.ticks(tickCount - 1);
+  }
 
   if (ticks.length <= 1) {
     if (isDate) ticks = scale.domain();
@@ -274,4 +281,11 @@ export function createAdaptiveLineThicknessStore(yAccessor) {
       dataStore.set(d);
     },
   };
+}
+
+// This is function equivalent of WithBisector
+export function bisectData(value, direction, accessor, data) {
+  const bisect = bisector((d) => d[accessor])[direction];
+
+  return value !== undefined ? data[bisect(data, value)] : undefined;
 }

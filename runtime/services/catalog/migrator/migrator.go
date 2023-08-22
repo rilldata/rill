@@ -151,7 +151,7 @@ func LastUpdated(ctx context.Context, instID string, repo drivers.RepoStore, cat
 		// return a very old time
 		return time.Time{}, nil
 	}
-	stat, err := repo.Stat(ctx, instID, catalog.GetSource().Properties.Fields["path"].GetStringValue())
+	stat, err := repo.Stat(ctx, catalog.GetSource().Properties.Fields["path"].GetStringValue())
 	if err != nil {
 		return time.Time{}, err
 	}

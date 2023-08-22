@@ -45,7 +45,7 @@ func (s *Server) ListFiles(ctx context.Context, req *connect.Request[runtimev1.L
 }
 
 // WatchFiles implements RuntimeService.
-func (s *Server) WatchFiles(ctx context.Context, req *connect.Request[runtimev1.WatchFilesRequest], ss *connect.ServerStream[runtimev1.WatchFilesResponse]) error {	
+func (s *Server) WatchFiles(ctx context.Context, req *connect.Request[runtimev1.WatchFilesRequest], ss *connect.ServerStream[runtimev1.WatchFilesResponse]) error {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.Msg.InstanceId),
 		attribute.Bool("args.replay", req.Msg.Replay),
@@ -55,13 +55,14 @@ func (s *Server) WatchFiles(ctx context.Context, req *connect.Request[runtimev1.
 		return ErrForbidden
 	}
 
-	repo, err := s.runtime.Repo(ctx, req.Msg.InstanceId)
+	repo, release, err := s.runtime.Repo(ctx, req.Msg.InstanceId)
 	if err != nil {
 		return err
 	}
+	defer release()
 
 	if req.Msg.Replay {
-		paths, err := repo.ListRecursive(ctx, req.Msg.InstanceId, "**")
+		paths, err := repo.ListRecursive(ctx, "**")
 		if err != nil {
 			return err
 		}
@@ -76,7 +77,7 @@ func (s *Server) WatchFiles(ctx context.Context, req *connect.Request[runtimev1.
 		}
 	}
 
-	return repo.Watch(ctx, "", func(events []drivers.WatchEvent) {
+	return repo.Watch(ctx, func(events []drivers.WatchEvent) {
 		for _, event := range events {
 			if !event.Dir {
 				err := ss.Conn().Send(&runtimev1.WatchFilesResponse{

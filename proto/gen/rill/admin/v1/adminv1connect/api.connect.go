@@ -159,6 +159,27 @@ const (
 	// AdminServiceSudoUpdateOrganizationQuotasProcedure is the fully-qualified name of the
 	// AdminService's SudoUpdateOrganizationQuotas RPC.
 	AdminServiceSudoUpdateOrganizationQuotasProcedure = "/rill.admin.v1.AdminService/SudoUpdateOrganizationQuotas"
+	// AdminServiceListServicesProcedure is the fully-qualified name of the AdminService's ListServices
+	// RPC.
+	AdminServiceListServicesProcedure = "/rill.admin.v1.AdminService/ListServices"
+	// AdminServiceCreateServiceProcedure is the fully-qualified name of the AdminService's
+	// CreateService RPC.
+	AdminServiceCreateServiceProcedure = "/rill.admin.v1.AdminService/CreateService"
+	// AdminServiceUpdateServiceProcedure is the fully-qualified name of the AdminService's
+	// UpdateService RPC.
+	AdminServiceUpdateServiceProcedure = "/rill.admin.v1.AdminService/UpdateService"
+	// AdminServiceDeleteServiceProcedure is the fully-qualified name of the AdminService's
+	// DeleteService RPC.
+	AdminServiceDeleteServiceProcedure = "/rill.admin.v1.AdminService/DeleteService"
+	// AdminServiceListServiceAuthTokensProcedure is the fully-qualified name of the AdminService's
+	// ListServiceAuthTokens RPC.
+	AdminServiceListServiceAuthTokensProcedure = "/rill.admin.v1.AdminService/ListServiceAuthTokens"
+	// AdminServiceIssueServiceAuthTokenProcedure is the fully-qualified name of the AdminService's
+	// IssueServiceAuthToken RPC.
+	AdminServiceIssueServiceAuthTokenProcedure = "/rill.admin.v1.AdminService/IssueServiceAuthToken"
+	// AdminServiceRevokeServiceAuthTokenProcedure is the fully-qualified name of the AdminService's
+	// RevokeServiceAuthToken RPC.
+	AdminServiceRevokeServiceAuthTokenProcedure = "/rill.admin.v1.AdminService/RevokeServiceAuthToken"
 	// AdminServiceUpdateUserPreferencesProcedure is the fully-qualified name of the AdminService's
 	// UpdateUserPreferences RPC.
 	AdminServiceUpdateUserPreferencesProcedure = "/rill.admin.v1.AdminService/UpdateUserPreferences"
@@ -265,6 +286,20 @@ type AdminServiceClient interface {
 	SudoUpdateUserQuotas(context.Context, *connect_go.Request[v1.SudoUpdateUserQuotasRequest]) (*connect_go.Response[v1.SudoUpdateUserQuotasResponse], error)
 	// SudoUpdateOrganizationQuotas update the quotas available for orgs
 	SudoUpdateOrganizationQuotas(context.Context, *connect_go.Request[v1.SudoUpdateOrganizationQuotasRequest]) (*connect_go.Response[v1.SudoUpdateOrganizationQuotasResponse], error)
+	// ListService returns all the services per organization
+	ListServices(context.Context, *connect_go.Request[v1.ListServicesRequest]) (*connect_go.Response[v1.ListServicesResponse], error)
+	// CreateService creates a new service per organization
+	CreateService(context.Context, *connect_go.Request[v1.CreateServiceRequest]) (*connect_go.Response[v1.CreateServiceResponse], error)
+	// UpdateService updates a service per organization
+	UpdateService(context.Context, *connect_go.Request[v1.UpdateServiceRequest]) (*connect_go.Response[v1.UpdateServiceResponse], error)
+	// DeleteService deletes a service per organization
+	DeleteService(context.Context, *connect_go.Request[v1.DeleteServiceRequest]) (*connect_go.Response[v1.DeleteServiceResponse], error)
+	// ListServiceAuthTokens lists all the service auth tokens
+	ListServiceAuthTokens(context.Context, *connect_go.Request[v1.ListServiceAuthTokensRequest]) (*connect_go.Response[v1.ListServiceAuthTokensResponse], error)
+	// IssueServiceAuthToken returns the temporary token for given service account
+	IssueServiceAuthToken(context.Context, *connect_go.Request[v1.IssueServiceAuthTokenRequest]) (*connect_go.Response[v1.IssueServiceAuthTokenResponse], error)
+	// RevokeServiceAuthToken revoke the service auth token
+	RevokeServiceAuthToken(context.Context, *connect_go.Request[v1.RevokeServiceAuthTokenRequest]) (*connect_go.Response[v1.RevokeServiceAuthTokenResponse], error)
 	// UpdateUserPreferences updates the preferences for the user
 	UpdateUserPreferences(context.Context, *connect_go.Request[v1.UpdateUserPreferencesRequest]) (*connect_go.Response[v1.UpdateUserPreferencesResponse], error)
 	// ListBookmarks lists all the bookmarks for the user
@@ -502,6 +537,41 @@ func NewAdminServiceClient(httpClient connect_go.HTTPClient, baseURL string, opt
 			baseURL+AdminServiceSudoUpdateOrganizationQuotasProcedure,
 			opts...,
 		),
+		listServices: connect_go.NewClient[v1.ListServicesRequest, v1.ListServicesResponse](
+			httpClient,
+			baseURL+AdminServiceListServicesProcedure,
+			opts...,
+		),
+		createService: connect_go.NewClient[v1.CreateServiceRequest, v1.CreateServiceResponse](
+			httpClient,
+			baseURL+AdminServiceCreateServiceProcedure,
+			opts...,
+		),
+		updateService: connect_go.NewClient[v1.UpdateServiceRequest, v1.UpdateServiceResponse](
+			httpClient,
+			baseURL+AdminServiceUpdateServiceProcedure,
+			opts...,
+		),
+		deleteService: connect_go.NewClient[v1.DeleteServiceRequest, v1.DeleteServiceResponse](
+			httpClient,
+			baseURL+AdminServiceDeleteServiceProcedure,
+			opts...,
+		),
+		listServiceAuthTokens: connect_go.NewClient[v1.ListServiceAuthTokensRequest, v1.ListServiceAuthTokensResponse](
+			httpClient,
+			baseURL+AdminServiceListServiceAuthTokensProcedure,
+			opts...,
+		),
+		issueServiceAuthToken: connect_go.NewClient[v1.IssueServiceAuthTokenRequest, v1.IssueServiceAuthTokenResponse](
+			httpClient,
+			baseURL+AdminServiceIssueServiceAuthTokenProcedure,
+			opts...,
+		),
+		revokeServiceAuthToken: connect_go.NewClient[v1.RevokeServiceAuthTokenRequest, v1.RevokeServiceAuthTokenResponse](
+			httpClient,
+			baseURL+AdminServiceRevokeServiceAuthTokenProcedure,
+			opts...,
+		),
 		updateUserPreferences: connect_go.NewClient[v1.UpdateUserPreferencesRequest, v1.UpdateUserPreferencesResponse](
 			httpClient,
 			baseURL+AdminServiceUpdateUserPreferencesProcedure,
@@ -575,6 +645,13 @@ type adminServiceClient struct {
 	sudoGetResource              *connect_go.Client[v1.SudoGetResourceRequest, v1.SudoGetResourceResponse]
 	sudoUpdateUserQuotas         *connect_go.Client[v1.SudoUpdateUserQuotasRequest, v1.SudoUpdateUserQuotasResponse]
 	sudoUpdateOrganizationQuotas *connect_go.Client[v1.SudoUpdateOrganizationQuotasRequest, v1.SudoUpdateOrganizationQuotasResponse]
+	listServices                 *connect_go.Client[v1.ListServicesRequest, v1.ListServicesResponse]
+	createService                *connect_go.Client[v1.CreateServiceRequest, v1.CreateServiceResponse]
+	updateService                *connect_go.Client[v1.UpdateServiceRequest, v1.UpdateServiceResponse]
+	deleteService                *connect_go.Client[v1.DeleteServiceRequest, v1.DeleteServiceResponse]
+	listServiceAuthTokens        *connect_go.Client[v1.ListServiceAuthTokensRequest, v1.ListServiceAuthTokensResponse]
+	issueServiceAuthToken        *connect_go.Client[v1.IssueServiceAuthTokenRequest, v1.IssueServiceAuthTokenResponse]
+	revokeServiceAuthToken       *connect_go.Client[v1.RevokeServiceAuthTokenRequest, v1.RevokeServiceAuthTokenResponse]
 	updateUserPreferences        *connect_go.Client[v1.UpdateUserPreferencesRequest, v1.UpdateUserPreferencesResponse]
 	listBookmarks                *connect_go.Client[v1.ListBookmarksRequest, v1.ListBookmarksResponse]
 	getBookmark                  *connect_go.Client[v1.GetBookmarkRequest, v1.GetBookmarkResponse]
@@ -797,6 +874,41 @@ func (c *adminServiceClient) SudoUpdateOrganizationQuotas(ctx context.Context, r
 	return c.sudoUpdateOrganizationQuotas.CallUnary(ctx, req)
 }
 
+// ListServices calls rill.admin.v1.AdminService.ListServices.
+func (c *adminServiceClient) ListServices(ctx context.Context, req *connect_go.Request[v1.ListServicesRequest]) (*connect_go.Response[v1.ListServicesResponse], error) {
+	return c.listServices.CallUnary(ctx, req)
+}
+
+// CreateService calls rill.admin.v1.AdminService.CreateService.
+func (c *adminServiceClient) CreateService(ctx context.Context, req *connect_go.Request[v1.CreateServiceRequest]) (*connect_go.Response[v1.CreateServiceResponse], error) {
+	return c.createService.CallUnary(ctx, req)
+}
+
+// UpdateService calls rill.admin.v1.AdminService.UpdateService.
+func (c *adminServiceClient) UpdateService(ctx context.Context, req *connect_go.Request[v1.UpdateServiceRequest]) (*connect_go.Response[v1.UpdateServiceResponse], error) {
+	return c.updateService.CallUnary(ctx, req)
+}
+
+// DeleteService calls rill.admin.v1.AdminService.DeleteService.
+func (c *adminServiceClient) DeleteService(ctx context.Context, req *connect_go.Request[v1.DeleteServiceRequest]) (*connect_go.Response[v1.DeleteServiceResponse], error) {
+	return c.deleteService.CallUnary(ctx, req)
+}
+
+// ListServiceAuthTokens calls rill.admin.v1.AdminService.ListServiceAuthTokens.
+func (c *adminServiceClient) ListServiceAuthTokens(ctx context.Context, req *connect_go.Request[v1.ListServiceAuthTokensRequest]) (*connect_go.Response[v1.ListServiceAuthTokensResponse], error) {
+	return c.listServiceAuthTokens.CallUnary(ctx, req)
+}
+
+// IssueServiceAuthToken calls rill.admin.v1.AdminService.IssueServiceAuthToken.
+func (c *adminServiceClient) IssueServiceAuthToken(ctx context.Context, req *connect_go.Request[v1.IssueServiceAuthTokenRequest]) (*connect_go.Response[v1.IssueServiceAuthTokenResponse], error) {
+	return c.issueServiceAuthToken.CallUnary(ctx, req)
+}
+
+// RevokeServiceAuthToken calls rill.admin.v1.AdminService.RevokeServiceAuthToken.
+func (c *adminServiceClient) RevokeServiceAuthToken(ctx context.Context, req *connect_go.Request[v1.RevokeServiceAuthTokenRequest]) (*connect_go.Response[v1.RevokeServiceAuthTokenResponse], error) {
+	return c.revokeServiceAuthToken.CallUnary(ctx, req)
+}
+
 // UpdateUserPreferences calls rill.admin.v1.AdminService.UpdateUserPreferences.
 func (c *adminServiceClient) UpdateUserPreferences(ctx context.Context, req *connect_go.Request[v1.UpdateUserPreferencesRequest]) (*connect_go.Response[v1.UpdateUserPreferencesResponse], error) {
 	return c.updateUserPreferences.CallUnary(ctx, req)
@@ -911,6 +1023,20 @@ type AdminServiceHandler interface {
 	SudoUpdateUserQuotas(context.Context, *connect_go.Request[v1.SudoUpdateUserQuotasRequest]) (*connect_go.Response[v1.SudoUpdateUserQuotasResponse], error)
 	// SudoUpdateOrganizationQuotas update the quotas available for orgs
 	SudoUpdateOrganizationQuotas(context.Context, *connect_go.Request[v1.SudoUpdateOrganizationQuotasRequest]) (*connect_go.Response[v1.SudoUpdateOrganizationQuotasResponse], error)
+	// ListService returns all the services per organization
+	ListServices(context.Context, *connect_go.Request[v1.ListServicesRequest]) (*connect_go.Response[v1.ListServicesResponse], error)
+	// CreateService creates a new service per organization
+	CreateService(context.Context, *connect_go.Request[v1.CreateServiceRequest]) (*connect_go.Response[v1.CreateServiceResponse], error)
+	// UpdateService updates a service per organization
+	UpdateService(context.Context, *connect_go.Request[v1.UpdateServiceRequest]) (*connect_go.Response[v1.UpdateServiceResponse], error)
+	// DeleteService deletes a service per organization
+	DeleteService(context.Context, *connect_go.Request[v1.DeleteServiceRequest]) (*connect_go.Response[v1.DeleteServiceResponse], error)
+	// ListServiceAuthTokens lists all the service auth tokens
+	ListServiceAuthTokens(context.Context, *connect_go.Request[v1.ListServiceAuthTokensRequest]) (*connect_go.Response[v1.ListServiceAuthTokensResponse], error)
+	// IssueServiceAuthToken returns the temporary token for given service account
+	IssueServiceAuthToken(context.Context, *connect_go.Request[v1.IssueServiceAuthTokenRequest]) (*connect_go.Response[v1.IssueServiceAuthTokenResponse], error)
+	// RevokeServiceAuthToken revoke the service auth token
+	RevokeServiceAuthToken(context.Context, *connect_go.Request[v1.RevokeServiceAuthTokenRequest]) (*connect_go.Response[v1.RevokeServiceAuthTokenResponse], error)
 	// UpdateUserPreferences updates the preferences for the user
 	UpdateUserPreferences(context.Context, *connect_go.Request[v1.UpdateUserPreferencesRequest]) (*connect_go.Response[v1.UpdateUserPreferencesResponse], error)
 	// ListBookmarks lists all the bookmarks for the user
@@ -1144,6 +1270,41 @@ func NewAdminServiceHandler(svc AdminServiceHandler, opts ...connect_go.HandlerO
 		svc.SudoUpdateOrganizationQuotas,
 		opts...,
 	)
+	adminServiceListServicesHandler := connect_go.NewUnaryHandler(
+		AdminServiceListServicesProcedure,
+		svc.ListServices,
+		opts...,
+	)
+	adminServiceCreateServiceHandler := connect_go.NewUnaryHandler(
+		AdminServiceCreateServiceProcedure,
+		svc.CreateService,
+		opts...,
+	)
+	adminServiceUpdateServiceHandler := connect_go.NewUnaryHandler(
+		AdminServiceUpdateServiceProcedure,
+		svc.UpdateService,
+		opts...,
+	)
+	adminServiceDeleteServiceHandler := connect_go.NewUnaryHandler(
+		AdminServiceDeleteServiceProcedure,
+		svc.DeleteService,
+		opts...,
+	)
+	adminServiceListServiceAuthTokensHandler := connect_go.NewUnaryHandler(
+		AdminServiceListServiceAuthTokensProcedure,
+		svc.ListServiceAuthTokens,
+		opts...,
+	)
+	adminServiceIssueServiceAuthTokenHandler := connect_go.NewUnaryHandler(
+		AdminServiceIssueServiceAuthTokenProcedure,
+		svc.IssueServiceAuthToken,
+		opts...,
+	)
+	adminServiceRevokeServiceAuthTokenHandler := connect_go.NewUnaryHandler(
+		AdminServiceRevokeServiceAuthTokenProcedure,
+		svc.RevokeServiceAuthToken,
+		opts...,
+	)
 	adminServiceUpdateUserPreferencesHandler := connect_go.NewUnaryHandler(
 		AdminServiceUpdateUserPreferencesProcedure,
 		svc.UpdateUserPreferences,
@@ -1257,6 +1418,20 @@ func NewAdminServiceHandler(svc AdminServiceHandler, opts ...connect_go.HandlerO
 			adminServiceSudoUpdateUserQuotasHandler.ServeHTTP(w, r)
 		case AdminServiceSudoUpdateOrganizationQuotasProcedure:
 			adminServiceSudoUpdateOrganizationQuotasHandler.ServeHTTP(w, r)
+		case AdminServiceListServicesProcedure:
+			adminServiceListServicesHandler.ServeHTTP(w, r)
+		case AdminServiceCreateServiceProcedure:
+			adminServiceCreateServiceHandler.ServeHTTP(w, r)
+		case AdminServiceUpdateServiceProcedure:
+			adminServiceUpdateServiceHandler.ServeHTTP(w, r)
+		case AdminServiceDeleteServiceProcedure:
+			adminServiceDeleteServiceHandler.ServeHTTP(w, r)
+		case AdminServiceListServiceAuthTokensProcedure:
+			adminServiceListServiceAuthTokensHandler.ServeHTTP(w, r)
+		case AdminServiceIssueServiceAuthTokenProcedure:
+			adminServiceIssueServiceAuthTokenHandler.ServeHTTP(w, r)
+		case AdminServiceRevokeServiceAuthTokenProcedure:
+			adminServiceRevokeServiceAuthTokenHandler.ServeHTTP(w, r)
 		case AdminServiceUpdateUserPreferencesProcedure:
 			adminServiceUpdateUserPreferencesHandler.ServeHTTP(w, r)
 		case AdminServiceListBookmarksProcedure:
@@ -1446,6 +1621,34 @@ func (UnimplementedAdminServiceHandler) SudoUpdateUserQuotas(context.Context, *c
 
 func (UnimplementedAdminServiceHandler) SudoUpdateOrganizationQuotas(context.Context, *connect_go.Request[v1.SudoUpdateOrganizationQuotasRequest]) (*connect_go.Response[v1.SudoUpdateOrganizationQuotasResponse], error) {
 	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("rill.admin.v1.AdminService.SudoUpdateOrganizationQuotas is not implemented"))
+}
+
+func (UnimplementedAdminServiceHandler) ListServices(context.Context, *connect_go.Request[v1.ListServicesRequest]) (*connect_go.Response[v1.ListServicesResponse], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("rill.admin.v1.AdminService.ListServices is not implemented"))
+}
+
+func (UnimplementedAdminServiceHandler) CreateService(context.Context, *connect_go.Request[v1.CreateServiceRequest]) (*connect_go.Response[v1.CreateServiceResponse], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("rill.admin.v1.AdminService.CreateService is not implemented"))
+}
+
+func (UnimplementedAdminServiceHandler) UpdateService(context.Context, *connect_go.Request[v1.UpdateServiceRequest]) (*connect_go.Response[v1.UpdateServiceResponse], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("rill.admin.v1.AdminService.UpdateService is not implemented"))
+}
+
+func (UnimplementedAdminServiceHandler) DeleteService(context.Context, *connect_go.Request[v1.DeleteServiceRequest]) (*connect_go.Response[v1.DeleteServiceResponse], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("rill.admin.v1.AdminService.DeleteService is not implemented"))
+}
+
+func (UnimplementedAdminServiceHandler) ListServiceAuthTokens(context.Context, *connect_go.Request[v1.ListServiceAuthTokensRequest]) (*connect_go.Response[v1.ListServiceAuthTokensResponse], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("rill.admin.v1.AdminService.ListServiceAuthTokens is not implemented"))
+}
+
+func (UnimplementedAdminServiceHandler) IssueServiceAuthToken(context.Context, *connect_go.Request[v1.IssueServiceAuthTokenRequest]) (*connect_go.Response[v1.IssueServiceAuthTokenResponse], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("rill.admin.v1.AdminService.IssueServiceAuthToken is not implemented"))
+}
+
+func (UnimplementedAdminServiceHandler) RevokeServiceAuthToken(context.Context, *connect_go.Request[v1.RevokeServiceAuthTokenRequest]) (*connect_go.Response[v1.RevokeServiceAuthTokenResponse], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("rill.admin.v1.AdminService.RevokeServiceAuthToken is not implemented"))
 }
 
 func (UnimplementedAdminServiceHandler) UpdateUserPreferences(context.Context, *connect_go.Request[v1.UpdateUserPreferencesRequest]) (*connect_go.Response[v1.UpdateUserPreferencesResponse], error) {

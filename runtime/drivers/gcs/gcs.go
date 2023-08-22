@@ -13,18 +13,16 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/gcputil"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"go.uber.org/zap"
 	"gocloud.dev/blob/gcsblob"
 	"gocloud.dev/gcp"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/googleapi"
 )
 
 const defaultPageSize = 20
-
-var errNoCredentials = errors.New("empty credentials: set `google_application_credentials` env variable")
 
 func init() {
 	drivers.Register("gcs", driver{})
@@ -98,7 +96,10 @@ type configProperties struct {
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }
 
-func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connection, error) {
+func (d driver) Open(config map[string]any, shared bool, logger *zap.Logger) (drivers.Handle, error) {
+	if shared {
+		return nil, fmt.Errorf("gcs driver can't be shared")
+	}
 	conf := &configProperties{}
 	err := mapstructure.Decode(config, conf)
 	if err != nil {
@@ -178,7 +179,7 @@ type Connection struct {
 	logger *zap.Logger
 }
 
-var _ drivers.Connection = &Connection{}
+var _ drivers.Handle = &Connection{}
 
 // Driver implements drivers.Connection.
 func (c *Connection) Driver() string {
@@ -194,7 +195,6 @@ func (c *Connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *Connection) Close() error {
-	// TODO:: anshul :: fix
 	return nil
 }
 
@@ -204,17 +204,17 @@ func (c *Connection) AsRegistry() (drivers.RegistryStore, bool) {
 }
 
 // Catalog implements drivers.Connection.
-func (c *Connection) AsCatalogStore() (drivers.CatalogStore, bool) {
+func (c *Connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // Repo implements drivers.Connection.
-func (c *Connection) AsRepoStore() (drivers.RepoStore, bool) {
+func (c *Connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
 
 // OLAP implements drivers.Connection.
-func (c *Connection) AsOLAP() (drivers.OLAPStore, bool) {
+func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
@@ -234,11 +234,16 @@ func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsTransporter implements drivers.Connection.
-func (c *Connection) AsTransporter(from, to drivers.Connection) (drivers.Transporter, bool) {
+func (c *Connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
 	return nil, false
 }
 
 func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
+	return nil, false
+}
+
+// AsSQLStore implements drivers.Connection.
+func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
 }
 
@@ -291,9 +296,9 @@ func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSo
 }
 
 func (c *Connection) createClient(ctx context.Context) (*gcp.HTTPClient, error) {
-	creds, err := c.resolvedCredentials(ctx)
+	creds, err := gcputil.Credentials(ctx, c.config.SecretJSON, c.config.AllowHostAccess)
 	if err != nil {
-		if !errors.Is(err, errNoCredentials) {
+		if !errors.Is(err, gcputil.ErrNoCredentials) {
 			return nil, err
 		}
 
@@ -302,25 +307,4 @@ func (c *Connection) createClient(ctx context.Context) (*gcp.HTTPClient, error) 
 	}
 	// the token source returned from credentials works for all kind of credentials like serviceAccountKey, credentialsKey etc.
 	return gcp.NewHTTPClient(gcp.DefaultTransport(), gcp.CredentialsTokenSource(creds))
-}
-
-func (c *Connection) resolvedCredentials(ctx context.Context) (*google.Credentials, error) {
-	if c.config.SecretJSON != "" {
-		// google_application_credentials is set, use credentials from json string provided by user
-		return google.CredentialsFromJSON(ctx, []byte(c.config.SecretJSON), "https://www.googleapis.com/auth/cloud-platform")
-	}
-	// google_application_credentials is not set
-	if c.config.AllowHostAccess {
-		// use host credentials
-		creds, err := gcp.DefaultCredentials(ctx)
-		if err != nil {
-			if strings.Contains(err.Error(), "google: could not find default credentials") {
-				return nil, errNoCredentials
-			}
-
-			return nil, err
-		}
-		return creds, nil
-	}
-	return nil, errNoCredentials
 }

@@ -47,10 +47,11 @@ func (q *ColumnTopK) UnmarshalResult(v any) error {
 
 func (q *ColumnTopK) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
 	// Get OLAP connection
-	olap, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID)
 	if err != nil {
 		return err
 	}
+	defer release()
 
 	// Check dialect
 	if olap.Dialect() != drivers.DialectDuckDB {

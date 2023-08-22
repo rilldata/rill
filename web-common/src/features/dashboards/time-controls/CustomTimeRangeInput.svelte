@@ -17,11 +17,13 @@
     shiftToUTC,
   } from "@rilldata/web-common/components/date-picker/util";
   import { getOffset } from "@rilldata/web-common/lib/time/transforms";
+  import { removeZoneOffset } from "@rilldata/web-common/lib/time/timezone";
 
   export let minTimeGrain: V1TimeGrain;
   export let boundaryStart: Date;
   export let boundaryEnd: Date;
   export let defaultDate: DashboardTimeControls;
+  export let zone: string;
 
   const dispatch = createEventDispatcher();
 
@@ -97,13 +99,15 @@
   $: min = getDateFromISOString(boundaryStart.toISOString());
 
   function applyCustomTimeRange() {
-    // Shift the selected dates to start in UTC instead of system timezone
-    const startDate = getISOStringFromDate(start, "UTC");
-    const endDate = getOffset(
+    let startDate = getISOStringFromDate(start, "UTC");
+    let endDate = getOffset(
       new Date(getISOStringFromDate(end, "UTC")),
       Period.DAY,
       TimeOffsetType.ADD
     ).toISOString();
+
+    startDate = removeZoneOffset(new Date(startDate), zone).toISOString();
+    endDate = removeZoneOffset(new Date(endDate), zone).toISOString();
 
     dispatch("apply", {
       startDate,

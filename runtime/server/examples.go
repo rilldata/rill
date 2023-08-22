@@ -49,10 +49,11 @@ func (s *Server) UnpackExample(ctx context.Context, req *connect.Request[runtime
 		return nil, ErrForbidden
 	}
 
-	repo, err := s.runtime.Repo(ctx, req.Msg.InstanceId)
+	repo, release, err := s.runtime.Repo(ctx, req.Msg.InstanceId)
 	if err != nil {
 		return nil, err
 	}
+	defer release()
 
 	exampleFS, err := examples.Get(req.Msg.Name)
 	if err != nil {
@@ -61,7 +62,7 @@ func (s *Server) UnpackExample(ctx context.Context, req *connect.Request[runtime
 
 	existingPaths := make(map[string]bool)
 	if !req.Msg.Force {
-		paths, err := repo.ListRecursive(ctx, req.Msg.InstanceId, "**")
+		paths, err := repo.ListRecursive(ctx, "**")
 		if err != nil {
 			return nil, err
 		}
@@ -101,7 +102,7 @@ func (s *Server) UnpackExample(ctx context.Context, req *connect.Request[runtime
 			}
 			defer file.Close()
 
-			return repo.Put(ctx, req.Msg.InstanceId, path, file)
+			return repo.Put(ctx, path, file)
 		}()
 		if err != nil {
 			return nil, err
@@ -124,10 +125,11 @@ func (s *Server) UnpackEmpty(ctx context.Context, req *connect.Request[runtimev1
 		return nil, ErrForbidden
 	}
 
-	repo, err := s.runtime.Repo(ctx, req.Msg.InstanceId)
+	repo, release, err := s.runtime.Repo(ctx, req.Msg.InstanceId)
 	if err != nil {
 		return nil, err
 	}
+	defer release()
 
 	c := rillv1beta.New(repo, req.Msg.InstanceId)
 	if c.IsInit(ctx) && !req.Msg.Force {

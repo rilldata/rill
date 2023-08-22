@@ -1,16 +1,19 @@
 ---
-title: Define metrics dashboard
+title: "Analyze: Build Dashboards"
 description: Define your time dimension, measures and dimensions to create a dashboard
-sidebar_label: Define dashboard
+sidebar_label: "Analyze: Build Dashboards"
 sidebar_position: 30
 ---
 
-In Rill, your dashboards are defined by _metric definition_. Metric definition are composed of:
+In Rill, your dashboards are defined by _metric definitions_. Metric definitions are composed of:
 * _**A model**_ - A [data model](./sql-models.md) creates One Big Table that will power the dashboard.
 * _**A timeseries**_ - A column from your model that will underlie x-axis data in the line charts. Time will be truncated into different time periods.
 * _**Measures**_ - Numerical aggregates of columns from your data model shown on the y-axis of the line charts and the "big number" summaries.
 * _**Dimensions**_ - Categorical columns from your data model whose values are shown in _leaderboards_ and allow you to look at segments and filter the data.
 
+:::tip Dashboard Properties
+For details about all available properties, see the syntax [reference](../reference/project-files/dashboards).
+:::
 
 ## Creating valid metrics
 
@@ -20,7 +23,7 @@ Your timeseries must be a column from your data model of [type](https://duckdb.o
 
 ### Measures
 
-Measures are numeric aggregates of columns from your data model. A measure must be defined with [DuckDB SQL](./sql-models.md) aggregation functions and expressions on columns from your data model. The following operators and function are allowed in a measure expression:
+Measures are numeric aggregates of columns from your data model. A measure must be defined with [DuckDB SQL](./sql-models.md) aggregation functions and expressions on columns from your data model. The following operators and functions are allowed in measure expressions:
 
 * Any DuckDB SQL [numeric](https://duckdb.org/docs/sql/functions/numeric) operators and functions
 * This set of DuckDB SQL [aggregates](https://duckdb.org/docs/sql/aggregates): `AVG`, `COUNT`, `FAVG`,`FIRST`, `FSUM`, `LAST`, `MAX`, `MIN`, `PRODUCT`, `SUM`, `APPROX_COUNT_DISTINCT`, `APPROX_QUANTILE`, `STDDEV_POP`, `STDDEV_SAMP`, `VAR_POP`, `VAR_SAMP`.
@@ -40,34 +43,18 @@ You can also add labels, descriptions, and your choice of number formatting to c
 Dimensions are used for exploring segments and filtering the dashboard. Valid dimensions can be any type and are selected using the drop down menu. You can also add labels and descriptions to your dimensions to customize how they are shown in the dashboard.
 
 
-## Using the UI
+## Updating dashboards
 
-Dashboards can be created and improved on using the metrics editor. The metrics editor helps you define a model, a timeseries, set of measures, and categorical dimensions that are directly tied to your dashboard. 
-
-To create a new dashboard from scratch, click "+" by Dashboards in the left hand navigation pane to open the metrics editor.
-
-In addition, you can quickly generate a dashboard with opinionated defaults using the "Create Dashboard" button in the upper right hand corner of the source or model views or "Quick Start" button in the metrics editor itself. These dashboards will be populated using:
-
-- First timestamp column from your model set as the timeseries
-- Number of records as the default measure (`COUNT(*)`)
-- All available categorical string columns as dimensions
-
-If you want to revisit these configurations, you can open the metrics editor by clicking on the "Edit Metrics" button in the upper right hand corner of the dashboard view.
-
-
-## Using the CLI
-
-We do not currently support adding or editing metrics from the CLI.
-
-## Using code
+### Using the UI / code
 When you add a metrics definition using the UI, a code definition will automatically be created as a .yaml file in your Rill project in the dashboards directory. However, you can also create metrics definitions more directly by creating the artifact.
 
-In your Rill project directory, create a `dashboard_name.yaml` file in the `dashboards` directory and adapt its definition from the following template:
+In your Rill project directory, a `dashboard_name.yaml` file is created in the `dashboards` directory and its definition its definition can be adapted from the following template:
 
 ```yaml
 model: model_name
 title: Dashboard name
-
+default_time_range: ""
+smallest_time_grain: ""
 timeseries: timestamp_column_name
 
 dimensions:
@@ -84,5 +71,7 @@ measures:
   # Add more measures here
 ```
 
-Rill will ingest the dashboard definition next time you run `rill start`. For details about all available properties, see the syntax [reference](../reference/project-files/dashboards).
+Rill will ingest the dashboard definition next time you run `rill start`. 
+
+For details about all available properties, see the syntax [reference](../reference/project-files/dashboards).
 

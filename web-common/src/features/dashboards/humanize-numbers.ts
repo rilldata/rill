@@ -7,53 +7,38 @@ import {
   FormatterFactoryOptions,
   NumberKind,
 } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
+import {
+  formatMsInterval,
+  formatMsToDuckDbIntervalString,
+} from "@rilldata/web-common/lib/number-formatting/strategies/intervals";
 import { PerRangeFormatter } from "@rilldata/web-common/lib/number-formatting/strategies/per-range";
 
 const shortHandSymbols = ["Q", "T", "B", "M", "k", "none"] as const;
 export type ShortHandSymbols = (typeof shortHandSymbols)[number];
 
-interface HumanizeOptions {
-  scale?: ShortHandSymbols;
-  excludeDecimalZeros?: boolean;
-  columnName?: string;
-}
-
-type formatterOptions = Intl.NumberFormatOptions & HumanizeOptions;
-
-export enum NicelyFormattedTypes {
+/**
+ * This enum represents all of the valid strings that can be
+ * used in the `format_preset` field of a measure definition.
+ */
+export enum FormatPreset {
   HUMANIZE = "humanize",
   NONE = "none",
   CURRENCY = "currency_usd",
   PERCENTAGE = "percentage",
+  INTERVAL = "interval_ms",
 }
 
 interface ColFormatSpec {
   columnName: string;
-  formatPreset: NicelyFormattedTypes;
+  formatPreset: FormatPreset;
 }
-
-export const nicelyFormattedTypesSelectorOptions = [
-  { value: NicelyFormattedTypes.HUMANIZE, label: "Humanize" },
-  {
-    value: NicelyFormattedTypes.NONE,
-    label: "No formatting",
-  },
-  {
-    value: NicelyFormattedTypes.CURRENCY,
-    label: "Currency (USD)",
-  },
-  {
-    value: NicelyFormattedTypes.PERCENTAGE,
-    label: "Percentage",
-  },
-];
 
 export function humanizeGroupValues(
   values: Array<Record<string, number | string>>,
-  type: NicelyFormattedTypes,
-  options?: formatterOptions
+  type: FormatPreset,
+  columnName?: string
 ) {
-  const valueKey = options.columnName ? options.columnName : "value";
+  const valueKey = columnName ?? "value";
   let numValues = values.map((v) => v[valueKey]);
 
   const areAllNumbers = numValues.some((e) => typeof e === "number");
@@ -78,10 +63,8 @@ export function humanizeGroupByColumns(
   return columnFormatSpec.reduce((valuesObj, column) => {
     return humanizeGroupValues(
       valuesObj,
-      column.formatPreset || NicelyFormattedTypes.HUMANIZE,
-      {
-        columnName: column.columnName,
-      }
+      column.formatPreset || FormatPreset.HUMANIZE,
+      column.columnName
     );
   }, values);
 }
@@ -95,40 +78,42 @@ export function humanizeGroupByColumns(
 // can deprecate any left over code that is no longer needed.
 
 export const nicelyFormattedTypesToNumberKind = (
-  type: NicelyFormattedTypes | string
+  type: FormatPreset | string
 ) => {
   switch (type) {
-    case NicelyFormattedTypes.CURRENCY:
+    case FormatPreset.CURRENCY:
       return NumberKind.DOLLAR;
 
-    case NicelyFormattedTypes.PERCENTAGE:
+    case FormatPreset.PERCENTAGE:
       return NumberKind.PERCENT;
 
     default:
       // captures:
-      // NicelyFormattedTypes.NONE
-      // NicelyFormattedTypes.HUMANIZE
+      // FormatPreset.NONE
+      // FormatPreset.HUMANIZE
       return NumberKind.ANY;
   }
 };
 
 export function humanizeDataType(
   value: unknown,
-  type: NicelyFormattedTypes,
+  type: FormatPreset,
   options?: FormatterFactoryOptions
 ): string {
   if (value === undefined || value === null) return "";
-  if (typeof value != "number") return value.toString();
+  if (typeof value !== "number") return value.toString();
 
   const numberKind = nicelyFormattedTypesToNumberKind(type);
 
   let innerOptions: FormatterFactoryOptions = options;
-  if (type === NicelyFormattedTypes.NONE) {
+  if (type === FormatPreset.NONE) {
     innerOptions = {
       strategy: "none",
       numberKind,
       padWithInsignificantZeros: false,
     };
+  } else if (type === FormatPreset.INTERVAL) {
+    return formatMsInterval(value);
   } else if (options === undefined) {
     innerOptions = {
       strategy: "default",
@@ -144,13 +129,25 @@ export function humanizeDataType(
   return humanizedFormatterFactory([value], innerOptions).stringFormat(value);
 }
 
+/**
+ * This function is intended to provide a lossless
+ * humanized string representation of a number in cases
+ * where a raw number will be meaningless to the user.
+ */
+export function humanizeDataTypeExpanded(
+  value: unknown,
+  type: FormatPreset
+): string {
+  if (type === FormatPreset.INTERVAL) {
+    return formatMsToDuckDbIntervalString(value as number);
+  }
+  return value.toString();
+}
+
 /** This function is used primarily in the leaderboard and the detail tables. */
-function humanizeGroupValuesUtil2(
-  values: number[],
-  type: NicelyFormattedTypes
-) {
+function humanizeGroupValuesUtil2(values: number[], type: FormatPreset) {
   if (!values.length) return values;
-  if (type == NicelyFormattedTypes.NONE) return values;
+  if (type == FormatPreset.NONE) return values;
 
   const numberKind = nicelyFormattedTypesToNumberKind(type);
 

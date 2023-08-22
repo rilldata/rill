@@ -11,7 +11,6 @@
     useMetaDimension,
     useMetaMeasure,
     useMetaQuery,
-    useModelAllTimeRange,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
@@ -26,11 +25,12 @@
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import {
-    humanizeGroupByColumns,
-    NicelyFormattedTypes,
-  } from "../humanize-numbers";
+    metricsExplorerStore,
+    useDashboardStore,
+    useFetchTimeRange,
+  } from "../dashboard-stores";
+  import { humanizeGroupByColumns, FormatPreset } from "../humanize-numbers";
   import {
     computeComparisonValues,
     computePercentOfTotal,
@@ -62,6 +62,7 @@
   $: dimensionColumn = dimension?.column || dimension?.name;
 
   $: dashboardStore = useDashboardStore(metricViewName);
+  $: fetchTimeStore = useFetchTimeRange(metricViewName);
 
   $: leaderboardMeasureName = $dashboardStore?.leaderboardMeasureName;
   $: leaderboardMeasureQuery = useMetaMeasure(
@@ -135,17 +136,6 @@
     }
   );
 
-  $: allTimeRangeQuery = useModelAllTimeRange(
-    $runtime.instanceId,
-    $metaQuery.data.model,
-    $metaQuery.data.timeDimension,
-    {
-      query: {
-        enabled: !!$metaQuery.data.timeDimension,
-      },
-    }
-  );
-
   // the timeRangeName is the key to a selected time range's associated presets.
   $: timeRangeName = $dashboardStore?.selectedTimeRange?.name;
 
@@ -155,13 +145,13 @@
     $dashboardStore?.showComparison &&
     // wait for the start time to be available
     // TODO: Move to better handling of undefined store values
-    $dashboardStore?.selectedTimeRange?.start;
+    $fetchTimeStore?.start;
 
   $: comparisonTimeRange =
     displayComparison &&
     getComparisonRange(
-      $dashboardStore?.selectedTimeRange?.start,
-      $dashboardStore?.selectedTimeRange?.end,
+      $fetchTimeStore?.start,
+      $fetchTimeStore?.end,
       ($dashboardStore?.selectedComparisonTimeRange
         ?.name as TimeComparisonOption) ||
         (DEFAULT_TIME_RANGES[timeRangeName]
@@ -209,8 +199,8 @@
     }
   );
 
-  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
-  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
+  $: timeStart = $fetchTimeStore?.start?.toISOString();
+  $: timeEnd = $fetchTimeStore?.end?.toISOString();
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     metricViewName,
@@ -263,7 +253,7 @@
       columnNames.splice(sortByColumnIndex + 1, 0, `${sortByColumn}_delta`);
 
       // Only push percentage delta column if selected measure is not a percentage
-      if (selectedMeasure?.format != NicelyFormattedTypes.PERCENTAGE) {
+      if (selectedMeasure?.format != FormatPreset.PERCENTAGE) {
         percentOfTotalSpliceIndex = 3;
         columnNames.splice(
           sortByColumnIndex + 2,
@@ -374,7 +364,7 @@
     const measureFormatSpec = columns?.map((column) => {
       return {
         columnName: column.name,
-        formatPreset: column.format as NicelyFormattedTypes,
+        formatPreset: column.format as FormatPreset,
       };
     });
     if (measureFormatSpec) {

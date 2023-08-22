@@ -3,10 +3,14 @@
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
-  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import {
+    useDashboardStore,
+    useFetchTimeRange,
+    useComparisonRange,
+  } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import {
     humanizeDataType,
-    NicelyFormattedTypes,
+    FormatPreset,
     nicelyFormattedTypesToNumberKind,
   } from "@rilldata/web-common/features/dashboards/humanize-numbers";
   import {
@@ -32,11 +36,14 @@
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   import { prepareTimeSeries } from "./utils";
+  import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
 
   export let metricViewName;
   export let workspaceWidth: number;
 
   $: dashboardStore = useDashboardStore(metricViewName);
+  $: fetchTimeStore = useFetchTimeRange(metricViewName);
+  $: comparisonStore = useComparisonRange(metricViewName);
 
   $: instanceId = $runtime.instanceId;
 
@@ -48,8 +55,7 @@
 
   $: allTimeRangeQuery = useModelAllTimeRange(
     $runtime.instanceId,
-    $metaQuery.data.model,
-    $metaQuery.data.timeDimension,
+    metricViewName,
     {
       query: {
         enabled: !!$metaQuery.data.timeDimension,
@@ -65,15 +71,15 @@
     name = $dashboardStore?.selectedTimeRange?.name;
   }
 
-  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
-  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
+  $: timeStart = $fetchTimeStore?.start?.toISOString();
+  $: timeEnd = $fetchTimeStore?.end?.toISOString();
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      timeStart: timeStart,
-      timeEnd: timeEnd,
+      timeStart,
+      timeEnd,
       filter: $dashboardStore?.filters,
     },
     {
@@ -86,10 +92,8 @@
   /** Generate the big number comparison query */
   $: displayComparison = showComparison;
 
-  $: comparisonTimeStart =
-    $dashboardStore?.selectedComparisonTimeRange?.start?.toISOString();
-  $: comparisonTimeEnd =
-    $dashboardStore?.selectedComparisonTimeRange?.end?.toISOString();
+  $: comparisonTimeStart = $comparisonStore?.start;
+  $: comparisonTimeEnd = $comparisonStore?.end;
   $: totalsComparisonQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     metricViewName,
@@ -134,6 +138,7 @@
     const { start: adjustedStart, end: adjustedEnd } = getAdjustedFetchTime(
       $dashboardStore?.selectedTimeRange?.start,
       $dashboardStore?.selectedTimeRange?.end,
+      $dashboardStore?.selectedTimezone,
       interval
     );
 
@@ -146,6 +151,7 @@
         timeStart: adjustedStart,
         timeEnd: adjustedEnd,
         timeGranularity: interval,
+        timeZone: $dashboardStore?.selectedTimezone,
       }
     );
     if (displayComparison) {
@@ -153,6 +159,7 @@
         getAdjustedFetchTime(
           $dashboardStore?.selectedComparisonTimeRange?.start,
           $dashboardStore?.selectedComparisonTimeRange?.end,
+          $dashboardStore?.selectedTimezone,
           interval
         );
 
@@ -165,6 +172,7 @@
           timeStart: compAdjustedStart,
           timeEnd: compAdjustedEnd,
           timeGranularity: interval,
+          timeZone: $dashboardStore?.selectedTimezone,
         }
       );
     }
@@ -178,22 +186,36 @@
   let dataCopy;
   let dataComparisonCopy;
 
-  $: if ($timeSeriesQuery?.data?.data) dataCopy = $timeSeriesQuery.data.data;
+  $: if ($timeSeriesQuery?.data?.data) {
+    dataCopy = $timeSeriesQuery.data.data;
+  }
   $: if ($timeSeriesComparisonQuery?.data?.data)
     dataComparisonCopy = $timeSeriesComparisonQuery.data.data;
 
   // formattedData adjusts the data to account for Javascript's handling of timezones
   let formattedData;
+  let scrubStart;
+  let scrubEnd;
   $: if (dataCopy && dataCopy?.length) {
     formattedData = prepareTimeSeries(
       dataCopy,
       dataComparisonCopy,
-      TIME_GRAIN[interval].duration
+      TIME_GRAIN[interval].duration,
+      $dashboardStore.selectedTimezone
+    );
+
+    // adjust scrub values for Javascript's timezone changes
+    scrubStart = adjustOffsetForZone(
+      $dashboardStore?.selectedScrubRange?.start,
+      $dashboardStore?.selectedTimezone
+    );
+    scrubEnd = adjustOffsetForZone(
+      $dashboardStore?.selectedScrubRange?.end,
+      $dashboardStore?.selectedTimezone
     );
   }
 
   let mouseoverValue = undefined;
-
   let startValue: Date;
   let endValue: Date;
 
@@ -205,6 +227,7 @@
     const adjustedChartValue = getAdjustedChartTime(
       $dashboardStore?.selectedTimeRange?.start,
       $dashboardStore?.selectedTimeRange?.end,
+      $dashboardStore?.selectedTimezone,
       interval,
       $dashboardStore?.selectedTimeRange?.name
     );
@@ -227,7 +250,7 @@
 </script>
 
 <TimeSeriesChartContainer end={endValue} start={startValue} {workspaceWidth}>
-  <div class="bg-white sticky top-0" style="z-index:100">
+  <div class="bg-white sticky top-0 flex" style="z-index:100">
     <SeachableFilterButton
       label="Measures"
       on:deselect-all={setAllMeasuresNotVisible}
@@ -238,19 +261,23 @@
       tooltipText="Choose measures to display"
     />
   </div>
-  <div class="bg-white sticky left-0 top-0">
+  <div
+    class="bg-white sticky left-0 top-0 overflow-visible"
+    style="z-index:101"
+  >
     <div style:height="20px" style:padding-left="24px" />
     <!-- top axis element -->
     <div />
     {#if $dashboardStore?.selectedTimeRange}
       <SimpleDataGraphic
-        height={32}
-        top={34}
+        height={26}
+        overflowHidden={false}
+        top={29}
         bottom={0}
         xMin={startValue}
         xMax={endValue}
       >
-        <Axis superlabel side="top" />
+        <Axis superlabel side="top" placement="start" />
       </SimpleDataGraphic>
     {/if}
   </div>
@@ -267,7 +294,7 @@
           ? (bigNum - comparisonValue) / comparisonValue
           : undefined}
       {@const formatPreset =
-        NicelyFormattedTypes[measure?.format] || NicelyFormattedTypes.HUMANIZE}
+        FormatPreset[measure?.format] || FormatPreset.HUMANIZE}
       <!-- FIXME: I can't select a time series by measure id. -->
       <MeasureBigNumber
         value={bigNum}
@@ -292,8 +319,13 @@
           <div class="p-5"><CrossIcon /></div>
         {:else if formattedData}
           <MeasureChart
+            isScrubbing={$dashboardStore?.selectedScrubRange?.isScrubbing}
+            {scrubStart}
+            {scrubEnd}
             bind:mouseoverValue
+            {metricViewName}
             data={formattedData}
+            zone={$dashboardStore?.selectedTimezone}
             xAccessor="ts_position"
             labelAccessor="ts"
             timeGrain={interval}
@@ -310,7 +342,7 @@
             }}
             numberKind={nicelyFormattedTypesToNumberKind(measure?.format)}
             mouseoverFormat={(value) =>
-              formatPreset === NicelyFormattedTypes.NONE
+              formatPreset === FormatPreset.NONE
                 ? `${value}`
                 : humanizeDataType(value, measure?.format)}
           />

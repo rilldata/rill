@@ -7,7 +7,7 @@ import type {
   V1MetricsViewToplistResponseDataItem,
 } from "../../../runtime-client";
 import {
-  NicelyFormattedTypes,
+  FormatPreset,
   formatMeasurePercentageDifference,
 } from "../humanize-numbers";
 import PercentOfTotal from "./PercentOfTotal.svelte";
@@ -156,7 +156,7 @@ export function getComparisonProperties(
     return {
       label: DeltaChangePercentage,
       type: "RILL_PERCENTAGE_CHANGE",
-      format: NicelyFormattedTypes.PERCENTAGE,
+      format: FormatPreset.PERCENTAGE,
       description: "Perc. change over comparison period",
     };
   else if (measureName.includes("_delta")) {
@@ -170,7 +170,7 @@ export function getComparisonProperties(
     return {
       label: PercentOfTotal,
       type: "RILL_PERCENTAGE_CHANGE",
-      format: NicelyFormattedTypes.PERCENTAGE,
+      format: FormatPreset.PERCENTAGE,
       description: "Percent of total",
     };
   }

@@ -48,10 +48,11 @@ func (q *ColumnRugHistogram) UnmarshalResult(v any) error {
 }
 
 func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID)
 	if err != nil {
 		return err
 	}
+	defer release()
 
 	if olap.Dialect() != drivers.DialectDuckDB {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())

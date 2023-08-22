@@ -1,5 +1,4 @@
 <script lang="ts">
-  import CLICommandDisplay from "@rilldata/web-common/components/commands/CLICommandDisplay.svelte";
   import { createAdminServiceGetProject } from "../../client";
 
   export let organization: string;
@@ -27,14 +26,7 @@
 
 {#if $proj.isSuccess}
   <ul class="w-full">
-    {#if $proj.data && !$proj.data.prodDeployment}
-      <li class="px-12 py-2 text-gray-800 border-b flex items-center gap-x-5">
-        This project does not currently have a deployment. To redeploy the
-        project, run this command in the Rill CLI: <CLICommandDisplay
-          command="rill project reconcile --project {$proj.data.project.name}"
-        />
-      </li>
-    {:else if !hasReadAccess}
+    {#if !hasReadAccess}
       <li class="px-12 py-2 font-semibold text-gray-500 border-b">
         You don't have permission to view project logs
       </li>

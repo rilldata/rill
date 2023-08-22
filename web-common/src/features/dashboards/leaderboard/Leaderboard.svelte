@@ -8,12 +8,11 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
+  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import {
     getFilterForDimension,
     useMetaDimension,
     useMetaMeasure,
-    useMetaQuery,
-    useModelAllTimeRange,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import {
@@ -23,9 +22,14 @@
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
+  import {
+    metricsExplorerStore,
+    useComparisonRange,
+    useDashboardStore,
+    useFetchTimeRange,
+  } from "../dashboard-stores";
   import { getFilterForComparsion } from "../dimension-table/dimension-table-utils";
-  import type { NicelyFormattedTypes } from "../humanize-numbers";
+  import type { FormatPreset } from "../humanize-numbers";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import { prepareLeaderboardItemData } from "./leaderboard-utils";
   import LeaderboardListItem from "./LeaderboardListItem.svelte";
@@ -39,7 +43,7 @@
   export let referenceValue: number;
   export let unfilteredTotal: number;
 
-  export let formatPreset: NicelyFormattedTypes;
+  export let formatPreset: FormatPreset;
   export let isSummableMeasure = false;
 
   let slice = 7;
@@ -47,18 +51,8 @@
   const queryClient = useQueryClient();
 
   $: dashboardStore = useDashboardStore(metricViewName);
-  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
-
-  $: allTimeRangeQuery = useModelAllTimeRange(
-    $runtime.instanceId,
-    $metaQuery.data.model,
-    $metaQuery.data.timeDimension,
-    {
-      query: {
-        enabled: !!$metaQuery.data.timeDimension,
-      },
-    }
-  );
+  $: fetchTimeStore = useFetchTimeRange(metricViewName);
+  $: comparisonStore = useComparisonRange(metricViewName);
 
   let filterExcludeMode: boolean;
   $: filterExcludeMode =
@@ -110,14 +104,14 @@
     metricsExplorerStore.setMetricDimensionName(metricViewName, dimensionName);
   }
 
-  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
-  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
+  $: timeStart = $fetchTimeStore?.start?.toISOString();
+  $: timeEnd = $fetchTimeStore?.end?.toISOString();
   $: topListQuery = createQueryServiceMetricsViewToplist(
     $runtime.instanceId,
     metricViewName,
     {
       dimensionName: dimensionName,
-      measureNames: [measure.name],
+      measureNames: [measure?.name],
       timeStart: hasTimeSeries ? timeStart : undefined,
       timeEnd: hasTimeSeries ? timeEnd : undefined,
       filter: filterForDimension,
@@ -125,7 +119,7 @@
       offset: "0",
       sort: [
         {
-          name: measure.name,
+          name: measure?.name,
           ascending: false,
         },
       ],
@@ -173,14 +167,14 @@
     });
 
   // Compose the comparison /toplist query
-  $: showTimeComparison = $dashboardStore?.showComparison;
-  $: showPercentOfTotal = $dashboardStore?.showPercentOfTotal;
-  let showContext: "time" | "percent" | false = false;
-  $: showContext = showTimeComparison
-    ? "time"
-    : showPercentOfTotal
-    ? "percent"
-    : false;
+  $: showTimeComparison =
+    $dashboardStore?.leaderboardContextColumn ===
+      LeaderboardContextColumn.DELTA_CHANGE && $dashboardStore?.showComparison;
+  $: showPercentOfTotal =
+    $dashboardStore?.leaderboardContextColumn ===
+    LeaderboardContextColumn.PERCENT;
+
+  $: showContext = $dashboardStore?.leaderboardContextColumn;
 
   // add all sliced and active values to the include filter.
   $: currentVisibleValues =
@@ -193,16 +187,14 @@
     dimensionName,
     currentVisibleValues
   );
-  $: comparisonTimeStart =
-    $dashboardStore?.selectedComparisonTimeRange?.start?.toISOString();
-  $: comparisonTimeEnd =
-    $dashboardStore?.selectedComparisonTimeRange?.end?.toISOString();
+  $: comparisonTimeStart = $comparisonStore?.start;
+  $: comparisonTimeEnd = $comparisonStore?.end;
   $: comparisonTopListQuery = createQueryServiceMetricsViewToplist(
     $runtime.instanceId,
     metricViewName,
     {
       dimensionName: dimensionName,
-      measureNames: [measure.name],
+      measureNames: [measure?.name],
       timeStart: comparisonTimeStart,
       timeEnd: comparisonTimeEnd,
       filter: updatedFilters,
@@ -210,7 +202,7 @@
       offset: "0",
       sort: [
         {
-          name: measure.name,
+          name: measure?.name,
           ascending: false,
         },
       ],

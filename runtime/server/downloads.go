@@ -119,6 +119,9 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
 				w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 				w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s.xlsx\"", filename))
+			case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
+				w.Header().Set("Content-Type", "application/octet-stream")
+				w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s.parquet\"", filename))
 			default:
 				return fmt.Errorf("unsupported format %q", request.Format.String())
 			}

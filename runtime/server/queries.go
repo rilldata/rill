@@ -3,10 +3,11 @@ package server
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
-	"github.com/bufbuild/connect-go"
 	jsonvalue "github.com/Andrew-M-C/go.jsonvalue"
+	"github.com/bufbuild/connect-go"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
@@ -15,6 +16,15 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 )
+
+var mutex sync.Mutex
+
+func unmarshalJSON(sql []byte) (*jsonvalue.V, error) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	return jsonvalue.Unmarshal(sql)
+}
 
 // Query implements QueryService.
 func (s *Server) Query(ctx context.Context, req *connect.Request[runtimev1.QueryRequest]) (*connect.Response[runtimev1.QueryResponse], error) {
@@ -27,14 +37,18 @@ func (s *Server) Query(ctx context.Context, req *connect.Request[runtimev1.Query
 		args[i] = arg.AsInterface()
 	}
 
-	olap, err := s.runtime.OLAP(ctx, req.Msg.InstanceId)
+	olap, release, err := s.runtime.OLAP(ctx, req.Msg.InstanceId)
 	if err != nil {
 		return nil, err
 	}
+	defer release()
 
-	transformedSQL, err := ensureLimits(ctx, olap, req.Msg.Sql, int(req.Msg.Limit))
-	if err != nil {
-		return nil, err
+	transformedSQL := req.Msg.Sql
+	if req.Msg.Limit != 0 {
+		transformedSQL, err = ensureLimits(ctx, olap, req.Msg.Sql, int(req.Msg.Limit))
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	res, err := olap.Execute(ctx, &drivers.Statement{
@@ -115,7 +129,7 @@ func ensureLimits(ctx context.Context, olap drivers.OLAPStore, inputSQL string, 
 
 	r.Close()
 
-	v, err := jsonvalue.Unmarshal(serializedSQL)
+	v, err := unmarshalJSON(serializedSQL)
 	if err != nil {
 		return "", err
 	}
@@ -241,7 +255,7 @@ func replaceOrUpdateLimitTo(root *jsonvalue.V, limit int) error {
 }
 
 func createConstantLimit(limit int) (*jsonvalue.V, error) {
-	v, err := jsonvalue.Unmarshal([]byte(fmt.Sprintf(`
+	return unmarshalJSON([]byte(fmt.Sprintf(`
 	{
 	   "class":"CONSTANT",
 	   "type":"VALUE_CONSTANT",
@@ -256,11 +270,10 @@ func createConstantLimit(limit int) (*jsonvalue.V, error) {
 	   }
 	}
 `, limit)))
-	return v, err
 }
 
 func createLimitModifier(limit int) (*jsonvalue.V, error) {
-	v, err := jsonvalue.Unmarshal([]byte(fmt.Sprintf(`
+	return unmarshalJSON([]byte(fmt.Sprintf(`
 {
 	"type":"LIMIT_MODIFIER",
 	"limit":{
@@ -279,5 +292,4 @@ func createLimitModifier(limit int) (*jsonvalue.V, error) {
 	"offset":null
  }
 `, limit)))
-	return v, err
 }

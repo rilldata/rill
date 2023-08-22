@@ -28,6 +28,7 @@ func (p *Parser) parseMigration(ctx context.Context, node *Node) error {
 	}
 
 	// Upsert resource (in practice, this will always be an insert)
+	// NOTE: After calling upsertResource, an error must not be returned. Any validation should be done before calling it.
 	r := p.upsertResource(ResourceKindMigration, node.Name, node.Paths, node.Refs...)
 	if node.Connector != "" {
 		r.MigrationSpec.Connector = node.Connector

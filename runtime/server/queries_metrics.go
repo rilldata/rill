@@ -160,6 +160,17 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *connect.Request
 
 // MetricsViewTotals implements QueryService.
 func (s *Server) MetricsViewTotals(ctx context.Context, req *connect.Request[runtimev1.MetricsViewTotalsRequest]) (*connect.Response[runtimev1.MetricsViewTotalsResponse], error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.Msg.InstanceId),
+		attribute.String("args.metric_view", req.Msg.MetricsViewName),
+		attribute.StringSlice("args.measures", req.Msg.MeasureNames),
+		attribute.StringSlice("args.inline_measures.names", marshalInlineMeasure(req.Msg.InlineMeasures)),
+		attribute.String("args.time_start", safeTimeStr(req.Msg.TimeStart)),
+		attribute.String("args.time_end", safeTimeStr(req.Msg.TimeEnd)),
+		attribute.Int("args.filter_count", filterCount(req.Msg.Filter)),
+		attribute.Int("args.priority", int(req.Msg.Priority)),
+	)
+
 	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.ReadMetrics) {
@@ -226,6 +237,31 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *connect.Request[runti
 	}
 
 	return connect.NewResponse(q.Result), nil
+}
+
+// MetricsViewTimeRange implements QueryService.
+func (s *Server) MetricsViewTimeRange(ctx context.Context, req *runtimev1.MetricsViewTimeRangeRequest) (*runtimev1.MetricsViewTimeRangeResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.metric_view", req.MetricsViewName),
+		attribute.Int("args.priority", int(req.Priority)),
+	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+		return nil, ErrForbidden
+	}
+
+	q := &queries.MetricsViewTimeRange{
+		MetricsViewName: req.MetricsViewName,
+	}
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	if err != nil {
+		return nil, err
+	}
+
+	return q.Result, nil
 }
 
 // validateInlineMeasures checks that the inline measures are allowed.

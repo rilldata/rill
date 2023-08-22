@@ -36,6 +36,35 @@ func TestServer_MetricsViewToplist(t *testing.T) {
 	require.Equal(t, 1.0, tr.Data[1].Fields["measure_2"].GetNumberValue())
 }
 
+func TestServer_MetricsViewToplist_dim_sort(t *testing.T) {
+	t.Parallel()
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewToplist(testCtx(), &runtimev1.MetricsViewToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "domain",
+		MeasureNames:    []string{"measure_2"},
+		Sort: []*runtimev1.MetricsViewSort{
+			{
+				Name:      "domain",
+				Ascending: false,
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tr.Data))
+
+	require.Equal(t, 2, len(tr.Data[0].Fields))
+	require.Equal(t, 2, len(tr.Data[1].Fields))
+
+	require.Equal(t, "yahoo.com", tr.Data[0].Fields["domain"].GetStringValue())
+	require.Equal(t, 1.0, tr.Data[0].Fields["measure_2"].GetNumberValue())
+
+	require.Equal(t, "msn.com", tr.Data[1].Fields["domain"].GetStringValue())
+	require.Equal(t, 2.0, tr.Data[1].Fields["measure_2"].GetNumberValue())
+}
+
 func TestServer_MetricsViewToplist_InlineMeasures(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")

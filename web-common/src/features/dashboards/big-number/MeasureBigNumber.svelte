@@ -13,7 +13,8 @@
   import {
     formatMeasurePercentageDifference,
     humanizeDataType,
-    NicelyFormattedTypes,
+    FormatPreset,
+    humanizeDataTypeExpanded,
   } from "../humanize-numbers";
 
   export let value: number;
@@ -25,10 +26,9 @@
   export let status: EntityStatus;
   export let description: string = undefined;
   export let withTimeseries = true;
-  export let formatPreset: string; // workaround, since unable to cast `string` to `NicelyFormattedTypes` within MetricsTimeSeriesCharts.svelte's `#each` block
+  export let formatPreset: string; // workaround, since unable to cast `string` to `FormatPreset` within MetricsTimeSeriesCharts.svelte's `#each` block
 
-  $: formatPresetEnum =
-    (formatPreset as NicelyFormattedTypes) || NicelyFormattedTypes.HUMANIZE;
+  $: formatPresetEnum = (formatPreset as FormatPreset) || FormatPreset.HUMANIZE;
   $: valueIsPresent = value !== undefined && value !== null;
 
   $: isComparisonPositive = comparisonPercChange && comparisonPercChange >= 0;
@@ -39,7 +39,7 @@
   $: noChange = !diff;
 
   /** when the measure is a percentage, we don't show a percentage change. */
-  $: measureIsPercentage = formatPresetEnum === NicelyFormattedTypes.PERCENTAGE;
+  $: measureIsPercentage = formatPresetEnum === FormatPreset.PERCENTAGE;
 </script>
 
 <div class="flex flex-col pl-1 {withTimeseries ? 'mt-2' : 'justify-between'}">
@@ -69,7 +69,7 @@
           <Tooltip distance={8} location="bottom" alignment="start">
             <div class="w-max">
               <WithTween {value} tweenProps={{ duration: 500 }} let:output>
-                {#if formatPresetEnum !== NicelyFormattedTypes.NONE}
+                {#if formatPresetEnum !== FormatPreset.NONE}
                   {humanizeDataType(output, formatPresetEnum)}
                 {:else}
                   {output}
@@ -77,7 +77,10 @@
               </WithTween>
             </div>
             <TooltipContent slot="tooltip-content">
-              the aggregate value over the current time period
+              {humanizeDataTypeExpanded(value, formatPresetEnum)}
+              <TooltipDescription>
+                the aggregate value over the current time period
+              </TooltipDescription>
             </TooltipContent>
           </Tooltip>
           {#if showComparison}
@@ -94,7 +97,7 @@
                       let:output
                     >
                       {@const formattedValue =
-                        formatPresetEnum !== NicelyFormattedTypes.NONE
+                        formatPresetEnum !== FormatPreset.NONE
                           ? humanizeDataType(diff, formatPresetEnum)
                           : diff}
                       {#if !noChange}
@@ -135,7 +138,7 @@
                 {:else}
                   {TIME_COMPARISON[comparisonOption].shorthand}
                   <span class="font-semibold"
-                    >{formatPresetEnum !== NicelyFormattedTypes.NONE
+                    >{formatPresetEnum !== FormatPreset.NONE
                       ? humanizeDataType(comparisonValue, formatPresetEnum)
                       : comparisonValue}</span
                   >{#if !measureIsPercentage}

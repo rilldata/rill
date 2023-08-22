@@ -75,13 +75,12 @@ func (s *Server) CreateInstance(ctx context.Context, req *connect.Request[runtim
 	inst := &drivers.Instance{
 		ID:                  req.Msg.InstanceId,
 		OLAPDriver:          req.Msg.OlapDriver,
-		OLAPDSN:             req.Msg.OlapDsn,
 		RepoDriver:          req.Msg.RepoDriver,
-		RepoDSN:             req.Msg.RepoDsn,
 		EmbedCatalog:        req.Msg.EmbedCatalog,
 		Variables:           req.Msg.Variables,
 		IngestionLimitBytes: req.Msg.IngestionLimitBytes,
 		Annotations:         req.Msg.Annotations,
+		Connectors:          req.Msg.Connectors,
 	}
 
 	err := s.runtime.CreateInstance(ctx, inst)
@@ -115,16 +114,24 @@ func (s *Server) EditInstance(ctx context.Context, req *connect.Request[runtimev
 		return nil, err
 	}
 
+	annotations := req.Msg.Annotations
+	if len(annotations) == 0 { // annotations not changed
+		annotations = oldInst.Annotations
+	}
+
 	inst := &drivers.Instance{
 		ID:                  req.Msg.InstanceId,
 		OLAPDriver:          valOrDefault(req.Msg.OlapDriver, oldInst.OLAPDriver),
-		OLAPDSN:             valOrDefault(req.Msg.OlapDsn, oldInst.OLAPDSN),
 		RepoDriver:          valOrDefault(req.Msg.RepoDriver, oldInst.RepoDriver),
-		RepoDSN:             valOrDefault(req.Msg.RepoDsn, oldInst.RepoDSN),
 		EmbedCatalog:        valOrDefault(req.Msg.EmbedCatalog, oldInst.EmbedCatalog),
 		Variables:           oldInst.Variables,
 		IngestionLimitBytes: valOrDefault(req.Msg.IngestionLimitBytes, oldInst.IngestionLimitBytes),
-		Annotations:         oldInst.Annotations,
+		Annotations:         annotations,
+	}
+	if len(req.Msg.Connectors) == 0 {
+		inst.Connectors = oldInst.Connectors
+	} else {
+		inst.Connectors = req.Msg.Connectors
 	}
 
 	err = s.runtime.EditInstance(ctx, inst)
@@ -155,13 +162,12 @@ func (s *Server) EditInstanceVariables(ctx context.Context, req *connect.Request
 	inst := &drivers.Instance{
 		ID:                  req.Msg.InstanceId,
 		OLAPDriver:          oldInst.OLAPDriver,
-		OLAPDSN:             oldInst.OLAPDSN,
 		RepoDriver:          oldInst.RepoDriver,
-		RepoDSN:             oldInst.RepoDSN,
 		EmbedCatalog:        oldInst.EmbedCatalog,
 		IngestionLimitBytes: oldInst.IngestionLimitBytes,
 		Variables:           req.Msg.Variables,
 		Annotations:         oldInst.Annotations,
+		Connectors:          oldInst.Connectors,
 	}
 
 	err = s.runtime.EditInstance(ctx, inst)
@@ -172,6 +178,41 @@ func (s *Server) EditInstanceVariables(ctx context.Context, req *connect.Request
 	return connect.NewResponse(&runtimev1.EditInstanceVariablesResponse{
 		Instance: instanceToPB(inst),
 	}), nil
+}
+
+// EditInstanceAnnotations implements RuntimeService.
+func (s *Server) EditInstanceAnnotations(ctx context.Context, req *runtimev1.EditInstanceAnnotationsRequest) (*runtimev1.EditInstanceAnnotationsResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.instance_id", req.InstanceId))
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
+	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
+		return nil, ErrForbidden
+	}
+
+	oldInst, err := s.runtime.FindInstance(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+
+	inst := &drivers.Instance{
+		ID:                  req.InstanceId,
+		OLAPDriver:          oldInst.OLAPDriver,
+		RepoDriver:          oldInst.RepoDriver,
+		EmbedCatalog:        oldInst.EmbedCatalog,
+		IngestionLimitBytes: oldInst.IngestionLimitBytes,
+		Variables:           oldInst.Variables,
+		Annotations:         req.Annotations,
+	}
+
+	err = s.runtime.EditInstance(ctx, inst)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &runtimev1.EditInstanceAnnotationsResponse{
+		Instance: instanceToPB(inst),
+	}, nil
 }
 
 // DeleteInstance implements RuntimeService.
@@ -199,13 +240,12 @@ func instanceToPB(inst *drivers.Instance) *runtimev1.Instance {
 	return &runtimev1.Instance{
 		InstanceId:          inst.ID,
 		OlapDriver:          inst.OLAPDriver,
-		OlapDsn:             inst.OLAPDSN,
 		RepoDriver:          inst.RepoDriver,
-		RepoDsn:             inst.RepoDSN,
 		EmbedCatalog:        inst.EmbedCatalog,
 		Variables:           inst.Variables,
 		ProjectVariables:    inst.ProjectVariables,
 		IngestionLimitBytes: inst.IngestionLimitBytes,
+		Connectors:          inst.Connectors,
 	}
 }
 

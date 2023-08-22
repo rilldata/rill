@@ -54,9 +54,15 @@ const (
 	// ConnectorServiceGCSGetCredentialsInfoProcedure is the fully-qualified name of the
 	// ConnectorService's GCSGetCredentialsInfo RPC.
 	ConnectorServiceGCSGetCredentialsInfoProcedure = "/rill.runtime.v1.ConnectorService/GCSGetCredentialsInfo"
-	// ConnectorServiceMotherduckListTablesProcedure is the fully-qualified name of the
-	// ConnectorService's MotherduckListTables RPC.
-	ConnectorServiceMotherduckListTablesProcedure = "/rill.runtime.v1.ConnectorService/MotherduckListTables"
+	// ConnectorServiceOLAPListTablesProcedure is the fully-qualified name of the ConnectorService's
+	// OLAPListTables RPC.
+	ConnectorServiceOLAPListTablesProcedure = "/rill.runtime.v1.ConnectorService/OLAPListTables"
+	// ConnectorServiceBigQueryListDatasetsProcedure is the fully-qualified name of the
+	// ConnectorService's BigQueryListDatasets RPC.
+	ConnectorServiceBigQueryListDatasetsProcedure = "/rill.runtime.v1.ConnectorService/BigQueryListDatasets"
+	// ConnectorServiceBigQueryListTablesProcedure is the fully-qualified name of the ConnectorService's
+	// BigQueryListTables RPC.
+	ConnectorServiceBigQueryListTablesProcedure = "/rill.runtime.v1.ConnectorService/BigQueryListTables"
 )
 
 // ConnectorServiceClient is a client for the rill.runtime.v1.ConnectorService service.
@@ -75,8 +81,12 @@ type ConnectorServiceClient interface {
 	GCSListObjects(context.Context, *connect_go.Request[v1.GCSListObjectsRequest]) (*connect_go.Response[v1.GCSListObjectsResponse], error)
 	// GCSGetCredentialsInfo returns metadata for the given bucket.
 	GCSGetCredentialsInfo(context.Context, *connect_go.Request[v1.GCSGetCredentialsInfoRequest]) (*connect_go.Response[v1.GCSGetCredentialsInfoResponse], error)
-	// MotherduckListTables list all tables across all databases on motherduck
-	MotherduckListTables(context.Context, *connect_go.Request[v1.MotherduckListTablesRequest]) (*connect_go.Response[v1.MotherduckListTablesResponse], error)
+	// OLAPListTables list all tables across all databases on motherduck
+	OLAPListTables(context.Context, *connect_go.Request[v1.OLAPListTablesRequest]) (*connect_go.Response[v1.OLAPListTablesResponse], error)
+	// BigQueryListDatasets list all datasets in a bigquery project
+	BigQueryListDatasets(context.Context, *connect_go.Request[v1.BigQueryListDatasetsRequest]) (*connect_go.Response[v1.BigQueryListDatasetsResponse], error)
+	// BigQueryListTables list all tables in a bigquery project:dataset
+	BigQueryListTables(context.Context, *connect_go.Request[v1.BigQueryListTablesRequest]) (*connect_go.Response[v1.BigQueryListTablesResponse], error)
 }
 
 // NewConnectorServiceClient constructs a client for the rill.runtime.v1.ConnectorService service.
@@ -124,9 +134,19 @@ func NewConnectorServiceClient(httpClient connect_go.HTTPClient, baseURL string,
 			baseURL+ConnectorServiceGCSGetCredentialsInfoProcedure,
 			opts...,
 		),
-		motherduckListTables: connect_go.NewClient[v1.MotherduckListTablesRequest, v1.MotherduckListTablesResponse](
+		oLAPListTables: connect_go.NewClient[v1.OLAPListTablesRequest, v1.OLAPListTablesResponse](
 			httpClient,
-			baseURL+ConnectorServiceMotherduckListTablesProcedure,
+			baseURL+ConnectorServiceOLAPListTablesProcedure,
+			opts...,
+		),
+		bigQueryListDatasets: connect_go.NewClient[v1.BigQueryListDatasetsRequest, v1.BigQueryListDatasetsResponse](
+			httpClient,
+			baseURL+ConnectorServiceBigQueryListDatasetsProcedure,
+			opts...,
+		),
+		bigQueryListTables: connect_go.NewClient[v1.BigQueryListTablesRequest, v1.BigQueryListTablesResponse](
+			httpClient,
+			baseURL+ConnectorServiceBigQueryListTablesProcedure,
 			opts...,
 		),
 	}
@@ -141,7 +161,9 @@ type connectorServiceClient struct {
 	gCSListBuckets        *connect_go.Client[v1.GCSListBucketsRequest, v1.GCSListBucketsResponse]
 	gCSListObjects        *connect_go.Client[v1.GCSListObjectsRequest, v1.GCSListObjectsResponse]
 	gCSGetCredentialsInfo *connect_go.Client[v1.GCSGetCredentialsInfoRequest, v1.GCSGetCredentialsInfoResponse]
-	motherduckListTables  *connect_go.Client[v1.MotherduckListTablesRequest, v1.MotherduckListTablesResponse]
+	oLAPListTables        *connect_go.Client[v1.OLAPListTablesRequest, v1.OLAPListTablesResponse]
+	bigQueryListDatasets  *connect_go.Client[v1.BigQueryListDatasetsRequest, v1.BigQueryListDatasetsResponse]
+	bigQueryListTables    *connect_go.Client[v1.BigQueryListTablesRequest, v1.BigQueryListTablesResponse]
 }
 
 // S3ListBuckets calls rill.runtime.v1.ConnectorService.S3ListBuckets.
@@ -179,9 +201,19 @@ func (c *connectorServiceClient) GCSGetCredentialsInfo(ctx context.Context, req 
 	return c.gCSGetCredentialsInfo.CallUnary(ctx, req)
 }
 
-// MotherduckListTables calls rill.runtime.v1.ConnectorService.MotherduckListTables.
-func (c *connectorServiceClient) MotherduckListTables(ctx context.Context, req *connect_go.Request[v1.MotherduckListTablesRequest]) (*connect_go.Response[v1.MotherduckListTablesResponse], error) {
-	return c.motherduckListTables.CallUnary(ctx, req)
+// OLAPListTables calls rill.runtime.v1.ConnectorService.OLAPListTables.
+func (c *connectorServiceClient) OLAPListTables(ctx context.Context, req *connect_go.Request[v1.OLAPListTablesRequest]) (*connect_go.Response[v1.OLAPListTablesResponse], error) {
+	return c.oLAPListTables.CallUnary(ctx, req)
+}
+
+// BigQueryListDatasets calls rill.runtime.v1.ConnectorService.BigQueryListDatasets.
+func (c *connectorServiceClient) BigQueryListDatasets(ctx context.Context, req *connect_go.Request[v1.BigQueryListDatasetsRequest]) (*connect_go.Response[v1.BigQueryListDatasetsResponse], error) {
+	return c.bigQueryListDatasets.CallUnary(ctx, req)
+}
+
+// BigQueryListTables calls rill.runtime.v1.ConnectorService.BigQueryListTables.
+func (c *connectorServiceClient) BigQueryListTables(ctx context.Context, req *connect_go.Request[v1.BigQueryListTablesRequest]) (*connect_go.Response[v1.BigQueryListTablesResponse], error) {
+	return c.bigQueryListTables.CallUnary(ctx, req)
 }
 
 // ConnectorServiceHandler is an implementation of the rill.runtime.v1.ConnectorService service.
@@ -200,8 +232,12 @@ type ConnectorServiceHandler interface {
 	GCSListObjects(context.Context, *connect_go.Request[v1.GCSListObjectsRequest]) (*connect_go.Response[v1.GCSListObjectsResponse], error)
 	// GCSGetCredentialsInfo returns metadata for the given bucket.
 	GCSGetCredentialsInfo(context.Context, *connect_go.Request[v1.GCSGetCredentialsInfoRequest]) (*connect_go.Response[v1.GCSGetCredentialsInfoResponse], error)
-	// MotherduckListTables list all tables across all databases on motherduck
-	MotherduckListTables(context.Context, *connect_go.Request[v1.MotherduckListTablesRequest]) (*connect_go.Response[v1.MotherduckListTablesResponse], error)
+	// OLAPListTables list all tables across all databases on motherduck
+	OLAPListTables(context.Context, *connect_go.Request[v1.OLAPListTablesRequest]) (*connect_go.Response[v1.OLAPListTablesResponse], error)
+	// BigQueryListDatasets list all datasets in a bigquery project
+	BigQueryListDatasets(context.Context, *connect_go.Request[v1.BigQueryListDatasetsRequest]) (*connect_go.Response[v1.BigQueryListDatasetsResponse], error)
+	// BigQueryListTables list all tables in a bigquery project:dataset
+	BigQueryListTables(context.Context, *connect_go.Request[v1.BigQueryListTablesRequest]) (*connect_go.Response[v1.BigQueryListTablesResponse], error)
 }
 
 // NewConnectorServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -245,9 +281,19 @@ func NewConnectorServiceHandler(svc ConnectorServiceHandler, opts ...connect_go.
 		svc.GCSGetCredentialsInfo,
 		opts...,
 	)
-	connectorServiceMotherduckListTablesHandler := connect_go.NewUnaryHandler(
-		ConnectorServiceMotherduckListTablesProcedure,
-		svc.MotherduckListTables,
+	connectorServiceOLAPListTablesHandler := connect_go.NewUnaryHandler(
+		ConnectorServiceOLAPListTablesProcedure,
+		svc.OLAPListTables,
+		opts...,
+	)
+	connectorServiceBigQueryListDatasetsHandler := connect_go.NewUnaryHandler(
+		ConnectorServiceBigQueryListDatasetsProcedure,
+		svc.BigQueryListDatasets,
+		opts...,
+	)
+	connectorServiceBigQueryListTablesHandler := connect_go.NewUnaryHandler(
+		ConnectorServiceBigQueryListTablesProcedure,
+		svc.BigQueryListTables,
 		opts...,
 	)
 	return "/rill.runtime.v1.ConnectorService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -266,8 +312,12 @@ func NewConnectorServiceHandler(svc ConnectorServiceHandler, opts ...connect_go.
 			connectorServiceGCSListObjectsHandler.ServeHTTP(w, r)
 		case ConnectorServiceGCSGetCredentialsInfoProcedure:
 			connectorServiceGCSGetCredentialsInfoHandler.ServeHTTP(w, r)
-		case ConnectorServiceMotherduckListTablesProcedure:
-			connectorServiceMotherduckListTablesHandler.ServeHTTP(w, r)
+		case ConnectorServiceOLAPListTablesProcedure:
+			connectorServiceOLAPListTablesHandler.ServeHTTP(w, r)
+		case ConnectorServiceBigQueryListDatasetsProcedure:
+			connectorServiceBigQueryListDatasetsHandler.ServeHTTP(w, r)
+		case ConnectorServiceBigQueryListTablesProcedure:
+			connectorServiceBigQueryListTablesHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -305,6 +355,14 @@ func (UnimplementedConnectorServiceHandler) GCSGetCredentialsInfo(context.Contex
 	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("rill.runtime.v1.ConnectorService.GCSGetCredentialsInfo is not implemented"))
 }
 
-func (UnimplementedConnectorServiceHandler) MotherduckListTables(context.Context, *connect_go.Request[v1.MotherduckListTablesRequest]) (*connect_go.Response[v1.MotherduckListTablesResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("rill.runtime.v1.ConnectorService.MotherduckListTables is not implemented"))
+func (UnimplementedConnectorServiceHandler) OLAPListTables(context.Context, *connect_go.Request[v1.OLAPListTablesRequest]) (*connect_go.Response[v1.OLAPListTablesResponse], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("rill.runtime.v1.ConnectorService.OLAPListTables is not implemented"))
+}
+
+func (UnimplementedConnectorServiceHandler) BigQueryListDatasets(context.Context, *connect_go.Request[v1.BigQueryListDatasetsRequest]) (*connect_go.Response[v1.BigQueryListDatasetsResponse], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("rill.runtime.v1.ConnectorService.BigQueryListDatasets is not implemented"))
+}
+
+func (UnimplementedConnectorServiceHandler) BigQueryListTables(context.Context, *connect_go.Request[v1.BigQueryListTablesRequest]) (*connect_go.Response[v1.BigQueryListTablesResponse], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("rill.runtime.v1.ConnectorService.BigQueryListTables is not implemented"))
 }

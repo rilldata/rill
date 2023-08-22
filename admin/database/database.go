@@ -101,6 +101,7 @@ type DB interface {
 	InsertUser(ctx context.Context, opts *InsertUserOptions) (*User, error)
 	DeleteUser(ctx context.Context, id string) error
 	UpdateUser(ctx context.Context, id string, opts *UpdateUserOptions) (*User, error)
+	UpdateUserActiveOn(ctx context.Context, ids []string) error
 	CheckUsersEmpty(ctx context.Context) (bool, error)
 	FindSuperusers(ctx context.Context) ([]*User, error)
 	UpdateSuperuser(ctx context.Context, userID string, superuser bool) error
@@ -113,8 +114,24 @@ type DB interface {
 	FindUserAuthTokens(ctx context.Context, userID string) ([]*UserAuthToken, error)
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
 	InsertUserAuthToken(ctx context.Context, opts *InsertUserAuthTokenOptions) (*UserAuthToken, error)
+	UpdateUserAuthTokenUsedOn(ctx context.Context, ids []string) error
 	DeleteUserAuthToken(ctx context.Context, id string) error
 	DeleteExpiredUserAuthTokens(ctx context.Context, retention time.Duration) error
+
+	FindServicesByOrgID(ctx context.Context, orgID string) ([]*Service, error)
+	FindService(ctx context.Context, id string) (*Service, error)
+	FindServiceByName(ctx context.Context, orgID, name string) (*Service, error)
+	InsertService(ctx context.Context, opts *InsertServiceOptions) (*Service, error)
+	DeleteService(ctx context.Context, id string) error
+	UpdateService(ctx context.Context, id string, opts *UpdateServiceOptions) (*Service, error)
+	UpdateServiceActiveOn(ctx context.Context, ids []string) error
+
+	FindServiceAuthTokens(ctx context.Context, serviceID string) ([]*ServiceAuthToken, error)
+	FindServiceAuthToken(ctx context.Context, id string) (*ServiceAuthToken, error)
+	InsertServiceAuthToken(ctx context.Context, opts *InsertServiceAuthTokenOptions) (*ServiceAuthToken, error)
+	UpdateServiceAuthTokenUsedOn(ctx context.Context, ids []string) error
+	DeleteServiceAuthToken(ctx context.Context, id string) error
+	DeleteExpiredServiceAuthTokens(ctx context.Context, retention time.Duration) error
 
 	FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*DeviceAuthCode, error)
 	FindPendingDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*DeviceAuthCode, error)
@@ -340,6 +357,7 @@ type User struct {
 	GithubUsername      string    `db:"github_username"`
 	CreatedOn           time.Time `db:"created_on"`
 	UpdatedOn           time.Time `db:"updated_on"`
+	ActiveOn            time.Time `db:"active_on"`
 	QuotaSingleuserOrgs int       `db:"quota_singleuser_orgs"`
 	PreferenceTimeZone  string    `db:"preference_time_zone"`
 	Superuser           bool      `db:"superuser"`
@@ -361,6 +379,28 @@ type UpdateUserOptions struct {
 	GithubUsername      string
 	QuotaSingleuserOrgs int
 	PreferenceTimeZone  string
+}
+
+// Service represents a service account.
+// Service accounts may belong to single organization
+type Service struct {
+	ID        string
+	OrgID     string    `db:"org_id"`
+	Name      string    `validate:"slug"`
+	CreatedOn time.Time `db:"created_on"`
+	UpdatedOn time.Time `db:"updated_on"`
+	ActiveOn  time.Time `db:"active_on"`
+}
+
+// InsertServiceOptions defines options for inserting a new service
+type InsertServiceOptions struct {
+	OrgID string
+	Name  string `validate:"slug"`
+}
+
+// UpdateServiceOptions defines options for updating an existing service
+type UpdateServiceOptions struct {
+	Name string `validate:"slug"`
 }
 
 // Usergroup represents a group of org members
@@ -386,6 +426,7 @@ type UserAuthToken struct {
 	RepresentingUserID *string    `db:"representing_user_id"`
 	CreatedOn          time.Time  `db:"created_on"`
 	ExpiresOn          *time.Time `db:"expires_on"`
+	UsedOn             time.Time  `db:"used_on"`
 }
 
 // InsertUserAuthTokenOptions defines options for creating a UserAuthToken.
@@ -397,6 +438,24 @@ type InsertUserAuthTokenOptions struct {
 	AuthClientID       *string
 	RepresentingUserID *string
 	ExpiresOn          *time.Time
+}
+
+// ServiceAuthToken is a persistent API token for a service.
+type ServiceAuthToken struct {
+	ID         string
+	SecretHash []byte     `db:"secret_hash"`
+	ServiceID  string     `db:"service_id"`
+	CreatedOn  time.Time  `db:"created_on"`
+	ExpiresOn  *time.Time `db:"expires_on"`
+	UsedOn     time.Time  `db:"used_on"`
+}
+
+// InsertServiceAuthTokenOptions defines options for creating a ServiceAuthToken.
+type InsertServiceAuthTokenOptions struct {
+	ID         string
+	SecretHash []byte
+	ServiceID  string
+	ExpiresOn  *time.Time
 }
 
 // AuthClient is a client that requests and consumes auth tokens.
