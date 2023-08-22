@@ -322,16 +322,16 @@ func (c catalogCache) updateDeleted(name *runtimev1.ResourceName) error {
 
 // updateStatus updates the ephemeral status fields on a resource.
 // The values of these fields are reset next time a catalog cache is created.
-func (c catalogCache) updateStatus(name *runtimev1.ResourceName, status runtimev1.ReconcileStatus, reconcileOn *time.Time, renamedFrom *runtimev1.ResourceName) error {
+func (c catalogCache) updateStatus(name *runtimev1.ResourceName, status runtimev1.ReconcileStatus, reconcileOn time.Time, renamedFrom *runtimev1.ResourceName) error {
 	r, err := c.get(name, true)
 	if err != nil {
 		return err
 	}
 	r.Meta.ReconcileStatus = status
-	if reconcileOn == nil {
+	if reconcileOn.IsZero() {
 		r.Meta.ReconcileOn = nil
 	} else {
-		r.Meta.ReconcileOn = timestamppb.New(*reconcileOn)
+		r.Meta.ReconcileOn = timestamppb.New(reconcileOn)
 	}
 	r.Meta.RenamedFrom = renamedFrom
 	return nil
