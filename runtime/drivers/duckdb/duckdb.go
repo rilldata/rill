@@ -115,7 +115,9 @@ func (d Driver) Open(config map[string]any, shared bool, logger *zap.Logger) (dr
 		return nil, err
 	}
 
-	go c.periodicallyEmitStats(time.Minute)
+	if d.name != "motherduck" {
+		go c.periodicallyEmitStats(time.Minute)
+	}
 
 	return c, nil
 }
