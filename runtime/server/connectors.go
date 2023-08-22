@@ -185,7 +185,7 @@ func (s *Server) GCSGetCredentialsInfo(ctx context.Context, req *connect.Request
 	}), nil
 }
 
-func (s *Server) MotherduckListTables(ctx context.Context, req *connect.Request[runtimev1.OLAPListTablesRequest]) (*connect.Response[runtimev1.OLAPListTablesResponse], error) {
+func (s *Server) OLAPListTables(ctx context.Context, req *connect.Request[runtimev1.OLAPListTablesRequest]) (*connect.Response[runtimev1.OLAPListTablesResponse], error) {
 	conn, release, err := s.runtime.AcquireHandle(ctx, req.Msg.InstanceId, req.Msg.Connector)
 	if err != nil {
 		return nil, err
@@ -210,40 +210,40 @@ func (s *Server) MotherduckListTables(ctx context.Context, req *connect.Request[
 	}), nil
 }
 
-func (s *Server) BigQueryListDatasets(ctx context.Context, req *runtimev1.BigQueryListDatasetsRequest) (*runtimev1.BigQueryListDatasetsResponse, error) {
-	bq, release, err := s.getBigQueryConn(ctx, req.Connector, req.InstanceId)
+func (s *Server) BigQueryListDatasets(ctx context.Context, req *connect.Request[runtimev1.BigQueryListDatasetsRequest]) (*connect.Response[runtimev1.BigQueryListDatasetsResponse], error) {
+	bq, release, err := s.getBigQueryConn(ctx, req.Msg.Connector, req.Msg.InstanceId)
 	if err != nil {
 		return nil, err
 	}
 	defer release()
 
-	names, nextToken, err := bq.ListDatasets(ctx, req)
+	names, nextToken, err := bq.ListDatasets(ctx, req.Msg)
 	if err != nil {
 		return nil, err
 	}
 
-	return &runtimev1.BigQueryListDatasetsResponse{
+	return connect.NewResponse(&runtimev1.BigQueryListDatasetsResponse{
 		Names:         names,
 		NextPageToken: nextToken,
-	}, nil
+	}), nil
 }
 
-func (s *Server) BigQueryListTables(ctx context.Context, req *runtimev1.BigQueryListTablesRequest) (*runtimev1.BigQueryListTablesResponse, error) {
-	bq, release, err := s.getBigQueryConn(ctx, req.Connector, req.InstanceId)
+func (s *Server) BigQueryListTables(ctx context.Context, req *connect.Request[runtimev1.BigQueryListTablesRequest]) (*connect.Response[runtimev1.BigQueryListTablesResponse], error) {
+	bq, release, err := s.getBigQueryConn(ctx, req.Msg.Connector, req.Msg.InstanceId)
 	if err != nil {
 		return nil, err
 	}
 	defer release()
 
-	names, nextToken, err := bq.ListTables(ctx, req)
+	names, nextToken, err := bq.ListTables(ctx, req.Msg)
 	if err != nil {
 		return nil, err
 	}
 
-	return &runtimev1.BigQueryListTablesResponse{
+	return connect.NewResponse(&runtimev1.BigQueryListTablesResponse{
 		Names:         names,
 		NextPageToken: nextToken,
-	}, nil
+	}), nil
 }
 
 func (s *Server) getGCSConn(ctx context.Context, connector, instanceID string) (*gcs.Connection, func(), error) {

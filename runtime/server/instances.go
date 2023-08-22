@@ -181,28 +181,28 @@ func (s *Server) EditInstanceVariables(ctx context.Context, req *connect.Request
 }
 
 // EditInstanceAnnotations implements RuntimeService.
-func (s *Server) EditInstanceAnnotations(ctx context.Context, req *runtimev1.EditInstanceAnnotationsRequest) (*runtimev1.EditInstanceAnnotationsResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.instance_id", req.InstanceId))
+func (s *Server) EditInstanceAnnotations(ctx context.Context, req *connect.Request[runtimev1.EditInstanceAnnotationsRequest]) (*connect.Response[runtimev1.EditInstanceAnnotationsResponse], error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.instance_id", req.Msg.InstanceId))
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
 	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
 		return nil, ErrForbidden
 	}
 
-	oldInst, err := s.runtime.FindInstance(ctx, req.InstanceId)
+	oldInst, err := s.runtime.FindInstance(ctx, req.Msg.InstanceId)
 	if err != nil {
 		return nil, err
 	}
 
 	inst := &drivers.Instance{
-		ID:                  req.InstanceId,
+		ID:                  req.Msg.InstanceId,
 		OLAPDriver:          oldInst.OLAPDriver,
 		RepoDriver:          oldInst.RepoDriver,
 		EmbedCatalog:        oldInst.EmbedCatalog,
 		IngestionLimitBytes: oldInst.IngestionLimitBytes,
 		Variables:           oldInst.Variables,
-		Annotations:         req.Annotations,
+		Annotations:         req.Msg.Annotations,
 	}
 
 	err = s.runtime.EditInstance(ctx, inst)
@@ -210,9 +210,9 @@ func (s *Server) EditInstanceAnnotations(ctx context.Context, req *runtimev1.Edi
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &runtimev1.EditInstanceAnnotationsResponse{
+	return connect.NewResponse(&runtimev1.EditInstanceAnnotationsResponse{
 		Instance: instanceToPB(inst),
-	}, nil
+	}), nil
 }
 
 // DeleteInstance implements RuntimeService.

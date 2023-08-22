@@ -240,28 +240,28 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *connect.Request[runti
 }
 
 // MetricsViewTimeRange implements QueryService.
-func (s *Server) MetricsViewTimeRange(ctx context.Context, req *runtimev1.MetricsViewTimeRangeRequest) (*runtimev1.MetricsViewTimeRangeResponse, error) {
+func (s *Server) MetricsViewTimeRange(ctx context.Context, req *connect.Request[runtimev1.MetricsViewTimeRangeRequest]) (*connect.Response[runtimev1.MetricsViewTimeRangeResponse], error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.metric_view", req.MetricsViewName),
-		attribute.Int("args.priority", int(req.Priority)),
+		attribute.String("args.instance_id", req.Msg.InstanceId),
+		attribute.String("args.metric_view", req.Msg.MetricsViewName),
+		attribute.Int("args.priority", int(req.Msg.Priority)),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	s.addInstanceRequestAttributes(ctx, req.Msg.InstanceId)
 
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+	if !auth.GetClaims(ctx).CanInstance(req.Msg.InstanceId, auth.ReadMetrics) {
 		return nil, ErrForbidden
 	}
 
 	q := &queries.MetricsViewTimeRange{
-		MetricsViewName: req.MetricsViewName,
+		MetricsViewName: req.Msg.MetricsViewName,
 	}
-	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err := s.runtime.Query(ctx, req.Msg.InstanceId, q, int(req.Msg.Priority))
 	if err != nil {
 		return nil, err
 	}
 
-	return q.Result, nil
+	return connect.NewResponse(q.Result), nil
 }
 
 // validateInlineMeasures checks that the inline measures are allowed.
