@@ -37,25 +37,6 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var projectPath string
-			if clean {
-				if len(args) > 0 {
-					err := deleteFilesWithExtensions(args[0], ".db", ".wal")
-					if err != nil {
-						return err
-					}
-				} else {
-					currentDir, err := filepath.Abs("")
-					if err != nil {
-						return err
-					}
-
-					err = deleteFilesWithExtensions(currentDir, ".db", ".wal")
-					if err != nil {
-						return err
-					}
-				}
-			}
-
 			if len(args) > 0 {
 				projectPath = args[0]
 				if strings.HasSuffix(projectPath, ".git") {
@@ -107,7 +88,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 
 			client := activity.NewNoopClient()
 
-			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, olapDriver, olapDSN, projectPath, parsedLogFormat, variables, client)
+			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, clean, olapDriver, olapDSN, projectPath, parsedLogFormat, variables, client)
 			if err != nil {
 				return err
 			}
@@ -149,25 +130,4 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 	startCmd.Flags().StringSliceVarP(&variables, "env", "e", []string{}, "Set project variables")
 
 	return startCmd
-}
-
-func deleteFilesWithExtensions(directoryPath string, extensions ...string) error {
-	files, err := filepath.Glob(filepath.Join(directoryPath, "*"))
-	if err != nil {
-		return err
-	}
-
-	for _, file := range files {
-		for _, ext := range extensions {
-			if filepath.Ext(file) == ext {
-				err = os.Remove(file)
-				if err != nil {
-					return err
-				}
-				fmt.Println("Deleted:", file)
-			}
-		}
-	}
-
-	return nil
 }
