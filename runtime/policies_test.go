@@ -332,7 +332,6 @@ func TestResolveMetricsView(t *testing.T) {
 					},
 				},
 			},
-			// since aud is nil in test case, open policy will be applied which same as local dev experience
 			want: &ResolvedMetricsViewPolicy{
 				HasAccess: false,
 				Filter:    "WHERE domain = 'rilldata.com'",
