@@ -27,6 +27,9 @@ display:contents. This is useful when nesting a floating element within a toolti
   // if it overflows the window
   export let overflowFlipY = true;
 
+  // mouse position to be used when relationship is `mouse`
+  export let mousePos = { x: 0, y: 0 };
+
   let top = 0;
   let left = 0;
   let innerHeight;
@@ -98,9 +101,8 @@ display:contents. This is useful when nesting a floating element within a toolti
       overflowFlipY
     );
   } else {
-    console.log(mouseLocationToBoundingRect(target));
     setLocation(
-      mouseLocationToBoundingRect(target),
+      mouseLocationToBoundingRect({ x: mousePos.x, y: mousePos.y }),
       child?.getBoundingClientRect(),
       scrollX,
       scrollY,

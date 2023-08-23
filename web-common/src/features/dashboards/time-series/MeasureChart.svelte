@@ -184,20 +184,16 @@
     });
   }
 
-  let contextMenuOpen = false;
   let mouseX;
   let mouseY;
+  let contextMenuOpen = false;
+
   function onContextMenu(e) {
     e.preventDefault();
 
     if (!hasSubrangeSelected) return;
     mouseX = e.clientX;
     mouseY = e.clientY;
-
-    // console.log("show context", e, mouseX, mouseY);
-
-    console.log("show context", mouseX);
-
     contextMenuOpen = true;
   }
 
@@ -386,6 +382,7 @@
     relationship="mouse"
     distance={16}
     let:toggleFloatingElement
+    mousePos={{ x: mouseX, y: mouseY }}
     bind:active={contextMenuOpen}
   >
     <Menu
@@ -400,7 +397,7 @@
         <span slot="right">Z</span>
       </MenuItem>
       <MenuItem on:select={() => resetScrub()}>
-        <span> Remove Scrub </span>
+        <span> Remove scrub </span>
         <span slot="right">esc</span>
       </MenuItem>
     </Menu>
