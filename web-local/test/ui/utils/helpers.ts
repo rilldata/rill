@@ -24,22 +24,13 @@ export async function clickMenuButton(page: Page, text: string) {
 export async function waitForProfiling(
   page: Page,
   name: string,
-  columns: Array<string>
+  // TODO: check columns' calls in batch
+  _columns: Array<string>
 ) {
-  return Promise.all(
-    [
-      page.waitForResponse(
-        new RegExp(`/queries/columns-profile/tables/${name}`)
-      ),
-      columns.map((column) =>
-        page.waitForResponse(
-          new RegExp(
-            `/queries/null-count/tables/${name}\\?columnName=${column}`
-          )
-        )
-      ),
-    ].flat()
-  );
+  return Promise.all([
+    page.waitForResponse(new RegExp(`/queries/columns-profile/tables/${name}`)),
+    page.waitForResponse(new RegExp(`/query/batch`)),
+  ]);
 }
 
 export function getEntityLink(page: Page, name: string) {

@@ -7,7 +7,6 @@ import { streamingFetchWrapper } from "@rilldata/web-common/runtime-client/strea
 
 export type BatchRequest = {
   request: V1QueryBatchEntry;
-  priority: number;
   resolve: (data: V1QueryBatchResponse) => void;
   reject: (err: Error) => void;
   signal: AbortSignal | undefined;
@@ -17,7 +16,7 @@ export class BatchedRequest {
   private expectedRequests = 0;
 
   public get ready() {
-    return this.expectedRequests >= this.requests.length;
+    return this.requests.length >= this.expectedRequests;
   }
 
   public register() {
@@ -32,14 +31,35 @@ export class BatchedRequest {
     signal: AbortSignal | undefined
   ) {
     request.key = this.requests.length;
-    this.requests.push({ request, priority, resolve, reject, signal });
+    this.requests.push({
+      request,
+      resolve,
+      reject,
+      signal,
+    });
+  }
+
+  public addReq<T>(
+    request: V1QueryBatchEntry,
+    selector: (data: V1QueryBatchResponse) => T
+  ) {
+    return new Promise<T>((resolve, reject) => {
+      request.key = this.requests.length;
+      this.requests.push({
+        request,
+        resolve: (data) => resolve(selector(data)),
+        reject,
+        signal: undefined,
+      });
+    });
   }
 
   public async send(instanceId: string) {
     const request: QueryServiceQueryBatchBody = {
-      queries: [...this.requests]
-        .sort((e1, e2) => e2.priority - e1.priority)
-        .map(({ request }) => request),
+      // queries: [...this.requests]
+      //   .sort((e1, e2) => e2.priority - e1.priority)
+      //   .map(({ request }) => request),
+      queries: this.requests.map(({ request }) => request),
     };
     const controller = new AbortController();
     const stream = streamingFetchWrapper<{ result: V1QueryBatchResponse }>(

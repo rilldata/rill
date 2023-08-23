@@ -14,7 +14,6 @@ import {
   V1ProfileColumn,
   V1TableColumnsResponse,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryObserverResult } from "@tanstack/query-core";
 import { derived, Readable, writable } from "svelte/store";
 

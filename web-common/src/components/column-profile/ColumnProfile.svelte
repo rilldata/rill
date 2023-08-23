@@ -1,5 +1,7 @@
 <script lang="ts">
   import { batchedProfileQuery } from "@rilldata/web-common/components/column-profile/batched-profile-query";
+  import { getColumnsProfileData } from "@rilldata/web-common/components/column-profile/columns-profile-data";
+  import type { ColumnsProfileDataStore } from "@rilldata/web-common/components/column-profile/columns-profile-data";
   import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-common/layout/config";
   import {
     createQueryServiceTableColumns,
@@ -48,6 +50,9 @@
     }
   );
 
+  let columnsProfile: ColumnsProfileDataStore;
+  $: columnsProfile = getColumnsProfileData($runtime?.instanceId, objectName);
+
   let batchedQuery: Readable<boolean>;
   let sending = true;
   $: if ($profileColumns) {
@@ -58,6 +63,9 @@
       $profileColumns,
       () => (sending = false)
     );
+
+    if ($profileColumns?.data && !$profileColumns.isFetching)
+      columnsProfile.load($profileColumns);
   }
 
   let nestedColumnProfileQuery;
@@ -79,6 +87,8 @@
   } else {
     sortedProfile = profile;
   }
+
+  $: console.log($columnsProfile);
 </script>
 
 <!-- Dummy read to force rendering -->

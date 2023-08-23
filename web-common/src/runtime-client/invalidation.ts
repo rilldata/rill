@@ -138,10 +138,10 @@ export async function invalidateProfilingQueries(
   // do not re-fetch for failed entities.
   if (failed) return Promise.resolve();
 
-  // queryClient.removeQueries({
-  //   predicate: (query) => isColumnProfilingQuery(query, name),
-  //   type: "active",
-  // });
+  queryClient.removeQueries({
+    predicate: (query) => isColumnProfilingQuery(query, name),
+    type: "active",
+  });
 
   await queryClient.invalidateQueries({
     predicate: (query) => isTableProfilingQuery(query, name),
