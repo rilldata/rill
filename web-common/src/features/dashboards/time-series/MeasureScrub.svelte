@@ -169,11 +169,8 @@
   export function endScrub(e) {
     // if the mouse leaves the svg area, reset the scrub
     // check if any parent of explicitOriginalTarget is a svg or not
-    if (
-      e?.explicitOriginalTarget?.nodeName === "#text" ||
-      (e?.explicitOriginalTarget?.nodeName !== "svg" &&
-        !e?.explicitOriginalTarget?.closest("svg"))
-    ) {
+    const hoverElem = Array.from(document.querySelectorAll(":hover")).pop();
+    if (hoverElem?.nodeName !== "svg" && !hoverElem?.closest("svg")) {
       dispatch("reset");
       return;
     }
