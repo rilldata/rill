@@ -6,15 +6,15 @@ import {
 } from "../../../runtime-client";
 import { invalidateMetricsViewData } from "../../../runtime-client/invalidation";
 import { runtime } from "../../../runtime-client/runtime-store";
-import type { TestUser } from "./useTestUsers";
+import type { MockUser } from "./useMockUsers";
 
 // Note: `null` means "viewing as self"
-export const viewAsStore = writable<TestUser | null>(null);
+export const viewAsStore = writable<MockUser | null>(null);
 
 export async function viewAs(
   queryClient: QueryClient,
   dashboardName: string,
-  user: TestUser | null
+  user: MockUser | null
 ) {
   const instanceId = get(runtime).instanceId;
 

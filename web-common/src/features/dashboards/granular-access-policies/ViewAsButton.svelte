@@ -9,7 +9,7 @@
   import Spacer from "../../../components/icons/Spacer.svelte";
   import { Divider, Menu, MenuItem } from "../../../components/menu";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { useTestUsers } from "./useTestUsers";
+  import { useMockUsers } from "./useMockUsers";
   import { viewAs, viewAsStore } from "./viewAs";
 
   export let dashboardName: string;
@@ -18,7 +18,7 @@
 
   let viewAsMenuOpen = false;
 
-  $: testUsers = useTestUsers($runtime.instanceId);
+  $: mockUsers = useMockUsers($runtime.instanceId);
 
   const iconColor = "#15141A";
 </script>
@@ -74,9 +74,9 @@
       </svelte:fragment>
       Me
     </MenuItem>
-    {#if $testUsers.data?.length > 0}
+    {#if $mockUsers.data?.length > 0}
       <Divider />
-      {#each $testUsers.data as user}
+      {#each $mockUsers.data as user}
         <MenuItem
           icon
           selected={$viewAsStore?.email === user?.email}
@@ -101,11 +101,11 @@
       icon
       on:select={() => {
         toggleFloatingElement();
-        goto(`/rill.yaml?addTestUser=true`);
+        goto(`/rill.yaml?addMockUser=true`);
       }}
     >
       <Add size="16px" slot="icon" color={iconColor} />
-      <span>Add test user</span>
+      <span>Add mock user</span>
     </MenuItem>
   </Menu>
 </WithTogglableFloatingElement>
