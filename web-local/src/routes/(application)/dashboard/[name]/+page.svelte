@@ -2,7 +2,10 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
-  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import DashboardStateProvider from "@rilldata/web-common/features/dashboards/DashboardStateProvider.svelte";
+  import { viewAsStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/viewAs";
+  import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
+  import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
@@ -14,12 +17,8 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { error } from "@sveltejs/kit";
   import { CATALOG_ENTRY_NOT_FOUND } from "../../../../lib/errors/messages";
-  import DashboardStateProvider from "@rilldata/web-common/features/dashboards/DashboardStateProvider.svelte";
-  import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
-  import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
 
   $: metricViewName = $page.params.name;
-  $: metricsExplorer = useDashboardStore(metricViewName);
 
   $: fileQuery = createRuntimeServiceGetFile(
     $runtime.instanceId,
@@ -42,7 +41,16 @@
     metricViewName,
     {
       query: {
-        onError: () => {
+        onSuccess: (data) => {
+          // Redirect to the `/edit` page if no measures are defined
+          if (
+            !$featureFlags.readOnly &&
+            !data.entry.metricsView.measures?.length
+          ) {
+            goto(`/dashboard/${metricViewName}/edit`);
+          }
+        },
+        onError: (err) => {
           if (!metricViewName) return;
 
           // When the catalog entry doesn't exist, the dashboard config is invalid
@@ -50,6 +58,13 @@
             throw error(400, "Invalid dashboard");
           }
 
+          if ($viewAsStore !== null && err.response?.status === 401) {
+            // TODO: show a 404 page
+            console.log("err", err);
+            return;
+          }
+
+          // On all other errors, redirect to the `/edit` page
           goto(`/dashboard/${metricViewName}/edit`);
         },
       },

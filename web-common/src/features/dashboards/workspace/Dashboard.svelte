@@ -1,36 +1,19 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
-  import {
-    useMetaQuery,
-    useModelHasTimeSeries,
-  } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useModelHasTimeSeries } from "@rilldata/web-common/features/dashboards/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import { useDashboardStore } from "../dashboard-stores";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
   import LeaderboardDisplay from "../leaderboard/LeaderboardDisplay.svelte";
+  import RowsViewerAccordion from "../rows-viewer/RowsViewerAccordion.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
   import DashboardContainer from "./DashboardContainer.svelte";
   import DashboardHeader from "./DashboardHeader.svelte";
-  import RowsViewerAccordion from "../rows-viewer/RowsViewerAccordion.svelte";
 
   export let metricViewName: string;
   export let hasTitle: boolean;
-
   export let leftMargin = undefined;
-
-  $: metricsViewQuery = useMetaQuery($runtime.instanceId, metricViewName);
-
-  $: if ($metricsViewQuery.data) {
-    if (!$featureFlags.readOnly && !$metricsViewQuery.data?.measures?.length) {
-      goto(`/dashboard/${metricViewName}/edit`);
-    }
-  }
-
-  $: if (!$featureFlags.readOnly && $metricsViewQuery.isError) {
-    goto(`/dashboard/${metricViewName}/edit`);
-  }
 
   let exploreContainerWidth;
 
