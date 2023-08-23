@@ -23,14 +23,14 @@ _**`smallest_time_grain`**_ — the smallest time granularity the user is allowe
 _**`available_time_zones`**_ — time zones that should be pinned to the top of the time zone selector _(optional)_. It should be a list of [IANA time zone identifiers](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).
 -->
 
-_**`dimensions`**_ — for exploring [segments](/develop/metrics-dashboard#dimensions) and filtering the dashboard _(required)_
+_**`dimensions`**_ — for exploring [segments](../../develop/metrics-dashboard#dimensions) and filtering the dashboard _(required)_
   - _**`column`**_ — a categorical column _(required)_ 
   - _**`name`**_ — a stable identifier for the dimension _(optional)_
   - _**`label`**_ — a label for your dashboard dimension _(optional)_ 
   - _**`description`**_ — a freeform text description of the dimension for your dashboard _(optional)_ 
   - _**`ignore`**_ — hides the dimension _(optional)_ 
 
-_**`measures`**_ — numeric [aggregates](/develop/metrics-dashboard#measures) of columns from your data model  _(required)_
+_**`measures`**_ — numeric [aggregates](../../develop/metrics-dashboard#measures) of columns from your data model  _(required)_
   - _**`expression`**_ — a combination of operators and functions for aggregations _(required)_ 
   - _**`name`**_ — a stable identifier for the measure _(required)_
   - _**`label`**_ — a label for your dashboard measure _(optional)_ 
@@ -43,3 +43,9 @@ _**`measures`**_ — numeric [aggregates](/develop/metrics-dashboard#measures) o
       - _`currency_usd`_ —  output rounded to 2 decimal points prepended with a dollar sign
       - _`percentage`_ — output transformed from a rate to a percentage appended with a percentage sign
       - _`comma_separators`_ — output transformed to decimal formal with commas every 3 digits
+
+_**`policy`**_ - Optionally define granular access policies for the dashboard. See [Secure: Dashboards](../../develop/policies) for more details.
+  - _**`has_access`**_ - Condition to check if user has access to the dashboard. If not defined, it will resolve to `false` meaning dashboard won't be accessible to anyone. _(optional)_
+  - _**`filter`**_ - Condition to filter the data as per user/custom attributes. It needs to be a valid SQL `WHERE` clause. It will be injected in the queries after resolving the user attributes templating. _(optional)_
+  - _**`exclude`**_ - List of columns to exclude from the dashboard. Each column can have an `if` condition to check if the column should be excluded or not. If the condition is not defined, it's an error. If the condition is defined, it will be resolved after resolving the user attributes templating. If `exclude` is defined all other columns are included. _(optional)_
+  - _**`include`**_ - List of columns to include in the dashboard. Each column can have an `if` condition to check if the column should be included or not. If the condition is not defined, it's an error. If the condition is defined, it will be resolved after resolving the user attributes templating. If `include` is defined all other columns are excluded. _(optional)_

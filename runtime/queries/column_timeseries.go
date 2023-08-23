@@ -55,7 +55,7 @@ func (q *ColumnTimeseries) Key() string {
 	if err != nil {
 		panic(err)
 	}
-	return fmt.Sprintf("ColumnTimeseries:%s", string(r))
+	return fmt.Sprintf("ColumnTimeseries:%s", r)
 }
 
 func (q *ColumnTimeseries) Deps() []string {
