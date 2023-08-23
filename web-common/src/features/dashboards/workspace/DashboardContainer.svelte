@@ -1,7 +1,7 @@
 <script lang="ts">
+  import { getEltSize } from "@rilldata/web-common/features/dashboards/get-element-size";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { getContext } from "svelte";
-  import { getEltSize } from "@rilldata/web-common/features/dashboards/get-element-size";
   import type { Tweened } from "svelte/motion";
 
   export let exploreContainerWidth;
@@ -26,11 +26,7 @@
 </script>
 
 <section use:listenToNodeResize class="flex flex-col gap-y-1">
-  <div
-    class="explore-header border-b mb-3"
-    style:padding-left={leftSide}
-    style:width={"100%"}
-  >
+  <div class="border-b mb-3" style:padding-left={leftSide} style:width={"100%"}>
     <slot name="header" />
   </div>
   <div
@@ -56,13 +52,11 @@
     overflow-y: hidden;
   }
 
-  .explore-header {
-    grid-area: header;
-  }
   .explore-content {
     height: 100%;
     overflow: hidden;
   }
+
   .explore-metrics {
     overflow-y: scroll;
   }

@@ -87,7 +87,7 @@
       {#key metricViewName}
         <DashboardStateProvider {metricViewName}>
           <DashboardURLStateProvider {metricViewName}>
-            <Dashboard {metricViewName} hasTitle />
+            <Dashboard {metricViewName} />
           </DashboardURLStateProvider>
         </DashboardStateProvider>
       {/key}

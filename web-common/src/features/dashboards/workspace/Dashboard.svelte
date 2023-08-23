@@ -12,7 +12,6 @@
   import DashboardHeader from "./DashboardHeader.svelte";
 
   export let metricViewName: string;
-  export let hasTitle: boolean;
   export let leftMargin = undefined;
 
   let exploreContainerWidth;
@@ -28,7 +27,7 @@
 </script>
 
 <DashboardContainer bind:exploreContainerWidth {leftMargin}>
-  <DashboardHeader {hasTitle} {metricViewName} slot="header" />
+  <DashboardHeader {metricViewName} slot="header" />
 
   <svelte:fragment slot="metrics">
     {#key metricViewName}
