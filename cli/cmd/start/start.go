@@ -24,6 +24,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 	var grpcPort int
 	var verbose bool
 	var readonly bool
+	var clean bool
 	var noUI bool
 	var noOpen bool
 	var strict bool
@@ -36,6 +37,25 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var projectPath string
+			if clean {
+				if len(args) > 0 {
+					err := deleteFilesWithExtensions(args[0], ".db", ".wal")
+					if err != nil {
+						return err
+					}
+				} else {
+					currentDir, err := filepath.Abs("")
+					if err != nil {
+						return err
+					}
+
+					err = deleteFilesWithExtensions(currentDir, ".db", ".wal")
+					if err != nil {
+						return err
+					}
+				}
+			}
+
 			if len(args) > 0 {
 				projectPath = args[0]
 				if strings.HasSuffix(projectPath, ".git") {
@@ -124,8 +144,30 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 	startCmd.Flags().BoolVar(&noUI, "no-ui", false, "Serve only the backend")
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 	startCmd.Flags().BoolVar(&strict, "strict", false, "Exit if project has build errors")
+	startCmd.Flags().BoolVar(&clean, "clean", false, "Clean project before build")
 	startCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
 	startCmd.Flags().StringSliceVarP(&variables, "env", "e", []string{}, "Set project variables")
 
 	return startCmd
+}
+
+func deleteFilesWithExtensions(directoryPath string, extensions ...string) error {
+	files, err := filepath.Glob(filepath.Join(directoryPath, "*"))
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		for _, ext := range extensions {
+			if filepath.Ext(file) == ext {
+				err = os.Remove(file)
+				if err != nil {
+					return err
+				}
+				fmt.Println("Deleted:", file)
+			}
+		}
+	}
+
+	return nil
 }
