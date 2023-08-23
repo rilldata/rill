@@ -15,6 +15,8 @@
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Filters from "../filters/Filters.svelte";
+  import { useDashboardPolicyCheck } from "../granular-access-policies/useDashboardPolicyCheck";
+  import ViewAsButton from "../granular-access-policies/ViewAsButton.svelte";
   import { useMetaQuery } from "../selectors";
   import TimeControls from "../time-controls/TimeControls.svelte";
 
@@ -40,6 +42,11 @@
   function deployModal() {
     projectShareStore.set(true);
   }
+
+  $: dashboardPolicyCheck = useDashboardPolicyCheck(
+    $runtime.instanceId,
+    metricViewName
+  );
 </script>
 
 <section class="w-full flex flex-col" id="header">
@@ -60,8 +67,10 @@
         </div>
       </h1>
       <!-- top right CTAs -->
-
       <PanelCTA side="right">
+        {#if $dashboardPolicyCheck.data}
+          <ViewAsButton dashboardName={metricViewName} />
+        {/if}
         {#if isEditableDashboard}
           <Tooltip distance={8}>
             <Button
