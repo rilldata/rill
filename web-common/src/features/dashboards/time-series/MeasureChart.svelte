@@ -20,7 +20,6 @@
   import { fly } from "svelte/transition";
   import MeasureValueMouseover from "./MeasureValueMouseover.svelte";
   import {
-    getBisectedTimeFromCordinates,
     getOrderedStartEnd,
     localToTimeZoneOffset,
     niceMeasureExtents,
@@ -69,42 +68,39 @@
 
   const xScale = getContext(contexts.scale("x")) as ScaleStore;
 
-  // scrub local control points
-  let justCreatedScrub = false;
-  let isMovingScrub = false;
-  let moveStartDelta = 0;
-  let moveEndDelta = 0;
-  let isResizing: "start" | "end" = undefined;
+  let scrub;
+  let cursorClass;
+  let preventScrubReset;
 
   $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
 
-  $: mainLineColor =
-    isScrubbing || hasSubrangeSelected
-      ? "hsla(217, 10%, 60%, 1)"
-      : "hsla(217,60%, 55%, 1)";
+  $: mainLineColor = hasSubrangeSelected
+    ? "hsla(217, 10%, 60%, 1)"
+    : "hsla(217,60%, 55%, 1)";
 
-  $: areaColor =
-    isScrubbing || hasSubrangeSelected
-      ? "hsla(225, 20%, 80%, .2)"
-      : "hsla(217,70%, 80%, .4)";
+  $: areaColor = hasSubrangeSelected
+    ? "hsla(225, 20%, 80%, .2)"
+    : "hsla(217,70%, 80%, .4)";
 
   $: scrubStartCords = $xScale(scrubStart);
   $: scrubEndCords = $xScale(scrubEnd);
   $: mouseOverCords = $xScale(mouseoverValue?.x);
-  $: isOverStart = Math.abs(mouseOverCords - scrubStartCords) <= 5;
-  $: isOverEnd = Math.abs(mouseOverCords - scrubEndCords) <= 5;
-  $: isInsideScrub = Boolean(
-    mouseOverCords > Math.min(scrubStartCords, scrubEndCords) + 5 &&
-      mouseOverCords < Math.max(scrubStartCords, scrubEndCords) - 5
-  );
 
-  $: cursorClass = isInsideScrub
-    ? "cursor-grab"
-    : isMovingScrub
-    ? "cursor-grabbing"
-    : isScrubbing || isOverStart || isOverEnd
-    ? "cursor-ew-resize"
-    : "";
+  let isOverStart = false;
+  let isOverEnd = false;
+  let isInsideScrub = false;
+
+  $: if (mouseOverCords && scrubStartCords && scrubEndCords) {
+    const min = Math.min(scrubStartCords, scrubEndCords);
+    const max = Math.max(scrubStartCords, scrubEndCords);
+
+    isOverStart = Math.abs(mouseOverCords - scrubStartCords) <= 5;
+    isOverEnd = Math.abs(mouseOverCords - scrubEndCords) <= 5;
+
+    isInsideScrub = Boolean(
+      mouseOverCords > min + 5 && mouseOverCords < max - 5
+    );
+  }
 
   $: [xExtentMin, xExtentMax] = extent(data, (d) => d[xAccessor]);
   $: [yExtentMin, yExtentMax] = extent(data, (d) => d[yAccessor]);
@@ -185,130 +181,15 @@
       isScrubbing: isScrubbing,
     });
   }
-  function startScrub(event) {
-    if (hasSubrangeSelected) {
-      const startX = event.detail?.start?.x;
-      // check if we are scrubbing on the edges of scrub rect
-      if (isOverStart || isOverEnd) {
-        isResizing = isOverStart ? "start" : "end";
-        updateScrub(scrubStart, scrubEnd, true);
-        return;
-      } else if (isInsideScrub) {
-        isMovingScrub = true;
-        moveStartDelta = startX - $xScale(scrubStart);
-        moveEndDelta = startX - $xScale(scrubEnd);
-
-        return;
-      }
-    }
-  }
-
-  function moveScrub(event) {
-    const startX = event.detail?.start?.x;
-    const scrubStartDate = getBisectedTimeFromCordinates(
-      startX,
-      $xScale,
-      labelAccessor,
-      data,
-      TIME_GRAIN[timeGrain].label
-    );
-
-    let stopX = event.detail?.stop?.x;
-    let intermediateScrubVal = getBisectedTimeFromCordinates(
-      stopX,
-      $xScale,
-      labelAccessor,
-      data,
-      TIME_GRAIN[timeGrain].label
-    );
-
-    if (hasSubrangeSelected && (isResizing || isMovingScrub)) {
-      if (
-        isResizing &&
-        intermediateScrubVal?.getTime() !== scrubEnd?.getTime() &&
-        intermediateScrubVal?.getTime() !== scrubStart?.getTime()
-      ) {
-        /**
-         * Adjust the ends of the subrange by dragging either end.
-         * This snaps to the nearest time grain.
-         */
-        const newStart =
-          isResizing === "start" ? intermediateScrubVal : scrubStart;
-        const newEnd = isResizing === "end" ? intermediateScrubVal : scrubEnd;
-
-        updateScrub(newStart, newEnd, true);
-      } else if (!isResizing && isMovingScrub) {
-        /**
-         * Pick up and shift the entire subrange left/right
-         * This snaps to the nearest time grain
-         */
-
-        const startX = event.detail?.start?.x;
-        const delta = stopX - startX;
-
-        const newStart = getBisectedTimeFromCordinates(
-          startX - moveStartDelta + delta,
-          $xScale,
-          labelAccessor,
-          data,
-          TIME_GRAIN[timeGrain].label
-        );
-
-        const newEnd = getBisectedTimeFromCordinates(
-          startX - moveEndDelta + delta,
-          $xScale,
-          labelAccessor,
-          data,
-          TIME_GRAIN[timeGrain].label
-        );
-
-        const insideBounds = $xScale(newStart) >= 0 && $xScale(newEnd) >= 0;
-        if (insideBounds && newStart?.getTime() !== scrubStart?.getTime()) {
-          updateScrub(newStart, newEnd, true);
-        }
-      }
-    } else {
-      // Only make state changes when the bisected value changes
-      if (
-        scrubStartDate?.getTime() !== scrubStart?.getTime() ||
-        intermediateScrubVal?.getTime() !== scrubEnd?.getTime()
-      ) {
-        updateScrub(scrubStartDate, intermediateScrubVal, true);
-      }
-    }
-  }
-
-  function endScrub() {
-    // Remove scrub if start and end are same
-    if (hasSubrangeSelected && scrubStart?.getTime() === scrubEnd?.getTime()) {
-      resetScrub();
-      return;
-    }
-
-    isResizing = undefined;
-    isMovingScrub = false;
-    justCreatedScrub = true;
-
-    // reset justCreatedScrub after 100 milliseconds
-    setTimeout(() => {
-      justCreatedScrub = false;
-    }, 100);
-
-    updateScrub(scrubStart, scrubEnd, false);
-  }
 
   function onMouseClick() {
     // skip if still scrubbing
-    if (justCreatedScrub || isScrubbing || isResizing) return;
-
+    if (preventScrubReset) return;
     // skip if no scrub range selected
     if (!hasSubrangeSelected) return;
 
     const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
-
-    if (mouseoverValue?.x < start || mouseoverValue?.x > end) {
-      resetScrub();
-    }
+    if (mouseoverValue?.x < start || mouseoverValue?.x > end) resetScrub();
   }
 </script>
 
@@ -334,9 +215,9 @@
   xMaxTweenProps={tweenProps}
   xMinTweenProps={tweenProps}
   on:click={() => onMouseClick()}
-  on:scrub-start={(e) => startScrub(e)}
-  on:scrub-move={(e) => moveScrub(e)}
-  on:scrub-end={() => endScrub()}
+  on:scrub-start={(e) => scrub?.startScrub(e)}
+  on:scrub-move={(e) => scrub?.moveScrub(e)}
+  on:scrub-end={() => scrub?.endScrub()}
 >
   <Axis side="right" {numberKind} />
   <Grid />
@@ -345,47 +226,52 @@
     We'll need to migrate this to a more robust solution once we've figured out
     the right way to "tile" together a time series with multiple pages of data.
     -->
-    <!-- {#key $timeRangeKey} -->
-    {#if showComparison}
-      <g
-        class="transition-opacity"
-        class:opacity-80={mouseoverValue?.x}
-        class:opacity-40={!mouseoverValue?.x}
-      >
-        <ChunkedLine
-          area={false}
-          lineColor={`hsl(217, 10%, 60%)`}
-          delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
-          duration={$timeRangeKey !== $previousTimeRangeKey ? 0 : 200}
-          {data}
-          {xAccessor}
-          yAccessor="comparison.{yAccessor}"
-        />
-      </g>
-    {/if}
-    <ChunkedLine
-      lineColor={mainLineColor}
-      {areaColor}
-      delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
-      duration={$timeRangeKey !== $previousTimeRangeKey ? 0 : 200}
-      {data}
-      {xAccessor}
-      {yAccessor}
-    />
-    {#if hasSubrangeSelected}
-      <ClippedChunkedLine
-        start={Math.min(scrubStart, scrubEnd)}
-        end={Math.max(scrubStart, scrubEnd)}
-        lineColor="hsla(217,60%, 55%, 1)"
-        areaColor="hsla(217,70%, 80%, .4)"
+    {#key $timeRangeKey}
+      {#if showComparison}
+        <g
+          class="transition-opacity"
+          class:opacity-80={mouseoverValue?.x}
+          class:opacity-40={!mouseoverValue?.x}
+        >
+          <ChunkedLine
+            area={false}
+            lineColor={`hsl(217, 10%, 60%)`}
+            delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
+            duration={hasSubrangeSelected ||
+            $timeRangeKey !== $previousTimeRangeKey
+              ? 0
+              : 200}
+            {data}
+            {xAccessor}
+            yAccessor="comparison.{yAccessor}"
+          />
+        </g>
+      {/if}
+      <ChunkedLine
+        lineColor={mainLineColor}
+        {areaColor}
         delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
-        duration={$timeRangeKey !== $previousTimeRangeKey ? 0 : 200}
+        duration={hasSubrangeSelected || $timeRangeKey !== $previousTimeRangeKey
+          ? 0
+          : 200}
         {data}
         {xAccessor}
         {yAccessor}
       />
-    {/if}
-    <!-- {/key} -->
+      {#if hasSubrangeSelected}
+        <ClippedChunkedLine
+          start={Math.min(scrubStart, scrubEnd)}
+          end={Math.max(scrubStart, scrubEnd)}
+          lineColor="hsla(217,60%, 55%, 1)"
+          areaColor="hsla(217,70%, 80%, .4)"
+          delay={0}
+          duration={0}
+          {data}
+          {xAccessor}
+          {yAccessor}
+        />
+      {/if}
+    {/key}
     <line
       x1={config.plotLeft}
       x2={config.plotLeft + config.plotRight}
@@ -446,14 +332,23 @@
       </WithBisector>
     </WithRoundToTimegrain>
   {/if}
-  {#if hasSubrangeSelected}
-    <MeasureScrub
-      start={scrubStart}
-      stop={scrubEnd}
-      {isScrubbing}
-      {mouseoverTimeFormat}
-      on:zoom={() => zoomScrub()}
-      on:reset={() => resetScrub()}
-    />
-  {/if}
+  <MeasureScrub
+    bind:cursorClass
+    bind:preventScrubReset
+    bind:this={scrub}
+    start={scrubStart}
+    stop={scrubEnd}
+    {isScrubbing}
+    {isOverStart}
+    {isOverEnd}
+    {isInsideScrub}
+    {data}
+    {labelAccessor}
+    timeGrainLabel={TIME_GRAIN[timeGrain].label}
+    {mouseoverTimeFormat}
+    on:zoom={() => zoomScrub()}
+    on:reset={() => resetScrub()}
+    on:update={(e) =>
+      updateScrub(e.detail.start, e.detail.stop, e.detail.isScrubbing)}
+  />
 </SimpleDataGraphic>
