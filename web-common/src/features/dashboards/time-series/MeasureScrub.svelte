@@ -166,7 +166,7 @@
     }
   }
 
-  export function endScrub(e) {
+  export function endScrub() {
     // if the mouse leaves the svg area, reset the scrub
     // check if any parent of explicitOriginalTarget is a svg or not
     const hoverElem = Array.from(document.querySelectorAll(":hover")).pop();

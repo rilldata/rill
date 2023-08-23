@@ -217,7 +217,7 @@
   on:click={() => onMouseClick()}
   on:scrub-start={(e) => scrub?.startScrub(e)}
   on:scrub-move={(e) => scrub?.moveScrub(e)}
-  on:scrub-end={(e) => scrub?.endScrub(e)}
+  on:scrub-end={() => scrub?.endScrub()}
 >
   <Axis side="right" {numberKind} />
   <Grid />
