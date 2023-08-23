@@ -87,11 +87,20 @@ display:contents. This is useful when nesting a floating element within a toolti
         innerHeight,
         overflowFlipY
       );
-  } else {
+  } else if (relationship === "direct") {
     setLocation(
-      relationship === "direct"
-        ? target.getBoundingClientRect()
-        : mouseLocationToBoundingRect(target),
+      target.getBoundingClientRect(),
+      child?.getBoundingClientRect(),
+      scrollX,
+      scrollY,
+      innerWidth,
+      innerHeight,
+      overflowFlipY
+    );
+  } else {
+    console.log(mouseLocationToBoundingRect(target));
+    setLocation(
+      mouseLocationToBoundingRect(target),
       child?.getBoundingClientRect(),
       scrollX,
       scrollY,
