@@ -26,7 +26,7 @@
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
   let disabledButtons: (
-    | LeaderboardContextColumn.DELTA_CHANGE
+    | LeaderboardContextColumn.DELTA_PERCENT
     | LeaderboardContextColumn.PERCENT
   )[] = [];
   $: {
@@ -36,7 +36,7 @@
       !metricsExplorer.showComparison ||
       metricsExplorer.selectedComparisonTimeRange === undefined
     )
-      disabledButtons.push(LeaderboardContextColumn.DELTA_CHANGE);
+      disabledButtons.push(LeaderboardContextColumn.DELTA_PERCENT);
     if (validPercentOfTotal !== true)
       disabledButtons.push(LeaderboardContextColumn.PERCENT);
   }
@@ -57,7 +57,7 @@
 
     // If a non-selected button is clicked, show the corresponding
     // context column
-    if (value === LeaderboardContextColumn.DELTA_CHANGE) {
+    if (value === LeaderboardContextColumn.DELTA_PERCENT) {
       metricsExplorerStore.displayDeltaChange(metricViewName);
     } else if (value === LeaderboardContextColumn.PERCENT) {
       metricsExplorerStore.displayPercentOfTotal(metricViewName);
@@ -86,7 +86,7 @@
   selected={selectedButtons}
 >
   <SubButton
-    value={LeaderboardContextColumn.DELTA_CHANGE}
+    value={LeaderboardContextColumn.DELTA_PERCENT}
     tooltips={deltaTooltips}
     ariaLabel="Toggle percent change"
   >
