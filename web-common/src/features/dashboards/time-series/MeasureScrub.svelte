@@ -316,7 +316,7 @@
   </WithGraphicContexts>
 {/if}
 
-<svelte:window on:keydown|preventDefault={onKeyDown} />
+<svelte:window on:keydown={onKeyDown} />
 
 <defs>
   <linearGradient id="scrubbing-gradient" gradientUnits="userSpaceOnUse">
