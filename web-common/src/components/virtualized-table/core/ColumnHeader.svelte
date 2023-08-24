@@ -164,23 +164,21 @@
 
     {#if isDimensionTable}
       <div class="mt-0.5 ui-copy-icon">
-        <!-- {#if isSortingDesc}
+        {#if isSortingDesc}
           <div
             in:fly={{ duration: 200, y: -8 }}
             style:opacity={isSelected ? 1 : 0}
           >
             <ArrowDown size="12px" />
           </div>
-        {:else} -->
-        <div
-          in:fly={{ duration: 200, y: isSortingDesc ? -8 : 8 }}
-          style:opacity={isSelected ? 1 : 0}
-        >
-          <ArrowDown
-            transform={isSortingDesc ? "" : "scale(1 -1)"}
-            size="12px"
-          />
-        </div>
+        {:else}
+          <div
+            in:fly={{ duration: 200, y: 8 }}
+            style:opacity={isSelected ? 1 : 0}
+          >
+            <ArrowDown transform="scale(1 -1)" size="12px" />
+          </div>
+        {/if}
       </div>
     {/if}
 
