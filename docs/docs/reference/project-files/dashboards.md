@@ -44,8 +44,12 @@ _**`measures`**_ — numeric [aggregates](../../develop/metrics-dashboard#measur
       - _`percentage`_ — output transformed from a rate to a percentage appended with a percentage sign
       - _`comma_separators`_ — output transformed to decimal formal with commas every 3 digits
 
-_**`policy`**_ - Optionally define granular access policies for the dashboard. See [Secure: Dashboards](../../develop/policies) for more details.
+_**`policy`**_ - Optionally define granular access policies for the dashboard. See [Secure: Dashboards](../../develop/policies) for more details and examples.
   - _**`has_access`**_ - Condition to check if user has access to the dashboard. If not defined, it will resolve to `false` meaning dashboard won't be accessible to anyone. _(optional)_
   - _**`filter`**_ - Condition to filter the data as per user/custom attributes. It needs to be a valid SQL `WHERE` clause. It will be injected in the queries after resolving the user attributes templating. _(optional)_
-  - _**`exclude`**_ - List of columns to exclude from the dashboard. Each column can have an `if` condition to check if the column should be excluded or not. If the condition is not defined, it's an error. If the condition is defined, it will be resolved after resolving the user attributes templating. If `exclude` is defined all other columns are included. _(optional)_
-  - _**`include`**_ - List of columns to include in the dashboard. Each column can have an `if` condition to check if the column should be included or not. If the condition is not defined, it's an error. If the condition is defined, it will be resolved after resolving the user attributes templating. If `include` is defined all other columns are excluded. _(optional)_
+  - _**`exclude`**_ - List of fields to exclude from the dashboard. If `exclude` is defined all other columns are included. _(optional)_
+    - **`name`** - Name of the column to exclude, should match the `column` property in the dimensions list. _(required)_ 
+    - **`if`** - Condition to check if the column should be excluded or not. It will be resolved after resolving the user attributes templating. _(required)_
+  - _**`include`**_ - List of fields to include in the dashboard. If `include` is defined all other columns are excluded. _(optional)_
+    - **`name`** - Name of the column to include, should match the `column` property in the dimensions list. _(required)_ 
+    - **`if`** - Condition to check if the column should be included or not. It will be resolved after resolving the user attributes templating. _(required)_
