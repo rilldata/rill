@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { shorthandTitle } from "./";
+import { describe, expect, it } from "vitest";
+import { shorthandTitle } from ".";
 
 const data = [
   { input: "Product", output: "Pr" },

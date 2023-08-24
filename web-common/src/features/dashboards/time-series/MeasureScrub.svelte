@@ -192,6 +192,17 @@
     });
   }
 
+  /***
+   * prevent unwanted scrub changes when clicked
+   * inside a scrub without any cursor move
+   */
+  function onMouseUp() {
+    isResizing = undefined;
+    isMovingScrub = false;
+    moveStartDelta = 0;
+    moveEndDelta = 0;
+  }
+
   function onKeyDown(e) {
     // if key Z is pressed, zoom the scrub
     if (e.key === "z") {
@@ -251,7 +262,7 @@
         stroke-width={strokeWidth}
       />
     </g>
-    <g opacity={isScrubbing ? "0.4" : "0.2"}>
+    <g on:mouseup={() => onMouseUp()} opacity={isScrubbing ? "0.4" : "0.2"}>
       <rect
         class:rect-shadow={isScrubbing}
         x={Math.min(xStart, xEnd)}
