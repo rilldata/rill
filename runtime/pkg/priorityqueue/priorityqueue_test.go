@@ -7,7 +7,7 @@ import (
 )
 
 func TestPriorityQueue(t *testing.T) {
-	pq := New[int]()
+	pq := New[int](false)
 	require.Equal(t, 0, pq.Len())
 	pq.Push(1, 1)
 	pq.Push(2, 2)

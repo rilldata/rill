@@ -219,7 +219,7 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	// Reset spec.Trigger
 	if src.Spec.Trigger {
 		src.Spec.Trigger = false
-		err = r.C.UpdateSpec(ctx, self.Meta.Name, self.Meta.Refs, self.Meta.Owner, self.Meta.FilePaths, self)
+		err = r.C.UpdateSpec(ctx, self.Meta.Name, self)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}

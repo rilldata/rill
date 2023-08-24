@@ -68,10 +68,10 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 
 	// If deleted, remove all resources created by self
 	if self.Meta.DeletedOn != nil {
-		r.C.Lock()
-		defer r.C.Unlock()
+		r.C.Lock(ctx)
+		defer r.C.Unlock(ctx)
 
-		resources, err := r.C.List(ctx)
+		resources, err := r.C.List(ctx, "")
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
@@ -207,8 +207,8 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, self *run
 	// Reconcile resources.
 	// The lock serves to delay the controller from triggering reconciliation until all resources have been updated.
 	// By delaying reconciliation until all resources have been updated, we don't need to worry about making changes in DAG order here.
-	r.C.Lock()
-	defer r.C.Unlock()
+	r.C.Lock(ctx)
+	defer r.C.Unlock(ctx)
 	if diff != nil {
 		return r.reconcileResourcesDiff(ctx, self, parser, diff)
 	}
@@ -242,7 +242,7 @@ func (r *ProjectParserReconciler) reconcileResources(ctx context.Context, self *
 	var deleteResources []*runtimev1.Resource
 
 	// Pass over all existing resources in the catalog.
-	resources, err := r.C.List(ctx)
+	resources, err := r.C.List(ctx, "")
 	if err != nil {
 		return err
 	}
@@ -443,7 +443,11 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, self
 
 	// Update spec if it changed
 	if res != nil {
-		err := r.C.UpdateSpec(ctx, n, refs, self.Meta.Name, def.Paths, res)
+		err := r.C.UpdateMeta(ctx, n, refs, self.Meta.Name, def.Paths, nil)
+		if err != nil {
+			return err
+		}
+		err = r.C.UpdateSpec(ctx, n, res)
 		if err != nil {
 			return err
 		}

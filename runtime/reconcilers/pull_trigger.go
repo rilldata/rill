@@ -3,7 +3,6 @@ package reconcilers
 import (
 	"context"
 	"fmt"
-	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -58,7 +57,7 @@ func (r *PullTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		return runtime.ReconcileResult{}
 	}
 
-	err = r.C.Retrigger(ctx, GlobalProjectParserName, time.Time{})
+	err = r.C.Reconcile(ctx, GlobalProjectParserName)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}

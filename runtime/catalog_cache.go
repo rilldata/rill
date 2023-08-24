@@ -79,6 +79,7 @@ func (c catalogCache) close(ctx context.Context) error {
 }
 
 // flush flushes changes to the underlying store.
+// Unlike other catalog functions, it is safe to call flush concurrently with calls to get and list (i.e. under a read lock).
 func (c catalogCache) flush(ctx context.Context) error {
 	for s, n := range c.dirty {
 		r, err := c.get(n, true)
@@ -128,13 +129,20 @@ func (c catalogCache) checkLeader(ctx context.Context) error {
 }
 
 // list returns a list of resources in the catalog.
+// Unlike other catalog functions, it is safe to call list concurrently with calls to get and flush (i.e. under a read lock).
 func (c catalogCache) list(kind string, withDeleted bool) ([]*runtimev1.Resource, error) {
 	if kind != "" {
 		n := len(c.resources[kind])
 		res := make([]*runtimev1.Resource, 0, n)
-		for _, r := range c.resources[kind] {
-			if r.Meta.DeletedOn == nil || withDeleted {
+		if withDeleted {
+			for _, r := range c.resources[kind] {
 				res = append(res, r)
+			}
+		} else {
+			for _, r := range c.resources[kind] {
+				if r.Meta.DeletedOn == nil {
+					res = append(res, r)
+				}
 			}
 		}
 
@@ -147,10 +155,18 @@ func (c catalogCache) list(kind string, withDeleted bool) ([]*runtimev1.Resource
 	}
 
 	res := make([]*runtimev1.Resource, 0, n)
-	for _, rs := range c.resources {
-		for _, r := range rs {
-			if r.Meta.DeletedOn == nil || withDeleted {
+	if withDeleted {
+		for _, rs := range c.resources {
+			for _, r := range rs {
 				res = append(res, r)
+			}
+		}
+	} else {
+		for _, rs := range c.resources {
+			for _, r := range rs {
+				if r.Meta.DeletedOn == nil {
+					res = append(res, r)
+				}
 			}
 		}
 	}
@@ -159,6 +175,7 @@ func (c catalogCache) list(kind string, withDeleted bool) ([]*runtimev1.Resource
 }
 
 // get returns a resource from the catalog.
+// Unlike other catalog functions, it is safe to call get concurrently with calls to list and flush (i.e. under a read lock).
 func (c catalogCache) get(n *runtimev1.ResourceName, withDeleted bool) (*runtimev1.Resource, error) {
 	rs := c.resources[n.Kind]
 	if rs == nil {
@@ -322,7 +339,7 @@ func (c catalogCache) updateDeleted(name *runtimev1.ResourceName) error {
 
 // updateStatus updates the ephemeral status fields on a resource.
 // The values of these fields are reset next time a catalog cache is created.
-func (c catalogCache) updateStatus(name *runtimev1.ResourceName, status runtimev1.ReconcileStatus, reconcileOn time.Time, renamedFrom *runtimev1.ResourceName) error {
+func (c catalogCache) updateStatus(name *runtimev1.ResourceName, status runtimev1.ReconcileStatus, reconcileOn time.Time) error {
 	r, err := c.get(name, true)
 	if err != nil {
 		return err
@@ -333,7 +350,6 @@ func (c catalogCache) updateStatus(name *runtimev1.ResourceName, status runtimev
 	} else {
 		r.Meta.ReconcileOn = timestamppb.New(reconcileOn)
 	}
-	r.Meta.RenamedFrom = renamedFrom
 	return nil
 }
 
@@ -417,6 +433,7 @@ func resourceFromDriver(r drivers.Resource) *runtimev1.Resource {
 		panic(err)
 	}
 
+	// Reset ephemeral fields.
 	res.Meta.ReconcileStatus = runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE
 	res.Meta.ReconcileOn = nil
 	res.Meta.RenamedFrom = nil

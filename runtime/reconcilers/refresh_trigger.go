@@ -59,7 +59,7 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 		return runtime.ReconcileResult{}
 	}
 
-	resources, err := r.C.List(ctx)
+	resources, err := r.C.List(ctx, "")
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
@@ -90,7 +90,7 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 			updated = false
 		}
 		if updated {
-			err = r.C.UpdateSpec(ctx, res.Meta.Name, res.Meta.Refs, res.Meta.Owner, res.Meta.FilePaths, res)
+			err = r.C.UpdateSpec(ctx, res.Meta.Name, res)
 			if err != nil {
 				return runtime.ReconcileResult{Err: err}
 			}
