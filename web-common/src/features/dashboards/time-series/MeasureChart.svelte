@@ -374,7 +374,6 @@
 </div>
 
 {#if contextMenuOpen}
-  <!-- <div class="absolute" style:top={`${mouseY}px`} style:left={`${mouseX}px`}> -->
   <!-- context menu -->
   <WithTogglableFloatingElement
     location="right"
@@ -386,7 +385,7 @@
     bind:active={contextMenuOpen}
   >
     <Menu
-      minWidth="200px"
+      minWidth="190px"
       on:click-outside={toggleFloatingElement}
       on:escape={toggleFloatingElement}
       on:item-select={toggleFloatingElement}
@@ -402,5 +401,4 @@
       </MenuItem>
     </Menu>
   </WithTogglableFloatingElement>
-  <!-- </div> -->
 {/if}
