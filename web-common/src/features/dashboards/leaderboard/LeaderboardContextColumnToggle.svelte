@@ -6,9 +6,8 @@
     SubButton,
   } from "@rilldata/web-common/components/button-group";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
-  import { runtime } from "../../../runtime-client/runtime-store";
-
-  import { useModelHasTimeSeries } from "@rilldata/web-common/features/dashboards/selectors";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -17,13 +16,9 @@
   export let metricViewName: string;
   export let validPercentOfTotal: boolean;
 
-  $: hasTimeSeriesQuery = useModelHasTimeSeries(
-    $runtime.instanceId,
-    metricViewName
-  );
-  $: hasTimeSeries = $hasTimeSeriesQuery?.data;
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  const timeControlsStore = useTimeControlStore(getStateManagers());
 
   let disabledButtons: (
     | LeaderboardContextColumn.DELTA_CHANGE
@@ -31,11 +26,7 @@
   )[] = [];
   $: {
     disabledButtons = [];
-    if (
-      !hasTimeSeries ||
-      !metricsExplorer.showComparison ||
-      metricsExplorer.selectedComparisonTimeRange === undefined
-    )
+    if (!$timeControlsStore.showComparison)
       disabledButtons.push(LeaderboardContextColumn.DELTA_CHANGE);
     if (validPercentOfTotal !== true)
       disabledButtons.push(LeaderboardContextColumn.PERCENT);
@@ -86,16 +77,16 @@
   selected={selectedButtons}
 >
   <SubButton
-    value={LeaderboardContextColumn.DELTA_CHANGE}
-    tooltips={deltaTooltips}
     ariaLabel="Toggle percent change"
+    tooltips={deltaTooltips}
+    value={LeaderboardContextColumn.DELTA_CHANGE}
   >
     <Delta />%
   </SubButton>
   <SubButton
-    value={LeaderboardContextColumn.PERCENT}
-    tooltips={pieTooltips}
     ariaLabel="Toggle percent of total"
+    tooltips={pieTooltips}
+    value={LeaderboardContextColumn.PERCENT}
   >
     <PieChart />%
   </SubButton>

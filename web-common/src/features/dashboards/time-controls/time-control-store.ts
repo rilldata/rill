@@ -1,3 +1,4 @@
+import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -110,7 +111,7 @@ export function createTimeControlStore(ctx: StateManagers) {
         metricsView.data.defaultTimeRange
       );
       const minTimeGrain =
-        (metricsView.data.defaultTimeRange as V1TimeGrain) ||
+        (metricsView.data.smallestTimeGrain as V1TimeGrain) ||
         V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
       const timeRangeState = calculateTimeRangePartial(
@@ -199,6 +200,7 @@ function calculateComparisonTimeRangePartial(
   timeRangeState: TimeRangeState
 ): ComparisonTimeRangeState {
   const selectedComparisonTimeRange = getComparisonTimeRange(
+    metricsExplorer,
     allTimeRange,
     timeRangeState.selectedTimeRange,
     metricsExplorer.selectedComparisonTimeRange
@@ -306,6 +308,7 @@ function getTimeGrain(
 }
 
 function getComparisonTimeRange(
+  metricsExplorer: MetricsExplorerEntity,
   allTimeRange: DashboardTimeControls,
   timeRange: DashboardTimeControls,
   comparisonTimeRange: DashboardTimeControls
@@ -333,6 +336,8 @@ function getComparisonTimeRange(
     }
   } else if (comparisonTimeRange.name === TimeComparisonOption.CUSTOM) {
     selectedComparisonTimeRange = comparisonTimeRange;
+  } else if (!metricsExplorer.showComparison) {
+    return undefined;
   } else {
     // variable time range of some kind.
     const comparisonOption = comparisonTimeRange.name as TimeComparisonOption;

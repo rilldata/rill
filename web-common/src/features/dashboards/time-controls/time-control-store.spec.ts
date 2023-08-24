@@ -6,7 +6,7 @@ import {
   AD_BIDS_NAME,
   AD_BIDS_SOURCE_NAME,
   AD_BIDS_TIMESTAMP_DIMENSION,
-  createAdBidsInStore,
+  initAdBidsInStore,
 } from "@rilldata/web-common/features/dashboards/dashboard-stores-test-data";
 import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
@@ -14,13 +14,17 @@ import {
   TimeControlState,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import TimeControlsStoreTest from "@rilldata/web-common/features/dashboards/time-controls/TimeControlsStoreTest.svelte";
+import {
+  getLocalUserPreferences,
+  initLocalUserPreferenceStore,
+} from "@rilldata/web-common/features/dashboards/user-preferences";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach } from "vitest";
 import { render } from "@testing-library/svelte";
 
 describe("time-control-store", () => {
@@ -29,6 +33,17 @@ describe("time-control-store", () => {
     instanceId: "default",
   });
   const dashboardFetchMocks = DashboardFetchMocks.useDashboardFetchMocks();
+
+  beforeAll(() => {
+    initLocalUserPreferenceStore(AD_BIDS_NAME);
+  });
+
+  beforeEach(() => {
+    metricsExplorerStore.remove(AD_BIDS_NAME);
+    getLocalUserPreferences().set({
+      timeZone: "UTC",
+    });
+  });
 
   it("Switching from no timestamp column to having one", async () => {
     const { unmount, queryClient, timeControlsStore } =
@@ -194,24 +209,149 @@ describe("time-control-store", () => {
       end: undefined,
       interval: V1TimeGrain.TIME_GRAIN_DAY,
     });
-    metricsExplorerStore.setSelectedComparisonRange(AD_BIDS_NAME, {
-      name: "P12M",
-    } as any);
+    metricsExplorerStore.setSelectedComparisonRange(AD_BIDS_NAME, {} as any);
+    expect(get(timeControlsStore).showComparison).toBeFalsy();
+
+    metricsExplorerStore.setSelectedTimeRange(AD_BIDS_NAME, {
+      name: TimeRangePreset.LAST_7_DAYS,
+      start: undefined,
+      end: undefined,
+      interval: V1TimeGrain.TIME_GRAIN_DAY,
+    });
+    metricsExplorerStore.setSelectedComparisonRange(AD_BIDS_NAME, {} as any);
     assertComparisonStartAndEnd(
       get(timeControlsStore),
       // Sets to the one selected
-      "P12M",
-      "2020-04-01T00:00:00.000Z",
-      "2021-04-01T00:00:00.000Z",
-      "2020-03-23T00:00:00.000Z",
-      "2021-04-05T00:00:00.000Z"
+      "P1W",
+      "2022-03-18T00:00:00.000Z",
+      "2022-03-25T00:00:00.000Z",
+      "2022-03-17T00:00:00.000Z",
+      "2022-03-26T00:00:00.000Z"
+    );
+
+    unmount();
+  });
+
+  it("Switching time zones", async () => {
+    dashboardFetchMocks.mockTimeRangeSummary(
+      AD_BIDS_SOURCE_NAME,
+      AD_BIDS_TIMESTAMP_DIMENSION,
+      {
+        min: "2022-01-01",
+        max: "2022-03-31",
+      }
+    );
+    const { unmount, timeControlsStore } = initTimeControlStoreTest(
+      AD_BIDS_INIT_WITH_TIME
+    );
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    metricsExplorerStore.setTimeZone(AD_BIDS_NAME, "IST");
+    assertStartAndEnd(
+      get(timeControlsStore),
+      "2022-01-01T00:00:00.000Z",
+      "2022-03-31T00:00:00.001Z",
+      "2021-12-30T18:30:00.000Z",
+      "2022-03-31T18:30:00.000Z"
+    );
+
+    metricsExplorerStore.displayComparison(AD_BIDS_NAME, true);
+    metricsExplorerStore.setSelectedTimeRange(AD_BIDS_NAME, {
+      name: TimeRangePreset.LAST_24_HOURS,
+      start: undefined,
+      end: undefined,
+      interval: V1TimeGrain.TIME_GRAIN_HOUR,
+    });
+    metricsExplorerStore.setSelectedComparisonRange(AD_BIDS_NAME, {} as any);
+    assertStartAndEnd(
+      get(timeControlsStore),
+      "2022-03-30T00:30:00.000Z",
+      "2022-03-31T00:30:00.000Z",
+      "2022-03-29T23:30:00.000Z",
+      "2022-03-31T01:30:00.000Z"
+    );
+    assertComparisonStartAndEnd(
+      get(timeControlsStore),
+      // Sets to default comparison
+      "P1D",
+      "2022-03-29T00:30:00.000Z",
+      "2022-03-30T00:30:00.000Z",
+      "2022-03-28T23:30:00.000Z",
+      "2022-03-30T01:30:00.000Z"
+    );
+
+    unmount();
+  });
+
+  it("Scrubbing to zoom", async () => {
+    dashboardFetchMocks.mockTimeRangeSummary(
+      AD_BIDS_SOURCE_NAME,
+      AD_BIDS_TIMESTAMP_DIMENSION,
+      {
+        min: "2022-01-01",
+        max: "2022-03-31",
+      }
+    );
+    const { unmount, timeControlsStore } = initTimeControlStoreTest(
+      AD_BIDS_INIT_WITH_TIME
+    );
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    metricsExplorerStore.displayComparison(AD_BIDS_NAME, true);
+    metricsExplorerStore.setSelectedComparisonRange(AD_BIDS_NAME, {
+      name: "P1M",
+    } as any);
+
+    metricsExplorerStore.setSelectedScrubRange(AD_BIDS_NAME, {
+      name: AD_BIDS_NAME,
+      start: new Date("2022-02-01 UTC"),
+      end: new Date("2022-02-10 UTC"),
+      isScrubbing: true,
+    });
+    assertStartAndEnd(
+      get(timeControlsStore),
+      "2022-01-01T00:00:00.000Z",
+      "2022-03-31T00:00:00.001Z",
+      "2021-12-31T00:00:00.000Z",
+      "2022-04-01T00:00:00.000Z"
+    );
+    assertComparisonStartAndEnd(
+      get(timeControlsStore),
+      // Sets to default comparison
+      "P1M",
+      "2021-12-01T00:00:00.000Z",
+      "2022-02-28T00:00:00.001Z",
+      "2021-11-30T00:00:00.000Z",
+      "2022-03-01T00:00:00.000Z"
+    );
+
+    metricsExplorerStore.setSelectedScrubRange(AD_BIDS_NAME, {
+      name: AD_BIDS_NAME,
+      start: new Date("2022-02-01 UTC"),
+      end: new Date("2022-02-10 UTC"),
+      isScrubbing: false,
+    });
+    assertStartAndEnd(
+      get(timeControlsStore),
+      "2022-02-01T00:00:00.000Z",
+      "2022-02-10T00:00:00.000Z",
+      "2021-12-31T00:00:00.000Z",
+      "2022-04-01T00:00:00.000Z"
+    );
+    assertComparisonStartAndEnd(
+      get(timeControlsStore),
+      // Sets to default comparison
+      "P1M",
+      "2022-01-01T00:00:00.000Z",
+      "2022-01-10T00:00:00.000Z",
+      "2021-11-30T00:00:00.000Z",
+      "2022-03-01T00:00:00.000Z"
     );
 
     unmount();
   });
 
   function initTimeControlStoreTest(resp: V1MetricsView) {
-    createAdBidsInStore();
+    initAdBidsInStore();
     dashboardFetchMocks.mockMetricsView(AD_BIDS_NAME, resp);
 
     const queryClient = new QueryClient({

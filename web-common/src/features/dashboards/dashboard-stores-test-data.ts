@@ -3,6 +3,10 @@ import {
   metricsExplorerStore,
 } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+import {
+  getLocalUserPreferences,
+  initLocalUserPreferenceStore,
+} from "@rilldata/web-common/features/dashboards/user-preferences";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {

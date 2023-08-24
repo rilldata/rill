@@ -81,9 +81,6 @@
   );
 
   function onSelectTimeRange(name: TimeRangeType, start: Date, end: Date) {
-    // Reset scrub when range changes
-    metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
-
     baseTimeRange = {
       name,
       start: new Date(start),
@@ -104,9 +101,6 @@
   }
 
   function onSelectTimeGrain(timeGrain: V1TimeGrain) {
-    // Reset scrub when grain changes
-    metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
-
     makeTimeSeriesTimeRangeAndUpdateAppState(
       baseTimeRange,
       timeGrain,
@@ -115,9 +109,6 @@
   }
 
   function onSelectTimeZone(timeZone: string) {
-    // Reset scrub when timezone changes
-    metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
-
     metricsExplorerStore.setTimeZone(metricViewName, timeZone);
     localUserPreferences.set({ timeZone });
   }
@@ -132,7 +123,6 @@
       start,
       end,
     });
-    metricsExplorerStore.displayComparison(metricViewName, true);
   }
 
   function makeTimeSeriesTimeRangeAndUpdateAppState(
@@ -146,12 +136,10 @@
   ) {
     cancelDashboardQueries(queryClient, metricViewName);
 
-    metricsExplorerStore.setSelectedTimeRange(metricViewName, {
-      ...timeRange,
-      interval: timeGrain,
-    });
-    metricsExplorerStore.setSelectedComparisonRange(
+    metricsExplorerStore.selectTimeRange(
       metricViewName,
+      timeRange,
+      timeGrain,
       comparisonTimeRange
     );
   }
