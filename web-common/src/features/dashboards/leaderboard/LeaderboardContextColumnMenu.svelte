@@ -21,11 +21,6 @@
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
-  $: console.log(
-    "leaderboardContextColumn",
-    metricsExplorer?.leaderboardContextColumn
-  );
-
   const handleContextValueButtonGroupClick = (evt) => {
     const value: SelectMenuItem = evt.detail;
     const key = value.key;
@@ -65,9 +60,6 @@
   $: selection = options.find(
     (option) => option.key === metricsExplorer?.leaderboardContextColumn
   );
-  $: console.log("options", options);
-
-  $: console.log("selection", selection);
 </script>
 
 <SelectMenu
