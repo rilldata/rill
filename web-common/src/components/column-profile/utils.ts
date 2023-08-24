@@ -1,3 +1,4 @@
+import type { ColumnProfileData } from "@rilldata/web-common/components/column-profile/columns-profile-data";
 import {
   BOOLEANS,
   CATEGORICALS,
@@ -8,7 +9,7 @@ import {
 } from "@rilldata/web-common/lib/duckdb-data-types";
 import type { NumericHistogramBinsBin } from "@rilldata/web-common/runtime-client";
 
-export function sortByCardinality(a, b) {
+export function sortByCardinality(a: ColumnProfileData, b: ColumnProfileData) {
   if (a.cardinality && b.cardinality) {
     if (a.cardinality < b.cardinality) {
       return 1;
@@ -22,7 +23,7 @@ export function sortByCardinality(a, b) {
   }
 }
 
-export function sortByNullity(a, b) {
+export function sortByNullity(a: ColumnProfileData, b: ColumnProfileData) {
   if (a.nullCount !== undefined && b.nullCount !== undefined) {
     if (a.nullCount < b.nullCount) {
       return 1;
@@ -38,7 +39,7 @@ export function sortByNullity(a, b) {
   return sortByName(a, b);
 }
 
-export function sortByType(a, b) {
+export function sortByType(a: ColumnProfileData, b: ColumnProfileData) {
   if (BOOLEANS.has(a.type) && !BOOLEANS.has(b.type)) return 1;
   else if (!BOOLEANS.has(a.type) && BOOLEANS.has(b.type)) return -1;
   else if (CATEGORICALS.has(a.type) && !CATEGORICALS.has(b.type)) return 1;
@@ -57,11 +58,11 @@ export function sortByType(a, b) {
   return 0;
 }
 
-export function sortByName(a, b) {
+export function sortByName(a: ColumnProfileData, b: ColumnProfileData) {
   return a.name > b.name ? 1 : -1;
 }
 
-export function defaultSort(a, b) {
+export function defaultSort(a: ColumnProfileData, b: ColumnProfileData) {
   const byType = sortByType(a, b);
   if (byType !== 0) return byType;
   /** sort nested types by cardinality, regardless of type. This should indicate

@@ -33,6 +33,9 @@ import { Updater, writable } from "svelte/store";
 import type { Readable } from "svelte/store";
 
 export type ColumnProfileData = {
+  name: string;
+  type: string;
+
   isFetching: boolean;
   nullCount?: number;
   cardinality?: number;
@@ -73,14 +76,18 @@ export function getColumnsProfileData(
     profiles: {},
   });
 
+  let batchedRequest: BatchedRequest;
+
   return {
     subscribe,
     load: async (
       profileColumnResponse: QueryObserverResult<V1TableColumnsResponse>
     ) => {
+      batchedRequest?.cancel();
+
       resetState(profileColumnResponse, update);
 
-      const batchedRequest = new BatchedRequest();
+      batchedRequest = new BatchedRequest();
       loadTableCardinality(instanceId, tableName, batchedRequest, update);
 
       for (const column of profileColumnResponse.data.profileColumns) {
@@ -199,6 +206,8 @@ export function resetState(
     for (const column of profileColumnResponse.data.profileColumns) {
       if (!(column.name in state.profiles)) {
         state.profiles[column.name] = {
+          name: column.name,
+          type: column.type,
           isFetching: true,
         };
       } else {

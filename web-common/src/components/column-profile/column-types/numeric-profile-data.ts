@@ -38,6 +38,12 @@ export async function loadColumnHistogram(
       diagnosticHistogramPromise,
       fdHistogramPromise,
     ]);
+    /**
+     * We have two choices of histogram method: diagnostic and freedman-diaconis.
+     * For integers, we go with diagnostic. For floating points, let's choose between
+     * the most viable of diagnostic and freedman-diaconis. We'll remove
+     * this once we've refactored floating-point columns toward a KDE plot.
+     */
     histogramData = chooseBetweenDiagnosticAndStatistical(
       diagnosticHistogram,
       fdHistogram
@@ -70,7 +76,8 @@ export async function loadDescriptiveStatistics(
       },
     },
     (data) =>
-      data.columnDescriptiveStatisticsResponse.numericSummary.numericStatistics
+      data.columnDescriptiveStatisticsResponse?.numericSummary
+        ?.numericStatistics
   );
 
   update((state) => {

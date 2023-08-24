@@ -1,6 +1,8 @@
 <script lang="ts">
-  import { batchedProfileQuery } from "@rilldata/web-common/components/column-profile/batched-profile-query";
-  import { getColumnsProfileData } from "@rilldata/web-common/components/column-profile/columns-profile-data";
+  import {
+    ColumnProfileData,
+    getColumnsProfileData,
+  } from "@rilldata/web-common/components/column-profile/columns-profile-data";
   import type { ColumnsProfileDataStore } from "@rilldata/web-common/components/column-profile/columns-profile-data";
   import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-common/layout/config";
   import {
@@ -12,7 +14,6 @@
   import type { Readable } from "svelte/store";
   import { runtime } from "../../runtime-client/runtime-store";
   import { getColumnType } from "./column-types";
-  import { getSummaries } from "./queries";
   import { defaultSort, sortByName, sortByNullity } from "./utils";
 
   export let containerWidth = 0;
@@ -54,31 +55,13 @@
   $: columnsProfile = getColumnsProfileData($runtime?.instanceId, objectName);
 
   let batchedQuery: Readable<boolean>;
-  let sending = true;
   $: if ($profileColumns) {
-    sending = true;
-    batchedQuery = batchedProfileQuery(
-      $runtime?.instanceId,
-      objectName,
-      $profileColumns,
-      () => (sending = false)
-    );
-
     if ($profileColumns?.data && !$profileColumns.isFetching)
       columnsProfile.load($profileColumns);
   }
 
-  let nestedColumnProfileQuery;
-  $: if ($profileColumns?.data?.profileColumns) {
-    nestedColumnProfileQuery = getSummaries(
-      objectName,
-      $runtime?.instanceId,
-      $profileColumns
-    );
-  }
-
-  $: profile = $nestedColumnProfileQuery;
-  let sortedProfile;
+  $: profile = Object.values($columnsProfile.profiles);
+  let sortedProfile: Array<ColumnProfileData>;
   const sortByOriginalOrder = null;
 
   let sortMethod = defaultSort;
@@ -87,8 +70,6 @@
   } else {
     sortedProfile = profile;
   }
-
-  $: console.log($columnsProfile);
 </script>
 
 <!-- Dummy read to force rendering -->
@@ -135,11 +116,11 @@
         {objectName}
         columnName={column.name}
         example={$exampleValue?.data?.data?.[0]?.[column.name]}
+        store={columnsProfile}
         {mode}
         {hideRight}
         {hideNullPercentage}
         {compact}
-        enableProfiling={sending}
       />
     {/each}
   {/if}

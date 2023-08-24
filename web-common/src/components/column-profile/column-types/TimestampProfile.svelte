@@ -1,4 +1,8 @@
 <script lang="ts">
+  import {
+    ColumnProfileData,
+    ColumnsProfileDataStore,
+  } from "@rilldata/web-common/components/column-profile/columns-profile-data";
   import TimestampDetail from "@rilldata/web-common/components/data-graphic/compositions/timestamp-profile/TimestampDetail.svelte";
   import TimestampSpark from "@rilldata/web-common/components/data-graphic/compositions/timestamp-profile/TimestampSpark.svelte";
   import WithParentClientRect from "@rilldata/web-common/components/data-graphic/functional-components/WithParentClientRect.svelte";
@@ -20,38 +24,23 @@
   export let type: string;
   export let mode = "summaries";
   export let example: any;
+  export let store: ColumnsProfileDataStore;
 
   export let hideRight = false;
   export let compact = false;
   export let hideNullPercentage = false;
 
-  export let enableProfiling = true;
-
   let timestampDetailHeight = 160;
 
   let active = false;
 
-  /** queries used to power the different plots */
-  $: nullPercentage = getNullPercentage(
-    $runtime?.instanceId,
-    objectName,
-    columnName,
-    enableProfiling
-  );
-
-  $: timeSeries = getTimeSeriesAndSpark(
-    $runtime?.instanceId,
-    objectName,
-    columnName,
-    enableProfiling
-  );
+  let columnProfileData: ColumnProfileData;
+  $: columnProfileData = $store.profiles[columnName];
 
   function toggleColumnProfile() {
     active = !active;
     httpRequestQueue.prioritiseColumn(objectName, columnName, active);
   }
-
-  $: fetchingSummaries = isFetching($timeSeries, $nullPercentage);
 </script>
 
 <ProfileContainer
@@ -61,14 +50,18 @@
   {example}
   {hideNullPercentage}
   {hideRight}
-  isFetching={fetchingSummaries}
+  isFetching={columnProfileData?.isFetching}
   {mode}
   on:select={toggleColumnProfile}
   on:shift-click={() =>
     copyToClipboard(columnName, `copied ${columnName} to clipboard`)}
   {type}
 >
-  <ColumnProfileIcon isFetching={fetchingSummaries} slot="icon" {type} />
+  <ColumnProfileIcon
+    isFetching={columnProfileData?.isFetching}
+    slot="icon"
+    {type}
+  />
   <div slot="left">{columnName}</div>
 
   <!-- wrap in div to get size of grid item -->
@@ -77,7 +70,7 @@
       <TimestampSpark
         bottom={4}
         color={"currentColor"}
-        data={$timeSeries?.spark}
+        data={columnProfileData?.timeSeriesSpark ?? []}
         height={18}
         top={4}
         width={rect?.width || 400}
@@ -87,24 +80,24 @@
     </WithParentClientRect>
   </div>
   <NullPercentageSpark
-    nullCount={$nullPercentage?.nullCount}
+    nullCount={columnProfileData?.nullCount}
     slot="nullity"
-    totalRows={$nullPercentage?.totalRows}
+    totalRows={$store?.tableRows}
     {type}
   />
 
   <div slot="details">
     <div class="pl-8 py-4" style:height="{timestampDetailHeight + 64 + 28}px">
       <WithParentClientRect let:rect>
-        {#if $timeSeries?.data?.length}
+        {#if columnProfileData?.timeSeriesData?.length}
           <TimestampDetail
             width={rect?.width - 56 || 400}
             mouseover={true}
             height={timestampDetailHeight}
-            data={$timeSeries?.data}
-            spark={$timeSeries?.spark}
-            rollupTimeGrain={$timeSeries?.estimatedRollupInterval?.interval}
-            estimatedSmallestTimeGrain={$timeSeries?.smallestTimegrain}
+            data={columnProfileData?.timeSeriesData ?? []}
+            spark={columnProfileData?.timeSeriesSpark ?? []}
+            rollupTimeGrain={columnProfileData?.estimatedRollupInterval}
+            estimatedSmallestTimeGrain={columnProfileData?.smallestTimeGrain}
             xAccessor="ts"
             yAccessor="count"
           />

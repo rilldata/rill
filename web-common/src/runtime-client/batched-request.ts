@@ -14,6 +14,7 @@ export type BatchRequest = {
 export class BatchedRequest {
   private requests = new Array<BatchRequest>();
   private expectedRequests = 0;
+  private controller: AbortController;
 
   public get ready() {
     return this.requests.length >= this.expectedRequests;
@@ -61,20 +62,20 @@ export class BatchedRequest {
       //   .map(({ request }) => request),
       queries: this.requests.map(({ request }) => request),
     };
-    const controller = new AbortController();
+    this.controller = new AbortController();
     const stream = streamingFetchWrapper<{ result: V1QueryBatchResponse }>(
       `http://localhost:9009/v1/instances/${instanceId}/query/batch`,
       "post",
       request,
-      controller.signal
+      this.controller.signal
     );
 
     this.requests.forEach(({ signal }) => {
       signal?.addEventListener(
         "abort",
         () => {
-          if (controller.signal.aborted) return;
-          controller.abort();
+          if (this.controller.signal.aborted) return;
+          this.controller.abort();
           stream.throw(new Error("cancelled"));
         },
         {
@@ -99,6 +100,11 @@ export class BatchedRequest {
       if (hit.has(i)) continue;
       this.requests[i].reject(buildError("No response"));
     }
+  }
+
+  public cancel() {
+    if (!this.controller || this.controller.signal.aborted) return;
+    this.controller.abort();
   }
 }
 
