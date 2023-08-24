@@ -1,4 +1,3 @@
-import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
