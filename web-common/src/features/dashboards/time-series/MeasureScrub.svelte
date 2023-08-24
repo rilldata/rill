@@ -3,9 +3,7 @@
   import { createEventDispatcher, getContext } from "svelte";
   import type { PlotConfig } from "@rilldata/web-common/components/data-graphic/utils";
   import type { Writable } from "svelte/store";
-  import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import { contexts } from "@rilldata/web-common/components/data-graphic/constants";
-  import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
   import { getBisectedTimeFromCordinates } from "@rilldata/web-common/features/dashboards/time-series/utils";
 
@@ -39,9 +37,6 @@
   const yLabelBuffer = 10;
   const y1 = $plotConfig.plotTop + $plotConfig.top + 5;
   const y2 = $plotConfig.plotBottom - $plotConfig.bottom - 1;
-
-  let showContextMenu = false;
-  let contextMenuOpen = false;
 
   $: hasSubrangeSelected = Boolean(start && stop);
 
@@ -197,8 +192,15 @@
     });
   }
 
-  function onContextMenu() {
-    showContextMenu = true;
+  /***
+   * prevent unwanted scrub changes when clicked
+   * inside a scrub without any cursor move
+   */
+  function onMouseUp() {
+    isResizing = undefined;
+    isMovingScrub = false;
+    moveStartDelta = 0;
+    moveEndDelta = 0;
   }
 
   function onKeyDown(e) {
@@ -260,7 +262,7 @@
         stroke-width={strokeWidth}
       />
     </g>
-    <g opacity={isScrubbing ? "0.4" : "0.2"}>
+    <g on:mouseup={() => onMouseUp()} opacity={isScrubbing ? "0.4" : "0.2"}>
       <rect
         class:rect-shadow={isScrubbing}
         x={Math.min(xStart, xEnd)}
@@ -269,43 +271,11 @@
         height={y2 - y1}
         fill="url('#scrubbing-gradient')"
       />
-      <foreignObject
-        x={Math.min(xStart, xEnd) + 20}
-        y={y1 + 20}
-        width="300"
-        height="160"
-      >
-        <div on:contextmenu|preventDefault={() => onContextMenu()}>
-          <!-- FIX ME: Unable to add menu on top of SVG  -->
-          {#if showContextMenu}
-            <!-- context menu -->
-            <WithTogglableFloatingElement
-              location="right"
-              alignment="start"
-              distance={16}
-              let:toggleFloatingElement
-              bind:active={contextMenuOpen}
-            >
-              <Menu
-                maxWidth="300px"
-                on:click-outside={toggleFloatingElement}
-                on:escape={toggleFloatingElement}
-                on:item-select={toggleFloatingElement}
-                slot="floating-element"
-              >
-                <MenuItem on:select={() => console.log("zoom")}
-                  >Zoom to subrange</MenuItem
-                >
-              </Menu>
-            </WithTogglableFloatingElement>
-          {/if}
-        </div>
-      </foreignObject>
     </g>
   </WithGraphicContexts>
 {/if}
 
-<svelte:window on:keydown|preventDefault={onKeyDown} />
+<svelte:window on:keydown={onKeyDown} />
 
 <defs>
   <linearGradient id="scrubbing-gradient" gradientUnits="userSpaceOnUse">
