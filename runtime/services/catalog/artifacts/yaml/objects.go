@@ -1,6 +1,7 @@
 package yaml
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -352,6 +353,9 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 	}
 	metrics.Measures = measures
 
+	// create a map of dimensions to be used for policy validation
+	dimensionsMap := map[string]bool{}
+
 	var dimensions []*Dimension
 	for _, dimension := range metrics.Dimensions {
 		if dimension.Ignore {
@@ -362,6 +366,7 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 			dimension.Column = dimension.Property
 		}
 		dimensions = append(dimensions, dimension)
+		dimensionsMap[dimension.Column] = true
 	}
 	metrics.Dimensions = dimensions
 
@@ -379,6 +384,22 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 	// validate time zone locations
 	for _, tz := range metrics.AvailableTimeZones {
 		_, err := time.LoadLocation(tz)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if metrics.Policy != nil {
+		if len(metrics.Policy.Include) > 0 && len(metrics.Policy.Exclude) > 0 {
+			return nil, errors.New("invalid 'policy': only one of 'include' and 'exclude' can be specified")
+		}
+
+		err := validatedPolicyFieldList(metrics.Policy.Include, dimensionsMap, "include")
+		if err != nil {
+			return nil, err
+		}
+
+		err = validatedPolicyFieldList(metrics.Policy.Exclude, dimensionsMap, "exclude")
 		if err != nil {
 			return nil, err
 		}
@@ -423,6 +444,21 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 		Path:   path,
 		Object: apiMetrics,
 	}, nil
+}
+
+func validatedPolicyFieldList(fieldConditions []*ConditionalColumn, dimensions map[string]bool, property string) error {
+	if len(fieldConditions) > 0 {
+		for _, field := range fieldConditions {
+			if field.Name == "" || field.Condition == "" {
+				return fmt.Errorf("invalid 'policy': '%q' fields must have a valid name and condition", property)
+			}
+			// check the name is a valid dimension that exists in the metrics view
+			if !dimensions[field.Name] {
+				return fmt.Errorf("invalid 'policy': '%q' property [%q] does not exists in dimensions list", property, field.Name)
+			}
+		}
+	}
+	return nil
 }
 
 // Get TimeGrain enum from string
