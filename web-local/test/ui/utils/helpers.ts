@@ -29,7 +29,9 @@ export async function waitForProfiling(
 ) {
   return Promise.all([
     page.waitForResponse(new RegExp(`/queries/columns-profile/tables/${name}`)),
-    page.waitForResponse(new RegExp(`/query/batch`)),
+    page.waitForResponse(new RegExp(`/query/batch`), {
+      timeout: 2000,
+    }),
   ]);
 }
 

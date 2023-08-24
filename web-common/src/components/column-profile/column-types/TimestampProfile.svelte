@@ -1,5 +1,5 @@
 <script lang="ts">
-  import {
+  import type {
     ColumnProfileData,
     ColumnsProfileDataStore,
   } from "@rilldata/web-common/components/column-profile/columns-profile-data";
@@ -9,14 +9,8 @@
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { TIMESTAMP_TOKENS } from "@rilldata/web-common/lib/duckdb-data-types";
   import { httpRequestQueue } from "../../../runtime-client/http-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import ColumnProfileIcon from "../ColumnProfileIcon.svelte";
   import ProfileContainer from "../ProfileContainer.svelte";
-  import {
-    getNullPercentage,
-    getTimeSeriesAndSpark,
-    isFetching,
-  } from "../queries";
   import NullPercentageSpark from "./sparks/NullPercentageSpark.svelte";
 
   export let columnName: string;
