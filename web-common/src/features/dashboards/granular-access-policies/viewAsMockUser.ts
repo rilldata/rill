@@ -6,7 +6,7 @@ import {
 } from "../../../runtime-client";
 import { invalidateMetricsViewData } from "../../../runtime-client/invalidation";
 import { runtime } from "../../../runtime-client/runtime-store";
-import { selectedMockUserStore } from "./stores";
+import { mockUserHasNoAccessStore, selectedMockUserStore } from "./stores";
 import type { MockUser } from "./useMockUsers";
 
 export async function viewAsMockUser(
@@ -29,11 +29,9 @@ export async function viewAsMockUser(
         name: user?.name,
         email: user?.email,
         groups: user?.groups,
-        admin: user?.admin,
+        admin: user?.admin ? true : false,
       });
-      console.log("resp", resp);
 
-      // TODO: test this
       // Set the Dev JWT in the runtime store
       runtime.set({
         ...get(runtime),
@@ -46,6 +44,10 @@ export async function viewAsMockUser(
       // Is this where I should show a mini 404 page, or is that covered by invalidating the catalog entry?
     }
   }
+
+  // Reset mockUserHasNoAccessStore
+  mockUserHasNoAccessStore.set(false);
+
   // Invalidate dashboard catalog entry
   await queryClient.invalidateQueries(
     getRuntimeServiceGetCatalogEntryQueryKey(instanceId, dashboardName)
