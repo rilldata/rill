@@ -82,7 +82,7 @@ export function formatContextColumnValue(
 export const contextColumnWidth = (
   contextType: LeaderboardContextColumn
 ): string => {
-  if (contextType === LeaderboardContextColumn.DELTA_PCT) {
+  if (contextType === LeaderboardContextColumn.DELTA_PERCENT) {
     return "44px";
   } else if (contextType === LeaderboardContextColumn.PERCENT) {
     return "44px";

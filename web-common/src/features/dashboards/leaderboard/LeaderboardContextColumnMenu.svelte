@@ -27,7 +27,7 @@
 
     if (key === LeaderboardContextColumn.HIDDEN) {
       metricsExplorerStore.hideContextColumn(metricViewName);
-    } else if (key === LeaderboardContextColumn.DELTA_PCT) {
+    } else if (key === LeaderboardContextColumn.DELTA_PERCENT) {
     } else if (key === LeaderboardContextColumn.DELTA_PERCENT) {
       metricsExplorerStore.displayDeltaChange(metricViewName);
     } else if (key === LeaderboardContextColumn.PERCENT) {

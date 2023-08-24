@@ -12,10 +12,8 @@
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import { createEventDispatcher } from "svelte";
   import { LeaderboardContextColumn } from "../leaderboard-context-column";
-  import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import { contextColumnWidth } from "./leaderboard-utils";
-  import { createEventDispatcher } from "svelte";
-  import { SortType } from "../dashboard-stores";
+  import { SortType } from "../proto-state/derived-types";
 
   export let displayName: string;
   export let isFetching: boolean;
@@ -28,7 +26,7 @@
 
   const dispatch = createEventDispatcher();
   $: contextColumnSortType = {
-    [LeaderboardContextColumn.DELTA_PCT]: SortType.DELTA_PCT,
+    [LeaderboardContextColumn.DELTA_PERCENT]: SortType.DELTA_PERCENT,
     [LeaderboardContextColumn.DELTA_ABSOLUTE]: SortType.DELTA_ABSOLUTE,
     [LeaderboardContextColumn.PERCENT]: SortType.PERCENT,
   }[contextColumn];
@@ -39,20 +37,6 @@
   $: arrowTransform = sortAscending ? "scale(1 -1)" : "scale(1 1)";
 
   let optionsMenuActive = false;
-  const dispatch = createEventDispatcher();
-
-  $: contextColumnWidth = (contextColumn: LeaderboardContextColumn) => {
-    if (contextColumn === LeaderboardContextColumn.HIDDEN) {
-      return "0px";
-    } else if (contextColumn === LeaderboardContextColumn.DELTA_ABSOLUTE) {
-      return "54px";
-    } else if (
-      contextColumn === LeaderboardContextColumn.DELTA_PERCENT ||
-      contextColumn === LeaderboardContextColumn.PERCENT
-    ) {
-      return "44px";
-    }
-  };
 
   $: arrowTransform = sortAscending ? "scale(1 -1)" : "scale(1 1)";
 </script>
@@ -143,7 +127,7 @@
           aria-label="Toggle sort leaderboards by context column"
           style:width={contextColumnWidth(contextColumn)}
         >
-          {#if contextColumn === LeaderboardContextColumn.DELTA_PCT}
+          {#if contextColumn === LeaderboardContextColumn.DELTA_PERCENT}
             <Delta /> %
           {:else if contextColumn === LeaderboardContextColumn.DELTA_ABSOLUTE}
             <Delta />
