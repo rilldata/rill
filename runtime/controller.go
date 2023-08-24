@@ -595,9 +595,17 @@ func (c *Controller) processQueue() {
 	c.queueNotEmpty = false
 }
 
-// must run with lock acquired
+// schedule a resource for reconciliation.
+// It contains the main scheduling logic described in the comment for Controller.
+// (Basically: deletions and renames run before regular reconciles, and only one invocation runs at a time between a root and a leaf in the DAG.)
+//
+// schedule does not necessarily invoke reconciliation immediately (though it may), but will ensure that the resource is eventually reconciled.
+// If schedule doesn't invoke reconciliation immediately, it will add the resource to another running invocation's waitlist, ensuring the resource will eventually be reconciled.
+//
+// After calling schedule, the resource can be removed from c.queue.
+// It must be called while c.mu is held.
 func (c *Controller) schedule(n *runtimev1.ResourceName) {
-
+	// TODO
 }
 
 // invoke starts a goroutine to invoke the reconciler and tracks the invocation in c.invocations.
