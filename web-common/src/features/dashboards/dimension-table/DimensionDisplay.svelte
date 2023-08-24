@@ -379,7 +379,6 @@
     }
   }
   $: sortAscending = $dashboardStore.sortDirection === SortDirection.ASCENDING;
-  $: console.log({ sortAscending });
 </script>
 
 {#if topListQuery}

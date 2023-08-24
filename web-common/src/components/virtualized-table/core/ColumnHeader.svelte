@@ -40,7 +40,6 @@
   // if sorting is controlled externally, use that prop value
   // otherwise, default to true
   $: isSortingDesc = sortAscending !== undefined ? !sortAscending : true;
-  $: console.log(isSortingDesc, sortAscending);
 
   $: isDimensionTable = config.table === "DimensionTable";
   $: isDimensionColumn = isDimensionTable && type === "VARCHAR";
