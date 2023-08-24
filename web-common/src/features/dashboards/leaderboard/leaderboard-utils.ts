@@ -62,7 +62,7 @@ export function formatContextColumnValue(
   const { value, comparisonValue } = itemData;
   let formattedValue = "";
 
-  if (contextType === LeaderboardContextColumn.DELTA_PCT) {
+  if (contextType === LeaderboardContextColumn.DELTA_PERCENT) {
     formattedValue = getFormatterValueForPercDiff(
       value && comparisonValue ? value - comparisonValue : null,
       comparisonValue

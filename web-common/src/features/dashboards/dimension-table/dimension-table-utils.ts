@@ -26,7 +26,6 @@ export function updateFilterOnSearch(
     let foundDimension = false;
 
     filterSet["include"].forEach((filter) => {
-      // console.log(filter.name, dimensionName);
       if (filter.name === dimensionName) {
         filter.like = [`%${searchText}%`];
         foundDimension = true;

@@ -9,6 +9,8 @@
   import LeaderboardOptionsMenu from "../leaderboard/LeaderboardOptionsMenu.svelte";
   import Delta from "@rilldata/web-common/components/icons/Delta.svelte";
   import PieChart from "@rilldata/web-common/components/icons/PieChart.svelte";
+  import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
+  import { createEventDispatcher } from "svelte";
   import { LeaderboardContextColumn } from "../leaderboard-context-column";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import { contextColumnWidth } from "./leaderboard-utils";
@@ -37,6 +39,22 @@
   $: arrowTransform = sortAscending ? "scale(1 -1)" : "scale(1 1)";
 
   let optionsMenuActive = false;
+  const dispatch = createEventDispatcher();
+
+  $: contextColumnWidth = (contextColumn: LeaderboardContextColumn) => {
+    if (contextColumn === LeaderboardContextColumn.HIDDEN) {
+      return "0px";
+    } else if (contextColumn === LeaderboardContextColumn.DELTA_ABSOLUTE) {
+      return "54px";
+    } else if (
+      contextColumn === LeaderboardContextColumn.DELTA_PERCENT ||
+      contextColumn === LeaderboardContextColumn.PERCENT
+    ) {
+      return "44px";
+    }
+  };
+
+  $: arrowTransform = sortAscending ? "scale(1 -1)" : "scale(1 1)";
 </script>
 
 <div class="flex flex-row items-center">

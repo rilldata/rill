@@ -12,8 +12,8 @@
   $: width = contextColumnWidth(showContext);
 </script>
 
-{#if showContext === LeaderboardContextColumn.DELTA_PCT || showContext === LeaderboardContextColumn.PERCENT}
-  <div style:width>
+{#if showContext === LeaderboardContextColumn.DELTA_PERCENT || showContext === LeaderboardContextColumn.PERCENT}
+  <div style:width="44px">
     <PercentageChange value={formattedValue} />
   </div>
 {:else if showContext === LeaderboardContextColumn.DELTA_ABSOLUTE}
