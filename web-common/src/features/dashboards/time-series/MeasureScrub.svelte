@@ -3,9 +3,7 @@
   import { createEventDispatcher, getContext } from "svelte";
   import type { PlotConfig } from "@rilldata/web-common/components/data-graphic/utils";
   import type { Writable } from "svelte/store";
-  import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import { contexts } from "@rilldata/web-common/components/data-graphic/constants";
-  import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
   import { getBisectedTimeFromCordinates } from "@rilldata/web-common/features/dashboards/time-series/utils";
 
@@ -39,9 +37,6 @@
   const yLabelBuffer = 10;
   const y1 = $plotConfig.plotTop + $plotConfig.top + 5;
   const y2 = $plotConfig.plotBottom - $plotConfig.bottom - 1;
-
-  let showContextMenu = false;
-  let contextMenuOpen = false;
 
   $: hasSubrangeSelected = Boolean(start && stop);
 
@@ -195,10 +190,6 @@
       stop,
       isScrubbing: false,
     });
-  }
-
-  function onContextMenu() {
-    showContextMenu = true;
   }
 
   function onKeyDown(e) {
