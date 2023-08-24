@@ -1,17 +1,15 @@
 import type { QueryClient } from "@tanstack/svelte-query";
-import { get, writable } from "svelte/store";
+import { get } from "svelte/store";
 import {
   getRuntimeServiceGetCatalogEntryQueryKey,
   runtimeServiceIssueDevJWT,
 } from "../../../runtime-client";
 import { invalidateMetricsViewData } from "../../../runtime-client/invalidation";
 import { runtime } from "../../../runtime-client/runtime-store";
+import { selectedMockUserStore } from "./stores";
 import type { MockUser } from "./useMockUsers";
 
-// Note: `null` means "viewing as self"
-export const viewAsStore = writable<MockUser | null>(null);
-
-export async function viewAs(
+export async function viewAsMockUser(
   queryClient: QueryClient,
   dashboardName: string,
   user: MockUser | null
@@ -57,5 +55,5 @@ export async function viewAs(
   invalidateMetricsViewData(queryClient, dashboardName, false);
 
   // Update store
-  viewAsStore.set(user);
+  selectedMockUserStore.set(user);
 }

@@ -9,8 +9,9 @@
   import Spacer from "../../../components/icons/Spacer.svelte";
   import { Divider, Menu, MenuItem } from "../../../components/menu";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import { selectedMockUserStore } from "./stores";
   import { useMockUsers } from "./useMockUsers";
-  import { viewAs, viewAsStore } from "./viewAs";
+  import { viewAsMockUser } from "./viewAsMockUser";
 
   export let dashboardName: string;
 
@@ -38,16 +39,16 @@
       toggleFloatingElement();
     }}
   >
-    <div class={$viewAsStore !== null && "text-blue-600"}>
+    <div class={$selectedMockUserStore !== null && "text-blue-600"}>
       <EyeIcon size={"16px"} />
     </div>
-    {#if $viewAsStore == null}
+    {#if $selectedMockUserStore == null}
       <div class="flex items-center gap-x-1">
         <span>View as</span><CaretDownIcon />
       </div>
     {:else}
       <div class="text-blue-600">
-        Viewing as <span class="font-bold">{$viewAsStore.email}</span>
+        Viewing as <span class="font-bold">{$selectedMockUserStore.email}</span>
       </div>
     {/if}
   </button>
@@ -59,14 +60,14 @@
   >
     <MenuItem
       icon
-      selected={$viewAsStore === null}
+      selected={$selectedMockUserStore === null}
       on:select={() => {
         toggleFloatingElement();
-        viewAs(queryClient, dashboardName, null);
+        viewAsMockUser(queryClient, dashboardName, null);
       }}
     >
       <svelte:fragment slot="icon">
-        {#if $viewAsStore === null}
+        {#if $selectedMockUserStore === null}
           <Check size="16px" color={iconColor} />
         {:else}
           <Spacer size="16px" />
@@ -79,14 +80,14 @@
       {#each $mockUsers.data as user}
         <MenuItem
           icon
-          selected={$viewAsStore?.email === user?.email}
+          selected={$selectedMockUserStore?.email === user?.email}
           on:select={() => {
             toggleFloatingElement();
-            viewAs(queryClient, dashboardName, user);
+            viewAsMockUser(queryClient, dashboardName, user);
           }}
         >
           <svelte:fragment slot="icon">
-            {#if $viewAsStore?.email === user?.email}
+            {#if $selectedMockUserStore?.email === user?.email}
               <Check size="16px" color={iconColor} />
             {:else}
               <Spacer size="16px" />

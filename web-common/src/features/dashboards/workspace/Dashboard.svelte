@@ -10,6 +10,8 @@
   import { useDashboardStore } from "../dashboard-stores";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
   import Filters from "../filters/Filters.svelte";
+  import MockUserHasNoAccess from "../granular-access-policies/MockUserHasNoAccess.svelte";
+  import { mockUserHasNoAccessStore } from "../granular-access-policies/stores";
   import LeaderboardDisplay from "../leaderboard/LeaderboardDisplay.svelte";
   import RowsViewerAccordion from "../rows-viewer/RowsViewerAccordion.svelte";
   import TimeControls from "../time-controls/TimeControls.svelte";
@@ -48,6 +50,7 @@
     : `calc(${$navigationVisibilityTween * 24}px + 1.25rem)`;
 
   $: isRillDeveloper = $featureFlags.readOnly === false;
+  $: showMockUserHasNoAccess = $mockUserHasNoAccessStore;
 </script>
 
 <section
@@ -72,44 +75,52 @@
       </div>
     {/if}
 
-    <div class="-ml-3 p-1 py-2 space-y-2">
-      <TimeControls {metricViewName} />
-      {#key metricViewName}
-        <Filters />
-      {/key}
-    </div>
+    {#if showMockUserHasNoAccess}
+      <div class="mb-3" />
+    {:else}
+      <div class="-ml-3 p-1 py-2 space-y-2">
+        <TimeControls {metricViewName} />
+        {#key metricViewName}
+          <Filters />
+        {/key}
+      </div>
+    {/if}
   </div>
 
-  <div
-    class="flex gap-x-1 h-full overflow-hidden"
-    style:padding-left={leftSide}
-  >
-    <div class="overflow-y-scroll pb-8 flex-none">
-      {#key metricViewName}
-        {#if hasTimeSeries}
-          <MetricsTimeSeriesCharts
+  {#if showMockUserHasNoAccess}
+    <MockUserHasNoAccess />
+  {:else}
+    <div
+      class="flex gap-x-1 h-full overflow-hidden"
+      style:padding-left={leftSide}
+    >
+      <div class="overflow-y-scroll pb-8 flex-none">
+        {#key metricViewName}
+          {#if hasTimeSeries}
+            <MetricsTimeSeriesCharts
+              {metricViewName}
+              workspaceWidth={exploreContainerWidth}
+            />
+          {:else}
+            <MeasuresContainer {exploreContainerWidth} {metricViewName} />
+          {/if}
+        {/key}
+      </div>
+
+      <div class="overflow-y-hidden px-4 grow">
+        {#if selectedDimensionName}
+          <DimensionDisplay
             {metricViewName}
-            workspaceWidth={exploreContainerWidth}
+            dimensionName={selectedDimensionName}
           />
         {:else}
-          <MeasuresContainer {exploreContainerWidth} {metricViewName} />
+          <LeaderboardDisplay {metricViewName} />
         {/if}
-      {/key}
+      </div>
     </div>
 
-    <div class="overflow-y-hidden px-4 grow">
-      {#if selectedDimensionName}
-        <DimensionDisplay
-          {metricViewName}
-          dimensionName={selectedDimensionName}
-        />
-      {:else}
-        <LeaderboardDisplay {metricViewName} />
-      {/if}
-    </div>
-  </div>
-
-  {#if isRillDeveloper}
-    <RowsViewerAccordion {metricViewName} />
+    {#if isRillDeveloper}
+      <RowsViewerAccordion {metricViewName} />
+    {/if}
   {/if}
 </section>

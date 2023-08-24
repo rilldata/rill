@@ -3,7 +3,10 @@
   import { page } from "$app/stores";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardStateProvider from "@rilldata/web-common/features/dashboards/DashboardStateProvider.svelte";
-  import { viewAsStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/viewAs";
+  import {
+    mockUserHasNoAccessStore,
+    selectedMockUserStore,
+  } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
   import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
@@ -58,9 +61,8 @@
             throw error(400, "Invalid dashboard");
           }
 
-          if ($viewAsStore !== null && err.response?.status === 401) {
-            // TODO: show a 404 page
-            console.log("err", err);
+          if ($selectedMockUserStore !== null && err.response?.status === 401) {
+            mockUserHasNoAccessStore.set(true);
             return;
           }
 
