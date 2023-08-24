@@ -378,7 +378,6 @@
       values = humanizeGroupByColumns(values, measureFormatSpec);
     }
   }
-  $: sortAscending = $dashboardStore.sortDirection === SortDirection.ASCENDING;
 </script>
 
 {#if topListQuery}
