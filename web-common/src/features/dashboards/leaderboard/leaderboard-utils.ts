@@ -48,8 +48,6 @@ export function prepareLeaderboardItemData(
   });
 }
 
-export const CONTEXT_COLUMN_WIDTH = 44;
-
 /**
  * Returns the formatted value for the context column
  * given the

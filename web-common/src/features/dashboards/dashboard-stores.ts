@@ -435,7 +435,7 @@ const metricViewReducers = {
 
   displayDeltaChange(name: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      // NOTE: only show delta change if comparison is enabled
+      // NOTE: only show delta change if time comparison is enabled
       if (metricsExplorer.showComparison === false) return;
 
       metricsExplorer.leaderboardContextColumn =
@@ -445,7 +445,7 @@ const metricViewReducers = {
 
   displayDeltaAbsolute(name: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      // NOTE: only show delta absolute if comparison is enabled
+      // NOTE: only show delta absolute if time comparison is enabled
       if (metricsExplorer.showComparison === false) return;
 
       metricsExplorer.leaderboardContextColumn =

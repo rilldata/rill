@@ -27,7 +27,8 @@
   export let enableResize = true;
   export let isSelected = false;
   export let bgClass = "";
-  //
+  // set this prop to control sorting arrow externally.
+  // if undefined, sorting arrow is toggled within the component.
   export let sortAscending: boolean | undefined = undefined;
 
   const config: VirtualizedTableConfig = getContext("config");
