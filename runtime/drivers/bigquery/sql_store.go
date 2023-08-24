@@ -36,7 +36,9 @@ func (c *Connection) Query(ctx context.Context, props map[string]any, sql string
 		return nil, err
 	}
 
+	now := time.Now()
 	q := client.Query(sql)
+	q.DisableQueryCache = true
 	it, err := q.Read(ctx)
 	if err != nil && !strings.Contains(err.Error(), "Syntax error") {
 		// close the read storage API client
@@ -57,6 +59,7 @@ func (c *Connection) Query(ctx context.Context, props map[string]any, sql string
 		client.Close()
 		return nil, err
 	}
+	c.logger.Info("query took", zap.Duration("duration", time.Since(now)))
 
 	return &rowIterator{
 		client: client,

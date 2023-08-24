@@ -8,31 +8,34 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/apache/arrow/go/v11/arrow"
-	"github.com/apache/arrow/go/v11/arrow/array"
-	"github.com/apache/arrow/go/v11/arrow/ipc"
+	"github.com/apache/arrow/go/v13/arrow"
+	"github.com/apache/arrow/go/v13/arrow/array"
+	"github.com/apache/arrow/go/v13/arrow/ipc"
+	"github.com/apache/arrow/go/v13/arrow/memory/mallocator"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/api/iterator"
 )
 
 func AsArrowRecordReader(i drivers.RowIterator) (array.RecordReader, error) {
-	tw := time.Now()
+	t := time.Now()
 	defer func() {
-		log.Default().Printf("fetching arrow recorder took %v", time.Since(tw).Seconds())
+		log.Default().Printf("fetching arrow recorder took %v", time.Since(t).Seconds())
 	}()
 	iter, ok := i.(*rowIterator)
 	if !ok || iter.bqIter.ArrowIterator == nil {
 		return nil, fmt.Errorf("not using storage API")
 	}
 
+	tz := time.Now()
 	ser, err := iter.bqIter.ArrowIterator.Next()
 	if err != nil {
 		return nil, err
 	}
+	duration := time.Since(tz)
 
 	arrowSerializedSchema := iter.bqIter.ArrowIterator.Decoder.RawArrowSchema
 	buf := bytes.NewBuffer(arrowSerializedSchema)
-	rdr, err := ipc.NewReader(buf)
+	rdr, err := ipc.NewReader(buf, ipc.WithAllocator(mallocator.NewMallocator()))
 	if err != nil {
 		return nil, err
 	}
@@ -42,6 +45,7 @@ func AsArrowRecordReader(i drivers.RowIterator) (array.RecordReader, error) {
 		arrowSchema: rdr.Schema(),
 		refCount:    1,
 		records:     make([]arrow.Record, 0),
+		apinext:     duration,
 	}
 
 	rec.records, rec.err = rec.nextArrowRecords(ser)
@@ -56,6 +60,8 @@ type arrowRecordReader struct {
 	refCount    int64
 	err         error
 	t           time.Duration
+	apinext     time.Duration
+	ipcread     time.Duration
 }
 
 // Retain increases the reference count by 1.
@@ -68,6 +74,9 @@ func (rs *arrowRecordReader) Retain() {
 // When the reference count goes to zero, the memory is freed.
 // Release may be called simultaneously from multiple goroutines.
 func (rs *arrowRecordReader) Release() {
+	log.Default().Printf("next took %v\n", rs.t.Seconds())
+	log.Default().Printf("next api took %v\n", rs.apinext.Seconds())
+	log.Default().Printf("next ipc read took %v\n", rs.ipcread.Seconds())
 	if atomic.LoadInt64(&rs.refCount) <= 0 {
 		return
 	}
@@ -81,7 +90,6 @@ func (rs *arrowRecordReader) Release() {
 		}
 		rs.records = nil
 	}
-	log.Default().Printf("next took %v\n", rs.t.Seconds())
 }
 
 func (rs *arrowRecordReader) Schema() *arrow.Schema {
@@ -102,11 +110,14 @@ func (rs *arrowRecordReader) Next() bool {
 	}
 
 	if len(rs.records) == 0 {
+		tz := time.Now()
 		next, err := rs.r.bqIter.ArrowIterator.Next()
 		if err != nil {
 			rs.err = err
 			return false
 		}
+		rs.apinext += time.Since(tz)
+
 		rs.records, rs.err = rs.nextArrowRecords(next)
 		if rs.err != nil {
 			return false
@@ -128,9 +139,14 @@ func (rs *arrowRecordReader) Err() error {
 }
 
 func (rs *arrowRecordReader) nextArrowRecords(serializedRecord []byte) ([]arrow.Record, error) {
+	t := time.Now()
+	defer func() {
+		rs.ipcread += time.Since(t)
+	}()
+
 	buf := bytes.NewBuffer(rs.r.bqIter.ArrowIterator.Decoder.RawArrowSchema)
 	buf.Write(serializedRecord)
-	rdr, err := ipc.NewReader(buf, ipc.WithSchema(rs.arrowSchema))
+	rdr, err := ipc.NewReader(buf, ipc.WithSchema(rs.arrowSchema), ipc.WithAllocator(mallocator.NewMallocator()))
 	if err != nil {
 		return nil, err
 	}
