@@ -27,6 +27,8 @@
   export let enableResize = true;
   export let isSelected = false;
   export let bgClass = "";
+  //
+  export let sortAscending: boolean | undefined = undefined;
 
   const config: VirtualizedTableConfig = getContext("config");
   const dispatch = createEventDispatcher();
@@ -34,7 +36,11 @@
   const { shiftClickAction } = createShiftClickAction();
 
   let showMore = false;
-  $: isSortingDesc = true;
+
+  // if sorting is controlled externally, use that prop value
+  // otherwise, default to true
+  $: isSortingDesc = sortAscending !== undefined ? !sortAscending : true;
+  $: console.log(isSortingDesc, sortAscending);
 
   $: isDimensionTable = config.table === "DimensionTable";
   $: isDimensionColumn = isDimensionTable && type === "VARCHAR";
@@ -68,8 +74,12 @@
     showMore = false;
   }}
   on:click={() => {
-    if (isSelected) isSortingDesc = !isSortingDesc;
-    else isSortingDesc = true;
+    // only toggle `isSortingDesc` within the component if
+    // sorting is not controlled externally
+    if (sortAscending === undefined) {
+      if (isSelected) isSortingDesc = !isSortingDesc;
+      else isSortingDesc = true;
+    }
     dispatch("click-column");
   }}
 >
@@ -154,21 +164,23 @@
 
     {#if isDimensionTable}
       <div class="mt-0.5 ui-copy-icon">
-        {#if isSortingDesc}
+        <!-- {#if isSortingDesc}
           <div
             in:fly={{ duration: 200, y: -8 }}
             style:opacity={isSelected ? 1 : 0}
           >
             <ArrowDown size="12px" />
           </div>
-        {:else}
-          <div
-            in:fly={{ duration: 200, y: 8 }}
-            style:opacity={isSelected ? 1 : 0}
-          >
-            <ArrowDown transform="scale(1 -1)" size="12px" />
-          </div>
-        {/if}
+        {:else} -->
+        <div
+          in:fly={{ duration: 200, y: isSortingDesc ? -8 : 8 }}
+          style:opacity={isSelected ? 1 : 0}
+        >
+          <ArrowDown
+            transform={isSortingDesc ? "" : "scale(1 -1)"}
+            size="12px"
+          />
+        </div>
       </div>
     {/if}
 

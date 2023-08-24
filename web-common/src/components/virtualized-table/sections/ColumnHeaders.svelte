@@ -12,6 +12,7 @@
   export let showDataIcon = false;
   export let selectedColumn: string = null;
   export let fallbackBGClass = "";
+  export let sortAscending: boolean;
 
   const getColumnHeaderProps = (header) => {
     const name = columns[header.index]?.label || columns[header.index]?.name;
@@ -61,6 +62,7 @@
       {header}
       {noPin}
       {showDataIcon}
+      {sortAscending}
       on:pin={() => {
         dispatch("pin", columns[header.index]);
       }}

@@ -378,6 +378,8 @@
       values = humanizeGroupByColumns(values, measureFormatSpec);
     }
   }
+  $: sortAscending = $dashboardStore.sortDirection === SortDirection.ASCENDING;
+  $: console.log({ sortAscending });
 </script>
 
 {#if topListQuery}
@@ -399,6 +401,7 @@
         <DimensionTable
           on:select-item={(event) => onSelectItem(event)}
           on:sort={(event) => onSortByColumn(event)}
+          {sortAscending}
           dimensionName={dimensionColumn}
           {columns}
           {selectedValues}
