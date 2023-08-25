@@ -522,8 +522,12 @@ dimensions:
 });
 
 async function runThroughLeaderboardContextColumnFlows(page: Page) {
-  // NOTE: this flow pick up from the end of runThroughEmptyMetricsFlows,
+  // NOTE: this flow picks up from the end of runThroughEmptyMetricsFlows,
   // at which point we are in the metrics editor
+
+  /*
+   * SUBFLOW: setup state for the leaderboard context column tests
+   */
 
   // reset metrics, and add a metric with `valid_percent_of_total: true`
   const metricsWithValidPercentOfTotal = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
@@ -563,19 +567,40 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
     await page.getByRole("menuitem", { name: "All Time" }).click();
   });
 
-  // Check "toggle percent change" button is disabled since there is no time comparison
+  /**
+   * SUBFLOW:
+   * check menu items are disabled/enabled as expected
+   * when there is no time comparison
+   */
+
+  // click to open the context column menu
+  await page.getByLabel("Select a context column").click();
+  // Check "percent change" menuitem disabled since there is no time comparison
   await expect(
-    page.getByRole("button", { name: "Toggle percent change" })
+    page.getByRole("menuitem", { name: "Percent change" })
   ).toBeDisabled();
-  // Check "toggle percent of total" button is disabled since `valid_percent_of_total` is not set for the measure "total rows"
+  // Check "percent of total" item is disabled since `valid_percent_of_total` is not set for the measure "total rows"
   await expect(
-    page.getByRole("button", { name: "Toggle percent change" })
+    page.getByRole("menuitem", { name: "Percent of total" })
   ).toBeDisabled();
+  // click to close the context column menu
+  await page.getByLabel("Select a context column").click();
+
+  /**
+   * SUBFLOW: check correct behavior when a time comparison
+   * is activated, but there is no valid_percent_of_total
+   */
 
   // Select a time range, which should automatically enable a time comparison (including context column)
   await interactWithTimeRangeMenu(page, async () => {
     await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
   });
+
+  // check that the "select a context column" button now reads "with Percent change"
+  await expect(
+    page.getByLabel("Select a context column")
+    // getByRole("button", { name: "with Percent change" })
+  ).toContainText("Percent change");
 
   // This regex matches a line that:
   // - starts with "Facebook"
@@ -587,23 +612,44 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
 
   // Check that time comparison context column is visible with correct value now that there is a time comparison
   await expect(page.getByText(comparisonColumnRegex)).toBeVisible();
-  // Check that the "toggle percent change" button is enabled
-  await expect(
-    page.getByRole("button", { name: "Toggle percent change" })
-  ).toBeEnabled();
-  // Check that the "toggle percent change" button is pressed
-  await expect(
-    page.getByRole("button", { name: "Toggle percent change" })
-  ).toHaveAttribute("aria-pressed", "true");
 
-  // click the "toggle percent change" button, and check that the percent change is hidden
-  await page.getByRole("button", { name: "Toggle percent change" }).click();
+  // click to open the context column menu
+  await page.getByLabel("Select a context column").click();
+  // Check that the "percent change" menuitem is enabled
+  await expect(
+    page.getByRole("menuitem", { name: "Percent change" })
+  ).toBeEnabled();
+  // check that the "percent of total" menuitem is still disabled
+  await expect(
+    page.getByRole("menuitem", { name: "Percent of total" })
+  ).toBeDisabled();
+  // click to close the context column menu
+  await page.getByLabel("Select a context column").click();
+
+  /**
+   * SUBFLOW: check correct behavior when
+   * - a time comparison is activated,
+   * - there is no valid_percent_of_total,
+   * - and then the context column is turned off
+   */
+
+  // turn off the context column
+  await page.getByLabel("Select a context column").click();
+  await page.getByRole("menuitem", { name: "No context column" }).click();
   // Check that time comparison context column is hidden
   await expect(page.getByText(comparisonColumnRegex)).not.toBeVisible();
   await expect(page.getByText("Facebook 68")).toBeVisible();
 
-  // click the "toggle percent change" button, and check that the percent change is visible again
-  await page.getByRole("button", { name: "Toggle percent change" }).click();
+  /**
+   * SUBFLOW: check correct behavior when
+   * - the context column is turned back on,
+   * - there is no valid_percent_of_total,
+   * - and then time comparison is turned off
+   */
+
+  // turn on the context column
+  await page.getByLabel("Select a context column").click();
+  await page.getByRole("menuitem", { name: "Percent change" }).click();
   await expect(page.getByText(comparisonColumnRegex)).toBeVisible();
 
   // click back to "All time" to clear the time comparison
@@ -614,31 +660,61 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
   // Check that time comparison context column is hidden
   await expect(page.getByText(comparisonColumnRegex)).not.toBeVisible();
   await expect(page.getByText("Facebook 19.3k")).toBeVisible();
-  // Check that the "toggle percent change" button is disabled
+  // Check that the "percent change" menuitem is disabled
+  await page.getByLabel("Select a context column").click();
   await expect(
-    page.getByRole("button", { name: "Toggle percent change" })
+    page.getByRole("menuitem", { name: "Percent change" })
   ).toBeDisabled();
 
-  // Switch to metric "total bid price"
+  /**
+   * SUBFLOW: check correct behavior when
+   * - switching to a measure with valid_percent_of_total
+   * - but no time comparison enabled
+   */
+
+  // Switch to measure "total bid price"
   await page.getByRole("button", { name: "Total rows" }).click();
   await page.getByRole("menuitem", { name: "Total Bid Price" }).click();
 
-  // Check that the "toggle percent of total" button is enabled for this measure
+  // open the context column menu
+  await page.getByLabel("Select a context column").click();
+  // Check that the "0ercent of total" menuitem is enabled
   await expect(
-    page.getByRole("button", { name: "Toggle percent of total" })
-  ).toBeEnabled();
-  // Check that the "toggle percent change" button is disabled since there is no time comparison
-  await expect(
-    page.getByRole("button", { name: "Toggle percent change" })
+    page.getByRole("menuitem", { name: "Percent of total" })
   ).toBeDisabled();
+  // Check that the "percent change" menuitem is disabled
+  await expect(
+    page.getByRole("menuitem", { name: "Percent change" })
+  ).toBeDisabled();
+  // close the context column menu
+  await page.getByLabel("Select a context column").click();
 
   // Check that the percent of total is hidden
   await expect(page.getByText(comparisonColumnRegex)).not.toBeVisible();
 
-  // Click on the "toggle percent of total" button
-  await page.getByRole("button", { name: "Toggle percent of total" }).click();
+  /**
+   * SUBFLOW: check correct behavior when
+   * - measure with valid_percent_of_total
+   * - no time comparison enabled
+   * - percent of total context column is turned on
+   */
+
+  // open the context column menu
+  await page.getByLabel("Select a context column").click();
+  // click on "percent of total" menuitem
+  await page.getByRole("menuitem", { name: "Percent of total" }).click();
+  //close the context column menu
+  await page.getByLabel("Select a context column").click();
   // check that the percent of total is visible
   await expect(page.getByText("Facebook $57.8k 19%")).toBeVisible();
+
+  /**
+   * SUBFLOW: check correct behavior when
+   * - measure with valid_percent_of_total
+   * - no time comparison enabled
+   * - percent of total context column is turned on
+   * - and then time comparison is enabled
+   */
 
   // Add a time comparison
   await interactWithTimeRangeMenu(page, async () => {
@@ -648,34 +724,52 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
   await expect(
     page.getByRole("menuitem", { name: "Last 6 Hours" })
   ).not.toBeVisible();
+  // check that the percent of total remains visible,
+  // with updated value for the time comparison
+  await expect(page.getByText("Facebook $229.26 28%")).toBeVisible();
 
-  // check that the percent of total button remains pressed after adding a time comparison
-  await expect(
-    page.getByRole("button", { name: "Toggle percent of total" })
-  ).toHaveAttribute("aria-pressed", "true");
+  /**
+   * SUBFLOW: check correct behavior when
+   * - switch context column to percent change
+   * - and then switch back to percent of total
+   */
 
-  // Click on "toggle percent change" button
-  await page.getByRole("button", { name: "Toggle percent change" }).click();
+  // open the context column menu
+  await page.getByLabel("Select a context column").click();
+  // click on "percent change" menuitem
+  await page.getByRole("menuitem", { name: "Percent change" }).click();
+  //close the context column menu
+  await page.getByLabel("Select a context column").click();
   // check that the percent change is visible+correct
   await expect(page.getByText("Facebook $229.26 3%")).toBeVisible();
-  // click on "toggle percent of total" button
-  await page.getByRole("button", { name: "Toggle percent of total" }).click();
+
+  // open the context column menu
+  await page.getByLabel("Select a context column").click();
+  // click on "percent of total" menuitem
+  await page.getByRole("menuitem", { name: "Percent of total" }).click();
+  //close the context column menu
+  await page.getByLabel("Select a context column").click();
   // check that the percent of total is visible+correct
   await expect(page.getByText("Facebook $229.26 28%")).toBeVisible();
 
-  // Go back to measure without valid_percent_of_total
-  // while percent of total is still pressed, and make
-  // sure that it is unpressed and disabled.
+  /**
+   * Go back to measure without valid_percent_of_total
+   * while percent of total context column is enabled.
+   * Make sure the context column is hidden,
+   * and the menuitems have the correct enabled/disabled state.
+   */
+
+  // Switch to measure "total rows" (no valid_percent_of_total)
   await page.getByRole("button", { name: "Total Bid Price" }).click();
   await page.getByRole("menuitem", { name: "Total rows" }).click();
-  await expect(
-    page.getByRole("button", { name: "Toggle percent of total" })
-  ).toHaveAttribute("aria-pressed", "false");
-  await expect(
-    page.getByRole("button", { name: "Toggle percent of total" })
-  ).toBeDisabled();
   // check that the context column is hidden
   await expect(page.getByText(comparisonColumnRegex)).not.toBeVisible();
+  // open the context column menu
+  await page.getByLabel("Select a context column").click();
+  // check that the "percent of total" menuitem is disabled
+  await expect(
+    page.getByRole("menuitem", { name: "Percent of total" })
+  ).toBeDisabled();
 }
 
 async function runThroughEmptyMetricsFlows(page) {
