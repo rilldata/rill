@@ -104,12 +104,6 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		}
 	}
 
-	if tmp.Policy != nil {
-		if len(tmp.Policy.Include) > 0 && len(tmp.Policy.Exclude) > 0 {
-			return errors.New("invalid 'policy': only one of 'include' and 'exclude' can be specified")
-		}
-	}
-
 	names := make(map[string]bool)
 	columns := make(map[string]bool)
 	for i, dim := range tmp.Dimensions {
@@ -171,6 +165,32 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		return fmt.Errorf("must define at least one measure")
 	}
 
+	if tmp.Policy != nil {
+		if len(tmp.Policy.Include) > 0 && len(tmp.Policy.Exclude) > 0 {
+			return errors.New("invalid 'policy': only one of 'include' and 'exclude' can be specified")
+		}
+		if tmp.Policy.Include != nil {
+			for _, include := range tmp.Policy.Include {
+				if include.Name == "" || include.Condition == "" {
+					return fmt.Errorf("invalid 'policy': 'include' fields must have a valid 'name' and 'if' condition")
+				}
+				if !names[include.Name] {
+					return fmt.Errorf("invalid 'policy': 'include' property %q does not exists in dimensions list", include.Name)
+				}
+			}
+		}
+		if tmp.Policy.Exclude != nil {
+			for _, exclude := range tmp.Policy.Exclude {
+				if exclude.Name == "" || exclude.Condition == "" {
+					return fmt.Errorf("invalid 'policy': 'include' fields must have a valid 'name' and 'if' condition")
+				}
+				if !names[exclude.Name] {
+					return fmt.Errorf("invalid 'policy': 'exclude' property %q does not exists in dimensions list", exclude.Name)
+				}
+			}
+		}
+	}
+
 	node.Refs = append(node.Refs, ResourceName{Name: table})
 
 	// NOTE: After calling upsertResource, an error must not be returned. Any validation should be done before calling it.
@@ -186,14 +206,10 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	spec.DefaultTimeRange = tmp.DefaultTimeRange
 	spec.AvailableTimeZones = tmp.AvailableTimeZones
 
-	// create a map of dimensions to be used for policy validation
-	dimensions := map[string]bool{}
-
 	for _, dim := range tmp.Dimensions {
 		if dim.Ignore {
 			continue
 		}
-		dimensions[dim.Column] = true
 
 		spec.Dimensions = append(spec.Dimensions, &runtimev1.MetricsViewSpec_DimensionV2{
 			Name:        dim.Name,
@@ -227,12 +243,6 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		// validation has been done above, only one of these will be set
 		if tmp.Policy.Include != nil {
 			for _, include := range tmp.Policy.Include {
-				if include.Name == "" || include.Condition == "" {
-					return fmt.Errorf("invalid 'policy': 'include' fields must have a valid name and condition")
-				}
-				if !dimensions[include.Name] {
-					return fmt.Errorf("invalid 'policy': 'include' property [%q] does not exists in dimensions list", include.Name)
-				}
 				spec.Policy.Include = append(spec.Policy.Include, &runtimev1.MetricsViewSpec_PolicyV2_FieldConditionV2{
 					Name:      include.Name,
 					Condition: include.Condition,
@@ -241,12 +251,6 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		}
 		if tmp.Policy.Exclude != nil {
 			for _, exclude := range tmp.Policy.Exclude {
-				if exclude.Name == "" || exclude.Condition == "" {
-					return fmt.Errorf("invalid 'policy': 'include' fields must have a valid name and condition")
-				}
-				if !dimensions[exclude.Name] {
-					return fmt.Errorf("invalid 'policy': 'exclude' property [%q] does not exists in dimensions list", exclude.Name)
-				}
 				spec.Policy.Exclude = append(spec.Policy.Exclude, &runtimev1.MetricsViewSpec_PolicyV2_FieldConditionV2{
 					Name:      exclude.Name,
 					Condition: exclude.Condition,

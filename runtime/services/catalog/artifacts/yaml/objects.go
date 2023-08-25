@@ -450,11 +450,11 @@ func validatedPolicyFieldList(fieldConditions []*ConditionalColumn, dimensions m
 	if len(fieldConditions) > 0 {
 		for _, field := range fieldConditions {
 			if field.Name == "" || field.Condition == "" {
-				return fmt.Errorf("invalid 'policy': '%q' fields must have a valid name and condition", property)
+				return fmt.Errorf("invalid 'policy': '%s' fields must have a valid 'name' and 'if' condition", property)
 			}
 			// check the name is a valid dimension that exists in the metrics view
 			if !dimensions[field.Name] {
-				return fmt.Errorf("invalid 'policy': '%q' property [%q] does not exists in dimensions list", property, field.Name)
+				return fmt.Errorf("invalid 'policy': '%s' property %q does not exists in dimensions list", property, field.Name)
 			}
 		}
 	}
