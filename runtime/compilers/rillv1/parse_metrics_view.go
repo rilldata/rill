@@ -166,6 +166,32 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	}
 
 	if tmp.Policy != nil {
+		templateData := TemplateData{User: map[string]interface{}{
+			"name":   "dummy",
+			"email":  "mock@example.org",
+			"domain": "example.org",
+			"groups": []interface{}{"all"},
+			"admin":  false,
+		}}
+
+		if tmp.Policy.HasAccess != "" {
+			hasAccess, err := ResolveTemplate(tmp.Policy.HasAccess, templateData)
+			if err != nil {
+				return fmt.Errorf(`invalid 'policy': 'has_access' templating is not valid: %w`, err)
+			}
+			_, err = EvaluateBoolExpression(hasAccess)
+			if err != nil {
+				return fmt.Errorf(`invalid 'policy': 'has_access' expression not valuating to a boolean: %w`, err)
+			}
+		}
+
+		if tmp.Policy.Filter != "" {
+			_, err := ResolveTemplate(tmp.Policy.Filter, templateData)
+			if err != nil {
+				return fmt.Errorf(`invalid 'policy': 'filter' templating is not valid: %w`, err)
+			}
+		}
+
 		if len(tmp.Policy.Include) > 0 && len(tmp.Policy.Exclude) > 0 {
 			return errors.New("invalid 'policy': only one of 'include' and 'exclude' can be specified")
 		}
@@ -177,6 +203,14 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 				if !names[include.Name] {
 					return fmt.Errorf("invalid 'policy': 'include' property %q does not exists in dimensions list", include.Name)
 				}
+				cond, err := ResolveTemplate(include.Condition, templateData)
+				if err != nil {
+					return fmt.Errorf(`invalid 'policy': 'if' condition templating for field %q is not valid: %w`, include.Name, err)
+				}
+				_, err = EvaluateBoolExpression(cond)
+				if err != nil {
+					return fmt.Errorf(`invalid 'policy': 'if' condition for field %q not valuating to a boolean: %w`, include.Name, err)
+				}
 			}
 		}
 		if tmp.Policy.Exclude != nil {
@@ -186,6 +220,14 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 				}
 				if !names[exclude.Name] {
 					return fmt.Errorf("invalid 'policy': 'exclude' property %q does not exists in dimensions list", exclude.Name)
+				}
+				cond, err := ResolveTemplate(exclude.Condition, templateData)
+				if err != nil {
+					return fmt.Errorf(`invalid 'policy': 'if' condition templating for field %q is not valid: %w`, exclude.Name, err)
+				}
+				_, err = EvaluateBoolExpression(cond)
+				if err != nil {
+					return fmt.Errorf(`invalid 'policy': 'if' condition for field %q not valuating to a boolean: %w`, exclude.Name, err)
 				}
 			}
 		}
