@@ -1,7 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { IconSpaceFixer } from "../../../components/button";
   import { Chip } from "../../../components/chip";
   import Add from "../../../components/icons/Add.svelte";
@@ -13,21 +12,12 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { selectedMockUserStore } from "./stores";
   import { useMockUsers } from "./useMockUsers";
-  import { viewAsMockUser } from "./viewAsMockUser";
-
-  export let dashboardName: string;
-
-  const queryClient = useQueryClient();
 
   let viewAsMenuOpen = false;
 
   $: mockUsers = useMockUsers($runtime.instanceId);
 
   const iconColor = "#15141A";
-
-  function handleRemoveChip() {
-    viewAsMockUser(queryClient, dashboardName, null);
-  }
 </script>
 
 <WithTogglableFloatingElement
@@ -52,7 +42,10 @@
     <Chip
       removable
       on:click={toggleFloatingElement}
-      on:remove={handleRemoveChip}
+      on:remove={() => {
+        if (viewAsMenuOpen) toggleFloatingElement();
+        selectedMockUserStore.set(null);
+      }}
       active={viewAsMenuOpen}
     >
       <div slot="body" class="flex gap-x-2">
@@ -90,7 +83,7 @@
           selected={$selectedMockUserStore?.email === user?.email}
           on:select={() => {
             toggleFloatingElement();
-            viewAsMockUser(queryClient, dashboardName, user);
+            selectedMockUserStore.set(user);
           }}
         >
           <svelte:fragment slot="icon">

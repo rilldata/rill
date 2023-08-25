@@ -45,7 +45,7 @@
 
 <PanelCTA side="right">
   {#if $dashboardPolicyCheck.data}
-    <ViewAsButton dashboardName={metricViewName} />
+    <ViewAsButton />
   {/if}
   {#if isEditableDashboard}
     <Tooltip distance={8}>

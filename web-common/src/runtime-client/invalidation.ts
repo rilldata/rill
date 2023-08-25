@@ -126,6 +126,19 @@ export const invalidateMetricsViewData = (
   });
 };
 
+export function invalidateAllMetricsViews(
+  queryClient: QueryClient,
+  instanceId: string
+) {
+  return queryClient.invalidateQueries({
+    predicate: (query) =>
+      typeof query.queryKey[0] === "string" &&
+      query.queryKey[0].startsWith(
+        `/v1/instances/${instanceId}/queries/metrics-views`
+      ),
+  });
+}
+
 export async function invalidateProfilingQueries(
   queryClient: QueryClient,
   name: string,
