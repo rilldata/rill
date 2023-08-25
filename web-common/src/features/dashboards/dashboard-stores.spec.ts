@@ -6,24 +6,33 @@ import {
   AD_BIDS_DOMAIN_DIMENSION,
   AD_BIDS_EXCLUDE_FILTER,
   AD_BIDS_IMPRESSIONS_MEASURE,
+  AD_BIDS_INIT,
   AD_BIDS_MIRROR_NAME,
   AD_BIDS_NAME,
   AD_BIDS_PUBLISHER_DIMENSION,
   AD_BIDS_WITH_DELETED_DIMENSION,
   ALL_TIME_PARSED_TEST_CONTROLS,
+  assertMetricsView,
+  assertMetricsViewRaw,
+  createAdBidsMirrorInStore,
+  createMetricsMetaQueryMock,
   CUSTOM_TEST_CONTROLS,
   LAST_6_HOURS_TEST_CONTROLS,
   LAST_6_HOURS_TEST_PARSED_CONTROLS,
-  assertMetricsView,
-  createAdBidsMirrorInStore,
-  createMetricsMetaQueryMock,
   resetDashboardStore,
-  AD_BIDS_INIT,
-  assertMetricsViewRaw,
   TestTimeConstants,
 } from "@rilldata/web-common/features/dashboards/dashboard-stores-test-data";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
+import {
+  getOffset,
+  getStartOfPeriod,
+} from "@rilldata/web-common/lib/time/transforms";
+import {
+  Period,
+  TimeOffsetType,
+  TimeRangePreset,
+} from "@rilldata/web-common/lib/time/types";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -229,8 +238,22 @@ describe("dashboard-stores", () => {
     assertMetricsView(AD_BIDS_NAME, undefined, {
       name: TimeRangePreset.LAST_SIX_HOURS,
       interval: V1TimeGrain.TIME_GRAIN_HOUR,
-      start: new Date("2023-08-25T00:30:00.000Z"),
-      end: new Date("2023-08-25T06:30:00.000Z"),
+      start: getOffset(
+        getStartOfPeriod(
+          TestTimeConstants.LAST_6_HOURS,
+          Period.HOUR,
+          getLocalIANA()
+        ),
+        Period.HOUR,
+        TimeOffsetType.ADD,
+        getLocalIANA()
+      ),
+      end: getOffset(
+        getStartOfPeriod(TestTimeConstants.NOW, Period.HOUR, getLocalIANA()),
+        Period.HOUR,
+        TimeOffsetType.ADD,
+        getLocalIANA()
+      ),
     });
   });
 
