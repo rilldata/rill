@@ -43,8 +43,8 @@ func CheckVersion(ctx context.Context, currentVersion string) error {
 	}
 
 	if v1.LessThan(v2) {
-		fmt.Printf("\n%s %s → %s\n\n",
-			color.YellowString("A new version of rill is available:"),
+		fmt.Printf("%s %s → %s\n\n",
+			color.YellowString("A new version of rill is available (run `rill upgrade`):"),
 			color.CyanString(currentVersion),
 			color.CyanString(latestVersion))
 		return nil
