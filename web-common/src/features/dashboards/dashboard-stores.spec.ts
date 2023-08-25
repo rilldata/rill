@@ -20,7 +20,6 @@ import {
   resetDashboardStore,
   AD_BIDS_INIT,
   assertMetricsViewRaw,
-  initAdBidsInStore,
   TestTimeConstants,
 } from "@rilldata/web-common/features/dashboards/dashboard-stores-test-data";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
