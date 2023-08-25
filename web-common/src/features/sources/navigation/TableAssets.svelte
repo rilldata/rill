@@ -45,7 +45,7 @@
     behaviourEvent?.fireSourceTriggerEvent(
       BehaviourEventAction.SourceAdd,
       BehaviourEventMedium.Button,
-      $appScreen,
+      $appScreen.type,
       MetricsEventSpace.LeftPanel
     );
   };

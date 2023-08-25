@@ -31,14 +31,23 @@ export class BehaviourEventHandler {
     screen_name: MetricsEventScreenName
   ) {
     const hashedName = MD5(entity_name).toString();
-    return this.metricsService.dispatch("navigationEvent", [
-      this.commonUserMetrics,
-      hashedName,
+    this.metricsService.syft.navigationEvent({
+      name: "",
+      entityName: hashedName,
       medium,
       space,
-      source_screen,
-      screen_name,
-    ]);
+      screenName: screen_name,
+      sourceScreenName: source_screen,
+    });
+    return Promise.resolve();
+    // return this.metricsService.dispatch("navigationEvent", [
+    //   this.commonUserMetrics,
+    //   hashedName,
+    //   medium,
+    //   space,
+    //   source_screen,
+    //   screen_name,
+    // ]);
   }
 
   public firePublishEvent(
@@ -101,12 +110,19 @@ export class BehaviourEventHandler {
     screen_name: MetricsEventScreenName,
     space: MetricsEventSpace
   ) {
-    return this.metricsService.dispatch("sourceTrigger", [
-      this.commonUserMetrics,
+    this.metricsService.syft.sourceTriggerEvent({
       action,
       medium,
-      screen_name,
+      screenName: screen_name,
       space,
-    ]);
+    });
+    return Promise.resolve();
+    // return this.metricsService.dispatch("sourceTrigger", [
+    //   this.commonUserMetrics,
+    //   action,
+    //   medium,
+    //   screen_name,
+    //   space,
+    // ]);
   }
 }

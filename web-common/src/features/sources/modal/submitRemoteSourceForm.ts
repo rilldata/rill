@@ -43,7 +43,7 @@ export async function submitRemoteSourceForm(
   behaviourEvent?.fireSourceTriggerEvent(
     BehaviourEventAction.SourceAdd,
     BehaviourEventMedium.Button,
-    get(appScreen),
+    get(appScreen).type,
     MetricsEventSpace.Modal
   );
 

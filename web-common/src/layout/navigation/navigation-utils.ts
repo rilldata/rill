@@ -17,7 +17,7 @@ export function emitNavigationTelemetry(href) {
   const previousActiveEntity = get(appScreen)?.type;
   const screenName = getNavURLToScreenMap(href);
   behaviourEvent.fireNavigationEvent(
-    name,
+    "",
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
     previousActiveEntity,

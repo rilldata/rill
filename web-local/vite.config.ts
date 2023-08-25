@@ -29,11 +29,19 @@ const config = defineConfig(({ mode }) => ({
     fs: {
       allow: ["."],
     },
+    watch: {
+      ignored: ["!**/node_modules/@syftdata/**"],
+    },
   },
   define: {
     RILL_RUNTIME_URL: `"${runtimeUrl}"`,
   },
   plugins: [sveltekit()],
+  // The watched package must be excluded from optimization,
+  // so that it can appear in the dependency graph and trigger hot reload.
+  optimizeDeps: {
+    exclude: ["@syftdata"],
+  },
 }));
 
 export default config;

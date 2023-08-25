@@ -13,6 +13,8 @@ import type { ErrorEventFactory } from "./ErrorEventFactory";
 import type { CommonFields, MetricsEvent } from "./MetricsTypes";
 import type { ProductHealthEventFactory } from "./ProductHealthEventFactory";
 import type { RillIntakeClient } from "./RillIntakeClient";
+import Syft, { SyftCustomPlugin } from "@syftdata/client";
+import { collectCommonUserFields } from "@rilldata/web-common/metrics/collectCommonUserFields";
 
 export const ClientIDStorageKey = "client_id";
 
@@ -36,12 +38,39 @@ export class MetricsService
   } = {};
 
   private commonFields: Record<string, unknown>;
+  public syft: Syft;
 
   public constructor(
     private readonly localConfig: V1RuntimeGetConfig,
     private readonly rillIntakeClient: RillIntakeClient,
     private readonly metricsEventFactories: Array<MetricsEventFactory>
   ) {
+    this.syft = new Syft({
+      appVersion: "1.0.0",
+      verbose: true,
+      plugins: [
+        new SyftCustomPlugin(
+          (events) => {
+            if (!this.localConfig.analytics_enabled) return;
+            const now = Date.now();
+            return Promise.all(
+              events.map((event) => {
+                const { syft, ...otherFields } = event;
+                const metricEvent = {
+                  ...otherFields,
+                  event_datetime: now,
+                  event_type: syft.eventName,
+                } as MetricsEvent;
+                return this.rillIntakeClient.fireEvent(metricEvent);
+              })
+            );
+          },
+          "user_id",
+          "client_id",
+          1
+        ),
+      ],
+    });
     metricsEventFactories.forEach((actions) => {
       getActionMethods(actions).forEach((action) => {
         this.actionsMap[action] = actions;
@@ -63,6 +92,28 @@ export class MetricsService
       analytics_enabled: this.localConfig.analytics_enabled,
       mode: this.localConfig.readonly ? "read-only" : "edit",
     };
+
+    const commonUserMetrics = await collectCommonUserFields();
+    this.syft.commonProperties({
+      appName: "rill-developer",
+      installId: this.localConfig.install_id,
+      buildId: this.localConfig.build_commit,
+      version: this.localConfig.version,
+      isDev: this.localConfig.is_dev,
+      projectId: MD5(projectPathParts[projectPathParts.length - 1]).toString(),
+      mode: this.localConfig.readonly ? "read-only" : "edit",
+
+      locale: commonUserMetrics.locale,
+      browser: commonUserMetrics.browser,
+      os: commonUserMetrics.os,
+      deviceModel: commonUserMetrics.device_model,
+    });
+
+    if (this.localConfig.user_id) {
+      this.syft.userIdentity({
+        userId: this.localConfig.user_id,
+      });
+    }
   }
 
   public async dispatch<Action extends keyof MetricsActionDefinition>(

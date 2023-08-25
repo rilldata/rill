@@ -50,7 +50,7 @@
     behaviourEvent?.fireSourceTriggerEvent(
       BehaviourEventAction.SourceCancel,
       BehaviourEventMedium.Button,
-      $appScreen,
+      $appScreen.type,
       MetricsEventSpace.Modal
     );
     dispatch("close");
