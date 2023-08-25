@@ -2,6 +2,8 @@
   import { goto } from "$app/navigation";
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { IconSpaceFixer } from "../../../components/button";
+  import { Chip } from "../../../components/chip";
   import Add from "../../../components/icons/Add.svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import Check from "../../../components/icons/Check.svelte";
@@ -22,6 +24,10 @@
   $: mockUsers = useMockUsers($runtime.instanceId);
 
   const iconColor = "#15141A";
+
+  function handleRemoveChip() {
+    viewAsMockUser(queryClient, dashboardName, null);
+  }
 </script>
 
 <WithTogglableFloatingElement
@@ -32,51 +38,52 @@
   on:open={() => (viewAsMenuOpen = true)}
   on:close={() => (viewAsMenuOpen = false)}
 >
-  <button
-    class="px-3 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600 items-center"
-    on:click={(evt) => {
-      evt.stopPropagation();
-      toggleFloatingElement();
-    }}
-  >
-    <div class={$selectedMockUserStore !== null && "text-blue-600"}>
+  {#if $selectedMockUserStore === null}
+    <button
+      class="px-3 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600 items-center"
+      on:click={toggleFloatingElement}
+    >
       <EyeIcon size={"16px"} />
-    </div>
-    {#if $selectedMockUserStore == null}
       <div class="flex items-center gap-x-1">
         <span>View as</span><CaretDownIcon />
       </div>
-    {:else}
-      <div class="text-blue-600">
-        Viewing as <span class="font-bold">{$selectedMockUserStore.email}</span>
+    </button>
+  {:else}
+    <Chip
+      removable
+      on:click={toggleFloatingElement}
+      on:remove={handleRemoveChip}
+      active={viewAsMenuOpen}
+    >
+      <div slot="body" class="flex gap-x-2">
+        <div>
+          Viewing as <span class="font-bold"
+            >{$selectedMockUserStore.email}</span
+          >
+        </div>
+        <div class="flex items-center">
+          <IconSpaceFixer pullRight>
+            <div
+              class="transition-transform"
+              class:-rotate-180={viewAsMenuOpen}
+            >
+              <CaretDownIcon size="14px" />
+            </div>
+          </IconSpaceFixer>
+        </div>
       </div>
-    {/if}
-  </button>
+      <svelte:fragment slot="remove-tooltip">
+        <slot name="remove-tooltip-content">Clear view</slot>
+      </svelte:fragment>
+    </Chip>
+  {/if}
   <Menu
     minWidth=""
     on:click-outside={toggleFloatingElement}
     on:escape={toggleFloatingElement}
     slot="floating-element"
   >
-    <MenuItem
-      icon
-      selected={$selectedMockUserStore === null}
-      on:select={() => {
-        toggleFloatingElement();
-        viewAsMockUser(queryClient, dashboardName, null);
-      }}
-    >
-      <svelte:fragment slot="icon">
-        {#if $selectedMockUserStore === null}
-          <Check size="16px" color={iconColor} />
-        {:else}
-          <Spacer size="16px" />
-        {/if}
-      </svelte:fragment>
-      Me
-    </MenuItem>
     {#if $mockUsers.data?.length > 0}
-      <Divider />
       {#each $mockUsers.data as user}
         <MenuItem
           icon
