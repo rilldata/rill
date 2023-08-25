@@ -126,10 +126,18 @@ export const invalidateMetricsViewData = (
   });
 };
 
-export function invalidateAllMetricsViews(
+export async function invalidateAllMetricsViews(
   queryClient: QueryClient,
   instanceId: string
 ) {
+  // First, invalidate the catalog entries
+  await queryClient.invalidateQueries({
+    predicate: (query) =>
+      typeof query.queryKey[0] === "string" &&
+      query.queryKey[0].startsWith(`/v1/instances/${instanceId}/catalog`),
+  });
+
+  // Second, invalidate the data
   return queryClient.invalidateQueries({
     predicate: (query) =>
       typeof query.queryKey[0] === "string" &&
