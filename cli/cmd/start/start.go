@@ -125,7 +125,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 	startCmd.Flags().BoolVar(&noUI, "no-ui", false, "Serve only the backend")
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 	startCmd.Flags().BoolVar(&strict, "strict", false, "Exit if project has build errors")
-	startCmd.Flags().BoolVar(&reset, "reset", false, "Reset project before build")
+	startCmd.Flags().BoolVar(&reset, "reset", false, "Clear and re-ingest source data")
 	startCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
 	startCmd.Flags().StringSliceVarP(&variables, "env", "e", []string{}, "Set project variables")
 

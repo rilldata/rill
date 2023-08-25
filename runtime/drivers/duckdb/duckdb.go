@@ -126,8 +126,6 @@ func (d Driver) Drop(config map[string]any, logger *zap.Logger) error {
 		return fmt.Errorf("require dsn to drop duckdb connection")
 	}
 
-	fmt.Println("Dropping DuckDB database at", dsn)
-
 	cfg, err := newConfig(dsn, nil)
 	if err != nil {
 		return err

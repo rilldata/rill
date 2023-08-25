@@ -120,6 +120,12 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 		return nil, err
 	}
 
+	if reset {
+		err := drivers.Drop(olapDriver, map[string]any{"dsn": olapDSN}, logger)
+		if err != nil {
+			return nil, fmt.Errorf("failed to clean OLAP: %w", err)
+		}
+	}
 	// Create instance with its repo set to the project directory
 	inst := &drivers.Instance{
 		ID:           DefaultInstanceID,
@@ -144,13 +150,6 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 	err = rt.CreateInstance(ctx, inst)
 	if err != nil {
 		return nil, err
-	}
-
-	if reset {
-		err := drivers.Drop(olapDriver, map[string]any{"dsn": olapDSN}, logger)
-		if err != nil {
-			return nil, fmt.Errorf("failed to clean OLAP: %w", err)
-		}
 	}
 
 	// Done
