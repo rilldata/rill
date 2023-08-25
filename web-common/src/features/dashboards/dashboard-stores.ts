@@ -9,12 +9,12 @@ import {
 } from "@rilldata/web-common/lib/arrayUtils";
 import { getComparionRangeForScrub } from "@rilldata/web-common/lib/time/comparisons";
 import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
-import { convertTimeRangePreset } from "@rilldata/web-common/lib/time/ranges";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
-  ScrubRange,
-  TimeRangePreset,
-} from "@rilldata/web-common/lib/time/types";
+  convertTimeRangePreset,
+  ISODurationToTimePreset,
+} from "@rilldata/web-common/lib/time/ranges";
+import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
+import type { ScrubRange } from "@rilldata/web-common/lib/time/types";
 import type {
   V1ColumnTimeRangeResponse,
   V1MetricsView,
@@ -255,7 +255,7 @@ const metricViewReducers = {
       if (fullTimeRange) {
         const timeZone = get(getLocalUserPreferences()).timeZone;
         const timeRange = convertTimeRangePreset(
-          TimeRangePreset.ALL_TIME,
+          ISODurationToTimePreset(metricsView.defaultTimeRange, true),
           new Date(fullTimeRange.timeRangeSummary.min),
           new Date(fullTimeRange.timeRangeSummary.max),
           timeZone
