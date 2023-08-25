@@ -63,6 +63,7 @@ func RegisterReconcilerInitializer(resourceKind string, initializer ReconcilerIn
 }
 
 // Controller manages the catalog for a single instance and runs reconcilers to migrate the catalog (and related resources in external databases) into the desired state.
+// For information about how the controller schedules reconcilers, see `runtime/reconcilers/README.md`.
 type Controller struct {
 	Runtime     *Runtime
 	InstanceID  string
@@ -73,7 +74,6 @@ type Controller struct {
 	catalog     catalogCache
 	// queue contains names waiting to be scheduled.
 	// It's not a real queue because we schedule the whole queue on each call to processQueue.
-	// The only reason we need the queue is to enable batching of changes under locks (reducing need for reconciler cancellations).
 	queue           map[string]*runtimev1.ResourceName
 	queueNotEmpty   bool
 	queueNotEmptyCh chan struct{}
@@ -112,6 +112,9 @@ func NewController(ctx context.Context, rt *Runtime, instanceID string, logger *
 }
 
 // Run starts and runs the controller's event loop. It returns when ctx is cancelled or an unrecoverable error occurs.
+// The event loop schedules/invokes resource reconciliation and periodically flushes catalog changes to persistant storage.
+// The implementation centers around these internal functions: enqueue, processQueue, schedule, and processCompletedInvocation.
+// See their docstrings for further details.
 func (c *Controller) Run(ctx context.Context) error {
 	if c.running.Swap(true) {
 		panic("controller is already running")
@@ -140,7 +143,6 @@ func (c *Controller) Run(ctx context.Context) error {
 	// Call resetTimelineTimer whenever the timeline may have been changed (must hold mu).
 	timelineTimer := time.NewTimer(time.Second)
 	defer timelineTimer.Stop()
-
 	timelineTimer.Stop() // We want it stopped initially
 	nextTime := time.Time{}
 	resetTimelineTimer := func() {
@@ -561,7 +563,8 @@ func (c *Controller) isReconcilerForResource(ctx context.Context, n *runtimev1.R
 	return proto.Equal(inv.name, n)
 }
 
-// enqueue adds a resource to c.queue and ensures processQueue() will be called at some point.
+// enqueue marks a resource to be scheduled in the next iteration of the event loop.
+// It does so by adding it to c.queue, which will be processed by processQueue().
 // It must be called while c.mu is held.
 func (c *Controller) enqueue(name *runtimev1.ResourceName) {
 	// Add to queue
@@ -574,7 +577,9 @@ func (c *Controller) enqueue(name *runtimev1.ResourceName) {
 	}
 }
 
-// processQueue calls schedule() for each resource in c.queue.
+// processQueue calls schedule() for each resource in c.queue. It is invoked in each iteration of the event loop.
+// The reason we have the queue and process it from the event loop (instead of calling schedule() directly from enqueue()) is to enable batching of schedule calls during initialization and when Lock/Unlock is used.
+// Batching makes it easier to ensure that parents are scheduled before children when both need to be scheduled.
 // It must be called while c.mu is held.
 func (c *Controller) processQueue() {
 	// Mark all pending. We do it here instead of in schedule() so that the pending parent checks in schedule() reflect all items in c.queue.
@@ -596,19 +601,102 @@ func (c *Controller) processQueue() {
 }
 
 // schedule a resource for reconciliation.
-// It contains the main scheduling logic described in the comment for Controller.
-// (Basically: deletions and renames run before regular reconciles, and only one invocation runs at a time between a root and a leaf in the DAG.)
+// It should only be called from processQueue(). After calling schedule(), the resource can be removed from c.queue.
+// It must be called while c.mu is held.
 //
 // schedule does not necessarily invoke reconciliation immediately (though it may), but will ensure that the resource is eventually reconciled.
-// If schedule doesn't invoke reconciliation immediately, it will add the resource to another running invocation's waitlist, ensuring the resource will eventually be reconciled.
+// If schedule doesn't invoke reconciliation immediately, it ensures the resource will eventually be reconciled through one of the enqueuing rules implemented in processCompletedInvocation.
 //
-// After calling schedule, the resource can be removed from c.queue.
-// It must be called while c.mu is held.
+// A key invariant for schedule is that all resources awaiting to be reconciled have status=pending, *including descendents of a resource with status=pending*.
+// This is ensured through the assignment of status=pending in processQueue and for descendents inside of schedule().
+// This invariant enables schedule() to skip invocation of resources with parents that have status=pending, knowing that processCompletedInvocation will eventually enqueue them when the parent transitions to status=idle.
 func (c *Controller) schedule(n *runtimev1.ResourceName) {
-	// TODO
+	r, err := c.catalog.get(n, true)
+	if err != nil {
+		return // log? or return error?
+	}
+
+	// Remove from timeline (if present)
+	c.timeline.Remove(n)
+
+	// If currently running, cancel and reschedule when cancellation is done.
+	inv := c.invocations[nameStr(r.Meta.Name)]
+	if inv != nil {
+		inv.cancel(true)
+		return
+	}
+
+	// If resource is cyclic, set error and skip it
+	_, cyclic := c.catalog.cyclic[nameStr(r.Meta.Name)]
+	if cyclic {
+		err = c.catalog.updateError(r.Meta.Name, errCyclicDependency)
+		if err != nil {
+			c.Logger.Warn("internal: unexpected update error", slog.Any("error", err))
+		}
+		err = c.catalog.updateStatus(r.Meta.Name, runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE, time.Time{})
+		if err != nil {
+			c.Logger.Warn("internal: unexpected update error", slog.Any("error", err))
+		}
+		return
+	}
+
+	// Return if any parents are pending or running
+	parents := c.catalog.dag.Parents(n, true)
+	for _, pn := range parents {
+		p, err := c.catalog.get(pn, true)
+		if err != nil {
+			continue
+		}
+		if p.Meta.ReconcileStatus != runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE {
+			return
+		}
+	}
+
+	// If any children are running, cancel and reschedule when cancellation is done.
+	childRunning := false
+	c.catalog.dag.Visit(n, func(cs string, cn *runtimev1.ResourceName) bool {
+		cr, err := c.catalog.get(cn, true)
+		if err != nil {
+			return false // Log?
+		}
+		if cr.Meta.ReconcileStatus != runtimev1.ReconcileStatus_RECONCILE_STATUS_RUNNING {
+			err = c.catalog.updateStatus(n, runtimev1.ReconcileStatus_RECONCILE_STATUS_PENDING, time.Time{})
+			if err != nil {
+				// log? or return error?
+			}
+			return false
+		}
+		inv := c.invocations[nameStr(cn)]
+		if inv == nil {
+			// Impossible state – log?
+			return false
+		}
+		inv.cancel(false)
+		inv.addPostVisit(n)
+		childRunning = true
+		return false
+		// TODO: Any invariants that will let us avoid a full traversal? Like if children already pending. Don't think so since needs to know if something running.
+	})
+	if childRunning {
+		return
+	}
+
+	// TODO:
+	// if self is deletion:
+	// 	start deletion
+	// 	break
+	// if self is rename:
+	// 	analyze – if compatible, run it. else, add as post visit to a compatible one.
+	// 	break
+	// if any current renames: add to post visits, break
+	// if any current deletions: add to post visits, break
+	// start invocation
+
+	// Invoke
+	c.invoke(n)
 }
 
-// invoke starts a goroutine to invoke the reconciler and tracks the invocation in c.invocations.
+// invoke starts a goroutine for reconciling the resource and tracks the invocation in c.invocations.
 // It must be called while c.mu is held.
 func (c *Controller) invoke(n *runtimev1.ResourceName) {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -641,6 +729,13 @@ func (c *Controller) invoke(n *runtimev1.ResourceName) {
 
 // processCompletedInvocation does post-processing after a reconciler invocation completes.
 // It must be called while c.mu is held.
+//
+// It updates the catalog with the invocation result and it calls enqueue() for any resources that are unblocked by its completion.
+// It calls enqueue() based on the following rules:
+// - for all the resources on its waitlist
+// - and, for itself if inv.reschedule is true
+// - and, for its children in the DAG if inv.reschedule is false
+//
 // TODO: All the error conditions here are weird. Log or ignore or exit (should we let catalog return inconsistent?)?
 func (c *Controller) processCompletedInvocation(inv *invocation) error {
 	r, err := c.catalog.get(inv.name, true)
