@@ -53,18 +53,17 @@ export function prepareTimeSeries(
   let i = 0;
   let j = 0;
   let k = 0;
-  let dtStart = DateTime.fromISO(start, { zone });
-  dtStart = dtStart.startOf("hour");
-  let dtEnd = DateTime.fromISO(end, { zone }).startOf("hour");
+  let dtStart = DateTime.fromISO(start, { zone }).startOf("hour");
+  const dtEnd = DateTime.fromISO(end, { zone }).startOf("hour");
   let dtCompStart = DateTime.fromISO(compStart, { zone }).startOf("hour");
-  let dtCompEnd = DateTime.fromISO(compEnd, { zone }).startOf("hour");
+  const dtCompEnd = DateTime.fromISO(compEnd, { zone }).startOf("hour");
 
-  let result = [];
+  const result = [];
 
   const offsetDuration = getDurationMultiple(timeGrainDuration, 0.5);
   while (dtStart < dtEnd || dtCompStart < dtCompEnd) {
-    let ts = adjustOffsetForZone(dtStart.toISO(), zone);
-    let ts_position = getOffset(ts, offsetDuration, TimeOffsetType.ADD);
+    const ts = adjustOffsetForZone(dtStart.toISO(), zone);
+    const ts_position = getOffset(ts, offsetDuration, TimeOffsetType.ADD);
     result.push({
       ts,
       ts_position,
