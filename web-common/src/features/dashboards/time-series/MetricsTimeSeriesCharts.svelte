@@ -128,10 +128,7 @@
     Error
   >;
 
-  let ast,
-      ae,
-      cas,
-      cae;
+  let ast, ae, cas, cae;
 
   $: if (
     $dashboardStore &&
@@ -147,7 +144,7 @@
       interval
     );
     ast = adjustedStart;
-    ae = adjustedEnd
+    ae = adjustedEnd;
 
     timeSeriesQuery = createQueryServiceMetricsViewTimeSeries(
       instanceId,
@@ -227,7 +224,6 @@
       $dashboardStore?.selectedTimezone
     );
   }
-
 
   let mouseoverValue = undefined;
   let startValue: Date;

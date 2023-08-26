@@ -4,7 +4,7 @@ import { roundToNearestTimeUnit } from "./round-to-nearest-time-unit";
 import { getDurationMultiple, getOffset } from "../../../lib/time/transforms";
 import { removeZoneOffset } from "../../../lib/time/timezone";
 import { TimeOffsetType } from "../../../lib/time/types";
-import {DateTime} from "luxon";
+import { DateTime } from "luxon";
 
 /** sets extents to 0 if it makes sense; otherwise, inflates each extent component */
 export function niceMeasureExtents(
@@ -53,11 +53,11 @@ export function prepareTimeSeries(
   let i = 0;
   let j = 0;
   let k = 0;
-  let dtStart = DateTime.fromISO(start, {zone});
-  dtStart = dtStart.startOf("hour")
-  let dtEnd = DateTime.fromISO(end, {zone}).startOf("hour");
-  let dtCompStart = DateTime.fromISO(compStart, {zone}).startOf("hour"); 
-  let dtCompEnd = DateTime.fromISO(compEnd, {zone}).startOf("hour"); 
+  let dtStart = DateTime.fromISO(start, { zone });
+  dtStart = dtStart.startOf("hour");
+  let dtEnd = DateTime.fromISO(end, { zone }).startOf("hour");
+  let dtCompStart = DateTime.fromISO(compStart, { zone }).startOf("hour");
+  let dtCompEnd = DateTime.fromISO(compEnd, { zone }).startOf("hour");
 
   let result = [];
 
@@ -70,15 +70,21 @@ export function prepareTimeSeries(
       ts_position,
     });
 
-    if (i < original.length && dtStart.equals(DateTime.fromISO(original[i].ts, {zone}))) {
+    if (
+      i < original.length &&
+      dtStart.equals(DateTime.fromISO(original[i].ts, { zone }))
+    ) {
       result[j] = {
         ...result[j],
         ...original[i].records,
       };
       i++;
-    } 
+    }
     if (comparison) {
-      if (k < comparison.length && dtCompStart.equals(DateTime.fromISO(comparison[k].ts, {zone}))) {
+      if (
+        k < comparison.length &&
+        dtCompStart.equals(DateTime.fromISO(comparison[k].ts, { zone }))
+      ) {
         result[j] = {
           ...result[j],
           ...toComparisonKeys(comparison[k], offsetDuration, zone),
@@ -86,15 +92,19 @@ export function prepareTimeSeries(
         k++;
       } else {
         result[j] = {
-            ...result[j],
-            ...toComparisonKeys({
-              ts: dtCompStart.toISO()
-            }, offsetDuration, zone),
-          };
+          ...result[j],
+          ...toComparisonKeys(
+            {
+              ts: dtCompStart.toISO(),
+            },
+            offsetDuration,
+            zone
+          ),
+        };
       }
     }
-    dtStart = dtStart.plus({hours: 1});
-    dtCompStart = dtCompStart.plus({hours: 1});
+    dtStart = dtStart.plus({ hours: 1 });
+    dtCompStart = dtCompStart.plus({ hours: 1 });
     j++;
   }
 
