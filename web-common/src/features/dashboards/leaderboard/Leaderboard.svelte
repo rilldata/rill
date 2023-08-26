@@ -13,7 +13,6 @@
     getFilterForDimension,
     useMetaDimension,
     useMetaMeasure,
-    useMetaQuery,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import {
@@ -23,7 +22,13 @@
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
+  import { SortDirection } from "../proto-state/derived-types";
+  import {
+    metricsExplorerStore,
+    useComparisonRange,
+    useDashboardStore,
+    useFetchTimeRange,
+  } from "../dashboard-stores";
   import { getFilterForComparsion } from "../dimension-table/dimension-table-utils";
   import type { FormatPreset } from "../humanize-numbers";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
@@ -47,7 +52,8 @@
   const queryClient = useQueryClient();
 
   $: dashboardStore = useDashboardStore(metricViewName);
-  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
+  $: fetchTimeStore = useFetchTimeRange(metricViewName);
+  $: comparisonStore = useComparisonRange(metricViewName);
 
   let filterExcludeMode: boolean;
   $: filterExcludeMode =
@@ -99,8 +105,13 @@
     metricsExplorerStore.setMetricDimensionName(metricViewName, dimensionName);
   }
 
-  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
-  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
+  function toggleSortDirection() {
+    metricsExplorerStore.toggleSortDirection(metricViewName);
+  }
+
+  $: timeStart = $fetchTimeStore?.start?.toISOString();
+  $: timeEnd = $fetchTimeStore?.end?.toISOString();
+  $: sortAscending = $dashboardStore.sortDirection === SortDirection.ASCENDING;
   $: topListQuery = createQueryServiceMetricsViewToplist(
     $runtime.instanceId,
     metricViewName,
@@ -115,7 +126,7 @@
       sort: [
         {
           name: measure?.name,
-          ascending: false,
+          ascending: sortAscending,
         },
       ],
     },
@@ -164,7 +175,7 @@
   // Compose the comparison /toplist query
   $: showTimeComparison =
     $dashboardStore?.leaderboardContextColumn ===
-      LeaderboardContextColumn.DELTA_CHANGE && $dashboardStore?.showComparison;
+      LeaderboardContextColumn.DELTA_PERCENT && $dashboardStore?.showComparison;
   $: showPercentOfTotal =
     $dashboardStore?.leaderboardContextColumn ===
     LeaderboardContextColumn.PERCENT;
@@ -182,10 +193,8 @@
     dimensionName,
     currentVisibleValues
   );
-  $: comparisonTimeStart =
-    $dashboardStore?.selectedComparisonTimeRange?.start?.toISOString();
-  $: comparisonTimeEnd =
-    $dashboardStore?.selectedComparisonTimeRange?.end?.toISOString();
+  $: comparisonTimeStart = $comparisonStore?.start;
+  $: comparisonTimeEnd = $comparisonStore?.end;
   $: comparisonTopListQuery = createQueryServiceMetricsViewToplist(
     $runtime.instanceId,
     metricViewName,
@@ -255,8 +264,10 @@
       on:toggle-filter-mode={toggleFilterMode}
       {filterExcludeMode}
       {hovered}
+      {sortAscending}
       dimensionDescription={dimension?.description}
-      on:click={() => selectDimension(dimensionName)}
+      on:open-dimension-details={() => selectDimension(dimensionName)}
+      on:toggle-sort-direction={toggleSortDirection}
     />
     {#if values}
       <div class="rounded-b border-gray-200 surface text-gray-800">

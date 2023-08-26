@@ -85,7 +85,10 @@ type configProperties struct {
 }
 
 // Open implements drivers.Driver
-func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connection, error) {
+func (d driver) Open(config map[string]any, shared bool, logger *zap.Logger) (drivers.Handle, error) {
+	if shared {
+		return nil, fmt.Errorf("s3 driver can't be shared")
+	}
 	conf := &configProperties{}
 	err := mapstructure.Decode(config, conf)
 	if err != nil {
@@ -118,7 +121,7 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source
 		return false, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	c, err := d.Open(map[string]any{}, logger)
+	c, err := d.Open(map[string]any{}, false, logger)
 	if err != nil {
 		return false, err
 	}
@@ -139,7 +142,7 @@ type Connection struct {
 	logger *zap.Logger
 }
 
-var _ drivers.Connection = &Connection{}
+var _ drivers.Handle = &Connection{}
 
 // Driver implements drivers.Connection.
 func (c *Connection) Driver() string {
@@ -149,7 +152,7 @@ func (c *Connection) Driver() string {
 // Config implements drivers.Connection.
 func (c *Connection) Config() map[string]any {
 	m := make(map[string]any, 0)
-	_ = mapstructure.Decode(c.config, m)
+	_ = mapstructure.Decode(c.config, &m)
 	return m
 }
 
@@ -164,17 +167,17 @@ func (c *Connection) AsRegistry() (drivers.RegistryStore, bool) {
 }
 
 // Catalog implements drivers.Connection.
-func (c *Connection) AsCatalogStore() (drivers.CatalogStore, bool) {
+func (c *Connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // Repo implements drivers.Connection.
-func (c *Connection) AsRepoStore() (drivers.RepoStore, bool) {
+func (c *Connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
 
 // OLAP implements drivers.Connection.
-func (c *Connection) AsOLAP() (drivers.OLAPStore, bool) {
+func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
@@ -194,7 +197,7 @@ func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsTransporter implements drivers.Connection.
-func (c *Connection) AsTransporter(from, to drivers.Connection) (drivers.Transporter, bool) {
+func (c *Connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
 	return nil, false
 }
 

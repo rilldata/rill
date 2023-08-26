@@ -41,43 +41,43 @@ A simple composable container for SVG-based data graphics.
   // const forwardAll = forwardEvents(getComponent(), []);
 </script>
 
-<div>
-  <GraphicContext
-    {width}
-    {height}
-    {top}
-    {bottom}
-    {left}
-    {right}
-    {fontSize}
-    {textGap}
-    {xType}
-    {yType}
-    {xMin}
-    {xMax}
-    {yMin}
-    {yMax}
-    {bodyBuffer}
-    {marginBuffer}
-    {shareXScale}
-    {shareYScale}
-    {xMinTweenProps}
-    {xMaxTweenProps}
-    {yMinTweenProps}
-    {yMaxTweenProps}
+<GraphicContext
+  {width}
+  {height}
+  {top}
+  {bottom}
+  {left}
+  {right}
+  {fontSize}
+  {textGap}
+  {xType}
+  {yType}
+  {xMin}
+  {xMax}
+  {yMin}
+  {yMax}
+  {bodyBuffer}
+  {marginBuffer}
+  {shareXScale}
+  {shareYScale}
+  {xMinTweenProps}
+  {xMaxTweenProps}
+  {yMinTweenProps}
+  {yMaxTweenProps}
+>
+  <SimpleSVGContainer
+    {overflowHidden}
+    bind:mouseoverValue
+    bind:hovered
+    let:xScale
+    let:yScale
+    let:config
+    on:scrub-start
+    on:scrub-move
+    on:scrub-end
+    on:click
+    on:contextmenu
   >
-    <SimpleSVGContainer
-      {overflowHidden}
-      bind:mouseoverValue
-      bind:hovered
-      let:xScale
-      let:yScale
-      let:config
-      on:scrub-start
-      on:scrub-move
-      on:scrub-end
-    >
-      <slot {xScale} {yScale} {mouseoverValue} {config} {hovered} />
-    </SimpleSVGContainer>
-  </GraphicContext>
-</div>
+    <slot {xScale} {yScale} {mouseoverValue} {config} {hovered} />
+  </SimpleSVGContainer>
+</GraphicContext>

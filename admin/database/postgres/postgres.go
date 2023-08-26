@@ -599,6 +599,18 @@ func (c *connection) InsertUsergroup(ctx context.Context, opts *database.InsertU
 	return res, nil
 }
 
+func (c *connection) FindUsergroupsForUser(ctx context.Context, userID, orgID string) ([]*database.Usergroup, error) {
+	var res []*database.Usergroup
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT ug.* FROM usergroups ug JOIN usergroups_users uug ON ug.id = uug.usergroup_id
+		WHERE uug.user_id = $1 AND ug.org_id = $2
+	`, userID, orgID)
+	if err != nil {
+		return nil, parseErr("usergroup", err)
+	}
+	return res, nil
+}
+
 func (c *connection) InsertUsergroupMember(ctx context.Context, groupID, userID string) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO usergroups_users (user_id, usergroup_id) VALUES ($1, $2)", userID, groupID)
 	if err != nil {
@@ -732,6 +744,15 @@ func (c *connection) UpdateService(ctx context.Context, id string, opts *databas
 		return nil, parseErr("service", err)
 	}
 	return res, nil
+}
+
+// UpdateServiceActiceOn updates a service's active_on timestamp.
+func (c *connection) UpdateServiceActiveOn(ctx context.Context, ids []string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE service SET active_on=now() WHERE id=ANY($1)", ids)
+	if err != nil {
+		return parseErr("service", err)
+	}
+	return nil
 }
 
 // DeleteService deletes a service.

@@ -22,12 +22,12 @@ const (
 
 // CatalogStore is implemented by drivers capable of storing catalog info for a specific instance.
 type CatalogStore interface {
-	FindEntries(ctx context.Context, instanceID string, t ObjectType) ([]*CatalogEntry, error)
-	FindEntry(ctx context.Context, instanceID string, name string) (*CatalogEntry, error)
-	CreateEntry(ctx context.Context, instanceID string, entry *CatalogEntry) error
-	UpdateEntry(ctx context.Context, instanceID string, entry *CatalogEntry) error
-	DeleteEntry(ctx context.Context, instanceID string, name string) error
-	DeleteEntries(ctx context.Context, instanceID string) error
+	FindEntries(ctx context.Context, t ObjectType) ([]*CatalogEntry, error)
+	FindEntry(ctx context.Context, name string) (*CatalogEntry, error)
+	CreateEntry(ctx context.Context, entry *CatalogEntry) error
+	UpdateEntry(ctx context.Context, entry *CatalogEntry) error
+	DeleteEntry(ctx context.Context, name string) error
+	DeleteEntries(ctx context.Context) error
 }
 
 // CatalogEntry represents one object in the catalog, such as a source.
@@ -75,4 +75,9 @@ func (e *CatalogEntry) GetMetricsView() *runtimev1.MetricsView {
 		panic(fmt.Errorf("entry '%s' is not a metrics view", e.Name))
 	}
 	return obj
+}
+
+func (e *CatalogEntry) IsMetricsView() bool {
+	_, ok := e.Object.(*runtimev1.MetricsView)
+	return ok
 }

@@ -3,6 +3,7 @@
   import {
     createTimeRangeSummary,
     useMetaQuery,
+    useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors/index";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
@@ -12,6 +13,7 @@
   $: initLocalUserPreferenceStore(metricViewName);
   const stateManagers = getStateManagers();
   const metaQuery = useMetaQuery(stateManagers);
+  const hasTimeSeries = useModelHasTimeSeries(stateManagers);
   const timeRangeQuery = createTimeRangeSummary(stateManagers);
 
   function syncDashboardState() {
@@ -26,7 +28,7 @@
     }
   }
 
-  $: if ($metaQuery.data && $timeRangeQuery.data) {
+  $: if ($metaQuery.data && ($timeRangeQuery.data || !$hasTimeSeries.data)) {
     syncDashboardState();
   }
 </script>

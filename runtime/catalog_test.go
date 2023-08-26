@@ -21,6 +21,7 @@ func TestCatalog(t *testing.T) {
 
 	cat, err := rt.NewCatalogService(ctx, instanceID)
 	require.NoError(t, err)
+	defer cat.Close()
 
 	sourcePath := "/sources/ad_bids_source.yaml"
 	modelPath := "/models/ad_bids.sql"

@@ -4,7 +4,7 @@
   import TabGroup from "@rilldata/web-common/components/tab/TabGroup.svelte";
   import {
     createRuntimeServiceListConnectors,
-    V1Connector,
+    V1ConnectorSpec,
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import { appScreen } from "../../../layout/app-store";
@@ -19,7 +19,7 @@
 
   const dispatch = createEventDispatcher();
 
-  let selectedConnector: V1Connector;
+  let selectedConnector: V1ConnectorSpec;
 
   const TAB_ORDER = [
     "gcs",
@@ -56,7 +56,7 @@
     dispatch("close");
   }
 
-  function setDefaultConnector(connectors: V1Connector[]) {
+  function setDefaultConnector(connectors: V1ConnectorSpec[]) {
     if (connectors?.length > 0) {
       selectedConnector = connectors[0];
     }

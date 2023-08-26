@@ -3,7 +3,11 @@
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
-  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import {
+    useDashboardStore,
+    useFetchTimeRange,
+    useComparisonRange,
+  } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import {
     humanizeDataType,
     FormatPreset,
@@ -32,11 +36,14 @@
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   import { prepareTimeSeries } from "./utils";
+  import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
 
   export let metricViewName;
   export let workspaceWidth: number;
 
   $: dashboardStore = useDashboardStore(metricViewName);
+  $: fetchTimeStore = useFetchTimeRange(metricViewName);
+  $: comparisonStore = useComparisonRange(metricViewName);
 
   $: instanceId = $runtime.instanceId;
 
@@ -64,15 +71,15 @@
     name = $dashboardStore?.selectedTimeRange?.name;
   }
 
-  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
-  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
+  $: timeStart = $fetchTimeStore?.start?.toISOString();
+  $: timeEnd = $fetchTimeStore?.end?.toISOString();
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      timeStart: timeStart,
-      timeEnd: timeEnd,
+      timeStart,
+      timeEnd,
       filter: $dashboardStore?.filters,
     },
     {
@@ -85,10 +92,8 @@
   /** Generate the big number comparison query */
   $: displayComparison = showComparison;
 
-  $: comparisonTimeStart =
-    $dashboardStore?.selectedComparisonTimeRange?.start?.toISOString();
-  $: comparisonTimeEnd =
-    $dashboardStore?.selectedComparisonTimeRange?.end?.toISOString();
+  $: comparisonTimeStart = $comparisonStore?.start;
+  $: comparisonTimeEnd = $comparisonStore?.end;
   $: totalsComparisonQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     metricViewName,
@@ -198,6 +203,8 @@
 
   // formattedData adjusts the data to account for Javascript's handling of timezones
   let formattedData;
+  let scrubStart;
+  let scrubEnd;
   $: if (dataCopy && dataCopy?.length) {
     formattedData = prepareTimeSeries(
       dataCopy,
@@ -209,11 +216,20 @@
       cas,
       cae
     );
+
+    // adjust scrub values for Javascript's timezone changes
+    scrubStart = adjustOffsetForZone(
+      $dashboardStore?.selectedScrubRange?.start,
+      $dashboardStore?.selectedTimezone
+    );
+    scrubEnd = adjustOffsetForZone(
+      $dashboardStore?.selectedScrubRange?.end,
+      $dashboardStore?.selectedTimezone
+    );
   }
 
 
   let mouseoverValue = undefined;
-
   let startValue: Date;
   let endValue: Date;
 
@@ -317,11 +333,15 @@
           <div class="p-5"><CrossIcon /></div>
         {:else if formattedData}
           <MeasureChart
+            isScrubbing={$dashboardStore?.selectedScrubRange?.isScrubbing}
+            {scrubStart}
+            {scrubEnd}
             bind:mouseoverValue
+            {metricViewName}
             data={formattedData}
+            zone={$dashboardStore?.selectedTimezone}
             xAccessor="ts_position"
             labelAccessor="ts"
-            zone={$dashboardStore?.selectedTimezone}
             timeGrain={interval}
             yAccessor={measure.name}
             xMin={startValue}

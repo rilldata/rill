@@ -1,7 +1,7 @@
 ---
-title: Roles and permissions
+title: Roles and Permissions
 description: Learn more about roles and permissions for organizations and projects in Rill Cloud
-sidebar_label: Roles and permissions
+sidebar_label: Roles and Permissions
 sidebar_position: 30
 ---
 

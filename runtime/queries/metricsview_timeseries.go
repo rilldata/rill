@@ -18,17 +18,19 @@ import (
 )
 
 type MetricsViewTimeSeries struct {
-	MetricsViewName string                       `json:"metrics_view_name,omitempty"`
-	MeasureNames    []string                     `json:"measure_names,omitempty"`
-	InlineMeasures  []*runtimev1.InlineMeasure   `json:"inline_measures,omitempty"`
-	TimeStart       *timestamppb.Timestamp       `json:"time_start,omitempty"`
-	TimeEnd         *timestamppb.Timestamp       `json:"time_end,omitempty"`
-	Limit           int64                        `json:"limit,omitempty"`
-	Offset          int64                        `json:"offset,omitempty"`
-	Sort            []*runtimev1.MetricsViewSort `json:"sort,omitempty"`
-	Filter          *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
-	TimeGranularity runtimev1.TimeGrain          `json:"time_granularity,omitempty"`
-	TimeZone        string                       `json:"time_zone,omitempty"`
+	MetricsViewName  string                             `json:"metrics_view_name,omitempty"`
+	MeasureNames     []string                           `json:"measure_names,omitempty"`
+	InlineMeasures   []*runtimev1.InlineMeasure         `json:"inline_measures,omitempty"`
+	TimeStart        *timestamppb.Timestamp             `json:"time_start,omitempty"`
+	TimeEnd          *timestamppb.Timestamp             `json:"time_end,omitempty"`
+	Limit            int64                              `json:"limit,omitempty"`
+	Offset           int64                              `json:"offset,omitempty"`
+	Sort             []*runtimev1.MetricsViewSort       `json:"sort,omitempty"`
+	Filter           *runtimev1.MetricsViewFilter       `json:"filter,omitempty"`
+	TimeGranularity  runtimev1.TimeGrain                `json:"time_granularity,omitempty"`
+	TimeZone         string                             `json:"time_zone,omitempty"`
+	MetricsView      *runtimev1.MetricsView             `json:"-"`
+	ResolvedMVPolicy *runtime.ResolvedMetricsViewPolicy `json:"policy"`
 
 	Result *runtimev1.MetricsViewTimeSeriesResponse `json:"-"`
 }
@@ -40,7 +42,7 @@ func (q *MetricsViewTimeSeries) Key() string {
 	if err != nil {
 		panic(err)
 	}
-	return fmt.Sprintf("MetricsViewTimeSeries:%s", string(r))
+	return fmt.Sprintf("MetricsViewTimeSeries:%s", r)
 }
 
 func (q *MetricsViewTimeSeries) Deps() []string {
@@ -64,19 +66,15 @@ func (q *MetricsViewTimeSeries) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	mv, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
-	if err != nil {
-		return err
-	}
-
-	if mv.TimeDimension == "" {
+	if q.MetricsView.TimeDimension == "" {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
-	olap, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID)
 	if err != nil {
 		return err
 	}
+	defer release()
 
 	sql, tsAlias, args, err := q.buildMetricsTimeseriesSQL(olap, mv)
 	if err != nil {
@@ -216,7 +214,7 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 	}
 
 	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, drivers.DialectDruid)
+		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, drivers.DialectDruid, policy)
 		if err != nil {
 			return "", "", nil, err
 		}

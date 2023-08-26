@@ -7,22 +7,15 @@ A slot is provided to change the text within the button.
 
 -->
 <script lang="ts">
-  import { createEventDispatcher, setContext } from "svelte";
+  import { createEventDispatcher } from "svelte";
   import type { Alignment, Location } from "../../floating-element/types";
   import { SelectButton, WithSelectMenu } from "../index";
+  import type { SelectMenuItem } from "../types";
 
-  export let options;
-  export let selection;
-  export let tailwindClasses = undefined;
-  export let activeTailwindClasses = undefined;
-  /** When true, will make the trigger element a block-level element.
-   * This is most useful when embedding a select menu in a table or wherever
-   * a block-level treatment is needed.
-   */
-  export let block = false;
-  export let level: undefined | "error" = undefined;
-  export let dark: boolean = undefined;
-  export let disabled = false;
+  export let options: SelectMenuItem[];
+  export let selection: SelectMenuItem;
+  // this is fixed text that will always be displayed in the button
+  export let fixedText = "";
 
   /* For multiSelect maintain array of keys in the consumer */
   export let multiSelect = false;
@@ -34,11 +27,7 @@ A slot is provided to change the text within the button.
   export let paddingTop = 1;
   export let paddingBottom = 1;
 
-  export let label: undefined | string = undefined;
-
-  if (dark) {
-    setContext("rill:menu:dark", dark);
-  }
+  export let ariaLabel: undefined | string = undefined;
 
   const dispatch = createEventDispatcher();
 </script>
@@ -47,7 +36,6 @@ A slot is provided to change the text within the button.
 <WithSelectMenu
   {paddingTop}
   {paddingBottom}
-  {dark}
   {location}
   {alignment}
   {distance}
@@ -63,23 +51,11 @@ A slot is provided to change the text within the button.
   let:active
 >
   <SelectButton
-    on:click={() => {
-      if (!disabled) {
-        toggleMenu();
-      }
-    }}
-    {tailwindClasses}
-    {activeTailwindClasses}
+    on:click={toggleMenu}
+    tailwindClasses="overflow-hidden"
     {active}
-    {block}
-    {disabled}
-    {level}
-    {label}
+    label={ariaLabel}
   >
-    <slot>
-      <div>
-        {selection?.main || ""}
-      </div>
-    </slot>
+    {fixedText} <span class="font-bold truncate">{selection?.main}</span>
   </SelectButton>
 </WithSelectMenu>

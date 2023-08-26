@@ -21,7 +21,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
-	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -317,13 +316,24 @@ func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
 }
 
 func (s *Server) addInstanceRequestAttributes(ctx context.Context, instanceID string) {
-	instance, err := s.runtime.FindInstance(ctx, instanceID)
+	attrs := s.runtime.GetInstanceAttributes(ctx, instanceID)
+	observability.AddRequestAttributes(ctx, attrs...)
+}
 
-	if err == nil && instance != nil {
-		var attrs []attribute.KeyValue
-		for k, v := range instance.Annotations {
-			attrs = append(attrs, attribute.String(k, v))
-		}
-		observability.AddRequestAttributes(ctx, attrs...)
+func (s *Server) IssueDevJWT(ctx context.Context, req *runtimev1.IssueDevJWTRequest) (*runtimev1.IssueDevJWTResponse, error) {
+	attr := map[string]any{
+		"name":   req.Name,
+		"email":  req.Email,
+		"domain": req.Email[strings.LastIndex(req.Email, "@")+1:],
+		"groups": req.Groups,
+		"admin":  req.Admin,
 	}
+
+	jwt, err := auth.NewDevToken(attr)
+	if err != nil {
+		return nil, err
+	}
+	return &runtimev1.IssueDevJWTResponse{
+		Jwt: jwt,
+	}, nil
 }

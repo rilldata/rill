@@ -594,15 +594,21 @@ func TestServer_MetricsViewTimeseries_export_xlsx(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	ctx := testCtx()
+	mvName := "ad_bids_metrics"
+	mv, policy, err := resolveMVAndPolicy(ctx, server.runtime, instanceId, mvName)
+	require.NoError(t, err)
+
 	q := &queries.MetricsViewTimeSeries{
-		MetricsViewName: "ad_bids_metrics",
-		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
-		MeasureNames:    []string{"measure_0"},
+		MetricsViewName:  "ad_bids_metrics",
+		TimeGranularity:  runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		MeasureNames:     []string{"measure_0"},
+		MetricsView:      mv,
+		ResolvedMVPolicy: policy,
 	}
 
 	var buf bytes.Buffer
 
-	err := q.Export(ctx, server.runtime, instanceId, &buf, &runtime.ExportOptions{
+	err = q.Export(ctx, server.runtime, instanceId, &buf, &runtime.ExportOptions{
 		Format: runtimev1.ExportFormat_EXPORT_FORMAT_XLSX,
 	})
 	require.NoError(t, err)
@@ -622,15 +628,21 @@ func TestServer_MetricsViewTimeseries_export_csv(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	ctx := testCtx()
+	mvName := "ad_bids_metrics"
+	mv, policy, err := resolveMVAndPolicy(ctx, server.runtime, instanceId, mvName)
+	require.NoError(t, err)
+
 	q := &queries.MetricsViewTimeSeries{
-		MetricsViewName: "ad_bids_metrics",
-		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
-		MeasureNames:    []string{"measure_0"},
+		MetricsViewName:  "ad_bids_metrics",
+		TimeGranularity:  runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		MeasureNames:     []string{"measure_0"},
+		MetricsView:      mv,
+		ResolvedMVPolicy: policy,
 	}
 
 	var buf bytes.Buffer
 
-	err := q.Export(ctx, server.runtime, instanceId, &buf, &runtime.ExportOptions{
+	err = q.Export(ctx, server.runtime, instanceId, &buf, &runtime.ExportOptions{
 		Format: runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
 	})
 	require.NoError(t, err)

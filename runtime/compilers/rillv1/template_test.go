@@ -70,3 +70,15 @@ func TestAnalyze(t *testing.T) {
 		})
 	}
 }
+
+func TestResolve(t *testing.T) {
+	template := "SELECT partner_id FROM domain_partner_mapping WHERE domain = '{{ .user.domain }}' and groups IN ('{{ .user.groups | join \"', '\" }}')"
+	resolved, err := ResolveTemplate(template, TemplateData{
+		User: map[string]any{
+			"domain": "rilldata.com",
+			"groups": []string{"admin", "user"},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "SELECT partner_id FROM domain_partner_mapping WHERE domain = 'rilldata.com' and groups IN ('admin', 'user')", resolved)
+}

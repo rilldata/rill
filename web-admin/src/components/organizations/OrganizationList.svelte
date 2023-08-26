@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createAdminServiceListOrganizations } from "../../client";
-  import ProjectList from "./ProjectList.svelte";
+  import ProjectList from "../projects/ProjectList.svelte";
 
   const orgs = createAdminServiceListOrganizations();
 </script>

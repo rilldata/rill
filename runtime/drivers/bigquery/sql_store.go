@@ -39,6 +39,8 @@ func (c *Connection) Query(ctx context.Context, props map[string]any, sql string
 	q := client.Query(sql)
 	it, err := q.Read(ctx)
 	if err != nil && !strings.Contains(err.Error(), "Syntax error") {
+		// close the read storage API client
+		client.Close()
 		c.logger.Info("query failed, retrying without storage api", zap.Error(err))
 		// the query results are always cached in a temporary table that storage api can use
 		// there are some exceptions when results aren't cached
