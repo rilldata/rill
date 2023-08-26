@@ -76,7 +76,14 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 	defer release()
 
-	sql, tsAlias, args, err := q.buildMetricsTimeseriesSQL(olap, mv)
+	obj, err := rt.GetCatalogEntry(ctx, instanceID, q.MetricsViewName)
+	if err != nil {
+		return err
+	}
+
+	mv := obj.GetMetricsView()
+
+	sql, tsAlias, args, err := q.buildMetricsTimeseriesSQL(olap, mv, q.ResolvedMVPolicy)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -147,10 +154,12 @@ func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime,
 		return err
 	}
 
-	mv, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
+	obj, err := rt.GetCatalogEntry(ctx, instanceID, q.MetricsViewName)
 	if err != nil {
 		return err
 	}
+
+	mv := obj.GetMetricsView()
 
 	if opts.PreWriteHook != nil {
 		err = opts.PreWriteHook(q.generateFilename(mv))
@@ -190,7 +199,7 @@ func (q *MetricsViewTimeSeries) generateFilename(mv *runtimev1.MetricsView) stri
 	return filename
 }
 
-func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore, mv *runtimev1.MetricsView) (string, string, []any, error) {
+func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore, mv *runtimev1.MetricsView, policy *runtime.ResolvedMetricsViewPolicy) (string, string, []any, error) {
 	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
 	if err != nil {
 		return "", "", nil, err
