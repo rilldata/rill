@@ -1,5 +1,6 @@
 import { prepareTimeSeries } from "./utils";
 import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
+import { expect, test } from 'vitest'
 
 test("should fill in missing intervals", () => {
 
