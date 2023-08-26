@@ -123,6 +123,11 @@
     Error
   >;
 
+  let ast,
+      ae,
+      cas,
+      cae;
+
   $: if (
     $dashboardStore &&
     metaQuery &&
@@ -136,6 +141,8 @@
       $dashboardStore?.selectedTimezone,
       interval
     );
+    ast = adjustedStart;
+    ae = adjustedEnd
 
     timeSeriesQuery = createQueryServiceMetricsViewTimeSeries(
       instanceId,
@@ -157,6 +164,8 @@
           $dashboardStore?.selectedTimezone,
           interval
         );
+      cas = compAdjustedStart;
+      cae = compAdjustedEnd;
 
       timeSeriesComparisonQuery = createQueryServiceMetricsViewTimeSeries(
         instanceId,
@@ -194,9 +203,14 @@
       dataCopy,
       dataComparisonCopy,
       TIME_GRAIN[interval].duration,
-      $dashboardStore.selectedTimezone
+      $dashboardStore.selectedTimezone,
+      ast,
+      ae,
+      cas,
+      cae
     );
   }
+
 
   let mouseoverValue = undefined;
 

@@ -1,6 +1,7 @@
 import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
 import { getDurationMultiple, getOffset } from "../../../lib/time/transforms";
 import { TimeOffsetType } from "../../../lib/time/types";
+import {DateTime} from "luxon";
 
 /** sets extents to 0 if it makes sense; otherwise, inflates each extent component */
 export function niceMeasureExtents(
@@ -40,20 +41,59 @@ export function prepareTimeSeries(
   original,
   comparison,
   timeGrainDuration: string,
-  zone: string
-) {
-  return original.map((originalPt, i) => {
-    const comparisonPt = comparison?.[i];
+  zone: string,
+  start: string,
+  end: string,
+  compStart?: string,
+  compEnd?: string
+): any[] {
+  let i = 0;
+  let j = 0;
+  let k = 0;
+  let dtStart = DateTime.fromISO(start, {zone});
+  dtStart = dtStart.startOf("hour")
+  let dtEnd = DateTime.fromISO(end, {zone}).startOf("hour");
+  let dtCompStart = DateTime.fromISO(compStart, {zone}).startOf("hour"); 
+  let dtCompEnd = DateTime.fromISO(compEnd, {zone}).startOf("hour"); 
 
-    const ts = adjustOffsetForZone(originalPt.ts, zone);
-    const offsetDuration = getDurationMultiple(timeGrainDuration, 0.5);
-    const ts_position = getOffset(ts, offsetDuration, TimeOffsetType.ADD);
-    return {
+  let result = [];
+
+  const offsetDuration = getDurationMultiple(timeGrainDuration, 0.5);
+  while (dtStart < dtEnd || dtCompStart < dtCompEnd) {
+    let ts = adjustOffsetForZone(dtStart.toISO(), zone);
+    let ts_position = getOffset(ts, offsetDuration, TimeOffsetType.ADD);
+    result.push({
       ts,
       ts_position,
-      bin: originalPt.bin,
-      ...originalPt.records,
-      ...toComparisonKeys(comparisonPt || {}, offsetDuration, zone),
-    };
-  });
+    });
+
+    if (i < original.length && dtStart.equals(DateTime.fromISO(original[i].ts, {zone}))) {
+      result[j] = {
+        ...result[j],
+        ...original[i].records,
+      };
+      i++;
+    } 
+    if (comparison) {
+      if (k < comparison.length && dtCompStart.equals(DateTime.fromISO(comparison[k].ts, {zone}))) {
+        result[j] = {
+          ...result[j],
+          ...toComparisonKeys(comparison[k], offsetDuration, zone),
+        };
+        k++;
+      } else {
+        result[j] = {
+            ...result[j],
+            ...toComparisonKeys({
+              ts: dtCompStart.toISO()
+            }, offsetDuration, zone),
+          };
+      }
+    }
+    dtStart = dtStart.plus({hours: 1});
+    dtCompStart = dtCompStart.plus({hours: 1});
+    j++;
+  }
+
+  return result;
 }
