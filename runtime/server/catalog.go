@@ -48,7 +48,7 @@ func (s *Server) ListCatalogEntries(ctx context.Context, req *runtimev1.ListCata
 			if policy != nil && !policy.HasAccess {
 				continue
 			}
-			newMv := filterDimensions(policy, mv)
+			newMv := filterDimensionsAndMeasures(policy, mv)
 			pb, err = mvCatalogObjectToPB(entry, newMv)
 			if err != nil {
 				return nil, status.Error(codes.Unknown, err.Error())
@@ -94,7 +94,7 @@ func (s *Server) GetCatalogEntry(ctx context.Context, req *runtimev1.GetCatalogE
 		if policy != nil && !policy.HasAccess {
 			return nil, ErrForbidden
 		}
-		newMv := filterDimensions(policy, mv)
+		newMv := filterDimensionsAndMeasures(policy, mv)
 		pb, err = mvCatalogObjectToPB(entry, newMv)
 		if err != nil {
 			return nil, status.Error(codes.Unknown, err.Error())
@@ -109,13 +109,14 @@ func (s *Server) GetCatalogEntry(ctx context.Context, req *runtimev1.GetCatalogE
 	return &runtimev1.GetCatalogEntryResponse{Entry: pb}, nil
 }
 
-// Filters the dimensions of a metrics view based on the policy, if something is filtered out, it creates a new metrics view
+// Filters the dimensions and measures of a metrics view based on the policy, if something is filtered out, it creates a new metrics view
 // otherwise it returns the original metrics view
-func filterDimensions(policy *runtime.ResolvedMetricsViewPolicy, mv *runtimev1.MetricsView) *runtimev1.MetricsView {
+func filterDimensionsAndMeasures(policy *runtime.ResolvedMetricsViewPolicy, mv *runtimev1.MetricsView) *runtimev1.MetricsView {
 	if policy == nil {
 		return mv
 	}
 	allowedDims := make([]*runtimev1.MetricsView_Dimension, 0)
+	allowedMeasures := make([]*runtimev1.MetricsView_Measure, 0)
 
 	if len(policy.Include) > 0 {
 		allowed := make(map[string]bool)
@@ -127,8 +128,14 @@ func filterDimensions(policy *runtime.ResolvedMetricsViewPolicy, mv *runtimev1.M
 				allowedDims = append(allowedDims, dim)
 			}
 		}
+		for _, measure := range mv.Measures {
+			if allowed[measure.Name] {
+				allowedMeasures = append(allowedMeasures, measure)
+			}
+		}
 		newMv := proto.Clone(mv).(*runtimev1.MetricsView)
 		newMv.Dimensions = allowedDims
+		newMv.Measures = allowedMeasures
 		return newMv
 	} else if len(policy.Exclude) > 0 {
 		restricted := make(map[string]bool)
@@ -140,8 +147,14 @@ func filterDimensions(policy *runtime.ResolvedMetricsViewPolicy, mv *runtimev1.M
 				allowedDims = append(allowedDims, dim)
 			}
 		}
+		for _, measure := range mv.Measures {
+			if !restricted[measure.Name] {
+				allowedMeasures = append(allowedMeasures, measure)
+			}
+		}
 		newMv := proto.Clone(mv).(*runtimev1.MetricsView)
 		newMv.Dimensions = allowedDims
+		newMv.Measures = allowedMeasures
 		return newMv
 	}
 	return mv

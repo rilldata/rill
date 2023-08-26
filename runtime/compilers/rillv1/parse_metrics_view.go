@@ -201,7 +201,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 					return fmt.Errorf("invalid 'policy': 'include' fields must have a valid 'name' and 'if' condition")
 				}
 				if !names[include.Name] {
-					return fmt.Errorf("invalid 'policy': 'include' property %q does not exists in dimensions list", include.Name)
+					return fmt.Errorf("invalid 'policy': 'include' property %q does not exists in dimensions or measures list", include.Name)
 				}
 				cond, err := ResolveTemplate(include.Condition, templateData)
 				if err != nil {
@@ -219,7 +219,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 					return fmt.Errorf("invalid 'policy': 'include' fields must have a valid 'name' and 'if' condition")
 				}
 				if !names[exclude.Name] {
-					return fmt.Errorf("invalid 'policy': 'exclude' property %q does not exists in dimensions list", exclude.Name)
+					return fmt.Errorf("invalid 'policy': 'exclude' property %q does not exists in dimensions or measures list", exclude.Name)
 				}
 				cond, err := ResolveTemplate(exclude.Condition, templateData)
 				if err != nil {

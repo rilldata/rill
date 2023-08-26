@@ -344,6 +344,8 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 		metrics.Label = metrics.DisplayName
 	}
 
+	names := map[string]bool{}
+
 	// remove ignored measures and dimensions
 	var measures []*Measure
 	for _, measure := range metrics.Measures {
@@ -351,11 +353,11 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 			continue
 		}
 		measures = append(measures, measure)
+		if measure.Name != "" {
+			names[measure.Name] = true
+		}
 	}
 	metrics.Measures = measures
-
-	// create a map of dimensions to be used for policy validation
-	dimensionsMap := map[string]bool{}
 
 	var dimensions []*Dimension
 	for _, dimension := range metrics.Dimensions {
@@ -367,28 +369,14 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 			dimension.Column = dimension.Property
 		}
 		dimensions = append(dimensions, dimension)
-		dimensionsMap[dimension.Column] = true
+
+		if dimension.Name != "" {
+			names[dimension.Name] = true
+		} else if dimension.Column != "" {
+			names[dimension.Column] = true
+		}
 	}
 	metrics.Dimensions = dimensions
-
-	apiMetrics := &runtimev1.MetricsView{}
-
-	// validate correctness of default time range
-	if metrics.DefaultTimeRange != "" {
-		_, err := duration.ParseISO8601(metrics.DefaultTimeRange)
-		if err != nil {
-			return nil, fmt.Errorf("invalid default_time_range: %w", err)
-		}
-		apiMetrics.DefaultTimeRange = metrics.DefaultTimeRange
-	}
-
-	// validate time zone locations
-	for _, tz := range metrics.AvailableTimeZones {
-		_, err := time.LoadLocation(tz)
-		if err != nil {
-			return nil, err
-		}
-	}
 
 	if metrics.Policy != nil {
 		templateData := rillv1.TemplateData{User: map[string]interface{}{
@@ -421,12 +409,31 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 			return nil, errors.New("invalid 'policy': only one of 'include' and 'exclude' can be specified")
 		}
 
-		err := validatedPolicyFieldList(metrics.Policy.Include, dimensionsMap, "include", templateData)
+		err := validatedPolicyFieldList(metrics.Policy.Include, names, "include", templateData)
 		if err != nil {
 			return nil, err
 		}
 
-		err = validatedPolicyFieldList(metrics.Policy.Exclude, dimensionsMap, "exclude", templateData)
+		err = validatedPolicyFieldList(metrics.Policy.Exclude, names, "exclude", templateData)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	apiMetrics := &runtimev1.MetricsView{}
+
+	// validate correctness of default time range
+	if metrics.DefaultTimeRange != "" {
+		_, err := duration.ParseISO8601(metrics.DefaultTimeRange)
+		if err != nil {
+			return nil, fmt.Errorf("invalid default_time_range: %w", err)
+		}
+		apiMetrics.DefaultTimeRange = metrics.DefaultTimeRange
+	}
+
+	// validate time zone locations
+	for _, tz := range metrics.AvailableTimeZones {
+		_, err := time.LoadLocation(tz)
 		if err != nil {
 			return nil, err
 		}
@@ -473,15 +480,15 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 	}, nil
 }
 
-func validatedPolicyFieldList(fieldConditions []*ConditionalColumn, dimensions map[string]bool, property string, templateData rillv1.TemplateData) error {
+func validatedPolicyFieldList(fieldConditions []*ConditionalColumn, names map[string]bool, property string, templateData rillv1.TemplateData) error {
 	if len(fieldConditions) > 0 {
 		for _, field := range fieldConditions {
 			if field.Name == "" || field.Condition == "" {
 				return fmt.Errorf("invalid 'policy': '%s' fields must have a valid 'name' and 'if' condition", property)
 			}
 			// check the name is a valid dimension that exists in the metrics view
-			if !dimensions[field.Name] {
-				return fmt.Errorf("invalid 'policy': '%s' property %q does not exists in dimensions list", property, field.Name)
+			if !names[field.Name] {
+				return fmt.Errorf("invalid 'policy': '%s' property %q does not exists in dimensions or measures list", property, field.Name)
 			}
 			cond, err := rillv1.ResolveTemplate(field.Condition, templateData)
 			if err != nil {
