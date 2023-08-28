@@ -521,6 +521,21 @@ func (c *connection) FindUsersByEmailPattern(ctx context.Context, emailPattern, 
 	return res, nil
 }
 
+// SearchProjectUsers searches for users that have access to the project.
+func (c *connection) SearchProjectUsers(ctx context.Context, projectID, emailQuery, afterEmail string, limit int) ([]*database.User, error) {
+	var res []*database.User
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT u.* FROM users u
+		JOIN users_projects_roles upr ON u.id = upr.user_id
+		JOIN project_roles r ON r.id = upr.project_role_id 
+		WHERE upr.project_id=$1 AND lower(u.email) ILIKE lower($2) AND lower(u.email) > lower($3)
+		ORDER BY lower(u.email) LIMIT $3`, projectID, emailQuery, afterEmail, limit)
+	if err != nil {
+		return nil, parseErr("users", err)
+	}
+	return res, nil
+}
+
 func (c *connection) InsertUser(ctx context.Context, opts *database.InsertUserOptions) (*database.User, error) {
 	if err := database.Validate(opts); err != nil {
 		return nil, err

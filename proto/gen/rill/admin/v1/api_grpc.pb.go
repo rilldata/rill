@@ -57,7 +57,9 @@ const (
 	AdminService_ListWhitelistedDomains_FullMethodName       = "/rill.admin.v1.AdminService/ListWhitelistedDomains"
 	AdminService_GetUser_FullMethodName                      = "/rill.admin.v1.AdminService/GetUser"
 	AdminService_SearchUsers_FullMethodName                  = "/rill.admin.v1.AdminService/SearchUsers"
+	AdminService_SearchProjectUsers_FullMethodName           = "/rill.admin.v1.AdminService/SearchProjectUsers"
 	AdminService_ListSuperusers_FullMethodName               = "/rill.admin.v1.AdminService/ListSuperusers"
+	AdminService_GetDeploymentCredentials_FullMethodName     = "/rill.admin.v1.AdminService/GetDeploymentCredentials"
 	AdminService_SetSuperuser_FullMethodName                 = "/rill.admin.v1.AdminService/SetSuperuser"
 	AdminService_SudoGetResource_FullMethodName              = "/rill.admin.v1.AdminService/SudoGetResource"
 	AdminService_SudoUpdateUserQuotas_FullMethodName         = "/rill.admin.v1.AdminService/SudoUpdateUserQuotas"
@@ -157,8 +159,12 @@ type AdminServiceClient interface {
 	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*GetUserResponse, error)
 	// GetUsersByEmail returns users by email
 	SearchUsers(ctx context.Context, in *SearchUsersRequest, opts ...grpc.CallOption) (*SearchUsersResponse, error)
+	// SearchProjectUsers returns users who has access to to a project (including org members that have access through a usergroup)
+	SearchProjectUsers(ctx context.Context, in *SearchProjectUsersRequest, opts ...grpc.CallOption) (*SearchProjectUsersResponse, error)
 	// ListSuperusers lists all the superusers
 	ListSuperusers(ctx context.Context, in *ListSuperusersRequest, opts ...grpc.CallOption) (*ListSuperusersResponse, error)
+	// GetDeploymentCredentials returns runtime info and JWT on behalf of a specific user, or alternatively for a raw set of JWT attributes
+	GetDeploymentCredentials(ctx context.Context, in *GetDeploymentCredentialsRequest, opts ...grpc.CallOption) (*GetDeploymentCredentialsResponse, error)
 	// SetSuperuser adds/remove a superuser
 	SetSuperuser(ctx context.Context, in *SetSuperuserRequest, opts ...grpc.CallOption) (*SetSuperuserResponse, error)
 	// SudoGetResource returns details about a resource by ID lookup
@@ -543,9 +549,27 @@ func (c *adminServiceClient) SearchUsers(ctx context.Context, in *SearchUsersReq
 	return out, nil
 }
 
+func (c *adminServiceClient) SearchProjectUsers(ctx context.Context, in *SearchProjectUsersRequest, opts ...grpc.CallOption) (*SearchProjectUsersResponse, error) {
+	out := new(SearchProjectUsersResponse)
+	err := c.cc.Invoke(ctx, AdminService_SearchProjectUsers_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) ListSuperusers(ctx context.Context, in *ListSuperusersRequest, opts ...grpc.CallOption) (*ListSuperusersResponse, error) {
 	out := new(ListSuperusersResponse)
 	err := c.cc.Invoke(ctx, AdminService_ListSuperusers_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetDeploymentCredentials(ctx context.Context, in *GetDeploymentCredentialsRequest, opts ...grpc.CallOption) (*GetDeploymentCredentialsResponse, error) {
+	out := new(GetDeploymentCredentialsResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetDeploymentCredentials_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -777,8 +801,12 @@ type AdminServiceServer interface {
 	GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error)
 	// GetUsersByEmail returns users by email
 	SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error)
+	// SearchProjectUsers returns users who has access to to a project (including org members that have access through a usergroup)
+	SearchProjectUsers(context.Context, *SearchProjectUsersRequest) (*SearchProjectUsersResponse, error)
 	// ListSuperusers lists all the superusers
 	ListSuperusers(context.Context, *ListSuperusersRequest) (*ListSuperusersResponse, error)
+	// GetDeploymentCredentials returns runtime info and JWT on behalf of a specific user, or alternatively for a raw set of JWT attributes
+	GetDeploymentCredentials(context.Context, *GetDeploymentCredentialsRequest) (*GetDeploymentCredentialsResponse, error)
 	// SetSuperuser adds/remove a superuser
 	SetSuperuser(context.Context, *SetSuperuserRequest) (*SetSuperuserResponse, error)
 	// SudoGetResource returns details about a resource by ID lookup
@@ -932,8 +960,14 @@ func (UnimplementedAdminServiceServer) GetUser(context.Context, *GetUserRequest)
 func (UnimplementedAdminServiceServer) SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchUsers not implemented")
 }
+func (UnimplementedAdminServiceServer) SearchProjectUsers(context.Context, *SearchProjectUsersRequest) (*SearchProjectUsersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchProjectUsers not implemented")
+}
 func (UnimplementedAdminServiceServer) ListSuperusers(context.Context, *ListSuperusersRequest) (*ListSuperusersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListSuperusers not implemented")
+}
+func (UnimplementedAdminServiceServer) GetDeploymentCredentials(context.Context, *GetDeploymentCredentialsRequest) (*GetDeploymentCredentialsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDeploymentCredentials not implemented")
 }
 func (UnimplementedAdminServiceServer) SetSuperuser(context.Context, *SetSuperuserRequest) (*SetSuperuserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetSuperuser not implemented")
@@ -1680,6 +1714,24 @@ func _AdminService_SearchUsers_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_SearchProjectUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchProjectUsersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SearchProjectUsers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SearchProjectUsers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SearchProjectUsers(ctx, req.(*SearchProjectUsersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_ListSuperusers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListSuperusersRequest)
 	if err := dec(in); err != nil {
@@ -1694,6 +1746,24 @@ func _AdminService_ListSuperusers_Handler(srv interface{}, ctx context.Context, 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).ListSuperusers(ctx, req.(*ListSuperusersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetDeploymentCredentials_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDeploymentCredentialsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetDeploymentCredentials(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetDeploymentCredentials_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetDeploymentCredentials(ctx, req.(*GetDeploymentCredentialsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2146,8 +2216,16 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_SearchUsers_Handler,
 		},
 		{
+			MethodName: "SearchProjectUsers",
+			Handler:    _AdminService_SearchProjectUsers_Handler,
+		},
+		{
 			MethodName: "ListSuperusers",
 			Handler:    _AdminService_ListSuperusers_Handler,
+		},
+		{
+			MethodName: "GetDeploymentCredentials",
+			Handler:    _AdminService_GetDeploymentCredentials_Handler,
 		},
 		{
 			MethodName: "SetSuperuser",
