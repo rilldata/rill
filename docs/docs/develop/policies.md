@@ -1,8 +1,8 @@
 ---
-title: "Secure: Dashboards"
-description: Granular access policies for dashboards 
-sidebar_label: "Secure: Dashboards"
-sidebar_position: 30
+title: "Secure: Access policies"
+description: Granular, row-level security for dashboards
+sidebar_label: "Secure: Access policies"
+sidebar_position: 40
 ---
 
 :::caution
@@ -11,108 +11,123 @@ This is an experimental feature.
 
 :::
 
-Rill supports granular access policies for dashboards. You can define access policies for dashboards in the respective `dashboard_name.yaml` file under `policies` section.
-See policies configuration reference for all the possible options here.
+Rill supports granular access policies for dashboards. They allow the dashboard developer to configure dashboard-level, row-level and column-level restrictions based on user attributes such as email address and domain. Some of the typical use cases include:
 
-## Dashboard Policies
-Currently, Rill supports the following use cases for dashboards:
-- Dashboard level access - Based on this condition you can restrict access to a dashboard for specific users based on user attributes.
-- Row level filtering - Based on this condition you can restrict access to certain rows for a specific users based on user attributes.
-- Column level access - Based on this condition you can restrict access to certain columns in a dashboard for a specific users based on user attributes. 
-Currently only dimensions defined in the dashboard definition can be used for column level access.
+- Restricting access to certain dashboards to admin users
+- Limiting access to sensitive dimensions or measures to users from a specific department
+- Partner-filtered dashboards where external users can only see the subset of data that relates to them
 
-### User Attributes
-Following user attributes are available for defining policies:
-- `name` - name of the user. Example - `John Doe`    
-- `email` - email of the user. Example - `john.doe@example.com`
-- `domain` - domain of the email. Example - `example.com`
-- `groups` - _**list**_ of groups the user belongs to. Currently, we don't support custom user groups, so the only group available is `all`. Example - `all`
-- `admin` - whether the user is an admin or not. Example - `true`
+Note: Access policies only apply to users who have been invited to access the project. They provide granular access control for your data, but are not the first layer of security for your project.
 
-User attributes will be namespaced with `.user` prefix while being used, more in the example below
- 
+## Configuration
+
+You define access policies for dashboards under the `policy` key in a dashboard's YAML file. The key properties are:
+
+- Dashboard-level access: `has_access` – a boolean expression that determines if a user can or can't access the dashboard
+- Row-level access: `filter` – a SQL expression that will be injected into the `WHERE` clause of all dashboard queries to restrict access to a subset of rows
+- Column-level access: `include` or `exclude` – lists of boolean expressions that determine which dimension and measure names will be available to the user
+
+See the [Dashboard YAML](../reference/project-files/dashboards) reference docs for all the available fields.
+
+## User attributes
+
+When developing access policies, you can leverage a fixed set of user attributes to resolve access at runtime. The attributes are:
+
+- `.user.email` – the current user's email address, for example `john.doe@example.com` (string)
+- `.user.domain` – the domain of the current user's email address, for example `example.com` (string)
+- `.user.name` - the current user's name, for example `John Doe` (string)
+- `.user.admin` – a boolean value indicating whether the current user is an org or project admin, for example `true` (bool)
+<!-- PENDING SUPPORT FOR USER-DEFINED USERGROUPS -->
+<!-- - `.user.groups` - a list of usergroups the user belongs to in the project's org. Custom usergroups are not currently supported, so this will always be `["all"]`. -->
+
+Note: Rill requires users to confirm their email address before letting them interact with the platform. So a user can't trivially fake an email address or email domain.
+
+If you require additional user attributes to enforce access policies, see the example for custom attributes further down on this page.
+
+## Templating and expression evaluation
+
+During development, the expressions used in the policies are validated using dummy data. When a user loads a dashboard, the policies are then resolved in two phases:
+
+1. The templating engine first replaces expressions like `{{ .user.domain }}` with actual values
+2. The resulting expression is then evaluated contextually:
+  - The `filter` value is injected into the `WHERE` clause of the SQL queries used to render the dashboard
+  - The `has_access` and `if` values are resolved to a `true` or `false` value using the expression engine
+
+For more information about Rill's templating and expression engines, see the [Templating and expressions](../reference/templating-and-expressions) reference page.
+
 ## Examples
 
-1. Let's say you want to restrict access to a dashboard only to admin users. You can define the following policy in the `dashboard_name.yaml` file under `policy` section.
-    ```yaml 
-    policy:
-      has_access: "{{ .user.admin }} == true"
-    ```
-   > **_Note:_**  If `policy` section is defined and `has_access` is not, then it will resolve to `false` meaning dashboard won't be accessible to anyone.
-2. Along with the above policy, you also want to filter all counts/measures as per the user domain. Assuming you have a `domain` dimension in your model. You can define the following policy in the `dashboard_name.yaml` file under `policy` section.
-    ```yaml
-    policy:
-      has_access: "{{ .user.admin }} == true"
-      filter: "domain = '{{ .user.domain }}'"
-     ```
-   > **_Note:_**  `filter` condition needs to be a valid SQL `WHERE` clause. It will be injected in the queries after resolving the user attributes templating.
-3. Along with the above policy, you want to exclude certain dimension for user not having `example.com` domain. Assuming you have a `ssn` dimension in your model. You can define the following policy in the `dashboard_name.yaml` file under `policy` section.
-    ```yaml
-    policy:
-      has_access: "{{ .user.admin }} == true"
-      filter: "domain = '{{ .user.domain }}'"
-      exclude:
-        - name: ssn
-          if: "'{{ .user.domain }}' != 'example.com'"
-    ```
-   As per above ssn dimension will be excluded but all other dimensions will be included.
-4. Here's one example for column inclusion.
+### Restrict dashboard access to users matching specific criteria
 
-    ```yaml
-    policy:
-      has_access: "true"
-      filter: "domain = '{{ .user.domain }}'"
-      include:
-        - name: ssn
-          if: "{{ .user.admin }} == true"
-    ```
-   > **_Note:_** If include is defined all other dimensions will be excluded. Only one of the
-     `include`/`exclude` can be defined at a time.
-
-> **_Note:_** `has_access` and `if` conditions on `include`/`exclude` fields needs to be valid expressions that evaluates to true/false.
-
-## Advanced Examples
-Policies are resolved in two phases - 
-1. The templating engine replaces placeholder like this `{{ }}` with actual values
-2. For `has_access` and `if` conditions, the resultant expression is evaluated to true/false, whereas for `filter` condition the resultant expression is injected in the query.
-
-> **_Note:_** We use sprig templating engine for templating and govaluate for expression evaluation. So any valid operator/expression they support will work here. You can refer to their documentation for more details.
-[Here](http://masterminds.github.io/sprig/) are the supported sprig functions and [here](https://github.com/Knetic/govaluate/blob/master/MANUAL.md#operators) are the supported expression evaluation operators. 
-
-Now lets look at some advanced examples.
-
-1. Let's say you want to restrict access to a dashboard only to admin users or users belonging to `example.com` domain.
-    ```yaml 
-    policy:
-      has_access: "{{ .user.admin }} == true || '{{ .user.domain }}' == 'example.com'"
-    ```
-2. Let's say additionally we want to filter queries based on user's groups and there exist a `group` dimension in the model.
-    ```yaml 
-    policy:
-      has_access: "{{ .user.admin }} == true || '{{ .user.domain }}' == 'example.com'"
-      filter: "groups IN ('{{ .user.groups | join \"', '\" }}')"
-    ```
-
-### Custom attributes
-Sometimes you may want to use custom attributes for defining policies other than existing user attributes. For example, you may have a `department` dimension and want to filter the dashboard view as per the users department.
-You need to define the mapping of users to department as a separate [source](../reference/project-files/sources) in Rill. 
-Then you can refer to the source mapping in the policy. 
-
-For example, lets say we create a file named `mappings.csv` having the following data and put it in `data/` directory.
-```csv
-email,department
-john.doe@example.com,marketing
-jane.doe@example.com,tech
+Let's say you want to restrict dashboard access to admin users or users whose email domain is `example.com`. Add the following clause to your dashboard's YAML:
+```yaml 
+policy:
+  has_access: {{ .user.admin }} == true || '{{ .user.domain }}' == 'example.com'
 ```
-Now we can define a new source in `sources/mappings.yaml` file as follows:
-```yaml
-type: "local_file"
-path: "data/mappings.csv"
-``` 
 
-Now we can refer to this source in the policy as follows:
+> **_Note:_** If the `policy` section is defined and `has_access` is not, then `has_access` will default to `false`, meaning that it won't be accessible to anyone.
+
+### Show only data from the user's own domain
+
+You can force the dashboard to filter all dimension and measure values by the user's domain. Assuming your dashboard's model has a `domain` column, add the following clause to your dashboard's YAML:
+
 ```yaml
 policy:
-has_access: "{{ .user.admin }} == true || '{{ .user.domain }}' == 'example.com'"
-filter: "department IN (SELECT department FROM mappings WHERE email = '{{ .user.email }}' )"
+  has_access: true
+  filter: domain = '{{ .user.domain }}'
+```
+
+> **_Note:_** The `filter` value needs to be valid SQL syntax for a `WHERE` clause. It will be injected into every SQL query used to render the dashboard.
+
+### Conditionally hide a dashboard dimension or measure
+
+You can include or exclude dimensions and measures based on a boolean expression. For example, to exclude a dimension named `ssn` for users whose email domain is not `example.com`:
+
+```yaml
+policy:
+  has_access: true
+  exclude:
+    - name: ssn
+      if: '{{ .user.domain }}' != 'example.com'
+```
+
+Alternatively, you can explicitly define the dimensions and measures to include using the `include` key. It uses the same syntax as `exclude` and automatically exclude all names not explicitly defined in the list. See the [Dashboard YAML](../reference/project-files/dashboards) reference for details.
+
+<!-- PENDING SUPPORT FOR USER-DEFINED USERGROUPS -->
+<!--
+### Filter queries based on the user's groups
+
+Let's say additionally we want to filter queries based on user's groups and there exist a `group` dimension in the model:
+```yaml 
+policy:
+  has_access: true
+  filter: "groups IN ('{{ .user.groups | join \"', '\" }}')"
+```
+-->
+
+### Advanced Example: Custom attributes
+
+For some use cases, the built-in user attributes do not provide sufficient context to correctly restrict access. For example, a dashboard for a multi-tenant SaaS application might have a `tenant_id` column and external users should only be able to see data for the tenant they belong to.
+
+To support this, we can ingest a separate data [source](./import-data) containing mappings of user email addresses to tenant IDs and reference it in the row-level filter.
+
+For example, if we have a `mappings.csv` file in the `data` directory of our Rill project:
+```csv
+email,tenant_id
+john.doe@example.com,1
+jane.doe@example.com,2
+```
+we can ingest it as a regular data source in Rill:
+```yaml
+# sources/mappings.yaml
+type: local_file
+path: data/mappings.csv
+```
+(In practice, you would probably ingest the data from a regularly updated export in S3.)
+
+We can now refer to the mappings data using a SQL sub-query as follows:
+```yaml
+policy:
+  has_access: true
+  filter: tenant_id IN (SELECT tenant_id FROM mappings WHERE email = '{{ .user.email }}')
 ```
