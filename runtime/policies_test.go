@@ -313,6 +313,62 @@ func TestResolveMetricsView(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "test_composite_condition_1",
+			args: args{
+				attr: map[string]any{
+					"name":   "test",
+					"email":  "test@exclude.com",
+					"domain": "exclude.com",
+					"groups": []interface{}{"test"},
+					"admin":  true,
+				},
+				mv: &runtimev1.MetricsView{
+					Name: "test",
+					Policy: &runtimev1.MetricsView_Policy{
+						HasAccess: "'{{.user.domain}}' == 'rilldata.com' || '{{.user.domain}}' == 'gmail.com'",
+						Filter:    "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
+						Include:   nil,
+						Exclude:   nil,
+					},
+				},
+			},
+			want: &ResolvedMetricsViewPolicy{
+				HasAccess: false,
+				Filter:    "WHERE groups IN ('test')",
+				Include:   nil,
+				Exclude:   nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_composite_condition_2",
+			args: args{
+				attr: map[string]any{
+					"name":   "test",
+					"email":  "test@rilldata.com",
+					"domain": "rilldata.com",
+					"groups": []interface{}{"test"},
+					"admin":  true,
+				},
+				mv: &runtimev1.MetricsView{
+					Name: "test",
+					Policy: &runtimev1.MetricsView_Policy{
+						HasAccess: "('{{.user.domain}}' == 'rilldata.com' || '{{.user.domain}}' == 'gmail.com') && {{.user.admin}}",
+						Filter:    "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
+						Include:   nil,
+						Exclude:   nil,
+					},
+				},
+			},
+			want: &ResolvedMetricsViewPolicy{
+				HasAccess: true,
+				Filter:    "WHERE groups IN ('test')",
+				Include:   nil,
+				Exclude:   nil,
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
