@@ -324,7 +324,7 @@ func TestResolveMetricsView(t *testing.T) {
 					"admin":  true,
 				},
 				mv: &runtimev1.MetricsView{
-					Name: "test_group",
+					Name: "test",
 					Policy: &runtimev1.MetricsView_Policy{
 						HasAccess: "'{{.user.domain}}' == 'rilldata.com' || '{{.user.domain}}' == 'gmail.com'",
 						Filter:    "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
@@ -352,7 +352,7 @@ func TestResolveMetricsView(t *testing.T) {
 					"admin":  true,
 				},
 				mv: &runtimev1.MetricsView{
-					Name: "test_group",
+					Name: "test",
 					Policy: &runtimev1.MetricsView_Policy{
 						HasAccess: "('{{.user.domain}}' == 'rilldata.com' || '{{.user.domain}}' == 'gmail.com') && {{.user.admin}}",
 						Filter:    "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
