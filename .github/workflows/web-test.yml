@@ -108,3 +108,7 @@ jobs:
         run: |-
           npm run build -w web-admin
           npm run test -w web-admin
+
+      - name: Build & Test storybook
+        run: |-
+          npm run storybook:smoketest -w web-common
