@@ -60,7 +60,7 @@ During development, the expressions used in the policies are validated using dum
 Let's say you want to restrict dashboard access to admin users or users whose email domain is `example.com`. Add the following clause to your dashboard's YAML:
 ```yaml 
 policy:
-  has_access: {{ .user.admin }} == true || '{{ .user.domain }}' == 'example.com'
+  has_access: "{{ .user.admin }} == true || '{{ .user.domain }}' == 'example.com'"
 ```
 
 > **_Note:_** If the `policy` section is defined and `has_access` is not, then `has_access` will default to `false`, meaning that it won't be accessible to anyone.
@@ -72,7 +72,7 @@ You can force the dashboard to filter all dimension and measure values by the us
 ```yaml
 policy:
   has_access: true
-  filter: domain = '{{ .user.domain }}'
+  filter: "domain = '{{ .user.domain }}'"
 ```
 
 > **_Note:_** The `filter` value needs to be valid SQL syntax for a `WHERE` clause. It will be injected into every SQL query used to render the dashboard.
@@ -86,7 +86,7 @@ policy:
   has_access: true
   exclude:
     - name: ssn
-      if: '{{ .user.domain }}' != 'example.com'
+      if: "'{{ .user.domain }}' != 'example.com'"
 ```
 
 Alternatively, you can explicitly define the dimensions and measures to include using the `include` key. It uses the same syntax as `exclude` and automatically exclude all names not explicitly defined in the list. See the [Dashboard YAML](../reference/project-files/dashboards) reference for details.
@@ -127,5 +127,5 @@ We can now refer to the mappings data using a SQL sub-query as follows:
 ```yaml
 policy:
   has_access: true
-  filter: tenant_id IN (SELECT tenant_id FROM mappings WHERE email = '{{ .user.email }}')
+  filter: "tenant_id IN (SELECT tenant_id FROM mappings WHERE email = '{{ .user.email }}')"
 ```
