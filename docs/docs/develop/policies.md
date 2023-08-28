@@ -89,7 +89,7 @@ policy:
       if: "'{{ .user.domain }}' != 'example.com'"
 ```
 
-Alternatively, you can explicitly define the dimensions and measures to include using the `include` key. It uses the same syntax as `exclude` and automatically exclude all names not explicitly defined in the list. See the [Dashboard YAML](../reference/project-files/dashboards) reference for details.
+Alternatively, you can explicitly define the dimensions and measures to include using the `include` key. It uses the same syntax as `exclude` and automatically excludes all names not explicitly defined in the list. See the [Dashboard YAML](../reference/project-files/dashboards) reference for details.
 
 <!-- PENDING SUPPORT FOR USER-DEFINED USERGROUPS -->
 <!--
