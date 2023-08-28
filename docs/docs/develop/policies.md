@@ -109,7 +109,7 @@ For some use cases, the built-in user attributes do not provide sufficient conte
 
 To support this, we can ingest a separate data [source](./import-data) containing mappings of user email addresses to tenant IDs and reference it in the row-level filter.
 
-For example, if we have a `mappings.csv` file in the `data` directory of our Rill project:
+For example, if we have a `mappings.csv` file in the `data` directory of our Rill project with the following contents:
 ```csv
 email,tenant_id
 john.doe@example.com,1
