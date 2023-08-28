@@ -48,12 +48,10 @@ If you require additional user attributes to enforce access policies, see the ex
 
 During development, the expressions used in the policies are validated using dummy data. When a user loads a dashboard, the policies are then resolved in two phases:
 
-1. The templating engine first replaces expressions like `{{ .user.domain }}` with actual values
+1. The templating engine first replaces expressions like `{{ .user.domain }}` with actual values ([Templating reference](../reference/templating))
 2. The resulting expression is then evaluated contextually:
   - The `filter` value is injected into the `WHERE` clause of the SQL queries used to render the dashboard
-  - The `has_access` and `if` values are resolved to a `true` or `false` value using the expression engine
-
-For more information about Rill's templating and expression engines, see the [Templating and expressions](../reference/templating-and-expressions) reference page.
+  - The `has_access` and `if` values are resolved to a `true` or `false` value using the expression engine ([Expressions reference](../reference/expressions))
 
 ## Examples
 
