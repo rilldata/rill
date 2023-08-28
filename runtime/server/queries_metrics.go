@@ -48,6 +48,13 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 		return nil, ErrForbidden
 	}
 
+	// validate measures access
+	for _, m := range req.MeasureNames {
+		if !checkFieldAccess(m, policy) {
+			return nil, ErrForbidden
+		}
+	}
+
 	err = validateInlineMeasures(req.InlineMeasures)
 	if err != nil {
 		return nil, err
@@ -114,6 +121,13 @@ func (s *Server) MetricsViewComparisonToplist(ctx context.Context, req *runtimev
 		return nil, ErrForbidden
 	}
 
+	// validate measures access
+	for _, m := range req.MeasureNames {
+		if !checkFieldAccess(m, policy) {
+			return nil, ErrForbidden
+		}
+	}
+
 	err = validateInlineMeasures(req.InlineMeasures)
 	if err != nil {
 		return nil, err
@@ -166,6 +180,13 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		return nil, err
 	}
 
+	// validate measures access
+	for _, m := range req.MeasureNames {
+		if !checkFieldAccess(m, policy) {
+			return nil, ErrForbidden
+		}
+	}
+
 	err = validateInlineMeasures(req.InlineMeasures)
 	if err != nil {
 		return nil, err
@@ -212,6 +233,13 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 	mv, policy, err := resolveMVAndPolicy(ctx, s.runtime, req.InstanceId, req.MetricsViewName)
 	if err != nil {
 		return nil, err
+	}
+
+	// validate measures access
+	for _, m := range req.MeasureNames {
+		if !checkFieldAccess(m, policy) {
+			return nil, ErrForbidden
+		}
 	}
 
 	err = validateInlineMeasures(req.InlineMeasures)
