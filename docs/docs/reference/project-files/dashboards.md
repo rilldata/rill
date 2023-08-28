@@ -23,14 +23,14 @@ _**`smallest_time_grain`**_ — the smallest time granularity the user is allowe
 _**`available_time_zones`**_ — time zones that should be pinned to the top of the time zone selector _(optional)_. It should be a list of [IANA time zone identifiers](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).
 -->
 
-_**`dimensions`**_ — for exploring [segments](/develop/metrics-dashboard#dimensions) and filtering the dashboard _(required)_
+_**`dimensions`**_ — for exploring [segments](../../develop/metrics-dashboard#dimensions) and filtering the dashboard _(required)_
   - _**`column`**_ — a categorical column _(required)_ 
   - _**`name`**_ — a stable identifier for the dimension _(optional)_
   - _**`label`**_ — a label for your dashboard dimension _(optional)_ 
   - _**`description`**_ — a freeform text description of the dimension for your dashboard _(optional)_ 
   - _**`ignore`**_ — hides the dimension _(optional)_ 
 
-_**`measures`**_ — numeric [aggregates](/develop/metrics-dashboard#measures) of columns from your data model  _(required)_
+_**`measures`**_ — numeric [aggregates](../../develop/metrics-dashboard#measures) of columns from your data model  _(required)_
   - _**`expression`**_ — a combination of operators and functions for aggregations _(required)_ 
   - _**`name`**_ — a stable identifier for the measure _(required)_
   - _**`label`**_ — a label for your dashboard measure _(optional)_ 
@@ -43,3 +43,13 @@ _**`measures`**_ — numeric [aggregates](/develop/metrics-dashboard#measures) o
       - _`currency_usd`_ —  output rounded to 2 decimal points prepended with a dollar sign
       - _`percentage`_ — output transformed from a rate to a percentage appended with a percentage sign
       - _`comma_separators`_ — output transformed to decimal formal with commas every 3 digits
+
+_**`policy`**_ - define granular [access policies](../../develop/policies) for the dashboard _(optional)_
+  - _**`has_access`**_ - Boolean expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to `false` and the dashboard won't be accessible to anyone. See [Expressions](../expressions) for syntax reference. _(optional)_
+  - _**`filter`**_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a `WHERE` clause. _(optional)_
+  - _**`exclude`**_ - List of dimension or measure names to exclude from the dashboard. If `exclude` is defined all other dimensions and measures are included. _(optional)_
+    - **`name`** - Name of the field to exclude. Should match the `name` of one of the dashboard's dimensions or measures. _(required)_ 
+    - **`if`** - Expression to decide if the column should be excluded or not. It can leverage templated user attributes. See [Expressions](../expressions) for syntax reference. _(required)_
+  - _**`include`**_ - List of dimension or measure names to include in the dashboard. If `include` is defined all other dimensions and measures are excluded. _(optional)_
+    - **`name`** - Name of the field to exclude. Should match the `name` of one of the dashboard's dimensions or measures. _(required)_ 
+    - **`if`** - Expression to decide if the column should be excluded or not. It can leverage templated user attributes. See [Expressions](../expressions) for syntax reference. _(required)_
