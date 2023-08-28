@@ -67,7 +67,7 @@ policy:
 
 ### Show only data from the user's own domain
 
-You can force the dashboard to filter all dimension and measure values by the user's domain. Assuming your dashboard's model has a `domain` column, add the following clause to your dashboard's YAML:
+You can limit the data available to the dashboard by applying a filter on the underlying data. Assuming the dashboard's underlying model has a `domain` column, adding the following clause to the dashboard's YAML will only show dimension and measure values for the current user's email domain:
 
 ```yaml
 policy:
