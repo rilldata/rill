@@ -87,6 +87,14 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
+		// validate measures access
+		for _, m := range r.MeasureNames {
+			if !checkFieldAccess(m, policy) {
+				http.Error(w, "action not allowed", http.StatusUnauthorized)
+				return
+			}
+		}
+
 		err = validateInlineMeasures(r.InlineMeasures)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

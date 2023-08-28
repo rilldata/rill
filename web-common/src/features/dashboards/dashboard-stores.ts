@@ -9,18 +9,19 @@ import {
 } from "@rilldata/web-common/lib/arrayUtils";
 import { getComparionRangeForScrub } from "@rilldata/web-common/lib/time/comparisons";
 import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
-import { convertTimeRangePreset } from "@rilldata/web-common/lib/time/ranges";
 import {
-  ScrubRange,
-  TimeRangePreset,
-} from "@rilldata/web-common/lib/time/types";
+  convertTimeRangePreset,
+  ISODurationToTimePreset,
+} from "@rilldata/web-common/lib/time/ranges";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
+import type { ScrubRange } from "@rilldata/web-common/lib/time/types";
 import type {
   V1ColumnTimeRangeResponse,
   V1MetricsView,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
 import { derived, get, Readable, Writable, writable } from "svelte/store";
+import { SortDirection, SortType } from "./proto-state/derived-types";
 
 export interface LeaderboardValue {
   value: number;
@@ -60,8 +61,21 @@ export interface MetricsExplorerEntity {
   // TODO: clean this up when we refactor how url state is synced
   allDimensionsVisible: boolean;
 
-  // this is used to show leaderboard values
+  // This is the name of the primary active measure in the dashboard.
+  // This is the measure that will be shown in leaderboards, and
+  // will be used for sorting the leaderboard and dimension
+  // detail table.
+  // This "name" is the internal name of the measure from the YAML,
+  // not the human readable name.
   leaderboardMeasureName: string;
+
+  // This is the sort type that will be used for the leaderboard
+  // and dimension detail table. See SortType for more details.
+  dashboardSortType: SortType;
+  // This is the sort direction that will be used for the leaderboard
+  // and dimension detail table.
+  sortDirection: SortDirection;
+
   filters: V1MetricsViewFilter;
   // stores whether a dimension is in include/exclude filter mode
   // false/absence = include, true = exclude
@@ -241,7 +255,7 @@ const metricViewReducers = {
       if (fullTimeRange) {
         const timeZone = get(getLocalUserPreferences()).timeZone;
         const timeRange = convertTimeRangePreset(
-          TimeRangePreset.ALL_TIME,
+          ISODurationToTimePreset(metricsView.defaultTimeRange, true),
           new Date(fullTimeRange.timeRangeSummary.min),
           new Date(fullTimeRange.timeRangeSummary.max),
           timeZone
@@ -276,6 +290,8 @@ const metricViewReducers = {
         },
         dimensionFilterExcludeMode: new Map(),
         leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
+        dashboardSortType: SortType.VALUE,
+        sortDirection: SortDirection.DESCENDING,
 
         ...timeSelections,
         showComparison: false,
@@ -320,9 +336,30 @@ const metricViewReducers = {
     });
   },
 
-  clearLeaderboardMeasureName(name: string) {
+  setSortDescending(name: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.leaderboardMeasureName = undefined;
+      metricsExplorer.sortDirection = SortDirection.DESCENDING;
+    });
+  },
+
+  setSortAscending(name: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.sortDirection = SortDirection.ASCENDING;
+    });
+  },
+
+  toggleSortDirection(name: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.sortDirection =
+        metricsExplorer.sortDirection === SortDirection.ASCENDING
+          ? SortDirection.DESCENDING
+          : SortDirection.ASCENDING;
+    });
+  },
+
+  setSortDirection(name: string, direction: SortDirection) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.sortDirection = direction;
     });
   },
 
@@ -373,22 +410,22 @@ const metricViewReducers = {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.showComparison = showComparison;
       // if setting showComparison===true and not currently
-      //  showing any context column, then show DELTA_CHANGE
+      //  showing any context column, then show DELTA_PERCENT
       if (
         showComparison &&
         metricsExplorer.leaderboardContextColumn ===
           LeaderboardContextColumn.HIDDEN
       ) {
         metricsExplorer.leaderboardContextColumn =
-          LeaderboardContextColumn.DELTA_CHANGE;
+          LeaderboardContextColumn.DELTA_PERCENT;
       }
 
       // if setting showComparison===false and currently
-      //  showing DELTA_CHANGE, then hide context column
+      //  showing DELTA_PERCENT, then hide context column
       if (
         !showComparison &&
         metricsExplorer.leaderboardContextColumn ===
-          LeaderboardContextColumn.DELTA_CHANGE
+          LeaderboardContextColumn.DELTA_PERCENT
       ) {
         metricsExplorer.leaderboardContextColumn =
           LeaderboardContextColumn.HIDDEN;
@@ -402,7 +439,7 @@ const metricViewReducers = {
       if (metricsExplorer.showComparison === false) return;
 
       metricsExplorer.leaderboardContextColumn =
-        LeaderboardContextColumn.DELTA_CHANGE;
+        LeaderboardContextColumn.DELTA_PERCENT;
     });
   },
 

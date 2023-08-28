@@ -58,6 +58,24 @@ export function pathDoesNotDropToZero(yAccessor: string) {
   };
 }
 
+export interface PlotConfig {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+  buffer: number;
+  width: number;
+  height: number;
+  devicePixelRatio: number;
+  plotTop: number;
+  plotBottom: number;
+  plotLeft: number;
+  plotRight: number;
+  fontSize: number;
+  textGap: number;
+  id: string;
+}
+
 interface LineGeneratorArguments {
   xAccessor: string;
   xScale:

@@ -65,7 +65,7 @@ type App struct {
 	activity              activity.Client
 }
 
-func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string, client activity.Client) (*App, error) {
+func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string, client activity.Client) (*App, error) {
 	logger, cleanupFn := initLogger(verbose, logFormat)
 	// Init Prometheus telemetry
 	shutdown, err := observability.Start(ctx, logger, &observability.Options{
@@ -120,6 +120,12 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 		return nil, err
 	}
 
+	if reset {
+		err := drivers.Drop(olapDriver, map[string]any{"dsn": olapDSN}, logger)
+		if err != nil {
+			return nil, fmt.Errorf("failed to clean OLAP: %w", err)
+		}
+	}
 	// Create instance with its repo set to the project directory
 	inst := &drivers.Instance{
 		ID:           DefaultInstanceID,
