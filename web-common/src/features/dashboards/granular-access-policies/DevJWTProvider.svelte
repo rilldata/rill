@@ -3,10 +3,9 @@
   import { selectedMockUserStore } from "./stores";
   import { useDevJWT } from "./useDevJWT";
 
-  $: devJWT = useDevJWT($selectedMockUserStore);
-
-  $: isMockUserSelected = $selectedMockUserStore !== null;
   $: isDashboardPage = $page.route.id === "/(application)/dashboard/[name]";
+  $: isMockUserSelected = $selectedMockUserStore !== null;
+  $: devJWT = useDevJWT($selectedMockUserStore);
 </script>
 
-<slot jwt={isMockUserSelected && isDashboardPage ? $devJWT?.data?.jwt : null} />
+<slot jwt={isDashboardPage && isMockUserSelected ? $devJWT?.data?.jwt : null} />
