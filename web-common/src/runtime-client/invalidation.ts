@@ -13,7 +13,7 @@ import {
   isProfilingQuery,
   isTableProfilingQuery,
 } from "@rilldata/web-common/runtime-client/query-matcher";
-import type { QueryClient } from "@tanstack/svelte-query";
+import type { Query, QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 
 // invalidation helpers
@@ -130,20 +130,25 @@ export async function invalidateAllMetricsViews(
   queryClient: QueryClient,
   instanceId: string
 ) {
-  // First, invalidate the catalog entries
-  await queryClient.invalidateQueries({
+  // First, refetch the catalog entries (which returns which dimensions are available)
+  await queryClient.refetchQueries({
     predicate: (query) =>
       typeof query.queryKey[0] === "string" &&
       query.queryKey[0].startsWith(`/v1/instances/${instanceId}/catalog`),
   });
 
-  // Second, invalidate the data
-  return queryClient.invalidateQueries({
-    predicate: (query) =>
-      typeof query.queryKey[0] === "string" &&
-      query.queryKey[0].startsWith(
-        `/v1/instances/${instanceId}/queries/metrics-views`
-      ),
+  // Second, remove queries for all metrics views. This will cause the active queries to refetch.
+  // Note: This is a confusing hack. At time of writing, neither `queryClient.refetchQueries`
+  // nor `queryClient.invalidateQueries` were working as expected. Perhaps there's a race condition somewhere.
+  queryClient.removeQueries({
+    predicate: (query: Query) => {
+      return (
+        typeof query.queryKey[0] === "string" &&
+        query.queryKey[0].startsWith(
+          `/v1/instances/${instanceId}/queries/metrics-views`
+        )
+      );
+    },
   });
 }
 
