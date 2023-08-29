@@ -69,7 +69,7 @@ func computeCacheKey(instanceID string, mv *runtimev1.MetricsView, lastUpdatedOn
 		}
 	}
 	if attributes["email"] != nil {
-		_, err = hash.Write([]byte(attributes["name"].(string)))
+		_, err = hash.Write([]byte(attributes["email"].(string)))
 		if err != nil {
 			return "", err
 		}

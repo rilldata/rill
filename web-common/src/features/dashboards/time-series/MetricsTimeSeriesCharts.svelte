@@ -7,6 +7,7 @@
     useDashboardStore,
     useFetchTimeRange,
     useComparisonRange,
+    metricsExplorerStore,
   } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import {
     humanizeDataType,
@@ -35,8 +36,9 @@
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
-  import { prepareTimeSeries } from "./utils";
+  import { getOrderedStartEnd, prepareTimeSeries } from "./utils";
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
+  import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 
   export let metricViewName;
   export let workspaceWidth: number;
@@ -247,6 +249,34 @@
   const setAllMeasuresVisible = () => {
     showHideMeasures.setAllToVisible();
   };
+
+  function onKeyDown(e) {
+    if (scrubStart && scrubEnd) {
+      // if key Z is pressed, zoom the scrub
+      if (e.key === "z") {
+        const { start, end } = getOrderedStartEnd(
+          $dashboardStore?.selectedScrubRange?.start,
+          $dashboardStore?.selectedScrubRange?.end
+        );
+        metricsExplorerStore.setSelectedTimeRange(metricViewName, {
+          name: TimeRangePreset.CUSTOM,
+          start,
+          end,
+        });
+
+        // hack to prevent race condition in URL proto changes
+        setTimeout(() => {
+          metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
+        }, 50);
+      }
+      if (
+        !$dashboardStore.selectedScrubRange?.isScrubbing &&
+        e.key === "Escape"
+      ) {
+        metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
+      }
+    }
+  }
 </script>
 
 <TimeSeriesChartContainer end={endValue} start={startValue} {workspaceWidth}>
@@ -355,3 +385,6 @@
     {/each}
   {/if}
 </TimeSeriesChartContainer>
+
+<!-- Only to be used on singleton components to avoid multiple state dispatches -->
+<svelte:window on:keydown={onKeyDown} />
