@@ -71,7 +71,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		embedCatalog = true
 		ingestionLimit = alloc.StorageBytes
 
-		olapDSN = fmt.Sprintf("%s.db?rill_pool_size=%d&threads=%d&max_memory=%dGB", path.Join(alloc.DataDir, instanceID), alloc.CPU, alloc.CPU, alloc.MemoryGB)
+		olapDSN = fmt.Sprintf("%s.db?rill_pool_size=%d&max_memory=%dGB", path.Join(alloc.DataDir, instanceID), alloc.CPU, alloc.MemoryGB)
 	}
 
 	// Open a runtime client
