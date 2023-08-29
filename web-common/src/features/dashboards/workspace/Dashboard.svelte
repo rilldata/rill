@@ -76,9 +76,9 @@
     id="header"
   >
     {#if isRillDeveloper}
-      <!-- FIXME: adding an -mb-3 fixes the spacing issue incurred by changes to the header
-    to accommodate the cloud dashboard. We should go back and reconcile these headers so we don't need
-  to do this. -->
+      <!-- FIXME: adding an -mb-3 fixes the spacing issue incurred by changes to the header 
+        to accommodate the cloud dashboard. We should go back and reconcile these headers so we 
+        don't need to do this. -->
       <div
         class="flex items-center justify-between -mb-3 w-full pl-1 pr-4"
         style:height="var(--header-height)"
