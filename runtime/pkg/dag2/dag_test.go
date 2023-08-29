@@ -14,7 +14,7 @@ func TestAcyclic(t *testing.T) {
 	require.False(t, d.Add(4, 1))
 	require.Len(t, d.vertices, 4)
 	require.True(t, d.Add(4))
-	require.ElementsMatch(t, []int{1, 2, 3}, d.DeepChildren(4))
+	require.ElementsMatch(t, []int{1, 2, 3}, d.Descendents(4))
 }
 
 func TestRetention(t *testing.T) {

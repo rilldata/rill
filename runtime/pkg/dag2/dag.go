@@ -1,6 +1,7 @@
 package dag2
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -65,9 +66,13 @@ func (d DAG[K, V]) Add(val V, parentVals ...V) bool {
 	// Check for cycles (there may be existing non-present references to it).
 	if len(v.children) > 0 {
 		visited := make(map[K]bool, len(v.children))
-		found := d.visit(v, visited, func(ck K, c V) bool {
-			_, ok := parents[ck]
-			return ok
+		found := false
+		_ = d.visit(v, visited, func(ck K, c V) error {
+			_, found = parents[ck]
+			if found {
+				return ErrStop
+			}
+			return nil
 		})
 		if found {
 			return false
@@ -164,41 +169,31 @@ func (d DAG[K, V]) Children(val V) []V {
 	return children
 }
 
-// DeepChildren returns the recursive children of the given value.
-func (d DAG[K, V]) DeepChildren(val V) []V {
+// Descendents returns the recursive children of the given value.
+func (d DAG[K, V]) Descendents(val V) []V {
 	var children []V
-	d.Visit(val, func(k K, v V) bool {
+	_ = d.Visit(val, func(k K, v V) error {
 		children = append(children, v)
-		return false
+		return nil
 	})
 	return children
 }
 
-// VisitRoots recursively visits all vertices connected to the roots.
-// If the visitor function returns true, the visit is stopped.
-func (d DAG[K, V]) VisitRoots(fn func(K, V) bool) {
-	var roots []*vertex[K, V]
-	for _, v := range d.vertices {
-		if !v.present {
-			continue
-		}
-		if len(v.parents) == 0 {
-			roots = append(roots, v)
-		}
-	}
+// VisitFunc is invoked for each node when visiting the DAG.
+// If it returns ErrSkip, the children of the node are not visited.
+// If it returns another error, the visitor is stopped.
+type VisitFunc[K comparable, V any] func(K, V) error
 
-	visited := make(map[K]bool, len(d.vertices))
-	for _, v := range roots {
-		stop := d.visit(v, visited, fn)
-		if stop {
-			return
-		}
-	}
-}
+// ErrSkip should be returned by a VisitFunc to skip the children of the visited node.
+var ErrSkip = errors.New("dag: skip")
+
+// ErrStop can be returned by a VisitFunc to signal a stopped visit.
+// It does not carry special meaning in this package since any error other than ErrSkip stops a visit.
+var ErrStop = errors.New("dag: stop")
 
 // Visit recursively visits the children of the given value.
 // If the visitor function returns true, the visit is stopped.
-func (d DAG[K, V]) Visit(val V, fn func(K, V) bool) {
+func (d DAG[K, V]) Visit(val V, fn VisitFunc[K, V]) error {
 	k := d.hash(val)
 	v, ok := d.vertices[k]
 	if !ok || !v.present {
@@ -206,26 +201,28 @@ func (d DAG[K, V]) Visit(val V, fn func(K, V) bool) {
 	}
 
 	if len(v.children) == 0 {
-		return
+		return nil
 	}
 
 	visited := make(map[K]bool, len(v.children))
-	d.visit(v, visited, fn)
+	return d.visit(v, visited, fn)
 }
 
-func (d DAG[K, V]) visit(v *vertex[K, V], visited map[K]bool, fn func(K, V) bool) bool {
+func (d DAG[K, V]) visit(v *vertex[K, V], visited map[K]bool, fn VisitFunc[K, V]) error {
 	for ck, c := range v.children {
 		if !visited[ck] {
-			stop := fn(ck, c.val)
-			if stop {
-				return true
-			}
 			visited[ck] = true
-			stop = d.visit(c, visited, fn)
-			if stop {
-				return true
+			err := fn(ck, c.val)
+			if err == nil {
+				err = d.visit(c, visited, fn)
+			}
+			if err != nil {
+				if errors.Is(err, ErrSkip) {
+					continue
+				}
+				return err
 			}
 		}
 	}
-	return false
+	return nil
 }

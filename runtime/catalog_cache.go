@@ -83,18 +83,16 @@ func (c catalogCache) close(ctx context.Context) error {
 func (c catalogCache) flush(ctx context.Context) error {
 	for s, n := range c.dirty {
 		r, err := c.get(n, true)
-
-		// Resource should be deleted from store
 		if err != nil {
 			if !errors.Is(err, drivers.ErrResourceNotFound) {
 				return fmt.Errorf("flush: unexpected error from get: %w", err)
 			}
 
+			// Resource should be deleted from store
 			err = c.store.DeleteResource(ctx, c.version, n.Kind, n.Name)
 			if err != nil {
 				return err
 			}
-
 			delete(c.dirty, s)
 			delete(c.stored, s)
 			continue
@@ -211,13 +209,17 @@ func (c catalogCache) create(name *runtimev1.ResourceName, refs []*runtimev1.Res
 		SpecUpdatedOn:  timestamppb.Now(),
 		StateUpdatedOn: timestamppb.Now(),
 	}
+	if existing != nil {
+		r.Meta.Version = existing.Meta.Version + 1
+		r.Meta.SpecVersion = existing.Meta.SpecVersion + 1
+	}
 	c.link(r)
 	c.dirty[nameStr(r.Meta.Name)] = r.Meta.Name
 	return nil
 }
 
 // rename renames a resource in the catalog and sets the r.Meta.RenamedFrom field.
-func (c catalogCache) rename(name *runtimev1.ResourceName, newName *runtimev1.ResourceName) error {
+func (c catalogCache) rename(name, newName *runtimev1.ResourceName) error {
 	r, err := c.get(name, false)
 	if err != nil {
 		return err
@@ -306,13 +308,13 @@ func (c catalogCache) updateState(name *runtimev1.ResourceName, from *runtimev1.
 }
 
 // updateError updates the reconcile_error field of a resource.
-func (c catalogCache) updateError(name *runtimev1.ResourceName, err error) error {
+func (c catalogCache) updateError(name *runtimev1.ResourceName, reconcileErr error) error {
 	r, err := c.get(name, false)
 	if err != nil {
 		return err
 	}
 	// NOTE: No need to unlink/link because no indexed fields are edited.
-	r.Meta.ReconcileError = err.Error()
+	r.Meta.ReconcileError = reconcileErr.Error()
 	r.Meta.Version++
 	r.Meta.StateVersion++
 	r.Meta.StateUpdatedOn = timestamppb.Now()

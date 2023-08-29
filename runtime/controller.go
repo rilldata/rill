@@ -10,6 +10,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/dag2"
 	"github.com/rilldata/rill/runtime/pkg/schedule"
 	"go.uber.org/zap"
 	"go.uber.org/zap/exp/zapslog"
@@ -73,10 +74,10 @@ type Controller struct {
 	reconcilers map[string]Reconciler
 	catalog     catalogCache
 	// queue contains names waiting to be scheduled.
-	// It's not a real queue because we schedule the whole queue on each call to processQueue.
-	queue           map[string]*runtimev1.ResourceName
-	queueNotEmpty   bool
-	queueNotEmptyCh chan struct{}
+	// It's not a real queue because we usually schedule the whole queue on each call to processQueue.
+	queue          map[string]*runtimev1.ResourceName
+	queueUpdated   bool
+	queueUpdatedCh chan struct{}
 	// timeline tracks resources to be scheduled in the future.
 	timeline *schedule.Schedule[string, *runtimev1.ResourceName]
 	// invocations tracks currently running reconciler invocations.
@@ -88,14 +89,14 @@ type Controller struct {
 // NewController creates a new Controller
 func NewController(ctx context.Context, rt *Runtime, instanceID string, logger *zap.Logger) (*Controller, error) {
 	c := &Controller{
-		Runtime:         rt,
-		InstanceID:      instanceID,
-		reconcilers:     make(map[string]Reconciler),
-		queue:           make(map[string]*runtimev1.ResourceName),
-		queueNotEmptyCh: make(chan struct{}),
-		timeline:        schedule.New[string, *runtimev1.ResourceName](nameStr),
-		invocations:     make(map[string]*invocation),
-		completed:       make(chan *invocation),
+		Runtime:        rt,
+		InstanceID:     instanceID,
+		reconcilers:    make(map[string]Reconciler),
+		queue:          make(map[string]*runtimev1.ResourceName),
+		queueUpdatedCh: make(chan struct{}),
+		timeline:       schedule.New[string, *runtimev1.ResourceName](nameStr),
+		invocations:    make(map[string]*invocation),
+		completed:      make(chan *invocation),
 	}
 
 	// TODO: Setup the logger to duplicate logs to a) the Zap logger, b) an in-memory buffer that exposes the logs over the API
@@ -112,7 +113,7 @@ func NewController(ctx context.Context, rt *Runtime, instanceID string, logger *
 }
 
 // Run starts and runs the controller's event loop. It returns when ctx is cancelled or an unrecoverable error occurs.
-// The event loop schedules/invokes resource reconciliation and periodically flushes catalog changes to persistant storage.
+// The event loop schedules/invokes resource reconciliation and periodically flushes catalog changes to persistent storage.
 // The implementation centers around these internal functions: enqueue, processQueue, schedule, and processCompletedInvocation.
 // See their docstrings for further details.
 func (c *Controller) Run(ctx context.Context) error {
@@ -169,13 +170,17 @@ func (c *Controller) Run(ctx context.Context) error {
 	// Run event loop
 	var stop bool
 	var loopErr error
-	var isFlushErr bool
 	for !stop {
 		select {
-		case <-c.queueNotEmptyCh: // There are resources we should schedule
+		case <-c.queueUpdatedCh: // There are resources we should schedule
 			c.mu.Lock()
-			c.processQueue()
-			resetTimelineTimer()
+			err := c.processQueue()
+			if err != nil {
+				loopErr = err
+				stop = true
+			} else {
+				resetTimelineTimer()
+			}
 			c.mu.Unlock()
 		case inv := <-c.completed: // A reconciler invocation has completed
 			c.mu.Lock()
@@ -203,7 +208,6 @@ func (c *Controller) Run(ctx context.Context) error {
 			c.mu.RUnlock()
 			if err != nil {
 				loopErr = err
-				isFlushErr = true
 				stop = true
 			}
 		case <-ctx.Done(): // We've been asked to stop
@@ -254,16 +258,14 @@ func (c *Controller) Run(ctx context.Context) error {
 	ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// Flush catalog cache
-	if !isFlushErr {
-		c.mu.Lock()
-		err = c.catalog.flush(ctx)
-		if err != nil {
-			err = fmt.Errorf("failed to flush catalog: %w", err)
-			closeErr = errors.Join(closeErr, err)
-		}
-		c.mu.Unlock()
+	// Close catalog cache (will call flush)
+	c.mu.Lock()
+	err = c.catalog.close(ctx)
+	if err != nil {
+		err = fmt.Errorf("failed to close catalog: %w", err)
+		closeErr = errors.Join(closeErr, err)
 	}
+	c.mu.Unlock()
 
 	c.running.Store(false)
 	return closeErr
@@ -329,7 +331,8 @@ func (c *Controller) UpdateMeta(ctx context.Context, name *runtimev1.ResourceNam
 	defer c.unlock(ctx, false)
 
 	if !c.isReconcilerForResource(ctx, name) {
-		c.cancelInvocation(name, false)
+		c.cancelIfRunning(name, false)
+		c.enqueue(name)
 	}
 
 	if newName != nil {
@@ -343,8 +346,6 @@ func (c *Controller) UpdateMeta(ctx context.Context, name *runtimev1.ResourceNam
 	if err != nil {
 		return err
 	}
-
-	c.enqueue(name) // TODO: Not if called by self?
 
 	// We updated refs, so it may have broken previous cyclic references
 	ns := c.catalog.retryCyclicRefs()
@@ -363,7 +364,8 @@ func (c *Controller) UpdateSpec(ctx context.Context, name *runtimev1.ResourceNam
 	defer c.unlock(ctx, false)
 
 	if !c.isReconcilerForResource(ctx, name) {
-		c.cancelInvocation(name, false)
+		c.cancelIfRunning(name, false)
+		c.enqueue(name)
 	}
 
 	err := c.catalog.updateSpec(name, r)
@@ -371,7 +373,6 @@ func (c *Controller) UpdateSpec(ctx context.Context, name *runtimev1.ResourceNam
 		return err
 	}
 
-	c.enqueue(name) // TODO: Not if called by self?
 	return nil
 }
 
@@ -408,7 +409,7 @@ func (c *Controller) Delete(ctx context.Context, name *runtimev1.ResourceName) e
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 
-	c.cancelInvocation(name, false)
+	c.cancelIfRunning(name, false)
 
 	if c.isReconcilerForResource(ctx, name) {
 		return c.catalog.delete(name)
@@ -438,7 +439,7 @@ func (c *Controller) Reconcile(ctx context.Context, name *runtimev1.ResourceName
 	c.checkRunning()
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
-	c.cancelInvocation(name, false)
+	c.cancelIfRunning(name, false)
 	c.enqueue(name)
 	return nil
 }
@@ -449,7 +450,7 @@ func (c *Controller) Cancel(ctx context.Context, name *runtimev1.ResourceName) e
 	c.checkRunning()
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
-	c.cancelInvocation(name, false)
+	c.cancelIfRunning(name, false)
 	return nil
 }
 
@@ -567,63 +568,219 @@ func (c *Controller) isReconcilerForResource(ctx context.Context, n *runtimev1.R
 // It does so by adding it to c.queue, which will be processed by processQueue().
 // It must be called while c.mu is held.
 func (c *Controller) enqueue(name *runtimev1.ResourceName) {
-	// Add to queue
 	c.queue[nameStr(name)] = name
+	c.setQueueUpdated()
+}
 
-	// Make sure the event loop knows there's stuff in the queue.
-	if !c.queueNotEmpty {
-		c.queueNotEmpty = true
-		c.queueNotEmptyCh <- struct{}{}
+// setQueueUpdated notifies the event loop that the queue has been updated and needs to be processed.
+// It must be called while c.mu is held.
+func (c *Controller) setQueueUpdated() {
+	if !c.queueUpdated {
+		c.queueUpdated = true
+		c.queueUpdatedCh <- struct{}{}
 	}
 }
 
 // processQueue calls schedule() for each resource in c.queue. It is invoked in each iteration of the event loop.
 // The reason we have the queue and process it from the event loop (instead of calling schedule() directly from enqueue()) is to enable batching of schedule calls during initialization and when Lock/Unlock is used.
 // Batching makes it easier to ensure that parents are scheduled before children when both need to be scheduled.
+//
 // It must be called while c.mu is held.
-func (c *Controller) processQueue() {
-	// Mark all pending. We do it here instead of in schedule() so that the pending parent checks in schedule() reflect all items in c.queue.
-	for _, n := range c.queue {
-		err := c.catalog.updateStatus(n, runtimev1.ReconcileStatus_RECONCILE_STATUS_PENDING, time.Time{})
+func (c *Controller) processQueue() error {
+	// Mark-sweep like approach - first mark all impacted resources (including descendents) pending, then schedule the ones that have no pending parents.
+
+	// Phase 1: Mark items pending and trim queue when possible.
+	for s, n := range c.queue {
+		skip, err := c.markPending(n)
 		if err != nil {
-			c.Logger.Warn("internal: unexpected update error", slog.Any("error", err))
-			// TODO: Return? Weird state.
+			return err
+		}
+		if skip {
+			delete(c.queue, s)
 		}
 	}
 
-	// Schedule all pending
-	for _, n := range c.queue {
-		c.schedule(n)
+	// Phase 2: Ensure scheduling
+	for s, n := range c.queue {
+		ok, err := c.trySchedule(n)
+		if err != nil {
+			return err
+		}
+		if ok {
+			delete(c.queue, s)
+		}
 	}
 
-	// Reset queueNotEmpty
-	c.queueNotEmpty = false
+	// Reset queueUpdated
+	c.queueUpdated = false
+	return nil
 }
 
-// schedule a resource for reconciliation.
-// It should only be called from processQueue(). After calling schedule(), the resource can be removed from c.queue.
+// markPending marks a resource and its descendents as pending.
+// It returns true if it already now knows that the resource can't be scheduled and will be re-triggered later (e.g. by being added to a waitlist).
+// It must be called while c.mu is held.
+func (c *Controller) markPending(n *runtimev1.ResourceName) (bool, error) {
+	// Remove from timeline (if present)
+	c.timeline.Remove(n)
+
+	// Get resource
+	r, err := c.catalog.get(n, true)
+	if err != nil {
+		if errors.Is(err, drivers.ErrResourceNotFound) {
+			return true, nil
+		}
+		return false, err
+	}
+
+	// If currently running, cancel and reschedule when cancellation is done.
+	// NOTE: We know children are already marked PENDING.
+	inv, ok := c.invocations[nameStr(n)]
+	if ok {
+		inv.cancel(true)
+		return true, nil
+	}
+
+	// Not running - mark pending
+	err = c.catalog.updateStatus(n, runtimev1.ReconcileStatus_RECONCILE_STATUS_PENDING, time.Time{})
+	if err != nil {
+		return false, err
+	}
+
+	// If resource is cyclic, set error and skip it
+	_, cyclic := c.catalog.cyclic[nameStr(n)]
+	if cyclic {
+		err = c.catalog.updateError(n, errCyclicDependency)
+		if err != nil {
+			return false, err
+		}
+		err = c.catalog.updateStatus(n, runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE, time.Time{})
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+
+	// Ensure all descendents get marked pending and cancel any running descendents.
+	descendentRunning := false
+	err = c.catalog.dag.Visit(n, func(ds string, dn *runtimev1.ResourceName) error {
+		dr, err := c.catalog.get(dn, true)
+		if err != nil {
+			return fmt.Errorf("error getting dag node %q: %w", ds, err)
+		}
+		switch dr.Meta.ReconcileStatus {
+		case runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE:
+			// Mark it pending
+			err = c.catalog.updateStatus(n, runtimev1.ReconcileStatus_RECONCILE_STATUS_PENDING, time.Time{})
+			if err != nil {
+				return fmt.Errorf("error updating dag node %q: %w", ds, err)
+			}
+			return nil
+		case runtimev1.ReconcileStatus_RECONCILE_STATUS_PENDING:
+			// If it's pending, we know all its descendents are also pending.
+			// We still need to traverse it to know if any of its descendents are running, but can skip that if we already know a descendent is running (minor optimization).
+			if descendentRunning {
+				return dag2.ErrSkip
+			}
+			return nil
+		case runtimev1.ReconcileStatus_RECONCILE_STATUS_RUNNING:
+			// Cancel it
+			inv, ok := c.invocations[nameStr(dn)]
+			if !ok {
+				return fmt.Errorf("internal: no invocation found for resource %q with status=running", ds)
+			}
+			inv.cancel(false)                        // False means it will go IDLE, but with n in the waitlist it will be marked PENDING again in the next iteration.
+			inv.addToWaitlist(n, r.Meta.SpecVersion) // Ensures n will get revisited when the cancellation is done.
+			descendentRunning = true
+			return dag2.ErrSkip // No need to traverse its children - we know they're all pending.
+		default:
+			panic(fmt.Errorf("internal: unexpected status %v", dr.Meta.ReconcileStatus))
+		}
+	})
+	if err != nil {
+		return false, err
+	}
+
+	// If a descendent is running, remove from queue (will be re-added when descendent's reconcile returns)
+	if descendentRunning {
+		return true, nil
+	}
+
+	// Proceed to maybeSchedule
+	return false, nil
+}
+
+// trySchedule schedules a resource for reconciliation. It should only be called from processQueue().
 // It must be called while c.mu is held.
 //
-// schedule does not necessarily invoke reconciliation immediately (though it may), but will ensure that the resource is eventually reconciled.
-// If schedule doesn't invoke reconciliation immediately, it ensures the resource will eventually be reconciled through one of the enqueuing rules implemented in processCompletedInvocation.
+// It returns true if the resource was invoked OR if it knows it will eventually be reconciled through one of the enqueueing rules implemented in processCompletedInvocation (waitlist or enqueuing of children).
+// It returns false if the resource can't be scheduled right now and should be retried later (kept in the queue).
 //
-// A key invariant for schedule is that all resources awaiting to be reconciled have status=pending, *including descendents of a resource with status=pending*.
-// This is ensured through the assignment of status=pending in processQueue and for descendents inside of schedule().
-// This invariant enables schedule() to skip invocation of resources with parents that have status=pending, knowing that processCompletedInvocation will eventually enqueue them when the parent transitions to status=idle.
-func (c *Controller) schedule(n *runtimev1.ResourceName) {
+// The implementation relies on the key invariant that all resources awaiting to be reconciled have status=pending, *including descendents of a resource with status=pending*.
+// This is ensured through the assignment of status=pending in markPending.
+func (c *Controller) trySchedule(n *runtimev1.ResourceName) (bool, error) {
+	r, err := c.catalog.get(n, true)
+	if err != nil {
+		if errors.Is(err, drivers.ErrResourceNotFound) {
+			return true, nil
+		}
+		return false, err
+	}
 
+	// Return true if any parents are pending or running
+	parents := c.catalog.dag.Parents(n, true)
+	for _, pn := range parents {
+		p, err := c.catalog.get(pn, true)
+		if err != nil {
+			return false, fmt.Errorf("internal: error getting present parent %q: %w", nameStr(pn), err)
+		}
+		if p.Meta.ReconcileStatus != runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE {
+			// When the parent has completed running, processCimpletedInvocation will enqueue its children and we'll run again.
+			return true, nil
+		}
+	}
+
+	// We want deletes to run before renames or regular reconciles.
+	// Return false if there are pending deletes and this isn't one of them.
+	if len(c.catalog.deleted) != 0 && r.Meta.DeletedOn == nil {
+		return false, nil
+	}
+
+	// We want renames to run before regular reconciles.
+	// Return false if there are pending renames and this isn't one of them.
+	if len(c.catalog.renamed) != 0 && r.Meta.RenamedFrom == nil {
+		return false, nil
+	}
+
+	// Invoke
+	err = c.invoke(r)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // invoke starts a goroutine for reconciling the resource and tracks the invocation in c.invocations.
 // It must be called while c.mu is held.
-func (c *Controller) invoke(n *runtimev1.ResourceName) {
+func (c *Controller) invoke(r *runtimev1.Resource) error {
+	// Set status to running
+	n := r.Meta.Name
+	err := c.catalog.updateStatus(n, runtimev1.ReconcileStatus_RECONCILE_STATUS_RUNNING, time.Time{})
+	if err != nil {
+		return fmt.Errorf("error updating dag node %q: %w", nameStr(n), err)
+	}
+
+	// Track invocation
 	ctx, cancel := context.WithCancel(context.Background())
 	inv := &invocation{
 		name:     n,
+		isDelete: r.Meta.DeletedOn != nil,
+		isRename: r.Meta.RenamedFrom != nil,
 		done:     make(chan struct{}),
 		cancelFn: cancel,
 	}
 	c.invocations[nameStr(n)] = inv
+
+	// Start reconcile in background
 	ctx = contextWithInvocation(ctx, inv)
 	reconciler := c.reconciler(n.Kind) // fetched outside of goroutine to keep access under mutex
 	go func() {
@@ -643,6 +800,8 @@ func (c *Controller) invoke(n *runtimev1.ResourceName) {
 		// Invoke reconciler
 		inv.result = reconciler.Reconcile(ctx, n)
 	}()
+
+	return nil
 }
 
 // processCompletedInvocation does post-processing after a reconciler invocation completes.
@@ -653,36 +812,55 @@ func (c *Controller) invoke(n *runtimev1.ResourceName) {
 // - for all the resources on its waitlist
 // - and, for itself if inv.reschedule is true
 // - and, for its children in the DAG if inv.reschedule is false
-//
-// TODO: All the error conditions here are weird. Log or ignore or exit (should we let catalog return inconsistent?)?
 func (c *Controller) processCompletedInvocation(inv *invocation) error {
 	r, err := c.catalog.get(inv.name, true)
 	if err != nil {
 		return err
 	}
 
-	if r.Meta.DeletedOn != nil && !inv.reschedule { // TODO: Is reschedule a reliable proxy?
-		err = c.catalog.delete(r.Meta.Name)
-		if err != nil {
-			return err
+	if inv.isDelete {
+		// Trigger processQueue - there may be items in the queue waiting for all deletes to finish
+		if len(c.catalog.deleted) == 0 {
+			c.setQueueUpdated()
 		}
-		if inv.result.Err != nil {
-			c.Logger.Error("got error while deleting resource", slog.String("name", nameStr(r.Meta.Name)), slog.Any("error", inv.result.Err))
+
+		// Extra checks in case item was re-created during deletion or deleted during a normal reconciling
+		if r.Meta.DeletedOn != nil && !inv.cancelled {
+			err = c.catalog.delete(r.Meta.Name)
+			if err != nil {
+				return err
+			}
+			if inv.result.Err != nil {
+				c.Logger.Error("got error while deleting resource", slog.String("name", nameStr(r.Meta.Name)), slog.Any("error", inv.result.Err))
+			}
+			return nil
 		}
-		return nil
 	}
 
-	if r.Meta.RenamedFrom != nil && !inv.reschedule { // TODO: Is reschedule a reliable proxy?
-		err = c.catalog.clearRenamedFrom(r.Meta.Name)
-		if err != nil {
-			return err
+	if inv.isRename {
+		// Trigger processQueue - there may be items in the queue waiting for all renames to finish
+		if len(c.catalog.renamed) == 0 {
+			c.setQueueUpdated()
+		}
+
+		// Extra checks in case item was cancelled during renaming
+		if r.Meta.RenamedFrom != nil && !inv.cancelled {
+			err = c.catalog.clearRenamedFrom(r.Meta.Name)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
-	// If retrigger requested before now, we'll just reschedule directly
-	if !inv.result.Retrigger.After(time.Now()) {
-		inv.reschedule = true
-		inv.result.Retrigger = time.Time{}
+	// Track retrigger time
+	if !inv.result.Retrigger.IsZero() {
+		if inv.result.Retrigger.After(time.Now()) {
+			c.timeline.Set(inv.name, inv.result.Retrigger)
+		} else {
+			// If retrigger requested before now, we'll just reschedule directly
+			inv.reschedule = true
+			inv.result.Retrigger = time.Time{}
+		}
 	}
 
 	// Update status and error
@@ -703,17 +881,35 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 	if inv.reschedule {
 		c.enqueue(inv.name)
 	}
-	for _, rn := range inv.waitlist {
-		c.enqueue(rn)
+
+	// Enqueue items from waitlist that haven't been updated (and hence re-triggered in the meantime).
+	for _, e := range inv.waitlist {
+		r, err := c.catalog.get(e.name, true)
+		if err != nil {
+			if errors.Is(err, drivers.ErrResourceNotFound) {
+				continue
+			}
+			return err
+		}
+		if r.Meta.SpecVersion == e.specVersion {
+			c.enqueue(e.name)
+		}
+	}
+
+	// When a parent is done, we enqueue its children (unless rescheduling since the children would be blocked anyway)
+	if !inv.reschedule {
+		for _, rn := range c.catalog.dag.Children(inv.name) {
+			c.enqueue(rn)
+		}
 	}
 
 	return nil
 }
 
-// cancelInvocation cancels a running invocation for the resource.
+// cancelIfRunning cancels a running invocation for the resource.
 // It does nothing if no invocation is running for the resource.
 // It must be called while c.mu is held.
-func (c *Controller) cancelInvocation(n *runtimev1.ResourceName, reschedule bool) {
+func (c *Controller) cancelIfRunning(n *runtimev1.ResourceName, reschedule bool) {
 	inv, ok := c.invocations[nameStr(n)]
 	if ok {
 		inv.cancel(reschedule)
@@ -723,13 +919,21 @@ func (c *Controller) cancelInvocation(n *runtimev1.ResourceName, reschedule bool
 // invocation represents a running reconciler invocation for a specific resource.
 type invocation struct {
 	name       *runtimev1.ResourceName
+	isDelete   bool
+	isRename   bool
 	done       chan struct{}
 	cancelFn   context.CancelFunc
 	cancelled  bool
 	reschedule bool
 	holdsLock  bool
-	waitlist   map[string]*runtimev1.ResourceName
+	waitlist   map[string]waitlistEntry
 	result     ReconcileResult
+}
+
+// waitlistEntry represents an entry in an invocation's waitlist.
+type waitlistEntry struct {
+	name        *runtimev1.ResourceName
+	specVersion int64
 }
 
 // cancel cancels the invocation.
@@ -746,11 +950,14 @@ func (i *invocation) cancel(reschedule bool) {
 // addToWaitlist adds a resource name to the invocation's waitlist.
 // Resources on the waitlist will be scheduled after the invocation completes.
 // It's not thread safe (must be called while the controller's mutex is held).
-func (i *invocation) addToWaitlist(n *runtimev1.ResourceName) {
+func (i *invocation) addToWaitlist(n *runtimev1.ResourceName, specVersion int64) {
 	if i.waitlist == nil {
-		i.waitlist = make(map[string]*runtimev1.ResourceName)
+		i.waitlist = make(map[string]waitlistEntry)
 	}
-	i.waitlist[nameStr(n)] = n
+	i.waitlist[nameStr(n)] = waitlistEntry{
+		name:        n,
+		specVersion: specVersion,
+	}
 }
 
 // invocationCtxKey is used for storing an invocation in a context.
