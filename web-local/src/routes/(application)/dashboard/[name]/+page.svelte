@@ -3,10 +3,7 @@
   import { page } from "$app/stores";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardStateProvider from "@rilldata/web-common/features/dashboards/DashboardStateProvider.svelte";
-  import {
-    mockUserHasNoAccessStore,
-    selectedMockUserStore,
-  } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
+  import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
   import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
@@ -45,9 +42,6 @@
     {
       query: {
         onSuccess: (data) => {
-          // Reset the mock user access store
-          mockUserHasNoAccessStore.set(false);
-
           // Redirect to the `/edit` page if no measures are defined
           if (
             !$featureFlags.readOnly &&
@@ -64,11 +58,9 @@
             throw error(400, "Invalid dashboard");
           }
 
-          // When a mock user doesn't have access to the dashboard, show a message
-          if ($selectedMockUserStore !== null && err.response?.status === 401) {
-            mockUserHasNoAccessStore.set(true);
+          // When a mock user doesn't have access to the dashboard, stay on the page to show a message
+          if ($selectedMockUserStore !== null && err.response?.status === 401)
             return;
-          }
 
           // On all other errors, redirect to the `/edit` page
           goto(`/dashboard/${metricViewName}/edit`);

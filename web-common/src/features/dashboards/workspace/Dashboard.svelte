@@ -5,13 +5,14 @@
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { getContext } from "svelte";
   import type { Tweened } from "svelte/motion";
+  import { createRuntimeServiceGetCatalogEntry } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import { useDashboardStore } from "../dashboard-stores";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
   import Filters from "../filters/Filters.svelte";
   import MockUserHasNoAccess from "../granular-access-policies/MockUserHasNoAccess.svelte";
-  import { mockUserHasNoAccessStore } from "../granular-access-policies/stores";
+  import { selectedMockUserStore } from "../granular-access-policies/stores";
   import LeaderboardDisplay from "../leaderboard/LeaderboardDisplay.svelte";
   import RowsViewerAccordion from "../rows-viewer/RowsViewerAccordion.svelte";
   import TimeControls from "../time-controls/TimeControls.svelte";
@@ -50,7 +51,14 @@
     : `calc(${$navigationVisibilityTween * 24}px + 1.25rem)`;
 
   $: isRillDeveloper = $featureFlags.readOnly === false;
-  $: showMockUserHasNoAccess = $mockUserHasNoAccessStore;
+
+  // Check if the mock user (if selected) has access to the dashboard
+  $: catalogQuery = createRuntimeServiceGetCatalogEntry(
+    $runtime.instanceId,
+    metricViewName
+  );
+  $: mockUserHasNoAccess =
+    $selectedMockUserStore && $catalogQuery.error?.response?.status === 401;
 </script>
 
 <section
@@ -75,7 +83,7 @@
       </div>
     {/if}
 
-    {#if showMockUserHasNoAccess}
+    {#if mockUserHasNoAccess}
       <div class="mb-3" />
     {:else}
       <div class="-ml-3 p-1 py-2 space-y-2">
@@ -87,7 +95,7 @@
     {/if}
   </div>
 
-  {#if showMockUserHasNoAccess}
+  {#if mockUserHasNoAccess}
     <MockUserHasNoAccess />
   {:else}
     <div
