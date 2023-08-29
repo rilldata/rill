@@ -470,9 +470,9 @@ message SearchProjectUsersResponse {
 message GetDeploymentCredentialsRequest {
   string organization = 1;
   string project = 2;
-  string branch = 3; // If empty, should use the ProdDeployment
+  string branch = 3;
   oneof for {
-    string user_id = 4; // If set, must construct a correct attrs payload for the user. See GetProject for how to do it.
+    string user_id = 4;
     google.protobuf.Struct attrs = 5;
   }
 }

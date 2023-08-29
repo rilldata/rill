@@ -526,10 +526,14 @@ func (c *connection) SearchProjectUsers(ctx context.Context, projectID, emailQue
 	var res []*database.User
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT u.* FROM users u
-		JOIN users_projects_roles upr ON u.id = upr.user_id
-		JOIN project_roles r ON r.id = upr.project_role_id 
-		WHERE upr.project_id=$1 AND lower(u.email) ILIKE lower($2) AND lower(u.email) > lower($3)
-		ORDER BY lower(u.email) LIMIT $3`, projectID, emailQuery, afterEmail, limit)
+        WHERE u.id IN (
+            SELECT upr.user_id FROM users_projects_roles upr WHERE upr.project_id=$1
+            UNION
+            SELECT ugu.user_id FROM usergroups_projects_roles ugpr JOIN usergroups_users ugu ON ugpr.usergroup_id = ugu.usergroup_id WHERE ugpr.project_id=$1
+        )
+        AND lower(u.email) LIKE lower($2)
+        AND lower(u.email) > lower($3)
+        ORDER BY lower(u.email) ASC LIMIT $4`, projectID, emailQuery, afterEmail, limit)
 	if err != nil {
 		return nil, parseErr("users", err)
 	}

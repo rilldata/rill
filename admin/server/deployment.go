@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
@@ -169,6 +168,10 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 
 	var deplToUse *database.Deployment
 	if req.Branch == "" {
+		if proj.ProdDeploymentID == nil {
+			return nil, status.Error(codes.InvalidArgument, "project does not have a deployment")
+		}
+
 		prodDepl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -203,27 +206,9 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 	var attr map[string]any
 	switch id := req.For.(type) {
 	case *adminv1.GetDeploymentCredentialsRequest_UserId:
-		// Find User
-		user, err := s.admin.DB.FindUser(ctx, id.UserId)
-		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-
-		// Find User groups
-		groups, err := s.admin.DB.FindUsergroupsForUser(ctx, user.ID, proj.OrganizationID)
+		attr, err = s.jwtAttributesForUser(ctx, permissions, claims.OwnerID(), proj.OrganizationID)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
-		}
-		groupNames := make([]string, len(groups))
-		for i, group := range groups {
-			groupNames[i] = group.Name
-		}
-		attr = map[string]any{
-			"name":   user.DisplayName,
-			"email":  user.Email,
-			"domain": user.Email[strings.LastIndex(user.Email, "@")+1:],
-			"groups": groupNames,
-			"admin":  permissions.ManageProject,
 		}
 	case *adminv1.GetDeploymentCredentialsRequest_Attrs:
 		attr = id.Attrs.AsMap()
