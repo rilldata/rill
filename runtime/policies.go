@@ -56,11 +56,6 @@ func computeCacheKey(instanceID string, mv *runtimev1.MetricsView, lastUpdatedOn
 	if err != nil {
 		return "", err
 	}
-	// adding this to break the cache, check if this solves the wrong policy resolution issue
-	_, err = hash.Write([]byte(time.Now().String()))
-	if err != nil {
-		return "", err
-	}
 	// go through attributes in a deterministic order (alphabetical by keys)
 	if attributes["admin"] != nil {
 		err = binary.Write(hash, binary.BigEndian, attributes["admin"])
