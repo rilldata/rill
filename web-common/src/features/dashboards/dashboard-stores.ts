@@ -7,17 +7,26 @@ import {
   getMapFromArray,
   removeIfExists,
 } from "@rilldata/web-common/lib/arrayUtils";
-import { getComparionRangeForScrub } from "@rilldata/web-common/lib/time/comparisons";
+import {
+  getComparionRangeForScrub,
+  getTimeComparisonParametersForComponent,
+} from "@rilldata/web-common/lib/time/comparisons";
+import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
 import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
-import { convertTimeRangePreset } from "@rilldata/web-common/lib/time/ranges";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import {
+  convertTimeRangePreset,
+  ISODurationToTimePreset,
+} from "@rilldata/web-common/lib/time/ranges";
+import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
+import type { ScrubRange } from "@rilldata/web-common/lib/time/types";
 import type {
   V1ColumnTimeRangeResponse,
   V1MetricsView,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
 import { derived, get, Readable, Writable, writable } from "svelte/store";
+import { SortDirection, SortType } from "./proto-state/derived-types";
 
 export interface LeaderboardValue {
   value: number;
@@ -57,8 +66,21 @@ export interface MetricsExplorerEntity {
   // TODO: clean this up when we refactor how url state is synced
   allDimensionsVisible: boolean;
 
-  // this is used to show leaderboard values
+  // This is the name of the primary active measure in the dashboard.
+  // This is the measure that will be shown in leaderboards, and
+  // will be used for sorting the leaderboard and dimension
+  // detail table.
+  // This "name" is the internal name of the measure from the YAML,
+  // not the human readable name.
   leaderboardMeasureName: string;
+
+  // This is the sort type that will be used for the leaderboard
+  // and dimension detail table. See SortType for more details.
+  dashboardSortType: SortType;
+  // This is the sort direction that will be used for the leaderboard
+  // and dimension detail table.
+  sortDirection: SortDirection;
+
   filters: V1MetricsViewFilter;
   // stores whether a dimension is in include/exclude filter mode
   // false/absence = include, true = exclude
@@ -237,10 +259,17 @@ const metricViewReducers = {
       const timeSelections: Partial<MetricsExplorerEntity> = {};
       if (fullTimeRange) {
         const timeZone = get(getLocalUserPreferences()).timeZone;
+        const fullTimeStart = new Date(fullTimeRange.timeRangeSummary.min);
+        const fullTimeEnd = new Date(fullTimeRange.timeRangeSummary.max);
+        const preset = ISODurationToTimePreset(
+          metricsView.defaultTimeRange,
+          true
+        );
+
         const timeRange = convertTimeRangePreset(
-          TimeRangePreset.ALL_TIME,
-          new Date(fullTimeRange.timeRangeSummary.min),
-          new Date(fullTimeRange.timeRangeSummary.max),
+          preset,
+          fullTimeStart,
+          fullTimeEnd,
           timeZone
         );
         const timeGrain = getDefaultTimeGrain(timeRange.start, timeRange.end);
@@ -249,6 +278,29 @@ const metricViewReducers = {
           ...timeRange,
           interval: timeGrain.grain,
         };
+        timeSelections.lastDefinedScrubRange = undefined;
+
+        const comparisonOption = DEFAULT_TIME_RANGES[preset]
+          ?.defaultComparison as TimeComparisonOption;
+        if (comparisonOption) {
+          const comparisonRange = getTimeComparisonParametersForComponent(
+            comparisonOption,
+            fullTimeStart,
+            fullTimeEnd,
+            timeRange.start,
+            timeRange.end
+          );
+          if (comparisonRange.isComparisonRangeAvailable) {
+            timeSelections.selectedComparisonTimeRange = {
+              name: comparisonOption,
+              start: comparisonRange.start,
+              end: comparisonRange.end,
+            };
+            timeSelections.showComparison = true;
+            timeSelections.leaderboardContextColumn =
+              LeaderboardContextColumn.DELTA_PERCENT;
+          }
+        }
       }
 
       state.entities[name] = {
@@ -272,7 +324,10 @@ const metricViewReducers = {
         },
         dimensionFilterExcludeMode: new Map(),
         leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
+        dashboardSortType: SortType.VALUE,
+        sortDirection: SortDirection.DESCENDING,
 
+        showComparison: false,
         ...timeSelections,
       };
 
@@ -315,9 +370,30 @@ const metricViewReducers = {
     });
   },
 
-  clearLeaderboardMeasureName(name: string) {
+  setSortDescending(name: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.leaderboardMeasureName = undefined;
+      metricsExplorer.sortDirection = SortDirection.DESCENDING;
+    });
+  },
+
+  setSortAscending(name: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.sortDirection = SortDirection.ASCENDING;
+    });
+  },
+
+  toggleSortDirection(name: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.sortDirection =
+        metricsExplorer.sortDirection === SortDirection.ASCENDING
+          ? SortDirection.DESCENDING
+          : SortDirection.ASCENDING;
+    });
+  },
+
+  setSortDirection(name: string, direction: SortDirection) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.sortDirection = direction;
     });
   },
 
@@ -368,22 +444,22 @@ const metricViewReducers = {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.showComparison = showComparison;
       // if setting showComparison===true and not currently
-      //  showing any context column, then show DELTA_CHANGE
+      //  showing any context column, then show DELTA_PERCENT
       if (
         showComparison &&
         metricsExplorer.leaderboardContextColumn ===
           LeaderboardContextColumn.HIDDEN
       ) {
         metricsExplorer.leaderboardContextColumn =
-          LeaderboardContextColumn.DELTA_CHANGE;
+          LeaderboardContextColumn.DELTA_PERCENT;
       }
 
       // if setting showComparison===false and currently
-      //  showing DELTA_CHANGE, then hide context column
+      //  showing DELTA_PERCENT, then hide context column
       if (
         !showComparison &&
         metricsExplorer.leaderboardContextColumn ===
-          LeaderboardContextColumn.DELTA_CHANGE
+          LeaderboardContextColumn.DELTA_PERCENT
       ) {
         metricsExplorer.leaderboardContextColumn =
           LeaderboardContextColumn.HIDDEN;
@@ -397,7 +473,7 @@ const metricViewReducers = {
       if (metricsExplorer.showComparison === false) return;
 
       metricsExplorer.leaderboardContextColumn =
-        LeaderboardContextColumn.DELTA_CHANGE;
+        LeaderboardContextColumn.DELTA_PERCENT;
     });
   },
 
@@ -548,7 +624,10 @@ export function useDashboardStore(
 export function useFetchTimeRange(name: string) {
   return derived(metricsExplorerStore, ($store) => {
     const entity = $store.entities[name];
-    if (entity?.lastDefinedScrubRange) {
+    if (
+      entity?.lastDefinedScrubRange?.start &&
+      entity?.lastDefinedScrubRange?.end
+    ) {
       // Use last scrub range before scrubbing started
       const { start, end } = getOrderedStartEnd(
         entity.lastDefinedScrubRange?.start,
@@ -569,12 +648,19 @@ export function useComparisonRange(name: string) {
   return derived(metricsExplorerStore, ($store) => {
     const entity = $store.entities[name];
 
-    if (!entity?.showComparison) {
+    if (
+      !entity?.showComparison ||
+      !entity.selectedComparisonTimeRange?.start ||
+      !entity.selectedComparisonTimeRange?.end
+    ) {
       return {
         start: undefined,
         end: undefined,
       };
-    } else if (entity?.lastDefinedScrubRange) {
+    } else if (
+      entity?.lastDefinedScrubRange?.start &&
+      entity?.lastDefinedScrubRange?.end
+    ) {
       const { start, end } = getOrderedStartEnd(
         entity.lastDefinedScrubRange?.start,
         entity.lastDefinedScrubRange?.end

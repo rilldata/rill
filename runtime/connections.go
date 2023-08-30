@@ -187,7 +187,7 @@ func (r *Runtime) connectorDef(inst *drivers.Instance, name string) (*runtimev1.
 
 // TODO :: these can also be generated during reconcile itself ?
 func (r *Runtime) connectorConfig(name string, def, variables map[string]string) map[string]any {
-	vars := make(map[string]any, 0)
+	vars := make(map[string]any)
 	for key, value := range def {
 		vars[strings.ToLower(key)] = value
 	}

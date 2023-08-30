@@ -8,6 +8,7 @@ import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashbo
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import {
   DashboardTimeControls,
+  ScrubRange,
   TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
@@ -21,7 +22,7 @@ import {
 } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
 import {
   DashboardState,
-  DashboardState_DashboardLeaderboardContextColumn,
+  DashboardState_LeaderboardContextColumn,
   DashboardTimeRange,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
@@ -33,14 +34,14 @@ import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 // TODO: make a follow up PR to use the one from the proto directly
 const LeaderboardContextColumnMap: Record<
   LeaderboardContextColumn,
-  DashboardState_DashboardLeaderboardContextColumn
+  DashboardState_LeaderboardContextColumn
 > = {
   [LeaderboardContextColumn.PERCENT]:
-    DashboardState_DashboardLeaderboardContextColumn.PERCENT,
-  [LeaderboardContextColumn.DELTA_CHANGE]:
-    DashboardState_DashboardLeaderboardContextColumn.DELTA_CHANGE,
+    DashboardState_LeaderboardContextColumn.PERCENT,
+  [LeaderboardContextColumn.DELTA_PERCENT]:
+    DashboardState_LeaderboardContextColumn.DELTA_PERCENT,
   [LeaderboardContextColumn.HIDDEN]:
-    DashboardState_DashboardLeaderboardContextColumn.HIDDEN,
+    DashboardState_LeaderboardContextColumn.HIDDEN,
 };
 
 export function getProtoFromDashboardState(
@@ -64,7 +65,7 @@ export function getProtoFromDashboardState(
     );
   }
   if (metrics.lastDefinedScrubRange) {
-    state.scrubRange = toTimeRangeProto(metrics.lastDefinedScrubRange);
+    state.scrubRange = toScrubProto(metrics.lastDefinedScrubRange);
   }
   state.showComparison = Boolean(metrics.showComparison);
   if (metrics.selectedTimezone) {
@@ -94,6 +95,13 @@ export function getProtoFromDashboardState(
       LeaderboardContextColumnMap[metrics.leaderboardContextColumn];
   }
 
+  if (metrics.sortDirection) {
+    state.leaderboardSortDirection = metrics.sortDirection;
+  }
+  if (metrics.dashboardSortType) {
+    state.leaderboardSortType = metrics.dashboardSortType;
+  }
+
   const message = new DashboardState(state);
   return protoToBase64(message.toBinary());
 }
@@ -120,6 +128,16 @@ function toTimeRangeProto(range: DashboardTimeControls) {
     timeRangeArgs.timeStart = toTimeProto(range.start);
     timeRangeArgs.timeEnd = toTimeProto(range.end);
   }
+  return new DashboardTimeRange(timeRangeArgs);
+}
+
+function toScrubProto(range: ScrubRange) {
+  const timeRangeArgs: PartialMessage<DashboardTimeRange> = {
+    name: TimeRangePreset.CUSTOM,
+  };
+  timeRangeArgs.timeStart = toTimeProto(range.start);
+  timeRangeArgs.timeEnd = toTimeProto(range.end);
+
   return new DashboardTimeRange(timeRangeArgs);
 }
 

@@ -239,6 +239,7 @@ export type QueryServiceExportBody = {
   format?: V1ExportFormat;
   metricsViewToplistRequest?: V1MetricsViewToplistRequest;
   metricsViewRowsRequest?: V1MetricsViewRowsRequest;
+  metricsViewTimeSeriesRequest?: V1MetricsViewTimeSeriesRequest;
 };
 
 export type QueryServiceColumnDescriptiveStatisticsParams = {
@@ -320,6 +321,21 @@ export type RuntimeServiceListCatalogEntriesParams = {
   type?: RuntimeServiceListCatalogEntriesType;
 };
 
+export type RuntimeServiceEditInstanceAnnotationsBodyAnnotations = {
+  [key: string]: string;
+};
+
+/**
+ * Request message for RuntimeService.EditInstanceAnnotations.
+ */
+export type RuntimeServiceEditInstanceAnnotationsBody = {
+  annotations?: RuntimeServiceEditInstanceAnnotationsBodyAnnotations;
+};
+
+export type RuntimeServiceEditInstanceBodyAnnotations = {
+  [key: string]: string;
+};
+
 /**
  * Request message for RuntimeService.EditInstance.
 See message Instance for field descriptions.
@@ -330,6 +346,7 @@ export type RuntimeServiceEditInstanceBody = {
   embedCatalog?: boolean;
   ingestionLimitBytes?: string;
   connectors?: V1Connector[];
+  annotations?: RuntimeServiceEditInstanceBodyAnnotations;
 };
 
 export type RuntimeServiceEditInstanceVariablesBodyVariables = {
@@ -373,6 +390,13 @@ export type ConnectorServiceGCSListObjectsParams = {
   startOffset?: string;
   endOffset?: string;
   delimiter?: string;
+};
+
+export type RuntimeServiceIssueDevJWTParams = {
+  name?: string;
+  email?: string;
+  groups?: string[];
+  admin?: boolean;
 };
 
 export type ConnectorServiceBigQueryListTablesParams = {
@@ -1003,11 +1027,6 @@ export interface V1Migration {
   state?: V1MigrationState;
 }
 
-export interface V1MetricsViewV2 {
-  spec?: V1MetricsViewSpec;
-  state?: V1MetricsViewState;
-}
-
 export type V1MetricsViewTotalsResponseData = { [key: string]: any };
 
 export interface V1MetricsViewTotalsResponse {
@@ -1053,19 +1072,6 @@ export interface V1MetricsViewTimeSeriesResponse {
   data?: V1TimeSeriesValue[];
 }
 
-export interface V1MetricsViewTimeSeriesRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  timeGranularity?: V1TimeGrain;
-  filter?: V1MetricsViewFilter;
-  timeZone?: string;
-  priority?: number;
-}
-
 export interface V1MetricsViewTimeRangeResponse {
   timeRangeSummary?: V1TimeRangeSummary;
 }
@@ -1082,10 +1088,16 @@ export interface V1MetricsViewSpec {
   /** Default time range for the dashboard. It should be a valid ISO 8601 duration string. */
   defaultTimeRange?: string;
   availableTimeZones?: string[];
+  policy?: MetricsViewSpecPolicyV2;
 }
 
 export interface V1MetricsViewState {
   validSpec?: V1MetricsViewSpec;
+}
+
+export interface V1MetricsViewV2 {
+  spec?: V1MetricsViewSpec;
+  state?: V1MetricsViewState;
 }
 
 export interface V1MetricsViewSort {
@@ -1095,9 +1107,27 @@ export interface V1MetricsViewSort {
 
 export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
 
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
+}
+
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
+}
+
+export interface V1MetricsViewTimeSeriesRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
+  filter?: V1MetricsViewFilter;
+  timeZone?: string;
+  priority?: number;
 }
 
 export interface V1MetricsViewRowsRequest {
@@ -1175,11 +1205,6 @@ export interface V1MetricsViewColumn {
   nullable?: boolean;
 }
 
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
-}
-
 export interface V1MetricsView {
   name?: string;
   model?: string;
@@ -1193,6 +1218,7 @@ export interface V1MetricsView {
   defaultTimeRange?: string;
   /** Available time zones list preferred time zones using IANA location identifiers. */
   availableTimeZones?: string[];
+  policy?: MetricsViewPolicy;
 }
 
 export interface V1MapType {
@@ -1243,6 +1269,10 @@ export interface V1ListConnectorsResponse {
 
 export interface V1ListCatalogEntriesResponse {
   entries?: V1CatalogEntry[];
+}
+
+export interface V1IssueDevJWTResponse {
+  jwt?: string;
 }
 
 export type V1InstanceProjectVariables = { [key: string]: string };
@@ -1372,6 +1402,10 @@ export interface V1EditInstanceVariablesResponse {
 }
 
 export interface V1EditInstanceResponse {
+  instance?: V1Instance;
+}
+
+export interface V1EditInstanceAnnotationsResponse {
   instance?: V1Instance;
 }
 
@@ -1707,6 +1741,16 @@ export interface SourceExtractPolicy {
   filesLimit?: string;
 }
 
+export interface PolicyV2FieldConditionV2 {
+  name?: string;
+  condition?: string;
+}
+
+export interface PolicyFieldCondition {
+  name?: string;
+  condition?: string;
+}
+
 export interface NumericOutliersOutlier {
   bucket?: number;
   low?: number;
@@ -1731,6 +1775,13 @@ export const ModelDialect = {
   DIALECT_DUCKDB: "DIALECT_DUCKDB",
 } as const;
 
+export interface MetricsViewSpecPolicyV2 {
+  hasAccess?: string;
+  filter?: string;
+  include?: PolicyV2FieldConditionV2[];
+  exclude?: PolicyV2FieldConditionV2[];
+}
+
 export interface MetricsViewSpecMeasureV2 {
   name?: string;
   expression?: string;
@@ -1745,6 +1796,13 @@ export interface MetricsViewSpecDimensionV2 {
   column?: string;
   label?: string;
   description?: string;
+}
+
+export interface MetricsViewPolicy {
+  hasAccess?: string;
+  filter?: string;
+  include?: PolicyFieldCondition[];
+  exclude?: PolicyFieldCondition[];
 }
 
 export interface MetricsViewMeasure {

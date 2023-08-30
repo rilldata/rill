@@ -22,6 +22,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import { SortDirection } from "../proto-state/derived-types";
   import {
     metricsExplorerStore,
     useComparisonRange,
@@ -104,8 +105,13 @@
     metricsExplorerStore.setMetricDimensionName(metricViewName, dimensionName);
   }
 
+  function toggleSortDirection() {
+    metricsExplorerStore.toggleSortDirection(metricViewName);
+  }
+
   $: timeStart = $fetchTimeStore?.start?.toISOString();
   $: timeEnd = $fetchTimeStore?.end?.toISOString();
+  $: sortAscending = $dashboardStore.sortDirection === SortDirection.ASCENDING;
   $: topListQuery = createQueryServiceMetricsViewToplist(
     $runtime.instanceId,
     metricViewName,
@@ -120,7 +126,7 @@
       sort: [
         {
           name: measure?.name,
-          ascending: false,
+          ascending: sortAscending,
         },
       ],
     },
@@ -169,7 +175,7 @@
   // Compose the comparison /toplist query
   $: showTimeComparison =
     $dashboardStore?.leaderboardContextColumn ===
-      LeaderboardContextColumn.DELTA_CHANGE && $dashboardStore?.showComparison;
+      LeaderboardContextColumn.DELTA_PERCENT && $dashboardStore?.showComparison;
   $: showPercentOfTotal =
     $dashboardStore?.leaderboardContextColumn ===
     LeaderboardContextColumn.PERCENT;
@@ -258,8 +264,10 @@
       on:toggle-filter-mode={toggleFilterMode}
       {filterExcludeMode}
       {hovered}
+      {sortAscending}
       dimensionDescription={dimension?.description}
-      on:click={() => selectDimension(dimensionName)}
+      on:open-dimension-details={() => selectDimension(dimensionName)}
+      on:toggle-sort-direction={toggleSortDirection}
     />
     {#if values}
       <div class="rounded-b border-gray-200 surface text-gray-800">

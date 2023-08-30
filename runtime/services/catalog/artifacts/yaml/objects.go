@@ -1,6 +1,7 @@
 package yaml
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"github.com/jinzhu/copier"
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -66,6 +68,19 @@ type MetricsView struct {
 	AvailableTimeZones []string `yaml:"available_time_zones,omitempty"`
 	Dimensions         []*Dimension
 	Measures           []*Measure
+	Policy             *Policy `yaml:"policy,omitempty"`
+}
+
+type Policy struct {
+	HasAccess string               `yaml:"has_access,omitempty"`
+	Filter    string               `yaml:"filter,omitempty"`
+	Include   []*ConditionalColumn `yaml:"include,omitempty"`
+	Exclude   []*ConditionalColumn `yaml:"exclude,omitempty"`
+}
+
+type ConditionalColumn struct {
+	Name      string
+	Condition string `yaml:"if"`
 }
 
 type Measure struct {
@@ -329,6 +344,8 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 		metrics.Label = metrics.DisplayName
 	}
 
+	names := map[string]bool{}
+
 	// remove ignored measures and dimensions
 	var measures []*Measure
 	for _, measure := range metrics.Measures {
@@ -336,6 +353,9 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 			continue
 		}
 		measures = append(measures, measure)
+		if measure.Name != "" {
+			names[measure.Name] = true
+		}
 	}
 	metrics.Measures = measures
 
@@ -349,8 +369,56 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 			dimension.Column = dimension.Property
 		}
 		dimensions = append(dimensions, dimension)
+
+		if dimension.Name != "" {
+			names[dimension.Name] = true
+		} else if dimension.Column != "" {
+			names[dimension.Column] = true
+		}
 	}
 	metrics.Dimensions = dimensions
+
+	if metrics.Policy != nil {
+		templateData := rillv1.TemplateData{User: map[string]interface{}{
+			"name":   "dummy",
+			"email":  "mock@example.org",
+			"domain": "example.org",
+			"groups": []interface{}{"all"},
+			"admin":  false,
+		}}
+
+		if metrics.Policy.HasAccess != "" {
+			hasAccess, err := rillv1.ResolveTemplate(metrics.Policy.HasAccess, templateData)
+			if err != nil {
+				return nil, fmt.Errorf(`invalid 'policy': 'has_access' templating is not valid: %w`, err)
+			}
+			_, err = rillv1.EvaluateBoolExpression(hasAccess)
+			if err != nil {
+				return nil, fmt.Errorf(`invalid 'policy': 'has_access' expression not valuating to a boolean: %w`, err)
+			}
+		}
+
+		if metrics.Policy.Filter != "" {
+			_, err := rillv1.ResolveTemplate(metrics.Policy.Filter, templateData)
+			if err != nil {
+				return nil, fmt.Errorf(`invalid 'policy': 'filter' templating is not valid: %w`, err)
+			}
+		}
+
+		if len(metrics.Policy.Include) > 0 && len(metrics.Policy.Exclude) > 0 {
+			return nil, errors.New("invalid 'policy': only one of 'include' and 'exclude' can be specified")
+		}
+
+		err := validatedPolicyFieldList(metrics.Policy.Include, names, "include", templateData)
+		if err != nil {
+			return nil, err
+		}
+
+		err = validatedPolicyFieldList(metrics.Policy.Exclude, names, "exclude", templateData)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	apiMetrics := &runtimev1.MetricsView{}
 
@@ -410,6 +478,29 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 		Path:   path,
 		Object: apiMetrics,
 	}, nil
+}
+
+func validatedPolicyFieldList(fieldConditions []*ConditionalColumn, names map[string]bool, property string, templateData rillv1.TemplateData) error {
+	if len(fieldConditions) > 0 {
+		for _, field := range fieldConditions {
+			if field.Name == "" || field.Condition == "" {
+				return fmt.Errorf("invalid 'policy': '%s' fields must have a valid 'name' and 'if' condition", property)
+			}
+			// check the name is a valid dimension that exists in the metrics view
+			if !names[field.Name] {
+				return fmt.Errorf("invalid 'policy': '%s' property %q does not exists in dimensions or measures list", property, field.Name)
+			}
+			cond, err := rillv1.ResolveTemplate(field.Condition, templateData)
+			if err != nil {
+				return fmt.Errorf(`invalid 'policy': 'if' condition templating for field %q is not valid: %w`, field.Name, err)
+			}
+			_, err = rillv1.EvaluateBoolExpression(cond)
+			if err != nil {
+				return fmt.Errorf(`invalid 'policy': 'if' condition for field %q not valuating to a boolean: %w`, field.Name, err)
+			}
+		}
+	}
+	return nil
 }
 
 // Get TimeGrain enum from string

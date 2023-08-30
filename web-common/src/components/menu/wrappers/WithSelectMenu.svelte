@@ -22,7 +22,7 @@ and the menu closes.
   export let paddingTop: number = undefined;
   export let paddingBottom: number = undefined;
   export let minWidth: string = undefined;
-  export let overflowFlipY = true;
+  export let overflowFlipY = false;
 
   export let active = false;
 

@@ -4,12 +4,16 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // MetricsViewToplist implements QueryService.
@@ -35,22 +39,40 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 		return nil, ErrForbidden
 	}
 
-	err := validateInlineMeasures(req.InlineMeasures)
+	mv, policy, err := resolveMVAndPolicy(ctx, s.runtime, req.InstanceId, req.MetricsViewName)
+	if err != nil {
+		return nil, err
+	}
+
+	if !checkFieldAccess(req.DimensionName, policy) {
+		return nil, ErrForbidden
+	}
+
+	// validate measures access
+	for _, m := range req.MeasureNames {
+		if !checkFieldAccess(m, policy) {
+			return nil, ErrForbidden
+		}
+	}
+
+	err = validateInlineMeasures(req.InlineMeasures)
 	if err != nil {
 		return nil, err
 	}
 
 	q := &queries.MetricsViewToplist{
-		MetricsViewName: req.MetricsViewName,
-		DimensionName:   req.DimensionName,
-		MeasureNames:    req.MeasureNames,
-		InlineMeasures:  req.InlineMeasures,
-		TimeStart:       req.TimeStart,
-		TimeEnd:         req.TimeEnd,
-		Limit:           &req.Limit,
-		Offset:          req.Offset,
-		Sort:            req.Sort,
-		Filter:          req.Filter,
+		MetricsViewName:  req.MetricsViewName,
+		DimensionName:    req.DimensionName,
+		MeasureNames:     req.MeasureNames,
+		InlineMeasures:   req.InlineMeasures,
+		TimeStart:        req.TimeStart,
+		TimeEnd:          req.TimeEnd,
+		Limit:            &req.Limit,
+		Offset:           req.Offset,
+		Sort:             req.Sort,
+		Filter:           req.Filter,
+		MetricsView:      mv,
+		ResolvedMVPolicy: policy,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -90,7 +112,23 @@ func (s *Server) MetricsViewComparisonToplist(ctx context.Context, req *runtimev
 		return nil, ErrForbidden
 	}
 
-	err := validateInlineMeasures(req.InlineMeasures)
+	mv, policy, err := resolveMVAndPolicy(ctx, s.runtime, req.InstanceId, req.MetricsViewName)
+	if err != nil {
+		return nil, err
+	}
+
+	if !checkFieldAccess(req.DimensionName, policy) {
+		return nil, ErrForbidden
+	}
+
+	// validate measures access
+	for _, m := range req.MeasureNames {
+		if !checkFieldAccess(m, policy) {
+			return nil, ErrForbidden
+		}
+	}
+
+	err = validateInlineMeasures(req.InlineMeasures)
 	if err != nil {
 		return nil, err
 	}
@@ -106,6 +144,8 @@ func (s *Server) MetricsViewComparisonToplist(ctx context.Context, req *runtimev
 		Offset:              req.Offset,
 		Sort:                req.Sort,
 		Filter:              req.Filter,
+		MetricsView:         mv,
+		ResolvedMVPolicy:    policy,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -135,20 +175,34 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		return nil, ErrForbidden
 	}
 
-	err := validateInlineMeasures(req.InlineMeasures)
+	mv, policy, err := resolveMVAndPolicy(ctx, s.runtime, req.InstanceId, req.MetricsViewName)
+	if err != nil {
+		return nil, err
+	}
+
+	// validate measures access
+	for _, m := range req.MeasureNames {
+		if !checkFieldAccess(m, policy) {
+			return nil, ErrForbidden
+		}
+	}
+
+	err = validateInlineMeasures(req.InlineMeasures)
 	if err != nil {
 		return nil, err
 	}
 
 	q := &queries.MetricsViewTimeSeries{
-		MetricsViewName: req.MetricsViewName,
-		MeasureNames:    req.MeasureNames,
-		InlineMeasures:  req.InlineMeasures,
-		TimeStart:       req.TimeStart,
-		TimeEnd:         req.TimeEnd,
-		TimeGranularity: req.TimeGranularity,
-		Filter:          req.Filter,
-		TimeZone:        req.TimeZone,
+		MetricsViewName:  req.MetricsViewName,
+		MeasureNames:     req.MeasureNames,
+		InlineMeasures:   req.InlineMeasures,
+		TimeStart:        req.TimeStart,
+		TimeEnd:          req.TimeEnd,
+		TimeGranularity:  req.TimeGranularity,
+		Filter:           req.Filter,
+		TimeZone:         req.TimeZone,
+		MetricsView:      mv,
+		ResolvedMVPolicy: policy,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -176,18 +230,32 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 		return nil, ErrForbidden
 	}
 
-	err := validateInlineMeasures(req.InlineMeasures)
+	mv, policy, err := resolveMVAndPolicy(ctx, s.runtime, req.InstanceId, req.MetricsViewName)
+	if err != nil {
+		return nil, err
+	}
+
+	// validate measures access
+	for _, m := range req.MeasureNames {
+		if !checkFieldAccess(m, policy) {
+			return nil, ErrForbidden
+		}
+	}
+
+	err = validateInlineMeasures(req.InlineMeasures)
 	if err != nil {
 		return nil, err
 	}
 
 	q := &queries.MetricsViewTotals{
-		MetricsViewName: req.MetricsViewName,
-		MeasureNames:    req.MeasureNames,
-		InlineMeasures:  req.InlineMeasures,
-		TimeStart:       req.TimeStart,
-		TimeEnd:         req.TimeEnd,
-		Filter:          req.Filter,
+		MetricsViewName:  req.MetricsViewName,
+		MeasureNames:     req.MeasureNames,
+		InlineMeasures:   req.InlineMeasures,
+		TimeStart:        req.TimeStart,
+		TimeEnd:          req.TimeEnd,
+		Filter:           req.Filter,
+		MetricsView:      mv,
+		ResolvedMVPolicy: policy,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -217,20 +285,27 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 		return nil, ErrForbidden
 	}
 
+	mv, policy, err := resolveMVAndPolicy(ctx, s.runtime, req.InstanceId, req.MetricsViewName)
+	if err != nil {
+		return nil, err
+	}
+
 	limit := int64(req.Limit)
 
 	q := &queries.MetricsViewRows{
-		MetricsViewName: req.MetricsViewName,
-		TimeStart:       req.TimeStart,
-		TimeEnd:         req.TimeEnd,
-		TimeGranularity: req.TimeGranularity,
-		Filter:          req.Filter,
-		Sort:            req.Sort,
-		Limit:           &limit,
-		Offset:          req.Offset,
-		TimeZone:        req.TimeZone,
+		MetricsViewName:  req.MetricsViewName,
+		TimeStart:        req.TimeStart,
+		TimeEnd:          req.TimeEnd,
+		TimeGranularity:  req.TimeGranularity,
+		Filter:           req.Filter,
+		Sort:             req.Sort,
+		Limit:            &limit,
+		Offset:           req.Offset,
+		TimeZone:         req.TimeZone,
+		MetricsView:      mv,
+		ResolvedMVPolicy: policy,
 	}
-	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
@@ -252,10 +327,17 @@ func (s *Server) MetricsViewTimeRange(ctx context.Context, req *runtimev1.Metric
 		return nil, ErrForbidden
 	}
 
-	q := &queries.MetricsViewTimeRange{
-		MetricsViewName: req.MetricsViewName,
+	mv, policy, err := resolveMVAndPolicy(ctx, s.runtime, req.InstanceId, req.MetricsViewName)
+	if err != nil {
+		return nil, err
 	}
-	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+
+	q := &queries.MetricsViewTimeRange{
+		MetricsViewName:  req.MetricsViewName,
+		MetricsView:      mv,
+		ResolvedMVPolicy: policy,
+	}
+	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
@@ -274,4 +356,59 @@ func validateInlineMeasures(ms []*runtimev1.InlineMeasure) error {
 		}
 	}
 	return nil
+}
+
+func resolveMVAndPolicy(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsView, *runtime.ResolvedMetricsViewPolicy, error) {
+	mv, lastUpdatedOn, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	resolvedPolicy, err := rt.ResolveMetricsViewPolicy(auth.GetClaims(ctx).Attributes(), instanceID, mv, lastUpdatedOn)
+	if err != nil {
+		return nil, nil, err
+	}
+	if resolvedPolicy != nil && !resolvedPolicy.HasAccess {
+		return nil, nil, ErrForbidden
+	}
+
+	return mv, resolvedPolicy, nil
+}
+
+// returns the metrics view and the time the catalog was last updated
+func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.MetricsView, time.Time, error) {
+	obj, err := rt.GetCatalogEntry(ctx, instanceID, name)
+	if err != nil {
+		return nil, time.Time{}, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	mv := obj.GetMetricsView()
+
+	return mv, obj.UpdatedOn, nil
+}
+
+func checkFieldAccess(field string, policy *runtime.ResolvedMetricsViewPolicy) bool {
+	if policy != nil {
+		if !policy.HasAccess {
+			return false
+		}
+
+		if len(policy.Include) > 0 {
+			for _, include := range policy.Include {
+				if include == field {
+					return true
+				}
+			}
+		} else if len(policy.Exclude) > 0 {
+			for _, exclude := range policy.Exclude {
+				if exclude == field {
+					return false
+				}
+			}
+		} else {
+			// if no include/exclude is specified, then all fields are allowed
+			return true
+		}
+	}
+	return true
 }

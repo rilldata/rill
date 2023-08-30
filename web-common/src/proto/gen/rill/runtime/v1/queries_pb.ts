@@ -270,6 +270,12 @@ export class ExportRequest extends Message<ExportRequest> {
      */
     value: MetricsViewRowsRequest;
     case: "metricsViewRowsRequest";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewTimeSeriesRequest metrics_view_time_series_request = 6;
+     */
+    value: MetricsViewTimeSeriesRequest;
+    case: "metricsViewTimeSeriesRequest";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<ExportRequest>) {
@@ -285,6 +291,7 @@ export class ExportRequest extends Message<ExportRequest> {
     { no: 3, name: "format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 4, name: "metrics_view_toplist_request", kind: "message", T: MetricsViewToplistRequest, oneof: "request" },
     { no: 5, name: "metrics_view_rows_request", kind: "message", T: MetricsViewRowsRequest, oneof: "request" },
+    { no: 6, name: "metrics_view_time_series_request", kind: "message", T: MetricsViewTimeSeriesRequest, oneof: "request" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExportRequest {

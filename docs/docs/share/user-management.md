@@ -68,4 +68,8 @@ Projects on Rill Cloud are private by default. To make a project's dashboards pu
 rill project edit --public=true
 ```
 
+:::caution Avoid Sharing Private Data
+
 Warning: If you make a project public, make sure it does not expose any confidential data.
+
+:::

@@ -38,6 +38,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "project_id",
 			Type:        drivers.StringPropertyType,
+			Required:    true,
 			DisplayName: "Project ID",
 			Description: "Google project ID.",
 			Placeholder: "my-project",

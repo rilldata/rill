@@ -757,6 +757,11 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
    */
   connectors: Connector[] = [];
 
+  /**
+   * @generated from field: map<string, string> annotations = 10;
+   */
+  annotations: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<EditInstanceRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -771,6 +776,7 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 8, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 9, name: "connectors", kind: "message", T: Connector, repeated: true },
+    { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceRequest {
@@ -910,6 +916,90 @@ export class EditInstanceVariablesResponse extends Message<EditInstanceVariables
 
   static equals(a: EditInstanceVariablesResponse | PlainMessage<EditInstanceVariablesResponse> | undefined, b: EditInstanceVariablesResponse | PlainMessage<EditInstanceVariablesResponse> | undefined): boolean {
     return proto3.util.equals(EditInstanceVariablesResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.EditInstanceAnnotations.
+ *
+ * @generated from message rill.runtime.v1.EditInstanceAnnotationsRequest
+ */
+export class EditInstanceAnnotationsRequest extends Message<EditInstanceAnnotationsRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: map<string, string> annotations = 2;
+   */
+  annotations: { [key: string]: string } = {};
+
+  constructor(data?: PartialMessage<EditInstanceAnnotationsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.EditInstanceAnnotationsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceAnnotationsRequest {
+    return new EditInstanceAnnotationsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EditInstanceAnnotationsRequest {
+    return new EditInstanceAnnotationsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EditInstanceAnnotationsRequest {
+    return new EditInstanceAnnotationsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: EditInstanceAnnotationsRequest | PlainMessage<EditInstanceAnnotationsRequest> | undefined, b: EditInstanceAnnotationsRequest | PlainMessage<EditInstanceAnnotationsRequest> | undefined): boolean {
+    return proto3.util.equals(EditInstanceAnnotationsRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.EditInstanceAnnotations
+ *
+ * @generated from message rill.runtime.v1.EditInstanceAnnotationsResponse
+ */
+export class EditInstanceAnnotationsResponse extends Message<EditInstanceAnnotationsResponse> {
+  /**
+   * @generated from field: rill.runtime.v1.Instance instance = 1;
+   */
+  instance?: Instance;
+
+  constructor(data?: PartialMessage<EditInstanceAnnotationsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.EditInstanceAnnotationsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance", kind: "message", T: Instance },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceAnnotationsResponse {
+    return new EditInstanceAnnotationsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EditInstanceAnnotationsResponse {
+    return new EditInstanceAnnotationsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EditInstanceAnnotationsResponse {
+    return new EditInstanceAnnotationsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: EditInstanceAnnotationsResponse | PlainMessage<EditInstanceAnnotationsResponse> | undefined, b: EditInstanceAnnotationsResponse | PlainMessage<EditInstanceAnnotationsResponse> | undefined): boolean {
+    return proto3.util.equals(EditInstanceAnnotationsResponse, a, b);
   }
 }
 
@@ -3864,6 +3954,102 @@ export class ListConnectorsResponse extends Message<ListConnectorsResponse> {
 
   static equals(a: ListConnectorsResponse | PlainMessage<ListConnectorsResponse> | undefined, b: ListConnectorsResponse | PlainMessage<ListConnectorsResponse> | undefined): boolean {
     return proto3.util.equals(ListConnectorsResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.IssueDevJWT
+ *
+ * @generated from message rill.runtime.v1.IssueDevJWTRequest
+ */
+export class IssueDevJWTRequest extends Message<IssueDevJWTRequest> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string email = 2;
+   */
+  email = "";
+
+  /**
+   * @generated from field: repeated string groups = 3;
+   */
+  groups: string[] = [];
+
+  /**
+   * @generated from field: bool admin = 4;
+   */
+  admin = false;
+
+  constructor(data?: PartialMessage<IssueDevJWTRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.IssueDevJWTRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "groups", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "admin", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): IssueDevJWTRequest {
+    return new IssueDevJWTRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): IssueDevJWTRequest {
+    return new IssueDevJWTRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): IssueDevJWTRequest {
+    return new IssueDevJWTRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: IssueDevJWTRequest | PlainMessage<IssueDevJWTRequest> | undefined, b: IssueDevJWTRequest | PlainMessage<IssueDevJWTRequest> | undefined): boolean {
+    return proto3.util.equals(IssueDevJWTRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.IssueDevJWT
+ *
+ * @generated from message rill.runtime.v1.IssueDevJWTResponse
+ */
+export class IssueDevJWTResponse extends Message<IssueDevJWTResponse> {
+  /**
+   * @generated from field: string jwt = 1;
+   */
+  jwt = "";
+
+  constructor(data?: PartialMessage<IssueDevJWTResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.IssueDevJWTResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "jwt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): IssueDevJWTResponse {
+    return new IssueDevJWTResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): IssueDevJWTResponse {
+    return new IssueDevJWTResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): IssueDevJWTResponse {
+    return new IssueDevJWTResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: IssueDevJWTResponse | PlainMessage<IssueDevJWTResponse> | undefined, b: IssueDevJWTResponse | PlainMessage<IssueDevJWTResponse> | undefined): boolean {
+    return proto3.util.equals(IssueDevJWTResponse, a, b);
   }
 }
 
