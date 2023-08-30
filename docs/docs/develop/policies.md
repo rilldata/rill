@@ -55,7 +55,7 @@ When a user loads a dashboard, the policies are resolved in two phases:
 
 ## Testing your policies
 
-In development, test your policies by adding "mock users" to your project and viewing the dashboard as one of them.
+In development (on `localhost`), you can test your policies by adding "mock users" to your project and viewing the dashboard as one of them.
 
 In your project's `rill.yaml` file, add a `mock_users` section. Each mock user must have an `email` attribute, and can optionally have `name` and `admin` attributes. For example:
 ```yaml
