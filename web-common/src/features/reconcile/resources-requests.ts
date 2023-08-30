@@ -19,7 +19,7 @@ export function resourcesRequests(queryClient: QueryClient) {
 
   return runtime.subscribe((runtime) => {
     client?.cancel();
-    if (!runtime?.instanceId || !runtime.host) return;
+    if (!runtime?.instanceId || !runtime?.host) return;
 
     client = new WatchRequestClient<
       RuntimeServiceWatchResourcesParams,
@@ -42,11 +42,14 @@ async function handleResourceResponses(
   queryClient: QueryClient,
   instanceId: string
 ) {
-  for await (const res of client.send(() =>
+  const stream = client.send(() =>
+    // When there is a reconnection we need to invalidate all resources.
+    // This is to make sure invalidations for files changed when disconnected goes through
     invalidateAllResources(queryClient, instanceId)
-  )) {
+  );
+
+  for await (const res of stream) {
     if (!res.resource) continue;
-    console.log(`File: ${res.event}: ${res.resource.meta.name.name}`);
 
     // invalidations will wait until the re-fetched query is completed
     // so, we should not `await` here

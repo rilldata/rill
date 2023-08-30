@@ -1,3 +1,7 @@
+/**
+ * Wrapper around native fetch method for streaming requests.
+ * Pass in {@link AbortSignal} to control cancellation.
+ */
 export async function* streamingFetchWrapper<T>(
   url: string,
   method: string,
@@ -29,7 +33,7 @@ export async function* streamingFetchWrapper<T>(
     for (const part of parts) {
       if (part === "") continue;
       if (!part.endsWith("}")) {
-        prevPart = part;
+        prevPart += part;
         continue;
       }
       try {

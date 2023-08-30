@@ -18,7 +18,7 @@ export function filesRequests(queryClient: QueryClient) {
 
   return runtime.subscribe((runtime) => {
     client?.cancel();
-    if (!runtime?.instanceId || !runtime.host) return;
+    if (!runtime?.instanceId || !runtime?.host) return;
 
     client = new WatchRequestClient<
       RuntimeServiceWatchFilesParams,
@@ -41,13 +41,13 @@ async function handleFileResponses(
   queryClient: QueryClient,
   instanceId: string
 ) {
-  for await (const res of client.send(() =>
+  const stream = client.send(() =>
     // When there is a reconnection we need to invalidate all files.
     // This is to make sure invalidations for files changed when disconnected goes through
     invalidateAllFiles(queryClient, instanceId)
-  )) {
-    console.log(`File: ${res.event}: ${res.path}`);
+  );
 
+  for await (const res of stream) {
     // invalidations will wait until the re-fetched query is completed
     // so, we should not `await` here
     switch (res.event) {
