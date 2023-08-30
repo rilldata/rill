@@ -1,11 +1,9 @@
 import type { Interval } from "@rilldata/web-common/lib/duckdb-data-types";
-import {
+import type {
   FormatterOptionsCommon,
   NumberParts,
   Formatter,
-  NumberKind,
   FormatterRangeSpecsStrategy,
-  FormatterOptionsIntTimesPowerOfTenStrategy,
 } from "../humanizer-types";
 
 const MS_PER_MICRO = 0.001;
