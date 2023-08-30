@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { afterNavigate, goto } from "$app/navigation";
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardStateProvider from "@rilldata/web-common/features/dashboards/DashboardStateProvider.svelte";
+  import { resetSelectedMockUserAfterNavigate } from "@rilldata/web-common/features/dashboards/granular-access-policies/resetSelectedMockUserAfterNavigate";
   import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
   import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
@@ -69,15 +70,7 @@
     }
   );
 
-  afterNavigate((nav) => {
-    // Remove any selected mock user, unless you're navigating from the edit page to the view page
-    // Note: It'd be better if we didn't do this. It's a hack to avoid the following bug:
-    // Navigating to a dashboard where the selected mock user does not have access shows a blank page –
-    // because under this scenario, the catalog entry returns a 401, and it's required to enter the top-level Dashboard component.
-    if (nav.from.params.name !== nav.to.params.name) {
-      selectedMockUserStore.set(null);
-    }
-  });
+  resetSelectedMockUserAfterNavigate();
 </script>
 
 <svelte:head>
