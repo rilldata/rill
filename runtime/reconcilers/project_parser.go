@@ -435,7 +435,7 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, self
 
 	// Update meta if refs or file paths changed
 	if !slices.Equal(existing.Meta.FilePaths, def.Paths) || !slices.Equal(existing.Meta.Refs, refs) { // TODO: Don't use slices.Equal for protos
-		err := r.C.UpdateMeta(ctx, n, refs, self.Meta.Name, def.Paths, nil)
+		err := r.C.UpdateMeta(ctx, n, refs, self.Meta.Name, def.Paths)
 		if err != nil {
 			return err
 		}
@@ -443,7 +443,7 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, self
 
 	// Update spec if it changed
 	if res != nil {
-		err := r.C.UpdateMeta(ctx, n, refs, self.Meta.Name, def.Paths, nil)
+		err := r.C.UpdateMeta(ctx, n, refs, self.Meta.Name, def.Paths)
 		if err != nil {
 			return err
 		}
@@ -502,7 +502,7 @@ func (r *ProjectParserReconciler) attemptRename(ctx context.Context, self *runti
 	// NOTE: Not comparing owner and paths since changing those are allowed when renaming.
 
 	// Run rename
-	err := r.C.UpdateMeta(ctx, existing.Meta.Name, existing.Meta.Refs, self.Meta.Name, def.Paths, newName)
+	err := r.C.UpdateName(ctx, existing.Meta.Name, newName, self.Meta.Name, def.Paths)
 	if err != nil {
 		return false, err
 	}
