@@ -389,7 +389,11 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 
 	prodTTLSeconds := proj.ProdTTLSeconds
 	if req.ProdTtlSeconds != nil {
-		prodTTLSeconds = req.ProdTtlSeconds
+		if *req.ProdTtlSeconds == 0 {
+			prodTTLSeconds = nil
+		} else {
+			prodTTLSeconds = req.ProdTtlSeconds
+		}
 	}
 
 	opts := &database.UpdateProjectOptions{
