@@ -197,6 +197,9 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		}
 		if tmp.Policy.Include != nil {
 			for _, include := range tmp.Policy.Include {
+				if include == nil {
+					return fmt.Errorf("invalid 'policy': 'include' fields must have a valid 'name' and 'if' condition")
+				}
 				if include.Name == "" || include.Condition == "" {
 					return fmt.Errorf("invalid 'policy': 'include' fields must have a valid 'name' and 'if' condition")
 				}
@@ -215,6 +218,9 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		}
 		if tmp.Policy.Exclude != nil {
 			for _, exclude := range tmp.Policy.Exclude {
+				if exclude == nil {
+					return fmt.Errorf("invalid 'policy': 'include' fields must have a valid 'name' and 'if' condition")
+				}
 				if exclude.Name == "" || exclude.Condition == "" {
 					return fmt.Errorf("invalid 'policy': 'include' fields must have a valid 'name' and 'if' condition")
 				}
