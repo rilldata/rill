@@ -387,7 +387,11 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		}
 	}
 
-	prodTTLSeconds := valOrDefault(req.ProdTtlSeconds, *proj.ProdTTLSeconds)
+	prodTTLSeconds := proj.ProdTTLSeconds
+	if req.ProdTtlSeconds != nil {
+		prodTTLSeconds = req.ProdTtlSeconds
+	}
+
 	opts := &database.UpdateProjectOptions{
 		Name:                 valOrDefault(req.NewName, proj.Name),
 		Description:          valOrDefault(req.Description, proj.Description),
@@ -398,7 +402,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		ProdVariables:        proj.ProdVariables,
 		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
-		ProdTTLSeconds:       &prodTTLSeconds,
+		ProdTTLSeconds:       prodTTLSeconds,
 		Region:               valOrDefault(req.Region, proj.Region),
 	}
 	proj, err = s.admin.UpdateProject(ctx, proj, opts)
