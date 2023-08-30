@@ -16,18 +16,14 @@ import (
 	"google.golang.org/api/iterator"
 )
 
-func (iter *rowIterator) AsArrowRecordReader() (array.RecordReader, error) {
-	// schema is available after first call to next records only
-	tn := time.Now()
-	ser, err := iter.bqIter.NextRecord()
+func (iter *fileIterator) AsArrowRecordReader() (array.RecordReader, error) {
+	arrowIt, err := iter.bqIter.ArrowIterator()
 	if err != nil {
 		return nil, err
 	}
-	duration := time.Since(tn)
 
 	allocator := memory.DefaultAllocator
-	arrowSerializedSchema := iter.bqIter.Schema()
-	buf := bytes.NewBuffer(arrowSerializedSchema)
+	buf := bytes.NewBuffer(arrowIt.SerializedArrowSchema())
 	rdr, err := ipc.NewReader(buf, ipc.WithAllocator(allocator))
 	if err != nil {
 		return nil, err
@@ -35,21 +31,20 @@ func (iter *rowIterator) AsArrowRecordReader() (array.RecordReader, error) {
 	defer rdr.Release()
 
 	rec := &arrowRecordReader{
-		bqIter:      iter.bqIter,
+		bqIter:      arrowIt,
 		arrowSchema: rdr.Schema(),
 		refCount:    1,
-		apinext:     duration,
 		allocator:   allocator,
 		logger:      iter.logger,
+		records:     make([]arrow.Record, 0),
 	}
 
-	rec.records, rec.err = rec.nextArrowRecords(ser)
 	return rec, rec.err
 }
 
 // some impl details are copied from array.simpleRecords
 type arrowRecordReader struct {
-	bqIter      *bigquery.ArrowIterator
+	bqIter      bigquery.ArrowIterator
 	records     []arrow.Record
 	cur         arrow.Record
 	arrowSchema *arrow.Schema
@@ -107,7 +102,7 @@ func (rs *arrowRecordReader) Next() bool {
 
 	if len(rs.records) == 0 {
 		tz := time.Now()
-		next, err := rs.bqIter.NextRecord()
+		next, err := rs.bqIter.Next()
 		if err != nil {
 			rs.err = err
 			return false
@@ -134,14 +129,14 @@ func (rs *arrowRecordReader) Err() error {
 	return rs.err
 }
 
-func (rs *arrowRecordReader) nextArrowRecords(serializedRecord []byte) ([]arrow.Record, error) {
+func (rs *arrowRecordReader) nextArrowRecords(r *bigquery.ArrowRecordBatch) ([]arrow.Record, error) {
 	t := time.Now()
 	defer func() {
 		rs.ipcread += time.Since(t)
 	}()
 
-	buf := bytes.NewBuffer(rs.bqIter.Schema())
-	buf.Write(serializedRecord)
+	buf := bytes.NewBuffer(rs.bqIter.SerializedArrowSchema())
+	buf.Write(r.Data)
 	rdr, err := ipc.NewReader(buf, ipc.WithSchema(rs.arrowSchema), ipc.WithAllocator(rs.allocator))
 	if err != nil {
 		return nil, err

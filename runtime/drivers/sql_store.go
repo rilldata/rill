@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/apache/arrow/go/v13/arrow/array"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
@@ -15,7 +14,10 @@ var ErrNotImplemented = errors.New("not implemented")
 // In future the results can be produced in other formats like arrow as well.
 // May be call it DataWarehouse to differentiate from OLAP or postgres?
 type SQLStore interface {
+	// Query returns driver.RowIterator
 	Query(ctx context.Context, props map[string]any, sql string) (RowIterator, error)
+	// QueryAsFiles returns files downloaded into local paths
+	QueryAsFiles(ctx context.Context, props map[string]any, sql string) (FileIterator, error)
 }
 
 // RowIterator returns an iterator to iterate over result of a sql query
@@ -29,6 +31,4 @@ type RowIterator interface {
 	// Size returns total size of data downloaded in unit.
 	// Returns 0,false if not able to compute size in given unit
 	Size(unit ProgressUnit) (uint64, bool)
-	// AsArrowRecordReader returns array.RecordReader if the results can be produed as batch of arrow records
-	AsArrowRecordReader() (array.RecordReader, error)
 }

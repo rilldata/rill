@@ -3,17 +3,27 @@ package bigquery
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
 	"cloud.google.com/go/bigquery"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/apache/arrow/go/v13/parquet"
+	"github.com/apache/arrow/go/v13/parquet/compress"
+	"github.com/apache/arrow/go/v13/parquet/pqarrow"
+	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"go.uber.org/zap"
 )
 
 // Query implements drivers.SQLStore
 func (c *Connection) Query(ctx context.Context, props map[string]any, sql string) (drivers.RowIterator, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
+// QueryAsFiles implements drivers.SQLStore
+func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, sql string) (drivers.FileIterator, error) {
 	srcProps, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, err
@@ -34,7 +44,7 @@ func (c *Connection) Query(ctx context.Context, props map[string]any, sql string
 
 	now := time.Now()
 	q := client.Query(sql)
-	it, err := q.ReadAsArrowObjects(ctx)
+	it, err := q.Read(ctx)
 	if err != nil && !strings.Contains(err.Error(), "Syntax error") {
 		// close the read storage API client
 		client.Close()
@@ -48,7 +58,7 @@ func (c *Connection) Query(ctx context.Context, props map[string]any, sql string
 		}
 
 		q := client.Query(sql)
-		it, err = q.ReadAsArrowObjects(ctx)
+		it, err = q.Read(ctx)
 	}
 	if err != nil {
 		client.Close()
@@ -56,36 +66,88 @@ func (c *Connection) Query(ctx context.Context, props map[string]any, sql string
 	}
 	c.logger.Info("query took", zap.Duration("duration", time.Since(now)))
 
-	return &rowIterator{
+	return &fileIterator{
 		client: client,
 		bqIter: it,
+		logger: c.logger,
 	}, nil
 }
 
-type rowIterator struct {
-	client *bigquery.Client
-	bqIter *bigquery.ArrowIterator
-	logger *zap.Logger
+type fileIterator struct {
+	client       *bigquery.Client
+	bqIter       *bigquery.RowIterator
+	logger       *zap.Logger
+	tempFilePath string
+	downloaded   bool
 }
 
-var _ drivers.RowIterator = &rowIterator{}
-
-func (r *rowIterator) Schema(ctx context.Context) (*runtimev1.StructType, error) {
-	return nil, drivers.ErrNotImplemented
+// Close implements drivers.FileIterator.
+func (f *fileIterator) Close() error {
+	return os.Remove(f.tempFilePath)
 }
 
-func (r *rowIterator) Next(ctx context.Context) ([]any, error) {
-	return nil, drivers.ErrNotImplemented
+// HasNext implements drivers.FileIterator.
+func (f *fileIterator) HasNext() bool {
+	return !f.downloaded
 }
 
-func (r *rowIterator) Close() error {
-	return r.client.Close()
+// KeepFilesUntilClose implements drivers.FileIterator.
+func (f *fileIterator) KeepFilesUntilClose(keepFilesUntilClose bool) {
 }
 
-func (r *rowIterator) Size(unit drivers.ProgressUnit) (uint64, bool) {
-	if unit == drivers.ProgressUnitRecord {
-		return r.bqIter.TotalRows, true
+// NextBatch implements drivers.FileIterator.
+func (f *fileIterator) NextBatch(limit int) ([]string, error) {
+	// create a temp file
+	fw, err := fileutil.OpenTempFileInDir("", "temp.parquet")
+	if err != nil {
+		return nil, err
 	}
+	defer fw.Close()
+	f.tempFilePath = fw.Name()
+	f.downloaded = true
 
-	return 0, false
+	rdr, err := f.AsArrowRecordReader()
+	if err != nil {
+		return nil, err
+	}
+	defer rdr.Release()
+
+	tf := time.Now()
+	writer, err := pqarrow.NewFileWriter(rdr.Schema(), fw,
+		parquet.NewWriterProperties(
+			parquet.WithCompression(compress.Codecs.Snappy),
+			parquet.WithRootRepetition(parquet.Repetitions.Required),
+			// duckdb has issues reading statistics of string type generated with this write
+			// column statistics are not useful if full file need to be ingested so better to disable to save computations
+			parquet.WithStats(false),
+		),
+		pqarrow.NewArrowWriterProperties(pqarrow.WithStoreSchema()))
+	if err != nil {
+		return nil, err
+	}
+	defer writer.Close()
+
+	// write arrow records to parquet file
+	for rdr.Next() {
+		if err := writer.WriteBuffered(rdr.Record()); err != nil {
+			return nil, err
+		}
+	}
+	writer.Close()
+	fw.Close()
+	f.logger.Info("time taken to write arrow records in parquet file", zap.Duration("duration", time.Since(tf)))
+
+	fileInfo, err := os.Stat(fw.Name())
+	if err != nil {
+		return nil, err
+	}
+	f.logger.Info("size of file", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()))
+	return []string{fw.Name()}, nil
 }
+
+// Size implements drivers.FileIterator.
+func (*fileIterator) Size(unit drivers.ProgressUnit) (int64, bool) {
+	panic("unimplemented")
+}
+
+var _ drivers.FileIterator = &fileIterator{}

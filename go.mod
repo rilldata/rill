@@ -11,7 +11,7 @@ require (
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/XSAM/otelsql v0.23.0
 	github.com/alicebob/miniredis v2.5.0+incompatible
-	github.com/apache/arrow/go/v13 v13.0.0-20230822132409-9ddd8d5c5279
+	github.com/apache/arrow/go/v13 v13.0.0
 	github.com/apache/calcite-avatica-go/v5 v5.2.0
 	github.com/aws/aws-sdk-go v1.44.268
 	github.com/benbjohnson/clock v1.3.5
@@ -85,13 +85,10 @@ require (
 	moul.io/zapfilter v1.7.0
 )
 
-require (
-	github.com/apache/arrow/go/v12 v12.0.0 // indirect
-	google.golang.org/genproto v0.0.0-20230530153820-e85fd2cbaebc // indirect
-)
+require google.golang.org/genproto v0.0.0-20230530153820-e85fd2cbaebc // indirect
 
 require (
-	cloud.google.com/go v0.110.2
+	cloud.google.com/go v0.110.2 // indirect
 	cloud.google.com/go/bigquery v1.52.0
 	cloud.google.com/go/compute v1.19.3 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
@@ -261,6 +258,6 @@ require (
 
 replace github.com/apache/calcite-avatica-go/v5 v5.2.0 => github.com/rilldata/calcite-avatica-go/v5 v5.0.0-20230621112535-eea498ff2a3d
 
-replace cloud.google.com/go/bigquery v1.52.0 => github.com/k-anshul/google-cloud-go/bigquery v0.0.0-20230828111937-1c2929d3860e
+replace cloud.google.com/go/bigquery v1.52.0 => github.com/k-anshul/google-cloud-go/bigquery v0.0.0-20230830084949-6713b7406620
 
 exclude modernc.org/sqlite v1.18.1
