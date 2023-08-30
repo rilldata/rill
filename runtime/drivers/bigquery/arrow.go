@@ -42,8 +42,7 @@ func (f *fileIterator) AsArrowRecordReader() (array.RecordReader, error) {
 		records:     make([]arrow.Record, 0),
 		ctx:         f.ctx,
 	}
-
-	return rec, rec.err
+	return rec, nil
 }
 
 // some impl details are copied from array.simpleRecords
@@ -73,8 +72,6 @@ func (rs *arrowRecordReader) Retain() {
 // When the reference count goes to zero, the memory is freed.
 // Release may be called simultaneously from multiple goroutines.
 func (rs *arrowRecordReader) Release() {
-	rs.logger.Info("next api call took", zap.Float64("seconds", rs.apinext.Seconds()), observability.ZapCtx(rs.ctx))
-	rs.logger.Info("next ipc read took", zap.Float64("seconds", rs.ipcread.Seconds()), observability.ZapCtx(rs.ctx))
 	if atomic.LoadInt64(&rs.refCount) <= 0 {
 		return
 	}
@@ -88,6 +85,8 @@ func (rs *arrowRecordReader) Release() {
 		}
 		rs.records = nil
 	}
+	rs.logger.Info("next api call took", zap.Float64("seconds", rs.apinext.Seconds()), observability.ZapCtx(rs.ctx))
+	rs.logger.Info("next ipc read took", zap.Float64("seconds", rs.ipcread.Seconds()), observability.ZapCtx(rs.ctx))
 }
 
 // Schema returns the underlying arrow schema

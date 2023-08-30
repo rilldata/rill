@@ -52,7 +52,8 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, 
 			observability.ZapCtx(ctx))
 	}()
 	create := true
-	// TODO :: iteration over fileiterator is similar to consuming fileIterator in objectStore_to_duckDB
+	// TODO :: iteration over fileiterator is similar(apart from no schema changes possible here)
+	// to consuming fileIterator in objectStore_to_duckDB
 	// both can be refactored to follow same path
 	for iter.HasNext() {
 		files, err := iter.NextBatch(opts.IteratorBatch)
