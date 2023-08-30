@@ -69,12 +69,14 @@
     }
   );
 
-  afterNavigate(() => {
-    // Remove any selected mock user
+  afterNavigate((nav) => {
+    // Remove any selected mock user, unless you're navigating from the edit page to the view page
     // Note: It'd be better if we didn't do this. It's a hack to avoid the following bug:
     // Navigating to a dashboard where the selected mock user does not have access shows a blank page –
     // because under this scenario, the catalog entry returns a 401, and it's required to enter the top-level Dashboard component.
-    selectedMockUserStore.set(null);
+    if (nav.from.params.name !== nav.to.params.name) {
+      selectedMockUserStore.set(null);
+    }
   });
 </script>
 
