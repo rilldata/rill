@@ -51,7 +51,7 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, 
 			zap.Bool("success", transferErr == nil),
 			observability.ZapCtx(ctx))
 	}()
-	insert := true
+	create := true
 	// TODO :: iteration over fileiterator is similar to consuming fileIterator in objectStore_to_duckDB
 	// both can be refactored to follow same path
 	for iter.HasNext() {
@@ -67,11 +67,11 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, 
 		}
 
 		var query string
-		if insert {
-			query = fmt.Sprintf("INSERT INTO %s (SELECT * FROM %s);", dbSink.Table, from)
-			insert = false
-		} else {
+		if create {
 			query = fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", dbSink.Table, from)
+			create = false
+		} else {
+			query = fmt.Sprintf("INSERT INTO %s (SELECT * FROM %s);", dbSink.Table, from)
 		}
 
 		if err := s.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1}); err != nil {

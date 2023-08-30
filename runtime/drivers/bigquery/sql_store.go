@@ -167,7 +167,7 @@ func (f *fileIterator) NextBatch(limit int) ([]string, error) {
 		}
 	}
 	if rdr.Err() != nil {
-		return nil, fmt.Errorf("file write failed with error %w", err)
+		return nil, fmt.Errorf("file write failed with error: %w", rdr.Err())
 	}
 	writer.Close()
 	fw.Close()
