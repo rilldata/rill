@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
-	"strings"
 	"sync/atomic"
 	"time"
 
@@ -130,9 +128,6 @@ func (rs *arrowRecordReader) Next() bool {
 func (rs *arrowRecordReader) Err() error {
 	if errors.Is(rs.err, iterator.Done) {
 		return nil
-	}
-	if rs.err != nil && strings.Contains(rs.err.Error(), "err not implemented: support for DECIMAL256") {
-		return fmt.Errorf("NUMERIC and BIGNUMERIC datatypes are not supported. Consider casting to varchar or float64(if loss of precision is acceptable) in the submitted query")
 	}
 	return rs.err
 }

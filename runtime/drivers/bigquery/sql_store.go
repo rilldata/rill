@@ -150,6 +150,9 @@ func (f *fileIterator) NextBatch(limit int) ([]string, error) {
 		),
 		pqarrow.NewArrowWriterProperties(pqarrow.WithStoreSchema()))
 	if err != nil {
+		if strings.Contains(err.Error(), "not implemented: support for DECIMAL256") {
+			return nil, fmt.Errorf("BIGNUMERIC datatype is not supported. Consider casting to varchar or NUMERIC(if loss of precision is acceptable) in the submitted query")
+		}
 		return nil, err
 	}
 	defer writer.Close()
@@ -159,6 +162,8 @@ func (f *fileIterator) NextBatch(limit int) ([]string, error) {
 	// write arrow records to parquet file
 	for rdr.Next() {
 		select {
+		case <-f.ctx.Done():
+			return nil, f.ctx.Err()
 		case <-ticker.C:
 			fileInfo, err := os.Stat(fw.Name())
 			if err == nil { // ignore error
@@ -216,6 +221,7 @@ func (f *fileIterator) downloadAsJSONFile() error {
 	f.tempFilePath = fw.Name()
 	f.downloaded = true
 
+	init := false
 	// not implementing size check since this flow is expected to be run for less data size only
 	for {
 		row := make(map[string]bigquery.Value)
@@ -224,6 +230,15 @@ func (f *fileIterator) downloadAsJSONFile() error {
 				return nil
 			}
 			return err
+		}
+
+		// schema and total rows is available after first call to next only
+		if !init {
+			init = true
+			f.progress.Target(int64(f.bqIter.TotalRows), drivers.ProgressUnitRecord)
+			if hasBigNumericType(f.bqIter.Schema) {
+				return fmt.Errorf("BIGNUMERIC datatype is not supported. Consider casting to varchar or NUMERIC(if loss of precision is acceptable) in the submitted query")
+			}
 		}
 
 		bytes, err := json.Marshal(row)
@@ -237,6 +252,17 @@ func (f *fileIterator) downloadAsJSONFile() error {
 			return err
 		}
 	}
+}
+
+func hasBigNumericType(s bigquery.Schema) bool {
+	for _, f := range s {
+		if f.Type == bigquery.BigNumericFieldType {
+			return true
+		} else if f.Type == bigquery.RecordFieldType && hasBigNumericType(f.Schema) {
+			return true
+		}
+	}
+	return false
 }
 
 var _ drivers.FileIterator = &fileIterator{}
