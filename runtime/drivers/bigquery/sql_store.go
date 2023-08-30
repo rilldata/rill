@@ -2,6 +2,8 @@ package bigquery
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -16,6 +18,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
+	"google.golang.org/api/iterator"
 )
 
 // Query implements drivers.SQLStore
@@ -110,6 +113,14 @@ func (f *fileIterator) KeepFilesUntilClose(keepFilesUntilClose bool) {
 // NextBatch implements drivers.FileIterator.
 // TODO :: currently it downloads all records in a single file. Need to check if it is efficient to ingest a single file with size in tens of GBs or more.
 func (f *fileIterator) NextBatch(limit int) ([]string, error) {
+	// storage API not available so can't read as arrow records. Read results row by row and dump in a json file.
+	if !f.bqIter.IsAccelerated() {
+		if err := f.downloadAsJSONFile(); err != nil {
+			return nil, err
+		}
+		return []string{f.tempFilePath}, nil
+	}
+
 	// create a temp file
 	fw, err := fileutil.OpenTempFileInDir("", "temp.parquet")
 	if err != nil {
@@ -148,8 +159,6 @@ func (f *fileIterator) NextBatch(limit int) ([]string, error) {
 	// write arrow records to parquet file
 	for rdr.Next() {
 		select {
-		case <-f.ctx.Done():
-			return nil, f.ctx.Err()
 		case <-ticker.C:
 			fileInfo, err := os.Stat(fw.Name())
 			if err == nil { // ignore error
@@ -189,6 +198,44 @@ func (f *fileIterator) Size(unit drivers.ProgressUnit) (int64, bool) {
 		return 1, true
 	default:
 		return 0, false
+	}
+}
+
+func (f *fileIterator) downloadAsJSONFile() error {
+	tf := time.Now()
+	defer func() {
+		f.logger.Info("time taken to write row in json file", zap.Duration("duration", time.Since(tf)), observability.ZapCtx(f.ctx))
+	}()
+
+	// create a temp file
+	fw, err := fileutil.OpenTempFileInDir("", "temp.ndjson")
+	if err != nil {
+		return err
+	}
+	defer fw.Close()
+	f.tempFilePath = fw.Name()
+	f.downloaded = true
+
+	// not implementing size check since this flow is expected to be run for less data size only
+	for {
+		row := make(map[string]bigquery.Value)
+		if err := f.bqIter.Next(&row); err != nil {
+			if errors.Is(err, iterator.Done) {
+				return nil
+			}
+			return err
+		}
+
+		bytes, err := json.Marshal(row)
+		if err != nil {
+			return fmt.Errorf("conversion of row to json failed with error: %w", err)
+		}
+		if _, err = fw.Write(bytes); err != nil {
+			return err
+		}
+		if _, err = fw.WriteString("\n"); err != nil {
+			return err
+		}
 	}
 }
 

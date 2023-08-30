@@ -1559,8 +1559,8 @@ github.com/juju/qthttptest v0.1.1/go.mod h1:aTlAv8TYaflIiTDIQYzxnl1QdPjAg8Q8qJME
 github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7VTCxuUUipMqKk8s4w=
 github.com/julienschmidt/httprouter v1.3.0/go.mod h1:JR6WtHb+2LUe8TCKY3cZOxFyyO8IZAc4RVcycCCAKdM=
 github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
-github.com/k-anshul/google-cloud-go/bigquery v0.0.0-20230830084949-6713b7406620 h1:A4mbx9NAG4iHQAuRVEJpdwRkNTi6ag1UOK+6yTeXuqo=
-github.com/k-anshul/google-cloud-go/bigquery v0.0.0-20230830084949-6713b7406620/go.mod h1:sJyijXv7F7/CRsPuWjId7YvBMzDi2H8qokBxqstIY+U=
+github.com/k-anshul/google-cloud-go/bigquery v0.0.0-20230830110740-57fe623cde03 h1:Bx9nbiPCx375f58XQiLf4Rhc4UdxSd93PZRODmc0HvY=
+github.com/k-anshul/google-cloud-go/bigquery v0.0.0-20230830110740-57fe623cde03/go.mod h1:sJyijXv7F7/CRsPuWjId7YvBMzDi2H8qokBxqstIY+U=
 github.com/karrick/godirwalk v1.8.0/go.mod h1:H5KPZjojv4lE+QYImBI8xVtrBRgYrIVsaRPx4tDPEn4=
 github.com/karrick/godirwalk v1.10.3/go.mod h1:RoGL9dQei4vP9ilrpETWE8CLOZ1kiN0LhBygSwrAsHA=
 github.com/kataras/tablewriter v0.0.0-20180708051242-e063d29b7c23 h1:M8exrBzuhWcU6aoHJlHWPe4qFjVKzkMGRal78f5jRRU=
