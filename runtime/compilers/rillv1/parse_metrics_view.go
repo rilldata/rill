@@ -197,10 +197,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		}
 		if tmp.Policy.Include != nil {
 			for _, include := range tmp.Policy.Include {
-				if include == nil {
-					return fmt.Errorf("invalid 'policy': 'include' fields must have a valid 'name' and 'if' condition")
-				}
-				if include.Name == "" || include.Condition == "" {
+				if include == nil || include.Name == "" || include.Condition == "" {
 					return fmt.Errorf("invalid 'policy': 'include' fields must have a valid 'name' and 'if' condition")
 				}
 				if !names[include.Name] {
@@ -212,17 +209,14 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 				}
 				_, err = EvaluateBoolExpression(cond)
 				if err != nil {
-					return fmt.Errorf(`invalid 'policy': 'if' condition for field %q not valuating to a boolean: %w`, include.Name, err)
+					return fmt.Errorf(`invalid 'policy': 'if' condition for field %q not evaluating to a boolean: %w`, include.Name, err)
 				}
 			}
 		}
 		if tmp.Policy.Exclude != nil {
 			for _, exclude := range tmp.Policy.Exclude {
-				if exclude == nil {
-					return fmt.Errorf("invalid 'policy': 'include' fields must have a valid 'name' and 'if' condition")
-				}
-				if exclude.Name == "" || exclude.Condition == "" {
-					return fmt.Errorf("invalid 'policy': 'include' fields must have a valid 'name' and 'if' condition")
+				if exclude == nil || exclude.Name == "" || exclude.Condition == "" {
+					return fmt.Errorf("invalid 'policy': 'exclude' fields must have a valid 'name' and 'if' condition")
 				}
 				if !names[exclude.Name] {
 					return fmt.Errorf("invalid 'policy': 'exclude' property %q does not exists in dimensions or measures list", exclude.Name)
@@ -233,7 +227,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 				}
 				_, err = EvaluateBoolExpression(cond)
 				if err != nil {
-					return fmt.Errorf(`invalid 'policy': 'if' condition for field %q not valuating to a boolean: %w`, exclude.Name, err)
+					return fmt.Errorf(`invalid 'policy': 'if' condition for field %q not evaluating to a boolean: %w`, exclude.Name, err)
 				}
 			}
 		}

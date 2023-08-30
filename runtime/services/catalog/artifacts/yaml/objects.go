@@ -483,10 +483,7 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 func validatedPolicyFieldList(fieldConditions []*ConditionalColumn, names map[string]bool, property string, templateData rillv1.TemplateData) error {
 	if len(fieldConditions) > 0 {
 		for _, field := range fieldConditions {
-			if field == nil {
-				return fmt.Errorf("invalid 'policy': '%s' fields must have a valid 'name' and 'if' condition", property)
-			}
-			if field.Name == "" || field.Condition == "" {
+			if field == nil || field.Name == "" || field.Condition == "" {
 				return fmt.Errorf("invalid 'policy': '%s' fields must have a valid 'name' and 'if' condition", property)
 			}
 			// check the name is a valid dimension that exists in the metrics view
