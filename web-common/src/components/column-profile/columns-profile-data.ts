@@ -29,6 +29,7 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { BatchedRequest } from "@rilldata/web-common/runtime-client/batched-request";
 import type { QueryObserverResult } from "@tanstack/query-core";
+import { getContext, setContext } from "svelte";
 import { Updater, writable } from "svelte/store";
 import type { Readable } from "svelte/store";
 
@@ -60,16 +61,23 @@ export type ColumnsProfileData = {
 };
 export type ColumnsProfileDataMethods = {
   load: (
+    instanceId: string,
+    tableName: string,
     profileColumnResponse: QueryObserverResult<V1TableColumnsResponse>
   ) => Promise<void>;
 };
 export type ColumnsProfileDataStore = Readable<ColumnsProfileData> &
   ColumnsProfileDataMethods;
 
-export function getColumnsProfileData(
-  instanceId: string,
-  tableName: string
-): ColumnsProfileDataStore {
+export function setColumnsProfileStore(store: ColumnsProfileDataStore) {
+  setContext("COLUMNS_PROFILE", store);
+}
+
+export function getColumnsProfileStore() {
+  return getContext<ColumnsProfileDataStore>("COLUMNS_PROFILE");
+}
+
+export function createColumnsProfileData(): ColumnsProfileDataStore {
   const { update, subscribe } = writable<ColumnsProfileData>({
     isFetching: true,
     tableRows: 0,
@@ -81,6 +89,8 @@ export function getColumnsProfileData(
   return {
     subscribe,
     load: async (
+      instanceId: string,
+      tableName: string,
       profileColumnResponse: QueryObserverResult<V1TableColumnsResponse>
     ) => {
       batchedRequest?.cancel();

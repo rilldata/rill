@@ -57,9 +57,6 @@ export class BatchedRequest {
 
   public async send(instanceId: string) {
     const request: QueryServiceQueryBatchBody = {
-      // queries: [...this.requests]
-      //   .sort((e1, e2) => e2.priority - e1.priority)
-      //   .map(({ request }) => request),
       queries: this.requests.map(({ request }) => request),
     };
     this.controller = new AbortController();

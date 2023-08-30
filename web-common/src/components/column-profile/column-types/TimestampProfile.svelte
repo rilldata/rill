@@ -1,8 +1,6 @@
 <script lang="ts">
-  import type {
-    ColumnProfileData,
-    ColumnsProfileDataStore,
-  } from "@rilldata/web-common/components/column-profile/columns-profile-data";
+  import { getColumnsProfileStore } from "@rilldata/web-common/components/column-profile/columns-profile-data";
+  import type { ColumnProfileData } from "@rilldata/web-common/components/column-profile/columns-profile-data";
   import TimestampDetail from "@rilldata/web-common/components/data-graphic/compositions/timestamp-profile/TimestampDetail.svelte";
   import TimestampSpark from "@rilldata/web-common/components/data-graphic/compositions/timestamp-profile/TimestampSpark.svelte";
   import WithParentClientRect from "@rilldata/web-common/components/data-graphic/functional-components/WithParentClientRect.svelte";
@@ -18,7 +16,6 @@
   export let type: string;
   export let mode = "summaries";
   export let example: any;
-  export let store: ColumnsProfileDataStore;
 
   export let hideRight = false;
   export let compact = false;
@@ -28,8 +25,10 @@
 
   let active = false;
 
+  const columnsProfile = getColumnsProfileStore();
+
   let columnProfileData: ColumnProfileData;
-  $: columnProfileData = $store.profiles[columnName];
+  $: columnProfileData = $columnsProfile.profiles[columnName];
 
   function toggleColumnProfile() {
     active = !active;
@@ -76,7 +75,7 @@
   <NullPercentageSpark
     nullCount={columnProfileData?.nullCount}
     slot="nullity"
-    totalRows={$store?.tableRows}
+    totalRows={$columnsProfile?.tableRows}
     {type}
   />
 

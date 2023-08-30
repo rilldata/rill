@@ -1,9 +1,6 @@
 <script lang="ts">
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
-  import {
-    ColumnSummary,
-    getSummaries,
-  } from "@rilldata/web-common/components/column-profile/queries";
+  import { getColumnsProfileStore } from "@rilldata/web-common/components/column-profile/columns-profile-data";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
@@ -18,7 +15,6 @@
     V1CatalogEntry,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
-  import type { Readable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { GridCell, LeftRightGrid } from "../../../components/grid";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
@@ -106,15 +102,12 @@
     { query: { keepPreviousData: true } }
   );
 
-  let summaries: Readable<Array<ColumnSummary>>;
-  $: if ($profileColumns?.data?.profileColumns) {
-    summaries = getSummaries(sourceName, $runtime?.instanceId, $profileColumns);
-  }
+  const columnsProfile = getColumnsProfileStore();
 
   let totalNulls = undefined;
 
-  $: if (summaries) {
-    totalNulls = $summaries.reduce(
+  $: if ($columnsProfile.profiles) {
+    totalNulls = Object.values($columnsProfile.profiles).reduce(
       (total, column) => total + (+column.nullCount || 0),
       0
     );

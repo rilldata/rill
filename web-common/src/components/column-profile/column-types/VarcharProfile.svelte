@@ -1,8 +1,6 @@
 <script lang="ts">
-  import type {
-    ColumnProfileData,
-    ColumnsProfileDataStore,
-  } from "@rilldata/web-common/components/column-profile/columns-profile-data";
+  import { getColumnsProfileStore } from "@rilldata/web-common/components/column-profile/columns-profile-data";
+  import type { ColumnProfileData } from "@rilldata/web-common/components/column-profile/columns-profile-data";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { httpRequestQueue } from "../../../runtime-client/http-client";
   import ColumnProfileIcon from "../ColumnProfileIcon.svelte";
@@ -15,7 +13,6 @@
   export let objectName: string;
   export let example: any;
   export let type: string;
-  export let store: ColumnsProfileDataStore;
 
   export let hideRight = false;
   export let compact = false;
@@ -26,8 +23,9 @@
 
   let topKLimit = 15;
 
+  const columnsProfile = getColumnsProfileStore();
   let columnProfileData: ColumnProfileData;
-  $: columnProfileData = $store.profiles[columnName];
+  $: columnProfileData = $columnsProfile.profiles[columnName];
 
   function toggleColumnProfile() {
     active = !active;
@@ -59,12 +57,12 @@
     cardinality={columnProfileData?.cardinality}
     {compact}
     slot="summary"
-    totalRows={$store?.tableRows}
+    totalRows={$columnsProfile?.tableRows}
   />
   <NullPercentageSpark
     nullCount={columnProfileData?.nullCount}
     slot="nullity"
-    totalRows={$store?.tableRows}
+    totalRows={$columnsProfile?.tableRows}
     {type}
   />
 
@@ -79,7 +77,7 @@
       <TopK
         k={topKLimit}
         topK={columnProfileData?.topK}
-        totalRows={$store?.tableRows}
+        totalRows={$columnsProfile?.tableRows}
         {type}
       />
     </div>

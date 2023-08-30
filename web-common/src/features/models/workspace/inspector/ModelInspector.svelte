@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ColumnProfileProvider from "@rilldata/web-common/components/column-profile/ColumnProfileProvider.svelte";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { runtime } from "../../../../runtime-client/runtime-store";
   import { useModelFileIsEmpty } from "../../selectors";
@@ -22,7 +23,9 @@
           containerWidth={$observedNode?.clientWidth}
         />
         <hr />
-        <ModelInspectorModelProfile {modelName} />
+        <ColumnProfileProvider objectName={modelName}>
+          <ModelInspectorModelProfile {modelName} />
+        </ColumnProfileProvider>
       </div>
     {/key}
   </div>

@@ -1,8 +1,6 @@
 <script lang="ts">
-  import type {
-    ColumnProfileData,
-    ColumnsProfileDataStore,
-  } from "@rilldata/web-common/components/column-profile/columns-profile-data";
+  import { getColumnsProfileStore } from "@rilldata/web-common/components/column-profile/columns-profile-data";
+  import type { ColumnProfileData } from "@rilldata/web-common/components/column-profile/columns-profile-data";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { INTERVALS } from "@rilldata/web-common/lib/duckdb-data-types";
   import { httpRequestQueue } from "../../../runtime-client/http-client";
@@ -17,7 +15,6 @@
   export let type: string;
   export let mode = "summaries";
   export let example: any;
-  export let store: ColumnsProfileDataStore;
 
   export let hideRight = false;
   export let compact = false;
@@ -25,8 +22,10 @@
 
   let active = false;
 
+  const columnsProfile = getColumnsProfileStore();
+
   let columnProfileData: ColumnProfileData;
-  $: columnProfileData = $store.profiles[columnName];
+  $: columnProfileData = $columnsProfile.profiles[columnName];
 
   $: histogramData = columnProfileData?.histogram;
 
@@ -42,7 +41,7 @@
   $: if (
     summary?.min !== undefined &&
     summary?.min === summary?.max &&
-    $store?.tableRows !== undefined
+    $columnsProfile?.tableRows !== undefined
   ) {
     const boundaries = 10;
     histogramData = [
@@ -57,7 +56,7 @@
       }),
       {
         bucket: boundaries,
-        count: $store?.tableRows,
+        count: $columnsProfile?.tableRows,
         low: summary?.min,
         high: summary?.min + 1,
       },
@@ -99,7 +98,7 @@
   <NullPercentageSpark
     nullCount={columnProfileData?.nullCount}
     slot="nullity"
-    totalRows={$store?.tableRows}
+    totalRows={$columnsProfile?.tableRows}
     {type}
   />
   <div
@@ -112,7 +111,7 @@
       rug={columnProfileData?.rugHistogram}
       {summary}
       topK={columnProfileData?.topK}
-      totalRows={$store?.tableRows}
+      totalRows={$columnsProfile?.tableRows}
       {type}
     />
   </div>

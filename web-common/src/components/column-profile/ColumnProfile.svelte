@@ -1,17 +1,10 @@
 <script lang="ts">
-  import {
-    ColumnProfileData,
-    getColumnsProfileData,
-  } from "@rilldata/web-common/components/column-profile/columns-profile-data";
-  import type { ColumnsProfileDataStore } from "@rilldata/web-common/components/column-profile/columns-profile-data";
+  import { getColumnsProfileStore } from "@rilldata/web-common/components/column-profile/columns-profile-data";
+  import type { ColumnProfileData } from "@rilldata/web-common/components/column-profile/columns-profile-data";
   import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-common/layout/config";
-  import {
-    createQueryServiceTableColumns,
-    createQueryServiceTableRows,
-  } from "@rilldata/web-common/runtime-client";
+  import { createQueryServiceTableRows } from "@rilldata/web-common/runtime-client";
   import { NATIVE_SELECT } from "@rilldata/web-local/lib/util/component-classes";
   import { onMount } from "svelte";
-  import type { Readable } from "svelte/store";
   import { runtime } from "../../runtime-client/runtime-store";
   import { getColumnType } from "./column-types";
   import { defaultSort, sortByName, sortByNullity } from "./utils";
@@ -32,15 +25,6 @@
     return () => observer.unobserve(container);
   });
 
-  // get all column profiles.
-  let profileColumns;
-  $: profileColumns = createQueryServiceTableColumns(
-    $runtime?.instanceId,
-    objectName,
-    {},
-    { query: { keepPreviousData: true } }
-  );
-
   /** get single example */
   let exampleValue;
   $: exampleValue = createQueryServiceTableRows(
@@ -51,14 +35,7 @@
     }
   );
 
-  let columnsProfile: ColumnsProfileDataStore;
-  $: columnsProfile = getColumnsProfileData($runtime?.instanceId, objectName);
-
-  let batchedQuery: Readable<boolean>;
-  $: if ($profileColumns) {
-    if ($profileColumns?.data && !$profileColumns.isFetching)
-      columnsProfile.load($profileColumns);
-  }
+  const columnsProfile = getColumnsProfileStore();
 
   $: profile = Object.values($columnsProfile.profiles);
   let sortedProfile: Array<ColumnProfileData>;
@@ -71,9 +48,6 @@
     sortedProfile = profile;
   }
 </script>
-
-<!-- Dummy read to force rendering -->
-{#if $batchedQuery}<div class="hidden" />{/if}
 
 <!-- pl-16 -->
 <div
@@ -116,7 +90,6 @@
         {objectName}
         columnName={column.name}
         example={$exampleValue?.data?.data?.[0]?.[column.name]}
-        store={columnsProfile}
         {mode}
         {hideRight}
         {hideNullPercentage}

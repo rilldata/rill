@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ColumnProfileProvider from "@rilldata/web-common/components/column-profile/ColumnProfileProvider.svelte";
   import { WorkspaceContainer } from "../../../layout/workspace";
   import BeforeLeavingUnsavedSource from "../editor/BeforeLeavingUnsavedSource.svelte";
   import SourceInspector from "../inspector/SourceInspector.svelte";
@@ -13,7 +14,9 @@
     <WorkspaceContainer assetID={sourceName}>
       <SourceWorkspaceHeader {sourceName} slot="header" />
       <SourceWorkspaceBody {sourceName} slot="body" />
-      <SourceInspector {sourceName} slot="inspector" />
+      <ColumnProfileProvider objectName={sourceName} slot="inspector">
+        <SourceInspector {sourceName} />
+      </ColumnProfileProvider>
     </WorkspaceContainer>
   </BeforeLeavingUnsavedSource>
 {/key}

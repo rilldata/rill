@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"sync"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"golang.org/x/sync/errgroup"
@@ -15,10 +16,15 @@ func (s *Server) QueryBatch(req *runtimev1.QueryBatchRequest, srv runtimev1.Quer
 
 	g, ctx := errgroup.WithContext(srv.Context())
 
+	l := sync.Mutex{}
+
 	for _, query := range req.Queries {
 		query := query // create a closed var for goroutine
 		g.Go(func() error {
 			resp := s.forwardQuery(ctx, req, query)
+			// Adding a lock around send to make sure chunks of larger responses are in the same order
+			l.Lock()
+			defer l.Unlock()
 			return srv.Send(resp)
 		})
 	}

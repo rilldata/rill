@@ -29,7 +29,7 @@ export async function* streamingFetchWrapper<T>(
     for (const part of parts) {
       if (part === "") continue;
       if (!part.endsWith("}")) {
-        prevPart = part;
+        prevPart += part;
         continue;
       }
       try {

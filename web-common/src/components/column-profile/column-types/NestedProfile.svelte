@@ -1,8 +1,6 @@
 <script lang="ts">
-  import type {
-    ColumnProfileData,
-    ColumnsProfileDataStore,
-  } from "@rilldata/web-common/components/column-profile/columns-profile-data";
+  import { getColumnsProfileStore } from "@rilldata/web-common/components/column-profile/columns-profile-data";
+  import type { ColumnProfileData } from "@rilldata/web-common/components/column-profile/columns-profile-data";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
   import {
     DATA_TYPE_COLORS,
@@ -20,7 +18,6 @@
   export let type: string;
   export let mode = "summaries";
   export let example: any;
-  export let store: ColumnsProfileDataStore;
 
   export let hideRight = false;
   export let compact = false;
@@ -30,8 +27,10 @@
 
   let active = false;
 
+  const columnsProfile = getColumnsProfileStore();
+
   let columnProfileData: ColumnProfileData;
-  $: columnProfileData = $store.profiles[columnName];
+  $: columnProfileData = $columnsProfile.profiles[columnName];
 
   function toggleColumnProfile() {
     active = !active;
@@ -65,13 +64,13 @@
     cardinality={columnProfileData?.cardinality}
     {compact}
     slot="summary"
-    totalRows={$store.tableRows}
+    totalRows={$columnsProfile.tableRows}
     {type}
   />
   <NullPercentageSpark
     nullCount={columnProfileData?.nullCount}
     slot="nullity"
-    totalRows={$store.tableRows}
+    totalRows={$columnsProfile.tableRows}
     {type}
   />
   <div
@@ -83,7 +82,7 @@
       colorClass={DATA_TYPE_COLORS["STRUCT"].bgClass}
       k={topKLimit}
       topK={columnProfileData?.topK}
-      totalRows={$store.tableRows}
+      totalRows={$columnsProfile.tableRows}
       {type}
     />
   </div>
