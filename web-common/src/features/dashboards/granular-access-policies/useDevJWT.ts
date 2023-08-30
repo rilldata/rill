@@ -12,10 +12,6 @@ export function useDevJWT(mockUser: MockUser | null) {
     {
       query: {
         enabled: mockUser !== null,
-        // TODO: this should move to a global error handler at the QueryCache level
-        onError: (err) => {
-          console.error("Error issuing Dev JWT", err);
-        },
       },
     }
   );

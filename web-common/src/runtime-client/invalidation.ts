@@ -130,7 +130,7 @@ export async function invalidateAllMetricsViews(
   queryClient: QueryClient,
   instanceId: string
 ) {
-  // First, refetch the catalog entries (which returns which dimensions are available)
+  // First, refetch the catalog entries (which returns the available dimensions and measures)
   await queryClient.refetchQueries({
     predicate: (query) =>
       typeof query.queryKey[0] === "string" &&
