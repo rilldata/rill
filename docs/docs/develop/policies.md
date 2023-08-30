@@ -46,13 +46,29 @@ If you require additional user attributes to enforce access policies, see the ex
 
 ## Templating and expression evaluation
 
-During development, the expressions used in the policies are validated using dummy data. When a user loads a dashboard, the policies are then resolved in two phases:
+When a user loads a dashboard, the policies are resolved in two phases:
 
 1. The templating engine first replaces expressions like `{{ .user.domain }}` with actual values ([Templating reference](../reference/templating))
 2. The resulting expression is then evaluated contextually:
   - The `filter` value is injected into the `WHERE` clause of the SQL queries used to render the dashboard
   - The `has_access` and `if` values are resolved to a `true` or `false` value using the expression engine ([Expressions reference](../reference/expressions))
 
+## Testing your policies
+
+In development, test your policies by adding "mock users" to your project and viewing the dashboard as one of them.
+
+In your project's `rill.yaml` file, add a `mock_users` section. Each mock user must have an `email` attribute, and can optionally have `name` and `admin` attributes. For example:
+```yaml
+# rill.yaml
+mock_users:
+- email: john@yourcompany.com
+  name: John Doe
+  admin: true
+- email: jane@partnercompany.com
+- email: anon@unknown.com
+```
+
+On your dashboard page, provided you've added a policy, you'll see a "View as" button in the top right corner. Click this button and select one of your mock users. You'll see the dashboard as that user would see it.
 ## Examples
 
 ### Restrict dashboard access to users matching specific criteria
