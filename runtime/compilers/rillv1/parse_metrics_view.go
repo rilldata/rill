@@ -2,6 +2,7 @@ package rillv1
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -40,7 +41,18 @@ type metricsViewYAML struct {
 		Ignore              bool   `yaml:"ignore"`
 		ValidPercentOfTotal bool   `yaml:"valid_percent_of_total"`
 	}
-	// ExtraProps map[string]any `yaml:",inline"`
+	Policy *struct {
+		HasAccess string `yaml:"has_access"`
+		Filter    string `yaml:"filter"`
+		Include   []*struct {
+			Name      string
+			Condition string `yaml:"if"`
+		}
+		Exclude []*struct {
+			Name      string
+			Condition string `yaml:"if"`
+		}
+	}
 }
 
 // parseMetricsView parses a metrics view (dashboard) definition and adds the resulting resource to p.Resources.
@@ -153,6 +165,74 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		return fmt.Errorf("must define at least one measure")
 	}
 
+	if tmp.Policy != nil {
+		templateData := TemplateData{User: map[string]interface{}{
+			"name":   "dummy",
+			"email":  "mock@example.org",
+			"domain": "example.org",
+			"groups": []interface{}{"all"},
+			"admin":  false,
+		}}
+
+		if tmp.Policy.HasAccess != "" {
+			hasAccess, err := ResolveTemplate(tmp.Policy.HasAccess, templateData)
+			if err != nil {
+				return fmt.Errorf(`invalid 'policy': 'has_access' templating is not valid: %w`, err)
+			}
+			_, err = EvaluateBoolExpression(hasAccess)
+			if err != nil {
+				return fmt.Errorf(`invalid 'policy': 'has_access' expression not valuating to a boolean: %w`, err)
+			}
+		}
+
+		if tmp.Policy.Filter != "" {
+			_, err := ResolveTemplate(tmp.Policy.Filter, templateData)
+			if err != nil {
+				return fmt.Errorf(`invalid 'policy': 'filter' templating is not valid: %w`, err)
+			}
+		}
+
+		if len(tmp.Policy.Include) > 0 && len(tmp.Policy.Exclude) > 0 {
+			return errors.New("invalid 'policy': only one of 'include' and 'exclude' can be specified")
+		}
+		if tmp.Policy.Include != nil {
+			for _, include := range tmp.Policy.Include {
+				if include.Name == "" || include.Condition == "" {
+					return fmt.Errorf("invalid 'policy': 'include' fields must have a valid 'name' and 'if' condition")
+				}
+				if !names[include.Name] {
+					return fmt.Errorf("invalid 'policy': 'include' property %q does not exists in dimensions or measures list", include.Name)
+				}
+				cond, err := ResolveTemplate(include.Condition, templateData)
+				if err != nil {
+					return fmt.Errorf(`invalid 'policy': 'if' condition templating for field %q is not valid: %w`, include.Name, err)
+				}
+				_, err = EvaluateBoolExpression(cond)
+				if err != nil {
+					return fmt.Errorf(`invalid 'policy': 'if' condition for field %q not valuating to a boolean: %w`, include.Name, err)
+				}
+			}
+		}
+		if tmp.Policy.Exclude != nil {
+			for _, exclude := range tmp.Policy.Exclude {
+				if exclude.Name == "" || exclude.Condition == "" {
+					return fmt.Errorf("invalid 'policy': 'include' fields must have a valid 'name' and 'if' condition")
+				}
+				if !names[exclude.Name] {
+					return fmt.Errorf("invalid 'policy': 'exclude' property %q does not exists in dimensions or measures list", exclude.Name)
+				}
+				cond, err := ResolveTemplate(exclude.Condition, templateData)
+				if err != nil {
+					return fmt.Errorf(`invalid 'policy': 'if' condition templating for field %q is not valid: %w`, exclude.Name, err)
+				}
+				_, err = EvaluateBoolExpression(cond)
+				if err != nil {
+					return fmt.Errorf(`invalid 'policy': 'if' condition for field %q not valuating to a boolean: %w`, exclude.Name, err)
+				}
+			}
+		}
+	}
+
 	node.Refs = append(node.Refs, ResourceName{Name: table})
 
 	// NOTE: After calling upsertResource, an error must not be returned. Any validation should be done before calling it.
@@ -194,6 +274,31 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			Format:              measure.Format,
 			ValidPercentOfTotal: measure.ValidPercentOfTotal,
 		})
+	}
+
+	if tmp.Policy != nil {
+		if spec.Policy == nil {
+			spec.Policy = &runtimev1.MetricsViewSpec_PolicyV2{}
+		}
+		spec.Policy.HasAccess = tmp.Policy.HasAccess
+		spec.Policy.Filter = tmp.Policy.Filter
+		// validation has been done above, only one of these will be set
+		if tmp.Policy.Include != nil {
+			for _, include := range tmp.Policy.Include {
+				spec.Policy.Include = append(spec.Policy.Include, &runtimev1.MetricsViewSpec_PolicyV2_FieldConditionV2{
+					Name:      include.Name,
+					Condition: include.Condition,
+				})
+			}
+		}
+		if tmp.Policy.Exclude != nil {
+			for _, exclude := range tmp.Policy.Exclude {
+				spec.Policy.Exclude = append(spec.Policy.Exclude, &runtimev1.MetricsViewSpec_PolicyV2_FieldConditionV2{
+					Name:      exclude.Name,
+					Condition: exclude.Condition,
+				})
+			}
+		}
 	}
 
 	return nil

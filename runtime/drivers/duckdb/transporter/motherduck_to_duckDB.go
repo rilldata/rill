@@ -74,7 +74,7 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, source drivers.Source
 			}
 		}
 
-		names := make([]string, 0)
+		var names []string
 
 		db := src.Database
 		if db == "" {

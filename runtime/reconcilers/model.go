@@ -334,7 +334,7 @@ func (r *ModelReconciler) createModel(ctx context.Context, self *runtimev1.Resou
 	var sql string
 	if spec.UsesTemplating {
 		sql, err = compilerv1.ResolveTemplate(spec.Sql, compilerv1.TemplateData{
-			Claims:    map[string]interface{}{},
+			User:      map[string]interface{}{},
 			Variables: inst.ResolveVariables(),
 			Self: compilerv1.TemplateResource{
 				Meta:  self.Meta,

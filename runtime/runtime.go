@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -13,11 +14,12 @@ import (
 )
 
 type Options struct {
-	ConnectionCacheSize int
-	MetastoreConnector  string
-	QueryCacheSizeBytes int64
-	AllowHostAccess     bool
-	SafeSourceRefresh   bool
+	ConnectionCacheSize   int
+	MetastoreConnector    string
+	QueryCacheSizeBytes   int64
+	PolicyEngineCacheSize int
+	AllowHostAccess       bool
+	SafeSourceRefresh     bool
 	// SystemConnectors are drivers whose handles are shared with all instances
 	SystemConnectors []*runtimev1.Connector
 }
@@ -28,6 +30,7 @@ type Runtime struct {
 	connCache          *connectionCache
 	migrationMetaCache *migrationMetaCache
 	queryCache         *queryCache
+	policyEngine       *policyEngine
 }
 
 func New(opts *Options, logger *zap.Logger, client activity.Client) (*Runtime, error) {
@@ -37,6 +40,7 @@ func New(opts *Options, logger *zap.Logger, client activity.Client) (*Runtime, e
 		connCache:          newConnectionCache(opts.ConnectionCacheSize, logger, client),
 		migrationMetaCache: newMigrationMetaCache(math.MaxInt),
 		queryCache:         newQueryCache(opts.QueryCacheSizeBytes),
+		policyEngine:       newPolicyEngine(opts.PolicyEngineCacheSize, logger),
 	}
 	store, _, err := rt.AcquireSystemHandle(context.Background(), opts.MetastoreConnector)
 	if err != nil {
@@ -62,4 +66,8 @@ func (r *Runtime) Close() error {
 		r.connCache.Close(),
 		r.queryCache.close(),
 	)
+}
+
+func (r *Runtime) ResolveMetricsViewPolicy(attributes map[string]any, instanceID string, mv *runtimev1.MetricsView, lastUpdatedOn time.Time) (*ResolvedMetricsViewPolicy, error) {
+	return r.policyEngine.resolveMetricsViewPolicy(attributes, instanceID, mv, lastUpdatedOn)
 }

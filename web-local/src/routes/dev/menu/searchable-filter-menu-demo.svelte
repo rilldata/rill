@@ -31,13 +31,6 @@
   ];
 
   let selectedItems: boolean[] = selectableItems.map((_, i) => i % 2 == 0);
-
-  $: {
-    console.log(
-      "selected items",
-      selectableItems.filter((_, i) => selectedItems[i])
-    );
-  }
 </script>
 
 <section class="grid grid-flow-row gap-y-4" style="margin-top:40px">

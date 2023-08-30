@@ -622,7 +622,7 @@ measures:
 	require.NoError(t, err)
 	// duplicate measure names throws error
 	testutils.AssertMigration(t, result, 1, 0, 0, 0, []string{AdBidsDashboardRepoPath})
-	require.Equal(t, "duplicate measure name", result.Errors[0].Message)
+	require.Equal(t, "duplicate measure name: imp", result.Errors[0].Message)
 
 	time.Sleep(time.Millisecond * 10)
 	err = s.Repo.Put(context.Background(), AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model

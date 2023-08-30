@@ -101,7 +101,7 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 	}
 
 	// evict caches if connections need to be updated
-	if r.olapChanged(ctx, olderInstance, inst) || r.repoChanged(ctx, olderInstance, inst) {
+	if r.olapChanged(ctx, olderInstance, inst) || r.repoChanged(ctx, olderInstance, inst) || r.annotationsChanged(ctx, olderInstance, inst) {
 		r.evictCaches(ctx, olderInstance)
 	}
 
@@ -145,6 +145,10 @@ func (r *Runtime) olapChanged(ctx context.Context, a, b *drivers.Instance) bool 
 	o1, _ := r.connectorDef(a, a.OLAPDriver)
 	o2, _ := r.connectorDef(b, b.OLAPDriver)
 	return a.OLAPDriver != b.OLAPDriver || !equal(o1, o2)
+}
+
+func (r *Runtime) annotationsChanged(ctx context.Context, a, b *drivers.Instance) bool {
+	return !maps.Equal(a.Annotations, b.Annotations)
 }
 
 func equal(a, b *runtimev1.Connector) bool {

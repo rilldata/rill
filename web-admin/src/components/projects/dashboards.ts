@@ -10,6 +10,7 @@ import { Readable, derived } from "svelte/store";
 export interface DashboardListItem {
   name: string;
   title?: string;
+  description?: string;
   isValid: boolean;
 }
 
@@ -71,11 +72,13 @@ export function getDashboardListItemsFromFilesAndCatalogEntries(
       (entry: V1CatalogEntry) => entry.path === path
     );
     const title = catalogEntry?.metricsView?.label;
+    const description = catalogEntry?.metricsView?.description;
     // invalid dashboards are not in the catalog
     const isValid = !!catalogEntry;
     return {
       name,
       title,
+      description,
       isValid,
     };
   });

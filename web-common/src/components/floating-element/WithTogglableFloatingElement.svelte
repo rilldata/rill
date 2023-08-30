@@ -12,7 +12,8 @@
   export let suppress = false;
   export let active = false;
   export let inline = false;
-  export let overflowFlipY = true;
+  export let overflowFlipY = false;
+  export let mousePos = { x: 0, y: 0 };
 
   /** this passes down the dom element used for the "outside click" action.
    * Since this element is not strictly within the parent of the menu (which is in a Portal),
@@ -53,6 +54,7 @@
           {distance}
           {pad}
           {overflowFlipY}
+          {mousePos}
         >
           <slot name="floating-element" />
         </FloatingElement>

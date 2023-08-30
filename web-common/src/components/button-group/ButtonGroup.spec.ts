@@ -184,7 +184,6 @@ describe("ButtonGroup - removing buttons", () => {
   it("removed buttons not found", async () => {
     await component.$set({ values: [1, 3, 4] });
     const button2 = await screen.queryByRole("button", { name: `button-2` });
-    console.log(button2);
     expect(button2).toBeNull();
     const button5 = await screen.queryByRole("button", { name: `button-5` });
     expect(button5).toBeNull();

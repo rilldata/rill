@@ -199,6 +199,7 @@ message ExportRequest {
   oneof request {
     MetricsViewToplistRequest metrics_view_toplist_request = 4;
     MetricsViewRowsRequest metrics_view_rows_request = 5;
+    MetricsViewTimeSeriesRequest metrics_view_time_series_request = 6;
   }
 }
 

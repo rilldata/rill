@@ -3,7 +3,12 @@
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
-  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import {
+    useDashboardStore,
+    useFetchTimeRange,
+    useComparisonRange,
+    metricsExplorerStore,
+  } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import {
     humanizeDataType,
     FormatPreset,
@@ -31,12 +36,16 @@
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
-  import { prepareTimeSeries } from "./utils";
+  import { getOrderedStartEnd, prepareTimeSeries } from "./utils";
+  import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
+  import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 
   export let metricViewName;
   export let workspaceWidth: number;
 
   $: dashboardStore = useDashboardStore(metricViewName);
+  $: fetchTimeStore = useFetchTimeRange(metricViewName);
+  $: comparisonStore = useComparisonRange(metricViewName);
 
   $: instanceId = $runtime.instanceId;
 
@@ -64,15 +73,15 @@
     name = $dashboardStore?.selectedTimeRange?.name;
   }
 
-  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
-  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
+  $: timeStart = $fetchTimeStore?.start?.toISOString();
+  $: timeEnd = $fetchTimeStore?.end?.toISOString();
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      timeStart: timeStart,
-      timeEnd: timeEnd,
+      timeStart,
+      timeEnd,
       filter: $dashboardStore?.filters,
     },
     {
@@ -85,10 +94,8 @@
   /** Generate the big number comparison query */
   $: displayComparison = showComparison;
 
-  $: comparisonTimeStart =
-    $dashboardStore?.selectedComparisonTimeRange?.start?.toISOString();
-  $: comparisonTimeEnd =
-    $dashboardStore?.selectedComparisonTimeRange?.end?.toISOString();
+  $: comparisonTimeStart = $comparisonStore?.start;
+  $: comparisonTimeEnd = $comparisonStore?.end;
   $: totalsComparisonQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     metricViewName,
@@ -189,6 +196,8 @@
 
   // formattedData adjusts the data to account for Javascript's handling of timezones
   let formattedData;
+  let scrubStart;
+  let scrubEnd;
   $: if (dataCopy && dataCopy?.length) {
     formattedData = prepareTimeSeries(
       dataCopy,
@@ -196,10 +205,19 @@
       TIME_GRAIN[interval].duration,
       $dashboardStore.selectedTimezone
     );
+
+    // adjust scrub values for Javascript's timezone changes
+    scrubStart = adjustOffsetForZone(
+      $dashboardStore?.selectedScrubRange?.start,
+      $dashboardStore?.selectedTimezone
+    );
+    scrubEnd = adjustOffsetForZone(
+      $dashboardStore?.selectedScrubRange?.end,
+      $dashboardStore?.selectedTimezone
+    );
   }
 
   let mouseoverValue = undefined;
-
   let startValue: Date;
   let endValue: Date;
 
@@ -231,6 +249,34 @@
   const setAllMeasuresVisible = () => {
     showHideMeasures.setAllToVisible();
   };
+
+  function onKeyDown(e) {
+    if (scrubStart && scrubEnd) {
+      // if key Z is pressed, zoom the scrub
+      if (e.key === "z") {
+        const { start, end } = getOrderedStartEnd(
+          $dashboardStore?.selectedScrubRange?.start,
+          $dashboardStore?.selectedScrubRange?.end
+        );
+        metricsExplorerStore.setSelectedTimeRange(metricViewName, {
+          name: TimeRangePreset.CUSTOM,
+          start,
+          end,
+        });
+
+        // hack to prevent race condition in URL proto changes
+        setTimeout(() => {
+          metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
+        }, 50);
+      }
+      if (
+        !$dashboardStore.selectedScrubRange?.isScrubbing &&
+        e.key === "Escape"
+      ) {
+        metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
+      }
+    }
+  }
 </script>
 
 <TimeSeriesChartContainer end={endValue} start={startValue} {workspaceWidth}>
@@ -303,11 +349,15 @@
           <div class="p-5"><CrossIcon /></div>
         {:else if formattedData}
           <MeasureChart
+            isScrubbing={$dashboardStore?.selectedScrubRange?.isScrubbing}
+            {scrubStart}
+            {scrubEnd}
             bind:mouseoverValue
+            {metricViewName}
             data={formattedData}
+            zone={$dashboardStore?.selectedTimezone}
             xAccessor="ts_position"
             labelAccessor="ts"
-            zone={$dashboardStore?.selectedTimezone}
             timeGrain={interval}
             yAccessor={measure.name}
             xMin={startValue}
@@ -335,3 +385,6 @@
     {/each}
   {/if}
 </TimeSeriesChartContainer>
+
+<!-- Only to be used on singleton components to avoid multiple state dispatches -->
+<svelte:window on:keydown={onKeyDown} />

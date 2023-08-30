@@ -75,6 +75,7 @@
     </Tooltip>
     <Menu
       slot="floating-element"
+      on:click-outside={toggleFloatingElement}
       on:escape={toggleFloatingElement}
       minWidth="320px"
     >
