@@ -148,5 +148,5 @@ func (rs *arrowRecordReader) nextArrowRecords(r *bigquery.ArrowRecordBatch) ([]a
 		rec.Retain()
 		records = append(records, rec)
 	}
-	return records, nil
+	return records, rdr.Err()
 }

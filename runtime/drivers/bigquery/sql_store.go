@@ -23,7 +23,7 @@ func (c *Connection) Query(ctx context.Context, props map[string]any, sql string
 }
 
 // QueryAsFiles implements drivers.SQLStore
-func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, sql string) (drivers.FileIterator, error) {
+func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, sql string, opt *drivers.QueryOption, p drivers.Progress) (drivers.FileIterator, error) {
 	srcProps, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, err
@@ -66,10 +66,15 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, sql
 	}
 	c.logger.Info("query took", zap.Duration("duration", time.Since(now)))
 
+	p.Target(int64(it.TotalRows), drivers.ProgressUnitRecord)
 	return &fileIterator{
-		client: client,
-		bqIter: it,
-		logger: c.logger,
+		client:       client,
+		bqIter:       it,
+		logger:       c.logger,
+		limitInBytes: opt.TotalLimitInBytes,
+		progress:     p,
+		totalRecords: int64(it.TotalRows),
+		ctx:          ctx,
 	}, nil
 }
 
@@ -77,8 +82,14 @@ type fileIterator struct {
 	client       *bigquery.Client
 	bqIter       *bigquery.RowIterator
 	logger       *zap.Logger
+	limitInBytes int64
+	progress     drivers.Progress
+
+	totalRecords int64
 	tempFilePath string
 	downloaded   bool
+
+	ctx context.Context // TODO :: refatcor NextBatch to take context on NextBatch
 }
 
 // Close implements drivers.FileIterator.
@@ -96,6 +107,7 @@ func (f *fileIterator) KeepFilesUntilClose(keepFilesUntilClose bool) {
 }
 
 // NextBatch implements drivers.FileIterator.
+// TODO :: currently it downloads all records in a single file. Need to check if it is efficient to ingest a single file with size in tens of GBs or more.
 func (f *fileIterator) NextBatch(limit int) ([]string, error) {
 	// create a temp file
 	fw, err := fileutil.OpenTempFileInDir("", "temp.parquet")
@@ -118,7 +130,7 @@ func (f *fileIterator) NextBatch(limit int) ([]string, error) {
 			parquet.WithCompression(compress.Codecs.Snappy),
 			parquet.WithRootRepetition(parquet.Repetitions.Required),
 			// duckdb has issues reading statistics of string type generated with this write
-			// column statistics are not useful if full file need to be ingested so better to disable to save computations
+			// column statistics may not be useful if full file need to be ingested so better to disable to save computations
 			parquet.WithStats(false),
 		),
 		pqarrow.NewArrowWriterProperties(pqarrow.WithStoreSchema()))
@@ -127,11 +139,31 @@ func (f *fileIterator) NextBatch(limit int) ([]string, error) {
 	}
 	defer writer.Close()
 
+	ticker := time.NewTicker(time.Second * 5)
+	defer ticker.Stop()
 	// write arrow records to parquet file
 	for rdr.Next() {
-		if err := writer.WriteBuffered(rdr.Record()); err != nil {
-			return nil, err
+		select {
+		case <-f.ctx.Done():
+			return nil, f.ctx.Err()
+		case <-ticker.C:
+			fileInfo, err := os.Stat(fw.Name())
+			if err == nil { // ignore error
+				if fileInfo.Size() > f.limitInBytes {
+					return nil, drivers.ErrIngestionLimitExceeded
+				}
+			}
+
+		default:
+			rec := rdr.Record()
+			f.progress.Observe(rec.NumRows(), drivers.ProgressUnitRecord)
+			if err := writer.WriteBuffered(rec); err != nil {
+				return nil, err
+			}
 		}
+	}
+	if rdr.Err() != nil {
+		return nil, fmt.Errorf("file write failed with error %w", err)
 	}
 	writer.Close()
 	fw.Close()
@@ -146,8 +178,16 @@ func (f *fileIterator) NextBatch(limit int) ([]string, error) {
 }
 
 // Size implements drivers.FileIterator.
-func (*fileIterator) Size(unit drivers.ProgressUnit) (int64, bool) {
-	panic("unimplemented")
+func (f *fileIterator) Size(unit drivers.ProgressUnit) (int64, bool) {
+	switch unit {
+	case drivers.ProgressUnitRecord:
+		return f.totalRecords, true
+	case drivers.ProgressUnitFile:
+		return 1, true
+	default:
+		return 0, false
+	}
+
 }
 
 var _ drivers.FileIterator = &fileIterator{}
