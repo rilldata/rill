@@ -39,7 +39,7 @@ const ms_breakpoints = [
   { ms: Infinity, unit: "TOO_LARGE" },
 ];
 
-// TODO: Rewrite this to the sample and provided options
+// TODO: Rewrite this to use the sample and provided options
 export class IntervalFormatter implements Formatter {
   options: FormatterOptionsCommon & FormatterRangeSpecsStrategy;
   initialSample: number[];
