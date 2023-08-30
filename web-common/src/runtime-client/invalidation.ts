@@ -150,6 +150,17 @@ export async function invalidateAllMetricsViews(
       );
     },
   });
+
+  // Additionally, remove the queries for the rows viewer, which have custom query keys
+  queryClient.removeQueries({
+    predicate: (query: Query) => {
+      return (
+        typeof query.queryKey[0] === "string" &&
+        (query.queryKey[0].startsWith(`dashboardFilteredRowsCt`) ||
+          query.queryKey[0].startsWith(`dashboardAllRowsCt`))
+      );
+    },
+  });
 }
 
 export async function invalidateProfilingQueries(
