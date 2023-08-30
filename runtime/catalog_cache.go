@@ -55,7 +55,11 @@ func newCatalogCache(ctx context.Context, ctrl *Controller, instanceID string) (
 		version:   v,
 		resources: make(map[string]map[string]*runtimev1.Resource),
 		dirty:     make(map[string]*runtimev1.ResourceName),
+		stored:    make(map[string]bool),
 		dag:       dag2.New(nameStr),
+		cyclic:    make(map[string]*runtimev1.ResourceName),
+		renamed:   make(map[string]*runtimev1.ResourceName),
+		deleted:   make(map[string]*runtimev1.ResourceName),
 	}
 
 	rs, err := store.FindResources(ctx)

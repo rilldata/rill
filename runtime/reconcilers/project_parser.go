@@ -434,7 +434,7 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, self
 	}
 
 	// Update meta if refs or file paths changed
-	if !slices.Equal(existing.Meta.FilePaths, def.Paths) || !slices.Equal(existing.Meta.Refs, refs) {
+	if !slices.Equal(existing.Meta.FilePaths, def.Paths) || !slices.Equal(existing.Meta.Refs, refs) { // TODO: Don't use slices.Equal for protos
 		err := r.C.UpdateMeta(ctx, n, refs, self.Meta.Name, def.Paths, nil)
 		if err != nil {
 			return err
@@ -465,6 +465,17 @@ func (r *ProjectParserReconciler) attemptRename(ctx context.Context, self *runti
 		return false, nil
 	}
 
+	// Check refs are the same (note: refs are always sorted)
+	if len(existing.Meta.Refs) != len(def.Refs) {
+		return false, nil
+	}
+	for i, n := range existing.Meta.Refs {
+		if resourceNameToCompiler(n) != def.Refs[i] {
+			return false, nil
+		}
+	}
+
+	// Check spec is the same
 	switch def.Name.Kind {
 	case compilerv1.ResourceKindSource:
 		if !equalSourceSpec(existing.GetSource().Spec, def.SourceSpec) {
@@ -488,14 +499,10 @@ func (r *ProjectParserReconciler) attemptRename(ctx context.Context, self *runti
 		return false, nil
 	}
 
-	// Make refs for the resource meta
-	refs := make([]*runtimev1.ResourceName, 0, len(def.Refs))
-	for _, r := range def.Refs {
-		refs = append(refs, resourceNameFromCompiler(r))
-	}
+	// NOTE: Not comparing owner and paths since changing those are allowed when renaming.
 
 	// Run rename
-	err := r.C.UpdateMeta(ctx, existing.Meta.Name, refs, self.Meta.Name, def.Paths, newName)
+	err := r.C.UpdateMeta(ctx, existing.Meta.Name, existing.Meta.Refs, self.Meta.Name, def.Paths, newName)
 	if err != nil {
 		return false, err
 	}

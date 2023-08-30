@@ -325,7 +325,7 @@ func (c *Controller) Create(ctx context.Context, name *runtimev1.ResourceName, r
 
 // UpdateMeta updates a resource's meta fields and enqueues it for reconciliation.
 // If called from outside the resource's reconciler and the resource is currently reconciling, the current reconciler will be cancelled first.
-func (c *Controller) UpdateMeta(ctx context.Context, name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths []string, newName *runtimev1.ResourceName) error {
+func (c *Controller) UpdateMeta(ctx context.Context, name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths []string) error {
 	c.checkRunning()
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
@@ -335,14 +335,12 @@ func (c *Controller) UpdateMeta(ctx context.Context, name *runtimev1.ResourceNam
 		c.enqueue(name)
 	}
 
-	if newName != nil {
-		err := c.catalog.rename(name, newName)
-		if err != nil {
-			return err
-		}
+	err := c.safeMutateRenamed(name)
+	if err != nil {
+		return err
 	}
 
-	err := c.catalog.updateMeta(name, refs, owner, paths)
+	err = c.catalog.updateMeta(name, refs, owner, paths)
 	if err != nil {
 		return err
 	}
@@ -351,6 +349,36 @@ func (c *Controller) UpdateMeta(ctx context.Context, name *runtimev1.ResourceNam
 	ns := c.catalog.retryCyclicRefs()
 	for _, n := range ns {
 		c.enqueue(n)
+	}
+
+	return nil
+}
+
+// UpdateName renames a resource and updates annotations, and enqueues it for reconciliation.
+// If called from outside the resource's reconciler and the resource is currently reconciling, the current reconciler will be cancelled first.
+func (c *Controller) UpdateName(ctx context.Context, name, newName, owner *runtimev1.ResourceName, paths []string) error {
+	c.checkRunning()
+	c.lock(ctx, false)
+	defer c.unlock(ctx, false)
+
+	if !c.isReconcilerForResource(ctx, name) {
+		c.cancelIfRunning(name, false)
+		c.enqueue(name)
+	}
+
+	r, err := c.catalog.get(name, true)
+	if err != nil {
+		return err
+	}
+
+	err = c.safeRename(name, newName)
+	if err != nil {
+		return err
+	}
+
+	err = c.catalog.updateMeta(newName, r.Meta.Refs, owner, paths)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -368,7 +396,12 @@ func (c *Controller) UpdateSpec(ctx context.Context, name *runtimev1.ResourceNam
 		c.enqueue(name)
 	}
 
-	err := c.catalog.updateSpec(name, r)
+	err := c.safeMutateRenamed(name)
+	if err != nil {
+		return err
+	}
+
+	err = c.catalog.updateSpec(name, r)
 	if err != nil {
 		return err
 	}
@@ -415,7 +448,12 @@ func (c *Controller) Delete(ctx context.Context, name *runtimev1.ResourceName) e
 		return c.catalog.delete(name)
 	}
 
-	err := c.catalog.updateDeleted(name)
+	err := c.catalog.clearRenamedFrom(name) // Avoid resource being marked both deleted and renamed
+	if err != nil {
+		return err
+	}
+
+	err = c.catalog.updateDeleted(name)
 	if err != nil {
 		return err
 	}
@@ -562,6 +600,98 @@ func (c *Controller) isReconcilerForResource(ctx context.Context, n *runtimev1.R
 		return false
 	}
 	return proto.Equal(inv.name, n)
+}
+
+// safeMutateRenamed makes it safe to mutate a resource that's currently being renamed by changing the rename to a delete+create.
+// It does nothing if the resource is not currently being renamed (RenamedFrom == nil).
+// It must be called while c.mu is held.
+func (c *Controller) safeMutateRenamed(n *runtimev1.ResourceName) error {
+	r, err := c.catalog.get(n, true)
+	if err != nil {
+		if errors.Is(err, drivers.ErrResourceNotFound) {
+			return nil
+		}
+		return err
+	}
+
+	renamedFrom := r.Meta.RenamedFrom
+	if renamedFrom == nil {
+		return nil
+	}
+
+	err = c.catalog.clearRenamedFrom(n)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.catalog.get(renamedFrom, true)
+	if err == nil {
+		// A new resource with the name of the old one has been created in the mean time, so no delete is necessary (reconciler will bring to desired state).
+		return nil
+	}
+
+	// Create a new resource with the old name, so we can delete it separately.
+	err = c.catalog.create(renamedFrom, r.Meta.Refs, r.Meta.Owner, r.Meta.FilePaths, r)
+	if err != nil {
+		return err
+	}
+
+	err = c.catalog.updateDeleted(renamedFrom)
+	if err != nil {
+		return err
+	}
+
+	c.enqueue(renamedFrom)
+	return nil
+}
+
+// safeRename safely renames a resource, handling the case where multiple resources are renamed at the same time with collisions between old and new names.
+// For example, imagine there are resources A and B, and then A is renamed to B and B is renamed to C simultaneously.
+// safeRename resolves collisions by changing some renames to deletes+creates, which works because processQueue ensures deletes are run before creates and renames.
+// It must be called while c.mu is held.
+func (c *Controller) safeRename(from, to *runtimev1.ResourceName) error {
+	// Just to be safe
+	if proto.Equal(from, to) {
+		return nil
+	}
+
+	// There's a collision if to matches RenamedFrom of another resource.
+	collision := false
+	for _, n := range c.catalog.renamed {
+		r, err := c.catalog.get(n, true)
+		if err != nil {
+			return fmt.Errorf("internal: failed to get renamed resource %v: %w", n, err)
+		}
+		if proto.Equal(to, r.Meta.RenamedFrom) {
+			collision = true
+			break
+		}
+	}
+
+	// No collision, do a normal rename
+	if !collision {
+		return c.catalog.rename(from, to)
+	}
+
+	// Collision, do a delete+create instead of a rename
+	r, err := c.catalog.get(from, true)
+	if err != nil {
+		return err
+	}
+
+	err = c.catalog.updateDeleted(from)
+	if err != nil {
+		return err
+	}
+	c.enqueue(from)
+
+	err = c.catalog.create(to, r.Meta.Refs, r.Meta.Owner, r.Meta.FilePaths, r)
+	if err != nil {
+		return err
+	}
+	// The caller of safeRename will enqueue the new name
+
+	return nil
 }
 
 // enqueue marks a resource to be scheduled in the next iteration of the event loop.
