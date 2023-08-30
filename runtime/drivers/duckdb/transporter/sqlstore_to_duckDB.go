@@ -43,7 +43,15 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, 
 	}
 	defer iter.Close()
 
-	append := false
+	start := time.Now()
+	s.logger.Info("started transfer from local file to duckdb", zap.String("sink_table", dbSink.Table), observability.ZapCtx(ctx))
+	defer func() {
+		s.logger.Info("transfer finished",
+			zap.Duration("duration", time.Since(start)),
+			zap.Bool("success", transferErr == nil),
+			observability.ZapCtx(ctx))
+	}()
+	insert := true
 	// TODO :: iteration over fileiterator is similar to consuming fileIterator in objectStore_to_duckDB
 	// both can be refactored to follow same path
 	for iter.HasNext() {
@@ -52,15 +60,6 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, 
 			return err
 		}
 
-		start := time.Now()
-		s.logger.Info("started transfer from local file to duckdb", zap.String("sink_table", dbSink.Table), observability.ZapCtx(ctx))
-		defer func() {
-			s.logger.Info("transfer finished",
-				zap.Duration("duration", time.Since(start)),
-				zap.Bool("success", transferErr == nil),
-				observability.ZapCtx(ctx))
-		}()
-
 		format := fileutil.FullExt(files[0])
 		from, err := sourceReader(files, format, make(map[string]any))
 		if err != nil {
@@ -68,8 +67,9 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, 
 		}
 
 		var query string
-		if append {
+		if insert {
 			query = fmt.Sprintf("INSERT INTO %s (SELECT * FROM %s);", dbSink.Table, from)
+			insert = false
 		} else {
 			query = fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", dbSink.Table, from)
 		}
@@ -77,7 +77,6 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, 
 		if err := s.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1}); err != nil {
 			return err
 		}
-
 	}
 	return nil
 }

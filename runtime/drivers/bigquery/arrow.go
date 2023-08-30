@@ -2,6 +2,7 @@ package bigquery
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"sync/atomic"
 	"time"
@@ -12,12 +13,13 @@ import (
 	"github.com/apache/arrow/go/v13/arrow/ipc"
 	"github.com/apache/arrow/go/v13/arrow/memory"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 	"google.golang.org/api/iterator"
 )
 
-func (iter *fileIterator) AsArrowRecordReader() (array.RecordReader, error) {
-	arrowIt, err := iter.bqIter.ArrowIterator()
+func (f *fileIterator) AsArrowRecordReader() (array.RecordReader, error) {
+	arrowIt, err := f.bqIter.ArrowIterator()
 	if err != nil {
 		return nil, err
 	}
@@ -35,8 +37,9 @@ func (iter *fileIterator) AsArrowRecordReader() (array.RecordReader, error) {
 		arrowSchema: rdr.Schema(),
 		refCount:    1,
 		allocator:   allocator,
-		logger:      iter.logger,
+		logger:      f.logger,
 		records:     make([]arrow.Record, 0),
+		ctx:         f.ctx,
 	}
 
 	return rec, rec.err
@@ -55,6 +58,8 @@ type arrowRecordReader struct {
 
 	apinext time.Duration
 	ipcread time.Duration
+
+	ctx context.Context
 }
 
 // Retain increases the reference count by 1.
@@ -67,8 +72,8 @@ func (rs *arrowRecordReader) Retain() {
 // When the reference count goes to zero, the memory is freed.
 // Release may be called simultaneously from multiple goroutines.
 func (rs *arrowRecordReader) Release() {
-	rs.logger.Info("next api call took", zap.Float64("seconds", rs.apinext.Seconds()))
-	rs.logger.Info("next ipc read took", zap.Float64("seconds", rs.ipcread.Seconds()))
+	rs.logger.Info("next api call took", zap.Float64("seconds", rs.apinext.Seconds()), observability.ZapCtx(rs.ctx))
+	rs.logger.Info("next ipc read took", zap.Float64("seconds", rs.ipcread.Seconds()), observability.ZapCtx(rs.ctx))
 	if atomic.LoadInt64(&rs.refCount) <= 0 {
 		return
 	}

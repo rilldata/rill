@@ -8,7 +8,6 @@ import (
 )
 
 var ErrIteratorDone = errors.New("empty iterator")
-var ErrNotImplemented = errors.New("not implemented")
 
 // SQLStore is implemented by drivers capable of running sql queries and generating an iterator to consume results.
 // In future the results can be produced in other formats like arrow as well.

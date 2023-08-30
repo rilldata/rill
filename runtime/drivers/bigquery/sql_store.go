@@ -14,12 +14,13 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 )
 
 // Query implements drivers.SQLStore
 func (c *Connection) Query(ctx context.Context, props map[string]any, sql string) (drivers.RowIterator, error) {
-	return nil, drivers.ErrNotImplemented
+	return nil, fmt.Errorf("not implemented")
 }
 
 // QueryAsFiles implements drivers.SQLStore
@@ -125,6 +126,9 @@ func (f *fileIterator) NextBatch(limit int) ([]string, error) {
 	defer rdr.Release()
 
 	tf := time.Now()
+	defer func() {
+		f.logger.Info("time taken to write arrow records in parquet file", zap.Duration("duration", time.Since(tf)), observability.ZapCtx(f.ctx))
+	}()
 	writer, err := pqarrow.NewFileWriter(rdr.Schema(), fw,
 		parquet.NewWriterProperties(
 			parquet.WithCompression(compress.Codecs.Snappy),
@@ -167,13 +171,12 @@ func (f *fileIterator) NextBatch(limit int) ([]string, error) {
 	}
 	writer.Close()
 	fw.Close()
-	f.logger.Info("time taken to write arrow records in parquet file", zap.Duration("duration", time.Since(tf)))
 
 	fileInfo, err := os.Stat(fw.Name())
 	if err != nil {
 		return nil, err
 	}
-	f.logger.Info("size of file", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()))
+	f.logger.Info("size of file", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()), observability.ZapCtx(f.ctx))
 	return []string{fw.Name()}, nil
 }
 
@@ -187,7 +190,6 @@ func (f *fileIterator) Size(unit drivers.ProgressUnit) (int64, bool) {
 	default:
 		return 0, false
 	}
-
 }
 
 var _ drivers.FileIterator = &fileIterator{}
