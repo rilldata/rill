@@ -50,7 +50,7 @@ function buildDuckDbQuery(path: string): string {
     return `select * from read_json('${path}', auto_detect=true, format='auto')`;
   }
 
-  throw new Error(`Unsupported extension ${extension} for ${path}`);
+  return `select * from '${path}'`;
 }
 
 /**
