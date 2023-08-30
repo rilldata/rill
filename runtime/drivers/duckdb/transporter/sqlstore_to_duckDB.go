@@ -2,20 +2,20 @@ package transporter
 
 import (
 	"context"
-	"database/sql"
-	"database/sql/driver"
-	"errors"
 	"fmt"
+	"os"
 	"time"
 
-	"github.com/marcboeker/go-duckdb"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/apache/arrow/go/v13/arrow/array"
+	"github.com/apache/arrow/go/v13/parquet"
+	"github.com/apache/arrow/go/v13/parquet/compress"
+	"github.com/apache/arrow/go/v13/parquet/pqarrow"
+	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 )
-
-const _batchSize = 10000
 
 type sqlStoreToDuckDB struct {
 	to     drivers.OLAPStore
@@ -49,153 +49,85 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, 
 	}
 	defer iter.Close()
 
-	schema, err := iter.Schema(ctx)
+	arrReader, err := iter.AsArrowRecordReader()
 	if err != nil {
-		if errors.Is(err, drivers.ErrIteratorDone) {
-			return fmt.Errorf("no results found for the query")
-		}
+		// TODO :: differentiate b/w not implemented error and other errors and can add support for row by row ingestion in future
 		return err
 	}
-
-	if total, ok := iter.Size(drivers.ProgressUnitRecord); ok {
-		s.logger.Info("records to be ingested", zap.Uint64("rows", total))
-		p.Target(int64(total), drivers.ProgressUnitRecord)
-	}
-	// create table
-	qry, err := createTableQuery(schema, dbSink.Table)
-	if err != nil {
-		return err
-	}
-
-	if err := s.to.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1}); err != nil {
-		return err
-	}
+	defer arrReader.Release()
 
 	start := time.Now()
-	var apitime, duckdbtime time.Duration
 	s.logger.Info("started transfer from SQL store to duckdb", zap.String("sink_table", dbSink.Table), observability.ZapCtx(ctx))
 	defer func() {
 		s.logger.Info("transfer finished",
 			zap.Duration("duration", time.Since(start)),
 			zap.Bool("success", transferErr == nil),
-			zap.Duration("nextrecord_duration", apitime),
-			zap.Duration("duckdb_duration", duckdbtime),
 			observability.ZapCtx(ctx))
 	}()
-	return s.to.WithConnection(ctx, 1, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
-		return rawConn(conn, func(conn driver.Conn) error {
-			a, err := duckdb.NewAppenderFromConn(conn, "", dbSink.Table)
-			if err != nil {
-				return err
-			}
-			defer a.Close()
-
-			for num := 0; ; num++ {
-				select {
-				case <-ctx.Done():
-					return ctx.Err()
-				default:
-					if num == _batchSize {
-						p.Observe(_batchSize, drivers.ProgressUnitRecord)
-						num = 0
-						if err := a.Flush(); err != nil {
-							return err
-						}
-					}
-
-					t := time.Now()
-					row, err := iter.Next(ctx)
-					if err != nil {
-						if errors.Is(err, drivers.ErrIteratorDone) {
-							p.Observe(int64(num), drivers.ProgressUnitRecord)
-							return nil
-						}
-						return err
-					}
-					apitime += time.Since(t)
-
-					t = time.Now()
-					colValues := make([]driver.Value, len(row))
-					for i, col := range row {
-						colValues[i] = driver.Value(col)
-					}
-
-					if err := a.AppendRowArray(colValues); err != nil {
-						return err
-					}
-					duckdbtime += time.Since(t)
-				}
-			}
-		})
-	})
+	return s.downloadAsParquet(ctx, arrReader, dbSink.Table, p)
 }
 
-func createTableQuery(schema *runtimev1.StructType, name string) (string, error) {
-	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s(", safeName(name))
-	for i, s := range schema.Fields {
-		i++
-		duckDBType, err := pbTypeToDuckDB(s.Type.Code)
-		if err != nil {
-			return "", err
-		}
-		query += fmt.Sprintf("%s %s", safeName(s.Name), duckDBType)
-		if i != len(schema.Fields) {
-			query += ","
-		}
+func (s *sqlStoreToDuckDB) downloadAsParquet(ctx context.Context, rdr array.RecordReader, sinkTable string, p drivers.Progress) error {
+	// create a temp directory
+	tf := time.Now()
+	temp, err := os.MkdirTemp(os.TempDir(), "pq_ingestion")
+	if err != nil {
+		return err
 	}
-	query += ")"
-	return query, nil
-}
+	defer func() {
+		os.RemoveAll(temp)
+	}()
 
-func pbTypeToDuckDB(code runtimev1.Type_Code) (string, error) {
-	switch code {
-	case runtimev1.Type_CODE_UNSPECIFIED:
-		return "", fmt.Errorf("unspecified code")
-	case runtimev1.Type_CODE_BOOL:
-		return "BOOLEAN", nil
-	case runtimev1.Type_CODE_INT8:
-		return "TINYINT", nil
-	case runtimev1.Type_CODE_INT16:
-		return "SMALLINT", nil
-	case runtimev1.Type_CODE_INT32:
-		return "INTEGER", nil
-	case runtimev1.Type_CODE_INT64:
-		return "BIGINT", nil
-	case runtimev1.Type_CODE_INT128:
-		return "HUGEINT", nil
-	case runtimev1.Type_CODE_UINT8:
-		return "UTINYINT", nil
-	case runtimev1.Type_CODE_UINT16:
-		return "USMALLINT", nil
-	case runtimev1.Type_CODE_UINT32:
-		return "UINTEGER", nil
-	case runtimev1.Type_CODE_UINT64:
-		return "UBIGINT", nil
-	case runtimev1.Type_CODE_FLOAT32:
-		return "FLOAT", nil
-	case runtimev1.Type_CODE_FLOAT64:
-		return "DOUBLE", nil
-	case runtimev1.Type_CODE_TIMESTAMP:
-		return "TIMESTAMP", nil
-	case runtimev1.Type_CODE_DATE:
-		return "DATE", nil
-	case runtimev1.Type_CODE_TIME:
-		return "TIME", nil
-	case runtimev1.Type_CODE_STRING:
-		return "VARCHAR", nil
-	case runtimev1.Type_CODE_BYTES:
-		return "BLOB", nil
-	case runtimev1.Type_CODE_ARRAY:
-		return "", fmt.Errorf("array is not supported")
-	case runtimev1.Type_CODE_STRUCT:
-		return "", fmt.Errorf("struct is not supported")
-	case runtimev1.Type_CODE_MAP:
-		return "", fmt.Errorf("map is not supported")
-	case runtimev1.Type_CODE_DECIMAL:
-		return "DECIMAL", nil
-	case runtimev1.Type_CODE_JSON:
-		return "JSON", nil
-	default:
-		return "", fmt.Errorf("unknown type_code %s", code)
+	// create a temp file
+	fw, err := fileutil.OpenTempFileInDir(temp, "temp.parquet")
+	if err != nil {
+		return err
 	}
+	defer fw.Close()
+
+	writer, err := pqarrow.NewFileWriter(rdr.Schema(), fw,
+		parquet.NewWriterProperties(
+			parquet.WithCompression(compress.Codecs.Snappy),
+			parquet.WithRootRepetition(parquet.Repetitions.Required),
+			// duckdb has issues reading statistics of string type generated with this write
+			// column statistics are not useful if full file need to be ingested so better to disable to save computations
+			parquet.WithStats(false),
+		),
+		pqarrow.NewArrowWriterProperties(pqarrow.WithStoreSchema()))
+	if err != nil {
+		return err
+	}
+	defer writer.Close()
+
+	// write arrow records to parquet file
+	for rdr.Next() {
+		fw.Stat()
+		rec := rdr.Record()
+		p.Observe(rec.NumRows(), drivers.ProgressUnitRecord)
+		if err := writer.WriteBuffered(rec); err != nil {
+			return err
+		}
+	}
+	writer.Close()
+	fw.Close()
+	s.logger.Info("time taken to write parquet file", zap.Duration("duration", time.Since(tf)))
+
+	fileInfo, err := os.Stat(fw.Name())
+	if err != nil {
+		return err
+	}
+	s.logger.Info("size of file", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()))
+
+	// generate source statement
+	from, err := sourceReader([]string{fw.Name()}, "parquet", make(map[string]any))
+	if err != nil {
+		return err
+	}
+
+	ti := time.Now()
+	defer func() {
+		s.logger.Info("time taken to ingest parquet file", zap.Duration("duration", time.Since(ti)))
+	}()
+	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", sinkTable, from)
+	return s.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
 }

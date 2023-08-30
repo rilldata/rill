@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 
+	"github.com/apache/arrow/go/v13/arrow/array"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
 var ErrIteratorDone = errors.New("empty iterator")
+var ErrNotImplemented = errors.New("not implemented")
 
 // SQLStore is implemented by drivers capable of running sql queries and generating an iterator to consume results.
 // In future the results can be produced in other formats like arrow as well.
@@ -27,4 +29,6 @@ type RowIterator interface {
 	// Size returns total size of data downloaded in unit.
 	// Returns 0,false if not able to compute size in given unit
 	Size(unit ProgressUnit) (uint64, bool)
+	// AsArrowRecordReader returns array.RecordReader if the results can be produed as batch of arrow records
+	AsArrowRecordReader() (array.RecordReader, error)
 }

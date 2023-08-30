@@ -85,7 +85,10 @@ require (
 	moul.io/zapfilter v1.7.0
 )
 
-require google.golang.org/genproto v0.0.0-20230530153820-e85fd2cbaebc // indirect
+require (
+	github.com/apache/arrow/go/v12 v12.0.0 // indirect
+	google.golang.org/genproto v0.0.0-20230530153820-e85fd2cbaebc // indirect
+)
 
 require (
 	cloud.google.com/go v0.110.2
@@ -258,8 +261,6 @@ require (
 
 replace github.com/apache/calcite-avatica-go/v5 v5.2.0 => github.com/rilldata/calcite-avatica-go/v5 v5.0.0-20230621112535-eea498ff2a3d
 
-replace cloud.google.com/go/bigquery v1.52.0 => github.com/k-anshul/google-cloud-go/bigquery v0.0.0-20230824131059-c0e4c61bf21e
-
-// replace github.com/marcboeker/go-duckdb v1.4.1 => github.com/k-anshul/go-duckdb v0.0.0-20230824124619-6d17b4831b4f
+replace cloud.google.com/go/bigquery v1.52.0 => github.com/k-anshul/google-cloud-go/bigquery v0.0.0-20230828111937-1c2929d3860e
 
 exclude modernc.org/sqlite v1.18.1
