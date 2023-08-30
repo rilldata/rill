@@ -129,11 +129,9 @@ test("comparison, should fill in missing intervals", () => {
     "2023-04-15T13:00:00Z"
   );
 
-  console.log(result);
   const ts = result.map((r) => formatDateToEnUS(r.ts));
 
   const comp = result.map((r) => {
-    console.log(r);
     return formatDateToEnUS(r["comparison.ts"]);
   });
 
@@ -168,11 +166,9 @@ test("comparison, should fill in missing intervals, America/Argentina/Buenos_Air
     "2023-04-15T13:00:00Z"
   );
 
-  console.log(result);
   const ts = result.map((r) => formatDateToEnUS(r.ts));
 
   const comp = result.map((r) => {
-    console.log(r);
     return formatDateToEnUS(r["comparison.ts"]);
   });
 
