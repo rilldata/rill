@@ -50,13 +50,8 @@ When a user loads a dashboard, the policies are resolved in two phases:
 
 1. The templating engine first replaces expressions like `{{ .user.domain }}` with actual values ([Templating reference](../reference/templating))
 2. The resulting expression is then evaluated contextually:
-<<<<<<< HEAD:docs/docs/develop/policies.md
-  - The `has_access` and `if` values are evaluated as SQL expressions and resolved to a `true` or `false` value
-  - The `filter` value is injected into the `WHERE` clause of the SQL queries used to render the dashboard
-=======
+  - The `access` and `if` values are evaluated as SQL expressions and resolved to a `true` or `false` value
   - The `row_filter` value is injected into the `WHERE` clause of the SQL queries used to render the dashboard
-  - The `access` and `if` values are resolved to a `true` or `false` value using the expression engine ([Expressions reference](../reference/expressions))
->>>>>>> 84fd7fc8 (rename security fields, allow list of names in include/exclude):docs/docs/develop/security.md
 
 ## Testing your policies
 
