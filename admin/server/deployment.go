@@ -166,33 +166,17 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	var deplToUse *database.Deployment
-	if req.Branch == "" {
-		if proj.ProdDeploymentID == nil {
-			return nil, status.Error(codes.InvalidArgument, "project does not have a deployment")
-		}
+	if proj.ProdDeploymentID == nil {
+		return nil, status.Error(codes.InvalidArgument, "project does not have a deployment")
+	}
 
-		prodDepl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
-		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
+	prodDepl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 
-		deplToUse = prodDepl
-	} else {
-		depls, err := s.admin.DB.FindDeploymentsForProject(ctx, proj.ID)
-		if err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		for _, d := range depls {
-			if d.Branch == req.Branch {
-				deplToUse = d
-				break
-			}
-		}
-
-		if deplToUse == nil {
-			return nil, status.Error(codes.InvalidArgument, "no deployment found for branch")
-		}
+	if req.Branch != "" && req.Branch != prodDepl.Branch {
+		return nil, status.Error(codes.InvalidArgument, "project does not have a deployment for given branch")
 	}
 
 	claims := auth.GetClaims(ctx)
@@ -218,11 +202,11 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 
 	// Generate JWT
 	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
-		AudienceURL: deplToUse.RuntimeAudience,
+		AudienceURL: prodDepl.RuntimeAudience,
 		Subject:     claims.OwnerID(),
 		TTL:         time.Hour,
 		InstancePermissions: map[string][]runtimeauth.Permission{
-			deplToUse.RuntimeInstanceID: {
+			prodDepl.RuntimeInstanceID: {
 				// TODO: Remove ReadProfiling and ReadRepo (may require frontend changes)
 				runtimeauth.ReadObjects,
 				runtimeauth.ReadMetrics,
@@ -236,11 +220,11 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
 	}
 
-	s.admin.Used.Deployment(deplToUse.ID)
+	s.admin.Used.Deployment(prodDepl.ID)
 
 	return &adminv1.GetDeploymentCredentialsResponse{
-		RuntimeHost:       deplToUse.RuntimeHost,
-		RuntimeInstanceId: deplToUse.RuntimeInstanceID,
+		RuntimeHost:       prodDepl.RuntimeHost,
+		RuntimeInstanceId: prodDepl.RuntimeInstanceID,
 		Jwt:               jwt,
 	}, nil
 }
