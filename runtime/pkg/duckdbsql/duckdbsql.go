@@ -4,175 +4,32 @@ import (
 	"context"
 	databasesql "database/sql"
 	"database/sql/driver"
-	"encoding/json"
 	"sync"
 
 	"github.com/marcboeker/go-duckdb"
 )
 
-type AST struct {
-	sql       string
-	ast       astNode
-	rootNodes []*selectNode
-	aliases   map[string]bool
-	added     map[string]bool
-	fromNodes []*fromNode
-	columns   []*columnNode
-}
-
-type selectNode struct {
-	ast astNode
-}
-
-type columnNode struct {
-	ast astNode
-	ref *ColumnRef
-}
-
-type fromNode struct {
-	ast      astNode
-	parent   astNode
-	childKey string
-	ref      *TableRef
-}
-
-func Parse(sql string) (*AST, error) {
-	sqlAst, err := queryString("select json_serialize_sql(?::VARCHAR)", sql)
+// queryAny runs a DuckDB query and returns the result as an any value
+func queryAny(qry string, args ...any) (any, error) {
+	rows, err := query(qry, args...)
 	if err != nil {
 		return nil, err
 	}
 
-	nativeAst := astNode{}
-	err = json.Unmarshal(sqlAst, &nativeAst)
-	if err != nil {
-		return nil, err
-	}
-
-	ast := &AST{
-		sql:       sql,
-		ast:       nativeAst,
-		rootNodes: make([]*selectNode, 0),
-		aliases:   map[string]bool{},
-		added:     map[string]bool{},
-		fromNodes: make([]*fromNode, 0),
-		columns:   make([]*columnNode, 0),
-	}
-
-	err = ast.traverse()
-	if err != nil {
-		return nil, err
-	}
-	return ast, nil
-}
-
-// Format normalizes a DuckDB SQL statement
-func (a *AST) Format() (string, error) {
-	sql, err := json.Marshal(a.ast)
-	if err != nil {
-		return "", err
-	}
-	res, err := queryString("SELECT json_deserialize_sql(?::JSON)", string(sql))
-	return string(res), err
-}
-
-// RewriteTableRefs replaces table references in a DuckDB SQL query. Only replacing with a base table reference is supported right now.
-func (a *AST) RewriteTableRefs(fn func(table *TableRef) (*TableRef, bool)) error {
-	for _, node := range a.fromNodes {
-		newRef, shouldReplace := fn(node.ref)
-		if !shouldReplace {
-			continue
-		}
-
-		if newRef.Name != "" {
-			err := node.rewriteToBaseTable(newRef.Name)
-			if err != nil {
-				return err
-			}
-		} else if newRef.Function != "" {
-			switch newRef.Function {
-			case "read_csv_auto", "read_csv",
-				"read_parquet",
-				"read_json", "read_json_auto", "read_json_objects", "read_json_objects_auto",
-				"read_ndjson_objects", "read_ndjson", "read_ndjson_auto":
-				err := node.rewriteToReadTableFunction(newRef.Function, newRef.Paths, newRef.Properties)
-				if err != nil {
-					return err
-				}
-				// non read_ functions are not supported right now
-			}
+	var res any
+	if rows.Next() {
+		err := rows.Scan(&res)
+		if err != nil {
+			return nil, err
 		}
 	}
 
-	return nil
-}
-
-// RewriteLimit rewrites a DuckDB SQL statement to limit the result size
-func (a *AST) RewriteLimit(limit, offset int) error {
-	if len(a.rootNodes) == 0 {
-		return nil
-	}
-
-	// We only need to add limit to the top level query
-	err := a.rootNodes[0].rewriteLimit(limit, offset)
+	err = rows.Close()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
-}
-
-// ExtractColumnRefs extracts column references from the outermost SELECT of a DuckDB SQL statement
-func (a *AST) ExtractColumnRefs() []*ColumnRef {
-	columnRefs := make([]*ColumnRef, 0)
-	for _, node := range a.columns {
-		columnRefs = append(columnRefs, node.ref)
-	}
-	return columnRefs
-}
-
-func (a *AST) GetTableRefs() []*TableRef {
-	tableRefs := make([]*TableRef, 0)
-	for _, node := range a.fromNodes {
-		tableRefs = append(tableRefs, node.ref)
-	}
-	return tableRefs
-}
-
-func (a *AST) newFromNode(node, parent astNode, childKey string, ref *TableRef) {
-	fn := &fromNode{
-		ast:      node,
-		parent:   parent,
-		childKey: childKey,
-		ref:      ref,
-	}
-	a.fromNodes = append(a.fromNodes, fn)
-}
-
-func (a *AST) newColumnNode(node astNode, ref *ColumnRef) {
-	cn := &columnNode{
-		ast: node,
-		ref: ref,
-	}
-	a.columns = append(a.columns, cn)
-}
-
-// TableRef has information extracted about a DuckDB table or table function reference
-type TableRef struct {
-	Name       string
-	Function   string
-	Paths      []string
-	Properties map[string]any
-	LocalAlias bool
-}
-
-// ColumnRef has information about a column in the select list of a DuckDB SQL statement
-type ColumnRef struct {
-	Name         string
-	RelationName string
-	Expr         string
-	IsAggr       bool
-	IsStar       bool
-	IsExclude    bool
+	return res, nil
 }
 
 // queryString runs a DuckDB query and returns the result as a scalar string
@@ -212,6 +69,11 @@ func query(qry string, args ...any) (*databasesql.Rows, error) {
 		connector, err := duckdb.NewConnector("", func(conn driver.ExecerContext) error {
 			// Load JSON extension
 			_, err := conn.ExecContext(context.Background(), "INSTALL 'json'; LOAD 'json';", nil)
+			if err != nil {
+				return err
+			}
+			// Lock it down
+			_, err = conn.ExecContext(context.Background(), "SET enable_external_access=false", nil)
 			return err
 		})
 		if err != nil {
