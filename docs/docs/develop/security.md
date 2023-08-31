@@ -106,10 +106,10 @@ You can include or exclude dimensions and measures based on a boolean expression
 security:
   access: true
   exclude:
-    - names: 
+    - if: "'{{ .user.domain }}' != 'example.com'"
+      names: 
         - ssn
         - id
-      if: "'{{ .user.domain }}' != 'example.com'"
 ```
 
 Alternatively, you can explicitly define the dimensions and measures to include using the `include` key. It uses the same syntax as `exclude` and automatically excludes all names not explicitly defined in the list. See the [Dashboard YAML](../reference/project-files/dashboards) reference for details.
