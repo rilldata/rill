@@ -14,30 +14,30 @@ import (
 	"go.uber.org/zap"
 )
 
-type policyEngine struct {
+type securityEngine struct {
 	cache  *simplelru.LRU
 	lock   sync.Mutex
 	logger *zap.Logger
 }
 
-func newPolicyEngine(cacheSize int, logger *zap.Logger) *policyEngine {
+func newSecurityEngine(cacheSize int, logger *zap.Logger) *securityEngine {
 	cache, err := simplelru.NewLRU(cacheSize, nil)
 	if err != nil {
 		panic(err)
 	}
-	return &policyEngine{cache: cache, logger: logger}
+	return &securityEngine{cache: cache, logger: logger}
 }
 
-var openPolicy = &ResolvedMetricsViewPolicy{
-	HasAccess: true,
-	Filter:    "",
+var openAccess = &ResolvedMetricsViewSecurity{
+	Access:    true,
+	RowFilter: "",
 	Include:   nil,
 	Exclude:   nil,
 }
 
-type ResolvedMetricsViewPolicy struct {
-	HasAccess bool
-	Filter    string
+type ResolvedMetricsViewSecurity struct {
+	Access    bool
+	RowFilter string
 	Include   []string
 	Exclude   []string
 }
@@ -80,15 +80,15 @@ func computeCacheKey(instanceID string, mv *runtimev1.MetricsView, lastUpdatedOn
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-func (p *policyEngine) resolveMetricsViewPolicy(attributes map[string]any, instanceID string, mv *runtimev1.MetricsView, lastUpdatedOn time.Time) (*ResolvedMetricsViewPolicy, error) {
-	if mv.Policy == nil {
+func (p *securityEngine) resolveMetricsViewSecurity(attributes map[string]any, instanceID string, mv *runtimev1.MetricsView, lastUpdatedOn time.Time) (*ResolvedMetricsViewSecurity, error) {
+	if mv.Security == nil {
 		return nil, nil
 	}
 
 	// if attributes is empty that means auth is disabled and also no user context is available
 	// since we are controlling the attributes we can safely return the open policy
 	if len(attributes) == 0 {
-		return openPolicy, nil
+		return openAccess, nil
 	}
 
 	cacheKey, err := computeCacheKey(instanceID, mv, lastUpdatedOn, attributes)
@@ -101,32 +101,34 @@ func (p *policyEngine) resolveMetricsViewPolicy(attributes map[string]any, insta
 
 	cached, ok := p.cache.Get(cacheKey)
 	if ok {
-		return cached.(*ResolvedMetricsViewPolicy), nil
+		return cached.(*ResolvedMetricsViewSecurity), nil
 	}
 
-	resolved := &ResolvedMetricsViewPolicy{}
+	resolved := &ResolvedMetricsViewSecurity{}
 	templateData := rillv1.TemplateData{User: attributes}
 
-	if mv.Policy.HasAccess != "" {
-		hasAccess, err := rillv1.ResolveTemplate(mv.Policy.HasAccess, templateData)
+	if mv.Security.Access != "" {
+		access, err := rillv1.ResolveTemplate(mv.Security.Access, templateData)
 		if err != nil {
 			return nil, err
 		}
-		resolved.HasAccess, err = rillv1.EvaluateBoolExpression(hasAccess)
+		resolved.Access, err = rillv1.EvaluateBoolExpression(access)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if mv.Policy.Filter != "" {
-		filter, err := rillv1.ResolveTemplate(mv.Policy.Filter, templateData)
+	if mv.Security.RowFilter != "" {
+		filter, err := rillv1.ResolveTemplate(mv.Security.RowFilter, templateData)
 		if err != nil {
 			return nil, err
 		}
-		resolved.Filter = filter
+		resolved.RowFilter = filter
 	}
 
-	for _, inc := range mv.Policy.Include {
+	seen := map[string]bool{}
+
+	for _, inc := range mv.Security.Include {
 		cond, err := rillv1.ResolveTemplate(inc.Condition, templateData)
 		if err != nil {
 			return nil, err
@@ -136,10 +138,17 @@ func (p *policyEngine) resolveMetricsViewPolicy(attributes map[string]any, insta
 			return nil, err
 		}
 		if incCond {
-			resolved.Include = append(resolved.Include, inc.Name)
+			for _, name := range inc.Names {
+				if seen[name] {
+					continue
+				}
+				seen[name] = true
+				resolved.Include = append(resolved.Include, name)
+			}
 		}
 	}
-	for _, exc := range mv.Policy.Exclude {
+
+	for _, exc := range mv.Security.Exclude {
 		cond, err := rillv1.ResolveTemplate(exc.Condition, templateData)
 		if err != nil {
 			return nil, err
@@ -149,7 +158,13 @@ func (p *policyEngine) resolveMetricsViewPolicy(attributes map[string]any, insta
 			return nil, err
 		}
 		if excCond {
-			resolved.Exclude = append(resolved.Exclude, exc.Name)
+			for _, name := range exc.Names {
+				if seen[name] {
+					continue
+				}
+				seen[name] = true
+				resolved.Exclude = append(resolved.Exclude, name)
+			}
 		}
 	}
 

@@ -29,7 +29,7 @@ type Resource struct {
 	// Metadata
 	Name    ResourceName
 	Paths   []string
-	Refs    []ResourceName // Derived from rawRefs after parsing (can't contain ResourceKindUnspecified)
+	Refs    []ResourceName // Derived from rawRefs after parsing (can't contain ResourceKindUnspecified). Always sorted.
 	rawRefs []ResourceName // Populated during parsing (may contain ResourceKindUnspecified)
 
 	// Only one of these will be non-nil
@@ -541,6 +541,8 @@ func (p *Parser) inferUnspecifiedRefs(r *Resource) {
 
 		// Rule 4: Skip it
 	}
+
+	slices.SortFunc(refs, func(a, b ResourceName) bool { return a.Kind < b.Kind || a.Kind == b.Kind && a.Name < b.Name })
 
 	r.Refs = refs
 }

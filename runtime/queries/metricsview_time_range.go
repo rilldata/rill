@@ -16,9 +16,9 @@ import (
 )
 
 type MetricsViewTimeRange struct {
-	MetricsViewName  string                             `json:"name"`
-	MetricsView      *runtimev1.MetricsView             `json:"-"`
-	ResolvedMVPolicy *runtime.ResolvedMetricsViewPolicy `json:"policy"`
+	MetricsViewName    string                               `json:"name"`
+	MetricsView        *runtimev1.MetricsView               `json:"-"`
+	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity `json:"security"`
 
 	Result *runtimev1.MetricsViewTimeRangeResponse `json:"_"`
 }
@@ -55,8 +55,8 @@ func (q *MetricsViewTimeRange) UnmarshalResult(v any) error {
 
 func (q *MetricsViewTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
 	policyFilter := ""
-	if q.ResolvedMVPolicy != nil {
-		policyFilter = q.ResolvedMVPolicy.Filter
+	if q.ResolvedMVSecurity != nil {
+		policyFilter = q.ResolvedMVSecurity.RowFilter
 	}
 
 	if q.MetricsView.TimeDimension == "" {

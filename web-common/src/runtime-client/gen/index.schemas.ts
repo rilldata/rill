@@ -490,12 +490,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -528,6 +522,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export type V1TableRowsResponseDataItem = { [key: string]: any };
 
@@ -591,6 +591,11 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
+export interface V1SourceV2 {
+  spec?: V1SourceSpec;
+  state?: V1SourceState;
+}
+
 export type V1SourceSpecProperties = { [key: string]: any };
 
 export interface V1SourceSpec {
@@ -602,11 +607,6 @@ export interface V1SourceSpec {
   stageChanges?: boolean;
   streamIngestion?: boolean;
   trigger?: boolean;
-}
-
-export interface V1SourceV2 {
-  spec?: V1SourceSpec;
-  state?: V1SourceState;
 }
 
 export type V1SourceProperties = { [key: string]: any };
@@ -661,17 +661,17 @@ export interface V1ResourceMeta {
   refs?: V1ResourceName[];
   owner?: V1ResourceName;
   filePaths?: string[];
-  deleted?: boolean;
-  renamedFrom?: V1ResourceName;
-  reconcileError?: string;
   version?: string;
-  metaVersion?: string;
   specVersion?: string;
   stateVersion?: string;
   createdOn?: string;
   specUpdatedOn?: string;
   stateUpdatedOn?: string;
   deletedOn?: string;
+  reconcileStatus?: V1ReconcileStatus;
+  reconcileError?: string;
+  reconcileOn?: string;
+  renamedFrom?: V1ResourceName;
 }
 
 export type V1ResourceEvent =
@@ -751,6 +751,17 @@ export interface V1RefreshAndReconcileRequest {
   dry?: boolean;
   strict?: boolean;
 }
+
+export type V1ReconcileStatus =
+  (typeof V1ReconcileStatus)[keyof typeof V1ReconcileStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ReconcileStatus = {
+  RECONCILE_STATUS_UNSPECIFIED: "RECONCILE_STATUS_UNSPECIFIED",
+  RECONCILE_STATUS_IDLE: "RECONCILE_STATUS_IDLE",
+  RECONCILE_STATUS_PENDING: "RECONCILE_STATUS_PENDING",
+  RECONCILE_STATUS_RUNNING: "RECONCILE_STATUS_RUNNING",
+} as const;
 
 /**
  * - CODE_UNSPECIFIED: Unspecified error

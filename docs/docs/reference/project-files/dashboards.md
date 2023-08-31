@@ -44,12 +44,12 @@ _**`measures`**_ — numeric [aggregates](../../develop/metrics-dashboard#measur
       - _`percentage`_ — output transformed from a rate to a percentage appended with a percentage sign
       - _`comma_separators`_ — output transformed to decimal formal with commas every 3 digits
 
-_**`policy`**_ - define granular [access policies](../../develop/policies) for the dashboard _(optional)_
-  - _**`has_access`**_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to `false` and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. _(optional)_
-  - _**`filter`**_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a `WHERE` clause. _(optional)_
+_**`security`**_ - define a [security policy](../../develop/security) for the dashboard _(optional)_
+  - _**`access`**_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to `false` and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. _(optional)_
+  - _**`row_filter`**_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a `WHERE` clause. _(optional)_
   - _**`exclude`**_ - List of dimension or measure names to exclude from the dashboard. If `exclude` is defined all other dimensions and measures are included. _(optional)_
-    - **`name`** - Name of the field to exclude. Should match the `name` of one of the dashboard's dimensions or measures. _(required)_ 
     - **`if`** - Expression to decide if the column should be excluded or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean. _(required)_
+    - **`names`** - List of fields to exclude. Should match the `name` of one of the dashboard's dimensions or measures. _(required)_
   - _**`include`**_ - List of dimension or measure names to include in the dashboard. If `include` is defined all other dimensions and measures are excluded. _(optional)_
-    - **`name`** - Name of the field to exclude. Should match the `name` of one of the dashboard's dimensions or measures. _(required)_ 
-    - **`if`** - Expression to decide if the column should be excluded or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean. _(required)_
+    - **`if`** - Expression to decide if the column should be included or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean. _(required)_
+    - **`names`** - List of fields to include. Should match the `name` of one of the dashboard's dimensions or measures. _(required)_
