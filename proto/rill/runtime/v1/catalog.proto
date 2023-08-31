@@ -97,16 +97,16 @@ message MetricsView {
     string format = 5;
     bool valid_percent_of_total = 6;
   }
-  // Policy is the access policy for the metrics view
-  message Policy {
+  // Security for the metrics view
+  message Security {
     // Dashboard level access condition
-    string has_access = 1;
+    string access = 1;
     // row level access condition
-    string filter = 2;
+    string row_filter = 2;
     // Dimension/measure access condition
     message FieldCondition {
-      string name = 1;
-      string condition = 2;
+      string condition = 1;
+      repeated string names = 2;
     }
     // either one of include or exclude will be specified
     repeated FieldCondition include = 3;
@@ -132,6 +132,6 @@ message MetricsView {
   string default_time_range = 10;
   // Available time zones list preferred time zones using IANA location identifiers.
   repeated string available_time_zones = 11;
-  // Access policy for the dashboard
-  Policy policy = 12;
+  // Security for the dashboard
+  Security security = 12;
 }
