@@ -39,6 +39,7 @@ export type RichFormatNumber = {
 export enum NumberKind {
   DOLLAR = "DOLLAR",
   PERCENT = "PERCENT",
+  INTERVAL = "INTERVAL",
   ANY = "ANY",
 }
 
