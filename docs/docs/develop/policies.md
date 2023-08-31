@@ -46,13 +46,29 @@ If you require additional user attributes to enforce access policies, see the ex
 
 ## Templating and expression evaluation
 
-During development, the expressions used in the policies are validated using dummy data. When a user loads a dashboard, the policies are then resolved in two phases:
+When a user loads a dashboard, the policies are resolved in two phases:
 
 1. The templating engine first replaces expressions like `{{ .user.domain }}` with actual values ([Templating reference](../reference/templating))
 2. The resulting expression is then evaluated contextually:
+  - The `has_access` and `if` values are evaluated as SQL expressions and resolved to a `true` or `false` value
   - The `filter` value is injected into the `WHERE` clause of the SQL queries used to render the dashboard
-  - The `has_access` and `if` values are resolved to a `true` or `false` value using the expression engine ([Expressions reference](../reference/expressions))
 
+## Testing your policies
+
+In development (on `localhost`), you can test your policies by adding "mock users" to your project and viewing the dashboard as one of them.
+
+In your project's `rill.yaml` file, add a `mock_users` section. Each mock user must have an `email` attribute, and can optionally have `name` and `admin` attributes. For example:
+```yaml
+# rill.yaml
+mock_users:
+- email: john@yourcompany.com
+  name: John Doe
+  admin: true
+- email: jane@partnercompany.com
+- email: anon@unknown.com
+```
+
+On the dashboard page, provided you've added a policy, you'll see a "View as" button in the top right corner. Click this button and select one of your mock users. You'll see the dashboard as that user would see it.
 ## Examples
 
 ### Restrict dashboard access to users matching specific criteria
@@ -60,7 +76,7 @@ During development, the expressions used in the policies are validated using dum
 Let's say you want to restrict dashboard access to admin users or users whose email domain is `example.com`. Add the following clause to your dashboard's YAML:
 ```yaml 
 policy:
-  has_access: "{{ .user.admin }} == true || '{{ .user.domain }}' == 'example.com'"
+  has_access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'example.com'"
 ```
 
 > **_Note:_** If the `policy` section is defined and `has_access` is not, then `has_access` will default to `false`, meaning that it won't be accessible to anyone.

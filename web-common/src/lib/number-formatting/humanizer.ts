@@ -1,6 +1,7 @@
 import { Formatter, FormatterFactory, NumberKind } from "./humanizer-types";
 import { IntTimesPowerOfTenFormatter } from "./strategies/IntTimesPowerOfTen";
 import { NonFormatter } from "./strategies/none";
+import { IntervalFormatter } from "./strategies/intervals";
 import { PerRangeFormatter } from "./strategies/per-range";
 import {
   defaultDollarOptions,
@@ -41,6 +42,9 @@ export const humanizedFormatterFactory: FormatterFactory = (
           break;
         case NumberKind.PERCENT:
           formatter = new PerRangeFormatter(sample, defaultPercentOptions);
+          break;
+        case NumberKind.INTERVAL:
+          formatter = new IntervalFormatter();
           break;
         default:
           formatter = new PerRangeFormatter(sample, defaultGenericNumOptions);

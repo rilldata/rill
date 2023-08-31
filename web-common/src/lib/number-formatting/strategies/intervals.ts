@@ -1,4 +1,10 @@
 import type { Interval } from "@rilldata/web-common/lib/duckdb-data-types";
+import type {
+  FormatterOptionsCommon,
+  NumberParts,
+  Formatter,
+  FormatterRangeSpecsStrategy,
+} from "../humanizer-types";
 
 const MS_PER_MICRO = 0.001;
 const MS_PER_SEC = 1000;
@@ -30,6 +36,25 @@ const ms_breakpoints = [
   { ms: 100 * MS_PER_YEAR, divisor: MS_PER_YEAR, unit: timeUnits.y },
   { ms: Infinity, unit: "TOO_LARGE" },
 ];
+
+// TODO: Rewrite this to use the sample and provided options
+export class IntervalFormatter implements Formatter {
+  options: FormatterOptionsCommon & FormatterRangeSpecsStrategy;
+  initialSample: number[];
+
+  stringFormat(x: number): string {
+    return formatMsInterval(x);
+  }
+
+  partsFormat(x: number): NumberParts {
+    return {
+      int: formatMsInterval(x),
+      dot: "",
+      frac: "",
+      suffix: "",
+    };
+  }
+}
 
 /**
  * Formats a millisecond value into a compact human readable time interval.
