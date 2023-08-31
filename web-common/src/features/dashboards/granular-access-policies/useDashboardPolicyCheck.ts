@@ -14,8 +14,8 @@ export function useDashboardPolicyCheck(
       query: {
         select: (data) => {
           const yamlObj = parse(data?.blob);
-          const policy = yamlObj?.policy;
-          return !!policy;
+          const securityPolicy = yamlObj?.security;
+          return !!securityPolicy;
         },
       },
     }
