@@ -1,12 +1,13 @@
 package runtime
 
 import (
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"go.uber.org/zap"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
+
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"go.uber.org/zap"
 )
 
 func TestResolveMetricsView(t *testing.T) {
@@ -62,7 +63,7 @@ func TestResolveMetricsView(t *testing.T) {
 				mv: &runtimev1.MetricsView{
 					Name: "test_group",
 					Policy: &runtimev1.MetricsView_Policy{
-						HasAccess: "'{{.user.domain}}' == 'rilldata.com'",
+						HasAccess: "'{{.user.domain}}' = 'rilldata.com'",
 						Filter:    "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
 						Include:   nil,
 						Exclude:   nil,
@@ -90,7 +91,7 @@ func TestResolveMetricsView(t *testing.T) {
 				mv: &runtimev1.MetricsView{
 					Name: "test_groups",
 					Policy: &runtimev1.MetricsView_Policy{
-						HasAccess: "'{{.user.domain}}' == 'rilldata.com'",
+						HasAccess: "'{{.user.domain}}' = 'rilldata.com'",
 						Filter:    "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
 						Include:   nil,
 						Exclude:   nil,
@@ -146,16 +147,16 @@ func TestResolveMetricsView(t *testing.T) {
 				mv: &runtimev1.MetricsView{
 					Name: "test_include",
 					Policy: &runtimev1.MetricsView_Policy{
-						HasAccess: "'{{.user.domain}}' == 'rilldata.com'",
+						HasAccess: "'{{.user.domain}}' = 'rilldata.com'",
 						Filter:    "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
 						Include: []*runtimev1.MetricsView_Policy_FieldCondition{
 							{
 								Name:      "col1",
-								Condition: "'{{.user.domain}}' == 'test.com'",
+								Condition: "'{{.user.domain}}' = 'test.com'",
 							},
 							{
 								Name:      "col2",
-								Condition: "'{{.user.domain}}' == 'rilldata.com'",
+								Condition: "'{{.user.domain}}' = 'rilldata.com'",
 							},
 							{
 								Name:      "col3",
@@ -187,7 +188,7 @@ func TestResolveMetricsView(t *testing.T) {
 				mv: &runtimev1.MetricsView{
 					Name: "test_include_empty_condition",
 					Policy: &runtimev1.MetricsView_Policy{
-						HasAccess: "'{{.user.domain}}' == 'rilldata.com'",
+						HasAccess: "'{{.user.domain}}' = 'rilldata.com'",
 						Filter:    "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
 						Include: []*runtimev1.MetricsView_Policy_FieldCondition{
 							{
@@ -196,7 +197,7 @@ func TestResolveMetricsView(t *testing.T) {
 							},
 							{
 								Name:      "col2",
-								Condition: "'{{.user.domain}}' == 'rilldata.com'",
+								Condition: "'{{.user.domain}}' = 'rilldata.com'",
 							},
 						},
 						Exclude: nil,
@@ -225,17 +226,17 @@ func TestResolveMetricsView(t *testing.T) {
 				mv: &runtimev1.MetricsView{
 					Name: "test_include_empty_condition",
 					Policy: &runtimev1.MetricsView_Policy{
-						HasAccess: "'{{.user.domain}}' == 'rilldata.com'",
+						HasAccess: "'{{.user.domain}}' = 'rilldata.com'",
 						Filter:    "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
 						Include:   nil,
 						Exclude: []*runtimev1.MetricsView_Policy_FieldCondition{
 							{
 								Name:      "col1",
-								Condition: "'{{.user.domain}}' == 'test.com'",
+								Condition: "'{{.user.domain}}' = 'test.com'",
 							},
 							{
 								Name:      "col2",
-								Condition: "'{{.user.domain}}' == 'rilldata.com'",
+								Condition: "'{{.user.domain}}' = 'rilldata.com'",
 							},
 						},
 					},
@@ -297,7 +298,7 @@ func TestResolveMetricsView(t *testing.T) {
 				mv: &runtimev1.MetricsView{
 					Name: "test",
 					Policy: &runtimev1.MetricsView_Policy{
-						HasAccess: "'{{.user.domain}}' == 'rilldata.com'",
+						HasAccess: "'{{.user.domain}}' = 'rilldata.com'",
 						Filter:    "WHERE domain = '{{.user.domain}}'",
 						Include:   nil,
 						Exclude:   nil,
@@ -353,7 +354,7 @@ func TestResolveMetricsView(t *testing.T) {
 				mv: &runtimev1.MetricsView{
 					Name: "test",
 					Policy: &runtimev1.MetricsView_Policy{
-						HasAccess: "'{{.user.domain}}' == 'rilldata.com' || '{{.user.domain}}' == 'gmail.com'",
+						HasAccess: "'{{.user.domain}}' = 'rilldata.com' OR '{{.user.domain}}' = 'gmail.com'",
 						Filter:    "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
 						Include:   nil,
 						Exclude:   nil,
@@ -381,7 +382,7 @@ func TestResolveMetricsView(t *testing.T) {
 				mv: &runtimev1.MetricsView{
 					Name: "test",
 					Policy: &runtimev1.MetricsView_Policy{
-						HasAccess: "('{{.user.domain}}' == 'rilldata.com' || '{{.user.domain}}' == 'gmail.com') && {{.user.admin}}",
+						HasAccess: "('{{.user.domain}}' = 'rilldata.com' OR '{{.user.domain}}' = 'gmail.com') AND {{.user.admin}}",
 						Filter:    "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
 						Include:   nil,
 						Exclude:   nil,
