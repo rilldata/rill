@@ -6,9 +6,9 @@ import (
 	"text/template"
 	"text/template/parse"
 
-	"github.com/Knetic/govaluate"
 	"github.com/Masterminds/sprig/v3"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
 )
@@ -272,16 +272,9 @@ func EvaluateBoolExpression(expr string) (bool, error) {
 	if expr == "" {
 		return false, fmt.Errorf("cannot evaluate empty expression")
 	}
-	expression, err := govaluate.NewEvaluableExpression(expr)
+	result, err := duckdbsql.EvaluateBool(expr)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to evaluate expression: %w", err)
 	}
-	result, err := expression.Evaluate(nil)
-	if err != nil {
-		return false, err
-	}
-	if _, ok := result.(bool); !ok {
-		return false, fmt.Errorf("expression did not evaluate to a bool")
-	}
-	return result.(bool), nil
+	return result, nil
 }
