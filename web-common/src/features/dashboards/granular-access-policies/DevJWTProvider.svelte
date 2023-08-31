@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { page } from "$app/stores";
+  import { appScreen } from "../../../layout/app-store";
+  import { MetricsEventScreenName } from "../../../metrics/service/MetricsTypes";
   import { selectedMockUserStore } from "./stores";
   import { useDevJWT } from "./useDevJWT";
 
-  $: isDashboardPage = $page.route.id === "/(application)/dashboard/[name]";
+  $: isDashboardPage = $appScreen?.type === MetricsEventScreenName.Dashboard;
   $: isMockUserSelected = $selectedMockUserStore !== null;
   $: devJWT = useDevJWT($selectedMockUserStore);
 </script>
