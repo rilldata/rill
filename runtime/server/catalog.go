@@ -40,15 +40,15 @@ func (s *Server) ListCatalogEntries(ctx context.Context, req *runtimev1.ListCata
 		var pb *runtimev1.CatalogEntry
 		if req.Type == runtimev1.ObjectType_OBJECT_TYPE_METRICS_VIEW || entry.IsMetricsView() {
 			mv := entry.GetMetricsView()
-			policy, err := s.runtime.ResolveMetricsViewPolicy(auth.GetClaims(ctx).Attributes(), req.InstanceId, mv, entry.UpdatedOn)
+			security, err := s.runtime.ResolveMetricsViewSecurity(auth.GetClaims(ctx).Attributes(), req.InstanceId, mv, entry.UpdatedOn)
 			if err != nil {
 				return nil, err
 			}
 
-			if policy != nil && !policy.HasAccess {
+			if security != nil && !security.Access {
 				continue
 			}
-			newMv := filterDimensionsAndMeasures(policy, mv)
+			newMv := filterDimensionsAndMeasures(security, mv)
 			pb, err = mvCatalogObjectToPB(entry, newMv)
 			if err != nil {
 				return nil, status.Error(codes.Unknown, err.Error())
@@ -86,15 +86,15 @@ func (s *Server) GetCatalogEntry(ctx context.Context, req *runtimev1.GetCatalogE
 	var pb *runtimev1.CatalogEntry
 	if entry.Type == drivers.ObjectTypeMetricsView || entry.IsMetricsView() {
 		mv := entry.GetMetricsView()
-		policy, err := s.runtime.ResolveMetricsViewPolicy(auth.GetClaims(ctx).Attributes(), req.InstanceId, mv, entry.UpdatedOn)
+		security, err := s.runtime.ResolveMetricsViewSecurity(auth.GetClaims(ctx).Attributes(), req.InstanceId, mv, entry.UpdatedOn)
 		if err != nil {
 			return nil, err
 		}
 
-		if policy != nil && !policy.HasAccess {
+		if security != nil && !security.Access {
 			return nil, ErrForbidden
 		}
-		newMv := filterDimensionsAndMeasures(policy, mv)
+		newMv := filterDimensionsAndMeasures(security, mv)
 		pb, err = mvCatalogObjectToPB(entry, newMv)
 		if err != nil {
 			return nil, status.Error(codes.Unknown, err.Error())
@@ -111,7 +111,7 @@ func (s *Server) GetCatalogEntry(ctx context.Context, req *runtimev1.GetCatalogE
 
 // Filters the dimensions and measures of a metrics view based on the policy, if something is filtered out, it creates a new metrics view
 // otherwise it returns the original metrics view
-func filterDimensionsAndMeasures(policy *runtime.ResolvedMetricsViewPolicy, mv *runtimev1.MetricsView) *runtimev1.MetricsView {
+func filterDimensionsAndMeasures(policy *runtime.ResolvedMetricsViewSecurity, mv *runtimev1.MetricsView) *runtimev1.MetricsView {
 	if policy == nil {
 		return mv
 	}

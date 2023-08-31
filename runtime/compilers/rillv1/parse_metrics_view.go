@@ -41,15 +41,15 @@ type metricsViewYAML struct {
 		Ignore              bool   `yaml:"ignore"`
 		ValidPercentOfTotal bool   `yaml:"valid_percent_of_total"`
 	}
-	Policy *struct {
-		HasAccess string `yaml:"has_access"`
-		Filter    string `yaml:"filter"`
+	Security *struct {
+		Access    string `yaml:"access"`
+		RowFilter string `yaml:"row_filter"`
 		Include   []*struct {
-			Name      string
+			Names     []string
 			Condition string `yaml:"if"`
 		}
 		Exclude []*struct {
-			Name      string
+			Names     []string
 			Condition string `yaml:"if"`
 		}
 	}
@@ -165,7 +165,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		return fmt.Errorf("must define at least one measure")
 	}
 
-	if tmp.Policy != nil {
+	if tmp.Security != nil {
 		templateData := TemplateData{User: map[string]interface{}{
 			"name":   "dummy",
 			"email":  "mock@example.org",
@@ -174,60 +174,74 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			"admin":  false,
 		}}
 
-		if tmp.Policy.HasAccess != "" {
-			hasAccess, err := ResolveTemplate(tmp.Policy.HasAccess, templateData)
+		if tmp.Security.Access != "" {
+			hasAccess, err := ResolveTemplate(tmp.Security.Access, templateData)
 			if err != nil {
-				return fmt.Errorf(`invalid 'policy': 'has_access' templating is not valid: %w`, err)
+				return fmt.Errorf(`invalid 'security': 'access' templating is not valid: %w`, err)
 			}
 			_, err = EvaluateBoolExpression(hasAccess)
 			if err != nil {
-				return fmt.Errorf(`invalid 'policy': 'has_access' expression not valuating to a boolean: %w`, err)
+				return fmt.Errorf(`invalid 'security': 'access' expression not valuating to a boolean: %w`, err)
 			}
 		}
 
-		if tmp.Policy.Filter != "" {
-			_, err := ResolveTemplate(tmp.Policy.Filter, templateData)
+		if tmp.Security.RowFilter != "" {
+			_, err := ResolveTemplate(tmp.Security.RowFilter, templateData)
 			if err != nil {
-				return fmt.Errorf(`invalid 'policy': 'filter' templating is not valid: %w`, err)
+				return fmt.Errorf(`invalid 'security': 'row_filter' templating is not valid: %w`, err)
 			}
 		}
 
-		if len(tmp.Policy.Include) > 0 && len(tmp.Policy.Exclude) > 0 {
-			return errors.New("invalid 'policy': only one of 'include' and 'exclude' can be specified")
+		if len(tmp.Security.Include) > 0 && len(tmp.Security.Exclude) > 0 {
+			return errors.New("invalid 'security': only one of 'include' and 'exclude' can be specified")
 		}
-		if tmp.Policy.Include != nil {
-			for _, include := range tmp.Policy.Include {
-				if include == nil || include.Name == "" || include.Condition == "" {
-					return fmt.Errorf("invalid 'policy': 'include' fields must have a valid 'name' and 'if' condition")
+		if tmp.Security.Include != nil {
+			for _, include := range tmp.Security.Include {
+				if include == nil || len(include.Names) == 0 || include.Condition == "" {
+					return fmt.Errorf("invalid 'security': 'include' fields must have a valid 'if' condition and 'names' list")
 				}
-				if !names[include.Name] {
-					return fmt.Errorf("invalid 'policy': 'include' property %q does not exists in dimensions or measures list", include.Name)
+				seen := make(map[string]bool)
+				for _, name := range include.Names {
+					if seen[name] {
+						return fmt.Errorf("invalid 'security': 'include' property %q is duplicated", name)
+					}
+					seen[name] = true
+					if !names[name] {
+						return fmt.Errorf("invalid 'security': 'include' property %q does not exists in dimensions or measures list", name)
+					}
 				}
 				cond, err := ResolveTemplate(include.Condition, templateData)
 				if err != nil {
-					return fmt.Errorf(`invalid 'policy': 'if' condition templating for field %q is not valid: %w`, include.Name, err)
+					return fmt.Errorf(`invalid 'security': 'if' condition templating for field %q is not valid: %w`, include.Names, err)
 				}
 				_, err = EvaluateBoolExpression(cond)
 				if err != nil {
-					return fmt.Errorf(`invalid 'policy': 'if' condition for field %q not evaluating to a boolean: %w`, include.Name, err)
+					return fmt.Errorf(`invalid 'security': 'if' condition for field %q not evaluating to a boolean: %w`, include.Names, err)
 				}
 			}
 		}
-		if tmp.Policy.Exclude != nil {
-			for _, exclude := range tmp.Policy.Exclude {
-				if exclude == nil || exclude.Name == "" || exclude.Condition == "" {
-					return fmt.Errorf("invalid 'policy': 'exclude' fields must have a valid 'name' and 'if' condition")
+		if tmp.Security.Exclude != nil {
+			for _, exclude := range tmp.Security.Exclude {
+				if exclude == nil || len(exclude.Names) == 0 || exclude.Condition == "" {
+					return fmt.Errorf("invalid 'security': 'exclude' fields must have a valid 'if' condition and 'names' list")
 				}
-				if !names[exclude.Name] {
-					return fmt.Errorf("invalid 'policy': 'exclude' property %q does not exists in dimensions or measures list", exclude.Name)
+				seen := make(map[string]bool)
+				for _, name := range exclude.Names {
+					if seen[name] {
+						return fmt.Errorf("invalid 'security': 'exclude' property %q is duplicated", name)
+					}
+					seen[name] = true
+					if !names[name] {
+						return fmt.Errorf("invalid 'security': 'exclude' property %q does not exists in dimensions or measures list", name)
+					}
 				}
 				cond, err := ResolveTemplate(exclude.Condition, templateData)
 				if err != nil {
-					return fmt.Errorf(`invalid 'policy': 'if' condition templating for field %q is not valid: %w`, exclude.Name, err)
+					return fmt.Errorf(`invalid 'security': 'if' condition templating for field %q is not valid: %w`, exclude.Names, err)
 				}
 				_, err = EvaluateBoolExpression(cond)
 				if err != nil {
-					return fmt.Errorf(`invalid 'policy': 'if' condition for field %q not evaluating to a boolean: %w`, exclude.Name, err)
+					return fmt.Errorf(`invalid 'security': 'if' condition for field %q not evaluating to a boolean: %w`, exclude.Names, err)
 				}
 			}
 		}
@@ -276,26 +290,26 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		})
 	}
 
-	if tmp.Policy != nil {
-		if spec.Policy == nil {
-			spec.Policy = &runtimev1.MetricsViewSpec_PolicyV2{}
+	if tmp.Security != nil {
+		if spec.Security == nil {
+			spec.Security = &runtimev1.MetricsViewSpec_SecurityV2{}
 		}
-		spec.Policy.HasAccess = tmp.Policy.HasAccess
-		spec.Policy.Filter = tmp.Policy.Filter
+		spec.Security.Access = tmp.Security.Access
+		spec.Security.RowFilter = tmp.Security.RowFilter
 		// validation has been done above, only one of these will be set
-		if tmp.Policy.Include != nil {
-			for _, include := range tmp.Policy.Include {
-				spec.Policy.Include = append(spec.Policy.Include, &runtimev1.MetricsViewSpec_PolicyV2_FieldConditionV2{
-					Name:      include.Name,
+		if tmp.Security.Include != nil {
+			for _, include := range tmp.Security.Include {
+				spec.Security.Include = append(spec.Security.Include, &runtimev1.MetricsViewSpec_SecurityV2_FieldConditionV2{
 					Condition: include.Condition,
+					Names:     include.Names,
 				})
 			}
 		}
-		if tmp.Policy.Exclude != nil {
-			for _, exclude := range tmp.Policy.Exclude {
-				spec.Policy.Exclude = append(spec.Policy.Exclude, &runtimev1.MetricsViewSpec_PolicyV2_FieldConditionV2{
-					Name:      exclude.Name,
+		if tmp.Security.Exclude != nil {
+			for _, exclude := range tmp.Security.Exclude {
+				spec.Security.Exclude = append(spec.Security.Exclude, &runtimev1.MetricsViewSpec_SecurityV2_FieldConditionV2{
 					Condition: exclude.Condition,
+					Names:     exclude.Names,
 				})
 			}
 		}
