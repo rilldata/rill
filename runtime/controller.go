@@ -72,7 +72,9 @@ type Controller struct {
 	mu          sync.RWMutex
 	running     atomic.Bool
 	reconcilers map[string]Reconciler
-	catalog     catalogCache
+	catalog     *catalogCache
+	// subscribers tracks subscribers to catalog events.
+	subscribers map[string]chan map[string]catalogEvent
 	// queue contains names waiting to be scheduled.
 	// It's not a real queue because we usually schedule the whole queue on each call to processQueue.
 	queue          map[string]*runtimev1.ResourceName
@@ -92,6 +94,7 @@ func NewController(ctx context.Context, rt *Runtime, instanceID string, logger *
 		Runtime:        rt,
 		InstanceID:     instanceID,
 		reconcilers:    make(map[string]Reconciler),
+		subscribers:    make(map[string]chan map[string]catalogEvent),
 		queue:          make(map[string]*runtimev1.ResourceName),
 		queueUpdatedCh: make(chan struct{}),
 		timeline:       schedule.New[string, *runtimev1.ResourceName](nameStr),
@@ -210,6 +213,13 @@ func (c *Controller) Run(ctx context.Context) error {
 				loopErr = err
 				stop = true
 			}
+		case <-c.catalog.hasEventsCh: // The catalog has events to process
+			c.mu.Lock()
+			for _, ch := range c.subscribers {
+				ch <- c.catalog.events
+			}
+			c.catalog.resetEvents()
+			c.mu.Unlock()
 		case <-ctx.Done(): // We've been asked to stop
 			stop = true
 			break
@@ -288,6 +298,38 @@ func (c *Controller) List(ctx context.Context, kind string) ([]*runtimev1.Resour
 	c.lock(ctx, true)
 	defer c.unlock(ctx, true)
 	return c.catalog.list(kind, false)
+}
+
+// SubscribeCallback is the callback type passed to Subscribe.
+type SubscribeCallback func(e runtimev1.ResourceEvent, n *runtimev1.ResourceName, r *runtimev1.Resource)
+
+// Subscribe registers a callback that will receive resource update events.
+func (c *Controller) Subscribe(ctx context.Context, fn SubscribeCallback) error {
+	c.checkRunning()
+
+	id := fmt.Sprintf("%v", fn)
+	ch := make(chan map[string]catalogEvent)
+
+	c.mu.Lock()
+	c.subscribers[id] = ch
+	c.mu.Unlock()
+
+	defer func() {
+		c.mu.Lock()
+		delete(c.subscribers, id)
+		c.mu.Unlock()
+	}()
+
+	for {
+		select {
+		case events := <-ch:
+			for _, e := range events {
+				fn(e.event, e.name, e.resource)
+			}
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
 }
 
 // Create creates a resource and enqueues it for reconciliation.
@@ -421,17 +463,27 @@ func (c *Controller) UpdateState(ctx context.Context, name *runtimev1.ResourceNa
 		return fmt.Errorf("can't update resource state from outside of reconciler")
 	}
 
-	return c.catalog.updateState(name, r)
+	err := c.catalog.updateState(name, r)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // UpdateError updates a resource's error.
 // Unlike UpdateMeta and UpdateSpec, it does not cancel or enqueue reconciliation for the resource.
-func (c *Controller) UpdateError(ctx context.Context, name *runtimev1.ResourceName, err error) error {
+func (c *Controller) UpdateError(ctx context.Context, name *runtimev1.ResourceName, reconcileErr error) error {
 	c.checkRunning()
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 
-	return c.catalog.updateError(name, err)
+	err := c.catalog.updateError(name, reconcileErr)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Delete soft-deletes a resource and enqueues it for reconciliation (with DeletedOn != nil).
@@ -459,6 +511,7 @@ func (c *Controller) Delete(ctx context.Context, name *runtimev1.ResourceName) e
 	}
 
 	c.enqueue(name)
+
 	return nil
 }
 
@@ -673,8 +726,13 @@ func (c *Controller) safeRename(from, to *runtimev1.ResourceName) error {
 		return c.catalog.rename(from, to)
 	}
 
-	// Collision, do a delete+create instead of a rename
+	// Collision, do a create+delete instead of a rename
 	r, err := c.catalog.get(from, true)
+	if err != nil {
+		return err
+	}
+
+	err = c.catalog.create(to, r.Meta.Refs, r.Meta.Owner, r.Meta.FilePaths, r)
 	if err != nil {
 		return err
 	}
@@ -683,12 +741,8 @@ func (c *Controller) safeRename(from, to *runtimev1.ResourceName) error {
 	if err != nil {
 		return err
 	}
-	c.enqueue(from)
 
-	err = c.catalog.create(to, r.Meta.Refs, r.Meta.Owner, r.Meta.FilePaths, r)
-	if err != nil {
-		return err
-	}
+	c.enqueue(from)
 	// The caller of safeRename will enqueue the new name
 
 	return nil
@@ -800,7 +854,7 @@ func (c *Controller) markPending(n *runtimev1.ResourceName) (bool, error) {
 		switch dr.Meta.ReconcileStatus {
 		case runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE:
 			// Mark it pending
-			err = c.catalog.updateStatus(n, runtimev1.ReconcileStatus_RECONCILE_STATUS_PENDING, time.Time{})
+			err = c.catalog.updateStatus(dn, runtimev1.ReconcileStatus_RECONCILE_STATUS_PENDING, time.Time{})
 			if err != nil {
 				return fmt.Errorf("error updating dag node %q: %w", ds, err)
 			}
