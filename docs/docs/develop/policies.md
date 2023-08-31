@@ -50,8 +50,8 @@ When a user loads a dashboard, the policies are resolved in two phases:
 
 1. The templating engine first replaces expressions like `{{ .user.domain }}` with actual values ([Templating reference](../reference/templating))
 2. The resulting expression is then evaluated contextually:
+  - The `has_access` and `if` values are evaluated as SQL expressions and resolved to a `true` or `false` value
   - The `filter` value is injected into the `WHERE` clause of the SQL queries used to render the dashboard
-  - The `has_access` and `if` values are resolved to a `true` or `false` value using the expression engine ([Expressions reference](../reference/expressions))
 
 ## Testing your policies
 
@@ -76,7 +76,7 @@ On the dashboard page, provided you've added a policy, you'll see a "View as" bu
 Let's say you want to restrict dashboard access to admin users or users whose email domain is `example.com`. Add the following clause to your dashboard's YAML:
 ```yaml 
 policy:
-  has_access: "{{ .user.admin }} == true || '{{ .user.domain }}' == 'example.com'"
+  has_access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'example.com'"
 ```
 
 > **_Note:_** If the `policy` section is defined and `has_access` is not, then `has_access` will default to `false`, meaning that it won't be accessible to anyone.
