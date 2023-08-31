@@ -42,12 +42,12 @@ func TestEvaluateBool(t *testing.T) {
 			want: true,
 		},
 		{
-			expr: "0 + 0",
-			want: false,
+			expr:    "0 + 0",
+			wantErr: true,
 		},
 		{
-			expr: "1 + 1",
-			want: true,
+			expr:    "1 + 1",
+			wantErr: true,
 		},
 		{
 			expr:    "CURRENT_TIMESTAMP",

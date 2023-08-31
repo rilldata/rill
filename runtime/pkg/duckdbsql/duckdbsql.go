@@ -9,35 +9,13 @@ import (
 	"github.com/marcboeker/go-duckdb"
 )
 
-// queryAny runs a DuckDB query and returns the result as an any value
-func queryAny(qry string, args ...any) (any, error) {
-	rows, err := query(qry, args...)
-	if err != nil {
-		return nil, err
-	}
-
-	var res any
-	if rows.Next() {
-		err := rows.Scan(&res)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	err = rows.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	return res, nil
-}
-
 // queryString runs a DuckDB query and returns the result as a scalar string
 func queryString(qry string, args ...any) ([]byte, error) {
 	rows, err := query(qry, args...)
 	if err != nil {
 		return nil, err
 	}
+	defer func() { _ = rows.Close() }()
 
 	var res []byte
 	if rows.Next() {
@@ -45,11 +23,6 @@ func queryString(qry string, args ...any) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	err = rows.Close()
-	if err != nil {
-		return nil, err
 	}
 
 	return res, nil
