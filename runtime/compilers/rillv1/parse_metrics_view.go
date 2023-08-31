@@ -175,13 +175,13 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		}}
 
 		if tmp.Security.Access != "" {
-			hasAccess, err := ResolveTemplate(tmp.Security.Access, templateData)
+			access, err := ResolveTemplate(tmp.Security.Access, templateData)
 			if err != nil {
 				return fmt.Errorf(`invalid 'security': 'access' templating is not valid: %w`, err)
 			}
-			_, err = EvaluateBoolExpression(hasAccess)
+			_, err = EvaluateBoolExpression(access)
 			if err != nil {
-				return fmt.Errorf(`invalid 'security': 'access' expression not valuating to a boolean: %w`, err)
+				return fmt.Errorf(`invalid 'security': 'access' expression error: %w`, err)
 			}
 		}
 

@@ -388,13 +388,13 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 		}}
 
 		if metrics.Security.Access != "" {
-			hasAccess, err := rillv1.ResolveTemplate(metrics.Security.Access, templateData)
+			access, err := rillv1.ResolveTemplate(metrics.Security.Access, templateData)
 			if err != nil {
 				return nil, fmt.Errorf(`invalid 'security': 'access' templating is not valid: %w`, err)
 			}
-			_, err = rillv1.EvaluateBoolExpression(hasAccess)
+			_, err = rillv1.EvaluateBoolExpression(access)
 			if err != nil {
-				return nil, fmt.Errorf(`invalid 'security': 'access' expression not valuating to a boolean: %w`, err)
+				return nil, fmt.Errorf(`invalid 'security': 'access' expression error: %w`, err)
 			}
 		}
 

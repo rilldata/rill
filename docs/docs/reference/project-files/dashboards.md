@@ -44,7 +44,7 @@ _**`measures`**_ — numeric [aggregates](../../develop/metrics-dashboard#measur
       - _`percentage`_ — output transformed from a rate to a percentage appended with a percentage sign
       - _`comma_separators`_ — output transformed to decimal formal with commas every 3 digits
 
-_**`security`**_ - define granular [security](../../develop/security) for the dashboard _(optional)_
+_**`security`**_ - define a [security policy](../../develop/security) for the dashboard _(optional)_
   - _**`access`**_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to `false` and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. _(optional)_
   - _**`row_filter`**_ - SQL expression to filter the underlying model by. Can leverage templated user attributes to customize the filter for the requesting user. Needs to be a valid SQL expression that can be injected into a `WHERE` clause. _(optional)_
   - _**`exclude`**_ - List of dimension or measure names to exclude from the dashboard. If `exclude` is defined all other dimensions and measures are included. _(optional)_

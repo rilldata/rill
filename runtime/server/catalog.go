@@ -109,7 +109,7 @@ func (s *Server) GetCatalogEntry(ctx context.Context, req *runtimev1.GetCatalogE
 	return &runtimev1.GetCatalogEntryResponse{Entry: pb}, nil
 }
 
-// Filters the dimensions and measures of a metrics view based on the security, if something is filtered out, it creates a new metrics view
+// Filters the dimensions and measures of a metrics view based on the security policy, if something is filtered out, it creates a new metrics view
 // otherwise it returns the original metrics view
 func filterDimensionsAndMeasures(policy *runtime.ResolvedMetricsViewSecurity, mv *runtimev1.MetricsView) *runtimev1.MetricsView {
 	if policy == nil {

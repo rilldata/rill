@@ -188,16 +188,16 @@ func TestResolveMetricsView(t *testing.T) {
 				mv: &runtimev1.MetricsView{
 					Name: "test",
 					Security: &runtimev1.MetricsView_Security{
-						Access:    "'{{.user.domain}}' == 'rilldata.com'",
+						Access:    "'{{.user.domain}}' = 'rilldata.com'",
 						RowFilter: "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
 						Include: []*runtimev1.MetricsView_Security_FieldCondition{
 							{
 								Names:     []string{"col1", "col2"},
-								Condition: "'{{.user.domain}}' == 'test.com'",
+								Condition: "'{{.user.domain}}' = 'test.com'",
 							},
 							{
 								Names:     []string{"col2"},
-								Condition: "'{{.user.domain}}' == 'rilldata.com'",
+								Condition: "'{{.user.domain}}' = 'rilldata.com'",
 							},
 							{
 								Names:     []string{"col3"},
@@ -304,17 +304,17 @@ func TestResolveMetricsView(t *testing.T) {
 				mv: &runtimev1.MetricsView{
 					Name: "test",
 					Security: &runtimev1.MetricsView_Security{
-						Access:    "'{{.user.domain}}' == 'rilldata.com'",
+						Access:    "'{{.user.domain}}' = 'rilldata.com'",
 						RowFilter: "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
 						Include:   nil,
 						Exclude: []*runtimev1.MetricsView_Security_FieldCondition{
 							{
 								Names:     []string{"col1", "col2"},
-								Condition: "'{{.user.domain}}' == 'test.com'",
+								Condition: "'{{.user.domain}}' = 'test.com'",
 							},
 							{
 								Names:     []string{"col2"},
-								Condition: "'{{.user.domain}}' == 'rilldata.com'",
+								Condition: "'{{.user.domain}}' = 'rilldata.com'",
 							},
 						},
 					},
@@ -432,7 +432,7 @@ func TestResolveMetricsView(t *testing.T) {
 				mv: &runtimev1.MetricsView{
 					Name: "test",
 					Security: &runtimev1.MetricsView_Security{
-						Access:    "'{{.user.domain}}' = 'rilldata.com' || '{{.user.domain}}' = 'gmail.com'",
+						Access:    "'{{.user.domain}}' = 'rilldata.com' OR '{{.user.domain}}' = 'gmail.com'",
 						RowFilter: "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
 						Include:   nil,
 						Exclude:   nil,
@@ -460,7 +460,7 @@ func TestResolveMetricsView(t *testing.T) {
 				mv: &runtimev1.MetricsView{
 					Name: "test",
 					Security: &runtimev1.MetricsView_Security{
-						Access:    "('{{.user.domain}}' = 'rilldata.com' || '{{.user.domain}}' = 'gmail.com') && {{.user.admin}}",
+						Access:    "('{{.user.domain}}' = 'rilldata.com' OR '{{.user.domain}}' = 'gmail.com') AND {{.user.admin}}",
 						RowFilter: "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
 						Include:   nil,
 						Exclude:   nil,
