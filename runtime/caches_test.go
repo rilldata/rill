@@ -257,7 +257,7 @@ func TestConnectionCacheBlockingCalls(t *testing.T) {
 
 	// verify that after 100 ms 11 connections have been opened
 	go func() {
-		<-time.After(100 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 		require.Equal(t, int32(11), m.opened.Load())
 		wg.Done()
 	}()

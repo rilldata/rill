@@ -124,45 +124,42 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver string, co
 	}
 
 	// connection is not opened
-	// unlock global mutex and open connection again
+	// We unlock the mutex before running openAndMigrate and later need it for setting value in cache.
+	// A deadlock is possible if goroutine waiting for the singleflight.Do result also holds the global mutex
+	// so unlock global mutex before entering singleflight.Do even if this means taking lock again for checking cache
 	c.lock.Unlock()
 	conn, err := c.singleflight.Do(ctx, key, func(ctx context.Context) (*connWithRef, error) {
 		// try cache again
-		if conn, ok := c.getFromCache(key); ok {
-			return conn, nil
-		}
-
-		h, err := c.openAndMigrate(ctx, instanceID, driver, shared, config)
-		if err != nil {
-			return nil, err
-		}
-
-		conn := &connWithRef{Handle: h, ref: 1}
 		c.lock.Lock()
-		defer c.lock.Unlock()
+		conn, ok := c.cache[key]
+		if !ok {
+			if val, ok := c.lruCache.Get(key); ok {
+				conn = val.(*connWithRef)
+			} else {
+				// open a new connection
+				c.lock.Unlock()
+				h, err := c.openAndMigrate(ctx, instanceID, driver, shared, config)
+				if err != nil {
+					return nil, err
+				}
+
+				conn = &connWithRef{Handle: h, ref: 0}
+				c.lock.Lock()
+			}
+		}
+		conn.ref++
 		// set in in-use cache
 		c.cache[key] = conn
 		if len(c.cache)+c.lruCache.Len() > c.size {
 			c.logger.Warn("number of in-use connections and open connections exceed total configured size", zap.Int("in-use", len(c.cache)), zap.Int("open", c.lruCache.Len()))
 		}
+		c.lock.Unlock()
 		return conn, nil
 	})
 	if err != nil {
 		return nil, nil, err
 	}
 	return conn.Handle, c.releaseFn(key, conn), nil
-}
-
-func (c *connectionCache) getFromCache(key string) (*connWithRef, bool) {
-	if c, ok := c.cache[key]; ok {
-		return c, true
-	}
-
-	if val, ok := c.lruCache.Get(key); ok {
-		return val.(*connWithRef), true
-	}
-
-	return nil, false
 }
 
 func (c *connectionCache) openAndMigrate(ctx context.Context, instanceID, driver string, shared bool, config map[string]any) (drivers.Handle, error) {
