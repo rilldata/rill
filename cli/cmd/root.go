@@ -17,6 +17,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/service"
 	"github.com/rilldata/rill/cli/cmd/start"
 	"github.com/rilldata/rill/cli/cmd/sudo"
+	"github.com/rilldata/rill/cli/cmd/upgrade"
 	"github.com/rilldata/rill/cli/cmd/user"
 	versioncmd "github.com/rilldata/rill/cli/cmd/version"
 	"github.com/rilldata/rill/cli/cmd/whoami"
@@ -132,6 +133,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(verifyInstallCmd(cfg))
 	rootCmd.AddCommand(versioncmd.VersionCmd())
+	rootCmd.AddCommand(upgrade.UpgradeCmd(cfg))
 	rootCmd.AddCommand(whoami.WhoamiCmd(cfg))
 
 	// Add sub-commands for admin

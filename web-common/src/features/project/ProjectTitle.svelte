@@ -2,29 +2,17 @@
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { shorthandTitle } from "@rilldata/web-common/layout/navigation/shorthand-title/index.js";
-  import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
+  import { shorthandTitle } from "@rilldata/web-common/features/project/shorthand-title/index.js";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onMount } from "svelte";
-  import { parseDocument } from "yaml";
+  import { useProjectTitle } from "./selectors";
+
+  $: projectTitle = useProjectTitle($runtime.instanceId);
 
   let mounted = false;
   onMount(() => {
     mounted = true;
   });
-
-  $: projectTitle = createRuntimeServiceGetFile(
-    $runtime?.instanceId,
-    "rill.yaml",
-    {
-      query: {
-        select: (data) => {
-          const projectData = parseDocument(data.blob)?.toJS();
-          return projectData.title ?? projectData.name;
-        },
-      },
-    }
-  );
 </script>
 
 <header

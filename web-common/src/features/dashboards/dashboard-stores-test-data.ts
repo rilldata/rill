@@ -194,6 +194,9 @@ export function createDashboardState(
     leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
 
     selectedTimeRange: timeRange,
+
+    dashboardSortType: undefined,
+    sortDirection: undefined,
   };
 }
 

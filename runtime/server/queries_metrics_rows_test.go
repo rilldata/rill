@@ -79,14 +79,20 @@ func TestServer_MetricsViewRows_export_xlsx(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	ctx := testCtx()
+	mvName := "ad_bids_metrics"
+	mv, security, err := resolveMVAndSecurity(ctx, server.runtime, instanceId, mvName)
+	require.NoError(t, err)
+
 	q := &queries.MetricsViewRows{
-		MetricsViewName: "ad_bids_metrics",
-		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		MetricsViewName:    mvName,
+		TimeGranularity:    runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		MetricsView:        mv,
+		ResolvedMVSecurity: security,
 	}
 
 	var buf bytes.Buffer
 
-	err := q.Export(ctx, server.runtime, instanceId, &buf, &runtime.ExportOptions{
+	err = q.Export(ctx, server.runtime, instanceId, &buf, &runtime.ExportOptions{
 		Format: runtimev1.ExportFormat_EXPORT_FORMAT_XLSX,
 	})
 	require.NoError(t, err)
@@ -110,14 +116,20 @@ func TestServer_MetricsViewRows_parquet_export(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	ctx := testCtx()
+	mvName := "ad_bids_metrics_parquet"
+	mv, security, err := resolveMVAndSecurity(ctx, server.runtime, instanceId, mvName)
+	require.NoError(t, err)
+
 	q := &queries.MetricsViewRows{
-		MetricsViewName: "ad_bids_metrics_parquet",
-		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		MetricsViewName:    mvName,
+		TimeGranularity:    runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		MetricsView:        mv,
+		ResolvedMVSecurity: security,
 	}
 
 	var buf bytes.Buffer
 
-	err := q.Export(ctx, server.runtime, instanceId, &buf, &runtime.ExportOptions{
+	err = q.Export(ctx, server.runtime, instanceId, &buf, &runtime.ExportOptions{
 		Format: runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET,
 	})
 	require.NoError(t, err)
@@ -302,14 +314,19 @@ func TestServer_MetricsViewRows_export_csv(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	ctx := testCtx()
+	mvName := "ad_bids_metrics"
+	mv, security, err := resolveMVAndSecurity(ctx, server.runtime, instanceId, mvName)
+	require.NoError(t, err)
 	q := &queries.MetricsViewRows{
-		MetricsViewName: "ad_bids_metrics",
-		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		MetricsViewName:    mvName,
+		TimeGranularity:    runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		MetricsView:        mv,
+		ResolvedMVSecurity: security,
 	}
 
 	var buf bytes.Buffer
 
-	err := q.Export(ctx, server.runtime, instanceId, &buf, &runtime.ExportOptions{
+	err = q.Export(ctx, server.runtime, instanceId, &buf, &runtime.ExportOptions{
 		Format: runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
 	})
 	require.NoError(t, err)

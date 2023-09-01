@@ -319,3 +319,21 @@ func (s *Server) addInstanceRequestAttributes(ctx context.Context, instanceID st
 	attrs := s.runtime.GetInstanceAttributes(ctx, instanceID)
 	observability.AddRequestAttributes(ctx, attrs...)
 }
+
+func (s *Server) IssueDevJWT(ctx context.Context, req *runtimev1.IssueDevJWTRequest) (*runtimev1.IssueDevJWTResponse, error) {
+	attr := map[string]any{
+		"name":   req.Name,
+		"email":  req.Email,
+		"domain": req.Email[strings.LastIndex(req.Email, "@")+1:],
+		"groups": req.Groups,
+		"admin":  req.Admin,
+	}
+
+	jwt, err := auth.NewDevToken(attr)
+	if err != nil {
+		return nil, err
+	}
+	return &runtimev1.IssueDevJWTResponse{
+		Jwt: jwt,
+	}, nil
+}

@@ -3,9 +3,9 @@
   import { createEventDispatcher, getContext } from "svelte";
   import type { PlotConfig } from "@rilldata/web-common/components/data-graphic/utils";
   import type { Writable } from "svelte/store";
-  import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import { contexts } from "@rilldata/web-common/components/data-graphic/constants";
-  import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
+  import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
+  import { getBisectedTimeFromCordinates } from "@rilldata/web-common/features/dashboards/time-series/utils";
 
   export let start;
   export let stop;
@@ -13,8 +13,24 @@
   export let showLabels = false;
   export let mouseoverTimeFormat;
 
+  export let labelAccessor;
+  export let timeGrainLabel;
+  export let data;
+
+  export let isOverStart;
+  export let isOverEnd;
+  export let isInsideScrub;
+
+  // scrub local control points
+  let justCreatedScrub = false;
+  let moveStartDelta = 0;
+  let moveEndDelta = 0;
+  let isResizing: "start" | "end" = undefined;
+  let isMovingScrub = false;
+
   const dispatch = createEventDispatcher();
   const plotConfig: Writable<PlotConfig> = getContext(contexts.config);
+  const xScale = getContext(contexts.scale("x")) as ScaleStore;
 
   const strokeWidth = 1;
   const xLabelBuffer = 8;
@@ -22,20 +38,169 @@
   const y1 = $plotConfig.plotTop + $plotConfig.top + 5;
   const y2 = $plotConfig.plotBottom - $plotConfig.bottom - 1;
 
-  let showContextMenu = false;
-  let contextMenuOpen = false;
-  function onContextMenu() {
-    showContextMenu = true;
+  $: hasSubrangeSelected = Boolean(start && stop);
+
+  export let cursorClass = "";
+  $: cursorClass = isMovingScrub
+    ? "cursor-grabbing"
+    : isInsideScrub
+    ? "cursor-grab"
+    : isScrubbing || isOverStart || isOverEnd
+    ? "cursor-ew-resize"
+    : "";
+
+  export let preventScrubReset;
+  $: preventScrubReset = justCreatedScrub || isScrubbing || isResizing;
+
+  export function startScrub(event) {
+    if (hasSubrangeSelected) {
+      const startX = event.detail?.start?.x;
+      // check if we are scrubbing on the edges of scrub rect
+      if (isOverStart || isOverEnd) {
+        isResizing = isOverStart ? "start" : "end";
+        dispatch("update", {
+          start: start,
+          stop: stop,
+          isScrubbing: true,
+        });
+
+        return;
+      } else if (isInsideScrub) {
+        isMovingScrub = true;
+        moveStartDelta = startX - $xScale(start);
+        moveEndDelta = startX - $xScale(stop);
+
+        return;
+      }
+    }
   }
 
-  function onKeyDown(e) {
-    // if key Z is pressed, zoom the scrub
-    if (e.key === "z") {
-      dispatch("zoom");
+  export function moveScrub(event) {
+    const startX = event.detail?.start?.x;
+    const scrubStartDate = getBisectedTimeFromCordinates(
+      startX,
+      $xScale,
+      labelAccessor,
+      data,
+      timeGrainLabel
+    );
+
+    let stopX = event.detail?.stop?.x;
+    let intermediateScrubVal = getBisectedTimeFromCordinates(
+      stopX,
+      $xScale,
+      labelAccessor,
+      data,
+      timeGrainLabel
+    );
+
+    if (hasSubrangeSelected && (isResizing || isMovingScrub)) {
+      if (
+        isResizing &&
+        intermediateScrubVal?.getTime() !== stop?.getTime() &&
+        intermediateScrubVal?.getTime() !== start?.getTime()
+      ) {
+        /**
+         * Adjust the ends of the subrange by dragging either end.
+         * This snaps to the nearest time grain.
+         */
+        const newStart = isResizing === "start" ? intermediateScrubVal : start;
+        const newEnd = isResizing === "end" ? intermediateScrubVal : stop;
+
+        dispatch("update", {
+          start: newStart,
+          stop: newEnd,
+          isScrubbing: true,
+        });
+      } else if (!isResizing && isMovingScrub) {
+        /**
+         * Pick up and shift the entire subrange left/right
+         * This snaps to the nearest time grain
+         */
+
+        const startX = event.detail?.start?.x;
+        const delta = stopX - startX;
+
+        const newStart = getBisectedTimeFromCordinates(
+          startX - moveStartDelta + delta,
+          $xScale,
+          labelAccessor,
+          data,
+          timeGrainLabel
+        );
+
+        const newEnd = getBisectedTimeFromCordinates(
+          startX - moveEndDelta + delta,
+          $xScale,
+          labelAccessor,
+          data,
+          timeGrainLabel
+        );
+
+        const insideBounds = $xScale(newStart) >= 0 && $xScale(newEnd) >= 0;
+        if (insideBounds && newStart?.getTime() !== start?.getTime()) {
+          dispatch("update", {
+            start: newStart,
+            stop: newEnd,
+            isScrubbing: true,
+          });
+        }
+      }
+    } else {
+      // Only make state changes when the bisected value changes
+      if (
+        scrubStartDate?.getTime() !== start?.getTime() ||
+        intermediateScrubVal?.getTime() !== stop?.getTime()
+      ) {
+        dispatch("update", {
+          start: scrubStartDate,
+          stop: intermediateScrubVal,
+          isScrubbing: true,
+        });
+      }
     }
-    if (!isScrubbing && e.key === "Escape") {
+  }
+
+  export function endScrub() {
+    // if the mouse leaves the svg area, reset the scrub
+    // check if any parent of explicitOriginalTarget is a svg or not
+    const hoverElem = Array.from(document.querySelectorAll(":hover")).pop();
+    if (hoverElem?.nodeName !== "svg" && !hoverElem?.closest("svg")) {
       dispatch("reset");
+      return;
     }
+
+    // Remove scrub if start and end are same
+    if (hasSubrangeSelected && start?.getTime() === stop?.getTime()) {
+      dispatch("reset");
+      return;
+    }
+
+    isResizing = undefined;
+    isMovingScrub = false;
+    justCreatedScrub = true;
+
+    // reset justCreatedScrub after 100 milliseconds
+    setTimeout(() => {
+      justCreatedScrub = false;
+    }, 100);
+
+    dispatch("update", {
+      start,
+      stop,
+      isScrubbing: false,
+    });
+  }
+
+  /***
+   * prevent unwanted scrub changes when clicked
+   * inside a scrub without any cursor move
+   */
+  function onMouseUp() {
+    isResizing = undefined;
+    isMovingScrub = false;
+    moveStartDelta = 0;
+    moveEndDelta = 0;
   }
 </script>
 
@@ -87,7 +252,7 @@
         stroke-width={strokeWidth}
       />
     </g>
-    <g opacity={isScrubbing ? "0.4" : "0.2"}>
+    <g on:mouseup={() => onMouseUp()} opacity={isScrubbing ? "0.4" : "0.2"}>
       <rect
         class:rect-shadow={isScrubbing}
         x={Math.min(xStart, xEnd)}
@@ -96,43 +261,9 @@
         height={y2 - y1}
         fill="url('#scrubbing-gradient')"
       />
-      <foreignObject
-        x={Math.min(xStart, xEnd) + 20}
-        y={y1 + 20}
-        width="300"
-        height="160"
-      >
-        <div on:contextmenu|preventDefault={() => onContextMenu()}>
-          <!-- FIX ME: Unable to add menu on top of SVG  -->
-          {#if showContextMenu}
-            <!-- context menu -->
-            <WithTogglableFloatingElement
-              location="right"
-              alignment="start"
-              distance={16}
-              let:toggleFloatingElement
-              bind:active={contextMenuOpen}
-            >
-              <Menu
-                maxWidth="300px"
-                on:click-outside={toggleFloatingElement}
-                on:escape={toggleFloatingElement}
-                on:item-select={toggleFloatingElement}
-                slot="floating-element"
-              >
-                <MenuItem on:select={() => console.log("zoom")}
-                  >Zoom to subrange</MenuItem
-                >
-              </Menu>
-            </WithTogglableFloatingElement>
-          {/if}
-        </div>
-      </foreignObject>
     </g>
   </WithGraphicContexts>
 {/if}
-
-<svelte:window on:keydown|preventDefault={onKeyDown} />
 
 <defs>
   <linearGradient id="scrubbing-gradient" gradientUnits="userSpaceOnUse">
@@ -149,6 +280,6 @@
   }
 
   g {
-    transition: opacity ease 0.4s;
+    transition: opacity ease 0.3s;
   }
 </style>
