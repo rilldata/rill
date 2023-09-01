@@ -62,9 +62,9 @@ func NewInstance(t TestingT) (*runtime.Runtime, string) {
 	rt := New(t)
 
 	inst := &drivers.Instance{
-		OLAPDriver:   "olap",
-		RepoDriver:   "repo",
-		EmbedCatalog: true,
+		OLAPConnector: "olap",
+		RepoConnector: "repo",
+		EmbedCatalog:  true,
 		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",
@@ -114,9 +114,9 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 	_, currentFile, _, _ := goruntime.Caller(0)
 
 	inst := &drivers.Instance{
-		OLAPDriver:   "olap",
-		RepoDriver:   "repo",
-		EmbedCatalog: true,
+		OLAPConnector: "olap",
+		RepoConnector: "repo",
+		EmbedCatalog:  true,
 		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",

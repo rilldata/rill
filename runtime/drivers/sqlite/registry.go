@@ -32,7 +32,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 	// Override ctx because sqlite sometimes segfaults on context cancellation
 	ctx := context.Background()
 
-	sql := fmt.Sprintf("SELECT id, olap_driver, repo_driver, embed_catalog, created_on, updated_on, variables, project_variables, ingestion_limit_bytes, annotations, connectors, project_connectors FROM instances %s ORDER BY id", whereClause)
+	sql := fmt.Sprintf("SELECT id, olap_connector, repo_connector, embed_catalog, created_on, updated_on, variables, project_variables, ingestion_limit_bytes, annotations, connectors, project_connectors FROM instances %s ORDER BY id", whereClause)
 
 	rows, err := c.db.QueryxContext(ctx, sql, args...)
 	if err != nil {
@@ -45,7 +45,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 		// sqlite doesn't support maps need to read as bytes and convert to map
 		var variables, projectVariables, annotations, connectors, projectConnectors []byte
 		i := &drivers.Instance{}
-		err := rows.Scan(&i.ID, &i.OLAPDriver, &i.RepoDriver, &i.EmbedCatalog, &i.CreatedOn, &i.UpdatedOn, &variables, &projectVariables, &i.IngestionLimitBytes, &annotations, &connectors, &projectConnectors)
+		err := rows.Scan(&i.ID, &i.OLAPConnector, &i.RepoConnector, &i.EmbedCatalog, &i.CreatedOn, &i.UpdatedOn, &variables, &projectVariables, &i.IngestionLimitBytes, &annotations, &connectors, &projectConnectors)
 		if err != nil {
 			return nil, err
 		}
@@ -117,11 +117,11 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
-		"INSERT INTO instances(id, olap_driver, repo_driver, embed_catalog, created_on, updated_on, variables, project_variables, ingestion_limit_bytes, annotations, connectors, project_connectors) "+
+		"INSERT INTO instances(id, olap_connector, repo_connector, embed_catalog, created_on, updated_on, variables, project_variables, ingestion_limit_bytes, annotations, connectors, project_connectors) "+
 			"VALUES ($1, $2, $3, $4, $5, $5, $6, $7, $8, $9, $10, $11)",
 		inst.ID,
-		inst.OLAPDriver,
-		inst.RepoDriver,
+		inst.OLAPConnector,
+		inst.RepoConnector,
 		inst.EmbedCatalog,
 		now,
 		variables,
@@ -175,11 +175,11 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
-		"UPDATE instances SET olap_driver = $2, repo_driver = $3, embed_catalog = $4, variables = $5, project_variables = $6, updated_on = $7, ingestion_limit_bytes = $8, annotations = $9, connectors = $10, project_connectors = $11 "+
+		"UPDATE instances SET olap_connector = $2, repo_connector = $3, embed_catalog = $4, variables = $5, project_variables = $6, updated_on = $7, ingestion_limit_bytes = $8, annotations = $9, connectors = $10, project_connectors = $11 "+
 			"WHERE id = $1",
 		inst.ID,
-		inst.OLAPDriver,
-		inst.RepoDriver,
+		inst.OLAPConnector,
+		inst.RepoConnector,
 		inst.EmbedCatalog,
 		variables,
 		projVariables,

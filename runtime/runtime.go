@@ -37,11 +37,11 @@ func New(opts *Options, logger *zap.Logger, client activity.Client) (*Runtime, e
 	rt := &Runtime{
 		opts:               opts,
 		logger:             logger,
-		connCache:          newConnectionCache(opts.ConnectionCacheSize, logger, client),
 		migrationMetaCache: newMigrationMetaCache(math.MaxInt),
 		queryCache:         newQueryCache(opts.QueryCacheSizeBytes),
 		policyEngine:       newPolicyEngine(opts.PolicyEngineCacheSize, logger),
 	}
+	rt.connCache = newConnectionCache(opts.ConnectionCacheSize, logger, rt, client)
 	store, _, err := rt.AcquireSystemHandle(context.Background(), opts.MetastoreConnector)
 	if err != nil {
 		return nil, err

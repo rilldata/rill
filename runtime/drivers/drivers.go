@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
 )
 
@@ -42,13 +43,13 @@ func Register(name string, driver Driver) {
 }
 
 // Open opens a new connection
-func Open(driver string, config map[string]any, shared bool, logger *zap.Logger) (Handle, error) {
+func Open(driver string, config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (Handle, error) {
 	d, ok := Drivers[driver]
 	if !ok {
 		return nil, fmt.Errorf("unknown driver: %s", driver)
 	}
 
-	conn, err := d.Open(config, shared, logger)
+	conn, err := d.Open(config, shared, client, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +72,7 @@ type Driver interface {
 	Spec() Spec
 
 	// Open opens a new connection to an underlying store.
-	Open(config map[string]any, shared bool, logger *zap.Logger) (Handle, error)
+	Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (Handle, error)
 
 	// Drop tears down a store. Drivers that do not support it return ErrDropNotSupported.
 	Drop(config map[string]any, logger *zap.Logger) error

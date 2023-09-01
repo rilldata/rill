@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -18,7 +19,7 @@ func TestOpenDrop(t *testing.T) {
 	walpath := path + ".wal"
 	dsn := path + "?rill_pool_size=2"
 
-	handle, err := Driver{}.Open(map[string]any{"dsn": dsn}, false, zap.NewNop())
+	handle, err := Driver{}.Open(map[string]any{"dsn": dsn}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := handle.AsOLAP("")
@@ -44,7 +45,7 @@ func TestFatalErr(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "tmp.db")
 	dsn := path + "?rill_pool_size=2"
 
-	handle, err := Driver{}.Open(map[string]any{"dsn": dsn}, false, zap.NewNop())
+	handle, err := Driver{}.Open(map[string]any{"dsn": dsn}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := handle.AsOLAP("")
@@ -107,7 +108,7 @@ func TestFatalErrConcurrent(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "tmp.db")
 	dsn := path + "?rill_pool_size=3"
 
-	handle, err := Driver{}.Open(map[string]any{"dsn": dsn}, false, zap.NewNop())
+	handle, err := Driver{}.Open(map[string]any{"dsn": dsn}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := handle.AsOLAP("")

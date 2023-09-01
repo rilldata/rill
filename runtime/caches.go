@@ -12,8 +12,8 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/singleflight"
 	"github.com/rilldata/rill/runtime/services/catalog"
-	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
@@ -25,13 +25,15 @@ const _migrateTimeout = 30 * time.Second
 
 // all connections should preferably be opened via connection cache only
 type connectionCache struct {
-	lruCache *simplelru.LRU          // items with zero references(opened but not in-use) ready for eviction
-	cache    map[string]*connWithRef // items with non zero references (in-use) which should not be evicted
-	lock     sync.Mutex
-	closed   bool
-	logger   *zap.Logger
-	size     int
-	activity activity.Client
+	lruCache     *simplelru.LRU          // items with zero references(opened but not in-use) ready for eviction
+	cache        map[string]*connWithRef // items with non zero references (in-use) which should not be evicted
+	lock         sync.Mutex
+	closed       bool
+	logger       *zap.Logger
+	size         int
+	activity     activity.Client
+	runtime      *Runtime
+	singleflight *singleflight.Group[string, *connWithRef]
 }
 
 type connWithRef struct {
@@ -39,7 +41,7 @@ type connWithRef struct {
 	ref int
 }
 
-func newConnectionCache(size int, logger *zap.Logger, client activity.Client) *connectionCache {
+func newConnectionCache(size int, logger *zap.Logger, runtime *Runtime, client activity.Client) *connectionCache {
 	cache, err := simplelru.NewLRU(size, func(key interface{}, value interface{}) {
 		// close the evicted connection
 		if value.(*connWithRef).ref != 0 { // the callback also gets called when removing items manually i.e. transferring to in-use cache
@@ -53,11 +55,13 @@ func newConnectionCache(size int, logger *zap.Logger, client activity.Client) *c
 		panic(err)
 	}
 	return &connectionCache{
-		lruCache: cache,
-		cache:    make(map[string]*connWithRef),
-		logger:   logger,
-		size:     size,
-		activity: client,
+		lruCache:     cache,
+		cache:        make(map[string]*connWithRef),
+		logger:       logger,
+		size:         size,
+		activity:     client,
+		runtime:      runtime,
+		singleflight: &singleflight.Group[string, *connWithRef]{},
 	}
 }
 
@@ -85,17 +89,7 @@ func (c *connectionCache) Close() error {
 	return firstErr
 }
 
-func (c *connectionCache) get(ctx context.Context, instanceID, driver string, config map[string]any, shared bool, activityDims []attribute.KeyValue) (drivers.Handle, func(), error) {
-	// TODO: This locks for all instances for the duration of Open and Migrate.
-	// Adapt to lock only on the lookup, and then on the individual instance's Open and Migrate.
-
-	c.lock.Lock()
-	defer c.lock.Unlock()
-
-	if c.closed {
-		return nil, nil, errConnectionCacheClosed
-	}
-
+func (c *connectionCache) get(ctx context.Context, instanceID, driver string, config map[string]any, shared bool) (drivers.Handle, func(), error) {
 	var key string
 	if shared {
 		// not using instanceID to ensure all instances share the same handle
@@ -103,56 +97,72 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver string, co
 	} else {
 		key = instanceID + driver + generateKey(config)
 	}
-	conn, ok := c.cache[key]
-	var found bool
-	if !ok { // not in use
-		var value interface{}
-		value, found = c.lruCache.Get(key)
-		if !found { // not opened
-			// not keeping activityClient in cache key
-			activityClient := c.activity
-			if activityClient != nil {
-				activityClient = activityClient.With(activityDims...)
-			}
 
-			if config == nil {
-				config = make(map[string]any)
-			}
-			// TODO: remove activity from the config and pass it as a func parameter, similar to the logger
-			config["activity"] = activityClient
-			handle, err := c.openAndMigrate(ctx, instanceID, driver, shared, config)
-			if err != nil {
-				return nil, nil, err
-			}
-			conn = &connWithRef{Handle: handle, ref: 0}
-		} else {
-			conn = value.(*connWithRef)
-		}
+	c.lock.Lock()
+	if c.closed {
+		c.lock.Unlock()
+		return nil, nil, errConnectionCacheClosed
 	}
 
-	// increase reference
-	conn.ref++
-	if found {
+	// check from in-use cache
+	if conn, ok := c.cache[key]; ok {
+		defer c.lock.Unlock()
+		conn.ref++
+		return conn.Handle, c.releaseFn(key, conn), nil
+	}
+
+	// check from open cache
+	if value, ok := c.lruCache.Get(key); ok {
+		defer c.lock.Unlock()
+		conn := value.(*connWithRef)
+		conn.ref++
 		// remove from lru-cache
 		c.lruCache.Remove(key)
+		// set in in-use cache
+		c.cache[key] = conn
+		return conn.Handle, c.releaseFn(key, conn), nil
 	}
-	// set in in-use cache
-	c.cache[key] = conn
-	if len(c.cache)+c.lruCache.Len() > c.size {
-		c.logger.Warn("number of in-use connections and open connections exceed total configured size", zap.Int("in-use", len(c.cache)), zap.Int("open", c.lruCache.Len()))
-	}
-	return conn.Handle, func() {
+
+	// connection is not opened
+	// unlock global mutex and open connection again
+	c.lock.Unlock()
+	conn, err := c.singleflight.Do(ctx, key, func(ctx context.Context) (*connWithRef, error) {
+		// try cache again
+		if conn, ok := c.getFromCache(key); ok {
+			return conn, nil
+		}
+
+		h, err := c.openAndMigrate(ctx, instanceID, driver, shared, config)
+		if err != nil {
+			return nil, err
+		}
+
+		conn := &connWithRef{Handle: h, ref: 1}
 		c.lock.Lock()
 		defer c.lock.Unlock()
-
-		conn.ref--
-		if conn.ref == 0 { // not in use
-			// add key to lrucache for eviction
-			c.lruCache.Add(key, conn)
-			// delete from in-use cache
-			delete(c.cache, key)
+		// set in in-use cache
+		c.cache[key] = conn
+		if len(c.cache)+c.lruCache.Len() > c.size {
+			c.logger.Warn("number of in-use connections and open connections exceed total configured size", zap.Int("in-use", len(c.cache)), zap.Int("open", c.lruCache.Len()))
 		}
-	}, nil
+		return conn, nil
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	return conn.Handle, c.releaseFn(key, conn), nil
+}
+
+func (c *connectionCache) getFromCache(key string) (*connWithRef, bool) {
+	if c, ok := c.cache[key]; ok {
+		return c, true
+	}
+
+	if val, ok := c.lruCache.Get(key); ok {
+		return val.(*connWithRef), true
+	}
+
+	return nil, false
 }
 
 func (c *connectionCache) openAndMigrate(ctx context.Context, instanceID, driver string, shared bool, config map[string]any) (drivers.Handle, error) {
@@ -160,7 +170,21 @@ func (c *connectionCache) openAndMigrate(ctx context.Context, instanceID, driver
 	if instanceID != "default" {
 		logger = c.logger.With(zap.String("instance_id", instanceID), zap.String("driver", driver))
 	}
-	handle, err := drivers.Open(driver, config, shared, logger)
+
+	activityClient := c.activity
+	if !shared {
+		inst, err := c.runtime.FindInstance(ctx, instanceID)
+		if err != nil {
+			return nil, err
+		}
+
+		activityDims := instanceAnnotationsToAttribs(inst)
+		if activityClient != nil {
+			activityClient = activityClient.With(activityDims...)
+		}
+	}
+
+	handle, err := drivers.Open(driver, config, shared, activityClient, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -199,6 +223,21 @@ func (c *connectionCache) evict(ctx context.Context, instanceID, driver string, 
 		delete(c.cache, key)
 	}
 	return ok
+}
+
+func (c *connectionCache) releaseFn(key string, conn *connWithRef) func() {
+	return func() {
+		c.lock.Lock()
+		defer c.lock.Unlock()
+
+		conn.ref--
+		if conn.ref == 0 { // not in use
+			// add key to lrucache for eviction
+			c.lruCache.Add(key, conn)
+			// delete from in-use cache
+			delete(c.cache, key)
+		}
+	}
 }
 
 type migrationMetaCache struct {

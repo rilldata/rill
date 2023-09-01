@@ -272,11 +272,11 @@ message PingResponse {
 message Instance {
   // Identifier (UUID)
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  // Driver to connect to for OLAP (options: duckdb, druid)
-  string olap_driver = 2;
-  // Driver for reading/editing code artifacts (options: file, metastore, github).
+  // OLAP connector name (typically called : olap )
+  string olap_connector = 2;
+  // Connecto name for repo driver for reading/editing code artifacts(typically called : repo).
   // This enables virtualizing a file system in a cloud setting.
-  string repo_driver = 4;
+  string repo_connector = 4;
   // If true, the runtime will store the instance's catalog in its OLAP store instead
   // of in the runtime's metadata store. Currently only supported for the duckdb driver.
   bool embed_catalog = 6;
@@ -328,8 +328,8 @@ message CreateInstanceRequest {
     ignore_empty: true,
     pattern: "^[_\\-a-zA-Z0-9]+$"
   }];
-  string olap_driver = 2;
-  string repo_driver = 4;
+  string olap_connector = 2;
+  string repo_connector = 4;
   bool embed_catalog = 6;
   map<string, string> variables = 7;
   int64 ingestion_limit_bytes = 8;
@@ -355,8 +355,8 @@ message DeleteInstanceResponse {}
 // See message Instance for field descriptions.
 message EditInstanceRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  optional string olap_driver = 2;
-  optional string repo_driver = 4;
+  optional string olap_connector = 2;
+  optional string repo_connector = 4;
   optional bool embed_catalog = 6;
   optional int64 ingestion_limit_bytes = 8;
   repeated Connector connectors = 9;

@@ -84,8 +84,8 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
 		InstanceId:          instanceID,
-		OlapDriver:          "olap",
-		RepoDriver:          "repo",
+		OlapConnector:       "olap",
+		RepoConnector:       "repo",
 		EmbedCatalog:        embedCatalog,
 		Variables:           opts.ProdVariables,
 		IngestionLimitBytes: ingestionLimit,
