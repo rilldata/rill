@@ -7,18 +7,12 @@
     Axis,
     Grid,
   } from "@rilldata/web-common/components/data-graphic/guides";
-  import {
-    ClippedChunkedLine,
-    ChunkedLine,
-  } from "@rilldata/web-common/components/data-graphic/marks";
   import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
-  import { previousValueStore } from "@rilldata/web-common/lib/store-utils";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { extent } from "d3-array";
   import { cubicOut } from "svelte/easing";
-  import { writable } from "svelte/store";
   import { fly } from "svelte/transition";
   import MeasureValueMouseover from "./MeasureValueMouseover.svelte";
   import {
@@ -34,7 +28,8 @@
   import { contexts } from "@rilldata/web-common/components/data-graphic/constants";
   import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-  import MeasureScrub from "@rilldata/web-common/features/dashboards/time-series/MeasureScrub.svelte";
+  import MeasureScrub from "./MeasureScrub.svelte";
+  import ChartBody from "./ChartBody.svelte";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 
   export let metricViewName: string;
@@ -75,14 +70,6 @@
   let preventScrubReset;
 
   $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
-
-  $: mainLineColor = hasSubrangeSelected
-    ? "hsla(217, 10%, 60%, 1)"
-    : "hsla(217,60%, 55%, 1)";
-
-  $: areaColor = hasSubrangeSelected
-    ? "hsla(225, 20%, 80%, .2)"
-    : "hsla(217,70%, 80%, .4)";
 
   $: scrubStartCords = $xScale(scrubStart);
   $: scrubEndCords = $xScale(scrubEnd);
@@ -126,32 +113,6 @@
 
   $: internalXMin = xMin || xExtentMin;
   $: internalXMax = xMax || xExtentMax;
-  // we delay the tween if previousYMax < yMax
-  let yMaxStore = writable(yExtentMax);
-  let previousYMax = previousValueStore(yMaxStore);
-
-  $: yMaxStore.set(yExtentMax);
-  const timeRangeKey = writable(`${xMin}-${xMax}`);
-
-  const previousTimeRangeKey = previousValueStore(timeRangeKey);
-
-  // FIXME: move this function to utils.ts
-  /** reset the keys to trigger animations on time range changes */
-  let syncTimeRangeKey;
-  $: {
-    timeRangeKey.set(`${xMin}-${xMax}`);
-    if ($previousTimeRangeKey !== $timeRangeKey) {
-      if (syncTimeRangeKey) clearTimeout(syncTimeRangeKey);
-      syncTimeRangeKey = setTimeout(() => {
-        previousTimeRangeKey.set($timeRangeKey);
-      }, 400);
-    }
-  }
-
-  $: delay =
-    $previousTimeRangeKey === $timeRangeKey && $previousYMax < yExtentMax
-      ? 100
-      : 0;
 
   function inBounds(min, max, value) {
     return value >= min && value <= max;
@@ -239,57 +200,17 @@
     <Axis side="right" {numberKind} />
     <Grid />
     <Body>
-      <!-- key on the time range itself to prevent weird tweening animations.
-    We'll need to migrate this to a more robust solution once we've figured out
-    the right way to "tile" together a time series with multiple pages of data.
-    -->
-      {#key $timeRangeKey}
-        {#if showComparison}
-          <g
-            class="transition-opacity"
-            class:opacity-80={mouseoverValue?.x}
-            class:opacity-40={!mouseoverValue?.x}
-          >
-            <ChunkedLine
-              area={false}
-              lineColor={`hsl(217, 10%, 60%)`}
-              delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
-              duration={hasSubrangeSelected ||
-              $timeRangeKey !== $previousTimeRangeKey
-                ? 0
-                : 200}
-              {data}
-              {xAccessor}
-              yAccessor="comparison.{yAccessor}"
-            />
-          </g>
-        {/if}
-        <ChunkedLine
-          lineColor={mainLineColor}
-          {areaColor}
-          delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
-          duration={hasSubrangeSelected ||
-          $timeRangeKey !== $previousTimeRangeKey
-            ? 0
-            : 200}
-          {data}
-          {xAccessor}
-          {yAccessor}
-        />
-        {#if hasSubrangeSelected}
-          <ClippedChunkedLine
-            start={Math.min(scrubStart, scrubEnd)}
-            end={Math.max(scrubStart, scrubEnd)}
-            lineColor="hsla(217,60%, 55%, 1)"
-            areaColor="hsla(217,70%, 80%, .4)"
-            delay={0}
-            duration={0}
-            {data}
-            {xAccessor}
-            {yAccessor}
-          />
-        {/if}
-      {/key}
+      <ChartBody
+        {xMin}
+        {xMax}
+        {showComparison}
+        isHovering={mouseoverValue?.x}
+        {data}
+        {xAccessor}
+        {yAccessor}
+        {scrubStart}
+        {scrubEnd}
+      />
       <line
         x1={config.plotLeft}
         x2={config.plotLeft + config.plotRight}

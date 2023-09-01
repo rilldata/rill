@@ -104,6 +104,9 @@ export interface MetricsExplorerEntity {
   // user selected dimension
   selectedDimensionName?: string;
 
+  // user selected measure which is exapnded in the TDD view
+  expandedMeasureName?: string;
+
   proto?: string;
   // proto for the default set of selections
   defaultProto?: string;
@@ -388,6 +391,13 @@ const metricViewReducers = {
   setMetricDimensionName(name: string, dimensionName: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.selectedDimensionName = dimensionName;
+    });
+  },
+
+  setExpandedMeasureName(name: string, measureName: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.expandedMeasureName = measureName;
+      console.log(metricsExplorer.expandedMeasureName);
     });
   },
 

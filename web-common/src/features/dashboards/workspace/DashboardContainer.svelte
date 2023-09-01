@@ -7,6 +7,7 @@
   export let exploreContainerWidth;
 
   export let leftMargin: string = undefined;
+  export let align: "row" | "col" = "row";
 
   // the navigationVisibilityTween is a tweened value that is used
   // to animate the extra padding that needs to be added to the
@@ -34,10 +35,13 @@
     <slot name="header" />
   </div>
   <div
-    class="explore-content flex flex-row gap-x-1"
+    class="explore-content flex flex-{align} gap-x-1"
     style:padding-left={leftSide}
   >
-    <div class="explore-metrics pb-8 flex-none">
+    <div
+      class:fixed-metric-height={align == "col"}
+      class="explore-metrics pb-8 flex-none"
+    >
       <slot name="metrics" />
     </div>
     <div class="explore-leaderboards px-4 grow">
@@ -65,6 +69,10 @@
   }
   .explore-metrics {
     overflow-y: scroll;
+  }
+
+  .fixed-metric-height {
+    height: 300px;
   }
 
   .explore-leaderboards {

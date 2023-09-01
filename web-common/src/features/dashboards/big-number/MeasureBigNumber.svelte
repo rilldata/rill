@@ -1,5 +1,6 @@
 <script lang="ts">
   import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -17,6 +18,8 @@
     humanizeDataTypeExpanded,
   } from "../humanize-numbers";
 
+  export let metricViewName: string;
+  export let measureName: string;
   export let value: number;
   export let comparisonOption: TimeComparisonOption = undefined;
   export let comparisonValue: number = undefined;
@@ -40,9 +43,18 @@
 
   /** when the measure is a percentage, we don't show a percentage change. */
   $: measureIsPercentage = formatPresetEnum === FormatPreset.PERCENTAGE;
+
+  function expandMeasure() {
+    metricsExplorerStore.setExpandedMeasureName(metricViewName, measureName);
+  }
 </script>
 
-<div class="flex flex-col pl-1 {withTimeseries ? 'mt-2' : 'justify-between'}">
+<button
+  on:click={() => expandMeasure()}
+  class="flex flex-col px-2 py-1 text-left hover:bg-gray-100 {withTimeseries
+    ? 'my-2'
+    : 'justify-between'}"
+>
   <Tooltip distance={16} location="top" alignment="start">
     <h2
       class="break-words line-clamp-2"
@@ -169,4 +181,4 @@
       </div>
     </slot>
   </div>
-</div>
+</button>

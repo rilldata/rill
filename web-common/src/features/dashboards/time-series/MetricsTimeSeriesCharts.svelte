@@ -297,6 +297,8 @@
         FormatPreset[measure?.format] || FormatPreset.HUMANIZE}
       <!-- FIXME: I can't select a time series by measure id. -->
       <MeasureBigNumber
+        {metricViewName}
+        measureName={measure.name}
         value={bigNum}
         {showComparison}
         comparisonOption={$dashboardStore?.selectedComparisonTimeRange?.name}
