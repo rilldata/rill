@@ -1,9 +1,13 @@
 <script lang="ts">
-  import SimpleActionMenu from "@rilldata/web-common/components/menu/wrappers/SimpleActionMenu.svelte";
+  import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
+  import { MenuItem } from "@rilldata/web-common/components/menu";
+  import Menu from "@rilldata/web-common/components/menu/core/Menu.svelte";
   import { createAdminServiceGetCurrentUser } from "../../client";
   import { ADMIN_URL } from "../../client/http-client";
 
   const user = createAdminServiceGetCurrentUser();
+
+  let menuOpen = false;
 
   function handleLogOut() {
     const loginWithRedirect = `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`;
@@ -17,14 +21,14 @@
   const isDev = process.env.NODE_ENV === "development";
 </script>
 
-<SimpleActionMenu
-  options={[
-    { main: "Logout", callback: handleLogOut },
-    { main: "Documentation", callback: handleDocumentation },
-  ]}
-  let:toggleMenu
-  minWidth="0px"
+<WithTogglableFloatingElement
   distance={4}
+  location="bottom"
+  alignment="start"
+  let:handleClose
+  let:toggleFloatingElement={toggleMenu}
+  on:open={() => (menuOpen = true)}
+  on:close={() => (menuOpen = false)}
 >
   <img
     src={$user.data?.user?.photoUrl}
@@ -34,4 +38,25 @@
     on:click={toggleMenu}
     on:keydown={toggleMenu}
   />
-</SimpleActionMenu>
+  <Menu
+    slot="floating-element"
+    minWidth="0px"
+    focusOnMount={false}
+    on:select-item={handleClose}
+    on:click-outside={handleClose}
+    on:escape={handleClose}
+  >
+    <MenuItem
+      on:select={() => {
+        handleClose();
+        handleLogOut();
+      }}>Logout</MenuItem
+    >
+    <MenuItem
+      on:select={() => {
+        handleClose();
+        handleDocumentation();
+      }}>Documentation</MenuItem
+    >
+  </Menu>
+</WithTogglableFloatingElement>
