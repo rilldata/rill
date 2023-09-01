@@ -204,9 +204,9 @@ func TestResolveMetricsView(t *testing.T) {
 				},
 			},
 			want: &ResolvedMetricsViewPolicy{
-				HasAccess: true,
-				Filter:    "WHERE groups IN ('all')",
-				Include:   []string{"col2"},
+				HasAccess: false,
+				Filter:    "",
+				Include:   []string{},
 				Exclude:   nil,
 			},
 			wantErr:        true,
@@ -308,6 +308,89 @@ func TestResolveMetricsView(t *testing.T) {
 			want: &ResolvedMetricsViewPolicy{
 				HasAccess: true,
 				Filter:    "",
+				Include:   nil,
+				Exclude:   nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_empty_has_access",
+			args: args{
+				attr: map[string]any{
+					"name":   "test",
+					"email":  "test@rilldata.com",
+					"domain": "rilldata.com",
+					"groups": []interface{}{"all"},
+					"admin":  true,
+				},
+				mv: &runtimev1.MetricsView{
+					Name: "test_empty_has_access",
+					Policy: &runtimev1.MetricsView_Policy{
+						Filter:  "WHERE domain = '{{.user.domain}}'",
+						Include: nil,
+						Exclude: nil,
+					},
+				},
+			},
+			want: &ResolvedMetricsViewPolicy{
+				HasAccess: false,
+				Filter:    "WHERE domain = 'rilldata.com'",
+				Include:   nil,
+				Exclude:   nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_composite_condition_1",
+			args: args{
+				attr: map[string]any{
+					"name":   "test",
+					"email":  "test@exclude.com",
+					"domain": "exclude.com",
+					"groups": []interface{}{"test"},
+					"admin":  true,
+				},
+				mv: &runtimev1.MetricsView{
+					Name: "test",
+					Policy: &runtimev1.MetricsView_Policy{
+						HasAccess: "'{{.user.domain}}' == 'rilldata.com' || '{{.user.domain}}' == 'gmail.com'",
+						Filter:    "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
+						Include:   nil,
+						Exclude:   nil,
+					},
+				},
+			},
+			want: &ResolvedMetricsViewPolicy{
+				HasAccess: false,
+				Filter:    "WHERE groups IN ('test')",
+				Include:   nil,
+				Exclude:   nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_composite_condition_2",
+			args: args{
+				attr: map[string]any{
+					"name":   "test",
+					"email":  "test@rilldata.com",
+					"domain": "rilldata.com",
+					"groups": []interface{}{"test"},
+					"admin":  true,
+				},
+				mv: &runtimev1.MetricsView{
+					Name: "test",
+					Policy: &runtimev1.MetricsView_Policy{
+						HasAccess: "('{{.user.domain}}' == 'rilldata.com' || '{{.user.domain}}' == 'gmail.com') && {{.user.admin}}",
+						Filter:    "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
+						Include:   nil,
+						Exclude:   nil,
+					},
+				},
+			},
+			want: &ResolvedMetricsViewPolicy{
+				HasAccess: true,
+				Filter:    "WHERE groups IN ('test')",
 				Include:   nil,
 				Exclude:   nil,
 			},
