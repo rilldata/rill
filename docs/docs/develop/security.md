@@ -68,7 +68,7 @@ mock_users:
 - email: anon@unknown.com
 ```
 
-On the dashboard page, provided you've added a security, you'll see a "View as" button in the top right corner. Click this button and select one of your mock users. You'll see the dashboard as that user would see it.
+On the dashboard page, provided you've added a policy, you'll see a "View as" button in the top right corner. Click this button and select one of your mock users. You'll see the dashboard as that user would see it.
 ## Examples
 
 ### Restrict dashboard access to users matching specific criteria
