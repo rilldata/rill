@@ -1,13 +1,19 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
   import { MenuItem } from "@rilldata/web-common/components/menu";
   import Menu from "@rilldata/web-common/components/menu/core/Menu.svelte";
   import { createAdminServiceGetCurrentUser } from "../../client";
   import { ADMIN_URL } from "../../client/http-client";
+  import ProjectAccessControls from "../projects/ProjectAccessControls.svelte";
 
   const user = createAdminServiceGetCurrentUser();
 
   let menuOpen = false;
+
+  function handleViewAs() {
+    console.log("open 'view as' UI");
+  }
 
   function handleLogOut() {
     const loginWithRedirect = `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`;
@@ -46,6 +52,22 @@
     on:click-outside={handleClose}
     on:escape={handleClose}
   >
+    {#if $page.params.organization && $page.params.project}
+      <ProjectAccessControls
+        organization={$page.params.organization}
+        project={$page.params.project}
+      >
+        <MenuItem
+          slot="manage-project"
+          on:select={() => {
+            handleClose();
+            handleViewAs();
+          }}
+        >
+          View as
+        </MenuItem>
+      </ProjectAccessControls>
+    {/if}
     <MenuItem
       on:select={() => {
         handleClose();
