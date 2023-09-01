@@ -91,7 +91,7 @@
     </TabGroup>
   </div>
   <div class="flex-grow overflow-y-auto">
-    {#if selectedConnector?.name === "gcs" || selectedConnector?.name === "s3" || selectedConnector?.name === "https" || selectedConnector?.name === "motherduck" || selectedConnector?.name === "bigquery"}
+    {#if selectedConnector?.name === "gcs" || selectedConnector?.name === "s3" || selectedConnector?.name === "https" || selectedConnector?.name === "motherduck" || selectedConnector?.name === "bigquery" || selectedConnector?.name === "athena"}
       {#key selectedConnector}
         <RemoteSourceForm connector={selectedConnector} on:close />
       {/key}

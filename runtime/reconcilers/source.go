@@ -415,6 +415,10 @@ func driversSource(conn drivers.Handle, propsPB *structpb.Struct) (drivers.Sourc
 			SQL:   query,
 			Props: props,
 		}, nil
+	case "athena":
+		return &drivers.BucketSource{
+			Properties: props,
+		}, nil
 	default:
 		return nil, fmt.Errorf("source connector %q not supported", conn.Driver())
 	}

@@ -33,11 +33,11 @@ func NewObjectStoreToDuckDB(from drivers.ObjectStore, to drivers.OLAPStore, logg
 func (t *objectStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, sink drivers.Sink, opts *drivers.TransferOpts, p drivers.Progress) error {
 	src, ok := source.BucketSource()
 	if !ok {
-		return fmt.Errorf("type of source should `drivers.BucketSource`")
+		return fmt.Errorf("type of source should be `drivers.BucketSource`")
 	}
 	dbSink, ok := sink.DatabaseSink()
 	if !ok {
-		return fmt.Errorf("type of source should `drivers.DatabaseSink`")
+		return fmt.Errorf("type of source should be `drivers.DatabaseSink`")
 	}
 
 	iterator, err := t.from.DownloadFiles(ctx, src)

@@ -184,6 +184,10 @@ func source(connector string, src *runtimev1.Source) drivers.Source {
 		return &drivers.DatabaseSource{
 			Props: props,
 		}
+	case "athena":
+		return &drivers.BucketSource{
+			Properties: props,
+		}
 	default:
 		return nil
 	}

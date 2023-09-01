@@ -402,6 +402,10 @@ func source(connector string, src *runtimev1.Source) (drivers.Source, error) {
 			SQL:   query,
 			Props: props,
 		}, nil
+	case "athena":
+		return &drivers.BucketSource{
+			Properties: props,
+		}, nil
 	default:
 		return nil, fmt.Errorf("connector %v not supported", connector)
 	}
