@@ -8,16 +8,19 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 
-export function watchFilesClient(queryClient: QueryClient) {
+export function startWatchFilesClient(queryClient: QueryClient) {
   return new WatchRequestClient<V1WatchFilesResponse>(
     (runtime) =>
       `${runtime.host}/v1/instances/${runtime.instanceId}/files/watch`,
-    (res) => invalidateFile(queryClient, res),
+    (res) => handleWatchFileResponse(queryClient, res),
     () => invalidateAllFiles(queryClient)
   ).start();
 }
 
-function invalidateFile(queryClient: QueryClient, res: V1WatchFilesResponse) {
+function handleWatchFileResponse(
+  queryClient: QueryClient,
+  res: V1WatchFilesResponse
+) {
   // Watch file returns events for all files under the project. Ignore everything except .sql, .yaml & .yml
   if (
     !res.path.endsWith(".sql") &&

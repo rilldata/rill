@@ -9,16 +9,16 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 
-export function watchResourcesClient(queryClient: QueryClient) {
+export function startWatchResourcesClient(queryClient: QueryClient) {
   return new WatchRequestClient<V1WatchResourcesResponse>(
     (runtime) =>
       `${runtime.host}/v1/instances/${runtime.instanceId}/resources/-/watch`,
-    (res) => invalidateResourceResponse(queryClient, res),
+    (res) => handleWatchResourceResponse(queryClient, res),
     () => invalidateAllResources(queryClient)
   ).start();
 }
 
-function invalidateResourceResponse(
+function handleWatchResourceResponse(
   queryClient: QueryClient,
   res: V1WatchResourcesResponse
 ) {

@@ -6,6 +6,7 @@ export async function* streamingFetchWrapper<T>(
   url: string,
   method: string,
   body?: Record<string, unknown>,
+  headers: HeadersInit = { "Content-Type": "application/json" },
   signal?: AbortSignal
 ): AsyncGenerator<T> {
   let response: Response;
@@ -13,7 +14,7 @@ export async function* streamingFetchWrapper<T>(
     response = await fetch(url, {
       method,
       ...(body ? { body: JSON.stringify(body) } : {}),
-      headers: { "Content-Type": "application/json" },
+      headers,
       signal,
     });
   } catch (err) {

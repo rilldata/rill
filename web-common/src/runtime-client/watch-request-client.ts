@@ -61,12 +61,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
 
       this.controller = controller;
       try {
-        const stream = streamingFetchWrapper<StreamingFetchResponse<Res>>(
-          url,
-          "GET",
-          undefined,
-          controller.signal
-        );
+        const stream = this.getFetchStream(url, controller);
 
         for await (const res of stream) {
           if (res.error) throw new Error(res.error.message);
@@ -78,5 +73,21 @@ export class WatchRequestClient<Res extends WatchResponse> {
         await asyncWait(2000);
       }
     }
+  }
+
+  private getFetchStream(url: string, controller: AbortController) {
+    const headers = { "Content-Type": "application/json" };
+    const jwt = get(runtime).jwt;
+    if (jwt) {
+      headers["Authorization"] = `Bearer ${jwt}`;
+    }
+
+    return streamingFetchWrapper<StreamingFetchResponse<Res>>(
+      url,
+      "GET",
+      undefined,
+      headers,
+      controller.signal
+    );
   }
 }
