@@ -27,12 +27,12 @@ func rawConn(conn *sql.Conn, f func(driver.Conn) error) error {
 	})
 }
 
-func sourceReader(paths []string, format string, ingestionProps map[string]any) (string, error) {
+func sourceReader(paths []string, format string, ingestionProps map[string]any, fromAthena bool) (string, error) {
 	// Generate a "read" statement
 	if containsAny(format, []string{".csv", ".tsv", ".txt"}) {
 		// CSV reader
 		return generateReadCsvStatement(paths, ingestionProps)
-	} else if strings.Contains(format, ".parquet") {
+	} else if strings.Contains(format, ".parquet") || fromAthena {
 		// Parquet reader
 		return generateReadParquetStatement(paths, ingestionProps)
 	} else if containsAny(format, []string{".json", ".ndjson"}) {

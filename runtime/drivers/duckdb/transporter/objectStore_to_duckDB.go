@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/athena"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -51,9 +53,10 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, source drivers.Sourc
 		return drivers.ErrIngestionLimitExceeded
 	}
 
+	fromAthena := reflect.TypeOf(t.from).AssignableTo(reflect.TypeOf(&athena.Connection{}))
 	sql, hasSQL := src.Properties["sql"].(string)
 	// if sql is specified use ast rewrite to fill in the downloaded files
-	if hasSQL {
+	if hasSQL && !fromAthena {
 		return t.ingestDuckDBSQL(ctx, sql, iterator, dbSink, opts, p)
 	}
 
@@ -63,6 +66,9 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, source drivers.Sourc
 	val, formatDefined := src.Properties["format"].(string)
 	if formatDefined {
 		format = fmt.Sprintf(".%s", val)
+	} else if fromAthena {
+		format = "parquet"
+		formatDefined = true
 	}
 
 	allowSchemaRelaxation, err := schemaRelaxationProperty(src.Properties)
@@ -97,11 +103,13 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, source drivers.Sourc
 		st := time.Now()
 		t.logger.Info("ingesting files", zap.Strings("files", files), observability.ZapCtx(ctx))
 		if appendToTable {
-			if err := a.appendData(ctx, files, format); err != nil {
+			if err := a.appendData(ctx, files, format, fromAthena); err != nil {
 				return err
 			}
 		} else {
-			from, err := sourceReader(files, format, ingestionProps)
+			var from string
+			var err error
+			from, err = sourceReader(files, format, ingestionProps, fromAthena)
 			if err != nil {
 				return err
 			}
@@ -142,8 +150,8 @@ func newAppender(to drivers.OLAPStore, sink *drivers.DatabaseSink, ingestionProp
 	}
 }
 
-func (a *appender) appendData(ctx context.Context, files []string, format string) error {
-	from, err := sourceReader(files, format, a.ingestionProps)
+func (a *appender) appendData(ctx context.Context, files []string, format string, fromAthena bool) error {
+	from, err := sourceReader(files, format, a.ingestionProps, fromAthena)
 	if err != nil {
 		return err
 	}

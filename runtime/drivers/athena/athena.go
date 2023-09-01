@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -15,6 +16,7 @@ import (
 	s3v2 "github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/eapache/go-resiliency/retrier"
+	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -48,7 +50,7 @@ var spec = drivers.Spec{
 			Key:         "output.location",
 			DisplayName: "Output location",
 			Description: "Oputut location for query results in S3.",
-			Placeholder: "s3://bucket-name/path/",
+			Placeholder: "bucket-name",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
 		},
@@ -106,7 +108,6 @@ type sourceProperties struct {
 }
 
 func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
-	fmt.Println(props)
 	conf := &sourceProperties{}
 	err := mapstructure.Decode(props, conf)
 	if err != nil {
@@ -198,22 +199,24 @@ func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSo
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	err = c.unload(ctx, conf)
+	prefix := "parquet_output_" + uuid.New().String()
+	bucketName := strings.TrimPrefix(strings.TrimRight(conf.OutputLocation, "/"), "s3://")
+	unloadPath := bucketName + "/" + prefix
+	err = c.unload(ctx, conf, "s3://"+unloadPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unload: %w", err)
 	}
 
-	path := conf.OutputLocation + "/parquet_output"
-	bucketObj, err := c.openBucket(ctx, conf, path)
+	bucketObj, err := c.openBucket(ctx, conf, bucketName)
 	if err != nil {
-		return nil, fmt.Errorf("cannot open bucket: %w", err)
+		return nil, fmt.Errorf("cannot open bucket %q: %w", unloadPath, err)
 	}
 
 	opts := rillblob.Options{
 		ExtractPolicy: &runtimev1.Source_ExtractPolicy{
 			// FilesStrategy: runtimev1.Source_ExtractPolicy_STRATEGY_HEAD,
 		},
-		GlobPattern: "**/*",
+		GlobPattern: prefix + "/**",
 	}
 
 	it, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
@@ -221,7 +224,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSo
 		// TODO :: fix this for single file access. for single file first call only happens during download
 		var failureErr awserr.RequestFailure
 		if !errors.As(err, &failureErr) {
-			return nil, fmt.Errorf("failed to create the iterator %w", err)
+			return nil, fmt.Errorf("failed to create the iterator %q %w", unloadPath, err)
 		}
 
 		// check again
@@ -246,15 +249,10 @@ func (c *Connection) openBucket(ctx context.Context, conf *sourceProperties, buc
 	return s3blob.OpenBucketV2(ctx, s3client, bucket, nil)
 }
 
-func (c *Connection) unload(ctx context.Context, conf *sourceProperties) error {
-	finalSQL := fmt.Sprintf("UNLOAD (%s) TO '%s' WITH (format = 'PARQUET')", conf.SQL, conf.OutputLocation+"/parquet_output/") // todo create folder
+func (c *Connection) unload(ctx context.Context, conf *sourceProperties, path string) error {
+	finalSQL := fmt.Sprintf("UNLOAD (%s) TO '%s' WITH (format = 'PARQUET')", conf.SQL, path)
 
-	cfg, err := config.LoadDefaultConfig(context.TODO(), func(o *config.LoadOptions) error {
-		// o.Region = "us-east-2"
-		return nil
-	}, config.WithSharedConfigProfile(conf.ProfileName))
-	fmt.Println("Executing : ", conf.ProfileName)
-
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(conf.ProfileName))
 	if err != nil {
 		return err
 	}
@@ -262,7 +260,7 @@ func (c *Connection) unload(ctx context.Context, conf *sourceProperties) error {
 	client := athena.NewFromConfig(cfg)
 
 	resultConfig := &types.ResultConfiguration{
-		OutputLocation: aws.String(conf.OutputLocation + "/output/"),
+		OutputLocation: aws.String("s3://" + strings.TrimPrefix(strings.TrimRight(conf.OutputLocation, "/"), "s3://") + "/output/"),
 	}
 
 	executeParams := &athena.StartQueryExecutionInput{
@@ -280,7 +278,7 @@ func (c *Connection) unload(ctx context.Context, conf *sourceProperties) error {
 	// Get Query execution and check for the Query state constantly every 2 second
 	executionID := *athenaExecution.QueryExecutionId
 
-	r := retrier.New(retrier.LimitedExponentialBackoff(10, 100*time.Millisecond, 1*time.Second), nil) // 100 200 400 800 1000 1000 1000 1000 1000 1000
+	r := retrier.New(retrier.LimitedExponentialBackoff(20, 100*time.Millisecond, 1*time.Second), nil) // 100 200 400 800 1000 1000 1000 1000 1000 1000 ... < 20 sec
 
 	return r.Run(func() error {
 		status, stateErr := client.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{
@@ -296,8 +294,8 @@ func (c *Connection) unload(ctx context.Context, conf *sourceProperties) error {
 		if state == types.QueryExecutionStateSucceeded || state == types.QueryExecutionStateCancelled {
 			return nil
 		} else if state == types.QueryExecutionStateFailed {
-			return fmt.Errorf("Athen query execution failed %s", *status.QueryExecution.Status.AthenaError.ErrorMessage)
+			return fmt.Errorf("Athena query execution failed %s", *status.QueryExecution.Status.AthenaError.ErrorMessage)
 		}
-		return nil
+		return fmt.Errorf("Execution is not completed yet, current state: %s", state)
 	})
 }
