@@ -14,12 +14,12 @@ import (
 )
 
 type Options struct {
-	ConnectionCacheSize   int
-	MetastoreConnector    string
-	QueryCacheSizeBytes   int64
-	PolicyEngineCacheSize int
-	AllowHostAccess       bool
-	SafeSourceRefresh     bool
+	ConnectionCacheSize     int
+	MetastoreConnector      string
+	QueryCacheSizeBytes     int64
+	SecurityEngineCacheSize int
+	AllowHostAccess         bool
+	SafeSourceRefresh       bool
 	// SystemConnectors are drivers whose handles are shared with all instances
 	SystemConnectors []*runtimev1.Connector
 }
@@ -30,7 +30,7 @@ type Runtime struct {
 	connCache          *connectionCache
 	migrationMetaCache *migrationMetaCache
 	queryCache         *queryCache
-	policyEngine       *policyEngine
+	securityEngine     *securityEngine
 }
 
 func New(opts *Options, logger *zap.Logger, client activity.Client) (*Runtime, error) {
@@ -39,7 +39,7 @@ func New(opts *Options, logger *zap.Logger, client activity.Client) (*Runtime, e
 		logger:             logger,
 		migrationMetaCache: newMigrationMetaCache(math.MaxInt),
 		queryCache:         newQueryCache(opts.QueryCacheSizeBytes),
-		policyEngine:       newPolicyEngine(opts.PolicyEngineCacheSize, logger),
+		securityEngine:     newSecurityEngine(opts.SecurityEngineCacheSize, logger),
 	}
 	rt.connCache = newConnectionCache(opts.ConnectionCacheSize, logger, rt, client)
 	store, _, err := rt.AcquireSystemHandle(context.Background(), opts.MetastoreConnector)
@@ -68,6 +68,6 @@ func (r *Runtime) Close() error {
 	)
 }
 
-func (r *Runtime) ResolveMetricsViewPolicy(attributes map[string]any, instanceID string, mv *runtimev1.MetricsView, lastUpdatedOn time.Time) (*ResolvedMetricsViewPolicy, error) {
-	return r.policyEngine.resolveMetricsViewPolicy(attributes, instanceID, mv, lastUpdatedOn)
+func (r *Runtime) ResolveMetricsViewSecurity(attributes map[string]any, instanceID string, mv *runtimev1.MetricsView, lastUpdatedOn time.Time) (*ResolvedMetricsViewSecurity, error) {
+	return r.securityEngine.resolveMetricsViewSecurity(attributes, instanceID, mv, lastUpdatedOn)
 }

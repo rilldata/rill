@@ -43,9 +43,9 @@ type ColumnTimeseries struct {
 	Result              *ColumnTimeseriesResult                           `json:"-"`
 
 	// MetricsView-related fields. These can be removed when MetricsViewTimeSeries is refactored to a standalone implementation.
-	MetricsView       *runtimev1.MetricsView             `json:"-"`
-	MetricsViewFilter *runtimev1.MetricsViewFilter       `json:"filters"`
-	MetricsViewPolicy *runtime.ResolvedMetricsViewPolicy `json:"policy"`
+	MetricsView       *runtimev1.MetricsView               `json:"-"`
+	MetricsViewFilter *runtimev1.MetricsViewFilter         `json:"filters"`
+	MetricsViewPolicy *runtime.ResolvedMetricsViewSecurity `json:"security"`
 }
 
 var _ runtime.Query = &ColumnTimeseries{}

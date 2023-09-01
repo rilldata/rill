@@ -2321,27 +2321,27 @@ definitions:
       validPercentOfTotal:
         type: boolean
     title: Measures are aggregated computed values
-  MetricsViewPolicy:
+  MetricsViewSecurity:
     type: object
     properties:
-      hasAccess:
+      access:
         type: string
         title: Dashboard level access condition
-      filter:
+      rowFilter:
         type: string
         title: row level access condition
       include:
         type: array
         items:
           type: object
-          $ref: '#/definitions/PolicyFieldCondition'
+          $ref: '#/definitions/SecurityFieldCondition'
         title: either one of include or exclude will be specified
       exclude:
         type: array
         items:
           type: object
-          $ref: '#/definitions/PolicyFieldCondition'
-    title: Policy is the access policy for the metrics view
+          $ref: '#/definitions/SecurityFieldCondition'
+    title: Security for the metrics view
   MetricsViewSpecDimensionV2:
     type: object
     properties:
@@ -2370,27 +2370,27 @@ definitions:
       validPercentOfTotal:
         type: boolean
     title: Measures are aggregated computed values
-  MetricsViewSpecPolicyV2:
+  MetricsViewSpecSecurityV2:
     type: object
     properties:
-      hasAccess:
+      access:
         type: string
         title: Dashboard level access condition
-      filter:
+      rowFilter:
         type: string
         title: row level access condition
       include:
         type: array
         items:
           type: object
-          $ref: '#/definitions/PolicyV2FieldConditionV2'
+          $ref: '#/definitions/SecurityV2FieldConditionV2'
         title: either one of include or exclude will be specified
       exclude:
         type: array
         items:
           type: object
-          $ref: '#/definitions/PolicyV2FieldConditionV2'
-    title: Access policy for the dashboard
+          $ref: '#/definitions/SecurityV2FieldConditionV2'
+    title: Security for the dashboard
   ModelDialect:
     type: string
     enum:
@@ -2433,21 +2433,25 @@ definitions:
       count:
         type: integer
         format: int32
-  PolicyFieldCondition:
+  SecurityFieldCondition:
     type: object
     properties:
-      name:
-        type: string
       condition:
         type: string
+      names:
+        type: array
+        items:
+          type: string
     title: Dimension/measure access condition
-  PolicyV2FieldConditionV2:
+  SecurityV2FieldConditionV2:
     type: object
     properties:
-      name:
-        type: string
       condition:
         type: string
+      names:
+        type: array
+        items:
+          type: string
     title: Dimension/measure level access condition
   SourceExtractPolicy:
     type: object
@@ -3303,9 +3307,9 @@ definitions:
         items:
           type: string
         description: Available time zones list preferred time zones using IANA location identifiers.
-      policy:
-        $ref: '#/definitions/MetricsViewPolicy'
-        title: Access policy for the dashboard
+      security:
+        $ref: '#/definitions/MetricsViewSecurity'
+        title: Security for the dashboard
     title: Metrics view is the internal representation of a metrics view definition
   v1MetricsViewColumn:
     type: object
@@ -3511,9 +3515,9 @@ definitions:
         items:
           type: string
         title: Available time zones list preferred time zones using IANA location identifiers
-      policy:
-        $ref: '#/definitions/MetricsViewSpecPolicyV2'
-        title: Access policy for the dashboard
+      security:
+        $ref: '#/definitions/MetricsViewSpecSecurityV2'
+        title: Security for the dashboard
   v1MetricsViewState:
     type: object
     properties:
@@ -4151,6 +4155,14 @@ definitions:
           executing the reconciliation. If changed_paths was empty, this will include all
           code artifacts in the repo.
     title: Response message for RuntimeService.Reconcile
+  v1ReconcileStatus:
+    type: string
+    enum:
+      - RECONCILE_STATUS_UNSPECIFIED
+      - RECONCILE_STATUS_IDLE
+      - RECONCILE_STATUS_PENDING
+      - RECONCILE_STATUS_RUNNING
+    default: RECONCILE_STATUS_UNSPECIFIED
   v1RefreshAndReconcileRequest:
     type: object
     properties:
@@ -4295,16 +4307,7 @@ definitions:
         type: array
         items:
           type: string
-      deleted:
-        type: boolean
-      renamedFrom:
-        $ref: '#/definitions/v1ResourceName'
-      reconcileError:
-        type: string
       version:
-        type: string
-        format: int64
-      metaVersion:
         type: string
         format: int64
       specVersion:
@@ -4325,6 +4328,15 @@ definitions:
       deletedOn:
         type: string
         format: date-time
+      reconcileStatus:
+        $ref: '#/definitions/v1ReconcileStatus'
+      reconcileError:
+        type: string
+      reconcileOn:
+        type: string
+        format: date-time
+      renamedFrom:
+        $ref: '#/definitions/v1ResourceName'
   v1ResourceName:
     type: object
     properties:
