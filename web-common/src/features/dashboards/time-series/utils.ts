@@ -3,8 +3,8 @@ import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
 import { roundToNearestTimeUnit } from "./round-to-nearest-time-unit";
 import { getDurationMultiple, getOffset } from "../../../lib/time/transforms";
 import { removeZoneOffset } from "../../../lib/time/timezone";
-import { TimeOffsetType } from "../../../lib/time/types";
-import { DateTime } from "luxon";
+import { TimeOffsetType, TimeGrain } from "../../../lib/time/types";
+import { DateTime, DateTimeUnit } from "luxon";
 
 /** sets extents to 0 if it makes sense; otherwise, inflates each extent component */
 export function niceMeasureExtents(
@@ -43,7 +43,7 @@ export function toComparisonKeys(d, offsetDuration: string, zone: string) {
 export function prepareTimeSeries(
   original,
   comparison,
-  timeGrainDuration: string,
+  timeGrain: TimeGrain,
   zone: string,
   start: string,
   end: string,
@@ -53,14 +53,15 @@ export function prepareTimeSeries(
   let i = 0;
   let j = 0;
   let k = 0;
-  let dtStart = DateTime.fromISO(start, { zone }).startOf("hour");
-  const dtEnd = DateTime.fromISO(end, { zone }).startOf("hour");
-  let dtCompStart = DateTime.fromISO(compStart, { zone }).startOf("hour");
-  const dtCompEnd = DateTime.fromISO(compEnd, { zone }).startOf("hour");
+  const dtu = timeGrain.label as DateTimeUnit;
+  let dtStart = DateTime.fromISO(start, { zone }).startOf(dtu);
+  const dtEnd = DateTime.fromISO(end, { zone }).startOf(dtu);
+  let dtCompStart = DateTime.fromISO(compStart, { zone }).startOf(dtu);
+  const dtCompEnd = DateTime.fromISO(compEnd, { zone }).startOf(dtu);
 
   const result = [];
 
-  const offsetDuration = getDurationMultiple(timeGrainDuration, 0.5);
+  const offsetDuration = getDurationMultiple(timeGrain.duration, 0.5);
   while (dtStart < dtEnd || dtCompStart < dtCompEnd) {
     const ts = adjustOffsetForZone(dtStart.toISO(), zone);
     const ts_position = getOffset(ts, offsetDuration, TimeOffsetType.ADD);
@@ -102,8 +103,45 @@ export function prepareTimeSeries(
         };
       }
     }
-    dtStart = dtStart.plus({ hours: 1 });
-    dtCompStart = dtCompStart.plus({ hours: 1 });
+
+    switch (dtu) {
+      case "year":
+              dtStart = dtStart.plus({ years: 1 });
+              dtCompStart = dtCompStart.plus({ years: 1 });
+              break;
+      case "quarter":
+              dtStart = dtStart.plus({ quarters: 1 });
+              dtCompStart = dtCompStart.plus({ quarters: 1 });
+              break;
+      case "month":
+              dtStart = dtStart.plus({ months: 1 });
+              dtCompStart = dtCompStart.plus({ months: 1 });
+              break;
+      case "week":
+              dtStart = dtStart.plus({ weeks: 1 });
+              dtCompStart = dtCompStart.plus({ weeks: 1 });
+              break;
+      case "day":
+              dtStart = dtStart.plus({ days: 1 });
+              dtCompStart = dtCompStart.plus({ days: 1 });
+              break;
+      case "hour":
+              dtStart = dtStart.plus({ hours: 1 });
+              dtCompStart = dtCompStart.plus({ hours: 1 });
+              break;
+      case "minute":
+              dtStart = dtStart.plus({ minutes: 1 });
+              dtCompStart = dtCompStart.plus({ minutes: 1 });
+              break;
+      case "second":
+              dtStart = dtStart.plus({ seconds: 1 });
+              dtCompStart = dtCompStart.plus({ seconds: 1 });
+              break;
+      case "millisecond":
+              dtStart = dtStart.plus({ milliseconds: 1 });
+              dtCompStart = dtCompStart.plus({ milliseconds: 1 });
+              break;
+    }
     j++;
   }
 

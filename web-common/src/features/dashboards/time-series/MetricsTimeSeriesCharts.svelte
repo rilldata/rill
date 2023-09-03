@@ -20,6 +20,7 @@
   import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+  
   import {
     getAdjustedChartTime,
     getAdjustedFetchTime,
@@ -206,7 +207,7 @@
     formattedData = prepareTimeSeries(
       dataCopy,
       dataComparisonCopy,
-      TIME_GRAIN[interval].duration,
+      TIME_GRAIN[interval],
       $dashboardStore.selectedTimezone,
       ast,
       ae,
