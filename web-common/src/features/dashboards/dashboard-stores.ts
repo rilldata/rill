@@ -7,12 +7,17 @@ import {
   getMapFromArray,
   removeIfExists,
 } from "@rilldata/web-common/lib/arrayUtils";
-import { getComparionRangeForScrub } from "@rilldata/web-common/lib/time/comparisons";
+import {
+  getComparionRangeForScrub,
+  getTimeComparisonParametersForComponent,
+} from "@rilldata/web-common/lib/time/comparisons";
+import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
 import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
 import {
   convertTimeRangePreset,
   ISODurationToTimePreset,
 } from "@rilldata/web-common/lib/time/ranges";
+import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import type { ScrubRange } from "@rilldata/web-common/lib/time/types";
 import type {
@@ -254,10 +259,17 @@ const metricViewReducers = {
       const timeSelections: Partial<MetricsExplorerEntity> = {};
       if (fullTimeRange) {
         const timeZone = get(getLocalUserPreferences()).timeZone;
+        const fullTimeStart = new Date(fullTimeRange.timeRangeSummary.min);
+        const fullTimeEnd = new Date(fullTimeRange.timeRangeSummary.max);
+        const preset = ISODurationToTimePreset(
+          metricsView.defaultTimeRange,
+          true
+        );
+
         const timeRange = convertTimeRangePreset(
-          ISODurationToTimePreset(metricsView.defaultTimeRange, true),
-          new Date(fullTimeRange.timeRangeSummary.min),
-          new Date(fullTimeRange.timeRangeSummary.max),
+          preset,
+          fullTimeStart,
+          fullTimeEnd,
           timeZone
         );
         const timeGrain = getDefaultTimeGrain(timeRange.start, timeRange.end);
@@ -267,6 +279,28 @@ const metricViewReducers = {
           interval: timeGrain.grain,
         };
         timeSelections.lastDefinedScrubRange = undefined;
+
+        const comparisonOption = DEFAULT_TIME_RANGES[preset]
+          ?.defaultComparison as TimeComparisonOption;
+        if (comparisonOption) {
+          const comparisonRange = getTimeComparisonParametersForComponent(
+            comparisonOption,
+            fullTimeStart,
+            fullTimeEnd,
+            timeRange.start,
+            timeRange.end
+          );
+          if (comparisonRange.isComparisonRangeAvailable) {
+            timeSelections.selectedComparisonTimeRange = {
+              name: comparisonOption,
+              start: comparisonRange.start,
+              end: comparisonRange.end,
+            };
+            timeSelections.showComparison = true;
+            timeSelections.leaderboardContextColumn =
+              LeaderboardContextColumn.DELTA_PERCENT;
+          }
+        }
       }
 
       state.entities[name] = {
@@ -293,8 +327,8 @@ const metricViewReducers = {
         dashboardSortType: SortType.VALUE,
         sortDirection: SortDirection.DESCENDING,
 
-        ...timeSelections,
         showComparison: false,
+        ...timeSelections,
       };
 
       updateMetricsExplorerProto(state.entities[name]);
