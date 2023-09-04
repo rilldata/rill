@@ -23,6 +23,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	// Load connectors and reconcilers for runtime
+	_ "github.com/rilldata/rill/runtime/drivers/azure"
 	_ "github.com/rilldata/rill/runtime/drivers/bigquery"
 	_ "github.com/rilldata/rill/runtime/drivers/druid"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
