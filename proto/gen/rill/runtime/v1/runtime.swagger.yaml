@@ -1866,24 +1866,7 @@ paths:
               in: path
               required: true
               type: string
-            - name: refFilter.kind
-              in: query
-              required: false
-              type: string
-            - name: refFilter.name
-              in: query
-              required: false
-              type: string
-            - name: prefixFilter.kind
-              in: query
-              required: false
-              type: string
-            - name: prefixFilter.name
-              in: query
-              required: false
-              type: string
-            - name: annotationsFilter
-              description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
+            - name: kind
               in: query
               required: false
               type: string
@@ -1913,27 +1896,14 @@ paths:
               in: path
               required: true
               type: string
-            - name: refFilter.kind
+            - name: kind
               in: query
               required: false
               type: string
-            - name: refFilter.name
+            - name: replay
               in: query
               required: false
-              type: string
-            - name: prefixFilter.kind
-              in: query
-              required: false
-              type: string
-            - name: prefixFilter.name
-              in: query
-              required: false
-              type: string
-            - name: annotationsFilter
-              description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
-              in: query
-              required: false
-              type: string
+              type: boolean
         tags:
             - RuntimeService
   /v1/instances/{instanceId}/sync: |
@@ -4284,10 +4254,8 @@ definitions:
     type: string
     enum:
       - RESOURCE_EVENT_UNSPECIFIED
-      - RESOURCE_EVENT_ADDED
-      - RESOURCE_EVENT_UPDATED_SPEC
-      - RESOURCE_EVENT_UPDATED_STATE
-      - RESOURCE_EVENT_DELETED
+      - RESOURCE_EVENT_WRITE
+      - RESOURCE_EVENT_DELETE
     default: RESOURCE_EVENT_UNSPECIFIED
   v1ResourceMeta:
     type: object
@@ -4699,7 +4667,9 @@ definitions:
   v1WatchResourcesResponse:
     type: object
     properties:
-      resource:
-        $ref: '#/definitions/v1Resource'
       event:
         $ref: '#/definitions/v1ResourceEvent'
+      name:
+        $ref: '#/definitions/v1ResourceName'
+      resource:
+        $ref: '#/definitions/v1Resource'

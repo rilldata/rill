@@ -5179,65 +5179,7 @@ func (m *ListResourcesRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
-	if all {
-		switch v := interface{}(m.GetRefFilter()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ListResourcesRequestValidationError{
-					field:  "RefFilter",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, ListResourcesRequestValidationError{
-					field:  "RefFilter",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetRefFilter()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return ListResourcesRequestValidationError{
-				field:  "RefFilter",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if all {
-		switch v := interface{}(m.GetPrefixFilter()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ListResourcesRequestValidationError{
-					field:  "PrefixFilter",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, ListResourcesRequestValidationError{
-					field:  "PrefixFilter",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetPrefixFilter()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return ListResourcesRequestValidationError{
-				field:  "PrefixFilter",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	// no validation rules for AnnotationsFilter
+	// no validation rules for Kind
 
 	if len(errors) > 0 {
 		return ListResourcesRequestMultiError(errors)
@@ -5479,65 +5421,9 @@ func (m *WatchResourcesRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
-	if all {
-		switch v := interface{}(m.GetRefFilter()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, WatchResourcesRequestValidationError{
-					field:  "RefFilter",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, WatchResourcesRequestValidationError{
-					field:  "RefFilter",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetRefFilter()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return WatchResourcesRequestValidationError{
-				field:  "RefFilter",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
+	// no validation rules for Kind
 
-	if all {
-		switch v := interface{}(m.GetPrefixFilter()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, WatchResourcesRequestValidationError{
-					field:  "PrefixFilter",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, WatchResourcesRequestValidationError{
-					field:  "PrefixFilter",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetPrefixFilter()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return WatchResourcesRequestValidationError{
-				field:  "PrefixFilter",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	// no validation rules for AnnotationsFilter
+	// no validation rules for Replay
 
 	if len(errors) > 0 {
 		return WatchResourcesRequestMultiError(errors)
@@ -5641,6 +5527,37 @@ func (m *WatchResourcesResponse) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for Event
+
+	if all {
+		switch v := interface{}(m.GetName()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, WatchResourcesResponseValidationError{
+					field:  "Name",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, WatchResourcesResponseValidationError{
+					field:  "Name",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetName()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return WatchResourcesResponseValidationError{
+				field:  "Name",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if all {
 		switch v := interface{}(m.GetResource()).(type) {
 		case interface{ ValidateAll() error }:
@@ -5669,8 +5586,6 @@ func (m *WatchResourcesResponse) validate(all bool) error {
 			}
 		}
 	}
-
-	// no validation rules for Event
 
 	if len(errors) > 0 {
 		return WatchResourcesResponseMultiError(errors)

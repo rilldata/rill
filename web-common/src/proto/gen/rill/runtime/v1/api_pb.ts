@@ -84,32 +84,20 @@ export enum ResourceEvent {
   UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: RESOURCE_EVENT_ADDED = 1;
+   * @generated from enum value: RESOURCE_EVENT_WRITE = 1;
    */
-  ADDED = 1,
+  WRITE = 1,
 
   /**
-   * @generated from enum value: RESOURCE_EVENT_UPDATED_SPEC = 2;
+   * @generated from enum value: RESOURCE_EVENT_DELETE = 2;
    */
-  UPDATED_SPEC = 2,
-
-  /**
-   * @generated from enum value: RESOURCE_EVENT_UPDATED_STATE = 3;
-   */
-  UPDATED_STATE = 3,
-
-  /**
-   * @generated from enum value: RESOURCE_EVENT_DELETED = 4;
-   */
-  DELETED = 4,
+  DELETE = 2,
 }
 // Retrieve enum metadata with: proto3.getEnumType(ResourceEvent)
 proto3.util.setEnumType(ResourceEvent, "rill.runtime.v1.ResourceEvent", [
   { no: 0, name: "RESOURCE_EVENT_UNSPECIFIED" },
-  { no: 1, name: "RESOURCE_EVENT_ADDED" },
-  { no: 2, name: "RESOURCE_EVENT_UPDATED_SPEC" },
-  { no: 3, name: "RESOURCE_EVENT_UPDATED_STATE" },
-  { no: 4, name: "RESOURCE_EVENT_DELETED" },
+  { no: 1, name: "RESOURCE_EVENT_WRITE" },
+  { no: 2, name: "RESOURCE_EVENT_DELETE" },
 ]);
 
 /**
@@ -2054,19 +2042,9 @@ export class ListResourcesRequest extends Message<ListResourcesRequest> {
   instanceId = "";
 
   /**
-   * @generated from field: rill.runtime.v1.ResourceName ref_filter = 2;
+   * @generated from field: string kind = 2;
    */
-  refFilter?: ResourceName;
-
-  /**
-   * @generated from field: rill.runtime.v1.ResourceName prefix_filter = 3;
-   */
-  prefixFilter?: ResourceName;
-
-  /**
-   * @generated from field: map<string, string> annotations_filter = 4;
-   */
-  annotationsFilter: { [key: string]: string } = {};
+  kind = "";
 
   constructor(data?: PartialMessage<ListResourcesRequest>) {
     super();
@@ -2077,9 +2055,7 @@ export class ListResourcesRequest extends Message<ListResourcesRequest> {
   static readonly typeName = "rill.runtime.v1.ListResourcesRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "ref_filter", kind: "message", T: ResourceName },
-    { no: 3, name: "prefix_filter", kind: "message", T: ResourceName },
-    { no: 4, name: "annotations_filter", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 2, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListResourcesRequest {
@@ -2146,19 +2122,14 @@ export class WatchResourcesRequest extends Message<WatchResourcesRequest> {
   instanceId = "";
 
   /**
-   * @generated from field: rill.runtime.v1.ResourceName ref_filter = 2;
+   * @generated from field: string kind = 2;
    */
-  refFilter?: ResourceName;
+  kind = "";
 
   /**
-   * @generated from field: rill.runtime.v1.ResourceName prefix_filter = 3;
+   * @generated from field: bool replay = 3;
    */
-  prefixFilter?: ResourceName;
-
-  /**
-   * @generated from field: map<string, string> annotations_filter = 4;
-   */
-  annotationsFilter: { [key: string]: string } = {};
+  replay = false;
 
   constructor(data?: PartialMessage<WatchResourcesRequest>) {
     super();
@@ -2169,9 +2140,8 @@ export class WatchResourcesRequest extends Message<WatchResourcesRequest> {
   static readonly typeName = "rill.runtime.v1.WatchResourcesRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "ref_filter", kind: "message", T: ResourceName },
-    { no: 3, name: "prefix_filter", kind: "message", T: ResourceName },
-    { no: 4, name: "annotations_filter", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 2, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "replay", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): WatchResourcesRequest {
@@ -2196,14 +2166,19 @@ export class WatchResourcesRequest extends Message<WatchResourcesRequest> {
  */
 export class WatchResourcesResponse extends Message<WatchResourcesResponse> {
   /**
-   * @generated from field: rill.runtime.v1.Resource resource = 1;
-   */
-  resource?: Resource;
-
-  /**
-   * @generated from field: rill.runtime.v1.ResourceEvent event = 2;
+   * @generated from field: rill.runtime.v1.ResourceEvent event = 1;
    */
   event = ResourceEvent.UNSPECIFIED;
+
+  /**
+   * @generated from field: rill.runtime.v1.ResourceName name = 2;
+   */
+  name?: ResourceName;
+
+  /**
+   * @generated from field: rill.runtime.v1.Resource resource = 3;
+   */
+  resource?: Resource;
 
   constructor(data?: PartialMessage<WatchResourcesResponse>) {
     super();
@@ -2213,8 +2188,9 @@ export class WatchResourcesResponse extends Message<WatchResourcesResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.WatchResourcesResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "resource", kind: "message", T: Resource },
-    { no: 2, name: "event", kind: "enum", T: proto3.getEnumType(ResourceEvent) },
+    { no: 1, name: "event", kind: "enum", T: proto3.getEnumType(ResourceEvent) },
+    { no: 2, name: "name", kind: "message", T: ResourceName },
+    { no: 3, name: "resource", kind: "message", T: Resource },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): WatchResourcesResponse {

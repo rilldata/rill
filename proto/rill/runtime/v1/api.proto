@@ -529,10 +529,8 @@ enum LogLevel {
 
 enum ResourceEvent {
   RESOURCE_EVENT_UNSPECIFIED = 0;
-  RESOURCE_EVENT_ADDED = 1;
-  RESOURCE_EVENT_UPDATED_SPEC = 2;
-  RESOURCE_EVENT_UPDATED_STATE = 3;
-  RESOURCE_EVENT_DELETED = 4;
+  RESOURCE_EVENT_WRITE = 1;
+  RESOURCE_EVENT_DELETE = 2;
 }
 
 message GetLogsRequest {
@@ -555,9 +553,7 @@ message WatchLogsResponse {
 
 message ListResourcesRequest {
   string instance_id = 1;
-  ResourceName ref_filter = 2;
-  ResourceName prefix_filter = 3;
-  map<string, string> annotations_filter = 4;
+  string kind = 2;
 }
 
 message ListResourcesResponse {
@@ -566,14 +562,14 @@ message ListResourcesResponse {
 
 message WatchResourcesRequest {
   string instance_id = 1;
-  ResourceName ref_filter = 2;
-  ResourceName prefix_filter = 3;
-  map<string, string> annotations_filter = 4;
+  string kind = 2;
+  bool replay = 3;
 }
 
 message WatchResourcesResponse {
-  Resource resource = 1;
-  ResourceEvent event = 2;
+  ResourceEvent event = 1;
+  ResourceName name = 2;
+  Resource resource = 3;
 }
 
 message GetResourceRequest {

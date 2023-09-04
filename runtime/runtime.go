@@ -68,6 +68,10 @@ func (r *Runtime) Close() error {
 	)
 }
 
+func (r *Runtime) Controller(instanceID string) (*Controller, error) {
+	panic("not implemented")
+}
+
 func (r *Runtime) ResolveMetricsViewSecurity(attributes map[string]any, instanceID string, mv *runtimev1.MetricsView, lastUpdatedOn time.Time) (*ResolvedMetricsViewSecurity, error) {
 	return r.securityEngine.resolveMetricsViewSecurity(attributes, instanceID, mv, lastUpdatedOn)
 }
