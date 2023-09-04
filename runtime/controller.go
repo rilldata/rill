@@ -304,6 +304,7 @@ func (c *Controller) List(ctx context.Context, kind string) ([]*runtimev1.Resour
 type SubscribeCallback func(e runtimev1.ResourceEvent, n *runtimev1.ResourceName, r *runtimev1.Resource)
 
 // Subscribe registers a callback that will receive resource update events.
+// The callback is invoked in the same goroutine as the call to Subscribe (so multiple callbacks can't be invoked concurrently).
 func (c *Controller) Subscribe(ctx context.Context, fn SubscribeCallback) error {
 	c.checkRunning()
 
