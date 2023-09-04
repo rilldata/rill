@@ -727,6 +727,7 @@ func (c *Controller) safeRename(from, to *runtimev1.ResourceName) error {
 	}
 
 	// Collision, do a create+delete instead of a rename
+	// (since creation might fail if the name is taken, whereas the delete is almost certain to succeed)
 	r, err := c.catalog.get(from, true)
 	if err != nil {
 		return err
