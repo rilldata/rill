@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/athena"
 	"github.com/aws/aws-sdk-go-v2/service/athena/types"
@@ -265,7 +264,6 @@ func (c *Connection) unload(ctx context.Context, conf *sourceProperties, path st
 
 	// Start Query Execution
 	athenaExecution, err := client.StartQueryExecution(ctx, executeParams)
-
 	if err != nil {
 		return err
 	}
