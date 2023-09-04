@@ -10,7 +10,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 
-	"github.com/aws/aws-sdk-go-v2/config"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/athena"
 	"github.com/aws/aws-sdk-go-v2/service/athena/types"
 	s3v2 "github.com/aws/aws-sdk-go-v2/service/s3"
@@ -25,8 +25,6 @@ import (
 	"gocloud.dev/blob"
 	"gocloud.dev/blob/s3blob"
 )
-
-const defaultPageSize = 20
 
 func init() {
 	drivers.Register("athena", driver{})
@@ -237,10 +235,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSo
 }
 
 func (c *Connection) openBucket(ctx context.Context, conf *sourceProperties, bucket string) (*blob.Bucket, error) {
-	cfg, err := config.LoadDefaultConfig(context.TODO(), func(o *config.LoadOptions) error {
-		// o.Region = conf.Region
-		return nil
-	}, config.WithSharedConfigProfile(conf.ProfileName))
+	cfg, err := awsconfig.LoadDefaultConfig(context.TODO(), awsconfig.WithSharedConfigProfile(conf.ProfileName))
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +247,7 @@ func (c *Connection) openBucket(ctx context.Context, conf *sourceProperties, buc
 func (c *Connection) unload(ctx context.Context, conf *sourceProperties, path string) error {
 	finalSQL := fmt.Sprintf("UNLOAD (%s) TO '%s' WITH (format = 'PARQUET')", conf.SQL, path)
 
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithSharedConfigProfile(conf.ProfileName))
+	cfg, err := awsconfig.LoadDefaultConfig(context.TODO(), awsconfig.WithSharedConfigProfile(conf.ProfileName))
 	if err != nil {
 		return err
 	}
