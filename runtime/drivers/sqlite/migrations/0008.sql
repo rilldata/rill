@@ -1,7 +1,2 @@
-ALTER TABLE instances ADD COLUMN olap_connector TEXT NOT NULL DEFAULT '';
-UPDATE instances SET olap_connector = olap_driver;
-ALTER TABLE instances DROP COLUMN olap_driver; 
-
-ALTER TABLE instances ADD COLUMN repo_connector TEXT NOT NULL DEFAULT '';
-UPDATE instances SET repo_connector = repo_driver;
-ALTER TABLE instances DROP COLUMN repo_driver;
+ALTER TABLE instances RENAME olap_driver TO olap_connector;
+ALTER TABLE instances RENAME repo_driver TO repo_connector;
