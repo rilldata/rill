@@ -57,6 +57,28 @@ export function getYupSchema(connector: V1ConnectorSpec) {
           )
           .required("Source name is required"),
       });
+    case "postgres_ext":
+      return yup.object().shape({
+        sql: yup.string().required("sql is required"),
+        sourceName: yup
+          .string()
+          .matches(
+            /^[a-zA-Z_][a-zA-Z0-9_]*$/,
+            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores"
+          )
+          .required("Source name is required"),
+      });
+    case "sqlite_ext":
+      return yup.object().shape({
+        sql: yup.string().required("sql is required"),
+        sourceName: yup
+          .string()
+          .matches(
+            /^[a-zA-Z_][a-zA-Z0-9_]*$/,
+            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores"
+          )
+          .required("Source name is required"),
+      });
     case "bigquery":
       return yup.object().shape({
         sql: yup.string().required("sql is required"),

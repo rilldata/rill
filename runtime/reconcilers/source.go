@@ -398,6 +398,24 @@ func driversSource(conn drivers.Handle, propsPB *structpb.Struct) (drivers.Sourc
 			SQL:      query,
 			Database: db,
 		}, nil
+	case "postgres_ext":
+		query, ok := props["sql"].(string)
+		if !ok {
+			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"postgres\"")
+		}
+
+		return &drivers.DatabaseSource{
+			SQL: query,
+		}, nil
+	case "sqlite_ext":
+		query, ok := props["sql"].(string)
+		if !ok {
+			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"sqlite\"")
+		}
+
+		return &drivers.DatabaseSource{
+			SQL: query,
+		}, nil
 	case "duckdb":
 		query, ok := props["sql"].(string)
 		if !ok {
