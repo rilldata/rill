@@ -86,6 +86,16 @@ func (c *connectionCache) Close() error {
 		}
 	}
 
+	for _, value := range c.cache {
+		err := value.Close()
+		if err != nil {
+			c.logger.Error("failed closing cached connection", zap.Error(err))
+			if firstErr == nil {
+				firstErr = err
+			}
+		}
+	}
+
 	return firstErr
 }
 
