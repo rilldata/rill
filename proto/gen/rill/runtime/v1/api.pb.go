@@ -421,8 +421,8 @@ type Instance struct {
 	InstanceId string `protobuf:"bytes,1,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
 	// OLAP connector name (typically called : olap )
 	OlapConnector string `protobuf:"bytes,2,opt,name=olap_connector,json=olapConnector,proto3" json:"olap_connector,omitempty"`
-	// Connecto name for repo driver for reading/editing code artifacts(typically called : repo).
-	// This enables virtualizing a file system in a cloud setting.
+	// Connector name for repo driver(typically called : repo).
+	// Repo driver is for reading/editing code artifacts. This enables virtualizing a file system in a cloud setting.
 	RepoConnector string `protobuf:"bytes,4,opt,name=repo_connector,json=repoConnector,proto3" json:"repo_connector,omitempty"`
 	// If true, the runtime will store the instance's catalog in its OLAP store instead
 	// of in the runtime's metadata store. Currently only supported for the duckdb driver.

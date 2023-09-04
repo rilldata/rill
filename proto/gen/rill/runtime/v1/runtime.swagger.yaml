@@ -3142,9 +3142,7 @@ definitions:
         title: 'OLAP connector name (typically called : olap )'
       repoConnector:
         type: string
-        description: |-
-          Connecto name for repo driver for reading/editing code artifacts(typically called : repo).
-          This enables virtualizing a file system in a cloud setting.
+        description: "Connector name for repo driver(typically called : repo). \nRepo driver is for reading/editing code artifacts. This enables virtualizing a file system in a cloud setting."
       embedCatalog:
         type: boolean
         description: |-

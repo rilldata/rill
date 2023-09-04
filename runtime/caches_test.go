@@ -219,6 +219,7 @@ func TestConnectionCacheParallelCalls(t *testing.T) {
 	wg.Wait()
 
 	require.Equal(t, int32(1), m.opened.Load())
+	require.Equal(t, 1, len(c.cache))
 }
 
 func TestConnectionCacheBlockingCalls(t *testing.T) {
@@ -259,6 +260,7 @@ func TestConnectionCacheBlockingCalls(t *testing.T) {
 	go func() {
 		time.Sleep(100 * time.Millisecond)
 		require.Equal(t, int32(11), m.opened.Load())
+		require.Equal(t, 10, len(c.cache))
 		wg.Done()
 	}()
 	wg.Wait()

@@ -220,8 +220,8 @@ export class Instance extends Message<Instance> {
   olapConnector = "";
 
   /**
-   * Connecto name for repo driver for reading/editing code artifacts(typically called : repo).
-   * This enables virtualizing a file system in a cloud setting.
+   * Connector name for repo driver(typically called : repo). 
+   * Repo driver is for reading/editing code artifacts. This enables virtualizing a file system in a cloud setting.
    *
    * @generated from field: string repo_connector = 4;
    */
