@@ -8,7 +8,7 @@ export async function loadTableCardinality(
   batchedRequest: BatchedRequest,
   update: ColumnsProfileDataUpdate
 ) {
-  const tableCardinality = await batchedRequest.addReq(
+  const tableCardinality = await batchedRequest.add(
     {
       tableCardinalityRequest: {
         instanceId,
@@ -33,7 +33,7 @@ export async function loadColumnsNullCount(
   batchedRequest: BatchedRequest,
   update: ColumnsProfileDataUpdate
 ) {
-  const nullCount = await batchedRequest.addReq(
+  const nullCount = await batchedRequest.add(
     {
       columnNullCountRequest: {
         instanceId,
@@ -58,7 +58,7 @@ export async function loadColumnCardinality(
   batchedRequest: BatchedRequest,
   update: ColumnsProfileDataUpdate
 ) {
-  const columnCardinality = await batchedRequest.addReq(
+  const columnCardinality = await batchedRequest.add(
     {
       columnCardinalityRequest: {
         instanceId,
@@ -83,7 +83,7 @@ export async function loadColumnTopK(
   batchedRequest: BatchedRequest,
   update: ColumnsProfileDataUpdate
 ) {
-  const topK = await batchedRequest.addReq(
+  const topK = await batchedRequest.add(
     {
       columnTopKRequest: {
         instanceId,

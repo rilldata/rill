@@ -66,7 +66,7 @@ export async function loadDescriptiveStatistics(
   batchedRequest: BatchedRequest,
   update: ColumnsProfileDataUpdate
 ) {
-  const descriptiveStatistics = await batchedRequest.addReq(
+  const descriptiveStatistics = await batchedRequest.add(
     {
       columnDescriptiveStatisticsRequest: {
         instanceId,
@@ -94,7 +94,7 @@ function getHistogramData(
   histogramMethod: V1HistogramMethod,
   batchedRequest: BatchedRequest
 ) {
-  return batchedRequest.addReq(
+  return batchedRequest.add(
     {
       columnNumericHistogramRequest: {
         instanceId,

@@ -10,7 +10,7 @@ export async function loadTimeSeries(
   batchedRequest: BatchedRequest,
   update: ColumnsProfileDataUpdate
 ) {
-  const timeSeriesPromise = batchedRequest.addReq(
+  const timeSeriesPromise = batchedRequest.add(
     {
       columnTimeSeriesRequest: {
         instanceId,
@@ -23,7 +23,7 @@ export async function loadTimeSeries(
     },
     (data) => data.columnTimeSeriesResponse.rollup
   );
-  const rollupIntervalPromise = batchedRequest.addReq(
+  const rollupIntervalPromise = batchedRequest.add(
     {
       columnRollupIntervalRequest: {
         instanceId,
@@ -33,7 +33,7 @@ export async function loadTimeSeries(
     },
     (data) => data.columnRollupIntervalResponse.interval
   );
-  const smallestTimeGrainPromise = batchedRequest.addReq(
+  const smallestTimeGrainPromise = batchedRequest.add(
     {
       columnTimeGrainRequest: {
         instanceId,

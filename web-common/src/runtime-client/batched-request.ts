@@ -3,13 +3,14 @@ import type {
   V1QueryBatchEntry,
   V1QueryBatchResponse,
 } from "@rilldata/web-common/runtime-client/gen/index.schemas";
+import { DefaultQueryPriority } from "@rilldata/web-common/runtime-client/http-request-queue/priorities";
 import { streamingFetchWrapper } from "@rilldata/web-common/runtime-client/streaming-fetch-wrapper";
 
 export type BatchRequest = {
   request: V1QueryBatchEntry;
+  priority: number;
   resolve: (data: V1QueryBatchResponse) => void;
   reject: (err: Error) => void;
-  signal: AbortSignal | undefined;
 };
 export class BatchedRequest {
   private requests = new Array<BatchRequest>();
@@ -24,40 +25,31 @@ export class BatchedRequest {
     this.expectedRequests++;
   }
 
-  public add(
-    request: V1QueryBatchEntry,
-    priority: number,
-    resolve: (data: V1QueryBatchResponse) => void,
-    reject: () => void,
-    signal: AbortSignal | undefined
-  ) {
-    request.key = this.requests.length;
-    this.requests.push({
-      request,
-      resolve,
-      reject,
-      signal,
-    });
-  }
-
-  public addReq<T>(
+  public add<T>(
     request: V1QueryBatchEntry,
     selector: (data: V1QueryBatchResponse) => T
   ) {
     return new Promise<T>((resolve, reject) => {
       request.key = this.requests.length;
+      const priorityKey = Object.keys(request).find(
+        (k) => typeof request[k] === "object" && "priority" in request[k]
+      );
       this.requests.push({
         request,
+        priority: priorityKey
+          ? request[priorityKey].priority
+          : DefaultQueryPriority,
         resolve: (data) => resolve(selector(data)),
         reject,
-        signal: undefined,
       });
     });
   }
 
   public async send(instanceId: string) {
     const request: QueryServiceQueryBatchBody = {
-      queries: this.requests.map(({ request }) => request),
+      queries: [...this.requests]
+        .sort((a, b) => b.priority - a.priority)
+        .map(({ request }) => request),
     };
     this.controller = new AbortController();
     const stream = streamingFetchWrapper<{ result: V1QueryBatchResponse }>(
@@ -66,20 +58,6 @@ export class BatchedRequest {
       request,
       this.controller.signal
     );
-
-    this.requests.forEach(({ signal }) => {
-      signal?.addEventListener(
-        "abort",
-        () => {
-          if (this.controller.signal.aborted) return;
-          this.controller.abort();
-          stream.throw(new Error("cancelled"));
-        },
-        {
-          once: true,
-        }
-      );
-    });
 
     const hit = new Set<number>();
 

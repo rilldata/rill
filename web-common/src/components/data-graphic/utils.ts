@@ -189,7 +189,9 @@ export function barplotPolyline(
   return (
     `M${X(data[0][xLow]) + separator},${Y(0)} ` +
     path +
-    ` ${X(data.findLast((d) => d[yAccessor])[xHigh]) - separator},${Y(0)} `
+    ` ${X(data.findLast((d) => d[yAccessor])?.[xHigh] ?? 0) - separator},${Y(
+      0
+    )} `
   );
 }
 

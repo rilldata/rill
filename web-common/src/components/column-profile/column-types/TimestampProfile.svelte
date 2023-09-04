@@ -82,15 +82,15 @@
   <div slot="details">
     <div class="pl-8 py-4" style:height="{timestampDetailHeight + 64 + 28}px">
       <WithParentClientRect let:rect>
-        {#if columnProfileData?.timeSeriesData?.length}
+        {#if !columnProfileData?.isFetching}
           <TimestampDetail
             width={rect?.width - 56 || 400}
             mouseover={true}
             height={timestampDetailHeight}
-            data={columnProfileData?.timeSeriesData ?? []}
-            spark={columnProfileData?.timeSeriesSpark ?? []}
-            rollupTimeGrain={columnProfileData?.estimatedRollupInterval}
-            estimatedSmallestTimeGrain={columnProfileData?.smallestTimeGrain}
+            data={columnProfileData.timeSeriesData}
+            spark={columnProfileData.timeSeriesSpark}
+            rollupTimeGrain={columnProfileData.estimatedRollupInterval}
+            estimatedSmallestTimeGrain={columnProfileData.smallestTimeGrain}
             xAccessor="ts"
             yAccessor="count"
           />
