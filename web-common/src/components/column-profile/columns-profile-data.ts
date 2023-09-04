@@ -57,6 +57,7 @@ export type ColumnProfileData = {
 export type ColumnsProfileData = {
   isFetching: boolean;
   tableRows: number;
+  columnNames: Array<string>;
   profiles: Record<string, ColumnProfileData>;
 };
 export type ColumnsProfileDataMethods = {
@@ -81,6 +82,7 @@ export function createColumnsProfileData(): ColumnsProfileDataStore {
   const { update, subscribe } = writable<ColumnsProfileData>({
     isFetching: true,
     tableRows: 0,
+    columnNames: [],
     profiles: {},
   });
 
@@ -212,6 +214,8 @@ export function resetState(
       }
     }
 
+    const columnNames = new Array<string>();
+
     // mark everything as fetching
     for (const column of profileColumnResponse.data.profileColumns) {
       if (!(column.name in state.profiles)) {
@@ -223,7 +227,10 @@ export function resetState(
       } else {
         state.profiles[column.name].isFetching = true;
       }
+      columnNames.push(column.name);
     }
+
+    state.columnNames = columnNames;
 
     return state;
   });

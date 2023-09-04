@@ -26,6 +26,7 @@
   const columnsProfile = getColumnsProfileStore();
   let columnProfileData: ColumnProfileData;
   $: columnProfileData = $columnsProfile.profiles[columnName];
+  $: tableRows = $columnsProfile.tableRows;
 
   function toggleColumnProfile() {
     active = !active;
@@ -57,12 +58,12 @@
     cardinality={columnProfileData?.cardinality}
     {compact}
     slot="summary"
-    totalRows={$columnsProfile?.tableRows}
+    totalRows={tableRows}
   />
   <NullPercentageSpark
     nullCount={columnProfileData?.nullCount}
     slot="nullity"
-    totalRows={$columnsProfile?.tableRows}
+    totalRows={tableRows}
     {type}
   />
 

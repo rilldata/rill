@@ -26,6 +26,7 @@
 
   let columnProfileData: ColumnProfileData;
   $: columnProfileData = $columnsProfile.profiles[columnName];
+  $: tableRows = $columnsProfile.tableRows;
 
   $: histogramData = columnProfileData?.histogram;
 
@@ -41,7 +42,7 @@
   $: if (
     summary?.min !== undefined &&
     summary?.min === summary?.max &&
-    $columnsProfile?.tableRows !== undefined
+    tableRows !== undefined
   ) {
     const boundaries = 10;
     histogramData = [
@@ -56,7 +57,7 @@
       }),
       {
         bucket: boundaries,
-        count: $columnsProfile?.tableRows,
+        count: tableRows,
         low: summary?.min,
         high: summary?.min + 1,
       },
@@ -98,7 +99,7 @@
   <NullPercentageSpark
     nullCount={columnProfileData?.nullCount}
     slot="nullity"
-    totalRows={$columnsProfile?.tableRows}
+    totalRows={tableRows}
     {type}
   />
   <div
@@ -111,7 +112,7 @@
       rug={columnProfileData?.rugHistogram}
       {summary}
       topK={columnProfileData?.topK}
-      totalRows={$columnsProfile?.tableRows}
+      totalRows={tableRows}
       {type}
     />
   </div>

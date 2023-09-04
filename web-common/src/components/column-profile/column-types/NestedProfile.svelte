@@ -31,6 +31,7 @@
 
   let columnProfileData: ColumnProfileData;
   $: columnProfileData = $columnsProfile.profiles[columnName];
+  $: tableRows = $columnsProfile.tableRows;
 
   function toggleColumnProfile() {
     active = !active;
@@ -64,13 +65,13 @@
     cardinality={columnProfileData?.cardinality}
     {compact}
     slot="summary"
-    totalRows={$columnsProfile.tableRows}
+    totalRows={tableRows}
     {type}
   />
   <NullPercentageSpark
     nullCount={columnProfileData?.nullCount}
     slot="nullity"
-    totalRows={$columnsProfile.tableRows}
+    totalRows={tableRows}
     {type}
   />
   <div
@@ -82,7 +83,7 @@
       colorClass={DATA_TYPE_COLORS["STRUCT"].bgClass}
       k={topKLimit}
       topK={columnProfileData?.topK}
-      totalRows={$columnsProfile.tableRows}
+      totalRows={tableRows}
       {type}
     />
   </div>

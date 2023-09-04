@@ -2,6 +2,7 @@
   import { getColumnsProfileStore } from "@rilldata/web-common/components/column-profile/columns-profile-data";
   import type { ColumnProfileData } from "@rilldata/web-common/components/column-profile/columns-profile-data";
   import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-common/layout/config";
+  import { createThrottler } from "@rilldata/web-common/lib/create-throttler";
   import { createQueryServiceTableRows } from "@rilldata/web-common/runtime-client";
   import { NATIVE_SELECT } from "@rilldata/web-local/lib/util/component-classes";
   import { onMount } from "svelte";
@@ -36,16 +37,30 @@
   );
 
   const columnsProfile = getColumnsProfileStore();
+  const throttler = createThrottler(500);
 
-  $: profile = Object.values($columnsProfile.profiles);
-  let sortedProfile: Array<ColumnProfileData>;
+  let profileNames: Array<string>;
+  $: profileNames = $columnsProfile.columnNames;
+
+  let sortedProfiles: Array<ColumnProfileData>;
   const sortByOriginalOrder = null;
-
   let sortMethod = defaultSort;
-  $: if (profile?.length && sortMethod !== sortByOriginalOrder) {
-    sortedProfile = [...profile].sort(sortMethod);
-  } else {
-    sortedProfile = profile;
+
+  $: if ($columnsProfile?.profiles) {
+    throttler(() => {
+      let sortedProfileNames: Array<string>;
+      if (profileNames?.length && sortMethod !== sortByOriginalOrder) {
+        sortedProfileNames = [...profileNames].sort((a, b) =>
+          sortMethod($columnsProfile.profiles[a], $columnsProfile.profiles[b])
+        );
+      } else {
+        sortedProfileNames = profileNames;
+      }
+      sortedProfiles = sortedProfileNames.map((name) => ({
+        name,
+        type: $columnsProfile.profiles[name].type,
+      }));
+    });
   }
 </script>
 
@@ -77,8 +92,8 @@
 </div>
 
 <div class="pb-4">
-  {#if sortedProfile && exampleValue}
-    {#each sortedProfile as column (column.name)}
+  {#if sortedProfiles && exampleValue}
+    {#each sortedProfiles as column (column.name)}
       {@const hideRight = containerWidth < COLUMN_PROFILE_CONFIG.hideRight}
       {@const hideNullPercentage =
         containerWidth < COLUMN_PROFILE_CONFIG.hideNullPercentage}
