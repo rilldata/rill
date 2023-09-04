@@ -261,6 +261,14 @@ func timeoutSelector(fullMethodName string) time.Duration {
 		return 0
 	}
 
+	if fullMethodName == runtimev1.RuntimeService_WatchResources_FullMethodName {
+		return 0
+	}
+
+	if fullMethodName == runtimev1.RuntimeService_WatchLogs_FullMethodName {
+		return 0
+	}
+
 	return time.Second * 30
 }
 
