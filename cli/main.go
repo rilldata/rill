@@ -3,9 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"gocloud.dev/blob/azureblob"
+	_ "gocloud.dev/blob/azureblob"
 )
 
 const (
@@ -14,40 +18,28 @@ const (
 )
 
 func main() {
-	// Construct the service URL.
-	// There are many forms of service URLs, see ServiceURLOptions.
-	opts := azureblob.NewDefaultServiceURLOptions()
-	serviceURL, err := azureblob.NewServiceURL(opts)
+	name := os.Getenv("AZURE_STORAGE_ACCOUNT")
+	key := os.Getenv("AZURE_STORAGE_KEY")
+	credential, err := azblob.NewSharedKeyCredential(name, key)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
-	fmt.Println(os.Getenv("AZURE_STORAGE_SAS_TOKEN"))
-
-	// There are many ways to authenticate to Azure.
-	// This approach uses environment variables as described in azureblob package
-	// documentation.
-	// For example, to use shared key authentication, you would set
-	// AZURE_STORAGE_ACCOUNT and AZURE_STORAGE_KEY.
-	// To use a SAS token, you would set AZURE_STORAGE_ACCOUNT and AZURE_STORAGE_SAS_TOKEN.
-	// You can also construct a client using the azblob constructors directly, like
-	// azblob.NewServiceClientWithSharedKey.
-	client, err := azureblob.NewDefaultClient(serviceURL, containerName)
+	containerURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s", name, containerName)
+	client, err := container.NewClientWithSharedKeyCredential(containerURL, credential, nil)
 	if err != nil {
-		 panic(err)
+		log.Fatal(err)
 	}
-
-	// Create a *blob.Bucket.
-	b, err := azureblob.OpenBucket(context.Background(), client, nil)
+	bkt, err := azureblob.OpenBucket(context.Background(), client, nil)
 	if err != nil {
-		 panic(err)
+		log.Fatal(err)
 	}
-	defer b.Close()
+	defer bkt.Close()
 
 	// Now we can use b to read or write files to the container.
-	data, err := b.ReadAll(context.Background(), "AdBids.parquet")
+	data, err := bkt.ReadAll(context.Background(), "AdBids.parquet")
 	if err != nil {
-		 panic(err)
+		panic(err)
 	}
 	_ = data
 
