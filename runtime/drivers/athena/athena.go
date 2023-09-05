@@ -262,24 +262,20 @@ func (c *Connection) unload(ctx context.Context, conf *sourceProperties, path st
 		ResultConfiguration: resultConfig,
 	}
 
-	// Start Query Execution
 	athenaExecution, err := client.StartQueryExecution(ctx, executeParams)
 	if err != nil {
 		return err
 	}
 
-	// Get Query execution and check for the Query state constantly every 2 second
-	executionID := *athenaExecution.QueryExecutionId
+	r := retrier.New(retrier.ConstantBackoff(20, 1*time.Second), nil)
 
-	r := retrier.New(retrier.LimitedExponentialBackoff(20, 100*time.Millisecond, 1*time.Second), nil) // 100 200 400 800 1000 1000 1000 1000 1000 1000 ... < 20 sec
-
-	return r.Run(func() error {
-		status, stateErr := client.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{
-			QueryExecutionId: &executionID,
+	return r.RunCtx(ctx, func(ctx context.Context) error {
+		status, err := client.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{
+			QueryExecutionId: athenaExecution.QueryExecutionId,
 		})
 
-		if stateErr != nil {
-			return stateErr
+		if err != nil {
+			return err
 		}
 
 		state := status.QueryExecution.Status.State
