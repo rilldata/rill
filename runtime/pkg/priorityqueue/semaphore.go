@@ -18,7 +18,7 @@ type Semaphore struct {
 func NewSemaphore(size int) *Semaphore {
 	return &Semaphore{
 		mu:   sync.Mutex{},
-		pq:   New[chan struct{}](),
+		pq:   New[chan struct{}](false),
 		size: size,
 		cur:  0,
 	}

@@ -18,19 +18,19 @@ import (
 )
 
 type MetricsViewTimeSeries struct {
-	MetricsViewName  string                             `json:"metrics_view_name,omitempty"`
-	MeasureNames     []string                           `json:"measure_names,omitempty"`
-	InlineMeasures   []*runtimev1.InlineMeasure         `json:"inline_measures,omitempty"`
-	TimeStart        *timestamppb.Timestamp             `json:"time_start,omitempty"`
-	TimeEnd          *timestamppb.Timestamp             `json:"time_end,omitempty"`
-	Limit            int64                              `json:"limit,omitempty"`
-	Offset           int64                              `json:"offset,omitempty"`
-	Sort             []*runtimev1.MetricsViewSort       `json:"sort,omitempty"`
-	Filter           *runtimev1.MetricsViewFilter       `json:"filter,omitempty"`
-	TimeGranularity  runtimev1.TimeGrain                `json:"time_granularity,omitempty"`
-	TimeZone         string                             `json:"time_zone,omitempty"`
-	MetricsView      *runtimev1.MetricsView             `json:"-"`
-	ResolvedMVPolicy *runtime.ResolvedMetricsViewPolicy `json:"policy"`
+	MetricsViewName    string                               `json:"metrics_view_name,omitempty"`
+	MeasureNames       []string                             `json:"measure_names,omitempty"`
+	InlineMeasures     []*runtimev1.InlineMeasure           `json:"inline_measures,omitempty"`
+	TimeStart          *timestamppb.Timestamp               `json:"time_start,omitempty"`
+	TimeEnd            *timestamppb.Timestamp               `json:"time_end,omitempty"`
+	Limit              int64                                `json:"limit,omitempty"`
+	Offset             int64                                `json:"offset,omitempty"`
+	Sort               []*runtimev1.MetricsViewSort         `json:"sort,omitempty"`
+	Filter             *runtimev1.MetricsViewFilter         `json:"filter,omitempty"`
+	TimeGranularity    runtimev1.TimeGrain                  `json:"time_granularity,omitempty"`
+	TimeZone           string                               `json:"time_zone,omitempty"`
+	MetricsView        *runtimev1.MetricsView               `json:"-"`
+	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity `json:"security"`
 
 	Result *runtimev1.MetricsViewTimeSeriesResponse `json:"-"`
 }
@@ -78,9 +78,9 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
-		return q.resolveDuckDB(ctx, rt, instanceID, q.MetricsView, priority, q.ResolvedMVPolicy)
+		return q.resolveDuckDB(ctx, rt, instanceID, q.MetricsView, priority, q.ResolvedMVSecurity)
 	case drivers.DialectDruid:
-		return q.resolveDruid(ctx, olap, q.MetricsView, priority, q.ResolvedMVPolicy)
+		return q.resolveDruid(ctx, olap, q.MetricsView, priority, q.ResolvedMVSecurity)
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
@@ -130,7 +130,7 @@ func (q *MetricsViewTimeSeries) generateFilename(mv *runtimev1.MetricsView) stri
 	return filename
 }
 
-func (q *MetricsViewTimeSeries) resolveDuckDB(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsView, priority int, policy *runtime.ResolvedMetricsViewPolicy) error {
+func (q *MetricsViewTimeSeries) resolveDuckDB(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsView, priority int, policy *runtime.ResolvedMetricsViewSecurity) error {
 	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
 	if err != nil {
 		return err
@@ -181,7 +181,7 @@ func toColumnTimeseriesMeasures(measures []*runtimev1.MetricsView_Measure) ([]*r
 	return res, nil
 }
 
-func (q *MetricsViewTimeSeries) resolveDruid(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsView, priority int, policy *runtime.ResolvedMetricsViewPolicy) error {
+func (q *MetricsViewTimeSeries) resolveDruid(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsView, priority int, policy *runtime.ResolvedMetricsViewSecurity) error {
 	sql, tsAlias, args, err := q.buildDruidMetricsTimeseriesSQL(mv, policy)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
@@ -247,7 +247,7 @@ func (q *MetricsViewTimeSeries) resolveDruid(ctx context.Context, olap drivers.O
 	return nil
 }
 
-func (q *MetricsViewTimeSeries) buildDruidMetricsTimeseriesSQL(mv *runtimev1.MetricsView, policy *runtime.ResolvedMetricsViewPolicy) (string, string, []any, error) {
+func (q *MetricsViewTimeSeries) buildDruidMetricsTimeseriesSQL(mv *runtimev1.MetricsView, policy *runtime.ResolvedMetricsViewSecurity) (string, string, []any, error) {
 	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
 	if err != nil {
 		return "", "", nil, err

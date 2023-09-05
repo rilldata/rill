@@ -15,17 +15,17 @@ import (
 )
 
 type MetricsViewRows struct {
-	MetricsViewName  string                             `json:"metrics_view_name,omitempty"`
-	TimeStart        *timestamppb.Timestamp             `json:"time_start,omitempty"`
-	TimeEnd          *timestamppb.Timestamp             `json:"time_end,omitempty"`
-	TimeGranularity  runtimev1.TimeGrain                `json:"time_granularity,omitempty"`
-	Filter           *runtimev1.MetricsViewFilter       `json:"filter,omitempty"`
-	Sort             []*runtimev1.MetricsViewSort       `json:"sort,omitempty"`
-	Limit            *int64                             `json:"limit,omitempty"`
-	Offset           int64                              `json:"offset,omitempty"`
-	TimeZone         string                             `json:"time_zone,omitempty"`
-	MetricsView      *runtimev1.MetricsView             `json:"-"`
-	ResolvedMVPolicy *runtime.ResolvedMetricsViewPolicy `json:"policy"`
+	MetricsViewName    string                               `json:"metrics_view_name,omitempty"`
+	TimeStart          *timestamppb.Timestamp               `json:"time_start,omitempty"`
+	TimeEnd            *timestamppb.Timestamp               `json:"time_end,omitempty"`
+	TimeGranularity    runtimev1.TimeGrain                  `json:"time_granularity,omitempty"`
+	Filter             *runtimev1.MetricsViewFilter         `json:"filter,omitempty"`
+	Sort               []*runtimev1.MetricsViewSort         `json:"sort,omitempty"`
+	Limit              *int64                               `json:"limit,omitempty"`
+	Offset             int64                                `json:"offset,omitempty"`
+	TimeZone           string                               `json:"time_zone,omitempty"`
+	MetricsView        *runtimev1.MetricsView               `json:"-"`
+	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity `json:"security"`
 
 	Result *runtimev1.MetricsViewRowsResponse `json:"-"`
 }
@@ -80,7 +80,7 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		return err
 	}
 
-	ql, args, err := q.buildMetricsRowsSQL(q.MetricsView, olap.Dialect(), timeRollupColumnName, q.ResolvedMVPolicy)
+	ql, args, err := q.buildMetricsRowsSQL(q.MetricsView, olap.Dialect(), timeRollupColumnName, q.ResolvedMVSecurity)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -117,7 +117,7 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 				return err
 			}
 
-			sql, args, err := q.buildMetricsRowsSQL(q.MetricsView, olap.Dialect(), timeRollupColumnName, q.ResolvedMVPolicy)
+			sql, args, err := q.buildMetricsRowsSQL(q.MetricsView, olap.Dialect(), timeRollupColumnName, q.ResolvedMVSecurity)
 			if err != nil {
 				return err
 			}
@@ -216,7 +216,7 @@ func (q *MetricsViewRows) resolveTimeRollupColumnName(ctx context.Context, rt *r
 	return "", nil
 }
 
-func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect, timeRollupColumnName string, policy *runtime.ResolvedMetricsViewPolicy) (string, []any, error) {
+func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect, timeRollupColumnName string, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
 	whereClause := "1=1"
 	args := []any{}
 	if mv.TimeDimension != "" {
