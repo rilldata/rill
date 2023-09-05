@@ -10,6 +10,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/athena"
 	"github.com/aws/aws-sdk-go-v2/service/athena/types"
 	s3v2 "github.com/aws/aws-sdk-go-v2/service/s3"
@@ -19,7 +20,6 @@ import (
 	"github.com/eapache/go-resiliency/retrier"
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
 	"go.uber.org/zap"
@@ -47,28 +47,38 @@ var spec = drivers.Spec{
 		},
 		{
 			Key:         "output_location",
-			DisplayName: "Output location",
+			DisplayName: "S3 output location",
 			Description: "Oputut location for query results in S3.",
-			Placeholder: "bucket-name",
+			Placeholder: "mybucket",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
 		},
 		{
-			Key:         "profile_name",
-			DisplayName: "AWS profile",
+			Key:         "region",
+			DisplayName: "AWS region",
 			Description: "AWS profile for credentials.",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
 		},
 	},
-	ConfigProperties: []drivers.PropertySchema{},
+	ConfigProperties: []drivers.PropertySchema{
+		{
+			Key:    "aws_access_key_id",
+			Secret: true,
+		},
+		{
+			Key:    "aws_secret_access_key",
+			Secret: true,
+		},
+	},
 }
 
 type driver struct{}
 
 type configProperties struct {
-	// SecretJSON      string `mapstructure:"google_application_credentials"`
-	// AllowHostAccess bool   `mapstructure:"allow_host_access"`
+	AccessKeyID     string `mapstructure:"aws_access_key_id"`
+	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
+	SessionToken    string `mapstructure:"aws_access_token"`
 }
 
 func (d driver) Open(config map[string]any, shared bool, logger *zap.Logger) (drivers.Handle, error) {
@@ -103,7 +113,7 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source
 type sourceProperties struct {
 	SQL            string `mapstructure:"sql"`
 	OutputLocation string `mapstructure:"output_location"`
-	ProfileName    string `mapstructure:"profile_name"`
+	Region    string `mapstructure:"region"`
 }
 
 func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
@@ -219,7 +229,11 @@ func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSo
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	cfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithSharedConfigProfile(conf.ProfileName))
+	cfg, err := awsconfig.LoadDefaultConfig(
+		ctx, 
+		awsconfig.WithRegion(conf.Region),
+		awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(c.config.AccessKeyID, c.config.SecretAccessKey, c.config.SessionToken))
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +271,11 @@ func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSo
 }
 
 func (c *Connection) openBucket(ctx context.Context, conf *sourceProperties, bucket string) (*blob.Bucket, error) {
-	cfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithSharedConfigProfile(conf.ProfileName))
+	cfg, err := awsconfig.LoadDefaultConfig(
+		ctx, 
+		awsconfig.WithRegion(conf.Region),
+		awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(c.config.AccessKeyID, c.config.SecretAccessKey, c.config.SessionToken))
+	)
 	if err != nil {
 		return nil, err
 	}

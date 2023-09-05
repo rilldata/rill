@@ -80,7 +80,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
           )
           .required("Source name is required"),
         output_location: yup.string().required(),
-        profile_name: yup.string().required(),
+        region: yup.string(),
       });
 
     default:

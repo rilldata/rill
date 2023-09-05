@@ -46,7 +46,6 @@ type Source struct {
 	DB                    string         `yaml:"db,omitempty" mapstructure:"db,omitempty"`
 	ProjectID             string         `yaml:"project_id,omitempty" mapstructure:"project_id,omitempty"`
 	AthenaOutputLocation  string         `yaml:"output_location,omitempty" mapstructure:"output_location,omitempty"`
-	AthenaProfileName     string         `yaml:"profile_name,omitempty" mapstructure:"profile_name,omitempty"`
 }
 
 type ExtractPolicy struct {
@@ -243,10 +242,6 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 
 	if source.AthenaOutputLocation != "" {
 		props["output_location"] = source.AthenaOutputLocation
-	}
-
-	if source.AthenaProfileName != "" {
-		props["profile_name"] = source.AthenaProfileName
 	}
 
 	propsPB, err := structpb.NewStruct(props)
