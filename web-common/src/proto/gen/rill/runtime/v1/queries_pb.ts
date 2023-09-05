@@ -4057,10 +4057,10 @@ export class QueryBatchResponse extends Message<QueryBatchResponse> {
    */
   result: {
     /**
-     * @generated from field: rill.runtime.v1.MetricsViewAggregationRequest metrics_view_aggregation_request = 21;
+     * @generated from field: rill.runtime.v1.MetricsViewAggregationResponse metrics_view_aggregation_response = 21;
      */
-    value: MetricsViewAggregationRequest;
-    case: "metricsViewAggregationRequest";
+    value: MetricsViewAggregationResponse;
+    case: "metricsViewAggregationResponse";
   } | {
     /**
      * @generated from field: rill.runtime.v1.MetricsViewToplistResponse metrics_view_toplist_response = 3;
@@ -4181,7 +4181,7 @@ export class QueryBatchResponse extends Message<QueryBatchResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "key", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 21, name: "metrics_view_aggregation_request", kind: "message", T: MetricsViewAggregationRequest, oneof: "result" },
+    { no: 21, name: "metrics_view_aggregation_response", kind: "message", T: MetricsViewAggregationResponse, oneof: "result" },
     { no: 3, name: "metrics_view_toplist_response", kind: "message", T: MetricsViewToplistResponse, oneof: "result" },
     { no: 4, name: "metrics_view_comparison_toplist_response", kind: "message", T: MetricsViewComparisonToplistResponse, oneof: "result" },
     { no: 5, name: "metrics_view_time_series_response", kind: "message", T: MetricsViewTimeSeriesResponse, oneof: "result" },

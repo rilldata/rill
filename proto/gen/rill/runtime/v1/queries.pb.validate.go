@@ -10997,7 +10997,7 @@ func (m *QueryBatchResponse) validate(all bool) error {
 	// no validation rules for Error
 
 	switch v := m.Result.(type) {
-	case *QueryBatchResponse_MetricsViewAggregationRequest:
+	case *QueryBatchResponse_MetricsViewAggregationResponse:
 		if v == nil {
 			err := QueryBatchResponseValidationError{
 				field:  "Result",
@@ -11010,11 +11010,11 @@ func (m *QueryBatchResponse) validate(all bool) error {
 		}
 
 		if all {
-			switch v := interface{}(m.GetMetricsViewAggregationRequest()).(type) {
+			switch v := interface{}(m.GetMetricsViewAggregationResponse()).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
 					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "MetricsViewAggregationRequest",
+						field:  "MetricsViewAggregationResponse",
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -11022,16 +11022,16 @@ func (m *QueryBatchResponse) validate(all bool) error {
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
 					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "MetricsViewAggregationRequest",
+						field:  "MetricsViewAggregationResponse",
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
 				}
 			}
-		} else if v, ok := interface{}(m.GetMetricsViewAggregationRequest()).(interface{ Validate() error }); ok {
+		} else if v, ok := interface{}(m.GetMetricsViewAggregationResponse()).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return QueryBatchResponseValidationError{
-					field:  "MetricsViewAggregationRequest",
+					field:  "MetricsViewAggregationResponse",
 					reason: "embedded message failed validation",
 					cause:  err,
 				}

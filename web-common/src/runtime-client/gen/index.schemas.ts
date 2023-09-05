@@ -829,7 +829,7 @@ export interface V1QueryResponse {
 export interface V1QueryBatchResponse {
   key?: number;
   error?: string;
-  metricsViewAggregationRequest?: V1MetricsViewAggregationRequest;
+  metricsViewAggregationResponse?: V1MetricsViewAggregationResponse;
   metricsViewToplistResponse?: V1MetricsViewToplistResponse;
   metricsViewComparisonToplistResponse?: V1MetricsViewComparisonToplistResponse;
   metricsViewTimeSeriesResponse?: V1MetricsViewTimeSeriesResponse;

@@ -4129,8 +4129,8 @@ definitions:
         format: int32
       error:
         type: string
-      metricsViewAggregationRequest:
-        $ref: '#/definitions/v1MetricsViewAggregationRequest'
+      metricsViewAggregationResponse:
+        $ref: '#/definitions/v1MetricsViewAggregationResponse'
       metricsViewToplistResponse:
         $ref: '#/definitions/v1MetricsViewToplistResponse'
       metricsViewComparisonToplistResponse:
