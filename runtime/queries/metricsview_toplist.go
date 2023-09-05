@@ -14,18 +14,18 @@ import (
 )
 
 type MetricsViewToplist struct {
-	MetricsViewName  string                             `json:"metrics_view_name,omitempty"`
-	DimensionName    string                             `json:"dimension_name,omitempty"`
-	MeasureNames     []string                           `json:"measure_names,omitempty"`
-	InlineMeasures   []*runtimev1.InlineMeasure         `json:"inline_measures,omitempty"`
-	TimeStart        *timestamppb.Timestamp             `json:"time_start,omitempty"`
-	TimeEnd          *timestamppb.Timestamp             `json:"time_end,omitempty"`
-	Limit            *int64                             `json:"limit,omitempty"`
-	Offset           int64                              `json:"offset,omitempty"`
-	Sort             []*runtimev1.MetricsViewSort       `json:"sort,omitempty"`
-	Filter           *runtimev1.MetricsViewFilter       `json:"filter,omitempty"`
-	MetricsView      *runtimev1.MetricsView             `json:"-"`
-	ResolvedMVPolicy *runtime.ResolvedMetricsViewPolicy `json:"policy"`
+	MetricsViewName    string                               `json:"metrics_view_name,omitempty"`
+	DimensionName      string                               `json:"dimension_name,omitempty"`
+	MeasureNames       []string                             `json:"measure_names,omitempty"`
+	InlineMeasures     []*runtimev1.InlineMeasure           `json:"inline_measures,omitempty"`
+	TimeStart          *timestamppb.Timestamp               `json:"time_start,omitempty"`
+	TimeEnd            *timestamppb.Timestamp               `json:"time_end,omitempty"`
+	Limit              *int64                               `json:"limit,omitempty"`
+	Offset             int64                                `json:"offset,omitempty"`
+	Sort               []*runtimev1.MetricsViewSort         `json:"sort,omitempty"`
+	Filter             *runtimev1.MetricsViewFilter         `json:"filter,omitempty"`
+	MetricsView        *runtimev1.MetricsView               `json:"-"`
+	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity `json:"security"`
 
 	Result *runtimev1.MetricsViewToplistResponse `json:"-"`
 }
@@ -76,7 +76,7 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	}
 
 	// Build query
-	sql, args, err := q.buildMetricsTopListSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVPolicy)
+	sql, args, err := q.buildMetricsTopListSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVSecurity)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -109,7 +109,7 @@ func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, in
 				return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 			}
 
-			sql, args, err := q.buildMetricsTopListSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVPolicy)
+			sql, args, err := q.buildMetricsTopListSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVSecurity)
 			if err != nil {
 				return err
 			}
@@ -169,7 +169,7 @@ func (q *MetricsViewToplist) generateFilename(mv *runtimev1.MetricsView) string 
 	return filename
 }
 
-func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewPolicy) (string, []any, error) {
+func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
 	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
 	if err != nil {
 		return "", nil, err

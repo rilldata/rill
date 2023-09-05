@@ -166,10 +166,13 @@
     resetScrub();
 
     const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
+    const adjustedStart = start ? localToTimeZoneOffset(start, zone) : start;
+    const adjustedEnd = end ? localToTimeZoneOffset(end, zone) : end;
+
     metricsExplorerStore.setSelectedTimeRange(metricViewName, {
       name: TimeRangePreset.CUSTOM,
-      start,
-      end,
+      start: adjustedStart,
+      end: adjustedEnd,
     });
   }
 

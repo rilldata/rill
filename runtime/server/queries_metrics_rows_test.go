@@ -80,14 +80,14 @@ func TestServer_MetricsViewRows_export_xlsx(t *testing.T) {
 
 	ctx := testCtx()
 	mvName := "ad_bids_metrics"
-	mv, policy, err := resolveMVAndPolicy(ctx, server.runtime, instanceId, mvName)
+	mv, security, err := resolveMVAndSecurity(ctx, server.runtime, instanceId, mvName)
 	require.NoError(t, err)
 
 	q := &queries.MetricsViewRows{
-		MetricsViewName:  mvName,
-		TimeGranularity:  runtimev1.TimeGrain_TIME_GRAIN_DAY,
-		MetricsView:      mv,
-		ResolvedMVPolicy: policy,
+		MetricsViewName:    mvName,
+		TimeGranularity:    runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		MetricsView:        mv,
+		ResolvedMVSecurity: security,
 	}
 
 	var buf bytes.Buffer
@@ -117,14 +117,14 @@ func TestServer_MetricsViewRows_parquet_export(t *testing.T) {
 
 	ctx := testCtx()
 	mvName := "ad_bids_metrics_parquet"
-	mv, policy, err := resolveMVAndPolicy(ctx, server.runtime, instanceId, mvName)
+	mv, security, err := resolveMVAndSecurity(ctx, server.runtime, instanceId, mvName)
 	require.NoError(t, err)
 
 	q := &queries.MetricsViewRows{
-		MetricsViewName:  mvName,
-		TimeGranularity:  runtimev1.TimeGrain_TIME_GRAIN_DAY,
-		MetricsView:      mv,
-		ResolvedMVPolicy: policy,
+		MetricsViewName:    mvName,
+		TimeGranularity:    runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		MetricsView:        mv,
+		ResolvedMVSecurity: security,
 	}
 
 	var buf bytes.Buffer
@@ -315,13 +315,13 @@ func TestServer_MetricsViewRows_export_csv(t *testing.T) {
 
 	ctx := testCtx()
 	mvName := "ad_bids_metrics"
-	mv, policy, err := resolveMVAndPolicy(ctx, server.runtime, instanceId, mvName)
+	mv, security, err := resolveMVAndSecurity(ctx, server.runtime, instanceId, mvName)
 	require.NoError(t, err)
 	q := &queries.MetricsViewRows{
-		MetricsViewName:  mvName,
-		TimeGranularity:  runtimev1.TimeGrain_TIME_GRAIN_DAY,
-		MetricsView:      mv,
-		ResolvedMVPolicy: policy,
+		MetricsViewName:    mvName,
+		TimeGranularity:    runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		MetricsView:        mv,
+		ResolvedMVSecurity: security,
 	}
 
 	var buf bytes.Buffer
