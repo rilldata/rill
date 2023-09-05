@@ -365,10 +365,10 @@ func TestRuntime_EditInstance(t *testing.T) {
 
 			// verify older olap connection is closed and cache updated if olap changed
 			c, _ := rt.connectorDef(inst, inst.OLAPConnector)
-			_, ok := rt.connCache.cache[inst.ID+c.Type+generateKey(rt.connectorConfig(inst.OLAPConnector, c.Config, inst.ResolveVariables()))]
+			_, ok := rt.connCache.acquired[inst.ID+c.Type+generateKey(rt.connectorConfig(inst.OLAPConnector, c.Config, inst.ResolveVariables()))]
 			require.Equal(t, !tt.clearCache, ok)
 			c, _ = rt.connectorDef(inst, inst.RepoConnector)
-			_, ok = rt.connCache.cache[inst.ID+c.Type+generateKey(rt.connectorConfig(inst.RepoConnector, c.Config, inst.ResolveVariables()))]
+			_, ok = rt.connCache.acquired[inst.ID+c.Type+generateKey(rt.connectorConfig(inst.RepoConnector, c.Config, inst.ResolveVariables()))]
 			require.Equal(t, !tt.clearCache, ok)
 			_, ok = rt.migrationMetaCache.cache.Get(inst.ID)
 			require.Equal(t, !tt.clearCache, ok)
@@ -451,8 +451,8 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 			require.Error(t, err)
 
 			// verify older olap connection is closed and cache updated
-			require.False(t, rt.connCache.lruCache.Contains(inst.ID+"duckdb"+fmt.Sprintf("dsn:%s ", dbFile)))
-			require.False(t, rt.connCache.lruCache.Contains(inst.ID+"file"+fmt.Sprintf("dsn:%s ", repodsn)))
+			require.False(t, rt.connCache.lru.Contains(inst.ID+"duckdb"+fmt.Sprintf("dsn:%s ", dbFile)))
+			require.False(t, rt.connCache.lru.Contains(inst.ID+"file"+fmt.Sprintf("dsn:%s ", repodsn)))
 			_, ok := rt.migrationMetaCache.cache.Get(inst.ID)
 			require.False(t, ok)
 			_, err = svc.Olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM rill.migration_version"})
