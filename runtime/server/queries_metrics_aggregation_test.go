@@ -14,16 +14,15 @@ func TestMetricsViewAggregation_Toplist(t *testing.T) {
 	tr, err := server.MetricsViewAggregation(testCtx(), &runtimev1.MetricsViewAggregationRequest{
 		InstanceId:  instanceId,
 		MetricsView: "ad_bids_metrics",
-		Dimensions:  []string{"domain"},
-		Measures:    []string{"measure_2", "__count"},
-		InlineMeasureDefinitions: []*runtimev1.InlineMeasure{
-			{
-				Name:       "__count",
-				Expression: "count(*)",
-			},
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{Name: "domain"},
 		},
-		Sort: []*runtimev1.MetricsViewSort{
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
 			{Name: "measure_2"},
+			{Name: "__count", BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{Name: "measure_2", Desc: true},
 		},
 	})
 	require.NoError(t, err)
@@ -48,7 +47,9 @@ func TestMetricsViewAggregation_Totals(t *testing.T) {
 	tr, err := server.MetricsViewAggregation(testCtx(), &runtimev1.MetricsViewAggregationRequest{
 		InstanceId:  instanceId,
 		MetricsView: "ad_bids_metrics",
-		Measures:    []string{"measure_0"},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{Name: "measure_0"},
+		},
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tr.Data))
@@ -62,9 +63,11 @@ func TestMetricsViewAggregation_Distinct(t *testing.T) {
 	tr, err := server.MetricsViewAggregation(testCtx(), &runtimev1.MetricsViewAggregationRequest{
 		InstanceId:  instanceId,
 		MetricsView: "ad_bids_metrics",
-		Dimensions:  []string{"domain"},
-		Sort: []*runtimev1.MetricsViewSort{
-			{Name: "domain", Ascending: false},
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{Name: "domain"},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{Name: "domain", Desc: true},
 		},
 	})
 	require.NoError(t, err)
@@ -79,13 +82,17 @@ func TestMetricsViewAggregation_Timeseries(t *testing.T) {
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
 	tr, err := server.MetricsViewAggregation(testCtx(), &runtimev1.MetricsViewAggregationRequest{
-		InstanceId:      instanceId,
-		MetricsView:     "ad_bids_metrics",
-		Dimensions:      []string{"timestamp"},
-		Measures:        []string{"measure_0", "measure_2"},
-		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
-		Sort: []*runtimev1.MetricsViewSort{
-			{Name: "timestamp", Ascending: true},
+		InstanceId:  instanceId,
+		MetricsView: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{Name: "timestamp", TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_HOUR},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{Name: "measure_0"},
+			{Name: "measure_2"},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{Name: "timestamp"},
 		},
 	})
 	require.NoError(t, err)

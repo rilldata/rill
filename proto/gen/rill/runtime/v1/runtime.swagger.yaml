@@ -1022,33 +1022,26 @@ paths:
               dimensions:
                 type: array
                 items:
-                  type: string
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewAggregationDimension'
               measures:
                 type: array
                 items:
-                  type: string
-              inlineMeasureDefinitions:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewAggregationMeasure'
+              sort:
                 type: array
                 items:
                   type: object
-                  $ref: '#/definitions/v1InlineMeasure'
+                  $ref: '#/definitions/v1MetricsViewAggregationSort'
               timeStart:
                 type: string
                 format: date-time
               timeEnd:
                 type: string
                 format: date-time
-              timeGranularity:
-                $ref: '#/definitions/v1TimeGrain'
-              timeZone:
-                type: string
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
-              sort:
-                type: array
-                items:
-                  type: object
-                  $ref: '#/definitions/v1MetricsViewSort'
               limit:
                 type: string
                 format: int64
@@ -1058,7 +1051,6 @@ paths:
               priority:
                 type: integer
                 format: int32
-            title: Request message for QueryService.MetricsViewAggregation
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
@@ -2659,6 +2651,13 @@ definitions:
     properties:
       region:
         type: string
+  v1BuiltinMeasure:
+    type: string
+    enum:
+      - BUILTIN_MEASURE_UNSPECIFIED
+      - BUILTIN_MEASURE_COUNT
+      - BUILTIN_MEASURE_COUNT_DISTINCT
+    default: BUILTIN_MEASURE_UNSPECIFIED
   v1CatalogEntry:
     type: object
     properties:
@@ -3353,6 +3352,25 @@ definitions:
         $ref: '#/definitions/MetricsViewSecurity'
         title: Security for the dashboard
     title: Metrics view is the internal representation of a metrics view definition
+  v1MetricsViewAggregationDimension:
+    type: object
+    properties:
+      name:
+        type: string
+      timeGrain:
+        $ref: '#/definitions/v1TimeGrain'
+      timeZone:
+        type: string
+  v1MetricsViewAggregationMeasure:
+    type: object
+    properties:
+      name:
+        type: string
+      builtinMeasure:
+        $ref: '#/definitions/v1BuiltinMeasure'
+      builtinMeasureArgs:
+        type: array
+        items: {}
   v1MetricsViewAggregationRequest:
     type: object
     properties:
@@ -3363,33 +3381,26 @@ definitions:
       dimensions:
         type: array
         items:
-          type: string
+          type: object
+          $ref: '#/definitions/v1MetricsViewAggregationDimension'
       measures:
         type: array
         items:
-          type: string
-      inlineMeasureDefinitions:
+          type: object
+          $ref: '#/definitions/v1MetricsViewAggregationMeasure'
+      sort:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1InlineMeasure'
+          $ref: '#/definitions/v1MetricsViewAggregationSort'
       timeStart:
         type: string
         format: date-time
       timeEnd:
         type: string
         format: date-time
-      timeGranularity:
-        $ref: '#/definitions/v1TimeGrain'
-      timeZone:
-        type: string
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
-      sort:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1MetricsViewSort'
       limit:
         type: string
         format: int64
@@ -3399,20 +3410,22 @@ definitions:
       priority:
         type: integer
         format: int32
-    title: Request message for QueryService.MetricsViewAggregation
   v1MetricsViewAggregationResponse:
     type: object
     properties:
-      meta:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1MetricsViewColumn'
+      schema:
+        $ref: '#/definitions/v1StructType'
       data:
         type: array
         items:
           type: object
-    title: Response message for QueryService.MetricsViewAggregation
+  v1MetricsViewAggregationSort:
+    type: object
+    properties:
+      name:
+        type: string
+      desc:
+        type: boolean
   v1MetricsViewColumn:
     type: object
     properties:

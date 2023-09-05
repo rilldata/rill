@@ -31,6 +31,42 @@ func marshalInlineMeasure(ms []*runtimev1.InlineMeasure) []string {
 	return nil
 }
 
+func marshalMetricsViewAggregationDimension(ms []*runtimev1.MetricsViewAggregationDimension) []string {
+	if len(ms) == 0 {
+		return make([]string, 0)
+	}
+
+	names := make([]string, len(ms))
+	for i := 0; i < len(ms); i++ {
+		names[i] = ms[i].Name
+	}
+	return nil
+}
+
+func marshalMetricsViewAggregationMeasures(ms []*runtimev1.MetricsViewAggregationMeasure) []string {
+	if len(ms) == 0 {
+		return make([]string, 0)
+	}
+
+	names := make([]string, len(ms))
+	for i := 0; i < len(ms); i++ {
+		names[i] = ms[i].Name
+	}
+	return nil
+}
+
+func marshalMetricsViewAggregationSort(ms []*runtimev1.MetricsViewAggregationSort) []string {
+	if len(ms) == 0 {
+		return make([]string, 0)
+	}
+
+	names := make([]string, len(ms))
+	for i := 0; i < len(ms); i++ {
+		names[i] = ms[i].Name
+	}
+	return nil
+}
+
 func marshalMetricsViewComparisonSort(ms []*runtimev1.MetricsViewComparisonSort) []string {
 	if len(ms) == 0 {
 		return make([]string, 0)

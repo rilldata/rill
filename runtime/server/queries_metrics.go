@@ -21,15 +21,12 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.metric_view", req.MetricsView),
-		attribute.StringSlice("args.dimensions", req.Dimensions),
-		attribute.StringSlice("args.measures", req.Measures),
-		attribute.StringSlice("args.inline_measure_definitions", marshalInlineMeasure(req.InlineMeasureDefinitions)),
+		attribute.StringSlice("args.dimensions.names", marshalMetricsViewAggregationDimension(req.Dimensions)),
+		attribute.StringSlice("args.measures.names", marshalMetricsViewAggregationMeasures(req.Measures)),
+		attribute.StringSlice("args.sort.names", marshalMetricsViewAggregationSort(req.Sort)),
 		attribute.String("args.time_start", safeTimeStr(req.TimeStart)),
 		attribute.String("args.time_end", safeTimeStr(req.TimeEnd)),
-		attribute.String("args.time_granularity", req.TimeGranularity.String()),
-		attribute.String("args.time_zone", req.TimeZone),
 		attribute.Int("args.filter_count", filterCount(req.Filter)),
-		attribute.StringSlice("args.sort.names", marshalMetricsViewSort(req.Sort)),
 		attribute.Int64("args.limit", req.Limit),
 		attribute.Int64("args.offset", req.Offset),
 		attribute.Int("args.priority", int(req.Priority)),
@@ -40,24 +37,42 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		return nil, ErrForbidden
 	}
 
-	err := validateInlineMeasures(req.InlineMeasureDefinitions)
+	mv, security, err := resolveMVAndSecurity(ctx, s.runtime, req.InstanceId, req.MetricsView)
 	if err != nil {
 		return nil, err
 	}
 
+	for _, dim := range req.Dimensions {
+		if dim.Name == mv.TimeDimension {
+			// checkFieldAccess doesn't currently check the time dimension
+			continue
+		}
+		if !checkFieldAccess(dim.Name, security) {
+			return nil, ErrForbidden
+		}
+	}
+
+	for _, m := range req.Measures {
+		if m.BuiltinMeasure != runtimev1.BuiltinMeasure_BUILTIN_MEASURE_UNSPECIFIED {
+			continue
+		}
+		if !checkFieldAccess(m.Name, security) {
+			return nil, ErrForbidden
+		}
+	}
+
 	q := &queries.MetricsViewAggregation{
-		MetricsView:              req.MetricsView,
-		Dimensions:               req.Dimensions,
-		Measures:                 req.Measures,
-		InlineMeasureDefinitions: req.InlineMeasureDefinitions,
-		TimeStart:                req.TimeStart,
-		TimeEnd:                  req.TimeEnd,
-		TimeGranularity:          req.TimeGranularity,
-		TimeZone:                 req.TimeZone,
-		Filter:                   req.Filter,
-		Sort:                     req.Sort,
-		Limit:                    &req.Limit,
-		Offset:                   req.Offset,
+		MetricsViewName:    req.MetricsView,
+		Dimensions:         req.Dimensions,
+		Measures:           req.Measures,
+		Sort:               req.Sort,
+		TimeStart:          req.TimeStart,
+		TimeEnd:            req.TimeEnd,
+		Filter:             req.Filter,
+		Limit:              &req.Limit,
+		Offset:             req.Offset,
+		MetricsView:        mv,
+		ResolvedMVSecurity: security,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {

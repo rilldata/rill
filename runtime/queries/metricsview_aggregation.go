@@ -15,19 +15,18 @@ import (
 )
 
 type MetricsViewAggregation struct {
-	MetricsView              string                       `json:"metrics_view,omitempty"`
-	Dimensions               []string                     `json:"dimensions,omitempty"`
-	Measures                 []string                     `json:"measures,omitempty"`
-	InlineMeasureDefinitions []*runtimev1.InlineMeasure   `json:"inline_measure_definitions,omitempty"`
-	TimeStart                *timestamppb.Timestamp       `json:"time_start,omitempty"`
-	TimeEnd                  *timestamppb.Timestamp       `json:"time_end,omitempty"`
-	TimeGranularity          runtimev1.TimeGrain          `json:"time_granularity,omitempty"`
-	TimeZone                 string                       `json:"time_zone,omitempty"`
-	Filter                   *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
-	Sort                     []*runtimev1.MetricsViewSort `json:"sort,omitempty"`
-	Priority                 int32                        `json:"priority,omitempty"`
-	Limit                    *int64                       `json:"limit,omitempty"`
-	Offset                   int64                        `json:"offset,omitempty"`
+	MetricsViewName    string                                       `json:"metrics_view,omitempty"`
+	Dimensions         []*runtimev1.MetricsViewAggregationDimension `json:"dimensions,omitempty"`
+	Measures           []*runtimev1.MetricsViewAggregationMeasure   `json:"measures,omitempty"`
+	Sort               []*runtimev1.MetricsViewAggregationSort      `json:"sort,omitempty"`
+	TimeStart          *timestamppb.Timestamp                       `json:"time_start,omitempty"`
+	TimeEnd            *timestamppb.Timestamp                       `json:"time_end,omitempty"`
+	Filter             *runtimev1.MetricsViewFilter                 `json:"filter,omitempty"`
+	Priority           int32                                        `json:"priority,omitempty"`
+	Limit              *int64                                       `json:"limit,omitempty"`
+	Offset             int64                                        `json:"offset,omitempty"`
+	MetricsView        *runtimev1.MetricsView                       `json:"-"`
+	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity         `json:"security"`
 
 	Result *runtimev1.MetricsViewAggregationResponse `json:"-"`
 }
@@ -43,7 +42,7 @@ func (q *MetricsViewAggregation) Key() string {
 }
 
 func (q *MetricsViewAggregation) Deps() []string {
-	return []string{q.MetricsView}
+	return []string{q.MetricsViewName}
 }
 
 func (q *MetricsViewAggregation) MarshalResult() *runtime.QueryResult {
@@ -63,39 +62,35 @@ func (q *MetricsViewAggregation) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID)
 	if err != nil {
 		return err
 	}
+	defer release()
 
 	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	mv, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsView)
-	if err != nil {
-		return err
-	}
-
-	if mv.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
+	if q.MetricsView.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsView)
 	}
 
 	// Build query
-	sql, args, err := q.buildMetricsAggregationSQL(mv, olap.Dialect())
+	sql, args, err := q.buildMetricsAggregationSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVSecurity)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
 
 	// Execute
-	meta, data, err := metricsQuery(ctx, olap, priority, sql, args)
+	schema, data, err := olapQuery(ctx, olap, priority, sql, args)
 	if err != nil {
 		return err
 	}
 
 	q.Result = &runtimev1.MetricsViewAggregationResponse{
-		Meta: meta,
-		Data: data,
+		Schema: schema,
+		Data:   data,
 	}
 
 	return nil
@@ -107,15 +102,12 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 		return err
 	}
 
-	mv, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsView)
-	if err != nil {
-		return err
-	}
-
-	filename := strings.ReplaceAll(mv.Model, `"`, `_`)
+	filename := strings.ReplaceAll(q.MetricsView.Model, `"`, `_`)
 	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
 		filename += "_filtered"
 	}
+
+	meta := structTypeToMetricsViewColumn(q.Result.Schema)
 
 	if opts.PreWriteHook != nil {
 		err = opts.PreWriteHook(filename)
@@ -128,54 +120,70 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	case runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED:
 		return fmt.Errorf("unspecified format")
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		return writeCSV(q.Result.Meta, q.Result.Data, w)
+		return writeCSV(meta, q.Result.Data, w)
 	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		return writeXLSX(q.Result.Meta, q.Result.Data, w)
+		return writeXLSX(meta, q.Result.Data, w)
 	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
-		return writeParquet(q.Result.Meta, q.Result.Data, w)
+		return writeParquet(meta, q.Result.Data, w)
 	}
 
 	return nil
 }
 
-func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect) (string, []any, error) {
-	ms, err := resolveMeasures(mv, q.InlineMeasureDefinitions, q.Measures)
-	if err != nil {
-		return "", nil, err
-	}
-
-	if len(q.Dimensions) == 0 && len(ms) == 0 {
+func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
+	if len(q.Dimensions) == 0 && len(q.Measures) == 0 {
 		return "", nil, errors.New("no dimensions or measures specified")
 	}
 
-	selectCols := make([]string, 0, len(q.Dimensions)+len(ms))
+	selectCols := make([]string, 0, len(q.Dimensions)+len(q.Measures))
 	groupCols := make([]string, 0, len(q.Dimensions))
 	args := []any{}
 
 	for _, d := range q.Dimensions {
-		if d != mv.TimeDimension {
-			col, err := metricsViewDimensionToSafeColumn(mv, d)
+		// Handle regular dimensions
+		if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+			col, err := metricsViewDimensionToSafeColumn(mv, d.Name)
 			if err != nil {
 				return "", nil, err
 			}
 
-			selectCols = append(selectCols, col)
+			selectCols = append(selectCols, fmt.Sprintf("%s as %s", col, safeName(d.Name)))
 			groupCols = append(groupCols, col)
 			continue
 		}
 
-		// TODO: Handle time dimension
+		// Handle time dimension
 		expr, exprArgs, err := q.buildTimestampExpr(d, dialect)
 		if err != nil {
 			return "", nil, err
 		}
-		selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, safeName(d)))
+		selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, safeName(d.Name)))
 		groupCols = append(groupCols, expr)
 		args = append(args, exprArgs...)
 	}
 
-	for _, m := range ms {
-		selectCols = append(selectCols, fmt.Sprintf("%s as %s", m.Expression, safeName(m.Name)))
+	for _, m := range q.Measures {
+		switch m.BuiltinMeasure {
+		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_UNSPECIFIED:
+			expr, err := metricsViewMeasureExpression(mv, m.Name)
+			if err != nil {
+				return "", nil, err
+			}
+			selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, safeName(m.Name)))
+		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT:
+			selectCols = append(selectCols, fmt.Sprintf("COUNT(*) as %s", safeName(m.Name)))
+		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT_DISTINCT:
+			if len(m.BuiltinMeasureArgs) != 1 {
+				return "", nil, fmt.Errorf("builtin measure '%s' expects 1 argument", m.BuiltinMeasure.String())
+			}
+			arg := m.BuiltinMeasureArgs[0].GetStringValue()
+			if arg == "" {
+				return "", nil, fmt.Errorf("builtin measure '%s' expects non-empty string argument, got '%v'", m.BuiltinMeasure.String(), m.BuiltinMeasureArgs[0])
+			}
+			selectCols = append(selectCols, fmt.Sprintf("COUNT(DISTINCT %s) as %s", safeName(arg), safeName(m.Name)))
+		default:
+			return "", nil, fmt.Errorf("unknown builtin measure '%d'", m.BuiltinMeasure)
+		}
 	}
 
 	groupClause := ""
@@ -195,7 +203,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		}
 	}
 	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect)
+		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
 		if err != nil {
 			return "", nil, err
 		}
@@ -209,7 +217,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	sortingCriteria := make([]string, 0, len(q.Sort))
 	for _, s := range q.Sort {
 		sortCriterion := safeName(s.Name)
-		if !s.Ascending {
+		if s.Desc {
 			sortCriterion += " DESC"
 		}
 		if dialect == drivers.DialectDuckDB {
@@ -243,22 +251,29 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	return sql, args, nil
 }
 
-func (q *MetricsViewAggregation) buildTimestampExpr(dim string, dialect drivers.Dialect) (string, []any, error) {
-	if q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
-		return "", nil, fmt.Errorf("querying a timestamp dimension, but time_granularity is not specified")
+func (q *MetricsViewAggregation) buildTimestampExpr(dim *runtimev1.MetricsViewAggregationDimension, dialect drivers.Dialect) (string, []any, error) {
+	var colName string
+	if dim.Name == q.MetricsView.TimeDimension {
+		colName = dim.Name
+	} else {
+		col, err := metricsViewDimensionToSafeColumn(q.MetricsView, dim.Name)
+		if err != nil {
+			return "", nil, err
+		}
+		colName = col
 	}
 
 	switch dialect {
 	case drivers.DialectDuckDB:
-		if q.TimeZone == "" || q.TimeZone == "UTC" {
-			return fmt.Sprintf("date_trunc('%s', %s)", convertToDateTruncSpecifier(q.TimeGranularity), safeName(dim)), nil, nil
+		if dim.TimeZone == "" || dim.TimeZone == "UTC" {
+			return fmt.Sprintf("date_trunc('%s', %s)", convertToDateTruncSpecifier(dim.TimeGrain), safeName(colName)), nil, nil
 		}
-		return fmt.Sprintf("timezone(?, date_trunc('%s', timezone(?, %s::TIMESTAMPTZ)))", convertToDateTruncSpecifier(q.TimeGranularity), safeName(dim)), []any{q.TimeZone, q.TimeZone}, nil
+		return fmt.Sprintf("timezone(?, date_trunc('%s', timezone(?, %s::TIMESTAMPTZ)))", convertToDateTruncSpecifier(dim.TimeGrain), safeName(colName)), []any{dim.TimeZone, dim.TimeZone}, nil
 	case drivers.DialectDruid:
-		if q.TimeZone == "" || q.TimeZone == "UTC" {
-			return fmt.Sprintf("date_trunc('%s', %s)", convertToDateTruncSpecifier(q.TimeGranularity), safeName(dim)), nil, nil
+		if dim.TimeZone == "" || dim.TimeZone == "UTC" {
+			return fmt.Sprintf("date_trunc('%s', %s)", convertToDateTruncSpecifier(dim.TimeGrain), safeName(colName)), nil, nil
 		}
-		return fmt.Sprintf("time_floor(%s, '%s', null, CAST(? AS VARCHAR)))", safeName(dim), convertToDruidTimeFloorSpecifier(q.TimeGranularity)), []any{q.TimeZone}, nil
+		return fmt.Sprintf("time_floor(%s, '%s', null, CAST(? AS VARCHAR)))", safeName(colName), convertToDruidTimeFloorSpecifier(dim.TimeGrain)), []any{dim.TimeZone}, nil
 	default:
 		return "", nil, fmt.Errorf("unsupported dialect %q", dialect)
 	}

@@ -72,23 +72,45 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	switch v := request.Request.(type) {
 	case *runtimev1.ExportRequest_MetricsViewAggregationRequest:
 		r := v.MetricsViewAggregationRequest
-		err := validateInlineMeasures(r.InlineMeasureDefinitions)
+		mv, security, err := resolveMVAndSecurity(req.Context(), s.runtime, request.InstanceId, r.MetricsView)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+		for _, dim := range r.Dimensions {
+			if dim.Name == mv.TimeDimension {
+				// checkFieldAccess doesn't currently check the time dimension
+				continue
+			}
+			if !checkFieldAccess(dim.Name, security) {
+				http.Error(w, "action not allowed", http.StatusUnauthorized)
+				return
+			}
+		}
+
+		for _, m := range r.Measures {
+			if m.BuiltinMeasure != runtimev1.BuiltinMeasure_BUILTIN_MEASURE_UNSPECIFIED {
+				continue
+			}
+			if !checkFieldAccess(m.Name, security) {
+				http.Error(w, "action not allowed", http.StatusUnauthorized)
+				return
+			}
+		}
+
 		q = &queries.MetricsViewAggregation{
-			MetricsView:              r.MetricsView,
-			Dimensions:               r.Dimensions,
-			Measures:                 r.Measures,
-			InlineMeasureDefinitions: r.InlineMeasureDefinitions,
-			TimeStart:                r.TimeStart,
-			TimeEnd:                  r.TimeEnd,
-			TimeGranularity:          r.TimeGranularity,
-			TimeZone:                 r.TimeZone,
-			Filter:                   r.Filter,
-			Sort:                     r.Sort,
-			Limit:                    request.Limit,
+			MetricsViewName:    r.MetricsView,
+			Dimensions:         r.Dimensions,
+			Measures:           r.Measures,
+			Sort:               r.Sort,
+			TimeStart:          r.TimeStart,
+			TimeEnd:            r.TimeEnd,
+			Filter:             r.Filter,
+			Limit:              &r.Limit,
+			Offset:             r.Offset,
+			MetricsView:        mv,
+			ResolvedMVSecurity: security,
 		}
 	case *runtimev1.ExportRequest_MetricsViewToplistRequest:
 		r := v.MetricsViewToplistRequest

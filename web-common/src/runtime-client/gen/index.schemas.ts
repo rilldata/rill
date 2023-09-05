@@ -222,15 +222,12 @@ export type QueryServiceMetricsViewComparisonToplistBody = {
 };
 
 export type QueryServiceMetricsViewAggregationBody = {
-  dimensions?: string[];
-  measures?: string[];
-  inlineMeasureDefinitions?: V1InlineMeasure[];
+  dimensions?: V1MetricsViewAggregationDimension[];
+  measures?: V1MetricsViewAggregationMeasure[];
+  sort?: V1MetricsViewAggregationSort[];
   timeStart?: string;
   timeEnd?: string;
-  timeGranularity?: V1TimeGrain;
-  timeZone?: string;
   filter?: V1MetricsViewFilter;
-  sort?: V1MetricsViewSort[];
   limit?: string;
   offset?: string;
   priority?: number;
@@ -1067,31 +1064,6 @@ export interface V1MetricsViewTotalsRequest {
 
 export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
 
-export interface V1MetricsViewToplistResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewToplistResponseDataItem[];
-}
-
-export interface V1MetricsViewToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  limit?: string;
-  offset?: string;
-  sort?: V1MetricsViewSort[];
-  filter?: V1MetricsViewFilter;
-  priority?: number;
-}
-
-export interface V1MetricsViewTimeSeriesResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1TimeSeriesValue[];
-}
-
 export interface V1MetricsViewTimeSeriesRequest {
   instanceId?: string;
   metricsViewName?: string;
@@ -1131,6 +1103,21 @@ export interface V1MetricsViewState {
 export interface V1MetricsViewSort {
   name?: string;
   ascending?: boolean;
+}
+
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  filter?: V1MetricsViewFilter;
+  priority?: number;
 }
 
 export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
@@ -1220,25 +1207,49 @@ export interface V1MetricsViewColumn {
   nullable?: boolean;
 }
 
+export interface V1MetricsViewToplistResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewToplistResponseDataItem[];
+}
+
+export interface V1MetricsViewTimeSeriesResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1TimeSeriesValue[];
+}
+
+export interface V1MetricsViewAggregationSort {
+  name?: string;
+  desc?: boolean;
+}
+
 export type V1MetricsViewAggregationResponseDataItem = { [key: string]: any };
 
 export interface V1MetricsViewAggregationResponse {
-  meta?: V1MetricsViewColumn[];
+  schema?: V1StructType;
   data?: V1MetricsViewAggregationResponseDataItem[];
+}
+
+export interface V1MetricsViewAggregationMeasure {
+  name?: string;
+  builtinMeasure?: V1BuiltinMeasure;
+  builtinMeasureArgs?: unknown[];
+}
+
+export interface V1MetricsViewAggregationDimension {
+  name?: string;
+  timeGrain?: V1TimeGrain;
+  timeZone?: string;
 }
 
 export interface V1MetricsViewAggregationRequest {
   instanceId?: string;
   metricsView?: string;
-  dimensions?: string[];
-  measures?: string[];
-  inlineMeasureDefinitions?: V1InlineMeasure[];
+  dimensions?: V1MetricsViewAggregationDimension[];
+  measures?: V1MetricsViewAggregationMeasure[];
+  sort?: V1MetricsViewAggregationSort[];
   timeStart?: string;
   timeEnd?: string;
-  timeGranularity?: V1TimeGrain;
-  timeZone?: string;
   filter?: V1MetricsViewFilter;
-  sort?: V1MetricsViewSort[];
   limit?: string;
   offset?: string;
   priority?: number;
@@ -1667,6 +1678,16 @@ export interface V1CatalogEntry {
   updatedOn?: string;
   refreshedOn?: string;
 }
+
+export type V1BuiltinMeasure =
+  (typeof V1BuiltinMeasure)[keyof typeof V1BuiltinMeasure];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1BuiltinMeasure = {
+  BUILTIN_MEASURE_UNSPECIFIED: "BUILTIN_MEASURE_UNSPECIFIED",
+  BUILTIN_MEASURE_COUNT: "BUILTIN_MEASURE_COUNT",
+  BUILTIN_MEASURE_COUNT_DISTINCT: "BUILTIN_MEASURE_COUNT_DISTINCT",
+} as const;
 
 export interface V1BucketPlannerState {
   region?: string;
