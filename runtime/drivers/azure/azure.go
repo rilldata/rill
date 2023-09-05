@@ -175,13 +175,13 @@ func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
 }
 
-// DownloadFiles returns a file iterator over objects stored in azure blob storage.
-func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSource) (drivers.FileIterator, error) {
-	return nil, fmt.Errorf("not implemented")
-}
+// // DownloadFiles returns a file iterator over objects stored in azure blob storage.
+// func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSource) (drivers.FileIterator, error) {
+// 	return nil, fmt.Errorf("not implemented")
+// }
 
 // DownloadFiles returns a file iterator over objects stored in azure blob storage.
-func (c *Connection) DownloadFile(ctx context.Context, source *drivers.BucketSource, path string) (drivers.FileIterator, error) {
+func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSource) (drivers.FileIterator, error) {
 	conf, err := parseSourceProperties(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
@@ -213,13 +213,13 @@ func (c *Connection) DownloadFile(ctx context.Context, source *drivers.BucketSou
 	}
 	defer bucketObj.Close()
 
-	// Now we can use b to read or write files to the container.
-	data, err := bucketObj.ReadAll(ctx, "my-key")
-	if err != nil {
-		return nil, err
-	}
+	// // Now we can use b to read or write files to the container.
+	// data, err := bucketObj.ReadAll(ctx, "my-key")
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	fmt.Println("Datat is ", data)
+	// fmt.Println("Datat is ", data)
 
 	// prepare fetch configs
 	opts1 := rillblob.Options{
@@ -263,7 +263,7 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse path %q, %w", conf.Path, err)
 	}
-	if url.Scheme != "az" {
+	if url.Scheme != "azblob" {
 		return nil, fmt.Errorf("invalid scheme %q in path %q", url.Scheme, conf.Path)
 	}
 

@@ -289,7 +289,7 @@ func mergeFromParsedQuery(apiSource *runtimev1.Source, env map[string]string, re
 		if err != nil {
 			return err
 		}
-	case "s3", "gcs":
+	case "s3", "gcs", "azure":
 		apiSource.Connector = c
 		props["path"] = p
 	default:
@@ -359,6 +359,11 @@ func source(connector string, src *runtimev1.Source) (drivers.Source, error) {
 			Properties:    props,
 		}, nil
 	case "gcs":
+		return &drivers.BucketSource{
+			ExtractPolicy: src.Policy,
+			Properties:    props,
+		}, nil
+	case "azure":
 		return &drivers.BucketSource{
 			ExtractPolicy: src.Policy,
 			Properties:    props,
