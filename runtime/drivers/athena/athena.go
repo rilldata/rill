@@ -238,8 +238,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSo
 	}
 
 	opts := rillblob.Options{
-		ExtractPolicy: &runtimev1.Source_ExtractPolicy{},
-		GlobPattern:   prefix + "/**",
+		GlobPattern: prefix + "/**",
 	}
 
 	it, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
