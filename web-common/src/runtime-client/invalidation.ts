@@ -137,10 +137,10 @@ export async function invalidateAllMetricsViews(
       query.queryKey[0].startsWith(`/v1/instances/${instanceId}/catalog`),
   });
 
-  // Second, remove queries for all metrics views. This will cause the active queries to refetch.
+  // Second, reset queries for all metrics views. This will cause the active queries to refetch.
   // Note: This is a confusing hack. At time of writing, neither `queryClient.refetchQueries`
   // nor `queryClient.invalidateQueries` were working as expected. Perhaps there's a race condition somewhere.
-  queryClient.removeQueries({
+  queryClient.resetQueries({
     predicate: (query: Query) => {
       return (
         typeof query.queryKey[0] === "string" &&
@@ -151,8 +151,8 @@ export async function invalidateAllMetricsViews(
     },
   });
 
-  // Additionally, remove the queries for the rows viewer, which have custom query keys
-  queryClient.removeQueries({
+  // Additionally, reset the queries for the rows viewer, which have custom query keys
+  queryClient.resetQueries({
     predicate: (query: Query) => {
       return (
         typeof query.queryKey[0] === "string" &&
