@@ -187,6 +187,9 @@ export function createDashboardState(
     leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
 
     selectedTimeRange: timeRange,
+
+    dashboardSortType: undefined,
+    sortDirection: undefined,
   };
 }
 
@@ -246,6 +249,7 @@ export function createMetricsMetaQueryMock(
   return mock;
 }
 
+// Wrapper function to simplify assert call
 export function assertMetricsView(
   name: string,
   filters: V1MetricsViewFilter = {
@@ -254,6 +258,17 @@ export function assertMetricsView(
   },
   timeRange: DashboardTimeControls = AD_BIDS_DEFAULT_TIME_RANGE,
   selectedMeasure = AD_BIDS_IMPRESSIONS_MEASURE
+) {
+  assertMetricsViewRaw(name, filters, timeRange, selectedMeasure);
+}
+// Raw assert function without any optional params.
+// This allows us to assert for `undefined`
+// TODO: find a better solution that this hack
+export function assertMetricsViewRaw(
+  name: string,
+  filters: V1MetricsViewFilter,
+  timeRange: DashboardTimeControls,
+  selectedMeasure: string
 ) {
   const metricsView = get(metricsExplorerStore).entities[name];
   expect(metricsView.filters).toEqual(filters);

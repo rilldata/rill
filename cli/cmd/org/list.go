@@ -10,6 +10,9 @@ import (
 )
 
 func ListCmd(cfg *config.Config) *cobra.Command {
+	var pageSize uint32
+	var pageToken string
+
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all organizations",
@@ -21,7 +24,10 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			res, err := client.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
+			res, err := client.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{
+				PageSize:  pageSize,
+				PageToken: pageToken,
+			})
 			if err != nil {
 				return err
 			}
@@ -33,9 +39,16 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 
 			cmdutil.PrintlnSuccess("Organizations list")
 			cmdutil.TablePrinter(toTable(res.Organizations, cfg.Org))
+			if res.NextPageToken != "" {
+				cmd.Println()
+				cmd.Printf("Next page token: %s\n", res.NextPageToken)
+			}
 			return nil
 		},
 	}
+
+	listCmd.Flags().Uint32Var(&pageSize, "page-size", 50, "Number of orgs to return per page")
+	listCmd.Flags().StringVar(&pageToken, "page-token", "", "Pagination token")
 
 	return listCmd
 }

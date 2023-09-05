@@ -511,6 +511,47 @@ func (m *ExportRequest) validate(all bool) error {
 			}
 		}
 
+	case *ExportRequest_MetricsViewTimeSeriesRequest:
+		if v == nil {
+			err := ExportRequestValidationError{
+				field:  "Request",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetMetricsViewTimeSeriesRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ExportRequestValidationError{
+						field:  "MetricsViewTimeSeriesRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ExportRequestValidationError{
+						field:  "MetricsViewTimeSeriesRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetMetricsViewTimeSeriesRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ExportRequestValidationError{
+					field:  "MetricsViewTimeSeriesRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	default:
 		_ = v // ensures v is used
 	}
@@ -9930,6 +9971,47 @@ func (m *QueryBatchEntry) validate(all bool) error {
 	// no validation rules for Key
 
 	switch v := m.Query.(type) {
+	case *QueryBatchEntry_MetricsViewAggregationRequest:
+		if v == nil {
+			err := QueryBatchEntryValidationError{
+				field:  "Query",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetMetricsViewAggregationRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryBatchEntryValidationError{
+						field:  "MetricsViewAggregationRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryBatchEntryValidationError{
+						field:  "MetricsViewAggregationRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetMetricsViewAggregationRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryBatchEntryValidationError{
+					field:  "MetricsViewAggregationRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	case *QueryBatchEntry_MetricsViewToplistRequest:
 		if v == nil {
 			err := QueryBatchEntryValidationError{
@@ -10915,6 +10997,47 @@ func (m *QueryBatchResponse) validate(all bool) error {
 	// no validation rules for Error
 
 	switch v := m.Result.(type) {
+	case *QueryBatchResponse_MetricsViewAggregationRequest:
+		if v == nil {
+			err := QueryBatchResponseValidationError{
+				field:  "Result",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetMetricsViewAggregationRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryBatchResponseValidationError{
+						field:  "MetricsViewAggregationRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryBatchResponseValidationError{
+						field:  "MetricsViewAggregationRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetMetricsViewAggregationRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryBatchResponseValidationError{
+					field:  "MetricsViewAggregationRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	case *QueryBatchResponse_MetricsViewToplistResponse:
 		if v == nil {
 			err := QueryBatchResponseValidationError{

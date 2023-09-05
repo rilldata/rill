@@ -166,13 +166,13 @@ measures:
 	}
 
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, zap.NewNop())
 	require.NoError(t, err)
-	repoStore, _ := fileStore.AsRepoStore()
+	repoStore, _ := fileStore.AsRepoStore("")
 	ctx := context.Background()
 
 	for _, tt := range catalogs {
-		t.Run(fmt.Sprintf("%s", tt.Name), func(t *testing.T) {
+		t.Run(fmt.Sprint(tt.Name), func(t *testing.T) {
 			err := artifacts.Write(ctx, repoStore, "test", tt.Catalog)
 			require.NoError(t, err)
 
@@ -209,9 +209,9 @@ duckdb:
     delim: '''|'''
 `
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, zap.NewNop())
 	require.NoError(t, err)
-	repoStore, _ := fileStore.AsRepoStore()
+	repoStore, _ := fileStore.AsRepoStore("")
 	ctx := context.Background()
 
 	err = artifacts.Write(ctx, repoStore, "test", catalog)
@@ -264,9 +264,9 @@ duckdb:
     hive_partitioning: true
 `
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, zap.NewNop())
 	require.NoError(t, err)
-	repoStore, _ := fileStore.AsRepoStore()
+	repoStore, _ := fileStore.AsRepoStore("")
 	ctx := context.Background()
 
 	err = artifacts.Write(ctx, repoStore, "test", catalog)
@@ -299,12 +299,12 @@ duckdb:
 
 func TestMetricsLabelBackwardsCompatibility(t *testing.T) {
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, zap.NewNop())
 	require.NoError(t, err)
-	repoStore, _ := fileStore.AsRepoStore()
+	repoStore, _ := fileStore.AsRepoStore("")
 	ctx := context.Background()
 
-	require.NoError(t, repoStore.Put(ctx, "test", "dashboards/MetricsView.yaml", bytes.NewReader([]byte(`display_name: dashboard name
+	require.NoError(t, repoStore.Put(ctx, "dashboards/MetricsView.yaml", bytes.NewReader([]byte(`display_name: dashboard name
 description: long description for dashboard
 model: Model
 timeseries: time
@@ -334,12 +334,12 @@ measures: []
 
 func TestDimensionAndMeasureNameAutoFill(t *testing.T) {
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, zap.NewNop())
 	require.NoError(t, err)
-	repoStore, _ := fileStore.AsRepoStore()
+	repoStore, _ := fileStore.AsRepoStore("")
 	ctx := context.Background()
 
-	require.NoError(t, repoStore.Put(ctx, "test", "dashboards/MetricsView.yaml", bytes.NewReader([]byte(`display_name: dashboard name
+	require.NoError(t, repoStore.Put(ctx, "dashboards/MetricsView.yaml", bytes.NewReader([]byte(`display_name: dashboard name
 description: long description for dashboard
 model: Model
 timeseries: time
@@ -413,12 +413,12 @@ measures:
 
 func TestDimensionColumnBackwardsCompatibility(t *testing.T) {
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, zap.NewNop())
 	require.NoError(t, err)
-	repoStore, _ := fileStore.AsRepoStore()
+	repoStore, _ := fileStore.AsRepoStore("")
 	ctx := context.Background()
 
-	require.NoError(t, repoStore.Put(ctx, "test", "dashboards/MetricsView.yaml", bytes.NewReader([]byte(`display_name: dashboard name
+	require.NoError(t, repoStore.Put(ctx, "dashboards/MetricsView.yaml", bytes.NewReader([]byte(`display_name: dashboard name
 description: long description for dashboard
 model: Model
 timeseries: time
@@ -487,9 +487,9 @@ func TestReadFailure(t *testing.T) {
 	}
 
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, zap.NewNop())
 	require.NoError(t, err)
-	repoStore, _ := fileStore.AsRepoStore()
+	repoStore, _ := fileStore.AsRepoStore("")
 	ctx := context.Background()
 
 	err = os.MkdirAll(path.Join(dir, "sources"), os.ModePerm)
@@ -620,7 +620,7 @@ region: {{.env.region}}
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.NoError(t, repoStore.Put(context.Background(), "test", tt.filePath, bytes.NewReader([]byte(tt.content))))
+			require.NoError(t, repoStore.Put(context.Background(), tt.filePath, bytes.NewReader([]byte(tt.content))))
 			got, err := artifacts.Read(context.Background(), repoStore, registryStore, "test", tt.filePath)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Read() error = %v, wantErr %v", err, tt.wantErr)
@@ -675,7 +675,7 @@ available_time_zones:
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.NoError(t, repoStore.Put(context.Background(), "test", tt.filePath, bytes.NewReader([]byte(tt.content))))
+			require.NoError(t, repoStore.Put(context.Background(), tt.filePath, bytes.NewReader([]byte(tt.content))))
 			got, err := artifacts.Read(context.Background(), repoStore, registryStore, "test", tt.filePath)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Read() error = %v, wantErr %v", err, tt.wantErr)
@@ -690,10 +690,10 @@ available_time_zones:
 
 func repoStore(t *testing.T) drivers.RepoStore {
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, zap.NewNop())
 	require.NoError(t, err)
 
-	repoStore, ok := fileStore.AsRepoStore()
+	repoStore, ok := fileStore.AsRepoStore("")
 	require.True(t, ok)
 
 	return repoStore
@@ -709,7 +709,7 @@ func toProtoStruct(obj map[string]any) *structpb.Struct {
 
 func registryStore(t *testing.T) drivers.RegistryStore {
 	ctx := context.Background()
-	store, err := drivers.Open("sqlite", map[string]any{"dsn": ":memory:"}, zap.NewNop())
+	store, err := drivers.Open("sqlite", map[string]any{"dsn": ":memory:"}, false, zap.NewNop())
 	require.NoError(t, err)
 	store.Migrate(ctx)
 	registry, _ := store.AsRegistry()

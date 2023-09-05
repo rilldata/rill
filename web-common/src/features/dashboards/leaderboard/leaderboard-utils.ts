@@ -38,3 +38,5 @@ export function prepareLeaderboardItemData(
     };
   });
 }
+
+export const CONTEXT_COLUMN_WIDTH = 44;

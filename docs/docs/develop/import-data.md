@@ -1,13 +1,19 @@
 ---
-title: Import data source
+title: "Import: Add Sources"
 description: Import local files or remote data sources
-sidebar_label: Import data source
+sidebar_label: "Import: Add Sources"
 sidebar_position: 10
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
 
-Rill supports several connectors for importing data: local files, download from an S3 or GCS bucket, or download using HTTP(S). Rill can ingest `.csv`, `.tsv`, and `.parquet` files, which may be compressed (`.gz`). To import data from multiple files, you can use a glob pattern to specify the files you want to include. To learn more about the syntax and details of glob patterns, please refer to the documentation on [glob-patterns](glob-patterns).
+Rill supports several connectors for importing data: local files, download from an S3 or GCS bucket, download using HTTP(S), connect to databases like MotherDuck or BigQuery. Rill can ingest `.csv`, `.tsv`, `.json`,and `.parquet` files, which may be compressed (`.gz`). 
+
+:::tip Import from multiple files
+To import data from multiple files, you can use a glob pattern to specify the files you want to include. To learn more about the syntax and details of glob patterns, please refer to the documentation on [glob patterns](/reference/glob-patterns).
+:::
+
+You can also push logic into source definition during important to filter the data for your source (see Using Code below).
 
 ## Adding a local file
 
@@ -48,9 +54,6 @@ FROM "https://data.example.org/path/to/file.parquet"
 
 After import, you can reimport your data whenever you want by clicking the "refresh source" button in the Rill UI.
 
-### Using the CLI
-Creating remote sources is not currently available through the CLI.
-
 ### Using code
 When you add a source using the UI or CLI, a code definition will automatically be created as a `.yaml` file in your Rill project in the `sources` directory.
 
@@ -60,6 +63,11 @@ To create a remote http(s) source, create a `source_name.yaml` file in the `sour
 type: https
 uri: https://data.example.org/path/to/file.parquet
 ```
+You can also push filters to your source definition using inline editing. Common use cases for inline editing:
+
+- Filter data to only use part of source files
+- Push transformations for key fields to source (particularly casting time fields, data types)
+- Resolve ingestion issues by declaring types (examples: STRUCT with different values to VARCHAR, fields mixed with INT and VARCHAR values)
 
 For details about all available properties for all remote connectors, see the syntax [reference](../reference/project-files/sources).
 

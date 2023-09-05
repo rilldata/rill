@@ -9,6 +9,7 @@
   export let activeTailwindClasses: string = undefined;
   export let active = false;
   export let level: undefined | "error" = undefined;
+  // used as aria-label
   export let label: undefined | string = undefined;
 
   let childRequestedTooltipSuppression;
@@ -44,7 +45,7 @@
   aria-label={label}
   class="
 {block ? 'flex w-full h-full px-2' : 'inline-flex w-max rounded px-1'} 
-  items-center gap-x-2 justify-between
+  items-center gap-x-1 justify-between
   {classes[level]}
   {tailwindClasses}
   {active && !disabled ? activeTailwindClasses : ''}

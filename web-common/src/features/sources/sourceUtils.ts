@@ -1,5 +1,5 @@
 import type {
-  V1Connector,
+  V1ConnectorSpec,
   V1ReconcileError,
 } from "@rilldata/web-common/runtime-client";
 import { extractFileExtension } from "./extract-table-name";
@@ -50,7 +50,7 @@ function buildDuckDbQuery(path: string): string {
     return `select * from read_json('${path}', auto_detect=true, format='auto')`;
   }
 
-  throw new Error(`Unsupported extension ${extension} for ${path}`);
+  return `select * from '${path}'`;
 }
 
 /**
@@ -66,7 +66,7 @@ function extensionContainsParts(
   return false;
 }
 
-export function inferSourceName(connector: V1Connector, path: string) {
+export function inferSourceName(connector: V1ConnectorSpec, path: string) {
   if (
     !path ||
     path.endsWith("/") ||

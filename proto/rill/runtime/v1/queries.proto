@@ -205,9 +205,10 @@ message ExportRequest {
   optional int64 limit = 2;
   ExportFormat format = 3;
   oneof request {
-    MetricsViewAggregationRequest metrics_view_aggregation_request = 6;
+    MetricsViewAggregationRequest metrics_view_aggregation_request = 7;
     MetricsViewToplistRequest metrics_view_toplist_request = 4;
     MetricsViewRowsRequest metrics_view_rows_request = 5;
+    MetricsViewTimeSeriesRequest metrics_view_time_series_request = 6;
   }
 }
 
@@ -707,6 +708,7 @@ message QueryBatchEntry {
   // Since response could out of order `key` is used to co-relate a specific response to request.
   int32 key = 1;
   oneof query {
+    MetricsViewAggregationRequest metrics_view_aggregation_request = 20;
     MetricsViewToplistRequest metrics_view_toplist_request = 2;
     MetricsViewComparisonToplistRequest metrics_view_comparison_toplist_request = 3;
     MetricsViewTimeSeriesRequest metrics_view_time_series_request = 4;
@@ -737,6 +739,7 @@ message QueryBatchResponse {
   int32 key = 1;
   string error = 2;
   oneof result {
+    MetricsViewAggregationRequest metrics_view_aggregation_request = 21;
     MetricsViewToplistResponse metrics_view_toplist_response = 3;
     MetricsViewComparisonToplistResponse metrics_view_comparison_toplist_response = 4;
     MetricsViewTimeSeriesResponse metrics_view_time_series_response = 5;

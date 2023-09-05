@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { useProjectDeploymentStatus } from "@rilldata/web-admin/components/projects/selectors";
+  import { Tag } from "@rilldata/web-common/components/tag";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
     createAdminServiceGetCurrentUser,
@@ -105,6 +106,10 @@
           goto(`/${orgName}/${projectName}/${dashboard}`)}
         isCurrentPage={isDashboardPage}
       />
+    {/if}
+    <!-- This is a temporary solution until we move intra-project navigation to tabs -->
+    {#if $page.route.id.endsWith("/-/logs")}
+      <Tag>Logs</Tag>
     {/if}
   </ol>
 </nav>

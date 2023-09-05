@@ -10,6 +10,11 @@ export function addZoneOffset(dt: Date, iana: string) {
   return new Date(dt.getTime() + offset * 60000);
 }
 
+export function removeZoneOffset(dt: Date, iana: string) {
+  const offset = DateTime.fromJSDate(dt).setZone(iana).offset;
+  return new Date(dt.getTime() - offset * 60000);
+}
+
 export function getLocalIANA(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
 }

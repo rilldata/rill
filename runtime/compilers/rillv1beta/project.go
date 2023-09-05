@@ -26,38 +26,40 @@ func New(repo drivers.RepoStore, instanceID string) *Codec {
 }
 
 func (c *Codec) IsInit(ctx context.Context) bool {
-	_, err := c.Repo.Get(ctx, c.InstanceID, "rill.yaml")
+	_, err := c.Repo.Get(ctx, "rill.yaml")
 	return err == nil
 }
 
 func (c *Codec) InitEmpty(ctx context.Context, title string) error {
-	err := c.Repo.Put(ctx, c.InstanceID, "rill.yaml", strings.NewReader(fmt.Sprintf("compiler: %s\n\ntitle: %q\n", Version, title)))
+	mockUsersInfo := "# These are example mock users to test your security policies.\n# For more information, see the documentation: https://docs.rilldata.com/develop/security"
+	mockUsers := "mock_users:\n- email: john@yourcompany.com\n- email: jane@partnercompany.com"
+	err := c.Repo.Put(ctx, "rill.yaml", strings.NewReader(fmt.Sprintf("compiler: %s\n\ntitle: %q\n\n%s\n\n%s", Version, title, mockUsersInfo, mockUsers)))
 	if err != nil {
 		return err
 	}
 
-	gitignore, _ := c.Repo.Get(ctx, c.InstanceID, ".gitignore")
+	gitignore, _ := c.Repo.Get(ctx, ".gitignore")
 	if gitignore != "" {
 		gitignore += "\n"
 	}
 	gitignore += "# Rill\n*.db\n*.db.tmp\n*.db.wal\n"
 
-	err = c.Repo.Put(ctx, c.InstanceID, ".gitignore", strings.NewReader(gitignore))
+	err = c.Repo.Put(ctx, ".gitignore", strings.NewReader(gitignore))
 	if err != nil {
 		return err
 	}
 
-	err = c.Repo.Put(ctx, c.InstanceID, "sources/.gitkeep", strings.NewReader(""))
+	err = c.Repo.Put(ctx, "sources/.gitkeep", strings.NewReader(""))
 	if err != nil {
 		return err
 	}
 
-	err = c.Repo.Put(ctx, c.InstanceID, "models/.gitkeep", strings.NewReader(""))
+	err = c.Repo.Put(ctx, "models/.gitkeep", strings.NewReader(""))
 	if err != nil {
 		return err
 	}
 
-	err = c.Repo.Put(ctx, c.InstanceID, "dashboards/.gitkeep", strings.NewReader(""))
+	err = c.Repo.Put(ctx, "dashboards/.gitkeep", strings.NewReader(""))
 	if err != nil {
 		return err
 	}
@@ -98,7 +100,7 @@ func (c *Codec) PutSource(ctx context.Context, repo drivers.RepoStore, instanceI
 		}
 	}
 
-	err = repo.Put(ctx, c.InstanceID, p, bytes.NewReader(blob))
+	err = repo.Put(ctx, p, bytes.NewReader(blob))
 	if err != nil {
 		return "", err
 	}
@@ -108,7 +110,7 @@ func (c *Codec) PutSource(ctx context.Context, repo drivers.RepoStore, instanceI
 
 func (c *Codec) DeleteSource(ctx context.Context, name string) (string, error) {
 	p := path.Join("sources", name+".yaml")
-	err := c.Repo.Delete(ctx, c.InstanceID, p)
+	err := c.Repo.Delete(ctx, p)
 	if err != nil {
 		return "", err
 	}
@@ -116,7 +118,7 @@ func (c *Codec) DeleteSource(ctx context.Context, name string) (string, error) {
 }
 
 func (c *Codec) ProjectConfig(ctx context.Context) (*ProjectConfig, error) {
-	content, err := c.Repo.Get(ctx, c.InstanceID, "rill.yaml")
+	content, err := c.Repo.Get(ctx, "rill.yaml")
 	// rill.yaml is not guaranteed to exist in case of older projects
 	if os.IsNotExist(err) {
 		return &ProjectConfig{Variables: make(map[string]string)}, nil
