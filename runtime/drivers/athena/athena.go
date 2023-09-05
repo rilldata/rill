@@ -46,7 +46,7 @@ var spec = drivers.Spec{
 			Placeholder: "select * from catalog.table;",
 		},
 		{
-			Key:         "output.location",
+			Key:         "output_location",
 			DisplayName: "Output location",
 			Description: "Oputut location for query results in S3.",
 			Placeholder: "bucket-name",
@@ -54,7 +54,7 @@ var spec = drivers.Spec{
 			Required:    true,
 		},
 		{
-			Key:         "profile.name",
+			Key:         "profile_name",
 			DisplayName: "AWS profile",
 			Description: "AWS profile for credentials.",
 			Type:        drivers.StringPropertyType,
@@ -102,8 +102,8 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source
 
 type sourceProperties struct {
 	SQL            string `mapstructure:"sql"`
-	OutputLocation string `mapstructure:"output.location"`
-	ProfileName    string `mapstructure:"profile.name"`
+	OutputLocation string `mapstructure:"output_location"`
+	ProfileName    string `mapstructure:"profile_name"`
 }
 
 func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
