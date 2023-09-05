@@ -188,16 +188,16 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 	}
 
 	var attr map[string]any
-	switch id := req.For.(type) {
+	switch forVal := req.For.(type) {
 	case *adminv1.GetDeploymentCredentialsRequest_UserId:
-		attr, err = s.jwtAttributesForUser(ctx, permissions, claims.OwnerID(), proj.OrganizationID)
+		attr, err = s.jwtAttributesForUser(ctx, permissions, forVal.UserId, proj.OrganizationID)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 	case *adminv1.GetDeploymentCredentialsRequest_Attrs:
-		attr = id.Attrs.AsMap()
+		attr = forVal.Attrs.AsMap()
 	default:
-		return nil, status.Error(codes.InvalidArgument, "id must be either user or attrs")
+		return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
 	}
 
 	// Generate JWT
