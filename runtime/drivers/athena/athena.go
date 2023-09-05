@@ -13,6 +13,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/athena"
 	"github.com/aws/aws-sdk-go-v2/service/athena/types"
 	s3v2 "github.com/aws/aws-sdk-go-v2/service/s3"
+	s3v2types "github.com/aws/aws-sdk-go-v2/service/s3/types"
+
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/eapache/go-resiliency/retrier"
 	"github.com/google/uuid"
@@ -187,46 +189,68 @@ func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
 }
 
-// DownloadFiles returns a file iterator over objects stored in gcs.
-// The credential json is read from config google_application_credentials.
-// Additionally in case `allow_host_credentials` is true it looks for "Application Default Credentials" as well
+func cleanPath(ctx context.Context, cfg aws.Config, bucketName, prefix string) error {
+	s3client := s3v2.NewFromConfig(cfg)
+	out, err := s3client.ListObjectsV2(ctx, &s3v2.ListObjectsV2Input{
+		Bucket: &bucketName,
+		Prefix: &prefix,
+	})
+	if err != nil {
+		return err
+	}
+
+	ids := make([]s3v2types.ObjectIdentifier, 0, len(out.Contents))
+	for _, o := range out.Contents {
+		ids = append(ids, s3v2types.ObjectIdentifier{
+			Key: o.Key,
+		})
+	}
+	_, err = s3client.DeleteObjects(ctx, &s3v2.DeleteObjectsInput{
+		Delete: &s3v2types.Delete{
+			Objects: ids,
+		},
+	})
+	return err
+}
+
 func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSource) (drivers.FileIterator, error) {
 	conf, err := parseSourceProperties(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
+	cfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithSharedConfigProfile(conf.ProfileName))
+	if err != nil {
+		return nil, err
+	}
+
 	prefix := "parquet_output_" + uuid.New().String()
 	bucketName := strings.TrimPrefix(strings.TrimRight(conf.OutputLocation, "/"), "s3://")
 	unloadPath := bucketName + "/" + prefix
-	err = c.unload(ctx, conf, "s3://"+unloadPath)
+	err = c.unload(ctx, cfg, conf, "s3://"+unloadPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unload: %w", err)
+		return nil, errors.Join(fmt.Errorf("failed to unload: %w", err), cleanPath(ctx, cfg, bucketName, prefix))
 	}
 
 	bucketObj, err := c.openBucket(ctx, conf, bucketName)
 	if err != nil {
-		return nil, fmt.Errorf("cannot open bucket %q: %w", unloadPath, err)
+		return nil, errors.Join(fmt.Errorf("cannot open bucket %q: %w", unloadPath, err), cleanPath(ctx, cfg, bucketName, prefix))
 	}
 
 	opts := rillblob.Options{
-		ExtractPolicy: &runtimev1.Source_ExtractPolicy{
-			// FilesStrategy: runtimev1.Source_ExtractPolicy_STRATEGY_HEAD,
-		},
-		GlobPattern: prefix + "/**",
+		ExtractPolicy: &runtimev1.Source_ExtractPolicy{},
+		GlobPattern:   prefix + "/**",
 	}
 
 	it, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
 	if err != nil {
-		// TODO :: fix this for single file access. for single file first call only happens during download
 		var failureErr awserr.RequestFailure
 		if !errors.As(err, &failureErr) {
-			return nil, fmt.Errorf("failed to create the iterator %q %w", unloadPath, err)
+			return nil, errors.Join(fmt.Errorf("failed to create the iterator %q %w", unloadPath, err), cleanPath(ctx, cfg, bucketName, prefix))
 		}
 
-		// check again
 		if errors.As(err, &failureErr) && (failureErr.StatusCode() == http.StatusForbidden || failureErr.StatusCode() == http.StatusBadRequest) {
-			return nil, drivers.NewPermissionDeniedError(fmt.Sprintf("can't access remote err: %v", failureErr))
+			return nil, errors.Join(drivers.NewPermissionDeniedError(fmt.Sprintf("can't access remote err: %v", failureErr)), cleanPath(ctx, cfg, bucketName, prefix))
 		}
 	}
 
@@ -234,7 +258,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSo
 }
 
 func (c *Connection) openBucket(ctx context.Context, conf *sourceProperties, bucket string) (*blob.Bucket, error) {
-	cfg, err := awsconfig.LoadDefaultConfig(context.TODO(), awsconfig.WithSharedConfigProfile(conf.ProfileName))
+	cfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithSharedConfigProfile(conf.ProfileName))
 	if err != nil {
 		return nil, err
 	}
@@ -243,16 +267,9 @@ func (c *Connection) openBucket(ctx context.Context, conf *sourceProperties, buc
 	return s3blob.OpenBucketV2(ctx, s3client, bucket, nil)
 }
 
-func (c *Connection) unload(ctx context.Context, conf *sourceProperties, path string) error {
+func (c *Connection) unload(ctx context.Context, cfg aws.Config, conf *sourceProperties, path string) error {
 	finalSQL := fmt.Sprintf("UNLOAD (%s) TO '%s' WITH (format = 'PARQUET')", conf.SQL, path)
-
-	cfg, err := awsconfig.LoadDefaultConfig(context.TODO(), awsconfig.WithSharedConfigProfile(conf.ProfileName))
-	if err != nil {
-		return err
-	}
-
 	client := athena.NewFromConfig(cfg)
-
 	resultConfig := &types.ResultConfiguration{
 		OutputLocation: aws.String("s3://" + strings.TrimPrefix(strings.TrimRight(conf.OutputLocation, "/"), "s3://") + "/output/"),
 	}
