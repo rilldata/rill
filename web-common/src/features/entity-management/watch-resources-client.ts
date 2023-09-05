@@ -28,23 +28,17 @@ function handleWatchResourceResponse(
   // invalidations will wait until the re-fetched query is completed
   // so, we should not `await` here
   switch (res.event) {
-    case "RESOURCE_EVENT_ADDED":
-      queryClient.refetchQueries(
-        getRuntimeServiceListResourcesQueryKey(instanceId)
-      );
-    // eslint-disable-next-line no-fallthrough
-    case "RESOURCE_EVENT_UPDATED_SPEC":
-    case "RESOURCE_EVENT_UPDATED_STATE":
+    case "RESOURCE_EVENT_WRITE":
       invalidateResource(queryClient, instanceId, res.resource);
       break;
 
-    case "RESOURCE_EVENT_DELETED":
+    case "RESOURCE_EVENT_DELETE":
       invalidateRemovedResource(queryClient, instanceId, res.resource);
-      queryClient.refetchQueries(
-        getRuntimeServiceListResourcesQueryKey(instanceId)
-      );
       break;
   }
+  queryClient.refetchQueries(
+    getRuntimeServiceListResourcesQueryKey(instanceId)
+  );
 }
 
 async function invalidateResource(
