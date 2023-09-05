@@ -1,5 +1,6 @@
 import { afterNavigate } from "$app/navigation";
-import { selectedMockUserStore } from "./stores";
+import { updateDevJWT } from "@rilldata/web-common/features/dashboards/granular-access-policies/updateDevJWT";
+import type { QueryClient } from "@tanstack/svelte-query";
 
 /**
  * Remove the selected mock user (if any) when navigating to a dashboard
@@ -10,10 +11,10 @@ import { selectedMockUserStore } from "./stores";
  * under this scenario, the catalog entry returns a 401, and it's required to enter the top-level
  * `Dashboard.svelte` component.
  */
-export function resetSelectedMockUserAfterNavigate() {
+export function resetSelectedMockUserAfterNavigate(queryClient: QueryClient) {
   afterNavigate((nav) => {
     if (nav.from.params.name !== nav.to.params.name) {
-      selectedMockUserStore.set(null);
+      updateDevJWT(queryClient, null);
     }
   });
 }
