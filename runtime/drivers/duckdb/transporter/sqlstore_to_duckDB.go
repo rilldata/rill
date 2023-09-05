@@ -69,10 +69,10 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, 
 
 		var query string
 		if create {
-			query = fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", dbSink.Table, from)
+			query = fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", safeName(dbSink.Table), from)
 			create = false
 		} else {
-			query = fmt.Sprintf("INSERT INTO %s (SELECT * FROM %s);", dbSink.Table, from)
+			query = fmt.Sprintf("INSERT INTO %s (SELECT * FROM %s);", safeName(dbSink.Table), from)
 		}
 
 		if err := s.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1}); err != nil {

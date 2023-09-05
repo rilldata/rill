@@ -167,11 +167,9 @@ func ResolveLocalPath(path, root string, allowHostAccess bool) (string, error) {
 // OpenTempFileInDir opens a temp file in given dir
 // If dir doesn't exist it creates full dir path (recursively if required)
 func OpenTempFileInDir(dir, filePath string) (*os.File, error) {
-	if dir != "" {
-		// recursively create all directories
-		if err := os.MkdirAll(dir, 0o750); err != nil {
-			return nil, err
-		}
+	// recursively create all directories
+	if err := os.MkdirAll(dir, 0o750); err != nil {
+		return nil, err
 	}
 
 	return os.CreateTemp(dir, fmt.Sprintf("%s*%s", Stem(filePath), FullExt(filePath)))

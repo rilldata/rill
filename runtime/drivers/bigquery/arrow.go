@@ -34,7 +34,7 @@ func (f *fileIterator) AsArrowRecordReader() (array.RecordReader, error) {
 	rec := &arrowRecordReader{
 		bqIter:      arrowIt,
 		arrowSchema: rdr.Schema(),
-		refCount:    1,
+		refCount:    atomic.Int64{},
 		allocator:   allocator,
 		logger:      f.logger,
 		records:     make([]arrow.Record, 0),
@@ -49,7 +49,7 @@ type arrowRecordReader struct {
 	records     []arrow.Record
 	cur         arrow.Record
 	arrowSchema *arrow.Schema
-	refCount    int64
+	refCount    atomic.Int64
 	err         error
 	logger      *zap.Logger
 	allocator   memory.Allocator
@@ -63,18 +63,18 @@ type arrowRecordReader struct {
 // Retain increases the reference count by 1.
 // Retain may be called simultaneously from multiple goroutines.
 func (rs *arrowRecordReader) Retain() {
-	atomic.AddInt64(&rs.refCount, 1)
+	rs.refCount.Add(1)
 }
 
 // Release decreases the reference count by 1.
 // When the reference count goes to zero, the memory is freed.
 // Release may be called simultaneously from multiple goroutines.
 func (rs *arrowRecordReader) Release() {
-	if atomic.LoadInt64(&rs.refCount) <= 0 {
+	if rs.refCount.Add(-1) <= 0 {
 		return
 	}
 
-	if atomic.AddInt64(&rs.refCount, -1) == 0 {
+	if rs.refCount.Add(-1) == 0 {
 		if rs.cur != nil {
 			rs.cur.Release()
 		}

@@ -15,7 +15,6 @@ import (
 	"github.com/apache/arrow/go/v13/parquet/pqarrow"
 	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 	"google.golang.org/api/iterator"
@@ -122,7 +121,7 @@ func (f *fileIterator) NextBatch(limit int) ([]string, error) {
 	}
 
 	// create a temp file
-	fw, err := fileutil.OpenTempFileInDir("", "temp.parquet")
+	fw, err := os.CreateTemp("", "temp.parquet")
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +150,7 @@ func (f *fileIterator) NextBatch(limit int) ([]string, error) {
 		pqarrow.NewArrowWriterProperties(pqarrow.WithStoreSchema()))
 	if err != nil {
 		if strings.Contains(err.Error(), "not implemented: support for DECIMAL256") {
-			return nil, fmt.Errorf("BIGNUMERIC datatype is not supported. Consider casting to varchar or NUMERIC(if loss of precision is acceptable) in the submitted query")
+			return nil, fmt.Errorf("BIGNUMERIC datatype is not supported. Consider casting to STRING or NUMERIC (if loss of precision is acceptable) in the submitted query")
 		}
 		return nil, err
 	}
@@ -213,7 +212,7 @@ func (f *fileIterator) downloadAsJSONFile() error {
 	}()
 
 	// create a temp file
-	fw, err := fileutil.OpenTempFileInDir("", "temp.ndjson")
+	fw, err := os.CreateTemp("", "temp.ndjson")
 	if err != nil {
 		return err
 	}
@@ -237,7 +236,7 @@ func (f *fileIterator) downloadAsJSONFile() error {
 			init = true
 			f.progress.Target(int64(f.bqIter.TotalRows), drivers.ProgressUnitRecord)
 			if hasBigNumericType(f.bqIter.Schema) {
-				return fmt.Errorf("BIGNUMERIC datatype is not supported. Consider casting to varchar or NUMERIC(if loss of precision is acceptable) in the submitted query")
+				return fmt.Errorf("BIGNUMERIC datatype is not supported. Consider casting to STRING or NUMERIC (if loss of precision is acceptable) in the submitted query")
 			}
 		}
 

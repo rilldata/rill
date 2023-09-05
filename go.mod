@@ -258,6 +258,7 @@ require (
 
 replace github.com/apache/calcite-avatica-go/v5 v5.2.0 => github.com/rilldata/calcite-avatica-go/v5 v5.0.0-20230621112535-eea498ff2a3d
 
+// revert to original SDK once this PR is merged : https://github.com/googleapis/google-cloud-go/pull/8506
 replace cloud.google.com/go/bigquery v1.52.0 => github.com/k-anshul/google-cloud-go/bigquery v0.0.0-20230830110740-57fe623cde03
 
 exclude modernc.org/sqlite v1.18.1
