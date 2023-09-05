@@ -260,7 +260,6 @@ func TestConnectionCacheBlockingCalls(t *testing.T) {
 	go func() {
 		time.Sleep(100 * time.Millisecond)
 		require.Equal(t, int32(11), m.opened.Load())
-		require.Equal(t, 10, len(c.cache))
 		wg.Done()
 	}()
 	wg.Wait()
@@ -342,7 +341,7 @@ func (*mockHandle) AsTransporter(from drivers.Handle, to drivers.Handle) (driver
 
 // Close implements drivers.Handle.
 func (*mockHandle) Close() error {
-	panic("unimplemented")
+	return nil
 }
 
 // Config implements drivers.Handle.

@@ -138,7 +138,9 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver string, co
 	// A deadlock is possible if goroutine waiting for the singleflight.Do result also holds the global mutex
 	// so unlock global mutex before entering singleflight.Do even if this means taking lock again for checking cache
 	c.lock.Unlock()
+	dedupe := true // singleflight call was deduped and connection's reference wasn't increased
 	conn, err := c.singleflight.Do(ctx, key, func(ctx context.Context) (*connWithRef, error) {
+		dedupe = false
 		// try cache again
 		c.lock.Lock()
 		conn, ok := c.cache[key]
@@ -168,6 +170,15 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver string, co
 	})
 	if err != nil {
 		return nil, nil, err
+	}
+	if dedupe {
+		c.lock.Lock()
+		defer c.lock.Unlock()
+		conn.ref++
+		// remove from lru-cache
+		c.lruCache.Remove(key)
+		// set in in-use cache
+		c.cache[key] = conn
 	}
 	return conn.Handle, c.releaseFn(key, conn), nil
 }
