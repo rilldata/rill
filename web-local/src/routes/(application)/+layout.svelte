@@ -11,6 +11,16 @@
   const queryClient = createQueryClient();
 
   beforeNavigate(retainFeaturesFlags);
+
+  // TODO: re-enable once controller changes are merged.
+  // onMount(() => {
+  //   const stopWatchFilesClient = startWatchFilesClient(queryClient);
+  //   const stopWatchResourcesClient = startWatchResourcesClient(queryClient);
+  //   return () => {
+  //     stopWatchFilesClient();
+  //     stopWatchResourcesClient();
+  //   };
+  // });
 </script>
 
 <QueryClientProvider client={queryClient}>
