@@ -30,7 +30,6 @@ export async function updateDevJWT(
     }
   }
 
-  console.log("update jwt", mockUser, jwt);
   selectedMockUserJWT.set(jwt);
   runtime.update((runtimeState) => {
     runtimeState.jwt = jwt;
