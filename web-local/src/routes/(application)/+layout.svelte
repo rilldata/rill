@@ -24,7 +24,7 @@
 </script>
 
 <QueryClientProvider client={queryClient}>
-  <DevJWTProvider let:jwt>
+  <DevJWTProvider instanceId="default" let:jwt>
     <RuntimeProvider host={RuntimeUrl} instanceId="default" {jwt}>
       <RillDeveloperLayout>
         <slot />
