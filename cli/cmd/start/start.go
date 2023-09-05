@@ -24,6 +24,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 	var grpcPort int
 	var verbose bool
 	var readonly bool
+	var reset bool
 	var noUI bool
 	var noOpen bool
 	var strict bool
@@ -87,7 +88,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 
 			client := activity.NewNoopClient()
 
-			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, olapDriver, olapDSN, projectPath, parsedLogFormat, variables, client)
+			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, reset, olapDriver, olapDSN, projectPath, parsedLogFormat, variables, client)
 			if err != nil {
 				return err
 			}
@@ -124,6 +125,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 	startCmd.Flags().BoolVar(&noUI, "no-ui", false, "Serve only the backend")
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
 	startCmd.Flags().BoolVar(&strict, "strict", false, "Exit if project has build errors")
+	startCmd.Flags().BoolVar(&reset, "reset", false, "Clear and re-ingest source data")
 	startCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
 	startCmd.Flags().StringSliceVarP(&variables, "env", "e", []string{}, "Set project variables")
 

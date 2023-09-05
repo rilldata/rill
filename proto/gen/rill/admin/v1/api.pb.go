@@ -1286,7 +1286,7 @@ type GetDeploymentCredentialsRequest struct {
 
 	Organization string `protobuf:"bytes,1,opt,name=organization,proto3" json:"organization,omitempty"`
 	Project      string `protobuf:"bytes,2,opt,name=project,proto3" json:"project,omitempty"`
-	Branch       string `protobuf:"bytes,3,opt,name=branch,proto3" json:"branch,omitempty"` // If empty, should use the ProdDeployment
+	Branch       string `protobuf:"bytes,3,opt,name=branch,proto3" json:"branch,omitempty"`
 	// Types that are assignable to For:
 	//
 	//	*GetDeploymentCredentialsRequest_UserId
@@ -1373,7 +1373,7 @@ type isGetDeploymentCredentialsRequest_For interface {
 }
 
 type GetDeploymentCredentialsRequest_UserId struct {
-	UserId string `protobuf:"bytes,4,opt,name=user_id,json=userId,proto3,oneof"` // If set, must construct a correct attrs payload for the user. See GetProject for how to do it.
+	UserId string `protobuf:"bytes,4,opt,name=user_id,json=userId,proto3,oneof"`
 }
 
 type GetDeploymentCredentialsRequest_Attrs struct {

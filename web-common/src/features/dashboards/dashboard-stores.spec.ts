@@ -255,6 +255,33 @@ describe("dashboard-stores", () => {
         getLocalIANA()
       ),
     });
+    const metrics = get(metricsExplorerStore).entities[AD_BIDS_NAME];
+    expect(metrics.showComparison).toBeTruthy();
+    expect(metrics.selectedComparisonTimeRange.name).toBe("CONTIGUOUS");
+    expect(metrics.selectedComparisonTimeRange.start).toEqual(
+      getOffset(
+        getStartOfPeriod(
+          TestTimeConstants.LAST_12_HOURS,
+          Period.HOUR,
+          getLocalIANA()
+        ),
+        Period.HOUR,
+        TimeOffsetType.ADD,
+        getLocalIANA()
+      )
+    );
+    expect(metrics.selectedComparisonTimeRange.end).toEqual(
+      getOffset(
+        getStartOfPeriod(
+          TestTimeConstants.LAST_6_HOURS,
+          Period.HOUR,
+          getLocalIANA()
+        ),
+        Period.HOUR,
+        TimeOffsetType.ADD,
+        getLocalIANA()
+      )
+    );
   });
 
   describe("Restore invalid state", () => {

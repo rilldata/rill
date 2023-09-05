@@ -4,6 +4,7 @@ This component will draw an axis on the specified side.
 <script lang="ts">
   import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { IntTimesPowerOfTenFormatter } from "@rilldata/web-common/lib/number-formatting/strategies/IntTimesPowerOfTen";
+  import { formatMsInterval } from "@rilldata/web-common/lib/number-formatting/strategies/intervals";
   import { timeFormat } from "d3-time-format";
   import { getContext } from "svelte";
   import { contexts } from "../constants";
@@ -182,7 +183,10 @@ This component will draw an axis on the specified side.
       onInvalidInput: "consoleWarn",
       padWithInsignificantZeros: false,
     });
-    formatterFunction = (x) => formatter.stringFormat(x);
+    formatterFunction = (x) =>
+      numberKind === "INTERVAL"
+        ? formatMsInterval(x)
+        : formatter.stringFormat(x);
   }
 
   let axisLength;

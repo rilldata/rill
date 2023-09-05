@@ -73,7 +73,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	case *runtimev1.ExportRequest_MetricsViewToplistRequest:
 		r := v.MetricsViewToplistRequest
 
-		mv, policy, err := resolveMVAndPolicy(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName)
+		mv, security, err := resolveMVAndSecurity(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName)
 		if err != nil {
 			if errors.Is(err, ErrForbidden) {
 				http.Error(w, "action not allowed", http.StatusUnauthorized)
@@ -82,9 +82,17 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		if !checkFieldAccess(r.DimensionName, policy) {
+		if !checkFieldAccess(r.DimensionName, security) {
 			http.Error(w, "action not allowed", http.StatusUnauthorized)
 			return
+		}
+
+		// validate measures access
+		for _, m := range r.MeasureNames {
+			if !checkFieldAccess(m, security) {
+				http.Error(w, "action not allowed", http.StatusUnauthorized)
+				return
+			}
 		}
 
 		err = validateInlineMeasures(r.InlineMeasures)
@@ -94,21 +102,21 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		}
 
 		q = &queries.MetricsViewToplist{
-			MetricsViewName:  r.MetricsViewName,
-			DimensionName:    r.DimensionName,
-			MeasureNames:     r.MeasureNames,
-			InlineMeasures:   r.InlineMeasures,
-			TimeStart:        r.TimeStart,
-			TimeEnd:          r.TimeEnd,
-			Sort:             r.Sort,
-			Filter:           r.Filter,
-			Limit:            request.Limit,
-			MetricsView:      mv,
-			ResolvedMVPolicy: policy,
+			MetricsViewName:    r.MetricsViewName,
+			DimensionName:      r.DimensionName,
+			MeasureNames:       r.MeasureNames,
+			InlineMeasures:     r.InlineMeasures,
+			TimeStart:          r.TimeStart,
+			TimeEnd:            r.TimeEnd,
+			Sort:               r.Sort,
+			Filter:             r.Filter,
+			Limit:              request.Limit,
+			MetricsView:        mv,
+			ResolvedMVSecurity: security,
 		}
 	case *runtimev1.ExportRequest_MetricsViewRowsRequest:
 		r := v.MetricsViewRowsRequest
-		mv, policy, err := resolveMVAndPolicy(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName)
+		mv, security, err := resolveMVAndSecurity(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName)
 		if err != nil {
 			if errors.Is(err, ErrForbidden) {
 				http.Error(w, "action not allowed", http.StatusUnauthorized)
@@ -119,20 +127,20 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		}
 
 		q = &queries.MetricsViewRows{
-			MetricsViewName:  r.MetricsViewName,
-			TimeStart:        r.TimeStart,
-			TimeEnd:          r.TimeEnd,
-			Filter:           r.Filter,
-			Sort:             r.Sort,
-			Limit:            request.Limit,
-			TimeZone:         r.TimeZone,
-			MetricsView:      mv,
-			ResolvedMVPolicy: policy,
+			MetricsViewName:    r.MetricsViewName,
+			TimeStart:          r.TimeStart,
+			TimeEnd:            r.TimeEnd,
+			Filter:             r.Filter,
+			Sort:               r.Sort,
+			Limit:              request.Limit,
+			TimeZone:           r.TimeZone,
+			MetricsView:        mv,
+			ResolvedMVSecurity: security,
 		}
 	case *runtimev1.ExportRequest_MetricsViewTimeSeriesRequest:
 		r := v.MetricsViewTimeSeriesRequest
 
-		mv, policy, err := resolveMVAndPolicy(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName)
+		mv, security, err := resolveMVAndSecurity(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName)
 		if err != nil {
 			if errors.Is(err, ErrForbidden) {
 				http.Error(w, "action not allowed", http.StatusUnauthorized)
@@ -149,16 +157,16 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		}
 
 		q = &queries.MetricsViewTimeSeries{
-			MetricsViewName:  r.MetricsViewName,
-			MeasureNames:     r.MeasureNames,
-			InlineMeasures:   r.InlineMeasures,
-			TimeStart:        r.TimeStart,
-			TimeEnd:          r.TimeEnd,
-			TimeGranularity:  r.TimeGranularity,
-			Filter:           r.Filter,
-			TimeZone:         r.TimeZone,
-			MetricsView:      mv,
-			ResolvedMVPolicy: policy,
+			MetricsViewName:    r.MetricsViewName,
+			MeasureNames:       r.MeasureNames,
+			InlineMeasures:     r.InlineMeasures,
+			TimeStart:          r.TimeStart,
+			TimeEnd:            r.TimeEnd,
+			TimeGranularity:    r.TimeGranularity,
+			Filter:             r.Filter,
+			TimeZone:           r.TimeZone,
+			MetricsView:        mv,
+			ResolvedMVSecurity: security,
 		}
 	default:
 		http.Error(w, fmt.Sprintf("unsupported request type: %s", reflect.TypeOf(v).Name()), http.StatusBadRequest)

@@ -319,7 +319,7 @@
         {#if values.length > slice}
           <Tooltip location="right">
             <button
-              on:open-dimension-details={() => selectDimension(dimensionName)}
+              on:click={() => selectDimension(dimensionName)}
               class="block flex-row w-full text-left transition-color ui-copy-muted"
               style:padding-left="30px"
             >
