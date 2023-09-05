@@ -40,6 +40,7 @@ func (f *fileIterator) AsArrowRecordReader() (array.RecordReader, error) {
 		records:     make([]arrow.Record, 0),
 		ctx:         f.ctx,
 	}
+	rec.refCount.Store(1)
 	return rec, nil
 }
 
@@ -119,6 +120,7 @@ func (rs *arrowRecordReader) Next() bool {
 	}
 	if rs.cur != nil {
 		rs.cur.Release()
+		rs.cur = nil
 	}
 	rs.cur = rs.records[0]
 	rs.records = rs.records[1:]
