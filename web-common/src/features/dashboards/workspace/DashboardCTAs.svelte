@@ -11,10 +11,18 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "../../../metrics/service/MetricsTypes";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import { featureFlags } from "../../feature-flags";
   import { projectShareStore } from "../dashboard-stores";
+  import { useDashboardPolicyCheck } from "../granular-access-policies/useDashboardPolicyCheck";
+  import ViewAsButton from "../granular-access-policies/ViewAsButton.svelte";
 
   export let metricViewName: string;
+
+  $: dashboardPolicyCheck = useDashboardPolicyCheck(
+    $runtime.instanceId,
+    metricViewName
+  );
 
   $: isEditableDashboard = $featureFlags.readOnly === false;
 
@@ -36,6 +44,9 @@
 </script>
 
 <PanelCTA side="right">
+  {#if $dashboardPolicyCheck.data}
+    <ViewAsButton />
+  {/if}
   {#if isEditableDashboard}
     <Tooltip distance={8}>
       <Button on:click={() => viewMetrics(metricViewName)} type="secondary">

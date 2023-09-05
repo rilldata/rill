@@ -121,7 +121,7 @@ func structTypeToMetricsViewColumn(v *runtimev1.StructType) []*runtimev1.Metrics
 // buildFilterClauseForMetricsViewFilter builds a SQL string of conditions joined with AND.
 // Unless the result is empty, it is prefixed with "AND".
 // I.e. it has the format "AND (...) AND (...) ...".
-func buildFilterClauseForMetricsViewFilter(mv *runtimev1.MetricsView, filter *runtimev1.MetricsViewFilter, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewPolicy) (string, []any, error) {
+func buildFilterClauseForMetricsViewFilter(mv *runtimev1.MetricsView, filter *runtimev1.MetricsViewFilter, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
 	var clauses []string
 	var args []any
 
@@ -143,8 +143,8 @@ func buildFilterClauseForMetricsViewFilter(mv *runtimev1.MetricsView, filter *ru
 		args = append(args, clauseArgs...)
 	}
 
-	if policy != nil && policy.Filter != "" {
-		clauses = append(clauses, "AND "+policy.Filter)
+	if policy != nil && policy.RowFilter != "" {
+		clauses = append(clauses, "AND "+policy.RowFilter)
 	}
 
 	return strings.Join(clauses, " "), args, nil

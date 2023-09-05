@@ -34,6 +34,26 @@ func (r *SourceReconciler) Close(ctx context.Context) error {
 	return nil
 }
 
+func (r *SourceReconciler) AssignSpec(from, to *runtimev1.Resource) error {
+	a := from.GetSource()
+	b := to.GetSource()
+	if a == nil || b == nil {
+		return fmt.Errorf("cannot assign spec from %T to %T", from.Resource, to.Resource)
+	}
+	b.Spec = a.Spec
+	return nil
+}
+
+func (r *SourceReconciler) AssignState(from, to *runtimev1.Resource) error {
+	a := from.GetSource()
+	b := to.GetSource()
+	if a == nil || b == nil {
+		return fmt.Errorf("cannot assign state from %T to %T", from.Resource, to.Resource)
+	}
+	b.Spec = a.Spec
+	return nil
+}
+
 func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName) runtime.ReconcileResult {
 	self, err := r.C.Get(ctx, n)
 	if err != nil {
@@ -47,7 +67,7 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	tableName := self.Meta.Name.Name
 
 	// Handle deletion
-	if self.Meta.Deleted {
+	if self.Meta.DeletedOn != nil {
 		olapDropTableIfExists(ctx, r.C, src.State.Connector, src.State.Table, false)
 		olapDropTableIfExists(ctx, r.C, src.State.Connector, r.stagingTableName(tableName), false)
 		return runtime.ReconcileResult{}
@@ -199,7 +219,7 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	// Reset spec.Trigger
 	if src.Spec.Trigger {
 		src.Spec.Trigger = false
-		err = r.C.UpdateSpec(ctx, self.Meta.Name, self.Meta.Refs, self.Meta.Owner, self.Meta.FilePaths, self)
+		err = r.C.UpdateSpec(ctx, self.Meta.Name, self)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
