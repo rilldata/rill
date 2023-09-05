@@ -65,7 +65,7 @@
             </span>
 
             <!-- Error tag -->
-            {#if !dashboardListItem.isValid}
+            {#if $proj.data.prodDeployment.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING && !dashboardListItem.isValid}
               <Tooltip distance={8} location="right">
                 <TooltipContent slot="tooltip-content">
                   <ProjectAccessControls {organization} {project}>
