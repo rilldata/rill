@@ -257,17 +257,10 @@ func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSo
 
 	it, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
 	if err != nil {
-		var failureErr awserr.RequestFailure
-		if !errors.As(err, &failureErr) {
-			return nil, errors.Join(fmt.Errorf("failed to create the iterator %q %w", unloadPath, err), cleanPath(ctx, cfg, bucketName, prefix))
-		}
-
-		if errors.As(err, &failureErr) && (failureErr.StatusCode() == http.StatusForbidden || failureErr.StatusCode() == http.StatusBadRequest) {
-			return nil, errors.Join(drivers.NewPermissionDeniedError(fmt.Sprintf("can't access remote err: %v", failureErr)), cleanPath(ctx, cfg, bucketName, prefix))
-		}
+		return nil, errors.Join(fmt.Errorf("cannot download parquet output %q %w", opts.GlobPattern, err), cleanPath(ctx, cfg, bucketName, prefix))
 	}
 
-	return it, err
+	return it 
 }
 
 func (c *Connection) openBucket(ctx context.Context, conf *sourceProperties, bucket string) (*blob.Bucket, error) {
