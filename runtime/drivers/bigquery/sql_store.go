@@ -224,8 +224,12 @@ func (f *fileIterator) downloadAsJSONFile() error {
 	// not implementing size check since this flow is expected to be run for less data size only
 	for {
 		row := make(map[string]bigquery.Value)
-		if err := f.bqIter.Next(&row); err != nil {
+		err := f.bqIter.Next(&row)
+		if err != nil {
 			if errors.Is(err, iterator.Done) {
+				if !init {
+					return fmt.Errorf("no results found for the query")
+				}
 				return nil
 			}
 			return err
