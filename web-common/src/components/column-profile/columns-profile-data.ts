@@ -10,6 +10,7 @@ import {
 } from "@rilldata/web-common/components/column-profile/column-types/numeric-profile-data";
 import { loadTimeSeries } from "@rilldata/web-common/components/column-profile/column-types/timestamp-profile-data";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
+import { createThrottler } from "@rilldata/web-common/lib/create-throttler";
 import {
   CATEGORICALS,
   INTERVALS,
@@ -28,6 +29,7 @@ import type {
   V1TimeSeriesValue,
 } from "@rilldata/web-common/runtime-client";
 import { BatchedRequest } from "@rilldata/web-common/runtime-client/batched-request";
+import { waitUntil } from "@rilldata/web-local/lib/util/waitUtils";
 import type { QueryObserverResult } from "@tanstack/query-core";
 import { getContext, setContext } from "svelte";
 import { Updater, writable } from "svelte/store";
@@ -69,6 +71,7 @@ export type ColumnsProfileDataMethods = {
 };
 export type ColumnsProfileDataStore = Readable<ColumnsProfileData> &
   ColumnsProfileDataMethods;
+type StoreUpdater = (state: ColumnsProfileData) => ColumnsProfileData;
 
 export function setColumnsProfileStore(store: ColumnsProfileDataStore) {
   setContext("COLUMNS_PROFILE", store);
@@ -88,6 +91,21 @@ export function createColumnsProfileData(): ColumnsProfileDataStore {
 
   let batchedRequest: BatchedRequest;
 
+  const throttler = createThrottler(500);
+  let updaters = new Array<StoreUpdater>();
+  const throttledUpdate = (updater: StoreUpdater) => {
+    updaters.push(updater);
+    throttler(() => {
+      update((state) => {
+        for (const up of updaters) {
+          up(state);
+        }
+        return state;
+      });
+      updaters = [];
+    });
+  };
+
   return {
     subscribe,
     load: async (
@@ -100,7 +118,12 @@ export function createColumnsProfileData(): ColumnsProfileDataStore {
       resetState(profileColumnResponse, update);
 
       batchedRequest = new BatchedRequest();
-      loadTableCardinality(instanceId, tableName, batchedRequest, update);
+      loadTableCardinality(
+        instanceId,
+        tableName,
+        batchedRequest,
+        throttledUpdate
+      );
 
       for (const column of profileColumnResponse.data.profileColumns) {
         const columnName = column.name;
@@ -111,14 +134,14 @@ export function createColumnsProfileData(): ColumnsProfileDataStore {
             tableName,
             columnName,
             batchedRequest,
-            update
+            throttledUpdate
           ),
           loadColumnCardinality(
             instanceId,
             tableName,
             columnName,
             batchedRequest,
-            update
+            throttledUpdate
           )
         );
 
@@ -133,7 +156,7 @@ export function createColumnsProfileData(): ColumnsProfileDataStore {
               tableName,
               columnName,
               batchedRequest,
-              update
+              throttledUpdate
             )
           );
         } else if (NUMERICS.has(type) || INTERVALS.has(type)) {
@@ -144,14 +167,14 @@ export function createColumnsProfileData(): ColumnsProfileDataStore {
               columnName,
               isFloat(type),
               batchedRequest,
-              update
+              throttledUpdate
             ),
             loadDescriptiveStatistics(
               instanceId,
               tableName,
               columnName,
               batchedRequest,
-              update
+              throttledUpdate
             )
           );
         } else if (TIMESTAMPS.has(type)) {
@@ -161,7 +184,7 @@ export function createColumnsProfileData(): ColumnsProfileDataStore {
               tableName,
               columnName,
               batchedRequest,
-              update
+              throttledUpdate
             )
           );
         } else if (isNested(type)) {
@@ -171,12 +194,13 @@ export function createColumnsProfileData(): ColumnsProfileDataStore {
               tableName,
               columnName,
               batchedRequest,
-              update
+              throttledUpdate
             )
           );
         }
 
-        Promise.all(columnPromises).then(() => {
+        Promise.all(columnPromises).then(async () => {
+          await waitUntil(() => updaters.length === 0);
           update((state) => {
             if (!state.profiles[columnName]) return;
             state.profiles[columnName].isFetching = false;
