@@ -26,6 +26,7 @@ This component needs to do the following:
   import CustomTimeRangeInput from "./CustomTimeRangeInput.svelte";
   import CustomTimeRangeMenuItem from "./CustomTimeRangeMenuItem.svelte";
   import SelectorButton from "./SelectorButton.svelte";
+  import Compare from "@rilldata/web-common/components/icons/Compare.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -129,10 +130,14 @@ This component needs to do the following:
         toggleFloatingElement();
       }}
     >
-      <span class="font-normal">
-        {showComparison ? "Comparing to" : ""}
-        <span class="font-bold">{label}</span>
-      </span>
+      <div class="flex items-center gap-x-3">
+        <span class="ui-copy-icon"><Compare size="16px" /></span>
+
+        <span class="font-normal">
+          {showComparison ? "Comparing to" : ""}
+          <span class="font-bold">{label}</span>
+        </span>
+      </div>
     </SelectorButton>
     <TooltipContent slot="tooltip-content" maxWidth="220px">
       Select a time range to compare to the selected time range
