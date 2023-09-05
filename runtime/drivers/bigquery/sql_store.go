@@ -121,7 +121,7 @@ func (f *fileIterator) NextBatch(limit int) ([]string, error) {
 	}
 
 	// create a temp file
-	fw, err := os.CreateTemp("", "temp.parquet")
+	fw, err := os.CreateTemp("", "temp*.parquet")
 	if err != nil {
 		return nil, err
 	}
@@ -212,7 +212,7 @@ func (f *fileIterator) downloadAsJSONFile() error {
 	}()
 
 	// create a temp file
-	fw, err := os.CreateTemp("", "temp.ndjson")
+	fw, err := os.CreateTemp("", "temp*.ndjson")
 	if err != nil {
 		return err
 	}

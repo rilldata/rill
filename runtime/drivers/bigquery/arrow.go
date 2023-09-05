@@ -71,7 +71,8 @@ func (rs *arrowRecordReader) Retain() {
 // When the reference count goes to zero, the memory is freed.
 // Release may be called simultaneously from multiple goroutines.
 func (rs *arrowRecordReader) Release() {
-	if rs.refCount.Add(-1) <= 0 {
+	if rs.refCount.Load() <= 0 {
+		rs.logger.Warn("too many releases")
 		return
 	}
 
