@@ -48,25 +48,12 @@ export type RuntimeServiceWatchResources200 = {
 };
 
 export type RuntimeServiceWatchResourcesParams = {
-  "refFilter.kind"?: string;
-  "refFilter.name"?: string;
-  "prefixFilter.kind"?: string;
-  "prefixFilter.name"?: string;
-  /**
-   * This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
-   */
-  annotationsFilter?: string;
+  kind?: string;
+  replay?: boolean;
 };
 
 export type RuntimeServiceListResourcesParams = {
-  "refFilter.kind"?: string;
-  "refFilter.name"?: string;
-  "prefixFilter.kind"?: string;
-  "prefixFilter.name"?: string;
-  /**
-   * This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
-   */
-  annotationsFilter?: string;
+  kind?: string;
 };
 
 export type RuntimeServiceGetResourceParams = {
@@ -415,8 +402,9 @@ export type ConnectorServiceBigQueryListDatasetsParams = {
 };
 
 export interface V1WatchResourcesResponse {
-  resource?: V1Resource;
   event?: V1ResourceEvent;
+  name?: V1ResourceName;
+  resource?: V1Resource;
 }
 
 export interface V1WatchLogsResponse {
@@ -490,6 +478,12 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -522,12 +516,6 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
-
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
 
 export type V1TableRowsResponseDataItem = { [key: string]: any };
 
@@ -591,11 +579,6 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
-export interface V1SourceV2 {
-  spec?: V1SourceSpec;
-  state?: V1SourceState;
-}
-
 export type V1SourceSpecProperties = { [key: string]: any };
 
 export interface V1SourceSpec {
@@ -607,6 +590,11 @@ export interface V1SourceSpec {
   stageChanges?: boolean;
   streamIngestion?: boolean;
   trigger?: boolean;
+}
+
+export interface V1SourceV2 {
+  spec?: V1SourceSpec;
+  state?: V1SourceState;
 }
 
 export type V1SourceProperties = { [key: string]: any };
@@ -656,6 +644,17 @@ export interface V1ResourceName {
   name?: string;
 }
 
+export type V1ReconcileStatus =
+  (typeof V1ReconcileStatus)[keyof typeof V1ReconcileStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ReconcileStatus = {
+  RECONCILE_STATUS_UNSPECIFIED: "RECONCILE_STATUS_UNSPECIFIED",
+  RECONCILE_STATUS_IDLE: "RECONCILE_STATUS_IDLE",
+  RECONCILE_STATUS_PENDING: "RECONCILE_STATUS_PENDING",
+  RECONCILE_STATUS_RUNNING: "RECONCILE_STATUS_RUNNING",
+} as const;
+
 export interface V1ResourceMeta {
   name?: V1ResourceName;
   refs?: V1ResourceName[];
@@ -680,10 +679,8 @@ export type V1ResourceEvent =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1ResourceEvent = {
   RESOURCE_EVENT_UNSPECIFIED: "RESOURCE_EVENT_UNSPECIFIED",
-  RESOURCE_EVENT_ADDED: "RESOURCE_EVENT_ADDED",
-  RESOURCE_EVENT_UPDATED_SPEC: "RESOURCE_EVENT_UPDATED_SPEC",
-  RESOURCE_EVENT_UPDATED_STATE: "RESOURCE_EVENT_UPDATED_STATE",
-  RESOURCE_EVENT_DELETED: "RESOURCE_EVENT_DELETED",
+  RESOURCE_EVENT_WRITE: "RESOURCE_EVENT_WRITE",
+  RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
 export interface V1Resource {
@@ -751,17 +748,6 @@ export interface V1RefreshAndReconcileRequest {
   dry?: boolean;
   strict?: boolean;
 }
-
-export type V1ReconcileStatus =
-  (typeof V1ReconcileStatus)[keyof typeof V1ReconcileStatus];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1ReconcileStatus = {
-  RECONCILE_STATUS_UNSPECIFIED: "RECONCILE_STATUS_UNSPECIFIED",
-  RECONCILE_STATUS_IDLE: "RECONCILE_STATUS_IDLE",
-  RECONCILE_STATUS_PENDING: "RECONCILE_STATUS_PENDING",
-  RECONCILE_STATUS_RUNNING: "RECONCILE_STATUS_RUNNING",
-} as const;
 
 /**
  * - CODE_UNSPECIFIED: Unspecified error
@@ -1099,7 +1085,7 @@ export interface V1MetricsViewSpec {
   /** Default time range for the dashboard. It should be a valid ISO 8601 duration string. */
   defaultTimeRange?: string;
   availableTimeZones?: string[];
-  policy?: MetricsViewSpecPolicyV2;
+  security?: MetricsViewSpecSecurityV2;
 }
 
 export interface V1MetricsViewState {
@@ -1229,7 +1215,7 @@ export interface V1MetricsView {
   defaultTimeRange?: string;
   /** Available time zones list preferred time zones using IANA location identifiers. */
   availableTimeZones?: string[];
-  policy?: MetricsViewPolicy;
+  security?: MetricsViewSecurity;
 }
 
 export interface V1MapType {
@@ -1752,14 +1738,14 @@ export interface SourceExtractPolicy {
   filesLimit?: string;
 }
 
-export interface PolicyV2FieldConditionV2 {
-  name?: string;
+export interface SecurityV2FieldConditionV2 {
   condition?: string;
+  names?: string[];
 }
 
-export interface PolicyFieldCondition {
-  name?: string;
+export interface SecurityFieldCondition {
   condition?: string;
+  names?: string[];
 }
 
 export interface NumericOutliersOutlier {
@@ -1786,11 +1772,11 @@ export const ModelDialect = {
   DIALECT_DUCKDB: "DIALECT_DUCKDB",
 } as const;
 
-export interface MetricsViewSpecPolicyV2 {
-  hasAccess?: string;
-  filter?: string;
-  include?: PolicyV2FieldConditionV2[];
-  exclude?: PolicyV2FieldConditionV2[];
+export interface MetricsViewSpecSecurityV2 {
+  access?: string;
+  rowFilter?: string;
+  include?: SecurityV2FieldConditionV2[];
+  exclude?: SecurityV2FieldConditionV2[];
 }
 
 export interface MetricsViewSpecMeasureV2 {
@@ -1809,11 +1795,11 @@ export interface MetricsViewSpecDimensionV2 {
   description?: string;
 }
 
-export interface MetricsViewPolicy {
-  hasAccess?: string;
-  filter?: string;
-  include?: PolicyFieldCondition[];
-  exclude?: PolicyFieldCondition[];
+export interface MetricsViewSecurity {
+  access?: string;
+  rowFilter?: string;
+  include?: SecurityFieldCondition[];
+  exclude?: SecurityFieldCondition[];
 }
 
 export interface MetricsViewMeasure {
