@@ -364,7 +364,7 @@ func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
 	return ctx, nil
 }
 
-func (s *Server) jwtAttributesForUser(ctx context.Context, permissions *adminv1.ProjectPermissions, orgID, userID string) (map[string]any, error) {
+func (s *Server) jwtAttributesForUser(ctx context.Context, permissions *adminv1.ProjectPermissions, userID, orgID string) (map[string]any, error) {
 	var attr map[string]any
 	// Find User
 	user, err := s.admin.DB.FindUser(ctx, userID)
