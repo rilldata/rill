@@ -1,11 +1,13 @@
 <script lang="ts">
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useMetaQuery, useModelHasTimeSeries } from "../selectors";
+  import { useMetaQuery } from "../selectors";
   import {
     createQueryServiceMetricsViewRows,
     createQueryServiceTableColumns,
   } from "@rilldata/web-common/runtime-client";
-  import { useDashboardStore, useFetchTimeRange } from "../dashboard-stores";
+  import { useDashboardStore } from "../dashboard-stores";
   import PreviewTable from "@rilldata/web-common/components/preview-table/PreviewTable.svelte";
   import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
   import { writable } from "svelte/store";
@@ -16,7 +18,7 @@
   const FALLBACK_SAMPLE_SIZE = 1000;
 
   $: dashboardStore = useDashboardStore(metricViewName);
-  $: fetchTimeStore = useFetchTimeRange(metricViewName);
+  const timeControlsStore = useTimeControlStore(getStateManagers());
 
   $: modelName = useMetaQuery<string>(
     $runtime.instanceId,
@@ -26,15 +28,6 @@
 
   $: name = $modelName?.data as string | undefined;
 
-  $: metricTimeSeries = useModelHasTimeSeries(
-    $runtime.instanceId,
-    metricViewName
-  );
-  $: hasTimeSeries = $metricTimeSeries.data;
-
-  $: timeStart = $fetchTimeStore?.start?.toISOString();
-  $: timeEnd = $fetchTimeStore?.end?.toISOString();
-
   let limit = writable(SAMPLE_SIZE);
 
   $: tableQuery = createQueryServiceMetricsViewRows(
@@ -43,14 +36,12 @@
     {
       limit: $limit,
       filter: $dashboardStore.filters,
-      timeStart: hasTimeSeries ? timeStart : undefined,
-      timeEnd: hasTimeSeries ? timeEnd : undefined,
+      timeStart: $timeControlsStore.timeStart,
+      timeEnd: $timeControlsStore.timeEnd,
     },
     {
       query: {
-        enabled:
-          (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
-          !!$dashboardStore?.filters,
+        enabled: $timeControlsStore.ready && !!$dashboardStore?.filters,
       },
     }
   );
