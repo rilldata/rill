@@ -41,7 +41,7 @@ import type {
   AdminServiceSetOrganizationMemberRoleBodyBody,
   V1LeaveOrganizationResponse,
   V1GetDeploymentCredentialsResponse,
-  AdminServiceGetDeploymentCredentialsParams,
+  AdminServiceGetDeploymentCredentialsBody,
   V1GetGitCredentialsResponse,
   V1ListProjectInvitesResponse,
   AdminServiceListProjectInvitesParams,
@@ -1216,25 +1216,24 @@ export const createAdminServiceLeaveOrganization = <
 export const adminServiceGetDeploymentCredentials = (
   organization: string,
   project: string,
-  params?: AdminServiceGetDeploymentCredentialsParams,
-  signal?: AbortSignal
+  adminServiceGetDeploymentCredentialsBody: AdminServiceGetDeploymentCredentialsBody
 ) => {
   return httpClient<V1GetDeploymentCredentialsResponse>({
     url: `/v1/organizations/${organization}/projects/${project}/credentials`,
-    method: "get",
-    params,
-    signal,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceGetDeploymentCredentialsBody,
   });
 };
 
 export const getAdminServiceGetDeploymentCredentialsQueryKey = (
   organization: string,
   project: string,
-  params?: AdminServiceGetDeploymentCredentialsParams
+  adminServiceGetDeploymentCredentialsBody: AdminServiceGetDeploymentCredentialsBody
 ) =>
   [
     `/v1/organizations/${organization}/projects/${project}/credentials`,
-    ...(params ? [params] : []),
+    adminServiceGetDeploymentCredentialsBody,
   ] as const;
 
 export const getAdminServiceGetDeploymentCredentialsQueryOptions = <
@@ -1243,7 +1242,7 @@ export const getAdminServiceGetDeploymentCredentialsQueryOptions = <
 >(
   organization: string,
   project: string,
-  params?: AdminServiceGetDeploymentCredentialsParams,
+  adminServiceGetDeploymentCredentialsBody: AdminServiceGetDeploymentCredentialsBody,
   options?: {
     query?: CreateQueryOptions<
       Awaited<ReturnType<typeof adminServiceGetDeploymentCredentials>>,
@@ -1263,13 +1262,17 @@ export const getAdminServiceGetDeploymentCredentialsQueryOptions = <
     getAdminServiceGetDeploymentCredentialsQueryKey(
       organization,
       project,
-      params
+      adminServiceGetDeploymentCredentialsBody
     );
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceGetDeploymentCredentials>>
-  > = ({ signal }) =>
-    adminServiceGetDeploymentCredentials(organization, project, params, signal);
+  > = () =>
+    adminServiceGetDeploymentCredentials(
+      organization,
+      project,
+      adminServiceGetDeploymentCredentialsBody
+    );
 
   return {
     queryKey,
@@ -1293,7 +1296,7 @@ export const createAdminServiceGetDeploymentCredentials = <
 >(
   organization: string,
   project: string,
-  params?: AdminServiceGetDeploymentCredentialsParams,
+  adminServiceGetDeploymentCredentialsBody: AdminServiceGetDeploymentCredentialsBody,
   options?: {
     query?: CreateQueryOptions<
       Awaited<ReturnType<typeof adminServiceGetDeploymentCredentials>>,
@@ -1305,7 +1308,7 @@ export const createAdminServiceGetDeploymentCredentials = <
   const queryOptions = getAdminServiceGetDeploymentCredentialsQueryOptions(
     organization,
     project,
-    params,
+    adminServiceGetDeploymentCredentialsBody,
     options
   );
 

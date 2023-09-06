@@ -101,10 +101,14 @@ export type AdminServiceListProjectInvitesParams = {
   pageToken?: string;
 };
 
-export type AdminServiceGetDeploymentCredentialsParams = {
+export type AdminServiceGetDeploymentCredentialsBodyAttrs = {
+  [key: string]: any;
+};
+
+export type AdminServiceGetDeploymentCredentialsBody = {
   branch?: string;
   userId?: string;
-  attrs?: { [key: string]: any };
+  attrs?: AdminServiceGetDeploymentCredentialsBodyAttrs;
 };
 
 export type AdminServiceRemoveOrganizationMemberParams = {

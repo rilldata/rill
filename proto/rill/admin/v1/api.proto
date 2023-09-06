@@ -253,7 +253,10 @@ service AdminService {
 
   // GetDeploymentCredentials returns runtime info and JWT on behalf of a specific user, or alternatively for a raw set of JWT attributes
   rpc GetDeploymentCredentials(GetDeploymentCredentialsRequest) returns (GetDeploymentCredentialsResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/credentials"};
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/credentials",
+      body: "*"
+    };
   }
 
   // SetSuperuser adds/remove a superuser
