@@ -83,8 +83,8 @@ func TestConnectionCacheWithAllShared(t *testing.T) {
 
 	require.True(t, conn1 == conn2)
 	require.True(t, conn2 == conn3)
-	require.Equal(t, 1, len(c.cache))
-	require.Equal(t, 0, c.lruCache.Len())
+	require.Equal(t, 1, len(c.acquired))
+	require.Equal(t, 0, c.lru.Len())
 }
 
 func TestConnectionCacheWithAllOpen(t *testing.T) {
@@ -106,16 +106,16 @@ func TestConnectionCacheWithAllOpen(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, conn3)
 
-	require.Equal(t, 3, len(c.cache))
-	require.Equal(t, 0, c.lruCache.Len())
+	require.Equal(t, 3, len(c.acquired))
+	require.Equal(t, 0, c.lru.Len())
 	// release all connections
 	r1()
 	r2()
 	r3()
-	require.Equal(t, 0, len(c.cache))
-	require.Equal(t, 1, c.lruCache.Len())
-	_, val, _ := c.lruCache.GetOldest()
-	require.True(t, conn3 == val.(*connWithRef).Handle)
+	require.Equal(t, 0, len(c.acquired))
+	require.Equal(t, 1, c.lru.Len())
+	_, val, _ := c.lru.GetOldest()
+	require.True(t, conn3 == val.(*connWithRef).handle)
 }
 
 func TestConnectionCacheParallel(t *testing.T) {
@@ -161,9 +161,9 @@ func TestConnectionCacheParallel(t *testing.T) {
 	wg.Wait()
 
 	// 10 connections were not released so should be present in in-use cache
-	require.Equal(t, 10, len(c.cache))
+	require.Equal(t, 10, len(c.acquired))
 	// 20 connections were released so 15 should be evicted
-	require.Equal(t, 5, c.lruCache.Len())
+	require.Equal(t, 5, c.lru.Len())
 }
 
 func TestConnectionCacheMultipleConfigs(t *testing.T) {
@@ -183,14 +183,14 @@ func TestConnectionCacheMultipleConfigs(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, conn3)
 
-	require.Equal(t, 1, len(c.cache))
-	require.Equal(t, 0, c.lruCache.Len())
+	require.Equal(t, 1, len(c.acquired))
+	require.Equal(t, 0, c.lru.Len())
 	// release all connections
 	r1()
 	r2()
 	r3()
-	require.Equal(t, 0, len(c.cache))
-	require.Equal(t, 1, c.lruCache.Len())
+	require.Equal(t, 0, len(c.acquired))
+	require.Equal(t, 1, c.lru.Len())
 }
 
 func TestConnectionCacheParallelCalls(t *testing.T) {
@@ -219,7 +219,7 @@ func TestConnectionCacheParallelCalls(t *testing.T) {
 	wg.Wait()
 
 	require.Equal(t, int32(1), m.opened.Load())
-	require.Equal(t, 1, len(c.cache))
+	require.Equal(t, 1, len(c.acquired))
 }
 
 func TestConnectionCacheBlockingCalls(t *testing.T) {
