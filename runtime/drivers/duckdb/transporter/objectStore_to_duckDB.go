@@ -106,7 +106,7 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, source drivers.Sourc
 				return err
 			}
 
-			query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", dbSink.Table, from)
+			query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", safeName(dbSink.Table), from)
 			if err := t.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1}); err != nil {
 				return err
 			}
@@ -150,9 +150,9 @@ func (a *appender) appendData(ctx context.Context, files []string, format string
 
 	var query string
 	if a.allowSchemaRelaxation {
-		query = fmt.Sprintf("INSERT INTO %q BY NAME (SELECT * FROM %s);", a.sink.Table, from)
+		query = fmt.Sprintf("INSERT INTO %s BY NAME (SELECT * FROM %s);", safeName(a.sink.Table), from)
 	} else {
-		query = fmt.Sprintf("INSERT INTO %q (SELECT * FROM %s);", a.sink.Table, from)
+		query = fmt.Sprintf("INSERT INTO %s (SELECT * FROM %s);", safeName(a.sink.Table), from)
 	}
 	a.logger.Debug("generated query", zap.String("query", query), observability.ZapCtx(ctx))
 	err = a.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
@@ -167,7 +167,7 @@ func (a *appender) appendData(ctx context.Context, files []string, format string
 		return fmt.Errorf("failed to update schema %w", err)
 	}
 
-	query = fmt.Sprintf("INSERT INTO %q BY NAME (SELECT * FROM %s);", a.sink.Table, from)
+	query = fmt.Sprintf("INSERT INTO %s BY NAME (SELECT * FROM %s);", safeName(a.sink.Table), from)
 	a.logger.Debug("generated query", zap.String("query", query), observability.ZapCtx(ctx))
 	return a.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
 }
@@ -182,7 +182,7 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 	}
 
 	// combined schema
-	qry := fmt.Sprintf("DESCRIBE ((SELECT * FROM %s limit 0) UNION ALL BY NAME (SELECT * FROM %s limit 0));", a.sink.Table, from)
+	qry := fmt.Sprintf("DESCRIBE ((SELECT * FROM %s limit 0) UNION ALL BY NAME (SELECT * FROM %s limit 0));", safeName(a.sink.Table), from)
 	unionSchema, err := a.scanSchemaFromQuery(ctx, qry)
 	if err != nil {
 		return err
@@ -190,7 +190,7 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 
 	// current schema
 	if a.tableSchema == nil {
-		a.tableSchema, err = a.scanSchemaFromQuery(ctx, fmt.Sprintf("DESCRIBE %q;", a.sink.Table))
+		a.tableSchema, err = a.scanSchemaFromQuery(ctx, fmt.Sprintf("DESCRIBE %s;", safeName(a.sink.Table)))
 		if err != nil {
 			return err
 		}
@@ -229,7 +229,7 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 
 	for colName, colType := range newCols {
 		a.tableSchema[colName] = colType
-		qry := fmt.Sprintf("ALTER TABLE %q ADD COLUMN %q %s", a.sink.Table, colName, colType)
+		qry := fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", safeName(a.sink.Table), safeName(colName), colType)
 		if err := a.to.Exec(ctx, &drivers.Statement{Query: qry}); err != nil {
 			return err
 		}
@@ -237,7 +237,7 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 
 	for colName, colType := range colTypeChanged {
 		a.tableSchema[colName] = colType
-		qry := fmt.Sprintf("ALTER TABLE %q ALTER COLUMN %q SET DATA TYPE %s", a.sink.Table, colName, colType)
+		qry := fmt.Sprintf("ALTER TABLE %s ALTER COLUMN %s SET DATA TYPE %s", safeName(a.sink.Table), safeName(colName), colType)
 		if err := a.to.Exec(ctx, &drivers.Statement{Query: qry}); err != nil {
 			return err
 		}

@@ -1,6 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
+  import { updateDevJWT } from "@rilldata/web-common/features/dashboards/granular-access-policies/updateDevJWT";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { IconSpaceFixer } from "../../../components/button";
   import { Chip } from "../../../components/chip";
   import Add from "../../../components/icons/Add.svelte";
@@ -15,6 +17,8 @@
 
   let viewAsMenuOpen = false;
 
+  const queryClient = useQueryClient();
+
   $: mockUsers = useMockUsers($runtime.instanceId);
 
   const iconColor = "#15141A";
@@ -25,8 +29,8 @@
   distance={8}
   let:toggleFloatingElement
   location="bottom"
-  on:open={() => (viewAsMenuOpen = true)}
   on:close={() => (viewAsMenuOpen = false)}
+  on:open={() => (viewAsMenuOpen = true)}
 >
   {#if $selectedMockUserStore === null}
     <button
@@ -44,7 +48,7 @@
       on:click={toggleFloatingElement}
       on:remove={() => {
         if (viewAsMenuOpen) toggleFloatingElement();
-        selectedMockUserStore.set(null);
+        updateDevJWT(queryClient, null);
       }}
       active={viewAsMenuOpen}
     >
@@ -85,7 +89,7 @@
           selected={$selectedMockUserStore?.email === user?.email}
           on:select={() => {
             toggleFloatingElement();
-            selectedMockUserStore.set(user);
+            updateDevJWT(queryClient, user);
           }}
         >
           <svelte:fragment slot="icon">
@@ -107,7 +111,7 @@
         goto(`/rill.yaml?addMockUser=true`);
       }}
     >
-      <Add size="16px" slot="icon" color={iconColor} />
+      <Add color={iconColor} size="16px" slot="icon" />
       <span>Add mock user</span>
     </MenuItem>
   </Menu>

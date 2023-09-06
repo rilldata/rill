@@ -163,7 +163,6 @@
 
   function zoomScrub() {
     if (isScrubbing) return;
-    resetScrub();
 
     const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
     const adjustedStart = start ? localToTimeZoneOffset(start, zone) : start;
@@ -214,32 +213,32 @@
 
 <div class={cursorClass}>
   <SimpleDataGraphic
-    overflowHidden={false}
-    yMin={internalYMin}
-    yMax={internalYMax}
-    shareYScale={false}
-    yType="number"
-    xType="date"
-    {width}
-    {height}
-    top={4}
-    left={0}
-    right={50}
-    bind:mouseoverValue
     bind:hovered
+    bind:mouseoverValue
+    {height}
+    left={0}
     let:config
     let:yScale
-    yMinTweenProps={tweenProps}
-    yMaxTweenProps={tweenProps}
+    on:click={() => onMouseClick()}
+    on:contextmenu={(e) => onContextMenu(e)}
+    on:scrub-end={() => scrub?.endScrub()}
+    on:scrub-move={(e) => scrub?.moveScrub(e)}
+    on:scrub-start={(e) => scrub?.startScrub(e)}
+    overflowHidden={false}
+    right={50}
+    shareYScale={false}
+    top={4}
+    {width}
     xMaxTweenProps={tweenProps}
     xMinTweenProps={tweenProps}
-    on:click={() => onMouseClick()}
-    on:scrub-start={(e) => scrub?.startScrub(e)}
-    on:scrub-move={(e) => scrub?.moveScrub(e)}
-    on:scrub-end={() => scrub?.endScrub()}
-    on:contextmenu={(e) => onContextMenu(e)}
+    xType="date"
+    yMax={internalYMax}
+    yMaxTweenProps={tweenProps}
+    yMin={internalYMin}
+    yMinTweenProps={tweenProps}
+    yType="number"
   >
-    <Axis side="right" {numberKind} />
+    <Axis {numberKind} side="right" />
     <Grid />
     <Body>
       <!-- key on the time range itself to prevent weird tweening animations.
@@ -294,11 +293,11 @@
         {/if}
       {/key}
       <line
+        class="stroke-blue-200"
         x1={config.plotLeft}
         x2={config.plotLeft + config.plotRight}
         y1={yScale(0)}
         y2={yScale(0)}
-        class="stroke-blue-200"
       />
     </Body>
     {#if !isScrubbing && mouseoverValue?.x}
@@ -358,20 +357,20 @@
       bind:cursorClass
       bind:preventScrubReset
       bind:this={scrub}
-      start={scrubStart}
-      stop={scrubEnd}
-      {isScrubbing}
-      {isOverStart}
-      {isOverEnd}
-      {isInsideScrub}
       {data}
+      {isInsideScrub}
+      {isOverEnd}
+      {isOverStart}
+      {isScrubbing}
       {labelAccessor}
-      timeGrainLabel={TIME_GRAIN[timeGrain].label}
       {mouseoverTimeFormat}
-      on:zoom={() => zoomScrub()}
       on:reset={() => resetScrub()}
       on:update={(e) =>
         updateScrub(e.detail.start, e.detail.stop, e.detail.isScrubbing)}
+      on:zoom={() => zoomScrub()}
+      start={scrubStart}
+      stop={scrubEnd}
+      timeGrainLabel={TIME_GRAIN[timeGrain].label}
     />
   </SimpleDataGraphic>
 </div>

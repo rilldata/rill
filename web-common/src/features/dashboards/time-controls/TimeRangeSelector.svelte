@@ -3,6 +3,8 @@
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     ALL_TIME,
     DEFAULT_TIME_RANGES,
@@ -40,6 +42,8 @@
   const dispatch = createEventDispatcher();
 
   $: dashboardStore = useDashboardStore(metricViewName);
+
+  const timeControlsStore = useTimeControlStore(getStateManagers());
 
   let isCustomRangeOpen = false;
   let isCalendarRecentlyClosed = false;
@@ -136,7 +140,7 @@
     }, 300);
   }
 
-  $: currentSelection = $dashboardStore?.selectedTimeRange?.name;
+  $: currentSelection = $timeControlsStore?.selectedTimeRange?.name;
   $: intermediateSelection = currentSelection;
 
   const handleMenuOpen = () => {
@@ -179,7 +183,7 @@
             {#if intermediateSelection === TimeRangePreset.CUSTOM}
               Custom range
             {:else if currentSelection in DEFAULT_TIME_RANGES}
-              {DEFAULT_TIME_RANGES[$dashboardStore?.selectedTimeRange?.name]
+              {DEFAULT_TIME_RANGES[$timeControlsStore?.selectedTimeRange?.name]
                 .label}
             {:else}
               Select a time range
@@ -188,9 +192,9 @@
         </div>
         <span style:transform="translateY(1px)">
           {prettyFormatTimeRange(
-            $dashboardStore?.selectedTimeRange?.start,
-            $dashboardStore?.selectedTimeRange?.end,
-            $dashboardStore?.selectedTimeRange?.name,
+            $timeControlsStore?.selectedTimeRange?.start,
+            $timeControlsStore?.selectedTimeRange?.end,
+            $timeControlsStore?.selectedTimeRange?.name,
             $dashboardStore?.selectedTimezone
           )}
         </span>
@@ -203,11 +207,11 @@
     </button>
   {/if}
   <Menu
+    label="Time range selector"
+    maxWidth="300px"
     on:click-outside={() => onClickOutside(toggleFloatingElement)}
     on:escape={toggleFloatingElement}
     slot="floating-element"
-    label="Time range selector"
-    maxWidth="300px"
   >
     {@const allTime = {
       name: TimeRangePreset.ALL_TIME,

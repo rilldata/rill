@@ -2,6 +2,8 @@
   import IconSpaceFixer from "@rilldata/web-common/components/button/IconSpaceFixer.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import WithSelectMenu from "@rilldata/web-common/components/menu/wrappers/WithSelectMenu.svelte";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
   import type { TimeGrain } from "@rilldata/web-common/lib/time/types";
@@ -15,8 +17,10 @@
 
   const dispatch = createEventDispatcher();
 
+  const timeControlsStore = useTimeControlStore(getStateManagers());
+
   $: dashboardStore = useDashboardStore(metricViewName);
-  $: activeTimeGrain = $dashboardStore?.selectedTimeRange?.interval;
+  $: activeTimeGrain = $timeControlsStore.selectedTimeRange?.interval;
   $: activeTimeGrainLabel = TIME_GRAIN[activeTimeGrain]?.label;
 
   $: timeGrains = timeGrainOptions
