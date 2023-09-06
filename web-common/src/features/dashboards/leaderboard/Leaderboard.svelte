@@ -16,9 +16,11 @@
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import {
+    createQueryServiceMetricsViewComparisonToplist,
     createQueryServiceMetricsViewToplist,
     MetricsViewDimension,
     MetricsViewMeasure,
+    V1MetricsViewComparisonSortType,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -32,7 +34,12 @@
   import { getFilterForComparsion } from "../dimension-table/dimension-table-utils";
   import type { FormatPreset } from "../humanize-numbers";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
-  import { prepareLeaderboardItemData } from "./leaderboard-utils";
+  import {
+    LeaderboardItemData2,
+    getLabeledComparisonFromComparisonRow,
+    prepareLeaderboardItemData,
+    prepareLeaderboardItemData2,
+  } from "./leaderboard-utils";
   import LeaderboardListItem from "./LeaderboardListItem.svelte";
 
   export let metricViewName: string;
@@ -215,7 +222,7 @@
       sort: [
         {
           name: measure?.name,
-          ascending: false,
+          ascending: sortAscending,
         },
       ],
     },
@@ -238,6 +245,121 @@
         label: val[dimensionColumn],
       })) ?? [];
   }
+
+  $: sortedQueryBody = {
+    dimensionName: dimensionName,
+    measureNames: [measure?.name],
+    baseTimeRange: { start: timeStart, end: timeEnd },
+    comparisonTimeRange: {
+      start: comparisonTimeStart,
+      end: comparisonTimeEnd,
+    },
+    sort: [
+      {
+        ascending: sortAscending,
+        measureName: measure?.name,
+        type: V1MetricsViewComparisonSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
+      },
+    ],
+    filter: filterForDimension,
+    // this limit was only appropriate for the comparison query.
+    // limit: currentVisibleValues.length.toString(),
+    limit: "250",
+    offset: "0",
+  };
+  // $: console.log("sortedQueryBody", sortedQueryBody);
+
+  // NOTE: this is the version of "enabled" that applied to
+  // the comparison query.
+  // $: sortedQueryEnabled = Boolean(
+  //   showTimeComparison &&
+  //     !!comparisonTimeStart &&
+  //     !!comparisonTimeEnd &&
+  //     !!updatedFilters
+  // );
+
+  $: sortedQueryEnabled =
+    (hasTimeSeries ? !!timeStart && !!timeEnd : true) && !!filterForDimension;
+
+  // $: console.log("sortedQueryEnabled", sortedQueryEnabled);
+
+  $: sortedQuery = createQueryServiceMetricsViewComparisonToplist(
+    $runtime.instanceId,
+    metricViewName,
+    sortedQueryBody,
+    {
+      query: {
+        enabled: sortedQueryEnabled,
+      },
+    }
+  );
+
+  // $: console.log("$topListQuery.status", $topListQuery.status);
+  // $: console.log("$sortedQuery.status", $sortedQuery.status);
+
+  // $: console.log(
+  //   "topListQuery",
+  //   $topListQuery?.data?.data?.map((v) => [v.domain, v.total_records])
+  // );
+  // $: console.log(
+  //   "comparisonTopListQuery",
+  //   $comparisonTopListQuery?.data?.data?.map((v) => [v.domain, v.total_records])
+  // );
+  // $: if ($sortedQuery.isError) {
+  //   console.log("sortedQuery isError", $sortedQuery);
+  // }
+
+  // $: console.log("$sortedQuery.status", $sortedQuery.status);
+
+  let aboveTheFold: LeaderboardItemData2[] = [];
+  let selectedBelowTheFold: LeaderboardItemData2[] = [];
+
+  /** replace data after fetched. */
+  $: if (!$sortedQuery?.isFetching) {
+    const leaderboardData = prepareLeaderboardItemData2(
+      $sortedQuery?.data?.rows?.map((r) =>
+        getLabeledComparisonFromComparisonRow(r, measure.name)
+      ) ?? [],
+      slice,
+      activeValues,
+      null
+    );
+
+    aboveTheFold = leaderboardData.aboveTheFold;
+    selectedBelowTheFold = leaderboardData.selectedBelowTheFold;
+    console.log("sortedQuery data", dimensionName, leaderboardData);
+  }
+
+  $: if (!$sortedQuery.isFetching) {
+    console.log(
+      "sortedQuery",
+      dimensionName,
+      $sortedQuery?.data?.rows.map((v) => [
+        v.dimensionValue,
+        {
+          name: v.measureValues[0].measureName,
+          base: v.measureValues[0].baseValue,
+          comparison: v.measureValues[0].comparisonValue,
+          deltaRel: v.measureValues[0].deltaRel,
+          deltaAbs: v.measureValues[0].deltaAbs,
+        },
+      ])
+    );
+  }
+
+  //   console.log(
+  //     "sortedQuery RAW ROWS",
+  //     dimensionName,
+  //     $sortedQuery?.data?.rows
+  //   );
+  //   console.log(
+  //     "sortedQuery getLabeledComparisonFromComparisonRow",
+  //     dimensionName,
+  //     $sortedQuery?.data?.rows.map((r) =>
+  //       getLabeledComparisonFromComparisonRow(r, measure.name)
+  //     )
+  //   );
+  // }
 
   let hovered: boolean;
 
