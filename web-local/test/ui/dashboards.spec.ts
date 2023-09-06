@@ -675,6 +675,9 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
   // Switch to measure "total bid price"
   await page.getByRole("button", { name: "Total rows" }).click();
   await page.getByRole("menuitem", { name: "Total Bid Price" }).click();
+  await page.getByRole("button", { name: "Total rows" }).click();
+  await page.getByRole("button", { name: "Total rows" }).click();
+  await page.getByRole("menuitem", { name: "Total Bid Price" }).click();
 
   // open the context column menu
   await page.getByLabel("Select a context column").click();
