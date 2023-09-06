@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
+	"golang.org/x/exp/slog"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -97,7 +98,23 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		// Note: Not exiting early. It might need to be (re-)ingested, and we need to set the correct retrigger time based on the refresh schedule.
 	}
 
-	// TODO: Exit if refs have errors
+	// Check refs - stop if any of them are invalid
+	err = checkRefs(ctx, r.C, self.Meta.Refs)
+	if err != nil {
+		if !src.Spec.StageChanges && src.State.Table != "" {
+			// Remove previously ingested table
+			olapDropTableIfExists(ctx, r.C, src.State.Connector, src.State.Table, false)
+			src.State.Connector = ""
+			src.State.Table = ""
+			src.State.SpecHash = ""
+			src.State.RefreshedOn = nil
+			err = r.C.UpdateState(ctx, self.Meta.Name, self)
+			if err != nil {
+				r.C.Logger.Error("refs check: failed to update state", slog.Any("err", err))
+			}
+		}
+		return runtime.ReconcileResult{Err: err}
+	}
 
 	// Use a hash of ingestion-related fields from the spec to determine if we need to re-ingest
 	hash, err := r.ingestionSpecHash(src.Spec)

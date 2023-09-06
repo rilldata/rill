@@ -3,6 +3,7 @@ package reconcilers
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -12,6 +13,26 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/robfig/cron/v3"
 )
+
+// checkRefs checks that all refs exist, are idle, and have no errors.
+func checkRefs(ctx context.Context, c *runtime.Controller, refs []*runtimev1.ResourceName) error {
+	for _, ref := range refs {
+		res, err := c.Get(ctx, ref)
+		if err != nil {
+			if errors.Is(err, drivers.ErrResourceNotFound) {
+				return fmt.Errorf("dependency error: resource %q (%s) not found", ref.Name, ref.Kind)
+			}
+			return fmt.Errorf("dependency error: failed to get resource %q (%s): %w", ref.Name, ref.Kind, err)
+		}
+		if res.Meta.ReconcileStatus != runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE {
+			return fmt.Errorf("dependency error: resource %q (%s) is not idle", ref.Name, ref.Kind)
+		}
+		if res.Meta.ReconcileError != "" {
+			return fmt.Errorf("dependency error: resource %q (%s) has an error", ref.Name, ref.Kind)
+		}
+	}
+	return nil
+}
 
 // nextRefreshTime returns the earliest time AFTER t that the schedule should trigger.
 func nextRefreshTime(t time.Time, schedule *runtimev1.Schedule) (time.Time, error) {

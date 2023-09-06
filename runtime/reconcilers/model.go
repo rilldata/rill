@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"golang.org/x/exp/slog"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -97,7 +98,25 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		// Note: Not exiting early. It might need to be created/materialized., and we need to set the correct retrigger time based on the refresh schedule.
 	}
 
-	// TODO: Exit if refs have errors
+	// Check refs - stop if any of them are invalid
+	err = checkRefs(ctx, r.C, self.Meta.Refs)
+	if err != nil {
+		if !model.Spec.StageChanges && model.State.Table != "" {
+			// Remove previously ingested table
+			if t, ok := olapTableInfo(ctx, r.C, model.State.Connector, model.State.Table); ok {
+				olapDropTableIfExists(ctx, r.C, model.State.Connector, model.State.Table, t.View)
+			}
+			model.State.Connector = ""
+			model.State.Table = ""
+			model.State.SpecHash = ""
+			model.State.RefreshedOn = nil
+			err = r.C.UpdateState(ctx, self.Meta.Name, self)
+			if err != nil {
+				r.C.Logger.Error("refs check: failed to update state", slog.Any("err", err))
+			}
+		}
+		return runtime.ReconcileResult{Err: err}
+	}
 
 	// TODO: Incorporate changes to refs in hash – track if refs have changed (deleted, added, or state updated)
 

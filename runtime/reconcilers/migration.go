@@ -53,6 +53,12 @@ func (r *MigrationReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 	}
 	mig := self.GetMigration()
 
+	// Check refs - stop if any of them are invalid
+	err = checkRefs(ctx, r.C, self.Meta.Refs)
+	if err != nil {
+		return runtime.ReconcileResult{Err: err}
+	}
+
 	from := mig.State.Version
 	to := mig.Spec.Version
 

@@ -54,6 +54,9 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 	}
 	mv := self.GetMetricsView()
 
+	// NOTE: Not checking refs here since refs may still be valid even if they have errors (in case of staged changes).
+	// Instead, we just validate against the table name.
+
 	validateErr := r.validate(ctx, mv.Spec)
 
 	if errors.Is(validateErr, ctx.Err()) {
