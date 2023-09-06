@@ -62,7 +62,7 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, 
 		}
 
 		format := fileutil.FullExt(files[0])
-		from, err := sourceReader(files, format, make(map[string]any))
+		from, err := sourceReader(files, format, make(map[string]any), false)
 		if err != nil {
 			return err
 		}

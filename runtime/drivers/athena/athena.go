@@ -14,12 +14,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/athena/types"
 	s3v2 "github.com/aws/aws-sdk-go-v2/service/s3"
 	s3v2types "github.com/aws/aws-sdk-go-v2/service/s3/types"
-
 	"github.com/eapache/go-resiliency/retrier"
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
 	"gocloud.dev/blob"
 	"gocloud.dev/blob/s3blob"
@@ -79,7 +79,7 @@ type configProperties struct {
 	SessionToken    string `mapstructure:"aws_access_token"`
 }
 
-func (d driver) Open(config map[string]any, shared bool, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("athena driver can't be shared")
 	}
@@ -298,7 +298,6 @@ func (c *Connection) unload(ctx context.Context, cfg aws.Config, conf *sourcePro
 		status, err := client.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{
 			QueryExecutionId: athenaExecution.QueryExecutionId,
 		})
-
 		if err != nil {
 			return err
 		}
