@@ -68,18 +68,18 @@ type MetricsView struct {
 	AvailableTimeZones []string `yaml:"available_time_zones,omitempty"`
 	Dimensions         []*Dimension
 	Measures           []*Measure
-	Policy             *Policy `yaml:"policy,omitempty"`
+	Security           *Security `yaml:"security,omitempty"`
 }
 
-type Policy struct {
-	HasAccess string               `yaml:"has_access,omitempty"`
-	Filter    string               `yaml:"filter,omitempty"`
-	Include   []*ConditionalColumn `yaml:"include,omitempty"`
-	Exclude   []*ConditionalColumn `yaml:"exclude,omitempty"`
+type Security struct {
+	Access    string              `yaml:"access,omitempty"`
+	RowFilter string              `yaml:"row_filter,omitempty"`
+	Include   []*ConditionalField `yaml:"include,omitempty"`
+	Exclude   []*ConditionalField `yaml:"exclude,omitempty"`
 }
 
-type ConditionalColumn struct {
-	Name      string
+type ConditionalField struct {
+	Names     []string
 	Condition string `yaml:"if"`
 }
 
@@ -344,6 +344,8 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 		metrics.Label = metrics.DisplayName
 	}
 
+	names := map[string]bool{}
+
 	// remove ignored measures and dimensions
 	var measures []*Measure
 	for _, measure := range metrics.Measures {
@@ -351,11 +353,11 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 			continue
 		}
 		measures = append(measures, measure)
+		if measure.Name != "" {
+			names[measure.Name] = true
+		}
 	}
 	metrics.Measures = measures
-
-	// create a map of dimensions to be used for policy validation
-	dimensionsMap := map[string]bool{}
 
 	var dimensions []*Dimension
 	for _, dimension := range metrics.Dimensions {
@@ -367,9 +369,56 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 			dimension.Column = dimension.Property
 		}
 		dimensions = append(dimensions, dimension)
-		dimensionsMap[dimension.Column] = true
+
+		if dimension.Name != "" {
+			names[dimension.Name] = true
+		} else if dimension.Column != "" {
+			names[dimension.Column] = true
+		}
 	}
 	metrics.Dimensions = dimensions
+
+	if metrics.Security != nil {
+		templateData := rillv1.TemplateData{User: map[string]interface{}{
+			"name":   "dummy",
+			"email":  "mock@example.org",
+			"domain": "example.org",
+			"groups": []interface{}{"all"},
+			"admin":  false,
+		}}
+
+		if metrics.Security.Access != "" {
+			access, err := rillv1.ResolveTemplate(metrics.Security.Access, templateData)
+			if err != nil {
+				return nil, fmt.Errorf(`invalid 'security': 'access' templating is not valid: %w`, err)
+			}
+			_, err = rillv1.EvaluateBoolExpression(access)
+			if err != nil {
+				return nil, fmt.Errorf(`invalid 'security': 'access' expression error: %w`, err)
+			}
+		}
+
+		if metrics.Security.RowFilter != "" {
+			_, err := rillv1.ResolveTemplate(metrics.Security.RowFilter, templateData)
+			if err != nil {
+				return nil, fmt.Errorf(`invalid 'security': 'row_filter' templating is not valid: %w`, err)
+			}
+		}
+
+		if len(metrics.Security.Include) > 0 && len(metrics.Security.Exclude) > 0 {
+			return nil, errors.New("invalid 'security': only one of 'include' and 'exclude' can be specified")
+		}
+
+		err := validatedPolicyFieldList(metrics.Security.Include, names, "include", templateData)
+		if err != nil {
+			return nil, err
+		}
+
+		err = validatedPolicyFieldList(metrics.Security.Exclude, names, "exclude", templateData)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	apiMetrics := &runtimev1.MetricsView{}
 
@@ -385,48 +434,6 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 	// validate time zone locations
 	for _, tz := range metrics.AvailableTimeZones {
 		_, err := time.LoadLocation(tz)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if metrics.Policy != nil {
-		templateData := rillv1.TemplateData{User: map[string]interface{}{
-			"name":   "dummy",
-			"email":  "mock@example.org",
-			"domain": "example.org",
-			"groups": []interface{}{"all"},
-			"admin":  false,
-		}}
-
-		if metrics.Policy.HasAccess != "" {
-			hasAccess, err := rillv1.ResolveTemplate(metrics.Policy.HasAccess, templateData)
-			if err != nil {
-				return nil, fmt.Errorf(`invalid 'policy': 'has_access' templating is not valid: %w`, err)
-			}
-			_, err = rillv1.EvaluateBoolExpression(hasAccess)
-			if err != nil {
-				return nil, fmt.Errorf(`invalid 'policy': 'has_access' expression not valuating to a boolean: %w`, err)
-			}
-		}
-
-		if metrics.Policy.Filter != "" {
-			_, err := rillv1.ResolveTemplate(metrics.Policy.Filter, templateData)
-			if err != nil {
-				return nil, fmt.Errorf(`invalid 'policy': 'filter' templating is not valid: %w`, err)
-			}
-		}
-
-		if len(metrics.Policy.Include) > 0 && len(metrics.Policy.Exclude) > 0 {
-			return nil, errors.New("invalid 'policy': only one of 'include' and 'exclude' can be specified")
-		}
-
-		err := validatedPolicyFieldList(metrics.Policy.Include, dimensionsMap, "include", templateData)
-		if err != nil {
-			return nil, err
-		}
-
-		err = validatedPolicyFieldList(metrics.Policy.Exclude, dimensionsMap, "exclude", templateData)
 		if err != nil {
 			return nil, err
 		}
@@ -473,23 +480,29 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 	}, nil
 }
 
-func validatedPolicyFieldList(fieldConditions []*ConditionalColumn, dimensions map[string]bool, property string, templateData rillv1.TemplateData) error {
+func validatedPolicyFieldList(fieldConditions []*ConditionalField, names map[string]bool, property string, templateData rillv1.TemplateData) error {
 	if len(fieldConditions) > 0 {
 		for _, field := range fieldConditions {
-			if field.Name == "" || field.Condition == "" {
-				return fmt.Errorf("invalid 'policy': '%s' fields must have a valid 'name' and 'if' condition", property)
+			if field == nil || len(field.Names) == 0 || field.Condition == "" {
+				return fmt.Errorf("invalid 'security': '%s' fields must have a valid 'if' condition and 'names' list", property)
 			}
-			// check the name is a valid dimension that exists in the metrics view
-			if !dimensions[field.Name] {
-				return fmt.Errorf("invalid 'policy': '%s' property %q does not exists in dimensions list", property, field.Name)
+			seen := map[string]bool{}
+			for _, name := range field.Names {
+				if seen[name] {
+					return fmt.Errorf("invalid 'security': '%s' property %q is duplicated", property, name)
+				}
+				seen[name] = true
+				if !names[name] {
+					return fmt.Errorf("invalid 'security': '%s' property %q does not exists in dimensions or measures list", property, name)
+				}
 			}
 			cond, err := rillv1.ResolveTemplate(field.Condition, templateData)
 			if err != nil {
-				return fmt.Errorf(`invalid 'policy': 'if' condition templating for field %q is not valid: %w`, field.Name, err)
+				return fmt.Errorf(`invalid 'security': 'if' condition templating for field %q is not valid: %w`, field.Names, err)
 			}
 			_, err = rillv1.EvaluateBoolExpression(cond)
 			if err != nil {
-				return fmt.Errorf(`invalid 'policy': 'if' condition for field %q not valuating to a boolean: %w`, field.Name, err)
+				return fmt.Errorf(`invalid 'security': 'if' condition for field %q not valuating to a boolean: %w`, field.Names, err)
 			}
 		}
 	}

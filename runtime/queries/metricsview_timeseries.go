@@ -18,19 +18,19 @@ import (
 )
 
 type MetricsViewTimeSeries struct {
-	MetricsViewName  string                             `json:"metrics_view_name,omitempty"`
-	MeasureNames     []string                           `json:"measure_names,omitempty"`
-	InlineMeasures   []*runtimev1.InlineMeasure         `json:"inline_measures,omitempty"`
-	TimeStart        *timestamppb.Timestamp             `json:"time_start,omitempty"`
-	TimeEnd          *timestamppb.Timestamp             `json:"time_end,omitempty"`
-	Limit            int64                              `json:"limit,omitempty"`
-	Offset           int64                              `json:"offset,omitempty"`
-	Sort             []*runtimev1.MetricsViewSort       `json:"sort,omitempty"`
-	Filter           *runtimev1.MetricsViewFilter       `json:"filter,omitempty"`
-	TimeGranularity  runtimev1.TimeGrain                `json:"time_granularity,omitempty"`
-	TimeZone         string                             `json:"time_zone,omitempty"`
-	MetricsView      *runtimev1.MetricsView             `json:"-"`
-	ResolvedMVPolicy *runtime.ResolvedMetricsViewPolicy `json:"policy"`
+	MetricsViewName    string                               `json:"metrics_view_name,omitempty"`
+	MeasureNames       []string                             `json:"measure_names,omitempty"`
+	InlineMeasures     []*runtimev1.InlineMeasure           `json:"inline_measures,omitempty"`
+	TimeStart          *timestamppb.Timestamp               `json:"time_start,omitempty"`
+	TimeEnd            *timestamppb.Timestamp               `json:"time_end,omitempty"`
+	Limit              int64                                `json:"limit,omitempty"`
+	Offset             int64                                `json:"offset,omitempty"`
+	Sort               []*runtimev1.MetricsViewSort         `json:"sort,omitempty"`
+	Filter             *runtimev1.MetricsViewFilter         `json:"filter,omitempty"`
+	TimeGranularity    runtimev1.TimeGrain                  `json:"time_granularity,omitempty"`
+	TimeZone           string                               `json:"time_zone,omitempty"`
+	MetricsView        *runtimev1.MetricsView               `json:"-"`
+	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity `json:"security"`
 
 	Result *runtimev1.MetricsViewTimeSeriesResponse `json:"-"`
 }

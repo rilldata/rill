@@ -202,16 +202,6 @@
     moveStartDelta = 0;
     moveEndDelta = 0;
   }
-
-  function onKeyDown(e) {
-    // if key Z is pressed, zoom the scrub
-    if (e.key === "z") {
-      dispatch("zoom");
-    }
-    if (!isScrubbing && e.key === "Escape") {
-      dispatch("reset");
-    }
-  }
 </script>
 
 {#if start && stop}
@@ -274,8 +264,6 @@
     </g>
   </WithGraphicContexts>
 {/if}
-
-<svelte:window on:keydown={onKeyDown} />
 
 <defs>
   <linearGradient id="scrubbing-gradient" gradientUnits="userSpaceOnUse">

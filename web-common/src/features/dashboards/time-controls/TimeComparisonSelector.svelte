@@ -117,10 +117,10 @@ This component needs to do the following:
 </script>
 
 <WithTogglableFloatingElement
-  distance={8}
   alignment="start"
-  let:toggleFloatingElement
+  distance={8}
   let:active
+  let:toggleFloatingElement
 >
   <Tooltip distance={8} suppress={active}>
     <SelectorButton
@@ -134,18 +134,17 @@ This component needs to do the following:
         <span class="font-bold">{label}</span>
       </span>
     </SelectorButton>
-    <TooltipContent slot="tooltip-content" maxWidth="220px">
+    <TooltipContent maxWidth="220px" slot="tooltip-content">
       Select a time range to compare to the selected time range
     </TooltipContent>
   </Tooltip>
   <Menu
-    slot="floating-element"
-    on:escape={toggleFloatingElement}
-    on:click-outside={() => onClickOutside(toggleFloatingElement)}
     label="Time comparison selector"
+    on:click-outside={() => onClickOutside(toggleFloatingElement)}
+    on:escape={toggleFloatingElement}
+    slot="floating-element"
   >
     <MenuItem
-      selected={!showComparison}
       on:before-select={() => {
         intermediateSelection = NO_COMPARISON_LABEL;
       }}
@@ -153,6 +152,7 @@ This component needs to do the following:
         dispatch("disable-comparison");
         toggleFloatingElement();
       }}
+      selected={!showComparison}
     >
       <span class:font-bold={intermediateSelection === NO_COMPARISON_LABEL}>
         {NO_COMPARISON_LABEL}

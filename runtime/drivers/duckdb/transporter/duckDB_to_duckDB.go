@@ -32,6 +32,6 @@ func (t *duckDBToDuckDB) Transfer(ctx context.Context, source drivers.Source, si
 		return fmt.Errorf("type of source should `drivers.DatabaseSink`")
 	}
 
-	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %q AS (%s)", fSink.Table, src.SQL)
+	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s)", safeName(fSink.Table), src.SQL)
 	return t.to.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1})
 }

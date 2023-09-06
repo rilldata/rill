@@ -87,6 +87,9 @@ export const nicelyFormattedTypesToNumberKind = (
     case FormatPreset.PERCENTAGE:
       return NumberKind.PERCENT;
 
+    case FormatPreset.INTERVAL:
+      return NumberKind.INTERVAL;
+
     default:
       // captures:
       // FormatPreset.NONE

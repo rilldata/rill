@@ -88,12 +88,12 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 	}
 
 	rtOpts := &runtime.Options{
-		ConnectionCacheSize:   100,
-		MetastoreConnector:    "metastore",
-		QueryCacheSizeBytes:   int64(datasize.MB * 100),
-		AllowHostAccess:       true,
-		SystemConnectors:      systemConnectors,
-		PolicyEngineCacheSize: 1000,
+		ConnectionCacheSize:     100,
+		MetastoreConnector:      "metastore",
+		QueryCacheSizeBytes:     int64(datasize.MB * 100),
+		AllowHostAccess:         true,
+		SystemConnectors:        systemConnectors,
+		SecurityEngineCacheSize: 1000,
 	}
 	rt, err := runtime.New(rtOpts, logger, client)
 	if err != nil {
@@ -128,12 +128,12 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 	}
 	// Create instance with its repo set to the project directory
 	inst := &drivers.Instance{
-		ID:           DefaultInstanceID,
-		Annotations:  map[string]string{},
-		OLAPDriver:   "olap",
-		RepoDriver:   "repo",
-		EmbedCatalog: olapDriver == "duckdb",
-		Variables:    parsedVariables,
+		ID:            DefaultInstanceID,
+		Annotations:   map[string]string{},
+		OLAPConnector: "olap",
+		RepoConnector: "repo",
+		EmbedCatalog:  olapDriver == "duckdb",
+		Variables:     parsedVariables,
 		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",

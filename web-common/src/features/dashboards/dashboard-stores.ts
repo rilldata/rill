@@ -1,20 +1,25 @@
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
-import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
 import { getLocalUserPreferences } from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
   getMapFromArray,
   removeIfExists,
 } from "@rilldata/web-common/lib/arrayUtils";
-import { getComparionRangeForScrub } from "@rilldata/web-common/lib/time/comparisons";
+import { getTimeComparisonParametersForComponent } from "@rilldata/web-common/lib/time/comparisons";
+import type {
+  ScrubRange,
+  TimeRange,
+} from "@rilldata/web-common/lib/time/types";
+import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
+import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
 import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
 import {
   convertTimeRangePreset,
   ISODurationToTimePreset,
 } from "@rilldata/web-common/lib/time/ranges";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
-import type { ScrubRange } from "@rilldata/web-common/lib/time/types";
+import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
 import type {
   V1ColumnTimeRangeResponse,
   V1MetricsView,
@@ -254,10 +259,17 @@ const metricViewReducers = {
       const timeSelections: Partial<MetricsExplorerEntity> = {};
       if (fullTimeRange) {
         const timeZone = get(getLocalUserPreferences()).timeZone;
+        const fullTimeStart = new Date(fullTimeRange.timeRangeSummary.min);
+        const fullTimeEnd = new Date(fullTimeRange.timeRangeSummary.max);
+        const preset = ISODurationToTimePreset(
+          metricsView.defaultTimeRange,
+          true
+        );
+
         const timeRange = convertTimeRangePreset(
-          ISODurationToTimePreset(metricsView.defaultTimeRange, true),
-          new Date(fullTimeRange.timeRangeSummary.min),
-          new Date(fullTimeRange.timeRangeSummary.max),
+          preset,
+          fullTimeStart,
+          fullTimeEnd,
           timeZone
         );
         const timeGrain = getDefaultTimeGrain(timeRange.start, timeRange.end);
@@ -267,6 +279,28 @@ const metricViewReducers = {
           interval: timeGrain.grain,
         };
         timeSelections.lastDefinedScrubRange = undefined;
+
+        const comparisonOption = DEFAULT_TIME_RANGES[preset]
+          ?.defaultComparison as TimeComparisonOption;
+        if (comparisonOption) {
+          const comparisonRange = getTimeComparisonParametersForComponent(
+            comparisonOption,
+            fullTimeStart,
+            fullTimeEnd,
+            timeRange.start,
+            timeRange.end
+          );
+          if (comparisonRange.isComparisonRangeAvailable) {
+            timeSelections.selectedComparisonTimeRange = {
+              name: comparisonOption,
+              start: comparisonRange.start,
+              end: comparisonRange.end,
+            };
+            timeSelections.showComparison = true;
+            timeSelections.leaderboardContextColumn =
+              LeaderboardContextColumn.DELTA_PERCENT;
+          }
+        }
       }
 
       state.entities[name] = {
@@ -293,8 +327,8 @@ const metricViewReducers = {
         dashboardSortType: SortType.VALUE,
         sortDirection: SortDirection.DESCENDING,
 
-        ...timeSelections,
         showComparison: false,
+        ...timeSelections,
       };
 
       updateMetricsExplorerProto(state.entities[name]);
@@ -365,23 +399,14 @@ const metricViewReducers = {
 
   setSelectedTimeRange(name: string, timeRange: DashboardTimeControls) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
+      setSelectedScrubRange(metricsExplorer, undefined);
       metricsExplorer.selectedTimeRange = timeRange;
     });
   },
 
   setSelectedScrubRange(name: string, scrubRange: ScrubRange) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      if (scrubRange === undefined) {
-        metricsExplorer.lastDefinedScrubRange = undefined;
-      } else if (
-        !scrubRange.isScrubbing &&
-        scrubRange?.start &&
-        scrubRange?.end
-      ) {
-        metricsExplorer.lastDefinedScrubRange = scrubRange;
-      }
-
-      metricsExplorer.selectedScrubRange = scrubRange;
+      setSelectedScrubRange(metricsExplorer, scrubRange);
     });
   },
 
@@ -396,40 +421,42 @@ const metricViewReducers = {
     comparisonTimeRange: DashboardTimeControls
   ) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
+      setDisplayComparison(metricsExplorer, true);
       metricsExplorer.selectedComparisonTimeRange = comparisonTimeRange;
     });
   },
 
   setTimeZone(name: string, zoneIANA: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
+      // Reset scrub when timezone changes
+      setSelectedScrubRange(metricsExplorer, undefined);
+
       metricsExplorer.selectedTimezone = zoneIANA;
     });
   },
 
   displayComparison(name: string, showComparison: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.showComparison = showComparison;
-      // if setting showComparison===true and not currently
-      //  showing any context column, then show DELTA_PERCENT
-      if (
-        showComparison &&
-        metricsExplorer.leaderboardContextColumn ===
-          LeaderboardContextColumn.HIDDEN
-      ) {
-        metricsExplorer.leaderboardContextColumn =
-          LeaderboardContextColumn.DELTA_PERCENT;
-      }
+      setDisplayComparison(metricsExplorer, showComparison);
+    });
+  },
 
-      // if setting showComparison===false and currently
-      //  showing DELTA_PERCENT, then hide context column
-      if (
-        !showComparison &&
-        metricsExplorer.leaderboardContextColumn ===
-          LeaderboardContextColumn.DELTA_PERCENT
-      ) {
-        metricsExplorer.leaderboardContextColumn =
-          LeaderboardContextColumn.HIDDEN;
-      }
+  selectTimeRange(
+    name: string,
+    timeRange: TimeRange,
+    timeGrain: V1TimeGrain,
+    comparisonTimeRange: DashboardTimeControls
+  ) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      // Reset scrub when range changes
+      setSelectedScrubRange(metricsExplorer, undefined);
+
+      metricsExplorer.selectedTimeRange = {
+        ...timeRange,
+        interval: timeGrain,
+      };
+      metricsExplorer.selectedComparisonTimeRange = comparisonTimeRange;
+      setDisplayComparison(metricsExplorer, true);
     });
   },
 
@@ -580,78 +607,43 @@ export function useDashboardStore(
   });
 }
 
-/***
- * Dervied stores to get time range and comparison range to be
- * used for fetching data. If we have a scrub range and
- * isScrubbing is false, use that, otherwise use the selected
- * time range
- */
+function setDisplayComparison(
+  metricsExplorer: MetricsExplorerEntity,
+  showComparison: boolean
+) {
+  metricsExplorer.showComparison = showComparison;
+  // if setting showComparison===true and not currently
+  //  showing any context column, then show DELTA_PERCENT
+  if (
+    showComparison &&
+    metricsExplorer.leaderboardContextColumn === LeaderboardContextColumn.HIDDEN
+  ) {
+    metricsExplorer.leaderboardContextColumn =
+      LeaderboardContextColumn.DELTA_PERCENT;
+  }
 
-export function useFetchTimeRange(name: string) {
-  return derived(metricsExplorerStore, ($store) => {
-    const entity = $store.entities[name];
-    if (
-      entity?.lastDefinedScrubRange?.start &&
-      entity?.lastDefinedScrubRange?.end
-    ) {
-      // Use last scrub range before scrubbing started
-      const { start, end } = getOrderedStartEnd(
-        entity.lastDefinedScrubRange?.start,
-        entity.lastDefinedScrubRange?.end
-      );
-
-      return { start, end };
-    } else {
-      return {
-        start: entity.selectedTimeRange?.start,
-        end: entity.selectedTimeRange?.end,
-      };
-    }
-  });
+  // if setting showComparison===false and currently
+  //  showing DELTA_PERCENT, then hide context column
+  if (
+    !showComparison &&
+    metricsExplorer.leaderboardContextColumn ===
+      LeaderboardContextColumn.DELTA_PERCENT
+  ) {
+    metricsExplorer.leaderboardContextColumn = LeaderboardContextColumn.HIDDEN;
+  }
 }
 
-export function useComparisonRange(name: string) {
-  return derived(metricsExplorerStore, ($store) => {
-    const entity = $store.entities[name];
+function setSelectedScrubRange(
+  metricsExplorer: MetricsExplorerEntity,
+  scrubRange: ScrubRange
+) {
+  if (scrubRange === undefined) {
+    metricsExplorer.lastDefinedScrubRange = undefined;
+  } else if (!scrubRange.isScrubbing && scrubRange?.start && scrubRange?.end) {
+    metricsExplorer.lastDefinedScrubRange = scrubRange;
+  }
 
-    if (
-      !entity?.showComparison ||
-      !entity.selectedComparisonTimeRange?.start ||
-      !entity.selectedComparisonTimeRange?.end
-    ) {
-      return {
-        start: undefined,
-        end: undefined,
-      };
-    } else if (
-      entity?.lastDefinedScrubRange?.start &&
-      entity?.lastDefinedScrubRange?.end
-    ) {
-      const { start, end } = getOrderedStartEnd(
-        entity.lastDefinedScrubRange?.start,
-        entity.lastDefinedScrubRange?.end
-      );
-
-      const comparisonRange = getComparionRangeForScrub(
-        entity.selectedTimeRange?.start,
-        entity.selectedTimeRange?.end,
-        entity.selectedComparisonTimeRange?.start,
-        entity.selectedComparisonTimeRange?.end,
-        start,
-        end
-      );
-
-      return {
-        start: comparisonRange?.start?.toISOString(),
-        end: comparisonRange?.end?.toISOString(),
-      };
-    } else {
-      return {
-        start: entity.selectedComparisonTimeRange?.start?.toISOString(),
-        end: entity.selectedComparisonTimeRange?.end?.toISOString(),
-      };
-    }
-  });
+  metricsExplorer.selectedScrubRange = scrubRange;
 }
 
 export const projectShareStore: Writable<boolean> = writable(false);
