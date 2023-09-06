@@ -106,41 +106,41 @@ export function prepareTimeSeries(
 
     switch (dtu) {
       case "year":
-              dtStart = dtStart.plus({ years: 1 });
-              dtCompStart = dtCompStart.plus({ years: 1 });
-              break;
+        dtStart = dtStart.plus({ years: 1 });
+        dtCompStart = dtCompStart.plus({ years: 1 });
+        break;
       case "quarter":
-              dtStart = dtStart.plus({ quarters: 1 });
-              dtCompStart = dtCompStart.plus({ quarters: 1 });
-              break;
+        dtStart = dtStart.plus({ quarters: 1 });
+        dtCompStart = dtCompStart.plus({ quarters: 1 });
+        break;
       case "month":
-              dtStart = dtStart.plus({ months: 1 });
-              dtCompStart = dtCompStart.plus({ months: 1 });
-              break;
+        dtStart = dtStart.plus({ months: 1 });
+        dtCompStart = dtCompStart.plus({ months: 1 });
+        break;
       case "week":
-              dtStart = dtStart.plus({ weeks: 1 });
-              dtCompStart = dtCompStart.plus({ weeks: 1 });
-              break;
+        dtStart = dtStart.plus({ weeks: 1 });
+        dtCompStart = dtCompStart.plus({ weeks: 1 });
+        break;
       case "day":
-              dtStart = dtStart.plus({ days: 1 });
-              dtCompStart = dtCompStart.plus({ days: 1 });
-              break;
+        dtStart = dtStart.plus({ days: 1 });
+        dtCompStart = dtCompStart.plus({ days: 1 });
+        break;
       case "hour":
-              dtStart = dtStart.plus({ hours: 1 });
-              dtCompStart = dtCompStart.plus({ hours: 1 });
-              break;
+        dtStart = dtStart.plus({ hours: 1 });
+        dtCompStart = dtCompStart.plus({ hours: 1 });
+        break;
       case "minute":
-              dtStart = dtStart.plus({ minutes: 1 });
-              dtCompStart = dtCompStart.plus({ minutes: 1 });
-              break;
+        dtStart = dtStart.plus({ minutes: 1 });
+        dtCompStart = dtCompStart.plus({ minutes: 1 });
+        break;
       case "second":
-              dtStart = dtStart.plus({ seconds: 1 });
-              dtCompStart = dtCompStart.plus({ seconds: 1 });
-              break;
+        dtStart = dtStart.plus({ seconds: 1 });
+        dtCompStart = dtCompStart.plus({ seconds: 1 });
+        break;
       case "millisecond":
-              dtStart = dtStart.plus({ milliseconds: 1 });
-              dtCompStart = dtCompStart.plus({ milliseconds: 1 });
-              break;
+        dtStart = dtStart.plus({ milliseconds: 1 });
+        dtCompStart = dtCompStart.plus({ milliseconds: 1 });
+        break;
     }
     j++;
   }
