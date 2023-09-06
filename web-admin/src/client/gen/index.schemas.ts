@@ -85,6 +85,12 @@ export type AdminServiceCreateWhitelistedDomainBody = {
   role?: string;
 };
 
+export type AdminServiceSearchProjectUsersParams = {
+  emailQuery?: string;
+  pageSize?: number;
+  pageToken?: string;
+};
+
 export type AdminServiceListProjectMembersParams = {
   pageSize?: number;
   pageToken?: string;
@@ -93,6 +99,12 @@ export type AdminServiceListProjectMembersParams = {
 export type AdminServiceListProjectInvitesParams = {
   pageSize?: number;
   pageToken?: string;
+};
+
+export type AdminServiceGetDeploymentCredentialsParams = {
+  branch?: string;
+  userId?: string;
+  attrs?: { [key: string]: any };
 };
 
 export type AdminServiceRemoveOrganizationMemberParams = {
@@ -276,6 +288,11 @@ export interface V1Service {
 }
 
 export interface V1SearchUsersResponse {
+  users?: V1User[];
+  nextPageToken?: string;
+}
+
+export interface V1SearchProjectUsersResponse {
   users?: V1User[];
   nextPageToken?: string;
 }
@@ -487,6 +504,12 @@ export interface V1GetGitCredentialsResponse {
   prodBranch?: string;
 }
 
+export interface V1GetDeploymentCredentialsResponse {
+  runtimeHost?: string;
+  runtimeInstanceId?: string;
+  jwt?: string;
+}
+
 export interface V1GetCurrentUserResponse {
   user?: V1User;
   preferences?: V1UserPreferences;
@@ -554,6 +577,10 @@ export interface V1CreateOrganizationRequest {
   description?: string;
 }
 
+export interface V1CreateBookmarkResponse {
+  bookmark?: V1Bookmark;
+}
+
 export interface V1CreateBookmarkRequest {
   displayName?: string;
   data?: string;
@@ -572,10 +599,6 @@ export interface V1Bookmark {
   updatedOn?: string;
 }
 
-export interface V1CreateBookmarkResponse {
-  bookmark?: V1Bookmark;
-}
-
 export interface V1AddProjectMemberResponse {
   pendingSignup?: boolean;
 }
@@ -584,13 +607,29 @@ export interface V1AddOrganizationMemberResponse {
   pendingSignup?: boolean;
 }
 
-export interface ProtobufAny {
-  "@type"?: string;
-  [key: string]: unknown;
-}
-
 export interface RpcStatus {
   code?: number;
   message?: string;
   details?: ProtobufAny[];
+}
+
+/**
+ * `NullValue` is a singleton enumeration to represent the null value for the
+`Value` type union.
+
+ The JSON representation for `NullValue` is JSON `null`.
+
+ - NULL_VALUE: Null value.
+ */
+export type ProtobufNullValue =
+  (typeof ProtobufNullValue)[keyof typeof ProtobufNullValue];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ProtobufNullValue = {
+  NULL_VALUE: "NULL_VALUE",
+} as const;
+
+export interface ProtobufAny {
+  "@type"?: string;
+  [key: string]: unknown;
 }

@@ -365,6 +365,42 @@ paths:
           type: string
       tags:
         - AdminService
+  /v1/organizations/{organization}/projects/{project}/credentials:
+    get:
+      summary: GetDeploymentCredentials returns runtime info and JWT on behalf of a specific user, or alternatively for a raw set of JWT attributes
+      operationId: AdminService_GetDeploymentCredentials
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetDeploymentCredentialsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: branch
+          in: query
+          required: false
+          type: string
+        - name: userId
+          in: query
+          required: false
+          type: string
+        - name: attrs
+          in: query
+          required: false
+          type: object
+      tags:
+        - AdminService
   /v1/organizations/{organization}/projects/{project}/git-credentials:
     get:
       summary: GetGitCredentials returns credentials and other details for a project's Git repository.
@@ -549,6 +585,43 @@ paths:
             properties:
               role:
                 type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/projects/{project}/users/search:
+    get:
+      summary: SearchProjectUsers returns users who has access to to a project (including org members that have access through a usergroup)
+      operationId: AdminService_SearchProjectUsers
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SearchProjectUsersResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: emailQuery
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
       tags:
         - AdminService
   /v1/organizations/{organization}/whitelisted:
@@ -1409,6 +1482,18 @@ definitions:
       '@type':
         type: string
     additionalProperties: {}
+  protobufNullValue:
+    type: string
+    enum:
+      - NULL_VALUE
+    default: NULL_VALUE
+    description: |-
+      `NullValue` is a singleton enumeration to represent the null value for the
+      `Value` type union.
+
+       The JSON representation for `NullValue` is JSON `null`.
+
+       - NULL_VALUE: Null value.
   rpcStatus:
     type: object
     properties:
@@ -1551,6 +1636,15 @@ definitions:
         $ref: '#/definitions/v1User'
       preferences:
         $ref: '#/definitions/v1UserPreferences'
+  v1GetDeploymentCredentialsResponse:
+    type: object
+    properties:
+      runtimeHost:
+        type: string
+      runtimeInstanceId:
+        type: string
+      jwt:
+        type: string
   v1GetGitCredentialsResponse:
     type: object
     properties:
@@ -1890,6 +1984,16 @@ definitions:
         type: array
         items:
           type: string
+      nextPageToken:
+        type: string
+  v1SearchProjectUsersResponse:
+    type: object
+    properties:
+      users:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1User'
       nextPageToken:
         type: string
   v1SearchUsersResponse:

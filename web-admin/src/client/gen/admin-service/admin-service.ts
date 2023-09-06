@@ -40,6 +40,8 @@ import type {
   V1SetOrganizationMemberRoleResponse,
   AdminServiceSetOrganizationMemberRoleBodyBody,
   V1LeaveOrganizationResponse,
+  V1GetDeploymentCredentialsResponse,
+  AdminServiceGetDeploymentCredentialsParams,
   V1GetGitCredentialsResponse,
   V1ListProjectInvitesResponse,
   AdminServiceListProjectInvitesParams,
@@ -48,6 +50,8 @@ import type {
   V1AddProjectMemberResponse,
   V1RemoveProjectMemberResponse,
   V1SetProjectMemberRoleResponse,
+  V1SearchProjectUsersResponse,
+  AdminServiceSearchProjectUsersParams,
   V1ListWhitelistedDomainsResponse,
   V1CreateWhitelistedDomainResponse,
   AdminServiceCreateWhitelistedDomainBody,
@@ -1207,6 +1211,115 @@ export const createAdminServiceLeaveOrganization = <
   return createMutation(mutationOptions);
 };
 /**
+ * @summary GetDeploymentCredentials returns runtime info and JWT on behalf of a specific user, or alternatively for a raw set of JWT attributes
+ */
+export const adminServiceGetDeploymentCredentials = (
+  organization: string,
+  project: string,
+  params?: AdminServiceGetDeploymentCredentialsParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1GetDeploymentCredentialsResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/credentials`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceGetDeploymentCredentialsQueryKey = (
+  organization: string,
+  project: string,
+  params?: AdminServiceGetDeploymentCredentialsParams
+) =>
+  [
+    `/v1/organizations/${organization}/projects/${project}/credentials`,
+    ...(params ? [params] : []),
+  ] as const;
+
+export const getAdminServiceGetDeploymentCredentialsQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetDeploymentCredentials>>,
+  TError = RpcStatus
+>(
+  organization: string,
+  project: string,
+  params?: AdminServiceGetDeploymentCredentialsParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetDeploymentCredentials>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryOptions<
+  Awaited<ReturnType<typeof adminServiceGetDeploymentCredentials>>,
+  TError,
+  TData
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetDeploymentCredentialsQueryKey(
+      organization,
+      project,
+      params
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetDeploymentCredentials>>
+  > = ({ signal }) =>
+    adminServiceGetDeploymentCredentials(organization, project, params, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(organization && project),
+    ...queryOptions,
+  };
+};
+
+export type AdminServiceGetDeploymentCredentialsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetDeploymentCredentials>>
+>;
+export type AdminServiceGetDeploymentCredentialsQueryError = RpcStatus;
+
+/**
+ * @summary GetDeploymentCredentials returns runtime info and JWT on behalf of a specific user, or alternatively for a raw set of JWT attributes
+ */
+export const createAdminServiceGetDeploymentCredentials = <
+  TData = Awaited<ReturnType<typeof adminServiceGetDeploymentCredentials>>,
+  TError = RpcStatus
+>(
+  organization: string,
+  project: string,
+  params?: AdminServiceGetDeploymentCredentialsParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetDeploymentCredentials>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const queryOptions = getAdminServiceGetDeploymentCredentialsQueryOptions(
+    organization,
+    project,
+    params,
+    options
+  );
+
+  const query = createQuery(queryOptions) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+};
+
+/**
  * @summary GetGitCredentials returns credentials and other details for a project's Git repository.
  */
 export const adminServiceGetGitCredentials = (
@@ -1764,6 +1877,111 @@ export const createAdminServiceSetProjectMemberRole = <
 
   return createMutation(mutationOptions);
 };
+/**
+ * @summary SearchProjectUsers returns users who has access to to a project (including org members that have access through a usergroup)
+ */
+export const adminServiceSearchProjectUsers = (
+  organization: string,
+  project: string,
+  params?: AdminServiceSearchProjectUsersParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1SearchProjectUsersResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/users/search`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceSearchProjectUsersQueryKey = (
+  organization: string,
+  project: string,
+  params?: AdminServiceSearchProjectUsersParams
+) =>
+  [
+    `/v1/organizations/${organization}/projects/${project}/users/search`,
+    ...(params ? [params] : []),
+  ] as const;
+
+export const getAdminServiceSearchProjectUsersQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceSearchProjectUsers>>,
+  TError = RpcStatus
+>(
+  organization: string,
+  project: string,
+  params?: AdminServiceSearchProjectUsersParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceSearchProjectUsers>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryOptions<
+  Awaited<ReturnType<typeof adminServiceSearchProjectUsers>>,
+  TError,
+  TData
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceSearchProjectUsersQueryKey(organization, project, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceSearchProjectUsers>>
+  > = ({ signal }) =>
+    adminServiceSearchProjectUsers(organization, project, params, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(organization && project),
+    ...queryOptions,
+  };
+};
+
+export type AdminServiceSearchProjectUsersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSearchProjectUsers>>
+>;
+export type AdminServiceSearchProjectUsersQueryError = RpcStatus;
+
+/**
+ * @summary SearchProjectUsers returns users who has access to to a project (including org members that have access through a usergroup)
+ */
+export const createAdminServiceSearchProjectUsers = <
+  TData = Awaited<ReturnType<typeof adminServiceSearchProjectUsers>>,
+  TError = RpcStatus
+>(
+  organization: string,
+  project: string,
+  params?: AdminServiceSearchProjectUsersParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceSearchProjectUsers>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const queryOptions = getAdminServiceSearchProjectUsersQueryOptions(
+    organization,
+    project,
+    params,
+    options
+  );
+
+  const query = createQuery(queryOptions) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+};
+
 /**
  * @summary ListWhitelistedDomains lists all the whitelisted domains for the organization
  */
