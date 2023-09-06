@@ -96,7 +96,7 @@
       baseTimeRange,
       defaultTimeGrain,
       // reset the comparison range
-      {}
+      undefined
     );
   }
 
@@ -132,7 +132,7 @@
      * time range. Otherwise, the current comparison state should continue to be the
      * source of truth.
      */
-    comparisonTimeRange: DashboardTimeControls
+    comparisonTimeRange: DashboardTimeControls | undefined
   ) {
     cancelDashboardQueries(queryClient, metricViewName);
 
@@ -140,7 +140,8 @@
       metricViewName,
       timeRange,
       timeGrain,
-      comparisonTimeRange
+      comparisonTimeRange,
+      $timeControlsStore.allTimeRange
     );
   }
 
