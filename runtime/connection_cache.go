@@ -12,7 +12,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	"github.com/rilldata/rill/runtime/services/catalog"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
@@ -23,15 +22,15 @@ var errConnectionCacheClosed = errors.New("connectionCache: closed")
 const migrateTimeout = 30 * time.Second
 
 // connectionCache is a thread-safe cache for open connections.
-// All connections should preferably be opened via connection cache only
+// Connections should preferably be opened only via the connection cache.
 type connectionCache struct {
 	size             int
 	runtime          *Runtime
 	logger           *zap.Logger
 	activity         activity.Client
 	closed           bool
-	migrateCtx       context.Context    // ctx used for connection migration
-	migrateCtxCancel context.CancelFunc // call to cancel all running migrations
+	migrateCtx       context.Context    // ctx used for connection migrations
+	migrateCtxCancel context.CancelFunc // cancel all running migrations
 	lock             sync.Mutex
 	acquired         map[string]*connWithRef // items with non-zero references (in use) which should not be evicted
 	lru              *simplelru.LRU          // items with no references (opened, but not in use) ready for eviction
@@ -44,7 +43,7 @@ type connWithRef struct {
 	ready  chan struct{}
 }
 
-func newConnectionCache(size int, logger *zap.Logger, runtime *Runtime, ac activity.Client) *connectionCache {
+func newConnectionCache(size int, logger *zap.Logger, rt *Runtime, ac activity.Client) *connectionCache {
 	// LRU cache that closes evicted connections
 	lru, err := simplelru.NewLRU(size, func(key interface{}, value interface{}) {
 		// Skip if the conn has refs, since the callback also gets called when transferring to acquired cache
@@ -65,7 +64,7 @@ func newConnectionCache(size int, logger *zap.Logger, runtime *Runtime, ac activ
 	ctx, cancel := context.WithCancel(context.Background())
 	return &connectionCache{
 		size:             size,
-		runtime:          runtime,
+		runtime:          rt,
 		logger:           logger,
 		activity:         ac,
 		migrateCtx:       ctx,
@@ -94,25 +93,27 @@ func (c *connectionCache) Close() error {
 			continue
 		}
 		conn := val.(*connWithRef)
-		if conn.handle != nil {
-			err := conn.handle.Close()
-			if err != nil {
-				c.logger.Error("failed closing cached connection", zap.Error(err))
-				if firstErr == nil {
-					firstErr = err
-				}
+		if conn.handle == nil {
+			continue
+		}
+		err := conn.handle.Close()
+		if err != nil {
+			c.logger.Error("failed closing cached connection", zap.Error(err))
+			if firstErr == nil {
+				firstErr = err
 			}
 		}
 	}
 
 	for _, value := range c.acquired {
-		if value.handle != nil {
-			err := value.handle.Close()
-			if err != nil {
-				c.logger.Error("failed closing cached connection", zap.Error(err))
-				if firstErr == nil {
-					firstErr = err
-				}
+		if value.handle == nil {
+			continue
+		}
+		err := value.handle.Close()
+		if err != nil {
+			c.logger.Error("failed closing cached connection", zap.Error(err))
+			if firstErr == nil {
+				firstErr = err
 			}
 		}
 	}
@@ -153,7 +154,10 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver string, co
 
 	// Cached conn not found, open a new one
 	if !ok {
-		conn = &connWithRef{refs: 1, ready: make(chan struct{})}
+		conn = &connWithRef{
+			refs:  1, // Since refs is assumed to already have been incremented when checking conn.ready
+			ready: make(chan struct{}),
+		}
 		c.acquired[key] = conn
 
 		if len(c.acquired)+c.lru.Len() > c.size {
@@ -166,9 +170,9 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver string, co
 		go func() {
 			handle, err := c.openAndMigrate(c.migrateCtx, instanceID, driver, shared, config)
 			c.lock.Lock()
-			c.releaseConn(key, conn)
 			conn.handle = handle
 			conn.err = err
+			c.releaseConn(key, conn)
 			wasClosed := c.closed
 			c.lock.Unlock()
 			close(conn.ready)
@@ -176,7 +180,7 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver string, co
 			// The cache might have been closed while the connection was being opened.
 			// Since we acquired the lock, the close will have already been completed, so we need to close the connection here.
 			if wasClosed && handle != nil {
-				handle.Close()
+				_ = handle.Close()
 			}
 		}()
 	}
@@ -190,7 +194,7 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver string, co
 	case <-conn.ready:
 		err = conn.err
 	case <-ctx.Done():
-		err = ctx.Err()
+		err = ctx.Err() // Will always be non-nil, ensuring releaseConn is called
 	}
 	if err != nil {
 		c.lock.Lock()
@@ -275,43 +279,14 @@ func (c *connectionCache) evict(ctx context.Context, instanceID, driver string, 
 			if err != nil {
 				c.logger.Error("connection cache: failed to close cached connection", zap.Error(err), zap.String("instance", instanceID), observability.ZapCtx(ctx))
 			}
+			conn.handle = nil
+			conn.err = fmt.Errorf("connection evicted") // Defensive, should never happen
 		}
 		c.lru.Remove(key)
 		delete(c.acquired, key)
 	}
+
 	return ok
-}
-
-type migrationMetaCache struct {
-	cache *simplelru.LRU
-	lock  sync.Mutex
-}
-
-func newMigrationMetaCache(size int) *migrationMetaCache {
-	cache, err := simplelru.NewLRU(size, nil)
-	if err != nil {
-		panic(err)
-	}
-
-	return &migrationMetaCache{cache: cache}
-}
-
-func (c *migrationMetaCache) get(instID string) *catalog.MigrationMeta {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	if val, ok := c.cache.Get(instID); ok {
-		return val.(*catalog.MigrationMeta)
-	}
-
-	meta := catalog.NewMigrationMeta()
-	c.cache.Add(instID, meta)
-	return meta
-}
-
-func (c *migrationMetaCache) evict(ctx context.Context, instID string) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	c.cache.Remove(instID)
 }
 
 func generateKey(m map[string]any) string {
