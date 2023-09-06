@@ -1,16 +1,12 @@
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
-import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
 import { getLocalUserPreferences } from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
   getMapFromArray,
   removeIfExists,
 } from "@rilldata/web-common/lib/arrayUtils";
-import {
-  getComparionRangeForScrub,
-  getTimeComparisonParametersForComponent,
-} from "@rilldata/web-common/lib/time/comparisons";
+import { getTimeComparisonParametersForComponent } from "@rilldata/web-common/lib/time/comparisons";
 import type {
   ScrubRange,
   TimeRange,
@@ -403,6 +399,7 @@ const metricViewReducers = {
 
   setSelectedTimeRange(name: string, timeRange: DashboardTimeControls) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
+      setSelectedScrubRange(metricsExplorer, undefined);
       metricsExplorer.selectedTimeRange = timeRange;
     });
   },
@@ -647,80 +644,6 @@ function setSelectedScrubRange(
   }
 
   metricsExplorer.selectedScrubRange = scrubRange;
-}
-
-/***
- * Dervied stores to get time range and comparison range to be
- * used for fetching data. If we have a scrub range and
- * isScrubbing is false, use that, otherwise use the selected
- * time range
- */
-
-export function useFetchTimeRange(name: string) {
-  return derived(metricsExplorerStore, ($store) => {
-    const entity = $store.entities[name];
-    if (
-      entity?.lastDefinedScrubRange?.start &&
-      entity?.lastDefinedScrubRange?.end
-    ) {
-      // Use last scrub range before scrubbing started
-      const { start, end } = getOrderedStartEnd(
-        entity.lastDefinedScrubRange?.start,
-        entity.lastDefinedScrubRange?.end
-      );
-
-      return { start, end };
-    } else {
-      return {
-        start: entity.selectedTimeRange?.start,
-        end: entity.selectedTimeRange?.end,
-      };
-    }
-  });
-}
-
-export function useComparisonRange(name: string) {
-  return derived(metricsExplorerStore, ($store) => {
-    const entity = $store.entities[name];
-
-    if (
-      !entity?.showComparison ||
-      !entity.selectedComparisonTimeRange?.start ||
-      !entity.selectedComparisonTimeRange?.end
-    ) {
-      return {
-        start: undefined,
-        end: undefined,
-      };
-    } else if (
-      entity?.lastDefinedScrubRange?.start &&
-      entity?.lastDefinedScrubRange?.end
-    ) {
-      const { start, end } = getOrderedStartEnd(
-        entity.lastDefinedScrubRange?.start,
-        entity.lastDefinedScrubRange?.end
-      );
-
-      const comparisonRange = getComparionRangeForScrub(
-        entity.selectedTimeRange?.start,
-        entity.selectedTimeRange?.end,
-        entity.selectedComparisonTimeRange?.start,
-        entity.selectedComparisonTimeRange?.end,
-        start,
-        end
-      );
-
-      return {
-        start: comparisonRange?.start?.toISOString(),
-        end: comparisonRange?.end?.toISOString(),
-      };
-    } else {
-      return {
-        start: entity.selectedComparisonTimeRange?.start?.toISOString(),
-        end: entity.selectedComparisonTimeRange?.end?.toISOString(),
-      };
-    }
-  });
 }
 
 export const projectShareStore: Writable<boolean> = writable(false);

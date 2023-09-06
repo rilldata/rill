@@ -215,13 +215,7 @@
           start,
           end,
         });
-
-        // hack to prevent race condition in URL proto changes
-        setTimeout(() => {
-          metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
-        }, 50);
-      }
-      if (
+      } else if (
         !$dashboardStore.selectedScrubRange?.isScrubbing &&
         e.key === "Escape"
       ) {

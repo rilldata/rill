@@ -3,8 +3,17 @@ import {
   metricsExplorerStore,
 } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
+import {
+  getOffset,
+  getStartOfPeriod,
+} from "@rilldata/web-common/lib/time/transforms";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import {
+  Period,
+  TimeOffsetType,
+  TimeRangePreset,
+} from "@rilldata/web-common/lib/time/types";
 import {
   MetricsViewDimension,
   MetricsViewMeasure,
@@ -81,6 +90,13 @@ export const TestTimeConstants = {
   LAST_12_HOURS: new Date(Date.now() - Hour * 12),
   LAST_18_HOURS: new Date(Date.now() - Hour * 18),
   LAST_DAY: new Date(Date.now() - Hour * 24),
+};
+export const TestTimeOffsetConstants = {
+  NOW: getOffsetByHour(TestTimeConstants.NOW),
+  LAST_6_HOURS: getOffsetByHour(TestTimeConstants.LAST_6_HOURS),
+  LAST_12_HOURS: getOffsetByHour(TestTimeConstants.LAST_12_HOURS),
+  LAST_18_HOURS: getOffsetByHour(TestTimeConstants.LAST_18_HOURS),
+  LAST_DAY: getOffsetByHour(TestTimeConstants.LAST_DAY),
 };
 export const AD_BIDS_DEFAULT_TIME_RANGE = {
   name: TimeRangePreset.ALL_TIME,
@@ -295,6 +311,15 @@ export function assertVisiblePartsOfMetricsView(
     expect([...metricsView.visibleDimensionKeys].sort()).toEqual(
       dimensions.sort()
     );
+}
+
+export function getOffsetByHour(time: Date) {
+  return getOffset(
+    getStartOfPeriod(time, Period.HOUR, getLocalIANA()),
+    Period.HOUR,
+    TimeOffsetType.ADD,
+    getLocalIANA()
+  );
 }
 
 export const AD_BIDS_BASE_FILTER = {
