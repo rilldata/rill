@@ -1,6 +1,7 @@
 import { prepareTimeSeries } from "./utils";
 import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
 import { expect, test } from "vitest";
+import { Period, TimeGrain } from "@rilldata/web-common/lib/time/types";
 
 test("should fill in missing intervals", () => {
   const original = [
@@ -11,7 +12,7 @@ test("should fill in missing intervals", () => {
   const result = prepareTimeSeries(
     original,
     null,
-    "PT1H",
+    <TimeGrain><any>{ label: "hour", duration: Period.HOUR },
     "UTC",
     "2023-04-14T10:00:00Z",
     "2023-04-14T13:00:00Z"
@@ -32,7 +33,7 @@ test("should fill in missing intervals in winter", () => {
   const result = prepareTimeSeries(
     original,
     null,
-    "PT1H",
+    <TimeGrain><any>{ label: "hour", duration: Period.HOUR },
     "UTC",
     "2023-01-14T10:00:00Z",
     "2023-01-14T13:00:00Z"
@@ -53,7 +54,7 @@ test("should fill in missing intervals, CET", () => {
   const result = prepareTimeSeries(
     original,
     null,
-    "PT1H",
+    <TimeGrain><any>{ label: "hour", duration: Period.HOUR },
     "CET",
     "2023-01-14T10:00:00Z",
     "2023-01-14T13:00:00Z"
@@ -121,7 +122,7 @@ test("comparison, should fill in missing intervals", () => {
   const result = prepareTimeSeries(
     original,
     comparison,
-    "PT1H",
+    <TimeGrain><any>{ label: "hour", duration: Period.HOUR },
     "UTC",
     "2023-04-14T10:00:00Z",
     "2023-04-14T13:00:00Z",
@@ -158,7 +159,7 @@ test("comparison, should fill in missing intervals, America/Argentina/Buenos_Air
   const result = prepareTimeSeries(
     original,
     comparison,
-    "PT1H",
+    <TimeGrain><any>{ label: "hour", duration: Period.HOUR },
     "America/Argentina/Buenos_Aires",
     "2023-04-14T10:00:00Z",
     "2023-04-14T13:00:00Z",
@@ -195,7 +196,7 @@ test("should include original records", () => {
   const result = prepareTimeSeries(
     original,
     null,
-    "PT1H",
+    <TimeGrain><any>{ label: "hour", duration: Period.HOUR },
     "UTC",
     "2020-01-01T00:00:00Z",
     "2020-01-01T01:00:00Z"
@@ -229,7 +230,7 @@ test("should include comparison records", () => {
   const result = prepareTimeSeries(
     original,
     comparison,
-    "PT1H",
+    <TimeGrain><any>{ label: "hour", duration: Period.HOUR },
     "UTC",
     "2020-01-01T00:00:00Z",
     "2020-01-01T01:00:00Z",
@@ -267,7 +268,7 @@ test("should include comparison records", () => {
   const result = prepareTimeSeries(
     original,
     comparison,
-    "PT1H",
+    <TimeGrain><any>{ label: "hour", duration: Period.HOUR },
     "UTC",
     "2020-01-01T00:00:00Z",
     "2020-01-01T01:00:00Z",
