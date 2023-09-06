@@ -14,8 +14,8 @@ import (
 func testRegistry(t *testing.T, reg drivers.RegistryStore) {
 	ctx := context.Background()
 	inst := &drivers.Instance{
-		OLAPDriver:          "olap",
-		RepoDriver:          "repo",
+		OLAPConnector:       "olap",
+		RepoConnector:       "repo",
 		EmbedCatalog:        true,
 		IngestionLimitBytes: 102345,
 		Connectors: []*runtimev1.Connector{
@@ -36,21 +36,21 @@ func testRegistry(t *testing.T, reg drivers.RegistryStore) {
 	require.NoError(t, err)
 	_, err = uuid.Parse(inst.ID)
 	require.NoError(t, err)
-	require.Equal(t, "olap", inst.OLAPDriver)
-	require.Equal(t, "repo", inst.RepoDriver)
+	require.Equal(t, "olap", inst.OLAPConnector)
+	require.Equal(t, "repo", inst.RepoConnector)
 	require.Equal(t, true, inst.EmbedCatalog)
 	require.Greater(t, time.Minute, time.Since(inst.CreatedOn))
 	require.Greater(t, time.Minute, time.Since(inst.UpdatedOn))
 
 	res, err := reg.FindInstance(ctx, inst.ID)
 	require.NoError(t, err)
-	require.Equal(t, inst.OLAPDriver, res.OLAPDriver)
-	require.Equal(t, inst.RepoDriver, res.RepoDriver)
+	require.Equal(t, inst.OLAPConnector, res.OLAPConnector)
+	require.Equal(t, inst.RepoConnector, res.RepoConnector)
 	require.Equal(t, inst.EmbedCatalog, res.EmbedCatalog)
 	require.Equal(t, inst.IngestionLimitBytes, res.IngestionLimitBytes)
 	require.ElementsMatch(t, inst.Connectors, res.Connectors)
 
-	err = reg.CreateInstance(ctx, &drivers.Instance{OLAPDriver: "druid"})
+	err = reg.CreateInstance(ctx, &drivers.Instance{OLAPConnector: "druid"})
 	require.NoError(t, err)
 
 	insts, err := reg.FindInstances(ctx)

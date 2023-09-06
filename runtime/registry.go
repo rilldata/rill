@@ -23,12 +23,12 @@ func (r *Runtime) FindInstance(ctx context.Context, instanceID string) (*drivers
 }
 
 func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) error {
-	_, err := r.connectorDef(inst, inst.OLAPDriver)
+	_, err := r.connectorDef(inst, inst.OLAPConnector)
 	if err != nil {
 		return fmt.Errorf("invalid olap driver")
 	}
 
-	_, err = r.connectorDef(inst, inst.RepoDriver)
+	_, err = r.connectorDef(inst, inst.RepoConnector)
 	if err != nil {
 		return fmt.Errorf("invalid repo driver")
 	}
@@ -72,7 +72,7 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 
 	// Drop the underlying data store
 	if dropDB {
-		err = r.EvictHandle(ctx, instanceID, inst.OLAPDriver, true)
+		err = r.EvictHandle(ctx, instanceID, inst.OLAPConnector, true)
 		if err != nil {
 			r.logger.Error("could not drop database", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 		}
@@ -85,12 +85,12 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 // The API compares and only evicts caches if drivers or dsn is changed.
 // This is done to ensure that db handlers are not unnecessarily closed
 func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) error {
-	_, err := r.connectorDef(inst, inst.OLAPDriver)
+	_, err := r.connectorDef(inst, inst.OLAPConnector)
 	if err != nil {
 		return fmt.Errorf("invalid olap driver")
 	}
 
-	_, err = r.connectorDef(inst, inst.RepoDriver)
+	_, err = r.connectorDef(inst, inst.RepoConnector)
 	if err != nil {
 		return fmt.Errorf("invalid repo driver")
 	}
@@ -117,8 +117,8 @@ func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) erro
 
 func (r *Runtime) evictCaches(ctx context.Context, inst *drivers.Instance) {
 	// evict and close instance connections
-	_ = r.EvictHandle(ctx, inst.ID, inst.OLAPDriver, false)
-	_ = r.EvictHandle(ctx, inst.ID, inst.RepoDriver, false)
+	_ = r.EvictHandle(ctx, inst.ID, inst.OLAPConnector, false)
+	_ = r.EvictHandle(ctx, inst.ID, inst.RepoConnector, false)
 	// evict catalog cache
 	r.migrationMetaCache.evict(ctx, inst.ID)
 	// query cache can't be evicted since key is a combination of instance ID and other parameters
@@ -136,15 +136,15 @@ func (r *Runtime) GetInstanceAttributes(ctx context.Context, instanceID string) 
 }
 
 func (r *Runtime) repoChanged(ctx context.Context, a, b *drivers.Instance) bool {
-	o1, _ := r.connectorDef(a, a.RepoDriver)
-	o2, _ := r.connectorDef(b, b.RepoDriver)
-	return a.RepoDriver != b.RepoDriver || !equal(o1, o2)
+	o1, _ := r.connectorDef(a, a.RepoConnector)
+	o2, _ := r.connectorDef(b, b.RepoConnector)
+	return a.RepoConnector != b.RepoConnector || !equal(o1, o2)
 }
 
 func (r *Runtime) olapChanged(ctx context.Context, a, b *drivers.Instance) bool {
-	o1, _ := r.connectorDef(a, a.OLAPDriver)
-	o2, _ := r.connectorDef(b, b.OLAPDriver)
-	return a.OLAPDriver != b.OLAPDriver || !equal(o1, o2)
+	o1, _ := r.connectorDef(a, a.OLAPConnector)
+	o2, _ := r.connectorDef(b, b.OLAPConnector)
+	return a.OLAPConnector != b.OLAPConnector || !equal(o1, o2)
 }
 
 func (r *Runtime) annotationsChanged(ctx context.Context, a, b *drivers.Instance) bool {

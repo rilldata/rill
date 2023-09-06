@@ -297,9 +297,9 @@ func (m *Instance) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for OlapDriver
+	// no validation rules for OlapConnector
 
-	// no validation rules for RepoDriver
+	// no validation rules for RepoConnector
 
 	// no validation rules for EmbedCatalog
 
@@ -1054,9 +1054,9 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	}
 
-	// no validation rules for OlapDriver
+	// no validation rules for OlapConnector
 
-	// no validation rules for RepoDriver
+	// no validation rules for RepoConnector
 
 	// no validation rules for EmbedCatalog
 
@@ -1601,12 +1601,12 @@ func (m *EditInstanceRequest) validate(all bool) error {
 
 	// no validation rules for Annotations
 
-	if m.OlapDriver != nil {
-		// no validation rules for OlapDriver
+	if m.OlapConnector != nil {
+		// no validation rules for OlapConnector
 	}
 
-	if m.RepoDriver != nil {
-		// no validation rules for RepoDriver
+	if m.RepoConnector != nil {
+		// no validation rules for RepoConnector
 	}
 
 	if m.EmbedCatalog != nil {

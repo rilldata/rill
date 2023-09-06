@@ -416,7 +416,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 				SELECT %[1]s FROM %[3]q WHERE %[5]s GROUP BY %[2]s
 			) comparison
 		ON
-				base.%[2]s = comparison.%[2]s
+				base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
 		ORDER BY
 			%[6]s
 		LIMIT
@@ -487,7 +487,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 						SELECT %[1]s FROM %[3]q WHERE %[5]s GROUP BY %[2]s
 					) %[12]s
 				ON
-						base.%[2]s = comparison.%[2]s
+						base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
 				ORDER BY
 					%[6]s
 				LIMIT
@@ -520,7 +520,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 						SELECT %[1]s FROM %[3]q WHERE %[5]s GROUP BY %[2]s
 					) comparison
 				ON
-						base.%[2]s = comparison.%[2]s
+						base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
 				ORDER BY
 					%[6]s
 				LIMIT
