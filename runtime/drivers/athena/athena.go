@@ -113,7 +113,7 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source
 type sourceProperties struct {
 	SQL            string `mapstructure:"sql"`
 	OutputLocation string `mapstructure:"output_location"`
-	Region    string `mapstructure:"region"`
+	Region         string `mapstructure:"region"`
 }
 
 func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
@@ -230,9 +230,9 @@ func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSo
 	}
 
 	cfg, err := awsconfig.LoadDefaultConfig(
-		ctx, 
+		ctx,
 		awsconfig.WithRegion(conf.Region),
-		awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(c.config.AccessKeyID, c.config.SecretAccessKey, c.config.SessionToken))
+		awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(c.config.AccessKeyID, c.config.SecretAccessKey, c.config.SessionToken)),
 	)
 	if err != nil {
 		return nil, err
@@ -260,14 +260,14 @@ func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSo
 		return nil, errors.Join(fmt.Errorf("cannot download parquet output %q %w", opts.GlobPattern, err), cleanPath(ctx, cfg, bucketName, prefix))
 	}
 
-	return it 
+	return it, nil
 }
 
 func (c *Connection) openBucket(ctx context.Context, conf *sourceProperties, bucket string) (*blob.Bucket, error) {
 	cfg, err := awsconfig.LoadDefaultConfig(
-		ctx, 
+		ctx,
 		awsconfig.WithRegion(conf.Region),
-		awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(c.config.AccessKeyID, c.config.SecretAccessKey, c.config.SessionToken))
+		awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(c.config.AccessKeyID, c.config.SecretAccessKey, c.config.SessionToken)),
 	)
 	if err != nil {
 		return nil, err
