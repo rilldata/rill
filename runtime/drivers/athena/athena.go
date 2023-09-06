@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
@@ -16,7 +15,6 @@ import (
 	s3v2 "github.com/aws/aws-sdk-go-v2/service/s3"
 	s3v2types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/eapache/go-resiliency/retrier"
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
