@@ -17,7 +17,10 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { error } from "@sveltejs/kit";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { CATALOG_ENTRY_NOT_FOUND } from "../../../../lib/errors/messages";
+
+  const queryClient = useQueryClient();
 
   $: metricViewName = $page.params.name;
 
@@ -70,7 +73,7 @@
     }
   );
 
-  resetSelectedMockUserAfterNavigate();
+  resetSelectedMockUserAfterNavigate(queryClient);
 </script>
 
 <svelte:head>

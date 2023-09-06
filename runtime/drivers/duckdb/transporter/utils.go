@@ -1,8 +1,6 @@
 package transporter
 
 import (
-	"database/sql"
-	"database/sql/driver"
 	"fmt"
 	"os"
 	"path/filepath"

@@ -313,12 +313,12 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 		var columnsTuple string
 		if dialect != drivers.DialectDruid {
 			columnsTuple = fmt.Sprintf(
-				"base.%[1]s, comparison.%[1]s, comparison.%[1]s - base.%[1]s, (comparison.%[1]s - base.%[1]s)/base.%[1]s::DOUBLE",
+				"base.%[1]s, comparison.%[1]s, base.%[1]s - comparison.%[1]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE",
 				safeName(m.Name),
 			)
 		} else {
 			columnsTuple = fmt.Sprintf(
-				"ANY_VALUE(base.%[1]s), ANY_VALUE(comparison.%[1]s), ANY_VALUE(comparison.%[1]s - base.%[1]s), ANY_VALUE(SAFE_DIVIDE(comparison.%[1]s - base.%[1]s, CAST(base.%[1]s AS FLOAT))",
+				"ANY_VALUE(base.%[1]s), ANY_VALUE(comparison.%[1]s), ANY_VALUE(base.%[1]s - comparison.%[1]s), ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS FLOAT))",
 				safeName(m.Name),
 			)
 		}
