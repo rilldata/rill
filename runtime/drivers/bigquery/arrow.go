@@ -39,6 +39,7 @@ func (f *fileIterator) AsArrowRecordReader() (array.RecordReader, error) {
 		logger:      f.logger,
 		records:     make([]arrow.Record, 0),
 		ctx:         f.ctx,
+		buf:         &bytes.Buffer{},
 	}
 	rec.refCount.Store(1)
 	return rec, nil
@@ -59,6 +60,7 @@ type arrowRecordReader struct {
 	ipcread time.Duration
 
 	ctx context.Context
+	buf *bytes.Buffer
 }
 
 // Retain increases the reference count by 1.
@@ -141,9 +143,10 @@ func (rs *arrowRecordReader) nextArrowRecords(r *bigquery.ArrowRecordBatch) ([]a
 		rs.ipcread += time.Since(t)
 	}()
 
-	buf := bytes.NewBuffer(rs.bqIter.SerializedArrowSchema())
-	buf.Write(r.Data)
-	rdr, err := ipc.NewReader(buf, ipc.WithSchema(rs.arrowSchema), ipc.WithAllocator(rs.allocator))
+	rs.buf.Reset()
+	rs.buf.Write(rs.bqIter.SerializedArrowSchema())
+	rs.buf.Write(r.Data)
+	rdr, err := ipc.NewReader(rs.buf, ipc.WithSchema(rs.arrowSchema), ipc.WithAllocator(rs.allocator))
 	if err != nil {
 		return nil, err
 	}
