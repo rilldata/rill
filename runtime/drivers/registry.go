@@ -22,9 +22,9 @@ type Instance struct {
 	// Identifier
 	ID string
 	// Driver name to connect to for OLAP
-	OLAPDriver string
+	OLAPConnector string
 	// Driver name for reading/editing code artifacts
-	RepoDriver string
+	RepoConnector string
 	// EmbedCatalog tells the runtime to store the instance's catalog in its OLAP store instead
 	// of in the runtime's metadata store. Currently only supported for the duckdb driver.
 	EmbedCatalog bool `db:"embed_catalog"`

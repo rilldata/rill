@@ -328,8 +328,8 @@ export type RuntimeServiceEditInstanceBodyAnnotations = {
 See message Instance for field descriptions.
  */
 export type RuntimeServiceEditInstanceBody = {
-  olapDriver?: string;
-  repoDriver?: string;
+  olapConnector?: string;
+  repoConnector?: string;
   embedCatalog?: boolean;
   ingestionLimitBytes?: string;
   connectors?: V1Connector[];
@@ -1286,10 +1286,10 @@ just a single instance.
  */
 export interface V1Instance {
   instanceId?: string;
-  olapDriver?: string;
-  /** Driver for reading/editing code artifacts (options: file, metastore, github).
-This enables virtualizing a file system in a cloud setting. */
-  repoDriver?: string;
+  olapConnector?: string;
+  /** Connector name for repo driver(typically called : repo). 
+Repo driver is for reading/editing code artifacts. This enables virtualizing a file system in a cloud setting. */
+  repoConnector?: string;
   /** If true, the runtime will store the instance's catalog in its OLAP store instead
 of in the runtime's metadata store. Currently only supported for the duckdb driver. */
   embedCatalog?: boolean;
@@ -1450,8 +1450,8 @@ See message Instance for field descriptions.
  */
 export interface V1CreateInstanceRequest {
   instanceId?: string;
-  olapDriver?: string;
-  repoDriver?: string;
+  olapConnector?: string;
+  repoConnector?: string;
   embedCatalog?: boolean;
   variables?: V1CreateInstanceRequestVariables;
   ingestionLimitBytes?: string;

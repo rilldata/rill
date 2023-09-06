@@ -15,6 +15,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
@@ -85,7 +86,7 @@ type configProperties struct {
 }
 
 // Open implements drivers.Driver
-func (d driver) Open(config map[string]any, shared bool, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("s3 driver can't be shared")
 	}
@@ -121,7 +122,7 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source
 		return false, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	c, err := d.Open(map[string]any{}, false, logger)
+	c, err := d.Open(map[string]any{}, false, activity.NewNoopClient(), logger)
 	if err != nil {
 		return false, err
 	}

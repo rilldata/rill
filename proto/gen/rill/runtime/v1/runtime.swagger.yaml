@@ -427,9 +427,9 @@ paths:
           schema:
             type: object
             properties:
-              olapDriver:
+              olapConnector:
                 type: string
-              repoDriver:
+              repoConnector:
                 type: string
               embedCatalog:
                 type: boolean
@@ -2886,9 +2886,9 @@ definitions:
     properties:
       instanceId:
         type: string
-      olapDriver:
+      olapConnector:
         type: string
-      repoDriver:
+      repoConnector:
         type: string
       embedCatalog:
         type: boolean
@@ -3107,14 +3107,12 @@ definitions:
       instanceId:
         type: string
         title: Identifier (UUID)
-      olapDriver:
+      olapConnector:
         type: string
-        title: 'Driver to connect to for OLAP (options: duckdb, druid)'
-      repoDriver:
+        title: 'OLAP connector name (typically called : olap )'
+      repoConnector:
         type: string
-        description: |-
-          Driver for reading/editing code artifacts (options: file, metastore, github).
-          This enables virtualizing a file system in a cloud setting.
+        description: "Connector name for repo driver(typically called : repo). \nRepo driver is for reading/editing code artifacts. This enables virtualizing a file system in a cloud setting."
       embedCatalog:
         type: boolean
         description: |-
