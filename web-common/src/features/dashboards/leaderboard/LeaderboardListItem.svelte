@@ -21,13 +21,13 @@
   import { humanizeDataType } from "../humanize-numbers";
   import LongBarZigZag from "./LongBarZigZag.svelte";
   import {
-    LeaderboardItemData,
+    LeaderboardItemData2,
     formatContextColumnValue,
   } from "./leaderboard-utils";
   import ContextColumnValue from "./ContextColumnValue.svelte";
 
-  export let itemData: LeaderboardItemData;
-  $: label = itemData.label;
+  export let itemData: LeaderboardItemData2;
+  $: label = itemData.dimensionValue;
   $: measureValue = itemData.value;
   $: selected = itemData.selected;
   $: comparisonValue = itemData.comparisonValue;
@@ -46,14 +46,10 @@
   /** for summable measures, this is the value we use to calculate the bar % to fill */
   export let referenceValue;
 
-  /** the unfilteredTotal is used to compute the "percent of total" context value*/
-  export let unfilteredTotal: number;
-
   $: formattedValue = humanizeDataType(measureValue, formatPreset);
 
   $: contextColumnFormattedValue = formatContextColumnValue(
     itemData,
-    unfilteredTotal,
     showContext,
     formatPreset
   );

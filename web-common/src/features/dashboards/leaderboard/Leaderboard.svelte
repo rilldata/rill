@@ -262,26 +262,12 @@
       },
     ],
     filter: filterForDimension,
-    // this limit was only appropriate for the comparison query.
-    // limit: currentVisibleValues.length.toString(),
     limit: "250",
     offset: "0",
   };
-  // $: console.log("sortedQueryBody", sortedQueryBody);
-
-  // NOTE: this is the version of "enabled" that applied to
-  // the comparison query.
-  // $: sortedQueryEnabled = Boolean(
-  //   showTimeComparison &&
-  //     !!comparisonTimeStart &&
-  //     !!comparisonTimeEnd &&
-  //     !!updatedFilters
-  // );
 
   $: sortedQueryEnabled =
     (hasTimeSeries ? !!timeStart && !!timeEnd : true) && !!filterForDimension;
-
-  // $: console.log("sortedQueryEnabled", sortedQueryEnabled);
 
   $: sortedQuery = createQueryServiceMetricsViewComparisonToplist(
     $runtime.instanceId,
@@ -294,27 +280,18 @@
     }
   );
 
-  // $: console.log("$topListQuery.status", $topListQuery.status);
-  // $: console.log("$sortedQuery.status", $sortedQuery.status);
-
-  // $: console.log(
-  //   "topListQuery",
-  //   $topListQuery?.data?.data?.map((v) => [v.domain, v.total_records])
-  // );
-  // $: console.log(
-  //   "comparisonTopListQuery",
-  //   $comparisonTopListQuery?.data?.data?.map((v) => [v.domain, v.total_records])
-  // );
-  // $: if ($sortedQuery.isError) {
-  //   console.log("sortedQuery isError", $sortedQuery);
-  // }
-
-  // $: console.log("$sortedQuery.status", $sortedQuery.status);
-
-  let aboveTheFold: LeaderboardItemData2[] = [];
-  let selectedBelowTheFold: LeaderboardItemData2[] = [];
+  $: console.log("sortedQuery BODY --", dimensionName, sortedQueryBody);
+  $: if (!$sortedQuery.isFetching) {
+    console.log(
+      "sortedQuery RAW DATA --",
+      dimensionName,
+      $sortedQuery?.data?.rows
+    );
+  }
 
   /** replace data after fetched. */
+  let aboveTheFold: LeaderboardItemData2[] = [];
+  let selectedBelowTheFold: LeaderboardItemData2[] = [];
   $: if (!$sortedQuery?.isFetching) {
     const leaderboardData = prepareLeaderboardItemData2(
       $sortedQuery?.data?.rows?.map((r) =>
@@ -322,42 +299,28 @@
       ) ?? [],
       slice,
       activeValues,
-      null
+      unfilteredTotal
     );
 
     aboveTheFold = leaderboardData.aboveTheFold;
     selectedBelowTheFold = leaderboardData.selectedBelowTheFold;
-    console.log("sortedQuery data", dimensionName, leaderboardData);
+    // console.log("sortedQuery data", dimensionName, leaderboardData);
   }
 
-  $: if (!$sortedQuery.isFetching) {
-    console.log(
-      "sortedQuery",
-      dimensionName,
-      $sortedQuery?.data?.rows.map((v) => [
-        v.dimensionValue,
-        {
-          name: v.measureValues[0].measureName,
-          base: v.measureValues[0].baseValue,
-          comparison: v.measureValues[0].comparisonValue,
-          deltaRel: v.measureValues[0].deltaRel,
-          deltaAbs: v.measureValues[0].deltaAbs,
-        },
-      ])
-    );
-  }
-
+  // $: if (!$sortedQuery.isFetching) {
   //   console.log(
-  //     "sortedQuery RAW ROWS",
+  //     "sortedQuery",
   //     dimensionName,
-  //     $sortedQuery?.data?.rows
-  //   );
-  //   console.log(
-  //     "sortedQuery getLabeledComparisonFromComparisonRow",
-  //     dimensionName,
-  //     $sortedQuery?.data?.rows.map((r) =>
-  //       getLabeledComparisonFromComparisonRow(r, measure.name)
-  //     )
+  //     $sortedQuery?.data?.rows.map((v) => [
+  //       v.dimensionValue,
+  //       {
+  //         name: v.measureValues[0].measureName,
+  //         base: v.measureValues[0].baseValue,
+  //         comparison: v.measureValues[0].comparisonValue,
+  //         deltaRel: v.measureValues[0].deltaRel,
+  //         deltaAbs: v.measureValues[0].deltaAbs,
+  //       },
+  //     ])
   //   );
   // }
 
@@ -370,6 +333,7 @@
     activeValues,
     comparisonMap
   );
+  // $: console.log("aboveTheFoldItems", dimensionName, aboveTheFoldItems);
 
   $: belowTheFoldItems = prepareLeaderboardItemData(
     selectedValuesThatAreBelowTheFold,
@@ -400,13 +364,12 @@
     {#if values}
       <div class="rounded-b border-gray-200 surface text-gray-800">
         <!-- place the leaderboard entries that are above the fold here -->
-        {#each aboveTheFoldItems as itemData (itemData.label)}
+        {#each aboveTheFold as itemData (itemData.dimensionValue)}
           <LeaderboardListItem
             {itemData}
             {showContext}
             {atLeastOneActive}
             {filterExcludeMode}
-            {unfilteredTotal}
             {isSummableMeasure}
             {referenceValue}
             {formatPreset}
@@ -416,9 +379,9 @@
           />
         {/each}
         <!-- place the selected values that are not above the fold here -->
-        {#if selectedValuesThatAreBelowTheFold?.length}
+        {#if selectedBelowTheFold?.length}
           <hr />
-          {#each belowTheFoldItems as itemData (itemData.label)}
+          {#each selectedBelowTheFold as itemData (itemData.dimensionValue)}
             <LeaderboardListItem
               {itemData}
               {showContext}

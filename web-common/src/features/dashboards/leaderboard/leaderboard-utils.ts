@@ -10,14 +10,9 @@ import {
 } from "../humanize-numbers";
 import { LeaderboardContextColumn } from "../leaderboard-context-column";
 
-export function getFormatterValueForPercDiff(numerator, denominator) {
-  if (denominator === 0) return PERC_DIFF.PREV_VALUE_ZERO;
-  if (!denominator) return PERC_DIFF.PREV_VALUE_NO_DATA;
-  if (numerator === null || numerator === undefined)
-    return PERC_DIFF.CURRENT_VALUE_NO_DATA;
-
-  const percDiff = numerator / denominator;
-  return formatMeasurePercentageDifference(percDiff);
+export function getFormatterValueForPercDiff(pct: number | null) {
+  if (pct === null) return PERC_DIFF.PREV_VALUE_NO_DATA;
+  return formatMeasurePercentageDifference(pct);
 }
 
 export type LeaderboardItemData = {
@@ -159,16 +154,17 @@ export function prepareLeaderboardItemData2(
 } {
   const aboveTheFold: LeaderboardItemData2[] = [];
   const selectedBelowTheFold: LeaderboardItemData2[] = [];
-  // console.log({ values, len: values.length, selectedValues });
+  let selectedValuesCopy = [...selectedValues];
+  console.log({ values, len: values.length, selectedValues });
   values.forEach((v, i) => {
     // console.log({ dimval: v.dimensionValue, selectedValues });
     const selected =
-      selectedValues.findIndex((value) => value === v.dimensionValue) >= 0;
+      selectedValuesCopy.findIndex((value) => value === v.dimensionValue) >= 0;
     // drop the value from the selectedValues array so that we'll
     // have any left over values that were selected but not included
     // in the results returned by the API
     if (selected)
-      selectedValues = selectedValues.filter(
+      selectedValuesCopy = selectedValuesCopy.filter(
         (value) => value !== v.dimensionValue
       );
     if (i < numberAboveTheFold) {
@@ -205,26 +201,18 @@ export function prepareLeaderboardItemData2(
  * accounting for the context column type.
  */
 export function formatContextColumnValue(
-  itemData: LeaderboardItemData,
-  unfilteredTotal: number,
+  itemData: LeaderboardItemData2,
   contextType: LeaderboardContextColumn,
   formatPreset: FormatPreset
 ): string {
-  const { value, comparisonValue } = itemData;
   let formattedValue = "";
 
   if (contextType === LeaderboardContextColumn.DELTA_PERCENT) {
-    formattedValue = getFormatterValueForPercDiff(
-      value && comparisonValue ? value - comparisonValue : null,
-      comparisonValue
-    );
+    formattedValue = getFormatterValueForPercDiff(itemData.deltaPct);
   } else if (contextType === LeaderboardContextColumn.PERCENT) {
-    formattedValue = getFormatterValueForPercDiff(value, unfilteredTotal);
+    formattedValue = getFormatterValueForPercDiff(itemData.pctOfTotal);
   } else if (contextType === LeaderboardContextColumn.DELTA_ABSOLUTE) {
-    formattedValue = humanizeDataType(
-      value && comparisonValue ? value - comparisonValue : null,
-      formatPreset
-    );
+    formattedValue = humanizeDataType(itemData.deltaAbs, formatPreset);
   } else {
     formattedValue = "";
   }
