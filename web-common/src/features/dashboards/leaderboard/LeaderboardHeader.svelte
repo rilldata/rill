@@ -31,9 +31,6 @@
     [LeaderboardContextColumn.PERCENT]: SortType.PERCENT,
   }[contextColumn];
 
-  $: console.log("sortType", sortType);
-  $: console.log("contextColumnSortType", contextColumnSortType);
-
   $: arrowTransform = sortAscending ? "scale(1 -1)" : "scale(1 1)";
 
   let optionsMenuActive = false;
