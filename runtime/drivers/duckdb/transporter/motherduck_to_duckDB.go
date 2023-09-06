@@ -39,7 +39,7 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, source drivers.Source
 	}
 
 	config := t.from.Config()
-	err := t.to.WithConnection(ctx, 1, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
+	err := t.to.WithConnection(ctx, 1, true, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
 		res, err := t.to.Execute(ctx, &drivers.Statement{Query: "SELECT current_database();"})
 		if err != nil {
 			return err

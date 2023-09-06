@@ -77,16 +77,17 @@ func (d Driver) Open(config map[string]any, shared bool, client activity.Client,
 
 	ctx, cancel := context.WithCancel(context.Background())
 	c := &connection{
-		config:       cfg,
-		logger:       logger,
-		metaSem:      semaphore.NewWeighted(1),
-		olapSem:      priorityqueue.NewSemaphore(olapSemSize),
-		dbCond:       sync.NewCond(&sync.Mutex{}),
-		driverConfig: config,
-		driverName:   d.name,
-		shared:       shared,
-		ctx:          ctx,
-		cancel:       cancel,
+		config:         cfg,
+		logger:         logger,
+		metaSem:        semaphore.NewWeighted(1),
+		olapSem:        priorityqueue.NewSemaphore(olapSemSize),
+		longRunningSem: semaphore.NewWeighted(1), // Currently hard-coded to 1
+		dbCond:         sync.NewCond(&sync.Mutex{}),
+		driverConfig:   config,
+		driverName:     d.name,
+		shared:         shared,
+		ctx:            ctx,
+		cancel:         cancel,
 	}
 
 	// Open the DB
@@ -158,6 +159,9 @@ type connection struct {
 	// This creates contention for the same connection in database/sql's pool, but its locks will handle that.
 	metaSem *semaphore.Weighted
 	olapSem *priorityqueue.Semaphore
+	// The OLAP interface additionally provides an option to limit the number of long-running queries, as designated by the caller.
+	// longRunningSem enforces this limitation.
+	longRunningSem *semaphore.Weighted
 	// If DuckDB encounters a fatal error, all queries will fail until the DB has been reopened.
 	// When dbReopen is set to true, dbCond will be used to stop acquisition of new connections,
 	// and then when dbConnCount becomes 0, the DB will be reopened and dbReopen set to false again.
@@ -347,16 +351,27 @@ func (c *connection) acquireMetaConn(ctx context.Context) (*sqlx.Conn, func() er
 
 // acquireOLAPConn gets a connection from the pool for OLAP queries (i.e. slow queries).
 // It returns a function that puts the connection back in the pool (if applicable).
-func (c *connection) acquireOLAPConn(ctx context.Context, priority int) (*sqlx.Conn, func() error, error) {
+func (c *connection) acquireOLAPConn(ctx context.Context, priority int, longRunning bool) (*sqlx.Conn, func() error, error) {
 	// Try to get conn from context (means the call is wrapped in WithConnection)
 	conn := connFromContext(ctx)
 	if conn != nil {
 		return conn, func() error { return nil }, nil
 	}
 
+	// Acquire long-running semaphore if applicable
+	if longRunning {
+		err := c.longRunningSem.Acquire(ctx, 1)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
 	// Acquire semaphore
 	err := c.olapSem.Acquire(ctx, priority)
 	if err != nil {
+		if longRunning {
+			c.longRunningSem.Release(1)
+		}
 		return nil, nil, err
 	}
 
@@ -364,6 +379,9 @@ func (c *connection) acquireOLAPConn(ctx context.Context, priority int) (*sqlx.C
 	conn, releaseConn, err := c.acquireConn(ctx)
 	if err != nil {
 		c.olapSem.Release()
+		if longRunning {
+			c.longRunningSem.Release(1)
+		}
 		return nil, nil, err
 	}
 
@@ -371,6 +389,9 @@ func (c *connection) acquireOLAPConn(ctx context.Context, priority int) (*sqlx.C
 	release := func() error {
 		err := releaseConn()
 		c.olapSem.Release()
+		if longRunning {
+			c.longRunningSem.Release(1)
+		}
 		return err
 	}
 

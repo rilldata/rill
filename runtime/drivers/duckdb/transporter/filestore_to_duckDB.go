@@ -71,7 +71,7 @@ func (t *fileStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source,
 	}
 
 	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s)", safeName(fSink.Table), from)
-	err = t.to.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1})
+	err = t.to.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1, LongRunning: true})
 	if err != nil {
 		return err
 	}

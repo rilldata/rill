@@ -75,7 +75,7 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, 
 			query = fmt.Sprintf("INSERT INTO %s (SELECT * FROM %s);", safeName(dbSink.Table), from)
 		}
 
-		if err := s.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1}); err != nil {
+		if err := s.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1, LongRunning: true}); err != nil {
 			return err
 		}
 	}

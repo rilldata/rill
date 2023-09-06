@@ -134,7 +134,8 @@ func (r *MigrationReconciler) executeMigration(ctx context.Context, self *runtim
 	defer release()
 
 	return olap.Exec(ctx, &drivers.Statement{
-		Query:    sql,
-		Priority: 100,
+		Query:       sql,
+		Priority:    100,
+		LongRunning: true,
 	})
 }

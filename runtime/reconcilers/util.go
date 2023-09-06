@@ -107,8 +107,9 @@ func olapDropTableIfExists(ctx context.Context, c *runtime.Controller, connector
 	}
 
 	_ = olap.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("DROP %s IF EXISTS %s", typ, safeSQLName(table)),
-		Priority: 100,
+		Query:       fmt.Sprintf("DROP %s IF EXISTS %s", typ, safeSQLName(table)),
+		Priority:    100,
+		LongRunning: true,
 	})
 }
 
@@ -137,7 +138,7 @@ func olapRenameTable(ctx context.Context, c *runtime.Controller, connector, oldN
 	}
 
 	// TODO: Use a transaction?
-	return olap.WithConnection(ctx, 100, func(ctx context.Context, ensuredCtx context.Context, conn *sql.Conn) error {
+	return olap.WithConnection(ctx, 100, true, func(ctx context.Context, ensuredCtx context.Context, conn *sql.Conn) error {
 		// Renaming a table to the same name with different casing is not supported. Workaround by renaming to a temporary name first.
 		if strings.EqualFold(oldName, newName) {
 			tmp := "__rill_tmp_rename_%s_" + typ + newName
