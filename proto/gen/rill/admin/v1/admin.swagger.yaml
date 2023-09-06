@@ -366,7 +366,7 @@ paths:
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/credentials:
-    get:
+    post:
       summary: GetDeploymentCredentials returns runtime info and JWT on behalf of a specific user, or alternatively for a raw set of JWT attributes
       operationId: AdminService_GetDeploymentCredentials
       responses:
@@ -387,18 +387,18 @@ paths:
           in: path
           required: true
           type: string
-        - name: branch
-          in: query
-          required: false
-          type: string
-        - name: userId
-          in: query
-          required: false
-          type: string
-        - name: attrs
-          in: query
-          required: false
-          type: object
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              branch:
+                type: string
+              userId:
+                type: string
+              attrs:
+                type: object
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/git-credentials:
