@@ -5,18 +5,18 @@
   import { contextColumnWidth } from "./leaderboard-utils";
 
   export let formattedValue: string;
-  export let showContext: LeaderboardContextColumn;
+  export let contextColumn: LeaderboardContextColumn;
   $: neg = formattedValue[0] === "-";
   $: noData = formattedValue === "" || !formattedValue;
   $: customStyle = neg ? "text-red-500" : noData ? "opacity-50 italic" : "";
-  $: width = contextColumnWidth(showContext);
+  $: width = contextColumnWidth(contextColumn);
 </script>
 
-{#if showContext === LeaderboardContextColumn.DELTA_PERCENT || showContext === LeaderboardContextColumn.PERCENT}
+{#if contextColumn === LeaderboardContextColumn.DELTA_PERCENT || contextColumn === LeaderboardContextColumn.PERCENT}
   <div style:width="44px">
     <PercentageChange value={formattedValue} />
   </div>
-{:else if showContext === LeaderboardContextColumn.DELTA_ABSOLUTE}
+{:else if contextColumn === LeaderboardContextColumn.DELTA_ABSOLUTE}
   <div style:width>
     {#if noData}
       <span class="opacity-50 italic" style:font-size=".925em">no data</span>

@@ -8,7 +8,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
-  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+
   import {
     getFilterForDimension,
     useMetaDimension,
@@ -108,17 +108,6 @@
   $: sortType = $dashboardStore.dashboardSortType;
 
   $: contextColumn = $dashboardStore?.leaderboardContextColumn;
-  // Compose the comparison /toplist query
-  $: showTimeComparison =
-    (contextColumn === LeaderboardContextColumn.DELTA_PERCENT ||
-      contextColumn === LeaderboardContextColumn.DELTA_ABSOLUTE) &&
-    $timeControlsStore?.showComparison;
-
-  $: showPercentOfTotal =
-    $dashboardStore?.leaderboardContextColumn ===
-    LeaderboardContextColumn.PERCENT;
-
-  $: showContext = $dashboardStore?.leaderboardContextColumn;
 
   $: querySortType = getQuerySortType(sortType);
 
@@ -219,7 +208,7 @@
         {#each aboveTheFold as itemData (itemData.dimensionValue)}
           <LeaderboardListItem
             {itemData}
-            {showContext}
+            {contextColumn}
             {atLeastOneActive}
             {filterExcludeMode}
             {isSummableMeasure}
@@ -236,7 +225,7 @@
           {#each selectedBelowTheFold as itemData (itemData.dimensionValue)}
             <LeaderboardListItem
               {itemData}
-              {showContext}
+              {contextColumn}
               {atLeastOneActive}
               {filterExcludeMode}
               {isSummableMeasure}

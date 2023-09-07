@@ -32,7 +32,7 @@
   $: selected = itemData.selected;
   $: comparisonValue = itemData.comparisonValue;
 
-  export let showContext: LeaderboardContextColumn;
+  export let contextColumn: LeaderboardContextColumn;
 
   export let atLeastOneActive = false;
 
@@ -50,7 +50,7 @@
 
   $: contextColumnFormattedValue = formatContextColumnValue(
     itemData,
-    showContext,
+    contextColumn,
     formatPreset
   );
 
@@ -169,7 +169,7 @@
           </div>
           <ContextColumnValue
             formattedValue={contextColumnFormattedValue}
-            {showContext}
+            {contextColumn}
           />
         </div>
       </div>
