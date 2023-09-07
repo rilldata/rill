@@ -9,7 +9,7 @@ import (
 
 // OrganizationPermissionsForUser resolves organization permissions for a user.
 func (s *Service) OrganizationPermissionsForUser(ctx context.Context, orgID, userID string) (*adminv1.OrganizationPermissions, error) {
-	roles, err := s.DB.ResolveOrganizationRolesForUser(context.Background(), userID, orgID)
+	roles, err := s.DB.ResolveOrganizationRolesForUser(ctx, userID, orgID)
 	if err != nil {
 		return nil, err
 	}
