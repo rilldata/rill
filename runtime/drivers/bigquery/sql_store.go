@@ -20,6 +20,9 @@ import (
 	"google.golang.org/api/iterator"
 )
 
+// recommended size is 512MB - 1GB, entire data is buffered in memory before its written to disk
+const rowGroupBufferSize = int64(datasize.MB) * 512
+
 // Query implements drivers.SQLStore
 func (c *Connection) Query(ctx context.Context, props map[string]any, sql string) (drivers.RowIterator, error) {
 	return nil, fmt.Errorf("not implemented")
@@ -67,7 +70,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, sql
 		client.Close()
 		return nil, err
 	}
-	c.logger.Info("query took", zap.Duration("duration", time.Since(now)))
+	c.logger.Info("query took", zap.Duration("duration", time.Since(now)), observability.ZapCtx(ctx))
 
 	p.Target(int64(it.TotalRows), drivers.ProgressUnitRecord)
 	return &fileIterator{
@@ -114,11 +117,13 @@ func (f *fileIterator) KeepFilesUntilClose(keepFilesUntilClose bool) {
 func (f *fileIterator) NextBatch(limit int) ([]string, error) {
 	// storage API not available so can't read as arrow records. Read results row by row and dump in a json file.
 	if !f.bqIter.IsAccelerated() {
+		f.logger.Info("downloading results in json file", observability.ZapCtx(f.ctx))
 		if err := f.downloadAsJSONFile(); err != nil {
 			return nil, err
 		}
 		return []string{f.tempFilePath}, nil
 	}
+	f.logger.Info("downloading results in parquet file", observability.ZapCtx(f.ctx))
 
 	// create a temp file
 	fw, err := os.CreateTemp("", "temp*.parquet")
@@ -174,6 +179,9 @@ func (f *fileIterator) NextBatch(limit int) ([]string, error) {
 		default:
 			rec := rdr.Record()
 			f.progress.Observe(rec.NumRows(), drivers.ProgressUnitRecord)
+			if writer.RowGroupTotalBytesWritten() >= rowGroupBufferSize {
+				writer.NewBufferedRowGroup()
+			}
 			if err := writer.WriteBuffered(rec); err != nil {
 				return nil, err
 			}
