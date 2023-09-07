@@ -13,6 +13,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/services/catalog"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	"github.com/stretchr/testify/require"
@@ -185,7 +186,7 @@ func CopyFileToData(t *testing.T, dir, source, name string) {
 func GetService(t *testing.T) (*catalog.Service, string) {
 	dir := t.TempDir()
 
-	duckdbStore, err := drivers.Open("duckdb", map[string]any{"dsn": filepath.Join(dir, "stage.db")}, false, zap.NewNop())
+	duckdbStore, err := drivers.Open("duckdb", map[string]any{"dsn": filepath.Join(dir, "stage.db")}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	err = duckdbStore.Migrate(context.Background())
 	require.NoError(t, err)
@@ -194,7 +195,7 @@ func GetService(t *testing.T) (*catalog.Service, string) {
 	catalogObject, ok := duckdbStore.AsCatalogStore("")
 	require.True(t, ok)
 
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	repo, ok := fileStore.AsRepoStore("")
 	require.True(t, ok)
@@ -206,7 +207,7 @@ func GetService(t *testing.T) (*catalog.Service, string) {
 }
 
 func registryStore(t *testing.T) drivers.RegistryStore {
-	store, err := drivers.Open("sqlite", map[string]any{"dsn": ":memory:"}, false, zap.NewNop())
+	store, err := drivers.Open("sqlite", map[string]any{"dsn": ":memory:"}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	err = store.Migrate(context.Background())
 	require.NoError(t, err)

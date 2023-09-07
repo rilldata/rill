@@ -3,6 +3,8 @@
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import Export from "@rilldata/web-common/components/icons/Export.svelte";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     V1ExportFormat,
     createQueryServiceExport,
@@ -12,12 +14,15 @@
   export let metricViewName;
   let exportMenuOpen = false;
 
+  const timeControlStore = useTimeControlStore(getStateManagers());
+
   const exportDash = createQueryServiceExport();
   const handleExportMetrics = async (format: V1ExportFormat) => {
     exportMetrics({
       metricViewName,
       query: exportDash,
       format,
+      timeControlStore,
     });
   };
 </script>
@@ -27,16 +32,16 @@
   distance={8}
   let:toggleFloatingElement
   location="top"
-  on:open={() => (exportMenuOpen = true)}
   on:close={() => (exportMenuOpen = false)}
+  on:open={() => (exportMenuOpen = true)}
 >
   <IconButton
     ariaLabel="Export model data"
+    disableTooltip={exportMenuOpen}
     on:click={(evt) => {
       evt.stopPropagation();
       toggleFloatingElement();
     }}
-    disableTooltip={exportMenuOpen}
     ><span class="text-gray-800">
       <Export size="18px" />
     </span>

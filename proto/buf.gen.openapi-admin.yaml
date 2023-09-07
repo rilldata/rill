@@ -4,7 +4,7 @@ managed:
   go_package_prefix:
     default: github.com/rilldata/rill
 plugins:
-  - plugin: buf.build/grpc-ecosystem/openapiv2
+  - plugin: buf.build/grpc-ecosystem/openapiv2:v2.16.2
     out: gen
     opt:
       - logtostderr=true

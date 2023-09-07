@@ -127,11 +127,11 @@ The main feature-set component for dashboard filters
   style:min-height={MIN_CONTAINER_HEIGHT}
 >
   <div
+    class="grid items-center place-items-center"
+    class:ui-copy-icon={hasFilters}
+    class:ui-copy-icon-inactive={!hasFilters}
     style:height={ROW_HEIGHT}
     style:width={ROW_HEIGHT}
-    class="grid items-center place-items-center"
-    class:ui-copy-icon-inactive={!hasFilters}
-    class:ui-copy-icon={hasFilters}
   >
     <Filter size="16px" />
   </div>

@@ -2,22 +2,34 @@ package bigquery
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"math/big"
+	"os"
 	"strings"
 	"time"
 
 	"cloud.google.com/go/bigquery"
-	"cloud.google.com/go/civil"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/apache/arrow/go/v13/parquet"
+	"github.com/apache/arrow/go/v13/parquet/compress"
+	"github.com/apache/arrow/go/v13/parquet/pqarrow"
+	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 	"google.golang.org/api/iterator"
 )
 
+// recommended size is 512MB - 1GB, entire data is buffered in memory before its written to disk
+const rowGroupBufferSize = int64(datasize.MB) * 512
+
 // Query implements drivers.SQLStore
 func (c *Connection) Query(ctx context.Context, props map[string]any, sql string) (drivers.RowIterator, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+// QueryAsFiles implements drivers.SQLStore
+func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, sql string, opt *drivers.QueryOption, p drivers.Progress) (drivers.FileIterator, error) {
 	srcProps, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, err
@@ -36,6 +48,7 @@ func (c *Connection) Query(ctx context.Context, props map[string]any, sql string
 		return nil, err
 	}
 
+	now := time.Now()
 	q := client.Query(sql)
 	it, err := q.Read(ctx)
 	if err != nil && !strings.Contains(err.Error(), "Syntax error") {
@@ -57,157 +70,210 @@ func (c *Connection) Query(ctx context.Context, props map[string]any, sql string
 		client.Close()
 		return nil, err
 	}
+	c.logger.Info("query took", zap.Duration("duration", time.Since(now)), observability.ZapCtx(ctx))
 
-	return &rowIterator{
-		client: client,
-		bqIter: it,
+	p.Target(int64(it.TotalRows), drivers.ProgressUnitRecord)
+	return &fileIterator{
+		client:       client,
+		bqIter:       it,
+		logger:       c.logger,
+		limitInBytes: opt.TotalLimitInBytes,
+		progress:     p,
+		totalRecords: int64(it.TotalRows),
+		ctx:          ctx,
 	}, nil
 }
 
-type rowIterator struct {
-	client  *bigquery.Client
-	next    []any
-	nexterr error
-	schema  *runtimev1.StructType
-	bqIter  *bigquery.RowIterator
+type fileIterator struct {
+	client       *bigquery.Client
+	bqIter       *bigquery.RowIterator
+	logger       *zap.Logger
+	limitInBytes int64
+	progress     drivers.Progress
+
+	totalRecords int64
+	tempFilePath string
+	downloaded   bool
+
+	ctx context.Context // TODO :: refatcor NextBatch to take context on NextBatch
 }
 
-var _ drivers.RowIterator = &rowIterator{}
+// Close implements drivers.FileIterator.
+func (f *fileIterator) Close() error {
+	return os.Remove(f.tempFilePath)
+}
 
-func (r *rowIterator) Schema(ctx context.Context) (*runtimev1.StructType, error) {
-	if r.schema != nil {
-		return r.schema, nil
-	}
+// HasNext implements drivers.FileIterator.
+func (f *fileIterator) HasNext() bool {
+	return !f.downloaded
+}
 
-	// schema is only available after first next call
-	r.next, r.nexterr = r.Next(ctx)
-	if r.nexterr != nil {
-		return nil, r.nexterr
-	}
+// KeepFilesUntilClose implements drivers.FileIterator.
+func (f *fileIterator) KeepFilesUntilClose(keepFilesUntilClose bool) {
+}
 
-	fields := make([]*runtimev1.StructType_Field, len(r.bqIter.Schema))
-	for i, s := range r.bqIter.Schema {
-		dbt, err := toPB(s)
-		if err != nil {
+// NextBatch implements drivers.FileIterator.
+// TODO :: currently it downloads all records in a single file. Need to check if it is efficient to ingest a single file with size in tens of GBs or more.
+func (f *fileIterator) NextBatch(limit int) ([]string, error) {
+	// storage API not available so can't read as arrow records. Read results row by row and dump in a json file.
+	if !f.bqIter.IsAccelerated() {
+		f.logger.Info("downloading results in json file", observability.ZapCtx(f.ctx))
+		if err := f.downloadAsJSONFile(); err != nil {
 			return nil, err
 		}
-
-		fields[i] = &runtimev1.StructType_Field{Name: s.Name, Type: dbt}
+		return []string{f.tempFilePath}, nil
 	}
-	r.schema = &runtimev1.StructType{Fields: fields}
-	return r.schema, nil
-}
+	f.logger.Info("downloading results in parquet file", observability.ZapCtx(f.ctx))
 
-func (r *rowIterator) Next(ctx context.Context) ([]any, error) {
-	if r.next != nil || r.nexterr != nil {
-		next, err := r.next, r.nexterr
-		r.next = nil
-		r.nexterr = nil
-		return next, err
+	// create a temp file
+	fw, err := os.CreateTemp("", "temp*.parquet")
+	if err != nil {
+		return nil, err
 	}
+	defer fw.Close()
+	f.tempFilePath = fw.Name()
+	f.downloaded = true
 
-	var row row = make([]any, 0)
-	if err := r.bqIter.Next(&row); err != nil {
-		if errors.Is(err, iterator.Done) {
-			return nil, drivers.ErrIteratorDone
+	rdr, err := f.AsArrowRecordReader()
+	if err != nil {
+		return nil, err
+	}
+	defer rdr.Release()
+
+	tf := time.Now()
+	defer func() {
+		f.logger.Info("time taken to write arrow records in parquet file", zap.Duration("duration", time.Since(tf)), observability.ZapCtx(f.ctx))
+	}()
+	writer, err := pqarrow.NewFileWriter(rdr.Schema(), fw,
+		parquet.NewWriterProperties(
+			parquet.WithCompression(compress.Codecs.Snappy),
+			parquet.WithRootRepetition(parquet.Repetitions.Required),
+			// duckdb has issues reading statistics of string type generated with this write
+			// column statistics may not be useful if full file need to be ingested so better to disable to save computations
+			parquet.WithStats(false),
+		),
+		pqarrow.NewArrowWriterProperties(pqarrow.WithStoreSchema()))
+	if err != nil {
+		if strings.Contains(err.Error(), "not implemented: support for DECIMAL256") {
+			return nil, fmt.Errorf("BIGNUMERIC datatype is not supported. Consider casting to STRING or NUMERIC (if loss of precision is acceptable) in the submitted query")
 		}
 		return nil, err
 	}
+	defer writer.Close()
 
-	return row, nil
-}
+	ticker := time.NewTicker(time.Second * 5)
+	defer ticker.Stop()
+	// write arrow records to parquet file
+	for rdr.Next() {
+		select {
+		case <-f.ctx.Done():
+			return nil, f.ctx.Err()
+		case <-ticker.C:
+			fileInfo, err := os.Stat(fw.Name())
+			if err == nil { // ignore error
+				if fileInfo.Size() > f.limitInBytes {
+					return nil, drivers.ErrIngestionLimitExceeded
+				}
+			}
 
-func (r *rowIterator) Close() error {
-	return r.client.Close()
-}
-
-func (r *rowIterator) Size(unit drivers.ProgressUnit) (uint64, bool) {
-	if unit == drivers.ProgressUnitRecord {
-		return r.bqIter.TotalRows, true
+		default:
+			rec := rdr.Record()
+			f.progress.Observe(rec.NumRows(), drivers.ProgressUnitRecord)
+			if writer.RowGroupTotalBytesWritten() >= rowGroupBufferSize {
+				writer.NewBufferedRowGroup()
+			}
+			if err := writer.WriteBuffered(rec); err != nil {
+				return nil, err
+			}
+		}
 	}
+	if rdr.Err() != nil {
+		return nil, fmt.Errorf("file write failed with error: %w", rdr.Err())
+	}
+	writer.Close()
+	fw.Close()
 
-	return 0, false
+	fileInfo, err := os.Stat(fw.Name())
+	if err != nil {
+		return nil, err
+	}
+	f.logger.Info("size of file", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()), observability.ZapCtx(f.ctx))
+	return []string{fw.Name()}, nil
 }
 
-type row []any
+// Size implements drivers.FileIterator.
+func (f *fileIterator) Size(unit drivers.ProgressUnit) (int64, bool) {
+	switch unit {
+	case drivers.ProgressUnitRecord:
+		return f.totalRecords, true
+	case drivers.ProgressUnitFile:
+		return 1, true
+	default:
+		return 0, false
+	}
+}
 
-var _ bigquery.ValueLoader = &row{}
+func (f *fileIterator) downloadAsJSONFile() error {
+	tf := time.Now()
+	defer func() {
+		f.logger.Info("time taken to write row in json file", zap.Duration("duration", time.Since(tf)), observability.ZapCtx(f.ctx))
+	}()
 
-func (r *row) Load(v []bigquery.Value, s bigquery.Schema) error {
-	m := make([]any, len(v))
-	for i := 0; i < len(v); i++ {
-		if s[i].Type == bigquery.RecordFieldType || s[i].Repeated {
-			return fmt.Errorf("repeated or nested data is not supported")
+	// create a temp file
+	fw, err := os.CreateTemp("", "temp*.ndjson")
+	if err != nil {
+		return err
+	}
+	defer fw.Close()
+	f.tempFilePath = fw.Name()
+	f.downloaded = true
+
+	init := false
+	// not implementing size check since this flow is expected to be run for less data size only
+	for {
+		row := make(map[string]bigquery.Value)
+		err := f.bqIter.Next(&row)
+		if err != nil {
+			if errors.Is(err, iterator.Done) {
+				if !init {
+					return fmt.Errorf("no results found for the query")
+				}
+				return nil
+			}
+			return err
 		}
 
-		m[i] = convert(v[i])
-	}
-	*r = m
-	return nil
-}
-
-// type conversion table for time
-func toPB(field *bigquery.FieldSchema) (*runtimev1.Type, error) {
-	t := &runtimev1.Type{Nullable: !field.Required}
-	switch field.Type {
-	case bigquery.StringFieldType:
-		t.Code = runtimev1.Type_CODE_STRING
-	case bigquery.JSONFieldType:
-		t.Code = runtimev1.Type_CODE_JSON
-	case bigquery.IntervalFieldType:
-		t.Code = runtimev1.Type_CODE_STRING
-	case bigquery.GeographyFieldType:
-		t.Code = runtimev1.Type_CODE_STRING
-	case bigquery.FloatFieldType:
-		t.Code = runtimev1.Type_CODE_FLOAT64
-	case bigquery.NumericFieldType:
-		t.Code = runtimev1.Type_CODE_STRING
-	// big numeric can have width upto 76 digits which can't be converted to DECIMAL type in duckdb
-	// which supports width upto 38 digits only.
-	case bigquery.BigNumericFieldType:
-		t.Code = runtimev1.Type_CODE_STRING
-	case bigquery.TimestampFieldType:
-		t.Code = runtimev1.Type_CODE_TIMESTAMP
-	case bigquery.DateTimeFieldType:
-		t.Code = runtimev1.Type_CODE_TIMESTAMP
-	case bigquery.TimeFieldType:
-		t.Code = runtimev1.Type_CODE_TIME
-	case bigquery.DateFieldType:
-		t.Code = runtimev1.Type_CODE_DATE
-	case bigquery.BooleanFieldType:
-		t.Code = runtimev1.Type_CODE_BOOL
-	case bigquery.IntegerFieldType:
-		t.Code = runtimev1.Type_CODE_INT64
-	case bigquery.BytesFieldType:
-		t.Code = runtimev1.Type_CODE_BYTES
-	case bigquery.RecordFieldType:
-		return nil, fmt.Errorf("record type not supported")
-	default:
-		// TODO :: may be just use VARCHAR ?
-		return nil, fmt.Errorf("type %s not supported", field.Type)
-	}
-	return t, nil
-}
-
-func convert(v any) any {
-	if v == nil {
-		return nil
-	}
-	// refer to documentation on bigquery.RowIterator.Next for the superset of all go types possible
-	switch val := v.(type) {
-	case civil.Date:
-		return val.In(time.UTC)
-	case civil.Time:
-		t, _ := time.Parse("15:04:05.999999999", val.String())
-		return t
-	case civil.DateTime:
-		return val.In(time.UTC)
-	case *big.Rat:
-		if val.IsInt() {
-			return val.FloatString(0)
+		// schema and total rows is available after first call to next only
+		if !init {
+			init = true
+			f.progress.Target(int64(f.bqIter.TotalRows), drivers.ProgressUnitRecord)
+			if hasBigNumericType(f.bqIter.Schema) {
+				return fmt.Errorf("BIGNUMERIC datatype is not supported. Consider casting to STRING or NUMERIC (if loss of precision is acceptable) in the submitted query")
+			}
 		}
-		return strings.TrimRight(val.FloatString(38), "0")
-	default:
-		return val
+
+		bytes, err := json.Marshal(row)
+		if err != nil {
+			return fmt.Errorf("conversion of row to json failed with error: %w", err)
+		}
+		if _, err = fw.Write(bytes); err != nil {
+			return err
+		}
+		if _, err = fw.WriteString("\n"); err != nil {
+			return err
+		}
 	}
 }
+
+func hasBigNumericType(s bigquery.Schema) bool {
+	for _, f := range s {
+		if f.Type == bigquery.BigNumericFieldType {
+			return true
+		} else if f.Type == bigquery.RecordFieldType && hasBigNumericType(f.Schema) {
+			return true
+		}
+	}
+	return false
+}
+
+var _ drivers.FileIterator = &fileIterator{}

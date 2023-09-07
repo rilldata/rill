@@ -48,25 +48,12 @@ export type RuntimeServiceWatchResources200 = {
 };
 
 export type RuntimeServiceWatchResourcesParams = {
-  "refFilter.kind"?: string;
-  "refFilter.name"?: string;
-  "prefixFilter.kind"?: string;
-  "prefixFilter.name"?: string;
-  /**
-   * This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
-   */
-  annotationsFilter?: string;
+  kind?: string;
+  replay?: boolean;
 };
 
 export type RuntimeServiceListResourcesParams = {
-  "refFilter.kind"?: string;
-  "refFilter.name"?: string;
-  "prefixFilter.kind"?: string;
-  "prefixFilter.name"?: string;
-  /**
-   * This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
-   */
-  annotationsFilter?: string;
+  kind?: string;
 };
 
 export type RuntimeServiceGetResourceParams = {
@@ -234,9 +221,22 @@ export type QueryServiceMetricsViewComparisonToplistBody = {
   priority?: number;
 };
 
+export type QueryServiceMetricsViewAggregationBody = {
+  dimensions?: V1MetricsViewAggregationDimension[];
+  measures?: V1MetricsViewAggregationMeasure[];
+  sort?: V1MetricsViewAggregationSort[];
+  timeStart?: string;
+  timeEnd?: string;
+  filter?: V1MetricsViewFilter;
+  limit?: string;
+  offset?: string;
+  priority?: number;
+};
+
 export type QueryServiceExportBody = {
   limit?: string;
   format?: V1ExportFormat;
+  metricsViewAggregationRequest?: V1MetricsViewAggregationRequest;
   metricsViewToplistRequest?: V1MetricsViewToplistRequest;
   metricsViewRowsRequest?: V1MetricsViewRowsRequest;
   metricsViewTimeSeriesRequest?: V1MetricsViewTimeSeriesRequest;
@@ -341,8 +341,8 @@ export type RuntimeServiceEditInstanceBodyAnnotations = {
 See message Instance for field descriptions.
  */
 export type RuntimeServiceEditInstanceBody = {
-  olapDriver?: string;
-  repoDriver?: string;
+  olapConnector?: string;
+  repoConnector?: string;
   embedCatalog?: boolean;
   ingestionLimitBytes?: string;
   connectors?: V1Connector[];
@@ -415,8 +415,9 @@ export type ConnectorServiceBigQueryListDatasetsParams = {
 };
 
 export interface V1WatchResourcesResponse {
-  resource?: V1Resource;
   event?: V1ResourceEvent;
+  name?: V1ResourceName;
+  resource?: V1Resource;
 }
 
 export interface V1WatchLogsResponse {
@@ -598,17 +599,6 @@ export interface V1SourceV2 {
 
 export type V1SourceSpecProperties = { [key: string]: any };
 
-export interface V1SourceSpec {
-  sourceConnector?: string;
-  sinkConnector?: string;
-  properties?: V1SourceSpecProperties;
-  refreshSchedule?: V1Schedule;
-  timeoutSeconds?: number;
-  stageChanges?: boolean;
-  streamIngestion?: boolean;
-  trigger?: boolean;
-}
-
 export type V1SourceProperties = { [key: string]: any };
 
 export interface V1Source {
@@ -623,6 +613,17 @@ export interface V1Source {
 export interface V1Schedule {
   cron?: string;
   tickerSeconds?: number;
+}
+
+export interface V1SourceSpec {
+  sourceConnector?: string;
+  sinkConnector?: string;
+  properties?: V1SourceSpecProperties;
+  refreshSchedule?: V1Schedule;
+  timeoutSeconds?: number;
+  stageChanges?: boolean;
+  streamIngestion?: boolean;
+  trigger?: boolean;
 }
 
 export interface V1S3Object {
@@ -680,10 +681,8 @@ export type V1ResourceEvent =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1ResourceEvent = {
   RESOURCE_EVENT_UNSPECIFIED: "RESOURCE_EVENT_UNSPECIFIED",
-  RESOURCE_EVENT_ADDED: "RESOURCE_EVENT_ADDED",
-  RESOURCE_EVENT_UPDATED_SPEC: "RESOURCE_EVENT_UPDATED_SPEC",
-  RESOURCE_EVENT_UPDATED_STATE: "RESOURCE_EVENT_UPDATED_STATE",
-  RESOURCE_EVENT_DELETED: "RESOURCE_EVENT_DELETED",
+  RESOURCE_EVENT_WRITE: "RESOURCE_EVENT_WRITE",
+  RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
 export interface V1Resource {
@@ -763,6 +762,16 @@ export const V1ReconcileStatus = {
   RECONCILE_STATUS_RUNNING: "RECONCILE_STATUS_RUNNING",
 } as const;
 
+export interface V1ReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
+}
+
 /**
  * - CODE_UNSPECIFIED: Unspecified error
  - CODE_SYNTAX: Code artifact failed to parse
@@ -807,16 +816,6 @@ Only applicable if file_path is set. */
   endLocation?: V1ReconcileErrorCharLocation;
 }
 
-export interface V1ReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-}
-
 export type V1QueryResponseDataItem = { [key: string]: any };
 
 export interface V1QueryResponse {
@@ -827,6 +826,7 @@ export interface V1QueryResponse {
 export interface V1QueryBatchResponse {
   key?: number;
   error?: string;
+  metricsViewAggregationResponse?: V1MetricsViewAggregationResponse;
   metricsViewToplistResponse?: V1MetricsViewToplistResponse;
   metricsViewComparisonToplistResponse?: V1MetricsViewComparisonToplistResponse;
   metricsViewTimeSeriesResponse?: V1MetricsViewTimeSeriesResponse;
@@ -850,6 +850,7 @@ export interface V1QueryBatchResponse {
 export interface V1QueryBatchEntry {
   /** Since response could out of order `key` is used to co-relate a specific response to request. */
   key?: number;
+  metricsViewAggregationRequest?: V1MetricsViewAggregationRequest;
   metricsViewToplistRequest?: V1MetricsViewToplistRequest;
   metricsViewComparisonToplistRequest?: V1MetricsViewComparisonToplistRequest;
   metricsViewTimeSeriesRequest?: V1MetricsViewTimeSeriesRequest;
@@ -910,6 +911,12 @@ export interface V1PullTrigger {
   state?: V1PullTriggerState;
 }
 
+export interface V1ProjectParserState {
+  parseErrors?: V1ParseError[];
+  currentCommitSha?: string;
+  changedPaths?: string[];
+}
+
 export interface V1ProjectParserSpec {
   compiler?: string;
   watch?: boolean;
@@ -940,12 +947,6 @@ export interface V1ParseError {
   message?: string;
   filePath?: string;
   startLocation?: Runtimev1CharLocation;
-}
-
-export interface V1ProjectParserState {
-  parseErrors?: V1ParseError[];
-  currentCommitSha?: string;
-  changedPaths?: string[];
 }
 
 export type V1ObjectType = (typeof V1ObjectType)[keyof typeof V1ObjectType];
@@ -1038,6 +1039,11 @@ export interface V1Migration {
   state?: V1MigrationState;
 }
 
+export interface V1MetricsViewV2 {
+  spec?: V1MetricsViewSpec;
+  state?: V1MetricsViewState;
+}
+
 export type V1MetricsViewTotalsResponseData = { [key: string]: any };
 
 export interface V1MetricsViewTotalsResponse {
@@ -1058,29 +1064,17 @@ export interface V1MetricsViewTotalsRequest {
 
 export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
 
-export interface V1MetricsViewToplistResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewToplistResponseDataItem[];
-}
-
-export interface V1MetricsViewToplistRequest {
+export interface V1MetricsViewTimeSeriesRequest {
   instanceId?: string;
   metricsViewName?: string;
-  dimensionName?: string;
   measureNames?: string[];
   inlineMeasures?: V1InlineMeasure[];
   timeStart?: string;
   timeEnd?: string;
-  limit?: string;
-  offset?: string;
-  sort?: V1MetricsViewSort[];
+  timeGranularity?: V1TimeGrain;
   filter?: V1MetricsViewFilter;
+  timeZone?: string;
   priority?: number;
-}
-
-export interface V1MetricsViewTimeSeriesResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1TimeSeriesValue[];
 }
 
 export interface V1MetricsViewTimeRangeResponse {
@@ -1099,21 +1093,31 @@ export interface V1MetricsViewSpec {
   /** Default time range for the dashboard. It should be a valid ISO 8601 duration string. */
   defaultTimeRange?: string;
   availableTimeZones?: string[];
-  policy?: MetricsViewSpecPolicyV2;
+  security?: MetricsViewSpecSecurityV2;
 }
 
 export interface V1MetricsViewState {
   validSpec?: V1MetricsViewSpec;
 }
 
-export interface V1MetricsViewV2 {
-  spec?: V1MetricsViewSpec;
-  state?: V1MetricsViewState;
-}
-
 export interface V1MetricsViewSort {
   name?: string;
   ascending?: boolean;
+}
+
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  filter?: V1MetricsViewFilter;
+  priority?: number;
 }
 
 export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
@@ -1126,19 +1130,6 @@ export interface V1MetricsViewRowsResponse {
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
-}
-
-export interface V1MetricsViewTimeSeriesRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  timeGranularity?: V1TimeGrain;
-  filter?: V1MetricsViewFilter;
-  timeZone?: string;
-  priority?: number;
 }
 
 export interface V1MetricsViewRowsRequest {
@@ -1161,6 +1152,10 @@ export interface V1MetricsViewComparisonValue {
   comparisonValue?: unknown;
   deltaAbs?: unknown;
   deltaRel?: unknown;
+}
+
+export interface V1MetricsViewComparisonToplistResponse {
+  rows?: V1MetricsViewComparisonRow[];
 }
 
 export type V1MetricsViewComparisonSortType =
@@ -1206,14 +1201,58 @@ export interface V1MetricsViewComparisonRow {
   measureValues?: V1MetricsViewComparisonValue[];
 }
 
-export interface V1MetricsViewComparisonToplistResponse {
-  rows?: V1MetricsViewComparisonRow[];
-}
-
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
   nullable?: boolean;
+}
+
+export interface V1MetricsViewToplistResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewToplistResponseDataItem[];
+}
+
+export interface V1MetricsViewTimeSeriesResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1TimeSeriesValue[];
+}
+
+export interface V1MetricsViewAggregationSort {
+  name?: string;
+  desc?: boolean;
+}
+
+export type V1MetricsViewAggregationResponseDataItem = { [key: string]: any };
+
+export interface V1MetricsViewAggregationResponse {
+  schema?: V1StructType;
+  data?: V1MetricsViewAggregationResponseDataItem[];
+}
+
+export interface V1MetricsViewAggregationMeasure {
+  name?: string;
+  builtinMeasure?: V1BuiltinMeasure;
+  builtinMeasureArgs?: unknown[];
+}
+
+export interface V1MetricsViewAggregationDimension {
+  name?: string;
+  timeGrain?: V1TimeGrain;
+  timeZone?: string;
+}
+
+export interface V1MetricsViewAggregationRequest {
+  instanceId?: string;
+  metricsView?: string;
+  dimensions?: V1MetricsViewAggregationDimension[];
+  measures?: V1MetricsViewAggregationMeasure[];
+  sort?: V1MetricsViewAggregationSort[];
+  timeStart?: string;
+  timeEnd?: string;
+  filter?: V1MetricsViewFilter;
+  limit?: string;
+  offset?: string;
+  priority?: number;
 }
 
 export interface V1MetricsView {
@@ -1229,7 +1268,7 @@ export interface V1MetricsView {
   defaultTimeRange?: string;
   /** Available time zones list preferred time zones using IANA location identifiers. */
   availableTimeZones?: string[];
-  policy?: MetricsViewPolicy;
+  security?: MetricsViewSecurity;
 }
 
 export interface V1MapType {
@@ -1300,10 +1339,10 @@ just a single instance.
  */
 export interface V1Instance {
   instanceId?: string;
-  olapDriver?: string;
-  /** Driver for reading/editing code artifacts (options: file, metastore, github).
-This enables virtualizing a file system in a cloud setting. */
-  repoDriver?: string;
+  olapConnector?: string;
+  /** Connector name for repo driver(typically called : repo). 
+Repo driver is for reading/editing code artifacts. This enables virtualizing a file system in a cloud setting. */
+  repoConnector?: string;
   /** If true, the runtime will store the instance's catalog in its OLAP store instead
 of in the runtime's metadata store. Currently only supported for the duckdb driver. */
   embedCatalog?: boolean;
@@ -1464,8 +1503,8 @@ See message Instance for field descriptions.
  */
 export interface V1CreateInstanceRequest {
   instanceId?: string;
-  olapDriver?: string;
-  repoDriver?: string;
+  olapConnector?: string;
+  repoConnector?: string;
   embedCatalog?: boolean;
   variables?: V1CreateInstanceRequestVariables;
   ingestionLimitBytes?: string;
@@ -1640,6 +1679,16 @@ export interface V1CatalogEntry {
   refreshedOn?: string;
 }
 
+export type V1BuiltinMeasure =
+  (typeof V1BuiltinMeasure)[keyof typeof V1BuiltinMeasure];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1BuiltinMeasure = {
+  BUILTIN_MEASURE_UNSPECIFIED: "BUILTIN_MEASURE_UNSPECIFIED",
+  BUILTIN_MEASURE_COUNT: "BUILTIN_MEASURE_COUNT",
+  BUILTIN_MEASURE_COUNT_DISTINCT: "BUILTIN_MEASURE_COUNT_DISTINCT",
+} as const;
+
 export interface V1BucketPlannerState {
   region?: string;
 }
@@ -1752,14 +1801,14 @@ export interface SourceExtractPolicy {
   filesLimit?: string;
 }
 
-export interface PolicyV2FieldConditionV2 {
-  name?: string;
+export interface SecurityV2FieldConditionV2 {
   condition?: string;
+  names?: string[];
 }
 
-export interface PolicyFieldCondition {
-  name?: string;
+export interface SecurityFieldCondition {
   condition?: string;
+  names?: string[];
 }
 
 export interface NumericOutliersOutlier {
@@ -1786,11 +1835,11 @@ export const ModelDialect = {
   DIALECT_DUCKDB: "DIALECT_DUCKDB",
 } as const;
 
-export interface MetricsViewSpecPolicyV2 {
-  hasAccess?: string;
-  filter?: string;
-  include?: PolicyV2FieldConditionV2[];
-  exclude?: PolicyV2FieldConditionV2[];
+export interface MetricsViewSpecSecurityV2 {
+  access?: string;
+  rowFilter?: string;
+  include?: SecurityV2FieldConditionV2[];
+  exclude?: SecurityV2FieldConditionV2[];
 }
 
 export interface MetricsViewSpecMeasureV2 {
@@ -1809,11 +1858,11 @@ export interface MetricsViewSpecDimensionV2 {
   description?: string;
 }
 
-export interface MetricsViewPolicy {
-  hasAccess?: string;
-  filter?: string;
-  include?: PolicyFieldCondition[];
-  exclude?: PolicyFieldCondition[];
+export interface MetricsViewSecurity {
+  access?: string;
+  rowFilter?: string;
+  include?: SecurityFieldCondition[];
+  exclude?: SecurityFieldCondition[];
 }
 
 export interface MetricsViewMeasure {
