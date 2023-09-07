@@ -18,7 +18,7 @@
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     createQueryServiceMetricsViewComparisonToplist,
-    createQueryServiceMetricsViewToplist,
+    // createQueryServiceMetricsViewToplist,
     MetricsViewDimension,
     MetricsViewMeasure,
     V1MetricsViewComparisonSortType,
@@ -27,13 +27,14 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { SortDirection } from "../proto-state/derived-types";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
-  import { getFilterForComparsion } from "../dimension-table/dimension-table-utils";
+  // import { getFilterForComparsion } from "../dimension-table/dimension-table-utils";
   import type { FormatPreset } from "../humanize-numbers";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import {
     LeaderboardItemData2,
     getLabeledComparisonFromComparisonRow,
-    prepareLeaderboardItemData,
+    getQuerySortType,
+    // prepareLeaderboardItemData,
     prepareLeaderboardItemData2,
   } from "./leaderboard-utils";
   import LeaderboardListItem from "./LeaderboardListItem.svelte";
@@ -217,6 +218,8 @@
   //   }
   // );
 
+  $: querySortType = getQuerySortType(sortType);
+
   $: sortedQueryBody = {
     dimensionName: dimensionName,
     measureNames: [measure?.name],
@@ -232,7 +235,7 @@
       {
         ascending: sortAscending,
         measureName: measure?.name,
-        type: V1MetricsViewComparisonSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
+        type: querySortType,
       },
     ],
     filter: filterForDimension,
@@ -257,13 +260,13 @@
 
   $: console.log("sortedQuery BODY --", dimensionName, sortedQueryBody);
   $: console.log("sortedQuery OPTIONS --", dimensionName, sortedQueryOptions);
-  // $: if (!$sortedQuery.isFetching) {
-  //   console.log(
-  //     "sortedQuery RAW DATA --",
-  //     dimensionName,
-  //     $sortedQuery?.data?.rows
-  //   );
-  // }
+  $: if (!$sortedQuery.isFetching) {
+    console.log("sortedQuery RAW DATA --", dimensionName, $sortedQuery);
+  }
+
+  $: if (!$sortedQuery.isFetching) {
+    console.log("sortedQuery RAW DATA --", dimensionName, $sortedQuery);
+  }
 
   /** replace data after fetched. */
   let aboveTheFold: LeaderboardItemData2[] = [];
@@ -365,7 +368,7 @@
         {/if}
         {#if $sortedQuery?.isError}
           <div class="text-red-500">
-            {$sortedQuery?.error}
+            {JSON.stringify($sortedQuery?.error)}
           </div>
         {:else if noAvailableValues}
           <div style:padding-left="30px" class="p-1 ui-copy-disabled">

@@ -1,6 +1,7 @@
-import type {
-  V1MetricsViewComparisonRow,
-  V1MetricsViewComparisonValue,
+import {
+  V1MetricsViewComparisonSortType,
+  type V1MetricsViewComparisonRow,
+  type V1MetricsViewComparisonValue,
 } from "@rilldata/web-common/runtime-client";
 import { PERC_DIFF } from "../../../components/data-types/type-utils";
 import {
@@ -9,6 +10,7 @@ import {
   humanizeDataType,
 } from "../humanize-numbers";
 import { LeaderboardContextColumn } from "../leaderboard-context-column";
+import { SortType } from "../proto-state/derived-types";
 
 export function getFormatterValueForPercDiff(pct: number | null) {
   if (pct === null) return PERC_DIFF.PREV_VALUE_NO_DATA;
@@ -241,3 +243,34 @@ export const contextColumnWidth = (
     return "0px";
   }
 };
+
+export function getQuerySortType(sortType: SortType) {
+  return (
+    {
+      [SortType.VALUE]:
+        V1MetricsViewComparisonSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
+
+      [SortType.DELTA_ABSOLUTE]:
+        V1MetricsViewComparisonSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
+
+      [SortType.DELTA_PERCENT]:
+        V1MetricsViewComparisonSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA,
+
+      // NOTE: sorting by percent-of-total has the same effect
+      // as sorting by base value
+      [SortType.PERCENT]:
+        V1MetricsViewComparisonSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
+
+      // NOTE: UNSPECIFIED is not actually a valid sort type,
+      // but it is required by protobuf serialization
+      [SortType.UNSPECIFIED]:
+        V1MetricsViewComparisonSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
+
+      // FIXME: sort by dimension value is not yet implemented,
+      // for now fall back to sorting by base value
+      [SortType.DIMENSION]:
+        V1MetricsViewComparisonSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
+    }[sortType] ||
+    V1MetricsViewComparisonSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE
+  );
+}
