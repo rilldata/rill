@@ -10,6 +10,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -106,10 +107,10 @@ func TestDruid(t *testing.T) {
 	avaticaURL, err := url.JoinPath(brokerURL, "/druid/v2/sql/avatica-protobuf/")
 	require.NoError(t, err)
 
-	conn, err := driver{}.Open(map[string]any{"dsn": avaticaURL}, zap.NewNop())
+	conn, err := driver{}.Open(map[string]any{"dsn": avaticaURL}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
-	olap, ok := conn.AsOLAP()
+	olap, ok := conn.AsOLAP("")
 	require.True(t, ok)
 
 	t.Run("count", func(t *testing.T) { testCount(t, olap) })

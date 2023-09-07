@@ -9,6 +9,7 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"go.uber.org/zap"
 )
@@ -46,7 +47,10 @@ type driver struct {
 	name string
 }
 
-func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connection, error) {
+func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if shared {
+		return nil, fmt.Errorf("file driver can't be shared")
+	}
 	dsn, ok := config["dsn"].(string)
 	if !ok {
 		return nil, fmt.Errorf("require dsn to open file connection")
@@ -66,6 +70,7 @@ func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connect
 		root:         absPath,
 		driverConfig: config,
 		driverName:   d.name,
+		shared:       shared,
 	}
 	if err := c.checkRoot(); err != nil {
 		return nil, err
@@ -105,6 +110,7 @@ type connection struct {
 	root         string
 	driverConfig map[string]any
 	driverName   string
+	shared       bool
 
 	watcherMu    sync.Mutex
 	watcherCount int
@@ -127,17 +133,20 @@ func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 }
 
 // Catalog implements drivers.Connection.
-func (c *connection) AsCatalogStore() (drivers.CatalogStore, bool) {
+func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // Repo implements drivers.Connection.
-func (c *connection) AsRepoStore() (drivers.RepoStore, bool) {
+func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
+	if c.shared {
+		return nil, false
+	}
 	return c, true
 }
 
 // OLAP implements drivers.Connection.
-func (c *connection) AsOLAP() (drivers.OLAPStore, bool) {
+func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
@@ -157,7 +166,7 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsTransporter implements drivers.Connection.
-func (c *connection) AsTransporter(from, to drivers.Connection) (drivers.Transporter, bool) {
+func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
 	return nil, false
 }
 

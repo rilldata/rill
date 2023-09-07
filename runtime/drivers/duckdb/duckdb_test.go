@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -18,10 +19,10 @@ func TestOpenDrop(t *testing.T) {
 	walpath := path + ".wal"
 	dsn := path + "?rill_pool_size=2"
 
-	handle, err := Driver{}.Open(map[string]any{"dsn": dsn}, zap.NewNop())
+	handle, err := Driver{}.Open(map[string]any{"dsn": dsn}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
-	olap, ok := handle.AsOLAP()
+	olap, ok := handle.AsOLAP("")
 	require.True(t, ok)
 
 	err = olap.Exec(context.Background(), &drivers.Statement{Query: "CREATE TABLE foo (bar INTEGER)"})
@@ -44,10 +45,10 @@ func TestFatalErr(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "tmp.db")
 	dsn := path + "?rill_pool_size=2"
 
-	handle, err := Driver{}.Open(map[string]any{"dsn": dsn}, zap.NewNop())
+	handle, err := Driver{}.Open(map[string]any{"dsn": dsn}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
-	olap, ok := handle.AsOLAP()
+	olap, ok := handle.AsOLAP("")
 	require.True(t, ok)
 
 	qry := `
@@ -107,10 +108,10 @@ func TestFatalErrConcurrent(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "tmp.db")
 	dsn := path + "?rill_pool_size=3"
 
-	handle, err := Driver{}.Open(map[string]any{"dsn": dsn}, zap.NewNop())
+	handle, err := Driver{}.Open(map[string]any{"dsn": dsn}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
-	olap, ok := handle.AsOLAP()
+	olap, ok := handle.AsOLAP("")
 	require.True(t, ok)
 
 	qry := `
@@ -208,4 +209,39 @@ func TestFatalErrConcurrent(t *testing.T) {
 
 	err = handle.Close()
 	require.NoError(t, err)
+}
+
+func TestHumanReadableSizeToBytes(t *testing.T) {
+	tests := []struct {
+		input     string
+		expected  float64
+		shouldErr bool
+	}{
+		{"1 byte", 1, false},
+		{"2 bytes", 2, false},
+		{"1KB", 1000, false},
+		{"1.5KB", 1500, false},
+		{"1MB", 1000 * 1000, false},
+		{"2.5MB", 2.5 * 1000 * 1000, false},
+		{"1GB", 1000 * 1000 * 1000, false},
+		{"1.5GB", 1.5 * 1000 * 1000 * 1000, false},
+		{"1TB", 1000 * 1000 * 1000 * 1000, false},
+		{"1.5TB", 1.5 * 1000 * 1000 * 1000 * 1000, false},
+		{"1PB", 1000 * 1000 * 1000 * 1000 * 1000, false},
+		{"1.5PB", 1.5 * 1000 * 1000 * 1000 * 1000 * 1000, false},
+		{"invalid", 0, true},
+		{"123invalid", 0, true},
+		{"123 ZZ", 0, true},
+	}
+
+	for _, tt := range tests {
+		result, err := humanReadableSizeToBytes(tt.input)
+		if (err != nil) != tt.shouldErr {
+			t.Errorf("expected error: %v, got error: %v for input: %s", tt.shouldErr, err, tt.input)
+		}
+
+		if !tt.shouldErr && result != tt.expected {
+			t.Errorf("expected: %v, got: %v for input: %s", tt.expected, result, tt.input)
+		}
+	}
 }

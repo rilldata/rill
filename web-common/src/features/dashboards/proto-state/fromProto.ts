@@ -1,12 +1,15 @@
 import type { Timestamp } from "@bufbuild/protobuf";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
+import type {
+  DashboardTimeControls,
+  ScrubRange,
+} from "@rilldata/web-common/lib/time/types";
 import { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
 import type { MetricsViewFilter_Cond } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
 import {
   DashboardState,
-  DashboardState_DashboardLeaderboardContextColumn,
+  DashboardState_LeaderboardContextColumn,
   DashboardTimeRange,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
@@ -16,16 +19,16 @@ import {
 
 // TODO: make a follow up PR to use the one from the proto directly
 const LeaderboardContextColumnReverseMap: Record<
-  DashboardState_DashboardLeaderboardContextColumn,
+  DashboardState_LeaderboardContextColumn,
   LeaderboardContextColumn
 > = {
-  [DashboardState_DashboardLeaderboardContextColumn.UNSPECIFIED]:
+  [DashboardState_LeaderboardContextColumn.UNSPECIFIED]:
     LeaderboardContextColumn.HIDDEN,
-  [DashboardState_DashboardLeaderboardContextColumn.PERCENT]:
+  [DashboardState_LeaderboardContextColumn.PERCENT]:
     LeaderboardContextColumn.PERCENT,
-  [DashboardState_DashboardLeaderboardContextColumn.DELTA_CHANGE]:
-    LeaderboardContextColumn.DELTA_CHANGE,
-  [DashboardState_DashboardLeaderboardContextColumn.HIDDEN]:
+  [DashboardState_LeaderboardContextColumn.DELTA_PERCENT]:
+    LeaderboardContextColumn.DELTA_PERCENT,
+  [DashboardState_LeaderboardContextColumn.HIDDEN]:
     LeaderboardContextColumn.HIDDEN,
 };
 
@@ -60,13 +63,22 @@ export function getDashboardStateFromProto(
       dashboard.compareTimeRange
     );
   }
-  entity.showComparison = dashboard.showComparison ?? true;
+  entity.showComparison = Boolean(dashboard.showComparison);
 
   entity.selectedTimeRange = dashboard.timeRange
     ? fromTimeRangeProto(dashboard.timeRange)
     : undefined;
   if (dashboard.timeGrain && dashboard.timeRange) {
     entity.selectedTimeRange.interval = fromTimeGrainProto(dashboard.timeGrain);
+  }
+
+  if (dashboard.scrubRange) {
+    entity.selectedScrubRange = fromTimeRangeProto(
+      dashboard.scrubRange
+    ) as ScrubRange;
+    entity.lastDefinedScrubRange = fromTimeRangeProto(
+      dashboard.scrubRange
+    ) as ScrubRange;
   }
 
   if (dashboard.leaderboardMeasure) {
@@ -103,6 +115,13 @@ export function getDashboardStateFromProto(
   if (dashboard.leaderboardContextColumn !== undefined) {
     entity.leaderboardContextColumn =
       LeaderboardContextColumnReverseMap[dashboard.leaderboardContextColumn];
+  }
+
+  if (dashboard.leaderboardSortDirection) {
+    entity.sortDirection = dashboard.leaderboardSortDirection;
+  }
+  if (dashboard.leaderboardSortType) {
+    entity.dashboardSortType = dashboard.leaderboardSortType;
   }
 
   return entity;

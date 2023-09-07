@@ -7,6 +7,10 @@ import {
   FormatterFactoryOptions,
   NumberKind,
 } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
+import {
+  formatMsInterval,
+  formatMsToDuckDbIntervalString,
+} from "@rilldata/web-common/lib/number-formatting/strategies/intervals";
 import { PerRangeFormatter } from "@rilldata/web-common/lib/number-formatting/strategies/per-range";
 
 const shortHandSymbols = ["Q", "T", "B", "M", "k", "none"] as const;
@@ -83,6 +87,9 @@ export const nicelyFormattedTypesToNumberKind = (
     case FormatPreset.PERCENTAGE:
       return NumberKind.PERCENT;
 
+    case FormatPreset.INTERVAL:
+      return NumberKind.INTERVAL;
+
     default:
       // captures:
       // FormatPreset.NONE
@@ -97,7 +104,7 @@ export function humanizeDataType(
   options?: FormatterFactoryOptions
 ): string {
   if (value === undefined || value === null) return "";
-  if (typeof value != "number") return value.toString();
+  if (typeof value !== "number") return value.toString();
 
   const numberKind = nicelyFormattedTypesToNumberKind(type);
 
@@ -108,6 +115,8 @@ export function humanizeDataType(
       numberKind,
       padWithInsignificantZeros: false,
     };
+  } else if (type === FormatPreset.INTERVAL) {
+    return formatMsInterval(value);
   } else if (options === undefined) {
     innerOptions = {
       strategy: "default",
@@ -121,6 +130,21 @@ export function humanizeDataType(
     };
   }
   return humanizedFormatterFactory([value], innerOptions).stringFormat(value);
+}
+
+/**
+ * This function is intended to provide a lossless
+ * humanized string representation of a number in cases
+ * where a raw number will be meaningless to the user.
+ */
+export function humanizeDataTypeExpanded(
+  value: unknown,
+  type: FormatPreset
+): string {
+  if (type === FormatPreset.INTERVAL) {
+    return formatMsToDuckDbIntervalString(value as number);
+  }
+  return value.toString();
 }
 
 /** This function is used primarily in the leaderboard and the detail tables. */

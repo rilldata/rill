@@ -1,5 +1,5 @@
 import { Duration, Interval } from "luxon";
-import { transformDate } from "../transforms";
+import { getTimeWidth, transformDate } from "../transforms";
 import {
   RelativeTimeTransformation,
   TimeComparisonOption,
@@ -48,6 +48,35 @@ export function getComparisonRange(
   };
 }
 
+/**
+ * get the comparison range for a scrub such that
+ * it aligns with the scrub start and end.
+ */
+export function getComparionRangeForScrub(
+  start: Date,
+  end: Date,
+  comparisonStart: Date,
+  comparisonEnd: Date,
+  scrubStart: Date,
+  scrubEnd: Date
+) {
+  // validate if selected range and comparison range are of equal width
+  if (
+    getTimeWidth(start, end) !== getTimeWidth(comparisonStart, comparisonEnd)
+  ) {
+    // TODO: Have better handling on uneven widths caused by custom comparisons
+    return { start: comparisonStart, end: comparisonEnd };
+  } else {
+    const startMOffset = getTimeWidth(start, scrubStart);
+    const endMOffset = getTimeWidth(scrubEnd, end);
+
+    return {
+      start: new Date(comparisonStart.getTime() + startMOffset),
+      end: new Date(comparisonEnd.getTime() - endMOffset),
+    };
+  }
+}
+
 // Returns true if the comparison range is inside the bounds.
 export function isComparisonInsideBounds(
   // the earliest possible Date for this data set
@@ -82,6 +111,33 @@ export function isRangeLargerThanDuration(
   );
 }
 
+// Checks if last period is a duplicate comparison.
+function isLastPeriodDuplicate(start: Date, end: Date) {
+  const lastPeriod = getComparisonRange(
+    start,
+    end,
+    TimeComparisonOption.CONTIGUOUS
+  );
+
+  const comparisonOptions = [...Object.values(TimeComparisonOption)].filter(
+    (option) =>
+      option !== TimeComparisonOption.CUSTOM &&
+      option !== TimeComparisonOption.CONTIGUOUS
+  );
+
+  return comparisonOptions.some((option) => {
+    const { start: comparisonStart, end: comparisonEnd } = getComparisonRange(
+      start,
+      end,
+      option
+    );
+    return (
+      comparisonStart.getTime() === lastPeriod.start.getTime() &&
+      comparisonEnd.getTime() === lastPeriod.end.getTime()
+    );
+  });
+}
+
 /** get the available comparison options for a selected time range + the boundary range.
  * This is used to populate the comparison dropdown.
  * We need to check boundary conditions on all sides, but ultimately the two checks per comparison option are:
@@ -100,7 +156,7 @@ export function getAvailableComparisonsForTimeRange(
   // necessarily the right widt.
   acceptedComparisons: TimeComparisonOption[] = []
 ) {
-  const comparisons = comparisonOptions.filter((comparison) => {
+  let comparisons = comparisonOptions.filter((comparison) => {
     if (comparison === TimeComparisonOption.CUSTOM) {
       return false;
     }
@@ -118,6 +174,12 @@ export function getAvailableComparisonsForTimeRange(
         !isRangeLargerThanDuration(start, end, comparison))
     );
   });
+
+  if (isLastPeriodDuplicate(start, end)) {
+    comparisons = comparisons.filter(
+      (comparison) => comparison !== TimeComparisonOption.CONTIGUOUS
+    );
+  }
   return comparisons;
 }
 

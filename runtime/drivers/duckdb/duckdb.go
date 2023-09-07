@@ -5,15 +5,20 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/duckdb/transporter"
+	activity "github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
 )
@@ -50,13 +55,16 @@ type Driver struct {
 	name string
 }
 
-func (d Driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connection, error) {
+func (d Driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if shared {
+		return nil, fmt.Errorf("duckdb driver can't be shared")
+	}
 	dsn, ok := config["dsn"].(string)
 	if !ok {
 		return nil, fmt.Errorf("require dsn to open duckdb connection")
 	}
 
-	cfg, err := newConfig(dsn)
+	cfg, err := newConfig(dsn, client)
 	if err != nil {
 		return nil, err
 	}
@@ -67,6 +75,7 @@ func (d Driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connect
 		olapSemSize = 1
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
 	c := &connection{
 		config:       cfg,
 		logger:       logger,
@@ -75,6 +84,9 @@ func (d Driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connect
 		dbCond:       sync.NewCond(&sync.Mutex{}),
 		driverConfig: config,
 		driverName:   d.name,
+		shared:       shared,
+		ctx:          ctx,
+		cancel:       cancel,
 	}
 
 	// Open the DB
@@ -94,6 +106,8 @@ func (d Driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connect
 		return nil, err
 	}
 
+	go c.periodicallyEmitStats(time.Minute)
+
 	return c, nil
 }
 
@@ -103,7 +117,7 @@ func (d Driver) Drop(config map[string]any, logger *zap.Logger) error {
 		return fmt.Errorf("require dsn to drop duckdb connection")
 	}
 
-	cfg, err := newConfig(dsn)
+	cfg, err := newConfig(dsn, nil)
 	if err != nil {
 		return err
 	}
@@ -152,6 +166,10 @@ type connection struct {
 	dbCond      *sync.Cond
 	dbReopen    bool
 	dbErr       error
+	shared      bool
+	// Cancellable context to control internal processes like emitting the stats
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 // Driver implements drivers.Connection.
@@ -166,6 +184,7 @@ func (c *connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
+	c.cancel()
 	return c.db.Close()
 }
 
@@ -175,17 +194,25 @@ func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 }
 
 // AsCatalogStore Catalog implements drivers.Connection.
-func (c *connection) AsCatalogStore() (drivers.CatalogStore, bool) {
+func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
+	if c.shared {
+		// duckdb catalog is instance specific
+		return nil, false
+	}
 	return c, true
 }
 
 // AsRepoStore Repo implements drivers.Connection.
-func (c *connection) AsRepoStore() (drivers.RepoStore, bool) {
+func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
 
 // AsOLAP OLAP implements drivers.Connection.
-func (c *connection) AsOLAP() (drivers.OLAPStore, bool) {
+func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+	if c.shared {
+		// duckdb olap is instance specific
+		return nil, false
+	}
 	return c, true
 }
 
@@ -201,8 +228,8 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 }
 
 // AsTransporter implements drivers.Connection.
-func (c *connection) AsTransporter(from, to drivers.Connection) (drivers.Transporter, bool) {
-	olap, _ := to.AsOLAP()
+func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
+	olap, _ := to.AsOLAP("") // if c == to, connection is instance specific
 	if c == to {
 		if from == to {
 			return transporter.NewDuckDBToDuckDB(olap, c.logger), true
@@ -408,4 +435,131 @@ func (c *connection) checkErr(err error) error {
 		}
 	}
 	return err
+}
+
+// Periodically collects stats using pragma_database_size() and emits as activity events
+func (c *connection) periodicallyEmitStats(d time.Duration) {
+	if c.config.Activity == nil {
+		// Activity client isn't set, there is no need to report stats
+		return
+	}
+
+	statTicker := time.NewTicker(d)
+	for {
+		select {
+		case <-statTicker.C:
+			var stat dbStat
+			// Obtain a connection, query, release
+			err := func() error {
+				conn, release, err := c.acquireMetaConn(c.ctx)
+				if err != nil {
+					return err
+				}
+				defer func() { _ = release() }()
+				err = conn.GetContext(c.ctx, &stat, "CALL pragma_database_size()")
+				return err
+			}()
+			if err != nil {
+				c.logger.Error("couldn't query DuckDB stats", zap.Error(err))
+				continue
+			}
+
+			// Emit collected stats as activity events
+			commonDims := []attribute.KeyValue{
+				attribute.String("duckdb.name", stat.DatabaseName),
+			}
+
+			dbSize, err := humanReadableSizeToBytes(stat.DatabaseSize)
+			if err != nil {
+				c.logger.Error("couldn't convert duckdb size to bytes", zap.Error(err))
+			} else {
+				c.config.Activity.Emit(c.ctx, "duckdb_size_bytes", dbSize, commonDims...)
+			}
+
+			walSize, err := humanReadableSizeToBytes(stat.WalSize)
+			if err != nil {
+				c.logger.Error("couldn't convert duckdb wal size to bytes", zap.Error(err))
+			} else {
+				c.config.Activity.Emit(c.ctx, "duckdb_wal_size_bytes", walSize, commonDims...)
+			}
+
+			memoryUsage, err := humanReadableSizeToBytes(stat.MemoryUsage)
+			if err != nil {
+				c.logger.Error("couldn't convert duckdb memory usage to bytes", zap.Error(err))
+			} else {
+				c.config.Activity.Emit(c.ctx, "duckdb_memory_usage_bytes", memoryUsage, commonDims...)
+			}
+
+			memoryLimit, err := humanReadableSizeToBytes(stat.MemoryLimit)
+			if err != nil {
+				c.logger.Error("couldn't convert duckdb memory limit to bytes", zap.Error(err))
+			} else {
+				c.config.Activity.Emit(c.ctx, "duckdb_memory_limit_bytes", memoryLimit, commonDims...)
+			}
+
+			c.config.Activity.Emit(c.ctx, "duckdb_block_size_bytes", float64(stat.BlockSize), commonDims...)
+			c.config.Activity.Emit(c.ctx, "duckdb_total_blocks", float64(stat.TotalBlocks), commonDims...)
+			c.config.Activity.Emit(c.ctx, "duckdb_free_blocks", float64(stat.FreeBlocks), commonDims...)
+			c.config.Activity.Emit(c.ctx, "duckdb_used_blocks", float64(stat.UsedBlocks), commonDims...)
+
+			estimatedDBSize, _ := c.EstimateSize()
+			c.config.Activity.Emit(c.ctx, "duckdb_estimated_size_bytes", float64(estimatedDBSize))
+
+		case <-c.ctx.Done():
+			statTicker.Stop()
+			return
+		}
+	}
+}
+
+// Regex to parse human-readable size returned by DuckDB
+var humanReadableSizeRegex = regexp.MustCompile(`^([\d.]+)\s*(\S+)$`)
+
+// Reversed logic of StringUtil::BytesToHumanReadableString
+// see https://github.com/cran/duckdb/blob/master/src/duckdb/src/common/string_util.cpp#L157
+// Examples: 1 bytes, 2 bytes, 1KB, 1MB, 1TB, 1PB
+func humanReadableSizeToBytes(sizeStr string) (float64, error) {
+	var multiplier float64
+
+	match := humanReadableSizeRegex.FindStringSubmatch(sizeStr)
+
+	if match == nil {
+		return 0, fmt.Errorf("invalid size format: '%s'", sizeStr)
+	}
+
+	sizeFloat, err := strconv.ParseFloat(match[1], 64)
+	if err != nil {
+		return 0, err
+	}
+
+	switch match[2] {
+	case "byte", "bytes":
+		multiplier = 1
+	case "KB":
+		multiplier = 1000
+	case "MB":
+		multiplier = 1000 * 1000
+	case "GB":
+		multiplier = 1000 * 1000 * 1000
+	case "TB":
+		multiplier = 1000 * 1000 * 1000 * 1000
+	case "PB":
+		multiplier = 1000 * 1000 * 1000 * 1000 * 1000
+	default:
+		return 0, fmt.Errorf("unknown size unit '%s' in '%s'", match[2], sizeStr)
+	}
+
+	return sizeFloat * multiplier, nil
+}
+
+type dbStat struct {
+	DatabaseName string `db:"database_name"`
+	DatabaseSize string `db:"database_size"`
+	BlockSize    int64  `db:"block_size"`
+	TotalBlocks  int64  `db:"total_blocks"`
+	UsedBlocks   int64  `db:"used_blocks"`
+	FreeBlocks   int64  `db:"free_blocks"`
+	WalSize      string `db:"wal_size"`
+	MemoryUsage  string `db:"memory_usage"`
+	MemoryLimit  string `db:"memory_limit"`
 }

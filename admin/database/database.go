@@ -108,6 +108,7 @@ type DB interface {
 	CheckUserIsAnOrganizationMember(ctx context.Context, userID, orgID string) (bool, error)
 
 	InsertUsergroup(ctx context.Context, opts *InsertUsergroupOptions) (*Usergroup, error)
+	FindUsergroupsForUser(ctx context.Context, userID, orgID string) ([]*Usergroup, error)
 	InsertUsergroupMember(ctx context.Context, groupID, userID string) error
 	DeleteUsergroupMember(ctx context.Context, groupID, userID string) error
 
@@ -124,6 +125,7 @@ type DB interface {
 	InsertService(ctx context.Context, opts *InsertServiceOptions) (*Service, error)
 	DeleteService(ctx context.Context, id string) error
 	UpdateService(ctx context.Context, id string, opts *UpdateServiceOptions) (*Service, error)
+	UpdateServiceActiveOn(ctx context.Context, ids []string) error
 
 	FindServiceAuthTokens(ctx context.Context, serviceID string) ([]*ServiceAuthToken, error)
 	FindServiceAuthToken(ctx context.Context, id string) (*ServiceAuthToken, error)
@@ -177,6 +179,8 @@ type DB interface {
 	FindBookmark(ctx context.Context, bookmarkID string) (*Bookmark, error)
 	InsertBookmark(ctx context.Context, opts *InsertBookmarkOptions) (*Bookmark, error)
 	DeleteBookmark(ctx context.Context, bookmarkID string) error
+
+	SearchProjectUsers(ctx context.Context, projectID, emailQuery string, afterEmail string, limit int) ([]*User, error)
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -388,6 +392,7 @@ type Service struct {
 	Name      string    `validate:"slug"`
 	CreatedOn time.Time `db:"created_on"`
 	UpdatedOn time.Time `db:"updated_on"`
+	ActiveOn  time.Time `db:"active_on"`
 }
 
 // InsertServiceOptions defines options for inserting a new service

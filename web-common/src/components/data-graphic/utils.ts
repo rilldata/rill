@@ -1,4 +1,5 @@
 import type { ScaleLinear, ScaleTime } from "d3-scale";
+import { bisector } from "d3-array";
 import { area, curveLinear, curveStep, line } from "d3-shape";
 import { getContext } from "svelte";
 import { derived, writable } from "svelte/store";
@@ -55,6 +56,24 @@ export function pathDoesNotDropToZero(yAccessor: string) {
         ))
     );
   };
+}
+
+export interface PlotConfig {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+  buffer: number;
+  width: number;
+  height: number;
+  devicePixelRatio: number;
+  plotTop: number;
+  plotBottom: number;
+  plotLeft: number;
+  plotRight: number;
+  fontSize: number;
+  textGap: number;
+  id: string;
 }
 
 interface LineGeneratorArguments {
@@ -282,4 +301,11 @@ export function createAdaptiveLineThicknessStore(yAccessor) {
       dataStore.set(d);
     },
   };
+}
+
+// This is function equivalent of WithBisector
+export function bisectData(value, direction, accessor, data) {
+  const bisect = bisector((d) => d[accessor])[direction];
+
+  return value !== undefined ? data[bisect(data, value)] : undefined;
 }

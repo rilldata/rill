@@ -8,6 +8,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
@@ -636,10 +637,10 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 
 func makeRepo(t testing.TB, files map[string]string) drivers.RepoStore {
 	root := t.TempDir()
-	handle, err := drivers.Open("file", map[string]any{"dsn": root}, zap.NewNop())
+	handle, err := drivers.Open("file", map[string]any{"dsn": root}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
-	repo, ok := handle.AsRepoStore()
+	repo, ok := handle.AsRepoStore("")
 	require.True(t, ok)
 
 	putRepo(t, repo, files)
@@ -649,14 +650,14 @@ func makeRepo(t testing.TB, files map[string]string) drivers.RepoStore {
 
 func putRepo(t testing.TB, repo drivers.RepoStore, files map[string]string) {
 	for path, data := range files {
-		err := repo.Put(context.Background(), "", path, strings.NewReader(data))
+		err := repo.Put(context.Background(), path, strings.NewReader(data))
 		require.NoError(t, err)
 	}
 }
 
 func deleteRepo(t testing.TB, repo drivers.RepoStore, files ...string) {
 	for _, path := range files {
-		err := repo.Delete(context.Background(), "", path)
+		err := repo.Delete(context.Background(), path)
 		require.NoError(t, err)
 	}
 }

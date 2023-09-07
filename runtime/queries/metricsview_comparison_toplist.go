@@ -24,6 +24,8 @@ type MetricsViewComparisonToplist struct {
 	Offset              int64                                  `json:"offset,omitempty"`
 	Sort                []*runtimev1.MetricsViewComparisonSort `json:"sort,omitempty"`
 	Filter              *runtimev1.MetricsViewFilter           `json:"filter,omitempty"`
+	MetricsView         *runtimev1.MetricsView                 `json:"-"`
+	ResolvedMVSecurity  *runtime.ResolvedMetricsViewSecurity   `json:"security"`
 
 	Result *runtimev1.MetricsViewComparisonToplistResponse `json:"-"`
 }
@@ -35,7 +37,7 @@ func (q *MetricsViewComparisonToplist) Key() string {
 	if err != nil {
 		panic(err)
 	}
-	return fmt.Sprintf("MetricsViewComparisonToplist:%s", string(r))
+	return fmt.Sprintf("MetricsViewComparisonToplist:%s", r)
 }
 
 func (q *MetricsViewComparisonToplist) Deps() []string {
@@ -59,33 +61,29 @@ func (q *MetricsViewComparisonToplist) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewComparisonToplist) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID)
 	if err != nil {
 		return err
 	}
+	defer release()
 
 	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	mv, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
-	if err != nil {
-		return err
-	}
-
-	if mv.TimeDimension == "" && (q.BaseTimeRange != nil || q.ComparisonTimeRange != nil) {
+	if q.MetricsView.TimeDimension == "" && (q.BaseTimeRange != nil || q.ComparisonTimeRange != nil) {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
 	if q.ComparisonTimeRange != nil {
-		return q.executeComparisonToplist(ctx, olap, mv, priority)
+		return q.executeComparisonToplist(ctx, olap, q.MetricsView, priority, q.ResolvedMVSecurity)
 	}
 
-	return q.executeToplist(ctx, olap, mv, priority)
+	return q.executeToplist(ctx, olap, q.MetricsView, priority, q.ResolvedMVSecurity)
 }
 
-func (q *MetricsViewComparisonToplist) executeToplist(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsView, priority int) error {
-	sql, args, err := q.buildMetricsTopListSQL(mv, olap.Dialect())
+func (q *MetricsViewComparisonToplist) executeToplist(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsView, priority int, policy *runtime.ResolvedMetricsViewSecurity) error {
+	sql, args, err := q.buildMetricsTopListSQL(mv, olap.Dialect(), policy)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -138,8 +136,8 @@ func (q *MetricsViewComparisonToplist) executeToplist(ctx context.Context, olap 
 	return nil
 }
 
-func (q *MetricsViewComparisonToplist) executeComparisonToplist(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsView, priority int) error {
-	sql, args, err := q.buildMetricsComparisonTopListSQL(mv, olap.Dialect())
+func (q *MetricsViewComparisonToplist) executeComparisonToplist(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsView, priority int, policy *runtime.ResolvedMetricsViewSecurity) error {
+	sql, args, err := q.buildMetricsComparisonTopListSQL(mv, olap.Dialect(), policy)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -229,7 +227,7 @@ func timeRangeClause(timeRange *runtimev1.TimeRange, td string, args *[]any) str
 	return clause
 }
 
-func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect) (string, []any, error) {
+func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
 	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
 	if err != nil {
 		return "", nil, err
@@ -254,7 +252,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 
 	baseWhereClause += timeRangeClause(q.BaseTimeRange, td, &args)
 	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect)
+		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
 		if err != nil {
 			return "", nil, err
 		}
@@ -293,7 +291,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 	return sql, args, nil
 }
 
-func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect) (string, []any, error) {
+func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
 	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
 	if err != nil {
 		return "", nil, err
@@ -315,12 +313,12 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 		var columnsTuple string
 		if dialect != drivers.DialectDruid {
 			columnsTuple = fmt.Sprintf(
-				"base.%[1]s, comparison.%[1]s, comparison.%[1]s - base.%[1]s, (comparison.%[1]s - base.%[1]s)/base.%[1]s::DOUBLE",
+				"base.%[1]s, comparison.%[1]s, base.%[1]s - comparison.%[1]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE",
 				safeName(m.Name),
 			)
 		} else {
 			columnsTuple = fmt.Sprintf(
-				"ANY_VALUE(base.%[1]s), ANY_VALUE(comparison.%[1]s), ANY_VALUE(comparison.%[1]s - base.%[1]s), ANY_VALUE(SAFE_DIVIDE(comparison.%[1]s - base.%[1]s, CAST(base.%[1]s AS FLOAT))",
+				"ANY_VALUE(base.%[1]s), ANY_VALUE(comparison.%[1]s), ANY_VALUE(base.%[1]s - comparison.%[1]s), ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS FLOAT))",
 				safeName(m.Name),
 			)
 		}
@@ -345,7 +343,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 
 	baseWhereClause += timeRangeClause(q.BaseTimeRange, td, &args)
 	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect)
+		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
 		if err != nil {
 			return "", nil, err
 		}
@@ -356,7 +354,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 
 	comparisonWhereClause += timeRangeClause(q.ComparisonTimeRange, td, &args)
 	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect)
+		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
 		if err != nil {
 			return "", nil, err
 		}

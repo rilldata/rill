@@ -42,11 +42,12 @@ func (s *Server) ExportTable(w http.ResponseWriter, req *http.Request, pathParam
 	defer os.Remove(filePath)
 
 	// select * from the table and write to the temp file (DuckDB only)
-	olap, err := s.runtime.OLAP(req.Context(), pathParams["instance_id"])
+	olap, release, err := s.runtime.OLAP(req.Context(), pathParams["instance_id"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	defer release()
 	err = olap.Exec(req.Context(), &drivers.Statement{
 		Query: fmt.Sprintf("COPY (SELECT * FROM %q) TO '%s' (%s)", pathParams["table_name"], filePath, exportString),
 	})

@@ -18,6 +18,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -46,7 +47,10 @@ func init() {
 
 type driver struct{}
 
-func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connection, error) {
+func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if shared {
+		return nil, fmt.Errorf("github driver can't be shared")
+	}
 	dsnStr, ok := config["dsn"].(string)
 	if !ok {
 		return nil, fmt.Errorf("require dsn to open github connection")
@@ -80,6 +84,7 @@ func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connect
 		tempdir:      tempdir,
 		projectdir:   projectDir,
 		singleflight: &singleflight.Group{},
+		shared:       shared,
 	}, nil
 }
 
@@ -98,6 +103,7 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source
 type connection struct {
 	config              map[string]any
 	dsn                 DSN
+	shared              bool
 	tempdir             string // tempdir path should be absolute
 	projectdir          string
 	cloneURLWithToken   string
@@ -127,17 +133,20 @@ func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 }
 
 // Catalog implements drivers.Connection.
-func (c *connection) AsCatalogStore() (drivers.CatalogStore, bool) {
+func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // Repo implements drivers.Connection.
-func (c *connection) AsRepoStore() (drivers.RepoStore, bool) {
+func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
+	if c.shared {
+		return nil, false
+	}
 	return c, true
 }
 
 // OLAP implements drivers.Connection.
-func (c *connection) AsOLAP() (drivers.OLAPStore, bool) {
+func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
@@ -157,7 +166,7 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsTransporter implements drivers.Connection.
-func (c *connection) AsTransporter(from, to drivers.Connection) (drivers.Transporter, bool) {
+func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
 	return nil, false
 }
 
@@ -238,7 +247,12 @@ func (c *connection) pullUnsafe(ctx context.Context) error {
 			return err
 		}
 
-		rev, err := repo.ResolveRevision(plumbing.Revision("remotes/origin/" + head.Name().Short()))
+		branch, err := repo.Branch(head.Name().Short())
+		if err != nil {
+			return err
+		}
+
+		rev, err := repo.ResolveRevision(plumbing.Revision(fmt.Sprintf("remotes/%s/%s", branch.Remote, head.Name().Short())))
 		if err != nil {
 			return err
 		}

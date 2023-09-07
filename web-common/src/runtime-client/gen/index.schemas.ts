@@ -48,25 +48,12 @@ export type RuntimeServiceWatchResources200 = {
 };
 
 export type RuntimeServiceWatchResourcesParams = {
-  "refFilter.kind"?: string;
-  "refFilter.name"?: string;
-  "prefixFilter.kind"?: string;
-  "prefixFilter.name"?: string;
-  /**
-   * This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
-   */
-  annotationsFilter?: string;
+  kind?: string;
+  replay?: boolean;
 };
 
 export type RuntimeServiceListResourcesParams = {
-  "refFilter.kind"?: string;
-  "refFilter.name"?: string;
-  "prefixFilter.kind"?: string;
-  "prefixFilter.name"?: string;
-  /**
-   * This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
-   */
-  annotationsFilter?: string;
+  kind?: string;
 };
 
 export type RuntimeServiceGetResourceParams = {
@@ -239,6 +226,7 @@ export type QueryServiceExportBody = {
   format?: V1ExportFormat;
   metricsViewToplistRequest?: V1MetricsViewToplistRequest;
   metricsViewRowsRequest?: V1MetricsViewRowsRequest;
+  metricsViewTimeSeriesRequest?: V1MetricsViewTimeSeriesRequest;
 };
 
 export type QueryServiceColumnDescriptiveStatisticsParams = {
@@ -320,17 +308,32 @@ export type RuntimeServiceListCatalogEntriesParams = {
   type?: RuntimeServiceListCatalogEntriesType;
 };
 
+export type RuntimeServiceEditInstanceAnnotationsBodyAnnotations = {
+  [key: string]: string;
+};
+
+/**
+ * Request message for RuntimeService.EditInstanceAnnotations.
+ */
+export type RuntimeServiceEditInstanceAnnotationsBody = {
+  annotations?: RuntimeServiceEditInstanceAnnotationsBodyAnnotations;
+};
+
+export type RuntimeServiceEditInstanceBodyAnnotations = {
+  [key: string]: string;
+};
+
 /**
  * Request message for RuntimeService.EditInstance.
 See message Instance for field descriptions.
  */
 export type RuntimeServiceEditInstanceBody = {
-  olapDriver?: string;
-  olapDsn?: string;
-  repoDriver?: string;
-  repoDsn?: string;
+  olapConnector?: string;
+  repoConnector?: string;
   embedCatalog?: boolean;
   ingestionLimitBytes?: string;
+  connectors?: V1Connector[];
+  annotations?: RuntimeServiceEditInstanceBodyAnnotations;
 };
 
 export type RuntimeServiceEditInstanceVariablesBodyVariables = {
@@ -376,6 +379,13 @@ export type ConnectorServiceGCSListObjectsParams = {
   delimiter?: string;
 };
 
+export type RuntimeServiceIssueDevJWTParams = {
+  name?: string;
+  email?: string;
+  groups?: string[];
+  admin?: boolean;
+};
+
 export type ConnectorServiceBigQueryListTablesParams = {
   instanceId?: string;
   connector?: string;
@@ -392,8 +402,9 @@ export type ConnectorServiceBigQueryListDatasetsParams = {
 };
 
 export interface V1WatchResourcesResponse {
-  resource?: V1Resource;
   event?: V1ResourceEvent;
+  name?: V1ResourceName;
+  resource?: V1Resource;
 }
 
 export interface V1WatchLogsResponse {
@@ -467,6 +478,12 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -499,12 +516,6 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
-
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
 
 export type V1TableRowsResponseDataItem = { [key: string]: any };
 
@@ -633,22 +644,33 @@ export interface V1ResourceName {
   name?: string;
 }
 
+export type V1ReconcileStatus =
+  (typeof V1ReconcileStatus)[keyof typeof V1ReconcileStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ReconcileStatus = {
+  RECONCILE_STATUS_UNSPECIFIED: "RECONCILE_STATUS_UNSPECIFIED",
+  RECONCILE_STATUS_IDLE: "RECONCILE_STATUS_IDLE",
+  RECONCILE_STATUS_PENDING: "RECONCILE_STATUS_PENDING",
+  RECONCILE_STATUS_RUNNING: "RECONCILE_STATUS_RUNNING",
+} as const;
+
 export interface V1ResourceMeta {
   name?: V1ResourceName;
   refs?: V1ResourceName[];
   owner?: V1ResourceName;
   filePaths?: string[];
-  deleted?: boolean;
-  renamedFrom?: V1ResourceName;
-  reconcileError?: string;
   version?: string;
-  metaVersion?: string;
   specVersion?: string;
   stateVersion?: string;
   createdOn?: string;
   specUpdatedOn?: string;
   stateUpdatedOn?: string;
   deletedOn?: string;
+  reconcileStatus?: V1ReconcileStatus;
+  reconcileError?: string;
+  reconcileOn?: string;
+  renamedFrom?: V1ResourceName;
 }
 
 export type V1ResourceEvent =
@@ -657,10 +679,8 @@ export type V1ResourceEvent =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const V1ResourceEvent = {
   RESOURCE_EVENT_UNSPECIFIED: "RESOURCE_EVENT_UNSPECIFIED",
-  RESOURCE_EVENT_ADDED: "RESOURCE_EVENT_ADDED",
-  RESOURCE_EVENT_UPDATED_SPEC: "RESOURCE_EVENT_UPDATED_SPEC",
-  RESOURCE_EVENT_UPDATED_STATE: "RESOURCE_EVENT_UPDATED_STATE",
-  RESOURCE_EVENT_DELETED: "RESOURCE_EVENT_DELETED",
+  RESOURCE_EVENT_WRITE: "RESOURCE_EVENT_WRITE",
+  RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
 export interface V1Resource {
@@ -876,12 +896,6 @@ export interface V1PullTrigger {
   state?: V1PullTriggerState;
 }
 
-export interface V1ProjectParserState {
-  parseErrors?: V1ParseError[];
-  currentCommitSha?: string;
-  changedPaths?: string[];
-}
-
 export interface V1ProjectParserSpec {
   compiler?: string;
   watch?: boolean;
@@ -912,6 +926,12 @@ export interface V1ParseError {
   message?: string;
   filePath?: string;
   startLocation?: Runtimev1CharLocation;
+}
+
+export interface V1ProjectParserState {
+  parseErrors?: V1ParseError[];
+  currentCommitSha?: string;
+  changedPaths?: string[];
 }
 
 export type V1ObjectType = (typeof V1ObjectType)[keyof typeof V1ObjectType];
@@ -1004,11 +1024,6 @@ export interface V1Migration {
   state?: V1MigrationState;
 }
 
-export interface V1MetricsViewV2 {
-  spec?: V1MetricsViewSpec;
-  state?: V1MetricsViewState;
-}
-
 export type V1MetricsViewTotalsResponseData = { [key: string]: any };
 
 export interface V1MetricsViewTotalsResponse {
@@ -1070,10 +1085,16 @@ export interface V1MetricsViewSpec {
   /** Default time range for the dashboard. It should be a valid ISO 8601 duration string. */
   defaultTimeRange?: string;
   availableTimeZones?: string[];
+  security?: MetricsViewSpecSecurityV2;
 }
 
 export interface V1MetricsViewState {
   validSpec?: V1MetricsViewSpec;
+}
+
+export interface V1MetricsViewV2 {
+  spec?: V1MetricsViewSpec;
+  state?: V1MetricsViewState;
 }
 
 export interface V1MetricsViewSort {
@@ -1082,6 +1103,11 @@ export interface V1MetricsViewSort {
 }
 
 export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
+
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
+}
 
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
@@ -1121,10 +1147,6 @@ export interface V1MetricsViewComparisonValue {
   comparisonValue?: unknown;
   deltaAbs?: unknown;
   deltaRel?: unknown;
-}
-
-export interface V1MetricsViewComparisonToplistResponse {
-  rows?: V1MetricsViewComparisonRow[];
 }
 
 export type V1MetricsViewComparisonSortType =
@@ -1170,15 +1192,14 @@ export interface V1MetricsViewComparisonRow {
   measureValues?: V1MetricsViewComparisonValue[];
 }
 
+export interface V1MetricsViewComparisonToplistResponse {
+  rows?: V1MetricsViewComparisonRow[];
+}
+
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
   nullable?: boolean;
-}
-
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
 }
 
 export interface V1MetricsView {
@@ -1194,6 +1215,7 @@ export interface V1MetricsView {
   defaultTimeRange?: string;
   /** Available time zones list preferred time zones using IANA location identifiers. */
   availableTimeZones?: string[];
+  security?: MetricsViewSecurity;
 }
 
 export interface V1MapType {
@@ -1239,11 +1261,15 @@ export interface V1ListExamplesResponse {
 }
 
 export interface V1ListConnectorsResponse {
-  connectors?: V1Connector[];
+  connectors?: V1ConnectorSpec[];
 }
 
 export interface V1ListCatalogEntriesResponse {
   entries?: V1CatalogEntry[];
+}
+
+export interface V1IssueDevJWTResponse {
+  jwt?: string;
 }
 
 export type V1InstanceProjectVariables = { [key: string]: string };
@@ -1260,18 +1286,18 @@ just a single instance.
  */
 export interface V1Instance {
   instanceId?: string;
-  olapDriver?: string;
-  olapDsn?: string;
-  /** Driver for reading/editing code artifacts (options: file, metastore, github).
-This enables virtualizing a file system in a cloud setting. */
-  repoDriver?: string;
-  repoDsn?: string;
+  olapConnector?: string;
+  /** Connector name for repo driver(typically called : repo). 
+Repo driver is for reading/editing code artifacts. This enables virtualizing a file system in a cloud setting. */
+  repoConnector?: string;
   /** If true, the runtime will store the instance's catalog in its OLAP store instead
 of in the runtime's metadata store. Currently only supported for the duckdb driver. */
   embedCatalog?: boolean;
   variables?: V1InstanceVariables;
   projectVariables?: V1InstanceProjectVariables;
   ingestionLimitBytes?: string;
+  /** bare minimum connectors required by the instance. */
+  connectors?: V1Connector[];
 }
 
 export interface V1InlineMeasure {
@@ -1376,6 +1402,10 @@ export interface V1EditInstanceResponse {
   instance?: V1Instance;
 }
 
+export interface V1EditInstanceAnnotationsResponse {
+  instance?: V1Instance;
+}
+
 export interface V1DeleteInstanceResponse {
   [key: string]: any;
 }
@@ -1420,25 +1450,33 @@ See message Instance for field descriptions.
  */
 export interface V1CreateInstanceRequest {
   instanceId?: string;
-  olapDriver?: string;
-  olapDsn?: string;
-  repoDriver?: string;
-  repoDsn?: string;
+  olapConnector?: string;
+  repoConnector?: string;
   embedCatalog?: boolean;
   variables?: V1CreateInstanceRequestVariables;
   ingestionLimitBytes?: string;
   annotations?: V1CreateInstanceRequestAnnotations;
+  connectors?: V1Connector[];
 }
 
 /**
- * Connector represents a connector available in the runtime.
+ * ConnectorSpec represents a connector available in the runtime.
 It should not be confused with a source.
  */
-export interface V1Connector {
+export interface V1ConnectorSpec {
   name?: string;
   displayName?: string;
   description?: string;
-  properties?: ConnectorProperty[];
+  properties?: ConnectorSpecProperty[];
+}
+
+export type V1ConnectorConfig = { [key: string]: string };
+
+export interface V1Connector {
+  /** Type of the connector. One of the infra driver supported. */
+  type?: string;
+  name?: string;
+  config?: V1ConnectorConfig;
 }
 
 export interface V1ColumnTopKResponse {
@@ -1700,6 +1738,16 @@ export interface SourceExtractPolicy {
   filesLimit?: string;
 }
 
+export interface SecurityV2FieldConditionV2 {
+  condition?: string;
+  names?: string[];
+}
+
+export interface SecurityFieldCondition {
+  condition?: string;
+  names?: string[];
+}
+
 export interface NumericOutliersOutlier {
   bucket?: number;
   low?: number;
@@ -1724,6 +1772,13 @@ export const ModelDialect = {
   DIALECT_DUCKDB: "DIALECT_DUCKDB",
 } as const;
 
+export interface MetricsViewSpecSecurityV2 {
+  access?: string;
+  rowFilter?: string;
+  include?: SecurityV2FieldConditionV2[];
+  exclude?: SecurityV2FieldConditionV2[];
+}
+
 export interface MetricsViewSpecMeasureV2 {
   name?: string;
   expression?: string;
@@ -1738,6 +1793,13 @@ export interface MetricsViewSpecDimensionV2 {
   column?: string;
   label?: string;
   description?: string;
+}
+
+export interface MetricsViewSecurity {
+  access?: string;
+  rowFilter?: string;
+  include?: SecurityFieldCondition[];
+  exclude?: SecurityFieldCondition[];
 }
 
 export interface MetricsViewMeasure {
@@ -1762,11 +1824,11 @@ export interface MetricsViewDimension {
   column?: string;
 }
 
-export type ConnectorPropertyType =
-  (typeof ConnectorPropertyType)[keyof typeof ConnectorPropertyType];
+export type ConnectorSpecPropertyType =
+  (typeof ConnectorSpecPropertyType)[keyof typeof ConnectorSpecPropertyType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const ConnectorPropertyType = {
+export const ConnectorSpecPropertyType = {
   TYPE_UNSPECIFIED: "TYPE_UNSPECIFIED",
   TYPE_STRING: "TYPE_STRING",
   TYPE_NUMBER: "TYPE_NUMBER",
@@ -1774,12 +1836,12 @@ export const ConnectorPropertyType = {
   TYPE_INFORMATIONAL: "TYPE_INFORMATIONAL",
 } as const;
 
-export interface ConnectorProperty {
+export interface ConnectorSpecProperty {
   key?: string;
   displayName?: string;
   description?: string;
   placeholder?: string;
-  type?: ConnectorPropertyType;
+  type?: ConnectorSpecPropertyType;
   nullable?: boolean;
   hint?: string;
   href?: string;

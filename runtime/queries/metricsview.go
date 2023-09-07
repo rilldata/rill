@@ -5,12 +5,15 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 
-	"github.com/apache/arrow/go/v11/arrow"
-	"github.com/apache/arrow/go/v11/arrow/array"
-	"github.com/apache/arrow/go/v11/arrow/memory"
-	"github.com/apache/arrow/go/v11/parquet/pqarrow"
+	"github.com/apache/arrow/go/v13/arrow"
+	"github.com/apache/arrow/go/v13/arrow/array"
+	"github.com/apache/arrow/go/v13/arrow/memory"
+	"github.com/apache/arrow/go/v13/parquet/pqarrow"
+	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -21,19 +24,6 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 )
-
-func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.MetricsView, error) {
-	obj, err := rt.GetCatalogEntry(ctx, instanceID, name)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	if obj.GetMetricsView() == nil {
-		return nil, status.Errorf(codes.NotFound, "object named '%s' is not a metrics view", name)
-	}
-
-	return obj.GetMetricsView(), nil
-}
 
 // resolveMeasures returns the selected measures
 func resolveMeasures(mv *runtimev1.MetricsView, inlines []*runtimev1.InlineMeasure, selectedNames []string) ([]*runtimev1.MetricsView_Measure, error) {
@@ -131,7 +121,7 @@ func structTypeToMetricsViewColumn(v *runtimev1.StructType) []*runtimev1.Metrics
 // buildFilterClauseForMetricsViewFilter builds a SQL string of conditions joined with AND.
 // Unless the result is empty, it is prefixed with "AND".
 // I.e. it has the format "AND (...) AND (...) ...".
-func buildFilterClauseForMetricsViewFilter(mv *runtimev1.MetricsView, filter *runtimev1.MetricsViewFilter, dialect drivers.Dialect) (string, []any, error) {
+func buildFilterClauseForMetricsViewFilter(mv *runtimev1.MetricsView, filter *runtimev1.MetricsViewFilter, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
 	var clauses []string
 	var args []any
 
@@ -151,6 +141,10 @@ func buildFilterClauseForMetricsViewFilter(mv *runtimev1.MetricsView, filter *ru
 		}
 		clauses = append(clauses, clause)
 		args = append(args, clauseArgs...)
+	}
+
+	if policy != nil && policy.RowFilter != "" {
+		clauses = append(clauses, "AND "+policy.RowFilter)
 	}
 
 	return strings.Join(clauses, " "), args, nil
@@ -515,4 +509,55 @@ func writeParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, 
 	rec := recordBuilder.NewRecord()
 	err = parquetwriter.Write(rec)
 	return err
+}
+
+func duckDBCopyExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions, sql string, args []any, filename string, olap drivers.OLAPStore, mv *runtimev1.MetricsView, exportFormat runtimev1.ExportFormat) error {
+	var extension string
+	switch exportFormat {
+	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
+		extension = "parquet"
+	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
+		extension = "csv"
+	}
+
+	tmpPath := fmt.Sprintf("export_%s.%s", uuid.New().String(), extension)
+	tmpPath = filepath.Join(os.TempDir(), tmpPath)
+	defer os.Remove(tmpPath)
+
+	sql = fmt.Sprintf("COPY (%s) TO '%s'", sql, tmpPath)
+
+	rows, err := olap.Execute(ctx, &drivers.Statement{
+		Query:            sql,
+		Args:             args,
+		Priority:         opts.Priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+	})
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	if opts.PreWriteHook != nil {
+		err = opts.PreWriteHook(filename)
+		if err != nil {
+			return err
+		}
+	}
+
+	f, err := os.Open(tmpPath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = io.Copy(w, f)
+	return err
+}
+
+func (q *MetricsViewRows) generateFilename(mv *runtimev1.MetricsView) string {
+	filename := strings.ReplaceAll(mv.Model, `"`, `_`)
+	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
+		filename += "_filtered"
+	}
+	return filename
 }

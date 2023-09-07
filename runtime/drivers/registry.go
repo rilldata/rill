@@ -3,6 +3,8 @@ package drivers
 import (
 	"context"
 	"time"
+
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
 // RegistryStore is implemented by drivers capable of storing and looking up instances and repos.
@@ -19,14 +21,10 @@ type RegistryStore interface {
 type Instance struct {
 	// Identifier
 	ID string
-	// Driver to connect to for OLAP (options: duckdb, druid)
-	OLAPDriver string
-	// DSN for connection to OLAP
-	OLAPDSN string
-	// Driver for reading/editing code artifacts (options: file, metastore)
-	RepoDriver string
-	// DSN for connecting to repo
-	RepoDSN string
+	// Driver name to connect to for OLAP
+	OLAPConnector string
+	// Driver name for reading/editing code artifacts
+	RepoConnector string
 	// EmbedCatalog tells the runtime to store the instance's catalog in its OLAP store instead
 	// of in the runtime's metadata store. Currently only supported for the duckdb driver.
 	EmbedCatalog bool `db:"embed_catalog"`
@@ -36,9 +34,13 @@ type Instance struct {
 	UpdatedOn time.Time `db:"updated_on"`
 	// Variables contains user-provided variables
 	Variables map[string]string `db:"variables"`
+	// Instance specific connectors
+	Connectors []*runtimev1.Connector `db:"connectors"`
 	// ProjectVariables contains default variables from rill.yaml
 	// (NOTE: This can always be reproduced from rill.yaml, so it's really just a handy cache of the values.)
 	ProjectVariables map[string]string `db:"project_variables"`
+	// ProjectVariables contains default connectors from rill.yaml
+	ProjectConnectors []*runtimev1.Connector `db:"project_connectors"`
 	// IngestionLimitBytes is total data allowed to ingest across all sources
 	// 0 means there is no limit
 	IngestionLimitBytes int64 `db:"ingestion_limit_bytes"`

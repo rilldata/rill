@@ -150,6 +150,8 @@ export function createScrubAction({
 
       function onScrubStart(event: MouseEvent) {
         event.preventDefault();
+        // Check for the main button press
+        if (event.button !== 0) return;
         if (!(startPredicate === undefined || startPredicate(event))) {
           return;
         }

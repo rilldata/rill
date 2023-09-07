@@ -119,6 +119,40 @@ paths:
             $ref: '#/definitions/v1DeleteFileAndReconcileRequest'
       tags:
         - RuntimeService
+  /v1/dev-jwt:
+    get:
+      operationId: RuntimeService_IssueDevJWT
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1IssueDevJWTResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: name
+          in: query
+          required: false
+          type: string
+        - name: email
+          in: query
+          required: false
+          type: string
+        - name: groups
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+        - name: admin
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - RuntimeService
   /v1/examples:
     get:
       summary: ListExamples lists all the examples embedded into binary
@@ -393,22 +427,58 @@ paths:
           schema:
             type: object
             properties:
-              olapDriver:
+              olapConnector:
                 type: string
-              olapDsn:
-                type: string
-              repoDriver:
-                type: string
-              repoDsn:
+              repoConnector:
                 type: string
               embedCatalog:
                 type: boolean
               ingestionLimitBytes:
                 type: string
                 format: int64
+              connectors:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1Connector'
+              annotations:
+                type: object
+                additionalProperties:
+                  type: string
             description: |-
               Request message for RuntimeService.EditInstance.
               See message Instance for field descriptions.
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/annotations:
+    put:
+      summary: EditInstanceAnnotations edits the instance annotations
+      operationId: RuntimeService_EditInstanceAnnotations
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1EditInstanceAnnotationsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              annotations:
+                type: object
+                additionalProperties:
+                  type: string
+            description: Request message for RuntimeService.EditInstanceAnnotations.
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/catalog:
@@ -914,6 +984,8 @@ paths:
                 $ref: '#/definitions/v1MetricsViewToplistRequest'
               metricsViewRowsRequest:
                 $ref: '#/definitions/v1MetricsViewRowsRequest'
+              metricsViewTimeSeriesRequest:
+                $ref: '#/definitions/v1MetricsViewTimeSeriesRequest'
             title: Request message for QueryService.Export
       tags:
         - QueryService
@@ -1794,24 +1866,7 @@ paths:
           in: path
           required: true
           type: string
-        - name: refFilter.kind
-          in: query
-          required: false
-          type: string
-        - name: refFilter.name
-          in: query
-          required: false
-          type: string
-        - name: prefixFilter.kind
-          in: query
-          required: false
-          type: string
-        - name: prefixFilter.name
-          in: query
-          required: false
-          type: string
-        - name: annotationsFilter
-          description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
+        - name: kind
           in: query
           required: false
           type: string
@@ -1841,27 +1896,14 @@ paths:
           in: path
           required: true
           type: string
-        - name: refFilter.kind
+        - name: kind
           in: query
           required: false
           type: string
-        - name: refFilter.name
+        - name: replay
           in: query
           required: false
-          type: string
-        - name: prefixFilter.kind
-          in: query
-          required: false
-          type: string
-        - name: prefixFilter.name
-          in: query
-          required: false
-          type: string
-        - name: annotationsFilter
-          description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
-          in: query
-          required: false
-          type: string
+          type: boolean
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/sync:
@@ -2171,7 +2213,7 @@ definitions:
       sqlName:
         type: string
         title: optional user defined metadata
-  ConnectorProperty:
+  ConnectorSpecProperty:
     type: object
     properties:
       key:
@@ -2187,7 +2229,7 @@ definitions:
         type: string
         title: Placeholder value for use in UIs
       type:
-        $ref: '#/definitions/ConnectorPropertyType'
+        $ref: '#/definitions/ConnectorSpecPropertyType'
         title: The type expected for this property
       nullable:
         type: boolean
@@ -2199,7 +2241,7 @@ definitions:
         type: string
         title: Link to documentation for this property
     title: Property represents one of the connector's config properties
-  ConnectorPropertyType:
+  ConnectorSpecPropertyType:
     type: string
     enum:
       - TYPE_UNSPECIFIED
@@ -2249,6 +2291,27 @@ definitions:
       validPercentOfTotal:
         type: boolean
     title: Measures are aggregated computed values
+  MetricsViewSecurity:
+    type: object
+    properties:
+      access:
+        type: string
+        title: Dashboard level access condition
+      rowFilter:
+        type: string
+        title: row level access condition
+      include:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/SecurityFieldCondition'
+        title: either one of include or exclude will be specified
+      exclude:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/SecurityFieldCondition'
+    title: Security for the metrics view
   MetricsViewSpecDimensionV2:
     type: object
     properties:
@@ -2277,6 +2340,27 @@ definitions:
       validPercentOfTotal:
         type: boolean
     title: Measures are aggregated computed values
+  MetricsViewSpecSecurityV2:
+    type: object
+    properties:
+      access:
+        type: string
+        title: Dashboard level access condition
+      rowFilter:
+        type: string
+        title: row level access condition
+      include:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/SecurityV2FieldConditionV2'
+        title: either one of include or exclude will be specified
+      exclude:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/SecurityV2FieldConditionV2'
+    title: Security for the dashboard
   ModelDialect:
     type: string
     enum:
@@ -2319,6 +2403,26 @@ definitions:
       count:
         type: integer
         format: int32
+  SecurityFieldCondition:
+    type: object
+    properties:
+      condition:
+        type: string
+      names:
+        type: array
+        items:
+          type: string
+    title: Dimension/measure access condition
+  SecurityV2FieldConditionV2:
+    type: object
+    properties:
+      condition:
+        type: string
+      names:
+        type: array
+        items:
+          type: string
+    title: Dimension/measure level access condition
   SourceExtractPolicy:
     type: object
     properties:
@@ -2745,6 +2849,20 @@ definitions:
   v1Connector:
     type: object
     properties:
+      type:
+        type: string
+        description: Type of the connector. One of the infra driver supported.
+      name:
+        type: string
+        title: Name of the connector
+      config:
+        type: object
+        additionalProperties:
+          type: string
+        title: Config for the connector
+  v1ConnectorSpec:
+    type: object
+    properties:
       name:
         type: string
         title: Name is the name of the connector (e.g. "CREATE SOURCE foo WITH connector = 'name'")
@@ -2758,23 +2876,19 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/ConnectorProperty'
+          $ref: '#/definitions/ConnectorSpecProperty'
         title: Properties accepted by the connector
     description: |-
-      Connector represents a connector available in the runtime.
+      ConnectorSpec represents a connector available in the runtime.
       It should not be confused with a source.
   v1CreateInstanceRequest:
     type: object
     properties:
       instanceId:
         type: string
-      olapDriver:
+      olapConnector:
         type: string
-      olapDsn:
-        type: string
-      repoDriver:
-        type: string
-      repoDsn:
+      repoConnector:
         type: string
       embedCatalog:
         type: boolean
@@ -2789,6 +2903,11 @@ definitions:
         type: object
         additionalProperties:
           type: string
+      connectors:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Connector'
     description: |-
       Request message for RuntimeService.CreateInstance.
       See message Instance for field descriptions.
@@ -2843,6 +2962,12 @@ definitions:
   v1DeleteInstanceResponse:
     type: object
     title: Response message for RuntimeService.DeleteInstance
+  v1EditInstanceAnnotationsResponse:
+    type: object
+    properties:
+      instance:
+        $ref: '#/definitions/v1Instance'
+    title: Response message for RuntimeService.EditInstanceAnnotations
   v1EditInstanceResponse:
     type: object
     properties:
@@ -2982,20 +3107,12 @@ definitions:
       instanceId:
         type: string
         title: Identifier (UUID)
-      olapDriver:
+      olapConnector:
         type: string
-        title: 'Driver to connect to for OLAP (options: duckdb, druid)'
-      olapDsn:
+        title: 'OLAP connector name (typically called : olap )'
+      repoConnector:
         type: string
-        title: DSN for connection to OLAP
-      repoDriver:
-        type: string
-        description: |-
-          Driver for reading/editing code artifacts (options: file, metastore, github).
-          This enables virtualizing a file system in a cloud setting.
-      repoDsn:
-        type: string
-        title: DSN for connecting to repo
+        description: "Connector name for repo driver(typically called : repo). \nRepo driver is for reading/editing code artifacts. This enables virtualizing a file system in a cloud setting."
       embedCatalog:
         type: boolean
         description: |-
@@ -3015,6 +3132,12 @@ definitions:
         type: string
         format: int64
         title: ingestion limit across all sources, 0 means no limit
+      connectors:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Connector'
+        description: bare minimum connectors required by the instance.
     description: |-
       Instance represents a single data project, meaning one set of code artifacts,
       one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
@@ -3022,6 +3145,12 @@ definitions:
       the runtime. They enable one runtime deployment to serve not only multiple data
       projects, but also multiple tenants. On local, the runtime will usually have
       just a single instance.
+  v1IssueDevJWTResponse:
+    type: object
+    properties:
+      jwt:
+        type: string
+    title: Response message for RuntimeService.IssueDevJWT
   v1ListCatalogEntriesResponse:
     type: object
     properties:
@@ -3038,7 +3167,7 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1Connector'
+          $ref: '#/definitions/v1ConnectorSpec'
     title: Response message for RuntimeService.ListConnectors
   v1ListExamplesResponse:
     type: object
@@ -3146,6 +3275,9 @@ definitions:
         items:
           type: string
         description: Available time zones list preferred time zones using IANA location identifiers.
+      security:
+        $ref: '#/definitions/MetricsViewSecurity'
+        title: Security for the dashboard
     title: Metrics view is the internal representation of a metrics view definition
   v1MetricsViewColumn:
     type: object
@@ -3351,6 +3483,9 @@ definitions:
         items:
           type: string
         title: Available time zones list preferred time zones using IANA location identifiers
+      security:
+        $ref: '#/definitions/MetricsViewSpecSecurityV2'
+        title: Security for the dashboard
   v1MetricsViewState:
     type: object
     properties:
@@ -3988,6 +4123,14 @@ definitions:
           executing the reconciliation. If changed_paths was empty, this will include all
           code artifacts in the repo.
     title: Response message for RuntimeService.Reconcile
+  v1ReconcileStatus:
+    type: string
+    enum:
+      - RECONCILE_STATUS_UNSPECIFIED
+      - RECONCILE_STATUS_IDLE
+      - RECONCILE_STATUS_PENDING
+      - RECONCILE_STATUS_RUNNING
+    default: RECONCILE_STATUS_UNSPECIFIED
   v1RefreshAndReconcileRequest:
     type: object
     properties:
@@ -4111,10 +4254,8 @@ definitions:
     type: string
     enum:
       - RESOURCE_EVENT_UNSPECIFIED
-      - RESOURCE_EVENT_ADDED
-      - RESOURCE_EVENT_UPDATED_SPEC
-      - RESOURCE_EVENT_UPDATED_STATE
-      - RESOURCE_EVENT_DELETED
+      - RESOURCE_EVENT_WRITE
+      - RESOURCE_EVENT_DELETE
     default: RESOURCE_EVENT_UNSPECIFIED
   v1ResourceMeta:
     type: object
@@ -4132,16 +4273,7 @@ definitions:
         type: array
         items:
           type: string
-      deleted:
-        type: boolean
-      renamedFrom:
-        $ref: '#/definitions/v1ResourceName'
-      reconcileError:
-        type: string
       version:
-        type: string
-        format: int64
-      metaVersion:
         type: string
         format: int64
       specVersion:
@@ -4162,6 +4294,15 @@ definitions:
       deletedOn:
         type: string
         format: date-time
+      reconcileStatus:
+        $ref: '#/definitions/v1ReconcileStatus'
+      reconcileError:
+        type: string
+      reconcileOn:
+        type: string
+        format: date-time
+      renamedFrom:
+        $ref: '#/definitions/v1ResourceName'
   v1ResourceName:
     type: object
     properties:
@@ -4526,7 +4667,9 @@ definitions:
   v1WatchResourcesResponse:
     type: object
     properties:
-      resource:
-        $ref: '#/definitions/v1Resource'
       event:
         $ref: '#/definitions/v1ResourceEvent'
+      name:
+        $ref: '#/definitions/v1ResourceName'
+      resource:
+        $ref: '#/definitions/v1Resource'

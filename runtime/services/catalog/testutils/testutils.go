@@ -13,6 +13,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/services/catalog"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	"github.com/stretchr/testify/require"
@@ -43,7 +44,7 @@ func CreateSource(t *testing.T, s *catalog.Service, name, file, sourcePath strin
 		},
 	})
 	require.NoError(t, err)
-	blob, err := s.Repo.Get(ctx, s.InstID, sourcePath)
+	blob, err := s.Repo.Get(ctx, sourcePath)
 	require.NoError(t, err)
 	return blob
 }
@@ -62,7 +63,7 @@ func CreateModel(t *testing.T, s *catalog.Service, name, sql, sourcePath string)
 		},
 	})
 	require.NoError(t, err)
-	blob, err := s.Repo.Get(ctx, s.InstID, sourcePath)
+	blob, err := s.Repo.Get(ctx, sourcePath)
 	require.NoError(t, err)
 	return blob
 }
@@ -77,7 +78,7 @@ func CreateMetricsView(t *testing.T, s *catalog.Service, metricsView *runtimev1.
 		Object: metricsView,
 	})
 	require.NoError(t, err)
-	blob, err := s.Repo.Get(ctx, s.InstID, sourcePath)
+	blob, err := s.Repo.Get(ctx, sourcePath)
 	require.NoError(t, err)
 	return blob
 }
@@ -185,28 +186,28 @@ func CopyFileToData(t *testing.T, dir, source, name string) {
 func GetService(t *testing.T) (*catalog.Service, string) {
 	dir := t.TempDir()
 
-	duckdbStore, err := drivers.Open("duckdb", map[string]any{"dsn": filepath.Join(dir, "stage.db")}, zap.NewNop())
+	duckdbStore, err := drivers.Open("duckdb", map[string]any{"dsn": filepath.Join(dir, "stage.db")}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	err = duckdbStore.Migrate(context.Background())
 	require.NoError(t, err)
-	olap, ok := duckdbStore.AsOLAP()
+	olap, ok := duckdbStore.AsOLAP("")
 	require.True(t, ok)
-	catalogObject, ok := duckdbStore.AsCatalogStore()
+	catalogObject, ok := duckdbStore.AsCatalogStore("")
 	require.True(t, ok)
 
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
-	repo, ok := fileStore.AsRepoStore()
+	repo, ok := fileStore.AsRepoStore("")
 	require.True(t, ok)
 
-	err = repo.Put(context.Background(), "test", "rill.yaml", strings.NewReader(""))
+	err = repo.Put(context.Background(), "rill.yaml", strings.NewReader(""))
 	require.NoError(t, err)
 
-	return catalog.NewService(catalogObject, repo, olap, registryStore(t), "test", nil, catalog.NewMigrationMeta()), dir
+	return catalog.NewService(catalogObject, repo, olap, registryStore(t), "test", nil, catalog.NewMigrationMeta(), func() {}), dir
 }
 
 func registryStore(t *testing.T) drivers.RegistryStore {
-	store, err := drivers.Open("sqlite", map[string]any{"dsn": ":memory:"}, zap.NewNop())
+	store, err := drivers.Open("sqlite", map[string]any{"dsn": ":memory:"}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	err = store.Migrate(context.Background())
 	require.NoError(t, err)

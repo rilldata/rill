@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -61,8 +62,9 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstanceRequest) (*runtimev1.CreateInstanceResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.olap_driver", req.OlapDriver),
-		attribute.String("args.repo_driver", req.RepoDriver),
+		attribute.String("args.olap_connector", req.OlapConnector),
+		attribute.String("args.repo_connector", req.RepoConnector),
+		attribute.StringSlice("args.connectors", toString(req.Connectors)),
 	)
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
@@ -73,14 +75,13 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 
 	inst := &drivers.Instance{
 		ID:                  req.InstanceId,
-		OLAPDriver:          req.OlapDriver,
-		OLAPDSN:             req.OlapDsn,
-		RepoDriver:          req.RepoDriver,
-		RepoDSN:             req.RepoDsn,
+		OLAPConnector:       req.OlapConnector,
+		RepoConnector:       req.RepoConnector,
 		EmbedCatalog:        req.EmbedCatalog,
 		Variables:           req.Variables,
 		IngestionLimitBytes: req.IngestionLimitBytes,
 		Annotations:         req.Annotations,
+		Connectors:          req.Connectors,
 	}
 
 	err := s.runtime.CreateInstance(ctx, inst)
@@ -96,11 +97,14 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 // EditInstance implements RuntimeService.
 func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRequest) (*runtimev1.EditInstanceResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.instance_id", req.InstanceId))
-	if req.OlapDriver != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.olap_driver", *req.OlapDriver))
+	if req.OlapConnector != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.olap_connector", *req.OlapConnector))
 	}
-	if req.RepoDriver != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.repo_driver", *req.RepoDriver))
+	if req.RepoConnector != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.repo_connector", *req.RepoConnector))
+	}
+	if len(req.Connectors) > 0 {
+		observability.AddRequestAttributes(ctx, attribute.StringSlice("args.connectors", toString(req.Connectors)))
 	}
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
@@ -114,16 +118,24 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		return nil, err
 	}
 
+	annotations := req.Annotations
+	if len(annotations) == 0 { // annotations not changed
+		annotations = oldInst.Annotations
+	}
+
 	inst := &drivers.Instance{
 		ID:                  req.InstanceId,
-		OLAPDriver:          valOrDefault(req.OlapDriver, oldInst.OLAPDriver),
-		OLAPDSN:             valOrDefault(req.OlapDsn, oldInst.OLAPDSN),
-		RepoDriver:          valOrDefault(req.RepoDriver, oldInst.RepoDriver),
-		RepoDSN:             valOrDefault(req.RepoDsn, oldInst.RepoDSN),
+		OLAPConnector:       valOrDefault(req.OlapConnector, oldInst.OLAPConnector),
+		RepoConnector:       valOrDefault(req.RepoConnector, oldInst.RepoConnector),
 		EmbedCatalog:        valOrDefault(req.EmbedCatalog, oldInst.EmbedCatalog),
 		Variables:           oldInst.Variables,
 		IngestionLimitBytes: valOrDefault(req.IngestionLimitBytes, oldInst.IngestionLimitBytes),
-		Annotations:         oldInst.Annotations,
+		Annotations:         annotations,
+	}
+	if len(req.Connectors) == 0 {
+		inst.Connectors = oldInst.Connectors
+	} else {
+		inst.Connectors = req.Connectors
 	}
 
 	err = s.runtime.EditInstance(ctx, inst)
@@ -153,14 +165,13 @@ func (s *Server) EditInstanceVariables(ctx context.Context, req *runtimev1.EditI
 
 	inst := &drivers.Instance{
 		ID:                  req.InstanceId,
-		OLAPDriver:          oldInst.OLAPDriver,
-		OLAPDSN:             oldInst.OLAPDSN,
-		RepoDriver:          oldInst.RepoDriver,
-		RepoDSN:             oldInst.RepoDSN,
+		OLAPConnector:       oldInst.OLAPConnector,
+		RepoConnector:       oldInst.RepoConnector,
 		EmbedCatalog:        oldInst.EmbedCatalog,
 		IngestionLimitBytes: oldInst.IngestionLimitBytes,
 		Variables:           req.Variables,
 		Annotations:         oldInst.Annotations,
+		Connectors:          oldInst.Connectors,
 	}
 
 	err = s.runtime.EditInstance(ctx, inst)
@@ -169,6 +180,41 @@ func (s *Server) EditInstanceVariables(ctx context.Context, req *runtimev1.EditI
 	}
 
 	return &runtimev1.EditInstanceVariablesResponse{
+		Instance: instanceToPB(inst),
+	}, nil
+}
+
+// EditInstanceAnnotations implements RuntimeService.
+func (s *Server) EditInstanceAnnotations(ctx context.Context, req *runtimev1.EditInstanceAnnotationsRequest) (*runtimev1.EditInstanceAnnotationsResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.instance_id", req.InstanceId))
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
+	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
+		return nil, ErrForbidden
+	}
+
+	oldInst, err := s.runtime.FindInstance(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+
+	inst := &drivers.Instance{
+		ID:                  req.InstanceId,
+		OLAPConnector:       oldInst.OLAPConnector,
+		RepoConnector:       oldInst.RepoConnector,
+		EmbedCatalog:        oldInst.EmbedCatalog,
+		IngestionLimitBytes: oldInst.IngestionLimitBytes,
+		Variables:           oldInst.Variables,
+		Annotations:         req.Annotations,
+	}
+
+	err = s.runtime.EditInstance(ctx, inst)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &runtimev1.EditInstanceAnnotationsResponse{
 		Instance: instanceToPB(inst),
 	}, nil
 }
@@ -197,14 +243,13 @@ func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstan
 func instanceToPB(inst *drivers.Instance) *runtimev1.Instance {
 	return &runtimev1.Instance{
 		InstanceId:          inst.ID,
-		OlapDriver:          inst.OLAPDriver,
-		OlapDsn:             inst.OLAPDSN,
-		RepoDriver:          inst.RepoDriver,
-		RepoDsn:             inst.RepoDSN,
+		OlapConnector:       inst.OLAPConnector,
+		RepoConnector:       inst.RepoConnector,
 		EmbedCatalog:        inst.EmbedCatalog,
 		Variables:           inst.Variables,
 		ProjectVariables:    inst.ProjectVariables,
 		IngestionLimitBytes: inst.IngestionLimitBytes,
+		Connectors:          inst.Connectors,
 	}
 }
 
@@ -213,4 +258,12 @@ func valOrDefault[T any](ptr *T, def T) T {
 		return *ptr
 	}
 	return def
+}
+
+func toString(connectors []*runtimev1.Connector) []string {
+	res := make([]string, len(connectors))
+	for i, c := range connectors {
+		res[i] = fmt.Sprintf("%s:%s", c.Name, c.Type)
+	}
+	return res
 }

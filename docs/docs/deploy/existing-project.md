@@ -1,7 +1,7 @@
 ---
-title: Deploy a project
-sidebar_label: Deploy project
-sidebar_position: 0
+title: Deploy Projects
+sidebar_label: Deploy Projects
+sidebar_position: 10
 ---
 
 <!-- WARNING: There are links to this page in source code. If you move it, find and replace the links and consider adding a redirect in docusaurus.config.js. -->
@@ -40,6 +40,12 @@ Once the deployment has completed, the browser will open on your project's statu
 ```
 rill project status
 ```
+
+:::info Resetting an Errored Project
+Projects can sometimes be in an error state for a variety of a reasons. A hard reset can often clear these issues.
+
+To execute a hard reset, use the following command from the CLI `rill project reconcile --reset` 
+:::info
 
 ## Updating the deployment
 

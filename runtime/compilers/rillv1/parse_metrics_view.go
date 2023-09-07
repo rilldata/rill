@@ -2,6 +2,7 @@ package rillv1
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -40,7 +41,18 @@ type metricsViewYAML struct {
 		Ignore              bool   `yaml:"ignore"`
 		ValidPercentOfTotal bool   `yaml:"valid_percent_of_total"`
 	}
-	// ExtraProps map[string]any `yaml:",inline"`
+	Security *struct {
+		Access    string `yaml:"access"`
+		RowFilter string `yaml:"row_filter"`
+		Include   []*struct {
+			Names     []string
+			Condition string `yaml:"if"`
+		}
+		Exclude []*struct {
+			Names     []string
+			Condition string `yaml:"if"`
+		}
+	}
 }
 
 // parseMetricsView parses a metrics view (dashboard) definition and adds the resulting resource to p.Resources.
@@ -153,6 +165,88 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		return fmt.Errorf("must define at least one measure")
 	}
 
+	if tmp.Security != nil {
+		templateData := TemplateData{User: map[string]interface{}{
+			"name":   "dummy",
+			"email":  "mock@example.org",
+			"domain": "example.org",
+			"groups": []interface{}{"all"},
+			"admin":  false,
+		}}
+
+		if tmp.Security.Access != "" {
+			access, err := ResolveTemplate(tmp.Security.Access, templateData)
+			if err != nil {
+				return fmt.Errorf(`invalid 'security': 'access' templating is not valid: %w`, err)
+			}
+			_, err = EvaluateBoolExpression(access)
+			if err != nil {
+				return fmt.Errorf(`invalid 'security': 'access' expression error: %w`, err)
+			}
+		}
+
+		if tmp.Security.RowFilter != "" {
+			_, err := ResolveTemplate(tmp.Security.RowFilter, templateData)
+			if err != nil {
+				return fmt.Errorf(`invalid 'security': 'row_filter' templating is not valid: %w`, err)
+			}
+		}
+
+		if len(tmp.Security.Include) > 0 && len(tmp.Security.Exclude) > 0 {
+			return errors.New("invalid 'security': only one of 'include' and 'exclude' can be specified")
+		}
+		if tmp.Security.Include != nil {
+			for _, include := range tmp.Security.Include {
+				if include == nil || len(include.Names) == 0 || include.Condition == "" {
+					return fmt.Errorf("invalid 'security': 'include' fields must have a valid 'if' condition and 'names' list")
+				}
+				seen := make(map[string]bool)
+				for _, name := range include.Names {
+					if seen[name] {
+						return fmt.Errorf("invalid 'security': 'include' property %q is duplicated", name)
+					}
+					seen[name] = true
+					if !names[name] {
+						return fmt.Errorf("invalid 'security': 'include' property %q does not exists in dimensions or measures list", name)
+					}
+				}
+				cond, err := ResolveTemplate(include.Condition, templateData)
+				if err != nil {
+					return fmt.Errorf(`invalid 'security': 'if' condition templating for field %q is not valid: %w`, include.Names, err)
+				}
+				_, err = EvaluateBoolExpression(cond)
+				if err != nil {
+					return fmt.Errorf(`invalid 'security': 'if' condition for field %q not evaluating to a boolean: %w`, include.Names, err)
+				}
+			}
+		}
+		if tmp.Security.Exclude != nil {
+			for _, exclude := range tmp.Security.Exclude {
+				if exclude == nil || len(exclude.Names) == 0 || exclude.Condition == "" {
+					return fmt.Errorf("invalid 'security': 'exclude' fields must have a valid 'if' condition and 'names' list")
+				}
+				seen := make(map[string]bool)
+				for _, name := range exclude.Names {
+					if seen[name] {
+						return fmt.Errorf("invalid 'security': 'exclude' property %q is duplicated", name)
+					}
+					seen[name] = true
+					if !names[name] {
+						return fmt.Errorf("invalid 'security': 'exclude' property %q does not exists in dimensions or measures list", name)
+					}
+				}
+				cond, err := ResolveTemplate(exclude.Condition, templateData)
+				if err != nil {
+					return fmt.Errorf(`invalid 'security': 'if' condition templating for field %q is not valid: %w`, exclude.Names, err)
+				}
+				_, err = EvaluateBoolExpression(cond)
+				if err != nil {
+					return fmt.Errorf(`invalid 'security': 'if' condition for field %q not evaluating to a boolean: %w`, exclude.Names, err)
+				}
+			}
+		}
+	}
+
 	node.Refs = append(node.Refs, ResourceName{Name: table})
 
 	// NOTE: After calling upsertResource, an error must not be returned. Any validation should be done before calling it.
@@ -194,6 +288,31 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			Format:              measure.Format,
 			ValidPercentOfTotal: measure.ValidPercentOfTotal,
 		})
+	}
+
+	if tmp.Security != nil {
+		if spec.Security == nil {
+			spec.Security = &runtimev1.MetricsViewSpec_SecurityV2{}
+		}
+		spec.Security.Access = tmp.Security.Access
+		spec.Security.RowFilter = tmp.Security.RowFilter
+		// validation has been done above, only one of these will be set
+		if tmp.Security.Include != nil {
+			for _, include := range tmp.Security.Include {
+				spec.Security.Include = append(spec.Security.Include, &runtimev1.MetricsViewSpec_SecurityV2_FieldConditionV2{
+					Condition: include.Condition,
+					Names:     include.Names,
+				})
+			}
+		}
+		if tmp.Security.Exclude != nil {
+			for _, exclude := range tmp.Security.Exclude {
+				spec.Security.Exclude = append(spec.Security.Exclude, &runtimev1.MetricsViewSpec_SecurityV2_FieldConditionV2{
+					Condition: exclude.Condition,
+					Names:     exclude.Names,
+				})
+			}
+		}
 	}
 
 	return nil
