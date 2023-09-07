@@ -17,38 +17,6 @@ export function getFormatterValueForPercDiff(pct: number | null) {
   return formatMeasurePercentageDifference(pct);
 }
 
-export type LeaderboardItemData = {
-  label: string | number;
-  // main value to be shown in the leaderboard
-  value: number;
-  // the comparison value, which may be either the previous value
-  // (used to calculate the absolute or percentage change) or
-  // the measure total (used to calculate the percentage of total)
-  comparisonValue: number;
-  // selection is not enough to determine if the item is included
-  // or excluded; for that we need to know the leaderboard's
-  // include/exclude state
-  selected: boolean;
-};
-
-export function prepareLeaderboardItemData(
-  values: { value: number; label: string | number }[],
-  selectedValues: (string | number)[],
-  comparisonMap: Map<string | number, number>
-): LeaderboardItemData[] {
-  return values.map((v) => {
-    const selected =
-      selectedValues.findIndex((value) => value === v.label) >= 0;
-    const comparisonValue = comparisonMap.get(v.label);
-
-    return {
-      ...v,
-      selected,
-      comparisonValue,
-    };
-  });
-}
-
 /**
  * A `V1MetricsViewComparisonRow` basically represents a row of data
  * in the *dimension detail table*, NOT in the leaderboard. Therefore,
@@ -73,7 +41,7 @@ export function getLabeledComparisonFromComparisonRow(
   };
 }
 
-export type LeaderboardItemData2 = {
+export type LeaderboardItemData = {
   // The dimension value label to be shown in the leaderboard
   dimensionValue: string | number;
 
@@ -105,7 +73,7 @@ function cleanUpComparisonValue(
   v: ComparisonValueWithLabel,
   total: number | null,
   selected: boolean
-): LeaderboardItemData2 {
+): LeaderboardItemData {
   if (!(Number.isFinite(v.baseValue) || v.baseValue === null)) {
     throw new Error(
       `Leaderboards only implemented for numeric baseValues or missing data (null). Got: ${JSON.stringify(
@@ -145,19 +113,19 @@ type ComparisonValueWithLabel = V1MetricsViewComparisonValue & {
  * or null if the measure is not valid_percent_of_total
  * @returns
  */
-export function prepareLeaderboardItemData2(
+export function prepareLeaderboardItemData(
   values: ComparisonValueWithLabel[],
   numberAboveTheFold: number,
   selectedValues: (string | number)[],
   total: number | null
 ): {
-  aboveTheFold: LeaderboardItemData2[];
-  selectedBelowTheFold: LeaderboardItemData2[];
+  aboveTheFold: LeaderboardItemData[];
+  selectedBelowTheFold: LeaderboardItemData[];
   noAvailableValues: boolean;
   showExpandTable: boolean;
 } {
-  const aboveTheFold: LeaderboardItemData2[] = [];
-  const selectedBelowTheFold: LeaderboardItemData2[] = [];
+  const aboveTheFold: LeaderboardItemData[] = [];
+  const selectedBelowTheFold: LeaderboardItemData[] = [];
   let selectedValuesCopy = [...selectedValues];
   // console.log({ values, len: values.length, selectedValues });
   values.forEach((v, i) => {
@@ -213,7 +181,7 @@ export function prepareLeaderboardItemData2(
  * accounting for the context column type.
  */
 export function formatContextColumnValue(
-  itemData: LeaderboardItemData2,
+  itemData: LeaderboardItemData,
   contextType: LeaderboardContextColumn,
   formatPreset: FormatPreset
 ): string {

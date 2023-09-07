@@ -21,12 +21,12 @@
   import { humanizeDataType } from "../humanize-numbers";
   import LongBarZigZag from "./LongBarZigZag.svelte";
   import {
-    LeaderboardItemData2,
+    LeaderboardItemData,
     formatContextColumnValue,
   } from "./leaderboard-utils";
   import ContextColumnValue from "./ContextColumnValue.svelte";
 
-  export let itemData: LeaderboardItemData2;
+  export let itemData: LeaderboardItemData;
   $: label = itemData.dimensionValue;
   $: measureValue = itemData.value;
   $: selected = itemData.selected;

@@ -18,7 +18,6 @@
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     createQueryServiceMetricsViewComparisonToplist,
-    // createQueryServiceMetricsViewToplist,
     MetricsViewDimension,
     MetricsViewMeasure,
   } from "@rilldata/web-common/runtime-client";
@@ -26,15 +25,13 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { SortDirection } from "../proto-state/derived-types";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
-  // import { getFilterForComparsion } from "../dimension-table/dimension-table-utils";
   import type { FormatPreset } from "../humanize-numbers";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import {
-    LeaderboardItemData2,
+    LeaderboardItemData,
     getLabeledComparisonFromComparisonRow,
     getQuerySortType,
-    // prepareLeaderboardItemData,
-    prepareLeaderboardItemData2,
+    prepareLeaderboardItemData,
   } from "./leaderboard-utils";
   import LeaderboardListItem from "./LeaderboardListItem.svelte";
 
@@ -110,64 +107,6 @@
   $: sortAscending = $dashboardStore.sortDirection === SortDirection.ASCENDING;
   $: sortType = $dashboardStore.dashboardSortType;
 
-  // $: topListQuery = createQueryServiceMetricsViewToplist(
-  //   $runtime.instanceId,
-  //   metricViewName,
-  //   {
-  //     dimensionName: dimensionName,
-  //     measureNames: [measure?.name],
-  //     timeStart: $timeControlsStore.timeStart,
-  //     timeEnd: $timeControlsStore.timeEnd,
-  //     filter: filterForDimension,
-  //     limit: "250",
-  //     offset: "0",
-  //     sort: [
-  //       {
-  //         name: measure?.name,
-  //         ascending: sortAscending,
-  //       },
-  //     ],
-  //   },
-  //   {
-  //     query: {
-  //       enabled: $timeControlsStore.ready && !!filterForDimension,
-  //     },
-  //   }
-  // );
-
-  // let values: { value: number; label: string | number }[] = [];
-  // // let comparisonValues = [];
-
-  // /** replace data after fetched. */
-  // $: if (!$topListQuery?.isFetching) {
-  //   values =
-  //     $topListQuery?.data?.data.map((val) => ({
-  //       value: val[measure?.name],
-  //       label: val[dimensionColumn],
-  //     })) ?? [];
-  // }
-
-  // // get all values that are selected but not visible.
-  // // we'll put these at the bottom w/ a divider.
-  // $: selectedValuesThatAreBelowTheFold = activeValues
-  //   ?.filter((label) => {
-  //     return (
-  //       // the value is visible within the fold.
-  //       !values.slice(0, slice).some((value) => {
-  //         return value.label === label;
-  //       })
-  //     );
-  //   })
-  //   .map((label) => {
-  //     const existingValue = values.find((value) => value.label === label);
-  //     // return the existing value, or if it does not exist, just return the label.
-  //     // FIX ME return values for label which are not in the query
-  //     return existingValue ? { ...existingValue } : { label };
-  //   })
-  //   .sort((a, b) => {
-  //     return b.value - a.value;
-  //   });
-
   $: contextColumn = $dashboardStore?.leaderboardContextColumn;
   // Compose the comparison /toplist query
   $: showTimeComparison =
@@ -180,42 +119,6 @@
     LeaderboardContextColumn.PERCENT;
 
   $: showContext = $dashboardStore?.leaderboardContextColumn;
-
-  // add all sliced and active values to the include filter.
-  // $: currentVisibleValues =
-  //   $topListQuery?.data?.data
-  //     ?.slice(0, slice)
-  //     ?.concat(selectedValuesThatAreBelowTheFold)
-  //     ?.map((v) => v[dimensionColumn]) ?? [];
-  // $: updatedFilters = getFilterForComparsion(
-  //   filterForDimension,
-  //   dimensionName,
-  //   currentVisibleValues
-  // );
-  // $: comparisonTopListQuery = createQueryServiceMetricsViewToplist(
-  //   $runtime.instanceId,
-  //   metricViewName,
-  //   {
-  //     dimensionName: dimensionName,
-  //     measureNames: [measure?.name],
-  //     timeStart: $timeControlsStore.comparisonTimeStart,
-  //     timeEnd: $timeControlsStore.comparisonTimeEnd,
-  //     filter: updatedFilters,
-  //     limit: currentVisibleValues.length.toString(),
-  //     offset: "0",
-  //     sort: [
-  //       {
-  //         name: measure?.name,
-  //         ascending: sortAscending,
-  //       },
-  //     ],
-  //   },
-  //   {
-  //     query: {
-  //       enabled: Boolean(showTimeComparison && !!updatedFilters),
-  //     },
-  //   }
-  // );
 
   $: querySortType = getQuerySortType(sortType);
 
@@ -268,12 +171,12 @@
   }
 
   /** replace data after fetched. */
-  let aboveTheFold: LeaderboardItemData2[] = [];
-  let selectedBelowTheFold: LeaderboardItemData2[] = [];
+  let aboveTheFold: LeaderboardItemData[] = [];
+  let selectedBelowTheFold: LeaderboardItemData[] = [];
   let noAvailableValues = true;
   let showExpandTable = false;
   $: if (!$sortedQuery?.isFetching) {
-    const leaderboardData = prepareLeaderboardItemData2(
+    const leaderboardData = prepareLeaderboardItemData(
       $sortedQuery?.data?.rows?.map((r) =>
         getLabeledComparisonFromComparisonRow(r, measure.name)
       ) ?? [],
@@ -286,25 +189,7 @@
     selectedBelowTheFold = leaderboardData.selectedBelowTheFold;
     noAvailableValues = leaderboardData.noAvailableValues;
     showExpandTable = leaderboardData.showExpandTable;
-    // console.log("sortedQuery data", dimensionName, leaderboardData);
   }
-
-  // $: if (!$sortedQuery.isFetching) {
-  //   console.log(
-  //     "sortedQuery",
-  //     dimensionName,
-  //     $sortedQuery?.data?.rows.map((v) => [
-  //       v.dimensionValue,
-  //       {
-  //         name: v.measureValues[0].measureName,
-  //         base: v.measureValues[0].baseValue,
-  //         comparison: v.measureValues[0].comparisonValue,
-  //         deltaRel: v.measureValues[0].deltaRel,
-  //         deltaAbs: v.measureValues[0].deltaAbs,
-  //       },
-  //     ])
-  //   );
-  // }
 
   let hovered: boolean;
 </script>
