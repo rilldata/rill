@@ -44,6 +44,11 @@
       disabled: !$timeControlsStore.showComparison,
     },
     {
+      main: "Absolute change",
+      key: LeaderboardContextColumn.DELTA_ABSOLUTE,
+      disabled: !$timeControlsStore.showComparison,
+    },
+    {
       main: "No context column",
       key: LeaderboardContextColumn.HIDDEN,
     },
