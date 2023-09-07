@@ -21,7 +21,6 @@
     // createQueryServiceMetricsViewToplist,
     MetricsViewDimension,
     MetricsViewMeasure,
-    V1MetricsViewComparisonSortType,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
