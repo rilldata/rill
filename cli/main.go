@@ -2,45 +2,29 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"os"
+	"os/signal"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
-	"gocloud.dev/blob/azureblob"
-	_ "gocloud.dev/blob/azureblob"
+	"github.com/rilldata/rill/cli/cmd"
+	"github.com/rilldata/rill/cli/pkg/config"
 )
 
-const (
-	// The storage container to access.
-	containerName = "rill-test"
+// Version details are set using -ldflags
+var (
+	Version   string
+	Commit    string
+	BuildDate string
 )
 
 func main() {
-	name := os.Getenv("AZURE_STORAGE_ACCOUNT")
-	key := os.Getenv("AZURE_STORAGE_KEY")
-	credential, err := azblob.NewSharedKeyCredential(name, key)
-	if err != nil {
-		log.Fatal(err)
+	ver := config.Version{
+		Number:    Version,
+		Commit:    Commit,
+		Timestamp: BuildDate,
 	}
 
-	containerURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s", name, containerName)
-	client, err := container.NewClientWithSharedKeyCredential(containerURL, credential, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	bkt, err := azureblob.OpenBucket(context.Background(), client, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer bkt.Close()
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
 
-	// Now we can use b to read or write files to the container.
-	data, err := bkt.ReadAll(context.Background(), "AdBids.parquet")
-	if err != nil {
-		panic(err)
-	}
-	_ = data
-
+	cmd.Execute(ctx, ver)
 }

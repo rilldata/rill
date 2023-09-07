@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -187,24 +189,34 @@ func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSo
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	opts := azureblob.NewDefaultServiceURLOptions()
-	serviceURL, err := azureblob.NewServiceURL(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	c.logger.Named("console").Info("Connecting to Azure Blob Storage", zap.String("account", conf.url.Host))
-
-	client, err := azureblob.NewDefaultClient(serviceURL, azureblob.ContainerName(conf.url.Host))
-	if err != nil {
-		return nil, err
-	}
-
-	// bucketObj, err := blob.OpenBucket(ctx, "azblob://temp")
+	// opts := azureblob.NewDefaultServiceURLOptions()
+	// serviceURL, err := azureblob.NewServiceURL(opts)
 	// if err != nil {
 	// 	return nil, err
 	// }
-	// defer bucketObj.Close()
+
+	// c.logger.Named("console").Info("Connecting to Azure Blob Storage", zap.String("account", conf.url.Host))
+
+	// client, err := azureblob.NewDefaultClient(serviceURL, azureblob.ContainerName(conf.url.Host))
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	name := os.Getenv("AZURE_STORAGE_ACCOUNT")
+	key := os.Getenv("AZURE_STORAGE_KEY")
+	credential, err := azblob.NewSharedKeyCredential(name, key)
+	if err != nil {
+		return nil, err
+	}
+
+	containerURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s", name, conf.url.Host)
+	// log on console
+	c.logger.Named("console").Info("Connecting to Azure Blob Storage", zap.String("account", conf.url.Host))
+
+	client, err := container.NewClientWithSharedKeyCredential(containerURL, credential, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	// Create a *blob.Bucket.
 	bucketObj, err := azureblob.OpenBucket(ctx, client, nil)
@@ -213,16 +225,8 @@ func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSo
 	}
 	defer bucketObj.Close()
 
-	// // Now we can use b to read or write files to the container.
-	// data, err := bucketObj.ReadAll(ctx, "my-key")
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// fmt.Println("Datat is ", data)
-
 	// prepare fetch configs
-	opts1 := rillblob.Options{
+	opts := rillblob.Options{
 		GlobMaxTotalSize:      conf.GlobMaxTotalSize,
 		GlobMaxObjectsMatched: conf.GlobMaxObjectsMatched,
 		GlobMaxObjectsListed:  conf.GlobMaxObjectsListed,
@@ -231,7 +235,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSo
 		ExtractPolicy:         source.ExtractPolicy,
 	}
 
-	iter, err := rillblob.NewIterator(ctx, bucketObj, opts1, c.logger)
+	iter, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
 	if err != nil {
 		return nil, err
 	}
