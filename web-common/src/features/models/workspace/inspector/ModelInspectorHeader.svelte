@@ -1,26 +1,18 @@
 <script lang="ts">
+  import { getColumnsProfileStore } from "@rilldata/web-common/components/column-profile/columns-profile-data";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { useEmbeddedSources } from "@rilldata/web-common/features/sources/selectors";
   import {
     formatBigNumberPercentage,
     formatInteger,
   } from "@rilldata/web-common/lib/formatters";
   import {
-    createQueryServiceTableCardinality,
-    createQueryServiceTableColumns,
     createRuntimeServiceGetCatalogEntry,
-    createRuntimeServiceListCatalogEntries,
     V1Model,
-    V1TableCardinalityResponse,
   } from "@rilldata/web-common/runtime-client";
-  import type { CreateQueryResult } from "@tanstack/svelte-query";
-  import { derived } from "svelte/store";
   import { COLUMN_PROFILE_CONFIG } from "../../../../layout/config";
   import { runtime } from "../../../../runtime-client/runtime-store";
-  import { getTableReferences } from "../../utils/get-table-references";
-  import { getMatchingReferencesAndEntries } from "./utils";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
 
   export let modelName: string;
@@ -37,102 +29,30 @@
   $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
 
   let rollup: number;
-  let sourceTableReferences;
 
-  // get source table references.
-  $: if (model?.sql) {
-    sourceTableReferences = getTableReferences(model.sql);
-  }
-
-  $: embeddedSources = useEmbeddedSources($runtime.instanceId);
-
-  // get the cardinalitie & table information.
-  let cardinalityQueries: Array<CreateQueryResult<number>> = [];
-  let sourceProfileColumns: Array<CreateQueryResult<number>> = [];
-
-  $: getAllSources = createRuntimeServiceListCatalogEntries(
-    $runtime?.instanceId,
-    {
-      type: "OBJECT_TYPE_SOURCE",
-    }
-  );
-
-  $: getAllModels = createRuntimeServiceListCatalogEntries(
-    $runtime?.instanceId,
-    {
-      type: "OBJECT_TYPE_MODEL",
-    }
-  );
-
-  // for each reference, match to an existing model or source,
-  $: referencedThings = getMatchingReferencesAndEntries(
-    modelName,
-    sourceTableReferences,
-    [
-      ...($getAllSources?.data?.entries || []),
-      ...($getAllModels?.data?.entries || []),
-    ]
-  );
-  $: if (sourceTableReferences?.length) {
-    // first, pull out all references that are in the catalog.
-
-    // then get the cardinalities.
-    cardinalityQueries = referencedThings?.map(([entity, _reference]) => {
-      return createQueryServiceTableCardinality(
-        $runtime?.instanceId,
-        entity.name,
-        {},
-        { query: { select: (data) => +data?.cardinality || 0 } }
-      );
-    });
-
-    // then we'll get the total number of columns for comparison.
-    sourceProfileColumns = referencedThings?.map(([entity]) => {
-      return createQueryServiceTableColumns(
-        $runtime?.instanceId,
-        entity.name,
-        {},
-        { query: { select: (data) => data?.profileColumns?.length || 0 } }
-      );
-    });
-  }
+  const columnsProfile = getColumnsProfileStore();
 
   // get input table cardinalities. We use this to determine the rollup factor.
-
-  $: inputCardinalities = derived(cardinalityQueries, ($cardinalities) => {
-    return $cardinalities
-      .map((c: { data: number }) => c?.data)
-      .reduce((total: number, cardinality: number) => total + cardinality, 0);
-  });
-
-  // get all source column amounts. We will use this determine the number of dropped columns.
-  $: sourceColumns = derived(
-    sourceProfileColumns,
-    (columns) => {
-      return columns
-        .map((col) => col.data)
-        .reduce((total: number, columns: number) => columns + total, 0);
-    },
+  $: inputCardinalities = $columnsProfile.references.reduce(
+    (total, ref) => (ref?.cardinality ?? 0) + total,
     0
   );
 
-  let modelCardinalityQuery: CreateQueryResult<V1TableCardinalityResponse>;
-  $: if (model?.name)
-    modelCardinalityQuery = createQueryServiceTableCardinality(
-      $runtime.instanceId,
-      model?.name
-    );
-  let outputRowCardinalityValue: number;
-  $: outputRowCardinalityValue = Number(
-    $modelCardinalityQuery?.data?.cardinality ?? 0
+  // get all source column amounts. We will use this determine the number of dropped columns.
+  $: sourceColumns = $columnsProfile.references.reduce(
+    (total, ref) => (ref?.columns?.length ?? 0) + total,
+    0
   );
 
+  let outputRowCardinalityValue: number;
+  $: outputRowCardinalityValue = Number($columnsProfile.tableRows ?? 0);
+
   $: if (
-    ($inputCardinalities !== undefined &&
+    (inputCardinalities !== undefined &&
       outputRowCardinalityValue !== undefined) ||
-    $inputCardinalities
+    inputCardinalities
   ) {
-    rollup = outputRowCardinalityValue / $inputCardinalities;
+    rollup = outputRowCardinalityValue / inputCardinalities;
   }
 
   function validRollup(number) {
@@ -140,7 +60,7 @@
   }
 
   $: outputColumnNum = model?.schema?.fields?.length ?? 0;
-  $: columnDelta = outputColumnNum - $sourceColumns;
+  $: columnDelta = outputColumnNum - sourceColumns;
 
   $: modelHasError = !!modelError;
 </script>

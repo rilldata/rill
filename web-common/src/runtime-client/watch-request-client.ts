@@ -3,9 +3,9 @@ import type {
   V1WatchLogsResponse,
   V1WatchResourcesResponse,
 } from "@rilldata/web-common/runtime-client/index";
-import { streamingFetchWrapper } from "@rilldata/web-common/runtime-client/fetch-streaming-wrapper";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { streamingFetchWrapper } from "@rilldata/web-common/runtime-client/streaming-fetch-wrapper";
 import { asyncWait } from "@rilldata/web-local/lib/util/waitUtils";
 import { get, Unsubscriber } from "svelte/store";
 
@@ -61,7 +61,13 @@ export class WatchRequestClient<Res extends WatchResponse> {
 
       this.controller = controller;
       try {
-        const stream = this.getFetchStream(url, controller);
+        const stream = streamingFetchWrapper<StreamingFetchResponse<Res>>(
+          url,
+          "GET",
+          undefined,
+          undefined,
+          controller.signal
+        );
 
         for await (const res of stream) {
           if (res.error) throw new Error(res.error.message);
@@ -73,21 +79,5 @@ export class WatchRequestClient<Res extends WatchResponse> {
         await asyncWait(2000);
       }
     }
-  }
-
-  private getFetchStream(url: string, controller: AbortController) {
-    const headers = { "Content-Type": "application/json" };
-    const jwt = get(runtime).jwt;
-    if (jwt) {
-      headers["Authorization"] = `Bearer ${jwt}`;
-    }
-
-    return streamingFetchWrapper<StreamingFetchResponse<Res>>(
-      url,
-      "GET",
-      undefined,
-      headers,
-      controller.signal
-    );
   }
 }

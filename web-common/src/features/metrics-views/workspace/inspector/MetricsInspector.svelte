@@ -1,5 +1,6 @@
 <script lang="ts">
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
+  import ColumnProfileProvider from "@rilldata/web-common/components/column-profile/ColumnProfileProvider.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import ModelInspectorHeader from "@rilldata/web-common/features/models/workspace/inspector/ModelInspectorHeader.svelte";
@@ -57,45 +58,50 @@
 
 <div>
   {#if modelName && !$modelQuery?.isError && isValidModel}
-    {#key modelName}
-      <div class="pt-1 pb-2" use:listenToNodeResize>
-        <div class="pl-4 pr-4">
-          <CollapsibleSectionTitle
-            tooltipText="model summary"
-            bind:active={showModelInformation}
-          >
-            Model summary
-          </CollapsibleSectionTitle>
-        </div>
-        {#if showModelInformation}
-          <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-            <ModelInspectorHeader
-              {modelName}
-              containerWidth={$observedNode?.clientWidth}
-            />
-            <hr class:opacity-0={!showColumns} class="transition-opacity" />
+    <ColumnProfileProvider
+      objectName={modelName}
+      sql={$modelQuery.data?.entry?.model?.sql}
+    >
+      {#key modelName}
+        <div class="pt-1 pb-2" use:listenToNodeResize>
+          <div class="pl-4 pr-4">
+            <CollapsibleSectionTitle
+              tooltipText="model summary"
+              bind:active={showModelInformation}
+            >
+              Model summary
+            </CollapsibleSectionTitle>
           </div>
+          {#if showModelInformation}
+            <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+              <ModelInspectorHeader
+                {modelName}
+                containerWidth={$observedNode?.clientWidth}
+              />
+              <hr class:opacity-0={!showColumns} class="transition-opacity" />
+            </div>
+          {/if}
+        </div>
+      {/key}
+      <div class="model-profile pb-4 pt-2">
+        {#if entry && entry?.model?.sql?.trim()?.length}
+          <div class="pl-4 pr-4">
+            <CollapsibleSectionTitle
+              tooltipText="selected columns"
+              bind:active={showColumns}
+            >
+              Model columns
+            </CollapsibleSectionTitle>
+          </div>
+
+          {#if showColumns}
+            <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+              <ColumnProfile objectName={entry?.model?.name} indentLevel={0} />
+            </div>
+          {/if}
         {/if}
       </div>
-    {/key}
-    <div class="model-profile pb-4 pt-2">
-      {#if entry && entry?.model?.sql?.trim()?.length}
-        <div class="pl-4 pr-4">
-          <CollapsibleSectionTitle
-            tooltipText="selected columns"
-            bind:active={showColumns}
-          >
-            Model columns
-          </CollapsibleSectionTitle>
-        </div>
-
-        {#if showColumns}
-          <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-            <ColumnProfile objectName={entry?.model?.name} indentLevel={0} />
-          </div>
-        {/if}
-      {/if}
-    </div>
+    </ColumnProfileProvider>
   {:else}
     <div
       class="px-4 py-24 italic ui-copy-disabled text-center"

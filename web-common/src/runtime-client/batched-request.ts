@@ -56,6 +56,7 @@ export class BatchedRequest {
       `http://localhost:9009/v1/instances/${instanceId}/query/batch`,
       "post",
       request,
+      undefined,
       this.controller.signal
     );
 

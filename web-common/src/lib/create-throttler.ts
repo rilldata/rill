@@ -6,7 +6,6 @@ export function createThrottler(time: number) {
   return (callback: () => void) => {
     if (timeout) return;
     timeout = setTimeout(() => {
-      console.log(new Date().toISOString(), "sort");
       timeout = undefined;
       callback();
     }, time);

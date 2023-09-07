@@ -1,6 +1,10 @@
+import type { Reference } from "@rilldata/web-common/features/models/utils/get-table-references";
 import type { V1CatalogEntry } from "@rilldata/web-common/runtime-client";
 
-export function filterEntriesOnReference(modelName, references) {
+export function filterEntriesOnReference(
+  modelName: string,
+  references: Reference[]
+) {
   return function (entry: V1CatalogEntry) {
     return references?.some((ref) => {
       return (
@@ -11,7 +15,10 @@ export function filterEntriesOnReference(modelName, references) {
   };
 }
 
-export function combineEntryWithReference(modelName, references) {
+export function combineEntryWithReference(
+  modelName: string,
+  references: Reference[]
+) {
   return function (entry: V1CatalogEntry) {
     // get the reference that matches this entry
     return [
@@ -27,8 +34,8 @@ export function combineEntryWithReference(modelName, references) {
 }
 
 export function getMatchingReferencesAndEntries(
-  modelName,
-  references,
+  modelName: string,
+  references: Reference[],
   entries: V1CatalogEntry[]
 ) {
   return entries

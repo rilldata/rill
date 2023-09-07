@@ -9,6 +9,7 @@ import {
   loadDescriptiveStatistics,
 } from "@rilldata/web-common/components/column-profile/column-types/numeric-profile-data";
 import { loadTimeSeries } from "@rilldata/web-common/components/column-profile/column-types/timestamp-profile-data";
+import { loadReferencesProfile } from "@rilldata/web-common/components/column-profile/references-profile-data";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import { createThrottler } from "@rilldata/web-common/lib/create-throttler";
 import {
@@ -24,9 +25,11 @@ import type {
   NumericOutliersOutlier,
   TopKEntry,
   V1NumericStatistics,
+  V1ProfileColumn,
   V1TableColumnsResponse,
   V1TimeGrain,
   V1TimeSeriesValue,
+  V1CatalogEntry,
 } from "@rilldata/web-common/runtime-client";
 import { BatchedRequest } from "@rilldata/web-common/runtime-client/batched-request";
 import { waitUntil } from "@rilldata/web-local/lib/util/waitUtils";
@@ -56,17 +59,23 @@ export type ColumnProfileData = {
   timeSeriesData?: Array<V1TimeSeriesValue>;
   timeSeriesSpark?: Array<V1TimeSeriesValue>;
 };
+export type ReferenceProfileData = {
+  cardinality: number;
+  columns: Array<V1ProfileColumn>;
+};
 export type ColumnsProfileData = {
   isFetching: boolean;
   tableRows: number;
   columnNames: Array<string>;
   profiles: Record<string, ColumnProfileData>;
+  references: Array<ReferenceProfileData>;
 };
 export type ColumnsProfileDataMethods = {
   load: (
     instanceId: string,
     tableName: string,
-    profileColumnResponse: QueryObserverResult<V1TableColumnsResponse>
+    profileColumnResponse: QueryObserverResult<V1TableColumnsResponse>,
+    references: Array<V1CatalogEntry>
   ) => Promise<void>;
 };
 export type ColumnsProfileDataStore = Readable<ColumnsProfileData> &
@@ -87,6 +96,7 @@ export function createColumnsProfileData(): ColumnsProfileDataStore {
     tableRows: 0,
     columnNames: [],
     profiles: {},
+    references: [],
   });
 
   let batchedRequest: BatchedRequest;
@@ -111,11 +121,12 @@ export function createColumnsProfileData(): ColumnsProfileDataStore {
     load: async (
       instanceId: string,
       tableName: string,
-      profileColumnResponse: QueryObserverResult<V1TableColumnsResponse>
+      profileColumnResponse: QueryObserverResult<V1TableColumnsResponse>,
+      references: Array<V1CatalogEntry>
     ) => {
       batchedRequest?.cancel();
 
-      resetState(profileColumnResponse, update);
+      resetState(profileColumnResponse, references?.length ?? 0, update);
 
       batchedRequest = new BatchedRequest();
       loadTableCardinality(
@@ -125,9 +136,16 @@ export function createColumnsProfileData(): ColumnsProfileDataStore {
         throttledUpdate
       );
 
+      loadReferencesProfile(
+        instanceId,
+        references ?? [],
+        batchedRequest,
+        throttledUpdate
+      );
+
       for (const column of profileColumnResponse.data.profileColumns) {
-        const columnName = column.name;
         const columnPromises = new Array<Promise<any>>();
+        const columnName = column.name;
         columnPromises.push(
           loadColumnsNullCount(
             instanceId,
@@ -200,8 +218,7 @@ export function createColumnsProfileData(): ColumnsProfileDataStore {
         }
 
         Promise.all(columnPromises).then(async () => {
-          await waitUntil(() => updaters.length === 0);
-          update((state) => {
+          throttledUpdate((state) => {
             if (!state.profiles[columnName]) return;
             state.profiles[columnName].isFetching = false;
             return state;
@@ -221,6 +238,7 @@ export type ColumnsProfileDataUpdate = (
 
 export function resetState(
   profileColumnResponse: QueryObserverResult<V1TableColumnsResponse>,
+  referencesCount: number,
   update: ColumnsProfileDataUpdate
 ) {
   const columnsMap = getMapFromArray(
@@ -255,6 +273,7 @@ export function resetState(
     }
 
     state.columnNames = columnNames;
+    state.references = new Array(referencesCount).fill(undefined);
 
     return state;
   });

@@ -1,15 +1,28 @@
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { get } from "svelte/store";
+
+/**
+ * Wrapper around native fetch method for streaming requests.
+ * Pass in {@link AbortSignal} to control cancellation.
+ */
 export async function* streamingFetchWrapper<T>(
   url: string,
   method: string,
   body?: Record<string, unknown>,
+  headers: HeadersInit = { "Content-Type": "application/json" },
   signal?: AbortSignal
 ): AsyncGenerator<T> {
+  const jwt = get(runtime).jwt;
+  if (jwt) {
+    headers["Authorization"] = `Bearer ${jwt}`;
+  }
+
   let response: Response;
   try {
     response = await fetch(url, {
       method,
       ...(body ? { body: JSON.stringify(body) } : {}),
-      headers: { "Content-Type": "application/json" },
+      headers,
       signal,
     });
   } catch (err) {
