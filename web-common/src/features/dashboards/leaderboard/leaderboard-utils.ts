@@ -70,10 +70,11 @@ export function formatContextColumnValue(
   } else if (contextType === LeaderboardContextColumn.PERCENT) {
     formattedValue = getFormatterValueForPercDiff(value, unfilteredTotal);
   } else if (contextType === LeaderboardContextColumn.DELTA_ABSOLUTE) {
-    formattedValue = humanizeDataType(
-      value && comparisonValue ? value - comparisonValue : null,
-      formatPreset
-    );
+    const delta = value && comparisonValue ? value - comparisonValue : null;
+    formattedValue = humanizeDataType(delta, formatPreset);
+    if (delta && delta > 0) {
+      formattedValue = "+" + formattedValue;
+    }
   } else {
     formattedValue = "";
   }
