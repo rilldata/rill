@@ -151,11 +151,13 @@ export function prepareLeaderboardItemData2(
 ): {
   aboveTheFold: LeaderboardItemData2[];
   selectedBelowTheFold: LeaderboardItemData2[];
+  noAvailableValues: boolean;
+  showExpandTable: boolean;
 } {
   const aboveTheFold: LeaderboardItemData2[] = [];
   const selectedBelowTheFold: LeaderboardItemData2[] = [];
   let selectedValuesCopy = [...selectedValues];
-  console.log({ values, len: values.length, selectedValues });
+  // console.log({ values, len: values.length, selectedValues });
   values.forEach((v, i) => {
     // console.log({ dimval: v.dimensionValue, selectedValues });
     const selected =
@@ -180,7 +182,7 @@ export function prepareLeaderboardItemData2(
   // that pushes it out of the top N. In that case, we will follow
   // the previous strategy, and just push a dummy value with only
   // the dimension value and nulls for all measure values.
-  selectedValues.forEach((v) => {
+  selectedValuesCopy.forEach((v) => {
     selectedBelowTheFold.push({
       dimensionValue: v,
       selected: true,
@@ -192,7 +194,15 @@ export function prepareLeaderboardItemData2(
     });
   });
 
-  return { aboveTheFold, selectedBelowTheFold };
+  const noAvailableValues = values.length === 0;
+  const showExpandTable = values.length > numberAboveTheFold;
+
+  return {
+    aboveTheFold,
+    selectedBelowTheFold,
+    noAvailableValues,
+    showExpandTable,
+  };
 }
 
 /**
