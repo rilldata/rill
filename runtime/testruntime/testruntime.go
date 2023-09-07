@@ -41,12 +41,12 @@ func New(t TestingT) *runtime.Runtime {
 		},
 	}
 	opts := &runtime.Options{
-		ConnectionCacheSize:   100,
-		MetastoreConnector:    "metastore",
-		QueryCacheSizeBytes:   int64(datasize.MB * 100),
-		AllowHostAccess:       true,
-		SystemConnectors:      systemConnectors,
-		PolicyEngineCacheSize: 100,
+		ConnectionCacheSize:     100,
+		MetastoreConnector:      "metastore",
+		QueryCacheSizeBytes:     int64(datasize.MB * 100),
+		AllowHostAccess:         true,
+		SystemConnectors:        systemConnectors,
+		SecurityEngineCacheSize: 100,
 	}
 	rt, err := runtime.New(opts, zap.NewNop(), nil)
 	require.NoError(t, err)
@@ -62,9 +62,9 @@ func NewInstance(t TestingT) (*runtime.Runtime, string) {
 	rt := New(t)
 
 	inst := &drivers.Instance{
-		OLAPDriver:   "olap",
-		RepoDriver:   "repo",
-		EmbedCatalog: true,
+		OLAPConnector: "olap",
+		RepoConnector: "repo",
+		EmbedCatalog:  true,
 		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",
@@ -114,9 +114,9 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 	_, currentFile, _, _ := goruntime.Caller(0)
 
 	inst := &drivers.Instance{
-		OLAPDriver:   "olap",
-		RepoDriver:   "repo",
-		EmbedCatalog: true,
+		OLAPConnector: "olap",
+		RepoConnector: "repo",
+		EmbedCatalog:  true,
 		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",

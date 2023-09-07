@@ -25,7 +25,7 @@ type MetricsViewComparisonToplist struct {
 	Sort                []*runtimev1.MetricsViewComparisonSort `json:"sort,omitempty"`
 	Filter              *runtimev1.MetricsViewFilter           `json:"filter,omitempty"`
 	MetricsView         *runtimev1.MetricsView                 `json:"-"`
-	ResolvedMVPolicy    *runtime.ResolvedMetricsViewPolicy     `json:"policy"`
+	ResolvedMVSecurity  *runtime.ResolvedMetricsViewSecurity   `json:"security"`
 
 	Result *runtimev1.MetricsViewComparisonToplistResponse `json:"-"`
 }
@@ -76,13 +76,13 @@ func (q *MetricsViewComparisonToplist) Resolve(ctx context.Context, rt *runtime.
 	}
 
 	if q.ComparisonTimeRange != nil {
-		return q.executeComparisonToplist(ctx, olap, q.MetricsView, priority, q.ResolvedMVPolicy)
+		return q.executeComparisonToplist(ctx, olap, q.MetricsView, priority, q.ResolvedMVSecurity)
 	}
 
-	return q.executeToplist(ctx, olap, q.MetricsView, priority, q.ResolvedMVPolicy)
+	return q.executeToplist(ctx, olap, q.MetricsView, priority, q.ResolvedMVSecurity)
 }
 
-func (q *MetricsViewComparisonToplist) executeToplist(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsView, priority int, policy *runtime.ResolvedMetricsViewPolicy) error {
+func (q *MetricsViewComparisonToplist) executeToplist(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsView, priority int, policy *runtime.ResolvedMetricsViewSecurity) error {
 	sql, args, err := q.buildMetricsTopListSQL(mv, olap.Dialect(), policy)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
@@ -136,7 +136,7 @@ func (q *MetricsViewComparisonToplist) executeToplist(ctx context.Context, olap 
 	return nil
 }
 
-func (q *MetricsViewComparisonToplist) executeComparisonToplist(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsView, priority int, policy *runtime.ResolvedMetricsViewPolicy) error {
+func (q *MetricsViewComparisonToplist) executeComparisonToplist(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsView, priority int, policy *runtime.ResolvedMetricsViewSecurity) error {
 	sql, args, err := q.buildMetricsComparisonTopListSQL(mv, olap.Dialect(), policy)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
@@ -227,7 +227,7 @@ func timeRangeClause(timeRange *runtimev1.TimeRange, td string, args *[]any) str
 	return clause
 }
 
-func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewPolicy) (string, []any, error) {
+func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
 	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
 	if err != nil {
 		return "", nil, err
@@ -291,7 +291,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 	return sql, args, nil
 }
 
-func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewPolicy) (string, []any, error) {
+func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
 	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
 	if err != nil {
 		return "", nil, err
@@ -313,12 +313,12 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 		var columnsTuple string
 		if dialect != drivers.DialectDruid {
 			columnsTuple = fmt.Sprintf(
-				"base.%[1]s, comparison.%[1]s, comparison.%[1]s - base.%[1]s, (comparison.%[1]s - base.%[1]s)/base.%[1]s::DOUBLE",
+				"base.%[1]s, comparison.%[1]s, base.%[1]s - comparison.%[1]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE",
 				safeName(m.Name),
 			)
 		} else {
 			columnsTuple = fmt.Sprintf(
-				"ANY_VALUE(base.%[1]s), ANY_VALUE(comparison.%[1]s), ANY_VALUE(comparison.%[1]s - base.%[1]s), ANY_VALUE(SAFE_DIVIDE(comparison.%[1]s - base.%[1]s, CAST(base.%[1]s AS FLOAT))",
+				"ANY_VALUE(base.%[1]s), ANY_VALUE(comparison.%[1]s), ANY_VALUE(base.%[1]s - comparison.%[1]s), ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS FLOAT))",
 				safeName(m.Name),
 			)
 		}
@@ -416,7 +416,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 				SELECT %[1]s FROM %[3]q WHERE %[5]s GROUP BY %[2]s
 			) comparison
 		ON
-				base.%[2]s = comparison.%[2]s
+				base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
 		ORDER BY
 			%[6]s
 		LIMIT
@@ -487,7 +487,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 						SELECT %[1]s FROM %[3]q WHERE %[5]s GROUP BY %[2]s
 					) %[12]s
 				ON
-						base.%[2]s = comparison.%[2]s
+						base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
 				ORDER BY
 					%[6]s
 				LIMIT
@@ -520,7 +520,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 						SELECT %[1]s FROM %[3]q WHERE %[5]s GROUP BY %[2]s
 					) comparison
 				ON
-						base.%[2]s = comparison.%[2]s
+						base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
 				ORDER BY
 					%[6]s
 				LIMIT

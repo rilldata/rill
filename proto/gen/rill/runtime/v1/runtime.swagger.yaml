@@ -427,9 +427,9 @@ paths:
           schema:
             type: object
             properties:
-              olapDriver:
+              olapConnector:
                 type: string
-              repoDriver:
+              repoConnector:
                 type: string
               embedCatalog:
                 type: boolean
@@ -980,6 +980,8 @@ paths:
                 format: int64
               format:
                 $ref: '#/definitions/v1ExportFormat'
+              metricsViewAggregationRequest:
+                $ref: '#/definitions/v1MetricsViewAggregationRequest'
               metricsViewToplistRequest:
                 $ref: '#/definitions/v1MetricsViewToplistRequest'
               metricsViewRowsRequest:
@@ -987,6 +989,68 @@ paths:
               metricsViewTimeSeriesRequest:
                 $ref: '#/definitions/v1MetricsViewTimeSeriesRequest'
             title: Request message for QueryService.Export
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsView}/aggregation:
+    post:
+      summary: MetricsViewAggregation is a generic API for running group-by queries against a metrics view.
+      operationId: QueryService_MetricsViewAggregation
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewAggregationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsView
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              dimensions:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewAggregationDimension'
+              measures:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewAggregationMeasure'
+              sort:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewAggregationSort'
+              timeStart:
+                type: string
+                format: date-time
+              timeEnd:
+                type: string
+                format: date-time
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
+              limit:
+                type: string
+                format: int64
+              offset:
+                type: string
+                format: int64
+              priority:
+                type: integer
+                format: int32
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
@@ -1866,24 +1930,7 @@ paths:
           in: path
           required: true
           type: string
-        - name: refFilter.kind
-          in: query
-          required: false
-          type: string
-        - name: refFilter.name
-          in: query
-          required: false
-          type: string
-        - name: prefixFilter.kind
-          in: query
-          required: false
-          type: string
-        - name: prefixFilter.name
-          in: query
-          required: false
-          type: string
-        - name: annotationsFilter
-          description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
+        - name: kind
           in: query
           required: false
           type: string
@@ -1913,27 +1960,14 @@ paths:
           in: path
           required: true
           type: string
-        - name: refFilter.kind
+        - name: kind
           in: query
           required: false
           type: string
-        - name: refFilter.name
+        - name: replay
           in: query
           required: false
-          type: string
-        - name: prefixFilter.kind
-          in: query
-          required: false
-          type: string
-        - name: prefixFilter.name
-          in: query
-          required: false
-          type: string
-        - name: annotationsFilter
-          description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
-          in: query
-          required: false
-          type: string
+          type: boolean
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/sync:
@@ -2321,27 +2355,27 @@ definitions:
       validPercentOfTotal:
         type: boolean
     title: Measures are aggregated computed values
-  MetricsViewPolicy:
+  MetricsViewSecurity:
     type: object
     properties:
-      hasAccess:
+      access:
         type: string
         title: Dashboard level access condition
-      filter:
+      rowFilter:
         type: string
         title: row level access condition
       include:
         type: array
         items:
           type: object
-          $ref: '#/definitions/PolicyFieldCondition'
+          $ref: '#/definitions/SecurityFieldCondition'
         title: either one of include or exclude will be specified
       exclude:
         type: array
         items:
           type: object
-          $ref: '#/definitions/PolicyFieldCondition'
-    title: Policy is the access policy for the metrics view
+          $ref: '#/definitions/SecurityFieldCondition'
+    title: Security for the metrics view
   MetricsViewSpecDimensionV2:
     type: object
     properties:
@@ -2370,27 +2404,27 @@ definitions:
       validPercentOfTotal:
         type: boolean
     title: Measures are aggregated computed values
-  MetricsViewSpecPolicyV2:
+  MetricsViewSpecSecurityV2:
     type: object
     properties:
-      hasAccess:
+      access:
         type: string
         title: Dashboard level access condition
-      filter:
+      rowFilter:
         type: string
         title: row level access condition
       include:
         type: array
         items:
           type: object
-          $ref: '#/definitions/PolicyV2FieldConditionV2'
+          $ref: '#/definitions/SecurityV2FieldConditionV2'
         title: either one of include or exclude will be specified
       exclude:
         type: array
         items:
           type: object
-          $ref: '#/definitions/PolicyV2FieldConditionV2'
-    title: Access policy for the dashboard
+          $ref: '#/definitions/SecurityV2FieldConditionV2'
+    title: Security for the dashboard
   ModelDialect:
     type: string
     enum:
@@ -2433,21 +2467,25 @@ definitions:
       count:
         type: integer
         format: int32
-  PolicyFieldCondition:
+  SecurityFieldCondition:
     type: object
     properties:
-      name:
-        type: string
       condition:
         type: string
+      names:
+        type: array
+        items:
+          type: string
     title: Dimension/measure access condition
-  PolicyV2FieldConditionV2:
+  SecurityV2FieldConditionV2:
     type: object
     properties:
-      name:
-        type: string
       condition:
         type: string
+      names:
+        type: array
+        items:
+          type: string
     title: Dimension/measure level access condition
   SourceExtractPolicy:
     type: object
@@ -2613,6 +2651,13 @@ definitions:
     properties:
       region:
         type: string
+  v1BuiltinMeasure:
+    type: string
+    enum:
+      - BUILTIN_MEASURE_UNSPECIFIED
+      - BUILTIN_MEASURE_COUNT
+      - BUILTIN_MEASURE_COUNT_DISTINCT
+    default: BUILTIN_MEASURE_UNSPECIFIED
   v1CatalogEntry:
     type: object
     properties:
@@ -2912,9 +2957,9 @@ definitions:
     properties:
       instanceId:
         type: string
-      olapDriver:
+      olapConnector:
         type: string
-      repoDriver:
+      repoConnector:
         type: string
       embedCatalog:
         type: boolean
@@ -3133,14 +3178,12 @@ definitions:
       instanceId:
         type: string
         title: Identifier (UUID)
-      olapDriver:
+      olapConnector:
         type: string
-        title: 'Driver to connect to for OLAP (options: duckdb, druid)'
-      repoDriver:
+        title: 'OLAP connector name (typically called : olap )'
+      repoConnector:
         type: string
-        description: |-
-          Driver for reading/editing code artifacts (options: file, metastore, github).
-          This enables virtualizing a file system in a cloud setting.
+        description: "Connector name for repo driver(typically called : repo). \nRepo driver is for reading/editing code artifacts. This enables virtualizing a file system in a cloud setting."
       embedCatalog:
         type: boolean
         description: |-
@@ -3303,10 +3346,84 @@ definitions:
         items:
           type: string
         description: Available time zones list preferred time zones using IANA location identifiers.
-      policy:
-        $ref: '#/definitions/MetricsViewPolicy'
-        title: Access policy for the dashboard
+      security:
+        $ref: '#/definitions/MetricsViewSecurity'
+        title: Security for the dashboard
     title: Metrics view is the internal representation of a metrics view definition
+  v1MetricsViewAggregationDimension:
+    type: object
+    properties:
+      name:
+        type: string
+      timeGrain:
+        $ref: '#/definitions/v1TimeGrain'
+      timeZone:
+        type: string
+  v1MetricsViewAggregationMeasure:
+    type: object
+    properties:
+      name:
+        type: string
+      builtinMeasure:
+        $ref: '#/definitions/v1BuiltinMeasure'
+      builtinMeasureArgs:
+        type: array
+        items: {}
+  v1MetricsViewAggregationRequest:
+    type: object
+    properties:
+      instanceId:
+        type: string
+      metricsView:
+        type: string
+      dimensions:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewAggregationDimension'
+      measures:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewAggregationMeasure'
+      sort:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewAggregationSort'
+      timeStart:
+        type: string
+        format: date-time
+      timeEnd:
+        type: string
+        format: date-time
+      filter:
+        $ref: '#/definitions/v1MetricsViewFilter'
+      limit:
+        type: string
+        format: int64
+      offset:
+        type: string
+        format: int64
+      priority:
+        type: integer
+        format: int32
+  v1MetricsViewAggregationResponse:
+    type: object
+    properties:
+      schema:
+        $ref: '#/definitions/v1StructType'
+      data:
+        type: array
+        items:
+          type: object
+  v1MetricsViewAggregationSort:
+    type: object
+    properties:
+      name:
+        type: string
+      desc:
+        type: boolean
   v1MetricsViewColumn:
     type: object
     properties:
@@ -3511,9 +3628,9 @@ definitions:
         items:
           type: string
         title: Available time zones list preferred time zones using IANA location identifiers
-      policy:
-        $ref: '#/definitions/MetricsViewSpecPolicyV2'
-        title: Access policy for the dashboard
+      security:
+        $ref: '#/definitions/MetricsViewSpecSecurityV2'
+        title: Security for the dashboard
   v1MetricsViewState:
     type: object
     properties:
@@ -3977,6 +4094,8 @@ definitions:
         type: integer
         format: int32
         description: Since response could out of order `key` is used to co-relate a specific response to request.
+      metricsViewAggregationRequest:
+        $ref: '#/definitions/v1MetricsViewAggregationRequest'
       metricsViewToplistRequest:
         $ref: '#/definitions/v1MetricsViewToplistRequest'
       metricsViewComparisonToplistRequest:
@@ -4021,6 +4140,8 @@ definitions:
         format: int32
       error:
         type: string
+      metricsViewAggregationResponse:
+        $ref: '#/definitions/v1MetricsViewAggregationResponse'
       metricsViewToplistResponse:
         $ref: '#/definitions/v1MetricsViewToplistResponse'
       metricsViewComparisonToplistResponse:
@@ -4151,6 +4272,14 @@ definitions:
           executing the reconciliation. If changed_paths was empty, this will include all
           code artifacts in the repo.
     title: Response message for RuntimeService.Reconcile
+  v1ReconcileStatus:
+    type: string
+    enum:
+      - RECONCILE_STATUS_UNSPECIFIED
+      - RECONCILE_STATUS_IDLE
+      - RECONCILE_STATUS_PENDING
+      - RECONCILE_STATUS_RUNNING
+    default: RECONCILE_STATUS_UNSPECIFIED
   v1RefreshAndReconcileRequest:
     type: object
     properties:
@@ -4274,10 +4403,8 @@ definitions:
     type: string
     enum:
       - RESOURCE_EVENT_UNSPECIFIED
-      - RESOURCE_EVENT_ADDED
-      - RESOURCE_EVENT_UPDATED_SPEC
-      - RESOURCE_EVENT_UPDATED_STATE
-      - RESOURCE_EVENT_DELETED
+      - RESOURCE_EVENT_WRITE
+      - RESOURCE_EVENT_DELETE
     default: RESOURCE_EVENT_UNSPECIFIED
   v1ResourceMeta:
     type: object
@@ -4295,16 +4422,7 @@ definitions:
         type: array
         items:
           type: string
-      deleted:
-        type: boolean
-      renamedFrom:
-        $ref: '#/definitions/v1ResourceName'
-      reconcileError:
-        type: string
       version:
-        type: string
-        format: int64
-      metaVersion:
         type: string
         format: int64
       specVersion:
@@ -4325,6 +4443,15 @@ definitions:
       deletedOn:
         type: string
         format: date-time
+      reconcileStatus:
+        $ref: '#/definitions/v1ReconcileStatus'
+      reconcileError:
+        type: string
+      reconcileOn:
+        type: string
+        format: date-time
+      renamedFrom:
+        $ref: '#/definitions/v1ResourceName'
   v1ResourceName:
     type: object
     properties:
@@ -4689,7 +4816,9 @@ definitions:
   v1WatchResourcesResponse:
     type: object
     properties:
-      resource:
-        $ref: '#/definitions/v1Resource'
       event:
         $ref: '#/definitions/v1ResourceEvent'
+      name:
+        $ref: '#/definitions/v1ResourceName'
+      resource:
+        $ref: '#/definitions/v1Resource'

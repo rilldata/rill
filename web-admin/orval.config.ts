@@ -15,6 +15,14 @@ export default defineConfig({
           path: "http-client.ts", // Relative to workspace path set above
           name: "httpClient",
         },
+        // Override queries and mutations here
+        operations: {
+          AdminService_GetDeploymentCredentials: {
+            query: {
+              useQuery: true,
+            },
+          },
+        },
       },
     },
   },

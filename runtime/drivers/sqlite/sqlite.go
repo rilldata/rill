@@ -8,6 +8,7 @@ import (
 	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
 
 	// Load sqlite driver
@@ -20,7 +21,7 @@ func init() {
 
 type driver struct{}
 
-func (d driver) Open(config map[string]any, shared bool, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	dsn, ok := config["dsn"].(string)
 	if !ok {
 		return nil, fmt.Errorf("require dsn to open sqlite connection")
@@ -91,7 +92,7 @@ func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 
 // Catalog implements drivers.Connection.
 func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
-	return &catalogStore{connection: c, instanceID: instanceID}, true
+	return nil, false
 }
 
 // Repo implements drivers.Connection.

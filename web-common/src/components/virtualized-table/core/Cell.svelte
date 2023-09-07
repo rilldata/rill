@@ -134,13 +134,13 @@
     >
       <button
         class="
-          {config.rowHeight <= 28 ? 'py-1' : 'py-2'}
           {isDimensionTable ? '' : 'px-4'}
           text-left w-full text-ellipsis overflow-x-hidden whitespace-nowrap
           "
         use:shiftClickAction
         on:shift-click={shiftClick}
         aria-label={label}
+        style:height="{row.size}px"
       >
         <FormattedDataType
           value={formattedValue || value}
