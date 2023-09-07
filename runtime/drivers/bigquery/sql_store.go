@@ -233,6 +233,7 @@ func (f *fileIterator) downloadAsJSONFile() error {
 	init := false
 	rows := 0
 	enc := json.NewEncoder(fw)
+	enc.SetEscapeHTML(false)
 	for {
 		row := make(map[string]bigquery.Value)
 		err := f.bqIter.Next(&row)
@@ -258,9 +259,6 @@ func (f *fileIterator) downloadAsJSONFile() error {
 		err = enc.Encode(row)
 		if err != nil {
 			return fmt.Errorf("conversion of row to json failed with error: %w", err)
-		}
-		if _, err = fw.WriteString("\n"); err != nil {
-			return err
 		}
 
 		// If we don't have storage API access, BigQuery may return massive JSON results. (But even with storage API access, it may return JSON for small results.)
