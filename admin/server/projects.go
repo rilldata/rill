@@ -124,7 +124,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 
 	var attr map[string]any
 	if claims.OwnerType() == auth.OwnerTypeUser {
-		attr, err = s.jwtAttributesForUser(ctx, permissions, claims.OwnerID(), proj.OrganizationID)
+		attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
