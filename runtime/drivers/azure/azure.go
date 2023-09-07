@@ -77,7 +77,7 @@ type configProperties struct {
 
 func (d driver) Open(config map[string]any, shared bool, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
-		return nil, fmt.Errorf("gcs driver can't be shared")
+		return nil, fmt.Errorf("azure driver does not support shared connections")
 	}
 	conf := &configProperties{}
 	err := mapstructure.Decode(config, conf)
@@ -100,7 +100,7 @@ func (d driver) Spec() drivers.Spec {
 	return spec
 }
 
-func (d driver) HasAnonymousSourceAccess(context.Context, drivers.Source, *zap.Logger) (bool, error) {
+func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
 	return false, nil
 }
 
