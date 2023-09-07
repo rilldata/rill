@@ -87,7 +87,9 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 		//{"duckdb", "", map[string]any{
 		//	"sql": `select * from read_csv_auto('gs://scratch.rilldata.com/rill-developer/AdBids.csv.gz')`,
 		//}},
-		// test it
+		//{"duckdb", "", map[string]any{
+		//	"sql": `select * from read_parquet('azblob/rill-test/AdBids.parquet')`,
+		//}},
 	}
 
 	ctx := context.Background()

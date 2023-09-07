@@ -177,30 +177,12 @@ func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
 }
 
-// // DownloadFiles returns a file iterator over objects stored in azure blob storage.
-// func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSource) (drivers.FileIterator, error) {
-// 	return nil, fmt.Errorf("not implemented")
-// }
-
 // DownloadFiles returns a file iterator over objects stored in azure blob storage.
 func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSource) (drivers.FileIterator, error) {
 	conf, err := parseSourceProperties(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
-
-	// opts := azureblob.NewDefaultServiceURLOptions()
-	// serviceURL, err := azureblob.NewServiceURL(opts)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// c.logger.Named("console").Info("Connecting to Azure Blob Storage", zap.String("account", conf.url.Host))
-
-	// client, err := azureblob.NewDefaultClient(serviceURL, azureblob.ContainerName(conf.url.Host))
-	// if err != nil {
-	// 	return nil, err
-	// }
 
 	name := os.Getenv("AZURE_STORAGE_ACCOUNT")
 	key := os.Getenv("AZURE_STORAGE_KEY")
@@ -210,8 +192,6 @@ func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSo
 	}
 
 	containerURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s", name, conf.url.Host)
-	// log on console
-	c.logger.Named("console").Info("Connecting to Azure Blob Storage", zap.String("account", conf.url.Host))
 
 	client, err := container.NewClientWithSharedKeyCredential(containerURL, credential, nil)
 	if err != nil {
