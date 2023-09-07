@@ -23,6 +23,8 @@ import type {
   QueryServiceColumnDescriptiveStatisticsParams,
   V1ExportResponse,
   QueryServiceExportBody,
+  V1MetricsViewAggregationResponse,
+  QueryServiceMetricsViewAggregationBody,
   V1MetricsViewComparisonToplistResponse,
   QueryServiceMetricsViewComparisonToplistBody,
   V1MetricsViewRowsResponse,
@@ -449,6 +451,94 @@ export const createQueryServiceExport = <
   >;
 }) => {
   const mutationOptions = getQueryServiceExportMutationOptions(options);
+
+  return createMutation(mutationOptions);
+};
+/**
+ * @summary MetricsViewAggregation is a generic API for running group-by queries against a metrics view.
+ */
+export const queryServiceMetricsViewAggregation = (
+  instanceId: string,
+  metricsView: string,
+  queryServiceMetricsViewAggregationBody: QueryServiceMetricsViewAggregationBody
+) => {
+  return httpClient<V1MetricsViewAggregationResponse>({
+    url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsView}/aggregation`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceMetricsViewAggregationBody,
+  });
+};
+
+export const getQueryServiceMetricsViewAggregationMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>,
+    TError,
+    {
+      instanceId: string;
+      metricsView: string;
+      data: QueryServiceMetricsViewAggregationBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>,
+  TError,
+  {
+    instanceId: string;
+    metricsView: string;
+    data: QueryServiceMetricsViewAggregationBody;
+  },
+  TContext
+> => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>,
+    {
+      instanceId: string;
+      metricsView: string;
+      data: QueryServiceMetricsViewAggregationBody;
+    }
+  > = (props) => {
+    const { instanceId, metricsView, data } = props ?? {};
+
+    return queryServiceMetricsViewAggregation(instanceId, metricsView, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type QueryServiceMetricsViewAggregationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>
+>;
+export type QueryServiceMetricsViewAggregationMutationBody =
+  QueryServiceMetricsViewAggregationBody;
+export type QueryServiceMetricsViewAggregationMutationError = RpcStatus;
+
+/**
+ * @summary MetricsViewAggregation is a generic API for running group-by queries against a metrics view.
+ */
+export const createQueryServiceMetricsViewAggregation = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>,
+    TError,
+    {
+      instanceId: string;
+      metricsView: string;
+      data: QueryServiceMetricsViewAggregationBody;
+    },
+    TContext
+  >;
+}) => {
+  const mutationOptions =
+    getQueryServiceMetricsViewAggregationMutationOptions(options);
 
   return createMutation(mutationOptions);
 };

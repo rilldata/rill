@@ -364,15 +364,12 @@ func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
 	return ctx, nil
 }
 
-func (s *Server) jwtAttributesForUser(ctx context.Context, permissions *adminv1.ProjectPermissions, userID, orgID string) (map[string]any, error) {
-	var attr map[string]any
-	// Find User
+func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string, projectPermissions *adminv1.ProjectPermissions) (map[string]any, error) {
 	user, err := s.admin.DB.FindUser(ctx, userID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// Find User groups
 	groups, err := s.admin.DB.FindUsergroupsForUser(ctx, user.ID, orgID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -381,12 +378,13 @@ func (s *Server) jwtAttributesForUser(ctx context.Context, permissions *adminv1.
 	for i, group := range groups {
 		groupNames[i] = group.Name
 	}
-	attr = map[string]any{
+
+	attr := map[string]any{
 		"name":   user.DisplayName,
 		"email":  user.Email,
 		"domain": user.Email[strings.LastIndex(user.Email, "@")+1:],
 		"groups": groupNames,
-		"admin":  permissions.ManageProject,
+		"admin":  projectPermissions.ManageProject,
 	}
 
 	return attr, nil

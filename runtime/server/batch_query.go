@@ -33,6 +33,14 @@ func (s *Server) forwardQuery(ctx context.Context, query *runtimev1.QueryBatchRe
 
 	var err error
 	switch q := queryEntry.Query.(type) {
+	case *runtimev1.QueryBatchEntry_MetricsViewAggregationRequest:
+		var r *runtimev1.MetricsViewAggregationResponse
+		q.MetricsViewAggregationRequest.InstanceId = query.InstanceId
+		r, err = s.MetricsViewAggregation(ctx, q.MetricsViewAggregationRequest)
+		if err == nil {
+			resp.Result = &runtimev1.QueryBatchResponse_MetricsViewAggregationResponse{MetricsViewAggregationResponse: r}
+		}
+
 	case *runtimev1.QueryBatchEntry_MetricsViewToplistRequest:
 		var r *runtimev1.MetricsViewToplistResponse
 		q.MetricsViewToplistRequest.InstanceId = query.InstanceId

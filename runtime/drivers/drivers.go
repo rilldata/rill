@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const _iteratorBatch = 8
+const _iteratorBatch = 32
 
 var ErrIngestionLimitExceeded = fmt.Errorf("connectors: source ingestion exceeds limit")
 

@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	QueryService_Query_FullMethodName                        = "/rill.runtime.v1.QueryService/Query"
 	QueryService_Export_FullMethodName                       = "/rill.runtime.v1.QueryService/Export"
+	QueryService_MetricsViewAggregation_FullMethodName       = "/rill.runtime.v1.QueryService/MetricsViewAggregation"
 	QueryService_MetricsViewToplist_FullMethodName           = "/rill.runtime.v1.QueryService/MetricsViewToplist"
 	QueryService_MetricsViewComparisonToplist_FullMethodName = "/rill.runtime.v1.QueryService/MetricsViewComparisonToplist"
 	QueryService_MetricsViewTimeSeries_FullMethodName        = "/rill.runtime.v1.QueryService/MetricsViewTimeSeries"
@@ -51,6 +52,8 @@ type QueryServiceClient interface {
 	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error)
 	// Export builds a URL to download the results of a query as a file.
 	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
+	// MetricsViewAggregation is a generic API for running group-by queries against a metrics view.
+	MetricsViewAggregation(ctx context.Context, in *MetricsViewAggregationRequest, opts ...grpc.CallOption) (*MetricsViewAggregationResponse, error)
 	// MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewToplist(ctx context.Context, in *MetricsViewToplistRequest, opts ...grpc.CallOption) (*MetricsViewToplistResponse, error)
@@ -116,6 +119,15 @@ func (c *queryServiceClient) Query(ctx context.Context, in *QueryRequest, opts .
 func (c *queryServiceClient) Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error) {
 	out := new(ExportResponse)
 	err := c.cc.Invoke(ctx, QueryService_Export_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryServiceClient) MetricsViewAggregation(ctx context.Context, in *MetricsViewAggregationRequest, opts ...grpc.CallOption) (*MetricsViewAggregationResponse, error) {
+	out := new(MetricsViewAggregationResponse)
+	err := c.cc.Invoke(ctx, QueryService_MetricsViewAggregation_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -333,6 +345,8 @@ type QueryServiceServer interface {
 	Query(context.Context, *QueryRequest) (*QueryResponse, error)
 	// Export builds a URL to download the results of a query as a file.
 	Export(context.Context, *ExportRequest) (*ExportResponse, error)
+	// MetricsViewAggregation is a generic API for running group-by queries against a metrics view.
+	MetricsViewAggregation(context.Context, *MetricsViewAggregationRequest) (*MetricsViewAggregationResponse, error)
 	// MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewToplist(context.Context, *MetricsViewToplistRequest) (*MetricsViewToplistResponse, error)
@@ -388,6 +402,9 @@ func (UnimplementedQueryServiceServer) Query(context.Context, *QueryRequest) (*Q
 }
 func (UnimplementedQueryServiceServer) Export(context.Context, *ExportRequest) (*ExportResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Export not implemented")
+}
+func (UnimplementedQueryServiceServer) MetricsViewAggregation(context.Context, *MetricsViewAggregationRequest) (*MetricsViewAggregationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MetricsViewAggregation not implemented")
 }
 func (UnimplementedQueryServiceServer) MetricsViewToplist(context.Context, *MetricsViewToplistRequest) (*MetricsViewToplistResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MetricsViewToplist not implemented")
@@ -494,6 +511,24 @@ func _QueryService_Export_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(QueryServiceServer).Export(ctx, req.(*ExportRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QueryService_MetricsViewAggregation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MetricsViewAggregationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServiceServer).MetricsViewAggregation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QueryService_MetricsViewAggregation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServiceServer).MetricsViewAggregation(ctx, req.(*MetricsViewAggregationRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -875,6 +910,10 @@ var QueryService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Export",
 			Handler:    _QueryService_Export_Handler,
+		},
+		{
+			MethodName: "MetricsViewAggregation",
+			Handler:    _QueryService_MetricsViewAggregation_Handler,
 		},
 		{
 			MethodName: "MetricsViewToplist",
