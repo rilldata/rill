@@ -803,6 +803,7 @@ func (c *Controller) processQueue() error {
 }
 
 // markPending marks a resource and its descendents as pending.
+// It also clears errors on every resource marked pending - it would be confusing to show an old error after a change has been made that may fix it.
 // It returns true if it already now knows that the resource can't be scheduled and will be re-triggered later (e.g. by being added to a waitlist).
 // It must be called while c.mu is held.
 func (c *Controller) markPending(n *runtimev1.ResourceName) (bool, error) {
@@ -826,7 +827,11 @@ func (c *Controller) markPending(n *runtimev1.ResourceName) (bool, error) {
 		return true, nil
 	}
 
-	// Not running - mark pending
+	// Not running - clear error and mark pending
+	err = c.catalog.updateError(n, nil)
+	if err != nil {
+		return false, err
+	}
 	err = c.catalog.updateStatus(n, runtimev1.ReconcileStatus_RECONCILE_STATUS_PENDING, time.Time{})
 	if err != nil {
 		return false, err
@@ -855,7 +860,11 @@ func (c *Controller) markPending(n *runtimev1.ResourceName) (bool, error) {
 		}
 		switch dr.Meta.ReconcileStatus {
 		case runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE:
-			// Mark it pending
+			// Clear error and mark it pending
+			err = c.catalog.updateError(n, nil)
+			if err != nil {
+				return fmt.Errorf("error updating dag node %q: %w", ds, err)
+			}
 			err = c.catalog.updateStatus(dn, runtimev1.ReconcileStatus_RECONCILE_STATUS_PENDING, time.Time{})
 			if err != nil {
 				return fmt.Errorf("error updating dag node %q: %w", ds, err)
