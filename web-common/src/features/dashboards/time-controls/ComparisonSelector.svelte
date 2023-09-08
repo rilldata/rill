@@ -67,7 +67,7 @@ This component needs to do the following:
       <div class="flex items-center gap-x-3">
         <span class="ui-copy-icon"><Compare size="16px" /></span>
 
-        <span class="font-normal">
+        <span style:transform="translateY(-1px)" class="font-normal">
           {showTimeComparison || selectedDimension ? "Comparing by" : ""}
           <span class="font-bold">{label}</span>
         </span>

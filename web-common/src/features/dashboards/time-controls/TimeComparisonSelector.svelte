@@ -132,7 +132,10 @@ This component needs to do the following:
     >
       <div class="flex items-center gap-x-3">
         <span class="ui-copy-icon"><ClockCircle size="16px" /></span>
-        <span class="font-normal justify-center">{label}</span>
+        <span
+          style:transform="translateY(-1px)"
+          class="font-normal justify-center">{label}</span
+        >
       </div>
     </SelectorButton>
     <TooltipContent maxWidth="220px" slot="tooltip-content">
