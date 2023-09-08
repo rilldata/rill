@@ -2,7 +2,6 @@ package bigquery
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -222,10 +221,7 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 func (c *Connection) clientOption(ctx context.Context) ([]option.ClientOption, error) {
 	creds, err := gcputil.Credentials(ctx, c.config.SecretJSON, c.config.AllowHostAccess)
 	if err != nil {
-		if !errors.Is(err, gcputil.ErrNoCredentials) {
-			return nil, err
-		}
-		return make([]option.ClientOption, 0), nil
+		return nil, err
 	}
 	return []option.ClientOption{option.WithCredentials(creds)}, nil
 }
