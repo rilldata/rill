@@ -87,6 +87,7 @@ func (d Driver) Open(config map[string]any, shared bool, client activity.Client,
 		shared:       shared,
 		ctx:          ctx,
 		cancel:       cancel,
+		activity:     client,
 	}
 
 	// Open the DB
@@ -168,8 +169,9 @@ type connection struct {
 	dbErr       error
 	shared      bool
 	// Cancellable context to control internal processes like emitting the stats
-	ctx    context.Context
-	cancel context.CancelFunc
+	ctx      context.Context
+	cancel   context.CancelFunc
+	activity activity.Client
 }
 
 // Driver implements drivers.Connection.
