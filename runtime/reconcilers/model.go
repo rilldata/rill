@@ -79,13 +79,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// Handle renames
 	if self.Meta.RenamedFrom != nil {
 		if t, ok := olapTableInfo(ctx, r.C, model.State.Connector, model.State.Table); ok {
-			// Clear any existing table with the new name
-			if t2, ok := olapTableInfo(ctx, r.C, model.State.Connector, tableName); ok {
-				olapDropTableIfExists(ctx, r.C, model.State.Connector, t2.Name, t2.View)
-			}
-
 			// Rename and update state
-			err = olapRenameTable(ctx, r.C, model.State.Connector, model.State.Table, tableName, t.View)
+			err = olapForceRenameTable(ctx, r.C, model.State.Connector, model.State.Table, t.View, tableName)
 			if err != nil {
 				return runtime.ReconcileResult{Err: fmt.Errorf("failed to rename model: %w", err)}
 			}
@@ -210,12 +205,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		createErr = fmt.Errorf("failed to create model: %w", createErr)
 	}
 	if createErr == nil && stage {
-		// Drop the main view/table
-		if t, ok := olapTableInfo(ctx, r.C, connector, tableName); ok {
-			olapDropTableIfExists(ctx, r.C, connector, t.Name, t.View)
-		}
 		// Rename the staging table to main view/table
-		err = olapRenameTable(ctx, r.C, connector, stagingTableName, tableName, !materialize)
+		err = olapForceRenameTable(ctx, r.C, connector, stagingTableName, !materialize, tableName)
 		if err != nil {
 			return runtime.ReconcileResult{Err: fmt.Errorf("failed to rename staged model: %w", err)}
 		}

@@ -79,13 +79,8 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		// Check if the table exists (it should, but might somehow have been corrupted)
 		t, ok := olapTableInfo(ctx, r.C, src.State.Connector, src.State.Table)
 		if ok && !t.View { // Checking View only out of caution (would indicate very corrupted DB)
-			// Clear any existing table with the new name
-			if t2, ok := olapTableInfo(ctx, r.C, src.State.Connector, tableName); ok {
-				olapDropTableIfExists(ctx, r.C, src.State.Connector, tableName, t2.View)
-			}
-
 			// Rename and update state
-			err = olapRenameTable(ctx, r.C, src.State.Connector, src.State.Table, tableName, false)
+			err = olapForceRenameTable(ctx, r.C, src.State.Connector, src.State.Table, false, tableName)
 			if err != nil {
 				return runtime.ReconcileResult{Err: fmt.Errorf("failed to rename table: %w", err)}
 			}
@@ -175,12 +170,8 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		ingestErr = fmt.Errorf("failed to ingest source: %w", ingestErr)
 	}
 	if ingestErr == nil && src.Spec.StageChanges {
-		// Drop the main table name
-		if t, ok := olapTableInfo(ctx, r.C, connector, tableName); ok {
-			olapDropTableIfExists(ctx, r.C, connector, tableName, t.View)
-		}
 		// Rename staging table to main table
-		err = olapRenameTable(ctx, r.C, connector, stagingTableName, tableName, false)
+		err = olapForceRenameTable(ctx, r.C, connector, stagingTableName, false, tableName)
 		if err != nil {
 			return runtime.ReconcileResult{Err: fmt.Errorf("failed to rename staging table: %w", err)}
 		}
