@@ -21,18 +21,10 @@ import {
   LAST_6_HOURS_TEST_PARSED_CONTROLS,
   resetDashboardStore,
   TestTimeConstants,
+  TestTimeOffsetConstants,
 } from "@rilldata/web-common/features/dashboards/dashboard-stores-test-data";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
-import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
-import {
-  getOffset,
-  getStartOfPeriod,
-} from "@rilldata/web-common/lib/time/transforms";
-import {
-  Period,
-  TimeOffsetType,
-  TimeRangePreset,
-} from "@rilldata/web-common/lib/time/types";
+import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -238,49 +230,17 @@ describe("dashboard-stores", () => {
     assertMetricsView(AD_BIDS_NAME, undefined, {
       name: TimeRangePreset.LAST_SIX_HOURS,
       interval: V1TimeGrain.TIME_GRAIN_HOUR,
-      start: getOffset(
-        getStartOfPeriod(
-          TestTimeConstants.LAST_6_HOURS,
-          Period.HOUR,
-          getLocalIANA()
-        ),
-        Period.HOUR,
-        TimeOffsetType.ADD,
-        getLocalIANA()
-      ),
-      end: getOffset(
-        getStartOfPeriod(TestTimeConstants.NOW, Period.HOUR, getLocalIANA()),
-        Period.HOUR,
-        TimeOffsetType.ADD,
-        getLocalIANA()
-      ),
+      start: TestTimeOffsetConstants.LAST_6_HOURS,
+      end: TestTimeOffsetConstants.NOW,
     });
     const metrics = get(metricsExplorerStore).entities[AD_BIDS_NAME];
     expect(metrics.showComparison).toBeTruthy();
     expect(metrics.selectedComparisonTimeRange.name).toBe("CONTIGUOUS");
     expect(metrics.selectedComparisonTimeRange.start).toEqual(
-      getOffset(
-        getStartOfPeriod(
-          TestTimeConstants.LAST_12_HOURS,
-          Period.HOUR,
-          getLocalIANA()
-        ),
-        Period.HOUR,
-        TimeOffsetType.ADD,
-        getLocalIANA()
-      )
+      TestTimeOffsetConstants.LAST_12_HOURS
     );
     expect(metrics.selectedComparisonTimeRange.end).toEqual(
-      getOffset(
-        getStartOfPeriod(
-          TestTimeConstants.LAST_6_HOURS,
-          Period.HOUR,
-          getLocalIANA()
-        ),
-        Period.HOUR,
-        TimeOffsetType.ADD,
-        getLocalIANA()
-      )
+      TestTimeOffsetConstants.LAST_6_HOURS
     );
   });
 

@@ -9,10 +9,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/apache/arrow/go/v11/arrow"
-	"github.com/apache/arrow/go/v11/arrow/array"
-	"github.com/apache/arrow/go/v11/arrow/memory"
-	"github.com/apache/arrow/go/v11/parquet/pqarrow"
+	"github.com/apache/arrow/go/v13/arrow"
+	"github.com/apache/arrow/go/v13/arrow/array"
+	"github.com/apache/arrow/go/v13/arrow/memory"
+	"github.com/apache/arrow/go/v13/parquet/pqarrow"
 	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -79,6 +79,26 @@ func metricsQuery(ctx context.Context, olap drivers.OLAPStore, priority int, sql
 	}
 
 	return structTypeToMetricsViewColumn(rows.Schema), data, nil
+}
+
+func olapQuery(ctx context.Context, olap drivers.OLAPStore, priority int, sql string, args []any) (*runtimev1.StructType, []*structpb.Struct, error) {
+	rows, err := olap.Execute(ctx, &drivers.Statement{
+		Query:            sql,
+		Args:             args,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+	})
+	if err != nil {
+		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	defer rows.Close()
+
+	data, err := rowsToData(rows)
+	if err != nil {
+		return nil, nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return rows.Schema, data, nil
 }
 
 func rowsToData(rows *drivers.Result) ([]*structpb.Struct, error) {
@@ -313,6 +333,15 @@ func metricsViewDimensionToSafeColumn(mv *runtimev1.MetricsView, dimName string)
 		}
 	}
 	return "", fmt.Errorf("dimension %s not found", dimName)
+}
+
+func metricsViewMeasureExpression(mv *runtimev1.MetricsView, measureName string) (string, error) {
+	for _, measure := range mv.Measures {
+		if strings.EqualFold(measure.Name, measureName) {
+			return measure.Expression, nil
+		}
+	}
+	return "", fmt.Errorf("measure %s not found", measureName)
 }
 
 func writeCSV(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, writer io.Writer) error {

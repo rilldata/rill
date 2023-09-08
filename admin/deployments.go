@@ -72,6 +72,21 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		ingestionLimit = alloc.StorageBytes
 
 		olapDSN = fmt.Sprintf("%s.db?rill_pool_size=%d&max_memory=%dGB", path.Join(alloc.DataDir, instanceID), alloc.CPU, alloc.MemoryGB)
+	} else if olapDriver == "duckdb-vip" {
+		if olapDSN != "" {
+			return nil, fmt.Errorf("passing a DSN is not allowed for driver 'duckdb-vip'")
+		}
+		if opts.ProdSlots == 0 {
+			return nil, fmt.Errorf("slot count can't be 0 for driver 'duckdb-vip'")
+		}
+
+		// NOTE: Rewriting to a "duckdb" driver without CPU, memory, or storage limits
+
+		embedCatalog = true
+		ingestionLimit = 0
+
+		olapDriver = "duckdb"
+		olapDSN = fmt.Sprintf("%s.db?rill_pool_size=8", path.Join(alloc.DataDir, instanceID))
 	}
 
 	// Open a runtime client
@@ -84,8 +99,8 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
 		InstanceId:          instanceID,
-		OlapDriver:          "olap",
-		RepoDriver:          "repo",
+		OlapConnector:       "olap",
+		RepoConnector:       "repo",
 		EmbedCatalog:        embedCatalog,
 		Variables:           opts.ProdVariables,
 		IngestionLimitBytes: ingestionLimit,

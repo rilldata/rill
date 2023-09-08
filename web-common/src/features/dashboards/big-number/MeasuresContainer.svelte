@@ -1,15 +1,14 @@
 <script lang="ts">
-  import {
-    useMetaQuery,
-    useModelHasTimeSeries,
-  } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { MEASURE_CONFIG } from "../config";
-  import { useDashboardStore, useFetchTimeRange } from "../dashboard-stores";
+  import { useDashboardStore } from "../dashboard-stores";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
 
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
@@ -36,12 +35,12 @@
     LEADERBOARD_PADDING_RIGHT;
 
   $: dashboardStore = useDashboardStore(metricViewName);
-  $: fetchTimeStore = useFetchTimeRange(metricViewName);
 
   $: instanceId = $runtime.instanceId;
 
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
+  const timeControlsStore = useTimeControlStore(getStateManagers());
 
   $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
 
@@ -125,10 +124,6 @@
 
   $: numColumns = 3;
 
-  $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricViewName);
-  $: hasTimeSeries = $metricTimeSeries.data;
-  $: timeStart = $fetchTimeStore?.start?.toISOString();
-  $: timeEnd = $fetchTimeStore?.end?.toISOString();
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     metricViewName,
@@ -140,7 +135,7 @@
       query: {
         enabled:
           selectedMeasureNames?.length > 0 &&
-          (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
+          $timeControlsStore.ready &&
           !!$dashboardStore?.filters,
       },
     }

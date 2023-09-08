@@ -1,9 +1,8 @@
 package env
 
 import (
-	"os"
+	"fmt"
 
-	"github.com/lensesio/tableprinter"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/variable"
@@ -31,7 +30,11 @@ func ShowEnvCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			tableprinter.PrintHeadList(os.Stdout, variable.Serialize(resp.Variables), "Project Variables")
+			vals := variable.Serialize(resp.Variables)
+			for _, v := range vals {
+				fmt.Println(v)
+			}
+
 			return nil
 		},
 	}

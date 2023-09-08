@@ -71,11 +71,11 @@ func (q *MetricsViewComparisonToplist) Resolve(ctx context.Context, rt *runtime.
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	if q.MetricsView.TimeDimension == "" && (q.BaseTimeRange != nil || q.ComparisonTimeRange != nil) {
+	if q.MetricsView.TimeDimension == "" && (!isTimeRangeNil(q.BaseTimeRange) || !isTimeRangeNil(q.ComparisonTimeRange)) {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
-	if q.ComparisonTimeRange != nil {
+	if !isTimeRangeNil(q.ComparisonTimeRange) {
 		return q.executeComparisonToplist(ctx, olap, q.MetricsView, priority, q.ResolvedMVSecurity)
 	}
 
@@ -313,12 +313,12 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 		var columnsTuple string
 		if dialect != drivers.DialectDruid {
 			columnsTuple = fmt.Sprintf(
-				"base.%[1]s, comparison.%[1]s, comparison.%[1]s - base.%[1]s, (comparison.%[1]s - base.%[1]s)/base.%[1]s::DOUBLE",
+				"base.%[1]s, comparison.%[1]s, base.%[1]s - comparison.%[1]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE",
 				safeName(m.Name),
 			)
 		} else {
 			columnsTuple = fmt.Sprintf(
-				"ANY_VALUE(base.%[1]s), ANY_VALUE(comparison.%[1]s), ANY_VALUE(comparison.%[1]s - base.%[1]s), ANY_VALUE(SAFE_DIVIDE(comparison.%[1]s - base.%[1]s, CAST(base.%[1]s AS FLOAT))",
+				"ANY_VALUE(base.%[1]s), ANY_VALUE(comparison.%[1]s), ANY_VALUE(base.%[1]s - comparison.%[1]s), ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS FLOAT))",
 				safeName(m.Name),
 			)
 		}
@@ -416,7 +416,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 				SELECT %[1]s FROM %[3]q WHERE %[5]s GROUP BY %[2]s
 			) comparison
 		ON
-				base.%[2]s = comparison.%[2]s
+				base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
 		ORDER BY
 			%[6]s
 		LIMIT
@@ -487,7 +487,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 						SELECT %[1]s FROM %[3]q WHERE %[5]s GROUP BY %[2]s
 					) %[12]s
 				ON
-						base.%[2]s = comparison.%[2]s
+						base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
 				ORDER BY
 					%[6]s
 				LIMIT
@@ -520,7 +520,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 						SELECT %[1]s FROM %[3]q WHERE %[5]s GROUP BY %[2]s
 					) comparison
 				ON
-						base.%[2]s = comparison.%[2]s
+						base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
 				ORDER BY
 					%[6]s
 				LIMIT
@@ -560,4 +560,8 @@ func validateSort(sorts []*runtimev1.MetricsViewComparisonSort) error {
 		}
 	}
 	return nil
+}
+
+func isTimeRangeNil(tr *runtimev1.TimeRange) bool {
+	return tr == nil || (tr.Start == nil && tr.End == nil)
 }

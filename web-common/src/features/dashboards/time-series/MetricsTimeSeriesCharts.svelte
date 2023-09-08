@@ -5,8 +5,6 @@
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
   import {
     useDashboardStore,
-    useFetchTimeRange,
-    useComparisonRange,
     metricsExplorerStore,
   } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import {
@@ -14,17 +12,13 @@
     FormatPreset,
     nicelyFormattedTypesToNumberKind,
   } from "@rilldata/web-common/features/dashboards/humanize-numbers";
-  import {
-    useMetaQuery,
-    useModelAllTimeRange,
-  } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-  import {
-    getAdjustedChartTime,
-    getAdjustedFetchTime,
-  } from "@rilldata/web-common/lib/time/ranges";
+  import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import {
     createQueryServiceMetricsViewTimeSeries,
     createQueryServiceMetricsViewTotals,
@@ -45,75 +39,52 @@
   export let workspaceWidth: number;
 
   $: dashboardStore = useDashboardStore(metricViewName);
-  $: fetchTimeStore = useFetchTimeRange(metricViewName);
-  $: comparisonStore = useComparisonRange(metricViewName);
 
   $: instanceId = $runtime.instanceId;
 
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
-  $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
-  $: showComparison = $dashboardStore?.showComparison;
-  $: interval = $dashboardStore?.selectedTimeRange?.interval;
 
-  $: allTimeRangeQuery = useModelAllTimeRange(
+  const timeControlsStore = useTimeControlStore(getStateManagers());
+
+  $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
+  $: comparisonDimension = $dashboardStore?.selectedComparisonDimension;
+  $: showComparison = !comparisonDimension && $timeControlsStore.showComparison;
+  $: interval =
+    $timeControlsStore.selectedTimeRange?.interval ??
+    $timeControlsStore.minTimeGrain;
+
+  $: totalsQuery = createQueryServiceMetricsViewTotals(
     $runtime.instanceId,
     metricViewName,
     {
-      query: {
-        enabled: !!$metaQuery.data.timeDimension,
-      },
-    }
-  );
-
-  // get the time range name, which is the preset.
-  let name;
-  let allTimeRange;
-  $: if ($allTimeRangeQuery?.isSuccess) {
-    allTimeRange = $allTimeRangeQuery.data;
-    name = $dashboardStore?.selectedTimeRange?.name;
-  }
-
-  $: timeStart = $fetchTimeStore?.start?.toISOString();
-  $: timeEnd = $fetchTimeStore?.end?.toISOString();
-  $: totalsQuery = createQueryServiceMetricsViewTotals(
-    instanceId,
-    metricViewName,
-    {
       measureNames: selectedMeasureNames,
-      timeStart,
-      timeEnd,
+      timeStart: $timeControlsStore.timeStart,
+      timeEnd: $timeControlsStore.timeEnd,
       filter: $dashboardStore?.filters,
     },
     {
       query: {
-        enabled: !!timeStart && !!timeEnd && !!$dashboardStore?.filters,
+        enabled:
+          selectedMeasureNames?.length > 0 &&
+          $timeControlsStore.ready &&
+          !!$dashboardStore?.filters,
       },
     }
   );
 
-  $: displayComparison =
-    showComparison && !$dashboardStore?.selectedComparisonDimension;
-
-  $: comparisonTimeStart = $comparisonStore?.start;
-  $: comparisonTimeEnd = $comparisonStore?.end;
   $: totalsComparisonQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      timeStart: comparisonTimeStart,
-      timeEnd: comparisonTimeEnd,
+      timeStart: $timeControlsStore.comparisonTimeStart,
+      timeEnd: $timeControlsStore.comparisonTimeEnd,
       filter: $dashboardStore?.filters,
     },
     {
       query: {
-        enabled: Boolean(
-          displayComparison &&
-            !!comparisonTimeStart &&
-            !!comparisonTimeEnd &&
-            !!$dashboardStore?.filters
-        ),
+        enabled: Boolean(showComparison && !!$dashboardStore?.filters),
       },
     }
   );
@@ -139,65 +110,29 @@
     metaQuery &&
     $metaQuery.isSuccess &&
     !$metaQuery.isRefetching &&
-    $dashboardStore?.selectedTimeRange?.start
+    $timeControlsStore.ready
   ) {
-    const { start: adjustedStart, end: adjustedEnd } = getAdjustedFetchTime(
-      $dashboardStore?.selectedTimeRange?.start,
-      $dashboardStore?.selectedTimeRange?.end,
-      $dashboardStore?.selectedTimezone,
-      interval
-    );
-
-    if ($dashboardStore?.selectedComparisonDimension) {
-      const dimensionFilters = $dashboardStore?.filters.include.filter(
-        (filter) => filter.name === $dashboardStore?.selectedComparisonDimension
-      );
-      if (dimensionFilters) includedValues = dimensionFilters[0]?.in;
-      if (includedValues?.length) {
-        allDimQuery = getDimensionValueTimeSeries(
-          instanceId,
-          metricViewName,
-          includedValues,
-          $dashboardStore?.selectedComparisonDimension,
-          selectedMeasureNames,
-          $dashboardStore.filters,
-          adjustedStart,
-          adjustedEnd,
-          interval,
-          $dashboardStore?.selectedTimezone
-        );
-      }
-    }
-
     timeSeriesQuery = createQueryServiceMetricsViewTimeSeries(
       instanceId,
       metricViewName,
       {
         measureNames: selectedMeasureNames,
         filter: $dashboardStore?.filters,
-        timeStart: adjustedStart,
-        timeEnd: adjustedEnd,
+        timeStart: $timeControlsStore.adjustedStart,
+        timeEnd: $timeControlsStore.adjustedEnd,
         timeGranularity: interval,
         timeZone: $dashboardStore?.selectedTimezone,
       }
     );
-    if (displayComparison) {
-      const { start: compAdjustedStart, end: compAdjustedEnd } =
-        getAdjustedFetchTime(
-          $dashboardStore?.selectedComparisonTimeRange?.start,
-          $dashboardStore?.selectedComparisonTimeRange?.end,
-          $dashboardStore?.selectedTimezone,
-          interval
-        );
-
+    if (showComparison) {
       timeSeriesComparisonQuery = createQueryServiceMetricsViewTimeSeries(
         instanceId,
         metricViewName,
         {
           measureNames: selectedMeasureNames,
           filter: $dashboardStore?.filters,
-          timeStart: compAdjustedStart,
-          timeEnd: compAdjustedEnd,
+          timeStart: $timeControlsStore.comparisonAdjustedStart,
+          timeEnd: $timeControlsStore.comparisonAdjustedEnd,
           timeGranularity: interval,
           timeZone: $dashboardStore?.selectedTimezone,
         }
@@ -242,29 +177,45 @@
     );
   }
 
-  $: dimensionData = $dashboardStore?.selectedComparisonDimension
-    ? $allDimQuery
-    : [];
+  $: dimensionData = comparisonDimension ? $allDimQuery : [];
 
   let mouseoverValue = undefined;
   let startValue: Date;
   let endValue: Date;
 
   // FIXME: move this logic to a function + write tests.
-  $: if (
-    $dashboardStore?.selectedTimeRange &&
-    $dashboardStore?.selectedTimeRange?.start
-  ) {
+  $: if ($timeControlsStore.ready) {
     const adjustedChartValue = getAdjustedChartTime(
-      $dashboardStore?.selectedTimeRange?.start,
-      $dashboardStore?.selectedTimeRange?.end,
+      $timeControlsStore.selectedTimeRange?.start,
+      $timeControlsStore.selectedTimeRange?.end,
       $dashboardStore?.selectedTimezone,
       interval,
-      $dashboardStore?.selectedTimeRange?.name
+      $timeControlsStore.selectedTimeRange?.name
     );
 
     startValue = adjustedChartValue?.start;
     endValue = adjustedChartValue?.end;
+
+    if (comparisonDimension) {
+      const dimensionFilters = $dashboardStore?.filters.include.filter(
+        (filter) => filter.name === comparisonDimension
+      );
+      if (dimensionFilters) includedValues = dimensionFilters[0]?.in;
+      if (includedValues?.length) {
+        allDimQuery = getDimensionValueTimeSeries(
+          instanceId,
+          metricViewName,
+          includedValues,
+          comparisonDimension,
+          selectedMeasureNames,
+          $dashboardStore.filters,
+          startValue,
+          endValue,
+          interval,
+          $dashboardStore?.selectedTimezone
+        );
+      }
+    }
   }
 
   $: showHideMeasures = createShowHideMeasuresStore(metricViewName, metaQuery);
@@ -292,13 +243,7 @@
           start,
           end,
         });
-
-        // hack to prevent race condition in URL proto changes
-        setTimeout(() => {
-          metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
-        }, 50);
-      }
-      if (
+      } else if (
         !$dashboardStore.selectedScrubRange?.isScrubbing &&
         e.key === "Escape"
       ) {
@@ -346,7 +291,6 @@
     {#each $metaQuery.data?.measures.filter((_, i) => $showHideMeasures.selectedItems[i]) as measure, index (measure.name)}
       <!-- FIXME: I can't select the big number by the measure id. -->
       {@const bigNum = $totalsQuery?.data?.data?.[measure.name]}
-      {@const showComparison = displayComparison}
       {@const comparisonValue = totalsComparisons?.[measure.name]}
       {@const comparisonPercChange =
         comparisonValue && bigNum !== undefined && bigNum !== null
@@ -360,7 +304,7 @@
         measureName={measure.name}
         value={bigNum}
         {showComparison}
-        comparisonOption={$dashboardStore?.selectedComparisonTimeRange?.name}
+        comparisonOption={$timeControlsStore?.selectedComparisonTimeRange?.name}
         {comparisonValue}
         {comparisonPercChange}
         description={measure?.description ||

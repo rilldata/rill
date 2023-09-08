@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/rilldata/rill/admin"
-	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/authtoken"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 )
@@ -161,13 +160,19 @@ func (c *authTokenClaims) ProjectPermissions(ctx context.Context, orgID, project
 		return perm
 	}
 
+	orgPerms := c.organizationPermissionsUnsafe(ctx, orgID)
+
+	var err error
 	switch c.token.Token().Type {
 	case authtoken.TypeUser:
-		perm = c.projectPermissionsUser(ctx, orgID, projectID)
+		perm, err = c.admin.ProjectPermissionsForUser(ctx, projectID, c.token.OwnerID(), orgPerms)
 	case authtoken.TypeService:
-		perm = c.projectPermissionsService(ctx, orgID, projectID)
+		perm, err = c.admin.ProjectPermissionsForService(ctx, projectID, c.token.OwnerID(), orgPerms)
 	default:
-		panic(fmt.Errorf("unexpected token type %q", c.token.Token().Type))
+		err = fmt.Errorf("unexpected token type %q", c.token.Token().Type)
+	}
+	if err != nil {
+		panic(fmt.Errorf("failed to get project permissions: %w", err))
 	}
 
 	c.projectPermissionsCache[projectID] = perm
@@ -182,135 +187,19 @@ func (c *authTokenClaims) organizationPermissionsUnsafe(ctx context.Context, org
 		return perm
 	}
 
+	var err error
 	switch c.token.Token().Type {
 	case authtoken.TypeUser:
-		perm = c.organizationPermissionsUser(ctx, orgID)
+		perm, err = c.admin.OrganizationPermissionsForUser(ctx, orgID, c.token.OwnerID())
 	case authtoken.TypeService:
-		perm = c.organizationPermissionsService(ctx, orgID)
+		perm, err = c.admin.OrganizationPermissionsForService(ctx, orgID, c.token.OwnerID())
 	default:
-		panic(fmt.Errorf("unexpected token type %q", c.token.Token().Type))
+		err = fmt.Errorf("unexpected token type %q", c.token.Token().Type)
 	}
-
-	c.orgPermissionsCache[orgID] = perm
-	return perm
-}
-
-// organizationPermissionsUser resolves organization permissions for a user.
-func (c *authTokenClaims) organizationPermissionsUser(ctx context.Context, orgID string) *adminv1.OrganizationPermissions {
-	roles, err := c.admin.DB.ResolveOrganizationRolesForUser(context.Background(), c.token.OwnerID(), orgID)
 	if err != nil {
 		panic(fmt.Errorf("failed to get org permissions: %w", err))
 	}
 
-	composite := &adminv1.OrganizationPermissions{}
-	for _, role := range roles {
-		composite = unionOrgRoles(composite, role)
-	}
-
-	return composite
-}
-
-// organizationPermissionsService resolves organization permissions for a service.
-// A service currently gets full permissions on the org they belong to.
-func (c *authTokenClaims) organizationPermissionsService(ctx context.Context, orgID string) *adminv1.OrganizationPermissions {
-	service, err := c.admin.DB.FindService(ctx, c.token.OwnerID())
-	if err != nil {
-		panic(fmt.Errorf("failed to get service info: %w", err))
-	}
-
-	// Services get full permissions on the org they belong to
-	if orgID == service.OrgID {
-		return &adminv1.OrganizationPermissions{
-			ReadOrg:          true,
-			ManageOrg:        true,
-			ReadProjects:     true,
-			CreateProjects:   true,
-			ManageProjects:   true,
-			ReadOrgMembers:   true,
-			ManageOrgMembers: true,
-		}
-	}
-
-	return &adminv1.OrganizationPermissions{}
-}
-
-// projectPermissionsUser resolves project permissions for a user.
-func (c *authTokenClaims) projectPermissionsUser(ctx context.Context, orgID, projectID string) *adminv1.ProjectPermissions {
-	// ManageProjects permission on the org gives full access to all projects in the org (only org admins have this)
-	orgPerms := c.organizationPermissionsUnsafe(ctx, orgID)
-	if orgPerms.ManageProjects {
-		return &adminv1.ProjectPermissions{
-			ReadProject:          true,
-			ManageProject:        true,
-			ReadProd:             true,
-			ReadProdStatus:       true,
-			ManageProd:           true,
-			ReadDev:              true,
-			ReadDevStatus:        true,
-			ManageDev:            true,
-			ReadProjectMembers:   true,
-			ManageProjectMembers: true,
-		}
-	}
-
-	roles, err := c.admin.DB.ResolveProjectRolesForUser(ctx, c.token.OwnerID(), projectID)
-	if err != nil {
-		panic(fmt.Errorf("failed to get project permissions: %w", err))
-	}
-
-	composite := &adminv1.ProjectPermissions{}
-	for _, role := range roles {
-		composite = unionProjectRoles(composite, role)
-	}
-
-	return composite
-}
-
-// projectPermissionsService resolves project permissions for a service.
-// A service currently gets full permissions on all projects in the org they belong to.
-func (c *authTokenClaims) projectPermissionsService(ctx context.Context, orgID, projectID string) *adminv1.ProjectPermissions {
-	orgPerms := c.organizationPermissionsUnsafe(ctx, orgID)
-	if orgPerms.ManageProjects {
-		return &adminv1.ProjectPermissions{
-			ReadProject:          true,
-			ManageProject:        true,
-			ReadProd:             true,
-			ReadProdStatus:       true,
-			ManageProd:           true,
-			ReadDev:              true,
-			ReadDevStatus:        true,
-			ManageDev:            true,
-			ReadProjectMembers:   true,
-			ManageProjectMembers: true,
-		}
-	}
-
-	return &adminv1.ProjectPermissions{}
-}
-
-func unionOrgRoles(a *adminv1.OrganizationPermissions, b *database.OrganizationRole) *adminv1.OrganizationPermissions {
-	return &adminv1.OrganizationPermissions{
-		ReadOrg:          a.ReadOrg || b.ReadOrg,
-		ManageOrg:        a.ManageOrg || b.ManageOrg,
-		ReadProjects:     a.ReadProjects || b.ReadProjects,
-		CreateProjects:   a.CreateProjects || b.CreateProjects,
-		ManageProjects:   a.ManageProjects || b.ManageProjects,
-		ReadOrgMembers:   a.ReadOrgMembers || b.ReadOrgMembers,
-		ManageOrgMembers: a.ManageOrgMembers || b.ManageOrgMembers,
-	}
-}
-
-func unionProjectRoles(a *adminv1.ProjectPermissions, b *database.ProjectRole) *adminv1.ProjectPermissions {
-	return &adminv1.ProjectPermissions{
-		ReadProject:          a.ReadProject || b.ReadProject,
-		ManageProject:        a.ManageProject || b.ManageProject,
-		ReadProd:             a.ReadProd || b.ReadProd,
-		ReadProdStatus:       a.ReadProdStatus || b.ReadProdStatus,
-		ManageProd:           a.ManageProd || b.ManageProd,
-		ReadDev:              a.ReadDev || b.ReadDev,
-		ReadDevStatus:        a.ReadDevStatus || b.ReadDevStatus,
-		ManageDev:            a.ManageDev || b.ManageDev,
-		ReadProjectMembers:   a.ReadProjectMembers || b.ReadProjectMembers,
-		ManageProjectMembers: a.ManageProjectMembers || b.ManageProjectMembers,
-	}
+	c.orgPermissionsCache[orgID] = perm
+	return perm
 }

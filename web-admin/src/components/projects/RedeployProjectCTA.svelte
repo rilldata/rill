@@ -11,8 +11,8 @@
     <span slot="manage-project">
       This project does not currently have a deployment. To redeploy the
       project, run this command in the Rill CLI:
+      <CLICommandDisplay command="rill project reconcile --project {project}" />
     </span>
-    <CLICommandDisplay command="rill project reconcile --project {project}" />
     <span slot="read-project">
       This project is not currently deployed. Contact your project's
       administrator to redeploy the project.

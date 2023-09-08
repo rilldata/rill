@@ -2,7 +2,6 @@ package bigquery
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -10,6 +9,7 @@ import (
 	"cloud.google.com/go/bigquery"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/gcputil"
 	"go.uber.org/zap"
@@ -97,7 +97,7 @@ type configProperties struct {
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }
 
-func (d driver) Open(config map[string]any, shared bool, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("bigquery driver can't be shared")
 	}
@@ -218,13 +218,10 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 	return conf, err
 }
 
-func (c *Connection) createClient(ctx context.Context, props *sourceProperties) (*bigquery.Client, error) {
+func (c *Connection) clientOption(ctx context.Context) ([]option.ClientOption, error) {
 	creds, err := gcputil.Credentials(ctx, c.config.SecretJSON, c.config.AllowHostAccess)
 	if err != nil {
-		if !errors.Is(err, gcputil.ErrNoCredentials) {
-			return nil, err
-		}
-		return bigquery.NewClient(ctx, props.ProjectID)
+		return nil, err
 	}
-	return bigquery.NewClient(ctx, props.ProjectID, option.WithCredentials(creds))
+	return []option.ClientOption{option.WithCredentials(creds)}, nil
 }

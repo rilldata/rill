@@ -201,19 +201,19 @@ export class Instance extends Message<Instance> {
   instanceId = "";
 
   /**
-   * Driver to connect to for OLAP (options: duckdb, druid)
+   * OLAP connector name (typically called : olap )
    *
-   * @generated from field: string olap_driver = 2;
+   * @generated from field: string olap_connector = 2;
    */
-  olapDriver = "";
+  olapConnector = "";
 
   /**
-   * Driver for reading/editing code artifacts (options: file, metastore, github).
-   * This enables virtualizing a file system in a cloud setting.
+   * Connector name for repo driver(typically called : repo). 
+   * Repo driver is for reading/editing code artifacts. This enables virtualizing a file system in a cloud setting.
    *
-   * @generated from field: string repo_driver = 4;
+   * @generated from field: string repo_connector = 4;
    */
-  repoDriver = "";
+  repoConnector = "";
 
   /**
    * If true, the runtime will store the instance's catalog in its OLAP store instead
@@ -260,8 +260,8 @@ export class Instance extends Message<Instance> {
   static readonly typeName = "rill.runtime.v1.Instance";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "repo_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "olap_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "repo_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 8, name: "project_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
@@ -522,14 +522,14 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
   instanceId = "";
 
   /**
-   * @generated from field: string olap_driver = 2;
+   * @generated from field: string olap_connector = 2;
    */
-  olapDriver = "";
+  olapConnector = "";
 
   /**
-   * @generated from field: string repo_driver = 4;
+   * @generated from field: string repo_connector = 4;
    */
-  repoDriver = "";
+  repoConnector = "";
 
   /**
    * @generated from field: bool embed_catalog = 6;
@@ -565,8 +565,8 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
   static readonly typeName = "rill.runtime.v1.CreateInstanceRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "repo_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "olap_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "repo_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 8, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
@@ -721,14 +721,14 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
   instanceId = "";
 
   /**
-   * @generated from field: optional string olap_driver = 2;
+   * @generated from field: optional string olap_connector = 2;
    */
-  olapDriver?: string;
+  olapConnector?: string;
 
   /**
-   * @generated from field: optional string repo_driver = 4;
+   * @generated from field: optional string repo_connector = 4;
    */
-  repoDriver?: string;
+  repoConnector?: string;
 
   /**
    * @generated from field: optional bool embed_catalog = 6;
@@ -759,8 +759,8 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
   static readonly typeName = "rill.runtime.v1.EditInstanceRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 4, name: "repo_driver", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "olap_connector", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 4, name: "repo_connector", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 8, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 9, name: "connectors", kind: "message", T: Connector, repeated: true },
