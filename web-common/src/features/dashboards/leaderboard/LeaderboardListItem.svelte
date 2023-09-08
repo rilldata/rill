@@ -26,7 +26,6 @@
     LeaderboardItemData,
     getFormatterValueForPercDiff,
   } from "./leaderboard-utils";
-  import ShiftKey from "@rilldata/web-common/components/tooltip/ShiftKey.svelte";
 
   export let itemData: LeaderboardItemData;
   $: label = itemData.label;
