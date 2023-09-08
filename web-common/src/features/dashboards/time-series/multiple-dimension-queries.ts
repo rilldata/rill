@@ -17,7 +17,6 @@ import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 export function getDimensionValueTimeSeries(
   instanceId,
   metricViewName,
-  values,
   dimensionName,
   selectedMeasureNames,
   filters,
@@ -26,7 +25,19 @@ export function getDimensionValueTimeSeries(
   interval,
   zone
 ) {
-  if (!values || values.length == 0) return;
+  let values = [];
+  const dimensionFilters = filters.include.filter(
+    (filter) => filter.name === dimensionName
+  );
+  if (dimensionFilters) {
+    values = dimensionFilters[0]?.in.slice(-7) || [];
+  }
+
+  if (values.length === 0) {
+    // fetch top 7 values
+  }
+
+  if (!values && values.length == 0) return;
   return derived(
     values.map((value, i) => {
       const updatedIncludeFilter = filters.include.map((filter) => {

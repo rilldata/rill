@@ -34,12 +34,12 @@
       y: currentPointIsNull ? lastAvailableCurrentY : y,
       yOverride: currentPointIsNull,
       yOverrideLabel: "no current data",
-      yOverrideStyleClass: `${dimension.fillClass} italic`,
+      yOverrideStyleClass: `fill-gray-600 italic`,
       key: dimension.name,
       label: "",
       pointColorClass: dimension.fillClass,
       valueStyleClass: "font-semibold",
-      valueColorClass: dimension.fillClass,
+      valueColorClass: "fill-gray-600",
       labelColorClass: dimension.fillClass,
     };
   });
@@ -51,7 +51,7 @@
 <WithGraphicContexts let:xScale let:yScale>
   <MultiMetricMouseoverLabel
     attachPointToLabel
-    direction="left"
+    direction={index % 2 === 0 ? "right" : "left"}
     flipAtEdge="body"
     formatValue={mouseoverFormat}
     point={pointSet || []}

@@ -54,8 +54,6 @@
     $previousTimeRangeKey === $timeRangeKey && $previousYMax < yExtentMax
       ? 100
       : 0;
-
-  $: console.log(dimensionData);
 </script>
 
 <!-- key on the time range itself to prevent weird tweening animations.

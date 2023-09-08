@@ -195,25 +195,18 @@
     endValue = adjustedChartValue?.end;
   }
 
-  $: if (comparisonDimension && endValue) {
-    const dimensionFilters = $dashboardStore?.filters.include.filter(
-      (filter) => filter.name === comparisonDimension
+  $: if (comparisonDimension && $timeControlsStore.ready) {
+    allDimQuery = getDimensionValueTimeSeries(
+      instanceId,
+      metricViewName,
+      comparisonDimension,
+      selectedMeasureNames,
+      $dashboardStore.filters,
+      $timeControlsStore.adjustedStart,
+      $timeControlsStore.adjustedEnd,
+      interval,
+      $dashboardStore?.selectedTimezone
     );
-    if (dimensionFilters) includedValues = dimensionFilters[0]?.in;
-    if (includedValues?.length) {
-      allDimQuery = getDimensionValueTimeSeries(
-        instanceId,
-        metricViewName,
-        includedValues,
-        comparisonDimension,
-        selectedMeasureNames,
-        $dashboardStore.filters,
-        startValue,
-        endValue,
-        interval,
-        $dashboardStore?.selectedTimezone
-      );
-    }
   }
   $: dimensionData = comparisonDimension ? $allDimQuery : [];
 
