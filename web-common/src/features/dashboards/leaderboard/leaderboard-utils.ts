@@ -11,6 +11,7 @@ import {
 } from "../humanize-numbers";
 import { LeaderboardContextColumn } from "../leaderboard-context-column";
 import { SortType } from "../proto-state/derived-types";
+import type { NumberParts } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 
 export function getFormatterValueForPercDiff(pct: number | null) {
   if (pct === null) return PERC_DIFF.PREV_VALUE_NO_DATA;
@@ -57,8 +58,10 @@ export type LeaderboardItemData = {
   // common use case.
   prevValue: number | null;
 
-  // the % change from the previous value
-  deltaPct: number | null;
+  // the relative change from the previous value
+  // note that this needs to be multiplied by 100 to get
+  // the percentage change
+  deltaRel: number | null;
 
   // the absolute change from the previous value
   deltaAbs: number | null;
@@ -90,7 +93,7 @@ function cleanUpComparisonValue(
     prevValue: Number.isFinite(v.comparisonValue)
       ? (v.comparisonValue as number)
       : null,
-    deltaPct: Number.isFinite(v.deltaRel) ? (v.deltaRel as number) * 100 : null,
+    deltaRel: Number.isFinite(v.deltaRel) ? (v.deltaRel as number) : null,
     deltaAbs: Number.isFinite(v.deltaAbs) ? (v.deltaAbs as number) : null,
 
     selected,
@@ -159,7 +162,7 @@ export function prepareLeaderboardItemData(
       value: null,
       pctOfTotal: null,
       prevValue: null,
-      deltaPct: null,
+      deltaRel: null,
       deltaAbs: null,
     });
   });
@@ -177,26 +180,22 @@ export function prepareLeaderboardItemData(
 
 /**
  * Returns the formatted value for the context column
- * given the
  * accounting for the context column type.
  */
 export function formatContextColumnValue(
   itemData: LeaderboardItemData,
   contextType: LeaderboardContextColumn,
   formatPreset: FormatPreset
-): string {
-  let formattedValue = "";
-
+): string | NumberParts | PERC_DIFF.PREV_VALUE_NO_DATA {
   if (contextType === LeaderboardContextColumn.DELTA_PERCENT) {
-    formattedValue = getFormatterValueForPercDiff(itemData.deltaPct);
+    return getFormatterValueForPercDiff(itemData.deltaRel);
   } else if (contextType === LeaderboardContextColumn.PERCENT) {
-    formattedValue = getFormatterValueForPercDiff(itemData.pctOfTotal);
+    return getFormatterValueForPercDiff(itemData.pctOfTotal);
   } else if (contextType === LeaderboardContextColumn.DELTA_ABSOLUTE) {
-    formattedValue = humanizeDataType(itemData.deltaAbs, formatPreset);
+    return humanizeDataType(itemData.deltaAbs, formatPreset);
   } else {
-    formattedValue = "";
+    return "";
   }
-  return formattedValue;
 }
 export const contextColumnWidth = (
   contextType: LeaderboardContextColumn

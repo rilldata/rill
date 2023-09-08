@@ -6,6 +6,7 @@ import { humanizedFormatterFactory } from "@rilldata/web-common/lib/number-forma
 import {
   FormatterFactoryOptions,
   NumberKind,
+  NumberParts,
 } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 import {
   formatMsInterval,
@@ -168,16 +169,11 @@ function humanizeGroupValuesUtil2(values: number[], type: FormatPreset) {
 }
 
 /** formatter for the comparison percentage differences */
-export function formatMeasurePercentageDifference(
-  value,
-  method = "partsFormat"
-) {
+export function formatMeasurePercentageDifference(value): NumberParts {
   if (Math.abs(value * 100) < 1 && value !== 0) {
-    return method === "partsFormat"
-      ? { percent: "%", neg: "", int: "<1" }
-      : "<1%";
+    return { percent: "%", neg: "", int: "<1" };
   } else if (value === 0) {
-    return method === "partsFormat" ? { percent: "%", neg: "", int: 0 } : "0%";
+    return { percent: "%", neg: "", int: 0 };
   }
   const factory = new PerRangeFormatter([], {
     strategy: "perRange",
@@ -194,5 +190,5 @@ export function formatMeasurePercentageDifference(
     numberKind: NumberKind.PERCENT,
   });
 
-  return factory[method](value);
+  return factory["partsFormat"](value);
 }

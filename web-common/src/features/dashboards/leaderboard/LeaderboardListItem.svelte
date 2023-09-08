@@ -30,7 +30,7 @@
   $: label = itemData.dimensionValue;
   $: measureValue = itemData.value;
   $: selected = itemData.selected;
-  $: comparisonValue = itemData.comparisonValue;
+  $: comparisonValue = itemData.prevValue;
 
   export let contextColumn: LeaderboardContextColumn;
 

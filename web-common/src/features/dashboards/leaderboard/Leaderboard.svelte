@@ -100,7 +100,6 @@
   }
 
   function toggleSort(evt) {
-    console.log("toggleSort", evt.detail);
     metricsExplorerStore.toggleSort(metricViewName, evt.detail);
   }
 
@@ -149,14 +148,10 @@
     sortedQueryOptions
   );
 
-  $: console.log("sortedQuery BODY --", dimensionName, sortedQueryBody);
-  $: console.log("sortedQuery OPTIONS --", dimensionName, sortedQueryOptions);
+  // $: console.log("sortedQuery BODY --", dimensionName, sortedQueryBody);
+  // $: console.log("sortedQuery OPTIONS --", dimensionName, sortedQueryOptions);
   $: if (!$sortedQuery.isFetching) {
-    console.log("sortedQuery RAW DATA --", dimensionName, $sortedQuery);
-  }
-
-  $: if (!$sortedQuery.isFetching) {
-    console.log("sortedQuery RAW DATA --", dimensionName, $sortedQuery);
+    console.log("sortedQuery RAW DATA --", dimensionName, $sortedQuery?.data);
   }
 
   /** replace data after fetched. */
