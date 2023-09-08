@@ -120,7 +120,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	}
 	if pp.State.CurrentCommitSha != hash {
 		pp.State.CurrentCommitSha = hash
-		err = r.C.UpdateState(ctx, n, self) // TODO: Pointer relationship between self and pp makes this hard to follow
+		err = r.C.UpdateState(ctx, n, self)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
@@ -442,7 +442,7 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, self
 	}
 
 	// Update meta if refs or file paths changed
-	if !slices.Equal(existing.Meta.FilePaths, def.Paths) || !slices.Equal(existing.Meta.Refs, refs) { // TODO: Don't use slices.Equal for protos
+	if !slices.Equal(existing.Meta.FilePaths, def.Paths) || !equalResourceNames(existing.Meta.Refs, refs) {
 		err := r.C.UpdateMeta(ctx, n, refs, self.Meta.Name, def.Paths)
 		if err != nil {
 			return err
@@ -550,6 +550,18 @@ func resourceNameToCompiler(name *runtimev1.ResourceName) compilerv1.ResourceNam
 
 func equalResourceName(a, b *runtimev1.ResourceName) bool {
 	return a.Kind == b.Kind && strings.EqualFold(a.Name, b.Name)
+}
+
+func equalResourceNames(a, b []*runtimev1.ResourceName) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, v := range a {
+		if !equalResourceName(v, b[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 func equalSourceSpec(a, b *runtimev1.SourceSpec) bool {

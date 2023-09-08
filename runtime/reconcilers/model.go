@@ -122,10 +122,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{Err: err}
 	}
 
-	// TODO: Incorporate changes to refs in hash – track if refs have changed (deleted, added, or state updated)
-
 	// Use a hash of execution-related fields from the spec to determine if something has changed
-	hash, err := r.executionSpecHash(model.Spec)
+	hash, err := r.executionSpecHash(ctx, self.Meta.Refs, model.Spec)
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to compute hash: %w", err)}
 	}
@@ -151,6 +149,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// Decide if we should trigger an update
 	trigger := model.Spec.Trigger
 	trigger = trigger || model.State.Table == ""
+	trigger = trigger || model.State.Table != tableName
 	trigger = trigger || model.State.RefreshedOn == nil
 	trigger = trigger || model.State.SpecHash != hash
 	trigger = trigger || !exists
@@ -307,9 +306,34 @@ func (r *ModelReconciler) delayedMaterializeTime(spec *runtimev1.ModelSpec, sinc
 	return since.Add(time.Duration(spec.MaterializeDelaySeconds) * time.Second), true
 }
 
-// executionSpecHash computes a hash of only those model spec properties that impact execution.
-func (r *ModelReconciler) executionSpecHash(spec *runtimev1.ModelSpec) (string, error) {
+// executionSpecHash computes a hash of only those model properties that impact execution.
+func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtimev1.ResourceName, spec *runtimev1.ModelSpec) (string, error) {
 	hash := md5.New()
+
+	for _, ref := range refs { // Refs are always sorted
+		// Write name
+		_, err := hash.Write([]byte(ref.Kind))
+		if err != nil {
+			return "", err
+		}
+		_, err = hash.Write([]byte(ref.Name))
+		if err != nil {
+			return "", err
+		}
+
+		// Write state version (doesn't matter how the spec or meta has changed, only if/when state changes)
+		r, err := r.C.Get(ctx, ref, false)
+		var stateVersion int64
+		if err == nil {
+			stateVersion = r.Meta.StateVersion
+		} else {
+			stateVersion = -1
+		}
+		err = binary.Write(hash, binary.BigEndian, stateVersion)
+		if err != nil {
+			return "", err
+		}
+	}
 
 	_, err := hash.Write([]byte(spec.Connector))
 	if err != nil {
