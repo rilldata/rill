@@ -73,7 +73,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
       return yup.object().shape({
         path: yup
           .string()
-          // .matches(/^https?:\/\//, 'Path must start with "http(s)://"')
+          .matches(/^azblob:\/\//, "Must be an Azure URI (e.g. azblob://container/path)")
           .required("Path is required"),
         sourceName: yup
           .string()

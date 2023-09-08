@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
@@ -13,7 +12,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
 	"github.com/rilldata/rill/runtime/pkg/activity"
-	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"go.uber.org/zap"
 	"gocloud.dev/blob/azureblob"
@@ -33,7 +31,7 @@ var spec = drivers.Spec{
 			Key:         "path",
 			DisplayName: "Blob URI",
 			Description: "Path to file on the disk.",
-			Placeholder: "az://container-name/path/to/file.csv",
+			Placeholder: "azblob://container-name/path/to/file.csv",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
 			Hint:        "Glob patterns are supported",
@@ -49,23 +47,16 @@ var spec = drivers.Spec{
 	},
 	ConfigProperties: []drivers.PropertySchema{
 		{
-			Key:  "azure.storage.account",
-			Hint: "Enter path of file to load from.",
-			ValidateFunc: func(any interface{}) error {
-				val := any.(string)
-				if val == "" {
-					// user can chhose to leave empty for public sources
-					return nil
-				}
-
-				path, err := fileutil.ExpandHome(strings.TrimSpace(val))
-				if err != nil {
-					return err
-				}
-
-				_, err = os.Stat(path)
-				return err
-			},
+			Key:    "azure_storage_account",
+			Secret: true,
+		},
+		{
+			Key:    "azure_storage_key",
+			Secret: true,
+		},
+		{
+			Key:    "azure_storage_sas_token",
+			Secret: true,
 		},
 	},
 }
@@ -73,7 +64,10 @@ var spec = drivers.Spec{
 type driver struct{}
 
 type configProperties struct {
-	Account string `mapstructure:"azure.storage.account"`
+	Account         string `mapstructure:"azure_storage_account"`
+	Key             string `mapstructure:"azure_storage_key"`
+	SASToken        string `mapstructure:"azure_storage_sas_token"`
+	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }
 
 func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -102,6 +96,7 @@ func (d driver) Spec() drivers.Spec {
 }
 
 func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
+	// TODO: implement
 	return false, nil
 }
 
@@ -240,8 +235,6 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 		return nil, err
 	}
 	if !doublestar.ValidatePattern(conf.Path) {
-		// ideally this should be validated at much earlier stage
-		// keeping it here to have gcs specific validations
 		return nil, fmt.Errorf("glob pattern %s is invalid", conf.Path)
 	}
 	url, err := globutil.ParseBucketURL(conf.Path)
