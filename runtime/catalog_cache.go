@@ -137,7 +137,7 @@ func (c *catalogCache) checkLeader(ctx context.Context) error {
 
 // get returns a resource from the catalog.
 // Unlike other catalog functions, it is safe to call get concurrently with calls to list and flush (i.e. under a read lock).
-func (c *catalogCache) get(n *runtimev1.ResourceName, withDeleted bool, clone bool) (*runtimev1.Resource, error) {
+func (c *catalogCache) get(n *runtimev1.ResourceName, withDeleted, clone bool) (*runtimev1.Resource, error) {
 	rs := c.resources[n.Kind]
 	if rs == nil {
 		return nil, drivers.ErrResourceNotFound
@@ -157,7 +157,7 @@ func (c *catalogCache) get(n *runtimev1.ResourceName, withDeleted bool, clone bo
 
 // list returns a list of resources in the catalog.
 // Unlike other catalog functions, it is safe to call list concurrently with calls to get and flush (i.e. under a read lock).
-func (c *catalogCache) list(kind string, withDeleted bool, clone bool) ([]*runtimev1.Resource, error) {
+func (c *catalogCache) list(kind string, withDeleted, clone bool) ([]*runtimev1.Resource, error) {
 	if kind != "" {
 		n := len(c.resources[kind])
 		res := make([]*runtimev1.Resource, 0, n)
@@ -216,6 +216,7 @@ func (c *catalogCache) list(kind string, withDeleted bool, clone bool) ([]*runti
 // create creates a resource in the catalog.
 // It will error if a resource with the same name already exists.
 // If a soft-deleted resource exists with the same name, it will be overwritten (no longer deleted).
+// The passed resource should only have its spec populated. The meta and state fields will be populated by this function.
 func (c *catalogCache) create(name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths []string, r *runtimev1.Resource) error {
 	existing, _ := c.get(name, true, false)
 	if existing != nil {
@@ -236,6 +237,10 @@ func (c *catalogCache) create(name *runtimev1.ResourceName, refs []*runtimev1.Re
 	if existing != nil {
 		r.Meta.Version = existing.Meta.Version + 1
 		r.Meta.SpecVersion = existing.Meta.SpecVersion + 1
+	}
+	err := c.ctrl.reconciler(name.Kind).ResetState(r)
+	if err != nil {
+		return err
 	}
 	c.link(r)
 	c.dirty[nameStr(r.Meta.Name)] = r.Meta.Name
@@ -300,13 +305,13 @@ func (c *catalogCache) updateMeta(name *runtimev1.ResourceName, refs []*runtimev
 }
 
 // updateSpec updates the spec field of a resource.
+// It uses the spec from the passed resource and disregards its other fields.
 func (c *catalogCache) updateSpec(name *runtimev1.ResourceName, from *runtimev1.Resource) error {
 	r, err := c.get(name, false, false)
 	if err != nil {
 		return err
 	}
 	// NOTE: No need to unlink/link because no indexed fields are edited.
-
 	err = c.ctrl.reconciler(name.Kind).AssignSpec(from, r)
 	if err != nil {
 		return err
@@ -320,6 +325,7 @@ func (c *catalogCache) updateSpec(name *runtimev1.ResourceName, from *runtimev1.
 }
 
 // updateState updates the state field of a resource.
+// It uses the state from the passed resource and disregards its other fields.
 func (c *catalogCache) updateState(name *runtimev1.ResourceName, from *runtimev1.Resource) error {
 	r, err := c.get(name, false, false)
 	if err != nil {

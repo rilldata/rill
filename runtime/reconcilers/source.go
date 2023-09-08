@@ -56,6 +56,11 @@ func (r *SourceReconciler) AssignState(from, to *runtimev1.Resource) error {
 	return nil
 }
 
+func (r *SourceReconciler) ResetState(res *runtimev1.Resource) error {
+	res.GetSource().State = &runtimev1.SourceState{}
+	return nil
+}
+
 func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName) runtime.ReconcileResult {
 	self, err := r.C.Get(ctx, n, true)
 	if err != nil {

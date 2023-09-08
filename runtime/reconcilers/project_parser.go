@@ -53,6 +53,11 @@ func (r *ProjectParserReconciler) AssignState(from, to *runtimev1.Resource) erro
 	return nil
 }
 
+func (r *ProjectParserReconciler) ResetState(res *runtimev1.Resource) error {
+	res.GetProjectParser().State = &runtimev1.ProjectParserState{}
+	return nil
+}
+
 func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName) runtime.ReconcileResult {
 	// Get ProjectParser resource
 	self, err := r.C.Get(ctx, n, true)

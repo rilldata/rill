@@ -55,6 +55,11 @@ func (r *ModelReconciler) AssignState(from, to *runtimev1.Resource) error {
 	return nil
 }
 
+func (r *ModelReconciler) ResetState(res *runtimev1.Resource) error {
+	res.GetModel().State = &runtimev1.ModelState{}
+	return nil
+}
+
 func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName) runtime.ReconcileResult {
 	self, err := r.C.Get(ctx, n, true)
 	if err != nil {

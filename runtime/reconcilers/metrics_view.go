@@ -47,6 +47,11 @@ func (r *MetricsViewReconciler) AssignState(from, to *runtimev1.Resource) error 
 	return nil
 }
 
+func (r *MetricsViewReconciler) ResetState(res *runtimev1.Resource) error {
+	res.GetMetricsView().State = &runtimev1.MetricsViewState{}
+	return nil
+}
+
 func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName) runtime.ReconcileResult {
 	self, err := r.C.Get(ctx, n, true)
 	if err != nil {

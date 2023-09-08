@@ -47,6 +47,11 @@ func (r *MigrationReconciler) AssignState(from, to *runtimev1.Resource) error {
 	return nil
 }
 
+func (r *MigrationReconciler) ResetState(res *runtimev1.Resource) error {
+	res.GetMigration().State = &runtimev1.MigrationState{}
+	return nil
+}
+
 func (r *MigrationReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName) runtime.ReconcileResult {
 	self, err := r.C.Get(ctx, n, true)
 	if err != nil {

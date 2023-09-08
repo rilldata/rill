@@ -49,6 +49,11 @@ func (r *RefreshTriggerReconciler) AssignState(from, to *runtimev1.Resource) err
 	return nil
 }
 
+func (r *RefreshTriggerReconciler) ResetState(res *runtimev1.Resource) error {
+	res.GetRefreshTrigger().State = &runtimev1.RefreshTriggerState{}
+	return nil
+}
+
 func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName) runtime.ReconcileResult {
 	self, err := r.C.Get(ctx, n, true)
 	if err != nil {

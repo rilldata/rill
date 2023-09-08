@@ -39,6 +39,7 @@ type Reconciler interface {
 	Close(ctx context.Context) error
 	AssignSpec(from, to *runtimev1.Resource) error
 	AssignState(from, to *runtimev1.Resource) error
+	ResetState(r *runtimev1.Resource) error
 	Reconcile(ctx context.Context, n *runtimev1.ResourceName) ReconcileResult
 }
 
