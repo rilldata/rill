@@ -17,7 +17,7 @@ import (
 // checkRefs checks that all refs exist, are idle, and have no errors.
 func checkRefs(ctx context.Context, c *runtime.Controller, refs []*runtimev1.ResourceName) error {
 	for _, ref := range refs {
-		res, err := c.Get(ctx, ref)
+		res, err := c.Get(ctx, ref, false)
 		if err != nil {
 			if errors.Is(err, drivers.ErrResourceNotFound) {
 				return fmt.Errorf("dependency error: resource %q (%s) not found", ref.Name, ref.Kind)

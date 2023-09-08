@@ -48,11 +48,14 @@ func (r *MetricsViewReconciler) AssignState(from, to *runtimev1.Resource) error 
 }
 
 func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName) runtime.ReconcileResult {
-	self, err := r.C.Get(ctx, n)
+	self, err := r.C.Get(ctx, n, true)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
 	mv := self.GetMetricsView()
+	if mv == nil {
+		return runtime.ReconcileResult{Err: errors.New("not a metrics view")}
+	}
 
 	// NOTE: Not checking refs here since refs may still be valid even if they have errors (in case of staged changes).
 	// Instead, we just validate against the table name.

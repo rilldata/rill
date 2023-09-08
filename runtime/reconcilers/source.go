@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"time"
 
@@ -56,11 +57,14 @@ func (r *SourceReconciler) AssignState(from, to *runtimev1.Resource) error {
 }
 
 func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName) runtime.ReconcileResult {
-	self, err := r.C.Get(ctx, n)
+	self, err := r.C.Get(ctx, n, true)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
 	src := self.GetSource()
+	if src == nil {
+		return runtime.ReconcileResult{Err: errors.New("not a source")}
+	}
 
 	// The table name to ingest into is derived from the resource name.
 	// We only set src.State.Table after ingestion is complete.
@@ -280,7 +284,7 @@ func (r *SourceReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Res
 	r.C.Lock(ctx)
 	defer r.C.Unlock(ctx)
 
-	self, err := r.C.Get(ctx, n)
+	self, err := r.C.Get(ctx, n, false)
 	if err != nil {
 		return err
 	}

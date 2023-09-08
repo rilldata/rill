@@ -2,6 +2,7 @@ package reconcilers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -47,11 +48,14 @@ func (r *MigrationReconciler) AssignState(from, to *runtimev1.Resource) error {
 }
 
 func (r *MigrationReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName) runtime.ReconcileResult {
-	self, err := r.C.Get(ctx, n)
+	self, err := r.C.Get(ctx, n, true)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
 	mig := self.GetMigration()
+	if mig == nil {
+		return runtime.ReconcileResult{Err: errors.New("not a migration")}
+	}
 
 	// Check refs - stop if any of them are invalid
 	err = checkRefs(ctx, r.C, self.Meta.Refs)
@@ -112,7 +116,7 @@ func (r *MigrationReconciler) executeMigration(ctx context.Context, self *runtim
 			if name.Kind == compilerv1.ResourceKindUnspecified {
 				return compilerv1.TemplateResource{}, fmt.Errorf("can't resolve name %q without kind specified", name.Name)
 			}
-			res, err := r.C.Get(ctx, resourceNameFromCompiler(name))
+			res, err := r.C.Get(ctx, resourceNameFromCompiler(name), false)
 			if err != nil {
 				return compilerv1.TemplateResource{}, err
 			}

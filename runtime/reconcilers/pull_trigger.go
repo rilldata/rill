@@ -48,7 +48,7 @@ func (r *PullTriggerReconciler) AssignState(from, to *runtimev1.Resource) error 
 }
 
 func (r *PullTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName) runtime.ReconcileResult {
-	self, err := r.C.Get(ctx, n)
+	self, err := r.C.Get(ctx, n, true)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}

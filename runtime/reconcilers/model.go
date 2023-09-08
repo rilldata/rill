@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"time"
 
@@ -55,11 +56,14 @@ func (r *ModelReconciler) AssignState(from, to *runtimev1.Resource) error {
 }
 
 func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName) runtime.ReconcileResult {
-	self, err := r.C.Get(ctx, n)
+	self, err := r.C.Get(ctx, n, true)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
 	model := self.GetModel()
+	if model == nil {
+		return runtime.ReconcileResult{Err: errors.New("not a model")}
+	}
 
 	// The view/table name is derived from the resource name.
 	// We only set src.State.Table after it has been created,
@@ -336,7 +340,7 @@ func (r *ModelReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Reso
 	r.C.Lock(ctx)
 	defer r.C.Unlock(ctx)
 
-	self, err := r.C.Get(ctx, n)
+	self, err := r.C.Get(ctx, n, false)
 	if err != nil {
 		return err
 	}
@@ -377,7 +381,7 @@ func (r *ModelReconciler) createModel(ctx context.Context, self *runtimev1.Resou
 				if name.Kind == compilerv1.ResourceKindUnspecified {
 					return compilerv1.TemplateResource{}, fmt.Errorf("can't resolve name %q without kind specified", name.Name)
 				}
-				res, err := r.C.Get(ctx, resourceNameFromCompiler(name))
+				res, err := r.C.Get(ctx, resourceNameFromCompiler(name), false)
 				if err != nil {
 					return compilerv1.TemplateResource{}, err
 				}
