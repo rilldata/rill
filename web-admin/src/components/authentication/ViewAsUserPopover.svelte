@@ -1,0 +1,83 @@
+<script lang="ts">
+  import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
+  import { Search } from "@rilldata/web-common/components/search";
+  import { updateMimickedJWT } from "@rilldata/web-common/features/dashboards/granular-access-policies/updateMimickedJWT";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { matchSorter } from "match-sorter";
+  import { createEventDispatcher } from "svelte";
+  import { createAdminServiceSearchProjectUsers, V1User } from "../../client";
+  import { viewAsUserStore } from "./viewAsUserStore";
+
+  export let organization: string;
+  export let project: string;
+
+  // Note: this will break down if there are more than 1000 users in a project
+  $: projectUsers = createAdminServiceSearchProjectUsers(
+    organization,
+    project,
+    { emailQuery: "%", pageSize: 1000, pageToken: undefined }
+  );
+
+  const dispatch = createEventDispatcher();
+
+  const queryClient = useQueryClient();
+  function viewAsUser(user: V1User) {
+    viewAsUserStore.set(user);
+    updateMimickedJWT(queryClient, organization, project, user);
+    dispatch("select");
+  }
+
+  let minWidth = "150px";
+  let maxWidth = "300px";
+  let minHeight = "150px";
+  let maxHeight = "190px";
+
+  let searchText = "";
+
+  $: clientSideUsers = $projectUsers.data?.users ?? [];
+  // For testing: repeat the users array X times
+  // $: clientSideUsers =
+  //   $projectUsers.data?.users.flatMap((users) =>
+  //     Array.from({ length: 10 }, () => users)
+  // ) ?? [];
+
+  $: visibleUsers = searchText
+    ? matchSorter(clientSideUsers, searchText, { keys: ["email"] })
+    : clientSideUsers;
+</script>
+
+<Menu
+  focusOnMount={false}
+  {minWidth}
+  {maxWidth}
+  {minHeight}
+  {maxHeight}
+  paddingBottom={0}
+  paddingTop={1}
+  rounded={false}
+  on:click-outside
+  on:escape
+>
+  <div class="px-2 pt-1 pb-2 text-[10px] text-gray-500 text-left">
+    Test your <a
+      target="_blank"
+      href="https://docs.rilldata.com/develop/security">security policies</a
+    > by viewing this project from the perspective of another user.
+  </div>
+  <Search bind:value={searchText} />
+  {#if visibleUsers.length > 0}
+    <div class="overflow-auto pb-1">
+      {#each visibleUsers as user}
+        <MenuItem
+          animateSelect={false}
+          focusOnMount={false}
+          on:select={() => viewAsUser(user)}
+        >
+          {user.email}
+        </MenuItem>
+      {/each}
+    </div>
+  {:else}
+    <div class="mt-5 ui-copy-disabled text-center">no results</div>
+  {/if}
+</Menu>
