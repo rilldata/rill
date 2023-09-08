@@ -180,9 +180,7 @@ func source(connector string, src *runtimev1.Source) drivers.Source {
 		}
 	case "motherduck":
 		return &drivers.DatabaseSource{}
-	case "postgres_ext":
-		return &drivers.DatabaseSource{}
-	case "sqlite_ext":
+	case "sqlite":
 		return &drivers.DatabaseSource{}
 	case "bigquery":
 		return &drivers.DatabaseSource{

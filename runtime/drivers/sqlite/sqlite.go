@@ -17,6 +17,7 @@ import (
 
 func init() {
 	drivers.Register("sqlite", driver{})
+	drivers.RegisterAsConnector("sqlite", driver{})
 }
 
 type driver struct{}
@@ -55,7 +56,21 @@ func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
 }
 
 func (d driver) Spec() drivers.Spec {
-	return drivers.Spec{}
+	return drivers.Spec{
+		DisplayName: "SQLite",
+		Description: "Import data from SQLite table to DuckDB.",
+		SourceProperties: []drivers.PropertySchema{
+			{
+				Key:         "sql",
+				Type:        drivers.StringPropertyType,
+				Required:    true,
+				DisplayName: "SQL",
+				Description: "Query to extract data from SQLite",
+				Placeholder: "SELECT * FROM sqlite_scan('/Users/kanshul/.config/gcloud/access_tokens.db', 'film');",
+				Hint:        "https://duckdb.org/docs/extensions/sqlite_scanner#querying-individual-tables",
+			},
+		},
+	}
 }
 
 func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {

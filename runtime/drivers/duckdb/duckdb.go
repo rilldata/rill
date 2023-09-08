@@ -26,62 +26,27 @@ import (
 func init() {
 	drivers.Register("duckdb", Driver{name: "duckdb"})
 	drivers.Register("motherduck", Driver{name: "motherduck"})
-	drivers.Register("postgres_ext", Driver{name: "postgres_ext"})
-	drivers.Register("sqlite_ext", Driver{name: "sqlite_ext"})
 	drivers.RegisterAsConnector("motherduck", Driver{name: "motherduck"})
-	drivers.RegisterAsConnector("postgres_ext", Driver{name: "postgres_ext"})
-	drivers.RegisterAsConnector("sqlite_ext", Driver{name: "sqlite_ext"})
 }
 
-var specs map[string]drivers.Spec = map[string]drivers.Spec{
-	"motherduck": {
-		DisplayName: "MotherDuck",
-		Description: "Import data from MotherDuck.",
-		SourceProperties: []drivers.PropertySchema{
-			{
-				Key:         "sql",
-				Type:        drivers.StringPropertyType,
-				Required:    true,
-				DisplayName: "SQL",
-				Description: "Query to extract data from MotherDuck.",
-				Placeholder: "select * from my_db.my_table;",
-			},
-		},
-		ConfigProperties: []drivers.PropertySchema{
-			{
-				Key:    "token",
-				Secret: true,
-			},
+// spec for duckdb as motherduck connector
+var spec = drivers.Spec{
+	DisplayName: "MotherDuck",
+	Description: "Import data from MotherDuck.",
+	SourceProperties: []drivers.PropertySchema{
+		{
+			Key:         "sql",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "SQL",
+			Description: "Query to extract data from MotherDuck.",
+			Placeholder: "select * from my_db.my_table;",
 		},
 	},
-	"postgres_ext": {
-		DisplayName: "Postgres",
-		Description: "Import data from Postgres table to DuckDB.",
-		SourceProperties: []drivers.PropertySchema{
-			{
-				Key:         "sql",
-				Type:        drivers.StringPropertyType,
-				Required:    true,
-				DisplayName: "SQL",
-				Description: "Query to extract data from postgres",
-				Placeholder: "SELECT * FROM postgres_scan('dbname=postgres user=postgres password=*** host=127.0.0.1', 'public', 'users');",
-				Hint:        "https://duckdb.org/docs/extensions/postgres_scanner.html#querying-individual-tables",
-			},
-		},
-	},
-	"sqlite_ext": {
-		DisplayName: "SQLite",
-		Description: "Import data from SQLite table to DuckDB.",
-		SourceProperties: []drivers.PropertySchema{
-			{
-				Key:         "sql",
-				Type:        drivers.StringPropertyType,
-				Required:    true,
-				DisplayName: "SQL",
-				Description: "Query to extract data from SQLite",
-				Placeholder: "SELECT * FROM sqlite_scan('sakila.db', 'film');",
-				Hint:        "https://duckdb.org/docs/extensions/sqlite_scanner#querying-individual-tables",
-			},
+	ConfigProperties: []drivers.PropertySchema{
+		{
+			Key:    "token",
+			Secret: true,
 		},
 	},
 }
@@ -170,7 +135,7 @@ func (d Driver) Drop(config map[string]any, logger *zap.Logger) error {
 }
 
 func (d Driver) Spec() drivers.Spec {
-	return specs[d.name]
+	return spec
 }
 
 func (d Driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
@@ -269,7 +234,7 @@ func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter
 		if from == to {
 			return transporter.NewDuckDBToDuckDB(olap, c.logger), true
 		}
-		if from.Driver() == "postgres_ext" || from.Driver() == "sqlite_ext" {
+		if from.Driver() == "sqlite" {
 			return transporter.NewSQLExtensionToDuckDB(from, olap, c.logger), true
 		}
 		if from.Driver() == "motherduck" {

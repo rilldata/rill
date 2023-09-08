@@ -403,16 +403,7 @@ func source(connector string, src *runtimev1.Source) (drivers.Source, error) {
 			SQL:   query,
 			Props: props,
 		}, nil
-	case "postgres_ext":
-		query, ok := props["sql"].(string)
-		if !ok {
-			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"postgres\"")
-		}
-
-		return &drivers.DatabaseSource{
-			SQL: query,
-		}, nil
-	case "sqlite_ext":
+	case "sqlite":
 		query, ok := props["sql"].(string)
 		if !ok {
 			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"sqlite\"")
@@ -452,9 +443,7 @@ func connectorVariables(src *runtimev1.Source, env map[string]string, repoRoot s
 	case "motherduck":
 		vars["token"] = env["token"]
 		vars["dsn"] = ""
-	case "postgres_ext":
-		vars["dsn"] = ""
-	case "sqlite_ext":
+	case "sqlite":
 		vars["dsn"] = ""
 	case "local_file":
 		vars["dsn"] = repoRoot

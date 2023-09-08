@@ -27,8 +27,7 @@
     "https",
     "local_file",
     "motherduck",
-    "postgres_ext",
-    "sqlite_ext",
+    "sqlite",
     "bigquery",
   ];
 
@@ -93,7 +92,7 @@
     </TabGroup>
   </div>
   <div class="flex-grow overflow-y-auto">
-    {#if selectedConnector?.name === "gcs" || selectedConnector?.name === "s3" || selectedConnector?.name === "https" || selectedConnector?.name === "motherduck" || selectedConnector?.name === "postgres_ext" || selectedConnector?.name === "sqlite_ext" || selectedConnector?.name === "bigquery"}
+    {#if selectedConnector?.name === "gcs" || selectedConnector?.name === "s3" || selectedConnector?.name === "https" || selectedConnector?.name === "motherduck" || selectedConnector?.name === "postgres_ext" || selectedConnector?.name === "sqlite"}
       {#key selectedConnector}
         <RemoteSourceForm connector={selectedConnector} on:close />
       {/key}

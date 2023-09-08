@@ -18,6 +18,7 @@ type sqlextensionToDuckDB struct {
 var _ drivers.Transporter = &sqlextensionToDuckDB{}
 
 // NewSQLExtensionToDuckDB returns a transporter to transfer data to duckdb from a sql extension supported by duckdb.
+// Currently only sqlite extension is supported. Postgres is not supported due to licensing issues.
 func NewSQLExtensionToDuckDB(from drivers.Handle, to drivers.OLAPStore, logger *zap.Logger) drivers.Transporter {
 	return &sqlextensionToDuckDB{
 		to:     to,

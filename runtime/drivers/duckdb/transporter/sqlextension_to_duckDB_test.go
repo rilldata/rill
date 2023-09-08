@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	_ "modernc.org/sqlite"
@@ -27,9 +29,9 @@ func Test_sqlextensionToDuckDB_Transfer(t *testing.T) {
 	require.NoError(t, err)
 	db.Close()
 
-	from, err := drivers.Open("sqlite_ext", map[string]any{"dsn": ""}, false, zap.NewNop())
+	from, err := drivers.Open("sqlite", map[string]any{"dsn": ""}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
-	to, err := drivers.Open("duckdb", map[string]any{"dsn": ""}, false, zap.NewNop())
+	to, err := drivers.Open("duckdb", map[string]any{"dsn": ""}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	olap, _ := to.AsOLAP("")
 
