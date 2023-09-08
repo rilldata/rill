@@ -71,11 +71,11 @@ func (q *MetricsViewComparisonToplist) Resolve(ctx context.Context, rt *runtime.
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	if q.MetricsView.TimeDimension == "" && (q.BaseTimeRange != nil || q.ComparisonTimeRange != nil) {
+	if q.MetricsView.TimeDimension == "" && (!isTimeRangeNil(q.BaseTimeRange) || !isTimeRangeNil(q.ComparisonTimeRange)) {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
-	if q.ComparisonTimeRange != nil {
+	if !isTimeRangeNil(q.ComparisonTimeRange) {
 		return q.executeComparisonToplist(ctx, olap, q.MetricsView, priority, q.ResolvedMVSecurity)
 	}
 
@@ -560,4 +560,8 @@ func validateSort(sorts []*runtimev1.MetricsViewComparisonSort) error {
 		}
 	}
 	return nil
+}
+
+func isTimeRangeNil(tr *runtimev1.TimeRange) bool {
+	return tr == nil || (tr.Start == nil && tr.End == nil)
 }
