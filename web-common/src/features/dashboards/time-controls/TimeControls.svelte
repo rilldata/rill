@@ -40,6 +40,7 @@
   let baseTimeRange: TimeRange;
   let minTimeGrain: V1TimeGrain;
   let availableTimeZones: string[] = [];
+  let dimensions = [];
 
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
 
@@ -71,6 +72,8 @@
       metricsExplorerStore.setTimeZone(metricViewName, "Etc/UTC");
       localUserPreferences.set({ timeZone: "Etc/UTC" });
     }
+
+    dimensions = $metaQuery?.data?.dimensions;
   }
 
   // we get the timeGrainOptions so that we can assess whether or not the
@@ -193,15 +196,9 @@
       }}
       on:disable-comparison={() =>
         metricsExplorerStore.displayComparison(metricViewName, false)}
-      {minTimeGrain}
-      currentStart={$dashboardStore?.selectedTimeRange?.start}
-      currentEnd={$dashboardStore?.selectedTimeRange?.end}
-      boundaryStart={allTimeRange.start}
-      boundaryEnd={allTimeRange.end}
-      zone={$dashboardStore?.selectedTimezone}
       showComparison={$dashboardStore?.showComparison}
-      selectedComparison={$dashboardStore?.selectedComparisonTimeRange}
-      comparisonOptions={availableComparisons}
+      selectedDimension={$dashboardStore?.selectedComparisonDimension}
+      {dimensions}
     />
     <TimeComparisonSelector
       on:select-comparison={(e) => {

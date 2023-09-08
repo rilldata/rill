@@ -13,100 +13,30 @@ This component needs to do the following:
   } from "@rilldata/web-common/components/menu";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
-  import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
   import {
     NO_COMPARISON_LABEL,
     TIME_COMPARISON,
   } from "@rilldata/web-common/lib/time/config";
-  import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import { createEventDispatcher } from "svelte";
-  import { slide } from "svelte/transition";
-  import type { V1TimeGrain } from "../../../runtime-client";
-  import CustomTimeRangeInput from "./CustomTimeRangeInput.svelte";
-  import CustomTimeRangeMenuItem from "./CustomTimeRangeMenuItem.svelte";
+
   import SelectorButton from "./SelectorButton.svelte";
   import Compare from "@rilldata/web-common/components/icons/Compare.svelte";
+  import type { MetricsViewDimension } from "@rilldata/web-common/runtime-client";
 
   const dispatch = createEventDispatcher();
 
-  export let currentStart: Date;
-  export let currentEnd: Date;
-  export let boundaryStart: Date;
-  export let boundaryEnd: Date;
-  export let minTimeGrain: V1TimeGrain;
-  export let zone: string;
-
   export let showComparison = true;
-  export let selectedComparison;
-  export let comparisonOptions: TimeComparisonOption[];
+  export let selectedDimension;
+  export let dimensions: MetricsViewDimension[];
 
-  $: comparisonOption = selectedComparison?.name;
+  const TIME = "Time";
+  $: comparisonOption = selectedDimension?.name;
 
   /** compile the comparison options */
-  let options: {
-    name: TimeComparisonOption;
-    start: Date;
-    end: Date;
-  }[];
-  $: if (comparisonOptions !== undefined)
-    options = Object.entries(comparisonOptions)?.map(([key, value]) => {
-      const comparisonTimeRange = getComparisonRange(
-        currentStart,
-        currentEnd,
-        value
-      );
-      return {
-        name: value,
-        key,
-        start: comparisonTimeRange.start,
-        end: comparisonTimeRange.end,
-      };
-    });
-
-  function onSelectCustomComparisonRange(
-    startDate: string,
-    endDate: string,
-    closeMenu: () => void
-  ) {
-    intermediateSelection = TimeComparisonOption.CUSTOM;
-    closeMenu();
-    dispatch("select-comparison", {
-      name: TimeComparisonOption.CUSTOM,
-      start: new Date(startDate),
-      end: new Date(endDate),
-    });
-  }
-
-  const onCompareRangeSelect = (comparisonOption) => {
-    const comparisonTimeRange = getComparisonRange(
-      currentStart,
-      currentEnd,
-      comparisonOption
-    );
-
-    dispatch("select-comparison", {
-      name: comparisonOption,
-      start: comparisonTimeRange.start,
-      end: comparisonTimeRange.end,
-    });
-  };
-
-  let isCustomRangeOpen = false;
-  let isCalendarRecentlyClosed = false;
-
-  function onClickOutside(closeMenu: () => void) {
-    if (!isCalendarRecentlyClosed) {
-      closeMenu();
-    }
-  }
-
-  function onCalendarClose() {
-    isCalendarRecentlyClosed = true;
-    setTimeout(() => {
-      isCalendarRecentlyClosed = false;
-    }, 300);
-  }
+  let options = dimensions.map((d) => ({
+    name: d.name,
+    label: d.label,
+  }));
 
   $: label = showComparison
     ? TIME_COMPARISON[comparisonOption]?.label
@@ -146,7 +76,7 @@ This component needs to do the following:
   <Menu
     slot="floating-element"
     on:escape={toggleFloatingElement}
-    on:click-outside={() => onClickOutside(toggleFloatingElement)}
+    on:click-outside={toggleFloatingElement}
     label="Time comparison selector"
   >
     <MenuItem
@@ -167,30 +97,29 @@ This component needs to do the following:
     <MenuItem
       selected={!showComparison}
       on:before-select={() => {
-        intermediateSelection = "Time";
+        intermediateSelection = TIME;
       }}
       on:select={() => {
         toggleFloatingElement();
       }}
     >
-      <span class:font-bold={intermediateSelection === "Time"}> Time </span>
+      <span class:font-bold={intermediateSelection === TIME}> {TIME} </span>
     </MenuItem>
     <Divider />
 
     {#each options as option}
-      {@const preset = TIME_COMPARISON[option.name]}
       <MenuItem
         selected={option.name === intermediateSelection}
         on:before-select={() => {
           intermediateSelection = option.name;
         }}
         on:select={() => {
-          onCompareRangeSelect(option.name);
+          // onCompareRangeSelect(option.name);
           toggleFloatingElement();
         }}
       >
         <span class:font-bold={intermediateSelection === option.name}>
-          {preset?.label || option.name}
+          {option.label}
         </span>
       </MenuItem>
     {/each}
