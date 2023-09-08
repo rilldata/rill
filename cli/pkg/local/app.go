@@ -126,6 +126,13 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 			return nil, fmt.Errorf("failed to clean OLAP: %w", err)
 		}
 	}
+
+	// Set default DuckDB pool size to 4
+	olapCfg := map[string]string{"dsn": olapDSN}
+	if olapDriver == "duckdb" {
+		olapCfg["pool_size"] = "4"
+	}
+
 	// Create instance with its repo set to the project directory
 	inst := &drivers.Instance{
 		ID:            DefaultInstanceID,
@@ -143,7 +150,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 			{
 				Type:   olapDriver,
 				Name:   "olap",
-				Config: map[string]string{"dsn": olapDSN},
+				Config: olapCfg,
 			},
 		},
 	}
