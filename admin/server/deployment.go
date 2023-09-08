@@ -190,7 +190,17 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 	var attr map[string]any
 	switch forVal := req.For.(type) {
 	case *adminv1.GetDeploymentCredentialsRequest_UserId:
-		attr, err = s.jwtAttributesForUser(ctx, permissions, forVal.UserId, proj.OrganizationID)
+		forOrgPerms, err := s.admin.OrganizationPermissionsForUser(ctx, proj.OrganizationID, forVal.UserId)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		forProjPerms, err := s.admin.ProjectPermissionsForUser(ctx, proj.ID, forVal.UserId, forOrgPerms)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		attr, err = s.jwtAttributesForUser(ctx, forVal.UserId, proj.OrganizationID, forProjPerms)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}

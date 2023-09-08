@@ -445,7 +445,8 @@ const metricViewReducers = {
     name: string,
     timeRange: TimeRange,
     timeGrain: V1TimeGrain,
-    comparisonTimeRange: DashboardTimeControls
+    comparisonTimeRange: DashboardTimeControls | undefined,
+    allTimeRange: TimeRange
   ) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       // Reset scrub when range changes
@@ -455,8 +456,37 @@ const metricViewReducers = {
         ...timeRange,
         interval: timeGrain,
       };
-      metricsExplorer.selectedComparisonTimeRange = comparisonTimeRange;
-      setDisplayComparison(metricsExplorer, true);
+
+      if (!comparisonTimeRange) {
+        // when switching time range we reset comparison time range
+        // get the default for the new time range and set it only if is valid
+        const comparisonOption = DEFAULT_TIME_RANGES[timeRange.name]
+          ?.defaultComparison as TimeComparisonOption;
+        const range = getTimeComparisonParametersForComponent(
+          comparisonOption,
+          allTimeRange.start,
+          allTimeRange.end,
+          timeRange.start,
+          timeRange.end
+        );
+
+        if (range.isComparisonRangeAvailable) {
+          metricsExplorer.selectedComparisonTimeRange = {
+            start: range.start,
+            end: range.end,
+            name: comparisonOption,
+          };
+        } else {
+          metricsExplorer.selectedComparisonTimeRange = undefined;
+        }
+      } else {
+        metricsExplorer.selectedComparisonTimeRange = comparisonTimeRange;
+      }
+
+      setDisplayComparison(
+        metricsExplorer,
+        metricsExplorer.selectedComparisonTimeRange !== undefined
+      );
     });
   },
 
