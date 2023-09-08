@@ -93,6 +93,7 @@ export interface MetricsExplorerEntity {
   lastDefinedScrubRange?: ScrubRange;
 
   selectedComparisonTimeRange?: DashboardTimeControls;
+  selectedComparisonDimension?: string;
 
   // user selected timezone
   selectedTimezone?: string;
@@ -108,9 +109,6 @@ export interface MetricsExplorerEntity {
 
   // user selected dimension
   selectedDimensionName?: string;
-
-  // user selected measure which is exapnded in the TDD view
-  expandedMeasureName?: string;
 
   proto?: string;
   // proto for the default set of selections
@@ -428,10 +426,9 @@ const metricViewReducers = {
     });
   },
 
-  setExpandedMeasureName(name: string, measureName: string) {
+  setComparisonDimension(name: string, dimensionName: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.expandedMeasureName = measureName;
-      console.log(metricsExplorer.expandedMeasureName);
+      metricsExplorer.selectedComparisonDimension = dimensionName;
     });
   },
 

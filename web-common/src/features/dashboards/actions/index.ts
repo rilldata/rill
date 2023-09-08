@@ -16,6 +16,8 @@ export function clearFilterForDimension(
         dashboard.filters.include,
         (dimensionValues) => dimensionValues.name === dimensionId
       );
+      if (dashboard?.selectedComparisonDimension === dimensionId)
+        dashboard.selectedComparisonDimension = undefined;
     } else {
       removeIfExists(
         dashboard.filters.exclude,
@@ -33,6 +35,7 @@ export function clearAllFilters(ctx: StateManagers) {
   if (hasFilters) {
     cancelDashboardQueries(ctx.queryClient, metricViewName);
     ctx.updateDashboard((dashboard) => {
+      dashboard.selectedComparisonDimension = undefined;
       dashboard.filters.include = [];
       dashboard.filters.exclude = [];
       dashboard.dimensionFilterExcludeMode.clear();

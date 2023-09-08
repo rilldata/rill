@@ -30,13 +30,14 @@
   export let itemData: LeaderboardItemData;
   $: label = itemData.label;
   $: measureValue = itemData.value;
-  $: selected = itemData.selected;
+  $: selected = itemData.selected >= 0;
   $: comparisonValue = itemData.comparisonValue;
 
   export let showContext: LeaderboardContextColumn;
 
   export let atLeastOneActive = false;
-
+  export let isBeingCompared = false;
+  export let index: number;
   export let formattedValue: string;
   export let filterExcludeMode;
 
@@ -133,7 +134,13 @@
     transition:slide|local={{ duration: 200 }}
     use:shiftClickAction
   >
-    <LeaderboardItemFilterIcon {excluded} {selected} />
+    <LeaderboardItemFilterIcon
+      {isBeingCompared}
+      {index}
+      {atLeastOneActive}
+      {excluded}
+      selectionIndex={itemData.selected}
+    />
     <BarAndLabel
       {color}
       justify={false}

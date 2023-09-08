@@ -31,6 +31,7 @@
   import MeasureScrub from "./MeasureScrub.svelte";
   import ChartBody from "./ChartBody.svelte";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import DimensionValueMouseover from "@rilldata/web-common/features/dashboards/time-series/DimensionValueMouseover.svelte";
 
   export let metricViewName: string;
   export let width: number = undefined;
@@ -45,11 +46,15 @@
 
   export let showComparison = false;
   export let data;
+  export let dimensionData;
   export let xAccessor = "ts";
   export let labelAccessor = "label";
   export let yAccessor = "value";
   export let mouseoverValue;
   export let hovered = false;
+
+  // used for positioning of labels on dimension comparison
+  export let index;
 
   // control point for scrub functionality.
   export let isScrubbing = false;
@@ -91,6 +96,12 @@
     );
   }
 
+  $: isComparingDimension = Boolean(dimensionData?.length);
+
+  /**
+   * TODO: Optimize this such that we don't need to fetch main chart data
+   * when comparing dimensions
+   */
   $: [xExtentMin, xExtentMax] = extent(data, (d) => d[xAccessor]);
   $: [yExtentMin, yExtentMax] = extent(data, (d) => d[yAccessor]);
   let comparisonExtents;
@@ -101,6 +112,31 @@
 
     yExtentMin = Math.min(yExtentMin, comparisonExtents[0] || yExtentMin);
     yExtentMax = Math.max(yExtentMax, comparisonExtents[1] || yExtentMax);
+  }
+
+  /** if we have dimension data, factor that into the extents */
+
+  let isFetchingDimensions = false;
+
+  $: if (isComparingDimension) {
+    let dimExtents = dimensionData.map((d) =>
+      extent(d?.data || [], (datum) => datum[yAccessor])
+    );
+
+    yExtentMin = dimExtents
+      .map((e) => e[0])
+      .reduce(
+        (min, curr) => Math.min(min, isNaN(curr) ? Infinity : curr),
+        Infinity
+      );
+    yExtentMax = dimExtents
+      .map((e) => e[1])
+      .reduce(
+        (max, curr) => Math.max(max, isNaN(curr) ? -Infinity : curr),
+        -Infinity
+      );
+
+    isFetchingDimensions = dimensionData.some((d) => d?.isFetching);
   }
 
   $: [internalYMin, internalYMax] = niceMeasureExtents(
@@ -206,9 +242,11 @@
       <ChartBody
         {xMin}
         {xMax}
+        {yExtentMax}
         {showComparison}
         isHovering={mouseoverValue?.x}
         {data}
+        {dimensionData}
         {xAccessor}
         {yAccessor}
         {scrubStart}
@@ -222,7 +260,7 @@
         class="stroke-blue-200"
       />
     </Body>
-    {#if !isScrubbing && mouseoverValue?.x}
+    {#if !isScrubbing && mouseoverValue?.x && !isFetchingDimensions}
       <WithRoundToTimegrain
         strategy={TimeRoundingStrategy.PREVIOUS}
         value={mouseoverValue.x}
@@ -261,14 +299,25 @@
               {/if}
             </g>
             <g transition:fly|local={{ duration: 100, x: -4 }}>
-              <MeasureValueMouseover
-                {point}
-                {xAccessor}
-                {yAccessor}
-                {showComparison}
-                {mouseoverFormat}
-                {numberKind}
-              />
+              {#if isComparingDimension}
+                <DimensionValueMouseover
+                  {index}
+                  {point}
+                  {xAccessor}
+                  {yAccessor}
+                  {dimensionData}
+                  {mouseoverFormat}
+                />
+              {:else}
+                <MeasureValueMouseover
+                  {point}
+                  {xAccessor}
+                  {yAccessor}
+                  {showComparison}
+                  {mouseoverFormat}
+                  {numberKind}
+                />
+              {/if}
             </g>
           {/if}
         </WithBisector>

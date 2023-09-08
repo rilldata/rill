@@ -20,10 +20,8 @@
   export let showTimeComparison: boolean;
   export let showPercentOfTotal: boolean;
   export let sortAscending: boolean;
+  export let isBeingCompared: boolean;
 
-  export let filterExcludeMode: boolean;
-
-  let optionsMenuActive = false;
   const dispatch = createEventDispatcher();
 
   $: arrowTransform = sortAscending ? "scale(1 -1)" : "scale(1 1)";
@@ -38,14 +36,10 @@
   <div class="grid place-items-center" style:height="22px" style:width="22px">
     {#if isFetching}
       <Spinner size="16px" status={EntityStatus.Running} />
-    {:else if hovered || optionsMenuActive}
+    {:else if hovered || isBeingCompared}
       <div style="position:relative; height:100%; width:100%; ">
         <div style="position: absolute; ">
-          <LeaderboardOptionsMenu
-            bind:optionsMenuActive
-            on:toggle-filter-mode
-            {filterExcludeMode}
-          />
+          <LeaderboardOptionsMenu {isBeingCompared} on:compare-dimension />
         </div>
       </div>
     {/if}

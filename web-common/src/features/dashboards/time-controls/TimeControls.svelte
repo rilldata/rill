@@ -42,6 +42,7 @@
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeSelector from "./TimeRangeSelector.svelte";
   import TimeZoneSelector from "./TimeZoneSelector.svelte";
+  import ComparisonSelector from "./ComparisonSelector.svelte";
 
   export let metricViewName: string;
 
@@ -346,6 +347,22 @@
         now={allTimeRange?.end}
       />
     {/if}
+    <ComparisonSelector
+      on:select-comparison={(e) => {
+        onSelectComparisonRange(e.detail.name, e.detail.start, e.detail.end);
+      }}
+      on:disable-comparison={() =>
+        metricsExplorerStore.displayComparison(metricViewName, false)}
+      {minTimeGrain}
+      currentStart={$dashboardStore?.selectedTimeRange?.start}
+      currentEnd={$dashboardStore?.selectedTimeRange?.end}
+      boundaryStart={allTimeRange.start}
+      boundaryEnd={allTimeRange.end}
+      zone={$dashboardStore?.selectedTimezone}
+      showComparison={$dashboardStore?.showComparison}
+      selectedComparison={$dashboardStore?.selectedComparisonTimeRange}
+      comparisonOptions={availableComparisons}
+    />
     <TimeComparisonSelector
       on:select-comparison={(e) => {
         onSelectComparisonRange(e.detail.name, e.detail.start, e.detail.end);

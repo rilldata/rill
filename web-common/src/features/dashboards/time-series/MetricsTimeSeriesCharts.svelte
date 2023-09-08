@@ -31,6 +31,7 @@
     V1MetricsViewTimeSeriesResponse,
   } from "@rilldata/web-common/runtime-client";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
+  import { getDimensionValueTimeSeries } from "./multiple-dimension-queries";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
@@ -91,8 +92,8 @@
     }
   );
 
-  /** Generate the big number comparison query */
-  $: displayComparison = showComparison;
+  $: displayComparison =
+    showComparison && !$dashboardStore?.selectedComparisonDimension;
 
   $: comparisonTimeStart = $comparisonStore?.start;
   $: comparisonTimeEnd = $comparisonStore?.end;
@@ -130,6 +131,9 @@
     Error
   >;
 
+  let includedValues;
+  let allDimQuery;
+
   $: if (
     $dashboardStore &&
     metaQuery &&
@@ -143,6 +147,27 @@
       $dashboardStore?.selectedTimezone,
       interval
     );
+
+    if ($dashboardStore?.selectedComparisonDimension) {
+      const dimensionFilters = $dashboardStore?.filters.include.filter(
+        (filter) => filter.name === $dashboardStore?.selectedComparisonDimension
+      );
+      if (dimensionFilters) includedValues = dimensionFilters[0]?.in;
+      if (includedValues?.length) {
+        allDimQuery = getDimensionValueTimeSeries(
+          instanceId,
+          metricViewName,
+          includedValues,
+          $dashboardStore?.selectedComparisonDimension,
+          selectedMeasureNames,
+          $dashboardStore.filters,
+          adjustedStart,
+          adjustedEnd,
+          interval,
+          $dashboardStore?.selectedTimezone
+        );
+      }
+    }
 
     timeSeriesQuery = createQueryServiceMetricsViewTimeSeries(
       instanceId,
@@ -216,6 +241,10 @@
       $dashboardStore?.selectedTimezone
     );
   }
+
+  $: dimensionData = $dashboardStore?.selectedComparisonDimension
+    ? $allDimQuery
+    : [];
 
   let mouseoverValue = undefined;
   let startValue: Date;
@@ -351,12 +380,14 @@
           <div class="p-5"><CrossIcon /></div>
         {:else if formattedData}
           <MeasureChart
+            bind:mouseoverValue
             isScrubbing={$dashboardStore?.selectedScrubRange?.isScrubbing}
             {scrubStart}
             {scrubEnd}
-            bind:mouseoverValue
+            {index}
             {metricViewName}
             data={formattedData}
+            {dimensionData}
             zone={$dashboardStore?.selectedTimezone}
             xAccessor="ts_position"
             labelAccessor="ts"

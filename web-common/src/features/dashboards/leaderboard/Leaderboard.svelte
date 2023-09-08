@@ -7,7 +7,6 @@
    */
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import {
     getFilterForDimension,
@@ -96,18 +95,20 @@
   );
   $: hasTimeSeries = $metricTimeSeries.data;
 
-  function toggleFilterMode() {
-    cancelDashboardQueries(queryClient, metricViewName);
-    metricsExplorerStore.toggleFilterMode(metricViewName, dimensionName);
-  }
-
   function selectDimension(dimensionName) {
     metricsExplorerStore.setMetricDimensionName(metricViewName, dimensionName);
+  }
+
+  function setComparisonDimension(dimensionName) {
+    metricsExplorerStore.setComparisonDimension(metricViewName, dimensionName);
   }
 
   function toggleSortDirection() {
     metricsExplorerStore.toggleSortDirection(metricViewName);
   }
+
+  $: isBeingCompared =
+    $dashboardStore?.selectedComparisonDimension === dimensionName;
 
   $: timeStart = $fetchTimeStore?.start?.toISOString();
   $: timeEnd = $fetchTimeStore?.end?.toISOString();
@@ -261,8 +262,8 @@
       {showPercentOfTotal}
       isFetching={$topListQuery.isFetching}
       {displayName}
-      on:toggle-filter-mode={toggleFilterMode}
-      {filterExcludeMode}
+      on:compare-dimension={() => setComparisonDimension(dimensionName)}
+      {isBeingCompared}
       {hovered}
       {sortAscending}
       dimensionDescription={dimension?.description}
@@ -272,11 +273,13 @@
     {#if values}
       <div class="rounded-b border-gray-200 surface text-gray-800">
         <!-- place the leaderboard entries that are above the fold here -->
-        {#each aboveTheFoldItems as itemData (itemData.label)}
+        {#each aboveTheFoldItems as itemData, index (itemData.label)}
           <LeaderboardListItem
             {itemData}
+            {index}
             {showContext}
             {atLeastOneActive}
+            {isBeingCompared}
             {filterExcludeMode}
             {unfilteredTotal}
             {isSummableMeasure}
@@ -295,6 +298,7 @@
               {itemData}
               {showContext}
               {atLeastOneActive}
+              {isBeingCompared}
               {filterExcludeMode}
               {isSummableMeasure}
               {referenceValue}
