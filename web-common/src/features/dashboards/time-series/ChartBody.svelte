@@ -54,6 +54,8 @@
     $previousTimeRangeKey === $timeRangeKey && $previousYMax < yExtentMax
       ? 100
       : 0;
+
+  $: console.log(dimensionData);
 </script>
 
 <!-- key on the time range itself to prevent weird tweening animations.
@@ -64,7 +66,6 @@
   {#if dimensionData?.length}
     {#each dimensionData as dimensionValue}
       <ChunkedLine
-        lineColor={mainLineColor}
         area={false}
         delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
         duration={hasSubrangeSelected || $timeRangeKey !== $previousTimeRangeKey

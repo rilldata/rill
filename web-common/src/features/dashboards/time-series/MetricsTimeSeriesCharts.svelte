@@ -177,8 +177,6 @@
     );
   }
 
-  $: dimensionData = comparisonDimension ? $allDimQuery : [];
-
   let mouseoverValue = undefined;
   let startValue: Date;
   let endValue: Date;
@@ -195,28 +193,29 @@
 
     startValue = adjustedChartValue?.start;
     endValue = adjustedChartValue?.end;
+  }
 
-    if (comparisonDimension) {
-      const dimensionFilters = $dashboardStore?.filters.include.filter(
-        (filter) => filter.name === comparisonDimension
+  $: if (comparisonDimension && endValue) {
+    const dimensionFilters = $dashboardStore?.filters.include.filter(
+      (filter) => filter.name === comparisonDimension
+    );
+    if (dimensionFilters) includedValues = dimensionFilters[0]?.in;
+    if (includedValues?.length) {
+      allDimQuery = getDimensionValueTimeSeries(
+        instanceId,
+        metricViewName,
+        includedValues,
+        comparisonDimension,
+        selectedMeasureNames,
+        $dashboardStore.filters,
+        startValue,
+        endValue,
+        interval,
+        $dashboardStore?.selectedTimezone
       );
-      if (dimensionFilters) includedValues = dimensionFilters[0]?.in;
-      if (includedValues?.length) {
-        allDimQuery = getDimensionValueTimeSeries(
-          instanceId,
-          metricViewName,
-          includedValues,
-          comparisonDimension,
-          selectedMeasureNames,
-          $dashboardStore.filters,
-          startValue,
-          endValue,
-          interval,
-          $dashboardStore?.selectedTimezone
-        );
-      }
     }
   }
+  $: dimensionData = comparisonDimension ? $allDimQuery : [];
 
   $: showHideMeasures = createShowHideMeasuresStore(metricViewName, metaQuery);
 
