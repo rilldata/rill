@@ -5,27 +5,30 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/mitchellh/mapstructure"
 )
 
-const poolSizeKey = "rill_pool_size"
-
-// config represents the Driver config, extracted from the DSN
+// config represents the DuckDB driver config
 type config struct {
-	// DSN for DuckDB
-	DSN string
+	// DSN is the connection string
+	DSN string `mapstructure:"dsn"`
 	// PoolSize is the number of concurrent connections and queries allowed
-	PoolSize int
-	// DBFilePath is the path where database is stored
-	DBFilePath string
-	// Activity client
-	Activity activity.Client
+	PoolSize int `mapstructure:"pool_size"`
+	// DBFilePath is the path where the database is stored. It is inferred from the DSN (can't be provided by user).
+	DBFilePath string `mapstructure:"-"`
 }
 
-// activityDims and client are allowed to be nil, in this case DuckDB stats are not emitted
-func newConfig(dsn string, client activity.Client) (*config, error) {
+func newConfig(cfgMap map[string]any) (*config, error) {
+	cfg := &config{
+		PoolSize: 1, // Default value
+	}
+	err := mapstructure.WeakDecode(cfgMap, cfg)
+	if err != nil {
+		return nil, fmt.Errorf("could not decode config: %w", err)
+	}
+
 	// Parse DSN as URL
-	uri, err := url.Parse(dsn)
+	uri, err := url.Parse(cfg.DSN)
 	if err != nil {
 		return nil, fmt.Errorf("could not parse dsn: %w", err)
 	}
@@ -34,31 +37,29 @@ func newConfig(dsn string, client activity.Client) (*config, error) {
 		return nil, fmt.Errorf("could not parse dsn: %w", err)
 	}
 
-	// If poolSizeKey is in the DSN, parse and remove it
-	poolSize := 1
-	if qry.Has(poolSizeKey) {
+	// Infer DBFilePath
+	cfg.DBFilePath = uri.Path
+
+	// We also support overriding the pool size via the DSN by setting "rill_pool_size" as a query argument.
+	if qry.Has("rill_pool_size") {
 		// Parse as integer
-		poolSize, err = strconv.Atoi(qry.Get(poolSizeKey))
+		cfg.PoolSize, err = strconv.Atoi(qry.Get("rill_pool_size"))
 		if err != nil {
-			return nil, fmt.Errorf("duckdb Driver: %s is not an integer", poolSizeKey)
+			return nil, fmt.Errorf("could not parse dsn: 'rill_pool_size' is not an integer")
 		}
+
 		// Remove from query string (so not passed into DuckDB config)
-		qry.Del(poolSizeKey)
-	}
-	if poolSize < 1 {
-		return nil, fmt.Errorf("%s must be >= 1", poolSizeKey)
+		qry.Del("rill_pool_size")
+
+		// Rebuild DuckDB DSN (which should be "path?key=val&...")
+		uri.RawQuery = qry.Encode()
+		cfg.DSN = uri.String()
 	}
 
-	// Rebuild DuckDB DSN (which should be "path?key=val&...")
-	uri.RawQuery = qry.Encode()
-	dsn = uri.String()
-
-	// Return config
-	cfg := &config{
-		DSN:        dsn,
-		PoolSize:   poolSize,
-		DBFilePath: uri.Path,
-		Activity:   client,
+	// Check pool size
+	if cfg.PoolSize < 1 {
+		return nil, fmt.Errorf("duckdb pool size must be >= 1")
 	}
+
 	return cfg, nil
 }

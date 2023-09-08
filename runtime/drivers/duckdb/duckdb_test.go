@@ -17,9 +17,9 @@ import (
 func TestOpenDrop(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "tmp.db")
 	walpath := path + ".wal"
-	dsn := path + "?rill_pool_size=2"
+	dsn := path
 
-	handle, err := Driver{}.Open(map[string]any{"dsn": dsn}, false, activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open(map[string]any{"dsn": dsn, "pool_size": 2}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := handle.AsOLAP("")
@@ -42,10 +42,9 @@ func TestOpenDrop(t *testing.T) {
 func TestFatalErr(t *testing.T) {
 	// NOTE: Using this issue to create a fatal error: https://github.com/duckdb/duckdb/issues/7905
 
-	path := filepath.Join(t.TempDir(), "tmp.db")
-	dsn := path + "?rill_pool_size=2"
+	dsn := filepath.Join(t.TempDir(), "tmp.db")
 
-	handle, err := Driver{}.Open(map[string]any{"dsn": dsn}, false, activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open(map[string]any{"dsn": dsn, "pool_size": 2}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := handle.AsOLAP("")
@@ -105,10 +104,9 @@ func TestFatalErr(t *testing.T) {
 func TestFatalErrConcurrent(t *testing.T) {
 	// NOTE: Using this issue to create a fatal error: https://github.com/duckdb/duckdb/issues/7905
 
-	path := filepath.Join(t.TempDir(), "tmp.db")
-	dsn := path + "?rill_pool_size=3"
+	dsn := filepath.Join(t.TempDir(), "tmp.db")
 
-	handle, err := Driver{}.Open(map[string]any{"dsn": dsn}, false, activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open(map[string]any{"dsn": dsn, "pool_size": 3}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := handle.AsOLAP("")
@@ -185,7 +183,7 @@ func TestFatalErrConcurrent(t *testing.T) {
 		wg.Done()
 	}()
 
-	// Func 3 acquires conn after 250ms and runs query immediately. It will be enqueued (because the OLAP conns limit is rill_pool_size-1 = 2).
+	// Func 3 acquires conn after 250ms and runs query immediately. It will be enqueued (because the OLAP conns limit is pool_size-1 = 2).
 	// By the time it's dequeued, the DB will have been invalidated, and it will wait for the reopen before returning a conn. So the query should succeed.
 	wg.Add(1)
 	var err3 error
