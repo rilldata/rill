@@ -14,6 +14,7 @@
   $: selected = selectionIndex >= 0;
 
   function getColor(i) {
+    if (i >= 7) return "fill-gray-300";
     return "fill-" + CHECKMARK_COLORS[i];
   }
 </script>
@@ -22,7 +23,7 @@
   {#if selected && isBeingCompared}
     <CheckCircle className={getColor(selectionIndex)} size="18px" />
   {:else if isBeingCompared && !atLeastOneActive}
-    <Circle className={getColor(index)} size="18px" />
+    <Circle className={getColor(index)} size="16px" />
   {:else if selected && !excluded}
     <Check size="20px" />
   {:else if selected && excluded}

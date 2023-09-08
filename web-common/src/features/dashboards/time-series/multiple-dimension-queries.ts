@@ -1,6 +1,10 @@
 // Throw away code for fetching timeseries data for individual dimension values
 import { derived, writable } from "svelte/store";
-import { createQueryServiceMetricsViewTimeSeries } from "@rilldata/web-common/runtime-client";
+
+import {
+  createQueryServiceMetricsViewToplist,
+  createQueryServiceMetricsViewTimeSeries,
+} from "@rilldata/web-common/runtime-client";
 import { prepareTimeSeries } from "./utils";
 import {
   CHECKMARK_COLORS,
@@ -15,6 +19,7 @@ import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
  */
 
 export function getDimensionValueTimeSeries(
+  values,
   instanceId,
   metricViewName,
   dimensionName,
@@ -25,18 +30,6 @@ export function getDimensionValueTimeSeries(
   interval,
   zone
 ) {
-  let values = [];
-  const dimensionFilters = filters.include.filter(
-    (filter) => filter.name === dimensionName
-  );
-  if (dimensionFilters) {
-    values = dimensionFilters[0]?.in.slice(-7) || [];
-  }
-
-  if (values.length === 0) {
-    // fetch top 7 values
-  }
-
   if (!values && values.length == 0) return;
   return derived(
     values.map((value, i) => {

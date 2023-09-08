@@ -12,7 +12,10 @@
     FormatPreset,
     nicelyFormattedTypesToNumberKind,
   } from "@rilldata/web-common/features/dashboards/humanize-numbers";
-  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
+  import {
+    getFilterForDimension,
+    useMetaQuery,
+  } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -21,6 +24,7 @@
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import {
     createQueryServiceMetricsViewTimeSeries,
+    createQueryServiceMetricsViewToplist,
     createQueryServiceMetricsViewTotals,
     V1MetricsViewTimeSeriesResponse,
   } from "@rilldata/web-common/runtime-client";
@@ -34,6 +38,7 @@
   import { getOrderedStartEnd, prepareTimeSeries } from "./utils";
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
   import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+  import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 
   export let metricViewName;
   export let workspaceWidth: number;
@@ -195,19 +200,85 @@
     endValue = adjustedChartValue?.end;
   }
 
+  let topListQuery;
   $: if (comparisonDimension && $timeControlsStore.ready) {
+    const dimensionFilters = $dashboardStore.filters.include.filter(
+      (filter) => filter.name === comparisonDimension
+    );
+    if (dimensionFilters) {
+      includedValues = dimensionFilters[0]?.in.slice(0, 7) || [];
+    }
+
+    if (includedValues.length === 0) {
+      // TODO: Create a central store for topList
+      // Fetch top 7 values for the dimension
+      const filterForDimension = getFilterForDimension(
+        $dashboardStore?.filters,
+        comparisonDimension
+      );
+      topListQuery = createQueryServiceMetricsViewToplist(
+        $runtime.instanceId,
+        metricViewName,
+        {
+          dimensionName: comparisonDimension,
+          measureNames: [$dashboardStore?.leaderboardMeasureName],
+          timeStart: $timeControlsStore.timeStart,
+          timeEnd: $timeControlsStore.timeEnd,
+          filter: filterForDimension,
+          limit: "7",
+          offset: "0",
+          sort: [
+            {
+              name: $dashboardStore?.leaderboardMeasureName,
+              ascending:
+                $dashboardStore.sortDirection === SortDirection.ASCENDING,
+            },
+          ],
+        },
+        {
+          query: {
+            enabled: $timeControlsStore.ready && !!filterForDimension,
+          },
+        }
+      );
+    }
+  }
+
+  $: if (includedValues?.length || (topListQuery && $topListQuery.isSuccess)) {
+    let filters = $dashboardStore.filters;
+
+    // Handle case when there are no filters
+    if (!includedValues?.length) {
+      includedValues = $topListQuery?.data?.data.map(
+        (d) => d[comparisonDimension]
+      );
+
+      // Add dimension to filter
+      filters = {
+        ...$dashboardStore.filters,
+        include: [
+          ...$dashboardStore.filters.include,
+          {
+            name: comparisonDimension,
+            in: includedValues,
+          },
+        ],
+      };
+    }
     allDimQuery = getDimensionValueTimeSeries(
+      includedValues,
       instanceId,
       metricViewName,
       comparisonDimension,
       selectedMeasureNames,
-      $dashboardStore.filters,
+      filters,
       $timeControlsStore.adjustedStart,
       $timeControlsStore.adjustedEnd,
       interval,
       $dashboardStore?.selectedTimezone
     );
   }
+
   $: dimensionData = comparisonDimension ? $allDimQuery : [];
 
   $: showHideMeasures = createShowHideMeasuresStore(metricViewName, metaQuery);

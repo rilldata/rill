@@ -113,24 +113,26 @@ This component needs to do the following:
     </MenuItem>
     <Divider />
 
-    {#each options as option}
-      <MenuItem
-        selected={option.name === intermediateSelection}
-        on:before-select={() => {
-          intermediateSelection = option.name;
-        }}
-        on:select={() => {
-          dispatch("enable-comparison", {
-            type: "dimension",
-            name: option.name,
-          });
-          toggleFloatingElement();
-        }}
-      >
-        <span class:font-bold={intermediateSelection === option.name}>
-          {option.label}
-        </span>
-      </MenuItem>
-    {/each}
+    <div style:max-height="200px" class="overflow-y-auto">
+      {#each options as option}
+        <MenuItem
+          selected={option.name === intermediateSelection}
+          on:before-select={() => {
+            intermediateSelection = option.name;
+          }}
+          on:select={() => {
+            dispatch("enable-comparison", {
+              type: "dimension",
+              name: option.name,
+            });
+            toggleFloatingElement();
+          }}
+        >
+          <span class:font-bold={intermediateSelection === option.name}>
+            {option.label}
+          </span>
+        </MenuItem>
+      {/each}
+    </div>
   </Menu>
 </WithTogglableFloatingElement>

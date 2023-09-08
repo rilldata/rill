@@ -27,7 +27,6 @@ export const CHECKMARK_COLORS = [
   "purple-500",
   "pink-400",
   "cyan-400",
-  "gray-600",
 ];
 
 export const LINE_COLORS = [
@@ -38,5 +37,4 @@ export const LINE_COLORS = [
   "purple-500",
   "pink-400",
   "cyan-400",
-  "gray-500",
 ];
