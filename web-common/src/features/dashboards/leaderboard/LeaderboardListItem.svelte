@@ -26,6 +26,7 @@
     LeaderboardItemData,
     getFormatterValueForPercDiff,
   } from "./leaderboard-utils";
+  import ShiftKey from "@rilldata/web-common/components/tooltip/ShiftKey.svelte";
 
   export let itemData: LeaderboardItemData;
   $: label = itemData.label;
@@ -120,7 +121,8 @@
   <button
     class="flex flex-row w-full text-left transition-color"
     on:blur={onLeave}
-    on:click={() => {
+    on:click={(e) => {
+      if (e.shiftKey) return;
       dispatch("select-item", {
         label,
       });
