@@ -90,22 +90,13 @@ type Driver struct {
 	name string
 }
 
-func (d Driver) Open(config map[string]any, shared bool, logger *zap.Logger) (drivers.Handle, error) {
+func (d Driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("duckdb driver can't be shared")
 	}
 	dsn, ok := config["dsn"].(string)
 	if !ok {
 		return nil, fmt.Errorf("require dsn to open duckdb connection")
-	}
-
-	// TODO: expect the activity is passed as a func parameter, similar to the logger (see caches.go)
-	var client activity.Client
-	clientAny := config["activity"]
-	if clientAny != nil {
-		if client, ok = clientAny.(activity.Client); !ok {
-			return nil, fmt.Errorf("couldn't cast activity client")
-		}
 	}
 
 	cfg, err := newConfig(dsn, client)

@@ -22,7 +22,7 @@ import (
 // increasing this limit can increase speed ingestion
 // but may increase bottleneck at duckdb or network/db IO
 // set without any benchamarks
-const _concurrentBlobDownloadLimit = 8
+const _concurrentBlobDownloadLimit = 32
 
 // map of supoprted extensions for partial downloads vs readers
 // zipped csv files can't be partialled downloaded

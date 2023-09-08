@@ -1,12 +1,11 @@
 <script lang="ts">
   import { appScreen } from "../../../layout/app-store";
   import { MetricsEventScreenName } from "../../../metrics/service/MetricsTypes";
-  import { selectedMockUserStore } from "./stores";
-  import { useDevJWT } from "./useDevJWT";
+  import { selectedMockUserJWT } from "./stores";
 
   $: isDashboardPage = $appScreen?.type === MetricsEventScreenName.Dashboard;
-  $: isMockUserSelected = $selectedMockUserStore !== null;
-  $: devJWT = useDevJWT($selectedMockUserStore);
+  $: isMockUserSelected = $selectedMockUserJWT !== null;
+  $: devJWT = $selectedMockUserJWT;
 </script>
 
-<slot jwt={isDashboardPage && isMockUserSelected ? $devJWT?.data?.jwt : null} />
+<slot jwt={isDashboardPage && isMockUserSelected ? devJWT : null} />

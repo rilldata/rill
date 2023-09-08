@@ -179,6 +179,8 @@ type DB interface {
 	FindBookmark(ctx context.Context, bookmarkID string) (*Bookmark, error)
 	InsertBookmark(ctx context.Context, opts *InsertBookmarkOptions) (*Bookmark, error)
 	DeleteBookmark(ctx context.Context, bookmarkID string) error
+
+	SearchProjectUsers(ctx context.Context, projectID, emailQuery string, afterEmail string, limit int) ([]*User, error)
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.

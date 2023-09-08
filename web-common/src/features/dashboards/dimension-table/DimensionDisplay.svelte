@@ -13,26 +13,19 @@
     useMetaQuery,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
-  import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
-  import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
-  import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     createQueryServiceMetricsViewToplist,
     createQueryServiceMetricsViewTotals,
     MetricsViewDimension,
-    MetricsViewFilterCond,
     MetricsViewMeasure,
     V1MetricsViewToplistResponseDataItem,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { SortDirection } from "../proto-state/derived-types";
-
-  import {
-    metricsExplorerStore,
-    useDashboardStore,
-    useFetchTimeRange,
-  } from "../dashboard-stores";
+  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import { humanizeGroupByColumns, FormatPreset } from "../humanize-numbers";
   import {
     computeComparisonValues,
@@ -65,7 +58,8 @@
   $: dimensionColumn = dimension?.column || dimension?.name;
 
   $: dashboardStore = useDashboardStore(metricViewName);
-  $: fetchTimeStore = useFetchTimeRange(metricViewName);
+
+  const timeControlsStore = useTimeControlStore(getStateManagers());
 
   $: leaderboardMeasureName = $dashboardStore?.leaderboardMeasureName;
   $: leaderboardMeasureQuery = useMetaMeasure(
@@ -73,9 +67,6 @@
     metricViewName,
     leaderboardMeasureName
   );
-
-  let excludeValues: Array<MetricsViewFilterCond>;
-  $: excludeValues = $dashboardStore?.filters.exclude;
 
   $: excludeMode =
     $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
@@ -115,8 +106,8 @@
     {
       dimensionName: dimensionName,
       measureNames: selectedMeasureNames,
-      timeStart: hasTimeSeries ? timeStart : undefined,
-      timeEnd: hasTimeSeries ? timeEnd : undefined,
+      timeStart: $timeControlsStore.timeStart,
+      timeEnd: $timeControlsStore.timeEnd,
       filter: filterSet,
       limit: "250",
       offset: "0",
@@ -130,40 +121,13 @@
     {
       query: {
         enabled:
-          (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
-          !!filterSet &&
-          !!leaderboardMeasureName,
+          $timeControlsStore.ready && !!filterSet && !!leaderboardMeasureName,
       },
     }
   );
 
-  // the timeRangeName is the key to a selected time range's associated presets.
-  $: timeRangeName = $dashboardStore?.selectedTimeRange?.name;
-
   // Compose the comparison /toplist query
-  $: displayComparison =
-    timeRangeName &&
-    $dashboardStore?.showComparison &&
-    // wait for the start time to be available
-    // TODO: Move to better handling of undefined store values
-    $fetchTimeStore?.start;
-
-  $: comparisonTimeRange =
-    displayComparison &&
-    getComparisonRange(
-      $fetchTimeStore?.start,
-      $fetchTimeStore?.end,
-      ($dashboardStore?.selectedComparisonTimeRange
-        ?.name as TimeComparisonOption) ||
-        (DEFAULT_TIME_RANGES[timeRangeName]
-          .defaultComparison as TimeComparisonOption)
-    );
-  $: comparisonTimeStart =
-    isFinite(comparisonTimeRange?.start?.getTime()) &&
-    comparisonTimeRange.start.toISOString();
-  $: comparisonTimeEnd =
-    isFinite(comparisonTimeRange?.end?.getTime()) &&
-    comparisonTimeRange.end.toISOString();
+  $: displayComparison = $timeControlsStore.showComparison;
   $: comparisonFilterSet = getFilterForComparisonTable(
     filterForDimension,
     dimensionName,
@@ -176,8 +140,8 @@
     {
       dimensionName: dimensionName,
       measureNames: [leaderboardMeasureName],
-      timeStart: comparisonTimeStart,
-      timeEnd: comparisonTimeEnd,
+      timeStart: $timeControlsStore.comparisonTimeStart,
+      timeEnd: $timeControlsStore.comparisonTimeEnd,
       filter: comparisonFilterSet,
       limit: "250",
       offset: "0",
@@ -191,28 +155,23 @@
     {
       query: {
         enabled: Boolean(
-          displayComparison &&
-            !!comparisonTimeStart &&
-            !!comparisonTimeEnd &&
-            !!comparisonFilterSet
+          $timeControlsStore.showComparison && !!comparisonFilterSet
         ),
       },
     }
   );
 
-  $: timeStart = $fetchTimeStore?.start?.toISOString();
-  $: timeEnd = $fetchTimeStore?.end?.toISOString();
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      timeStart: hasTimeSeries ? timeStart : undefined,
-      timeEnd: hasTimeSeries ? timeEnd : undefined,
+      timeStart: $timeControlsStore.timeStart,
+      timeEnd: $timeControlsStore.timeEnd,
     },
     {
       query: {
-        enabled: hasTimeSeries ? !!timeStart && !!timeEnd : true,
+        enabled: $timeControlsStore.ready,
       },
     }
   );

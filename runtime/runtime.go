@@ -37,11 +37,11 @@ func New(opts *Options, logger *zap.Logger, client activity.Client) (*Runtime, e
 	rt := &Runtime{
 		opts:               opts,
 		logger:             logger,
-		connCache:          newConnectionCache(opts.ConnectionCacheSize, logger, client),
 		migrationMetaCache: newMigrationMetaCache(math.MaxInt),
 		queryCache:         newQueryCache(opts.QueryCacheSizeBytes),
 		securityEngine:     newSecurityEngine(opts.SecurityEngineCacheSize, logger),
 	}
+	rt.connCache = newConnectionCache(opts.ConnectionCacheSize, logger, rt, client)
 	store, _, err := rt.AcquireSystemHandle(context.Background(), opts.MetastoreConnector)
 	if err != nil {
 		return nil, err
@@ -66,6 +66,10 @@ func (r *Runtime) Close() error {
 		r.connCache.Close(),
 		r.queryCache.close(),
 	)
+}
+
+func (r *Runtime) Controller(instanceID string) (*Controller, error) {
+	panic("not implemented")
 }
 
 func (r *Runtime) ResolveMetricsViewSecurity(attributes map[string]any, instanceID string, mv *runtimev1.MetricsView, lastUpdatedOn time.Time) (*ResolvedMetricsViewSecurity, error) {

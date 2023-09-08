@@ -11,2226 +11,2260 @@ consumes:
 produces:
   - application/json
 paths:
-  /v1/bigquery/datasets: |
+  /v1/bigquery/datasets:
     get:
-        summary: BigQueryListDatasets list all datasets in a bigquery project
-        operationId: ConnectorService_BigQueryListDatasets
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1BigQueryListDatasetsResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: query
-              required: false
-              type: string
-            - name: connector
-              in: query
-              required: false
-              type: string
-            - name: pageSize
-              in: query
-              required: false
-              type: integer
-              format: int64
-            - name: pageToken
-              in: query
-              required: false
-              type: string
-        tags:
-            - ConnectorService
-  /v1/bigquery/tables: |
+      summary: BigQueryListDatasets list all datasets in a bigquery project
+      operationId: ConnectorService_BigQueryListDatasets
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1BigQueryListDatasetsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
+  /v1/bigquery/tables:
     get:
-        summary: BigQueryListTables list all tables in a bigquery project:dataset
-        operationId: ConnectorService_BigQueryListTables
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1BigQueryListTablesResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: query
-              required: false
-              type: string
-            - name: connector
-              in: query
-              required: false
-              type: string
-            - name: dataset
-              in: query
-              required: false
-              type: string
-            - name: pageSize
-              in: query
-              required: false
-              type: integer
-              format: int64
-            - name: pageToken
-              in: query
-              required: false
-              type: string
-        tags:
-            - ConnectorService
-  /v1/connectors/meta: |
+      summary: BigQueryListTables list all tables in a bigquery project:dataset
+      operationId: ConnectorService_BigQueryListTables
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1BigQueryListTablesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
+        - name: dataset
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
+  /v1/connectors/meta:
     get:
-        summary: |-
-            ListConnectors returns a description of all the connectors implemented in the runtime,
-            including their schema and validation rules
-        operationId: RuntimeService_ListConnectors
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1ListConnectorsResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        tags:
-            - RuntimeService
-  /v1/delete-and-reconcile: |
+      summary: |-
+        ListConnectors returns a description of all the connectors implemented in the runtime,
+        including their schema and validation rules
+      operationId: RuntimeService_ListConnectors
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListConnectorsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - RuntimeService
+  /v1/delete-and-reconcile:
     post:
-        summary: DeleteFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
-        operationId: RuntimeService_DeleteFileAndReconcile
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1DeleteFileAndReconcileResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: body
-              in: body
-              required: true
-              schema:
-                $ref: '#/definitions/v1DeleteFileAndReconcileRequest'
-        tags:
-            - RuntimeService
-  /v1/dev-jwt: |
+      summary: DeleteFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
+      operationId: RuntimeService_DeleteFileAndReconcile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteFileAndReconcileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1DeleteFileAndReconcileRequest'
+      tags:
+        - RuntimeService
+  /v1/dev-jwt:
     get:
-        operationId: RuntimeService_IssueDevJWT
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1IssueDevJWTResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: name
-              in: query
-              required: false
-              type: string
-            - name: email
-              in: query
-              required: false
-              type: string
-            - name: groups
-              in: query
-              required: false
-              type: array
-              items:
-                type: string
-              collectionFormat: multi
-            - name: admin
-              in: query
-              required: false
-              type: boolean
-        tags:
-            - RuntimeService
-  /v1/examples: |
+      operationId: RuntimeService_IssueDevJWT
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1IssueDevJWTResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: name
+          in: query
+          required: false
+          type: string
+        - name: email
+          in: query
+          required: false
+          type: string
+        - name: groups
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+        - name: admin
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - RuntimeService
+  /v1/examples:
     get:
-        summary: ListExamples lists all the examples embedded into binary
-        operationId: RuntimeService_ListExamples
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1ListExamplesResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        tags:
-            - RuntimeService
-  /v1/gcs/bucket/{bucket}/objects: |
+      summary: ListExamples lists all the examples embedded into binary
+      operationId: RuntimeService_ListExamples
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListExamplesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - RuntimeService
+  /v1/gcs/bucket/{bucket}/objects:
     get:
-        summary: GCSListObjects lists objects for the given bucket.
-        operationId: ConnectorService_GCSListObjects
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1GCSListObjectsResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: bucket
-              in: path
-              required: true
-              type: string
-            - name: instanceId
-              in: query
-              required: false
-              type: string
-            - name: connector
-              in: query
-              required: false
-              type: string
-            - name: pageSize
-              in: query
-              required: false
-              type: integer
-              format: int64
-            - name: pageToken
-              in: query
-              required: false
-              type: string
-            - name: prefix
-              in: query
-              required: false
-              type: string
-            - name: startOffset
-              in: query
-              required: false
-              type: string
-            - name: endOffset
-              in: query
-              required: false
-              type: string
-            - name: delimiter
-              in: query
-              required: false
-              type: string
-        tags:
-            - ConnectorService
-  /v1/gcs/buckets: |
+      summary: GCSListObjects lists objects for the given bucket.
+      operationId: ConnectorService_GCSListObjects
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GCSListObjectsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: bucket
+          in: path
+          required: true
+          type: string
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+        - name: prefix
+          in: query
+          required: false
+          type: string
+        - name: startOffset
+          in: query
+          required: false
+          type: string
+        - name: endOffset
+          in: query
+          required: false
+          type: string
+        - name: delimiter
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
+  /v1/gcs/buckets:
     get:
-        summary: GCSListBuckets lists buckets accessible with the configured credentials.
-        operationId: ConnectorService_GCSListBuckets
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1GCSListBucketsResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: query
-              required: false
-              type: string
-            - name: connector
-              in: query
-              required: false
-              type: string
-            - name: pageSize
-              in: query
-              required: false
-              type: integer
-              format: int64
-            - name: pageToken
-              in: query
-              required: false
-              type: string
-        tags:
-            - ConnectorService
-  /v1/gcs/credentials_info: |
+      summary: GCSListBuckets lists buckets accessible with the configured credentials.
+      operationId: ConnectorService_GCSListBuckets
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GCSListBucketsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
+  /v1/gcs/credentials_info:
     get:
-        summary: GCSGetCredentialsInfo returns metadata for the given bucket.
-        operationId: ConnectorService_GCSGetCredentialsInfo
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1GCSGetCredentialsInfoResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: query
-              required: false
-              type: string
-            - name: connector
-              in: query
-              required: false
-              type: string
-        tags:
-            - ConnectorService
-  /v1/instances: |
+      summary: GCSGetCredentialsInfo returns metadata for the given bucket.
+      operationId: ConnectorService_GCSGetCredentialsInfo
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GCSGetCredentialsInfoResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
+  /v1/instances:
     get:
-        summary: ListInstances lists all the instances currently managed by the runtime
-        operationId: RuntimeService_ListInstances
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1ListInstancesResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: pageSize
-              in: query
-              required: false
-              type: integer
-              format: int64
-            - name: pageToken
-              in: query
-              required: false
-              type: string
-        tags:
-            - RuntimeService
+      summary: ListInstances lists all the instances currently managed by the runtime
+      operationId: RuntimeService_ListInstances
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListInstancesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - RuntimeService
     post:
-        summary: CreateInstance creates a new instance
-        operationId: RuntimeService_CreateInstance
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1CreateInstanceResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: body
-              description: |-
-                Request message for RuntimeService.CreateInstance.
-                See message Instance for field descriptions.
-              in: body
-              required: true
-              schema:
-                $ref: '#/definitions/v1CreateInstanceRequest'
-        tags:
-            - RuntimeService
-  /v1/instances/{instanceId}: |
+      summary: CreateInstance creates a new instance
+      operationId: RuntimeService_CreateInstance
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateInstanceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          description: |-
+            Request message for RuntimeService.CreateInstance.
+            See message Instance for field descriptions.
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1CreateInstanceRequest'
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}:
     get:
-        summary: GetInstance returns information about a specific instance
-        operationId: RuntimeService_GetInstance
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1GetInstanceResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-        tags:
-            - RuntimeService
+      summary: GetInstance returns information about a specific instance
+      operationId: RuntimeService_GetInstance
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetInstanceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
     post:
-        summary: DeleteInstance deletes an instance
-        operationId: RuntimeService_DeleteInstance
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1DeleteInstanceResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: body
-              in: body
-              required: true
-              schema:
-                type: object
-                properties:
-                    dropDb:
-                        type: boolean
-                title: Request message for RuntimeService.DeleteInstance
-        tags:
-            - RuntimeService
+      summary: DeleteInstance deletes an instance
+      operationId: RuntimeService_DeleteInstance
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteInstanceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              dropDb:
+                type: boolean
+            title: Request message for RuntimeService.DeleteInstance
+      tags:
+        - RuntimeService
     put:
-        summary: EditInstanceVariables edits the instance variable
-        operationId: RuntimeService_EditInstanceVariables
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1EditInstanceVariablesResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: body
-              in: body
-              required: true
-              schema:
+      summary: EditInstanceVariables edits the instance variable
+      operationId: RuntimeService_EditInstanceVariables
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1EditInstanceVariablesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              variables:
                 type: object
-                properties:
-                    variables:
-                        type: object
-                        additionalProperties:
-                            type: string
-                description: Request message for RuntimeService.EditInstanceVariables.
-        tags:
-            - RuntimeService
+                additionalProperties:
+                  type: string
+            description: Request message for RuntimeService.EditInstanceVariables.
+      tags:
+        - RuntimeService
     patch:
-        summary: EditInstance edits an existing instance
-        operationId: RuntimeService_EditInstance
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1EditInstanceResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: body
-              in: body
-              required: true
-              schema:
+      summary: EditInstance edits an existing instance
+      operationId: RuntimeService_EditInstance
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1EditInstanceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              olapConnector:
+                type: string
+              repoConnector:
+                type: string
+              embedCatalog:
+                type: boolean
+              ingestionLimitBytes:
+                type: string
+                format: int64
+              connectors:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1Connector'
+              annotations:
                 type: object
-                properties:
-                    olapDriver:
-                        type: string
-                    repoDriver:
-                        type: string
-                    embedCatalog:
-                        type: boolean
-                    ingestionLimitBytes:
-                        type: string
-                        format: int64
-                    connectors:
-                        type: array
-                        items:
-                            type: object
-                            $ref: '#/definitions/v1Connector'
-                    annotations:
-                        type: object
-                        additionalProperties:
-                            type: string
-                description: |-
-                    Request message for RuntimeService.EditInstance.
-                    See message Instance for field descriptions.
-        tags:
-            - RuntimeService
-  /v1/instances/{instanceId}/annotations: |
+                additionalProperties:
+                  type: string
+            description: |-
+              Request message for RuntimeService.EditInstance.
+              See message Instance for field descriptions.
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/annotations:
     put:
-        summary: EditInstanceAnnotations edits the instance annotations
-        operationId: RuntimeService_EditInstanceAnnotations
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1EditInstanceAnnotationsResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: body
-              in: body
-              required: true
-              schema:
+      summary: EditInstanceAnnotations edits the instance annotations
+      operationId: RuntimeService_EditInstanceAnnotations
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1EditInstanceAnnotationsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              annotations:
                 type: object
-                properties:
-                    annotations:
-                        type: object
-                        additionalProperties:
-                            type: string
-                description: Request message for RuntimeService.EditInstanceAnnotations.
-        tags:
-            - RuntimeService
-  /v1/instances/{instanceId}/catalog: |
+                additionalProperties:
+                  type: string
+            description: Request message for RuntimeService.EditInstanceAnnotations.
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/catalog:
     get:
-        summary: ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
-        operationId: RuntimeService_ListCatalogEntries
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1ListCatalogEntriesResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: type
-              in: query
-              required: false
-              type: string
-              enum:
-                - OBJECT_TYPE_UNSPECIFIED
-                - OBJECT_TYPE_TABLE
-                - OBJECT_TYPE_SOURCE
-                - OBJECT_TYPE_MODEL
-                - OBJECT_TYPE_METRICS_VIEW
-              default: OBJECT_TYPE_UNSPECIFIED
-        tags:
-            - RuntimeService
-  /v1/instances/{instanceId}/catalog/{name}: |
+      summary: ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
+      operationId: RuntimeService_ListCatalogEntries
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListCatalogEntriesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: type
+          in: query
+          required: false
+          type: string
+          enum:
+            - OBJECT_TYPE_UNSPECIFIED
+            - OBJECT_TYPE_TABLE
+            - OBJECT_TYPE_SOURCE
+            - OBJECT_TYPE_MODEL
+            - OBJECT_TYPE_METRICS_VIEW
+          default: OBJECT_TYPE_UNSPECIFIED
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/catalog/{name}:
     get:
-        summary: GetCatalogEntry returns information about a specific entry in the catalog
-        operationId: RuntimeService_GetCatalogEntry
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1GetCatalogEntryResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: name
-              in: path
-              required: true
-              type: string
-        tags:
-            - RuntimeService
-  /v1/instances/{instanceId}/catalog/{name}/refresh: |
+      summary: GetCatalogEntry returns information about a specific entry in the catalog
+      operationId: RuntimeService_GetCatalogEntry
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetCatalogEntryResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/catalog/{name}/refresh:
     post:
-        summary: |-
-            TriggerRefresh triggers a refresh of a refreshable catalog object.
-            It currently only supports sources (which will be re-ingested), but will also support materialized models in the future.
-            It does not respond until the refresh has completed (will move to async jobs when the task scheduler is in place).
-        operationId: RuntimeService_TriggerRefresh
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1TriggerRefreshResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: name
-              in: path
-              required: true
-              type: string
-        tags:
-            - RuntimeService
-  /v1/instances/{instanceId}/files: |
+      summary: |-
+        TriggerRefresh triggers a refresh of a refreshable catalog object.
+        It currently only supports sources (which will be re-ingested), but will also support materialized models in the future.
+        It does not respond until the refresh has completed (will move to async jobs when the task scheduler is in place).
+      operationId: RuntimeService_TriggerRefresh
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1TriggerRefreshResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/files:
     get:
-        summary: |-
-            ListFiles lists all the files matching a glob in a repo.
-            The files are sorted by their full path.
-        operationId: RuntimeService_ListFiles
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1ListFilesResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: glob
-              in: query
-              required: false
-              type: string
-        tags:
-            - RuntimeService
-  /v1/instances/{instanceId}/files/-/{path}: |
+      summary: |-
+        ListFiles lists all the files matching a glob in a repo.
+        The files are sorted by their full path.
+      operationId: RuntimeService_ListFiles
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListFilesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: glob
+          in: query
+          required: false
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/files/-/{path}:
     get:
-        summary: GetFile returns the contents of a specific file in a repo.
-        operationId: RuntimeService_GetFile
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1GetFileResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: path
-              in: path
-              required: true
-              type: string
-              pattern: .+
-        tags:
-            - RuntimeService
+      summary: GetFile returns the contents of a specific file in a repo.
+      operationId: RuntimeService_GetFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: path
+          in: path
+          required: true
+          type: string
+          pattern: .+
+      tags:
+        - RuntimeService
     delete:
-        summary: DeleteFile deletes a file from a repo
-        operationId: RuntimeService_DeleteFile
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1DeleteFileResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: path
-              in: path
-              required: true
-              type: string
-              pattern: .+
-        tags:
-            - RuntimeService
+      summary: DeleteFile deletes a file from a repo
+      operationId: RuntimeService_DeleteFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: path
+          in: path
+          required: true
+          type: string
+          pattern: .+
+      tags:
+        - RuntimeService
     post:
-        summary: PutFile creates or updates a file in a repo
-        operationId: RuntimeService_PutFile
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1PutFileResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: path
-              in: path
-              required: true
-              type: string
-              pattern: .+
-            - name: body
-              in: body
-              required: true
-              schema:
-                type: object
-                properties:
-                    blob:
-                        type: string
-                    create:
-                        type: boolean
-                        title: Create indicates whether to create the file if it doesn't already exist
-                    createOnly:
-                        type: boolean
-                        description: |-
-                            Will cause the operation to fail if the file already exists.
-                            It should only be set when create = true.
-                title: Request message for RuntimeService.PutFile
-        tags:
-            - RuntimeService
-  /v1/instances/{instanceId}/files/rename: |
+      summary: PutFile creates or updates a file in a repo
+      operationId: RuntimeService_PutFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1PutFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: path
+          in: path
+          required: true
+          type: string
+          pattern: .+
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              blob:
+                type: string
+              create:
+                type: boolean
+                title: Create indicates whether to create the file if it doesn't already exist
+              createOnly:
+                type: boolean
+                description: |-
+                  Will cause the operation to fail if the file already exists.
+                  It should only be set when create = true.
+            title: Request message for RuntimeService.PutFile
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/files/rename:
     post:
-        summary: RenameFile renames a file in a repo
-        operationId: RuntimeService_RenameFile
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1RenameFileResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: body
-              in: body
-              required: true
-              schema:
-                type: object
-                properties:
-                    fromPath:
-                        type: string
-                    toPath:
-                        type: string
-                title: Request message for RuntimeService.RenameFile
-        tags:
-            - RuntimeService
-  /v1/instances/{instanceId}/files/unpack-empty: |
+      summary: RenameFile renames a file in a repo
+      operationId: RuntimeService_RenameFile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RenameFileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              fromPath:
+                type: string
+              toPath:
+                type: string
+            title: Request message for RuntimeService.RenameFile
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/files/unpack-empty:
     post:
-        summary: UnpackEmpty unpacks an empty project
-        operationId: RuntimeService_UnpackEmpty
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1UnpackEmptyResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: body
-              in: body
-              required: true
-              schema:
-                type: object
-                properties:
-                    title:
-                        type: string
-                    force:
-                        type: boolean
-                title: Request message for RuntimeService.UnpackEmpty
-        tags:
-            - RuntimeService
-  /v1/instances/{instanceId}/files/unpack-example: |
+      summary: UnpackEmpty unpacks an empty project
+      operationId: RuntimeService_UnpackEmpty
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UnpackEmptyResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              title:
+                type: string
+              force:
+                type: boolean
+            title: Request message for RuntimeService.UnpackEmpty
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/files/unpack-example:
     post:
-        summary: UnpackExample unpacks an example project
-        operationId: RuntimeService_UnpackExample
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1UnpackExampleResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: body
-              in: body
-              required: true
-              schema:
-                type: object
-                properties:
-                    name:
-                        type: string
-                    force:
-                        type: boolean
-                title: Request message for RuntimeService.UnpackExample
-        tags:
-            - RuntimeService
-  /v1/instances/{instanceId}/files/watch: |
+      summary: UnpackExample unpacks an example project
+      operationId: RuntimeService_UnpackExample
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UnpackExampleResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+              force:
+                type: boolean
+            title: Request message for RuntimeService.UnpackExample
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/files/watch:
     get:
-        summary: WatchFiles streams repo file update events. It is not supported on all backends.
-        operationId: RuntimeService_WatchFiles
-        responses:
-            "200":
-                description: A successful response.(streaming responses)
-                schema:
-                    type: object
-                    properties:
-                        result:
-                            $ref: '#/definitions/v1WatchFilesResponse'
-                        error:
-                            $ref: '#/definitions/rpcStatus'
-                    title: Stream result of v1WatchFilesResponse
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: replay
-              in: query
-              required: false
-              type: boolean
-        tags:
-            - RuntimeService
-  /v1/instances/{instanceId}/logs: |
+      summary: WatchFiles streams repo file update events. It is not supported on all backends.
+      operationId: RuntimeService_WatchFiles
+      responses:
+        "200":
+          description: A successful response.(streaming responses)
+          schema:
+            type: object
+            properties:
+              result:
+                $ref: '#/definitions/v1WatchFilesResponse'
+              error:
+                $ref: '#/definitions/rpcStatus'
+            title: Stream result of v1WatchFilesResponse
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: replay
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/logs:
     get:
-        summary: GetLogs returns recent logs from a controller
-        operationId: RuntimeService_GetLogs
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1GetLogsResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: ascending
-              in: query
-              required: false
-              type: boolean
-        tags:
-            - RuntimeService
-  /v1/instances/{instanceId}/logs/watch: |
+      summary: GetLogs returns recent logs from a controller
+      operationId: RuntimeService_GetLogs
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetLogsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: ascending
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/logs/watch:
     get:
-        summary: WatchLogs streams new logs emitted from a controller
-        operationId: RuntimeService_WatchLogs
-        responses:
-            "200":
-                description: A successful response.(streaming responses)
-                schema:
-                    type: object
-                    properties:
-                        result:
-                            $ref: '#/definitions/v1WatchLogsResponse'
-                        error:
-                            $ref: '#/definitions/rpcStatus'
-                    title: Stream result of v1WatchLogsResponse
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: replay
-              in: query
-              required: false
-              type: boolean
-        tags:
-            - RuntimeService
-  /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}: |
+      summary: WatchLogs streams new logs emitted from a controller
+      operationId: RuntimeService_WatchLogs
+      responses:
+        "200":
+          description: A successful response.(streaming responses)
+          schema:
+            type: object
+            properties:
+              result:
+                $ref: '#/definitions/v1WatchLogsResponse'
+              error:
+                $ref: '#/definitions/rpcStatus'
+            title: Stream result of v1WatchLogsResponse
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: replay
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
     get:
-        summary: Get cardinality for a column
-        operationId: QueryService_ColumnCardinality
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1ColumnCardinalityResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: tableName
-              in: path
-              required: true
-              type: string
-            - name: columnName
-              in: query
-              required: false
-              type: string
-            - name: priority
-              in: query
-              required: false
-              type: integer
-              format: int32
-        tags:
-            - QueryService
-  /v1/instances/{instanceId}/queries/columns-profile/tables/{tableName}: |
+      summary: Get cardinality for a column
+      operationId: QueryService_ColumnCardinality
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ColumnCardinalityResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
+          in: path
+          required: true
+          type: string
+        - name: columnName
+          in: query
+          required: false
+          type: string
+        - name: priority
+          in: query
+          required: false
+          type: integer
+          format: int32
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/columns-profile/tables/{tableName}:
     post:
-        summary: TableColumns returns column profiles
-        operationId: QueryService_TableColumns
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1TableColumnsResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: tableName
-              in: path
-              required: true
-              type: string
-            - name: priority
-              in: query
-              required: false
-              type: integer
-              format: int32
-        tags:
-            - QueryService
-  /v1/instances/{instanceId}/queries/descriptive-statistics/tables/{tableName}: |
+      summary: TableColumns returns column profiles
+      operationId: QueryService_TableColumns
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1TableColumnsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
+          in: path
+          required: true
+          type: string
+        - name: priority
+          in: query
+          required: false
+          type: integer
+          format: int32
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/descriptive-statistics/tables/{tableName}:
     get:
-        summary: Get basic stats for a numeric column like min, max, mean, stddev, etc
-        operationId: QueryService_ColumnDescriptiveStatistics
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1ColumnDescriptiveStatisticsResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: tableName
-              in: path
-              required: true
-              type: string
-            - name: columnName
-              in: query
-              required: false
-              type: string
-            - name: priority
-              in: query
-              required: false
-              type: integer
-              format: int32
-        tags:
-            - QueryService
-  /v1/instances/{instanceId}/queries/export: |
+      summary: Get basic stats for a numeric column like min, max, mean, stddev, etc
+      operationId: QueryService_ColumnDescriptiveStatistics
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ColumnDescriptiveStatisticsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
+          in: path
+          required: true
+          type: string
+        - name: columnName
+          in: query
+          required: false
+          type: string
+        - name: priority
+          in: query
+          required: false
+          type: integer
+          format: int32
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/export:
     post:
-        summary: Export builds a URL to download the results of a query as a file.
-        operationId: QueryService_Export
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1ExportResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: body
-              in: body
-              required: true
-              schema:
-                type: object
-                properties:
-                    limit:
-                        type: string
-                        format: int64
-                    format:
-                        $ref: '#/definitions/v1ExportFormat'
-                    metricsViewToplistRequest:
-                        $ref: '#/definitions/v1MetricsViewToplistRequest'
-                    metricsViewRowsRequest:
-                        $ref: '#/definitions/v1MetricsViewRowsRequest'
-                    metricsViewTimeSeriesRequest:
-                        $ref: '#/definitions/v1MetricsViewTimeSeriesRequest'
-                title: Request message for QueryService.Export
-        tags:
-            - QueryService
-  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist: |
+      summary: Export builds a URL to download the results of a query as a file.
+      operationId: QueryService_Export
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ExportResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              limit:
+                type: string
+                format: int64
+              format:
+                $ref: '#/definitions/v1ExportFormat'
+              metricsViewAggregationRequest:
+                $ref: '#/definitions/v1MetricsViewAggregationRequest'
+              metricsViewToplistRequest:
+                $ref: '#/definitions/v1MetricsViewToplistRequest'
+              metricsViewRowsRequest:
+                $ref: '#/definitions/v1MetricsViewRowsRequest'
+              metricsViewTimeSeriesRequest:
+                $ref: '#/definitions/v1MetricsViewTimeSeriesRequest'
+            title: Request message for QueryService.Export
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsView}/aggregation:
     post:
-        operationId: QueryService_MetricsViewComparisonToplist
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1MetricsViewComparisonToplistResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: metricsViewName
-              in: path
-              required: true
-              type: string
-            - name: body
-              in: body
-              required: true
-              schema:
-                type: object
-                properties:
-                    dimensionName:
-                        type: string
-                    measureNames:
-                        type: array
-                        items:
-                            type: string
-                    inlineMeasures:
-                        type: array
-                        items:
-                            type: object
-                            $ref: '#/definitions/v1InlineMeasure'
-                    baseTimeRange:
-                        $ref: '#/definitions/v1TimeRange'
-                    comparisonTimeRange:
-                        $ref: '#/definitions/v1TimeRange'
-                    sort:
-                        type: array
-                        items:
-                            type: object
-                            $ref: '#/definitions/v1MetricsViewComparisonSort'
-                    filter:
-                        $ref: '#/definitions/v1MetricsViewFilter'
-                    limit:
-                        type: string
-                        format: int64
-                    offset:
-                        type: string
-                        format: int64
-                    priority:
-                        type: integer
-                        format: int32
-                title: Request message for QueryService.MetricsViewComparisonToplist
-        tags:
-            - QueryService
-  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/rows: |
+      summary: MetricsViewAggregation is a generic API for running group-by queries against a metrics view.
+      operationId: QueryService_MetricsViewAggregation
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewAggregationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsView
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              dimensions:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewAggregationDimension'
+              measures:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewAggregationMeasure'
+              sort:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewAggregationSort'
+              timeStart:
+                type: string
+                format: date-time
+              timeEnd:
+                type: string
+                format: date-time
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
+              limit:
+                type: string
+                format: int64
+              offset:
+                type: string
+                format: int64
+              priority:
+                type: integer
+                format: int32
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
     post:
-        summary: MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
-        operationId: QueryService_MetricsViewRows
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1MetricsViewRowsResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: metricsViewName
-              in: path
-              required: true
-              type: string
-            - name: body
-              in: body
-              required: true
-              schema:
-                type: object
-                properties:
-                    timeStart:
-                        type: string
-                        format: date-time
-                    timeEnd:
-                        type: string
-                        format: date-time
-                    timeGranularity:
-                        $ref: '#/definitions/v1TimeGrain'
-                    filter:
-                        $ref: '#/definitions/v1MetricsViewFilter'
-                    sort:
-                        type: array
-                        items:
-                            type: object
-                            $ref: '#/definitions/v1MetricsViewSort'
-                    limit:
-                        type: integer
-                        format: int32
-                    offset:
-                        type: string
-                        format: int64
-                    priority:
-                        type: integer
-                        format: int32
-                    timeZone:
-                        type: string
-                title: Request message for QueryService.MetricsViewRows
-        tags:
-            - QueryService
-  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/time-range-summary: |
+      operationId: QueryService_MetricsViewComparisonToplist
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewComparisonToplistResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsViewName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              dimensionName:
+                type: string
+              measureNames:
+                type: array
+                items:
+                  type: string
+              inlineMeasures:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1InlineMeasure'
+              baseTimeRange:
+                $ref: '#/definitions/v1TimeRange'
+              comparisonTimeRange:
+                $ref: '#/definitions/v1TimeRange'
+              sort:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewComparisonSort'
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
+              limit:
+                type: string
+                format: int64
+              offset:
+                type: string
+                format: int64
+              priority:
+                type: integer
+                format: int32
+            title: Request message for QueryService.MetricsViewComparisonToplist
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/rows:
     post:
-        summary: MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
-        operationId: QueryService_MetricsViewTimeRange
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1MetricsViewTimeRangeResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: metricsViewName
-              in: path
-              required: true
-              type: string
-            - name: body
-              in: body
-              required: true
-              schema:
-                type: object
-                properties:
-                    priority:
-                        type: integer
-                        format: int32
-        tags:
-            - QueryService
-  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/timeseries: |
+      summary: MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
+      operationId: QueryService_MetricsViewRows
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewRowsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsViewName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              timeStart:
+                type: string
+                format: date-time
+              timeEnd:
+                type: string
+                format: date-time
+              timeGranularity:
+                $ref: '#/definitions/v1TimeGrain'
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
+              sort:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewSort'
+              limit:
+                type: integer
+                format: int32
+              offset:
+                type: string
+                format: int64
+              priority:
+                type: integer
+                format: int32
+              timeZone:
+                type: string
+            title: Request message for QueryService.MetricsViewRows
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/time-range-summary:
     post:
-        summary: |-
-            MetricsViewTimeSeries returns time series for the measures in the metrics view.
-            It's a convenience API for querying a metrics view.
-        operationId: QueryService_MetricsViewTimeSeries
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1MetricsViewTimeSeriesResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: metricsViewName
-              in: path
-              required: true
-              type: string
-            - name: body
-              in: body
-              required: true
-              schema:
-                type: object
-                properties:
-                    measureNames:
-                        type: array
-                        items:
-                            type: string
-                    inlineMeasures:
-                        type: array
-                        items:
-                            type: object
-                            $ref: '#/definitions/v1InlineMeasure'
-                    timeStart:
-                        type: string
-                        format: date-time
-                    timeEnd:
-                        type: string
-                        format: date-time
-                    timeGranularity:
-                        $ref: '#/definitions/v1TimeGrain'
-                    filter:
-                        $ref: '#/definitions/v1MetricsViewFilter'
-                    timeZone:
-                        type: string
-                    priority:
-                        type: integer
-                        format: int32
-                title: Request message for QueryService.MetricsViewTimeSeries
-        tags:
-            - QueryService
-  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/toplist: |
+      summary: MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
+      operationId: QueryService_MetricsViewTimeRange
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewTimeRangeResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsViewName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              priority:
+                type: integer
+                format: int32
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/timeseries:
     post:
-        summary: |-
-            MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
-            It's a convenience API for querying a metrics view.
-        operationId: QueryService_MetricsViewToplist
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1MetricsViewToplistResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: metricsViewName
-              in: path
-              required: true
-              type: string
-            - name: body
-              in: body
-              required: true
-              schema:
-                type: object
-                properties:
-                    dimensionName:
-                        type: string
-                    measureNames:
-                        type: array
-                        items:
-                            type: string
-                    inlineMeasures:
-                        type: array
-                        items:
-                            type: object
-                            $ref: '#/definitions/v1InlineMeasure'
-                    timeStart:
-                        type: string
-                        format: date-time
-                    timeEnd:
-                        type: string
-                        format: date-time
-                    limit:
-                        type: string
-                        format: int64
-                    offset:
-                        type: string
-                        format: int64
-                    sort:
-                        type: array
-                        items:
-                            type: object
-                            $ref: '#/definitions/v1MetricsViewSort'
-                    filter:
-                        $ref: '#/definitions/v1MetricsViewFilter'
-                    priority:
-                        type: integer
-                        format: int32
-                title: Request message for QueryService.MetricsViewToplist
-        tags:
-            - QueryService
-  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/totals: |
+      summary: |-
+        MetricsViewTimeSeries returns time series for the measures in the metrics view.
+        It's a convenience API for querying a metrics view.
+      operationId: QueryService_MetricsViewTimeSeries
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewTimeSeriesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsViewName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              measureNames:
+                type: array
+                items:
+                  type: string
+              inlineMeasures:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1InlineMeasure'
+              timeStart:
+                type: string
+                format: date-time
+              timeEnd:
+                type: string
+                format: date-time
+              timeGranularity:
+                $ref: '#/definitions/v1TimeGrain'
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
+              timeZone:
+                type: string
+              priority:
+                type: integer
+                format: int32
+            title: Request message for QueryService.MetricsViewTimeSeries
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/toplist:
     post:
-        summary: |-
-            MetricsViewTotals returns totals over a time period for the measures in a metrics view.
-            It's a convenience API for querying a metrics view.
-        operationId: QueryService_MetricsViewTotals
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1MetricsViewTotalsResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: metricsViewName
-              in: path
-              required: true
-              type: string
-            - name: body
-              in: body
-              required: true
-              schema:
-                type: object
-                properties:
-                    measureNames:
-                        type: array
-                        items:
-                            type: string
-                    inlineMeasures:
-                        type: array
-                        items:
-                            type: object
-                            $ref: '#/definitions/v1InlineMeasure'
-                    timeStart:
-                        type: string
-                        format: date-time
-                    timeEnd:
-                        type: string
-                        format: date-time
-                    filter:
-                        $ref: '#/definitions/v1MetricsViewFilter'
-                    priority:
-                        type: integer
-                        format: int32
-                title: Request message for QueryService.MetricsViewTotals
-        tags:
-            - QueryService
-  /v1/instances/{instanceId}/queries/null-count/tables/{tableName}: |
+      summary: |-
+        MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
+        It's a convenience API for querying a metrics view.
+      operationId: QueryService_MetricsViewToplist
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewToplistResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsViewName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              dimensionName:
+                type: string
+              measureNames:
+                type: array
+                items:
+                  type: string
+              inlineMeasures:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1InlineMeasure'
+              timeStart:
+                type: string
+                format: date-time
+              timeEnd:
+                type: string
+                format: date-time
+              limit:
+                type: string
+                format: int64
+              offset:
+                type: string
+                format: int64
+              sort:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewSort'
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
+              priority:
+                type: integer
+                format: int32
+            title: Request message for QueryService.MetricsViewToplist
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/totals:
+    post:
+      summary: |-
+        MetricsViewTotals returns totals over a time period for the measures in a metrics view.
+        It's a convenience API for querying a metrics view.
+      operationId: QueryService_MetricsViewTotals
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewTotalsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsViewName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              measureNames:
+                type: array
+                items:
+                  type: string
+              inlineMeasures:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1InlineMeasure'
+              timeStart:
+                type: string
+                format: date-time
+              timeEnd:
+                type: string
+                format: date-time
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
+              priority:
+                type: integer
+                format: int32
+            title: Request message for QueryService.MetricsViewTotals
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/null-count/tables/{tableName}:
     get:
-        summary: Get the number of nulls in a column
-        operationId: QueryService_ColumnNullCount
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1ColumnNullCountResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: tableName
-              in: path
-              required: true
-              type: string
-            - name: columnName
-              in: query
-              required: false
-              type: string
-            - name: priority
-              in: query
-              required: false
-              type: integer
-              format: int32
-        tags:
-            - QueryService
-  /v1/instances/{instanceId}/queries/numeric-histogram/tables/{tableName}: |
+      summary: Get the number of nulls in a column
+      operationId: QueryService_ColumnNullCount
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ColumnNullCountResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
+          in: path
+          required: true
+          type: string
+        - name: columnName
+          in: query
+          required: false
+          type: string
+        - name: priority
+          in: query
+          required: false
+          type: integer
+          format: int32
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/numeric-histogram/tables/{tableName}:
     get:
-        summary: Get the histogram for values in a column
-        operationId: QueryService_ColumnNumericHistogram
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1ColumnNumericHistogramResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: tableName
-              in: path
-              required: true
-              type: string
-            - name: columnName
-              in: query
-              required: false
-              type: string
-            - name: histogramMethod
-              in: query
-              required: false
-              type: string
-              enum:
-                - HISTOGRAM_METHOD_UNSPECIFIED
-                - HISTOGRAM_METHOD_FD
-                - HISTOGRAM_METHOD_DIAGNOSTIC
-              default: HISTOGRAM_METHOD_UNSPECIFIED
-            - name: priority
-              in: query
-              required: false
-              type: integer
-              format: int32
-        tags:
-            - QueryService
-  /v1/instances/{instanceId}/queries/rollup-interval/tables/{tableName}: |
+      summary: Get the histogram for values in a column
+      operationId: QueryService_ColumnNumericHistogram
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ColumnNumericHistogramResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
+          in: path
+          required: true
+          type: string
+        - name: columnName
+          in: query
+          required: false
+          type: string
+        - name: histogramMethod
+          in: query
+          required: false
+          type: string
+          enum:
+            - HISTOGRAM_METHOD_UNSPECIFIED
+            - HISTOGRAM_METHOD_FD
+            - HISTOGRAM_METHOD_DIAGNOSTIC
+          default: HISTOGRAM_METHOD_UNSPECIFIED
+        - name: priority
+          in: query
+          required: false
+          type: integer
+          format: int32
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/rollup-interval/tables/{tableName}:
     post:
-        summary: ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
-        operationId: QueryService_ColumnRollupInterval
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1ColumnRollupIntervalResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: tableName
-              in: path
-              required: true
-              type: string
-            - name: body
-              in: body
-              required: true
-              schema:
-                type: object
-                properties:
-                    columnName:
-                        type: string
-                    priority:
-                        type: integer
-                        format: int32
-        tags:
-            - QueryService
-  /v1/instances/{instanceId}/queries/rows/tables/{tableName}: |
+      summary: ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
+      operationId: QueryService_ColumnRollupInterval
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ColumnRollupIntervalResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              columnName:
+                type: string
+              priority:
+                type: integer
+                format: int32
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/rows/tables/{tableName}:
     get:
-        summary: TableRows returns table rows
-        operationId: QueryService_TableRows
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1TableRowsResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: tableName
-              in: path
-              required: true
-              type: string
-            - name: limit
-              in: query
-              required: false
-              type: integer
-              format: int32
-            - name: priority
-              in: query
-              required: false
-              type: integer
-              format: int32
-        tags:
-            - QueryService
-  /v1/instances/{instanceId}/queries/rug-histogram/tables/{tableName}: |
+      summary: TableRows returns table rows
+      operationId: QueryService_TableRows
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1TableRowsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
+          in: path
+          required: true
+          type: string
+        - name: limit
+          in: query
+          required: false
+          type: integer
+          format: int32
+        - name: priority
+          in: query
+          required: false
+          type: integer
+          format: int32
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/rug-histogram/tables/{tableName}:
     get:
-        summary: Get outliers for a numeric column
-        operationId: QueryService_ColumnRugHistogram
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1ColumnRugHistogramResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: tableName
-              in: path
-              required: true
-              type: string
-            - name: columnName
-              in: query
-              required: false
-              type: string
-            - name: priority
-              in: query
-              required: false
-              type: integer
-              format: int32
-        tags:
-            - QueryService
-  /v1/instances/{instanceId}/queries/smallest-time-grain/tables/{tableName}: |
+      summary: Get outliers for a numeric column
+      operationId: QueryService_ColumnRugHistogram
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ColumnRugHistogramResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
+          in: path
+          required: true
+          type: string
+        - name: columnName
+          in: query
+          required: false
+          type: string
+        - name: priority
+          in: query
+          required: false
+          type: integer
+          format: int32
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/smallest-time-grain/tables/{tableName}:
     get:
-        summary: Estimates the smallest time grain present in the column
-        operationId: QueryService_ColumnTimeGrain
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1ColumnTimeGrainResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: tableName
-              in: path
-              required: true
-              type: string
-            - name: columnName
-              in: query
-              required: false
-              type: string
-            - name: priority
-              in: query
-              required: false
-              type: integer
-              format: int32
-        tags:
-            - QueryService
-  /v1/instances/{instanceId}/queries/table-cardinality/tables/{tableName}: |
+      summary: Estimates the smallest time grain present in the column
+      operationId: QueryService_ColumnTimeGrain
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ColumnTimeGrainResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
+          in: path
+          required: true
+          type: string
+        - name: columnName
+          in: query
+          required: false
+          type: string
+        - name: priority
+          in: query
+          required: false
+          type: integer
+          format: int32
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/table-cardinality/tables/{tableName}:
     get:
-        summary: TableCardinality returns row count
-        operationId: QueryService_TableCardinality
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1TableCardinalityResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: tableName
-              in: path
-              required: true
-              type: string
-            - name: priority
-              in: query
-              required: false
-              type: integer
-              format: int32
-        tags:
-            - QueryService
-  /v1/instances/{instanceId}/queries/time-range-summary/tables/{tableName}: |
+      summary: TableCardinality returns row count
+      operationId: QueryService_TableCardinality
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1TableCardinalityResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
+          in: path
+          required: true
+          type: string
+        - name: priority
+          in: query
+          required: false
+          type: integer
+          format: int32
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/time-range-summary/tables/{tableName}:
     get:
-        summary: Get the time range summaries (min, max) for a column
-        operationId: QueryService_ColumnTimeRange
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1ColumnTimeRangeResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: tableName
-              in: path
-              required: true
-              type: string
-            - name: columnName
-              in: query
-              required: false
-              type: string
-            - name: priority
-              in: query
-              required: false
-              type: integer
-              format: int32
-        tags:
-            - QueryService
-  /v1/instances/{instanceId}/queries/timeseries/tables/{tableName}: |
+      summary: Get the time range summaries (min, max) for a column
+      operationId: QueryService_ColumnTimeRange
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ColumnTimeRangeResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
+          in: path
+          required: true
+          type: string
+        - name: columnName
+          in: query
+          required: false
+          type: string
+        - name: priority
+          in: query
+          required: false
+          type: integer
+          format: int32
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/timeseries/tables/{tableName}:
     post:
-        summary: Generate time series for the given measures (aggregation expressions) along with the sparkline timeseries
-        operationId: QueryService_ColumnTimeSeries
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1ColumnTimeSeriesResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: tableName
-              in: path
-              required: true
-              type: string
-            - name: body
-              in: body
-              required: true
-              schema:
-                type: object
-                properties:
-                    measures:
-                        type: array
-                        items:
-                            type: object
-                            $ref: '#/definitions/ColumnTimeSeriesRequestBasicMeasure'
-                    timestampColumnName:
-                        type: string
-                    timeRange:
-                        $ref: '#/definitions/v1TimeSeriesTimeRange'
-                    pixels:
-                        type: integer
-                        format: int32
-                    sampleSize:
-                        type: integer
-                        format: int32
-                    priority:
-                        type: integer
-                        format: int32
-                    timeZone:
-                        type: string
-        tags:
-            - QueryService
-  /v1/instances/{instanceId}/queries/topk/tables/{tableName}: |
+      summary: Generate time series for the given measures (aggregation expressions) along with the sparkline timeseries
+      operationId: QueryService_ColumnTimeSeries
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ColumnTimeSeriesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              measures:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/ColumnTimeSeriesRequestBasicMeasure'
+              timestampColumnName:
+                type: string
+              timeRange:
+                $ref: '#/definitions/v1TimeSeriesTimeRange'
+              pixels:
+                type: integer
+                format: int32
+              sampleSize:
+                type: integer
+                format: int32
+              priority:
+                type: integer
+                format: int32
+              timeZone:
+                type: string
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/topk/tables/{tableName}:
     post:
-        summary: |-
-            Get TopK elements from a table for a column given an agg function
-            agg function and k are optional, defaults are count(*) and 50 respectively
-        operationId: QueryService_ColumnTopK
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1ColumnTopKResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: tableName
-              in: path
-              required: true
-              type: string
-            - name: body
-              in: body
-              required: true
-              schema:
-                type: object
-                properties:
-                    columnName:
-                        type: string
-                    agg:
-                        type: string
-                        title: default is count(*)
-                    k:
-                        type: integer
-                        format: int32
-                        title: default is 50
-                    priority:
-                        type: integer
-                        format: int32
-                description: Request for QueryService.ColumnTopK. Returns the top K values for a given column using agg function for table table_name.
-        tags:
-            - QueryService
-  /v1/instances/{instanceId}/query: |
+      summary: |-
+        Get TopK elements from a table for a column given an agg function
+        agg function and k are optional, defaults are count(*) and 50 respectively
+      operationId: QueryService_ColumnTopK
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ColumnTopKResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: tableName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              columnName:
+                type: string
+              agg:
+                type: string
+                title: default is count(*)
+              k:
+                type: integer
+                format: int32
+                title: default is 50
+              priority:
+                type: integer
+                format: int32
+            description: Request for QueryService.ColumnTopK. Returns the top K values for a given column using agg function for table table_name.
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/query:
     post:
-        summary: Query runs a SQL query against the instance's OLAP datastore.
-        operationId: QueryService_Query
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1QueryResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              description: Instance to query
-              in: path
-              required: true
-              type: string
-            - name: body
-              in: body
-              required: true
-              schema:
-                type: object
-                properties:
-                    sql:
-                        type: string
-                        title: SELECT statement
-                    args:
-                        type: array
-                        items: {}
-                        title: Args to interpolate into the statement
-                    priority:
-                        type: integer
-                        format: int32
-                        title: Query priority (not supported by all backends)
-                    dryRun:
-                        type: boolean
-                        title: If true, will only validate the query, not execute it
-                    limit:
-                        type: integer
-                        format: int32
-                title: Request message for QueryService.Query
-        tags:
-            - QueryService
-  /v1/instances/{instanceId}/query/batch: |
+      summary: Query runs a SQL query against the instance's OLAP datastore.
+      operationId: QueryService_Query
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1QueryResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          description: Instance to query
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              sql:
+                type: string
+                title: SELECT statement
+              args:
+                type: array
+                items: {}
+                title: Args to interpolate into the statement
+              priority:
+                type: integer
+                format: int32
+                title: Query priority (not supported by all backends)
+              dryRun:
+                type: boolean
+                title: If true, will only validate the query, not execute it
+              limit:
+                type: integer
+                format: int32
+            title: Request message for QueryService.Query
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/query/batch:
     post:
-        summary: Batch request with different queries
-        operationId: QueryService_QueryBatch
-        responses:
-            "200":
-                description: A successful response.(streaming responses)
-                schema:
-                    type: object
-                    properties:
-                        result:
-                            $ref: '#/definitions/v1QueryBatchResponse'
-                        error:
-                            $ref: '#/definitions/rpcStatus'
-                    title: Stream result of v1QueryBatchResponse
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: body
-              in: body
-              required: true
-              schema:
-                type: object
-                properties:
-                    queries:
-                        type: array
-                        items:
-                            type: object
-                            $ref: '#/definitions/v1QueryBatchEntry'
-        tags:
-            - QueryService
-  /v1/instances/{instanceId}/reconcile: |
+      summary: Batch request with different queries
+      operationId: QueryService_QueryBatch
+      responses:
+        "200":
+          description: A successful response.(streaming responses)
+          schema:
+            type: object
+            properties:
+              result:
+                $ref: '#/definitions/v1QueryBatchResponse'
+              error:
+                $ref: '#/definitions/rpcStatus'
+            title: Stream result of v1QueryBatchResponse
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              queries:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1QueryBatchEntry'
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/reconcile:
     post:
-        summary: |-
-            Reconcile applies a full set of artifacts from a repo to the catalog and infra.
-            It attempts to infer a minimal number of migrations to apply to reconcile the current state with
-            the desired state expressed in the artifacts. Any existing objects not described in the submitted
-            artifacts will be deleted.
-        operationId: RuntimeService_Reconcile
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1ReconcileResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              description: Instance to reconcile
-              in: path
-              required: true
-              type: string
-            - name: body
-              in: body
-              required: true
-              schema:
-                type: object
-                properties:
-                    changedPaths:
-                        type: array
-                        items:
-                            type: string
-                        description: |-
-                            Changed paths provides a way to "hint" what files have changed in the repo, enabling
-                            reconciliation to execute faster by not scanning all code artifacts for changes.
-                    forcedPaths:
-                        type: array
-                        items:
-                            type: string
-                        description: |-
-                            Forced paths is used to force run reconcile on certain files.
-                            This is mainly used by UI to reconcile paths missing in catalog and get errors if any.
-                    dry:
-                        type: boolean
-                        title: If true, will validate the file artifacts, but not actually execute any migrations
-                    strict:
-                        type: boolean
-                        title: |-
-                            If true, will not execute any migrations if any artifact fails to validate.
-                            Otherwise, it will execute a best-effort reconciliation (including dropping objects with
-                            artifacts that fail to validate.)
-                title: Request message for RuntimeService.Reconcile
-        tags:
-            - RuntimeService
-  /v1/instances/{instanceId}/resource: |
+      summary: |-
+        Reconcile applies a full set of artifacts from a repo to the catalog and infra.
+        It attempts to infer a minimal number of migrations to apply to reconcile the current state with
+        the desired state expressed in the artifacts. Any existing objects not described in the submitted
+        artifacts will be deleted.
+      operationId: RuntimeService_Reconcile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ReconcileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          description: Instance to reconcile
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              changedPaths:
+                type: array
+                items:
+                  type: string
+                description: |-
+                  Changed paths provides a way to "hint" what files have changed in the repo, enabling
+                  reconciliation to execute faster by not scanning all code artifacts for changes.
+              forcedPaths:
+                type: array
+                items:
+                  type: string
+                description: |-
+                  Forced paths is used to force run reconcile on certain files.
+                  This is mainly used by UI to reconcile paths missing in catalog and get errors if any.
+              dry:
+                type: boolean
+                title: If true, will validate the file artifacts, but not actually execute any migrations
+              strict:
+                type: boolean
+                title: |-
+                  If true, will not execute any migrations if any artifact fails to validate.
+                  Otherwise, it will execute a best-effort reconciliation (including dropping objects with
+                  artifacts that fail to validate.)
+            title: Request message for RuntimeService.Reconcile
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/resource:
     get:
-        summary: GetResource looks up a specific catalog resource
-        operationId: RuntimeService_GetResource
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1GetResourceResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: name.kind
-              in: query
-              required: false
-              type: string
-            - name: name.name
-              in: query
-              required: false
-              type: string
-        tags:
-            - RuntimeService
-  /v1/instances/{instanceId}/resources: |
+      summary: GetResource looks up a specific catalog resource
+      operationId: RuntimeService_GetResource
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetResourceResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: name.kind
+          in: query
+          required: false
+          type: string
+        - name: name.name
+          in: query
+          required: false
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/resources:
     get:
-        summary: ListResources lists the resources stored in the catalog
-        operationId: RuntimeService_ListResources
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1ListResourcesResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: refFilter.kind
-              in: query
-              required: false
-              type: string
-            - name: refFilter.name
-              in: query
-              required: false
-              type: string
-            - name: prefixFilter.kind
-              in: query
-              required: false
-              type: string
-            - name: prefixFilter.name
-              in: query
-              required: false
-              type: string
-            - name: annotationsFilter
-              description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
-              in: query
-              required: false
-              type: string
-        tags:
-            - RuntimeService
-  /v1/instances/{instanceId}/resources/-/watch: |
+      summary: ListResources lists the resources stored in the catalog
+      operationId: RuntimeService_ListResources
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListResourcesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: kind
+          in: query
+          required: false
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/resources/-/watch:
     get:
-        summary: WatchResources streams updates to catalog resources (including creation and deletion events)
-        operationId: RuntimeService_WatchResources
-        responses:
-            "200":
-                description: A successful response.(streaming responses)
-                schema:
-                    type: object
-                    properties:
-                        result:
-                            $ref: '#/definitions/v1WatchResourcesResponse'
-                        error:
-                            $ref: '#/definitions/rpcStatus'
-                    title: Stream result of v1WatchResourcesResponse
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: refFilter.kind
-              in: query
-              required: false
-              type: string
-            - name: refFilter.name
-              in: query
-              required: false
-              type: string
-            - name: prefixFilter.kind
-              in: query
-              required: false
-              type: string
-            - name: prefixFilter.name
-              in: query
-              required: false
-              type: string
-            - name: annotationsFilter
-              description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
-              in: query
-              required: false
-              type: string
-        tags:
-            - RuntimeService
-  /v1/instances/{instanceId}/sync: |
+      summary: WatchResources streams updates to catalog resources (including creation and deletion events)
+      operationId: RuntimeService_WatchResources
+      responses:
+        "200":
+          description: A successful response.(streaming responses)
+          schema:
+            type: object
+            properties:
+              result:
+                $ref: '#/definitions/v1WatchResourcesResponse'
+              error:
+                $ref: '#/definitions/rpcStatus'
+            title: Stream result of v1WatchResourcesResponse
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: kind
+          in: query
+          required: false
+          type: string
+        - name: replay
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/sync:
     post:
-        summary: |-
-            TriggerSync syncronizes the instance's catalog with the underlying OLAP's information schema.
-            If the instance has exposed=true, tables found in the information schema will be added to the catalog.
-        operationId: RuntimeService_TriggerSync
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1TriggerSyncResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-        tags:
-            - RuntimeService
-  /v1/instances/{instanceId}/trigger: |
+      summary: |-
+        TriggerSync syncronizes the instance's catalog with the underlying OLAP's information schema.
+        If the instance has exposed=true, tables found in the information schema will be added to the catalog.
+      operationId: RuntimeService_TriggerSync
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1TriggerSyncResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/trigger:
     post:
-        summary: |-
-            CreateTrigger creates a trigger in the catalog.
-            Triggers are ephemeral resources that will be cleaned up by the controller.
-        operationId: RuntimeService_CreateTrigger
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1CreateTriggerResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: path
-              required: true
-              type: string
-            - name: body
-              in: body
-              required: true
-              schema:
-                type: object
-                properties:
-                    pullTriggerSpec:
-                        $ref: '#/definitions/v1PullTriggerSpec'
-                    refreshTriggerSpec:
-                        $ref: '#/definitions/v1RefreshTriggerSpec'
-        tags:
-            - RuntimeService
-  /v1/olap/tables: |
+      summary: |-
+        CreateTrigger creates a trigger in the catalog.
+        Triggers are ephemeral resources that will be cleaned up by the controller.
+      operationId: RuntimeService_CreateTrigger
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateTriggerResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              pullTriggerSpec:
+                $ref: '#/definitions/v1PullTriggerSpec'
+              refreshTriggerSpec:
+                $ref: '#/definitions/v1RefreshTriggerSpec'
+      tags:
+        - RuntimeService
+  /v1/olap/tables:
     get:
-        summary: OLAPListTables list all tables across all databases on motherduck
-        operationId: ConnectorService_OLAPListTables
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1OLAPListTablesResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: query
-              required: false
-              type: string
-            - name: connector
-              in: query
-              required: false
-              type: string
-        tags:
-            - ConnectorService
-  /v1/ping: |
+      summary: OLAPListTables list all tables across all databases on motherduck
+      operationId: ConnectorService_OLAPListTables
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1OLAPListTablesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
+  /v1/ping:
     get:
-        summary: Ping returns information about the runtime
-        operationId: RuntimeService_Ping
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1PingResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        tags:
-            - RuntimeService
-  /v1/put-and-reconcile: |
+      summary: Ping returns information about the runtime
+      operationId: RuntimeService_Ping
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1PingResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - RuntimeService
+  /v1/put-and-reconcile:
     post:
-        summary: |-
-            PutFileAndReconcile combines PutFile and Reconcile in a single endpoint to reduce latency.
-            It is equivalent to calling the two RPCs sequentially.
-        operationId: RuntimeService_PutFileAndReconcile
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1PutFileAndReconcileResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: body
-              in: body
-              required: true
-              schema:
-                $ref: '#/definitions/v1PutFileAndReconcileRequest'
-        tags:
-            - RuntimeService
-  /v1/refresh-and-reconcile: |
+      summary: |-
+        PutFileAndReconcile combines PutFile and Reconcile in a single endpoint to reduce latency.
+        It is equivalent to calling the two RPCs sequentially.
+      operationId: RuntimeService_PutFileAndReconcile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1PutFileAndReconcileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1PutFileAndReconcileRequest'
+      tags:
+        - RuntimeService
+  /v1/refresh-and-reconcile:
     post:
-        operationId: RuntimeService_RefreshAndReconcile
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1RefreshAndReconcileResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: body
-              in: body
-              required: true
-              schema:
-                $ref: '#/definitions/v1RefreshAndReconcileRequest'
-        tags:
-            - RuntimeService
-  /v1/rename-and-reconcile: |
+      operationId: RuntimeService_RefreshAndReconcile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RefreshAndReconcileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1RefreshAndReconcileRequest'
+      tags:
+        - RuntimeService
+  /v1/rename-and-reconcile:
     post:
-        summary: RenameFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
-        operationId: RuntimeService_RenameFileAndReconcile
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1RenameFileAndReconcileResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: body
-              in: body
-              required: true
-              schema:
-                $ref: '#/definitions/v1RenameFileAndReconcileRequest'
-        tags:
-            - RuntimeService
-  /v1/s3/bucket/{bucket}/metadata: |
+      summary: RenameFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
+      operationId: RuntimeService_RenameFileAndReconcile
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RenameFileAndReconcileResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1RenameFileAndReconcileRequest'
+      tags:
+        - RuntimeService
+  /v1/s3/bucket/{bucket}/metadata:
     get:
-        summary: S3GetBucketMetadata returns metadata for the given bucket.
-        operationId: ConnectorService_S3GetBucketMetadata
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1S3GetBucketMetadataResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: bucket
-              in: path
-              required: true
-              type: string
-            - name: instanceId
-              in: query
-              required: false
-              type: string
-            - name: connector
-              in: query
-              required: false
-              type: string
-        tags:
-            - ConnectorService
-  /v1/s3/bucket/{bucket}/objects: |
+      summary: S3GetBucketMetadata returns metadata for the given bucket.
+      operationId: ConnectorService_S3GetBucketMetadata
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1S3GetBucketMetadataResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: bucket
+          in: path
+          required: true
+          type: string
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
+  /v1/s3/bucket/{bucket}/objects:
     get:
-        summary: S3ListBuckets lists objects for the given bucket.
-        operationId: ConnectorService_S3ListObjects
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1S3ListObjectsResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: bucket
-              in: path
-              required: true
-              type: string
-            - name: instanceId
-              in: query
-              required: false
-              type: string
-            - name: connector
-              in: query
-              required: false
-              type: string
-            - name: pageSize
-              in: query
-              required: false
-              type: integer
-              format: int64
-            - name: pageToken
-              in: query
-              required: false
-              type: string
-            - name: region
-              in: query
-              required: false
-              type: string
-            - name: prefix
-              in: query
-              required: false
-              type: string
-            - name: startAfter
-              in: query
-              required: false
-              type: string
-            - name: delimiter
-              in: query
-              required: false
-              type: string
-        tags:
-            - ConnectorService
-  /v1/s3/buckets: |
+      summary: S3ListBuckets lists objects for the given bucket.
+      operationId: ConnectorService_S3ListObjects
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1S3ListObjectsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: bucket
+          in: path
+          required: true
+          type: string
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+        - name: region
+          in: query
+          required: false
+          type: string
+        - name: prefix
+          in: query
+          required: false
+          type: string
+        - name: startAfter
+          in: query
+          required: false
+          type: string
+        - name: delimiter
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
+  /v1/s3/buckets:
     get:
-        summary: S3ListBuckets lists buckets accessible with the configured credentials.
-        operationId: ConnectorService_S3ListBuckets
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1S3ListBucketsResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: query
-              required: false
-              type: string
-            - name: connector
-              in: query
-              required: false
-              type: string
-            - name: pageSize
-              in: query
-              required: false
-              type: integer
-              format: int64
-            - name: pageToken
-              in: query
-              required: false
-              type: string
-        tags:
-            - ConnectorService
-  /v1/s3/credentials_info: |
+      summary: S3ListBuckets lists buckets accessible with the configured credentials.
+      operationId: ConnectorService_S3ListBuckets
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1S3ListBucketsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
+  /v1/s3/credentials_info:
     get:
-        summary: S3GetCredentialsInfo returns metadata for the given bucket.
-        operationId: ConnectorService_S3GetCredentialsInfo
-        responses:
-            "200":
-                description: A successful response.
-                schema:
-                    $ref: '#/definitions/v1S3GetCredentialsInfoResponse'
-            default:
-                description: An unexpected error response.
-                schema:
-                    $ref: '#/definitions/rpcStatus'
-        parameters:
-            - name: instanceId
-              in: query
-              required: false
-              type: string
-            - name: connector
-              in: query
-              required: false
-              type: string
-        tags:
-            - ConnectorService
+      summary: S3GetCredentialsInfo returns metadata for the given bucket.
+      operationId: ConnectorService_S3GetCredentialsInfo
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1S3GetCredentialsInfoResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
 definitions:
   ColumnTimeSeriesRequestBasicMeasure:
     type: object
@@ -2617,6 +2651,13 @@ definitions:
     properties:
       region:
         type: string
+  v1BuiltinMeasure:
+    type: string
+    enum:
+      - BUILTIN_MEASURE_UNSPECIFIED
+      - BUILTIN_MEASURE_COUNT
+      - BUILTIN_MEASURE_COUNT_DISTINCT
+    default: BUILTIN_MEASURE_UNSPECIFIED
   v1CatalogEntry:
     type: object
     properties:
@@ -2916,9 +2957,9 @@ definitions:
     properties:
       instanceId:
         type: string
-      olapDriver:
+      olapConnector:
         type: string
-      repoDriver:
+      repoConnector:
         type: string
       embedCatalog:
         type: boolean
@@ -3137,14 +3178,12 @@ definitions:
       instanceId:
         type: string
         title: Identifier (UUID)
-      olapDriver:
+      olapConnector:
         type: string
-        title: 'Driver to connect to for OLAP (options: duckdb, druid)'
-      repoDriver:
+        title: 'OLAP connector name (typically called : olap )'
+      repoConnector:
         type: string
-        description: |-
-          Driver for reading/editing code artifacts (options: file, metastore, github).
-          This enables virtualizing a file system in a cloud setting.
+        description: "Connector name for repo driver(typically called : repo). \nRepo driver is for reading/editing code artifacts. This enables virtualizing a file system in a cloud setting."
       embedCatalog:
         type: boolean
         description: |-
@@ -3311,6 +3350,80 @@ definitions:
         $ref: '#/definitions/MetricsViewSecurity'
         title: Security for the dashboard
     title: Metrics view is the internal representation of a metrics view definition
+  v1MetricsViewAggregationDimension:
+    type: object
+    properties:
+      name:
+        type: string
+      timeGrain:
+        $ref: '#/definitions/v1TimeGrain'
+      timeZone:
+        type: string
+  v1MetricsViewAggregationMeasure:
+    type: object
+    properties:
+      name:
+        type: string
+      builtinMeasure:
+        $ref: '#/definitions/v1BuiltinMeasure'
+      builtinMeasureArgs:
+        type: array
+        items: {}
+  v1MetricsViewAggregationRequest:
+    type: object
+    properties:
+      instanceId:
+        type: string
+      metricsView:
+        type: string
+      dimensions:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewAggregationDimension'
+      measures:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewAggregationMeasure'
+      sort:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewAggregationSort'
+      timeStart:
+        type: string
+        format: date-time
+      timeEnd:
+        type: string
+        format: date-time
+      filter:
+        $ref: '#/definitions/v1MetricsViewFilter'
+      limit:
+        type: string
+        format: int64
+      offset:
+        type: string
+        format: int64
+      priority:
+        type: integer
+        format: int32
+  v1MetricsViewAggregationResponse:
+    type: object
+    properties:
+      schema:
+        $ref: '#/definitions/v1StructType'
+      data:
+        type: array
+        items:
+          type: object
+  v1MetricsViewAggregationSort:
+    type: object
+    properties:
+      name:
+        type: string
+      desc:
+        type: boolean
   v1MetricsViewColumn:
     type: object
     properties:
@@ -3981,6 +4094,8 @@ definitions:
         type: integer
         format: int32
         description: Since response could out of order `key` is used to co-relate a specific response to request.
+      metricsViewAggregationRequest:
+        $ref: '#/definitions/v1MetricsViewAggregationRequest'
       metricsViewToplistRequest:
         $ref: '#/definitions/v1MetricsViewToplistRequest'
       metricsViewComparisonToplistRequest:
@@ -4025,6 +4140,8 @@ definitions:
         format: int32
       error:
         type: string
+      metricsViewAggregationResponse:
+        $ref: '#/definitions/v1MetricsViewAggregationResponse'
       metricsViewToplistResponse:
         $ref: '#/definitions/v1MetricsViewToplistResponse'
       metricsViewComparisonToplistResponse:
@@ -4286,10 +4403,8 @@ definitions:
     type: string
     enum:
       - RESOURCE_EVENT_UNSPECIFIED
-      - RESOURCE_EVENT_ADDED
-      - RESOURCE_EVENT_UPDATED_SPEC
-      - RESOURCE_EVENT_UPDATED_STATE
-      - RESOURCE_EVENT_DELETED
+      - RESOURCE_EVENT_WRITE
+      - RESOURCE_EVENT_DELETE
     default: RESOURCE_EVENT_UNSPECIFIED
   v1ResourceMeta:
     type: object
@@ -4701,7 +4816,9 @@ definitions:
   v1WatchResourcesResponse:
     type: object
     properties:
-      resource:
-        $ref: '#/definitions/v1Resource'
       event:
         $ref: '#/definitions/v1ResourceEvent'
+      name:
+        $ref: '#/definitions/v1ResourceName'
+      resource:
+        $ref: '#/definitions/v1Resource'

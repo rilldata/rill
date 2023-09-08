@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
-	"strings"
+	"regexp"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -15,6 +15,72 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+// MetricsViewAggregation implements QueryService.
+func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.MetricsViewAggregationRequest) (*runtimev1.MetricsViewAggregationResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.metric_view", req.MetricsView),
+		attribute.StringSlice("args.dimensions.names", marshalMetricsViewAggregationDimension(req.Dimensions)),
+		attribute.StringSlice("args.measures.names", marshalMetricsViewAggregationMeasures(req.Measures)),
+		attribute.StringSlice("args.sort.names", marshalMetricsViewAggregationSort(req.Sort)),
+		attribute.String("args.time_start", safeTimeStr(req.TimeStart)),
+		attribute.String("args.time_end", safeTimeStr(req.TimeEnd)),
+		attribute.Int("args.filter_count", filterCount(req.Filter)),
+		attribute.Int64("args.limit", req.Limit),
+		attribute.Int64("args.offset", req.Offset),
+		attribute.Int("args.priority", int(req.Priority)),
+	)
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+		return nil, ErrForbidden
+	}
+
+	mv, security, err := resolveMVAndSecurity(ctx, s.runtime, req.InstanceId, req.MetricsView)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, dim := range req.Dimensions {
+		if dim.Name == mv.TimeDimension {
+			// checkFieldAccess doesn't currently check the time dimension
+			continue
+		}
+		if !checkFieldAccess(dim.Name, security) {
+			return nil, ErrForbidden
+		}
+	}
+
+	for _, m := range req.Measures {
+		if m.BuiltinMeasure != runtimev1.BuiltinMeasure_BUILTIN_MEASURE_UNSPECIFIED {
+			continue
+		}
+		if !checkFieldAccess(m.Name, security) {
+			return nil, ErrForbidden
+		}
+	}
+
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName:    req.MetricsView,
+		Dimensions:         req.Dimensions,
+		Measures:           req.Measures,
+		Sort:               req.Sort,
+		TimeStart:          req.TimeStart,
+		TimeEnd:            req.TimeEnd,
+		Filter:             req.Filter,
+		Limit:              &req.Limit,
+		Offset:             req.Offset,
+		MetricsView:        mv,
+		ResolvedMVSecurity: security,
+	}
+	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	if err != nil {
+		return nil, err
+	}
+
+	return q.Result, nil
+}
 
 // MetricsViewToplist implements QueryService.
 func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsViewToplistRequest) (*runtimev1.MetricsViewToplistResponse, error) {
@@ -345,13 +411,16 @@ func (s *Server) MetricsViewTimeRange(ctx context.Context, req *runtimev1.Metric
 	return q.Result, nil
 }
 
+// inlineMeasureRegexp is used by validateInlineMeasures.
+var inlineMeasureRegexp = regexp.MustCompile(`(?i)^COUNT\((DISTINCT)? *.+\)$`)
+
 // validateInlineMeasures checks that the inline measures are allowed.
 // This is to prevent injection of arbitrary SQL from clients with only ReadMetrics access.
 // In the future, we should consider allowing arbitrary expressions from people with wider access.
-// Currently, only COUNT(*) is allowed.
+// Currently, only COUNT(*) and COUNT(DISTINCT name) is allowed.
 func validateInlineMeasures(ms []*runtimev1.InlineMeasure) error {
 	for _, im := range ms {
-		if !strings.EqualFold(im.Expression, "COUNT(*)") {
+		if !inlineMeasureRegexp.MatchString(im.Expression) {
 			return fmt.Errorf("illegal inline measure expression: %q", im.Expression)
 		}
 	}
