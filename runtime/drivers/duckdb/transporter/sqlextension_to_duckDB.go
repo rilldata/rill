@@ -37,7 +37,7 @@ func (t *sqlextensionToDuckDB) Transfer(ctx context.Context, source drivers.Sour
 		return fmt.Errorf("type of source should be `drivers.DatabaseSink`")
 	}
 
-	extensionName := extName(t.from.Driver())
+	extensionName := t.from.Driver()
 	if err := t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("INSTALL '%s'; LOAD '%s';", extensionName, extensionName)}); err != nil {
 		return fmt.Errorf("failed to load %s extension %w", extensionName, err)
 	}
@@ -47,9 +47,4 @@ func (t *sqlextensionToDuckDB) Transfer(ctx context.Context, source drivers.Sour
 	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s);", safeName(fSink.Table), userQuery)
 
 	return t.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
-}
-
-func extName(name string) string {
-	before, _ := strings.CutSuffix(name, "_ext")
-	return before
 }

@@ -66,7 +66,7 @@ func (d driver) Spec() drivers.Spec {
 				Required:    true,
 				DisplayName: "SQL",
 				Description: "Query to extract data from SQLite",
-				Placeholder: "SELECT * FROM sqlite_scan('/Users/kanshul/.config/gcloud/access_tokens.db', 'film');",
+				Placeholder: "SELECT * FROM sqlite_scan('sqlite.db', 'film');",
 				Hint:        "https://duckdb.org/docs/extensions/sqlite_scanner#querying-individual-tables",
 			},
 		},
