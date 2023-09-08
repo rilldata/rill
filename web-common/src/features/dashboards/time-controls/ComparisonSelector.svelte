@@ -5,6 +5,7 @@ This component needs to do the following:
 3. read the existing active comparison from somewhere.
 -->
 <script lang="ts">
+  import { createEventDispatcher } from "svelte";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
   import {
     Divider,
@@ -13,24 +14,23 @@ This component needs to do the following:
   } from "@rilldata/web-common/components/menu";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import {
-    NO_COMPARISON_LABEL,
-    TIME_COMPARISON,
-  } from "@rilldata/web-common/lib/time/config";
-  import { createEventDispatcher } from "svelte";
-
+  import type { MetricsViewDimension } from "@rilldata/web-common/runtime-client";
+  import { NO_COMPARISON_LABEL } from "@rilldata/web-common/lib/time/config";
   import SelectorButton from "./SelectorButton.svelte";
   import Compare from "@rilldata/web-common/components/icons/Compare.svelte";
-  import type { MetricsViewDimension } from "@rilldata/web-common/runtime-client";
+  import ClockCircle from "@rilldata/web-common/components/icons/ClockCircle.svelte";
 
   const dispatch = createEventDispatcher();
 
-  export let showComparison = true;
+  export let showTimeComparison = true;
   export let selectedDimension;
   export let dimensions: MetricsViewDimension[];
 
   const TIME = "Time";
-  $: comparisonOption = selectedDimension?.name;
+
+  function getLabelForDimension(dimension: string) {
+    return dimensions.find((d) => d.name === dimension)?.label;
+  }
 
   /** compile the comparison options */
   let options = dimensions.map((d) => ({
@@ -38,12 +38,16 @@ This component needs to do the following:
     label: d.label,
   }));
 
-  $: label = showComparison
-    ? TIME_COMPARISON[comparisonOption]?.label
+  $: label = selectedDimension
+    ? getLabelForDimension(selectedDimension)
+    : showTimeComparison
+    ? TIME
     : NO_COMPARISON_LABEL;
 
-  $: intermediateSelection = showComparison
-    ? comparisonOption
+  $: intermediateSelection = selectedDimension
+    ? selectedDimension
+    : showTimeComparison
+    ? TIME
     : NO_COMPARISON_LABEL;
 </script>
 
@@ -64,13 +68,13 @@ This component needs to do the following:
         <span class="ui-copy-icon"><Compare size="16px" /></span>
 
         <span class="font-normal">
-          {showComparison ? "Comparing by" : ""}
+          {showTimeComparison || selectedDimension ? "Comparing by" : ""}
           <span class="font-bold">{label}</span>
         </span>
       </div>
     </SelectorButton>
     <TooltipContent slot="tooltip-content" maxWidth="220px">
-      Select a time range to compare to the selected time range
+      Select a comparison for the dashboard
     </TooltipContent>
   </Tooltip>
   <Menu
@@ -80,12 +84,12 @@ This component needs to do the following:
     label="Time comparison selector"
   >
     <MenuItem
-      selected={!showComparison}
+      selected={!(showTimeComparison || selectedDimension)}
       on:before-select={() => {
         intermediateSelection = NO_COMPARISON_LABEL;
       }}
       on:select={() => {
-        dispatch("disable-comparison");
+        dispatch("disable-all-comparison");
         toggleFloatingElement();
       }}
     >
@@ -95,15 +99,17 @@ This component needs to do the following:
     </MenuItem>
     <Divider />
     <MenuItem
-      selected={!showComparison}
+      selected={showTimeComparison}
       on:before-select={() => {
         intermediateSelection = TIME;
       }}
       on:select={() => {
+        dispatch("enable-comparison", { type: "time" });
         toggleFloatingElement();
       }}
     >
       <span class:font-bold={intermediateSelection === TIME}> {TIME} </span>
+      <span slot="right"><ClockCircle size="16px" /></span>
     </MenuItem>
     <Divider />
 
@@ -114,7 +120,10 @@ This component needs to do the following:
           intermediateSelection = option.name;
         }}
         on:select={() => {
-          // onCompareRangeSelect(option.name);
+          dispatch("enable-comparison", {
+            type: "dimension",
+            name: option.name,
+          });
           toggleFloatingElement();
         }}
       >

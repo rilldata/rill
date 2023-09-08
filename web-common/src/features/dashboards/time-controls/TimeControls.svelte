@@ -129,6 +129,21 @@
     });
   }
 
+  function disableComparisons() {
+    metricsExplorerStore.displayComparison(metricViewName, false);
+    metricsExplorerStore.setComparisonDimension(metricViewName, undefined);
+  }
+
+  function enableComparison(type: string, name: string) {
+    if (type === "time") {
+      metricsExplorerStore.displayComparison(metricViewName, true);
+      metricsExplorerStore.setComparisonDimension(metricViewName, undefined);
+    } else {
+      metricsExplorerStore.displayComparison(metricViewName, false);
+      metricsExplorerStore.setComparisonDimension(metricViewName, name);
+    }
+  }
+
   function makeTimeSeriesTimeRangeAndUpdateAppState(
     timeRange: TimeRange,
     timeGrain: V1TimeGrain,
@@ -191,31 +206,30 @@
       />
     {/if}
     <ComparisonSelector
-      on:select-comparison={(e) => {
-        onSelectComparisonRange(e.detail.name, e.detail.start, e.detail.end);
+      on:enable-comparison={(e) => {
+        enableComparison(e.detail.type, e.detail.name);
       }}
-      on:disable-comparison={() =>
-        metricsExplorerStore.displayComparison(metricViewName, false)}
-      showComparison={$dashboardStore?.showComparison}
+      on:disable-all-comparison={() => disableComparisons()}
+      showTimeComparison={$dashboardStore?.showComparison}
       selectedDimension={$dashboardStore?.selectedComparisonDimension}
       {dimensions}
     />
-    <TimeComparisonSelector
-      on:select-comparison={(e) => {
-        onSelectComparisonRange(e.detail.name, e.detail.start, e.detail.end);
-      }}
-      on:disable-comparison={() =>
-        metricsExplorerStore.displayComparison(metricViewName, false)}
-      {minTimeGrain}
-      currentStart={$timeControlsStore.selectedTimeRange.start}
-      currentEnd={$timeControlsStore.selectedTimeRange.end}
-      boundaryStart={allTimeRange.start}
-      boundaryEnd={allTimeRange.end}
-      showComparison={$timeControlsStore?.showComparison}
-      selectedComparison={$timeControlsStore?.selectedComparisonTimeRange}
-      zone={$dashboardStore?.selectedTimezone}
-      comparisonOptions={availableComparisons}
-    />
+    {#if $dashboardStore?.showComparison}
+      <TimeComparisonSelector
+        on:select-comparison={(e) => {
+          onSelectComparisonRange(e.detail.name, e.detail.start, e.detail.end);
+        }}
+        {minTimeGrain}
+        currentStart={$timeControlsStore.selectedTimeRange.start}
+        currentEnd={$timeControlsStore.selectedTimeRange.end}
+        boundaryStart={allTimeRange.start}
+        boundaryEnd={allTimeRange.end}
+        showComparison={$timeControlsStore?.showComparison}
+        selectedComparison={$timeControlsStore?.selectedComparisonTimeRange}
+        zone={$dashboardStore?.selectedTimezone}
+        comparisonOptions={availableComparisons}
+      />
+    {/if}
     <TimeGrainSelector
       on:select-time-grain={(e) => onSelectTimeGrain(e.detail.timeGrain)}
       {metricViewName}
