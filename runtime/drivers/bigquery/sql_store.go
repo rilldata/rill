@@ -37,7 +37,12 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, sql
 		return nil, err
 	}
 
-	client, err := c.createClient(ctx, srcProps)
+	opts, err := c.clientOption(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := bigquery.NewClient(ctx, srcProps.ProjectID, opts...)
 	if err != nil {
 		if strings.Contains(err.Error(), "unable to detect projectID") {
 			return nil, fmt.Errorf("projectID not detected in credentials. Please set `project_id` in source yaml")
@@ -45,7 +50,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, sql
 		return nil, fmt.Errorf("failed to create bigquery client: %w", err)
 	}
 
-	if err := client.EnableStorageReadClient(ctx); err != nil {
+	if err := client.EnableStorageReadClient(ctx, opts...); err != nil {
 		client.Close()
 		return nil, err
 	}
@@ -60,7 +65,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, sql
 		// the query results are always cached in a temporary table that storage api can use
 		// there are some exceptions when results aren't cached
 		// so we also try without storage api
-		client, err = c.createClient(ctx, srcProps)
+		client, err = bigquery.NewClient(ctx, srcProps.ProjectID, opts...)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create bigquery client: %w", err)
 		}
