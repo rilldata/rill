@@ -59,6 +59,9 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 		return runtime.ReconcileResult{}
 	}
 
+	r.C.Lock(ctx)
+	defer r.C.Unlock(ctx)
+
 	resources, err := r.C.List(ctx, "")
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}

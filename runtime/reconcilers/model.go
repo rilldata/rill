@@ -261,8 +261,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 	// Reset spec.Trigger
 	if model.Spec.Trigger {
-		model.Spec.Trigger = false
-		err = r.C.UpdateSpec(ctx, self.Meta.Name, self)
+		err := r.setTriggerFalse(ctx, n)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
@@ -329,6 +328,26 @@ func (r *ModelReconciler) executionSpecHash(spec *runtimev1.ModelSpec) (string, 
 	}
 
 	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+// setTriggerFalse sets the model's spec.Trigger to false.
+// Unlike the State, the Spec may be edited concurrently with a Reconcile call, so we need to read and edit it under a lock.
+func (r *ModelReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.ResourceName) error {
+	r.C.Lock(ctx)
+	defer r.C.Unlock(ctx)
+
+	self, err := r.C.Get(ctx, n)
+	if err != nil {
+		return err
+	}
+
+	model := self.GetModel()
+	if model == nil {
+		return fmt.Errorf("not a model")
+	}
+
+	model.Spec.Trigger = false
+	return r.C.UpdateSpec(ctx, self.Meta.Name, self)
 }
 
 // createModel creates or updates the model in the OLAP connector.

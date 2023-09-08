@@ -226,8 +226,7 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 
 	// Reset spec.Trigger
 	if src.Spec.Trigger {
-		src.Spec.Trigger = false
-		err = r.C.UpdateSpec(ctx, self.Meta.Name, self)
+		err := r.setTriggerFalse(ctx, n)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
@@ -273,6 +272,26 @@ func (r *SourceReconciler) ingestionSpecHash(spec *runtimev1.SourceSpec) (string
 // By using a stable temporary table name, we can ensure proper garbage collection without managing additional state.
 func (r *SourceReconciler) stagingTableName(table string) string {
 	return "__rill_tmp_src_" + table
+}
+
+// setTriggerFalse sets the source's spec.Trigger to false.
+// Unlike the State, the Spec may be edited concurrently with a Reconcile call, so we need to read and edit it under a lock.
+func (r *SourceReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.ResourceName) error {
+	r.C.Lock(ctx)
+	defer r.C.Unlock(ctx)
+
+	self, err := r.C.Get(ctx, n)
+	if err != nil {
+		return err
+	}
+
+	source := self.GetSource()
+	if source == nil {
+		return fmt.Errorf("not a source")
+	}
+
+	source.Spec.Trigger = false
+	return r.C.UpdateSpec(ctx, self.Meta.Name, self)
 }
 
 // ingestSource ingests the source into a table with tableName.
