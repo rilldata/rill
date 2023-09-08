@@ -44,10 +44,6 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, sql
 
 	client, err := bigquery.NewClient(ctx, srcProps.ProjectID, opts...)
 	if err != nil {
-		return nil, err
-	}
-
-	if err != nil {
 		if strings.Contains(err.Error(), "unable to detect projectID") {
 			return nil, fmt.Errorf("projectID not detected in credentials. Please set `project_id` in source yaml")
 		}
