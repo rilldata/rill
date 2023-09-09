@@ -1,23 +1,17 @@
 <script lang="ts">
-  import {
-    DashboardListItem,
-    getDashboardsForProject,
-  } from "@rilldata/web-admin/components/projects/dashboards";
+  import { getDashboardsForProject } from "@rilldata/web-admin/components/projects/dashboards";
   import DashboardIcon from "@rilldata/web-common/components/icons/DashboardIcon.svelte";
-  import { Tag } from "@rilldata/web-common/components/tag";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
   import {
     createAdminServiceGetProject,
     V1DeploymentStatus,
     V1GetProjectResponse,
   } from "../../client";
-  import ProjectAccessControls from "./ProjectAccessControls.svelte";
 
   export let organization: string;
   export let project: string;
 
-  let dashboardListItems: DashboardListItem[];
+  let dashboards: V1MetricsView[];
 
   $: proj = createAdminServiceGetProject(organization, project);
   $: if ($proj?.isSuccess && $proj.data?.prodDeployment) {
@@ -29,24 +23,19 @@
     const status = projectData.prodDeployment.status;
     if (status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING) return;
 
-    dashboardListItems = await getDashboardsForProject(projectData);
+    dashboards = await getDashboardsForProject(projectData);
   }
 </script>
 
-{#if dashboardListItems?.length === 0}
+{#if dashboards?.length === 0}
   <p class="text-gray-500 text-xs">This project has no dashboards yet.</p>
-{:else if dashboardListItems?.length > 0}
+{:else if dashboards?.length > 0}
   <ol class="flex flex-col gap-y-4 max-w-full 2xl:max-w-[1200px]">
-    {#each dashboardListItems as dashboardListItem}
+    {#each dashboards as dashboard}
       <li class="w-full h-[52px] border rounded">
-        <svelte:element
-          this={dashboardListItem.isValid ? "a" : "div"}
-          href={dashboardListItem.isValid
-            ? `/${organization}/${project}/${dashboardListItem.name}`
-            : undefined}
-          class="w-full h-full overflow-x-auto p-3 flex items-center gap-x-6 {dashboardListItem.isValid
-            ? 'text-gray-700 hover:text-blue-600 hover:bg-slate-50'
-            : 'text-gray-400'}"
+        <a
+          href={`/${organization}/${project}/${dashboard.name}`}
+          class="w-full h-full overflow-x-auto p-3 flex items-center gap-x-6 text-gray-700 hover:text-blue-600 hover:bg-slate-50"
         >
           <!-- Icon -->
           <div
@@ -59,13 +48,14 @@
             <!-- Name -->
             <span
               class="text-sm font-medium shrink-0 truncate"
-              title={dashboardListItem?.title || dashboardListItem.name}
+              title={dashboard?.label || dashboard.name}
             >
-              {dashboardListItem?.title || dashboardListItem.name}
+              {dashboard?.label || dashboard.name}
             </span>
 
+            <!-- We'll show errored dashboards again when we integrate the new Reconcile -->
             <!-- Error tag -->
-            {#if $proj.data.prodDeployment.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING && !dashboardListItem.isValid}
+            <!-- {#if $proj.data.prodDeployment.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING && !dashboard.isValid}
               <Tooltip distance={8} location="right">
                 <TooltipContent slot="tooltip-content">
                   <ProjectAccessControls {organization} {project}>
@@ -85,18 +75,18 @@
                 </TooltipContent>
                 <Tag>Error</Tag>
               </Tooltip>
-            {/if}
+            {/if} -->
 
             <!-- Description -->
-            {#if dashboardListItem.description}
+            {#if dashboard.description}
               <!-- Note: line-clamp-2 uses `display: -webkit-box;` which overrides the `hidden` class -->
               <span
                 class="text-gray-800 text-xs font-light break-normal hidden sm:line-clamp-2"
-                >{dashboardListItem.description}</span
+                >{dashboard.description}</span
               >
             {/if}
           </div>
-        </svelte:element>
+        </a>
       </li>
     {/each}
   </ol>

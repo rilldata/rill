@@ -23,6 +23,18 @@ export function globalErrorCallback(error: AxiosError): void {
     return;
   }
 
+  // If on a Dashboard page, and "entry not found" (i.e. a dashboard wasn't found),
+  // ignore the error here, so the page can handle it.
+  const isDashboardPage =
+    get(page).route.id === "/[organization]/[project]/[dashboard]";
+  if (
+    isDashboardPage &&
+    error.response.status === 400 &&
+    (error.response.data as RpcStatus).message === "entry not found"
+  ) {
+    return;
+  }
+
   // Create a pretty message for the error page
   const errorStoreState = createErrorStoreStateFromAxiosError(error);
 
