@@ -194,8 +194,6 @@
           class="inline-grid"
         >
           <MeasureBigNumber
-            {metricViewName}
-            measureName={measure.name}
             value={bigNum}
             description={measure?.description ||
               measure?.label ||
