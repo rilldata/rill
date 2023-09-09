@@ -68,6 +68,9 @@ export function getProtoFromDashboardState(
     state.scrubRange = toScrubProto(metrics.lastDefinedScrubRange);
   }
   state.showComparison = Boolean(metrics.showComparison);
+  if (metrics.selectedComparisonDimension) {
+    state.comparisonDimension = metrics.selectedComparisonDimension;
+  }
   if (metrics.selectedTimezone) {
     state.selectedTimezone = metrics.selectedTimezone;
   }

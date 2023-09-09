@@ -110,6 +110,11 @@ export class DashboardState extends Message<DashboardState> {
    */
   leaderboardSortType?: DashboardState_LeaderboardSortType;
 
+  /**
+   * @generated from field: optional string comparison_dimension = 17;
+   */
+  comparisonDimension?: string;
+
   constructor(data?: PartialMessage<DashboardState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -134,6 +139,7 @@ export class DashboardState extends Message<DashboardState> {
     { no: 14, name: "scrub_range", kind: "message", T: DashboardTimeRange, opt: true },
     { no: 15, name: "leaderboard_sort_direction", kind: "enum", T: proto3.getEnumType(DashboardState_LeaderboardSortDirection), opt: true },
     { no: 16, name: "leaderboard_sort_type", kind: "enum", T: proto3.getEnumType(DashboardState_LeaderboardSortType), opt: true },
+    { no: 17, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardState {
@@ -218,7 +224,7 @@ proto3.util.setEnumType(DashboardState_LeaderboardSortDirection, "rill.ui.v1.Das
 ]);
 
 /**
- *
+ * *
  * SortType is used to determine how to sort the leaderboard
  * and dimension detail table, as well as where to place the
  * sort arrow.

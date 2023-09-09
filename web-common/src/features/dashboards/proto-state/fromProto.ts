@@ -88,6 +88,10 @@ export function getDashboardStateFromProto(
     entity.selectedDimensionName = dashboard.selectedDimension;
   }
 
+  if (dashboard.comparisonDimension) {
+    entity.selectedComparisonDimension = dashboard.comparisonDimension;
+  }
+
   if (dashboard.selectedTimezone) {
     entity.selectedTimezone = dashboard.selectedTimezone;
   }
