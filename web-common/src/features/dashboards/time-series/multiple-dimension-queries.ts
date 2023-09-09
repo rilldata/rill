@@ -1,10 +1,7 @@
 // Throw away code for fetching timeseries data for individual dimension values
 import { derived, writable } from "svelte/store";
 
-import {
-  createQueryServiceMetricsViewToplist,
-  createQueryServiceMetricsViewTimeSeries,
-} from "@rilldata/web-common/runtime-client";
+import { createQueryServiceMetricsViewTimeSeries } from "@rilldata/web-common/runtime-client";
 import { prepareTimeSeries } from "./utils";
 import {
   CHECKMARK_COLORS,

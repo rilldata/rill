@@ -20,7 +20,6 @@
     MetricsViewDimension,
     MetricsViewMeasure,
   } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { SortDirection } from "../proto-state/derived-types";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
@@ -43,8 +42,6 @@
   export let isSummableMeasure = false;
 
   let slice = 7;
-
-  const queryClient = useQueryClient();
 
   $: dashboardStore = useDashboardStore(metricViewName);
 
