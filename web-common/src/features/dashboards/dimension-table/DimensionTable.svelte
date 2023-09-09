@@ -25,6 +25,7 @@ TableCells – the cell contents.
   export let sortByColumn: string;
   export let dimensionName: string;
   export let excludeMode = false;
+  export let isBeingCompared = false;
 
   /** the overscan values tell us how much to render off-screen. These may be set by the consumer
    * in certain circumstances. The tradeoff: the higher the overscan amount, the more DOM elements we have
@@ -212,6 +213,7 @@ TableCells – the cell contents.
             virtualRowItems={virtualRows}
             totalHeight={virtualHeight}
             {selectedIndex}
+            {isBeingCompared}
             {excludeMode}
             on:select-item={(event) => onSelectItem(event)}
           />

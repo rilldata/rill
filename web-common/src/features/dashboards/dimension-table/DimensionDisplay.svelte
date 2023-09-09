@@ -62,6 +62,8 @@
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
   $: leaderboardMeasureName = $dashboardStore?.leaderboardMeasureName;
+  $: isBeingCompared =
+    $dashboardStore?.selectedComparisonDimension === dimensionName;
   $: leaderboardMeasureQuery = useMetaMeasure(
     instanceId,
     metricViewName,
@@ -359,6 +361,7 @@
           on:select-item={(event) => onSelectItem(event)}
           on:sort={(event) => onSortByColumn(event)}
           dimensionName={dimensionColumn}
+          {isBeingCompared}
           {columns}
           {selectedValues}
           rows={values}
