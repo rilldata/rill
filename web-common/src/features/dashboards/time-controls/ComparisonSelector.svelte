@@ -81,7 +81,7 @@ This component needs to do the following:
     slot="floating-element"
     on:escape={toggleFloatingElement}
     on:click-outside={toggleFloatingElement}
-    label="Time comparison selector"
+    label="Comparison selector"
   >
     <MenuItem
       selected={!(showTimeComparison || selectedDimension)}
