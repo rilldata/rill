@@ -244,14 +244,16 @@
     }
   }
 
-  $: if (includedValues?.length || (topListQuery && $topListQuery.isSuccess)) {
+  $: if (
+    includedValues?.length ||
+    (topListQuery && !$topListQuery?.isFetching)
+  ) {
     let filters = $dashboardStore.filters;
 
     // Handle case when there are no filters
     if (!includedValues?.length) {
-      includedValues = $topListQuery?.data?.data.map(
-        (d) => d[comparisonDimension]
-      );
+      const columnName = $topListQuery?.data?.meta[0]?.name;
+      includedValues = $topListQuery?.data?.data.map((d) => d[columnName]);
 
       // Add dimension to filter
       filters = {
