@@ -87,6 +87,7 @@
   }
 
   function setComparisonDimension(dimensionName) {
+    metricsExplorerStore.displayComparison(metricViewName, false);
     metricsExplorerStore.setComparisonDimension(metricViewName, dimensionName);
   }
 
