@@ -3,16 +3,12 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { Dialog } from "@rilldata/web-common/components/modal/index";
+  import { renameFile } from "@rilldata/web-common/features/entity-management/rename-entity";
   import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
-  import {
-    createRuntimeServiceGetCatalogEntry,
-    createRuntimeServiceRenameFileAndReconcile,
-  } from "../../runtime-client";
+  import { createRuntimeServiceRenameFile } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
-  import { renameFileArtifact } from "./actions";
   import { getLabel, getRouteFromName } from "./entity-mappers";
   import { isDuplicateName } from "./name-utils";
   import { useAllNames } from "./selectors";
@@ -21,18 +17,12 @@
   export let entityType: EntityType;
   export let currentAssetName: string;
 
-  const queryClient = useQueryClient();
-
   let error: string;
 
   $: runtimeInstanceId = $runtime.instanceId;
-  $: getCatalog = createRuntimeServiceGetCatalogEntry(
-    runtimeInstanceId,
-    currentAssetName
-  );
   $: allNamesQuery = useAllNames(runtimeInstanceId);
 
-  const renameAsset = createRuntimeServiceRenameFileAndReconcile();
+  const renameAsset = createRuntimeServiceRenameFile();
 
   const { form, errors, handleSubmit } = createForm({
     initialValues: {
@@ -56,13 +46,12 @@
         return;
       }
       try {
-        await renameFileArtifact(
-          queryClient,
+        await renameFile(
           runtimeInstanceId,
           currentAssetName,
           values.newName,
           entityType,
-          $renameAsset
+          renameAsset
         );
         goto(getRouteFromName(values.newName, entityType), {
           replaceState: true,

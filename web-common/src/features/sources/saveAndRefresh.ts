@@ -56,6 +56,8 @@ export async function saveAndRefresh(
   } catch (e) {
     // ignore
   }
+  // TODO: should this emit after a save?
+  //       should this emit only when a source is modified from UI? or perhaps change screen and others based on where it is emitted from?
   if (resp.errors.length > 0) {
     emitSourceErrorTelemetry(
       MetricsEventSpace.RightPanel,

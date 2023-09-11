@@ -1,27 +1,20 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { IconButton } from "@rilldata/web-common/components/button";
   import HideBottomPane from "@rilldata/web-common/components/icons/HideBottomPane.svelte";
-  import { notifications } from "@rilldata/web-common/components/notifications";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { validateAndRenameEntity } from "@rilldata/web-common/features/entity-management/rename-entity";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { createRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceRenameFile } from "@rilldata/web-common/runtime-client";
   import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import { WorkspaceHeader } from "../../../layout/workspace";
   import type { LayoutElement } from "../../../layout/workspace/types";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useGetDashboardsForModel } from "../../dashboards/selectors";
-  import { renameFileArtifact } from "../../entity-management/actions";
-  import {
-    getFilePathFromNameAndType,
-    getRouteFromName,
-  } from "../../entity-management/entity-mappers";
-  import { isDuplicateName } from "../../entity-management/name-utils";
+  import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
   import { useAllNames } from "../../entity-management/selectors";
   import ModelWorkspaceCTAs from "./ModelWorkspaceCTAs.svelte";
 
@@ -30,8 +23,7 @@
   $: runtimeInstanceId = $runtime.instanceId;
 
   $: allNamesQuery = useAllNames(runtimeInstanceId);
-  const queryClient = useQueryClient();
-  const renameModel = createRuntimeServiceRenameFileAndReconcile();
+  const renameModel = createRuntimeServiceRenameFile();
 
   const outputLayout = getContext(
     "rill:app:output-layout"
@@ -52,38 +44,17 @@
   }
 
   const onChangeCallback = async (e) => {
-    if (!e.target.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
-      notifications.send({
-        message:
-          "Model name must start with a letter or underscore and contain only letters, numbers, and underscores",
-      });
-      e.target.value = modelName; // resets the input
-      return;
-    }
-    if (isDuplicateName(e.target.value, modelName, $allNamesQuery.data)) {
-      notifications.send({
-        message: `Name ${e.target.value} is already in use`,
-      });
-      e.target.value = modelName; // resets the input
-      return;
-    }
-
-    try {
-      const toName = e.target.value;
-      const entityType = EntityType.Model;
-      await renameFileArtifact(
-        queryClient,
+    if (
+      !(await validateAndRenameEntity(
         runtimeInstanceId,
+        e.target.value,
         modelName,
-        toName,
-        entityType,
-        $renameModel
-      );
-      goto(getRouteFromName(toName, entityType), {
-        replaceState: true,
-      });
-    } catch (err) {
-      console.error(err.response.data.message);
+        $allNamesQuery.data,
+        EntityType.Model,
+        renameModel
+      ))
+    ) {
+      e.target.value = modelName; // resets the input
     }
   };
 
@@ -91,9 +62,9 @@
 </script>
 
 <WorkspaceHeader
-  let:width
   {...{ titleInput: formatModelName(titleInput), onChangeCallback }}
   appRunning={$appQueryStatusStore}
+  let:width
 >
   <svelte:fragment slot="workspace-controls">
     <IconButton
@@ -116,10 +87,10 @@
     <PanelCTA side="right">
       <ModelWorkspaceCTAs
         availableDashboards={$availableDashboards?.data}
-        suppressTooltips={contextMenuOpen}
-        {modelName}
         {collapse}
         {modelHasError}
+        {modelName}
+        suppressTooltips={contextMenuOpen}
       />
     </PanelCTA>
   </svelte:fragment>

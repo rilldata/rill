@@ -6,6 +6,7 @@
   } from "@rilldata/web-common/components/column-profile/queries";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { useSource } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
   import {
     formatBigNumberPercentage,
@@ -14,9 +15,7 @@
   import {
     createQueryServiceTableCardinality,
     createQueryServiceTableColumns,
-    createRuntimeServiceGetCatalogEntry,
-    V1CatalogEntry,
-    V1Source,
+    V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
   import type { Readable } from "svelte/store";
   import { slide } from "svelte/transition";
@@ -30,12 +29,9 @@
 
   $: runtimeInstanceId = $runtime.instanceId;
 
-  $: getSource = createRuntimeServiceGetCatalogEntry(
-    runtimeInstanceId,
-    sourceName
-  );
-  let sourceCatalog: V1CatalogEntry;
-  $: sourceCatalog = $getSource?.data?.entry;
+  $: sourceQuery = useSource(runtimeInstanceId, sourceName);
+  let source: V1SourceV2;
+  $: source = $sourceQuery.data;
 
   let showColumns = true;
 
@@ -63,8 +59,8 @@
     }
   }
 
-  function getFileExtension(source: V1Source): string {
-    const path = source?.properties?.path?.toLowerCase();
+  function getFileExtension(source: V1SourceV2): string {
+    const path = source?.spec?.properties?.path?.toLowerCase();
     if (path?.includes(".csv")) return "CSV";
     if (path?.includes(".parquet")) return "Parquet";
     if (path?.includes(".json")) return "JSON";
@@ -72,8 +68,8 @@
     return "";
   }
 
-  $: connectorType = formatConnectorType(sourceCatalog?.source?.connector);
-  $: fileExtension = getFileExtension(sourceCatalog);
+  $: connectorType = formatConnectorType(source?.spec?.sourceConnector);
+  $: fileExtension = getFileExtension(source);
 
   $: cardinalityQuery = createQueryServiceTableCardinality(
     $runtime.instanceId,
@@ -90,13 +86,6 @@
     }`;
   }
 
-  /** get the current column count */
-  $: {
-    columnCount = `${formatInteger(
-      sourceCatalog?.source?.schema?.fields?.length
-    )} columns`;
-  }
-
   /** total % null cells */
 
   $: profileColumns = createQueryServiceTableColumns(
@@ -108,6 +97,11 @@
 
   let summaries: Readable<Array<ColumnSummary>>;
   $: if ($profileColumns?.data?.profileColumns) {
+    /** get the current column count */
+    columnCount = `${formatInteger(
+      $profileColumns.data.profileColumns.length
+    )} columns`;
+
     summaries = getSummaries(sourceName, $runtime?.instanceId, $profileColumns);
   }
 
@@ -121,7 +115,7 @@
   }
   $: {
     const totalCells =
-      sourceCatalog?.source?.schema?.fields?.length * cardinality;
+      $profileColumns?.data?.profileColumns?.length * cardinality;
     nullPercentage = formatBigNumberPercentage(totalNulls / totalCells);
   }
 
@@ -138,7 +132,7 @@
 <div
   class="table-profile {isSourceUnsaved && 'grayscale'} transition duration-200"
 >
-  {#if sourceCatalog && !$getSource.isError}
+  {#if source && !$sourceQuery.isError}
     <!-- summary info -->
     <div class="p-4 pt-2">
       <LeftRightGrid>

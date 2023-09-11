@@ -5,21 +5,21 @@
     IconSpaceFixer,
   } from "@rilldata/web-common/components/button";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
-  import { notifications } from "@rilldata/web-common/components/notifications";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
+  import { saveFile } from "@rilldata/web-common/features/entity-management/file-actions";
+  import { validateAndRenameEntity } from "@rilldata/web-common/features/entity-management/rename-entity";
+  import { useSource } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import {
-    createRuntimeServiceGetCatalogEntry,
     createRuntimeServiceGetFile,
-    createRuntimeServicePutFileAndReconcile,
+    createRuntimeServicePutFile,
     createRuntimeServiceRefreshAndReconcile,
-    createRuntimeServiceRenameFileAndReconcile,
+    createRuntimeServiceRenameFile,
     getRuntimeServiceGetCatalogEntryQueryKey,
-    V1CatalogEntry,
-    V1Source,
+    V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
   import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -34,20 +34,14 @@
     MetricsEventSpace,
   } from "../../../metrics/service/MetricsTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { renameFileArtifact } from "../../entity-management/actions";
-  import {
-    getFilePathFromNameAndType,
-    getRouteFromName,
-  } from "../../entity-management/entity-mappers";
+  import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
   import {
     fileArtifactsStore,
     getFileArtifactReconciliationErrors,
   } from "../../entity-management/file-artifacts-store";
-  import { isDuplicateName } from "../../entity-management/name-utils";
   import { useAllNames } from "../../entity-management/selectors";
   import { createModelFromSourceV2 } from "../createModel";
   import { refreshSource } from "../refreshSource";
-  import { saveAndRefresh } from "../saveAndRefresh";
   import { useIsSourceUnsaved } from "../selectors";
   import { useSourceStore } from "../sources-store";
 
@@ -55,63 +49,38 @@
 
   const queryClient = useQueryClient();
 
-  const renameSource = createRuntimeServiceRenameFileAndReconcile();
   const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
-  const createSource = createRuntimeServicePutFileAndReconcile();
+  const renameSource = createRuntimeServiceRenameFile();
+  const saveSource = createRuntimeServicePutFile();
 
   $: runtimeInstanceId = $runtime.instanceId;
-  $: getSource = createRuntimeServiceGetCatalogEntry(
-    runtimeInstanceId,
-    sourceName
-  );
+
+  $: sourceQuery = useSource(runtimeInstanceId, sourceName);
+  let source: V1SourceV2;
+  $: source = $sourceQuery.data;
+
   $: file = createRuntimeServiceGetFile(
     runtimeInstanceId,
     getFilePathFromNameAndType(sourceName, EntityType.Table)
   );
 
-  let entry: V1CatalogEntry;
-  let source: V1Source;
-  $: entry = $getSource?.data?.entry;
-  $: source = entry?.source;
-
   let connector: string;
-  $: connector = $getSource.data?.entry?.source?.connector as string;
+  $: connector = source?.spec?.sourceConnector;
 
   $: allNamesQuery = useAllNames(runtimeInstanceId);
 
   const onChangeCallback = async (e) => {
-    if (!e.target.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
-      notifications.send({
-        message:
-          "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
-      });
-      e.target.value = sourceName; // resets the input
-      return;
-    }
-    if (isDuplicateName(e.target.value, sourceName, $allNamesQuery.data)) {
-      notifications.send({
-        message: `Name ${e.target.value} is already in use`,
-      });
-      e.target.value = sourceName; // resets the input
-      return;
-    }
-
-    try {
-      const toName = e.target.value;
-      const entityType = EntityType.Table;
-      await renameFileArtifact(
-        queryClient,
+    if (
+      !(await validateAndRenameEntity(
         runtimeInstanceId,
+        e.target.value,
         sourceName,
-        toName,
-        entityType,
-        $renameSource
-      );
-      goto(getRouteFromName(toName, entityType), {
-        replaceState: true,
-      });
-    } catch (err) {
-      console.error(err.response.data.message);
+        $allNamesQuery.data,
+        EntityType.Table,
+        renameSource
+      ))
+    ) {
+      e.target.value = sourceName; // resets the input
     }
   };
 
@@ -121,23 +90,31 @@
 
   const onSaveAndRefreshClick = async (tableName: string) => {
     overlay.set({ title: `Importing ${tableName}.yaml` });
-    await saveAndRefresh(queryClient, tableName, $sourceStore.clientYAML);
+    await saveFile(
+      runtimeInstanceId,
+      tableName,
+      EntityType.Table,
+      $sourceStore.clientYAML,
+      saveSource
+    );
+    // TODO: emit telemetry
+    //       should it emit only when a source is modified from UI?
+    //       or perhaps change screen and others based on where it is emitted from and always fire?
     overlay.set(null);
   };
 
   const onRefreshClick = async (tableName: string) => {
     try {
+      // TODO: what is the replacement for refresh in new reconcile?
       await refreshSource(
         connector,
         tableName,
         runtimeInstanceId,
         $refreshSourceMutation,
-        $createSource,
+        $saveSource,
         queryClient,
-        source?.connector === "s3" ||
-          source?.connector === "gcs" ||
-          source?.connector === "https"
-          ? source?.properties?.path
+        connector === "s3" || connector === "gcs" || connector === "https"
+          ? source?.spec?.properties?.path
           : sourceName
       );
       // invalidate the "refreshed_on" time
@@ -209,14 +186,14 @@
         Refreshing...
       {:else}
         <div class="flex items-center pr-2 gap-x-2">
-          {#if $getSource.isSuccess && $getSource.data?.entry?.refreshedOn}
+          {#if $sourceQuery.isSuccess && $sourceQuery.data?.state?.refreshedOn}
             <div
               class="ui-copy-muted"
               style:font-size="11px"
               transition:fade|local={{ duration: 200 }}
             >
               Imported on {formatRefreshedOn(
-                $getSource.data?.entry?.refreshedOn
+                $sourceQuery.data?.state?.refreshedOn
               )}
             </div>
           {/if}
@@ -226,9 +203,9 @@
     <svelte:fragment slot="cta">
       <PanelCTA side="right">
         <Button
+          disabled={!isSourceUnsaved}
           on:click={() => onRevertChanges()}
           type="secondary"
-          disabled={!isSourceUnsaved}
         >
           <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall(headerWidth)}>
             <UndoIcon size="14px" />
@@ -261,8 +238,8 @@
           </ResponsiveButtonText>
         </Button>
         <Button
-          on:click={handleCreateModelFromSource}
           disabled={isSourceUnsaved || hasReconciliationErrors}
+          on:click={handleCreateModelFromSource}
         >
           <ResponsiveButtonText collapse={isHeaderWidthSmall(headerWidth)}>
             Create model
