@@ -353,7 +353,7 @@
   <!-- bignumbers and line charts -->
   {#if $metaQuery.data?.measures}
     <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
-    {#each $metaQuery.data?.measures.filter((_, i) => $showHideMeasures.selectedItems[i]) as measure, index (measure.name)}
+    {#each $metaQuery.data?.measures.filter((_, i) => $showHideMeasures.selectedItems[i]) as measure (measure.name)}
       <!-- FIXME: I can't select the big number by the measure id. -->
       {@const bigNum = $totalsQuery?.data?.data?.[measure.name]}
       {@const comparisonValue = totalsComparisons?.[measure.name]}
@@ -391,7 +391,6 @@
             isScrubbing={$dashboardStore?.selectedScrubRange?.isScrubbing}
             {scrubStart}
             {scrubEnd}
-            {index}
             {metricViewName}
             data={formattedData}
             {dimensionData}

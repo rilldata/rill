@@ -53,9 +53,6 @@
   export let mouseoverValue;
   export let hovered = false;
 
-  // used for positioning of labels on dimension comparison
-  export let index;
-
   // control point for scrub functionality.
   export let isScrubbing = false;
   export let scrubStart;
@@ -300,7 +297,6 @@
             <g transition:fly|local={{ duration: 100, x: -4 }}>
               {#if isComparingDimension}
                 <DimensionValueMouseover
-                  {index}
                   {point}
                   {xAccessor}
                   {yAccessor}

@@ -8,7 +8,6 @@
   export let yAccessor;
   export let mouseoverFormat;
   export let dimensionData;
-  export let index;
 
   $: x = point[xAccessor];
 
@@ -51,7 +50,7 @@
 <WithGraphicContexts let:xScale let:yScale>
   <MultiMetricMouseoverLabel
     attachPointToLabel
-    direction={index % 2 === 0 ? "right" : "left"}
+    direction="right"
     flipAtEdge="body"
     formatValue={mouseoverFormat}
     point={pointSet || []}
