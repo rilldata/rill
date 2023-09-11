@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"go.uber.org/zap"
+	"gocloud.dev/blob"
 	"gocloud.dev/blob/azureblob"
 )
 
@@ -96,8 +97,28 @@ func (d driver) Spec() drivers.Spec {
 }
 
 func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
-	// TODO: implement
-	return false, nil
+	b, ok := src.BucketSource()
+	if !ok {
+		return false, fmt.Errorf("require bucket source")
+	}
+	conf, err := parseSourceProperties(b.Properties)
+	if err != nil {
+		return false, fmt.Errorf("failed to parse config: %w", err)
+	}
+
+	c, err := d.Open(map[string]any{}, false, activity.NewNoopClient(), logger)
+	if err != nil {
+		return false, err
+	}
+
+	conn := c.(*Connection)
+	bucketObj, err := conn.openBucket(ctx, conf)
+	if err != nil {
+		return false, fmt.Errorf("failed to open container %q, %w", conf.url.Host, err)
+	}
+	defer bucketObj.Close()
+
+	return bucketObj.IsAccessible(ctx)
 }
 
 type Connection struct {
@@ -180,22 +201,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSo
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	name := c.config.Account
-	key := c.config.Key
-
-	if c.config.AllowHostAccess {
-		name = os.Getenv("AZURE_STORAGE_ACCOUNT")
-		key = os.Getenv("AZURE_STORAGE_KEY")
-	}
-
-	credential, err := azblob.NewSharedKeyCredential(name, key)
-	if err != nil {
-		return nil, err
-	}
-
-	containerURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s", name, conf.url.Host)
-
-	client, err := container.NewClientWithSharedKeyCredential(containerURL, credential, nil)
+	client, err := c.getClient(ctx, conf)
 	if err != nil {
 		return nil, err
 	}
@@ -253,4 +259,52 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 
 	conf.url = url
 	return conf, nil
+}
+
+// getClient returns a new azure blob client.
+func (c *Connection) getClient(ctx context.Context, conf *sourceProperties) (*container.Client, error) {
+	name := c.config.Account
+	key := c.config.Key
+
+	if c.config.AllowHostAccess {
+		name = os.Getenv("AZURE_STORAGE_ACCOUNT")
+		key = os.Getenv("AZURE_STORAGE_KEY")
+	}
+
+	credential, err := azblob.NewSharedKeyCredential(name, key)
+	if err != nil {
+		return nil, err
+	}
+
+	containerURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s", name, conf.url.Host)
+	client, err := container.NewClientWithNoCredential(containerURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if key != "" {
+		client, err = container.NewClientWithSharedKeyCredential(containerURL, credential, nil)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return client, nil
+}
+
+func (c *Connection) openBucket(ctx context.Context, conf *sourceProperties) (*blob.Bucket, error) {
+	// Create containerURL object.
+	containerURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s", c.config.Account, conf.url.Host)
+	client, err := container.NewClientWithNoCredential(containerURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a *blob.Bucket.
+	bucketObj, err := azureblob.OpenBucket(ctx, client, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return bucketObj, nil
 }
