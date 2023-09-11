@@ -47,7 +47,7 @@ var spec = drivers.Spec{
 			Key:         "output_location",
 			DisplayName: "S3 output location",
 			Description: "Oputut location for query results in S3.",
-			Placeholder: "mybucket",
+			Placeholder: "s3://bucket-name/path/",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
 		},
@@ -236,26 +236,31 @@ func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSo
 		return nil, err
 	}
 
-	prefix := "parquet_output_" + uuid.New().String()
-	bucketName := strings.TrimPrefix(strings.TrimRight(conf.OutputLocation, "/"), "s3://")
-	unloadPath := bucketName + "/" + prefix
-	err = c.unload(ctx, cfg, conf, "s3://"+unloadPath)
+	unloadPath := "parquet_output_" + uuid.New().String()
+	bucketName := strings.Split(strings.TrimPrefix(conf.OutputLocation, "s3://"), "/")[0]
+	unloadLocation := strings.TrimRight(conf.OutputLocation, "/") + "/" + unloadPath
+	err = c.unload(ctx, cfg, conf, unloadLocation)
 	if err != nil {
-		return nil, errors.Join(fmt.Errorf("failed to unload: %w", err), cleanPath(ctx, cfg, bucketName, prefix))
+		return nil, errors.Join(fmt.Errorf("failed to unload: %w", err), cleanPath(ctx, cfg, bucketName, unloadPath))
 	}
 
 	bucketObj, err := c.openBucket(ctx, conf, bucketName)
 	if err != nil {
-		return nil, errors.Join(fmt.Errorf("cannot open bucket %q: %w", unloadPath, err), cleanPath(ctx, cfg, bucketName, prefix))
+		return nil, errors.Join(fmt.Errorf("cannot open bucket %q: %w", unloadLocation, err), cleanPath(ctx, cfg, bucketName, unloadPath))
 	}
 
 	opts := rillblob.Options{
-		GlobPattern: prefix + "/**",
+		GlobPattern: unloadPath + "/**",
 	}
 
 	it, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
 	if err != nil {
-		return nil, errors.Join(fmt.Errorf("cannot download parquet output %q %w", opts.GlobPattern, err), cleanPath(ctx, cfg, bucketName, prefix))
+		return nil, errors.Join(fmt.Errorf("cannot download parquet output %q %w", opts.GlobPattern, err), cleanPath(ctx, cfg, bucketName, unloadPath))
+	}
+
+	err = cleanPath(ctx, cfg, bucketName, unloadPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to clean path: %w", err)
 	}
 
 	return it, nil
@@ -279,7 +284,7 @@ func (c *Connection) unload(ctx context.Context, cfg aws.Config, conf *sourcePro
 	finalSQL := fmt.Sprintf("UNLOAD (%s) TO '%s' WITH (format = 'PARQUET')", conf.SQL, path)
 	client := athena.NewFromConfig(cfg)
 	resultConfig := &types.ResultConfiguration{
-		OutputLocation: aws.String("s3://" + strings.TrimPrefix(strings.TrimRight(conf.OutputLocation, "/"), "s3://") + "/output/"),
+		OutputLocation: aws.String(strings.TrimRight(conf.OutputLocation, "/") + "/output/"),
 	}
 
 	executeParams := &athena.StartQueryExecutionInput{
