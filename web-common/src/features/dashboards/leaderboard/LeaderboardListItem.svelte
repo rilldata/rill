@@ -121,7 +121,8 @@
   <button
     class="flex flex-row w-full text-left transition-color"
     on:blur={onLeave}
-    on:click={() => {
+    on:click={(e) => {
+      if (e.shiftKey) return;
       dispatch("select-item", {
         label,
       });

@@ -44,7 +44,7 @@
           href={dashboardListItem.isValid
             ? `/${organization}/${project}/${dashboardListItem.name}`
             : undefined}
-          class="w-full h-full p-3 flex items-center gap-x-6 {dashboardListItem.isValid
+          class="w-full h-full overflow-x-auto p-3 flex items-center gap-x-6 {dashboardListItem.isValid
             ? 'text-gray-700 hover:text-blue-600 hover:bg-slate-50'
             : 'text-gray-400'}"
         >
@@ -55,10 +55,10 @@
             <DashboardIcon size={"14px"} />
           </div>
 
-          <div class="flex items-center gap-x-10">
+          <div class="flex items-center gap-x-8">
             <!-- Name -->
             <span
-              class="text-sm font-medium w-[250px] shrink-0 truncate"
+              class="text-sm font-medium shrink-0 truncate"
               title={dashboardListItem?.title || dashboardListItem.name}
             >
               {dashboardListItem?.title || dashboardListItem.name}
