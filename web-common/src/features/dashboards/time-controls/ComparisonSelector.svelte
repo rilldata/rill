@@ -6,6 +6,7 @@ This component needs to do the following:
 -->
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
+  import { matchSorter } from "match-sorter";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
   import {
     Divider,
@@ -19,6 +20,7 @@ This component needs to do the following:
   import SelectorButton from "./SelectorButton.svelte";
   import Compare from "@rilldata/web-common/components/icons/Compare.svelte";
   import ClockCircle from "@rilldata/web-common/components/icons/ClockCircle.svelte";
+  import { Search } from "@rilldata/web-common/components/search";
 
   const dispatch = createEventDispatcher();
 
@@ -27,6 +29,8 @@ This component needs to do the following:
   export let dimensions: MetricsViewDimension[];
 
   const TIME = "Time";
+
+  let searchText = "";
 
   function getLabelForDimension(dimension: string) {
     return dimensions.find((d) => d.name === dimension)?.label;
@@ -37,6 +41,8 @@ This component needs to do the following:
     name: d.name,
     label: d.label,
   }));
+
+  $: menuOptions = matchSorter(options, searchText, { keys: ["label"] });
 
   $: label = selectedDimension
     ? getLabelForDimension(selectedDimension)
@@ -83,7 +89,9 @@ This component needs to do the following:
     on:click-outside={toggleFloatingElement}
     label="Comparison selector"
   >
+    <Search placeholder="Search Dimension" bind:value={searchText} />
     <MenuItem
+      focusOnMount={false}
       selected={!(showTimeComparison || selectedDimension)}
       on:before-select={() => {
         intermediateSelection = NO_COMPARISON_LABEL;
@@ -114,7 +122,7 @@ This component needs to do the following:
     <Divider />
 
     <div style:max-height="200px" class="overflow-y-auto">
-      {#each options as option}
+      {#each menuOptions as option}
         <MenuItem
           selected={option.name === intermediateSelection}
           on:before-select={() => {
