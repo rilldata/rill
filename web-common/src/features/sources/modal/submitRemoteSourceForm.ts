@@ -63,7 +63,8 @@ export async function submitRemoteSourceForm(
   const formValues = Object.fromEntries(
     Object.entries(values).map(([key, value]) => {
       switch (key) {
-        case "project_id":
+        case "project_id": 
+        case "output_location":
           return [key, value];
         default:
           return [fromYupFriendlyKey(key), value];

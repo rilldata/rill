@@ -54,7 +54,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "region",
 			DisplayName: "AWS region",
-			Description: "AWS profile for credentials.",
+			Description: "AWS region",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
 		},
