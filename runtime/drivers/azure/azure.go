@@ -180,8 +180,14 @@ func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSo
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	name := os.Getenv("AZURE_STORAGE_ACCOUNT")
-	key := os.Getenv("AZURE_STORAGE_KEY")
+	name := c.config.Account
+	key := c.config.Key
+
+	if c.config.AllowHostAccess {
+		name = os.Getenv("AZURE_STORAGE_ACCOUNT")
+		key = os.Getenv("AZURE_STORAGE_KEY")
+	}
+
 	credential, err := azblob.NewSharedKeyCredential(name, key)
 	if err != nil {
 		return nil, err
