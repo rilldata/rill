@@ -15,6 +15,7 @@
     createRuntimeServiceGetCatalogEntry,
     getRuntimeServiceGetCatalogEntryQueryKey,
   } from "@rilldata/web-common/runtime-client";
+  import type { QueryError } from "@rilldata/web-common/runtime-client/error";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { errorStore } from "../../../../components/errors/error-store";
@@ -70,7 +71,8 @@
   $: dashboard = createRuntimeServiceGetCatalogEntry(instanceId, dashboardName);
   $: isDashboardOK = $dashboard.isSuccess;
   $: isDashboardNotFound =
-    $dashboard.isError && $dashboard.error?.response?.status === 400;
+    $dashboard.isError &&
+    ($dashboard.error as QueryError)?.response?.status === 400;
   // isDashboardErrored // We'll reinstate this case once we integrate the new Reconcile
 
   // If no dashboard is found, show a 404 page
