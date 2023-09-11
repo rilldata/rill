@@ -23,6 +23,8 @@ import (
 // recommended size is 512MB - 1GB, entire data is buffered in memory before its written to disk
 const rowGroupBufferSize = int64(datasize.MB) * 512
 
+const _jsonDownloadLimitBytes = 100 * int64(datasize.MB)
+
 // Query implements drivers.SQLStore
 func (c *Connection) Query(ctx context.Context, props map[string]any, sql string) (drivers.RowIterator, error) {
 	return nil, fmt.Errorf("not implemented")
@@ -35,7 +37,12 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, sql
 		return nil, err
 	}
 
-	client, err := c.createClient(ctx, srcProps)
+	opts, err := c.clientOption(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := bigquery.NewClient(ctx, srcProps.ProjectID, opts...)
 	if err != nil {
 		if strings.Contains(err.Error(), "unable to detect projectID") {
 			return nil, fmt.Errorf("projectID not detected in credentials. Please set `project_id` in source yaml")
@@ -43,7 +50,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, sql
 		return nil, fmt.Errorf("failed to create bigquery client: %w", err)
 	}
 
-	if err := client.EnableStorageReadClient(ctx); err != nil {
+	if err := client.EnableStorageReadClient(ctx, opts...); err != nil {
 		client.Close()
 		return nil, err
 	}
@@ -58,7 +65,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, sql
 		// the query results are always cached in a temporary table that storage api can use
 		// there are some exceptions when results aren't cached
 		// so we also try without storage api
-		client, err = c.createClient(ctx, srcProps)
+		client, err = bigquery.NewClient(ctx, srcProps.ProjectID, opts...)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create bigquery client: %w", err)
 		}
@@ -229,7 +236,9 @@ func (f *fileIterator) downloadAsJSONFile() error {
 	f.downloaded = true
 
 	init := false
-	// not implementing size check since this flow is expected to be run for less data size only
+	rows := 0
+	enc := json.NewEncoder(fw)
+	enc.SetEscapeHTML(false)
 	for {
 		row := make(map[string]bigquery.Value)
 		err := f.bqIter.Next(&row)
@@ -252,15 +261,22 @@ func (f *fileIterator) downloadAsJSONFile() error {
 			}
 		}
 
-		bytes, err := json.Marshal(row)
+		err = enc.Encode(row)
 		if err != nil {
 			return fmt.Errorf("conversion of row to json failed with error: %w", err)
 		}
-		if _, err = fw.Write(bytes); err != nil {
-			return err
-		}
-		if _, err = fw.WriteString("\n"); err != nil {
-			return err
+
+		// If we don't have storage API access, BigQuery may return massive JSON results. (But even with storage API access, it may return JSON for small results.)
+		// We want to avoid JSON for massive results. Currently, the only way to do so is to error at a limit.
+		rows++
+		if rows != 0 && rows%10000 == 0 { // Check file size every 10k rows
+			fileInfo, err := os.Stat(fw.Name())
+			if err != nil {
+				return fmt.Errorf("bigquery: failed to poll json file size: %w", err)
+			}
+			if fileInfo.Size() >= _jsonDownloadLimitBytes {
+				return fmt.Errorf("bigquery: json download exceeded limit of %d bytes (enable and provide access to the BigQuery Storage Read API to read larger results)", _jsonDownloadLimitBytes)
+			}
 		}
 	}
 }

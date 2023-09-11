@@ -11,7 +11,12 @@ import (
 const defaultPageSize = 20
 
 func (c *Connection) ListDatasets(ctx context.Context, req *runtimev1.BigQueryListDatasetsRequest) ([]string, string, error) {
-	client, err := c.createClient(ctx, &sourceProperties{ProjectID: bigquery.DetectProjectID})
+	opts, err := c.clientOption(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+
+	client, err := bigquery.NewClient(ctx, bigquery.DetectProjectID, opts...)
 	if err != nil {
 		return nil, "", err
 	}
@@ -36,7 +41,12 @@ func (c *Connection) ListDatasets(ctx context.Context, req *runtimev1.BigQueryLi
 }
 
 func (c *Connection) ListTables(ctx context.Context, req *runtimev1.BigQueryListTablesRequest) ([]string, string, error) {
-	client, err := c.createClient(ctx, &sourceProperties{ProjectID: bigquery.DetectProjectID})
+	opts, err := c.clientOption(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+
+	client, err := bigquery.NewClient(ctx, bigquery.DetectProjectID, opts...)
 	if err != nil {
 		return nil, "", err
 	}

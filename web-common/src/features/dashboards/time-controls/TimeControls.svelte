@@ -65,8 +65,10 @@
      * timezone to UTC in such cases.
      *
      */
-
-    if (!availableTimeZones?.length) {
+    if (
+      !availableTimeZones?.length &&
+      $dashboardStore?.selectedTimezone !== "Etc/UTC"
+    ) {
       metricsExplorerStore.setTimeZone(metricViewName, "Etc/UTC");
       localUserPreferences.set({ timeZone: "Etc/UTC" });
     }
@@ -96,7 +98,7 @@
       baseTimeRange,
       defaultTimeGrain,
       // reset the comparison range
-      {}
+      undefined
     );
   }
 
@@ -132,7 +134,7 @@
      * time range. Otherwise, the current comparison state should continue to be the
      * source of truth.
      */
-    comparisonTimeRange: DashboardTimeControls
+    comparisonTimeRange: DashboardTimeControls | undefined
   ) {
     cancelDashboardQueries(queryClient, metricViewName);
 
@@ -140,7 +142,8 @@
       metricViewName,
       timeRange,
       timeGrain,
-      comparisonTimeRange
+      comparisonTimeRange,
+      $timeControlsStore.allTimeRange
     );
   }
 
