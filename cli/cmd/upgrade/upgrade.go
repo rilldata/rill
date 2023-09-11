@@ -45,6 +45,8 @@ func UpgradeCmd(cfg *config.Config) *cobra.Command {
 				args = append(args, "--nightly")
 			}
 			cmd := exec.Command("/bin/bash", args...)
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
 			return cmd.Run()
 		},
 	}
