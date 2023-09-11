@@ -36,6 +36,7 @@ type Source struct {
 	HivePartition         *bool          `yaml:"hive_partitioning,omitempty" mapstructure:"hive_partitioning,omitempty"`
 	Timeout               int32          `yaml:"timeout,omitempty"`
 	Format                string         `yaml:"format,omitempty" mapstructure:"format,omitempty"`
+	Extract               map[string]any `yaml:"extract,omitempty" mapstructure:"extract,omitempty"`
 	DuckDBProps           map[string]any `yaml:"duckdb,omitempty" mapstructure:"duckdb,omitempty"`
 	Headers               map[string]any `yaml:"headers,omitempty" mapstructure:"headers,omitempty"`
 	AllowSchemaRelaxation *bool          `yaml:"ingest.allow_schema_relaxation,omitempty" mapstructure:"allow_schema_relaxation,omitempty"`
@@ -130,6 +131,10 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 	}
 	if source.Region != "" {
 		props["region"] = source.Region
+	}
+
+	if source.Extract != nil {
+		props["extract"] = source.Extract
 	}
 
 	if source.DuckDBProps != nil {
