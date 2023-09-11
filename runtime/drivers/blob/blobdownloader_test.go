@@ -5,7 +5,6 @@ import (
 	"os"
 	"testing"
 
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -127,7 +126,7 @@ func TestFetchFileNamesWithParitionLimits(t *testing.T) {
 			name: "listing head limits",
 			args: args{context.Background(),
 				prepareBucket(t),
-				Options{ExtractPolicy: &runtimev1.Source_ExtractPolicy{FilesStrategy: runtimev1.Source_ExtractPolicy_STRATEGY_HEAD, FilesLimit: 2}, GlobPattern: "2020/**", StorageLimitInBytes: TenGB},
+				Options{ExtractPolicy: &ExtractPolicy{FilesStrategy: ExtractPolicyStrategyHead, FilesLimit: 2}, GlobPattern: "2020/**", StorageLimitInBytes: TenGB},
 			},
 			want:    map[string]struct{}{"hello": {}, "world": {}},
 			wantErr: false,
@@ -137,7 +136,7 @@ func TestFetchFileNamesWithParitionLimits(t *testing.T) {
 			args: args{
 				context.Background(),
 				prepareBucket(t),
-				Options{ExtractPolicy: &runtimev1.Source_ExtractPolicy{FilesStrategy: runtimev1.Source_ExtractPolicy_STRATEGY_TAIL, FilesLimit: 2}, GlobPattern: "2020/**", StorageLimitInBytes: TenGB},
+				Options{ExtractPolicy: &ExtractPolicy{FilesStrategy: ExtractPolicyStrategyTail, FilesLimit: 2}, GlobPattern: "2020/**", StorageLimitInBytes: TenGB},
 			},
 			want:    map[string]struct{}{"test": {}, "writing": {}},
 			wantErr: false,
