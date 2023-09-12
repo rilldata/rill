@@ -80,7 +80,10 @@
     metricsExplorer?.leaderboardContextColumn ===
       LeaderboardContextColumn.PERCENT
   ) {
-    metricsExplorerStore.hideContextColumn(metricViewName);
+    metricsExplorerStore.setContextColumn(
+      metricViewName,
+      LeaderboardContextColumn.HIDDEN
+    );
   }
 
   $: showHideDimensions = createShowHideDimensionsStore(
