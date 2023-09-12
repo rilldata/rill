@@ -26,15 +26,16 @@
   const dispatch = createEventDispatcher();
 
   $: contextColumnWidth = (contextColumn: LeaderboardContextColumn) => {
-    if (contextColumn === LeaderboardContextColumn.HIDDEN) {
-      return "0px";
-    } else if (contextColumn === LeaderboardContextColumn.DELTA_ABSOLUTE) {
-      return "54px";
-    } else if (
-      contextColumn === LeaderboardContextColumn.DELTA_PERCENT ||
-      contextColumn === LeaderboardContextColumn.PERCENT
-    ) {
-      return "44px";
+    switch (contextColumn) {
+      case LeaderboardContextColumn.DELTA_ABSOLUTE:
+        return "54px";
+      case LeaderboardContextColumn.DELTA_PERCENT:
+      case LeaderboardContextColumn.PERCENT:
+        return "44px";
+      case LeaderboardContextColumn.HIDDEN:
+        return "0px";
+      default:
+        throw new Error("Invalid context column, all cases must be handled");
     }
   };
 

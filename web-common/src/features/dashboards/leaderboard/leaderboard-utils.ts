@@ -60,23 +60,26 @@ export function formatContextColumnValue(
   formatPreset: FormatPreset
 ): string {
   const { value, comparisonValue } = itemData;
-  let formattedValue = "";
 
-  if (contextType === LeaderboardContextColumn.DELTA_PERCENT) {
-    formattedValue = getFormatterValueForPercDiff(
-      value && comparisonValue ? value - comparisonValue : null,
-      comparisonValue
-    );
-  } else if (contextType === LeaderboardContextColumn.PERCENT) {
-    formattedValue = getFormatterValueForPercDiff(value, unfilteredTotal);
-  } else if (contextType === LeaderboardContextColumn.DELTA_ABSOLUTE) {
-    const delta = value && comparisonValue ? value - comparisonValue : null;
-    formattedValue = humanizeDataType(delta, formatPreset);
-    if (delta && delta > 0) {
-      formattedValue = "+" + formattedValue;
+  switch (contextType) {
+    case LeaderboardContextColumn.DELTA_ABSOLUTE: {
+      const delta = value && comparisonValue ? value - comparisonValue : null;
+      let formattedValue = humanizeDataType(delta, formatPreset);
+      if (delta && delta > 0) {
+        formattedValue = "+" + formattedValue;
+      }
+      return formattedValue;
     }
-  } else {
-    formattedValue = "";
+    case LeaderboardContextColumn.DELTA_PERCENT:
+      return getFormatterValueForPercDiff(
+        value && comparisonValue ? value - comparisonValue : null,
+        comparisonValue
+      );
+    case LeaderboardContextColumn.PERCENT:
+      return getFormatterValueForPercDiff(value, unfilteredTotal);
+    case LeaderboardContextColumn.HIDDEN:
+      return "";
+    default:
+      throw new Error("Invalid context column, all cases must be handled");
   }
-  return formattedValue;
 }
