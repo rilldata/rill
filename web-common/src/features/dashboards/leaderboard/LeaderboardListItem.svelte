@@ -119,7 +119,7 @@
 
 <Tooltip location="right">
   <button
-    class="flex flex-row w-full text-left transition-color"
+    class="flex flex-row items-center w-full text-left transition-color"
     on:blur={onLeave}
     on:click={(e) => {
       if (e.shiftKey) return;
