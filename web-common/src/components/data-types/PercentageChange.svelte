@@ -21,10 +21,11 @@
     // in this case, we have a NumberParts object.
     // We have a couple cases to consider:
     // * If the NumberParts object has approxZero===true,
-    // we want to show e.g. "~0" WITHOUT a negative sign,
-    // even if the NumberParts object has a negative sign,
-    // we do want to show the number in red to indicate a
+    // we want to show e.g. "~0%" WITHOUT a negative sign
+    // * However, in this case we show the number in red to indicate a
     // small negative change.
+    //
+    // Otherwise, we format the number as usual.
 
     intValue = value?.int;
     diffIsNegative = value?.neg === "-";
