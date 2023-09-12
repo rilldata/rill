@@ -8,7 +8,6 @@ import (
 	"io"
 	"os"
 
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"gocloud.dev/blob"
 )
 
@@ -35,12 +34,12 @@ func downloadText(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObject
 
 func rows(reader *ObjectReader, option *textExtractOption) ([]byte, error) {
 	switch option.extractOption.strategy {
-	case runtimev1.Source_ExtractPolicy_STRATEGY_HEAD:
+	case ExtractPolicyStrategyHead:
 		return rowsHead(reader, option.extractOption)
-	case runtimev1.Source_ExtractPolicy_STRATEGY_TAIL:
+	case ExtractPolicyStrategyTail:
 		return rowsTail(reader, option)
 	default:
-		panic(fmt.Sprintf("unsupported strategy %s", option.extractOption.strategy))
+		panic(fmt.Sprintf("unsupported strategy %s", option.extractOption.strategy.String()))
 	}
 }
 

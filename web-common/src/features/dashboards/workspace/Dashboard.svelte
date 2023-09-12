@@ -58,7 +58,7 @@
     metricViewName
   );
   $: mockUserHasNoAccess =
-    $selectedMockUserStore && $catalogQuery.error?.response?.status === 401;
+    $selectedMockUserStore && $catalogQuery.error?.response?.status === 404;
 </script>
 
 <section

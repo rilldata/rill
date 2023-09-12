@@ -30,9 +30,6 @@ func (r *Runtime) GetCatalogEntry(ctx context.Context, instanceID, name string) 
 
 	e, err := cat.FindEntry(ctx, name)
 	if err != nil {
-		if errors.Is(err, drivers.ErrNotFound) {
-			return nil, fmt.Errorf("entry not found")
-		}
 		return nil, err
 	}
 

@@ -76,6 +76,9 @@
     }
 
     dimensions = $metaQuery?.data?.dimensions;
+    baseTimeRange ??= {
+      ...$dashboardStore.selectedTimeRange,
+    };
   }
 
   // we get the timeGrainOptions so that we can assess whether or not the
