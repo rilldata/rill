@@ -72,6 +72,10 @@
       metricsExplorerStore.setTimeZone(metricViewName, "Etc/UTC");
       localUserPreferences.set({ timeZone: "Etc/UTC" });
     }
+
+    baseTimeRange ??= {
+      ...$dashboardStore.selectedTimeRange,
+    };
   }
 
   // we get the timeGrainOptions so that we can assess whether or not the
