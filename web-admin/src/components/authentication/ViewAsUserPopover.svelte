@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { Search } from "@rilldata/web-common/components/search";
   import { updateMimickedJWT } from "@rilldata/web-common/features/dashboards/granular-access-policies/updateMimickedJWT";
@@ -71,10 +73,18 @@
     <div class="overflow-auto pb-1">
       {#each visibleUsers as user}
         <MenuItem
+          icon
           animateSelect={false}
           focusOnMount={false}
           on:select={() => viewAsUser(user)}
         >
+          <svelte:fragment slot="icon">
+            {#if user === $viewAsUserStore}
+              <Check size="20px" color="#15141A" />
+            {:else}
+              <Spacer size="20px" />
+            {/if}
+          </svelte:fragment>
           {user.email}
         </MenuItem>
       {/each}
