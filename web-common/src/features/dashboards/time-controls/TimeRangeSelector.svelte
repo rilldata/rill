@@ -178,7 +178,7 @@
       <div class="flex flew-row gap-x-3">
         <div class="font-bold flex flex-row items-center gap-x-3">
           <span class="ui-copy-icon"><Calendar size="16px" /></span>
-          <span>
+          <span style:transform="translateY(1px)">
             <!-- This conditional shouldn't be necessary because there should always be a selected (at least default) time range -->
             {#if intermediateSelection === TimeRangePreset.CUSTOM}
               Custom range
@@ -190,7 +190,7 @@
             {/if}
           </span>
         </div>
-        <span>
+        <span style:transform="translateY(1px)">
           {prettyFormatTimeRange(
             $timeControlsStore?.selectedTimeRange?.start,
             $timeControlsStore?.selectedTimeRange?.end,

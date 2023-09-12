@@ -62,7 +62,7 @@
       >
         <div class="flex items-center gap-x-2">
           <Globe size="16px" />
-          <span style:transform="translateY(-1px)" class="font-bold"
+          <span class="font-bold"
             >{getAbbreviationForIANA(now, activeTimeZone)}</span
           >
         </div>
