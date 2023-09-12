@@ -109,10 +109,14 @@ export function ISODurationToTimePreset(
   switch (isoDuration) {
     case "PT6H":
       return TimeRangePreset.LAST_SIX_HOURS;
+    case "PT24H":
+      return TimeRangePreset.LAST_24_HOURS;
     case "P1D":
       return TimeRangePreset.LAST_24_HOURS;
     case "P7D":
       return TimeRangePreset.LAST_7_DAYS;
+    case "P14D":
+      return TimeRangePreset.LAST_14_DAYS;
     case "P4W":
       return TimeRangePreset.LAST_4_WEEKS;
     case "inf":
