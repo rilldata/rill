@@ -10,7 +10,7 @@ import (
 )
 
 type sourceProperties struct {
-	Database string `mapstructure:"database"`
+	Database string `mapstructure:"db"`
 	SQL      string `mapstructure:"sql"`
 }
 
@@ -18,6 +18,9 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 	cfg := &sourceProperties{}
 	if err := mapstructure.Decode(props, cfg); err != nil {
 		return nil, fmt.Errorf("failed to parse source properties: %w", err)
+	}
+	if cfg.SQL == "" {
+		return nil, fmt.Errorf("property 'sql' is mandatory")
 	}
 	return cfg, nil
 }

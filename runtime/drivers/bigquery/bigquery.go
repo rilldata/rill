@@ -213,6 +213,9 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 	if err != nil {
 		return nil, err
 	}
+	if conf.SQL == "" {
+		return nil, fmt.Errorf("property 'sql' is mandatory for connector \"bigquery\"")
+	}
 	if conf.ProjectID == "" {
 		conf.ProjectID = bigquery.DetectProjectID
 	}

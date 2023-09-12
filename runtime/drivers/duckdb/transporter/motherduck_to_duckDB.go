@@ -114,7 +114,7 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 		}
 
 		if srcCfg.SQL == "" {
-			return fmt.Errorf("property \"query\" is mandatory for connector \"motherduck\"")
+			return fmt.Errorf("property \"sql\" is mandatory for connector \"motherduck\"")
 		}
 
 		userQuery := strings.TrimSpace(srcCfg.SQL)
