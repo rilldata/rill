@@ -53,13 +53,21 @@ func (r *ProjectParserReconciler) AssignState(from, to *runtimev1.Resource) erro
 	return nil
 }
 
+func (r *ProjectParserReconciler) ResetState(res *runtimev1.Resource) error {
+	res.GetProjectParser().State = &runtimev1.ProjectParserState{}
+	return nil
+}
+
 func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName) runtime.ReconcileResult {
 	// Get ProjectParser resource
-	self, err := r.C.Get(ctx, n)
+	self, err := r.C.Get(ctx, n, true)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
 	pp := self.GetProjectParser()
+	if pp == nil {
+		return runtime.ReconcileResult{Err: errors.New("not a project parser")}
+	}
 
 	// Does not support renames
 	if self.Meta.RenamedFrom != nil {
@@ -71,7 +79,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 		r.C.Lock(ctx)
 		defer r.C.Unlock(ctx)
 
-		resources, err := r.C.List(ctx, "")
+		resources, err := r.C.List(ctx, "", false)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
@@ -112,7 +120,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	}
 	if pp.State.CurrentCommitSha != hash {
 		pp.State.CurrentCommitSha = hash
-		err = r.C.UpdateState(ctx, n, self) // TODO: Pointer relationship between self and pp makes this hard to follow
+		err = r.C.UpdateState(ctx, n, self)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
@@ -245,7 +253,7 @@ func (r *ProjectParserReconciler) reconcileResources(ctx context.Context, self *
 	var deleteResources []*runtimev1.Resource
 
 	// Pass over all existing resources in the catalog.
-	resources, err := r.C.List(ctx, "")
+	resources, err := r.C.List(ctx, "", false)
 	if err != nil {
 		return err
 	}
@@ -320,7 +328,7 @@ func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, se
 	// Gather resource to delete so we can check for renames.
 	deleteResources := make([]*runtimev1.Resource, 0, len(diff.Deleted))
 	for _, n := range diff.Deleted {
-		r, err := r.C.Get(ctx, resourceNameFromCompiler(n))
+		r, err := r.C.Get(ctx, resourceNameFromCompiler(n), false)
 		if err != nil {
 			return err
 		}
@@ -329,7 +337,7 @@ func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, se
 
 	// Updates
 	for _, n := range diff.Modified {
-		existing, err := r.C.Get(ctx, resourceNameFromCompiler(n))
+		existing, err := r.C.Get(ctx, resourceNameFromCompiler(n), false)
 		if err != nil {
 			return err
 		}
@@ -437,7 +445,7 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, self
 	}
 
 	// Update meta if refs or file paths changed
-	if !slices.Equal(existing.Meta.FilePaths, def.Paths) || !slices.Equal(existing.Meta.Refs, refs) { // TODO: Don't use slices.Equal for protos
+	if !slices.Equal(existing.Meta.FilePaths, def.Paths) || !equalResourceNames(existing.Meta.Refs, refs) {
 		err := r.C.UpdateMeta(ctx, n, refs, self.Meta.Name, def.Paths)
 		if err != nil {
 			return err
@@ -545,6 +553,18 @@ func resourceNameToCompiler(name *runtimev1.ResourceName) compilerv1.ResourceNam
 
 func equalResourceName(a, b *runtimev1.ResourceName) bool {
 	return a.Kind == b.Kind && strings.EqualFold(a.Name, b.Name)
+}
+
+func equalResourceNames(a, b []*runtimev1.ResourceName) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, v := range a {
+		if !equalResourceName(v, b[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 func equalSourceSpec(a, b *runtimev1.SourceSpec) bool {
