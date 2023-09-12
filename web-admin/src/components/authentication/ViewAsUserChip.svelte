@@ -52,7 +52,7 @@
           </div>
         </div>
       </PopoverButton>
-      <PopoverPanel use={[[popperContent, popperOptions]]}>
+      <PopoverPanel use={[[popperContent, popperOptions]]} class="z-[1000]">
         <ViewAsUserPopover
           organization={$page.params.organization}
           project={$page.params.project}
