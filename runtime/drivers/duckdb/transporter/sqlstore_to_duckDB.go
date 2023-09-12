@@ -27,24 +27,20 @@ func NewSQLStoreToDuckDB(from drivers.SQLStore, to drivers.OLAPStore, logger *za
 	}
 }
 
-func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, sink drivers.Sink, opts *drivers.TransferOpts, p drivers.Progress) (transferErr error) {
-	src, ok := source.DatabaseSource()
-	if !ok {
-		return fmt.Errorf("type of source should `drivers.DatabaseSource`")
-	}
-	dbSink, ok := sink.DatabaseSink()
-	if !ok {
-		return fmt.Errorf("type of source should `drivers.DatabaseSink`")
+func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[string]any, opts *drivers.TransferOpts, p drivers.Progress) (transferErr error) {
+	sinkCfg, err := parseSinkProperties(sinkProps)
+	if err != nil {
+		return err
 	}
 
-	iter, err := s.from.QueryAsFiles(ctx, src.Props, src.SQL, &drivers.QueryOption{TotalLimitInBytes: opts.LimitInBytes}, p)
+	iter, err := s.from.QueryAsFiles(ctx, srcProps, &drivers.QueryOption{TotalLimitInBytes: opts.LimitInBytes}, p)
 	if err != nil {
 		return err
 	}
 	defer iter.Close()
 
 	start := time.Now()
-	s.logger.Info("started transfer from local file to duckdb", zap.String("sink_table", dbSink.Table), observability.ZapCtx(ctx))
+	s.logger.Info("started transfer from local file to duckdb", zap.String("sink_table", sinkCfg.Table), observability.ZapCtx(ctx))
 	defer func() {
 		s.logger.Info("transfer finished",
 			zap.Duration("duration", time.Since(start)),
@@ -69,10 +65,10 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, 
 
 		var query string
 		if create {
-			query = fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", safeName(dbSink.Table), from)
+			query = fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", safeName(sinkCfg.Table), from)
 			create = false
 		} else {
-			query = fmt.Sprintf("INSERT INTO %s (SELECT * FROM %s);", safeName(dbSink.Table), from)
+			query = fmt.Sprintf("INSERT INTO %s (SELECT * FROM %s);", safeName(sinkCfg.Table), from)
 		}
 
 		if err := s.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1}); err != nil {
