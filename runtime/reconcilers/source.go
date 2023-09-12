@@ -365,7 +365,6 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 
 func driversSource(conn drivers.Handle, propsPB *structpb.Struct) (map[string]any, error) {
 	props := propsPB.AsMap()
-	// props["extract"] = src.Policy // TODO: add
 	return props, nil
 }
 
