@@ -11,6 +11,7 @@
     QueryClient,
     QueryClientProvider,
   } from "@tanstack/svelte-query";
+  import { clearMimickedUserAfterNavigate } from "../components/authentication/clearMimickedUserAfterNavigate";
   import { globalErrorCallback } from "../components/errors/error-utils";
   import ErrorBoundary from "../components/errors/ErrorBoundary.svelte";
   import TopNavigationBar from "../components/navigation/TopNavigationBar.svelte";
@@ -38,6 +39,7 @@
   });
 
   beforeNavigate(retainFeaturesFlags);
+  clearMimickedUserAfterNavigate(queryClient);
 </script>
 
 <svelte:head>
