@@ -130,7 +130,7 @@ func (d Driver) Spec() drivers.Spec {
 	return spec
 }
 
-func (d Driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
+func (d Driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
 	return false, nil
 }
 

@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, proto3, protoInt64, Struct } from "@bufbuild/protobuf";
+import { Message, proto3, Struct } from "@bufbuild/protobuf";
 import { StructType } from "./schema_pb.js";
 import { TimeGrain } from "./time_grain_pb.js";
 
@@ -143,13 +143,6 @@ export class Source extends Message<Source> {
   schema?: StructType;
 
   /**
-   * extraction policy for the source
-   *
-   * @generated from field: rill.runtime.v1.Source.ExtractPolicy policy = 6;
-   */
-  policy?: Source_ExtractPolicy;
-
-  /**
    * timeout for source ingestion in seconds
    *
    * @generated from field: int32 timeout_seconds = 7;
@@ -168,7 +161,6 @@ export class Source extends Message<Source> {
     { no: 2, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "properties", kind: "message", T: Struct },
     { no: 5, name: "schema", kind: "message", T: StructType },
-    { no: 6, name: "policy", kind: "message", T: Source_ExtractPolicy },
     { no: 7, name: "timeout_seconds", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
@@ -188,98 +180,6 @@ export class Source extends Message<Source> {
     return proto3.util.equals(Source, a, b);
   }
 }
-
-/**
- * Extract policy for glob connectors
- *
- * @generated from message rill.runtime.v1.Source.ExtractPolicy
- */
-export class Source_ExtractPolicy extends Message<Source_ExtractPolicy> {
-  /**
-   * strategy for selecting rows in a file
-   *
-   * @generated from field: rill.runtime.v1.Source.ExtractPolicy.Strategy rows_strategy = 1;
-   */
-  rowsStrategy = Source_ExtractPolicy_Strategy.UNSPECIFIED;
-
-  /**
-   * could in future add: uint64 rows_limit = n;
-   * limit on data fetched in bytes
-   *
-   * @generated from field: uint64 rows_limit_bytes = 2;
-   */
-  rowsLimitBytes = protoInt64.zero;
-
-  /**
-   * strategy for selecting files
-   *
-   * @generated from field: rill.runtime.v1.Source.ExtractPolicy.Strategy files_strategy = 3;
-   */
-  filesStrategy = Source_ExtractPolicy_Strategy.UNSPECIFIED;
-
-  /**
-   * limit on number of files
-   *
-   * @generated from field: uint64 files_limit = 4;
-   */
-  filesLimit = protoInt64.zero;
-
-  constructor(data?: PartialMessage<Source_ExtractPolicy>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.Source.ExtractPolicy";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "rows_strategy", kind: "enum", T: proto3.getEnumType(Source_ExtractPolicy_Strategy) },
-    { no: 2, name: "rows_limit_bytes", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
-    { no: 3, name: "files_strategy", kind: "enum", T: proto3.getEnumType(Source_ExtractPolicy_Strategy) },
-    { no: 4, name: "files_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Source_ExtractPolicy {
-    return new Source_ExtractPolicy().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Source_ExtractPolicy {
-    return new Source_ExtractPolicy().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Source_ExtractPolicy {
-    return new Source_ExtractPolicy().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: Source_ExtractPolicy | PlainMessage<Source_ExtractPolicy> | undefined, b: Source_ExtractPolicy | PlainMessage<Source_ExtractPolicy> | undefined): boolean {
-    return proto3.util.equals(Source_ExtractPolicy, a, b);
-  }
-}
-
-/**
- * @generated from enum rill.runtime.v1.Source.ExtractPolicy.Strategy
- */
-export enum Source_ExtractPolicy_Strategy {
-  /**
-   * @generated from enum value: STRATEGY_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: STRATEGY_HEAD = 1;
-   */
-  HEAD = 1,
-
-  /**
-   * @generated from enum value: STRATEGY_TAIL = 2;
-   */
-  TAIL = 2,
-}
-// Retrieve enum metadata with: proto3.getEnumType(Source_ExtractPolicy_Strategy)
-proto3.util.setEnumType(Source_ExtractPolicy_Strategy, "rill.runtime.v1.Source.ExtractPolicy.Strategy", [
-  { no: 0, name: "STRATEGY_UNSPECIFIED" },
-  { no: 1, name: "STRATEGY_HEAD" },
-  { no: 2, name: "STRATEGY_TAIL" },
-]);
 
 /**
  * Model is the internal representation of a model definition
