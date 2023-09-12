@@ -1,7 +1,12 @@
-// Throw away code for fetching timeseries data for individual dimension values
+// Query for fetching timeseries data for individual dimension values
+// TODO: Replace this with MetricsViewAggregationRequest API call
 import { derived, writable } from "svelte/store";
 
-import { createQueryServiceMetricsViewTimeSeries } from "@rilldata/web-common/runtime-client";
+import {
+  createQueryServiceMetricsViewTimeSeries,
+  V1MetricsViewFilter,
+  V1TimeGrain,
+} from "@rilldata/web-common/runtime-client";
 import { prepareTimeSeries } from "./utils";
 import {
   CHECKMARK_COLORS,
@@ -16,16 +21,16 @@ import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
  */
 
 export function getDimensionValueTimeSeries(
-  values,
-  instanceId,
-  metricViewName,
-  dimensionName,
-  selectedMeasureNames,
-  filters,
-  start,
-  end,
-  interval,
-  zone
+  values: string[],
+  instanceId: string,
+  metricViewName: string,
+  dimensionName: string,
+  selectedMeasureNames: string[],
+  filters: V1MetricsViewFilter,
+  start: string,
+  end: string,
+  interval: V1TimeGrain,
+  zone: string
 ) {
   if (!values && values.length == 0) return;
   return derived(
