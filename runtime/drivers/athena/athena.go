@@ -44,7 +44,7 @@ var spec = drivers.Spec{
 			Placeholder: "select * from catalog.table;",
 		},
 		{
-			Key:         "output_location",
+			Key:         "athena_output_location",
 			DisplayName: "S3 output location",
 			Description: "Oputut location for query results in S3.",
 			Placeholder: "s3://bucket-name/path/",
@@ -52,11 +52,11 @@ var spec = drivers.Spec{
 			Required:    true,
 		},
 		{
-			Key:         "region",
-			DisplayName: "AWS region",
-			Description: "AWS region",
+			Key:         "athena_workgroup",
+			DisplayName: "AWS Athena workgroup",
+			Description: "AWS Athena workgroup to use for queries.",
 			Type:        drivers.StringPropertyType,
-			Required:    true,
+			Required:    false,
 		},
 	},
 	ConfigProperties: []drivers.PropertySchema{
@@ -77,6 +77,7 @@ type configProperties struct {
 	AccessKeyID     string `mapstructure:"aws_access_key_id"`
 	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
 	SessionToken    string `mapstructure:"aws_access_token"`
+	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }
 
 func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -105,13 +106,13 @@ func (d driver) Spec() drivers.Spec {
 }
 
 func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
-	return false, fmt.Errorf("not implemented")
+	return false, nil
 }
 
 type sourceProperties struct {
 	SQL            string `mapstructure:"sql"`
-	OutputLocation string `mapstructure:"output_location"`
-	Region         string `mapstructure:"region"`
+	OutputLocation string `mapstructure:"athena_output_location"`
+	WorkGroup      string `mapstructure:"athena_workgroup"`
 }
 
 func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
@@ -227,11 +228,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSo
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	cfg, err := awsconfig.LoadDefaultConfig(
-		ctx,
-		awsconfig.WithRegion(conf.Region),
-		awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(c.config.AccessKeyID, c.config.SecretAccessKey, c.config.SessionToken)),
-	)
+	cfg, err := c.Cfg(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -266,12 +263,28 @@ func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSo
 	return it, nil
 }
 
+func (c *Connection) Cfg(ctx context.Context) (aws.Config, error) {
+	var cfg aws.Config
+	var err error
+	if c.config.AllowHostAccess {
+		cfg, err = awsconfig.LoadDefaultConfig(
+			ctx,
+		)
+	} else {
+		cfg, err = awsconfig.LoadDefaultConfig(
+			ctx,
+			awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(c.config.AccessKeyID, c.config.SecretAccessKey, c.config.SessionToken)),
+		)
+	}
+	if err != nil {
+		return aws.Config{}, err
+	}
+
+	return cfg, nil
+}
+
 func (c *Connection) openBucket(ctx context.Context, conf *sourceProperties, bucket string) (*blob.Bucket, error) {
-	cfg, err := awsconfig.LoadDefaultConfig(
-		ctx,
-		awsconfig.WithRegion(conf.Region),
-		awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(c.config.AccessKeyID, c.config.SecretAccessKey, c.config.SessionToken)),
-	)
+	cfg, err := c.Cfg(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -283,6 +296,7 @@ func (c *Connection) openBucket(ctx context.Context, conf *sourceProperties, buc
 func (c *Connection) unload(ctx context.Context, cfg aws.Config, conf *sourceProperties, path string) error {
 	finalSQL := fmt.Sprintf("UNLOAD (%s) TO '%s' WITH (format = 'PARQUET')", conf.SQL, path)
 	client := athena.NewFromConfig(cfg)
+
 	resultConfig := &types.ResultConfiguration{
 		OutputLocation: aws.String(strings.TrimRight(conf.OutputLocation, "/") + "/output/"),
 	}
@@ -290,6 +304,13 @@ func (c *Connection) unload(ctx context.Context, cfg aws.Config, conf *sourcePro
 	executeParams := &athena.StartQueryExecutionInput{
 		QueryString:         aws.String(finalSQL),
 		ResultConfiguration: resultConfig,
+	}
+
+	if conf.WorkGroup != "" {
+		executeParams = &athena.StartQueryExecutionInput{
+			QueryString: aws.String(finalSQL),
+			WorkGroup:   aws.String(conf.WorkGroup),
+		}
 	}
 
 	athenaExecution, err := client.StartQueryExecution(ctx, executeParams)
