@@ -8,7 +8,10 @@
   import { IconSpaceFixer } from "@rilldata/web-common/components/button";
   import { Chip } from "@rilldata/web-common/components/chip";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { updateMimickedJWT } from "@rilldata/web-common/features/dashboards/granular-access-policies/updateMimickedJWT";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { createPopperActions } from "svelte-popperjs";
+  import { errorStore } from "../errors/error-store";
   import ViewAsUserPopover from "./ViewAsUserPopover.svelte";
   import { viewAsUserStore } from "./viewAsUserStore";
 
@@ -19,14 +22,18 @@
     strategy: "fixed",
     modifiers: [{ name: "offset", options: { offset: [0, 4] } }],
   };
+
+  const queryClient = useQueryClient();
+  $: org = $page.params.organization;
+  $: project = $page.params.project;
 </script>
 
 <Popover use={[popperRef]} let:close let:open>
   <Chip
     removable
-    on:remove={() => {
-      // updateMimickedJWT(queryClient, null);
-      viewAsUserStore.set(null);
+    on:remove={async () => {
+      await updateMimickedJWT(queryClient, org, project, null);
+      errorStore.reset();
     }}
     active={open}
   >
