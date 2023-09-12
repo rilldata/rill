@@ -33,6 +33,8 @@
   import { getOrderedStartEnd, prepareTimeSeries } from "./utils";
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
   import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+  import { Button } from "@rilldata/web-common/components/button";
+  import Zoom from "@rilldata/web-common/components/icons/Zoom.svelte";
 
   export let metricViewName;
   export let workspaceWidth: number;
@@ -241,9 +243,29 @@
     class="bg-white sticky left-0 top-0 overflow-visible"
     style="z-index:101"
   >
-    <div style:height="20px" style:padding-left="24px" />
     <!-- top axis element -->
     <div />
+    {#if true || ($dashboardStore?.selectedScrubRange?.end && !$dashboardStore?.selectedScrubRange?.isScrubbing)}
+      <div
+        style:transform="translateY(-21px)"
+        style:height="22px"
+        class="flex justify-center"
+      >
+        <Button
+          compact
+          type="highlighted"
+          on:select={() => console.log("zoom")}
+        >
+          <div class="flex items-center gap-x-2">
+            <Zoom size="16px" />
+            Zoom
+            <span class="font-semibold">(Z)</span>
+          </div>
+        </Button>
+      </div>
+    {:else}
+      <div style:height="22px" style:padding-left="24px" />
+    {/if}
     {#if $dashboardStore?.selectedTimeRange}
       <SimpleDataGraphic
         height={26}
