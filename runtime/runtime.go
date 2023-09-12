@@ -31,6 +31,7 @@ type Runtime struct {
 	migrationMetaCache *migrationMetaCache
 	queryCache         *queryCache
 	securityEngine     *securityEngine
+	activity           activity.Client
 }
 
 func New(opts *Options, logger *zap.Logger, client activity.Client) (*Runtime, error) {
@@ -40,6 +41,7 @@ func New(opts *Options, logger *zap.Logger, client activity.Client) (*Runtime, e
 		migrationMetaCache: newMigrationMetaCache(math.MaxInt),
 		queryCache:         newQueryCache(opts.QueryCacheSizeBytes),
 		securityEngine:     newSecurityEngine(opts.SecurityEngineCacheSize, logger),
+		activity:           client,
 	}
 	rt.connCache = newConnectionCache(opts.ConnectionCacheSize, logger, rt, client)
 	store, _, err := rt.AcquireSystemHandle(context.Background(), opts.MetastoreConnector)

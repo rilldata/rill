@@ -34,8 +34,9 @@ func (m *sourceMigrator) Create(
 	opts migrator.Options,
 	catalogObj *drivers.CatalogEntry,
 	logger *zap.Logger,
+	ac activity.Client,
 ) error {
-	return ingestSource(ctx, olap, repo, opts, catalogObj, "", logger)
+	return ingestSource(ctx, olap, repo, opts, catalogObj, "", logger, ac)
 }
 
 func (m *sourceMigrator) Update(ctx context.Context,
@@ -44,12 +45,13 @@ func (m *sourceMigrator) Update(ctx context.Context,
 	opts migrator.Options,
 	oldCatalogObj, newCatalogObj *drivers.CatalogEntry,
 	logger *zap.Logger,
+	ac activity.Client,
 ) error {
 	apiSource := newCatalogObj.GetSource()
 
 	tempName := fmt.Sprintf("__rill_temp_%s", apiSource.Name)
 
-	err := ingestSource(ctx, olap, repo, opts, newCatalogObj, tempName, logger)
+	err := ingestSource(ctx, olap, repo, opts, newCatalogObj, tempName, logger, ac)
 	if err != nil {
 		// cleanup of temp table. can exist and still error out in incremental ingestion
 		_ = olap.Exec(ctx, &drivers.Statement{
@@ -152,7 +154,7 @@ func convertLower(in map[string]string) map[string]string {
 }
 
 func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts migrator.Options,
-	catalogObj *drivers.CatalogEntry, name string, logger *zap.Logger,
+	catalogObj *drivers.CatalogEntry, name string, logger *zap.Logger, ac activity.Client,
 ) error {
 	apiSource := catalogObj.GetSource()
 	if name == "" {
@@ -226,7 +228,10 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 			}
 		}
 	}()
+	transferStart := time.Now()
 	err = t.Transfer(ctxWithTimeout, src, sink, drivers.NewTransferOpts(drivers.WithLimitInBytes(ingestionLimit)), p)
+	transferLatency := time.Since(transferStart).Milliseconds()
+	ac.Emit(ctx, "ingestion_transfer_ms", float64(transferLatency))
 	if limitExceeded {
 		return drivers.ErrIngestionLimitExceeded
 	}

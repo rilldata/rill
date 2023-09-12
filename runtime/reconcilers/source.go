@@ -356,7 +356,10 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 	if ingestionLimit != nil {
 		opts.LimitInBytes = *ingestionLimit
 	}
+	start := time.Now()
 	err = t.Transfer(ctx, srcConfig, sinkConfig, opts, drivers.NoOpProgress{})
+	transferLatency := time.Since(start).Milliseconds()
+	r.C.Activity.Emit(ctx, "ingestion_transfer_ms", float64(transferLatency))
 	if limitExceeded {
 		return drivers.ErrIngestionLimitExceeded
 	}

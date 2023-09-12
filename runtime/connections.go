@@ -165,7 +165,16 @@ func (r *Runtime) NewCatalogService(ctx context.Context, instanceID string) (*ca
 		releaseCatalog()
 		releaseRepo()
 	}
-	return catalog.NewService(catalogStore, repoStore, olapStore, registry, instanceID, r.logger, migrationMetadata, releaseFunc), nil
+
+	inst, err := r.FindInstance(ctx, instanceID)
+	if err != nil {
+		return nil, err
+	}
+
+	activityDims := instanceAnnotationsToAttribs(inst)
+	ac := r.activity.With(activityDims...)
+
+	return catalog.NewService(catalogStore, repoStore, olapStore, registry, instanceID, r.logger, migrationMetadata, releaseFunc, ac), nil
 }
 
 func (r *Runtime) connectorDef(inst *drivers.Instance, name string) (*runtimev1.Connector, error) {

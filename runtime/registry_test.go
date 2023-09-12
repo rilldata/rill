@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 )
 
 func TestRuntime_EditInstance(t *testing.T) {
@@ -542,7 +543,7 @@ func NewTestRunTime(t *testing.T) *Runtime {
 		AllowHostAccess:         true,
 		SystemConnectors:        globalConnectors,
 	}
-	rt, err := New(opts, zap.NewNop(), nil)
+	rt, err := New(opts, zap.NewNop(), activity.NewNoopClient())
 	t.Cleanup(func() {
 		rt.Close()
 	})

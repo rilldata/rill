@@ -18,6 +18,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 )
 
 // TestingT satisfies both *testing.T and *testing.B.
@@ -48,7 +49,7 @@ func New(t TestingT) *runtime.Runtime {
 		SystemConnectors:        systemConnectors,
 		SecurityEngineCacheSize: 100,
 	}
-	rt, err := runtime.New(opts, zap.NewNop(), nil)
+	rt, err := runtime.New(opts, zap.NewNop(), activity.NewNoopClient())
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		rt.Close()
