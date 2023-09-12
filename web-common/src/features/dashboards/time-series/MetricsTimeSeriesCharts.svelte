@@ -319,7 +319,7 @@
 </script>
 
 <TimeSeriesChartContainer end={endValue} start={startValue} {workspaceWidth}>
-  <div class="bg-white sticky top-0 flex" style="z-index:100">
+  <div class="bg-white sticky top-0 flex pl-1" style="z-index:100">
     <SeachableFilterButton
       label="Measures"
       on:deselect-all={setAllMeasuresNotVisible}
