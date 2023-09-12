@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
   import InformationalField from "@rilldata/web-common/components/forms/InformationalField.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
@@ -19,7 +18,7 @@
   import { overlay } from "../../../layout/overlay-store";
   import { inferSourceName } from "../sourceUtils";
   import { humanReadableErrorMessage } from "./errors";
-  import { submitRemoteSourceForm } from "./submitRemoteSourceForm";
+  import { submitRemoteSourceForm } from "@rilldata/web-common/features/sources/modal/submitRemoteSourceForm";
   import { getYupSchema, toYupFriendlyKey } from "./yupSchemas";
 
   export let connector: V1ConnectorSpec;
@@ -52,7 +51,6 @@
           overlay.set({ title: `Importing ${values.sourceName}` });
           try {
             await submitRemoteSourceForm(queryClient, connector.name, values);
-            goto(`/source/${values.sourceName}`);
             dispatch("close");
           } catch (e) {
             rpcError = e?.response?.data;
@@ -92,16 +90,16 @@
 
 <div class="h-full w-full flex flex-col">
   <form
-    on:submit|preventDefault={handleSubmit}
-    id="remote-source-{connector.name}-form"
     class="px-4 pb-2 flex-grow overflow-y-auto"
+    id="remote-source-{connector.name}-form"
+    on:submit|preventDefault={handleSubmit}
   >
     <div class="pt-4 pb-2">
       Need help? Refer to our
       <a
         href="https://docs.rilldata.com/develop/import-data"
-        target="_blank"
-        rel="noreferrer">docs</a
+        rel="noreferrer"
+        target="_blank">docs</a
       > for more information.
     </div>
     {#if rpcError}
@@ -153,10 +151,10 @@
     <DialogFooter>
       <div class="flex items-center space-x-2">
         <Button
-          type="primary"
-          submitForm
-          form="remote-source-{connector.name}-form"
           disabled={$isSubmitting}
+          form="remote-source-{connector.name}-form"
+          submitForm
+          type="primary"
         >
           Add source
         </Button>

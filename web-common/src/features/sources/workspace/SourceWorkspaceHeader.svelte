@@ -40,7 +40,10 @@
     getFileArtifactReconciliationErrors,
   } from "../../entity-management/file-artifacts-store";
   import { useAllNames } from "../../entity-management/selectors";
-  import { createModelFromSourceV2 } from "../createModel";
+  import {
+    createModelFromSource,
+    createModelFromSourceV2,
+  } from "../createModel";
   import { refreshSource } from "../refreshSource";
   import { useIsSourceUnsaved } from "../selectors";
   import { useSourceStore } from "../sources-store";
@@ -150,15 +153,15 @@
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;
 
   const handleCreateModelFromSource = async () => {
-    const modelName = await createModelFromSourceV2(queryClient, sourceName);
-    goto(`/model/${modelName}`);
-    behaviourEvent.fireNavigationEvent(
-      modelName,
-      BehaviourEventMedium.Button,
-      MetricsEventSpace.RightPanel,
-      MetricsEventScreenName.Source,
-      MetricsEventScreenName.Model
-    );
+    await createModelFromSource(queryClient, sourceName);
+
+    // behaviourEvent.fireNavigationEvent(
+    //   modelName,
+    //   BehaviourEventMedium.Button,
+    //   MetricsEventSpace.RightPanel,
+    //   MetricsEventScreenName.Source,
+    //   MetricsEventScreenName.Model
+    // );
   };
 
   let hasReconciliationErrors: boolean;

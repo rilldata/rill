@@ -9,7 +9,9 @@
   import { Divider, MenuItem } from "@rilldata/web-common/components/menu";
   import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { deleteFile } from "@rilldata/web-common/features/entity-management/file-actions";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { useAllEntityNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import {
     useSourceFromYaml,
     useSourceNames,
@@ -23,7 +25,6 @@
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import {
-    createRuntimeServiceDeleteFileAndReconcile,
     createRuntimeServiceGetCatalogEntry,
     createRuntimeServicePutFileAndReconcile,
     createRuntimeServiceRefreshAndReconcile,
@@ -35,7 +36,6 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { deleteFileArtifact } from "../../entity-management/actions";
   import { getName } from "../../entity-management/name-utils";
   import { EntityType } from "../../entity-management/types";
   import { useModelNames } from "../../models/selectors";
@@ -71,21 +71,17 @@
   $: sourceNames = useSourceNames($runtime.instanceId);
   $: modelNames = useModelNames($runtime.instanceId);
   $: dashboardNames = useDashboardNames($runtime.instanceId);
+  $: allEntityNames = useAllEntityNames($runtime.instanceId);
 
-  const deleteSource = createRuntimeServiceDeleteFileAndReconcile();
   const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
   const createEntityMutation = createRuntimeServicePutFileAndReconcile();
   const createDashboardFromSourceMutation = useCreateDashboardFromSource();
-  const createFileMutation = createRuntimeServicePutFileAndReconcile();
 
   const handleDeleteSource = async (tableName: string) => {
-    await deleteFileArtifact(
-      queryClient,
+    await deleteFile(
       runtimeInstanceId,
       tableName,
       EntityType.Table,
-      $deleteSource,
-      $appScreen,
       $sourceNames.data
     );
     toggleMenu();
@@ -95,12 +91,9 @@
     try {
       const previousActiveEntity = $appScreen?.type;
       const newModelName = await createModelFromSource(
-        queryClient,
-        runtimeInstanceId,
-        $modelNames.data,
         sourceName,
-        embedded ? `"${path}"` : sourceName,
-        $createFileMutation
+        $allEntityNames.data,
+        embedded ? `"${path}"` : sourceName
       );
 
       behaviourEvent.fireNavigationEvent(

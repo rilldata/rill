@@ -6,6 +6,7 @@
   import { Divider, MenuItem } from "@rilldata/web-common/components/menu";
   import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { deleteFile } from "@rilldata/web-common/features/entity-management/file-actions";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
@@ -17,7 +18,6 @@
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import {
-    createRuntimeServiceDeleteFileAndReconcile,
     createRuntimeServiceGetCatalogEntry,
     createRuntimeServicePutFileAndReconcile,
     V1Model,
@@ -27,7 +27,6 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { deleteFileArtifact } from "../../entity-management/actions";
   import { getName } from "../../entity-management/name-utils";
   import { generateDashboardYAMLForModel } from "../../metrics-views/metrics-internal-store";
   import { useModelNames } from "../selectors";
@@ -40,7 +39,6 @@
 
   const queryClient = useQueryClient();
 
-  const deleteModel = createRuntimeServiceDeleteFileAndReconcile();
   const createFileMutation = createRuntimeServicePutFileAndReconcile();
 
   $: modelNames = useModelNames($runtime.instanceId);
@@ -109,13 +107,10 @@
   };
 
   const handleDeleteModel = async (modelName: string) => {
-    await deleteFileArtifact(
-      queryClient,
+    await deleteFile(
       $runtime.instanceId,
       modelName,
       EntityType.Model,
-      $deleteModel,
-      $appScreen,
       $modelNames.data
     );
     toggleMenu();

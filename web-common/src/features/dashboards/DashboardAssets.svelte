@@ -8,8 +8,8 @@
   import { MenuItem } from "@rilldata/web-common/components/menu";
   import { Divider } from "@rilldata/web-common/components/menu/index.js";
   import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
-  import { deleteFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { deleteFile } from "@rilldata/web-common/features/entity-management/file-actions";
   import {
     FileArtifactsData,
     fileArtifactsStore,
@@ -142,13 +142,10 @@
       $fileArtifactsStore.entities,
       dashboardName
     );
-    await deleteFileArtifact(
-      queryClient,
+    await deleteFile(
       instanceId,
       dashboardName,
       EntityType.MetricsDefinition,
-      $deleteDashboard,
-      $appScreen,
       $dashboardNames.data
     );
 

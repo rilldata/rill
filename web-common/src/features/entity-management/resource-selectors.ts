@@ -1,4 +1,7 @@
-import { createRuntimeServiceGetResource } from "@rilldata/web-common/runtime-client";
+import {
+  createRuntimeServiceGetResource,
+  createRuntimeServiceListResources,
+} from "@rilldata/web-common/runtime-client";
 
 export enum ResourceKind {
   Source = "source",
@@ -16,6 +19,33 @@ export function useSource(instanceId: string, name: string) {
     {
       query: {
         select: (data) => data?.resource?.source,
+      },
+    }
+  );
+}
+
+export function useFilteredEntityNames(instanceId: string, kind: ResourceKind) {
+  return createRuntimeServiceListResources(
+    instanceId,
+    {
+      kind,
+    },
+    {
+      query: {
+        select: (data) => data.resources.map((res) => res.meta.name.name),
+      },
+    }
+  );
+}
+
+// TODO: replace usage of this with appropriate ones for de-duping names
+export function useAllEntityNames(instanceId: string) {
+  return createRuntimeServiceListResources(
+    instanceId,
+    {},
+    {
+      query: {
+        select: (data) => data.resources.map((res) => res.meta.name.name),
       },
     }
   );

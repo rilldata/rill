@@ -1,15 +1,9 @@
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
 import { createModel } from "@rilldata/web-common/features/models/createModel";
-import type {
-  CreateBaseMutationResult,
-  QueryClient,
-} from "@tanstack/svelte-query";
+import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 import { notifications } from "../../components/notifications";
-import {
-  runtimeServicePutFileAndReconcile,
-  type V1PutFileAndReconcileResponse,
-} from "../../runtime-client";
+import { runtimeServicePutFileAndReconcile } from "../../runtime-client";
 import { invalidateAfterReconcile } from "../../runtime-client/invalidation";
 import { runtime } from "../../runtime-client/runtime-store";
 import { getFilePathFromNameAndType } from "../entity-management/entity-mappers";
@@ -18,23 +12,12 @@ import { EntityType } from "../entity-management/types";
 import { getModelNames } from "../models/selectors";
 
 export async function createModelFromSource(
-  queryClient: QueryClient,
-  instanceId: string,
-  modelNames: Array<string>,
   sourceName: string,
-  sourceNameInQuery: string,
-  createModelMutation: CreateBaseMutationResult<V1PutFileAndReconcileResponse>, // TODO: type
-  setAsActive = true
+  allNames: Array<string>,
+  sourceNameInQuery = sourceName
 ): Promise<string> {
-  const newModelName = getName(`${sourceName}_model`, modelNames);
-  await createModel(
-    queryClient,
-    instanceId,
-    newModelName,
-    createModelMutation,
-    `select * from ${sourceNameInQuery}`,
-    setAsActive
-  );
+  const newModelName = getName(`${sourceName}_model`, allNames);
+  await createModel(newModelName, `select * from ${sourceNameInQuery}`);
   notifications.send({
     message: `Queried ${sourceNameInQuery} in workspace`,
   });
