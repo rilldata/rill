@@ -63,7 +63,7 @@ export function getDashboardStateFromProto(
       dashboard.compareTimeRange
     );
   }
-  entity.showComparison = Boolean(dashboard.showComparison);
+  entity.showTimeComparison = Boolean(dashboard.showTimeComparison);
 
   entity.selectedTimeRange = dashboard.timeRange
     ? fromTimeRangeProto(dashboard.timeRange)

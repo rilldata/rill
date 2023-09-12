@@ -212,11 +212,11 @@
         enableComparison(e.detail.type, e.detail.name);
       }}
       on:disable-all-comparison={() => disableComparisons()}
-      showTimeComparison={$dashboardStore?.showComparison}
+      showTimeComparison={$dashboardStore?.showTimeComparison}
       selectedDimension={$dashboardStore?.selectedComparisonDimension}
       {dimensions}
     />
-    {#if $dashboardStore?.showComparison}
+    {#if $dashboardStore?.showTimeComparison}
       <TimeComparisonSelector
         on:select-comparison={(e) => {
           onSelectComparisonRange(e.detail.name, e.detail.start, e.detail.end);
