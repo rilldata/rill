@@ -128,6 +128,8 @@ func driverSourceForAnonAccessCheck(connector string, src *runtimev1.SourceSpec)
 		}
 	case "motherduck":
 		return &drivers.DatabaseSource{}
+	case "postgres":
+		return &drivers.DatabaseSource{}
 	default:
 		return nil
 	}

@@ -415,6 +415,15 @@ func driversSource(conn drivers.Handle, propsPB *structpb.Struct) (drivers.Sourc
 			SQL:   query,
 			Props: props,
 		}, nil
+	case "postgres":
+		query, ok := props["sql"].(string)
+		if !ok {
+			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"postgres\"")
+		}
+		return &drivers.DatabaseSource{
+			SQL:   query,
+			Props: props,
+		}, nil
 	default:
 		return nil, fmt.Errorf("source connector %q not supported", conn.Driver())
 	}

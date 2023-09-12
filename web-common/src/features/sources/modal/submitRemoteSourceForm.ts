@@ -65,6 +65,8 @@ export async function submitRemoteSourceForm(
       switch (key) {
         case "project_id":
           return [key, value];
+        case "dsn":
+          return [key, value];
         default:
           return [fromYupFriendlyKey(key), value];
       }

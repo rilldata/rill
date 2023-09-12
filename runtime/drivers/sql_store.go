@@ -2,6 +2,7 @@ package drivers
 
 import (
 	"context"
+	"database/sql/driver"
 	"errors"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -29,7 +30,7 @@ type RowIterator interface {
 	// Schema of the underlying data
 	Schema(ctx context.Context) (*runtimev1.StructType, error)
 	// Next fetches next row
-	Next(ctx context.Context) ([]any, error)
+	Next(ctx context.Context) ([]driver.Value, error)
 	// Close closes the iterator and frees resources
 	Close() error
 	// Size returns total size of data downloaded in unit.

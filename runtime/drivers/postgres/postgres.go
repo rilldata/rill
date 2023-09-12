@@ -15,6 +15,37 @@ import (
 
 func init() {
 	drivers.Register("postgres", driver{})
+	drivers.RegisterAsConnector("postgres", driver{})
+}
+
+var spec = drivers.Spec{
+	DisplayName: "Postgres",
+	Description: "Connect to Postgres.",
+	SourceProperties: []drivers.PropertySchema{
+		{
+			Key:         "sql",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "SQL",
+			Description: "Query to extract data from Postgres.",
+			Placeholder: "select * from table;",
+		},
+		{
+			Key:         "pg_database_url",
+			DisplayName: "Postgress Connection String",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			Href:        "https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING",
+			Placeholder: "postgresql://user:password@localhost/mydb",
+			Hint:        "Either set this or configure PG_DATABASE_URL env variable.",
+		},
+	},
+	ConfigProperties: []drivers.PropertySchema{
+		{
+			Key:    "pg_database_url",
+			Secret: true,
+		},
+	},
 }
 
 type driver struct{}
@@ -40,16 +71,26 @@ func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
 }
 
 func (d driver) Spec() drivers.Spec {
-	return drivers.Spec{}
+	return spec
 }
 
 func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
-	return false, fmt.Errorf("not implemented")
+	return false, nil
 }
 
 type connection struct {
 	db     *sqlx.DB
 	config map[string]any
+}
+
+// Migrate implements drivers.Connection.
+func (c *connection) Migrate(ctx context.Context) (err error) {
+	return nil
+}
+
+// MigrationStatus implements drivers.Handle.
+func (*connection) MigrationStatus(ctx context.Context) (current int, desired int, err error) {
+	return 0, 0, nil
 }
 
 // Driver implements drivers.Connection.
@@ -104,5 +145,5 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 
 // AsSQLStore implements drivers.Connection.
 func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
-	return nil, false
+	return c, true
 }

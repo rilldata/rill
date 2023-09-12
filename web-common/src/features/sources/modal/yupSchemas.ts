@@ -67,7 +67,19 @@ export function getYupSchema(connector: V1ConnectorSpec) {
             "Source name must start with a letter or underscore and contain only letters, numbers, and underscores"
           )
           .required("Source name is required"),
-        project_id: yup.string().required("project_id is required"),
+          project_id: yup.string().required("project_id is required"),
+      });
+    case "postgres":
+      return yup.object().shape({
+        sql: yup.string().required("sql is required"),
+        sourceName: yup
+          .string()
+          .matches(
+            /^[a-zA-Z_][a-zA-Z0-9_]*$/,
+            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores"
+          )
+          .required("Source name is required"),
+        dsn: yup.string().required("dsn is required"),
       });
     default:
       throw new Error(`Unknown connector: ${connector.name}`);

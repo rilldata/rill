@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"os"
 	"reflect"
 	"strings"
 	"time"
@@ -403,6 +404,15 @@ func source(connector string, src *runtimev1.Source) (drivers.Source, error) {
 			SQL:   query,
 			Props: props,
 		}, nil
+	case "postgres":
+		query, ok := props["sql"].(string)
+		if !ok {
+			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"postgres\"")
+		}
+		return &drivers.DatabaseSource{
+			SQL:   query,
+			Props: props,
+		}, nil
 	default:
 		return nil, fmt.Errorf("connector %v not supported", connector)
 	}
@@ -438,6 +448,14 @@ func connectorVariables(src *runtimev1.Source, env map[string]string, repoRoot s
 		vars["dsn"] = repoRoot
 	case "bigquery":
 		vars["google_application_credentials"] = env["google_application_credentials"]
+	case "postgres":
+		props := src.Properties.AsMap()
+		if dsn, ok := props["pg_database_url"]; ok {
+			vars["dsn"] = dsn
+		} else if allowHostAccess, _ := vars["allow_host_access"].(bool); allowHostAccess {
+			vars["dsn"] = os.Getenv("PG_DATABASE_URL")
+		}
+
 	}
 	return vars
 }
