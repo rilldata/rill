@@ -29,8 +29,8 @@ export function globalErrorCallback(error: AxiosError): void {
     get(page).route.id === "/[organization]/[project]/[dashboard]";
   if (
     isDashboardPage &&
-    error.response.status === 400 &&
-    (error.response.data as RpcStatus).message === "entry not found"
+    error.response.status === 404 &&
+    (error.response.data as RpcStatus).message === "not found"
   ) {
     return;
   }
