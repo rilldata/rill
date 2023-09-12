@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"strings"
 
-	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"golang.org/x/exp/slices"
+
+	// load pgx driver
+	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
 // Query implements drivers.SQLStore

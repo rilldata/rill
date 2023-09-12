@@ -369,7 +369,6 @@ func connectorVariables(src *runtimev1.Source, env map[string]string, repoRoot s
 		} else if allowHostAccess, _ := vars["allow_host_access"].(bool); allowHostAccess {
 			vars["dsn"] = os.Getenv("PG_DATABASE_URL")
 		}
-
 	}
 	return vars
 }

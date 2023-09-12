@@ -89,7 +89,7 @@ func (c *connection) Migrate(ctx context.Context) (err error) {
 }
 
 // MigrationStatus implements drivers.Handle.
-func (*connection) MigrationStatus(ctx context.Context) (current int, desired int, err error) {
+func (c *connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
 	return 0, 0, nil
 }
 
