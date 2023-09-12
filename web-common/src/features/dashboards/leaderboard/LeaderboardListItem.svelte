@@ -37,7 +37,7 @@
 
   export let atLeastOneActive = false;
   export let isBeingCompared = false;
-  export let index: number = -1;
+  export let index = -1;
   export let formattedValue: string;
   export let filterExcludeMode;
 
