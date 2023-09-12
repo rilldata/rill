@@ -15,15 +15,17 @@ import (
 )
 
 type MetricsViewRows struct {
-	MetricsViewName string                       `json:"metrics_view_name,omitempty"`
-	TimeStart       *timestamppb.Timestamp       `json:"time_start,omitempty"`
-	TimeEnd         *timestamppb.Timestamp       `json:"time_end,omitempty"`
-	TimeGranularity runtimev1.TimeGrain          `json:"time_granularity,omitempty"`
-	Filter          *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
-	Sort            []*runtimev1.MetricsViewSort `json:"sort,omitempty"`
-	Limit           *int64                       `json:"limit,omitempty"`
-	Offset          int64                        `json:"offset,omitempty"`
-	TimeZone        string                       `json:"time_zone,omitempty"`
+	MetricsViewName    string                               `json:"metrics_view_name,omitempty"`
+	TimeStart          *timestamppb.Timestamp               `json:"time_start,omitempty"`
+	TimeEnd            *timestamppb.Timestamp               `json:"time_end,omitempty"`
+	TimeGranularity    runtimev1.TimeGrain                  `json:"time_granularity,omitempty"`
+	Filter             *runtimev1.MetricsViewFilter         `json:"filter,omitempty"`
+	Sort               []*runtimev1.MetricsViewSort         `json:"sort,omitempty"`
+	Limit              *int64                               `json:"limit,omitempty"`
+	Offset             int64                                `json:"offset,omitempty"`
+	TimeZone           string                               `json:"time_zone,omitempty"`
+	MetricsView        *runtimev1.MetricsView               `json:"-"`
+	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity `json:"security"`
 
 	Result *runtimev1.MetricsViewRowsResponse `json:"-"`
 }
@@ -35,7 +37,7 @@ func (q *MetricsViewRows) Key() string {
 	if err != nil {
 		panic(err)
 	}
-	return fmt.Sprintf("MetricsViewRows:%s", string(r))
+	return fmt.Sprintf("MetricsViewRows:%s", r)
 }
 
 func (q *MetricsViewRows) Deps() []string {
@@ -69,21 +71,16 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	mv, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
-	if err != nil {
-		return err
-	}
-
-	if mv.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
+	if q.MetricsView.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
-	timeRollupColumnName, err := q.resolveTimeRollupColumnName(ctx, rt, instanceID, priority, mv)
+	timeRollupColumnName, err := q.resolveTimeRollupColumnName(ctx, rt, instanceID, priority, q.MetricsView)
 	if err != nil {
 		return err
 	}
 
-	ql, args, err := q.buildMetricsRowsSQL(mv, olap.Dialect(), timeRollupColumnName)
+	ql, args, err := q.buildMetricsRowsSQL(q.MetricsView, olap.Dialect(), timeRollupColumnName, q.ResolvedMVSecurity)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -102,23 +99,57 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 }
 
 func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
+	olap, release, err := rt.OLAP(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+	defer release()
+
+	switch olap.Dialect() {
+	case drivers.DialectDuckDB:
+		if opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV || opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET {
+			if q.MetricsView.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
+				return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
+			}
+
+			timeRollupColumnName, err := q.resolveTimeRollupColumnName(ctx, rt, instanceID, opts.Priority, q.MetricsView)
+			if err != nil {
+				return err
+			}
+
+			sql, args, err := q.buildMetricsRowsSQL(q.MetricsView, olap.Dialect(), timeRollupColumnName, q.ResolvedMVSecurity)
+			if err != nil {
+				return err
+			}
+
+			filename := q.generateFilename(q.MetricsView)
+			if err := duckDBCopyExport(ctx, rt, instanceID, w, opts, sql, args, filename, olap, q.MetricsView, opts.Format); err != nil {
+				return err
+			}
+		} else {
+			if err := q.generalExport(ctx, rt, instanceID, w, opts, olap, q.MetricsView); err != nil {
+				return err
+			}
+		}
+	case drivers.DialectDruid:
+		if err := q.generalExport(ctx, rt, instanceID, w, opts, olap, q.MetricsView); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
+	}
+
+	return nil
+}
+
+func (q *MetricsViewRows) generalExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions, olap drivers.OLAPStore, mv *runtimev1.MetricsView) error {
 	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
 	if err != nil {
 		return err
 	}
 
-	mv, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
-	if err != nil {
-		return err
-	}
-
-	filename := strings.ReplaceAll(mv.Model, `"`, `_`)
-	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
-		filename += "_filtered"
-	}
-
 	if opts.PreWriteHook != nil {
-		err = opts.PreWriteHook(filename)
+		err = opts.PreWriteHook(q.generateFilename(mv))
 		if err != nil {
 			return err
 		}
@@ -185,7 +216,7 @@ func (q *MetricsViewRows) resolveTimeRollupColumnName(ctx context.Context, rt *r
 	return "", nil
 }
 
-func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect, timeRollupColumnName string) (string, []any, error) {
+func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect, timeRollupColumnName string, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
 	whereClause := "1=1"
 	args := []any{}
 	if mv.TimeDimension != "" {
@@ -200,7 +231,7 @@ func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsView, dialect
 	}
 
 	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect)
+		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
 		if err != nil {
 			return "", nil, err
 		}

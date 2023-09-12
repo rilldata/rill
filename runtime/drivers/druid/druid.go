@@ -6,6 +6,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
 
 	// Load calcite avatica driver for druid
@@ -20,7 +21,7 @@ type driver struct{}
 
 // Open connects to Druid using Avatica.
 // Note that the Druid connection string must have the form "http://host/druid/v2/sql/avatica-protobuf/".
-func (d driver) Open(config map[string]any, shared bool, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("druid driver can't be shared")
 	}
@@ -51,7 +52,7 @@ func (d driver) Spec() drivers.Spec {
 	return drivers.Spec{}
 }
 
-func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
+func (d driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
 	return false, fmt.Errorf("not implemented")
 }
 

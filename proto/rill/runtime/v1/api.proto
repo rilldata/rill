@@ -52,6 +52,14 @@ service RuntimeService {
     };
   }
 
+  // EditInstanceAnnotations edits the instance annotations
+  rpc EditInstanceAnnotations(EditInstanceAnnotationsRequest) returns (EditInstanceAnnotationsResponse) {
+    option (google.api.http) = {
+      put: "/v1/instances/{instance_id}/annotations",
+      body: "*"
+    };
+  }
+
   // DeleteInstance deletes an instance
   rpc DeleteInstance(DeleteInstanceRequest) returns (DeleteInstanceResponse) {
     option (google.api.http) = {
@@ -233,6 +241,10 @@ service RuntimeService {
   rpc ListConnectors(ListConnectorsRequest) returns (ListConnectorsResponse) {
     option (google.api.http) = {get: "/v1/connectors/meta"};
   }
+
+  rpc IssueDevJWT(IssueDevJWTRequest) returns (IssueDevJWTResponse) {
+    option (google.api.http) = {get: "/v1/dev-jwt"};
+  }
 }
 
 // Request message for RuntimeService.Ping
@@ -260,11 +272,11 @@ message PingResponse {
 message Instance {
   // Identifier (UUID)
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  // Driver to connect to for OLAP (options: duckdb, druid)
-  string olap_driver = 2;
-  // Driver for reading/editing code artifacts (options: file, metastore, github).
-  // This enables virtualizing a file system in a cloud setting.
-  string repo_driver = 4;
+  // OLAP connector name (typically called : olap )
+  string olap_connector = 2;
+  // Connector name for repo driver(typically called : repo). 
+  // Repo driver is for reading/editing code artifacts. This enables virtualizing a file system in a cloud setting.
+  string repo_connector = 4;
   // If true, the runtime will store the instance's catalog in its OLAP store instead
   // of in the runtime's metadata store. Currently only supported for the duckdb driver.
   bool embed_catalog = 6;
@@ -316,8 +328,8 @@ message CreateInstanceRequest {
     ignore_empty: true,
     pattern: "^[_\\-a-zA-Z0-9]+$"
   }];
-  string olap_driver = 2;
-  string repo_driver = 4;
+  string olap_connector = 2;
+  string repo_connector = 4;
   bool embed_catalog = 6;
   map<string, string> variables = 7;
   int64 ingestion_limit_bytes = 8;
@@ -343,11 +355,12 @@ message DeleteInstanceResponse {}
 // See message Instance for field descriptions.
 message EditInstanceRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  optional string olap_driver = 2;
-  optional string repo_driver = 4;
+  optional string olap_connector = 2;
+  optional string repo_connector = 4;
   optional bool embed_catalog = 6;
   optional int64 ingestion_limit_bytes = 8;
   repeated Connector connectors = 9;
+  map<string, string> annotations = 10;
 }
 
 // Response message for RuntimeService.EditInstance
@@ -365,6 +378,18 @@ message EditInstanceVariablesRequest {
 message EditInstanceVariablesResponse {
   Instance instance = 1;
 }
+
+// Request message for RuntimeService.EditInstanceAnnotations.
+message EditInstanceAnnotationsRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  map<string, string> annotations = 2;
+}
+
+// Response message for RuntimeService.EditInstanceAnnotations
+message EditInstanceAnnotationsResponse {
+  Instance instance = 1;
+}
+
 
 // **********
 // Repos
@@ -504,10 +529,8 @@ enum LogLevel {
 
 enum ResourceEvent {
   RESOURCE_EVENT_UNSPECIFIED = 0;
-  RESOURCE_EVENT_ADDED = 1;
-  RESOURCE_EVENT_UPDATED_SPEC = 2;
-  RESOURCE_EVENT_UPDATED_STATE = 3;
-  RESOURCE_EVENT_DELETED = 4;
+  RESOURCE_EVENT_WRITE = 1;
+  RESOURCE_EVENT_DELETE = 2;
 }
 
 message GetLogsRequest {
@@ -530,9 +553,7 @@ message WatchLogsResponse {
 
 message ListResourcesRequest {
   string instance_id = 1;
-  ResourceName ref_filter = 2;
-  ResourceName prefix_filter = 3;
-  map<string, string> annotations_filter = 4;
+  string kind = 2;
 }
 
 message ListResourcesResponse {
@@ -541,14 +562,14 @@ message ListResourcesResponse {
 
 message WatchResourcesRequest {
   string instance_id = 1;
-  ResourceName ref_filter = 2;
-  ResourceName prefix_filter = 3;
-  map<string, string> annotations_filter = 4;
+  string kind = 2;
+  bool replay = 3;
 }
 
 message WatchResourcesResponse {
-  Resource resource = 1;
-  ResourceEvent event = 2;
+  ResourceEvent event = 1;
+  ResourceName name = 2;
+  Resource resource = 3;
 }
 
 message GetResourceRequest {
@@ -867,4 +888,17 @@ message ListConnectorsRequest {}
 // Response message for RuntimeService.ListConnectors
 message ListConnectorsResponse {
   repeated ConnectorSpec connectors = 1;
+}
+
+// Request message for RuntimeService.IssueDevJWT
+message IssueDevJWTRequest {
+  string name = 1 [(validate.rules).string.min_len = 1];
+  string email = 2 [(validate.rules).string.min_len = 1];
+  repeated string groups = 3;
+  bool admin = 4;
+}
+
+// Response message for RuntimeService.IssueDevJWT
+message IssueDevJWTResponse {
+  string jwt = 1;
 }

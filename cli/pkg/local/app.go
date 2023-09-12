@@ -65,7 +65,7 @@ type App struct {
 	activity              activity.Client
 }
 
-func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string, client activity.Client) (*App, error) {
+func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string, client activity.Client) (*App, error) {
 	logger, cleanupFn := initLogger(verbose, logFormat)
 	// Init Prometheus telemetry
 	shutdown, err := observability.Start(ctx, logger, &observability.Options{
@@ -88,11 +88,12 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 	}
 
 	rtOpts := &runtime.Options{
-		ConnectionCacheSize: 100,
-		MetastoreConnector:  "metastore",
-		QueryCacheSizeBytes: int64(datasize.MB * 100),
-		AllowHostAccess:     true,
-		SystemConnectors:    systemConnectors,
+		ConnectionCacheSize:     100,
+		MetastoreConnector:      "metastore",
+		QueryCacheSizeBytes:     int64(datasize.MB * 100),
+		AllowHostAccess:         true,
+		SystemConnectors:        systemConnectors,
+		SecurityEngineCacheSize: 1000,
 	}
 	rt, err := runtime.New(rtOpts, logger, client)
 	if err != nil {
@@ -119,14 +120,27 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 		return nil, err
 	}
 
+	if reset {
+		err := drivers.Drop(olapDriver, map[string]any{"dsn": olapDSN}, logger)
+		if err != nil {
+			return nil, fmt.Errorf("failed to clean OLAP: %w", err)
+		}
+	}
+
+	// Set default DuckDB pool size to 4
+	olapCfg := map[string]string{"dsn": olapDSN}
+	if olapDriver == "duckdb" {
+		olapCfg["pool_size"] = "4"
+	}
+
 	// Create instance with its repo set to the project directory
 	inst := &drivers.Instance{
-		ID:           DefaultInstanceID,
-		Annotations:  map[string]string{},
-		OLAPDriver:   "olap",
-		RepoDriver:   "repo",
-		EmbedCatalog: olapDriver == "duckdb",
-		Variables:    parsedVariables,
+		ID:            DefaultInstanceID,
+		Annotations:   map[string]string{},
+		OLAPConnector: "olap",
+		RepoConnector: "repo",
+		EmbedCatalog:  olapDriver == "duckdb",
+		Variables:     parsedVariables,
 		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",
@@ -136,7 +150,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 			{
 				Type:   olapDriver,
 				Name:   "olap",
-				Config: map[string]string{"dsn": olapDSN},
+				Config: olapCfg,
 			},
 		},
 	}

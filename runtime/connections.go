@@ -13,7 +13,7 @@ import (
 func (r *Runtime) AcquireSystemHandle(ctx context.Context, connector string) (drivers.Handle, func(), error) {
 	for _, c := range r.opts.SystemConnectors {
 		if c.Name == connector {
-			return r.connCache.get(ctx, "", c.Type, r.connectorConfig(c.Name, c.Config, nil), true, nil)
+			return r.connCache.get(ctx, "", c.Type, r.connectorConfig(c.Name, c.Config, nil), true)
 		}
 	}
 	return nil, nil, fmt.Errorf("connector %s doesn't exist", connector)
@@ -27,11 +27,11 @@ func (r *Runtime) AcquireHandle(ctx context.Context, instanceID, connector strin
 	}
 
 	if c, err := r.connectorDef(instance, connector); err == nil {
-		return r.connCache.get(ctx, instanceID, c.Type, r.connectorConfig(connector, c.Config, instance.ResolveVariables()), false, instanceAnnotationsToAttribs(instance))
+		return r.connCache.get(ctx, instanceID, c.Type, r.connectorConfig(connector, c.Config, instance.ResolveVariables()), false)
 	}
 
 	// neither defined in rill.yaml nor set in instance, directly used in source
-	return r.connCache.get(ctx, instanceID, connector, r.connectorConfig(connector, nil, instance.ResolveVariables()), false, instanceAnnotationsToAttribs(instance))
+	return r.connCache.get(ctx, instanceID, connector, r.connectorConfig(connector, nil, instance.ResolveVariables()), false)
 }
 
 // EvictHandle flushes the db handle for the specific connector from the cache
@@ -72,7 +72,7 @@ func (r *Runtime) Repo(ctx context.Context, instanceID string) (drivers.RepoStor
 		return nil, nil, err
 	}
 
-	conn, release, err := r.AcquireHandle(ctx, instanceID, inst.RepoDriver)
+	conn, release, err := r.AcquireHandle(ctx, instanceID, inst.RepoConnector)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -93,7 +93,7 @@ func (r *Runtime) OLAP(ctx context.Context, instanceID string) (drivers.OLAPStor
 		return nil, nil, err
 	}
 
-	conn, release, err := r.AcquireHandle(ctx, instanceID, inst.OLAPDriver)
+	conn, release, err := r.AcquireHandle(ctx, instanceID, inst.OLAPConnector)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -115,7 +115,7 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 	}
 
 	if inst.EmbedCatalog {
-		conn, release, err := r.AcquireHandle(ctx, instanceID, inst.OLAPDriver)
+		conn, release, err := r.AcquireHandle(ctx, instanceID, inst.OLAPConnector)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -187,7 +187,7 @@ func (r *Runtime) connectorDef(inst *drivers.Instance, name string) (*runtimev1.
 
 // TODO :: these can also be generated during reconcile itself ?
 func (r *Runtime) connectorConfig(name string, def, variables map[string]string) map[string]any {
-	vars := make(map[string]any, 0)
+	vars := make(map[string]any)
 	for key, value := range def {
 		vars[strings.ToLower(key)] = value
 	}

@@ -11,6 +11,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
@@ -122,9 +123,6 @@ func (m *sourceMigrator) IsEqual(ctx context.Context, cat1, cat2 *drivers.Catalo
 	if !isSQLSource && cat1.GetSource().Connector != cat2.GetSource().Connector {
 		return false
 	}
-	if !comparePolicy(cat1.GetSource().GetPolicy(), cat2.GetSource().GetPolicy()) {
-		return false
-	}
 
 	map2 := cat2.GetSource().Properties.AsMap()
 	if isSQLSource {
@@ -133,21 +131,6 @@ func (m *sourceMigrator) IsEqual(ctx context.Context, cat1, cat2 *drivers.Catalo
 	}
 
 	return equal(cat1.GetSource().Properties.AsMap(), map2)
-}
-
-func comparePolicy(p1, p2 *runtimev1.Source_ExtractPolicy) bool {
-	if (p1 != nil) == (p2 != nil) {
-		if p1 != nil {
-			// both non nil
-			return p1.FilesStrategy == p2.FilesStrategy &&
-				p1.FilesLimit == p2.FilesLimit &&
-				p1.RowsStrategy == p2.RowsStrategy &&
-				p1.RowsLimitBytes == p2.RowsLimitBytes
-		}
-		// both nil
-		return true
-	}
-	return false
 }
 
 func (m *sourceMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) (bool, error) {
@@ -193,7 +176,7 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 	} else {
 		var err error
 		variables := convertLower(opts.InstanceEnv)
-		srcConnector, err = drivers.Open(apiSource.Connector, connectorVariables(apiSource, variables, repo.Root()), false, logger)
+		srcConnector, err = drivers.Open(apiSource.Connector, connectorVariables(apiSource, variables, repo.Root()), false, activity.NewNoopClient(), logger)
 		if err != nil {
 			return fmt.Errorf("failed to open driver %w", err)
 		}
@@ -350,72 +333,13 @@ func (p *progress) Observe(val int64, unit drivers.ProgressUnit) {
 	}
 }
 
-func source(connector string, src *runtimev1.Source) (drivers.Source, error) {
+func source(connector string, src *runtimev1.Source) (map[string]any, error) {
 	props := src.Properties.AsMap()
-	switch connector {
-	case "s3":
-		return &drivers.BucketSource{
-			ExtractPolicy: src.Policy,
-			Properties:    props,
-		}, nil
-	case "gcs":
-		return &drivers.BucketSource{
-			ExtractPolicy: src.Policy,
-			Properties:    props,
-		}, nil
-	case "https":
-		return &drivers.FileSource{
-			Properties: props,
-		}, nil
-	case "local_file":
-		return &drivers.FileSource{
-			Properties: props,
-		}, nil
-	case "motherduck":
-		query, ok := props["sql"].(string)
-		if !ok {
-			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"motherduck\"")
-		}
-		var db string
-		if val, ok := props["db"].(string); ok {
-			db = val
-		}
-
-		return &drivers.DatabaseSource{
-			SQL:      query,
-			Database: db,
-		}, nil
-	case "duckdb":
-		query, ok := props["sql"].(string)
-		if !ok {
-			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"duckdb\"")
-		}
-		return &drivers.DatabaseSource{
-			SQL: query,
-		}, nil
-	case "bigquery":
-		query, ok := props["sql"].(string)
-		if !ok {
-			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"bigquery\"")
-		}
-		return &drivers.DatabaseSource{
-			SQL:   query,
-			Props: props,
-		}, nil
-	default:
-		return nil, fmt.Errorf("connector %v not supported", connector)
-	}
+	return props, nil
 }
 
-func sink(connector, tableName string) drivers.Sink {
-	switch connector {
-	case "duckdb":
-		return &drivers.DatabaseSink{
-			Table: tableName,
-		}
-	default:
-		return nil
-	}
+func sink(connector, tableName string) map[string]any {
+	return map[string]any{"table": tableName}
 }
 
 func connectorVariables(src *runtimev1.Source, env map[string]string, repoRoot string) map[string]any {

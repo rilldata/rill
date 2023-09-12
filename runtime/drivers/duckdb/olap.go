@@ -90,18 +90,28 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 		totalLatency := time.Since(start).Milliseconds()
 		queueLatency := acquiredTime.Sub(start).Milliseconds()
 
-		attrs := attribute.NewSet(
+		attrs := []attribute.KeyValue{
 			attribute.String("db", c.config.DBFilePath),
 			attribute.Bool("cancelled", errors.Is(outErr, context.Canceled)),
 			attribute.Bool("failed", outErr != nil),
-		)
+		}
 
-		queriesCounter.Add(ctx, 1, metric.WithAttributeSet(attrs))
-		queueLatencyHistogram.Record(ctx, queueLatency, metric.WithAttributeSet(attrs))
-		totalLatencyHistogram.Record(ctx, totalLatency, metric.WithAttributeSet(attrs))
+		attrSet := attribute.NewSet(attrs...)
+
+		queriesCounter.Add(ctx, 1, metric.WithAttributeSet(attrSet))
+		queueLatencyHistogram.Record(ctx, queueLatency, metric.WithAttributeSet(attrSet))
+		totalLatencyHistogram.Record(ctx, totalLatency, metric.WithAttributeSet(attrSet))
 		if acquired {
 			// Only track query latency when not cancelled in queue
-			queryLatencyHistogram.Record(ctx, totalLatency-queueLatency, metric.WithAttributeSet(attrs))
+			queryLatencyHistogram.Record(ctx, totalLatency-queueLatency, metric.WithAttributeSet(attrSet))
+		}
+
+		if c.activity != nil {
+			c.activity.Emit(ctx, "duckdb_queue_latency_ms", float64(queueLatency), attrs...)
+			c.activity.Emit(ctx, "duckdb_total_latency_ms", float64(totalLatency), attrs...)
+			if acquired {
+				c.activity.Emit(ctx, "duckdb_query_latency_ms", float64(totalLatency-queueLatency), attrs...)
+			}
 		}
 	}()
 

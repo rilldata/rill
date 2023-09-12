@@ -22,6 +22,7 @@
   import { humanizeDataType } from "../humanize-numbers";
   import LongBarZigZag from "./LongBarZigZag.svelte";
   import {
+    CONTEXT_COLUMN_WIDTH,
     LeaderboardItemData,
     getFormatterValueForPercDiff,
   } from "./leaderboard-utils";
@@ -52,7 +53,7 @@
   $: formattedValue = humanizeDataType(measureValue, formatPreset);
 
   $: percentChangeFormatted =
-    showContext === LeaderboardContextColumn.DELTA_CHANGE
+    showContext === LeaderboardContextColumn.DELTA_PERCENT
       ? getFormatterValueForPercDiff(
           measureValue && comparisonValue
             ? measureValue - comparisonValue
@@ -119,7 +120,8 @@
   <button
     class="flex flex-row w-full text-left transition-color"
     on:blur={onLeave}
-    on:click={() => {
+    on:click={(e) => {
+      if (e.shiftKey) return;
       dispatch("select-item", {
         label,
       });
@@ -179,7 +181,7 @@
           {#if percentChangeFormatted !== undefined}
             <div
               class="text-xs text-gray-500 dark:text-gray-400"
-              style:width="44px"
+              style:width={CONTEXT_COLUMN_WIDTH + "px"}
             >
               <PercentageChange value={percentChangeFormatted} />
             </div>

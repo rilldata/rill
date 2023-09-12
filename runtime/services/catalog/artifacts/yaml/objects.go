@@ -1,15 +1,15 @@
 package yaml
 
 import (
+	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/c2h5oh/datasize"
 	"github.com/jinzhu/copier"
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -35,24 +35,14 @@ type Source struct {
 	GlobPageSize          int            `yaml:"glob.page_size,omitempty" mapstructure:"glob.page_size,omitempty"`
 	HivePartition         *bool          `yaml:"hive_partitioning,omitempty" mapstructure:"hive_partitioning,omitempty"`
 	Timeout               int32          `yaml:"timeout,omitempty"`
-	ExtractPolicy         *ExtractPolicy `yaml:"extract,omitempty"`
 	Format                string         `yaml:"format,omitempty" mapstructure:"format,omitempty"`
+	Extract               map[string]any `yaml:"extract,omitempty" mapstructure:"extract,omitempty"`
 	DuckDBProps           map[string]any `yaml:"duckdb,omitempty" mapstructure:"duckdb,omitempty"`
 	Headers               map[string]any `yaml:"headers,omitempty" mapstructure:"headers,omitempty"`
 	AllowSchemaRelaxation *bool          `yaml:"ingest.allow_schema_relaxation,omitempty" mapstructure:"allow_schema_relaxation,omitempty"`
 	SQL                   string         `yaml:"sql,omitempty" mapstructure:"sql,omitempty"`
 	DB                    string         `yaml:"db,omitempty" mapstructure:"db,omitempty"`
 	ProjectID             string         `yaml:"project_id,omitempty" mapstructure:"project_id,omitempty"`
-}
-
-type ExtractPolicy struct {
-	Row  *ExtractConfig `yaml:"rows,omitempty" mapstructure:"rows,omitempty"`
-	File *ExtractConfig `yaml:"files,omitempty" mapstructure:"files,omitempty"`
-}
-
-type ExtractConfig struct {
-	Strategy string `yaml:"strategy,omitempty" mapstructure:"strategy,omitempty"`
-	Size     string `yaml:"size,omitempty" mapstructure:"size,omitempty"`
 }
 
 type MetricsView struct {
@@ -66,6 +56,19 @@ type MetricsView struct {
 	AvailableTimeZones []string `yaml:"available_time_zones,omitempty"`
 	Dimensions         []*Dimension
 	Measures           []*Measure
+	Security           *Security `yaml:"security,omitempty"`
+}
+
+type Security struct {
+	Access    string              `yaml:"access,omitempty"`
+	RowFilter string              `yaml:"row_filter,omitempty"`
+	Include   []*ConditionalField `yaml:"include,omitempty"`
+	Exclude   []*ConditionalField `yaml:"exclude,omitempty"`
+}
+
+type ConditionalField struct {
+	Names     []string
+	Condition string `yaml:"if"`
 }
 
 type Measure struct {
@@ -104,37 +107,7 @@ func toSourceArtifact(catalog *drivers.CatalogEntry) (*Source, error) {
 		source.Path = ""
 	}
 
-	extract, err := toExtractArtifact(catalog.GetSource().GetPolicy())
-	if err != nil {
-		return nil, err
-	}
-
-	source.ExtractPolicy = extract
 	return source, nil
-}
-
-func toExtractArtifact(extract *runtimev1.Source_ExtractPolicy) (*ExtractPolicy, error) {
-	if extract == nil {
-		return nil, nil
-	}
-
-	sourceExtract := &ExtractPolicy{}
-	// set file
-	if extract.FilesStrategy != runtimev1.Source_ExtractPolicy_STRATEGY_UNSPECIFIED {
-		sourceExtract.File = &ExtractConfig{}
-		sourceExtract.File.Strategy = extract.FilesStrategy.String()
-		sourceExtract.File.Size = fmt.Sprintf("%v", extract.FilesLimit)
-	}
-
-	// set row
-	if extract.RowsStrategy != runtimev1.Source_ExtractPolicy_STRATEGY_UNSPECIFIED {
-		sourceExtract.Row = &ExtractConfig{}
-		sourceExtract.Row.Strategy = extract.RowsStrategy.String()
-		bytes := datasize.ByteSize(extract.RowsLimitBytes)
-		sourceExtract.Row.Size = bytes.HumanReadable()
-	}
-
-	return sourceExtract, nil
 }
 
 func toMetricsViewArtifact(catalog *drivers.CatalogEntry) (*MetricsView, error) {
@@ -158,6 +131,10 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 	}
 	if source.Region != "" {
 		props["region"] = source.Region
+	}
+
+	if source.Extract != nil {
+		props["extract"] = source.Extract
 	}
 
 	if source.DuckDBProps != nil {
@@ -229,11 +206,6 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 		return nil, err
 	}
 
-	extract, err := fromExtractArtifact(source.ExtractPolicy)
-	if err != nil {
-		return nil, err
-	}
-
 	name := fileutil.Stem(path)
 	return &drivers.CatalogEntry{
 		Name: name,
@@ -243,84 +215,9 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 			Name:           name,
 			Connector:      source.Type,
 			Properties:     propsPB,
-			Policy:         extract,
 			TimeoutSeconds: source.Timeout,
 		},
 	}, nil
-}
-
-func fromExtractArtifact(policy *ExtractPolicy) (*runtimev1.Source_ExtractPolicy, error) {
-	if policy == nil {
-		return nil, nil
-	}
-
-	extractPolicy := &runtimev1.Source_ExtractPolicy{}
-
-	// parse file
-	if policy.File != nil {
-		// parse strategy
-		strategy, err := parseStrategy(policy.File.Strategy)
-		if err != nil {
-			return nil, err
-		}
-
-		extractPolicy.FilesStrategy = strategy
-
-		// parse size
-		size, err := strconv.ParseUint(policy.File.Size, 10, 64)
-		if err != nil {
-			return nil, fmt.Errorf("invalid size, parse failed with error %w", err)
-		}
-		if size <= 0 {
-			return nil, fmt.Errorf("invalid size %q", size)
-		}
-
-		extractPolicy.FilesLimit = size
-	}
-
-	// parse rows
-	if policy.Row != nil {
-		// parse strategy
-		strategy, err := parseStrategy(policy.Row.Strategy)
-		if err != nil {
-			return nil, err
-		}
-
-		extractPolicy.RowsStrategy = strategy
-
-		// parse size
-		// todo :: add support for number of rows
-		size, err := getBytes(policy.Row.Size)
-		if err != nil {
-			return nil, fmt.Errorf("invalid size, parse failed with error %w", err)
-		}
-		if size <= 0 {
-			return nil, fmt.Errorf("invalid size %q", size)
-		}
-
-		extractPolicy.RowsLimitBytes = size
-	}
-	return extractPolicy, nil
-}
-
-func parseStrategy(s string) (runtimev1.Source_ExtractPolicy_Strategy, error) {
-	switch strings.ToLower(s) {
-	case "tail":
-		return runtimev1.Source_ExtractPolicy_STRATEGY_TAIL, nil
-	case "head":
-		return runtimev1.Source_ExtractPolicy_STRATEGY_HEAD, nil
-	default:
-		return runtimev1.Source_ExtractPolicy_STRATEGY_UNSPECIFIED, fmt.Errorf("invalid extract strategy %q", s)
-	}
-}
-
-func getBytes(size string) (uint64, error) {
-	var s datasize.ByteSize
-	if err := s.UnmarshalText([]byte(size)); err != nil {
-		return 0, err
-	}
-
-	return s.Bytes(), nil
 }
 
 func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.CatalogEntry, error) {
@@ -329,6 +226,8 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 		metrics.Label = metrics.DisplayName
 	}
 
+	names := map[string]bool{}
+
 	// remove ignored measures and dimensions
 	var measures []*Measure
 	for _, measure := range metrics.Measures {
@@ -336,6 +235,9 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 			continue
 		}
 		measures = append(measures, measure)
+		if measure.Name != "" {
+			names[measure.Name] = true
+		}
 	}
 	metrics.Measures = measures
 
@@ -349,8 +251,56 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 			dimension.Column = dimension.Property
 		}
 		dimensions = append(dimensions, dimension)
+
+		if dimension.Name != "" {
+			names[dimension.Name] = true
+		} else if dimension.Column != "" {
+			names[dimension.Column] = true
+		}
 	}
 	metrics.Dimensions = dimensions
+
+	if metrics.Security != nil {
+		templateData := rillv1.TemplateData{User: map[string]interface{}{
+			"name":   "dummy",
+			"email":  "mock@example.org",
+			"domain": "example.org",
+			"groups": []interface{}{"all"},
+			"admin":  false,
+		}}
+
+		if metrics.Security.Access != "" {
+			access, err := rillv1.ResolveTemplate(metrics.Security.Access, templateData)
+			if err != nil {
+				return nil, fmt.Errorf(`invalid 'security': 'access' templating is not valid: %w`, err)
+			}
+			_, err = rillv1.EvaluateBoolExpression(access)
+			if err != nil {
+				return nil, fmt.Errorf(`invalid 'security': 'access' expression error: %w`, err)
+			}
+		}
+
+		if metrics.Security.RowFilter != "" {
+			_, err := rillv1.ResolveTemplate(metrics.Security.RowFilter, templateData)
+			if err != nil {
+				return nil, fmt.Errorf(`invalid 'security': 'row_filter' templating is not valid: %w`, err)
+			}
+		}
+
+		if len(metrics.Security.Include) > 0 && len(metrics.Security.Exclude) > 0 {
+			return nil, errors.New("invalid 'security': only one of 'include' and 'exclude' can be specified")
+		}
+
+		err := validatedPolicyFieldList(metrics.Security.Include, names, "include", templateData)
+		if err != nil {
+			return nil, err
+		}
+
+		err = validatedPolicyFieldList(metrics.Security.Exclude, names, "exclude", templateData)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	apiMetrics := &runtimev1.MetricsView{}
 
@@ -410,6 +360,35 @@ func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.Catalo
 		Path:   path,
 		Object: apiMetrics,
 	}, nil
+}
+
+func validatedPolicyFieldList(fieldConditions []*ConditionalField, names map[string]bool, property string, templateData rillv1.TemplateData) error {
+	if len(fieldConditions) > 0 {
+		for _, field := range fieldConditions {
+			if field == nil || len(field.Names) == 0 || field.Condition == "" {
+				return fmt.Errorf("invalid 'security': '%s' fields must have a valid 'if' condition and 'names' list", property)
+			}
+			seen := map[string]bool{}
+			for _, name := range field.Names {
+				if seen[name] {
+					return fmt.Errorf("invalid 'security': '%s' property %q is duplicated", property, name)
+				}
+				seen[name] = true
+				if !names[name] {
+					return fmt.Errorf("invalid 'security': '%s' property %q does not exists in dimensions or measures list", property, name)
+				}
+			}
+			cond, err := rillv1.ResolveTemplate(field.Condition, templateData)
+			if err != nil {
+				return fmt.Errorf(`invalid 'security': 'if' condition templating for field %q is not valid: %w`, field.Names, err)
+			}
+			_, err = rillv1.EvaluateBoolExpression(cond)
+			if err != nil {
+				return fmt.Errorf(`invalid 'security': 'if' condition for field %q not valuating to a boolean: %w`, field.Names, err)
+			}
+		}
+	}
+	return nil
 }
 
 // Get TimeGrain enum from string

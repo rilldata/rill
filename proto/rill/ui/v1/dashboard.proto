@@ -7,11 +7,49 @@ import "rill/runtime/v1/queries.proto";
 
 // DashboardState represents the dashboard as seen by the user
 message DashboardState {
-  enum DashboardLeaderboardContextColumn {
-    DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_UNSPECIFIED=0;
-    DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_PERCENT = 1;
-    DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_DELTA_CHANGE = 2;
-    DASHBOARD_LEADERBOARD_CONTEXT_COLUMN_HIDDEN = 3;
+  enum LeaderboardContextColumn {
+    LEADERBOARD_CONTEXT_COLUMN_UNSPECIFIED=0;
+    LEADERBOARD_CONTEXT_COLUMN_PERCENT = 1;
+    LEADERBOARD_CONTEXT_COLUMN_DELTA_PERCENT = 2;
+    LEADERBOARD_CONTEXT_COLUMN_DELTA_ABSOLUTE = 3;
+    LEADERBOARD_CONTEXT_COLUMN_HIDDEN = 4;
+  }
+
+  enum LeaderboardSortDirection {
+    LEADERBOARD_SORT_DIRECTION_UNSPECIFIED = 0;
+    LEADERBOARD_SORT_DIRECTION_ASCENDING = 1;
+    LEADERBOARD_SORT_DIRECTION_DESCENDING = 2;
+  }
+
+  /**
+   * SortType is used to determine how to sort the leaderboard
+   * and dimension detail table, as well as where to place the
+   * sort arrow.
+   *
+   * By default, the leaderboards+table will be sorted by VALUE,
+   * using the value of the currently selected dashboard measure.
+   *
+   * If DELTA_ABSOLUTE or DELTA_PERCENT is selected, the
+   * leaderboards+table will be sorted by the absolute or percentage
+   * delta change of the currently selected dashboard measure.
+   *
+   * If PERCENT is selected, the table will be sorted by the value
+   * of the currently selected dashboard measure, which will return
+   * the same ordering as the percent-of-total sort for measures
+   * with valid percent-of-total. However, the sort arrow will be
+   * placed next to the percent-of-total icon.
+   *
+   * As of 2023-08, DIMENSION is not implemented, but at that time
+   * the plan was to only apply DIMENSTION sort to the dimension
+   * detail table, and not the leaderboards.
+   */
+  enum LeaderboardSortType {
+    LEADERBOARD_SORT_TYPE_UNSPECIFIED = 0;
+    LEADERBOARD_SORT_TYPE_VALUE = 1;
+    LEADERBOARD_SORT_TYPE_DIMENSION = 2;
+    LEADERBOARD_SORT_TYPE_PERCENT = 3;
+    LEADERBOARD_SORT_TYPE_DELTA_PERCENT = 4;
+    LEADERBOARD_SORT_TYPE_DELTA_ABSOLUTE = 5;
   }
 
   // Selected time range
@@ -36,10 +74,16 @@ message DashboardState {
   repeated string visible_dimensions = 10;
   optional bool all_dimensions_visible = 11;
 
-  optional DashboardLeaderboardContextColumn leaderboard_context_column = 12;
+  optional LeaderboardContextColumn leaderboard_context_column = 12;
 
   // Selected timezone for the dashboard
   optional string selected_timezone = 13;
+
+  // Scrub time range
+  optional DashboardTimeRange scrub_range = 14;
+
+  optional LeaderboardSortDirection leaderboard_sort_direction = 15;
+  optional LeaderboardSortType leaderboard_sort_type = 16;
 }
 
 message DashboardTimeRange {

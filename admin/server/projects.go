@@ -122,6 +122,14 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		depl.Logs = ""
 	}
 
+	var attr map[string]any
+	if claims.OwnerType() == auth.OwnerTypeUser {
+		attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
 	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
 		AudienceURL: depl.RuntimeAudience,
 		Subject:     claims.OwnerID(),
@@ -135,6 +143,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 				runtimeauth.ReadRepo,
 			},
 		},
+		Attributes: attr,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
@@ -360,7 +369,15 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		}
 	}
 
-	prodTTLSeconds := valOrDefault(req.ProdTtlSeconds, *proj.ProdTTLSeconds)
+	prodTTLSeconds := proj.ProdTTLSeconds
+	if req.ProdTtlSeconds != nil {
+		if *req.ProdTtlSeconds == 0 {
+			prodTTLSeconds = nil
+		} else {
+			prodTTLSeconds = req.ProdTtlSeconds
+		}
+	}
+
 	opts := &database.UpdateProjectOptions{
 		Name:                 valOrDefault(req.NewName, proj.Name),
 		Description:          valOrDefault(req.Description, proj.Description),
@@ -371,7 +388,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		ProdVariables:        proj.ProdVariables,
 		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
-		ProdTTLSeconds:       &prodTTLSeconds,
+		ProdTTLSeconds:       prodTTLSeconds,
 		Region:               valOrDefault(req.Region, proj.Region),
 	}
 	proj, err = s.admin.UpdateProject(ctx, proj, opts)

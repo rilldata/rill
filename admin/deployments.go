@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -21,7 +22,6 @@ import (
 )
 
 type createDeploymentOptions struct {
-	OrganizationID       string
 	ProjectID            string
 	Region               string
 	GithubURL            *string
@@ -32,6 +32,7 @@ type createDeploymentOptions struct {
 	ProdOLAPDriver       string
 	ProdOLAPDSN          string
 	ProdSlots            int
+	Annotations          deploymentAnnotations
 }
 
 func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOptions) (*database.Deployment, error) {
@@ -57,21 +58,40 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	// Build instance config
 	instanceID := strings.ReplaceAll(uuid.New().String(), "-", "")
 	olapDriver := opts.ProdOLAPDriver
-	olapDSN := opts.ProdOLAPDSN
+	olapConfig := map[string]string{}
 	var embedCatalog bool
 	var ingestionLimit int64
-	if olapDriver == "duckdb" {
-		if olapDSN != "" {
+	switch olapDriver {
+	case "duckdb":
+		if opts.ProdOLAPDSN != "" {
 			return nil, fmt.Errorf("passing a DSN is not allowed for driver 'duckdb'")
 		}
 		if opts.ProdSlots == 0 {
 			return nil, fmt.Errorf("slot count can't be 0 for driver 'duckdb'")
 		}
 
+		olapConfig["dsn"] = fmt.Sprintf("%s.db?max_memory=%dGB", path.Join(alloc.DataDir, instanceID), alloc.MemoryGB)
+		olapConfig["pool_size"] = strconv.Itoa(alloc.CPU)
 		embedCatalog = true
 		ingestionLimit = alloc.StorageBytes
+	case "duckdb-vip":
+		if opts.ProdOLAPDSN != "" {
+			return nil, fmt.Errorf("passing a DSN is not allowed for driver 'duckdb-vip'")
+		}
+		if opts.ProdSlots == 0 {
+			return nil, fmt.Errorf("slot count can't be 0 for driver 'duckdb-vip'")
+		}
 
-		olapDSN = fmt.Sprintf("%s.db?rill_pool_size=%d&threads=%d&max_memory=%dGB", path.Join(alloc.DataDir, instanceID), alloc.CPU, alloc.CPU, alloc.MemoryGB)
+		// NOTE: Rewriting to a "duckdb" driver without CPU, memory, or storage limits
+		olapDriver = "duckdb"
+		olapConfig["dsn"] = fmt.Sprintf("%s.db", path.Join(alloc.DataDir, instanceID))
+		olapConfig["pool_size"] = "8"
+		embedCatalog = true
+		ingestionLimit = 0
+	default:
+		olapConfig["dsn"] = opts.ProdOLAPDSN
+		embedCatalog = false
+		ingestionLimit = 0
 	}
 
 	// Open a runtime client
@@ -84,20 +104,17 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
 		InstanceId:          instanceID,
-		OlapDriver:          "olap",
-		RepoDriver:          "repo",
+		OlapConnector:       "olap",
+		RepoConnector:       "repo",
 		EmbedCatalog:        embedCatalog,
 		Variables:           opts.ProdVariables,
 		IngestionLimitBytes: ingestionLimit,
-		Annotations: map[string]string{
-			"organization_id": opts.OrganizationID,
-			"project_id":      opts.ProjectID,
-		},
+		Annotations:         opts.Annotations.toMap(),
 		Connectors: []*runtimev1.Connector{
 			{
 				Name:   "olap",
 				Type:   olapDriver,
-				Config: map[string]string{"dsn": olapDSN},
+				Config: olapConfig,
 			},
 			{
 				Name:   "repo",
@@ -138,6 +155,7 @@ type updateDeploymentOptions struct {
 	Subpath              string
 	Branch               string
 	Variables            map[string]string
+	Annotations          *deploymentAnnotations
 }
 
 func (s *Service) updateDeployment(ctx context.Context, depl *database.Deployment, opts *updateDeploymentOptions) error {
@@ -171,9 +189,14 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 		}
 	}
 
+	var annotations map[string]string
+	if opts.Annotations != nil { // annotations changed
+		annotations = opts.Annotations.toMap()
+	}
 	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
-		InstanceId: depl.RuntimeInstanceID,
-		Connectors: connectors,
+		InstanceId:  depl.RuntimeInstanceID,
+		Connectors:  connectors,
+		Annotations: annotations,
 	})
 	if err != nil {
 		return err
@@ -268,6 +291,20 @@ func (s *Service) updateDeplVariables(ctx context.Context, depl *database.Deploy
 	return err
 }
 
+func (s *Service) updateDeplAnnotations(ctx context.Context, depl *database.Deployment, annotations deploymentAnnotations) error {
+	rt, err := s.openRuntimeClientForDeployment(depl)
+	if err != nil {
+		return err
+	}
+	defer rt.Close()
+
+	_, err = rt.EditInstanceAnnotations(ctx, &runtimev1.EditInstanceAnnotationsRequest{
+		InstanceId:  depl.RuntimeInstanceID,
+		Annotations: annotations.toMap(),
+	})
+	return err
+}
+
 func (s *Service) teardownDeployment(ctx context.Context, proj *database.Project, depl *database.Deployment) error {
 	// Connect to the deployment's runtime
 	rt, err := s.openRuntimeClientForDeployment(depl)
@@ -328,4 +365,29 @@ func githubRepoInfoForRuntime(githubURL string, installationID int64, subPath, b
 	}
 
 	return "github", string(dsn), nil
+}
+
+type deploymentAnnotations struct {
+	orgID    string
+	orgName  string
+	projID   string
+	projName string
+}
+
+func newDeploymentAnnotations(org *database.Organization, proj *database.Project) deploymentAnnotations {
+	return deploymentAnnotations{
+		orgID:    org.ID,
+		orgName:  org.Name,
+		projID:   proj.ID,
+		projName: proj.Name,
+	}
+}
+
+func (da *deploymentAnnotations) toMap() map[string]string {
+	return map[string]string{
+		"organization_id":   da.orgID,
+		"organization_name": da.orgName,
+		"project_id":        da.projID,
+		"project_name":      da.projName,
+	}
 }

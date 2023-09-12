@@ -3,6 +3,8 @@
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     ALL_TIME,
     DEFAULT_TIME_RANGES,
@@ -28,6 +30,8 @@
   import { useDashboardStore } from "../dashboard-stores";
   import CustomTimeRangeInput from "./CustomTimeRangeInput.svelte";
   import CustomTimeRangeMenuItem from "./CustomTimeRangeMenuItem.svelte";
+  import TimeRangeScrubChip from "@rilldata/web-common/features/dashboards/time-controls/TimeRangeScrubChip.svelte";
+  import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
 
   export let metricViewName: string;
   export let boundaryStart: Date;
@@ -38,6 +42,8 @@
   const dispatch = createEventDispatcher();
 
   $: dashboardStore = useDashboardStore(metricViewName);
+
+  const timeControlsStore = useTimeControlStore(getStateManagers());
 
   let isCustomRangeOpen = false;
   let isCalendarRecentlyClosed = false;
@@ -66,6 +72,8 @@
       $dashboardStore?.selectedTimezone
     );
   }
+
+  $: hasSubRangeSelected = $dashboardStore?.selectedScrubRange?.end;
 
   function setIntermediateSelection(timeRangeName: string) {
     return () => {
@@ -99,6 +107,22 @@
     });
   }
 
+  function zoomScrub(toggleFloatingElement) {
+    const { start, end } = getOrderedStartEnd(
+      $dashboardStore?.selectedScrubRange?.start,
+      $dashboardStore?.selectedScrubRange?.end
+    );
+    onSelectRelativeTimeRange(
+      {
+        name: TimeRangePreset.CUSTOM,
+        start,
+        end,
+      },
+      toggleFloatingElement
+    );
+    dispatch("remove-scrub");
+  }
+
   function onClickOutside(closeMenu: () => void) {
     if (!isCalendarRecentlyClosed) {
       closeMenu();
@@ -116,7 +140,7 @@
     }, 300);
   }
 
-  $: currentSelection = $dashboardStore?.selectedTimeRange?.name;
+  $: currentSelection = $timeControlsStore?.selectedTimeRange?.name;
   $: intermediateSelection = currentSelection;
 
   const handleMenuOpen = () => {
@@ -133,48 +157,61 @@
   let:toggleFloatingElement
   on:open={handleMenuOpen}
 >
-  <button
-    class:bg-gray-200={active}
-    class="px-3 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600 items-baseline"
-    on:click={toggleFloatingElement}
-    aria-label="Select time range"
-  >
-    <div class="flex flew-row gap-x-3">
-      <div class="font-bold flex flex-row items-center gap-x-3">
-        <span class="ui-copy-icon"><Calendar size="16px" /></span>
+  {#if hasSubRangeSelected}
+    <div class="flex">
+      <TimeRangeScrubChip
+        on:click={toggleFloatingElement}
+        on:remove={() => dispatch("remove-scrub")}
+        {active}
+        start={$dashboardStore?.selectedScrubRange?.start}
+        end={$dashboardStore?.selectedScrubRange?.end}
+        zone={$dashboardStore?.selectedTimezone}
+      />
+    </div>
+  {:else}
+    <button
+      class:bg-gray-200={active}
+      class="px-3 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600 items-baseline"
+      on:click={toggleFloatingElement}
+      aria-label="Select time range"
+    >
+      <div class="flex flew-row gap-x-3">
+        <div class="font-bold flex flex-row items-center gap-x-3">
+          <span class="ui-copy-icon"><Calendar size="16px" /></span>
+          <span style:transform="translateY(1px)">
+            <!-- This conditional shouldn't be necessary because there should always be a selected (at least default) time range -->
+            {#if intermediateSelection === TimeRangePreset.CUSTOM}
+              Custom range
+            {:else if currentSelection in DEFAULT_TIME_RANGES}
+              {DEFAULT_TIME_RANGES[$timeControlsStore?.selectedTimeRange?.name]
+                .label}
+            {:else}
+              Select a time range
+            {/if}
+          </span>
+        </div>
         <span style:transform="translateY(1px)">
-          <!-- This conditional shouldn't be necessary because there should always be a selected (at least default) time range -->
-          {#if intermediateSelection === TimeRangePreset.CUSTOM}
-            Custom range
-          {:else if currentSelection in DEFAULT_TIME_RANGES}
-            {DEFAULT_TIME_RANGES[$dashboardStore?.selectedTimeRange?.name]
-              .label}
-          {:else}
-            Select a time range
-          {/if}
+          {prettyFormatTimeRange(
+            $timeControlsStore?.selectedTimeRange?.start,
+            $timeControlsStore?.selectedTimeRange?.end,
+            $timeControlsStore?.selectedTimeRange?.name,
+            $dashboardStore?.selectedTimezone
+          )}
         </span>
       </div>
-      <span style:transform="translateY(1px)">
-        {prettyFormatTimeRange(
-          $dashboardStore?.selectedTimeRange?.start,
-          $dashboardStore?.selectedTimeRange?.end,
-          $dashboardStore?.selectedTimeRange?.name,
-          $dashboardStore?.selectedTimezone
-        )}
-      </span>
-    </div>
-    <IconSpaceFixer pullRight>
-      <div class="transition-transform" class:-rotate-180={active}>
-        <CaretDownIcon size="14px" />
-      </div>
-    </IconSpaceFixer>
-  </button>
+      <IconSpaceFixer pullRight>
+        <div class="transition-transform" class:-rotate-180={active}>
+          <CaretDownIcon size="14px" />
+        </div>
+      </IconSpaceFixer>
+    </button>
+  {/if}
   <Menu
+    label="Time range selector"
+    maxWidth="300px"
     on:click-outside={() => onClickOutside(toggleFloatingElement)}
     on:escape={toggleFloatingElement}
     slot="floating-element"
-    label="Time range selector"
-    maxWidth="300px"
   >
     {@const allTime = {
       name: TimeRangePreset.ALL_TIME,
@@ -182,6 +219,16 @@
       start: boundaryStart,
       end: new Date(boundaryEnd.getTime() + 1), // end is exclusive
     }}
+    {#if hasSubRangeSelected}
+      <MenuItem
+        on:before-select={setIntermediateSelection(TimeRangePreset.CUSTOM)}
+        on:select={() => zoomScrub(toggleFloatingElement)}
+      >
+        <span> Zoom to subrange </span>
+        <span slot="right">Z</span>
+      </MenuItem>
+      <Divider />
+    {/if}
     <MenuItem
       on:before-select={setIntermediateSelection(allTime.name)}
       on:select={() =>

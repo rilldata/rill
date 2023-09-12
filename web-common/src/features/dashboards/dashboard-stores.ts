@@ -6,16 +6,27 @@ import {
   getMapFromArray,
   removeIfExists,
 } from "@rilldata/web-common/lib/arrayUtils";
-import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
-import { convertTimeRangePreset } from "@rilldata/web-common/lib/time/ranges";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import { getTimeComparisonParametersForComponent } from "@rilldata/web-common/lib/time/comparisons";
+import type {
+  ScrubRange,
+  TimeRange,
+} from "@rilldata/web-common/lib/time/types";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
+import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
+import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
+import {
+  convertTimeRangePreset,
+  ISODurationToTimePreset,
+} from "@rilldata/web-common/lib/time/ranges";
+import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
 import type {
   V1ColumnTimeRangeResponse,
   V1MetricsView,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
 import { derived, get, Readable, Writable, writable } from "svelte/store";
+import { SortDirection, SortType } from "./proto-state/derived-types";
 
 export interface LeaderboardValue {
   value: number;
@@ -55,14 +66,32 @@ export interface MetricsExplorerEntity {
   // TODO: clean this up when we refactor how url state is synced
   allDimensionsVisible: boolean;
 
-  // this is used to show leaderboard values
+  // This is the name of the primary active measure in the dashboard.
+  // This is the measure that will be shown in leaderboards, and
+  // will be used for sorting the leaderboard and dimension
+  // detail table.
+  // This "name" is the internal name of the measure from the YAML,
+  // not the human readable name.
   leaderboardMeasureName: string;
+
+  // This is the sort type that will be used for the leaderboard
+  // and dimension detail table. See SortType for more details.
+  dashboardSortType: SortType;
+  // This is the sort direction that will be used for the leaderboard
+  // and dimension detail table.
+  sortDirection: SortDirection;
+
   filters: V1MetricsViewFilter;
   // stores whether a dimension is in include/exclude filter mode
   // false/absence = include, true = exclude
   dimensionFilterExcludeMode: Map<string, boolean>;
   // user selected time range
   selectedTimeRange?: DashboardTimeControls;
+
+  // user selected scrub range
+  selectedScrubRange?: ScrubRange;
+  lastDefinedScrubRange?: ScrubRange;
+
   selectedComparisonTimeRange?: DashboardTimeControls;
 
   // user selected timezone
@@ -222,19 +251,57 @@ const metricViewReducers = {
   init(
     name: string,
     metricsView: V1MetricsView,
-    fullTimeRange: V1ColumnTimeRangeResponse
+    fullTimeRange: V1ColumnTimeRangeResponse | undefined
   ) {
     update((state) => {
       if (state.entities[name]) return state;
 
-      const timeZone = get(getLocalUserPreferences()).timeZone;
-      const timeRange = convertTimeRangePreset(
-        TimeRangePreset.ALL_TIME,
-        new Date(fullTimeRange.timeRangeSummary.min),
-        new Date(fullTimeRange.timeRangeSummary.max),
-        timeZone
-      );
-      const timeGrain = getDefaultTimeGrain(timeRange.start, timeRange.end);
+      const timeSelections: Partial<MetricsExplorerEntity> = {};
+      if (fullTimeRange) {
+        const timeZone = get(getLocalUserPreferences()).timeZone;
+        const fullTimeStart = new Date(fullTimeRange.timeRangeSummary.min);
+        const fullTimeEnd = new Date(fullTimeRange.timeRangeSummary.max);
+        const preset = ISODurationToTimePreset(
+          metricsView.defaultTimeRange,
+          true
+        );
+
+        const timeRange = convertTimeRangePreset(
+          preset,
+          fullTimeStart,
+          fullTimeEnd,
+          timeZone
+        );
+        const timeGrain = getDefaultTimeGrain(timeRange.start, timeRange.end);
+        timeSelections.selectedTimezone = timeZone;
+        timeSelections.selectedTimeRange = {
+          ...timeRange,
+          interval: timeGrain.grain,
+        };
+        timeSelections.lastDefinedScrubRange = undefined;
+
+        const comparisonOption = DEFAULT_TIME_RANGES[preset]
+          ?.defaultComparison as TimeComparisonOption;
+        if (comparisonOption) {
+          const comparisonRange = getTimeComparisonParametersForComponent(
+            comparisonOption,
+            fullTimeStart,
+            fullTimeEnd,
+            timeRange.start,
+            timeRange.end
+          );
+          if (comparisonRange.isComparisonRangeAvailable) {
+            timeSelections.selectedComparisonTimeRange = {
+              name: comparisonOption,
+              start: comparisonRange.start,
+              end: comparisonRange.end,
+            };
+            timeSelections.showComparison = true;
+            timeSelections.leaderboardContextColumn =
+              LeaderboardContextColumn.DELTA_PERCENT;
+          }
+        }
+      }
 
       state.entities[name] = {
         name,
@@ -257,12 +324,11 @@ const metricViewReducers = {
         },
         dimensionFilterExcludeMode: new Map(),
         leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
+        dashboardSortType: SortType.VALUE,
+        sortDirection: SortDirection.DESCENDING,
 
-        selectedTimezone: timeZone,
-        selectedTimeRange: {
-          ...timeRange,
-          interval: timeGrain.grain,
-        },
+        showComparison: false,
+        ...timeSelections,
       };
 
       updateMetricsExplorerProto(state.entities[name]);
@@ -304,15 +370,43 @@ const metricViewReducers = {
     });
   },
 
-  clearLeaderboardMeasureName(name: string) {
+  setSortDescending(name: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.leaderboardMeasureName = undefined;
+      metricsExplorer.sortDirection = SortDirection.DESCENDING;
+    });
+  },
+
+  setSortAscending(name: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.sortDirection = SortDirection.ASCENDING;
+    });
+  },
+
+  toggleSortDirection(name: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.sortDirection =
+        metricsExplorer.sortDirection === SortDirection.ASCENDING
+          ? SortDirection.DESCENDING
+          : SortDirection.ASCENDING;
+    });
+  },
+
+  setSortDirection(name: string, direction: SortDirection) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.sortDirection = direction;
     });
   },
 
   setSelectedTimeRange(name: string, timeRange: DashboardTimeControls) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
+      setSelectedScrubRange(metricsExplorer, undefined);
       metricsExplorer.selectedTimeRange = timeRange;
+    });
+  },
+
+  setSelectedScrubRange(name: string, scrubRange: ScrubRange) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      setSelectedScrubRange(metricsExplorer, scrubRange);
     });
   },
 
@@ -327,40 +421,72 @@ const metricViewReducers = {
     comparisonTimeRange: DashboardTimeControls
   ) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
+      setDisplayComparison(metricsExplorer, true);
       metricsExplorer.selectedComparisonTimeRange = comparisonTimeRange;
     });
   },
 
   setTimeZone(name: string, zoneIANA: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
+      // Reset scrub when timezone changes
+      setSelectedScrubRange(metricsExplorer, undefined);
+
       metricsExplorer.selectedTimezone = zoneIANA;
     });
   },
 
   displayComparison(name: string, showComparison: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.showComparison = showComparison;
-      // if setting showComparison===true and not currently
-      //  showing any context column, then show DELTA_CHANGE
-      if (
-        showComparison &&
-        metricsExplorer.leaderboardContextColumn ===
-          LeaderboardContextColumn.HIDDEN
-      ) {
-        metricsExplorer.leaderboardContextColumn =
-          LeaderboardContextColumn.DELTA_CHANGE;
+      setDisplayComparison(metricsExplorer, showComparison);
+    });
+  },
+
+  selectTimeRange(
+    name: string,
+    timeRange: TimeRange,
+    timeGrain: V1TimeGrain,
+    comparisonTimeRange: DashboardTimeControls | undefined,
+    allTimeRange: TimeRange
+  ) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      // Reset scrub when range changes
+      setSelectedScrubRange(metricsExplorer, undefined);
+
+      metricsExplorer.selectedTimeRange = {
+        ...timeRange,
+        interval: timeGrain,
+      };
+
+      if (!comparisonTimeRange) {
+        // when switching time range we reset comparison time range
+        // get the default for the new time range and set it only if is valid
+        const comparisonOption = DEFAULT_TIME_RANGES[timeRange.name]
+          ?.defaultComparison as TimeComparisonOption;
+        const range = getTimeComparisonParametersForComponent(
+          comparisonOption,
+          allTimeRange.start,
+          allTimeRange.end,
+          timeRange.start,
+          timeRange.end
+        );
+
+        if (range.isComparisonRangeAvailable) {
+          metricsExplorer.selectedComparisonTimeRange = {
+            start: range.start,
+            end: range.end,
+            name: comparisonOption,
+          };
+        } else {
+          metricsExplorer.selectedComparisonTimeRange = undefined;
+        }
+      } else {
+        metricsExplorer.selectedComparisonTimeRange = comparisonTimeRange;
       }
 
-      // if setting showComparison===false and currently
-      //  showing DELTA_CHANGE, then hide context column
-      if (
-        !showComparison &&
-        metricsExplorer.leaderboardContextColumn ===
-          LeaderboardContextColumn.DELTA_CHANGE
-      ) {
-        metricsExplorer.leaderboardContextColumn =
-          LeaderboardContextColumn.HIDDEN;
-      }
+      setDisplayComparison(
+        metricsExplorer,
+        metricsExplorer.selectedComparisonTimeRange !== undefined
+      );
     });
   },
 
@@ -370,7 +496,7 @@ const metricViewReducers = {
       if (metricsExplorer.showComparison === false) return;
 
       metricsExplorer.leaderboardContextColumn =
-        LeaderboardContextColumn.DELTA_CHANGE;
+        LeaderboardContextColumn.DELTA_PERCENT;
     });
   },
 
@@ -509,6 +635,45 @@ export function useDashboardStore(
   return derived(metricsExplorerStore, ($store) => {
     return $store.entities[name];
   });
+}
+
+function setDisplayComparison(
+  metricsExplorer: MetricsExplorerEntity,
+  showComparison: boolean
+) {
+  metricsExplorer.showComparison = showComparison;
+  // if setting showComparison===true and not currently
+  //  showing any context column, then show DELTA_PERCENT
+  if (
+    showComparison &&
+    metricsExplorer.leaderboardContextColumn === LeaderboardContextColumn.HIDDEN
+  ) {
+    metricsExplorer.leaderboardContextColumn =
+      LeaderboardContextColumn.DELTA_PERCENT;
+  }
+
+  // if setting showComparison===false and currently
+  //  showing DELTA_PERCENT, then hide context column
+  if (
+    !showComparison &&
+    metricsExplorer.leaderboardContextColumn ===
+      LeaderboardContextColumn.DELTA_PERCENT
+  ) {
+    metricsExplorer.leaderboardContextColumn = LeaderboardContextColumn.HIDDEN;
+  }
+}
+
+function setSelectedScrubRange(
+  metricsExplorer: MetricsExplorerEntity,
+  scrubRange: ScrubRange
+) {
+  if (scrubRange === undefined) {
+    metricsExplorer.lastDefinedScrubRange = undefined;
+  } else if (!scrubRange.isScrubbing && scrubRange?.start && scrubRange?.end) {
+    metricsExplorer.lastDefinedScrubRange = scrubRange;
+  }
+
+  metricsExplorer.selectedScrubRange = scrubRange;
 }
 
 export const projectShareStore: Writable<boolean> = writable(false);

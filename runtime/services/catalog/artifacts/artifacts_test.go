@@ -11,6 +11,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/services/catalog/artifacts"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -166,7 +167,7 @@ measures:
 	}
 
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	repoStore, _ := fileStore.AsRepoStore("")
 	ctx := context.Background()
@@ -209,7 +210,7 @@ duckdb:
     delim: '''|'''
 `
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	repoStore, _ := fileStore.AsRepoStore("")
 	ctx := context.Background()
@@ -264,7 +265,7 @@ duckdb:
     hive_partitioning: true
 `
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	repoStore, _ := fileStore.AsRepoStore("")
 	ctx := context.Background()
@@ -299,7 +300,7 @@ duckdb:
 
 func TestMetricsLabelBackwardsCompatibility(t *testing.T) {
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	repoStore, _ := fileStore.AsRepoStore("")
 	ctx := context.Background()
@@ -334,7 +335,7 @@ measures: []
 
 func TestDimensionAndMeasureNameAutoFill(t *testing.T) {
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	repoStore, _ := fileStore.AsRepoStore("")
 	ctx := context.Background()
@@ -413,7 +414,7 @@ measures:
 
 func TestDimensionColumnBackwardsCompatibility(t *testing.T) {
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	repoStore, _ := fileStore.AsRepoStore("")
 	ctx := context.Background()
@@ -487,7 +488,7 @@ func TestReadFailure(t *testing.T) {
 	}
 
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	repoStore, _ := fileStore.AsRepoStore("")
 	ctx := context.Background()
@@ -690,7 +691,7 @@ available_time_zones:
 
 func repoStore(t *testing.T) drivers.RepoStore {
 	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	repoStore, ok := fileStore.AsRepoStore("")
@@ -709,7 +710,7 @@ func toProtoStruct(obj map[string]any) *structpb.Struct {
 
 func registryStore(t *testing.T) drivers.RegistryStore {
 	ctx := context.Background()
-	store, err := drivers.Open("sqlite", map[string]any{"dsn": ":memory:"}, false, zap.NewNop())
+	store, err := drivers.Open("sqlite", map[string]any{"dsn": ":memory:"}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	store.Migrate(ctx)
 	registry, _ := store.AsRegistry()

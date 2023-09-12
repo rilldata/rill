@@ -5,10 +5,11 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
 )
 
-const _iteratorBatch = 8
+const _iteratorBatch = 32
 
 var ErrIngestionLimitExceeded = fmt.Errorf("connectors: source ingestion exceeds limit")
 
@@ -42,13 +43,13 @@ func Register(name string, driver Driver) {
 }
 
 // Open opens a new connection
-func Open(driver string, config map[string]any, shared bool, logger *zap.Logger) (Handle, error) {
+func Open(driver string, config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (Handle, error) {
 	d, ok := Drivers[driver]
 	if !ok {
 		return nil, fmt.Errorf("unknown driver: %s", driver)
 	}
 
-	conn, err := d.Open(config, shared, logger)
+	conn, err := d.Open(config, shared, client, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -71,13 +72,13 @@ type Driver interface {
 	Spec() Spec
 
 	// Open opens a new connection to an underlying store.
-	Open(config map[string]any, shared bool, logger *zap.Logger) (Handle, error)
+	Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (Handle, error)
 
 	// Drop tears down a store. Drivers that do not support it return ErrDropNotSupported.
 	Drop(config map[string]any, logger *zap.Logger) error
 
 	// HasAnonymousSourceAccess returns true if external system can be accessed without credentials
-	HasAnonymousSourceAccess(ctx context.Context, src Source, logger *zap.Logger) (bool, error)
+	HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error)
 }
 
 // Handle represents a connection to an underlying DB.

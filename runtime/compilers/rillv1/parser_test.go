@@ -8,6 +8,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
@@ -636,7 +637,7 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 
 func makeRepo(t testing.TB, files map[string]string) drivers.RepoStore {
 	root := t.TempDir()
-	handle, err := drivers.Open("file", map[string]any{"dsn": root}, false, zap.NewNop())
+	handle, err := drivers.Open("file", map[string]any{"dsn": root}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	repo, ok := handle.AsRepoStore("")

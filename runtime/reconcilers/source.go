@@ -34,6 +34,26 @@ func (r *SourceReconciler) Close(ctx context.Context) error {
 	return nil
 }
 
+func (r *SourceReconciler) AssignSpec(from, to *runtimev1.Resource) error {
+	a := from.GetSource()
+	b := to.GetSource()
+	if a == nil || b == nil {
+		return fmt.Errorf("cannot assign spec from %T to %T", from.Resource, to.Resource)
+	}
+	b.Spec = a.Spec
+	return nil
+}
+
+func (r *SourceReconciler) AssignState(from, to *runtimev1.Resource) error {
+	a := from.GetSource()
+	b := to.GetSource()
+	if a == nil || b == nil {
+		return fmt.Errorf("cannot assign state from %T to %T", from.Resource, to.Resource)
+	}
+	b.Spec = a.Spec
+	return nil
+}
+
 func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName) runtime.ReconcileResult {
 	self, err := r.C.Get(ctx, n)
 	if err != nil {
@@ -47,7 +67,7 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	tableName := self.Meta.Name.Name
 
 	// Handle deletion
-	if self.Meta.Deleted {
+	if self.Meta.DeletedOn != nil {
 		olapDropTableIfExists(ctx, r.C, src.State.Connector, src.State.Table, false)
 		olapDropTableIfExists(ctx, r.C, src.State.Connector, r.stagingTableName(tableName), false)
 		return runtime.ReconcileResult{}
@@ -199,7 +219,7 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	// Reset spec.Trigger
 	if src.Spec.Trigger {
 		src.Spec.Trigger = false
-		err = r.C.UpdateSpec(ctx, self.Meta.Name, self.Meta.Refs, self.Meta.Owner, self.Meta.FilePaths, self)
+		err = r.C.UpdateSpec(ctx, self.Meta.Name, self)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
@@ -343,70 +363,11 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 	return err
 }
 
-func driversSource(conn drivers.Handle, propsPB *structpb.Struct) (drivers.Source, error) {
+func driversSource(conn drivers.Handle, propsPB *structpb.Struct) (map[string]any, error) {
 	props := propsPB.AsMap()
-	switch conn.Driver() {
-	case "s3":
-		return &drivers.BucketSource{
-			// ExtractPolicy: src.Policy, // TODO: Add
-			Properties: props,
-		}, nil
-	case "gcs":
-		return &drivers.BucketSource{
-			// ExtractPolicy: src.Policy, // TODO: Add
-			Properties: props,
-		}, nil
-	case "https":
-		return &drivers.FileSource{
-			Properties: props,
-		}, nil
-	case "local_file":
-		return &drivers.FileSource{
-			Properties: props,
-		}, nil
-	case "motherduck":
-		query, ok := props["sql"].(string)
-		if !ok {
-			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"motherduck\"")
-		}
-		var db string
-		if val, ok := props["db"].(string); ok {
-			db = val
-		}
-
-		return &drivers.DatabaseSource{
-			SQL:      query,
-			Database: db,
-		}, nil
-	case "duckdb":
-		query, ok := props["sql"].(string)
-		if !ok {
-			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"duckdb\"")
-		}
-		return &drivers.DatabaseSource{
-			SQL: query,
-		}, nil
-	case "bigquery":
-		query, ok := props["sql"].(string)
-		if !ok {
-			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"bigquery\"")
-		}
-		return &drivers.DatabaseSource{
-			SQL:   query,
-			Props: props,
-		}, nil
-	default:
-		return nil, fmt.Errorf("source connector %q not supported", conn.Driver())
-	}
+	return props, nil
 }
 
-func driversSink(conn drivers.Handle, tableName string) (drivers.Sink, error) {
-	switch conn.Driver() {
-	case "duckdb":
-		return &drivers.DatabaseSink{
-			Table: tableName,
-		}, nil
-	default:
-		return nil, fmt.Errorf("sink connector %q not supported", conn.Driver())
-	}
+func driversSink(conn drivers.Handle, tableName string) (map[string]any, error) {
+	return map[string]any{"table": tableName}, nil
 }

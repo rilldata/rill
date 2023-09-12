@@ -9,6 +9,9 @@
   import LeaderboardOptionsMenu from "../leaderboard/LeaderboardOptionsMenu.svelte";
   import Delta from "@rilldata/web-common/components/icons/Delta.svelte";
   import PieChart from "@rilldata/web-common/components/icons/PieChart.svelte";
+  import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
+  import { CONTEXT_COLUMN_WIDTH } from "./leaderboard-utils";
+  import { createEventDispatcher } from "svelte";
 
   export let displayName: string;
   export let isFetching: boolean;
@@ -16,11 +19,14 @@
   export let hovered: boolean;
   export let showTimeComparison: boolean;
   export let showPercentOfTotal: boolean;
+  export let sortAscending: boolean;
 
   export let filterExcludeMode: boolean;
 
   let optionsMenuActive = false;
+  const dispatch = createEventDispatcher();
 
+  $: arrowTransform = sortAscending ? "scale(1 -1)" : "scale(1 1)";
   $: iconShown = showTimeComparison
     ? "delta"
     : showPercentOfTotal
@@ -45,7 +51,7 @@
     {/if}
   </div>
 
-  <button
+  <div
     class="
         pr-2
         grid justify-between items-center
@@ -58,18 +64,21 @@
         font-semibold
         truncate
     "
-    on:click
     style="max-width: calc(100% - 22px);"
     style:flex="1"
     style:grid-template-columns="auto max-content"
     style:height="32px"
-    aria-label="Open dimension details"
   >
     <div>
       <Tooltip distance={16} location="top">
-        <div class="pl-2 truncate" style="max-width: calc(315px - 60px);">
+        <button
+          on:click={() => dispatch("open-dimension-details")}
+          class="pl-2 truncate"
+          style="max-width: calc(315px - 60px);"
+          aria-label="Open dimension details"
+        >
           {displayName}
-        </div>
+        </button>
         <TooltipContent slot="tooltip-content">
           <TooltipTitle>
             <svelte:fragment slot="name">
@@ -92,12 +101,27 @@
         </TooltipContent>
       </Tooltip>
     </div>
-    <div class="shrink flex flex-row items-center">
-      {#if iconShown === "delta"}
-        <Delta /> %
-      {:else if iconShown === "pie"}
-        <PieChart /> %
+    <div class="shrink flex flex-row items-center gap-x-4">
+      <button
+        on:click={() => dispatch("toggle-sort-direction")}
+        class="shrink flex flex-row items-center"
+        aria-label="Toggle sort order for all leaderboards"
+      >
+        # <ArrowDown transform={arrowTransform} />
+      </button>
+
+      {#if iconShown}
+        <div
+          class="shrink flex flex-row items-center justify-end"
+          style:width={CONTEXT_COLUMN_WIDTH + "px"}
+        >
+          {#if iconShown === "delta"}
+            <Delta /> %
+          {:else if iconShown === "pie"}
+            <PieChart /> %
+          {/if}
+        </div>
       {/if}
     </div>
-  </button>
+  </div>
 </div>

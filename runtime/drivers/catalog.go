@@ -2,6 +2,7 @@ package drivers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -20,6 +21,16 @@ const (
 	ObjectTypeMetricsView ObjectType = 4
 )
 
+// ErrInconsistentControllerVersion is returned from Controller when an unexpected controller version is observed in the DB.
+// An unexpected controller version will only be observed if multiple controllers are running simultanesouly (split brain).
+var ErrInconsistentControllerVersion = errors.New("controller: inconsistent version")
+
+// ErrResourceNotFound is returned from catalog functions when a referenced resource does not exist.
+var ErrResourceNotFound = errors.New("controller: resource not found")
+
+// ErrResourceAlreadyExists is returned from catalog functions when attempting to create a resource that already exists.
+var ErrResourceAlreadyExists = errors.New("controller: resource already exists")
+
 // CatalogStore is implemented by drivers capable of storing catalog info for a specific instance.
 type CatalogStore interface {
 	FindEntries(ctx context.Context, t ObjectType) ([]*CatalogEntry, error)
@@ -28,6 +39,21 @@ type CatalogStore interface {
 	UpdateEntry(ctx context.Context, entry *CatalogEntry) error
 	DeleteEntry(ctx context.Context, name string) error
 	DeleteEntries(ctx context.Context) error
+
+	NextControllerVersion(ctx context.Context) (int64, error)
+	CheckControllerVersion(ctx context.Context, v int64) error
+	FindResources(ctx context.Context) ([]Resource, error)
+	CreateResource(ctx context.Context, v int64, r Resource) error
+	UpdateResource(ctx context.Context, v int64, r Resource) error
+	DeleteResource(ctx context.Context, v int64, k, n string) error
+	DeleteResources(ctx context.Context) error
+}
+
+// Resource is an entry in a catalog store
+type Resource struct {
+	Kind string
+	Name string
+	Data []byte
 }
 
 // CatalogEntry represents one object in the catalog, such as a source.
@@ -75,4 +101,9 @@ func (e *CatalogEntry) GetMetricsView() *runtimev1.MetricsView {
 		panic(fmt.Errorf("entry '%s' is not a metrics view", e.Name))
 	}
 	return obj
+}
+
+func (e *CatalogEntry) IsMetricsView() bool {
+	_, ok := e.Object.(*runtimev1.MetricsView)
+	return ok
 }
