@@ -3,11 +3,9 @@ package yaml
 import (
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/c2h5oh/datasize"
 	"github.com/jinzhu/copier"
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -37,8 +35,8 @@ type Source struct {
 	GlobPageSize          int            `yaml:"glob.page_size,omitempty" mapstructure:"glob.page_size,omitempty"`
 	HivePartition         *bool          `yaml:"hive_partitioning,omitempty" mapstructure:"hive_partitioning,omitempty"`
 	Timeout               int32          `yaml:"timeout,omitempty"`
-	ExtractPolicy         *ExtractPolicy `yaml:"extract,omitempty"`
 	Format                string         `yaml:"format,omitempty" mapstructure:"format,omitempty"`
+	Extract               map[string]any `yaml:"extract,omitempty" mapstructure:"extract,omitempty"`
 	DuckDBProps           map[string]any `yaml:"duckdb,omitempty" mapstructure:"duckdb,omitempty"`
 	Headers               map[string]any `yaml:"headers,omitempty" mapstructure:"headers,omitempty"`
 	AllowSchemaRelaxation *bool          `yaml:"ingest.allow_schema_relaxation,omitempty" mapstructure:"allow_schema_relaxation,omitempty"`
@@ -46,16 +44,6 @@ type Source struct {
 	DB                    string         `yaml:"db,omitempty" mapstructure:"db,omitempty"`
 	ProjectID             string         `yaml:"project_id,omitempty" mapstructure:"project_id,omitempty"`
 	PostgresDatabaseURL   string         `yaml:"pg_database_url,omitempty" mapstructure:"pg_database_url,omitempty"`
-}
-
-type ExtractPolicy struct {
-	Row  *ExtractConfig `yaml:"rows,omitempty" mapstructure:"rows,omitempty"`
-	File *ExtractConfig `yaml:"files,omitempty" mapstructure:"files,omitempty"`
-}
-
-type ExtractConfig struct {
-	Strategy string `yaml:"strategy,omitempty" mapstructure:"strategy,omitempty"`
-	Size     string `yaml:"size,omitempty" mapstructure:"size,omitempty"`
 }
 
 type MetricsView struct {
@@ -120,37 +108,7 @@ func toSourceArtifact(catalog *drivers.CatalogEntry) (*Source, error) {
 		source.Path = ""
 	}
 
-	extract, err := toExtractArtifact(catalog.GetSource().GetPolicy())
-	if err != nil {
-		return nil, err
-	}
-
-	source.ExtractPolicy = extract
 	return source, nil
-}
-
-func toExtractArtifact(extract *runtimev1.Source_ExtractPolicy) (*ExtractPolicy, error) {
-	if extract == nil {
-		return nil, nil
-	}
-
-	sourceExtract := &ExtractPolicy{}
-	// set file
-	if extract.FilesStrategy != runtimev1.Source_ExtractPolicy_STRATEGY_UNSPECIFIED {
-		sourceExtract.File = &ExtractConfig{}
-		sourceExtract.File.Strategy = extract.FilesStrategy.String()
-		sourceExtract.File.Size = fmt.Sprintf("%v", extract.FilesLimit)
-	}
-
-	// set row
-	if extract.RowsStrategy != runtimev1.Source_ExtractPolicy_STRATEGY_UNSPECIFIED {
-		sourceExtract.Row = &ExtractConfig{}
-		sourceExtract.Row.Strategy = extract.RowsStrategy.String()
-		bytes := datasize.ByteSize(extract.RowsLimitBytes)
-		sourceExtract.Row.Size = bytes.HumanReadable()
-	}
-
-	return sourceExtract, nil
 }
 
 func toMetricsViewArtifact(catalog *drivers.CatalogEntry) (*MetricsView, error) {
@@ -174,6 +132,10 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 	}
 	if source.Region != "" {
 		props["region"] = source.Region
+	}
+
+	if source.Extract != nil {
+		props["extract"] = source.Extract
 	}
 
 	if source.DuckDBProps != nil {
@@ -249,11 +211,6 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 		return nil, err
 	}
 
-	extract, err := fromExtractArtifact(source.ExtractPolicy)
-	if err != nil {
-		return nil, err
-	}
-
 	name := fileutil.Stem(path)
 	return &drivers.CatalogEntry{
 		Name: name,
@@ -263,84 +220,9 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 			Name:           name,
 			Connector:      source.Type,
 			Properties:     propsPB,
-			Policy:         extract,
 			TimeoutSeconds: source.Timeout,
 		},
 	}, nil
-}
-
-func fromExtractArtifact(policy *ExtractPolicy) (*runtimev1.Source_ExtractPolicy, error) {
-	if policy == nil {
-		return nil, nil
-	}
-
-	extractPolicy := &runtimev1.Source_ExtractPolicy{}
-
-	// parse file
-	if policy.File != nil {
-		// parse strategy
-		strategy, err := parseStrategy(policy.File.Strategy)
-		if err != nil {
-			return nil, err
-		}
-
-		extractPolicy.FilesStrategy = strategy
-
-		// parse size
-		size, err := strconv.ParseUint(policy.File.Size, 10, 64)
-		if err != nil {
-			return nil, fmt.Errorf("invalid size, parse failed with error %w", err)
-		}
-		if size <= 0 {
-			return nil, fmt.Errorf("invalid size %q", size)
-		}
-
-		extractPolicy.FilesLimit = size
-	}
-
-	// parse rows
-	if policy.Row != nil {
-		// parse strategy
-		strategy, err := parseStrategy(policy.Row.Strategy)
-		if err != nil {
-			return nil, err
-		}
-
-		extractPolicy.RowsStrategy = strategy
-
-		// parse size
-		// todo :: add support for number of rows
-		size, err := getBytes(policy.Row.Size)
-		if err != nil {
-			return nil, fmt.Errorf("invalid size, parse failed with error %w", err)
-		}
-		if size <= 0 {
-			return nil, fmt.Errorf("invalid size %q", size)
-		}
-
-		extractPolicy.RowsLimitBytes = size
-	}
-	return extractPolicy, nil
-}
-
-func parseStrategy(s string) (runtimev1.Source_ExtractPolicy_Strategy, error) {
-	switch strings.ToLower(s) {
-	case "tail":
-		return runtimev1.Source_ExtractPolicy_STRATEGY_TAIL, nil
-	case "head":
-		return runtimev1.Source_ExtractPolicy_STRATEGY_HEAD, nil
-	default:
-		return runtimev1.Source_ExtractPolicy_STRATEGY_UNSPECIFIED, fmt.Errorf("invalid extract strategy %q", s)
-	}
-}
-
-func getBytes(size string) (uint64, error) {
-	var s datasize.ByteSize
-	if err := s.UnmarshalText([]byte(size)); err != nil {
-		return 0, err
-	}
-
-	return s.Bytes(), nil
 }
 
 func fromMetricsViewArtifact(metrics *MetricsView, path string) (*drivers.CatalogEntry, error) {

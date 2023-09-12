@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	sqldriver "database/sql/driver"
+	"fmt"
 	"strings"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -13,7 +14,12 @@ import (
 )
 
 // Query implements drivers.SQLStore
-func (c *connection) Query(ctx context.Context, props map[string]any, sql string) (drivers.RowIterator, error) {
+func (c *connection) Query(ctx context.Context, props map[string]any) (drivers.RowIterator, error) {
+	sql, ok := props["sql"].(string)
+	if !ok {
+		return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"motherduck\"")
+	}
+
 	res, err := c.db.QueryxContext(ctx, sql)
 	if err != nil {
 		return nil, err
@@ -37,7 +43,7 @@ func (c *connection) Query(ctx context.Context, props map[string]any, sql string
 }
 
 // QueryAsFiles implements drivers.SQLStore
-func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, sql string, opt *drivers.QueryOption, p drivers.Progress) (drivers.FileIterator, error) {
+func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt *drivers.QueryOption, p drivers.Progress) (drivers.FileIterator, error) {
 	return nil, drivers.ErrNotImplemented
 }
 

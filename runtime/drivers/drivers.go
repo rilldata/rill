@@ -80,7 +80,7 @@ type Driver interface {
 	Drop(config map[string]any, logger *zap.Logger) error
 
 	// HasAnonymousSourceAccess returns true if external system can be accessed without credentials
-	HasAnonymousSourceAccess(ctx context.Context, src Source, logger *zap.Logger) (bool, error)
+	HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error)
 }
 
 // Handle represents a connection to an underlying DB.

@@ -15,9 +15,9 @@ var ErrIteratorDone = errors.New("empty iterator")
 // May be call it DataWarehouse to differentiate from OLAP or postgres?
 type SQLStore interface {
 	// Query returns driver.RowIterator to iterate over results row by row
-	Query(ctx context.Context, props map[string]any, sql string) (RowIterator, error)
+	Query(ctx context.Context, props map[string]any) (RowIterator, error)
 	// QueryAsFiles downloads results into files and returns an iterator to iterate over them
-	QueryAsFiles(ctx context.Context, props map[string]any, sql string, opt *QueryOption, p Progress) (FileIterator, error)
+	QueryAsFiles(ctx context.Context, props map[string]any, opt *QueryOption, p Progress) (FileIterator, error)
 }
 
 type QueryOption struct {
