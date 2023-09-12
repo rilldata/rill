@@ -65,11 +65,17 @@
      * timezone to UTC in such cases.
      *
      */
-
-    if (!availableTimeZones?.length) {
+    if (
+      !availableTimeZones?.length &&
+      $dashboardStore?.selectedTimezone !== "Etc/UTC"
+    ) {
       metricsExplorerStore.setTimeZone(metricViewName, "Etc/UTC");
       localUserPreferences.set({ timeZone: "Etc/UTC" });
     }
+
+    baseTimeRange ??= {
+      ...$dashboardStore.selectedTimeRange,
+    };
   }
 
   // we get the timeGrainOptions so that we can assess whether or not the

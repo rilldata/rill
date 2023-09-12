@@ -4,7 +4,7 @@ import "context"
 
 type ObjectStore interface {
 	// DownloadFiles provides an iterator for downloading and consuming files
-	DownloadFiles(ctx context.Context, src *BucketSource) (FileIterator, error)
+	DownloadFiles(ctx context.Context, src map[string]any) (FileIterator, error)
 }
 
 // FileIterator provides ways to iteratively download files from external sources

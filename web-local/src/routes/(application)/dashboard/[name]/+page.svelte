@@ -63,7 +63,7 @@
           }
 
           // When a mock user doesn't have access to the dashboard, stay on the page to show a message
-          if ($selectedMockUserStore !== null && err.response?.status === 401)
+          if ($selectedMockUserStore !== null && err.response?.status === 404)
             return;
 
           // On all other errors, redirect to the `/edit` page

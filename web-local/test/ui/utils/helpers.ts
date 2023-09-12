@@ -1,4 +1,4 @@
-import { asyncWaitUntil } from "@rilldata/web-local/lib/util/waitUtils";
+import { asyncWaitUntil } from "@rilldata/web-common/lib/waitUtils";
 import type { Page } from "playwright";
 
 export enum TestEntityType {
