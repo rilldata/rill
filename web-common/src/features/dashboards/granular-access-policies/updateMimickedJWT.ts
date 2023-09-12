@@ -1,5 +1,8 @@
 import {
   adminServiceGetDeploymentCredentials,
+  adminServiceGetProject,
+  getAdminServiceGetProjectQueryKey,
+  V1GetProjectResponse,
   type V1User,
 } from "@rilldata/web-admin/client";
 import { viewAsUserStore } from "@rilldata/web-admin/components/authentication/viewAsUserStore";
@@ -30,6 +33,13 @@ export async function updateMimickedJWT(
     } catch (e) {
       // no-op
     }
+  } else {
+    // Get the admin's JWT from `GetProject` call
+    const projResp = await queryClient.fetchQuery<V1GetProjectResponse>({
+      queryKey: getAdminServiceGetProjectQueryKey(organization, project),
+      queryFn: () => adminServiceGetProject(organization, project),
+    });
+    jwt = projResp.jwt;
   }
 
   // selectedMockUserJWT.set(jwt);
