@@ -18,7 +18,7 @@ export type LeaderboardItemData = {
   // selection is not enough to determine if the item is included
   // or excluded; for that we need to know the leaderboard's
   // include/exclude state
-  selected: number;
+  selectedIndex: number;
 };
 
 export function prepareLeaderboardItemData(
@@ -27,12 +27,14 @@ export function prepareLeaderboardItemData(
   comparisonMap: Map<string | number, number>
 ): LeaderboardItemData[] {
   return values.map((v) => {
-    const selected = selectedValues.findIndex((value) => value === v.label);
+    const selectedIndex = selectedValues.findIndex(
+      (value) => value === v.label
+    );
     const comparisonValue = comparisonMap.get(v.label);
 
     return {
       ...v,
-      selected,
+      selectedIndex,
       comparisonValue,
     };
   });

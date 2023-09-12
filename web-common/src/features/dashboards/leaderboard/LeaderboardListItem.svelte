@@ -30,14 +30,14 @@
   export let itemData: LeaderboardItemData;
   $: label = itemData.label;
   $: measureValue = itemData.value;
-  $: selected = itemData.selected >= 0;
+  $: selected = itemData.selectedIndex >= 0;
   $: comparisonValue = itemData.comparisonValue;
 
   export let showContext: LeaderboardContextColumn;
 
   export let atLeastOneActive = false;
   export let isBeingCompared = false;
-  export let index: number;
+  export let index: number = -1;
   export let formattedValue: string;
   export let filterExcludeMode;
 
@@ -140,7 +140,7 @@
       {index}
       {atLeastOneActive}
       {excluded}
-      selectionIndex={itemData.selected}
+      selectionIndex={itemData.selectedIndex}
     />
     <BarAndLabel
       {color}
