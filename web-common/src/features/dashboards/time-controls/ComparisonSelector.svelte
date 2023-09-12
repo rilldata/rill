@@ -105,7 +105,7 @@ This component needs to do the following:
         {NO_COMPARISON_LABEL}
       </span>
     </MenuItem>
-    <Divider />
+    <Divider marginTop={0.5} marginBottom={0.5} />
     <MenuItem
       selected={showTimeComparison}
       on:before-select={() => {
@@ -119,7 +119,7 @@ This component needs to do the following:
       <span class:font-bold={intermediateSelection === TIME}> {TIME} </span>
       <span slot="right"><ClockCircle size="16px" /></span>
     </MenuItem>
-    <Divider />
+    <Divider marginTop={0.5} marginBottom={0.5} />
 
     <div style:max-height="200px" class="overflow-y-auto">
       {#each menuOptions as option}
