@@ -222,13 +222,30 @@ func cleanPath(ctx context.Context, cfg aws.Config, bucketName, prefix string) e
 	return err
 }
 
+type janitorIterator struct {
+	drivers.FileIterator
+	ctx        context.Context
+	cfg        aws.Config
+	bucketName string
+	unloadPath string
+}
+
+func (ci janitorIterator) Close() error {
+	err := ci.FileIterator.Close()
+	if err != nil {
+		return err
+	}
+
+	return cleanPath(ci.ctx, ci.cfg, ci.bucketName, ci.unloadPath)
+}
+
 func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSource) (drivers.FileIterator, error) {
 	conf, err := parseSourceProperties(source.Properties)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	cfg, err := c.Cfg(ctx)
+	cfg, err := c.newCfg(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -255,15 +272,16 @@ func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSo
 		return nil, errors.Join(fmt.Errorf("cannot download parquet output %q %w", opts.GlobPattern, err), cleanPath(ctx, cfg, bucketName, unloadPath))
 	}
 
-	err = cleanPath(ctx, cfg, bucketName, unloadPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to clean path: %w", err)
-	}
-
-	return it, nil
+	return janitorIterator{
+		FileIterator: it,
+		ctx:          ctx,
+		unloadPath:   unloadPath,
+		bucketName:   bucketName,
+		cfg:          cfg,
+	}, nil
 }
 
-func (c *Connection) Cfg(ctx context.Context) (aws.Config, error) {
+func (c *Connection) newCfg(ctx context.Context) (aws.Config, error) {
 	var cfg aws.Config
 	var err error
 	if c.config.AllowHostAccess {
@@ -284,7 +302,7 @@ func (c *Connection) Cfg(ctx context.Context) (aws.Config, error) {
 }
 
 func (c *Connection) openBucket(ctx context.Context, conf *sourceProperties, bucket string) (*blob.Bucket, error) {
-	cfg, err := c.Cfg(ctx)
+	cfg, err := c.newCfg(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -318,8 +336,7 @@ func (c *Connection) unload(ctx context.Context, cfg aws.Config, conf *sourcePro
 		return err
 	}
 
-	r := retrier.New(retrier.ConstantBackoff(20, 1*time.Second), nil)
-
+	r := retrier.New(retrier.ConstantBackoff(int(5*time.Minute/time.Second), time.Second), nil) // 5 minutes timeout
 	return r.RunCtx(ctx, func(ctx context.Context) error {
 		status, err := client.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{
 			QueryExecutionId: athenaExecution.QueryExecutionId,
@@ -335,6 +352,6 @@ func (c *Connection) unload(ctx context.Context, cfg aws.Config, conf *sourcePro
 		} else if state == types.QueryExecutionStateFailed {
 			return fmt.Errorf("Athena query execution failed %s", *status.QueryExecution.Status.AthenaError.ErrorMessage)
 		}
-		return fmt.Errorf("Execution is not completed yet, current state: %s", state)
+		return fmt.Errorf("Athena ingestion timeout")
 	})
 }
