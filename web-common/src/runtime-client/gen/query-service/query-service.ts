@@ -470,78 +470,102 @@ export const queryServiceMetricsViewAggregation = (
   });
 };
 
-export const getQueryServiceMetricsViewAggregationMutationOptions = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>,
-    TError,
-    {
-      instanceId: string;
-      metricsView: string;
-      data: QueryServiceMetricsViewAggregationBody;
-    },
-    TContext
-  >;
-}): CreateMutationOptions<
+export const getQueryServiceMetricsViewAggregationQueryKey = (
+  instanceId: string,
+  metricsView: string,
+  queryServiceMetricsViewAggregationBody: QueryServiceMetricsViewAggregationBody
+) =>
+  [
+    `/v1/instances/${instanceId}/queries/metrics-views/${metricsView}/aggregation`,
+    queryServiceMetricsViewAggregationBody,
+  ] as const;
+
+export const getQueryServiceMetricsViewAggregationQueryOptions = <
+  TData = Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  metricsView: string,
+  queryServiceMetricsViewAggregationBody: QueryServiceMetricsViewAggregationBody,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryOptions<
   Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>,
   TError,
-  {
-    instanceId: string;
-    metricsView: string;
-    data: QueryServiceMetricsViewAggregationBody;
-  },
-  TContext
-> => {
-  const { mutation: mutationOptions } = options ?? {};
+  TData
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>,
-    {
-      instanceId: string;
-      metricsView: string;
-      data: QueryServiceMetricsViewAggregationBody;
-    }
-  > = (props) => {
-    const { instanceId, metricsView, data } = props ?? {};
+  const queryKey =
+    queryOptions?.queryKey ??
+    getQueryServiceMetricsViewAggregationQueryKey(
+      instanceId,
+      metricsView,
+      queryServiceMetricsViewAggregationBody
+    );
 
-    return queryServiceMetricsViewAggregation(instanceId, metricsView, data);
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>
+  > = () =>
+    queryServiceMetricsViewAggregation(
+      instanceId,
+      metricsView,
+      queryServiceMetricsViewAggregationBody
+    );
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(instanceId && metricsView),
+    ...queryOptions,
   };
-
-  return { mutationFn, ...mutationOptions };
 };
 
-export type QueryServiceMetricsViewAggregationMutationResult = NonNullable<
+export type QueryServiceMetricsViewAggregationQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>
 >;
-export type QueryServiceMetricsViewAggregationMutationBody =
-  QueryServiceMetricsViewAggregationBody;
-export type QueryServiceMetricsViewAggregationMutationError = RpcStatus;
+export type QueryServiceMetricsViewAggregationQueryError = RpcStatus;
 
 /**
  * @summary MetricsViewAggregation is a generic API for running group-by queries against a metrics view.
  */
 export const createQueryServiceMetricsViewAggregation = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>,
-    TError,
-    {
-      instanceId: string;
-      metricsView: string;
-      data: QueryServiceMetricsViewAggregationBody;
-    },
-    TContext
-  >;
-}) => {
-  const mutationOptions =
-    getQueryServiceMetricsViewAggregationMutationOptions(options);
+  TData = Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  metricsView: string,
+  queryServiceMetricsViewAggregationBody: QueryServiceMetricsViewAggregationBody,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const queryOptions = getQueryServiceMetricsViewAggregationQueryOptions(
+    instanceId,
+    metricsView,
+    queryServiceMetricsViewAggregationBody,
+    options
+  );
 
-  return createMutation(mutationOptions);
+  const query = createQuery(queryOptions) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
 };
+
 export const queryServiceMetricsViewComparisonToplist = (
   instanceId: string,
   metricsViewName: string,
