@@ -7,16 +7,12 @@ import { PERC_DIFF } from "../../../components/data-types/type-utils";
 import {
   FormatPreset,
   formatMeasurePercentageDifference,
+  formatProperFractionAsPercent,
   humanizeDataType,
 } from "../humanize-numbers";
 import { LeaderboardContextColumn } from "../leaderboard-context-column";
 import { SortType } from "../proto-state/derived-types";
 import type { NumberParts } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
-
-export function getFormatterValueForPercDiff(pct: number | null) {
-  if (pct === null) return PERC_DIFF.PREV_VALUE_NO_DATA;
-  return formatMeasurePercentageDifference(pct);
-}
 
 /**
  * A `V1MetricsViewComparisonRow` basically represents a row of data
@@ -89,7 +85,7 @@ function cleanUpComparisonValue(
   return {
     dimensionValue: v.dimensionValue,
     value,
-    pctOfTotal: total && value ? (value / total) * 100 : null,
+    pctOfTotal: total && value ? value / total : null,
     prevValue: Number.isFinite(v.comparisonValue)
       ? (v.comparisonValue as number)
       : null,
@@ -187,27 +183,35 @@ export function formatContextColumnValue(
   contextType: LeaderboardContextColumn,
   formatPreset: FormatPreset
 ): string | NumberParts | PERC_DIFF.PREV_VALUE_NO_DATA {
-  if (contextType === LeaderboardContextColumn.DELTA_PERCENT) {
-    return getFormatterValueForPercDiff(itemData.deltaRel);
-  } else if (contextType === LeaderboardContextColumn.PERCENT) {
-    return getFormatterValueForPercDiff(itemData.pctOfTotal);
-  } else if (contextType === LeaderboardContextColumn.DELTA_ABSOLUTE) {
-    return humanizeDataType(itemData.deltaAbs, formatPreset);
-  } else {
-    return "";
+  switch (contextType) {
+    case LeaderboardContextColumn.DELTA_ABSOLUTE: {
+      return humanizeDataType(itemData.deltaAbs, formatPreset);
+    }
+    case LeaderboardContextColumn.DELTA_PERCENT:
+      if (itemData.deltaRel === null || itemData.deltaRel === undefined)
+        return PERC_DIFF.PREV_VALUE_NO_DATA;
+      return formatMeasurePercentageDifference(itemData.deltaRel);
+    case LeaderboardContextColumn.PERCENT:
+      return formatProperFractionAsPercent(itemData.pctOfTotal);
+    case LeaderboardContextColumn.HIDDEN:
+      return "";
+    default:
+      throw new Error("Invalid context column, all cases must be handled");
   }
 }
 export const contextColumnWidth = (
   contextType: LeaderboardContextColumn
 ): string => {
-  if (contextType === LeaderboardContextColumn.DELTA_PERCENT) {
-    return "44px";
-  } else if (contextType === LeaderboardContextColumn.PERCENT) {
-    return "44px";
-  } else if (contextType === LeaderboardContextColumn.DELTA_ABSOLUTE) {
-    return "56px";
-  } else {
-    return "0px";
+  switch (contextType) {
+    case LeaderboardContextColumn.DELTA_ABSOLUTE:
+    case LeaderboardContextColumn.DELTA_PERCENT:
+      return "56px";
+    case LeaderboardContextColumn.PERCENT:
+      return "44px";
+    case LeaderboardContextColumn.HIDDEN:
+      return "0px";
+    default:
+      throw new Error("Invalid context column, all cases must be handled");
   }
 };
 

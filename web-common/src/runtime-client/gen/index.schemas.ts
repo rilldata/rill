@@ -399,6 +399,10 @@ export type RuntimeServiceIssueDevJWTParams = {
   admin?: boolean;
 };
 
+export type ConnectorServiceScanConnectorsParams = {
+  instanceId?: string;
+};
+
 export type ConnectorServiceBigQueryListTablesParams = {
   instanceId?: string;
   connector?: string;
@@ -491,6 +495,12 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -523,12 +533,6 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
-
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
 
 export type V1TableRowsResponseDataItem = { [key: string]: any };
 
@@ -606,7 +610,6 @@ export interface V1Source {
   connector?: string;
   properties?: V1SourceProperties;
   schema?: V1StructType;
-  policy?: SourceExtractPolicy;
   timeoutSeconds?: number;
 }
 
@@ -624,6 +627,16 @@ export interface V1SourceSpec {
   stageChanges?: boolean;
   streamIngestion?: boolean;
   trigger?: boolean;
+}
+
+export interface V1ScannedConnector {
+  name?: string;
+  type?: string;
+  hasAnonymousAccess?: boolean;
+}
+
+export interface V1ScanConnectorsResponse {
+  connectors?: V1ScannedConnector[];
 }
 
 export interface V1S3Object {
@@ -1702,20 +1715,10 @@ export interface V1BucketPlanner {
   state?: V1BucketPlannerState;
 }
 
-export type V1BucketExtractPolicyStrategy =
-  (typeof V1BucketExtractPolicyStrategy)[keyof typeof V1BucketExtractPolicyStrategy];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1BucketExtractPolicyStrategy = {
-  STRATEGY_UNSPECIFIED: "STRATEGY_UNSPECIFIED",
-  STRATEGY_HEAD: "STRATEGY_HEAD",
-  STRATEGY_TAIL: "STRATEGY_TAIL",
-} as const;
-
 export interface V1BucketExtractPolicy {
-  rowsStrategy?: V1BucketExtractPolicyStrategy;
+  rowsStrategy?: BucketExtractPolicyStrategy;
   rowsLimitBytes?: string;
-  filesStrategy?: V1BucketExtractPolicyStrategy;
+  filesStrategy?: BucketExtractPolicyStrategy;
   filesLimit?: string;
 }
 
@@ -1782,23 +1785,6 @@ export interface TimeRangeSummaryInterval {
 export interface StructTypeField {
   name?: string;
   type?: Runtimev1Type;
-}
-
-export type SourceExtractPolicyStrategy =
-  (typeof SourceExtractPolicyStrategy)[keyof typeof SourceExtractPolicyStrategy];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const SourceExtractPolicyStrategy = {
-  STRATEGY_UNSPECIFIED: "STRATEGY_UNSPECIFIED",
-  STRATEGY_HEAD: "STRATEGY_HEAD",
-  STRATEGY_TAIL: "STRATEGY_TAIL",
-} as const;
-
-export interface SourceExtractPolicy {
-  rowsStrategy?: SourceExtractPolicyStrategy;
-  rowsLimitBytes?: string;
-  filesStrategy?: SourceExtractPolicyStrategy;
-  filesLimit?: string;
 }
 
 export interface SecurityV2FieldConditionV2 {
@@ -1915,3 +1901,13 @@ export interface ColumnTimeSeriesRequestBasicMeasure {
   expression?: string;
   sqlName?: string;
 }
+
+export type BucketExtractPolicyStrategy =
+  (typeof BucketExtractPolicyStrategy)[keyof typeof BucketExtractPolicyStrategy];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const BucketExtractPolicyStrategy = {
+  STRATEGY_UNSPECIFIED: "STRATEGY_UNSPECIFIED",
+  STRATEGY_HEAD: "STRATEGY_HEAD",
+  STRATEGY_TAIL: "STRATEGY_TAIL",
+} as const;

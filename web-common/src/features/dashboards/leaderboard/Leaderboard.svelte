@@ -148,8 +148,6 @@
     sortedQueryOptions
   );
 
-  // $: console.log("sortedQuery BODY --", dimensionName, sortedQueryBody);
-  // $: console.log("sortedQuery OPTIONS --", dimensionName, sortedQueryOptions);
   $: if (!$sortedQuery.isFetching) {
     console.log("sortedQuery RAW DATA --", dimensionName, $sortedQuery?.data);
   }

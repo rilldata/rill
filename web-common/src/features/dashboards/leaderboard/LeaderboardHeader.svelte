@@ -34,8 +34,6 @@
   $: arrowTransform = sortAscending ? "scale(1 -1)" : "scale(1 1)";
 
   let optionsMenuActive = false;
-
-  $: arrowTransform = sortAscending ? "scale(1 -1)" : "scale(1 1)";
 </script>
 
 <div class="flex flex-row items-center">

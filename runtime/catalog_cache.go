@@ -91,7 +91,7 @@ func (c *catalogCache) close(ctx context.Context) error {
 // Unlike other catalog functions, it is safe to call flush concurrently with calls to get and list (i.e. under a read lock).
 func (c *catalogCache) flush(ctx context.Context) error {
 	for s, n := range c.dirty {
-		r, err := c.get(n, true)
+		r, err := c.get(n, true, false)
 		if err != nil {
 			if !errors.Is(err, drivers.ErrResourceNotFound) {
 				return fmt.Errorf("flush: unexpected error from get: %w", err)
@@ -135,19 +135,45 @@ func (c *catalogCache) checkLeader(ctx context.Context) error {
 	return nil
 }
 
+// get returns a resource from the catalog.
+// Unlike other catalog functions, it is safe to call get concurrently with calls to list and flush (i.e. under a read lock).
+func (c *catalogCache) get(n *runtimev1.ResourceName, withDeleted, clone bool) (*runtimev1.Resource, error) {
+	rs := c.resources[n.Kind]
+	if rs == nil {
+		return nil, drivers.ErrResourceNotFound
+	}
+	r, ok := rs[strings.ToLower(n.Name)]
+	if !ok {
+		return nil, drivers.ErrResourceNotFound
+	}
+	if r.Meta.DeletedOn != nil && !withDeleted {
+		return nil, drivers.ErrResourceNotFound
+	}
+	if clone {
+		return c.clone(r), nil
+	}
+	return r, nil
+}
+
 // list returns a list of resources in the catalog.
 // Unlike other catalog functions, it is safe to call list concurrently with calls to get and flush (i.e. under a read lock).
-func (c *catalogCache) list(kind string, withDeleted bool) ([]*runtimev1.Resource, error) {
+func (c *catalogCache) list(kind string, withDeleted, clone bool) ([]*runtimev1.Resource, error) {
 	if kind != "" {
 		n := len(c.resources[kind])
 		res := make([]*runtimev1.Resource, 0, n)
 		if withDeleted {
 			for _, r := range c.resources[kind] {
+				if clone {
+					r = c.clone(r)
+				}
 				res = append(res, r)
 			}
 		} else {
 			for _, r := range c.resources[kind] {
 				if r.Meta.DeletedOn == nil {
+					if clone {
+						r = c.clone(r)
+					}
 					res = append(res, r)
 				}
 			}
@@ -165,6 +191,9 @@ func (c *catalogCache) list(kind string, withDeleted bool) ([]*runtimev1.Resourc
 	if withDeleted {
 		for _, rs := range c.resources {
 			for _, r := range rs {
+				if clone {
+					r = c.clone(r)
+				}
 				res = append(res, r)
 			}
 		}
@@ -172,6 +201,9 @@ func (c *catalogCache) list(kind string, withDeleted bool) ([]*runtimev1.Resourc
 		for _, rs := range c.resources {
 			for _, r := range rs {
 				if r.Meta.DeletedOn == nil {
+					if clone {
+						r = c.clone(r)
+					}
 					res = append(res, r)
 				}
 			}
@@ -181,28 +213,12 @@ func (c *catalogCache) list(kind string, withDeleted bool) ([]*runtimev1.Resourc
 	return res, nil
 }
 
-// get returns a resource from the catalog.
-// Unlike other catalog functions, it is safe to call get concurrently with calls to list and flush (i.e. under a read lock).
-func (c *catalogCache) get(n *runtimev1.ResourceName, withDeleted bool) (*runtimev1.Resource, error) {
-	rs := c.resources[n.Kind]
-	if rs == nil {
-		return nil, drivers.ErrResourceNotFound
-	}
-	r, ok := rs[strings.ToLower(n.Name)]
-	if !ok {
-		return nil, drivers.ErrResourceNotFound
-	}
-	if r.Meta.DeletedOn != nil && !withDeleted {
-		return nil, drivers.ErrResourceNotFound
-	}
-	return r, nil
-}
-
 // create creates a resource in the catalog.
 // It will error if a resource with the same name already exists.
 // If a soft-deleted resource exists with the same name, it will be overwritten (no longer deleted).
+// The passed resource should only have its spec populated. The meta and state fields will be populated by this function.
 func (c *catalogCache) create(name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths []string, r *runtimev1.Resource) error {
-	existing, _ := c.get(name, true)
+	existing, _ := c.get(name, true, false)
 	if existing != nil {
 		if existing.Meta.DeletedOn == nil {
 			return drivers.ErrResourceAlreadyExists
@@ -222,6 +238,10 @@ func (c *catalogCache) create(name *runtimev1.ResourceName, refs []*runtimev1.Re
 		r.Meta.Version = existing.Meta.Version + 1
 		r.Meta.SpecVersion = existing.Meta.SpecVersion + 1
 	}
+	err := c.ctrl.reconciler(name.Kind).ResetState(r)
+	if err != nil {
+		return err
+	}
 	c.link(r)
 	c.dirty[nameStr(r.Meta.Name)] = r.Meta.Name
 	c.addEvent(name, r, runtimev1.ResourceEvent_RESOURCE_EVENT_WRITE)
@@ -230,7 +250,7 @@ func (c *catalogCache) create(name *runtimev1.ResourceName, refs []*runtimev1.Re
 
 // rename renames a resource in the catalog and sets the r.Meta.RenamedFrom field.
 func (c *catalogCache) rename(name, newName *runtimev1.ResourceName) error {
-	r, err := c.get(name, false)
+	r, err := c.get(name, false, false)
 	if err != nil {
 		return err
 	}
@@ -250,7 +270,7 @@ func (c *catalogCache) rename(name, newName *runtimev1.ResourceName) error {
 
 // clearRenamedFrom clears the r.Meta.RenamedFrom field without bumping version numbers.
 func (c *catalogCache) clearRenamedFrom(name *runtimev1.ResourceName) error {
-	r, err := c.get(name, false)
+	r, err := c.get(name, false, false)
 	if err != nil {
 		return err
 	}
@@ -267,7 +287,7 @@ func (c *catalogCache) clearRenamedFrom(name *runtimev1.ResourceName) error {
 
 // updateMeta updates the meta fields of a resource.
 func (c *catalogCache) updateMeta(name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths []string) error {
-	r, err := c.get(name, false)
+	r, err := c.get(name, false, false)
 	if err != nil {
 		return err
 	}
@@ -285,13 +305,13 @@ func (c *catalogCache) updateMeta(name *runtimev1.ResourceName, refs []*runtimev
 }
 
 // updateSpec updates the spec field of a resource.
+// It uses the spec from the passed resource and disregards its other fields.
 func (c *catalogCache) updateSpec(name *runtimev1.ResourceName, from *runtimev1.Resource) error {
-	r, err := c.get(name, false)
+	r, err := c.get(name, false, false)
 	if err != nil {
 		return err
 	}
 	// NOTE: No need to unlink/link because no indexed fields are edited.
-
 	err = c.ctrl.reconciler(name.Kind).AssignSpec(from, r)
 	if err != nil {
 		return err
@@ -305,8 +325,9 @@ func (c *catalogCache) updateSpec(name *runtimev1.ResourceName, from *runtimev1.
 }
 
 // updateState updates the state field of a resource.
+// It uses the state from the passed resource and disregards its other fields.
 func (c *catalogCache) updateState(name *runtimev1.ResourceName, from *runtimev1.Resource) error {
-	r, err := c.get(name, false)
+	r, err := c.get(name, false, false)
 	if err != nil {
 		return err
 	}
@@ -325,7 +346,7 @@ func (c *catalogCache) updateState(name *runtimev1.ResourceName, from *runtimev1
 
 // updateError updates the reconcile_error field of a resource.
 func (c *catalogCache) updateError(name *runtimev1.ResourceName, reconcileErr error) error {
-	r, err := c.get(name, false)
+	r, err := c.get(name, false, false)
 	if err != nil {
 		return err
 	}
@@ -342,7 +363,7 @@ func (c *catalogCache) updateError(name *runtimev1.ResourceName, reconcileErr er
 // updateDeleted sets the deleted_on field of a resource (a soft delete).
 // Afterwards, the resource can still be accessed by passing withDeleted to the getters.
 func (c *catalogCache) updateDeleted(name *runtimev1.ResourceName) error {
-	r, err := c.get(name, false)
+	r, err := c.get(name, false, false)
 	if err != nil {
 		return err
 	}
@@ -360,7 +381,7 @@ func (c *catalogCache) updateDeleted(name *runtimev1.ResourceName) error {
 // updateStatus updates the ephemeral status fields on a resource.
 // The values of these fields are reset next time a catalog cache is created.
 func (c *catalogCache) updateStatus(name *runtimev1.ResourceName, status runtimev1.ReconcileStatus, reconcileOn time.Time) error {
-	r, err := c.get(name, true)
+	r, err := c.get(name, true, false)
 	if err != nil {
 		return err
 	}
@@ -377,7 +398,7 @@ func (c *catalogCache) updateStatus(name *runtimev1.ResourceName, status runtime
 // delete permanently deletes a resource from the catalog (a hard delete).
 // Afterwards, the resource can no longer be accessed.
 func (c *catalogCache) delete(name *runtimev1.ResourceName) error {
-	r, err := c.get(name, true)
+	r, err := c.get(name, true, false)
 	if err != nil {
 		return err
 	}
@@ -424,12 +445,17 @@ func (c *catalogCache) unlink(r *runtimev1.Resource) {
 	delete(c.renamed, s)
 }
 
+// clone clones a resource such that it is safe to mutate without affecting a cached resource.
+func (c *catalogCache) clone(r *runtimev1.Resource) *runtimev1.Resource {
+	return proto.Clone(r).(*runtimev1.Resource)
+}
+
 // retryCyclicRefs attempts to re-link resources into the DAG that were previously rejected due to cyclic references.
 // It returns a list of resource names that were successfully linked into the DAG.
 func (c *catalogCache) retryCyclicRefs() []*runtimev1.ResourceName {
 	var res []*runtimev1.ResourceName
 	for s, n := range c.cyclic {
-		r, err := c.get(n, false)
+		r, err := c.get(n, false, false)
 		if err != nil {
 			panic(err)
 		}

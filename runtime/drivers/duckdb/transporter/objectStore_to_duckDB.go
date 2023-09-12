@@ -30,17 +30,13 @@ func NewObjectStoreToDuckDB(from drivers.ObjectStore, to drivers.OLAPStore, logg
 	}
 }
 
-func (t *objectStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, sink drivers.Sink, opts *drivers.TransferOpts, p drivers.Progress) error {
-	src, ok := source.BucketSource()
-	if !ok {
-		return fmt.Errorf("type of source should `drivers.BucketSource`")
-	}
-	dbSink, ok := sink.DatabaseSink()
-	if !ok {
-		return fmt.Errorf("type of source should `drivers.DatabaseSink`")
+func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[string]any, opts *drivers.TransferOpts, p drivers.Progress) error {
+	sinkCfg, err := parseSinkProperties(sinkProps)
+	if err != nil {
+		return err
 	}
 
-	iterator, err := t.from.DownloadFiles(ctx, src)
+	iterator, err := t.from.DownloadFiles(ctx, srcProps)
 	if err != nil {
 		return err
 	}
@@ -51,27 +47,27 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, source drivers.Sourc
 		return drivers.ErrIngestionLimitExceeded
 	}
 
-	sql, hasSQL := src.Properties["sql"].(string)
 	// if sql is specified use ast rewrite to fill in the downloaded files
+	sql, hasSQL := srcProps["sql"].(string)
 	if hasSQL {
-		return t.ingestDuckDBSQL(ctx, sql, iterator, dbSink, opts, p)
+		return t.ingestDuckDBSQL(ctx, sql, iterator, sinkCfg, opts, p)
 	}
 
 	p.Target(size, drivers.ProgressUnitByte)
 	appendToTable := false
 	var format string
-	val, formatDefined := src.Properties["format"].(string)
+	val, formatDefined := srcProps["format"].(string)
 	if formatDefined {
 		format = fmt.Sprintf(".%s", val)
 	}
 
-	allowSchemaRelaxation, err := schemaRelaxationProperty(src.Properties)
+	allowSchemaRelaxation, err := schemaRelaxationProperty(srcProps)
 	if err != nil {
 		return err
 	}
 
 	var ingestionProps map[string]any
-	if duckDBProps, ok := src.Properties["duckdb"].(map[string]any); ok {
+	if duckDBProps, ok := srcProps["duckdb"].(map[string]any); ok {
 		ingestionProps = duckDBProps
 	} else {
 		ingestionProps = map[string]any{}
@@ -81,7 +77,7 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, source drivers.Sourc
 		ingestionProps["union_by_name"] = true
 	}
 
-	a := newAppender(t.to, dbSink, ingestionProps, allowSchemaRelaxation, t.logger)
+	a := newAppender(t.to, sinkCfg, ingestionProps, allowSchemaRelaxation, t.logger)
 
 	for iterator.HasNext() {
 		files, err := iterator.NextBatch(opts.IteratorBatch)
@@ -106,8 +102,8 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, source drivers.Sourc
 				return err
 			}
 
-			query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", safeName(dbSink.Table), from)
-			if err := t.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1}); err != nil {
+			query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", safeName(sinkCfg.Table), from)
+			if err := t.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1, LongRunning: true}); err != nil {
 				return err
 			}
 		}
@@ -122,14 +118,14 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, source drivers.Sourc
 
 type appender struct {
 	to                    drivers.OLAPStore
-	sink                  *drivers.DatabaseSink
+	sink                  *sinkProperties
 	ingestionProps        map[string]any
 	allowSchemaRelaxation bool
 	tableSchema           map[string]string
 	logger                *zap.Logger
 }
 
-func newAppender(to drivers.OLAPStore, sink *drivers.DatabaseSink, ingestionProps map[string]any,
+func newAppender(to drivers.OLAPStore, sink *sinkProperties, ingestionProps map[string]any,
 	allowSchemaRelaxation bool, logger *zap.Logger,
 ) *appender {
 	return &appender{
@@ -155,7 +151,7 @@ func (a *appender) appendData(ctx context.Context, files []string, format string
 		query = fmt.Sprintf("INSERT INTO %s (SELECT * FROM %s);", safeName(a.sink.Table), from)
 	}
 	a.logger.Debug("generated query", zap.String("query", query), observability.ZapCtx(ctx))
-	err = a.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
+	err = a.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1, LongRunning: true})
 	if err == nil || !a.allowSchemaRelaxation || !containsAny(err.Error(), []string{"binder error", "conversion error"}) {
 		return err
 	}
@@ -169,7 +165,7 @@ func (a *appender) appendData(ctx context.Context, files []string, format string
 
 	query = fmt.Sprintf("INSERT INTO %s BY NAME (SELECT * FROM %s);", safeName(a.sink.Table), from)
 	a.logger.Debug("generated query", zap.String("query", query), observability.ZapCtx(ctx))
-	return a.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
+	return a.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1, LongRunning: true})
 }
 
 // updateSchema updates the schema of the table in case new file adds a new column or
@@ -230,7 +226,7 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 	for colName, colType := range newCols {
 		a.tableSchema[colName] = colType
 		qry := fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", safeName(a.sink.Table), safeName(colName), colType)
-		if err := a.to.Exec(ctx, &drivers.Statement{Query: qry}); err != nil {
+		if err := a.to.Exec(ctx, &drivers.Statement{Query: qry, LongRunning: true}); err != nil {
 			return err
 		}
 	}
@@ -238,7 +234,7 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 	for colName, colType := range colTypeChanged {
 		a.tableSchema[colName] = colType
 		qry := fmt.Sprintf("ALTER TABLE %s ALTER COLUMN %s SET DATA TYPE %s", safeName(a.sink.Table), safeName(colName), colType)
-		if err := a.to.Exec(ctx, &drivers.Statement{Query: qry}); err != nil {
+		if err := a.to.Exec(ctx, &drivers.Statement{Query: qry, LongRunning: true}); err != nil {
 			return err
 		}
 	}
@@ -247,7 +243,7 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 }
 
 func (a *appender) scanSchemaFromQuery(ctx context.Context, qry string) (map[string]string, error) {
-	result, err := a.to.Execute(ctx, &drivers.Statement{Query: qry, Priority: 1})
+	result, err := a.to.Execute(ctx, &drivers.Statement{Query: qry, Priority: 1, LongRunning: true})
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +269,7 @@ func (t *objectStoreToDuckDB) ingestDuckDBSQL(
 	ctx context.Context,
 	originalSQL string,
 	iterator drivers.FileIterator,
-	dbSink *drivers.DatabaseSink,
+	dbSink *sinkProperties,
 	opts *drivers.TransferOpts,
 	p drivers.Progress,
 ) error {
@@ -324,7 +320,7 @@ func (t *objectStoreToDuckDB) ingestDuckDBSQL(
 
 	st := time.Now()
 	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s);", dbSink.Table, sql)
-	err = t.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
+	err = t.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1, LongRunning: true})
 	if err != nil {
 		return err
 	}

@@ -387,7 +387,6 @@ const metricViewReducers = {
       // if sortType is not provided,  or if it is provided
       // and is the same as the current sort type,
       // then just toggle the current sort direction
-
       if (
         sortType === undefined ||
         metricsExplorer.dashboardSortType === sortType
@@ -505,34 +504,29 @@ const metricViewReducers = {
     });
   },
 
-  displayDeltaChange(name: string) {
+  setContextColumn(name: string, contextColumn: LeaderboardContextColumn) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      // NOTE: only show delta change if time comparison is enabled
-      if (metricsExplorer.showComparison === false) return;
-      setContextColumn(metricsExplorer, LeaderboardContextColumn.DELTA_PERCENT);
-    });
-  },
+      switch (contextColumn) {
+        case LeaderboardContextColumn.DELTA_ABSOLUTE:
+        case LeaderboardContextColumn.DELTA_PERCENT: {
+          if (metricsExplorer.showComparison === false) return;
+          metricsExplorer.leaderboardContextColumn = contextColumn;
+          break;
+        }
+        default:
+          metricsExplorer.leaderboardContextColumn = contextColumn;
+      }
 
-  displayDeltaAbsolute(name: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      // NOTE: only show delta absolute if time comparison is enabled
-      if (metricsExplorer.showComparison === false) return;
-      setContextColumn(
-        metricsExplorer,
-        LeaderboardContextColumn.DELTA_ABSOLUTE
-      );
-    });
-  },
-
-  displayPercentOfTotal(name: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      setContextColumn(metricsExplorer, LeaderboardContextColumn.PERCENT);
-    });
-  },
-
-  hideContextColumn(name: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      setContextColumn(metricsExplorer, LeaderboardContextColumn.HIDDEN);
+      // if we have changed the context column, and the leaderboard is currently
+      // sorted by the active context column, then we also need to change
+      // the sort type to match the new context column
+      if (
+        metricsExplorer.dashboardSortType ===
+        sortTypeForContextColumnType(metricsExplorer.leaderboardContextColumn)
+      ) {
+        metricsExplorer.dashboardSortType =
+          sortTypeForContextColumnType(contextColumn);
+      }
     });
   },
 
@@ -703,24 +697,6 @@ function sortTypeForContextColumnType(
     throw new Error(`Invalid context column type: ${contextCol}`);
   }
   return sortType;
-}
-
-function setContextColumn(
-  metricsExplorer: MetricsExplorerEntity,
-  contextCol: LeaderboardContextColumn
-) {
-  // if we change the context column, and the leaderboard is currently
-  // sorted by the active context column, then we also need to change
-  // the sort type to match the new context column
-  if (
-    metricsExplorer.dashboardSortType ===
-    sortTypeForContextColumnType(metricsExplorer.leaderboardContextColumn)
-  ) {
-    metricsExplorer.dashboardSortType =
-      sortTypeForContextColumnType(contextCol);
-  }
-
-  metricsExplorer.leaderboardContextColumn = contextCol;
 }
 
 function setSelectedScrubRange(
