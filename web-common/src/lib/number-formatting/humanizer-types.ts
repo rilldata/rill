@@ -8,6 +8,7 @@ export type NumberParts = {
   frac: string;
   suffix: string;
   percent?: "%";
+  approxZero?: boolean;
 };
 
 export type NumericRange = {
