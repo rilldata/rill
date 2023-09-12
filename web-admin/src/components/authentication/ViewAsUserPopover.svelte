@@ -6,6 +6,7 @@
   import { matchSorter } from "match-sorter";
   import { createEventDispatcher } from "svelte";
   import { createAdminServiceSearchProjectUsers, V1User } from "../../client";
+  import { errorStore } from "../errors/error-store";
   import { viewAsUserStore } from "./viewAsUserStore";
 
   export let organization: string;
@@ -21,9 +22,10 @@
   const dispatch = createEventDispatcher();
 
   const queryClient = useQueryClient();
-  function viewAsUser(user: V1User) {
+  async function viewAsUser(user: V1User) {
     viewAsUserStore.set(user);
-    updateMimickedJWT(queryClient, organization, project, user);
+    await updateMimickedJWT(queryClient, organization, project, user);
+    errorStore.reset();
     dispatch("select");
   }
 
