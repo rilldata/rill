@@ -12,12 +12,14 @@
 
 <IconButton
   on:click={(e) => {
-    dispatch("compare-dimension");
+    dispatch("toggle-dimension-comparison");
     e.stopPropagation();
   }}
 >
   <Tooltip location="left" distance={8}>
     <Compare isColored={isBeingCompared} />
-    <TooltipContent slot="tooltip-content">Compare</TooltipContent>
+    <TooltipContent slot="tooltip-content">
+      {isBeingCompared ? "Remove comparison" : "Compare"}
+    </TooltipContent>
   </Tooltip>
 </IconButton>

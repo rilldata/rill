@@ -39,7 +39,10 @@
     {:else if hovered || isBeingCompared}
       <div style="position:relative; height:100%; width:100%; ">
         <div style="position: absolute; ">
-          <LeaderboardOptionsMenu {isBeingCompared} on:compare-dimension />
+          <LeaderboardOptionsMenu
+            {isBeingCompared}
+            on:toggle-dimension-comparison
+          />
         </div>
       </div>
     {/if}

@@ -185,7 +185,7 @@ describe("time-control-store", () => {
     );
     await new Promise((resolve) => setTimeout(resolve, 10));
 
-    metricsExplorerStore.displayComparison(AD_BIDS_NAME, true);
+    metricsExplorerStore.displayTimeComparison(AD_BIDS_NAME, true);
     metricsExplorerStore.setSelectedTimeRange(AD_BIDS_NAME, {
       name: TimeRangePreset.LAST_24_HOURS,
       start: undefined,
@@ -255,7 +255,7 @@ describe("time-control-store", () => {
       "2022-03-31T18:30:00.000Z"
     );
 
-    metricsExplorerStore.displayComparison(AD_BIDS_NAME, true);
+    metricsExplorerStore.displayTimeComparison(AD_BIDS_NAME, true);
     metricsExplorerStore.setSelectedTimeRange(AD_BIDS_NAME, {
       name: TimeRangePreset.LAST_24_HOURS,
       start: undefined,
@@ -294,7 +294,7 @@ describe("time-control-store", () => {
     );
     const { unmount } = initTimeControlStoreTest(AD_BIDS_INIT_WITH_TIME);
     await new Promise((resolve) => setTimeout(resolve, 10));
-    metricsExplorerStore.displayComparison(AD_BIDS_NAME, true);
+    metricsExplorerStore.displayTimeComparison(AD_BIDS_NAME, true);
     metricsExplorerStore.setSelectedComparisonRange(AD_BIDS_NAME, {
       name: "P1M",
     } as any);

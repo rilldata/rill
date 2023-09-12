@@ -442,7 +442,7 @@ const metricViewReducers = {
     });
   },
 
-  displayComparison(name: string, showComparison: boolean) {
+  displayTimeComparison(name: string, showComparison: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       setDisplayComparison(metricsExplorer, showComparison);
     });

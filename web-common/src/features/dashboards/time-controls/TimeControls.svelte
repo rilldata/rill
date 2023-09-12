@@ -132,16 +132,16 @@
   }
 
   function disableComparisons() {
-    metricsExplorerStore.displayComparison(metricViewName, false);
+    metricsExplorerStore.displayTimeComparison(metricViewName, false);
     metricsExplorerStore.setComparisonDimension(metricViewName, undefined);
   }
 
   function enableComparison(type: string, name: string) {
     if (type === "time") {
-      metricsExplorerStore.displayComparison(metricViewName, true);
+      metricsExplorerStore.displayTimeComparison(metricViewName, true);
       metricsExplorerStore.setComparisonDimension(metricViewName, undefined);
     } else {
-      metricsExplorerStore.displayComparison(metricViewName, false);
+      metricsExplorerStore.displayTimeComparison(metricViewName, false);
       metricsExplorerStore.setComparisonDimension(metricViewName, name);
     }
   }

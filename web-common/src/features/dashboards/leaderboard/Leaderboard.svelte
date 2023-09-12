@@ -86,9 +86,18 @@
     metricsExplorerStore.setMetricDimensionName(metricViewName, dimensionName);
   }
 
-  function setComparisonDimension(dimensionName) {
-    metricsExplorerStore.displayComparison(metricViewName, false);
-    metricsExplorerStore.setComparisonDimension(metricViewName, dimensionName);
+  function toggleComparisonDimension(dimensionName, isBeingCompared) {
+    if (isBeingCompared) {
+      metricsExplorerStore.setComparisonDimension(metricViewName, undefined);
+      metricsExplorerStore.displayTimeComparison(metricViewName, true);
+      return;
+    } else {
+      metricsExplorerStore.displayTimeComparison(metricViewName, false);
+      metricsExplorerStore.setComparisonDimension(
+        metricViewName,
+        dimensionName
+      );
+    }
   }
 
   function toggleSortDirection() {
@@ -240,7 +249,8 @@
       {showPercentOfTotal}
       isFetching={$topListQuery.isFetching}
       {displayName}
-      on:compare-dimension={() => setComparisonDimension(dimensionName)}
+      on:toggle-dimension-comparison={() =>
+        toggleComparisonDimension(dimensionName, isBeingCompared)}
       {isBeingCompared}
       {hovered}
       {sortAscending}
