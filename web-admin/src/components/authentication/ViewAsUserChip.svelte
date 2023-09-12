@@ -28,17 +28,17 @@
   $: project = $page.params.project;
 </script>
 
-<Popover use={[popperRef]} let:close let:open>
-  <Chip
-    removable
-    on:remove={async () => {
-      await updateMimickedJWT(queryClient, org, project, null);
-      errorStore.reset();
-    }}
-    active={open}
-  >
-    <div slot="body">
-      <PopoverButton>
+<Popover let:close let:open>
+  <PopoverButton use={[popperRef]}>
+    <Chip
+      removable
+      on:remove={async () => {
+        await updateMimickedJWT(queryClient, org, project, null);
+        errorStore.reset();
+      }}
+      active={open}
+    >
+      <div slot="body">
         <div class="flex gap-x-2">
           <div>
             Viewing as <span class="font-bold">{$viewAsUserStore.email}</span>
@@ -51,17 +51,17 @@
             </IconSpaceFixer>
           </div>
         </div>
-      </PopoverButton>
-      <PopoverPanel use={[[popperContent, popperOptions]]} class="z-[1000]">
-        <ViewAsUserPopover
-          organization={$page.params.organization}
-          project={$page.params.project}
-          on:select={() => close(undefined)}
-        />
-      </PopoverPanel>
-    </div>
-    <svelte:fragment slot="remove-tooltip">
-      <slot name="remove-tooltip-content">Clear view</slot>
-    </svelte:fragment>
-  </Chip>
+      </div>
+      <svelte:fragment slot="remove-tooltip">
+        <slot name="remove-tooltip-content">Clear view</slot>
+      </svelte:fragment>
+    </Chip>
+  </PopoverButton>
+  <PopoverPanel use={[[popperContent, popperOptions]]} class="z-[1000]">
+    <ViewAsUserPopover
+      organization={$page.params.organization}
+      project={$page.params.project}
+      on:select={() => close(undefined)}
+    />
+  </PopoverPanel>
 </Popover>
