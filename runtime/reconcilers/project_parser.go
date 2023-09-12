@@ -159,17 +159,9 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 
 // reconcileParser reconciles a parser's output with the current resources in the catalog.
 func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, owner *runtimev1.Resource, parser *compilerv1.Parser, diff *compilerv1.Diff) error {
-	// Update state from rill.yaml
-	if diff == nil || diff.ModifiedRillYAML {
-		err := r.reconcileRillYAML(ctx, parser)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Update state from .env
-	if diff == nil || diff.ModifiedDotEnv {
-		err := r.reconcileDotEnv(ctx, parser)
+	// Update state from rill.yaml and .env
+	if diff == nil || diff.ModifiedRillYAML || diff.ModifiedDotEnv {
+		err := r.reconcileProjectConfig(ctx, parser)
 		if err != nil {
 			return err
 		}
@@ -203,8 +195,8 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, owner *ru
 	return r.reconcileResources(ctx, owner, parser)
 }
 
-// reconcileRillYAML updates instance config derived from rill.yaml
-func (r *ProjectParserReconciler) reconcileRillYAML(ctx context.Context, parser *compilerv1.Parser) error {
+// reconcileProjectConfig updates instance config derived from rill.yaml and .env
+func (r *ProjectParserReconciler) reconcileProjectConfig(ctx context.Context, parser *compilerv1.Parser) error {
 	inst, err := r.C.Runtime.FindInstance(ctx, r.C.InstanceID)
 	if err != nil {
 		return err
@@ -214,6 +206,9 @@ func (r *ProjectParserReconciler) reconcileRillYAML(ctx context.Context, parser 
 	for _, v := range parser.RillYAML.Variables {
 		vars[v.Name] = v.Default
 	}
+	for k, v := range parser.DotEnv {
+		vars[k] = v
+	}
 
 	inst.ProjectVariables = vars
 	err = r.C.Runtime.EditInstance(ctx, inst)
@@ -222,21 +217,6 @@ func (r *ProjectParserReconciler) reconcileRillYAML(ctx context.Context, parser 
 	}
 
 	return nil
-}
-
-// reconcileRillYAML updates instance config derived from rill.yaml
-func (r *ProjectParserReconciler) reconcileDotEnv(ctx context.Context, parser *compilerv1.Parser) error {
-	inst, err := r.C.Runtime.FindInstance(ctx, r.C.InstanceID)
-	if err != nil {
-		return err
-	}
-
-	// not resetting entire variables since variable can also be set via edit instance api
-	for k, v := range parser.DotEnv {
-		inst.Variables[k] = v
-	}
-
-	return r.C.Runtime.EditInstance(ctx, inst)
 }
 
 // reconcileResources creates, updates and deletes resources as necessary to match the parser's output with the current resources in the catalog.
