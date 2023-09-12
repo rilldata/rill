@@ -155,6 +155,9 @@ type connection struct {
 	// The OLAP interface additionally provides an option to limit the number of long-running queries, as designated by the caller.
 	// longRunningSem enforces this limitation.
 	longRunningSem *semaphore.Weighted
+	// The OLAP interface also provides an option to acquire a connection "transactionally".
+	// We've run into issues with DuckDB freezing up on transactions, so we just use a lock for now to serialize them (inconsistency in case of crashes is acceptable).
+	txMu sync.RWMutex
 	// If DuckDB encounters a fatal error, all queries will fail until the DB has been reopened.
 	// When dbReopen is set to true, dbCond will be used to stop acquisition of new connections,
 	// and then when dbConnCount becomes 0, the DB will be reopened and dbReopen set to false again.
@@ -344,7 +347,7 @@ func (c *connection) acquireMetaConn(ctx context.Context) (*sqlx.Conn, func() er
 
 // acquireOLAPConn gets a connection from the pool for OLAP queries (i.e. slow queries).
 // It returns a function that puts the connection back in the pool (if applicable).
-func (c *connection) acquireOLAPConn(ctx context.Context, priority int, longRunning bool) (*sqlx.Conn, func() error, error) {
+func (c *connection) acquireOLAPConn(ctx context.Context, priority int, longRunning, tx bool) (*sqlx.Conn, func() error, error) {
 	// Try to get conn from context (means the call is wrapped in WithConnection)
 	conn := connFromContext(ctx)
 	if conn != nil {
@@ -368,9 +371,21 @@ func (c *connection) acquireOLAPConn(ctx context.Context, priority int, longRunn
 		return nil, nil, err
 	}
 
+	// Poor man's transaction support – see struct docstring for details
+	if tx {
+		c.txMu.Lock()
+	} else {
+		c.txMu.RLock()
+	}
+
 	// Get new conn
 	conn, releaseConn, err := c.acquireConn(ctx)
 	if err != nil {
+		if tx {
+			c.txMu.Unlock()
+		} else {
+			c.txMu.RUnlock()
+		}
 		c.olapSem.Release()
 		if longRunning {
 			c.longRunningSem.Release(1)
@@ -381,6 +396,11 @@ func (c *connection) acquireOLAPConn(ctx context.Context, priority int, longRunn
 	// Build release func
 	release := func() error {
 		err := releaseConn()
+		if tx {
+			c.txMu.Unlock()
+		} else {
+			c.txMu.RUnlock()
+		}
 		c.olapSem.Release()
 		if longRunning {
 			c.longRunningSem.Release(1)

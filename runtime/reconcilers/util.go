@@ -132,14 +132,7 @@ func olapForceRenameTable(ctx context.Context, c *runtime.Controller, connector,
 
 	existingTo, _ := olap.InformationSchema().Lookup(ctx, toName)
 
-	return olap.WithConnection(ctx, 100, true, func(ctx context.Context, ensuredCtx context.Context, conn *sql.Conn) error {
-		// Start tx
-		tx, err := conn.BeginTx(ctx, nil)
-		if err != nil {
-			return err
-		}
-		defer func() { _ = tx.Rollback() }()
-
+	return olap.WithConnection(ctx, 100, true, true, func(ctx context.Context, ensuredCtx context.Context, conn *sql.Conn) error {
 		// Drop the existing table at toName
 		if existingTo != nil {
 			var typ string
@@ -149,7 +142,9 @@ func olapForceRenameTable(ctx context.Context, c *runtime.Controller, connector,
 				typ = "TABLE"
 			}
 
-			_, err = tx.ExecContext(ctx, fmt.Sprintf("DROP %s IF EXISTS %s", typ, safeSQLName(existingTo.Name)))
+			err := olap.Exec(ctx, &drivers.Statement{
+				Query: fmt.Sprintf("DROP %s IF EXISTS %s", typ, safeSQLName(existingTo.Name)),
+			})
 			if err != nil {
 				return err
 			}
@@ -172,8 +167,7 @@ func olapForceRenameTable(ctx context.Context, c *runtime.Controller, connector,
 			}
 
 			err := olap.Exec(ctx, &drivers.Statement{
-				Query:    fmt.Sprintf("ALTER %s %s RENAME TO %s", typ, safeSQLName(fromName), safeSQLName(tmpName)),
-				Priority: 100,
+				Query: fmt.Sprintf("ALTER %s %s RENAME TO %s", typ, safeSQLName(fromName), safeSQLName(tmpName)),
 			})
 			if err != nil {
 				return err
@@ -182,12 +176,14 @@ func olapForceRenameTable(ctx context.Context, c *runtime.Controller, connector,
 		}
 
 		// Do the rename
-		_, err = tx.ExecContext(ctx, fmt.Sprintf("ALTER %s %s RENAME TO %s", typ, safeSQLName(fromName), safeSQLName(toName)))
+		err = olap.Exec(ctx, &drivers.Statement{
+			Query: fmt.Sprintf("ALTER %s %s RENAME TO %s", typ, safeSQLName(fromName), safeSQLName(toName)),
+		})
 		if err != nil {
 			return err
 		}
 
-		return tx.Commit()
+		return nil
 	})
 }
 
