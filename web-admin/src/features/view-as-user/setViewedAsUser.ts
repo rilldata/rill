@@ -1,5 +1,7 @@
 import {
   adminServiceGetDeploymentCredentials,
+  getAdminServiceGetDeploymentCredentialsQueryKey,
+  V1GetDeploymentCredentialsResponse,
   type V1User,
 } from "@rilldata/web-admin/client";
 import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
@@ -16,19 +18,21 @@ export async function setViewedAsUser(
 ) {
   viewAsUserStore.set(user);
 
-  let jwt: string = null;
-  try {
-    const jwtResp = await adminServiceGetDeploymentCredentials(
-      organization,
-      project,
-      {
-        userId: user.id,
-      }
-    );
-    jwt = jwtResp.jwt;
-  } catch (e) {
-    // no-op
-  }
+  const jwtResp =
+    await queryClient.fetchQuery<V1GetDeploymentCredentialsResponse>({
+      queryKey: getAdminServiceGetDeploymentCredentialsQueryKey(
+        organization,
+        project,
+        {
+          userId: user.id,
+        }
+      ),
+      queryFn: () =>
+        adminServiceGetDeploymentCredentials(organization, project, {
+          userId: user.id,
+        }),
+    });
+  const jwt = jwtResp.jwt;
 
   runtime.update((runtimeState) => {
     runtimeState.jwt = jwt;
