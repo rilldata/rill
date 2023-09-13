@@ -33,6 +33,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		return nil, err
 	}
 
+	// ie
 	// outputLocation s3://bucket-name/prefix
 	// unloadLocation s3://bucket-name/prefix/rill-connector-parquet-output-<uuid>
 	// unloadPath prefix/rill-connector-parquet-output-<uuid>
@@ -40,7 +41,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 	bucketName := strings.Split(strings.TrimPrefix(outputLocation, "s3://"), "/")[0]
 	unloadLocation := strings.TrimRight(outputLocation, "/") + "/" + unloadFolderName
 	unloadPath := strings.TrimPrefix(strings.TrimPrefix(unloadLocation, "s3://"+bucketName), "/")
-	err = c.unload(client, ctx, cfg, conf, strings.TrimRight(outputLocation, "/")+unloadFolderName)
+	err = c.unload(ctx, client, cfg, conf, unloadLocation)
 	if err != nil {
 		return nil, errors.Join(fmt.Errorf("failed to unload: %w", err), cleanPath(ctx, cfg, bucketName, unloadPath))
 	}

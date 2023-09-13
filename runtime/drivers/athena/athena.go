@@ -2,6 +2,7 @@ package athena
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -204,6 +205,10 @@ func cleanPath(ctx context.Context, cfg aws.Config, bucketName, prefix string) e
 		return err
 	}
 
+	if len(out.Contents) > 1000 { // aws error is opaque here
+		return fmt.Errorf("too many objects to delete %d from %s", len(out.Contents), "s3://"+bucketName+"/"+prefix)
+	}
+
 	ids := make([]s3v2types.ObjectIdentifier, 0, len(out.Contents))
 	for _, o := range out.Contents {
 		ids = append(ids, s3v2types.ObjectIdentifier{
@@ -211,6 +216,7 @@ func cleanPath(ctx context.Context, cfg aws.Config, bucketName, prefix string) e
 		})
 	}
 	_, err = s3client.DeleteObjects(ctx, &s3v2.DeleteObjectsInput{
+		Bucket: &bucketName,
 		Delete: &s3v2types.Delete{
 			Objects: ids,
 		},
@@ -268,7 +274,7 @@ func (c *Connection) openBucket(ctx context.Context, conf *sourceProperties, buc
 func resolveOutputLocation(ctx context.Context, client *athena.Client, conf *sourceProperties) (string, error) {
 	if conf.OutputLocation != "" {
 		return conf.OutputLocation, nil
-	} else {
+	} else if conf.WorkGroup != "" {
 		wo, err := client.GetWorkGroup(ctx, &athena.GetWorkGroupInput{
 			WorkGroup: aws.String(conf.WorkGroup),
 		})
@@ -277,9 +283,11 @@ func resolveOutputLocation(ctx context.Context, client *athena.Client, conf *sou
 		}
 		return *wo.WorkGroup.Configuration.ResultConfiguration.OutputLocation, nil
 	}
+
+	return "", errors.New("Athena output location or Athena workgroup is required")
 }
 
-func (c *Connection) unload(client *athena.Client, ctx context.Context, cfg aws.Config, conf *sourceProperties, unloadLocation string) error {
+func (c *Connection) unload(ctx context.Context, client *athena.Client, cfg aws.Config, conf *sourceProperties, unloadLocation string) error {
 	finalSQL := fmt.Sprintf("UNLOAD (%s) TO '%s' WITH (format = 'PARQUET')", conf.SQL, unloadLocation)
 
 	resultConfig := &types.ResultConfiguration{
