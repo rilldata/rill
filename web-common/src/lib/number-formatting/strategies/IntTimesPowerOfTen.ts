@@ -109,28 +109,6 @@ export class IntTimesPowerOfTenFormatter implements Formatter {
         useTrailingDot
       );
 
-      // if (onInvalidInput === "consoleWarn" || onInvalidInput === "throw") {
-      //   // Valid inputs must have only one digit of precision,
-      //   // but because of floating point errors, we may have
-      //   // a number that is very close to an integer multiple
-      //   // of a power of ten. Therefore, we check that the
-      //   // formatted value satisfies the requirements of the
-      //   // formatter. This is kind of backwards, but ok for now.
-      //   const trailingDigits = numParts.int.slice(1);
-      //   const repeatedZeros = "0".repeat(trailingDigits.length);
-
-      //   if (trailingDigits !== repeatedZeros) {
-      //     const msg = `invalid input for IntTimesPowerOfTenFormatter: ${x}, ${JSON.stringify(
-      //       numParts
-      //     )})`;
-      //     if (onInvalidInput === "consoleWarn") {
-      //       console.warn(msg);
-      //     } else {
-      //       throw new Error(msg);
-      //     }
-      //   }
-      // }
-
       numParts.suffix = shortScaleSuffixIfAvailableForStr(numParts.suffix);
 
       if (this.options.upperCaseEForExponent !== true) {
