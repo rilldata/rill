@@ -11,7 +11,7 @@
     createAdminServiceListOrganizations,
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
-  import { useDashboardListItems } from "../projects/dashboards";
+  import { useDashboards } from "../projects/dashboards";
   import BreadcrumbItem from "./BreadcrumbItem.svelte";
   import OrganizationAvatar from "./OrganizationAvatar.svelte";
 
@@ -43,8 +43,8 @@
   );
   $: isProjectPage = $page.route.id === "/[organization]/[project]";
 
-  $: dashboardListItems = useDashboardListItems(instanceId);
-  $: currentDashboard = $dashboardListItems?.items?.find(
+  $: dashboards = useDashboards(instanceId);
+  $: currentDashboard = $dashboards?.data?.find(
     (listing) => listing.name === $page.params.dashboard
   );
   $: isDashboardPage =
@@ -92,13 +92,13 @@
     {#if currentDashboard}
       <span class="text-gray-600">/</span>
       <BreadcrumbItem
-        label={currentDashboard?.title || currentDashboard.name}
+        label={currentDashboard?.label || currentDashboard.name}
         href={`/${orgName}/${projectName}/${currentDashboard.name}`}
-        menuOptions={$dashboardListItems?.items?.length > 1 &&
-          $dashboardListItems.items.map((listing) => {
+        menuOptions={$dashboards?.data?.length > 1 &&
+          $dashboards.data.map((listing) => {
             return {
               key: listing.name,
-              main: listing?.title || listing.name,
+              main: listing?.label || listing.name,
             };
           })}
         menuKey={currentDashboard.name}
