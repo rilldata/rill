@@ -25,37 +25,38 @@
     lastAvailableCurrentY = mean(yValues, (d) => d.y);
   }
 
-  $: points = yValues.map((dimension) => {
-    const y = dimension.y;
-    const currentPointIsNull = y === null;
-    return {
-      x,
-      y: currentPointIsNull ? lastAvailableCurrentY : y,
-      yOverride: currentPointIsNull,
-      yOverrideLabel: "no current data",
-      yOverrideStyleClass: `fill-gray-600 italic`,
-      key: dimension.name,
-      label: "",
-      pointColorClass: dimension.fillClass,
-      valueStyleClass: "font-semibold",
-      valueColorClass: "fill-gray-600",
-      labelColorClass: dimension.fillClass,
-    };
-  });
+  $: points = yValues
+    .map((dimension) => {
+      const y = dimension.y;
+      const currentPointIsNull = y === null;
+      return {
+        x,
+        y: currentPointIsNull ? lastAvailableCurrentY : y,
+        yOverride: currentPointIsNull,
+        yOverrideLabel: "no current data",
+        yOverrideStyleClass: `fill-gray-600 italic`,
+        key: dimension.name,
+        label: "",
+        pointColorClass: dimension.fillClass,
+        valueStyleClass: "font-semibold",
+        valueColorClass: "fill-gray-600",
+        labelColorClass: dimension.fillClass,
+      };
+    })
+    .filter((d) => !d.yOverride);
 
   /** get the final point set*/
   $: pointSet = points;
 </script>
 
-<WithGraphicContexts let:xScale let:yScale>
-  <MultiMetricMouseoverLabel
-    attachPointToLabel
-    direction="right"
-    flipAtEdge="body"
-    formatValue={mouseoverFormat}
-    point={pointSet || []}
-  />
-
-  <!-- {/if} -->
-</WithGraphicContexts>
-<!-- lines and such -->
+{#if pointSet.length}
+  <WithGraphicContexts let:xScale let:yScale>
+    <MultiMetricMouseoverLabel
+      attachPointToLabel
+      direction="right"
+      flipAtEdge="body"
+      formatValue={mouseoverFormat}
+      point={pointSet || []}
+    />
+  </WithGraphicContexts>
+{/if}

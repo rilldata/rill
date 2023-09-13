@@ -150,6 +150,8 @@
         return false;
       })
       .map((value) => value.label);
+  } else {
+    valuesComparedInExcludeMode = [];
   }
 
   // get all values that are selected but not visible.
