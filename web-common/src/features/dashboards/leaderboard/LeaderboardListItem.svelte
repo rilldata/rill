@@ -37,7 +37,6 @@
 
   export let atLeastOneActive = false;
   export let isBeingCompared = false;
-  export let index = -1;
   export let formattedValue: string;
   export let filterExcludeMode;
 
@@ -137,10 +136,9 @@
   >
     <LeaderboardItemFilterIcon
       {isBeingCompared}
-      {index}
-      {atLeastOneActive}
       {excluded}
-      selectionIndex={itemData.selectedIndex}
+      selectionIndex={itemData?.selectedIndex}
+      defaultComparedIndex={itemData?.defaultComparedIndex}
     />
     <BarAndLabel
       {color}

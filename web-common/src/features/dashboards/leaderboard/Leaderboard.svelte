@@ -221,13 +221,15 @@
   $: aboveTheFoldItems = prepareLeaderboardItemData(
     values.slice(0, slice),
     activeValues,
-    comparisonMap
+    comparisonMap,
+    filterExcludeMode
   );
 
   $: belowTheFoldItems = prepareLeaderboardItemData(
     selectedValuesThatAreBelowTheFold,
     activeValues,
-    comparisonMap
+    comparisonMap,
+    filterExcludeMode
   );
 </script>
 
@@ -254,10 +256,9 @@
     {#if values}
       <div class="rounded-b border-gray-200 surface text-gray-800">
         <!-- place the leaderboard entries that are above the fold here -->
-        {#each aboveTheFoldItems as itemData, index (itemData.label)}
+        {#each aboveTheFoldItems as itemData (itemData.label)}
           <LeaderboardListItem
             {itemData}
-            {index}
             {showContext}
             {atLeastOneActive}
             {isBeingCompared}
