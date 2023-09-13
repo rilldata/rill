@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -231,7 +232,12 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 	transferStart := time.Now()
 	err = t.Transfer(ctxWithTimeout, src, sink, drivers.NewTransferOpts(drivers.WithLimitInBytes(ingestionLimit)), p)
 	transferLatency := time.Since(transferStart).Milliseconds()
-	ac.Emit(ctx, "ingestion_transfer_ms", float64(transferLatency))
+	ac.Emit(
+		ctx, "ingestion_transfer_ms", float64(transferLatency),
+		attribute.String("source", srcConnector.Driver()),
+		attribute.String("destination", olapConnection.Driver()),
+		attribute.Int64("bytes", p.catalogObj.BytesIngested),
+	)
 	if limitExceeded {
 		return drivers.ErrIngestionLimitExceeded
 	}
