@@ -3,12 +3,12 @@
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { Search } from "@rilldata/web-common/components/search";
-  import { updateMimickedJWT } from "@rilldata/web-common/features/dashboards/granular-access-policies/updateMimickedJWT";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { matchSorter } from "match-sorter";
   import { createEventDispatcher } from "svelte";
   import { createAdminServiceSearchProjectUsers, V1User } from "../../client";
   import { errorStore } from "../../components/errors/error-store";
+  import { updateViewedAsUser } from "./updateViewedAsUser";
   import { viewAsUserStore } from "./viewAsUserStore";
 
   export let organization: string;
@@ -25,8 +25,7 @@
 
   const queryClient = useQueryClient();
   async function viewAsUser(user: V1User) {
-    viewAsUserStore.set(user);
-    await updateMimickedJWT(queryClient, organization, project, user);
+    await updateViewedAsUser(queryClient, organization, project, user);
     errorStore.reset();
     dispatch("select");
   }

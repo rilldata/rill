@@ -11,7 +11,7 @@ import { viewAsUserStore } from "./viewAsUserStore";
  */
 export function clearViewedAsUserAfterNavigate(queryClient: QueryClient) {
   afterNavigate((nav) => {
-    // Only applies if mimicking a user on the Dashboard page
+    // Only applies if viewing as a user on the Dashboard page
     if (!get(viewAsUserStore) || !nav.from?.params?.dashboard) return;
 
     // If remaining within the project, set the admin's JWT
