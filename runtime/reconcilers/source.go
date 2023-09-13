@@ -307,8 +307,6 @@ func (r *SourceReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Res
 // It does NOT drop the table if ingestion fails after the table has been created.
 // It will return an error if the sink connector is not an OLAP.
 func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.SourceSpec, tableName string) error {
-	// Special case:
-
 	// Get connections and transporter
 	srcConn, release1, err := r.C.AcquireConn(ctx, src.SourceConnector)
 	if err != nil {
