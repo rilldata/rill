@@ -9,6 +9,7 @@
   import StickyHeader from "@rilldata/web-common/components/virtualized-table/core/StickyHeader.svelte";
   import { getContext } from "svelte";
   import type { VirtualizedTableConfig } from "../../../components/virtualized-table/types";
+  import DimensionCompareMenu from "@rilldata/web-common/features/dashboards/leaderboard/DimensionCompareMenu.svelte";
 
   export let totalHeight: number;
   export let virtualRowItems;
@@ -32,11 +33,12 @@
   style:height="{totalHeight}px"
   style:width="{config.indexWidth}px"
 >
-  <!-- Hide filter symbols above the column headers -->
   <div
     style:height="{config.columnHeaderHeight}px"
-    class="sticky left-0 top-0 surface z-40"
-  />
+    class="sticky left-0 top-0 surface z-40 flex items-center"
+  >
+    <DimensionCompareMenu {isBeingCompared} on:toggle-dimension-comparison />
+  </div>
   {#each virtualRowItems as row (`row-${row.key}`)}
     {@const isSelected = selectedIndex.includes(row.index)}
     <StickyHeader

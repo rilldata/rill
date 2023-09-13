@@ -215,6 +215,7 @@ TableCells – the cell contents.
             {selectedIndex}
             {isBeingCompared}
             {excludeMode}
+            on:toggle-dimension-comparison
             on:select-item={(event) => onSelectItem(event)}
           />
           <DimensionValueHeader

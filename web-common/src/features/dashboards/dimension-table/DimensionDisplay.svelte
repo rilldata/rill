@@ -305,6 +305,20 @@
     }
   }
 
+  function toggleComparisonDimension(dimensionName, isBeingCompared) {
+    if (isBeingCompared) {
+      metricsExplorerStore.setComparisonDimension(metricViewName, undefined);
+      metricsExplorerStore.displayTimeComparison(metricViewName, true);
+      return;
+    } else {
+      metricsExplorerStore.displayTimeComparison(metricViewName, false);
+      metricsExplorerStore.setComparisonDimension(
+        metricViewName,
+        dimensionName
+      );
+    }
+  }
+
   $: if ($comparisonTopListQuery?.data && values.length && displayComparison) {
     values = computeComparisonValues(
       $comparisonTopListQuery?.data,
@@ -360,6 +374,8 @@
         <DimensionTable
           on:select-item={(event) => onSelectItem(event)}
           on:sort={(event) => onSortByColumn(event)}
+          on:toggle-dimension-comparison={() =>
+            toggleComparisonDimension(dimensionName, isBeingCompared)}
           dimensionName={dimensionColumn}
           {isBeingCompared}
           {columns}
