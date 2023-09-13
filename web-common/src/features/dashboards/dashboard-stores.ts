@@ -506,6 +506,9 @@ const metricViewReducers = {
 
   setContextColumn(name: string, contextColumn: LeaderboardContextColumn) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
+      const initialSort = sortTypeForContextColumnType(
+        metricsExplorer.leaderboardContextColumn
+      );
       switch (contextColumn) {
         case LeaderboardContextColumn.DELTA_ABSOLUTE:
         case LeaderboardContextColumn.DELTA_PERCENT: {
@@ -517,13 +520,11 @@ const metricViewReducers = {
           metricsExplorer.leaderboardContextColumn = contextColumn;
       }
 
-      // if we have changed the context column, and the leaderboard is currently
-      // sorted by the active context column, then we also need to change
+      // if we have changed the context column, and the leaderboard is
+      // sorted by the context column from before we made the change,
+      // then we also need to change
       // the sort type to match the new context column
-      if (
-        metricsExplorer.dashboardSortType ===
-        sortTypeForContextColumnType(metricsExplorer.leaderboardContextColumn)
-      ) {
+      if (metricsExplorer.dashboardSortType === initialSort) {
         metricsExplorer.dashboardSortType =
           sortTypeForContextColumnType(contextColumn);
       }

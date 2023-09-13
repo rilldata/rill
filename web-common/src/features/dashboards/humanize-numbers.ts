@@ -240,7 +240,7 @@ export function formatProperFractionAsPercent(value): NumberParts {
     return formatMeasurePercentageDifference(value);
   }
 
-  if (value < 0.005 && value !== 0) {
+  if (value < 0.01 && value !== 0) {
     return { percent: "%", int: "<1", dot: "", frac: "", suffix: "" };
   } else if (value === 0) {
     return { percent: "%", int: "0", dot: "", frac: "", suffix: "" };
