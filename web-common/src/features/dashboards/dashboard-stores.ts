@@ -420,9 +420,9 @@ const metricViewReducers = {
   setComparisonDimension(name: string, dimensionName: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       if (dimensionName === undefined) {
-        metricsExplorer.showTimeComparison = true;
+        setDisplayComparison(metricsExplorer, true);
       } else {
-        metricsExplorer.showTimeComparison = false;
+        setDisplayComparison(metricsExplorer, false);
       }
       metricsExplorer.selectedComparisonDimension = dimensionName;
     });
@@ -430,8 +430,8 @@ const metricViewReducers = {
 
   disableAllComparisons(name: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.showTimeComparison = false;
       metricsExplorer.selectedComparisonDimension = undefined;
+      setDisplayComparison(metricsExplorer, false);
     });
   },
 
