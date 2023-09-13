@@ -41,8 +41,8 @@
   $: isProjectErrored =
     $projectDeploymentStatus.data ===
     V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR;
-  $: isProjectUpdating = isProjectPending || isProjectReconciling;
-  $: isProjectStatic = isProjectOK || isProjectErrored;
+  $: isProjectBuilding = isProjectPending || isProjectReconciling;
+  $: isProjectBuilt = isProjectOK || isProjectErrored;
 
   let isProjectOK: boolean;
 
@@ -76,7 +76,7 @@
   // isDashboardErrored // We'll reinstate this case once we integrate the new Reconcile
 
   // If no dashboard is found, show a 404 page
-  $: if (isProjectStatic && isDashboardNotFound) {
+  $: if (isProjectBuilt && isDashboardNotFound) {
     errorStore.set({
       statusCode: 404,
       header: "Dashboard not found",
@@ -92,7 +92,7 @@
 <!-- Note: Project and dashboard states might appear to diverge. A project could be errored 
   because dashboard #1 is errored, but dashboard #2 could be OK.  -->
 
-{#if isProjectUpdating && isDashboardNotFound}
+{#if isProjectBuilding && isDashboardNotFound}
   <ProjectBuilding organization={orgName} project={projectName} />
 {:else if isDashboardOK}
   <StateManagersProvider metricsViewName={dashboardName}>
