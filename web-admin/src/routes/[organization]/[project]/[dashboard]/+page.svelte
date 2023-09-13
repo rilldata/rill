@@ -80,7 +80,7 @@
     errorStore.set({
       statusCode: 404,
       header: "Dashboard not found",
-      body: `The dashboard you requested could not be found. Please check that you have provided a valid dashboard name.`,
+      body: `The dashboard you requested could not be found. Please check that you provided the name of a working dashboard.`,
     });
   }
 </script>
