@@ -112,7 +112,7 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source
 	}
 
 	conn := c.(*Connection)
-	bucketObj, err := conn.openBucket(ctx, conf)
+	bucketObj, err := conn.openBucketWithNoCredentials(ctx, conf)
 	if err != nil {
 		return false, fmt.Errorf("failed to open container %q, %w", conf.url.Host, err)
 	}
@@ -207,6 +207,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSo
 	}
 
 	// Create a *blob.Bucket.
+	// bucketObj, err := azureblob.OpenBucket(ctx, client.ServiceClient().NewContainerClient(conf.url.Host), nil)
 	bucketObj, err := azureblob.OpenBucket(ctx, client, nil)
 	if err != nil {
 		return nil, err
@@ -277,22 +278,20 @@ func (c *Connection) getClient(ctx context.Context, conf *sourceProperties) (*co
 	}
 
 	containerURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s", name, conf.url.Host)
-	client, err := container.NewClientWithNoCredential(containerURL, nil)
+	var client *container.Client
+	if key == "" {
+		client, err = container.NewClientWithNoCredential(containerURL, nil)
+	} else {
+		client, err = container.NewClientWithSharedKeyCredential(containerURL, credential, nil)
+	}
 	if err != nil {
 		return nil, err
-	}
-
-	if key != "" {
-		client, err = container.NewClientWithSharedKeyCredential(containerURL, credential, nil)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	return client, nil
 }
 
-func (c *Connection) openBucket(ctx context.Context, conf *sourceProperties) (*blob.Bucket, error) {
+func (c *Connection) openBucketWithNoCredentials(ctx context.Context, conf *sourceProperties) (*blob.Bucket, error) {
 	// Create containerURL object.
 	containerURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s", c.config.Account, conf.url.Host)
 	client, err := container.NewClientWithNoCredential(containerURL, nil)
