@@ -9,7 +9,6 @@ import {
   metricsViewRequestFilterMatcher,
   waitForComparisonTopLists,
   waitForTimeSeries,
-  waitForTopLists,
 } from "./utils/dashboardHelpers";
 import {
   assertAdBidsDashboard,
