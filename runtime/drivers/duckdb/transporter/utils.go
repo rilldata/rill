@@ -5,7 +5,37 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/mitchellh/mapstructure"
 )
+
+type sourceProperties struct {
+	Database string `mapstructure:"db"`
+	SQL      string `mapstructure:"sql"`
+}
+
+func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
+	cfg := &sourceProperties{}
+	if err := mapstructure.Decode(props, cfg); err != nil {
+		return nil, fmt.Errorf("failed to parse source properties: %w", err)
+	}
+	if cfg.SQL == "" {
+		return nil, fmt.Errorf("property 'sql' is mandatory")
+	}
+	return cfg, nil
+}
+
+type sinkProperties struct {
+	Table string `mapstructure:"table"`
+}
+
+func parseSinkProperties(props map[string]any) (*sinkProperties, error) {
+	cfg := &sinkProperties{}
+	if err := mapstructure.Decode(props, cfg); err != nil {
+		return nil, fmt.Errorf("failed to parse sink properties: %w", err)
+	}
+	return cfg, nil
+}
 
 func sourceReader(paths []string, format string, ingestionProps map[string]any, fromAthena bool) (string, error) {
 	// Generate a "read" statement

@@ -51,10 +51,10 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 	}
 
 	fromAthena := reflect.TypeOf(t.from).AssignableTo(reflect.TypeOf(&athena.Connection{}))
-	sql, hasSQL := src.Properties["sql"].(string)
+	sql, hasSQL := srcProps["sql"].(string)
 	// if sql is specified use ast rewrite to fill in the downloaded files
 	if hasSQL && !fromAthena {
-		return t.ingestDuckDBSQL(ctx, sql, iterator, dbSink, opts, p)
+		return t.ingestDuckDBSQL(ctx, sql, iterator, sinkCfg, opts, p)
 	}
 
 	p.Target(size, drivers.ProgressUnitByte)

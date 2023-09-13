@@ -28,6 +28,7 @@
     "local_file",
     "motherduck",
     "bigquery",
+    "athena",
   ];
 
   const connectors = createRuntimeServiceListConnectors({
