@@ -64,14 +64,17 @@ func parseFileSourceProperties(props map[string]any) (*fileSourceProperties, err
 
 	if cfg.HivePartitioning != nil {
 		cfg.DuckDB["hive_partitioning"] = *cfg.HivePartitioning
+		cfg.HivePartitioning = nil
 	}
 
 	if cfg.CSVDelimiter != "" {
 		cfg.DuckDB["delim"] = fmt.Sprintf("'%v'", cfg.CSVDelimiter)
+		cfg.CSVDelimiter = ""
 	}
 
 	if cfg.IngestAllowSchemaRelaxation != nil {
 		cfg.AllowSchemaRelaxation = *cfg.IngestAllowSchemaRelaxation
+		cfg.IngestAllowSchemaRelaxation = nil
 	}
 
 	if cfg.AllowSchemaRelaxation {
