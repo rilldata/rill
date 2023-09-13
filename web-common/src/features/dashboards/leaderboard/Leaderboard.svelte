@@ -87,17 +87,10 @@
   }
 
   function toggleComparisonDimension(dimensionName, isBeingCompared) {
-    if (isBeingCompared) {
-      metricsExplorerStore.setComparisonDimension(metricViewName, undefined);
-      metricsExplorerStore.displayTimeComparison(metricViewName, true);
-      return;
-    } else {
-      metricsExplorerStore.displayTimeComparison(metricViewName, false);
-      metricsExplorerStore.setComparisonDimension(
-        metricViewName,
-        dimensionName
-      );
-    }
+    metricsExplorerStore.setComparisonDimension(
+      metricViewName,
+      isBeingCompared ? undefined : dimensionName
+    );
   }
 
   function toggleSortDirection() {

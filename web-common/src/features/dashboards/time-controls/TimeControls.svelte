@@ -134,17 +134,10 @@
     });
   }
 
-  function disableComparisons() {
-    metricsExplorerStore.displayTimeComparison(metricViewName, false);
-    metricsExplorerStore.setComparisonDimension(metricViewName, undefined);
-  }
-
   function enableComparison(type: string, name: string) {
     if (type === "time") {
       metricsExplorerStore.displayTimeComparison(metricViewName, true);
-      metricsExplorerStore.setComparisonDimension(metricViewName, undefined);
     } else {
-      metricsExplorerStore.displayTimeComparison(metricViewName, false);
       metricsExplorerStore.setComparisonDimension(metricViewName, name);
     }
   }
@@ -214,7 +207,8 @@
       on:enable-comparison={(e) => {
         enableComparison(e.detail.type, e.detail.name);
       }}
-      on:disable-all-comparison={() => disableComparisons()}
+      on:disable-all-comparison={() =>
+        metricsExplorerStore.disableAllComparisons(metricViewName)}
       showTimeComparison={$dashboardStore?.showTimeComparison}
       selectedDimension={$dashboardStore?.selectedComparisonDimension}
       {dimensions}

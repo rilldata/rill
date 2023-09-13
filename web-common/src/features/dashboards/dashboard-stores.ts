@@ -419,7 +419,19 @@ const metricViewReducers = {
 
   setComparisonDimension(name: string, dimensionName: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
+      if (dimensionName === undefined) {
+        metricsExplorer.showTimeComparison = true;
+      } else {
+        metricsExplorer.showTimeComparison = false;
+      }
       metricsExplorer.selectedComparisonDimension = dimensionName;
+    });
+  },
+
+  disableAllComparisons(name: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.showTimeComparison = false;
+      metricsExplorer.selectedComparisonDimension = undefined;
     });
   },
 
@@ -492,7 +504,8 @@ const metricViewReducers = {
 
       setDisplayComparison(
         metricsExplorer,
-        metricsExplorer.selectedComparisonTimeRange !== undefined
+        metricsExplorer.selectedComparisonTimeRange !== undefined &&
+          metricsExplorer.selectedComparisonDimension === undefined
       );
     });
   },
@@ -649,6 +662,11 @@ function setDisplayComparison(
   showTimeComparison: boolean
 ) {
   metricsExplorer.showTimeComparison = showTimeComparison;
+
+  if (showTimeComparison) {
+    metricsExplorer.selectedComparisonDimension = undefined;
+  }
+
   // if setting showTimeComparison===true and not currently
   //  showing any context column, then show DELTA_PERCENT
   if (
