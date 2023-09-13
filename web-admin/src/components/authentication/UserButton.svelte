@@ -5,13 +5,12 @@
     PopoverButton,
     PopoverPanel,
   } from "@rgossiaux/svelte-headlessui";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { MenuItem } from "@rilldata/web-common/components/menu";
   import Menu from "@rilldata/web-common/components/menu/core/Menu.svelte";
   import { createPopperActions } from "svelte-popperjs";
   import { createAdminServiceGetCurrentUser } from "../../client";
   import { ADMIN_URL } from "../../client/http-client";
-  import ViewAsUserPopover from "../../features/view-as-user/ViewAsUserPopover.svelte";
+  import ViewAsUserMenuItem from "../../features/view-as-user/ViewAsUserMenuItem.svelte";
   import ProjectAccessControls from "../projects/ProjectAccessControls.svelte";
 
   const user = createAdminServiceGetCurrentUser();
@@ -27,7 +26,7 @@
 
   const isDev = process.env.NODE_ENV === "development";
 
-  // Position the first popover
+  // Position the Menu popover
   const [popperRef1, popperContent1] = createPopperActions();
   const popperOptions1 = {
     placement: "bottom-end",
@@ -35,13 +34,8 @@
     modifiers: [{ name: "offset", options: { offset: [0, 4] } }],
   };
 
-  // Position the nested popover
+  // Position the View As User popover
   const [popperRef2, popperContent2] = createPopperActions();
-  const popperOptions = {
-    placement: "left-start",
-    strategy: "fixed",
-    modifiers: [{ name: "offset", options: { offset: [0, 4] } }],
-  };
 </script>
 
 <Popover class="relative" let:close={close1}>
@@ -64,28 +58,14 @@
           project={$page.params.project}
         >
           <svelte:fragment slot="manage-project">
-            <Popover>
-              <PopoverButton class="w-full text-left">
-                <MenuItem animateSelect={false}>
-                  View as
-                  <CaretDownIcon
-                    className="transform -rotate-90"
-                    slot="right"
-                    size="14px"
-                  />
-                </MenuItem>
-              </PopoverButton>
-              <PopoverPanel use={[[popperContent2, popperOptions]]}>
-                <ViewAsUserPopover
-                  organization={$page.params.organization}
-                  project={$page.params.project}
-                  on:select={() => close1(undefined)}
-                />
-              </PopoverPanel>
-            </Popover>
+            <ViewAsUserMenuItem
+              popperContent={popperContent2}
+              on:select-user={() => close1(undefined)}
+            />
           </svelte:fragment>
         </ProjectAccessControls>
       {/if}
+
       <MenuItem
         on:select={() => {
           // handleClose();
