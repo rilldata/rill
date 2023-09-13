@@ -8,7 +8,6 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
-
   import {
     getFilterForDimension,
     useMetaDimension,
@@ -148,11 +147,6 @@
     sortedQueryOptions
   );
 
-  $: if (!$sortedQuery.isFetching) {
-    console.log("sortedQuery RAW DATA --", dimensionName, $sortedQuery?.data);
-  }
-
-  /** replace data after fetched. */
   let aboveTheFold: LeaderboardItemData[] = [];
   let selectedBelowTheFold: LeaderboardItemData[] = [];
   let noAvailableValues = true;

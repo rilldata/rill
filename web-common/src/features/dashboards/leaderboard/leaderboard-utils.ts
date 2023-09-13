@@ -1,5 +1,5 @@
 import {
-  V1MetricsViewComparisonSortType,
+  V1MetricsViewComparisonSortType as ApiSortType,
   type V1MetricsViewComparisonRow,
   type V1MetricsViewComparisonValue,
 } from "@rilldata/web-common/runtime-client";
@@ -126,9 +126,7 @@ export function prepareLeaderboardItemData(
   const aboveTheFold: LeaderboardItemData[] = [];
   const selectedBelowTheFold: LeaderboardItemData[] = [];
   let selectedValuesCopy = [...selectedValues];
-  // console.log({ values, len: values.length, selectedValues });
   values.forEach((v, i) => {
-    // console.log({ dimval: v.dimensionValue, selectedValues });
     const selected =
       selectedValuesCopy.findIndex((value) => value === v.dimensionValue) >= 0;
     // drop the value from the selectedValues array so that we'll
@@ -219,29 +217,28 @@ export function getQuerySortType(sortType: SortType) {
   return (
     {
       [SortType.VALUE]:
-        V1MetricsViewComparisonSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
+        ApiSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
 
       [SortType.DELTA_ABSOLUTE]:
-        V1MetricsViewComparisonSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
+        ApiSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
 
       [SortType.DELTA_PERCENT]:
-        V1MetricsViewComparisonSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA,
+        ApiSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA,
 
       // NOTE: sorting by percent-of-total has the same effect
       // as sorting by base value
       [SortType.PERCENT]:
-        V1MetricsViewComparisonSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
+        ApiSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
 
       // NOTE: UNSPECIFIED is not actually a valid sort type,
       // but it is required by protobuf serialization
       [SortType.UNSPECIFIED]:
-        V1MetricsViewComparisonSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
+        ApiSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
 
       // FIXME: sort by dimension value is not yet implemented,
       // for now fall back to sorting by base value
       [SortType.DIMENSION]:
-        V1MetricsViewComparisonSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
-    }[sortType] ||
-    V1MetricsViewComparisonSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE
+        ApiSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
+    }[sortType] || ApiSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE
   );
 }
