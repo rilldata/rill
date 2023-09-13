@@ -16,6 +16,7 @@
   export let selectedIndex = [];
   export let excludeMode = false;
   export let isBeingCompared = false;
+  export let atLeastOneActive = false;
 
   function getInsertIndex(arr, num) {
     return arr
@@ -47,7 +48,7 @@
         return colorPos < 3 ? colorPos + 1 : false;
       }
     }
-    return isBeingCompared && !selectedIndex.length && index < 3;
+    return isBeingCompared && !atLeastOneActive && index < 3;
   }
 
   const config: VirtualizedTableConfig = getContext("config");
