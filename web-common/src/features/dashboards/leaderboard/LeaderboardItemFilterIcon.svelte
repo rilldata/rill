@@ -22,7 +22,7 @@
 <div style:width="22px" class="grid place-items-center">
   {#if selected && isBeingCompared}
     <CheckCircle className={getColor(selectionIndex)} size="18px" />
-  {:else if isBeingCompared && !atLeastOneActive}
+  {:else if isBeingCompared && !atLeastOneActive && index < 3}
     <Circle className={getColor(index)} size="16px" />
   {:else if selected && !excluded}
     <Check size="20px" />

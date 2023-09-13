@@ -49,7 +49,7 @@
       <div class="py-0.5 grid place-items-center">
         {#if isSelected && isBeingCompared}
           <CheckCircle className={getColor(row.index)} size="18px" />
-        {:else if isBeingCompared && !selectedIndex.length && row.index < 7}
+        {:else if isBeingCompared && !selectedIndex.length && row.index < 3}
           <Circle className={getColor(row.index)} size="16px" />
         {:else if isSelected && !excludeMode}
           <Check size="20px" />

@@ -211,7 +211,7 @@
 
     if (includedValues.length === 0) {
       // TODO: Create a central store for topList
-      // Fetch top 7 values for the dimension
+      // Fetch top 3 values for the dimension
       const filterForDimension = getFilterForDimension(
         $dashboardStore?.filters,
         comparisonDimension
@@ -225,7 +225,7 @@
           timeStart: $timeControlsStore.timeStart,
           timeEnd: $timeControlsStore.timeEnd,
           filter: filterForDimension,
-          limit: "7",
+          limit: "3",
           offset: "0",
           sort: [
             {
