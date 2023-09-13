@@ -41,7 +41,7 @@ type Source struct {
 	DuckDBProps                 map[string]any `yaml:"duckdb,omitempty" mapstructure:"duckdb,omitempty"`
 	Headers                     map[string]any `yaml:"headers,omitempty" mapstructure:"headers,omitempty"`
 	AllowSchemaRelaxation       *bool          `yaml:"allow_schema_relaxation,omitempty" mapstructure:"allow_schema_relaxation,omitempty"`
-	IngestAllowSchemaRelaxation *bool          `yaml:"ingest.allow_schema_relaxation,omitempty" mapstructure:"allow_schema_relaxation,omitempty"`
+	IngestAllowSchemaRelaxation *bool          `yaml:"ingest.allow_schema_relaxation,omitempty" mapstructure:"ingest.allow_schema_relaxation,omitempty"`
 	SQL                         string         `yaml:"sql,omitempty" mapstructure:"sql,omitempty"`
 	DB                          string         `yaml:"db,omitempty" mapstructure:"db,omitempty"`
 	ProjectID                   string         `yaml:"project_id,omitempty" mapstructure:"project_id,omitempty"`
