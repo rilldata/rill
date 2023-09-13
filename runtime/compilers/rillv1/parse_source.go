@@ -90,8 +90,9 @@ func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 	// NOTE: After calling upsertResource, an error must not be returned. Any validation should be done before calling it.
 	r := p.upsertResource(ResourceKindSource, node.Name, node.Paths, node.Refs...)
 	r.SourceSpec.Properties = mergeStructPB(r.SourceSpec.Properties, props)
+	r.SourceSpec.SinkConnector = p.DefaultConnector // Sink connector not currently configurable
 	if node.Connector != "" {
-		r.SourceSpec.SourceConnector = node.Connector // Source connector. Sink connector not currently configurable.
+		r.SourceSpec.SourceConnector = node.Connector // Source connector
 	}
 	if timeout != 0 {
 		r.SourceSpec.TimeoutSeconds = uint32(timeout.Seconds())
