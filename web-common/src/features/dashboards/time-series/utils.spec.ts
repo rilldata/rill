@@ -87,7 +87,10 @@ describe("getFilterForComparedDimension", () => {
     );
 
     expect(result.updatedFilter).toEqual({
-      include: [{ name: "country", in: ["US", "IN", "CN"] }],
+      include: [
+        { name: "company", in: ["zoom"] },
+        { name: "country", in: ["US", "IN", "CN"] },
+      ],
       exclude: [{ name: "device", in: ["mobile"] }],
     });
   });
