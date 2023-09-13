@@ -17,6 +17,8 @@ import type {
   ConnectorServiceBigQueryListDatasetsParams,
   V1BigQueryListTablesResponse,
   ConnectorServiceBigQueryListTablesParams,
+  V1ScanConnectorsResponse,
+  ConnectorServiceScanConnectorsParams,
   V1GCSListObjectsResponse,
   ConnectorServiceGCSListObjectsParams,
   V1GCSListBucketsResponse,
@@ -192,6 +194,94 @@ export const createConnectorServiceBigQueryListTables = <
   }
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getConnectorServiceBigQueryListTablesQueryOptions(
+    params,
+    options
+  );
+
+  const query = createQuery(queryOptions) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+};
+
+/**
+ * @summary ScanConnectors scans the artifacts for connectors and returns information about
+the connectors referenced in the artifacts. The information includes name,type and
+credentials for the connector.
+ */
+export const connectorServiceScanConnectors = (
+  params?: ConnectorServiceScanConnectorsParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1ScanConnectorsResponse>({
+    url: `/v1/connectors/scan`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getConnectorServiceScanConnectorsQueryKey = (
+  params?: ConnectorServiceScanConnectorsParams
+) => [`/v1/connectors/scan`, ...(params ? [params] : [])] as const;
+
+export const getConnectorServiceScanConnectorsQueryOptions = <
+  TData = Awaited<ReturnType<typeof connectorServiceScanConnectors>>,
+  TError = RpcStatus
+>(
+  params?: ConnectorServiceScanConnectorsParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof connectorServiceScanConnectors>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryOptions<
+  Awaited<ReturnType<typeof connectorServiceScanConnectors>>,
+  TError,
+  TData
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getConnectorServiceScanConnectorsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof connectorServiceScanConnectors>>
+  > = ({ signal }) => connectorServiceScanConnectors(params, signal);
+
+  return { queryKey, queryFn, ...queryOptions };
+};
+
+export type ConnectorServiceScanConnectorsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof connectorServiceScanConnectors>>
+>;
+export type ConnectorServiceScanConnectorsQueryError = RpcStatus;
+
+/**
+ * @summary ScanConnectors scans the artifacts for connectors and returns information about
+the connectors referenced in the artifacts. The information includes name,type and
+credentials for the connector.
+ */
+export const createConnectorServiceScanConnectors = <
+  TData = Awaited<ReturnType<typeof connectorServiceScanConnectors>>,
+  TError = RpcStatus
+>(
+  params?: ConnectorServiceScanConnectorsParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof connectorServiceScanConnectors>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const queryOptions = getConnectorServiceScanConnectorsQueryOptions(
     params,
     options
   );

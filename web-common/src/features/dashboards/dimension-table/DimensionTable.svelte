@@ -23,6 +23,7 @@ TableCells – the cell contents.
   export let columns: VirtualizedTableColumns[];
   export let selectedValues: Array<unknown> = [];
   export let sortByColumn: string;
+  export let sortAscending: boolean;
   export let dimensionName: string;
   export let excludeMode = false;
 
@@ -203,6 +204,7 @@ TableCells – the cell contents.
           selectedColumn={sortByColumn}
           columns={measureColumns}
           fallbackBGClass="bg-white"
+          {sortAscending}
           on:click-column={handleColumnHeaderClick}
         />
 

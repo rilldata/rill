@@ -1,7 +1,6 @@
 package blob
 
 import (
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"gocloud.dev/blob"
 )
 
@@ -19,7 +18,7 @@ type objectWithPlan struct {
 
 type extractOption struct {
 	limitInBytes uint64
-	strategy     runtimev1.Source_ExtractPolicy_Strategy
+	strategy     ExtractPolicyStrategy
 }
 
 // rowPlanner is an interface that creates download plan of a cloud object
@@ -34,7 +33,7 @@ type rowPlanner interface {
 // the limitInBytes is a combined limit on all files
 type plannerWithGlobalLimits struct {
 	cumsizeInBytes uint64
-	strategy       runtimev1.Source_ExtractPolicy_Strategy
+	strategy       ExtractPolicyStrategy
 	limitInBytes   uint64
 	full           bool
 }
@@ -58,7 +57,7 @@ func (r *plannerWithGlobalLimits) done() bool {
 // plannerWithPerFileLimits implements rowPlanner interface
 // limitInBytes is on individual file
 type plannerWithPerFileLimits struct {
-	strategy     runtimev1.Source_ExtractPolicy_Strategy
+	strategy     ExtractPolicyStrategy
 	limitInBytes uint64
 }
 

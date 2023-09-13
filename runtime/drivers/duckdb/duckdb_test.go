@@ -17,9 +17,9 @@ import (
 func TestOpenDrop(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "tmp.db")
 	walpath := path + ".wal"
-	dsn := path + "?rill_pool_size=2"
+	dsn := path
 
-	handle, err := Driver{}.Open(map[string]any{"dsn": dsn}, false, activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open(map[string]any{"dsn": dsn, "pool_size": 2}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := handle.AsOLAP("")
@@ -42,10 +42,9 @@ func TestOpenDrop(t *testing.T) {
 func TestFatalErr(t *testing.T) {
 	// NOTE: Using this issue to create a fatal error: https://github.com/duckdb/duckdb/issues/7905
 
-	path := filepath.Join(t.TempDir(), "tmp.db")
-	dsn := path + "?rill_pool_size=2"
+	dsn := filepath.Join(t.TempDir(), "tmp.db")
 
-	handle, err := Driver{}.Open(map[string]any{"dsn": dsn}, false, activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open(map[string]any{"dsn": dsn, "pool_size": 2}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := handle.AsOLAP("")
@@ -105,10 +104,9 @@ func TestFatalErr(t *testing.T) {
 func TestFatalErrConcurrent(t *testing.T) {
 	// NOTE: Using this issue to create a fatal error: https://github.com/duckdb/duckdb/issues/7905
 
-	path := filepath.Join(t.TempDir(), "tmp.db")
-	dsn := path + "?rill_pool_size=3"
+	dsn := filepath.Join(t.TempDir(), "tmp.db")
 
-	handle, err := Driver{}.Open(map[string]any{"dsn": dsn}, false, activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open(map[string]any{"dsn": dsn, "pool_size": 3}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := handle.AsOLAP("")
@@ -165,7 +163,7 @@ func TestFatalErrConcurrent(t *testing.T) {
 			LEFT JOIN d ON b.b12 = d.d1
 			WHERE d.d2 IN ('');
 		`
-		err1 = olap.WithConnection(context.Background(), 0, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
+		err1 = olap.WithConnection(context.Background(), 0, false, false, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
 			time.Sleep(500 * time.Millisecond)
 			return olap.Exec(ctx, &drivers.Statement{Query: qry})
 		})
@@ -178,21 +176,21 @@ func TestFatalErrConcurrent(t *testing.T) {
 	var err2 error
 	go func() {
 		qry := `SELECT * FROM a;`
-		err2 = olap.WithConnection(context.Background(), 0, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
+		err2 = olap.WithConnection(context.Background(), 0, false, false, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
 			time.Sleep(1000 * time.Millisecond)
 			return olap.Exec(ctx, &drivers.Statement{Query: qry})
 		})
 		wg.Done()
 	}()
 
-	// Func 3 acquires conn after 250ms and runs query immediately. It will be enqueued (because the OLAP conns limit is rill_pool_size-1 = 2).
+	// Func 3 acquires conn after 250ms and runs query immediately. It will be enqueued (because the OLAP conns limit is pool_size-1 = 2).
 	// By the time it's dequeued, the DB will have been invalidated, and it will wait for the reopen before returning a conn. So the query should succeed.
 	wg.Add(1)
 	var err3 error
 	go func() {
 		time.Sleep(250 * time.Millisecond)
 		qry := `SELECT * FROM a;`
-		err3 = olap.WithConnection(context.Background(), 0, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
+		err3 = olap.WithConnection(context.Background(), 0, false, false, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
 			return olap.Exec(ctx, &drivers.Statement{Query: qry})
 		})
 		wg.Done()

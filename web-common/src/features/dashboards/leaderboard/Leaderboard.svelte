@@ -13,8 +13,9 @@
     getFilterForDimension,
     useMetaDimension,
     useMetaMeasure,
-    useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     createQueryServiceMetricsViewToplist,
     MetricsViewDimension,
@@ -23,12 +24,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { SortDirection } from "../proto-state/derived-types";
-  import {
-    metricsExplorerStore,
-    useComparisonRange,
-    useDashboardStore,
-    useFetchTimeRange,
-  } from "../dashboard-stores";
+  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import { getFilterForComparsion } from "../dimension-table/dimension-table-utils";
   import type { FormatPreset } from "../humanize-numbers";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
@@ -52,8 +48,6 @@
   const queryClient = useQueryClient();
 
   $: dashboardStore = useDashboardStore(metricViewName);
-  $: fetchTimeStore = useFetchTimeRange(metricViewName);
-  $: comparisonStore = useComparisonRange(metricViewName);
 
   let filterExcludeMode: boolean;
   $: filterExcludeMode =
@@ -90,11 +84,7 @@
       ?.in ?? [];
   $: atLeastOneActive = !!activeValues?.length;
 
-  $: metricTimeSeries = useModelHasTimeSeries(
-    $runtime.instanceId,
-    metricViewName
-  );
-  $: hasTimeSeries = $metricTimeSeries.data;
+  const timeControlsStore = useTimeControlStore(getStateManagers());
 
   function toggleFilterMode() {
     cancelDashboardQueries(queryClient, metricViewName);
@@ -109,8 +99,6 @@
     metricsExplorerStore.toggleSortDirection(metricViewName);
   }
 
-  $: timeStart = $fetchTimeStore?.start?.toISOString();
-  $: timeEnd = $fetchTimeStore?.end?.toISOString();
   $: sortAscending = $dashboardStore.sortDirection === SortDirection.ASCENDING;
   $: topListQuery = createQueryServiceMetricsViewToplist(
     $runtime.instanceId,
@@ -118,8 +106,8 @@
     {
       dimensionName: dimensionName,
       measureNames: [measure?.name],
-      timeStart: hasTimeSeries ? timeStart : undefined,
-      timeEnd: hasTimeSeries ? timeEnd : undefined,
+      timeStart: $timeControlsStore.timeStart,
+      timeEnd: $timeControlsStore.timeEnd,
       filter: filterForDimension,
       limit: "250",
       offset: "0",
@@ -132,9 +120,7 @@
     },
     {
       query: {
-        enabled:
-          (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
-          !!filterForDimension,
+        enabled: $timeControlsStore.ready && !!filterForDimension,
       },
     }
   );
@@ -172,10 +158,13 @@
       return b.value - a.value;
     });
 
+  $: contextColumn = $dashboardStore?.leaderboardContextColumn;
   // Compose the comparison /toplist query
   $: showTimeComparison =
-    $dashboardStore?.leaderboardContextColumn ===
-      LeaderboardContextColumn.DELTA_PERCENT && $dashboardStore?.showComparison;
+    (contextColumn === LeaderboardContextColumn.DELTA_PERCENT ||
+      contextColumn === LeaderboardContextColumn.DELTA_ABSOLUTE) &&
+    $timeControlsStore?.showComparison;
+
   $: showPercentOfTotal =
     $dashboardStore?.leaderboardContextColumn ===
     LeaderboardContextColumn.PERCENT;
@@ -193,16 +182,14 @@
     dimensionName,
     currentVisibleValues
   );
-  $: comparisonTimeStart = $comparisonStore?.start;
-  $: comparisonTimeEnd = $comparisonStore?.end;
   $: comparisonTopListQuery = createQueryServiceMetricsViewToplist(
     $runtime.instanceId,
     metricViewName,
     {
       dimensionName: dimensionName,
       measureNames: [measure?.name],
-      timeStart: comparisonTimeStart,
-      timeEnd: comparisonTimeEnd,
+      timeStart: $timeControlsStore.comparisonTimeStart,
+      timeEnd: $timeControlsStore.comparisonTimeEnd,
       filter: updatedFilters,
       limit: currentVisibleValues.length.toString(),
       offset: "0",
@@ -215,12 +202,7 @@
     },
     {
       query: {
-        enabled: Boolean(
-          showTimeComparison &&
-            !!comparisonTimeStart &&
-            !!comparisonTimeEnd &&
-            !!updatedFilters
-        ),
+        enabled: Boolean(showTimeComparison && !!updatedFilters),
       },
     }
   );
@@ -257,8 +239,7 @@
     on:mouseleave={() => (hovered = false)}
   >
     <LeaderboardHeader
-      {showTimeComparison}
-      {showPercentOfTotal}
+      {contextColumn}
       isFetching={$topListQuery.isFetching}
       {displayName}
       on:toggle-filter-mode={toggleFilterMode}

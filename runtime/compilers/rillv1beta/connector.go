@@ -71,7 +71,7 @@ func ExtractConnectors(ctx context.Context, projectPath string) ([]*Connector, e
 		}
 		// ignoring error since failure to resolve this should not break the deployment flow
 		// this can fail under cases such as full or host/bucket of URI is a variable
-		access, _ := connector.HasAnonymousSourceAccess(ctx, source(src.Connector, src), zap.NewNop())
+		access, _ := connector.HasAnonymousSourceAccess(ctx, src.Properties.AsMap(), zap.NewNop())
 		c := key{Name: src.Connector, Type: src.Connector, AnonymousAccess: access}
 		srcs, ok := connectorMap[c]
 		if !ok {
@@ -157,38 +157,4 @@ type key struct {
 	Name            string
 	Type            string
 	AnonymousAccess bool
-}
-
-func source(connector string, src *runtimev1.Source) drivers.Source {
-	props := src.Properties.AsMap()
-	switch connector {
-	case "s3":
-		return &drivers.BucketSource{
-			Properties: props,
-		}
-	case "gcs":
-		return &drivers.BucketSource{
-			Properties: props,
-		}
-	case "https":
-		return &drivers.FileSource{
-			Properties: props,
-		}
-	case "local_file":
-		return &drivers.FileSource{
-			Properties: props,
-		}
-	case "motherduck":
-		return &drivers.DatabaseSource{}
-	case "bigquery":
-		return &drivers.DatabaseSource{
-			Props: props,
-		}
-	case "athena":
-		return &drivers.BucketSource{
-			Properties: props,
-		}
-	default:
-		return nil
-	}
 }

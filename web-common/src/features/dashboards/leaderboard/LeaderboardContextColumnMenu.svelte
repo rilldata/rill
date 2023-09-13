@@ -1,8 +1,7 @@
 <script lang="ts">
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
-  import { runtime } from "../../../runtime-client/runtime-store";
-
-  import { useModelHasTimeSeries } from "@rilldata/web-common/features/dashboards/selectors";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     MetricsExplorerEntity,
     metricsExplorerStore,
@@ -13,25 +12,24 @@
   export let metricViewName: string;
   export let validPercentOfTotal: boolean;
 
-  $: hasTimeSeriesQuery = useModelHasTimeSeries(
-    $runtime.instanceId,
-    metricViewName
-  );
-  $: hasTimeSeries = $hasTimeSeriesQuery?.data;
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  const timeControlsStore = useTimeControlStore(getStateManagers());
 
   const handleContextValueButtonGroupClick = (evt) => {
     const value: SelectMenuItem = evt.detail;
     const key = value.key;
+    metricsExplorerStore.setContextColumn(metricViewName, key);
 
-    if (key === LeaderboardContextColumn.HIDDEN) {
-      metricsExplorerStore.hideContextColumn(metricViewName);
-    } else if (key === LeaderboardContextColumn.DELTA_PERCENT) {
-      metricsExplorerStore.displayDeltaChange(metricViewName);
-    } else if (key === LeaderboardContextColumn.PERCENT) {
-      metricsExplorerStore.displayPercentOfTotal(metricViewName);
-    }
+    // if (key === LeaderboardContextColumn.HIDDEN) {
+    //   metricsExplorerStore.hideContextColumn(metricViewName);
+    // } else if (key === LeaderboardContextColumn.DELTA_PERCENT) {
+    //   metricsExplorerStore.displayDeltaChange(metricViewName);
+    // } else if (key === LeaderboardContextColumn.PERCENT) {
+    //   metricsExplorerStore.displayPercentOfTotal(metricViewName);
+    // } else if (key === LeaderboardContextColumn.DELTA_ABSOLUTE) {
+    //   metricsExplorerStore.displayDeltaAbsolute(metricViewName);
+    // }
   };
 
   let options: SelectMenuItem[];
@@ -44,10 +42,12 @@
     {
       main: "Percent change",
       key: LeaderboardContextColumn.DELTA_PERCENT,
-      disabled:
-        !hasTimeSeries ||
-        !metricsExplorer.showComparison ||
-        metricsExplorer.selectedComparisonTimeRange === undefined,
+      disabled: !$timeControlsStore.showComparison,
+    },
+    {
+      main: "Absolute change",
+      key: LeaderboardContextColumn.DELTA_ABSOLUTE,
+      disabled: !$timeControlsStore.showComparison,
     },
     {
       main: "No context column",
@@ -63,12 +63,12 @@
 </script>
 
 <SelectMenu
-  {options}
-  {selection}
-  fixedText="with"
-  ariaLabel="Select a context column"
-  paddingTop={2}
-  paddingBottom={2}
   alignment="end"
+  ariaLabel="Select a context column"
+  fixedText="with"
   on:select={handleContextValueButtonGroupClick}
+  {options}
+  paddingBottom={2}
+  paddingTop={2}
+  {selection}
 />

@@ -25,17 +25,13 @@ func NewFileStoreToDuckDB(from drivers.FileStore, to drivers.OLAPStore, logger *
 
 var _ drivers.Transporter = &fileStoreToDuckDB{}
 
-func (t *fileStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source, sink drivers.Sink, opts *drivers.TransferOpts, p drivers.Progress) error {
-	src, ok := source.FileSource()
-	if !ok {
-		return fmt.Errorf("type of source should be `drivers.FilesSource`")
-	}
-	fSink, ok := sink.DatabaseSink()
-	if !ok {
-		return fmt.Errorf("type of source should be `drivers.DatabaseSink`")
+func (t *fileStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[string]any, opts *drivers.TransferOpts, p drivers.Progress) error {
+	sinkCfg, err := parseSinkProperties(sinkProps)
+	if err != nil {
+		return err
 	}
 
-	localPaths, err := t.from.FilePaths(ctx, src)
+	localPaths, err := t.from.FilePaths(ctx, srcProps)
 	if err != nil {
 		return err
 	}
@@ -51,14 +47,14 @@ func (t *fileStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source,
 	p.Target(size, drivers.ProgressUnitByte)
 
 	var format string
-	if val, ok := src.Properties["format"].(string); ok {
+	if val, ok := srcProps["format"].(string); ok {
 		format = fmt.Sprintf(".%s", val)
 	} else {
 		format = fileutil.FullExt(localPaths[0])
 	}
 
 	var ingestionProps map[string]any
-	if duckDBProps, ok := src.Properties["duckdb"].(map[string]any); ok {
+	if duckDBProps, ok := srcProps["duckdb"].(map[string]any); ok {
 		ingestionProps = duckDBProps
 	} else {
 		ingestionProps = map[string]any{}
@@ -70,8 +66,8 @@ func (t *fileStoreToDuckDB) Transfer(ctx context.Context, source drivers.Source,
 		return err
 	}
 
-	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s)", safeName(fSink.Table), from)
-	err = t.to.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1})
+	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s)", safeName(sinkCfg.Table), from)
+	err = t.to.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1, LongRunning: true})
 	if err != nil {
 		return err
 	}
