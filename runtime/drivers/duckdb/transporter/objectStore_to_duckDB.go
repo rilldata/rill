@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -79,8 +80,16 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 
 	a := newAppender(t.to, sinkCfg, ingestionProps, allowSchemaRelaxation, t.logger)
 
+	batchSize := opts.IteratorBatchSizeInBytes
+	if val, ok := srcProps["batch_size"].(string); ok {
+		b, err := datasize.ParseString(val)
+		if err != nil {
+			return err
+		}
+		batchSize = int64(b.Bytes())
+	}
 	for iterator.HasNext() {
-		files, err := iterator.NextBatch(opts.IteratorBatch)
+		files, err := iterator.NextBatchSize(batchSize)
 		if err != nil {
 			return err
 		}
