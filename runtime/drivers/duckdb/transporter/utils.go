@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -42,6 +43,8 @@ type fileSourceProperties struct {
 	DuckDB                map[string]any `mapstructure:"duckdb"`
 	Format                string         `mapstructure:"format"`
 	AllowSchemaRelaxation bool           `mapstructure:"allow_schema_relaxation"`
+	BatchSize             string         `mapstructure:"batch_size"`
+	BatchSizeBytes        int64          `mapstructure:"-"` // Inferred from BatchSize
 
 	// Backwards compatibility
 	HivePartitioning            *bool  `mapstructure:"hive_partitioning"`
@@ -79,6 +82,14 @@ func parseFileSourceProperties(props map[string]any) (*fileSourceProperties, err
 		if hasKey(cfg.DuckDB, "columns", "types", "dtypes") {
 			return nil, fmt.Errorf("if any of `columns`,`types`,`dtypes` is set `allow_schema_relaxation` must be disabled")
 		}
+	}
+
+	if cfg.BatchSize != "" {
+		b, err := datasize.ParseString(cfg.BatchSize)
+		if err != nil {
+			return nil, err
+		}
+		cfg.BatchSizeBytes = int64(b.Bytes())
 	}
 
 	return cfg, nil

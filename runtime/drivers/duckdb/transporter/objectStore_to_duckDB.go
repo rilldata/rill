@@ -71,8 +71,13 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 
 	a := newAppender(t.to, sinkCfg, srcCfg.DuckDB, srcCfg.AllowSchemaRelaxation, t.logger)
 
+	batchSize := opts.IteratorBatchSizeInBytes
+	if srcCfg.BatchSizeBytes != 0 {
+		batchSize = srcCfg.BatchSizeBytes
+	}
+
 	for iterator.HasNext() {
-		files, err := iterator.NextBatch(opts.IteratorBatch)
+		files, err := iterator.NextBatchSize(batchSize)
 		if err != nil {
 			return err
 		}

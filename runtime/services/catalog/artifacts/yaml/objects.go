@@ -33,6 +33,7 @@ type Source struct {
 	GlobMaxObjectsMatched       int            `yaml:"glob.max_objects_matched,omitempty" mapstructure:"glob.max_objects_matched,omitempty"`
 	GlobMaxObjectsListed        int64          `yaml:"glob.max_objects_listed,omitempty" mapstructure:"glob.max_objects_listed,omitempty"`
 	GlobPageSize                int            `yaml:"glob.page_size,omitempty" mapstructure:"glob.page_size,omitempty"`
+	BatchSize                   string         `yaml:"batch_size,omitempty" mapstructure:"batch_size,omitempty"`
 	HivePartition               *bool          `yaml:"hive_partitioning,omitempty" mapstructure:"hive_partitioning,omitempty"`
 	Timeout                     int32          `yaml:"timeout,omitempty"`
 	Format                      string         `yaml:"format,omitempty" mapstructure:"format,omitempty"`
@@ -168,6 +169,10 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 
 	if source.GlobPageSize != 0 {
 		props["glob.page_size"] = source.GlobPageSize
+	}
+
+	if source.BatchSize != "" {
+		props["batch_size"] = source.BatchSize
 	}
 
 	if source.S3Endpoint != "" {

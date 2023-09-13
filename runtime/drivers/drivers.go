@@ -5,11 +5,15 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
 )
 
-const _iteratorBatch = 32
+const (
+	_iteratorBatch            = 32
+	_iteratorBatchSizeInBytes = int64(5 * datasize.GB)
+)
 
 var ErrIngestionLimitExceeded = fmt.Errorf("connectors: source ingestion exceeds limit")
 
