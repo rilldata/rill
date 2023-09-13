@@ -17,12 +17,37 @@
   export let excludeMode = false;
   export let isBeingCompared = false;
 
+  function getInsertIndex(arr, num) {
+    return arr
+      .concat(num)
+      .sort((a, b) => a - b)
+      .indexOf(num);
+  }
+
   function getColor(i) {
     const posInSelection = selectedIndex.indexOf(i);
     if (posInSelection >= 7) return "fill-gray-300";
 
-    const colorIndex = posInSelection >= 0 ? posInSelection : i;
+    let colorIndex = i;
+    if (posInSelection >= 0) {
+      colorIndex = posInSelection;
+    } else if (excludeMode && selectedIndex.length) {
+      colorIndex = (showCircleIcon(i) as number) - 1;
+    }
     return "fill-" + CHECKMARK_COLORS[colorIndex];
+  }
+
+  function showCircleIcon(index) {
+    if (excludeMode && selectedIndex.length) {
+      if (selectedIndex.includes(index)) {
+        return false;
+      } else {
+        const posExcludingSelection = getInsertIndex(selectedIndex, index);
+        const colorPos = index - posExcludingSelection;
+        return colorPos < 3 ? colorPos + 1 : false;
+      }
+    }
+    return isBeingCompared && !selectedIndex.length && index < 3;
   }
 
   const config: VirtualizedTableConfig = getContext("config");
@@ -47,9 +72,9 @@
       header={{ size: config.indexWidth, start: row.start }}
     >
       <div class="py-0.5 grid place-items-center">
-        {#if isSelected && isBeingCompared}
+        {#if isSelected && !excludeMode && isBeingCompared}
           <CheckCircle className={getColor(row.index)} size="18px" />
-        {:else if isBeingCompared && !selectedIndex.length && row.index < 3}
+        {:else if showCircleIcon(row.index)}
           <Circle className={getColor(row.index)} size="16px" />
         {:else if isSelected && !excludeMode}
           <Check size="20px" />

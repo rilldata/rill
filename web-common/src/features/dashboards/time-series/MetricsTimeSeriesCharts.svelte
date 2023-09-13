@@ -35,7 +35,11 @@
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
-  import { getOrderedStartEnd, prepareTimeSeries } from "./utils";
+  import {
+    getFilterForComparedDimension,
+    getOrderedStartEnd,
+    prepareTimeSeries,
+  } from "./utils";
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
   import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
   import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
@@ -211,7 +215,7 @@
 
     if (includedValues.length === 0) {
       // TODO: Create a central store for topList
-      // Fetch top 3 values for the dimension
+      // Fetch top values for the dimension
       const filterForDimension = getFilterForDimension(
         $dashboardStore?.filters,
         comparisonDimension
@@ -225,7 +229,7 @@
           timeStart: $timeControlsStore.timeStart,
           timeEnd: $timeControlsStore.timeEnd,
           filter: filterForDimension,
-          limit: "3",
+          limit: "250",
           offset: "0",
           sort: [
             {
@@ -250,23 +254,20 @@
   ) {
     let filters = $dashboardStore.filters;
 
-    // Handle case when there are no filters
+    // Handle case when there are no included filters for the dimension
     if (!includedValues?.length) {
       const columnName = $topListQuery?.data?.meta[0]?.name;
-      includedValues = $topListQuery?.data?.data.map((d) => d[columnName]);
+      const topListValues = $topListQuery?.data?.data.map((d) => d[columnName]);
 
-      // Add dimension to filter
-      filters = {
-        ...$dashboardStore.filters,
-        include: [
-          ...$dashboardStore.filters.include,
-          {
-            name: comparisonDimension,
-            in: includedValues,
-          },
-        ],
-      };
+      const computedFilter = getFilterForComparedDimension(
+        comparisonDimension,
+        $dashboardStore?.filters,
+        topListValues
+      );
+      filters = computedFilter?.updatedFilter;
+      includedValues = computedFilter?.includedValues;
     }
+
     allDimQuery = getDimensionValueTimeSeries(
       includedValues,
       instanceId,

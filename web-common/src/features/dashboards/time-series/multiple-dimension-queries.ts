@@ -40,8 +40,12 @@ export function getDimensionValueTimeSeries(
           return { name: dimensionName, in: [value] };
         else return filter;
       });
+      // remove excluded values
+      const updatedExcludeFilter = filters.exclude.filter(
+        (filter) => filter.name !== dimensionName
+      );
       const updatedFilter = {
-        ...filters,
+        exclude: updatedExcludeFilter,
         include: updatedIncludeFilter,
       };
 
