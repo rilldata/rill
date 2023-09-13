@@ -37,6 +37,11 @@ func (m *mockIterator) NextBatch(limit int) ([]string, error) {
 	return m.batches[m.index-1], nil
 }
 
+func (m *mockIterator) NextBatchSize(sizeInBytes int64) ([]string, error) {
+	m.index += 1
+	return m.batches[m.index-1], nil
+}
+
 func (m *mockIterator) HasNext() bool {
 	return m.index < len(m.batches)
 }

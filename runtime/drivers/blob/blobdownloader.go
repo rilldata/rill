@@ -18,10 +18,9 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// increasing this limit can increase speed ingestion
-// but may increase bottleneck at duckdb or network/db IO
-// set without any benchamarks
-const _concurrentBlobDownloadLimit = 32
+// Number of concurrent file downloads.
+// 23-11-13: Experimented with increasing the value to 16. It caused network saturation errors on macOS.
+const _concurrentBlobDownloadLimit = 8
 
 // map of supoprted extensions for partial downloads vs readers
 // zipped csv files can't be partialled downloaded
@@ -150,6 +149,104 @@ func (it *blobIterator) Close() error {
 // HasNext returns true if iterator has more data
 func (it *blobIterator) HasNext() bool {
 	return it.index < len(it.objects)
+}
+
+// NextBatchSize downloads next n files and copies to local directory
+func (it *blobIterator) NextBatchSize(sizeInBytes int64) ([]string, error) {
+	if !it.HasNext() {
+		return nil, io.EOF
+	}
+	if len(it.nextPaths) != 0 {
+		paths := it.nextPaths
+		it.index += len(paths)
+		it.nextPaths = nil
+		return paths, nil
+	}
+
+	if !it.opts.KeepFilesUntilClose {
+		// delete files created in last iteration
+		fileutil.ForceRemoveFiles(it.localFiles)
+	}
+
+	// new slice creation is not necessary on every iteration
+	// but there may be cases where n in first batch is different from n in next batch
+	// to keep things easy creating a new slice every time
+	it.localFiles = make([]string, 0)
+	g, grpCtx := errgroup.WithContext(it.ctx)
+	g.SetLimit(_concurrentBlobDownloadLimit)
+
+	var totalSizeInBytes int64
+	start := it.index
+	for ; it.index < len(it.objects) && totalSizeInBytes < sizeInBytes; it.index++ {
+		obj := it.objects[it.index]
+		totalSizeInBytes += obj.obj.Size
+		g.Go(func() error {
+			// need to create file by maintaining same dir path as in glob for hivepartition support
+			filename := filepath.Join(it.tempDir, obj.obj.Key)
+			if err := os.MkdirAll(filepath.Dir(filename), os.ModePerm); err != nil {
+				return err
+			}
+
+			file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, os.ModePerm)
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+
+			it.localFiles = append(it.localFiles, file.Name())
+			ext := filepath.Ext(obj.obj.Key)
+			partialReader, isPartialDownloadSupported := _partialDownloadReaders[ext]
+			downloadFull := obj.full || !isPartialDownloadSupported
+
+			// Collect metrics of download size and time
+			startTime := time.Now()
+			defer func() {
+				size := obj.obj.Size
+				st, err := file.Stat()
+				if err == nil {
+					size = st.Size()
+				}
+
+				duration := time.Since(startTime)
+				it.logger.Info("download complete", zap.String("object", obj.obj.Key), zap.Duration("duration", duration), observability.ZapCtx(it.ctx))
+				drivers.RecordDownloadMetrics(grpCtx, &drivers.DownloadMetrics{
+					Connector: "blob",
+					Ext:       ext,
+					Partial:   !downloadFull,
+					Duration:  duration,
+					Size:      size,
+				})
+			}()
+
+			// download full file
+			if downloadFull {
+				return downloadObject(grpCtx, it.bucket, obj.obj.Key, file)
+			}
+			// download partial file
+			// check if, for smaller size we can download entire file
+			switch partialReader {
+			case "parquet":
+				return downloadParquet(grpCtx, it.bucket, obj.obj, obj.extractOption, file)
+			case "csv":
+				return downloadText(grpCtx, it.bucket, obj.obj, &textExtractOption{extractOption: obj.extractOption, hasCSVHeader: true}, file)
+			case "json":
+				return downloadText(grpCtx, it.bucket, obj.obj, &textExtractOption{extractOption: obj.extractOption, hasCSVHeader: false}, file)
+			default:
+				// should not reach here
+				panic(fmt.Errorf("partial download not supported for extension %q", ext))
+			}
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
+	// clients can make changes to slice if passing the same slice that iterator holds
+	// creating a copy since we want to delete all these files on next batch/close
+	result := make([]string, it.index-start)
+	copy(result, it.localFiles)
+	return result, nil
 }
 
 // NextBatch downloads next n files and copies to local directory

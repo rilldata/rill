@@ -399,6 +399,10 @@ export type RuntimeServiceIssueDevJWTParams = {
   admin?: boolean;
 };
 
+export type ConnectorServiceScanConnectorsParams = {
+  instanceId?: string;
+};
+
 export type ConnectorServiceBigQueryListTablesParams = {
   instanceId?: string;
   connector?: string;
@@ -491,6 +495,12 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -523,12 +533,6 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
-
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
 
 export type V1TableRowsResponseDataItem = { [key: string]: any };
 
@@ -623,6 +627,16 @@ export interface V1SourceSpec {
   stageChanges?: boolean;
   streamIngestion?: boolean;
   trigger?: boolean;
+}
+
+export interface V1ScannedConnector {
+  name?: string;
+  type?: string;
+  hasAnonymousAccess?: boolean;
+}
+
+export interface V1ScanConnectorsResponse {
+  connectors?: V1ScannedConnector[];
 }
 
 export interface V1S3Object {
