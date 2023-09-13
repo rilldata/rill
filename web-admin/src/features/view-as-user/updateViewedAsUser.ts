@@ -11,7 +11,7 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 
-export async function updateMimickedJWT(
+export async function updateViewedAsUser(
   queryClient: QueryClient,
   organization: string,
   project: string,

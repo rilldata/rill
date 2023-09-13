@@ -8,10 +8,10 @@
   import { IconSpaceFixer } from "@rilldata/web-common/components/button";
   import { Chip } from "@rilldata/web-common/components/chip";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { updateMimickedJWT } from "@rilldata/web-common/features/dashboards/granular-access-policies/updateMimickedJWT";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createPopperActions } from "svelte-popperjs";
   import { errorStore } from "../../components/errors/error-store";
+  import { updateViewedAsUser } from "./updateViewedAsUser";
   import ViewAsUserPopover from "./ViewAsUserPopover.svelte";
   import { viewAsUserStore } from "./viewAsUserStore";
 
@@ -33,7 +33,7 @@
     <Chip
       removable
       on:remove={async () => {
-        await updateMimickedJWT(queryClient, org, project, null);
+        await updateViewedAsUser(queryClient, org, project, null);
         errorStore.reset();
       }}
       active={open}

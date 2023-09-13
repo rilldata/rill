@@ -1,5 +1,5 @@
 import { afterNavigate } from "$app/navigation";
-import { updateMimickedJWT } from "@rilldata/web-common/features/dashboards/granular-access-policies/updateMimickedJWT";
+import { updateViewedAsUser } from "@rilldata/web-admin/features/view-as-user/updateViewedAsUser";
 import { invalidateRuntimeQueries } from "@rilldata/web-common/runtime-client/invalidation";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
@@ -16,7 +16,7 @@ export function clearViewedAsUserAfterNavigate(queryClient: QueryClient) {
 
     // If remaining within the project, set the admin's JWT
     if (!nav.to.params.dashboard && nav.to.params.project) {
-      updateMimickedJWT(
+      updateViewedAsUser(
         queryClient,
         nav.to.params.organization,
         nav.to.params.project,
