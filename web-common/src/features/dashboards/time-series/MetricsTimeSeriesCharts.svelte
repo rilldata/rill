@@ -3,21 +3,18 @@
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
-  import {
-    useDashboardStore,
-    metricsExplorerStore,
-  } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import { prepareTimeSeries } from "@rilldata/web-common/features/dashboards/time-series/utils";
   import {
     humanizeDataType,
     FormatPreset,
     nicelyFormattedTypesToNumberKind,
   } from "@rilldata/web-common/features/dashboards/humanize-numbers";
-  import Portal from "@rilldata/web-common/components/Portal.svelte";
-  import { FloatingElement } from "@rilldata/web-common/components/floating-element";
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
@@ -31,12 +28,8 @@
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import MeasureChart from "./MeasureChart.svelte";
+  import MeasureZoom from "./MeasureZoom.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
-  import { getOrderedStartEnd, prepareTimeSeries } from "./utils";
-  import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
-  import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
-  import { Button } from "@rilldata/web-common/components/button";
-  import Zoom from "@rilldata/web-common/components/icons/Zoom.svelte";
 
   export let metricViewName;
   export let workspaceWidth: number;
@@ -48,7 +41,6 @@
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
 
-  let axisTop;
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
   $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
@@ -206,32 +198,6 @@
   const setAllMeasuresVisible = () => {
     showHideMeasures.setAllToVisible();
   };
-
-  function onKeyDown(e) {
-    if (scrubStart && scrubEnd) {
-      // if key Z is pressed, zoom the scrub
-      if (e.key === "z") {
-        zoomScrub();
-      } else if (
-        !$dashboardStore.selectedScrubRange?.isScrubbing &&
-        e.key === "Escape"
-      ) {
-        metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
-      }
-    }
-  }
-
-  function zoomScrub() {
-    const { start, end } = getOrderedStartEnd(
-      $dashboardStore?.selectedScrubRange?.start,
-      $dashboardStore?.selectedScrubRange?.end
-    );
-    metricsExplorerStore.setSelectedTimeRange(metricViewName, {
-      name: TimeRangePreset.CUSTOM,
-      start,
-      end,
-    });
-  }
 </script>
 
 <TimeSeriesChartContainer end={endValue} start={startValue} {workspaceWidth}>
@@ -252,30 +218,7 @@
   >
     <!-- top axis element -->
     <div />
-    <div bind:this={axisTop} style:height="24px" style:padding-left="24px">
-      {#if $dashboardStore?.selectedScrubRange?.end && !$dashboardStore?.selectedScrubRange?.isScrubbing}
-        <Portal>
-          <FloatingElement
-            target={axisTop}
-            location="top"
-            relationship="direct"
-            alignment="middle"
-            distance={10}
-            pad={0}
-          >
-            <div style:left="-40px" class="absolute flex justify-center">
-              <Button compact type="highlighted" on:click={() => zoomScrub()}>
-                <div class="flex items-center gap-x-2">
-                  <Zoom size="16px" />
-                  Zoom
-                  <span class="font-semibold">(Z)</span>
-                </div>
-              </Button>
-            </div>
-          </FloatingElement>
-        </Portal>
-      {/if}
-    </div>
+    <MeasureZoom {metricViewName} />
     {#if $dashboardStore?.selectedTimeRange}
       <SimpleDataGraphic
         height={26}
@@ -362,6 +305,3 @@
     {/each}
   {/if}
 </TimeSeriesChartContainer>
-
-<!-- Only to be used on singleton components to avoid multiple state dispatches -->
-<svelte:window on:keydown={onKeyDown} />
