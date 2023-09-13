@@ -2,7 +2,6 @@ package athena
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -15,10 +14,8 @@ import (
 	s3v2 "github.com/aws/aws-sdk-go-v2/service/s3"
 	s3v2types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/eapache/go-resiliency/retrier"
-	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
-	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
 	"gocloud.dev/blob"
@@ -181,7 +178,7 @@ func (c *Connection) MigrationStatus(ctx context.Context) (current, desired int,
 
 // AsObjectStore implements drivers.Connection.
 func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
-	return c, true
+	return nil, false
 }
 
 // AsTransporter implements drivers.Connection.
@@ -195,7 +192,7 @@ func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 
 // AsSQLStore implements drivers.Connection.
 func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
-	return nil, false
+	return c, true
 }
 
 func cleanPath(ctx context.Context, cfg aws.Config, bucketName, prefix string) error {
@@ -239,48 +236,6 @@ func (ci janitorIterator) Close() error {
 	return cleanPath(ci.ctx, ci.cfg, ci.bucketName, ci.unloadPath)
 }
 
-func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (drivers.FileIterator, error) {
-	conf, err := parseSourceProperties(props)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse config: %w", err)
-	}
-
-	cfg, err := c.newCfg(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	unloadPath := "parquet_output_" + uuid.New().String()
-	bucketName := strings.Split(strings.TrimPrefix(conf.OutputLocation, "s3://"), "/")[0]
-	unloadLocation := strings.TrimRight(conf.OutputLocation, "/") + "/" + unloadPath
-	err = c.unload(ctx, cfg, conf, unloadLocation)
-	if err != nil {
-		return nil, errors.Join(fmt.Errorf("failed to unload: %w", err), cleanPath(ctx, cfg, bucketName, unloadPath))
-	}
-
-	bucketObj, err := c.openBucket(ctx, conf, bucketName)
-	if err != nil {
-		return nil, errors.Join(fmt.Errorf("cannot open bucket %q: %w", unloadLocation, err), cleanPath(ctx, cfg, bucketName, unloadPath))
-	}
-
-	opts := rillblob.Options{
-		GlobPattern: unloadPath + "/**",
-	}
-
-	it, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
-	if err != nil {
-		return nil, errors.Join(fmt.Errorf("cannot download parquet output %q %w", opts.GlobPattern, err), cleanPath(ctx, cfg, bucketName, unloadPath))
-	}
-
-	return janitorIterator{
-		FileIterator: it,
-		ctx:          ctx,
-		unloadPath:   unloadPath,
-		bucketName:   bucketName,
-		cfg:          cfg,
-	}, nil
-}
-
 func (c *Connection) newCfg(ctx context.Context) (aws.Config, error) {
 	var cfg aws.Config
 	var err error
@@ -311,12 +266,25 @@ func (c *Connection) openBucket(ctx context.Context, conf *sourceProperties, buc
 	return s3blob.OpenBucketV2(ctx, s3client, bucket, nil)
 }
 
-func (c *Connection) unload(ctx context.Context, cfg aws.Config, conf *sourceProperties, path string) error {
-	finalSQL := fmt.Sprintf("UNLOAD (%s) TO '%s' WITH (format = 'PARQUET')", conf.SQL, path)
-	client := athena.NewFromConfig(cfg)
+func resolveOutputLocation(ctx context.Context, client *athena.Client, conf *sourceProperties) (string, error) {
+	if conf.OutputLocation != "" {
+		return conf.OutputLocation, nil
+	} else {
+		wo, err := client.GetWorkGroup(ctx, &athena.GetWorkGroupInput{
+			WorkGroup: aws.String(conf.WorkGroup),
+		})
+		if err != nil {
+			return "", err
+		}
+		return *wo.WorkGroup.Configuration.ResultConfiguration.OutputLocation, nil
+	}
+}
+
+func (c *Connection) unload(client *athena.Client, ctx context.Context, cfg aws.Config, conf *sourceProperties, unloadLocation string) error {
+	finalSQL := fmt.Sprintf("UNLOAD (%s) TO '%s' WITH (format = 'PARQUET')", conf.SQL, unloadLocation)
 
 	resultConfig := &types.ResultConfiguration{
-		OutputLocation: aws.String(strings.TrimRight(conf.OutputLocation, "/") + "/output/"),
+		OutputLocation: aws.String(conf.OutputLocation),
 	}
 
 	executeParams := &athena.StartQueryExecutionInput{

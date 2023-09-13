@@ -3,9 +3,11 @@ package transporter
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/athena"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
@@ -51,6 +53,7 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map
 	// TODO :: iteration over fileiterator is similar(apart from no schema changes possible here)
 	// to consuming fileIterator in objectStore_to_duckDB
 	// both can be refactored to follow same path
+	fromAthena := reflect.TypeOf(s.from).AssignableTo(reflect.TypeOf(&athena.Connection{}))
 	for iter.HasNext() {
 		files, err := iter.NextBatch(opts.IteratorBatch)
 		if err != nil {
@@ -58,7 +61,7 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map
 		}
 
 		format := fileutil.FullExt(files[0])
-		from, err := sourceReader(files, format, make(map[string]any), false)
+		from, err := sourceReader(files, format, make(map[string]any), fromAthena)
 		if err != nil {
 			return err
 		}
