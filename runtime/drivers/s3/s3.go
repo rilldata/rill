@@ -211,6 +211,7 @@ func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 
 type sourceProperties struct {
 	Path                  string         `mapstructure:"path"`
+	URI                   string         `mapstructure:"uri"`
 	AWSRegion             string         `mapstructure:"region"`
 	GlobMaxTotalSize      int64          `mapstructure:"glob.max_total_size"`
 	GlobMaxObjectsMatched int            `mapstructure:"glob.max_objects_matched"`
@@ -227,6 +228,11 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 	err := mapstructure.WeakDecode(props, conf)
 	if err != nil {
 		return nil, err
+	}
+
+	// Backwards compatibility for "uri" renamed to "path"
+	if conf.URI != "" {
+		conf.Path = conf.URI
 	}
 
 	if !doublestar.ValidatePattern(conf.Path) {
