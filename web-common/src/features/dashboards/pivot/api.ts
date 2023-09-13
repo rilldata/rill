@@ -1,6 +1,8 @@
 // Mock apis
 
+import { getBlock } from "../time-dimension-details/util";
 import type { PivotColumnSet, PivotConfig, PivotDimension } from "./types";
+import { range } from "./util";
 
 function getDimensionCardinality(dim: string) {
   return parseInt(dim.split("Dim").at(1));
@@ -120,3 +122,49 @@ export function getRowHeaders(config: PivotConfig, y0: number, y1: number) {
   }
   return headers.slice(y0, y1);
 }
+
+const dimNames = ["DimA", "DimB", "DimC", "DimD", "DimE"];
+
+export const fetchMockRowData = (block, delay) => async () => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        block: block,
+        data: Array.from(Array(50).keys()).map((x) =>
+          Array.from(Array(2).keys()).map(
+            (y) => `${dimNames[y]}_${block[0] + x},${y}`
+          )
+        ),
+      });
+    }, delay);
+  });
+};
+
+export const fetchMockColumnData = (block, config, delay) => async () => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        block: block,
+        data: getColumnHeaders(config, block[0], block[1]),
+      });
+    }, delay);
+  });
+};
+
+export const fetchMockBodyData = (pos, config, delay) => async () => {
+  const blockX = getBlock(50, pos.x0, pos.x1);
+  const blockY = getBlock(50, pos.y0, pos.y1);
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        block: {
+          x: blockX,
+          y: blockY,
+        },
+        data: range(blockY[0], blockY[1], (y) =>
+          range(blockX[0], blockX[1], (x) => `${x},${y}`)
+        ),
+      });
+    }, delay);
+  });
+};

@@ -42,7 +42,7 @@ export const basicPivot: PivotConfig = {
     {
       dims: [
         {
-          def: "Dim10",
+          def: "Dim100",
         },
       ],
       measures: [
