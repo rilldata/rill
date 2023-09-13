@@ -246,8 +246,6 @@ func (it *blobIterator) NextBatchSize(sizeInBytes int64) ([]string, error) {
 	// clients can make changes to slice if passing the same slice that iterator holds
 	// creating a copy since we want to delete all these files on next batch/close
 	result := make([]string, it.index-start)
-	// clients can make changes to slice if passing the same slice that iterator holds
-	// creating a copy since we want to delete all these files on next batch/close
 	copy(result, it.localFiles)
 	return result, nil
 }
