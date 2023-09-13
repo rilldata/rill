@@ -84,6 +84,7 @@ This component needs to do the following:
     </TooltipContent>
   </Tooltip>
   <Menu
+    minWidth="280px"
     slot="floating-element"
     on:escape={toggleFloatingElement}
     on:click-outside={toggleFloatingElement}
