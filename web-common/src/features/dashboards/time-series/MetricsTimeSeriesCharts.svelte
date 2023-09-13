@@ -12,6 +12,8 @@
     FormatPreset,
     nicelyFormattedTypesToNumberKind,
   } from "@rilldata/web-common/features/dashboards/humanize-numbers";
+  import Portal from "@rilldata/web-common/components/Portal.svelte";
+  import { FloatingElement } from "@rilldata/web-common/components/floating-element";
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -46,6 +48,7 @@
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
 
+  let axisTop;
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
   $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
@@ -208,15 +211,7 @@
     if (scrubStart && scrubEnd) {
       // if key Z is pressed, zoom the scrub
       if (e.key === "z") {
-        const { start, end } = getOrderedStartEnd(
-          $dashboardStore?.selectedScrubRange?.start,
-          $dashboardStore?.selectedScrubRange?.end
-        );
-        metricsExplorerStore.setSelectedTimeRange(metricViewName, {
-          name: TimeRangePreset.CUSTOM,
-          start,
-          end,
-        });
+        zoomScrub();
       } else if (
         !$dashboardStore.selectedScrubRange?.isScrubbing &&
         e.key === "Escape"
@@ -224,6 +219,18 @@
         metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
       }
     }
+  }
+
+  function zoomScrub() {
+    const { start, end } = getOrderedStartEnd(
+      $dashboardStore?.selectedScrubRange?.start,
+      $dashboardStore?.selectedScrubRange?.end
+    );
+    metricsExplorerStore.setSelectedTimeRange(metricViewName, {
+      name: TimeRangePreset.CUSTOM,
+      start,
+      end,
+    });
   }
 </script>
 
@@ -245,27 +252,30 @@
   >
     <!-- top axis element -->
     <div />
-    {#if true || ($dashboardStore?.selectedScrubRange?.end && !$dashboardStore?.selectedScrubRange?.isScrubbing)}
-      <div
-        style:transform="translateY(-21px)"
-        style:height="22px"
-        class="flex justify-center"
-      >
-        <Button
-          compact
-          type="highlighted"
-          on:select={() => console.log("zoom")}
-        >
-          <div class="flex items-center gap-x-2">
-            <Zoom size="16px" />
-            Zoom
-            <span class="font-semibold">(Z)</span>
-          </div>
-        </Button>
-      </div>
-    {:else}
-      <div style:height="22px" style:padding-left="24px" />
-    {/if}
+    <div bind:this={axisTop} style:height="24px" style:padding-left="24px">
+      {#if $dashboardStore?.selectedScrubRange?.end && !$dashboardStore?.selectedScrubRange?.isScrubbing}
+        <Portal>
+          <FloatingElement
+            target={axisTop}
+            location="top"
+            relationship="direct"
+            alignment="middle"
+            distance={10}
+            pad={0}
+          >
+            <div style:left="-40px" class="absolute flex justify-center">
+              <Button compact type="highlighted" on:click={() => zoomScrub()}>
+                <div class="flex items-center gap-x-2">
+                  <Zoom size="16px" />
+                  Zoom
+                  <span class="font-semibold">(Z)</span>
+                </div>
+              </Button>
+            </div>
+          </FloatingElement>
+        </Portal>
+      {/if}
+    </div>
     {#if $dashboardStore?.selectedTimeRange}
       <SimpleDataGraphic
         height={26}
