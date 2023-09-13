@@ -1,7 +1,7 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { sourceIngestionTelemetry } from "@rilldata/web-common/features/sources/source-ingestion-telemetry";
-import type { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
-import type { MetricsEventScreenName } from "@rilldata/web-common/metrics/service/MetricsTypes";
+import type { TelemetryParams } from "@rilldata/web-common/metrics/service/metrics-helpers";
+import type { V1ResourceEvent } from "@rilldata/web-common/runtime-client";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import { Readable, writable } from "svelte/store";
 
@@ -10,6 +10,11 @@ export enum EntityAction {
   Update,
   Rename,
   Delete,
+}
+
+export enum ChainAction {
+  ModelFromSource,
+  DashboardFromModel,
 }
 
 /**
@@ -21,14 +26,19 @@ export type EntityActionQueueState = {
 };
 export type EntityActionInstance = {
   action: EntityAction;
+  chain?: Array<ChainAction>;
 
   // telemetry
-  screenName: MetricsEventScreenName;
-  behaviourEventMedium: BehaviourEventMedium;
+  params: TelemetryParams;
 };
 type EntityActionQueueReducers = {
-  add: (name: string, actionInstance: EntityActionInstance) => void;
-  resolved: (resource: V1Resource) => void;
+  add: (
+    name: string,
+    action: EntityAction,
+    params: TelemetryParams,
+    chain?: Array<ChainAction>
+  ) => void;
+  resolved: (resource: V1Resource, event: V1ResourceEvent) => void;
 };
 export type EntityActionQueueStore = Readable<EntityActionQueueState> &
   EntityActionQueueReducers;
@@ -41,15 +51,24 @@ const { update, subscribe } = writable<EntityActionQueueState>({
 export const entityActionQueueStore: EntityActionQueueStore = {
   subscribe,
 
-  add(name: string, actionInstance: EntityActionInstance) {
+  add(
+    name: string,
+    action: EntityAction,
+    params: TelemetryParams,
+    chain?: Array<ChainAction>
+  ) {
     update((state) => {
       state.entities[name] ??= [];
-      state.entities[name].push(actionInstance);
+      state.entities[name].push({
+        action,
+        params,
+        chain,
+      });
       return state;
     });
   },
 
-  resolved(resource: V1Resource) {
+  resolved(resource: V1Resource, _: V1ResourceEvent) {
     update((state) => {
       if (!state.entities[resource.meta.name.name]?.length) return state;
 
@@ -58,12 +77,21 @@ export const entityActionQueueStore: EntityActionQueueStore = {
         return state;
       }
 
+      const action = state.entities[resource.meta.name.name].shift();
+
       switch (resource.meta.name.kind) {
         case ResourceKind.Source:
-          sourceIngestionTelemetry(
-            resource,
-            state.entities[resource.meta.name.name].shift()
-          );
+          sourceIngestionTelemetry(resource, action);
+          break;
+      }
+
+      if (action.chain?.length) {
+        switch (action.chain[0]) {
+          case ChainAction.DashboardFromModel:
+            this.add();
+            break;
+          // TODO: others
+        }
       }
 
       return state;

@@ -7,6 +7,7 @@ export enum ResourceKind {
   Source = "source",
   Model = "model",
   MetricsView = "metricsview",
+  // TODO: do a correct map based on backend code
 }
 
 export function useSource(instanceId: string, name: string) {

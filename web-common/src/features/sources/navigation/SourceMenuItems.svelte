@@ -20,6 +20,7 @@
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
+  import { getLeftPanelModelParams } from "@rilldata/web-common/metrics/service/metrics-helpers";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
@@ -40,7 +41,7 @@
   import { EntityType } from "../../entity-management/types";
   import { useModelNames } from "../../models/selectors";
   import { useCreateDashboardFromSource } from "../createDashboard";
-  import { createModelFromSource } from "../createModel";
+  import { createModelFromSourceCreator } from "web-common/src/features/sources/createModelFromSource";
   import { refreshSource } from "../refreshSource";
 
   export let sourceName: string;
@@ -77,6 +78,11 @@
   const createEntityMutation = createRuntimeServicePutFileAndReconcile();
   const createDashboardFromSourceMutation = useCreateDashboardFromSource();
 
+  $: modelFromSourceCreator = createModelFromSourceCreator(
+    allEntityNames,
+    getLeftPanelModelParams()
+  );
+
   const handleDeleteSource = async (tableName: string) => {
     await deleteFile(
       runtimeInstanceId,
@@ -89,19 +95,10 @@
 
   const handleCreateModel = async () => {
     try {
-      const previousActiveEntity = $appScreen?.type;
-      const newModelName = await createModelFromSource(
-        sourceName,
-        $allEntityNames.data,
-        embedded ? `"${path}"` : sourceName
-      );
-
-      behaviourEvent.fireNavigationEvent(
-        newModelName,
-        BehaviourEventMedium.Menu,
-        MetricsEventSpace.LeftPanel,
-        previousActiveEntity,
-        MetricsEventScreenName.Model
+      await modelFromSourceCreator(
+        undefined, // TODO
+        embedded ? `"${path}"` : sourceName,
+        "/models/"
       );
     } catch (err) {
       console.error(err);

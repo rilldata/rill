@@ -3,7 +3,6 @@ import {
   emitSourceErrorTelemetry,
   emitSourceSuccessTelemetry,
 } from "@rilldata/web-common/features/sources/sourceUtils";
-import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
 import { connectorToSourceConnectionType } from "@rilldata/web-common/metrics/service/SourceEventTypes";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 
@@ -15,8 +14,8 @@ export function sourceIngestionTelemetry(
   if (resource.meta.reconcileError) {
     // Error
     emitSourceErrorTelemetry(
-      MetricsEventSpace.Modal,
-      actionInstance.screenName,
+      actionInstance.params.space,
+      actionInstance.params.screenName,
       resource.meta.reconcileError,
       connectorToSourceConnectionType[connectorName],
       resource.source.spec.properties?.path ?? ""
@@ -24,9 +23,9 @@ export function sourceIngestionTelemetry(
   } else {
     // Success
     emitSourceSuccessTelemetry(
-      MetricsEventSpace.Modal,
-      actionInstance.screenName,
-      actionInstance.behaviourEventMedium,
+      actionInstance.params.space,
+      actionInstance.params.screenName,
+      actionInstance.params.medium,
       connectorToSourceConnectionType[connectorName],
       resource.source.spec.properties?.path ?? ""
     );

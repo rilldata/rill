@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import {
     Button,
     IconSpaceFixer,
@@ -13,6 +12,7 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
+  import { getRightPanelModelParams } from "@rilldata/web-common/metrics/service/metrics-helpers";
   import {
     createRuntimeServiceGetFile,
     createRuntimeServicePutFile,
@@ -27,12 +27,6 @@
   import EnterIcon from "../../../components/icons/EnterIcon.svelte";
   import UndoIcon from "../../../components/icons/UndoIcon.svelte";
   import { WorkspaceHeader } from "../../../layout/workspace";
-  import { behaviourEvent } from "../../../metrics/initMetrics";
-  import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
-  import {
-    MetricsEventScreenName,
-    MetricsEventSpace,
-  } from "../../../metrics/service/MetricsTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
   import {
@@ -40,10 +34,7 @@
     getFileArtifactReconciliationErrors,
   } from "../../entity-management/file-artifacts-store";
   import { useAllNames } from "../../entity-management/selectors";
-  import {
-    createModelFromSource,
-    createModelFromSourceV2,
-  } from "../createModel";
+  import { createModelFromSourceCreator } from "web-common/src/features/sources/createModelFromSource";
   import { refreshSource } from "../refreshSource";
   import { useIsSourceUnsaved } from "../selectors";
   import { useSourceStore } from "../sources-store";
@@ -55,6 +46,13 @@
   const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
   const renameSource = createRuntimeServiceRenameFile();
   const saveSource = createRuntimeServicePutFile();
+
+  $: allNamesQuery = useAllNames(runtimeInstanceId);
+
+  $: modelFromSourceCreator = createModelFromSourceCreator(
+    allNamesQuery,
+    getRightPanelModelParams()
+  );
 
   $: runtimeInstanceId = $runtime.instanceId;
 
@@ -69,8 +67,6 @@
 
   let connector: string;
   $: connector = source?.spec?.sourceConnector;
-
-  $: allNamesQuery = useAllNames(runtimeInstanceId);
 
   const onChangeCallback = async (e) => {
     if (
@@ -153,15 +149,11 @@
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;
 
   const handleCreateModelFromSource = async () => {
-    await createModelFromSource(queryClient, sourceName);
-
-    // behaviourEvent.fireNavigationEvent(
-    //   modelName,
-    //   BehaviourEventMedium.Button,
-    //   MetricsEventSpace.RightPanel,
-    //   MetricsEventScreenName.Source,
-    //   MetricsEventScreenName.Model
-    // );
+    await modelFromSourceCreator(
+      undefined, // TODO
+      sourceName,
+      "/models/"
+    );
   };
 
   let hasReconciliationErrors: boolean;

@@ -2,6 +2,7 @@ import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-re
 import {
   getRuntimeServiceGetFileQueryKey,
   getRuntimeServiceListFilesQueryKey,
+  V1FileEvent,
   V1WatchFilesResponse,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -33,13 +34,13 @@ function handleWatchFileResponse(
   // invalidations will wait until the re-fetched query is completed
   // so, we should not `await` here on `refetchQueries`
   switch (res.event) {
-    case "FILE_EVENT_WRITE":
+    case V1FileEvent.FILE_EVENT_WRITE:
       queryClient.refetchQueries(
         getRuntimeServiceGetFileQueryKey(instanceId, res.path)
       );
       break;
 
-    case "FILE_EVENT_DELETE":
+    case V1FileEvent.FILE_EVENT_DELETE:
       queryClient.removeQueries(
         getRuntimeServiceGetFileQueryKey(instanceId, res.path)
       );

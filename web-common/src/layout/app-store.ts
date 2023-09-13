@@ -23,7 +23,10 @@ interface AppStore {
 }
 
 export const appScreen = derived(page, ($page) => {
-  let activeEntity;
+  let activeEntity: {
+    name: string;
+    type: MetricsEventScreenName;
+  };
   switch ($page.route.id) {
     case "/(application)":
       activeEntity = {

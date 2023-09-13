@@ -1,8 +1,10 @@
+import { entityActionQueueStore } from "@rilldata/web-common/features/entity-management/entity-action-queue";
 import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-request-client";
 import {
   getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
   V1Resource,
+  V1ResourceEvent,
   V1WatchResourcesResponse,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -24,15 +26,17 @@ function handleWatchResourceResponse(
 ) {
   if (!res.resource) return;
 
+  entityActionQueueStore.resolved(res.resource, res.event);
+
   const instanceId = get(runtime).instanceId;
   // invalidations will wait until the re-fetched query is completed
   // so, we should not `await` here
   switch (res.event) {
-    case "RESOURCE_EVENT_WRITE":
+    case V1ResourceEvent.RESOURCE_EVENT_WRITE:
       invalidateResource(queryClient, instanceId, res.resource);
       break;
 
-    case "RESOURCE_EVENT_DELETE":
+    case V1ResourceEvent.RESOURCE_EVENT_DELETE:
       invalidateRemovedResource(queryClient, instanceId, res.resource);
       break;
   }

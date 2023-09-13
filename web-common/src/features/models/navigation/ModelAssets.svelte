@@ -8,6 +8,7 @@
     useFilteredEntityNames,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { getLeftPanelModelParams } from "@rilldata/web-common/metrics/service/metrics-helpers";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import NavigationEntry from "../../../layout/navigation/NavigationEntry.svelte";
@@ -15,7 +16,7 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import AddAssetButton from "../../entity-management/AddAssetButton.svelte";
   import { getName } from "../../entity-management/name-utils";
-  import { createModel } from "../createModel";
+  import { createModelCreator } from "../createModel";
   import ModelMenuItems from "./ModelMenuItems.svelte";
   import ModelTooltip from "./ModelTooltip.svelte";
 
@@ -29,13 +30,12 @@
   );
   $: allEntityNames = useAllEntityNames($runtime.instanceId);
 
+  const modelCreator = createModelCreator(getLeftPanelModelParams());
+
   let showModels = true;
 
   async function handleAddModel() {
-    await createModel(
-      $runtime.instanceId,
-      getName("model", $allEntityNames.data)
-    );
+    await modelCreator(getName("model", $allEntityNames.data), "/models/", "");
     // if the models are not visible in the assets list, show them.
     if (!showModels) {
       showModels = true;

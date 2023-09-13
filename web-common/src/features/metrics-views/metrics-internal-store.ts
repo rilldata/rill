@@ -1,8 +1,15 @@
 import { CATEGORICALS } from "@rilldata/web-common/lib/duckdb-data-types";
 import { DEFAULT_TIMEZONES } from "@rilldata/web-common/lib/time/config";
-import type { V1Model } from "@rilldata/web-common/runtime-client";
+import type {
+  V1Model,
+  V1ProfileColumn,
+  V1TableColumnsResponse,
+} from "@rilldata/web-common/runtime-client";
 import { Document, parseDocument } from "yaml";
-import { selectTimestampColumnFromSchema } from "./column-selectors";
+import {
+  selectTimestampColumnFromSchema,
+  selectTimestampColumnFromSchemaV2,
+} from "./column-selectors";
 
 export interface MetricsConfig extends MetricsParams {
   measures: MeasureEntity[];
@@ -108,6 +115,58 @@ export function generateDashboardYAMLForModel(
     });
 
   const dimensionNode = doc.createNode(diemensionSeq);
+  doc.set("dimensions", dimensionNode);
+
+  doc.set("available_time_zones", DEFAULT_TIMEZONES);
+
+  return doc.toString({ collectionStyle: "block" });
+}
+
+export function generateDashboardYAMLForModelV2(
+  modelName: string,
+  columns: Array<V1ProfileColumn>,
+  dashboardTitle = ""
+) {
+  const doc = new Document();
+
+  doc.commentBefore = ` Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.`;
+
+  if (dashboardTitle) {
+    doc.set("title", dashboardTitle);
+  }
+  doc.set("model", modelName);
+
+  const timestampColumns = selectTimestampColumnFromSchemaV2(columns);
+  if (timestampColumns?.length) {
+    doc.set("timeseries", timestampColumns[0]);
+  } else {
+    doc.set("timeseries", "");
+  }
+
+  const measureNode = doc.createNode({
+    label: "Total records",
+    expression: "count(*)",
+    name: "total_records",
+    description: "Total number of records present",
+    format_preset: "humanize",
+    valid_percent_of_total: true,
+  });
+  doc.set("measures", [measureNode]);
+
+  const dimensionSeq = columns
+    .filter((c) => {
+      return CATEGORICALS.has(c.type);
+    })
+    .map((c) => {
+      return {
+        name: c.name,
+        label: capitalize(c.name),
+        column: c.name,
+        description: "",
+      };
+    });
+
+  const dimensionNode = doc.createNode(dimensionSeq);
   doc.set("dimensions", dimensionNode);
 
   doc.set("available_time_zones", DEFAULT_TIMEZONES);

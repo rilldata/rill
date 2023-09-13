@@ -7,6 +7,7 @@ import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import { appScreen } from "@rilldata/web-common/layout/app-store";
 import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
+import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
 import { runtimeServicePutFile } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 
@@ -16,10 +17,10 @@ export async function createSource(
   yaml: string,
   behaviourEventMedium = BehaviourEventMedium.Button
 ) {
-  entityActionQueueStore.add(tableName, {
-    action: EntityAction.Create,
-    screenName: get(appScreen),
-    behaviourEventMedium,
+  entityActionQueueStore.add(tableName, EntityAction.Create, {
+    space: MetricsEventSpace.Modal,
+    screenName: get(appScreen).type,
+    medium: behaviourEventMedium,
   });
   await runtimeServicePutFile(
     instanceId,

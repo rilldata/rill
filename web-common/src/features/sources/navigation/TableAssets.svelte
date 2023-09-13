@@ -3,11 +3,8 @@
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
-  import {
-    createRuntimeServiceListCatalogEntries,
-    createRuntimeServicePutFileAndReconcile,
-  } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import { getLeftPanelModelParams } from "@rilldata/web-common/metrics/service/metrics-helpers";
+  import { createRuntimeServiceListCatalogEntries } from "@rilldata/web-common/runtime-client";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
   import { appScreen } from "../../../layout/app-store";
@@ -24,16 +21,18 @@
   import AddAssetButton from "../../entity-management/AddAssetButton.svelte";
   import { EntityType } from "../../entity-management/types";
   import { useModelNames } from "../../models/selectors";
-  import { createModelFromSource } from "../createModel";
+  import { createModelFromSourceCreator } from "web-common/src/features/sources/createModelFromSource";
   import AddSourceModal from "../modal/AddSourceModal.svelte";
   import SourceMenuItems from "./SourceMenuItems.svelte";
   import SourceTooltip from "./SourceTooltip.svelte";
 
   $: sourceNames = useSourceNames($runtime.instanceId);
   $: modelNames = useModelNames($runtime.instanceId);
-  const createModelMutation = createRuntimeServicePutFileAndReconcile();
 
-  const queryClient = useQueryClient();
+  $: modelFromSourceCreator = createModelFromSourceCreator(
+    modelNames,
+    getLeftPanelModelParams()
+  );
 
   let showTables = true;
 
@@ -45,21 +44,17 @@
     behaviourEvent?.fireSourceTriggerEvent(
       BehaviourEventAction.SourceAdd,
       BehaviourEventMedium.Button,
-      $appScreen,
+      $appScreen.type,
       MetricsEventSpace.LeftPanel
     );
   };
 
   const queryHandler = async (tableName: string) => {
-    await createModelFromSource(
-      queryClient,
-      $runtime.instanceId,
-      $modelNames.data,
+    await modelFromSourceCreator(
+      undefined, // TODO
       tableName,
-      tableName,
-      $createModelMutation
+      "/models/"
     );
-    // TODO: fire telemetry
   };
 
   let showRenameTableModal = false;
