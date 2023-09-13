@@ -512,7 +512,10 @@ const metricViewReducers = {
       switch (contextColumn) {
         case LeaderboardContextColumn.DELTA_ABSOLUTE:
         case LeaderboardContextColumn.DELTA_PERCENT: {
+          // if there is no time comparison, then we can't show
+          // these context columns, so return with no change
           if (metricsExplorer.showComparison === false) return;
+
           metricsExplorer.leaderboardContextColumn = contextColumn;
           break;
         }
@@ -686,7 +689,7 @@ function sortTypeForContextColumnType(
   const sortType = {
     [LeaderboardContextColumn.DELTA_PERCENT]: SortType.DELTA_PERCENT,
     [LeaderboardContextColumn.DELTA_ABSOLUTE]: SortType.DELTA_ABSOLUTE,
-    [LeaderboardContextColumn.PERCENT]: SortType.DELTA_ABSOLUTE,
+    [LeaderboardContextColumn.PERCENT]: SortType.PERCENT,
     [LeaderboardContextColumn.HIDDEN]: SortType.VALUE,
   }[contextCol];
 
