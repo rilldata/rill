@@ -18,9 +18,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// increasing this limit can increase speed ingestion
-// but may increase bottleneck at duckdb or network/db IO
-// set without any benchamarks
+// Number of concurrent file downloads.
+// 23-11-13: Experimented with increasing the value to 16. It caused network saturation errors on macOS.
 const _concurrentBlobDownloadLimit = 8
 
 // map of supoprted extensions for partial downloads vs readers
