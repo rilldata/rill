@@ -11,7 +11,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createPopperActions } from "svelte-popperjs";
   import { errorStore } from "../../components/errors/error-store";
-  import { updateViewedAsUser } from "./updateViewedAsUser";
+  import { clearViewedAsUserWithinProject } from "./clearViewedAsUser";
   import ViewAsUserPopover from "./ViewAsUserPopover.svelte";
   import { viewAsUserStore } from "./viewAsUserStore";
 
@@ -33,7 +33,7 @@
     <Chip
       removable
       on:remove={async () => {
-        await updateViewedAsUser(queryClient, org, project, null);
+        await clearViewedAsUserWithinProject(queryClient, org, project);
         errorStore.reset();
       }}
       active={open}

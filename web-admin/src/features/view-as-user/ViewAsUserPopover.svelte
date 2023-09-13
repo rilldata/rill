@@ -8,7 +8,7 @@
   import { createEventDispatcher } from "svelte";
   import { createAdminServiceSearchProjectUsers, V1User } from "../../client";
   import { errorStore } from "../../components/errors/error-store";
-  import { updateViewedAsUser } from "./updateViewedAsUser";
+  import { setViewedAsUser } from "./setViewedAsUser";
   import { viewAsUserStore } from "./viewAsUserStore";
 
   export let organization: string;
@@ -25,7 +25,7 @@
 
   const queryClient = useQueryClient();
   async function viewAsUser(user: V1User) {
-    await updateViewedAsUser(queryClient, organization, project, user);
+    await setViewedAsUser(queryClient, organization, project, user);
     errorStore.reset();
     dispatch("select");
   }

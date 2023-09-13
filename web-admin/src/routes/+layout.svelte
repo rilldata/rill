@@ -14,7 +14,7 @@
   import { globalErrorCallback } from "../components/errors/error-utils";
   import ErrorBoundary from "../components/errors/ErrorBoundary.svelte";
   import TopNavigationBar from "../components/navigation/TopNavigationBar.svelte";
-  import { clearViewedAsUserAfterNavigate } from "../features/view-as-user/clearViewedAsUserAfterNavigate";
+  import { clearViewedAsUserAfterNavigate } from "../features/view-as-user/clearViewedAsUser";
 
   const queryClient = new QueryClient({
     queryCache: new QueryCache({
