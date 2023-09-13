@@ -61,7 +61,7 @@
         }}
       >
         <div class="flex items-center gap-x-2">
-          <Globe size="16px" />
+          <Globe />
           <span class="font-bold"
             >{getAbbreviationForIANA(now, activeTimeZone)}</span
           >
