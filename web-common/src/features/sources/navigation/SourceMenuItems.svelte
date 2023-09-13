@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
@@ -7,41 +6,28 @@
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import { Divider, MenuItem } from "@rilldata/web-common/components/menu";
-  import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { deleteFile } from "@rilldata/web-common/features/entity-management/file-actions";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { useAllEntityNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { createDashboardFromModel } from "@rilldata/web-common/features/models/createDashboardFromModel";
   import {
     useSourceFromYaml,
     useSourceNames,
   } from "@rilldata/web-common/features/sources/selectors";
-  import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
-  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
-  import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
-  import { getLeftPanelModelParams } from "@rilldata/web-common/metrics/service/metrics-helpers";
-  import {
-    MetricsEventScreenName,
-    MetricsEventSpace,
-  } from "@rilldata/web-common/metrics/service/MetricsTypes";
+  import { getLeftPanelParams } from "@rilldata/web-common/metrics/service/metrics-helpers";
   import {
     createRuntimeServiceGetCatalogEntry,
     createRuntimeServicePutFileAndReconcile,
     createRuntimeServiceRefreshAndReconcile,
     getRuntimeServiceGetCatalogEntryQueryKey,
-    V1ReconcileResponse,
     V1Source,
   } from "@rilldata/web-common/runtime-client";
-  import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
-  import { runtime } from "../../../runtime-client/runtime-store";
-  import { getName } from "../../entity-management/name-utils";
-  import { EntityType } from "../../entity-management/types";
-  import { useModelNames } from "../../models/selectors";
-  import { useCreateDashboardFromSource } from "../createDashboard";
   import { createModelFromSourceCreator } from "web-common/src/features/sources/createModelFromSource";
+  import { runtime } from "../../../runtime-client/runtime-store";
+  import { EntityType } from "../../entity-management/types";
   import { refreshSource } from "../refreshSource";
 
   export let sourceName: string;
@@ -70,17 +56,19 @@
   );
 
   $: sourceNames = useSourceNames($runtime.instanceId);
-  $: modelNames = useModelNames($runtime.instanceId);
-  $: dashboardNames = useDashboardNames($runtime.instanceId);
   $: allEntityNames = useAllEntityNames($runtime.instanceId);
 
   const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
   const createEntityMutation = createRuntimeServicePutFileAndReconcile();
-  const createDashboardFromSourceMutation = useCreateDashboardFromSource();
+  const dashboardFromSourceCreator = createModelFromSourceCreator(
+    allEntityNames,
+    undefined,
+    createDashboardFromModel(allEntityNames, getLeftPanelParams())
+  );
 
   $: modelFromSourceCreator = createModelFromSourceCreator(
     allEntityNames,
-    getLeftPanelModelParams()
+    getLeftPanelParams()
   );
 
   const handleDeleteSource = async (tableName: string) => {
@@ -105,44 +93,16 @@
     }
   };
 
-  const handleCreateDashboardFromSource = (sourceName: string) => {
+  const handleCreateDashboardFromSource = async (sourceName: string) => {
     overlay.set({
       title: "Creating a dashboard for " + sourceName,
     });
-    const newModelName = getName(`${sourceName}_model`, $modelNames.data);
-    const newDashboardName = getName(
-      `${sourceName}_dashboard`,
-      $dashboardNames.data
-    );
-    $createDashboardFromSourceMutation.mutate(
-      {
-        data: {
-          instanceId: $runtime.instanceId,
-          sourceName,
-          newModelName,
-          newDashboardName,
-        },
-      },
-      {
-        onSuccess: async (resp: V1ReconcileResponse) => {
-          fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-          goto(`/dashboard/${newDashboardName}`);
-          const previousActiveEntity = $appScreen?.type;
-          behaviourEvent.fireNavigationEvent(
-            newDashboardName,
-            BehaviourEventMedium.Menu,
-            MetricsEventSpace.LeftPanel,
-            previousActiveEntity,
-            MetricsEventScreenName.Dashboard
-          );
-          return invalidateAfterReconcile(queryClient, runtimeInstanceId, resp);
-        },
-        onSettled: () => {
-          overlay.set(null);
-          toggleMenu(); // unmount component
-        },
-      }
-    );
+
+    await dashboardFromSourceCreator(undefined, sourceName);
+
+    // TODO: should this wait till everything is finished?
+    overlay.set(null);
+    toggleMenu(); // unmount component
   };
 
   const onRefreshSource = async (tableName: string) => {

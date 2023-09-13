@@ -14,8 +14,8 @@ export function sourceIngestionTelemetry(
   if (resource.meta.reconcileError) {
     // Error
     emitSourceErrorTelemetry(
-      actionInstance.params.space,
-      actionInstance.params.screenName,
+      actionInstance.telemetryParams.space,
+      actionInstance.telemetryParams.screenName,
       resource.meta.reconcileError,
       connectorToSourceConnectionType[connectorName],
       resource.source.spec.properties?.path ?? ""
@@ -23,9 +23,9 @@ export function sourceIngestionTelemetry(
   } else {
     // Success
     emitSourceSuccessTelemetry(
-      actionInstance.params.space,
-      actionInstance.params.screenName,
-      actionInstance.params.medium,
+      actionInstance.telemetryParams.space,
+      actionInstance.telemetryParams.screenName,
+      actionInstance.telemetryParams.medium,
       connectorToSourceConnectionType[connectorName],
       resource.source.spec.properties?.path ?? ""
     );

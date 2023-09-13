@@ -12,7 +12,7 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
-  import { getRightPanelModelParams } from "@rilldata/web-common/metrics/service/metrics-helpers";
+  import { getRightPanelParams } from "@rilldata/web-common/metrics/service/metrics-helpers";
   import {
     createRuntimeServiceGetFile,
     createRuntimeServicePutFile,
@@ -51,7 +51,7 @@
 
   $: modelFromSourceCreator = createModelFromSourceCreator(
     allNamesQuery,
-    getRightPanelModelParams()
+    getRightPanelParams()
   );
 
   $: runtimeInstanceId = $runtime.instanceId;

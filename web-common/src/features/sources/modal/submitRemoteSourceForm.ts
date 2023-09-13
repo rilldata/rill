@@ -21,6 +21,7 @@ export interface RemoteSourceFormValues {
   [key: string]: any;
 }
 
+// TODO: move this to new reconcile
 export async function submitRemoteSourceForm(
   queryClient: QueryClient,
   connectorName: string,
@@ -32,7 +33,7 @@ export async function submitRemoteSourceForm(
   behaviourEvent?.fireSourceTriggerEvent(
     BehaviourEventAction.SourceAdd,
     BehaviourEventMedium.Button,
-    get(appScreen),
+    get(appScreen).type,
     MetricsEventSpace.Modal
   );
 

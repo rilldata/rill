@@ -1,3 +1,8 @@
+import type { EntityCreateFunction } from "@rilldata/web-common/features/entity-management/entity-action-queue";
+import {
+  EntityAction,
+  entityActionQueueStore,
+} from "@rilldata/web-common/features/entity-management/entity-action-queue";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
 import { createModelCreator } from "@rilldata/web-common/features/models/createModel";
 import type { TelemetryParams } from "@rilldata/web-common/metrics/service/metrics-helpers";
@@ -8,7 +13,8 @@ import { notifications } from "../../components/notifications";
 
 export function createModelFromSourceCreator(
   allNamesQuery: CreateQueryResult<Array<string>>,
-  telemetryParams?: TelemetryParams
+  telemetryParams?: TelemetryParams,
+  chainFunction?: EntityCreateFunction
 ) {
   const modelCreator = createModelCreator(telemetryParams);
 
@@ -18,13 +24,33 @@ export function createModelFromSourceCreator(
     sourceName: string,
     pathPrefix?: string
   ) => {
-    pathPrefix ??= "/models/";
+    const modelPathPrefix = pathPrefix ?? "/models/";
 
     const newModelName = getName(
       `${sourceName}_model`,
       get(allNamesQuery).data
     );
-    await modelCreator(newModelName, pathPrefix, `select * from ${sourceName}`);
+
+    if (chainFunction) {
+      // add the chain with telemetry params
+      entityActionQueueStore.add(
+        newModelName,
+        EntityAction.Create,
+        telemetryParams,
+        {
+          chainFunction,
+          sourceName,
+          // pass in the original path prefix and not the defaulted one from the beginning of the function
+          pathPrefix,
+        }
+      );
+    }
+
+    await modelCreator(
+      newModelName,
+      modelPathPrefix,
+      `select * from ${sourceName}`
+    );
     notifications.send({
       message: `Queried ${sourceName} in workspace`,
     });

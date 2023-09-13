@@ -2,14 +2,13 @@
   import Overlay from "@rilldata/web-common/components/overlay/Overlay.svelte";
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
   import { createRuntimeServiceUnpackEmpty } from "@rilldata/web-common/runtime-client";
-  import { appScreen } from "../../../layout/app-store";
   import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useModelNames } from "../../models/selectors";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
   import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
   import { compileCreateSourceYAML } from "../sourceUtils";
-  import { createSource } from "./createSource";
+  import { createSourceCreator } from "./createSource";
   import { uploadTableFiles } from "./file-upload";
 
   export let showDropOverlay: boolean;
@@ -20,6 +19,7 @@
   $: isProjectInitialized = useIsProjectInitialized(runtimeInstanceId);
 
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
+  const sourceCreator = createSourceCreator(BehaviourEventMedium.Drag);
 
   const handleSourceDrop = async (e: DragEvent) => {
     showDropOverlay = false;
@@ -48,12 +48,7 @@
           },
           "local_file"
         );
-        await createSource(
-          runtimeInstanceId,
-          tableName,
-          yaml,
-          BehaviourEventMedium.Drag
-        );
+        await sourceCreator(tableName, yaml);
       } catch (err) {
         // TODO: file write errors
         console.error(err);

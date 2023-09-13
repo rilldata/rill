@@ -7,6 +7,7 @@
   } from "@rilldata/web-common/features/sources/modal/file-upload";
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
+  import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { createRuntimeServiceUnpackEmpty } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -14,7 +15,7 @@
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
   import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
   import { compileCreateSourceYAML } from "../sourceUtils";
-  import { createSource } from "./createSource";
+  import { createSourceCreator } from "./createSource";
 
   const dispatch = createEventDispatcher();
 
@@ -25,6 +26,7 @@
   $: isProjectInitialized = useIsProjectInitialized(runtimeInstanceId);
 
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
+  const sourceCreator = createSourceCreator(BehaviourEventMedium.Button);
 
   async function handleOpenFileDialog() {
     return handleUpload(await openFileUploadDialog());
@@ -57,7 +59,7 @@
           "local_file"
         );
 
-        await createSource(runtimeInstanceId, tableName, yaml);
+        await sourceCreator(tableName, yaml);
       } catch (err) {
         // TODO: file write errors
       }

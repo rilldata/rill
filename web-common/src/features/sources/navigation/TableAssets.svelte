@@ -3,7 +3,7 @@
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
-  import { getLeftPanelModelParams } from "@rilldata/web-common/metrics/service/metrics-helpers";
+  import { getLeftPanelParams } from "@rilldata/web-common/metrics/service/metrics-helpers";
   import { createRuntimeServiceListCatalogEntries } from "@rilldata/web-common/runtime-client";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
@@ -31,7 +31,7 @@
 
   $: modelFromSourceCreator = createModelFromSourceCreator(
     modelNames,
-    getLeftPanelModelParams()
+    getLeftPanelParams()
   );
 
   let showTables = true;

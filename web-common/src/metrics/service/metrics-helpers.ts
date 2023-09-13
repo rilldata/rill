@@ -13,13 +13,13 @@ export type TelemetryParams = {
   screenName?: MetricsEventScreenName;
 };
 
-export function getLeftPanelModelParams(): TelemetryParams {
+export function getLeftPanelParams(): TelemetryParams {
   return {
     medium: BehaviourEventMedium.Menu,
     space: MetricsEventSpace.LeftPanel,
   };
 }
-export function getRightPanelModelParams(): TelemetryParams {
+export function getRightPanelParams(): TelemetryParams {
   return {
     medium: BehaviourEventMedium.Button,
     space: MetricsEventSpace.RightPanel,

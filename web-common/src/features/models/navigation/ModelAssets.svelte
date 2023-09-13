@@ -8,7 +8,7 @@
     useFilteredEntityNames,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { getLeftPanelModelParams } from "@rilldata/web-common/metrics/service/metrics-helpers";
+  import { getLeftPanelParams } from "@rilldata/web-common/metrics/service/metrics-helpers";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import NavigationEntry from "../../../layout/navigation/NavigationEntry.svelte";
@@ -30,7 +30,7 @@
   );
   $: allEntityNames = useAllEntityNames($runtime.instanceId);
 
-  const modelCreator = createModelCreator(getLeftPanelModelParams());
+  const modelCreator = createModelCreator(getLeftPanelParams());
 
   let showModels = true;
 

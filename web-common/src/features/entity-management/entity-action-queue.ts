@@ -12,10 +12,17 @@ export enum EntityAction {
   Delete,
 }
 
-export enum ChainAction {
-  ModelFromSource,
-  DashboardFromModel,
-}
+export type EntityCreateFunction = (
+  resource: V1Resource,
+  sourceName: string,
+  pathPrefix?: string
+) => Promise<void>;
+
+export type ChainParams = {
+  chainFunction: EntityCreateFunction;
+  sourceName: string;
+  pathPrefix?: string;
+};
 
 /**
  * A global queue for entity actions.
@@ -26,17 +33,18 @@ export type EntityActionQueueState = {
 };
 export type EntityActionInstance = {
   action: EntityAction;
-  chain?: Array<ChainAction>;
 
   // telemetry
-  params: TelemetryParams;
+  telemetryParams: TelemetryParams;
+
+  chainParams?: ChainParams;
 };
 type EntityActionQueueReducers = {
   add: (
     name: string,
     action: EntityAction,
-    params: TelemetryParams,
-    chain?: Array<ChainAction>
+    telemetryParams: TelemetryParams,
+    chainParams?: ChainParams
   ) => void;
   resolved: (resource: V1Resource, event: V1ResourceEvent) => void;
 };
@@ -54,15 +62,15 @@ export const entityActionQueueStore: EntityActionQueueStore = {
   add(
     name: string,
     action: EntityAction,
-    params: TelemetryParams,
-    chain?: Array<ChainAction>
+    telemetryParams: TelemetryParams,
+    chainParams?: ChainParams
   ) {
     update((state) => {
       state.entities[name] ??= [];
       state.entities[name].push({
         action,
-        params,
-        chain,
+        telemetryParams,
+        chainParams,
       });
       return state;
     });
@@ -85,13 +93,12 @@ export const entityActionQueueStore: EntityActionQueueStore = {
           break;
       }
 
-      if (action.chain?.length) {
-        switch (action.chain[0]) {
-          case ChainAction.DashboardFromModel:
-            this.add();
-            break;
-          // TODO: others
-        }
+      if (action.chainParams) {
+        action.chainParams.chainFunction(
+          resource,
+          action.chainParams.sourceName,
+          action.chainParams.pathPrefix
+        );
       }
 
       return state;
