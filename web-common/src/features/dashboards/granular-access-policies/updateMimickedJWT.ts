@@ -42,7 +42,6 @@ export async function updateMimickedJWT(
     jwt = projResp.jwt;
   }
 
-  // selectedMockUserJWT.set(jwt);
   runtime.update((runtimeState) => {
     runtimeState.jwt = jwt;
     return runtimeState;
