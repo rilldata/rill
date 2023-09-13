@@ -35,9 +35,10 @@ export function prepareLeaderboardItemData(
   values: { value: number; label: string | number }[],
   selectedValues: (string | number)[],
   comparisonMap: Map<string | number, number>,
-  excludeMode: boolean
+  excludeMode: boolean,
+  initalCount = 0
 ): LeaderboardItemData[] {
-  let count = 0;
+  let count = initalCount;
 
   return values.map((v) => {
     const selectedIndex = selectedValues.findIndex(
@@ -47,6 +48,7 @@ export function prepareLeaderboardItemData(
 
     // Tag values which will be compared by default
     let defaultComparedIndex = -1;
+
     if (!excludeMode && count < 3 && !selectedValues.length) {
       defaultComparedIndex = count;
       count = count + 1;

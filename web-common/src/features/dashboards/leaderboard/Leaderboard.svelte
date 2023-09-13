@@ -138,9 +138,24 @@
       })) ?? [];
   }
 
+  let valuesComparedInExcludeMode = [];
+  $: if (isBeingCompared && filterExcludeMode) {
+    let count = 0;
+    valuesComparedInExcludeMode = values
+      .filter((value) => {
+        if (!activeValues.includes(value.label) && count < 3) {
+          count++;
+          return true;
+        }
+        return false;
+      })
+      .map((value) => value.label);
+  }
+
   // get all values that are selected but not visible.
   // we'll put these at the bottom w/ a divider.
   $: selectedValuesThatAreBelowTheFold = activeValues
+    ?.concat(valuesComparedInExcludeMode)
     ?.filter((label) => {
       return (
         // the value is visible within the fold.
@@ -227,11 +242,16 @@
     filterExcludeMode
   );
 
+  $: defaultComparisonsPresentInAboveFold =
+    aboveTheFoldItems?.filter((item) => item.defaultComparedIndex >= 0)
+      ?.length || 0;
+
   $: belowTheFoldItems = prepareLeaderboardItemData(
     selectedValuesThatAreBelowTheFold,
     activeValues,
     comparisonMap,
-    filterExcludeMode
+    filterExcludeMode,
+    defaultComparisonsPresentInAboveFold
   );
 </script>
 
