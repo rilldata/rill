@@ -15,6 +15,10 @@ type FileIterator interface {
 	// NextBatch returns a list of file downloaded from external sources
 	// and cleanups file created in previous batch
 	NextBatch(limit int) ([]string, error)
+	// NextBatchSize returns a list of file downloaded from external sources
+	// such that the size of all files is less than equal to sizeInBytes
+	// and cleanups file created in previous batch
+	NextBatchSize(sizeInBytes int64) ([]string, error)
 	// HasNext can be utlisied to check if iterator has more elements left
 	HasNext() bool
 	// Size returns size of data downloaded in unit.
