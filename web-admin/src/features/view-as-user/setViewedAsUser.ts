@@ -35,5 +35,5 @@ export async function setViewedAsUser(
     return runtimeState;
   });
 
-  invalidateAllMetricsViews(queryClient, get(runtime).instanceId);
+  await invalidateAllMetricsViews(queryClient, get(runtime).instanceId);
 }
