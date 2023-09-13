@@ -14,7 +14,7 @@
   export let organization: string;
   export let project: string;
 
-  // Note: this will break down if there are more than 1000 users in a project
+  // Note: this approach will break down if/when there are more than 1000 users in a project
   $: projectUsers = createAdminServiceSearchProjectUsers(
     organization,
     project,
@@ -24,7 +24,7 @@
   const dispatch = createEventDispatcher();
 
   const queryClient = useQueryClient();
-  async function viewAsUser(user: V1User) {
+  async function handleViewAsUser(user: V1User) {
     await setViewedAsUser(queryClient, organization, project, user);
     errorStore.reset();
     dispatch("select");
@@ -38,11 +38,6 @@
   let searchText = "";
 
   $: clientSideUsers = $projectUsers.data?.users ?? [];
-  // For testing: repeat the users array X times
-  // $: clientSideUsers =
-  //   $projectUsers.data?.users.flatMap((users) =>
-  //     Array.from({ length: 10 }, () => users)
-  // ) ?? [];
 
   $: visibleUsers = searchText
     ? matchSorter(clientSideUsers, searchText, { keys: ["email"] })
@@ -75,7 +70,7 @@
           icon
           animateSelect={false}
           focusOnMount={false}
-          on:select={() => viewAsUser(user)}
+          on:select={() => handleViewAsUser(user)}
         >
           <svelte:fragment slot="icon">
             {#if user === $viewAsUserStore}

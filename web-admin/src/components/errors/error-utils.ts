@@ -25,7 +25,7 @@ export function globalErrorCallback(error: AxiosError): void {
   // Special handling for some errors on the Dashboard page
   if (isDashboardPage) {
     // If a dashboard wasn't found, let +page.svelte handle the error.
-    // Because the project may be reconciling, in which case we should show a loading spinner not a 404.
+    // Because the project may be reconciling, in which case we want to show a loading spinner not a 404.
     if (
       error.response.status === 404 &&
       (error.response.data as RpcStatus).message === "not found"
