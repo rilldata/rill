@@ -71,6 +71,12 @@
   }
   let hovered = false;
 
+  function onMouseOver() {
+    if (!disabled) {
+      hovered = true;
+    }
+  }
+
   function onFocus() {
     if (!disabled) {
       $currentItem = itemID;
@@ -124,6 +130,7 @@
     ? 'rgb(75, 85, 99)'
     : 'rgb(235, 235, 235)'}"
   class="
+        w-full
         text-left
         py-1
         {icon ? 'px-2' : 'px-3'}
@@ -147,7 +154,7 @@
   class:selected
   class:cursor-not-allowed={disabled}
   aria-disabled={disabled}
-  on:mouseover={onFocus}
+  on:mouseover={onMouseOver}
   on:mouseleave={onBlur}
   on:focus={onFocus}
   on:blur={() => {
@@ -155,7 +162,7 @@
       hovered = false;
     }
   }}
-  on:click|stopPropagation={handleClick}
+  on:click={handleClick}
 >
   {#if icon}
     <div
@@ -183,7 +190,10 @@
     </div>
   </div>
   {#if $$slots["right"]}
-    <div class="text-right ui-copy-muted">
+    <div
+      class="grid place-content-center text-right ui-copy-muted"
+      style:height="18px"
+    >
       <slot name="right" {focused} />
     </div>
   {/if}

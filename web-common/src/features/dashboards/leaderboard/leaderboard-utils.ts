@@ -1,5 +1,10 @@
 import { PERC_DIFF } from "../../../components/data-types/type-utils";
-import { formatMeasurePercentageDifference } from "../humanize-numbers";
+import {
+  FormatPreset,
+  formatMeasurePercentageDifference,
+  humanizeDataType,
+} from "../humanize-numbers";
+import { LeaderboardContextColumn } from "../leaderboard-context-column";
 
 export function getFormatterValueForPercDiff(numerator, denominator) {
   if (denominator === 0) return PERC_DIFF.PREV_VALUE_ZERO;
@@ -13,7 +18,11 @@ export function getFormatterValueForPercDiff(numerator, denominator) {
 
 export type LeaderboardItemData = {
   label: string | number;
+  // main value to be shown in the leaderboard
   value: number;
+  // the comparison value, which may be either the previous value
+  // (used to calculate the absolute or percentage change) or
+  // the measure total (used to calculate the percentage of total)
   comparisonValue: number;
   // selection is not enough to determine if the item is included
   // or excluded; for that we need to know the leaderboard's
@@ -56,4 +65,38 @@ export function prepareLeaderboardItemData(
   });
 }
 
-export const CONTEXT_COLUMN_WIDTH = 44;
+/**
+ * Returns the formatted value for the context column
+ * given the
+ * accounting for the context column type.
+ */
+export function formatContextColumnValue(
+  itemData: LeaderboardItemData,
+  unfilteredTotal: number,
+  contextType: LeaderboardContextColumn,
+  formatPreset: FormatPreset
+): string {
+  const { value, comparisonValue } = itemData;
+
+  switch (contextType) {
+    case LeaderboardContextColumn.DELTA_ABSOLUTE: {
+      const delta = value && comparisonValue ? value - comparisonValue : null;
+      let formattedValue = humanizeDataType(delta, formatPreset);
+      if (delta && delta > 0) {
+        formattedValue = "+" + formattedValue;
+      }
+      return formattedValue;
+    }
+    case LeaderboardContextColumn.DELTA_PERCENT:
+      return getFormatterValueForPercDiff(
+        value && comparisonValue ? value - comparisonValue : null,
+        comparisonValue
+      );
+    case LeaderboardContextColumn.PERCENT:
+      return getFormatterValueForPercDiff(value, unfilteredTotal);
+    case LeaderboardContextColumn.HIDDEN:
+      return "";
+    default:
+      throw new Error("Invalid context column, all cases must be handled");
+  }
+}

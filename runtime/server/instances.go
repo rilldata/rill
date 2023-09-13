@@ -206,6 +206,7 @@ func (s *Server) EditInstanceAnnotations(ctx context.Context, req *runtimev1.Edi
 		EmbedCatalog:        oldInst.EmbedCatalog,
 		IngestionLimitBytes: oldInst.IngestionLimitBytes,
 		Variables:           oldInst.Variables,
+		Connectors:          oldInst.Connectors,
 		Annotations:         req.Annotations,
 	}
 

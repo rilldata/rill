@@ -510,27 +510,19 @@ const metricViewReducers = {
     });
   },
 
-  displayDeltaChange(name: string) {
+  setContextColumn(name: string, contextColumn: LeaderboardContextColumn) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      // NOTE: only show delta change if comparison is enabled
-      if (metricsExplorer.showTimeComparison === false) return;
-
-      metricsExplorer.leaderboardContextColumn =
-        LeaderboardContextColumn.DELTA_PERCENT;
-    });
-  },
-
-  displayPercentOfTotal(name: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.leaderboardContextColumn =
-        LeaderboardContextColumn.PERCENT;
-    });
-  },
-
-  hideContextColumn(name: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.leaderboardContextColumn =
-        LeaderboardContextColumn.HIDDEN;
+      switch (contextColumn) {
+        case LeaderboardContextColumn.DELTA_ABSOLUTE:
+        case LeaderboardContextColumn.DELTA_PERCENT: {
+          if (metricsExplorer.showTimeComparison === false) return;
+          metricsExplorer.leaderboardContextColumn = contextColumn;
+          return;
+        }
+        default:
+          metricsExplorer.leaderboardContextColumn = contextColumn;
+          return;
+      }
     });
   },
 
