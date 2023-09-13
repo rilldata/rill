@@ -3,10 +3,8 @@
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
-  import {
-    useDashboardStore,
-    metricsExplorerStore,
-  } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import { getFilterForComparedDimension, prepareTimeSeries } from "./utils";
   import {
     humanizeDataType,
     FormatPreset,
@@ -19,8 +17,10 @@
   import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+  import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import {
     createQueryServiceMetricsViewTimeSeries,
@@ -34,15 +34,8 @@
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import MeasureChart from "./MeasureChart.svelte";
+  import MeasureZoom from "./MeasureZoom.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
-  import {
-    getFilterForComparedDimension,
-    getOrderedStartEnd,
-    prepareTimeSeries,
-  } from "./utils";
-  import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
-  import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
-  import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 
   export let metricViewName;
   export let workspaceWidth: number;
@@ -295,28 +288,6 @@
   const setAllMeasuresVisible = () => {
     showHideMeasures.setAllToVisible();
   };
-
-  function onKeyDown(e) {
-    if (scrubStart && scrubEnd) {
-      // if key Z is pressed, zoom the scrub
-      if (e.key === "z") {
-        const { start, end } = getOrderedStartEnd(
-          $dashboardStore?.selectedScrubRange?.start,
-          $dashboardStore?.selectedScrubRange?.end
-        );
-        metricsExplorerStore.setSelectedTimeRange(metricViewName, {
-          name: TimeRangePreset.CUSTOM,
-          start,
-          end,
-        });
-      } else if (
-        !$dashboardStore.selectedScrubRange?.isScrubbing &&
-        e.key === "Escape"
-      ) {
-        metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
-      }
-    }
-  }
 </script>
 
 <TimeSeriesChartContainer end={endValue} start={startValue} {workspaceWidth}>
@@ -335,9 +306,9 @@
     class="bg-white sticky left-0 top-0 overflow-visible"
     style="z-index:101"
   >
-    <div style:height="20px" style:padding-left="24px" />
     <!-- top axis element -->
     <div />
+    <MeasureZoom {metricViewName} />
     {#if $dashboardStore?.selectedTimeRange}
       <SimpleDataGraphic
         height={26}
@@ -425,6 +396,3 @@
     {/each}
   {/if}
 </TimeSeriesChartContainer>
-
-<!-- Only to be used on singleton components to avoid multiple state dispatches -->
-<svelte:window on:keydown={onKeyDown} />

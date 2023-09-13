@@ -9,8 +9,6 @@
   } from "@rilldata/web-common/components/data-graphic/guides";
   import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-  import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
-  import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { extent } from "d3-array";
   import { cubicOut } from "svelte/easing";
   import { fly } from "svelte/transition";
@@ -180,21 +178,7 @@
     });
   }
 
-  let mouseX;
-  let mouseY;
-  let contextMenuOpen = false;
-
-  function onContextMenu(e) {
-    e.preventDefault();
-
-    if (!hasSubrangeSelected) return;
-    mouseX = e.clientX;
-    mouseY = e.clientY;
-    contextMenuOpen = true;
-  }
-
   function onMouseClick() {
-    if (contextMenuOpen) contextMenuOpen = false;
     // skip if still scrubbing
     if (preventScrubReset) return;
     // skip if no scrub range selected
@@ -214,7 +198,6 @@
     let:config
     let:yScale
     on:click={() => onMouseClick()}
-    on:contextmenu={(e) => onContextMenu(e)}
     on:scrub-end={() => scrub?.endScrub()}
     on:scrub-move={(e) => scrub?.moveScrub(e)}
     on:scrub-start={(e) => scrub?.startScrub(e)}
@@ -340,33 +323,3 @@
     />
   </SimpleDataGraphic>
 </div>
-
-{#if contextMenuOpen}
-  <!-- context menu -->
-  <WithTogglableFloatingElement
-    location="right"
-    alignment="start"
-    relationship="mouse"
-    distance={16}
-    let:toggleFloatingElement
-    mousePos={{ x: mouseX, y: mouseY }}
-    bind:active={contextMenuOpen}
-  >
-    <Menu
-      minWidth="190px"
-      on:click-outside={toggleFloatingElement}
-      on:escape={toggleFloatingElement}
-      on:item-select={toggleFloatingElement}
-      slot="floating-element"
-    >
-      <MenuItem on:select={() => zoomScrub()}>
-        <span> Zoom to subrange </span>
-        <span slot="right">Z</span>
-      </MenuItem>
-      <MenuItem on:select={() => resetScrub()}>
-        <span> Remove scrub </span>
-        <span slot="right">esc</span>
-      </MenuItem>
-    </Menu>
-  </WithTogglableFloatingElement>
-{/if}
