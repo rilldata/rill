@@ -29,7 +29,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 		{
 			name: "edit env",
 			inst: &drivers.Instance{
-				OLAPConnector: "olap",
+				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
 				EmbedCatalog:  true,
 				Variables:     map[string]string{"connectors.s3.region": "us-east-1"},
@@ -41,13 +41,13 @@ func TestRuntime_EditInstance(t *testing.T) {
 					},
 					{
 						Type:   "duckdb",
-						Name:   "olap",
+						Name:   "duckdb",
 						Config: map[string]string{"dsn": ""},
 					},
 				},
 			},
 			savedInst: &drivers.Instance{
-				OLAPConnector: "olap",
+				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
 				EmbedCatalog:  true,
 				Variables:     map[string]string{"connectors.s3.region": "us-east-1", "allow_host_access": "true"},
@@ -59,7 +59,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					},
 					{
 						Type:   "duckdb",
-						Name:   "olap",
+						Name:   "duckdb",
 						Config: map[string]string{"dsn": ""},
 					},
 				},
@@ -107,7 +107,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 		{
 			name: "edit env and embed catalog",
 			inst: &drivers.Instance{
-				OLAPConnector: "olap",
+				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
 				EmbedCatalog:  false,
 				Variables:     map[string]string{"connectors.s3.region": "us-east-1"},
@@ -119,13 +119,13 @@ func TestRuntime_EditInstance(t *testing.T) {
 					},
 					{
 						Type:   "duckdb",
-						Name:   "olap",
+						Name:   "duckdb",
 						Config: map[string]string{"dsn": ""},
 					},
 				},
 			},
 			savedInst: &drivers.Instance{
-				OLAPConnector: "olap",
+				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
 				EmbedCatalog:  false,
 				Variables:     map[string]string{"connectors.s3.region": "us-east-1", "allow_host_access": "true"},
@@ -137,7 +137,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					},
 					{
 						Type:   "duckdb",
-						Name:   "olap",
+						Name:   "duckdb",
 						Config: map[string]string{"dsn": ""},
 					},
 				},
@@ -146,7 +146,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 		{
 			name: "edit olap dsn",
 			inst: &drivers.Instance{
-				OLAPConnector: "olap",
+				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
 				EmbedCatalog:  false,
 				Variables:     map[string]string{"host": "localhost"},
@@ -158,13 +158,13 @@ func TestRuntime_EditInstance(t *testing.T) {
 					},
 					{
 						Type:   "duckdb",
-						Name:   "olap",
+						Name:   "duckdb",
 						Config: map[string]string{"dsn": "?access_mode=read_write"},
 					},
 				},
 			},
 			savedInst: &drivers.Instance{
-				OLAPConnector: "olap",
+				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
 				EmbedCatalog:  false,
 				Variables:     map[string]string{"host": "localhost", "allow_host_access": "true"},
@@ -176,7 +176,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					},
 					{
 						Type:   "duckdb",
-						Name:   "olap",
+						Name:   "duckdb",
 						Config: map[string]string{"dsn": "?access_mode=read_write"},
 					},
 				},
@@ -185,7 +185,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 		{
 			name: "edit repo dsn",
 			inst: &drivers.Instance{
-				OLAPConnector: "olap",
+				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
 				EmbedCatalog:  false,
 				Variables:     map[string]string{"host": "localhost"},
@@ -197,13 +197,13 @@ func TestRuntime_EditInstance(t *testing.T) {
 					},
 					{
 						Type:   "duckdb",
-						Name:   "olap",
+						Name:   "duckdb",
 						Config: map[string]string{"dsn": ""},
 					},
 				},
 			},
 			savedInst: &drivers.Instance{
-				OLAPConnector: "olap",
+				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
 				EmbedCatalog:  false,
 				Variables:     map[string]string{"host": "localhost", "allow_host_access": "true"},
@@ -215,7 +215,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					},
 					{
 						Type:   "duckdb",
-						Name:   "olap",
+						Name:   "duckdb",
 						Config: map[string]string{"dsn": ""},
 					},
 				},
@@ -224,7 +224,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 		{
 			name: "edit annotations",
 			inst: &drivers.Instance{
-				OLAPConnector: "olap",
+				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
 				EmbedCatalog:  false,
 				Variables:     map[string]string{"host": "localhost"},
@@ -236,7 +236,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					},
 					{
 						Type:   "duckdb",
-						Name:   "olap",
+						Name:   "duckdb",
 						Config: map[string]string{"dsn": ""},
 					},
 				},
@@ -245,7 +245,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				},
 			},
 			savedInst: &drivers.Instance{
-				OLAPConnector: "olap",
+				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
 				EmbedCatalog:  false,
 				Variables:     map[string]string{"host": "localhost", "allow_host_access": "true"},
@@ -257,7 +257,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					},
 					{
 						Type:   "duckdb",
-						Name:   "olap",
+						Name:   "duckdb",
 						Config: map[string]string{"dsn": ""},
 					},
 				},
@@ -272,7 +272,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 			ctx := context.Background()
 			//create instance
 			inst := &drivers.Instance{
-				OLAPConnector: "olap",
+				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
 				EmbedCatalog:  true,
 				Connectors: []*runtimev1.Connector{
@@ -283,7 +283,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					},
 					{
 						Type:   "duckdb",
-						Name:   "olap",
+						Name:   "duckdb",
 						Config: map[string]string{"dsn": ""},
 					},
 				},
@@ -349,7 +349,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 			dbFile := filepath.Join(t.TempDir(), "test.db")
 			inst := &drivers.Instance{
 				ID:            "default",
-				OLAPConnector: "olap",
+				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
 				EmbedCatalog:  true,
 				Connectors: []*runtimev1.Connector{
@@ -360,7 +360,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 					},
 					{
 						Type:   "duckdb",
-						Name:   "olap",
+						Name:   "duckdb",
 						Config: map[string]string{"dsn": dbFile},
 					},
 				},
@@ -428,7 +428,7 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 	// Create instance
 	inst := &drivers.Instance{
 		ID:            "default",
-		OLAPConnector: "olap",
+		OLAPConnector: "duckdb",
 		RepoConnector: "repo",
 		EmbedCatalog:  true,
 		Connectors: []*runtimev1.Connector{
@@ -439,7 +439,7 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 			},
 			{
 				Type:   "duckdb",
-				Name:   "olap",
+				Name:   "duckdb",
 				Config: map[string]string{"dsn": dbpath},
 			},
 		},
