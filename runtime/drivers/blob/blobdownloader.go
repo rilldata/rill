@@ -10,7 +10,6 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/bmatcuk/doublestar/v4"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -59,7 +58,7 @@ type Options struct {
 	GlobMaxObjectsMatched int
 	GlobMaxObjectsListed  int64
 	GlobPageSize          int
-	ExtractPolicy         *runtimev1.Source_ExtractPolicy
+	ExtractPolicy         *ExtractPolicy
 	GlobPattern           string
 	// Although at this point GlobMaxTotalSize and StorageLimitInBytes have same impl but
 	// this is total size the source should consume on disk and is calculated upstream basis how much data one instance has already consumed
