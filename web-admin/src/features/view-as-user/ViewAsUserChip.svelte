@@ -11,7 +11,7 @@
   import { updateMimickedJWT } from "@rilldata/web-common/features/dashboards/granular-access-policies/updateMimickedJWT";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createPopperActions } from "svelte-popperjs";
-  import { errorStore } from "../errors/error-store";
+  import { errorStore } from "../../components/errors/error-store";
   import ViewAsUserPopover from "./ViewAsUserPopover.svelte";
   import { viewAsUserStore } from "./viewAsUserStore";
 

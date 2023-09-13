@@ -7,9 +7,9 @@ import { get } from "svelte/store";
 import { viewAsUserStore } from "./viewAsUserStore";
 
 /**
- * Remove the mimicked user (if any) when navigating away from the Dashboard page
+ * Remove the viewed as user (if any) when navigating away from the Dashboard page
  */
-export function clearMimickedUserAfterNavigate(queryClient: QueryClient) {
+export function clearViewedAsUserAfterNavigate(queryClient: QueryClient) {
   afterNavigate((nav) => {
     // Only applies if mimicking a user on the Dashboard page
     if (!get(viewAsUserStore) || !nav.from?.params?.dashboard) return;

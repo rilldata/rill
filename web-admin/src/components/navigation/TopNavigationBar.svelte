@@ -4,10 +4,10 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { createAdminServiceGetCurrentUser } from "../../client";
+  import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
+  import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
   import SignIn from "../authentication/SignIn.svelte";
   import UserButton from "../authentication/UserButton.svelte";
-  import ViewAsUserChip from "../authentication/ViewAsUserChip.svelte";
-  import { viewAsUserStore } from "../authentication/viewAsUserStore";
   import { isErrorStoreEmpty } from "../errors/error-store";
   import Breadcrumbs from "./Breadcrumbs.svelte";
 

@@ -3,8 +3,8 @@
   import { page } from "$app/stores";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
   import { createAdminServiceGetDeploymentCredentials } from "../../../client";
-  import { viewAsUserStore } from "../../../components/authentication/viewAsUserStore";
   import { useProjectRuntime } from "../../../components/projects/selectors";
+  import { viewAsUserStore } from "../../../features/view-as-user/viewAsUserStore";
 
   $: projRuntime = useProjectRuntime(
     $page.params.organization,

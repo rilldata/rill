@@ -5,7 +5,7 @@ import {
   V1GetProjectResponse,
   type V1User,
 } from "@rilldata/web-admin/client";
-import { viewAsUserStore } from "@rilldata/web-admin/components/authentication/viewAsUserStore";
+import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
 import { invalidateAllMetricsViews } from "@rilldata/web-common/runtime-client/invalidation";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
