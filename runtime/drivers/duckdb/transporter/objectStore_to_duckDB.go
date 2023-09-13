@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -79,8 +80,16 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 
 	a := newAppender(t.to, sinkCfg, ingestionProps, allowSchemaRelaxation, t.logger)
 
+	batchSize := opts.IteratorBatchSizeInBytes
+	if val, ok := srcProps["batch_size"].(string); ok {
+		b, err := datasize.ParseString(val)
+		if err != nil {
+			return err
+		}
+		batchSize = int64(b.Bytes())
+	}
 	for iterator.HasNext() {
-		files, err := iterator.NextBatch(opts.IteratorBatch)
+		files, err := iterator.NextBatchSize(batchSize)
 		if err != nil {
 			return err
 		}
@@ -103,7 +112,7 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 			}
 
 			query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", safeName(sinkCfg.Table), from)
-			if err := t.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1}); err != nil {
+			if err := t.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1, LongRunning: true}); err != nil {
 				return err
 			}
 		}
@@ -151,7 +160,7 @@ func (a *appender) appendData(ctx context.Context, files []string, format string
 		query = fmt.Sprintf("INSERT INTO %s (SELECT * FROM %s);", safeName(a.sink.Table), from)
 	}
 	a.logger.Debug("generated query", zap.String("query", query), observability.ZapCtx(ctx))
-	err = a.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
+	err = a.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1, LongRunning: true})
 	if err == nil || !a.allowSchemaRelaxation || !containsAny(err.Error(), []string{"binder error", "conversion error"}) {
 		return err
 	}
@@ -165,7 +174,7 @@ func (a *appender) appendData(ctx context.Context, files []string, format string
 
 	query = fmt.Sprintf("INSERT INTO %s BY NAME (SELECT * FROM %s);", safeName(a.sink.Table), from)
 	a.logger.Debug("generated query", zap.String("query", query), observability.ZapCtx(ctx))
-	return a.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
+	return a.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1, LongRunning: true})
 }
 
 // updateSchema updates the schema of the table in case new file adds a new column or
@@ -226,7 +235,7 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 	for colName, colType := range newCols {
 		a.tableSchema[colName] = colType
 		qry := fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", safeName(a.sink.Table), safeName(colName), colType)
-		if err := a.to.Exec(ctx, &drivers.Statement{Query: qry}); err != nil {
+		if err := a.to.Exec(ctx, &drivers.Statement{Query: qry, LongRunning: true}); err != nil {
 			return err
 		}
 	}
@@ -234,7 +243,7 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 	for colName, colType := range colTypeChanged {
 		a.tableSchema[colName] = colType
 		qry := fmt.Sprintf("ALTER TABLE %s ALTER COLUMN %s SET DATA TYPE %s", safeName(a.sink.Table), safeName(colName), colType)
-		if err := a.to.Exec(ctx, &drivers.Statement{Query: qry}); err != nil {
+		if err := a.to.Exec(ctx, &drivers.Statement{Query: qry, LongRunning: true}); err != nil {
 			return err
 		}
 	}
@@ -243,7 +252,7 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 }
 
 func (a *appender) scanSchemaFromQuery(ctx context.Context, qry string) (map[string]string, error) {
-	result, err := a.to.Execute(ctx, &drivers.Statement{Query: qry, Priority: 1})
+	result, err := a.to.Execute(ctx, &drivers.Statement{Query: qry, Priority: 1, LongRunning: true})
 	if err != nil {
 		return nil, err
 	}
@@ -320,7 +329,7 @@ func (t *objectStoreToDuckDB) ingestDuckDBSQL(
 
 	st := time.Now()
 	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s);", dbSink.Table, sql)
-	err = t.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1})
+	err = t.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1, LongRunning: true})
 	if err != nil {
 		return err
 	}

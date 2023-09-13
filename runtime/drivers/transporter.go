@@ -12,14 +12,16 @@ type Transporter interface {
 }
 
 type TransferOpts struct {
-	IteratorBatch int
-	LimitInBytes  int64
+	IteratorBatch            int
+	IteratorBatchSizeInBytes int64
+	LimitInBytes             int64
 }
 
 func NewTransferOpts(opts ...TransferOption) *TransferOpts {
 	t := &TransferOpts{
-		IteratorBatch: _iteratorBatch,
-		LimitInBytes:  math.MaxInt64,
+		IteratorBatch:            _iteratorBatch,
+		LimitInBytes:             math.MaxInt64,
+		IteratorBatchSizeInBytes: _iteratorBatchSizeInBytes,
 	}
 
 	for _, opt := range opts {
@@ -33,6 +35,12 @@ type TransferOption func(*TransferOpts)
 func WithIteratorBatch(b int) TransferOption {
 	return func(t *TransferOpts) {
 		t.IteratorBatch = b
+	}
+}
+
+func WithIteratorBatchSizeInBytes(b int64) TransferOption {
+	return func(t *TransferOpts) {
+		t.IteratorBatchSizeInBytes = b
 	}
 }
 

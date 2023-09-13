@@ -19,14 +19,17 @@
   const handleContextValueButtonGroupClick = (evt) => {
     const value: SelectMenuItem = evt.detail;
     const key = value.key;
+    metricsExplorerStore.setContextColumn(metricViewName, key);
 
-    if (key === LeaderboardContextColumn.HIDDEN) {
-      metricsExplorerStore.hideContextColumn(metricViewName);
-    } else if (key === LeaderboardContextColumn.DELTA_PERCENT) {
-      metricsExplorerStore.displayDeltaChange(metricViewName);
-    } else if (key === LeaderboardContextColumn.PERCENT) {
-      metricsExplorerStore.displayPercentOfTotal(metricViewName);
-    }
+    // if (key === LeaderboardContextColumn.HIDDEN) {
+    //   metricsExplorerStore.hideContextColumn(metricViewName);
+    // } else if (key === LeaderboardContextColumn.DELTA_PERCENT) {
+    //   metricsExplorerStore.displayDeltaChange(metricViewName);
+    // } else if (key === LeaderboardContextColumn.PERCENT) {
+    //   metricsExplorerStore.displayPercentOfTotal(metricViewName);
+    // } else if (key === LeaderboardContextColumn.DELTA_ABSOLUTE) {
+    //   metricsExplorerStore.displayDeltaAbsolute(metricViewName);
+    // }
   };
 
   let options: SelectMenuItem[];
@@ -39,6 +42,11 @@
     {
       main: "Percent change",
       key: LeaderboardContextColumn.DELTA_PERCENT,
+      disabled: !$timeControlsStore.showComparison,
+    },
+    {
+      main: "Absolute change",
+      key: LeaderboardContextColumn.DELTA_ABSOLUTE,
       disabled: !$timeControlsStore.showComparison,
     },
     {

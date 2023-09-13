@@ -60,24 +60,18 @@ func (m *sourceMigrator) Update(ctx context.Context,
 		return err
 	}
 
-	return olap.WithConnection(ctx, 100, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
-		tx, err := conn.BeginTx(ctx, nil)
-		if err != nil {
-			return err
-		}
-		defer func() { _ = tx.Rollback() }()
-
-		_, err = tx.ExecContext(ctx, fmt.Sprintf("DROP TABLE IF EXISTS %s", apiSource.Name))
+	return olap.WithConnection(ctx, 100, true, true, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("DROP TABLE IF EXISTS %s", apiSource.Name))
 		if err != nil {
 			return err
 		}
 
-		_, err = tx.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %s RENAME TO %s", tempName, apiSource.Name))
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %s RENAME TO %s", tempName, apiSource.Name))
 		if err != nil {
 			return err
 		}
 
-		return tx.Commit()
+		return nil
 	})
 }
 
