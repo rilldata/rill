@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
+	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -270,7 +272,7 @@ func (r *SourceReconciler) stagingTableName(table string) string {
 // ingestSource ingests the source into a table with tableName.
 // It does NOT drop the table if ingestion fails after the table has been created.
 // It will return an error if the sink connector is not an OLAP.
-func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.SourceSpec, tableName string) error {
+func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.SourceSpec, tableName string) (outErr error) {
 	// Get connections and transporter
 	srcConn, release1, err := r.C.AcquireConn(ctx, src.SourceConnector)
 	if err != nil {
@@ -356,13 +358,27 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 	if ingestionLimit != nil {
 		opts.LimitInBytes = *ingestionLimit
 	}
-	start := time.Now()
+	transferStart := time.Now()
 	err = t.Transfer(ctx, srcConfig, sinkConfig, opts, drivers.NoOpProgress{})
-	transferLatency := time.Since(start).Milliseconds()
-	r.C.Activity.Emit(ctx, "ingestion_transfer_ms", float64(transferLatency))
 	if limitExceeded {
 		return drivers.ErrIngestionLimitExceeded
 	}
+
+	defer func() {
+		transferLatency := time.Since(transferStart).Milliseconds()
+		commonDims := []attribute.KeyValue{
+			attribute.String("source", srcConn.Driver()),
+			attribute.String("destination", sinkConn.Driver()),
+			attribute.Bool("cancelled", errors.Is(outErr, context.Canceled)),
+			attribute.Bool("failed", outErr != nil),
+			attribute.Bool("limit_exceeded", limitExceeded),
+			attribute.Int64("limit_bytes", opts.LimitInBytes),
+		}
+		r.C.Activity.Emit(ctx, "ingestion_ms", float64(transferLatency), commonDims...)
+
+		// TODO: emit the number of bytes ingested (this might be extracted from a progress)
+	}()
+
 	return err
 }
 

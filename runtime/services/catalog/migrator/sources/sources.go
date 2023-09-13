@@ -156,7 +156,7 @@ func convertLower(in map[string]string) map[string]string {
 
 func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts migrator.Options,
 	catalogObj *drivers.CatalogEntry, name string, logger *zap.Logger, ac activity.Client,
-) error {
+) (outErr error) {
 	apiSource := catalogObj.GetSource()
 	if name == "" {
 		name = apiSource.Name
@@ -231,16 +231,24 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 	}()
 	transferStart := time.Now()
 	err = t.Transfer(ctxWithTimeout, src, sink, drivers.NewTransferOpts(drivers.WithLimitInBytes(ingestionLimit)), p)
-	transferLatency := time.Since(transferStart).Milliseconds()
-	ac.Emit(
-		ctx, "ingestion_transfer_ms", float64(transferLatency),
-		attribute.String("source", srcConnector.Driver()),
-		attribute.String("destination", olapConnection.Driver()),
-		attribute.Int64("bytes", p.catalogObj.BytesIngested),
-	)
 	if limitExceeded {
 		return drivers.ErrIngestionLimitExceeded
 	}
+	defer func() {
+		transferLatency := time.Since(transferStart).Milliseconds()
+		commonDims := []attribute.KeyValue{
+			attribute.String("source", srcConnector.Driver()),
+			attribute.String("destination", olapConnection.Driver()),
+			attribute.Bool("cancelled", errors.Is(outErr, context.Canceled)),
+			attribute.Bool("failed", outErr != nil),
+			attribute.Bool("limit_exceeded", limitExceeded),
+			attribute.Int64("limit_bytes", ingestionLimit),
+		}
+		ac.Emit(ctx, "ingestion_ms", float64(transferLatency), commonDims...)
+		if p.unit == drivers.ProgressUnitByte {
+			ac.Emit(ctx, "ingestion_bytes", float64(p.catalogObj.BytesIngested), commonDims...)
+		}
+	}()
 	return err
 }
 
