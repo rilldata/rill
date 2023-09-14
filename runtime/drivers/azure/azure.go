@@ -3,8 +3,9 @@ package azure
 import (
 	"context"
 	"fmt"
-	"log"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
@@ -67,6 +68,9 @@ type configProperties struct {
 	Account         string `mapstructure:"azure_storage_account"`
 	Key             string `mapstructure:"azure_storage_key"`
 	SASToken        string `mapstructure:"azure_storage_sas_token"`
+	StorageDomain   string `mapstructure:"azure_storage_domain,default:blob.core.windows.net"`
+	IsCDN           bool   `mapstructure:"azure_storage_is_cdn,default:false"`
+	IsLocalEmulator bool   `mapstructure:"azure_storage_is_local_emulator,default:false"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }
 
@@ -200,13 +204,13 @@ func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSo
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
+	// Permission error will be thrown while iterating the bucket object, default error will be for az login, considering that as primary authenticaion
 	client, err := c.getClient(ctx, conf)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create a *blob.Bucket.
-	// bucketObj, err := azureblob.OpenBucket(ctx, client.ServiceClient().NewContainerClient(conf.url.Host), nil)
 	bucketObj, err := azureblob.OpenBucket(ctx, client, nil)
 	if err != nil {
 		return nil, err
@@ -263,25 +267,55 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 
 // getClient returns a new azure blob client.
 func (c *Connection) getClient(ctx context.Context, conf *sourceProperties) (*container.Client, error) {
-	// name := c.config.Account
-	// key := c.config.Key
+	var opts *azureblob.ServiceURLOptions
+	if c.config.AllowHostAccess {
+		opts = azureblob.NewDefaultServiceURLOptions()
+	} else {
+		opts = &azureblob.ServiceURLOptions{
+			AccountName:     c.config.Account,
+			StorageDomain:   c.config.StorageDomain,
+			IsCDN:           c.config.IsCDN,
+			IsLocalEmulator: c.config.IsLocalEmulator,
+			SASToken:        c.config.Key,
+		}
 
-	// if c.config.AllowHostAccess {
-	// 	name = os.Getenv("AZURE_STORAGE_ACCOUNT")
-	// 	key = os.Getenv("AZURE_STORAGE_SAS_TOKEN")
-	// }
-
-	opts := azureblob.NewDefaultServiceURLOptions()
-	serviceURL, err := azureblob.NewServiceURL(opts)
-	if err != nil {
-		return nil, err
+		if c.config.Key != "" {
+			opts.SASToken = c.config.Key
+		} else {
+			opts.SASToken = c.config.SASToken
+		}
 	}
 
-	client, err := azureblob.NewDefaultClient(serviceURL, azureblob.ContainerName(conf.url.Host))
-	if err != nil {
-		log.Fatal(err)
+	var client *container.Client
+	if opts.SASToken != "" {
+		c.logger.Named("Console").Info("Using Azure Blob Storage with env credentials")
+		serviceURL, err := azureblob.NewServiceURL(opts)
+		if err != nil {
+			return nil, err
+		}
+
+		client, err = azureblob.NewDefaultClient(serviceURL, azureblob.ContainerName(conf.url.Host))
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		c.logger.Named("Console").Info("Using Azure Blob Storage without env credentials")
+		// Create container url of the Azure Storage account.
+		url := fmt.Sprintf("https://%s.blob.core.windows.net", c.config.Account)
+
+		credential, err := azidentity.NewDefaultAzureCredential(nil)
+		if err != nil {
+			return nil, err
+		}
+
+		azblobClient, err := azblob.NewClient(url, credential, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		client = azblobClient.ServiceClient().NewContainerClient(conf.url.Host)
 	}
-	
+
 	return client, nil
 }
 
