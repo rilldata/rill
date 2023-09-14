@@ -10,7 +10,7 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createPopperActions } from "svelte-popperjs";
-  import { errorStore } from "../../components/errors/error-store";
+  import { errorStore } from "../../features/errors/error-store";
   import { clearViewedAsUserWithinProject } from "./clearViewedAsUser";
   import ViewAsUserPopover from "./ViewAsUserPopover.svelte";
   import { viewAsUserStore } from "./viewAsUserStore";

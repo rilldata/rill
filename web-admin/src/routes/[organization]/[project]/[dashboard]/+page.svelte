@@ -18,7 +18,7 @@
   import type { QueryError } from "@rilldata/web-common/runtime-client/error";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { errorStore } from "../../../../components/errors/error-store";
+  import { errorStore } from "../../../../features/errors/error-store";
   import ProjectBuilding from "../../../../features/projects/ProjectBuilding.svelte";
 
   const queryClient = useQueryClient();
