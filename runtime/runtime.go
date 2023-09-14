@@ -75,3 +75,10 @@ func (r *Runtime) Controller(instanceID string) (*Controller, error) {
 func (r *Runtime) ResolveMetricsViewSecurity(attributes map[string]any, instanceID string, mv *runtimev1.MetricsView, lastUpdatedOn time.Time) (*ResolvedMetricsViewSecurity, error) {
 	return r.securityEngine.resolveMetricsViewSecurity(attributes, instanceID, mv, lastUpdatedOn)
 }
+
+func (r *Runtime) ResolveMetricsViewSecurityV2(attributes map[string]any, instanceID string, mv *runtimev1.MetricsViewSpec, lastUpdatedOn time.Time) (*ResolvedMetricsViewSecurity, error) {
+	// TODO: Implement actual checks when deprecating ResolveMetricsViewSecurity
+	return &ResolvedMetricsViewSecurity{
+		Access: true,
+	}, nil
+}
