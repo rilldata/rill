@@ -9,8 +9,8 @@
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import GithubFail from "@rilldata/web-common/components/icons/GithubFail.svelte";
-  import GithubRepoInline from "../../../../../components/projects/GithubRepoInline.svelte";
-  import GithubUserInline from "../../../../../components/projects/GithubUserInline.svelte";
+  import GithubRepoInline from "../../../../../features/projects/GithubRepoInline.svelte";
+  import GithubUserInline from "../../../../../features/projects/GithubUserInline.svelte";
 
   const urlParams = new URLSearchParams(window.location.search);
   const remote = urlParams.get("remote");
