@@ -72,7 +72,7 @@
   $: isDashboardOK = $dashboard.isSuccess;
   $: isDashboardNotFound =
     $dashboard.isError &&
-    ($dashboard.error as QueryError)?.response?.status === 400;
+    ($dashboard.error as QueryError)?.response?.status === 404;
   // isDashboardErrored // We'll reinstate this case once we integrate the new Reconcile
 
   // If no dashboard is found, show a 404 page
