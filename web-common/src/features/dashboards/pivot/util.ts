@@ -57,3 +57,45 @@ export function createRowDataGetter(cache) {
   };
   return getData;
 }
+
+export function mergeBlocks(blocks) {
+  let mergedData = null;
+  const results = blocks.slice(0);
+  let currentData = results.shift();
+  while (currentData) {
+    mergedData = mergedData ?? { block: [Infinity, -Infinity], data: [] };
+    mergedData.block[0] = Math.min(mergedData.block[0], currentData.block[0]);
+    mergedData.block[1] = Math.max(mergedData.block[1], currentData.block[1]);
+    mergedData.data = mergedData.data.concat(currentData.data);
+    currentData = results.shift();
+  }
+  return mergedData;
+}
+
+export function merge2DBlocks(blocks) {
+  let mergedData = null;
+  if (blocks.every((b) => !b)) return mergedData;
+
+  // const fullArea = {
+  //   x0: Math.min(...blocks.map((b) => b.block.x[0])),
+  //   x1: Math.max(...blocks.map((b) => b.block.x[1])),
+  //   y0: Math.min(...blocks.map((b) => b.block.y[0])),
+  //   y1: Math.max(...blocks.map((b) => b.block.y[1])),
+  // };
+  // console.log("blocks", blocks, fullArea);
+  // do we even need to merge this stuff, we never use it...
+  // const sampleColData = new Array(pos.x1 - pos.x0).fill(null);
+  //   let data = new Array(pos.y1 - pos.y0)
+  //     .fill(null)
+  //     .map(() => sampleColData.slice());
+  const results = blocks.slice(0);
+  let currentData = results.shift();
+  while (currentData) {
+    mergedData = mergedData ?? { block: [Infinity, -Infinity], data: [] };
+    mergedData.block[0] = Math.min(mergedData.block[0], currentData.block[0]);
+    mergedData.block[1] = Math.max(mergedData.block[1], currentData.block[1]);
+    mergedData.data = mergedData.data.concat(currentData.data);
+    currentData = results.shift();
+  }
+  return mergedData;
+}

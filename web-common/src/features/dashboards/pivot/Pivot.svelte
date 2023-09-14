@@ -7,25 +7,25 @@
   import type { PivotDataProvider } from "./pivot-data-provider";
   import type { PivotPos } from "./types";
   import { isEmptyPos, range } from "./util";
+  import type { ColumnDataProvider } from "./column-data-provider";
+  import type { RowDataProvider } from "./row-data-provider";
+  import type { BodyDataProvider } from "./body-data-provider";
+  import Row from "@rilldata/web-common/components/virtualized-table/core/Row.svelte";
 
   // TODO: replace with w-full once you have fixed widths
   const LOADING_EL = `<div class="w-8 h-4 bg-gray-100 rounded loading-cell"/>`;
   const LOADING_EL_FW = `<div class="min-w-8 w-8 h-4 bg-gray-100 rounded loading-cell"/>`;
 
-  export let rowHeaderDataProvider: PivotDataProvider;
-  export let columnHeaderDataProvider: PivotDataProvider;
-  export let bodyDataProvider: PivotDataProvider;
+  export let rowHeaderDataProvider: RowDataProvider;
+  export let columnHeaderDataProvider: ColumnDataProvider;
+  export let bodyDataProvider: BodyDataProvider;
 
-  const getRowHeaderData = (pos: PivotPos) =>
-    rowHeaderDataProvider.getData(pos);
-  $: rowHeaderQuery = rowHeaderDataProvider.query;
+  // const getRowHeaderData = (pos: PivotPos) =>
+  //   rowHeaderDataProvider.getData(pos);
+  // $: rowHeaderQuery = rowHeaderDataProvider.query;
 
-  const getColumnHeaderData = (pos: PivotPos) =>
-    columnHeaderDataProvider.getData(pos);
-  $: columnHeaderQuery = columnHeaderDataProvider.query;
-
-  const getBodyData = (pos: PivotPos) => bodyDataProvider.getData(pos);
-  $: bodyQuery = bodyDataProvider.query;
+  // const getBodyData = (pos: PivotPos) => bodyDataProvider.getData(pos);
+  // $: bodyQuery = bodyDataProvider.query;
 
   const dispatch = createEventDispatcher();
 
@@ -52,18 +52,19 @@
     const depth = 2;
     const placeholderEvenColumnHeader = new Array(depth).fill("LOADING");
     const placeholderOddColumnHeader = new Array(depth).fill("\u200BLOADING");
-    let column_headers = [];
-    const lastColumnBlock = getColumnHeaderData({ x0, x1, y0, y1 });
-    if (lastColumnBlock) {
-      const xOffset = x0 - lastColumnBlock.block[0];
-      column_headers = lastColumnBlock.data.slice(xOffset);
-    }
-    while (column_headers.length < x1 - x0) {
-      column_headers.push(
-        column_headers.length % 2
-          ? placeholderEvenColumnHeader
-          : placeholderOddColumnHeader
-      );
+    let column_headers =
+      columnHeaderDataProvider.getData({
+        x0,
+        x1,
+        y0,
+        y1,
+      })?.data ?? [];
+    // Replace any nulls with loading placeholders
+    for (let i = 0; i < column_headers.length; i++) {
+      if (!column_headers[i]) {
+        column_headers[i] =
+          i % 2 ? placeholderEvenColumnHeader : placeholderOddColumnHeader;
+      }
     }
 
     const rowDepth = 2;
@@ -74,53 +75,32 @@
       ...placeholderEvenRowHeader.slice(1),
       placeholderEvenRowHeader.at(0),
     ];
-
-    let row_headers = [];
-    const rowHeaderData = getRowHeaderData({ x0, x1, y0, y1 });
-    if (rowHeaderData && !isEmptyPos({ x0, x1, y0, y1 })) {
-      const yOffset = y0 - rowHeaderData.block[0];
-      const yEnd = y1 - rowHeaderData.block[0];
-      row_headers = rowHeaderData.data.slice(yOffset, yEnd);
-    }
+    let row_headers =
+      rowHeaderDataProvider.getData({ x0, x1, y0, y1 })?.data ?? [];
     row_headers.forEach((r, i) => {
       if (!r) {
         row_headers[i] =
           i % 2 ? placeholderEvenRowHeader : placeholderOddRowHeader;
       }
     });
-    while (row_headers.length < y1 - y0) {
-      row_headers.push(
-        row_headers.length % 2
-          ? placeholderEvenRowHeader
-          : placeholderOddRowHeader
-      );
-    }
 
-    let data = [];
+    let data = bodyDataProvider.getData({ x0, x1, y0, y1 }).data;
     const placeholderData = new Array(x1 - x0).fill("LOADING");
-    const bodyData = getBodyData({ x0, x1, y0, y1 });
-    if (bodyData && !isEmptyPos({ x0, x1, y0, y1 })) {
-      const yOffset = y0 - bodyData.block.y[0];
-      const yEnd = y1 - bodyData.block.y[0];
-      const xOffset = x0 - bodyData.block.x[0];
-      const xEnd = x1 - bodyData.block.x[0];
-      data = bodyData.data
-        .slice(yOffset, yEnd)
-        .map((r) => r.slice(xOffset, xEnd));
-    }
-    data.forEach((r, i) => {
-      if (!r) {
-        data[i] = placeholderData;
-      }
+    // Replace nulls with loading placeholders
+    data.forEach((c, i) => {
+      c.forEach((r, j) => {
+        if (!r) {
+          data[i][j] = "LOADING";
+        }
+      });
     });
-    while (data.length < y1 - y0) {
-      data.push(placeholderData);
-    }
 
     const dataSlice = {
       num_rows: metadata.rowCt,
       num_columns: metadata.colCt,
-      data, //: range(x0, x1, (x) => range(y0, y1, (y) => `${y},${x}`)),
+      data,
+      // placeholder body data, overwrite during styling step
+      // data: range(x0, x1, (x) => range(y0, y1, (y) => `${y},${x}`)),
       row_headers,
       column_headers,
     };
@@ -128,14 +108,17 @@
     return dataSlice;
   };
 
-  function map_row_th(th: Element, data: any) {
+  function map_row_th(th: Element) {
     const meta = table.getMeta(th);
     const x = meta.row_header_x;
     const y = meta.y;
     th.setAttribute("__col", String(x));
     th.setAttribute("__row", String(y));
-    if (th.textContent === "LOADING" || th.textContent === "\u200BLOADING")
+    if (meta.value === "LOADING" || meta.value === "\u200BLOADING")
       th.innerHTML = LOADING_EL_FW;
+    else if (x === 0) {
+      th.innerHTML = `<div class="xborder-t xborder-b" style=" height: 100%; padding-top: 3px;">${meta.value}</div>`;
+    }
   }
 
   function map_td(td: Element) {
@@ -158,16 +141,6 @@
       th.innerHTML = LOADING_EL_FW;
   }
 
-  function renderRowHeader(cell: Element, data: any) {
-    const x = Number(cell.getAttribute("__col"));
-    const y = Number(cell.getAttribute("__row"));
-    if (data) {
-      const yOffset = y - data.block[0];
-      const v = data.data[yOffset][x];
-      cell.innerHTML = v;
-    } else cell.innerHTML = LOADING_EL;
-  }
-
   $: {
     if (table) {
       table.setDataListener(reactiveDataListener);
@@ -178,13 +151,12 @@
   $: {
     if (table) {
       table.addStyleListener(() => {
-        const data = getRowHeaderData(getCachedPos());
         for (const td of table.querySelectorAll("tbody td")) {
           map_td(td);
         }
 
         for (const th of table.querySelectorAll("tbody th")) {
-          map_row_th(th, data);
+          map_row_th(th);
         }
 
         for (const th of table.querySelectorAll("thead th")) {
@@ -195,43 +167,72 @@
     }
   }
 
-  let lastSeenRowQuery = null;
-  const getLastSeenRowQuery = () => lastSeenRowQuery;
+  // Can experiment with debouncing forced draws from async data arriving
+  let t = null;
+  const forceDraw = () => {
+    if (t) clearTimeout(t);
+    t = setTimeout(() => {
+      console.log("FORCE DRAW");
+      table.draw();
+    }, 0);
+  };
+
+  // let lastSeenRowQuery = null;
+  // const getLastSeenRowQuery = () => lastSeenRowQuery;
+  // $: {
+  //   // If data and we haven't drawn this data already, redraw the table
+  //   if (
+  //     $rowHeaderQuery.data &&
+  //     $rowHeaderQuery.data !== getLastSeenRowQuery()
+  //   ) {
+  //     lastSeenRowQuery = $rowHeaderQuery.data;
+
+  //     console.log("DRAW ROWS");
+  //     table.draw();
+  //     // forceDraw();
+  //   }
+  // }
+
+  const rowDataStore = rowHeaderDataProvider.data;
   $: {
-    // If data and we haven't drawn this data already, redraw the table
-    if (
-      $rowHeaderQuery.data &&
-      $rowHeaderQuery.data !== getLastSeenRowQuery()
-    ) {
-      lastSeenRowQuery = $rowHeaderQuery.data;
+    if (table && $rowDataStore) {
+      console.count("DRAW ROWS");
       table.draw();
     }
   }
 
-  let lastSeenColumnQuery = null;
-  const getLastSeenColumnQuery = () => lastSeenColumnQuery;
+  const columnDataStore = columnHeaderDataProvider.data;
   $: {
-    if (
-      $columnHeaderQuery.data &&
-      getLastSeenColumnQuery() !== $columnHeaderQuery.data
-    ) {
-      lastSeenColumnQuery = $columnHeaderQuery.data;
+    if (table && $columnDataStore) {
+      console.count("DRAW COLUMNS");
+      // TODO: any way to skip this draw if we know reading from cache will suffice?
       table.draw();
+      // forceDraw();
 
-      if ($columnHeaderQuery.data.block[0] >= 175) {
-        metadata.colCt = 500;
-      }
+      // Example of infinite scroll. expand available columns when reaching end
+      // if ($columnHeaderQuery.data.block[0] >= 175) {
+      //   metadata.colCt = 500;
+      // }
     }
   }
 
-  let lastSeenBodyData = null;
-  const getLastSeenBodyData = () => lastSeenBodyData;
+  const bodyDataStore = bodyDataProvider.data;
   $: {
-    if ($bodyQuery.data && getLastSeenBodyData() !== $bodyQuery.data) {
-      lastSeenBodyData = $bodyQuery.data;
+    if (table && $bodyDataStore) {
+      console.count("DRAW BODY");
       table.draw();
     }
   }
+
+  // let lastSeenBodyData = null;
+  // const getLastSeenBodyData = () => lastSeenBodyData;
+  // $: {
+  //   if ($bodyQuery.data && getLastSeenBodyData() !== $bodyQuery.data) {
+  //     lastSeenBodyData = $bodyQuery.data;
+  //     // table.draw();
+  //     // console.log("DRAW BODY");
+  //   }
+  // }
 
   $: {
     console.log({ metadata });
@@ -278,7 +279,12 @@
   }
 
   /* Example of fixing column width in the header */
-  :global(regular-table thead tr:last-child th:not([__col="0"])) {
+  :global(
+      regular-table
+        thead
+        tr:last-child
+        th:not([__col="0"]):not(.rt-group-corner)
+    ) {
     min-width: 70px !important;
     width: 70px;
     max-width: 70px;
@@ -288,5 +294,10 @@
     min-width: 92px !important;
     width: 92px;
     max-width: 92px;
+  }
+
+  :global(regular-table tbody th[__col="0"]) {
+    /* color: red; */
+    /* border-bottom: 1px solid black; */
   }
 </style>

@@ -124,17 +124,46 @@ export function getRowHeaders(config: PivotConfig, y0: number, y1: number) {
 }
 
 const dimNames = ["DimA", "DimB", "DimC", "DimD", "DimE"];
+const EXPANDED = [0, 1, 4];
+const CUMULATIVE_EXPANDED = EXPANDED.reduce((acc, curr) => {
+  const prev = acc.at(-1);
+  if (prev === undefined) return [curr];
+  else return [...acc, curr + 3 * acc.length];
+}, []);
 
 export const fetchMockRowData = (block, delay) => async () => {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve({
         block: block,
-        data: Array.from(Array(50).keys()).map((x) =>
-          Array.from(Array(2).keys()).map(
-            (y) => `${dimNames[y]}_${block[0] + x},${y}`
-          )
-        ),
+        // For nested data, one way to do it is use cumulative_expanded
+        // with a for loop, and basically add multiple rows in 1 pass for expanded + jump the index ahead
+        // as opposed to do thing this Array 50 method.
+        // will need a function to do loop. or maybe flatMap would work as well...just need an early exit OR can just slice array at end
+        data: Array.from(Array(50).keys()).map((y) => {
+          const parentRow = (block[0] + y) % 4 === 0;
+          const rowGroupIdx = Math.floor((block[0] + y) / 4);
+          const isExpanded = EXPANDED.includes(rowGroupIdx);
+          if (isExpanded) {
+            if (parentRow) return [`- ${dimNames[0]}_${rowGroupIdx}`];
+            else return ["", `${dimNames[1]}_${block[0] + y}`];
+          } else return [`+ ${dimNames[0]}_${block[0] + y}`];
+        }),
+        //   Array.from(Array(2).keys()).map(
+        //     // (x) => `${dimNames[x]}_${x},${block[0] + y}`
+        //     (x) => {
+        //       const parentRow = (block[0] + y) % 4 === 0;
+        //       const rowGroupIdx = Math.floor((block[0] + y) / 4);
+        //       if(parentRow) {
+        //         if(x === 0) return `${dimNames[x]}_${rowGroupIdx}`;
+        //         else return
+        //       }
+        //       if (x === 0) {
+        //         return `${dimNames[x]}_${Math.floor((block[0] + y) / 3)}`;
+        //       } else return `${dimNames[x]}_${block[0] + y}`;
+        //     }
+        //   )
+        // ),
       });
     }, delay);
   });
@@ -151,18 +180,14 @@ export const fetchMockColumnData = (block, config, delay) => async () => {
   });
 };
 
-export const fetchMockBodyData = (pos, config, delay) => async () => {
-  const blockX = getBlock(50, pos.x0, pos.x1);
-  const blockY = getBlock(50, pos.y0, pos.y1);
+// TODO: transpose here
+export const fetchMockBodyData = (block, delay) => async () => {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve({
-        block: {
-          x: blockX,
-          y: blockY,
-        },
-        data: range(blockY[0], blockY[1], (y) =>
-          range(blockX[0], blockX[1], (x) => `${x},${y}`)
+        block,
+        data: range(block.y[0], block.y[1], (y) =>
+          range(block.x[0], block.x[1], (x) => `${x},${y}`)
         ),
       });
     }, delay);
