@@ -226,11 +226,12 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 	env := convertLower(opts.InstanceEnv)
 	allowHostAccess := strings.EqualFold(env["allow_host_access"], "true")
 
+	p := &progress{}
 	transferOpts := &drivers.TransferOptions{
 		AcquireConnector: func(name string) (drivers.Handle, func(), error) {
 			return nil, nil, fmt.Errorf("this reconciler can't resolve connectors")
 		},
-		Progress:        &progress{},
+		Progress:        p,
 		LimitInBytes:    ingestionLimit,
 		RepoRoot:        repo.Root(),
 		AllowHostAccess: allowHostAccess,
