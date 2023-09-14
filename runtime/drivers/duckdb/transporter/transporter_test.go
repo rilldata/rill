@@ -171,8 +171,7 @@ mum,8.2`)
 				src = map[string]any{"allow_schema_relaxation": true}
 			}
 
-			err = tr.Transfer(ctx, src, map[string]any{"table": test.name}, drivers.NewTransferOpts(),
-				drivers.NoOpProgress{})
+			err = tr.Transfer(ctx, src, map[string]any{"table": test.name}, mockTransferOptions())
 			require.NoError(t, err, "no err expected test %s", test.name)
 
 			var count int
@@ -317,8 +316,7 @@ mum,8.2`)
 				src = map[string]any{}
 			}
 
-			err = tr.Transfer(ctx, src, map[string]any{"table": test.name},
-				drivers.NewTransferOpts(), drivers.NoOpProgress{})
+			err = tr.Transfer(ctx, src, map[string]any{"table": test.name}, mockTransferOptions())
 			if test.hasError {
 				require.Error(t, err, fmt.Errorf("error expected for %s got nil", test.name))
 			} else {
@@ -417,8 +415,7 @@ func TestIterativeParquetIngestionWithVariableSchema(t *testing.T) {
 				src = map[string]any{"allow_schema_relaxation": true}
 			}
 
-			err := tr.Transfer(ctx, src, map[string]any{"table": test.name},
-				drivers.NewTransferOpts(), drivers.NoOpProgress{})
+			err := tr.Transfer(ctx, src, map[string]any{"table": test.name}, mockTransferOptions())
 			require.NoError(t, err)
 
 			var count int
@@ -559,8 +556,7 @@ func TestIterativeJSONIngestionWithVariableSchema(t *testing.T) {
 				src = map[string]any{"allow_schema_relaxation": true}
 			}
 
-			err := tr.Transfer(ctx, src, map[string]any{"table": test.name},
-				drivers.NewTransferOpts(), drivers.NoOpProgress{})
+			err := tr.Transfer(ctx, src, map[string]any{"table": test.name}, mockTransferOptions())
 			require.NoError(t, err, "no err expected test %s", test.name)
 
 			var count int
@@ -595,4 +591,13 @@ func runOLAPStore(t *testing.T) drivers.OLAPStore {
 	olap, canServe := conn.AsOLAP("")
 	require.True(t, canServe)
 	return olap
+}
+
+func mockTransferOptions() *drivers.TransferOptions {
+	return &drivers.TransferOptions{
+		AcquireConnector: func(name string) (drivers.Handle, func(), error) {
+			return nil, nil, fmt.Errorf("not found")
+		},
+		Progress: drivers.NoOpProgress{},
+	}
 }
