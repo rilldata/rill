@@ -59,6 +59,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 			rs[i] = rs[len(rs)-1]
 			rs[len(rs)-1] = nil
 			rs = rs[:len(rs)-1]
+			continue
 		}
 		rs[i] = r
 	}
