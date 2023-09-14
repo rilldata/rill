@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
@@ -36,11 +37,6 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 		return err
 	}
 
-	srcCfg, err := parseFileSourceProperties(srcProps)
-	if err != nil {
-		return err
-	}
-
 	iterator, err := t.from.DownloadFiles(ctx, srcProps)
 	if err != nil {
 		return err
@@ -53,37 +49,54 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 	}
 
 	// if sql is specified use ast rewrite to fill in the downloaded files
-	if srcCfg.SQL != "" {
-		return t.ingestDuckDBSQL(ctx, srcCfg.SQL, iterator, sinkCfg, opts, p)
+	sql, hasSQL := srcProps["sql"].(string)
+	if hasSQL {
+		return t.ingestDuckDBSQL(ctx, sql, iterator, sinkCfg, opts, p)
 	}
 
 	p.Target(size, drivers.ProgressUnitByte)
 	appendToTable := false
 	var format string
-	if srcCfg.Format != "" {
-		format = fmt.Sprintf(".%s", srcCfg.Format)
+	val, formatDefined := srcProps["format"].(string)
+	if formatDefined {
+		format = fmt.Sprintf(".%s", val)
 	}
 
-	if srcCfg.AllowSchemaRelaxation {
+	allowSchemaRelaxation, err := schemaRelaxationProperty(srcProps)
+	if err != nil {
+		return err
+	}
+
+	var ingestionProps map[string]any
+	if duckDBProps, ok := srcProps["duckdb"].(map[string]any); ok {
+		ingestionProps = duckDBProps
+	} else {
+		ingestionProps = map[string]any{}
+	}
+	if _, ok := ingestionProps["union_by_name"]; !ok && allowSchemaRelaxation {
 		// set union_by_name to unify the schema of the files
-		srcCfg.DuckDB["union_by_name"] = true
+		ingestionProps["union_by_name"] = true
 	}
 
-	a := newAppender(t.to, sinkCfg, srcCfg.DuckDB, srcCfg.AllowSchemaRelaxation, t.logger)
+	a := newAppender(t.to, sinkCfg, ingestionProps, allowSchemaRelaxation, t.logger)
 
 	batchSize := opts.IteratorBatchSizeInBytes
-	if srcCfg.BatchSizeBytes != 0 {
-		batchSize = srcCfg.BatchSizeBytes
+	if val, ok := srcProps["batch_size"].(string); ok {
+		b, err := datasize.ParseString(val)
+		if err != nil {
+			return err
+		}
+		batchSize = int64(b.Bytes())
 	}
-
 	for iterator.HasNext() {
 		files, err := iterator.NextBatchSize(batchSize)
 		if err != nil {
 			return err
 		}
 
-		if format == "" {
+		if !formatDefined {
 			format = fileutil.FullExt(files[0])
+			formatDefined = true
 		}
 
 		st := time.Now()
@@ -93,7 +106,7 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 				return err
 			}
 		} else {
-			from, err := sourceReader(files, format, srcCfg.DuckDB)
+			from, err := sourceReader(files, format, ingestionProps)
 			if err != nil {
 				return err
 			}

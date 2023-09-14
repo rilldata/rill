@@ -29,7 +29,7 @@ func NewMotherduckToDuckDB(from drivers.Handle, to drivers.OLAPStore, logger *za
 
 // TODO: should it run count from user_query to set target in progress ?
 func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[string]any, opts *drivers.TransferOpts, p drivers.Progress) error {
-	srcCfg, err := parseDBSourceProperties(srcProps)
+	srcCfg, err := parseSourceProperties(srcProps)
 	if err != nil {
 		return err
 	}

@@ -31,11 +31,6 @@ func (t *fileStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps ma
 		return err
 	}
 
-	srcCfg, err := parseFileSourceProperties(srcProps)
-	if err != nil {
-		return err
-	}
-
 	localPaths, err := t.from.FilePaths(ctx, srcProps)
 	if err != nil {
 		return err
@@ -52,14 +47,21 @@ func (t *fileStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps ma
 	p.Target(size, drivers.ProgressUnitByte)
 
 	var format string
-	if srcCfg.Format != "" {
-		format = fmt.Sprintf(".%s", srcCfg.Format)
+	if val, ok := srcProps["format"].(string); ok {
+		format = fmt.Sprintf(".%s", val)
 	} else {
 		format = fileutil.FullExt(localPaths[0])
 	}
 
+	var ingestionProps map[string]any
+	if duckDBProps, ok := srcProps["duckdb"].(map[string]any); ok {
+		ingestionProps = duckDBProps
+	} else {
+		ingestionProps = map[string]any{}
+	}
+
 	// Ingest data
-	from, err := sourceReader(localPaths, format, srcCfg.DuckDB)
+	from, err := sourceReader(localPaths, format, ingestionProps)
 	if err != nil {
 		return err
 	}

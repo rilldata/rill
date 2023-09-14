@@ -23,7 +23,7 @@ func NewDuckDBToDuckDB(to drivers.OLAPStore, logger *zap.Logger) drivers.Transpo
 var _ drivers.Transporter = &duckDBToDuckDB{}
 
 func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[string]any, opts *drivers.TransferOpts, p drivers.Progress) error {
-	srcCfg, err := parseDBSourceProperties(srcProps)
+	srcCfg, err := parseSourceProperties(srcProps)
 	if err != nil {
 		return err
 	}
