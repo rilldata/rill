@@ -63,7 +63,7 @@ func NewInstance(t TestingT) (*runtime.Runtime, string) {
 	rt := New(t)
 
 	inst := &drivers.Instance{
-		OLAPConnector: "olap",
+		OLAPConnector: "duckdb",
 		RepoConnector: "repo",
 		EmbedCatalog:  true,
 		Connectors: []*runtimev1.Connector{
@@ -74,7 +74,7 @@ func NewInstance(t TestingT) (*runtime.Runtime, string) {
 			},
 			{
 				Type:   "duckdb",
-				Name:   "olap",
+				Name:   "duckdb",
 				Config: map[string]string{"dsn": ""},
 			},
 		},
@@ -115,7 +115,7 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 	_, currentFile, _, _ := goruntime.Caller(0)
 
 	inst := &drivers.Instance{
-		OLAPConnector: "olap",
+		OLAPConnector: "duckdb",
 		RepoConnector: "repo",
 		EmbedCatalog:  true,
 		Connectors: []*runtimev1.Connector{
@@ -126,7 +126,7 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 			},
 			{
 				Type:   "duckdb",
-				Name:   "olap",
+				Name:   "duckdb",
 				Config: map[string]string{"dsn": "?access_mode=read_write"},
 			},
 		},

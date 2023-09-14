@@ -126,8 +126,22 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 		}
 	}
 
+	// Get instance
+	inst, err := r.C.Runtime.FindInstance(ctx, r.C.InstanceID)
+	if err != nil {
+		return runtime.ReconcileResult{Err: fmt.Errorf("failed to find instance: %w", err)}
+	}
+
+	// Find DuckDB connectors
+	var duckdbConnectors []string
+	for _, connector := range inst.Connectors {
+		if connector.Type == "duckdb" {
+			duckdbConnectors = append(duckdbConnectors, connector.Name)
+		}
+	}
+
 	// Parse the project
-	parser, err := compilerv1.Parse(ctx, repo, r.C.InstanceID, pp.Spec.DuckdbConnectors)
+	parser, err := compilerv1.Parse(ctx, repo, r.C.InstanceID, inst.OLAPConnector, duckdbConnectors)
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to parse repo: %w", err)}
 	}

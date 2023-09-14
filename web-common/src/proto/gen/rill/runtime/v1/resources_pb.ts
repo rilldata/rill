@@ -392,13 +392,6 @@ export class ProjectParserSpec extends Message<ProjectParserSpec> {
    */
   modelMaterializeDelaySeconds = 0;
 
-  /**
-   * duckdb_connectors is a list of connectors that use DuckDB
-   *
-   * @generated from field: repeated string duckdb_connectors = 7;
-   */
-  duckdbConnectors: string[] = [];
-
   constructor(data?: PartialMessage<ProjectParserSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -413,7 +406,6 @@ export class ProjectParserSpec extends Message<ProjectParserSpec> {
     { no: 4, name: "source_stream_ingestion", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 5, name: "model_default_materialize", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "model_materialize_delay_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 7, name: "duckdb_connectors", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectParserSpec {

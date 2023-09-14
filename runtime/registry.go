@@ -3,15 +3,12 @@ package runtime
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strconv"
 
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
-	"golang.org/x/exp/maps"
 )
 
 func (r *Runtime) FindInstances(ctx context.Context) ([]*drivers.Instance, error) {
@@ -23,16 +20,6 @@ func (r *Runtime) FindInstance(ctx context.Context, instanceID string) (*drivers
 }
 
 func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) error {
-	_, err := r.connectorDef(inst, inst.OLAPConnector)
-	if err != nil {
-		return fmt.Errorf("invalid olap driver")
-	}
-
-	_, err = r.connectorDef(inst, inst.RepoConnector)
-	if err != nil {
-		return fmt.Errorf("invalid repo driver")
-	}
-
 	// this is a hack to set variables and pass to connectors
 	// remove this once sources start calling runtime.AcquireHandle in all cases
 	if inst.Variables == nil {
@@ -81,29 +68,14 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 	return r.Registry().DeleteInstance(ctx, instanceID)
 }
 
-// EditInstance edits exisiting instance.
-// The API compares and only evicts caches if drivers or dsn is changed.
-// This is done to ensure that db handlers are not unnecessarily closed
+// EditInstance edits exisiting instance. Calling it will evict all connection handles associated with the instance.
 func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) error {
-	_, err := r.connectorDef(inst, inst.OLAPConnector)
-	if err != nil {
-		return fmt.Errorf("invalid olap driver")
-	}
-
-	_, err = r.connectorDef(inst, inst.RepoConnector)
-	if err != nil {
-		return fmt.Errorf("invalid repo driver")
-	}
-
-	olderInstance, err := r.Registry().FindInstance(ctx, inst.ID)
+	// evict caches
+	oldInstance, err := r.Registry().FindInstance(ctx, inst.ID)
 	if err != nil {
 		return err
 	}
-
-	// evict caches if connections need to be updated
-	if r.olapChanged(ctx, olderInstance, inst) || r.repoChanged(ctx, olderInstance, inst) || r.annotationsChanged(ctx, olderInstance, inst) {
-		r.evictCaches(ctx, olderInstance)
-	}
+	r.evictCaches(ctx, oldInstance)
 
 	// update variables
 	if inst.Variables == nil {
@@ -133,29 +105,6 @@ func (r *Runtime) GetInstanceAttributes(ctx context.Context, instanceID string) 
 	}
 
 	return instanceAnnotationsToAttribs(instance)
-}
-
-func (r *Runtime) repoChanged(ctx context.Context, a, b *drivers.Instance) bool {
-	o1, _ := r.connectorDef(a, a.RepoConnector)
-	o2, _ := r.connectorDef(b, b.RepoConnector)
-	return a.RepoConnector != b.RepoConnector || !equal(o1, o2)
-}
-
-func (r *Runtime) olapChanged(ctx context.Context, a, b *drivers.Instance) bool {
-	o1, _ := r.connectorDef(a, a.OLAPConnector)
-	o2, _ := r.connectorDef(b, b.OLAPConnector)
-	return a.OLAPConnector != b.OLAPConnector || !equal(o1, o2)
-}
-
-func (r *Runtime) annotationsChanged(ctx context.Context, a, b *drivers.Instance) bool {
-	return !maps.Equal(a.Annotations, b.Annotations)
-}
-
-func equal(a, b *runtimev1.Connector) bool {
-	if (a != nil) != (b != nil) {
-		return false
-	}
-	return a.Name == b.Name && a.Type == b.Type && maps.Equal(a.Config, b.Config)
 }
 
 func instanceAnnotationsToAttribs(instance *drivers.Instance) []attribute.KeyValue {

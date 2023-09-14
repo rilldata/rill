@@ -28,6 +28,7 @@
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeSelector from "./TimeRangeSelector.svelte";
   import TimeZoneSelector from "./TimeZoneSelector.svelte";
+  import ComparisonSelector from "./ComparisonSelector.svelte";
 
   export let metricViewName: string;
 
@@ -39,6 +40,7 @@
   let baseTimeRange: TimeRange;
   let minTimeGrain: V1TimeGrain;
   let availableTimeZones: string[] = [];
+  let dimensions = [];
 
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
 
@@ -73,6 +75,7 @@
       localUserPreferences.set({ timeZone: "Etc/UTC" });
     }
 
+    dimensions = $metaQuery?.data?.dimensions;
     baseTimeRange ??= {
       ...$dashboardStore.selectedTimeRange,
     };
@@ -129,6 +132,14 @@
       start,
       end,
     });
+  }
+
+  function enableComparison(type: string, name: string) {
+    if (type === "time") {
+      metricsExplorerStore.displayTimeComparison(metricViewName, true);
+    } else {
+      metricsExplorerStore.setComparisonDimension(metricViewName, name);
+    }
   }
 
   function makeTimeSeriesTimeRangeAndUpdateAppState(
@@ -192,22 +203,32 @@
         now={allTimeRange?.end}
       />
     {/if}
-    <TimeComparisonSelector
-      on:select-comparison={(e) => {
-        onSelectComparisonRange(e.detail.name, e.detail.start, e.detail.end);
+    <ComparisonSelector
+      on:enable-comparison={(e) => {
+        enableComparison(e.detail.type, e.detail.name);
       }}
-      on:disable-comparison={() =>
-        metricsExplorerStore.displayComparison(metricViewName, false)}
-      {minTimeGrain}
-      currentStart={$timeControlsStore.selectedTimeRange.start}
-      currentEnd={$timeControlsStore.selectedTimeRange.end}
-      boundaryStart={allTimeRange.start}
-      boundaryEnd={allTimeRange.end}
-      showComparison={$timeControlsStore?.showComparison}
-      selectedComparison={$timeControlsStore?.selectedComparisonTimeRange}
-      zone={$dashboardStore?.selectedTimezone}
-      comparisonOptions={availableComparisons}
+      on:disable-all-comparison={() =>
+        metricsExplorerStore.disableAllComparisons(metricViewName)}
+      showTimeComparison={$dashboardStore?.showTimeComparison}
+      selectedDimension={$dashboardStore?.selectedComparisonDimension}
+      {dimensions}
     />
+    {#if $dashboardStore?.showTimeComparison}
+      <TimeComparisonSelector
+        on:select-comparison={(e) => {
+          onSelectComparisonRange(e.detail.name, e.detail.start, e.detail.end);
+        }}
+        {minTimeGrain}
+        currentStart={$timeControlsStore.selectedTimeRange.start}
+        currentEnd={$timeControlsStore.selectedTimeRange.end}
+        boundaryStart={allTimeRange.start}
+        boundaryEnd={allTimeRange.end}
+        showComparison={$timeControlsStore?.showComparison}
+        selectedComparison={$timeControlsStore?.selectedComparisonTimeRange}
+        zone={$dashboardStore?.selectedTimezone}
+        comparisonOptions={availableComparisons}
+      />
+    {/if}
     <TimeGrainSelector
       on:select-time-grain={(e) => onSelectTimeGrain(e.detail.timeGrain)}
       {metricViewName}

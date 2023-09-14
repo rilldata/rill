@@ -4,6 +4,8 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { createAdminServiceGetCurrentUser } from "../../client";
+  import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
+  import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
   import SignIn from "../authentication/SignIn.svelte";
   import UserButton from "../authentication/UserButton.svelte";
   import { isErrorStoreEmpty } from "../errors/error-store";
@@ -38,6 +40,9 @@
     <div />
   {/if}
   <div class="flex gap-x-3 items-center">
+    {#if $viewAsUserStore}
+      <ViewAsUserChip />
+    {/if}
     <a
       class="font-medium"
       href="https://discord.com/invite/ngVV4KzEGv?utm_source=rill&utm_medium=rill-cloud-nav"

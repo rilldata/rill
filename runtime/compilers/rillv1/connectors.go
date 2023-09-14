@@ -44,7 +44,7 @@ func (p *Parser) AnalyzeConnectors(ctx context.Context) ([]*Connector, error) {
 	res := make([]*Connector, 0, len(connectorResources))
 	for name, resources := range connectorResources {
 		// Skip default connector
-		if name == "" {
+		if name == p.DefaultConnector {
 			continue
 		}
 

@@ -3,7 +3,7 @@
   export let marginTop = 2;
   export let marginBottom = 2;
   const dark = getContext("rill:menu:dark");
-  // mt-2 mb-2 mt-1 mb-1
+  // mt-2 mb-2 mt-1 mb-1 mt-0.5 mb-0.5
 </script>
 
 <hr

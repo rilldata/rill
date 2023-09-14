@@ -104,7 +104,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
 		InstanceId:          instanceID,
-		OlapConnector:       "olap",
+		OlapConnector:       olapDriver,
 		RepoConnector:       "repo",
 		EmbedCatalog:        embedCatalog,
 		Variables:           opts.ProdVariables,
@@ -112,7 +112,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		Annotations:         opts.Annotations.toMap(),
 		Connectors: []*runtimev1.Connector{
 			{
-				Name:   "olap",
+				Name:   olapDriver,
 				Type:   olapDriver,
 				Config: olapConfig,
 			},

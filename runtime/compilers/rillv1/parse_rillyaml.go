@@ -7,7 +7,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var _reservedConnectorNames = map[string]bool{"olap": true, "repo": true, "metastore": true}
+var _reservedConnectorNames = map[string]bool{"repo": true, "metastore": true}
 
 // RillYAML is the parsed contents of rill.yaml
 type RillYAML struct {

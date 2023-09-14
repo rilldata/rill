@@ -345,6 +345,14 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
+	// Get repo root
+	repo, release, err := r.C.Runtime.Repo(ctx, r.C.InstanceID)
+	if err != nil {
+		return fmt.Errorf("failed to access repo: %w", err)
+	}
+	repoRoot := repo.Root()
+	release()
+
 	// Enforce storage limits
 	// TODO: This code is pretty ugly. We should push storage limit tracking into the underlying driver and transporter.
 	var ingestionLimit *int64
@@ -356,8 +364,6 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 			return err
 		}
 		storageLimit := inst.IngestionLimitBytes
-
-		// Enforce storage limit if it's set
 		if storageLimit > 0 {
 			// Get ingestion limit (storage limit minus current size)
 			bytes, ok := olap.EstimateSize()
@@ -389,7 +395,14 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 	}
 
 	// Execute the data transfer
-	opts := drivers.NewTransferOpts()
+	opts := &drivers.TransferOptions{
+		AllowHostAccess: r.C.Runtime.AllowHostAccess(),
+		RepoRoot:        repoRoot,
+		AcquireConnector: func(name string) (drivers.Handle, func(), error) {
+			return r.C.AcquireConn(ctx, name)
+		},
+		Progress: drivers.NoOpProgress{},
+	}
 	if ingestionLimit != nil {
 		opts.LimitInBytes = *ingestionLimit
 	}
@@ -410,7 +423,7 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 		// TODO: emit the number of bytes ingested (this might be extracted from a progress)
 	}()
 
-	err = t.Transfer(ctx, srcConfig, sinkConfig, opts, drivers.NoOpProgress{})
+	err = t.Transfer(ctx, srcConfig, sinkConfig, opts)
 	if limitExceeded {
 		return drivers.ErrIngestionLimitExceeded
 	}
