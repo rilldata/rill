@@ -156,6 +156,8 @@ func (c *catalogCache) get(n *runtimev1.ResourceName, withDeleted, clone bool) (
 }
 
 // list returns a list of resources in the catalog.
+// The returned list is not sorted.
+// The returned list is always safe to manipulate (e.g. sort/filter), but the resource pointers must not be edited unless clone=true.
 // Unlike other catalog functions, it is safe to call list concurrently with calls to get and flush (i.e. under a read lock).
 func (c *catalogCache) list(kind string, withDeleted, clone bool) ([]*runtimev1.Resource, error) {
 	if kind != "" {
