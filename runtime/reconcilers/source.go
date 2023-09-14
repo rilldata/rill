@@ -388,11 +388,16 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 	}
 
 	// Execute the data transfer
-	opts := drivers.NewTransferOpts()
+	opts := &drivers.TransferOptions{
+		AcquireConnector: func(name string) (drivers.Handle, func(), error) {
+			return r.C.AcquireConn(ctx, name)
+		},
+		Progress: drivers.NoOpProgress{},
+	}
 	if ingestionLimit != nil {
 		opts.LimitInBytes = *ingestionLimit
 	}
-	err = t.Transfer(ctx, srcConfig, sinkConfig, opts, drivers.NoOpProgress{})
+	err = t.Transfer(ctx, srcConfig, sinkConfig, opts)
 	if limitExceeded {
 		return drivers.ErrIngestionLimitExceeded
 	}
