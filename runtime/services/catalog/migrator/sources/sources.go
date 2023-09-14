@@ -202,7 +202,6 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 	defer cancel()
 
 	ingestionLimit := opts.IngestStorageLimitInBytes
-	p := &progress{}
 	limitExceeded := false
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)
@@ -220,7 +219,21 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 			}
 		}
 	}()
-	err = t.Transfer(ctxWithTimeout, src, sink, drivers.NewTransferOpts(drivers.WithLimitInBytes(ingestionLimit)), p)
+
+	env := convertLower(opts.InstanceEnv)
+	allowHostAccess := strings.EqualFold(env["allow_host_access"], "true")
+
+	transferOpts := &drivers.TransferOptions{
+		AcquireConnector: func(name string) (drivers.Handle, func(), error) {
+			return nil, nil, fmt.Errorf("this reconciler can't resolve connectors")
+		},
+		Progress:        &progress{},
+		LimitInBytes:    ingestionLimit,
+		RepoRoot:        repo.Root(),
+		AllowHostAccess: allowHostAccess,
+	}
+
+	err = t.Transfer(ctxWithTimeout, src, sink, transferOpts)
 	if limitExceeded {
 		return drivers.ErrIngestionLimitExceeded
 	}

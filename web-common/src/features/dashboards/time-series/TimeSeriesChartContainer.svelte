@@ -7,6 +7,7 @@ A container GraphicContext for the time series in a metrics dashboard.
   export let start: Date;
   export let end: Date;
   export let workspaceWidth: number;
+  export let enableFullWidth = false;
 </script>
 
 <div
@@ -21,7 +22,9 @@ A container GraphicContext for the time series in a metrics dashboard.
     right={50}
     fontSize={11}
     top={4}
-    width={(workspaceWidth >= MEASURE_CONFIG.breakpoint
+    width={(enableFullWidth
+      ? workspaceWidth
+      : workspaceWidth >= MEASURE_CONFIG.breakpoint
       ? MEASURE_CONFIG.container.width.full
       : MEASURE_CONFIG.container.width.breakpoint) -
       MEASURE_CONFIG.bigNumber.widthWithChart}

@@ -29,7 +29,7 @@
     class="{marginClasses} grid place-items-center
 {active ? 'bg-gray-200 dark:bg-gray-800' : ''}
 {disabled ? 'text-gray-400' : 'text-gray-800'}
-{disabled ? '' : bgDark ? 'hover:bg-gray-600' : 'hover:bg-gray-200'}"
+{disabled ? '' : bgDark ? 'hover:bg-gray-600' : 'hover:bg-gray-100'}"
     style:width="{compact ? 20 : 24}px"
     style:height="{compact ? 20 : 24}px"
     style:font-size="18px"

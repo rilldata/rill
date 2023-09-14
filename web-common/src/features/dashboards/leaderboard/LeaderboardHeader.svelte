@@ -6,7 +6,7 @@
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import Spinner from "../../entity-management/Spinner.svelte";
-  import LeaderboardOptionsMenu from "../leaderboard/LeaderboardOptionsMenu.svelte";
+  import DimensionCompareMenu from "./DimensionCompareMenu.svelte";
   import Delta from "@rilldata/web-common/components/icons/Delta.svelte";
   import PieChart from "@rilldata/web-common/components/icons/PieChart.svelte";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
@@ -22,7 +22,7 @@
   export let contextColumn: LeaderboardContextColumn;
   export let sortAscending: boolean;
   export let sortType: SortType;
-  export let filterExcludeMode: boolean;
+  export let isBeingCompared: boolean;
 
   const dispatch = createEventDispatcher();
   $: contextColumnSortType = {
@@ -32,21 +32,18 @@
   }[contextColumn];
 
   $: arrowTransform = sortAscending ? "scale(1 -1)" : "scale(1 1)";
-
-  let optionsMenuActive = false;
 </script>
 
 <div class="flex flex-row items-center">
   <div class="grid place-items-center" style:height="22px" style:width="22px">
     {#if isFetching}
       <Spinner size="16px" status={EntityStatus.Running} />
-    {:else if hovered || optionsMenuActive}
+    {:else if hovered || isBeingCompared}
       <div style="position:relative; height:100%; width:100%; ">
         <div style="position: absolute; ">
-          <LeaderboardOptionsMenu
-            bind:optionsMenuActive
-            on:toggle-filter-mode
-            {filterExcludeMode}
+          <DimensionCompareMenu
+            {isBeingCompared}
+            on:toggle-dimension-comparison
           />
         </div>
       </div>

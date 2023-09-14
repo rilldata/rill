@@ -23,26 +23,28 @@ import (
  * This file contains the mapping from CatalogObject to Yaml files
  */
 type Source struct {
-	Type                  string
-	Path                  string         `yaml:"path,omitempty"`
-	CsvDelimiter          string         `yaml:"csv.delimiter,omitempty" mapstructure:"csv.delimiter,omitempty"`
-	URI                   string         `yaml:"uri,omitempty"`
-	Region                string         `yaml:"region,omitempty" mapstructure:"region,omitempty"`
-	S3Endpoint            string         `yaml:"endpoint,omitempty" mapstructure:"endpoint,omitempty"`
-	GlobMaxTotalSize      int64          `yaml:"glob.max_total_size,omitempty" mapstructure:"glob.max_total_size,omitempty"`
-	GlobMaxObjectsMatched int            `yaml:"glob.max_objects_matched,omitempty" mapstructure:"glob.max_objects_matched,omitempty"`
-	GlobMaxObjectsListed  int64          `yaml:"glob.max_objects_listed,omitempty" mapstructure:"glob.max_objects_listed,omitempty"`
-	GlobPageSize          int            `yaml:"glob.page_size,omitempty" mapstructure:"glob.page_size,omitempty"`
-	HivePartition         *bool          `yaml:"hive_partitioning,omitempty" mapstructure:"hive_partitioning,omitempty"`
-	Timeout               int32          `yaml:"timeout,omitempty"`
-	Format                string         `yaml:"format,omitempty" mapstructure:"format,omitempty"`
-	Extract               map[string]any `yaml:"extract,omitempty" mapstructure:"extract,omitempty"`
-	DuckDBProps           map[string]any `yaml:"duckdb,omitempty" mapstructure:"duckdb,omitempty"`
-	Headers               map[string]any `yaml:"headers,omitempty" mapstructure:"headers,omitempty"`
-	AllowSchemaRelaxation *bool          `yaml:"ingest.allow_schema_relaxation,omitempty" mapstructure:"allow_schema_relaxation,omitempty"`
-	SQL                   string         `yaml:"sql,omitempty" mapstructure:"sql,omitempty"`
-	DB                    string         `yaml:"db,omitempty" mapstructure:"db,omitempty"`
-	ProjectID             string         `yaml:"project_id,omitempty" mapstructure:"project_id,omitempty"`
+	Type                        string
+	Path                        string         `yaml:"path,omitempty"`
+	CsvDelimiter                string         `yaml:"csv.delimiter,omitempty" mapstructure:"csv.delimiter,omitempty"`
+	URI                         string         `yaml:"uri,omitempty"`
+	Region                      string         `yaml:"region,omitempty" mapstructure:"region,omitempty"`
+	S3Endpoint                  string         `yaml:"endpoint,omitempty" mapstructure:"endpoint,omitempty"`
+	GlobMaxTotalSize            int64          `yaml:"glob.max_total_size,omitempty" mapstructure:"glob.max_total_size,omitempty"`
+	GlobMaxObjectsMatched       int            `yaml:"glob.max_objects_matched,omitempty" mapstructure:"glob.max_objects_matched,omitempty"`
+	GlobMaxObjectsListed        int64          `yaml:"glob.max_objects_listed,omitempty" mapstructure:"glob.max_objects_listed,omitempty"`
+	GlobPageSize                int            `yaml:"glob.page_size,omitempty" mapstructure:"glob.page_size,omitempty"`
+	BatchSize                   string         `yaml:"batch_size,omitempty" mapstructure:"batch_size,omitempty"`
+	HivePartition               *bool          `yaml:"hive_partitioning,omitempty" mapstructure:"hive_partitioning,omitempty"`
+	Timeout                     int32          `yaml:"timeout,omitempty"`
+	Format                      string         `yaml:"format,omitempty" mapstructure:"format,omitempty"`
+	Extract                     map[string]any `yaml:"extract,omitempty" mapstructure:"extract,omitempty"`
+	DuckDBProps                 map[string]any `yaml:"duckdb,omitempty" mapstructure:"duckdb,omitempty"`
+	Headers                     map[string]any `yaml:"headers,omitempty" mapstructure:"headers,omitempty"`
+	AllowSchemaRelaxation       *bool          `yaml:"allow_schema_relaxation,omitempty" mapstructure:"allow_schema_relaxation,omitempty"`
+	IngestAllowSchemaRelaxation *bool          `yaml:"ingest.allow_schema_relaxation,omitempty" mapstructure:"ingest.allow_schema_relaxation,omitempty"`
+	SQL                         string         `yaml:"sql,omitempty" mapstructure:"sql,omitempty"`
+	DB                          string         `yaml:"db,omitempty" mapstructure:"db,omitempty"`
+	ProjectID                   string         `yaml:"project_id,omitempty" mapstructure:"project_id,omitempty"`
 }
 
 type MetricsView struct {
@@ -124,11 +126,15 @@ func toMetricsViewArtifact(catalog *drivers.CatalogEntry) (*MetricsView, error) 
 
 func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, error) {
 	props := map[string]interface{}{}
-	if source.Type == "local_file" {
+
+	if source.Path != "" {
 		props["path"] = source.Path
-	} else if source.URI != "" {
-		props["path"] = source.URI
 	}
+
+	if source.URI != "" {
+		props["uri"] = source.URI
+	}
+
 	if source.Region != "" {
 		props["region"] = source.Region
 	}
@@ -142,19 +148,11 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 	}
 
 	if source.CsvDelimiter != "" {
-		// backward compatibility
-		if _, defined := props["duckdb"]; !defined {
-			props["duckdb"] = map[string]any{}
-		}
-		props["duckdb"].(map[string]any)["delim"] = fmt.Sprintf("'%v'", source.CsvDelimiter)
+		props["csv.delimiter"] = source.CsvDelimiter
 	}
 
 	if source.HivePartition != nil {
-		// backward compatibility
-		if _, defined := props["duckdb"]; !defined {
-			props["duckdb"] = map[string]any{}
-		}
-		props["duckdb"].(map[string]any)["hive_partitioning"] = *source.HivePartition
+		props["hive_partitioning"] = *source.HivePartition
 	}
 
 	if source.GlobMaxTotalSize != 0 {
@@ -173,6 +171,10 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 		props["glob.page_size"] = source.GlobPageSize
 	}
 
+	if source.BatchSize != "" {
+		props["batch_size"] = source.BatchSize
+	}
+
 	if source.S3Endpoint != "" {
 		props["endpoint"] = source.S3Endpoint
 	}
@@ -187,6 +189,10 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 
 	if source.AllowSchemaRelaxation != nil {
 		props["allow_schema_relaxation"] = *source.AllowSchemaRelaxation
+	}
+
+	if source.IngestAllowSchemaRelaxation != nil {
+		props["ingest.allow_schema_relaxation"] = *source.IngestAllowSchemaRelaxation
 	}
 
 	if source.SQL != "" {

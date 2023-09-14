@@ -93,6 +93,7 @@ export interface MetricsExplorerEntity {
   lastDefinedScrubRange?: ScrubRange;
 
   selectedComparisonTimeRange?: DashboardTimeControls;
+  selectedComparisonDimension?: string;
 
   // user selected timezone
   selectedTimezone?: string;
@@ -101,7 +102,7 @@ export interface MetricsExplorerEntity {
   // This controls whether a time comparison is shown in e.g.
   // the line charts and bignums.
   // It does NOT affect the leaderboard context column.
-  showComparison?: boolean;
+  showTimeComparison?: boolean;
 
   // state of context column in the leaderboard
   leaderboardContextColumn: LeaderboardContextColumn;
@@ -296,7 +297,7 @@ const metricViewReducers = {
               start: comparisonRange.start,
               end: comparisonRange.end,
             };
-            timeSelections.showComparison = true;
+            timeSelections.showTimeComparison = true;
             timeSelections.leaderboardContextColumn =
               LeaderboardContextColumn.DELTA_PERCENT;
           }
@@ -327,7 +328,7 @@ const metricViewReducers = {
         dashboardSortType: SortType.VALUE,
         sortDirection: SortDirection.DESCENDING,
 
-        showComparison: false,
+        showTimeComparison: false,
         ...timeSelections,
       };
 
@@ -430,6 +431,24 @@ const metricViewReducers = {
     });
   },
 
+  setComparisonDimension(name: string, dimensionName: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      if (dimensionName === undefined) {
+        setDisplayComparison(metricsExplorer, true);
+      } else {
+        setDisplayComparison(metricsExplorer, false);
+      }
+      metricsExplorer.selectedComparisonDimension = dimensionName;
+    });
+  },
+
+  disableAllComparisons(name: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.selectedComparisonDimension = undefined;
+      setDisplayComparison(metricsExplorer, false);
+    });
+  },
+
   setSelectedComparisonRange(
     name: string,
     comparisonTimeRange: DashboardTimeControls
@@ -449,9 +468,9 @@ const metricViewReducers = {
     });
   },
 
-  displayComparison(name: string, showComparison: boolean) {
+  displayTimeComparison(name: string, showTimeComparison: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      setDisplayComparison(metricsExplorer, showComparison);
+      setDisplayComparison(metricsExplorer, showTimeComparison);
     });
   },
 
@@ -499,7 +518,8 @@ const metricViewReducers = {
 
       setDisplayComparison(
         metricsExplorer,
-        metricsExplorer.selectedComparisonTimeRange !== undefined
+        metricsExplorer.selectedComparisonTimeRange !== undefined &&
+          metricsExplorer.selectedComparisonDimension === undefined
       );
     });
   },
@@ -514,7 +534,7 @@ const metricViewReducers = {
         case LeaderboardContextColumn.DELTA_PERCENT: {
           // if there is no time comparison, then we can't show
           // these context columns, so return with no change
-          if (metricsExplorer.showComparison === false) return;
+          if (metricsExplorer.showTimeComparison === false) return;
 
           metricsExplorer.leaderboardContextColumn = contextColumn;
           break;
@@ -659,23 +679,28 @@ export function useDashboardStore(
 
 function setDisplayComparison(
   metricsExplorer: MetricsExplorerEntity,
-  showComparison: boolean
+  showTimeComparison: boolean
 ) {
-  metricsExplorer.showComparison = showComparison;
-  // if setting showComparison===true and not currently
+  metricsExplorer.showTimeComparison = showTimeComparison;
+
+  if (showTimeComparison) {
+    metricsExplorer.selectedComparisonDimension = undefined;
+  }
+
+  // if setting showTimeComparison===true and not currently
   //  showing any context column, then show DELTA_PERCENT
   if (
-    showComparison &&
+    showTimeComparison &&
     metricsExplorer.leaderboardContextColumn === LeaderboardContextColumn.HIDDEN
   ) {
     metricsExplorer.leaderboardContextColumn =
       LeaderboardContextColumn.DELTA_PERCENT;
   }
 
-  // if setting showComparison===false and currently
+  // if setting showTimeComparison===false and currently
   //  showing DELTA_PERCENT, then hide context column
   if (
-    !showComparison &&
+    !showTimeComparison &&
     metricsExplorer.leaderboardContextColumn ===
       LeaderboardContextColumn.DELTA_PERCENT
   ) {

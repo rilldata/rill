@@ -937,7 +937,6 @@ export interface V1ProjectParserSpec {
   sourceStreamIngestion?: boolean;
   modelDefaultMaterialize?: boolean;
   modelMaterializeDelaySeconds?: number;
-  duckdbConnectors?: string[];
 }
 
 export interface V1ProjectParser {

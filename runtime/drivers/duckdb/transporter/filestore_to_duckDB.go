@@ -25,8 +25,13 @@ func NewFileStoreToDuckDB(from drivers.FileStore, to drivers.OLAPStore, logger *
 
 var _ drivers.Transporter = &fileStoreToDuckDB{}
 
-func (t *fileStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[string]any, opts *drivers.TransferOpts, p drivers.Progress) error {
+func (t *fileStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[string]any, opts *drivers.TransferOptions) error {
 	sinkCfg, err := parseSinkProperties(sinkProps)
+	if err != nil {
+		return err
+	}
+
+	srcCfg, err := parseFileSourceProperties(srcProps)
 	if err != nil {
 		return err
 	}
@@ -41,27 +46,20 @@ func (t *fileStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps ma
 	}
 
 	size := fileSize(localPaths)
-	if size > opts.LimitInBytes {
+	if opts.LimitInBytes != 0 && size > opts.LimitInBytes {
 		return drivers.ErrIngestionLimitExceeded
 	}
-	p.Target(size, drivers.ProgressUnitByte)
+	opts.Progress.Target(size, drivers.ProgressUnitByte)
 
 	var format string
-	if val, ok := srcProps["format"].(string); ok {
-		format = fmt.Sprintf(".%s", val)
+	if srcCfg.Format != "" {
+		format = fmt.Sprintf(".%s", srcCfg.Format)
 	} else {
 		format = fileutil.FullExt(localPaths[0])
 	}
 
-	var ingestionProps map[string]any
-	if duckDBProps, ok := srcProps["duckdb"].(map[string]any); ok {
-		ingestionProps = duckDBProps
-	} else {
-		ingestionProps = map[string]any{}
-	}
-
 	// Ingest data
-	from, err := sourceReader(localPaths, format, ingestionProps)
+	from, err := sourceReader(localPaths, format, srcCfg.DuckDB)
 	if err != nil {
 		return err
 	}
@@ -71,6 +69,6 @@ func (t *fileStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps ma
 	if err != nil {
 		return err
 	}
-	p.Observe(size, drivers.ProgressUnitByte)
+	opts.Progress.Observe(size, drivers.ProgressUnitByte)
 	return nil
 }

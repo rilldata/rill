@@ -7,7 +7,7 @@
    */
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
+  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import {
     getFilterForDimension,
     useMetaDimension,
@@ -20,7 +20,6 @@
     MetricsViewDimension,
     MetricsViewMeasure,
   } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { SortDirection } from "../proto-state/derived-types";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
@@ -47,8 +46,6 @@
   export let isSummableMeasure = false;
 
   let slice = 7;
-
-  const queryClient = useQueryClient();
 
   $: dashboardStore = useDashboardStore(metricViewName);
 
@@ -89,18 +86,23 @@
 
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
-  function toggleFilterMode() {
-    cancelDashboardQueries(queryClient, metricViewName);
-    metricsExplorerStore.toggleFilterMode(metricViewName, dimensionName);
-  }
-
   function selectDimension(dimensionName) {
     metricsExplorerStore.setMetricDimensionName(metricViewName, dimensionName);
+  }
+
+  function toggleComparisonDimension(dimensionName, isBeingCompared) {
+    metricsExplorerStore.setComparisonDimension(
+      metricViewName,
+      isBeingCompared ? undefined : dimensionName
+    );
   }
 
   function toggleSort(evt) {
     metricsExplorerStore.toggleSort(metricViewName, evt.detail);
   }
+
+  $: isBeingCompared =
+    $dashboardStore?.selectedComparisonDimension === dimensionName;
 
   $: sortAscending = $dashboardStore.sortDirection === SortDirection.ASCENDING;
   $: sortType = $dashboardStore.dashboardSortType;
@@ -108,6 +110,51 @@
   $: contextColumn = $dashboardStore?.leaderboardContextColumn;
 
   $: querySortType = getQuerySortType(sortType);
+
+  //
+  //
+  // ======= dhiraj section
+  let valuesComparedInExcludeMode = [];
+  $: if (isBeingCompared && filterExcludeMode) {
+    let count = 0;
+    valuesComparedInExcludeMode = values
+      .filter((value) => {
+        if (!activeValues.includes(value.label) && count < 3) {
+          count++;
+          return true;
+        }
+        return false;
+      })
+      .map((value) => value.label);
+  } else {
+    valuesComparedInExcludeMode = [];
+  }
+
+  // get all values that are selected but not visible.
+  // we'll put these at the bottom w/ a divider.
+  $: selectedValuesThatAreBelowTheFold = activeValues
+    ?.concat(valuesComparedInExcludeMode)
+    ?.filter((label) => {
+      return (
+        // the value is visible within the fold.
+        !values.slice(0, slice).some((value) => {
+          return value.label === label;
+        })
+      );
+    })
+    .map((label) => {
+      const existingValue = values.find((value) => value.label === label);
+      // return the existing value, or if it does not exist, just return the label.
+      // FIX ME return values for label which are not in the query
+      return existingValue ? { ...existingValue } : { label };
+    })
+    .sort((a, b) => {
+      return b.value - a.value;
+    });
+  //
+  // >>>>>>> main --- dhiraj section END
+  //
+  //
 
   $: sortedQueryBody = {
     dimensionName: dimensionName,
@@ -168,6 +215,31 @@
   }
 
   let hovered: boolean;
+  // <<<<<<< HEAD
+  // =======
+  // from dhirajs branch
+
+  $: comparisonMap = new Map(comparisonValues?.map((v) => [v.label, v.value]));
+
+  $: aboveTheFoldItems = prepareLeaderboardItemData_dhiraj(
+    values.slice(0, slice),
+    activeValues,
+    comparisonMap,
+    filterExcludeMode
+  );
+
+  $: defaultComparisonsPresentInAboveFold =
+    aboveTheFoldItems?.filter((item) => item.defaultComparedIndex >= 0)
+      ?.length || 0;
+
+  $: belowTheFoldItems = prepareLeaderboardItemData_dhiraj(
+    selectedValuesThatAreBelowTheFold,
+    activeValues,
+    comparisonMap,
+    filterExcludeMode,
+    defaultComparisonsPresentInAboveFold
+  );
+  // >>>>>>> main
 </script>
 
 {#if sortedQuery}
@@ -180,8 +252,9 @@
       {contextColumn}
       isFetching={$sortedQuery.isFetching}
       {displayName}
-      on:toggle-filter-mode={toggleFilterMode}
-      {filterExcludeMode}
+      on:toggle-dimension-comparison={() =>
+        toggleComparisonDimension(dimensionName, isBeingCompared)}
+      {isBeingCompared}
       {hovered}
       {sortAscending}
       {sortType}
@@ -197,6 +270,7 @@
             {itemData}
             {contextColumn}
             {atLeastOneActive}
+            {isBeingCompared}
             {filterExcludeMode}
             {isSummableMeasure}
             {referenceValue}
@@ -214,6 +288,7 @@
               {itemData}
               {contextColumn}
               {atLeastOneActive}
+              {isBeingCompared}
               {filterExcludeMode}
               {isSummableMeasure}
               {referenceValue}

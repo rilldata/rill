@@ -14,7 +14,7 @@ import (
 func testRegistry(t *testing.T, reg drivers.RegistryStore) {
 	ctx := context.Background()
 	inst := &drivers.Instance{
-		OLAPConnector:       "olap",
+		OLAPConnector:       "duckdb",
 		RepoConnector:       "repo",
 		EmbedCatalog:        true,
 		IngestionLimitBytes: 102345,
@@ -26,7 +26,7 @@ func testRegistry(t *testing.T, reg drivers.RegistryStore) {
 			},
 			{
 				Type:   "duckdb",
-				Name:   "olap",
+				Name:   "duckdb",
 				Config: map[string]string{"dsn": ":memory:"},
 			},
 		},
@@ -36,7 +36,7 @@ func testRegistry(t *testing.T, reg drivers.RegistryStore) {
 	require.NoError(t, err)
 	_, err = uuid.Parse(inst.ID)
 	require.NoError(t, err)
-	require.Equal(t, "olap", inst.OLAPConnector)
+	require.Equal(t, "duckdb", inst.OLAPConnector)
 	require.Equal(t, "repo", inst.RepoConnector)
 	require.Equal(t, true, inst.EmbedCatalog)
 	require.Greater(t, time.Minute, time.Since(inst.CreatedOn))

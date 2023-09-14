@@ -7,12 +7,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 )
+
+const _objectStoreIteratorBatchSizeInBytes = int64(5 * datasize.GB)
 
 type objectStoreToDuckDB struct {
 	to     drivers.OLAPStore
@@ -30,8 +33,13 @@ func NewObjectStoreToDuckDB(from drivers.ObjectStore, to drivers.OLAPStore, logg
 	}
 }
 
-func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[string]any, opts *drivers.TransferOpts, p drivers.Progress) error {
+func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[string]any, opts *drivers.TransferOptions) error {
 	sinkCfg, err := parseSinkProperties(sinkProps)
+	if err != nil {
+		return err
+	}
+
+	srcCfg, err := parseFileSourceProperties(srcProps)
 	if err != nil {
 		return err
 	}
@@ -43,51 +51,42 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 	defer iterator.Close()
 
 	size, _ := iterator.Size(drivers.ProgressUnitByte)
-	if size > opts.LimitInBytes {
+	if opts.LimitInBytes != 0 && size > opts.LimitInBytes {
 		return drivers.ErrIngestionLimitExceeded
 	}
 
 	// if sql is specified use ast rewrite to fill in the downloaded files
-	sql, hasSQL := srcProps["sql"].(string)
-	if hasSQL {
-		return t.ingestDuckDBSQL(ctx, sql, iterator, sinkCfg, opts, p)
+	if srcCfg.SQL != "" {
+		return t.ingestDuckDBSQL(ctx, srcCfg.SQL, iterator, srcCfg, sinkCfg, opts)
 	}
 
-	p.Target(size, drivers.ProgressUnitByte)
+	opts.Progress.Target(size, drivers.ProgressUnitByte)
 	appendToTable := false
 	var format string
-	val, formatDefined := srcProps["format"].(string)
-	if formatDefined {
-		format = fmt.Sprintf(".%s", val)
+	if srcCfg.Format != "" {
+		format = fmt.Sprintf(".%s", srcCfg.Format)
 	}
 
-	allowSchemaRelaxation, err := schemaRelaxationProperty(srcProps)
-	if err != nil {
-		return err
-	}
-
-	var ingestionProps map[string]any
-	if duckDBProps, ok := srcProps["duckdb"].(map[string]any); ok {
-		ingestionProps = duckDBProps
-	} else {
-		ingestionProps = map[string]any{}
-	}
-	if _, ok := ingestionProps["union_by_name"]; !ok && allowSchemaRelaxation {
+	if srcCfg.AllowSchemaRelaxation {
 		// set union_by_name to unify the schema of the files
-		ingestionProps["union_by_name"] = true
+		srcCfg.DuckDB["union_by_name"] = true
 	}
 
-	a := newAppender(t.to, sinkCfg, ingestionProps, allowSchemaRelaxation, t.logger)
+	a := newAppender(t.to, sinkCfg, srcCfg.DuckDB, srcCfg.AllowSchemaRelaxation, t.logger)
+
+	batchSize := _objectStoreIteratorBatchSizeInBytes
+	if srcCfg.BatchSizeBytes != 0 {
+		batchSize = srcCfg.BatchSizeBytes
+	}
 
 	for iterator.HasNext() {
-		files, err := iterator.NextBatch(opts.IteratorBatch)
+		files, err := iterator.NextBatchSize(batchSize)
 		if err != nil {
 			return err
 		}
 
-		if !formatDefined {
+		if format == "" {
 			format = fileutil.FullExt(files[0])
-			formatDefined = true
 		}
 
 		st := time.Now()
@@ -97,7 +96,7 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 				return err
 			}
 		} else {
-			from, err := sourceReader(files, format, ingestionProps)
+			from, err := sourceReader(files, format, srcCfg.DuckDB)
 			if err != nil {
 				return err
 			}
@@ -110,7 +109,7 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 
 		size := fileSize(files)
 		t.logger.Info("ingested files", zap.Strings("files", files), zap.Int64("bytes_ingested", size), zap.Duration("duration", time.Since(st)), observability.ZapCtx(ctx))
-		p.Observe(size, drivers.ProgressUnitByte)
+		opts.Progress.Observe(size, drivers.ProgressUnitByte)
 		appendToTable = true
 	}
 	return nil
@@ -125,9 +124,7 @@ type appender struct {
 	logger                *zap.Logger
 }
 
-func newAppender(to drivers.OLAPStore, sink *sinkProperties, ingestionProps map[string]any,
-	allowSchemaRelaxation bool, logger *zap.Logger,
-) *appender {
+func newAppender(to drivers.OLAPStore, sink *sinkProperties, ingestionProps map[string]any, allowSchemaRelaxation bool, logger *zap.Logger) *appender {
 	return &appender{
 		to:                    to,
 		sink:                  sink,
@@ -265,18 +262,16 @@ func (a *appender) scanSchemaFromQuery(ctx context.Context, qry string) (map[str
 	return schema, nil
 }
 
-func (t *objectStoreToDuckDB) ingestDuckDBSQL(
-	ctx context.Context,
-	originalSQL string,
-	iterator drivers.FileIterator,
-	dbSink *sinkProperties,
-	opts *drivers.TransferOpts,
-	p drivers.Progress,
-) error {
+func (t *objectStoreToDuckDB) ingestDuckDBSQL(ctx context.Context, originalSQL string, iterator drivers.FileIterator, srcCfg *fileSourceProperties, dbSink *sinkProperties, opts *drivers.TransferOptions) error {
+	batchSize := _objectStoreIteratorBatchSizeInBytes
+	if srcCfg.BatchSizeBytes != 0 {
+		batchSize = srcCfg.BatchSizeBytes
+	}
+
 	iterator.KeepFilesUntilClose(true)
 	allFiles := make([]string, 0)
 	for iterator.HasNext() {
-		files, err := iterator.NextBatch(opts.IteratorBatch)
+		files, err := iterator.NextBatchSize(batchSize)
 		if err != nil {
 			return err
 		}
@@ -327,6 +322,6 @@ func (t *objectStoreToDuckDB) ingestDuckDBSQL(
 
 	size := fileSize(allFiles)
 	t.logger.Info("ingested files", zap.Strings("files", allFiles), zap.Int64("bytes_ingested", size), zap.Duration("duration", time.Since(st)), observability.ZapCtx(ctx))
-	p.Observe(size, drivers.ProgressUnitByte)
+	opts.Progress.Observe(size, drivers.ProgressUnitByte)
 	return nil
 }

@@ -14,6 +14,8 @@ type config struct {
 	DSN string `mapstructure:"dsn"`
 	// PoolSize is the number of concurrent connections and queries allowed
 	PoolSize int `mapstructure:"pool_size"`
+	// AllowHostAccess denotes whether to limit access to the local environment and file system
+	AllowHostAccess bool `mapstructure:"allow_host_access"`
 	// DBFilePath is the path where the database is stored. It is inferred from the DSN (can't be provided by user).
 	DBFilePath string `mapstructure:"-"`
 }

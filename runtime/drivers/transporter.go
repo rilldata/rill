@@ -2,44 +2,21 @@ package drivers
 
 import (
 	"context"
-	"math"
 )
 
 // Transporter implements logic for moving data between two connectors
 // (the actual connector objects are provided in AsTransporter)
 type Transporter interface {
-	Transfer(ctx context.Context, source map[string]any, sink map[string]any, t *TransferOpts, p Progress) error
+	Transfer(ctx context.Context, srcProps, sinkProps map[string]any, opts *TransferOptions) error
 }
 
-type TransferOpts struct {
-	IteratorBatch int
-	LimitInBytes  int64
-}
-
-func NewTransferOpts(opts ...TransferOption) *TransferOpts {
-	t := &TransferOpts{
-		IteratorBatch: _iteratorBatch,
-		LimitInBytes:  math.MaxInt64,
-	}
-
-	for _, opt := range opts {
-		opt(t)
-	}
-	return t
-}
-
-type TransferOption func(*TransferOpts)
-
-func WithIteratorBatch(b int) TransferOption {
-	return func(t *TransferOpts) {
-		t.IteratorBatch = b
-	}
-}
-
-func WithLimitInBytes(limit int64) TransferOption {
-	return func(t *TransferOpts) {
-		t.LimitInBytes = limit
-	}
+// TransferOptions provide execution context for Transporter.Transfer
+type TransferOptions struct {
+	AllowHostAccess  bool
+	RepoRoot         string
+	LimitInBytes     int64
+	Progress         Progress
+	AcquireConnector func(string) (Handle, func(), error)
 }
 
 // Progress is an interface for communicating progress info

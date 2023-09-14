@@ -279,6 +279,12 @@ func (c *connection) reopenDB() error {
 		"SET timezone='UTC'",
 	}
 
+	// We want to set preserve_insertion_order=false in hosted environments only (where source data is never viewed directly). Setting it reduces batch data ingestion time by ~40%.
+	// Hack: Using AllowHostAccess as a proxy indicator for a hosted environment.
+	if !c.config.AllowHostAccess {
+		bootQueries = append(bootQueries, "SET preserve_insertion_order TO false")
+	}
+
 	// DuckDB extensions need to be loaded separately on each connection, but the built-in connection pool in database/sql doesn't enable that.
 	// So we use go-duckdb's custom connector to pass a callback that it invokes for each new connection.
 	connector, err := duckdb.NewConnector(c.config.DSN, func(execer driver.ExecerContext) error {

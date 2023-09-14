@@ -234,7 +234,7 @@ describe("dashboard-stores", () => {
       end: TestTimeOffsetConstants.NOW,
     });
     const metrics = get(metricsExplorerStore).entities[AD_BIDS_NAME];
-    expect(metrics.showComparison).toBeTruthy();
+    expect(metrics.showTimeComparison).toBeTruthy();
     expect(metrics.selectedComparisonTimeRange.name).toBe("CONTIGUOUS");
     expect(metrics.selectedComparisonTimeRange.start).toEqual(
       TestTimeOffsetConstants.LAST_12_HOURS
