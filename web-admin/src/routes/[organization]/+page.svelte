@@ -5,7 +5,7 @@
     createAdminServiceGetOrganization,
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
-  import OrganizationHero from "../../components/organizations/OrganizationHero.svelte";
+  import OrganizationHero from "../../features/organizations/OrganizationHero.svelte";
   import ProjectList from "../../features/projects/ProjectList.svelte";
 
   $: orgName = $page.params.organization;
