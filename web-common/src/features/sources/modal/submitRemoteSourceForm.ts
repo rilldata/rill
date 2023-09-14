@@ -63,7 +63,7 @@ export async function submitRemoteSourceForm(
   const formValues = Object.fromEntries(
     Object.entries(values).map(([key, value]) => {
       switch (key) {
-        case "project_id": 
+        case "project_id":
         case "athena_output_location":
         case "athena_workgroup":
           return [key, value];
