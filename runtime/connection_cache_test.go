@@ -276,7 +276,7 @@ func (*mockDriver) Drop(config map[string]any, logger *zap.Logger) error {
 }
 
 // HasAnonymousSourceAccess implements drivers.Driver.
-func (*mockDriver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
+func (*mockDriver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
 	panic("unimplemented")
 }
 

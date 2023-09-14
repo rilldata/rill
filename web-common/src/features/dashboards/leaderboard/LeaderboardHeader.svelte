@@ -10,15 +10,14 @@
   import Delta from "@rilldata/web-common/components/icons/Delta.svelte";
   import PieChart from "@rilldata/web-common/components/icons/PieChart.svelte";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
-  import { CONTEXT_COLUMN_WIDTH } from "./leaderboard-utils";
   import { createEventDispatcher } from "svelte";
+  import { LeaderboardContextColumn } from "../leaderboard-context-column";
 
   export let displayName: string;
   export let isFetching: boolean;
   export let dimensionDescription: string;
   export let hovered: boolean;
-  export let showTimeComparison: boolean;
-  export let showPercentOfTotal: boolean;
+  export let contextColumn: LeaderboardContextColumn;
   export let sortAscending: boolean;
 
   export let filterExcludeMode: boolean;
@@ -26,12 +25,21 @@
   let optionsMenuActive = false;
   const dispatch = createEventDispatcher();
 
+  $: contextColumnWidth = (contextColumn: LeaderboardContextColumn) => {
+    switch (contextColumn) {
+      case LeaderboardContextColumn.DELTA_ABSOLUTE:
+        return "54px";
+      case LeaderboardContextColumn.DELTA_PERCENT:
+      case LeaderboardContextColumn.PERCENT:
+        return "44px";
+      case LeaderboardContextColumn.HIDDEN:
+        return "0px";
+      default:
+        throw new Error("Invalid context column, all cases must be handled");
+    }
+  };
+
   $: arrowTransform = sortAscending ? "scale(1 -1)" : "scale(1 1)";
-  $: iconShown = showTimeComparison
-    ? "delta"
-    : showPercentOfTotal
-    ? "pie"
-    : null;
 </script>
 
 <div class="flex flex-row items-center">
@@ -110,14 +118,16 @@
         # <ArrowDown transform={arrowTransform} />
       </button>
 
-      {#if iconShown}
+      {#if contextColumn !== LeaderboardContextColumn.HIDDEN}
         <div
           class="shrink flex flex-row items-center justify-end"
-          style:width={CONTEXT_COLUMN_WIDTH + "px"}
+          style:width={contextColumnWidth(contextColumn)}
         >
-          {#if iconShown === "delta"}
+          {#if contextColumn === LeaderboardContextColumn.DELTA_PERCENT}
             <Delta /> %
-          {:else if iconShown === "pie"}
+          {:else if contextColumn === LeaderboardContextColumn.DELTA_ABSOLUTE}
+            <Delta />
+          {:else if contextColumn === LeaderboardContextColumn.PERCENT}
             <PieChart /> %
           {/if}
         </div>

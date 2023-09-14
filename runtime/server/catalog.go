@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -80,6 +81,9 @@ func (s *Server) GetCatalogEntry(ctx context.Context, req *runtimev1.GetCatalogE
 
 	entry, err := s.runtime.GetCatalogEntry(ctx, req.InstanceId, req.Name)
 	if err != nil {
+		if errors.Is(err, drivers.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "not found")
+		}
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
@@ -92,8 +96,9 @@ func (s *Server) GetCatalogEntry(ctx context.Context, req *runtimev1.GetCatalogE
 		}
 
 		if security != nil && !security.Access {
-			return nil, ErrForbidden
+			return nil, status.Error(codes.NotFound, "not found")
 		}
+
 		newMv := filterDimensionsAndMeasures(security, mv)
 		pb, err = mvCatalogObjectToPB(entry, newMv)
 		if err != nil {

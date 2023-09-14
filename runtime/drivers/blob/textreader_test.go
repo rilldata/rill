@@ -7,7 +7,6 @@ import (
 	"os"
 	"testing"
 
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/stretchr/testify/require"
 	"gocloud.dev/blob"
@@ -38,7 +37,7 @@ func TestDownloadCSV(t *testing.T) {
 				ctx:    context.Background(),
 				bucket: bucket,
 				obj:    object,
-				option: &textExtractOption{extractOption: &extractOption{strategy: runtimev1.Source_ExtractPolicy_STRATEGY_HEAD, limitInBytes: uint64(object.Size - 5)}, hasCSVHeader: true},
+				option: &textExtractOption{extractOption: &extractOption{strategy: ExtractPolicyStrategyHead, limitInBytes: uint64(object.Size - 5)}, hasCSVHeader: true},
 				fw:     getTempFile(t, object.Key),
 			},
 			want: testData[:len(testData)-1],
@@ -49,7 +48,7 @@ func TestDownloadCSV(t *testing.T) {
 				ctx:    context.Background(),
 				bucket: bucket,
 				obj:    object,
-				option: &textExtractOption{extractOption: &extractOption{strategy: runtimev1.Source_ExtractPolicy_STRATEGY_TAIL, limitInBytes: uint64(object.Size - 5)}, hasCSVHeader: true},
+				option: &textExtractOption{extractOption: &extractOption{strategy: ExtractPolicyStrategyTail, limitInBytes: uint64(object.Size - 5)}, hasCSVHeader: true},
 				fw:     getTempFile(t, object.Key),
 			},
 			want: resultTail,
@@ -88,7 +87,7 @@ func TestDownloadCSVSingleLineHead(t *testing.T) {
 		object, err := bucket.List(&blob.ListOptions{Prefix: file}).Next(ctx)
 		require.NoError(t, err)
 
-		extractOption := &extractOption{strategy: runtimev1.Source_ExtractPolicy_STRATEGY_HEAD, limitInBytes: uint64(object.Size)}
+		extractOption := &extractOption{strategy: ExtractPolicyStrategyHead, limitInBytes: uint64(object.Size)}
 		fw := getTempFile(t, "temp.csv")
 		err = downloadText(ctx, bucket, object, &textExtractOption{extractOption: extractOption, hasCSVHeader: true}, fw)
 		require.NoError(t, err)

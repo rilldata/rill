@@ -26,18 +26,23 @@ const rowGroupBufferSize = int64(datasize.MB) * 512
 const _jsonDownloadLimitBytes = 100 * int64(datasize.MB)
 
 // Query implements drivers.SQLStore
-func (c *Connection) Query(ctx context.Context, props map[string]any, sql string) (drivers.RowIterator, error) {
+func (c *Connection) Query(ctx context.Context, props map[string]any) (drivers.RowIterator, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
 // QueryAsFiles implements drivers.SQLStore
-func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, sql string, opt *drivers.QueryOption, p drivers.Progress) (drivers.FileIterator, error) {
+func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt *drivers.QueryOption, p drivers.Progress) (drivers.FileIterator, error) {
 	srcProps, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, err
 	}
 
-	client, err := c.createClient(ctx, srcProps)
+	opts, err := c.clientOption(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := bigquery.NewClient(ctx, srcProps.ProjectID, opts...)
 	if err != nil {
 		if strings.Contains(err.Error(), "unable to detect projectID") {
 			return nil, fmt.Errorf("projectID not detected in credentials. Please set `project_id` in source yaml")
@@ -45,13 +50,13 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, sql
 		return nil, fmt.Errorf("failed to create bigquery client: %w", err)
 	}
 
-	if err := client.EnableStorageReadClient(ctx); err != nil {
+	if err := client.EnableStorageReadClient(ctx, opts...); err != nil {
 		client.Close()
 		return nil, err
 	}
 
 	now := time.Now()
-	q := client.Query(sql)
+	q := client.Query(srcProps.SQL)
 	it, err := q.Read(ctx)
 	if err != nil && !strings.Contains(err.Error(), "Syntax error") {
 		// close the read storage API client
@@ -60,12 +65,12 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, sql
 		// the query results are always cached in a temporary table that storage api can use
 		// there are some exceptions when results aren't cached
 		// so we also try without storage api
-		client, err = c.createClient(ctx, srcProps)
+		client, err = bigquery.NewClient(ctx, srcProps.ProjectID, opts...)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create bigquery client: %w", err)
 		}
 
-		q := client.Query(sql)
+		q := client.Query(srcProps.SQL)
 		it, err = q.Read(ctx)
 	}
 	if err != nil {
@@ -112,6 +117,10 @@ func (f *fileIterator) HasNext() bool {
 
 // KeepFilesUntilClose implements drivers.FileIterator.
 func (f *fileIterator) KeepFilesUntilClose(keepFilesUntilClose bool) {
+}
+
+func (f *fileIterator) NextBatchSize(sizeInBytes int64) ([]string, error) {
+	return f.NextBatch(1)
 }
 
 // NextBatch implements drivers.FileIterator.

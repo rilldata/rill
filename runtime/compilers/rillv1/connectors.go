@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
@@ -64,7 +63,7 @@ func (p *Parser) AnalyzeConnectors(ctx context.Context) ([]*Connector, error) {
 				break
 			}
 			// Poll for anon access
-			res, _ := connector.HasAnonymousSourceAccess(ctx, driverSourceForAnonAccessCheck(driver, r.SourceSpec), zap.NewNop())
+			res, _ := connector.HasAnonymousSourceAccess(ctx, r.SourceSpec.Properties.AsMap(), zap.NewNop())
 			if !res {
 				anonAccess = false
 				break
@@ -105,32 +104,4 @@ func (p *Parser) connectorForName(name string) (string, drivers.Driver, error) {
 		return "", nil, fmt.Errorf("unknown connector type %q", driver)
 	}
 	return driver, connector, nil
-}
-
-func driverSourceForAnonAccessCheck(connector string, src *runtimev1.SourceSpec) drivers.Source {
-	props := src.Properties.AsMap()
-	switch connector {
-	case "s3":
-		return &drivers.BucketSource{
-			Properties: props,
-		}
-	case "gcs":
-		return &drivers.BucketSource{
-			Properties: props,
-		}
-	case "https":
-		return &drivers.FileSource{
-			Properties: props,
-		}
-	case "local_file":
-		return &drivers.FileSource{
-			Properties: props,
-		}
-	case "motherduck":
-		return &drivers.DatabaseSource{}
-	case "sqlite":
-		return &drivers.DatabaseSource{}
-	default:
-		return nil
-	}
 }

@@ -27,6 +27,9 @@
   export let enableResize = true;
   export let isSelected = false;
   export let bgClass = "";
+  // set this prop to control sorting arrow externally.
+  // if undefined, sorting arrow is toggled within the component.
+  export let sortAscending: boolean | undefined = undefined;
 
   const config: VirtualizedTableConfig = getContext("config");
   const dispatch = createEventDispatcher();
@@ -34,7 +37,10 @@
   const { shiftClickAction } = createShiftClickAction();
 
   let showMore = false;
-  $: isSortingDesc = true;
+
+  // if sorting is controlled externally, use that prop value
+  // otherwise, default to true
+  $: isSortingDesc = sortAscending !== undefined ? !sortAscending : true;
 
   $: isDimensionTable = config.table === "DimensionTable";
   $: isDimensionColumn = isDimensionTable && type === "VARCHAR";
@@ -68,8 +74,12 @@
     showMore = false;
   }}
   on:click={() => {
-    if (isSelected) isSortingDesc = !isSortingDesc;
-    else isSortingDesc = true;
+    // only toggle `isSortingDesc` within the component if
+    // sorting is not controlled externally
+    if (sortAscending === undefined) {
+      if (isSelected) isSortingDesc = !isSortingDesc;
+      else isSortingDesc = true;
+    }
     dispatch("click-column");
   }}
 >

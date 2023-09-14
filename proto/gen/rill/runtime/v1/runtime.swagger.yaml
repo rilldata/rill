@@ -98,6 +98,29 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - RuntimeService
+  /v1/connectors/scan:
+    get:
+      summary: |-
+        ScanConnectors scans the artifacts for connectors and returns information about
+        the connectors referenced in the artifacts. The information includes name,type and
+        credentials for the connector.
+      operationId: ConnectorService_ScanConnectors
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ScanConnectorsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
   /v1/delete-and-reconcile:
     post:
       summary: DeleteFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
@@ -2266,6 +2289,13 @@ paths:
       tags:
         - ConnectorService
 definitions:
+  BucketExtractPolicyStrategy:
+    type: string
+    enum:
+      - STRATEGY_UNSPECIFIED
+      - STRATEGY_HEAD
+      - STRATEGY_TAIL
+    default: STRATEGY_UNSPECIFIED
   ColumnTimeSeriesRequestBasicMeasure:
     type: object
     properties:
@@ -2487,33 +2517,6 @@ definitions:
         items:
           type: string
     title: Dimension/measure level access condition
-  SourceExtractPolicy:
-    type: object
-    properties:
-      rowsStrategy:
-        $ref: '#/definitions/SourceExtractPolicyStrategy'
-        title: strategy for selecting rows in a file
-      rowsLimitBytes:
-        type: string
-        format: uint64
-        title: |-
-          could in future add: uint64 rows_limit = n;
-          limit on data fetched in bytes
-      filesStrategy:
-        $ref: '#/definitions/SourceExtractPolicyStrategy'
-        title: strategy for selecting files
-      filesLimit:
-        type: string
-        format: uint64
-        title: limit on number of files
-    title: Extract policy for glob connectors
-  SourceExtractPolicyStrategy:
-    type: string
-    enum:
-      - STRATEGY_UNSPECIFIED
-      - STRATEGY_HEAD
-      - STRATEGY_TAIL
-    default: STRATEGY_UNSPECIFIED
   StructTypeField:
     type: object
     properties:
@@ -2618,22 +2621,15 @@ definitions:
     type: object
     properties:
       rowsStrategy:
-        $ref: '#/definitions/v1BucketExtractPolicyStrategy'
+        $ref: '#/definitions/BucketExtractPolicyStrategy'
       rowsLimitBytes:
         type: string
         format: uint64
       filesStrategy:
-        $ref: '#/definitions/v1BucketExtractPolicyStrategy'
+        $ref: '#/definitions/BucketExtractPolicyStrategy'
       filesLimit:
         type: string
         format: uint64
-  v1BucketExtractPolicyStrategy:
-    type: string
-    enum:
-      - STRATEGY_UNSPECIFIED
-      - STRATEGY_HEAD
-      - STRATEGY_TAIL
-    default: STRATEGY_UNSPECIFIED
   v1BucketPlanner:
     type: object
     properties:
@@ -4503,6 +4499,24 @@ definitions:
         format: int64
       isDir:
         type: boolean
+  v1ScanConnectorsResponse:
+    type: object
+    properties:
+      connectors:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ScannedConnector'
+  v1ScannedConnector:
+    type: object
+    properties:
+      name:
+        type: string
+      type:
+        type: string
+      hasAnonymousAccess:
+        type: boolean
+        title: reports whether access is present without any credentials
   v1Schedule:
     type: object
     properties:
@@ -4526,9 +4540,6 @@ definitions:
       schema:
         $ref: '#/definitions/v1StructType'
         title: Detected schema of the source
-      policy:
-        $ref: '#/definitions/SourceExtractPolicy'
-        title: extraction policy for the source
       timeoutSeconds:
         type: integer
         format: int32
