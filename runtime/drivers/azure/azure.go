@@ -3,9 +3,8 @@ package azure
 import (
 	"context"
 	"fmt"
-	"os"
+	"log"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
@@ -264,29 +263,44 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 
 // getClient returns a new azure blob client.
 func (c *Connection) getClient(ctx context.Context, conf *sourceProperties) (*container.Client, error) {
-	name := c.config.Account
-	key := c.config.Key
+	// name := c.config.Account
+	// key := c.config.Key
 
-	if c.config.AllowHostAccess {
-		name = os.Getenv("AZURE_STORAGE_ACCOUNT")
-		key = os.Getenv("AZURE_STORAGE_KEY")
-	}
+	// if c.config.AllowHostAccess {
+	// 	name = os.Getenv("AZURE_STORAGE_ACCOUNT")
+	// 	key = os.Getenv("AZURE_STORAGE_KEY")
+	// }
 
-	credential, err := azblob.NewSharedKeyCredential(name, key)
+	// credential, err := azblob.NewSharedKeyCredential(name, key)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// containerURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s", name, conf.url.Host)
+	// var client *container.Client
+	// if key == "" {
+	// 	client, err = container.NewClientWithNoCredential(containerURL, nil)
+	// } else {
+	// 	client, err = container.NewClientWithSharedKeyCredential(containerURL, credential, nil)
+	// }
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	opts := azureblob.NewDefaultServiceURLOptions()
+	serviceURL, err := azureblob.NewServiceURL(opts)
 	if err != nil {
-		return nil, err
+		log.Fatal(err)
 	}
 
-	containerURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s", name, conf.url.Host)
-	var client *container.Client
-	if key == "" {
-		client, err = container.NewClientWithNoCredential(containerURL, nil)
-	} else {
-		client, err = container.NewClientWithSharedKeyCredential(containerURL, credential, nil)
-	}
+	c.logger.Named("Console").Info("url is", zap.String("url hai", fmt.Sprintf("serviceURL: %v\n", serviceURL)))
+
+	client, err := azureblob.NewDefaultClient(serviceURL, azureblob.ContainerName(conf.url.Host))
 	if err != nil {
-		return nil, err
+		log.Fatal(err)
 	}
+
+	c.logger.Named("Console").Info("url is", zap.String("url hai dusra ", fmt.Sprintf("serviceURL: %v\n", client.URL())))
 
 	return client, nil
 }
