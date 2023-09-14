@@ -38,7 +38,7 @@ func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[s
 	}
 
 	// We can't just pass the SQL statement to DuckDB outright.
-	// We need to do some rewriting for some table references (currently object stores and local files).
+	// We need to do some rewriting for certain table references (currently object stores and local files).
 
 	// Parse AST
 	ast, err := duckdbsql.Parse(srcCfg.SQL)
