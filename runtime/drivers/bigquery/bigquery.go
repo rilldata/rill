@@ -2,7 +2,6 @@ package bigquery
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -123,7 +122,7 @@ func (d driver) Spec() drivers.Spec {
 	return spec
 }
 
-func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
+func (d driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
 	// gcp provides public access to the data via a project
 	return false, nil
 }
@@ -205,6 +204,7 @@ func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 
 type sourceProperties struct {
 	ProjectID string `mapstructure:"project_id"`
+	SQL       string `mapstructure:"sql"`
 }
 
 func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
@@ -213,19 +213,19 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 	if err != nil {
 		return nil, err
 	}
+	if conf.SQL == "" {
+		return nil, fmt.Errorf("property 'sql' is mandatory for connector \"bigquery\"")
+	}
 	if conf.ProjectID == "" {
 		conf.ProjectID = bigquery.DetectProjectID
 	}
 	return conf, err
 }
 
-func (c *Connection) createClient(ctx context.Context, props *sourceProperties) (*bigquery.Client, error) {
+func (c *Connection) clientOption(ctx context.Context) ([]option.ClientOption, error) {
 	creds, err := gcputil.Credentials(ctx, c.config.SecretJSON, c.config.AllowHostAccess)
 	if err != nil {
-		if !errors.Is(err, gcputil.ErrNoCredentials) {
-			return nil, err
-		}
-		return bigquery.NewClient(ctx, props.ProjectID)
+		return nil, err
 	}
-	return bigquery.NewClient(ctx, props.ProjectID, option.WithCredentials(creds))
+	return []option.ClientOption{option.WithCredentials(creds)}, nil
 }

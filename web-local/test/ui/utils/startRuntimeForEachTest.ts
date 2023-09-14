@@ -4,7 +4,7 @@ import { spawn } from "node:child_process";
 import type { ChildProcess } from "node:child_process";
 import treeKill from "tree-kill";
 import { isPortOpen } from "@rilldata/web-local/lib/util/isPortOpen";
-import { asyncWaitUntil } from "@rilldata/web-local/lib/util/waitUtils";
+import { asyncWaitUntil } from "@rilldata/web-common/lib/waitUtils";
 import axios from "axios";
 
 const TEST_PROJECT_DIRECTORY = "temp/test-project";

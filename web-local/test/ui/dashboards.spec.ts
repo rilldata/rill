@@ -173,22 +173,20 @@ test.describe("dashboard", () => {
     expect(parquetRegex.test(downloadParquet.suggestedFilename())).toBe(true);
 
     // Turn off comparison
+    await page.getByRole("button", { name: "Comparing by Time" }).click();
     await page
-      .getByRole("button", { name: "Comparing to last period" })
-      .click();
-    await page
-      .getByLabel("Time comparison selector")
-      .getByRole("menuitem", { name: "no comparison" })
+      .getByLabel("Comparison selector")
+      .getByRole("menuitem", { name: "No comparison" })
       .click();
 
     // Check number
     await expect(page.getByText("272", { exact: true })).toBeVisible();
 
     // Add comparison back
-    await page.getByRole("button", { name: "no comparison" }).click();
+    await page.getByRole("button", { name: "No comparison" }).click();
     await page
-      .getByLabel("Time comparison selector")
-      .getByRole("menuitem", { name: "last period" })
+      .getByLabel("Comparison selector")
+      .getByRole("menuitem", { name: "Time" })
       .click();
 
     /*
@@ -202,7 +200,7 @@ test.describe("dashboard", () => {
 
       For now, we will wait for the menu to disappear before clicking the next menu
      */
-    await expect(page.getByLabel("Time comparison selector")).not.toBeVisible();
+    await expect(page.getByLabel("Comparison selector")).not.toBeVisible();
 
     // Switch to a custom time range
     await interactWithTimeRangeMenu(page, async () => {

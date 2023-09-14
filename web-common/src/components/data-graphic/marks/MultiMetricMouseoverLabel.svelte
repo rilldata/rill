@@ -48,6 +48,7 @@ It is probably not the most up to date code; but it works very well in practice.
 
   export let direction = "right";
   export let flipAtEdge: "body" | "graphic" | false = "graphic"; // "body", "graphic", or undefined
+  export let attachPointToLabel = false;
 
   let container;
   let containerWidths = [];
@@ -210,9 +211,11 @@ It is probably not the most up to date code; but it works very well in practice.
                 <tspan
                   dy=".35em"
                   y={y.label}
-                  x={xText - labelWidth}
-                  class="mc-mouseover-label {location?.labelStyleClass ||
-                    ''} {(!location?.yOverride && location?.labelColorClass) ||
+                  x={xText - (location?.yOverride ? 0 : labelWidth)}
+                  class="mc-mouseover-label {location?.yOverride
+                    ? location?.yOverrideStyleClass
+                    : location?.labelStyleClass || ''} {(!location?.yOverride &&
+                    location?.labelColorClass) ||
                     ''}"
                   text-anchor="end"
                 >
@@ -239,7 +242,7 @@ It is probably not the most up to date code; but it works very well in practice.
             {#if location.yRange}
               <circle
                 cx={x}
-                cy={y.point}
+                cy={attachPointToLabel ? y.label : y.point}
                 r={3}
                 paint-order="stroke"
                 class={location.pointColorClass}

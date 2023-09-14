@@ -12,6 +12,7 @@ import { createStateManagers } from "@rilldata/web-common/features/dashboards/st
 import {
   createTimeControlStore,
   TimeControlState,
+  TimeControlStore,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import TimeControlsStoreTest from "@rilldata/web-common/features/dashboards/time-controls/TimeControlsStoreTest.svelte";
 import {
@@ -22,6 +23,7 @@ import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 import { describe, it, expect, beforeAll, beforeEach } from "vitest";
@@ -48,7 +50,7 @@ describe("time-control-store", () => {
   it("Switching from no timestamp column to having one", async () => {
     const { unmount, queryClient, timeControlsStore } =
       initTimeControlStoreTest(AD_BIDS_INIT);
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    await waitUntil(() => !get(timeControlsStore).isFetching);
 
     const state = get(timeControlsStore);
     expect(state.isFetching).toBeFalsy();
@@ -67,8 +69,8 @@ describe("time-control-store", () => {
     await queryClient.refetchQueries({
       type: "active",
     });
-    await new Promise((resolve) => setTimeout(resolve, 10));
 
+    await waitForUpdate(timeControlsStore, "2022-01-01T00:00:00.000Z");
     assertStartAndEnd(
       get(timeControlsStore),
       "2022-01-01T00:00:00.000Z",
@@ -88,7 +90,8 @@ describe("time-control-store", () => {
     await queryClient.refetchQueries({
       type: "active",
     });
-    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    await waitForUpdate(timeControlsStore, "2023-01-01T00:00:00.000Z");
     // Updating time range updates the start and end
     assertStartAndEnd(
       get(timeControlsStore),
@@ -113,7 +116,7 @@ describe("time-control-store", () => {
     const { unmount, timeControlsStore } = initTimeControlStoreTest(
       AD_BIDS_INIT_WITH_TIME
     );
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    await waitForUpdate(timeControlsStore, "2022-03-30T01:00:00.000Z");
 
     metricsExplorerStore.setSelectedTimeRange(AD_BIDS_NAME, {
       name: TimeRangePreset.LAST_24_HOURS,
@@ -183,9 +186,9 @@ describe("time-control-store", () => {
     const { unmount, timeControlsStore } = initTimeControlStoreTest(
       AD_BIDS_INIT_WITH_TIME
     );
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    await waitForUpdate(timeControlsStore, "2022-01-01T00:00:00.000Z");
 
-    metricsExplorerStore.displayComparison(AD_BIDS_NAME, true);
+    metricsExplorerStore.displayTimeComparison(AD_BIDS_NAME, true);
     metricsExplorerStore.setSelectedTimeRange(AD_BIDS_NAME, {
       name: TimeRangePreset.LAST_24_HOURS,
       start: undefined,
@@ -244,7 +247,7 @@ describe("time-control-store", () => {
     const { unmount, timeControlsStore } = initTimeControlStoreTest(
       AD_BIDS_INIT_WITH_TIME
     );
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    await waitForUpdate(timeControlsStore, "2022-01-01T00:00:00.000Z");
 
     metricsExplorerStore.setTimeZone(AD_BIDS_NAME, "IST");
     assertStartAndEnd(
@@ -255,7 +258,7 @@ describe("time-control-store", () => {
       "2022-03-31T18:30:00.000Z"
     );
 
-    metricsExplorerStore.displayComparison(AD_BIDS_NAME, true);
+    metricsExplorerStore.displayTimeComparison(AD_BIDS_NAME, true);
     metricsExplorerStore.setSelectedTimeRange(AD_BIDS_NAME, {
       name: TimeRangePreset.LAST_24_HOURS,
       start: undefined,
@@ -283,8 +286,7 @@ describe("time-control-store", () => {
     unmount();
   },  { retry: 5 });
 
-  // TODO: fix this by using zone independent tests
-  it.skip("Scrubbing to zoom", async () => {
+  it("Scrubbing to zoom", async () => {
     dashboardFetchMocks.mockTimeRangeSummary(
       AD_BIDS_SOURCE_NAME,
       AD_BIDS_TIMESTAMP_DIMENSION,
@@ -296,8 +298,8 @@ describe("time-control-store", () => {
     const { unmount, timeControlsStore } = initTimeControlStoreTest(
       AD_BIDS_INIT_WITH_TIME
     );
-    await new Promise((resolve) => setTimeout(resolve, 10));
-    metricsExplorerStore.displayComparison(AD_BIDS_NAME, true);
+    await waitForUpdate(timeControlsStore, "2022-01-01T00:00:00.000Z");
+    metricsExplorerStore.displayTimeComparison(AD_BIDS_NAME, true);
     metricsExplorerStore.setSelectedComparisonRange(AD_BIDS_NAME, {
       name: "P1M",
     } as any);
@@ -405,4 +407,15 @@ function assertComparisonStartAndEnd(
   expect(timeControlsSate.comparisonTimeEnd).toBe(end);
   expect(timeControlsSate.comparisonAdjustedStart).toBe(adjustedStart);
   expect(timeControlsSate.comparisonAdjustedEnd).toBe(adjustedEnd);
+}
+
+async function waitForUpdate(
+  timeControlsStore: TimeControlStore,
+  startTime: string
+) {
+  return waitUntil(
+    () => get(timeControlsStore).timeStart === startTime,
+    1000,
+    20
+  );
 }

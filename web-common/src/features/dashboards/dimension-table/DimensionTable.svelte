@@ -23,8 +23,10 @@ TableCells – the cell contents.
   export let columns: VirtualizedTableColumns[];
   export let selectedValues: Array<unknown> = [];
   export let sortByColumn: string;
+  export let sortAscending: boolean;
   export let dimensionName: string;
   export let excludeMode = false;
+  export let isBeingCompared = false;
 
   /** the overscan values tell us how much to render off-screen. These may be set by the consumer
    * in certain circumstances. The tradeoff: the higher the overscan amount, the more DOM elements we have
@@ -203,6 +205,7 @@ TableCells – the cell contents.
           selectedColumn={sortByColumn}
           columns={measureColumns}
           fallbackBGClass="bg-white"
+          {sortAscending}
           on:click-column={handleColumnHeaderClick}
         />
 
@@ -212,7 +215,10 @@ TableCells – the cell contents.
             virtualRowItems={virtualRows}
             totalHeight={virtualHeight}
             {selectedIndex}
+            {isBeingCompared}
             {excludeMode}
+            atLeastOneActive={selectedValues?.length > 0}
+            on:toggle-dimension-comparison
             on:select-item={(event) => onSelectItem(event)}
           />
           <DimensionValueHeader

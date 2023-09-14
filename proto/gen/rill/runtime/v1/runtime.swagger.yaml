@@ -98,6 +98,29 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - RuntimeService
+  /v1/connectors/scan:
+    get:
+      summary: |-
+        ScanConnectors scans the artifacts for connectors and returns information about
+        the connectors referenced in the artifacts. The information includes name,type and
+        credentials for the connector.
+      operationId: ConnectorService_ScanConnectors
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ScanConnectorsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
   /v1/delete-and-reconcile:
     post:
       summary: DeleteFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
@@ -980,6 +1003,8 @@ paths:
                 format: int64
               format:
                 $ref: '#/definitions/v1ExportFormat'
+              metricsViewAggregationRequest:
+                $ref: '#/definitions/v1MetricsViewAggregationRequest'
               metricsViewToplistRequest:
                 $ref: '#/definitions/v1MetricsViewToplistRequest'
               metricsViewRowsRequest:
@@ -987,6 +1012,68 @@ paths:
               metricsViewTimeSeriesRequest:
                 $ref: '#/definitions/v1MetricsViewTimeSeriesRequest'
             title: Request message for QueryService.Export
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsView}/aggregation:
+    post:
+      summary: MetricsViewAggregation is a generic API for running group-by queries against a metrics view.
+      operationId: QueryService_MetricsViewAggregation
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewAggregationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsView
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              dimensions:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewAggregationDimension'
+              measures:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewAggregationMeasure'
+              sort:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewAggregationSort'
+              timeStart:
+                type: string
+                format: date-time
+              timeEnd:
+                type: string
+                format: date-time
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
+              limit:
+                type: string
+                format: int64
+              offset:
+                type: string
+                format: int64
+              priority:
+                type: integer
+                format: int32
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
@@ -2202,6 +2289,13 @@ paths:
       tags:
         - ConnectorService
 definitions:
+  BucketExtractPolicyStrategy:
+    type: string
+    enum:
+      - STRATEGY_UNSPECIFIED
+      - STRATEGY_HEAD
+      - STRATEGY_TAIL
+    default: STRATEGY_UNSPECIFIED
   ColumnTimeSeriesRequestBasicMeasure:
     type: object
     properties:
@@ -2423,33 +2517,6 @@ definitions:
         items:
           type: string
     title: Dimension/measure level access condition
-  SourceExtractPolicy:
-    type: object
-    properties:
-      rowsStrategy:
-        $ref: '#/definitions/SourceExtractPolicyStrategy'
-        title: strategy for selecting rows in a file
-      rowsLimitBytes:
-        type: string
-        format: uint64
-        title: |-
-          could in future add: uint64 rows_limit = n;
-          limit on data fetched in bytes
-      filesStrategy:
-        $ref: '#/definitions/SourceExtractPolicyStrategy'
-        title: strategy for selecting files
-      filesLimit:
-        type: string
-        format: uint64
-        title: limit on number of files
-    title: Extract policy for glob connectors
-  SourceExtractPolicyStrategy:
-    type: string
-    enum:
-      - STRATEGY_UNSPECIFIED
-      - STRATEGY_HEAD
-      - STRATEGY_TAIL
-    default: STRATEGY_UNSPECIFIED
   StructTypeField:
     type: object
     properties:
@@ -2554,22 +2621,15 @@ definitions:
     type: object
     properties:
       rowsStrategy:
-        $ref: '#/definitions/v1BucketExtractPolicyStrategy'
+        $ref: '#/definitions/BucketExtractPolicyStrategy'
       rowsLimitBytes:
         type: string
         format: uint64
       filesStrategy:
-        $ref: '#/definitions/v1BucketExtractPolicyStrategy'
+        $ref: '#/definitions/BucketExtractPolicyStrategy'
       filesLimit:
         type: string
         format: uint64
-  v1BucketExtractPolicyStrategy:
-    type: string
-    enum:
-      - STRATEGY_UNSPECIFIED
-      - STRATEGY_HEAD
-      - STRATEGY_TAIL
-    default: STRATEGY_UNSPECIFIED
   v1BucketPlanner:
     type: object
     properties:
@@ -2587,6 +2647,13 @@ definitions:
     properties:
       region:
         type: string
+  v1BuiltinMeasure:
+    type: string
+    enum:
+      - BUILTIN_MEASURE_UNSPECIFIED
+      - BUILTIN_MEASURE_COUNT
+      - BUILTIN_MEASURE_COUNT_DISTINCT
+    default: BUILTIN_MEASURE_UNSPECIFIED
   v1CatalogEntry:
     type: object
     properties:
@@ -3279,6 +3346,80 @@ definitions:
         $ref: '#/definitions/MetricsViewSecurity'
         title: Security for the dashboard
     title: Metrics view is the internal representation of a metrics view definition
+  v1MetricsViewAggregationDimension:
+    type: object
+    properties:
+      name:
+        type: string
+      timeGrain:
+        $ref: '#/definitions/v1TimeGrain'
+      timeZone:
+        type: string
+  v1MetricsViewAggregationMeasure:
+    type: object
+    properties:
+      name:
+        type: string
+      builtinMeasure:
+        $ref: '#/definitions/v1BuiltinMeasure'
+      builtinMeasureArgs:
+        type: array
+        items: {}
+  v1MetricsViewAggregationRequest:
+    type: object
+    properties:
+      instanceId:
+        type: string
+      metricsView:
+        type: string
+      dimensions:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewAggregationDimension'
+      measures:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewAggregationMeasure'
+      sort:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewAggregationSort'
+      timeStart:
+        type: string
+        format: date-time
+      timeEnd:
+        type: string
+        format: date-time
+      filter:
+        $ref: '#/definitions/v1MetricsViewFilter'
+      limit:
+        type: string
+        format: int64
+      offset:
+        type: string
+        format: int64
+      priority:
+        type: integer
+        format: int32
+  v1MetricsViewAggregationResponse:
+    type: object
+    properties:
+      schema:
+        $ref: '#/definitions/v1StructType'
+      data:
+        type: array
+        items:
+          type: object
+  v1MetricsViewAggregationSort:
+    type: object
+    properties:
+      name:
+        type: string
+      desc:
+        type: boolean
   v1MetricsViewColumn:
     type: object
     properties:
@@ -3857,11 +3998,6 @@ definitions:
         type: integer
         format: int64
         title: materialize_model_delay_seconds makes the project parser delay materialization of updated models
-      duckdbConnectors:
-        type: array
-        items:
-          type: string
-        title: duckdb_connectors is a list of connectors that use DuckDB
   v1ProjectParserState:
     type: object
     properties:
@@ -3949,6 +4085,8 @@ definitions:
         type: integer
         format: int32
         description: Since response could out of order `key` is used to co-relate a specific response to request.
+      metricsViewAggregationRequest:
+        $ref: '#/definitions/v1MetricsViewAggregationRequest'
       metricsViewToplistRequest:
         $ref: '#/definitions/v1MetricsViewToplistRequest'
       metricsViewComparisonToplistRequest:
@@ -3993,6 +4131,8 @@ definitions:
         format: int32
       error:
         type: string
+      metricsViewAggregationResponse:
+        $ref: '#/definitions/v1MetricsViewAggregationResponse'
       metricsViewToplistResponse:
         $ref: '#/definitions/v1MetricsViewToplistResponse'
       metricsViewComparisonToplistResponse:
@@ -4354,6 +4494,24 @@ definitions:
         format: int64
       isDir:
         type: boolean
+  v1ScanConnectorsResponse:
+    type: object
+    properties:
+      connectors:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ScannedConnector'
+  v1ScannedConnector:
+    type: object
+    properties:
+      name:
+        type: string
+      type:
+        type: string
+      hasAnonymousAccess:
+        type: boolean
+        title: reports whether access is present without any credentials
   v1Schedule:
     type: object
     properties:
@@ -4377,9 +4535,6 @@ definitions:
       schema:
         $ref: '#/definitions/v1StructType'
         title: Detected schema of the source
-      policy:
-        $ref: '#/definitions/SourceExtractPolicy'
-        title: extraction policy for the source
       timeoutSeconds:
         type: integer
         format: int32

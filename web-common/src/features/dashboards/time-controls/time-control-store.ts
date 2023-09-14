@@ -205,7 +205,7 @@ function calculateComparisonTimeRangePartial(
     metricsExplorer.selectedComparisonTimeRange
   );
   const showComparison = Boolean(
-    metricsExplorer.showComparison && selectedComparisonTimeRange?.start
+    metricsExplorer.showTimeComparison && selectedComparisonTimeRange?.start
   );
   let comparisonAdjustedStart: string;
   let comparisonAdjustedEnd: string;
@@ -335,7 +335,7 @@ function getComparisonTimeRange(
     }
   } else if (comparisonTimeRange.name === TimeComparisonOption.CUSTOM) {
     selectedComparisonTimeRange = comparisonTimeRange;
-  } else if (!metricsExplorer.showComparison) {
+  } else if (!metricsExplorer.showTimeComparison) {
     return undefined;
   } else {
     // variable time range of some kind.

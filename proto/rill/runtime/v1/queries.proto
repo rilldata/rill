@@ -27,6 +27,14 @@ service QueryService {
 
   // Explore APIs
 
+  // MetricsViewAggregation is a generic API for running group-by queries against a metrics view.
+  rpc MetricsViewAggregation(MetricsViewAggregationRequest) returns (MetricsViewAggregationResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view}/aggregation",
+      body: "*"
+    };
+  }
+
   // MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
   // It's a convenience API for querying a metrics view.
   rpc MetricsViewToplist(MetricsViewToplistRequest) returns (MetricsViewToplistResponse) {
@@ -197,6 +205,7 @@ message ExportRequest {
   optional int64 limit = 2;
   ExportFormat format = 3;
   oneof request {
+    MetricsViewAggregationRequest metrics_view_aggregation_request = 7;
     MetricsViewToplistRequest metrics_view_toplist_request = 4;
     MetricsViewRowsRequest metrics_view_rows_request = 5;
     MetricsViewTimeSeriesRequest metrics_view_time_series_request = 6;
@@ -219,6 +228,48 @@ enum ExportFormat {
 // **********
 // Explore APIs
 // **********
+
+message MetricsViewAggregationRequest {
+  string instance_id = 1;
+  string metrics_view = 2 [(validate.rules).string.min_len = 1];
+  repeated MetricsViewAggregationDimension dimensions = 3;
+  repeated MetricsViewAggregationMeasure measures = 4;
+  repeated MetricsViewAggregationSort sort = 5;
+  google.protobuf.Timestamp time_start = 6;
+  google.protobuf.Timestamp time_end = 7;
+  MetricsViewFilter filter = 8;
+  int64 limit = 9 [(validate.rules).int64.gte = 0];
+  int64 offset = 10 [(validate.rules).int64.gte = 0];
+  int32 priority = 11;
+}
+
+message MetricsViewAggregationResponse {
+  StructType schema = 1;
+  repeated google.protobuf.Struct data = 2;
+}
+
+message MetricsViewAggregationDimension {
+  string name = 1;
+  TimeGrain time_grain = 2;
+  string time_zone = 3;
+}
+
+message MetricsViewAggregationMeasure {
+  string name = 1;
+  BuiltinMeasure builtin_measure = 2;
+  repeated google.protobuf.Value builtin_measure_args = 3;
+}
+
+enum BuiltinMeasure {
+  BUILTIN_MEASURE_UNSPECIFIED = 0;
+  BUILTIN_MEASURE_COUNT = 1;
+  BUILTIN_MEASURE_COUNT_DISTINCT = 2;
+}
+
+message MetricsViewAggregationSort {
+  string name = 1;
+  bool desc = 2;
+}
 
 // Request message for QueryService.MetricsViewToplist
 message MetricsViewToplistRequest {
@@ -675,6 +726,7 @@ message QueryBatchEntry {
   // Since response could out of order `key` is used to co-relate a specific response to request.
   int32 key = 1;
   oneof query {
+    MetricsViewAggregationRequest metrics_view_aggregation_request = 20;
     MetricsViewToplistRequest metrics_view_toplist_request = 2;
     MetricsViewComparisonToplistRequest metrics_view_comparison_toplist_request = 3;
     MetricsViewTimeSeriesRequest metrics_view_time_series_request = 4;
@@ -705,6 +757,7 @@ message QueryBatchResponse {
   int32 key = 1;
   string error = 2;
   oneof result {
+    MetricsViewAggregationResponse metrics_view_aggregation_response = 21;
     MetricsViewToplistResponse metrics_view_toplist_response = 3;
     MetricsViewComparisonToplistResponse metrics_view_comparison_toplist_response = 4;
     MetricsViewTimeSeriesResponse metrics_view_time_series_response = 5;

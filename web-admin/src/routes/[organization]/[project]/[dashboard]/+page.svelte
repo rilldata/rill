@@ -4,10 +4,7 @@
     createAdminServiceGetProject,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
-  import {
-    getDashboardsForProject,
-    useDashboardListItems,
-  } from "@rilldata/web-admin/components/projects/dashboards";
+  import { getDashboardsForProject } from "@rilldata/web-admin/components/projects/dashboards";
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/components/projects/invalidations";
   import { useProjectDeploymentStatus } from "@rilldata/web-admin/components/projects/selectors";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
@@ -15,14 +12,14 @@
   import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import {
-    getRuntimeServiceListCatalogEntriesQueryKey,
-    getRuntimeServiceListFilesQueryKey,
+    createRuntimeServiceGetCatalogEntry,
+    getRuntimeServiceGetCatalogEntryQueryKey,
   } from "@rilldata/web-common/runtime-client";
+  import type { QueryError } from "@rilldata/web-common/runtime-client/error";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { errorStore } from "../../../../components/errors/error-store";
   import ProjectBuilding from "../../../../components/projects/ProjectBuilding.svelte";
-  import ProjectErrored from "../../../../components/projects/ProjectErrored.svelte";
 
   const queryClient = useQueryClient();
 
@@ -44,6 +41,8 @@
   $: isProjectErrored =
     $projectDeploymentStatus.data ===
     V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR;
+  $: isProjectBuilding = isProjectPending || isProjectReconciling;
+  $: isProjectBuilt = isProjectOK || isProjectErrored;
 
   let isProjectOK: boolean;
 
@@ -56,16 +55,9 @@
     if (projectWasNotOk && isProjectOK) {
       getDashboardsAndInvalidate();
 
-      // Invalidate the queries used to assess dashboard validity
+      // Invalidate the query used to assess dashboard validity
       queryClient.invalidateQueries(
-        getRuntimeServiceListFilesQueryKey(instanceId, {
-          glob: "dashboards/*.yaml",
-        })
-      );
-      queryClient.invalidateQueries(
-        getRuntimeServiceListCatalogEntriesQueryKey(instanceId, {
-          type: "OBJECT_TYPE_METRICS_VIEW",
-        })
+        getRuntimeServiceGetCatalogEntryQueryKey(instanceId, dashboardName)
       );
     }
   }
@@ -76,21 +68,19 @@
     return invalidateDashboardsQueries(queryClient, dashboardNames);
   }
 
-  // We avoid calling `GetCatalogEntry` to check for dashboard validity because that would trigger a 404 page.
-  $: dashboardListItems = useDashboardListItems(instanceId);
-  $: currentDashboard = $dashboardListItems?.items?.find(
-    (listing) => listing.name === $page.params.dashboard
-  );
-  $: isDashboardOK = currentDashboard?.isValid;
-  $: isDashboardErrored = !!currentDashboard && !currentDashboard.isValid;
-  $: isDashboardNotFound = $dashboardListItems?.isSuccess && !currentDashboard;
+  $: dashboard = createRuntimeServiceGetCatalogEntry(instanceId, dashboardName);
+  $: isDashboardOK = $dashboard.isSuccess;
+  $: isDashboardNotFound =
+    $dashboard.isError &&
+    ($dashboard.error as QueryError)?.response?.status === 404;
+  // isDashboardErrored // We'll reinstate this case once we integrate the new Reconcile
 
   // If no dashboard is found, show a 404 page
-  if ((isProjectOK || isProjectErrored) && isDashboardNotFound) {
+  $: if (isProjectBuilt && isDashboardNotFound) {
     errorStore.set({
       statusCode: 404,
       header: "Dashboard not found",
-      body: `The dashboard you requested could not be found. Please check that you have provided a valid dashboard name.`,
+      body: `The dashboard you requested could not be found. Please check that you provided the name of a working dashboard.`,
     });
   }
 </script>
@@ -102,7 +92,7 @@
 <!-- Note: Project and dashboard states might appear to diverge. A project could be errored 
   because dashboard #1 is errored, but dashboard #2 could be OK.  -->
 
-{#if isProjectPending || (isProjectReconciling && isDashboardNotFound)}
+{#if isProjectBuilding && isDashboardNotFound}
   <ProjectBuilding organization={orgName} project={projectName} />
 {:else if isDashboardOK}
   <StateManagersProvider metricsViewName={dashboardName}>
@@ -114,6 +104,8 @@
       </DashboardStateProvider>
     {/key}
   </StateManagersProvider>
-{:else if isDashboardErrored}
-  <ProjectErrored organization={orgName} project={projectName} />
 {/if}
+<!-- We'll reinstate this case once we integrate the new Reconcile -->
+<!-- {:else if isDashboardErrored}
+  <ProjectErrored organization={orgName} project={projectName} />
+{/if} -->

@@ -23,6 +23,8 @@ import type {
   QueryServiceColumnDescriptiveStatisticsParams,
   V1ExportResponse,
   QueryServiceExportBody,
+  V1MetricsViewAggregationResponse,
+  QueryServiceMetricsViewAggregationBody,
   V1MetricsViewComparisonToplistResponse,
   QueryServiceMetricsViewComparisonToplistBody,
   V1MetricsViewRowsResponse,
@@ -452,6 +454,118 @@ export const createQueryServiceExport = <
 
   return createMutation(mutationOptions);
 };
+/**
+ * @summary MetricsViewAggregation is a generic API for running group-by queries against a metrics view.
+ */
+export const queryServiceMetricsViewAggregation = (
+  instanceId: string,
+  metricsView: string,
+  queryServiceMetricsViewAggregationBody: QueryServiceMetricsViewAggregationBody
+) => {
+  return httpClient<V1MetricsViewAggregationResponse>({
+    url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsView}/aggregation`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceMetricsViewAggregationBody,
+  });
+};
+
+export const getQueryServiceMetricsViewAggregationQueryKey = (
+  instanceId: string,
+  metricsView: string,
+  queryServiceMetricsViewAggregationBody: QueryServiceMetricsViewAggregationBody
+) =>
+  [
+    `/v1/instances/${instanceId}/queries/metrics-views/${metricsView}/aggregation`,
+    queryServiceMetricsViewAggregationBody,
+  ] as const;
+
+export const getQueryServiceMetricsViewAggregationQueryOptions = <
+  TData = Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  metricsView: string,
+  queryServiceMetricsViewAggregationBody: QueryServiceMetricsViewAggregationBody,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryOptions<
+  Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>,
+  TError,
+  TData
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getQueryServiceMetricsViewAggregationQueryKey(
+      instanceId,
+      metricsView,
+      queryServiceMetricsViewAggregationBody
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>
+  > = () =>
+    queryServiceMetricsViewAggregation(
+      instanceId,
+      metricsView,
+      queryServiceMetricsViewAggregationBody
+    );
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(instanceId && metricsView),
+    ...queryOptions,
+  };
+};
+
+export type QueryServiceMetricsViewAggregationQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>
+>;
+export type QueryServiceMetricsViewAggregationQueryError = RpcStatus;
+
+/**
+ * @summary MetricsViewAggregation is a generic API for running group-by queries against a metrics view.
+ */
+export const createQueryServiceMetricsViewAggregation = <
+  TData = Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  metricsView: string,
+  queryServiceMetricsViewAggregationBody: QueryServiceMetricsViewAggregationBody,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const queryOptions = getQueryServiceMetricsViewAggregationQueryOptions(
+    instanceId,
+    metricsView,
+    queryServiceMetricsViewAggregationBody,
+    options
+  );
+
+  const query = createQuery(queryOptions) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+};
+
 export const queryServiceMetricsViewComparisonToplist = (
   instanceId: string,
   metricsViewName: string,
