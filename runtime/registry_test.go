@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
 )
 
 func TestRuntime_EditInstance(t *testing.T) {
@@ -20,16 +21,15 @@ func TestRuntime_EditInstance(t *testing.T) {
 	newRepodsn := t.TempDir()
 	rt := NewTestRunTime(t)
 	tests := []struct {
-		name       string
-		inst       *drivers.Instance
-		wantErr    bool
-		savedInst  *drivers.Instance
-		clearCache bool
+		name      string
+		inst      *drivers.Instance
+		wantErr   bool
+		savedInst *drivers.Instance
 	}{
 		{
 			name: "edit env",
 			inst: &drivers.Instance{
-				OLAPConnector: "olap",
+				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
 				EmbedCatalog:  true,
 				Variables:     map[string]string{"connectors.s3.region": "us-east-1"},
@@ -41,13 +41,13 @@ func TestRuntime_EditInstance(t *testing.T) {
 					},
 					{
 						Type:   "duckdb",
-						Name:   "olap",
+						Name:   "duckdb",
 						Config: map[string]string{"dsn": ""},
 					},
 				},
 			},
 			savedInst: &drivers.Instance{
-				OLAPConnector: "olap",
+				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
 				EmbedCatalog:  true,
 				Variables:     map[string]string{"connectors.s3.region": "us-east-1", "allow_host_access": "true"},
@@ -59,7 +59,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					},
 					{
 						Type:   "duckdb",
-						Name:   "olap",
+						Name:   "duckdb",
 						Config: map[string]string{"dsn": ""},
 					},
 				},
@@ -103,12 +103,11 @@ func TestRuntime_EditInstance(t *testing.T) {
 					},
 				},
 			},
-			clearCache: true,
 		},
 		{
 			name: "edit env and embed catalog",
 			inst: &drivers.Instance{
-				OLAPConnector: "olap",
+				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
 				EmbedCatalog:  false,
 				Variables:     map[string]string{"connectors.s3.region": "us-east-1"},
@@ -120,13 +119,13 @@ func TestRuntime_EditInstance(t *testing.T) {
 					},
 					{
 						Type:   "duckdb",
-						Name:   "olap",
+						Name:   "duckdb",
 						Config: map[string]string{"dsn": ""},
 					},
 				},
 			},
 			savedInst: &drivers.Instance{
-				OLAPConnector: "olap",
+				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
 				EmbedCatalog:  false,
 				Variables:     map[string]string{"connectors.s3.region": "us-east-1", "allow_host_access": "true"},
@@ -138,7 +137,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					},
 					{
 						Type:   "duckdb",
-						Name:   "olap",
+						Name:   "duckdb",
 						Config: map[string]string{"dsn": ""},
 					},
 				},
@@ -147,7 +146,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 		{
 			name: "edit olap dsn",
 			inst: &drivers.Instance{
-				OLAPConnector: "olap",
+				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
 				EmbedCatalog:  false,
 				Variables:     map[string]string{"host": "localhost"},
@@ -159,13 +158,13 @@ func TestRuntime_EditInstance(t *testing.T) {
 					},
 					{
 						Type:   "duckdb",
-						Name:   "olap",
+						Name:   "duckdb",
 						Config: map[string]string{"dsn": "?access_mode=read_write"},
 					},
 				},
 			},
 			savedInst: &drivers.Instance{
-				OLAPConnector: "olap",
+				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
 				EmbedCatalog:  false,
 				Variables:     map[string]string{"host": "localhost", "allow_host_access": "true"},
@@ -177,17 +176,16 @@ func TestRuntime_EditInstance(t *testing.T) {
 					},
 					{
 						Type:   "duckdb",
-						Name:   "olap",
+						Name:   "duckdb",
 						Config: map[string]string{"dsn": "?access_mode=read_write"},
 					},
 				},
 			},
-			clearCache: true,
 		},
 		{
 			name: "edit repo dsn",
 			inst: &drivers.Instance{
-				OLAPConnector: "olap",
+				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
 				EmbedCatalog:  false,
 				Variables:     map[string]string{"host": "localhost"},
@@ -199,13 +197,13 @@ func TestRuntime_EditInstance(t *testing.T) {
 					},
 					{
 						Type:   "duckdb",
-						Name:   "olap",
+						Name:   "duckdb",
 						Config: map[string]string{"dsn": ""},
 					},
 				},
 			},
 			savedInst: &drivers.Instance{
-				OLAPConnector: "olap",
+				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
 				EmbedCatalog:  false,
 				Variables:     map[string]string{"host": "localhost", "allow_host_access": "true"},
@@ -217,17 +215,16 @@ func TestRuntime_EditInstance(t *testing.T) {
 					},
 					{
 						Type:   "duckdb",
-						Name:   "olap",
+						Name:   "duckdb",
 						Config: map[string]string{"dsn": ""},
 					},
 				},
 			},
-			clearCache: true,
 		},
 		{
 			name: "edit annotations",
 			inst: &drivers.Instance{
-				OLAPConnector: "olap",
+				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
 				EmbedCatalog:  false,
 				Variables:     map[string]string{"host": "localhost"},
@@ -239,7 +236,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					},
 					{
 						Type:   "duckdb",
-						Name:   "olap",
+						Name:   "duckdb",
 						Config: map[string]string{"dsn": ""},
 					},
 				},
@@ -248,7 +245,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				},
 			},
 			savedInst: &drivers.Instance{
-				OLAPConnector: "olap",
+				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
 				EmbedCatalog:  false,
 				Variables:     map[string]string{"host": "localhost", "allow_host_access": "true"},
@@ -260,7 +257,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					},
 					{
 						Type:   "duckdb",
-						Name:   "olap",
+						Name:   "duckdb",
 						Config: map[string]string{"dsn": ""},
 					},
 				},
@@ -268,51 +265,6 @@ func TestRuntime_EditInstance(t *testing.T) {
 					"organization_name": "org_name",
 				},
 			},
-			clearCache: true,
-		},
-		{
-			name: "invalid olap driver",
-			inst: &drivers.Instance{
-				OLAPConnector: "olap1",
-				RepoConnector: "repo",
-				EmbedCatalog:  false,
-				Variables:     map[string]string{"host": "localhost"},
-				Connectors: []*runtimev1.Connector{
-					{
-						Type:   "file",
-						Name:   "repo",
-						Config: map[string]string{"dsn": repodsn},
-					},
-					{
-						Type:   "duckdb",
-						Name:   "olap",
-						Config: map[string]string{"dsn": ""},
-					},
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "invalid repo driver",
-			inst: &drivers.Instance{
-				OLAPConnector: "olap",
-				RepoConnector: "repo1",
-				EmbedCatalog:  false,
-				Variables:     map[string]string{"host": "localhost"},
-				Connectors: []*runtimev1.Connector{
-					{
-						Type:   "file",
-						Name:   "repo",
-						Config: map[string]string{"dsn": repodsn},
-					},
-					{
-						Type:   "duckdb",
-						Name:   "olap",
-						Config: map[string]string{"dsn": ""},
-					},
-				},
-			},
-			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -320,7 +272,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 			ctx := context.Background()
 			//create instance
 			inst := &drivers.Instance{
-				OLAPConnector: "olap",
+				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
 				EmbedCatalog:  true,
 				Connectors: []*runtimev1.Connector{
@@ -331,7 +283,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					},
 					{
 						Type:   "duckdb",
-						Name:   "olap",
+						Name:   "duckdb",
 						Config: map[string]string{"dsn": ""},
 					},
 				},
@@ -356,24 +308,24 @@ func TestRuntime_EditInstance(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, inst.ID, newInst.ID)
 			require.Equal(t, tt.savedInst.OLAPConnector, newInst.OLAPConnector)
-			require.True(t, equal(tt.savedInst.Connectors[0], newInst.Connectors[0]))
-			require.True(t, equal(tt.savedInst.Connectors[1], newInst.Connectors[1]))
+			require.True(t, connectorsEqual(tt.savedInst.Connectors[0], newInst.Connectors[0]))
+			require.True(t, connectorsEqual(tt.savedInst.Connectors[1], newInst.Connectors[1]))
 			require.Equal(t, tt.savedInst.RepoConnector, newInst.RepoConnector)
 			require.Equal(t, tt.savedInst.EmbedCatalog, newInst.EmbedCatalog)
 			require.Greater(t, time.Since(newInst.CreatedOn), time.Since(newInst.UpdatedOn))
 			require.Equal(t, tt.savedInst.Variables, newInst.Variables)
 
-			// verify older olap connection is closed and cache updated if olap changed
-			c, _ := rt.connectorDef(inst, inst.OLAPConnector)
-			_, ok := rt.connCache.acquired[inst.ID+c.Type+generateKey(rt.connectorConfig(inst.OLAPConnector, c.Config, inst.ResolveVariables()))]
-			require.Equal(t, !tt.clearCache, ok)
-			c, _ = rt.connectorDef(inst, inst.RepoConnector)
-			_, ok = rt.connCache.acquired[inst.ID+c.Type+generateKey(rt.connectorConfig(inst.RepoConnector, c.Config, inst.ResolveVariables()))]
-			require.Equal(t, !tt.clearCache, ok)
+			// verify older olap connection is closed
+			driver, cfg, err := rt.connectorConfig(ctx, inst.ID, inst.OLAPConnector)
+			_, ok := rt.connCache.acquired[inst.ID+driver+generateKey(cfg)]
+			require.Equal(t, false, ok)
+			driver, cfg, err = rt.connectorConfig(ctx, inst.ID, inst.RepoConnector)
+			_, ok = rt.connCache.acquired[inst.ID+driver+generateKey(cfg)]
+			require.Equal(t, false, ok)
 			_, ok = rt.migrationMetaCache.cache.Get(inst.ID)
-			require.Equal(t, !tt.clearCache, ok)
+			require.Equal(t, false, ok)
 			_, err = svc.Olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM rill.migration_version"})
-			require.Equal(t, tt.clearCache, err != nil)
+			require.Equal(t, true, err != nil)
 		})
 	}
 }
@@ -397,7 +349,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 			dbFile := filepath.Join(t.TempDir(), "test.db")
 			inst := &drivers.Instance{
 				ID:            "default",
-				OLAPConnector: "olap",
+				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
 				EmbedCatalog:  true,
 				Connectors: []*runtimev1.Connector{
@@ -408,7 +360,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 					},
 					{
 						Type:   "duckdb",
-						Name:   "olap",
+						Name:   "duckdb",
 						Config: map[string]string{"dsn": dbFile},
 					},
 				},
@@ -476,7 +428,7 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 	// Create instance
 	inst := &drivers.Instance{
 		ID:            "default",
-		OLAPConnector: "olap",
+		OLAPConnector: "duckdb",
 		RepoConnector: "repo",
 		EmbedCatalog:  true,
 		Connectors: []*runtimev1.Connector{
@@ -487,7 +439,7 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 			},
 			{
 				Type:   "duckdb",
-				Name:   "olap",
+				Name:   "duckdb",
 				Config: map[string]string{"dsn": dbpath},
 			},
 		},
@@ -503,8 +455,9 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 	require.NoError(t, err)
 
 	// Close OLAP connection
-	c, _ := rt.connectorDef(inst, inst.OLAPConnector)
-	evicted := rt.connCache.evict(ctx, inst.ID, c.Type, rt.connectorConfig("olap", c.Config, inst.ResolveVariables()))
+	driver, cfg, err := rt.connectorConfig(ctx, inst.ID, inst.OLAPConnector)
+	require.NoError(t, err)
+	evicted := rt.connCache.evict(ctx, inst.ID, driver, cfg)
 	require.True(t, evicted)
 
 	// Corrupt database file
@@ -549,4 +502,11 @@ func NewTestRunTime(t *testing.T) *Runtime {
 	require.NoError(t, err)
 
 	return rt
+}
+
+func connectorsEqual(a, b *runtimev1.Connector) bool {
+	if (a != nil) != (b != nil) {
+		return false
+	}
+	return a.Name == b.Name && a.Type == b.Type && maps.Equal(a.Config, b.Config)
 }

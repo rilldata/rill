@@ -1,11 +1,10 @@
 import type { V1GetProjectResponse } from "@rilldata/web-admin/client";
-import type { V1CatalogEntry } from "@rilldata/web-common/runtime-client";
-import {
-  createRuntimeServiceListCatalogEntries,
-  createRuntimeServiceListFiles,
+import type {
+  V1CatalogEntry,
+  V1MetricsView,
 } from "@rilldata/web-common/runtime-client";
+import { createRuntimeServiceListCatalogEntries } from "@rilldata/web-common/runtime-client";
 import Axios from "axios";
-import { Readable, derived } from "svelte/store";
 
 export interface DashboardListItem {
   name: string;
@@ -16,7 +15,7 @@ export interface DashboardListItem {
 
 export async function getDashboardsForProject(
   projectData: V1GetProjectResponse
-): Promise<DashboardListItem[]> {
+): Promise<V1MetricsView[]> {
   // There may not be a prodDeployment if the project was hibernated
   if (!projectData.prodDeployment) {
     return [];
@@ -35,84 +34,32 @@ export async function getDashboardsForProject(
     },
   });
 
-  // get all valid and invalid dashboards
-  const filesRequest = axios.get(
-    `/v1/instances/${projectData.prodDeployment.runtimeInstanceId}/files?glob=dashboards/*.yaml`
-  );
-
-  // get the valid dashboards
-  const catalogEntriesRequest = axios.get(
+  const catalogEntriesResponse = await axios.get(
     `/v1/instances/${projectData.prodDeployment.runtimeInstanceId}/catalog?type=OBJECT_TYPE_METRICS_VIEW`
   );
 
-  const [filesResponse, catalogEntriesResponse] = await Promise.all([
-    filesRequest,
-    catalogEntriesRequest,
-  ]);
+  const catalogEntries = catalogEntriesResponse.data
+    ?.entries as V1CatalogEntry[];
 
-  const filePaths = filesResponse.data?.paths;
-  const catalogEntries = catalogEntriesResponse.data?.entries;
-
-  // compose the dashboard list items
-  const dashboardListItems = getDashboardListItemsFromFilesAndCatalogEntries(
-    filePaths,
-    catalogEntries
+  const dashboards = catalogEntries?.map(
+    (entry: V1CatalogEntry) => entry.metricsView
   );
 
-  return dashboardListItems;
+  return dashboards;
 }
 
-export function getDashboardListItemsFromFilesAndCatalogEntries(
-  filePaths: string[],
-  catalogEntries: V1CatalogEntry[]
-): DashboardListItem[] {
-  const dashboardListings = filePaths?.map((path: string) => {
-    const name = path.replace("/dashboards/", "").replace(".yaml", "");
-    const catalogEntry = catalogEntries?.find(
-      (entry: V1CatalogEntry) => entry.path === path
-    );
-    const title = catalogEntry?.metricsView?.label;
-    const description = catalogEntry?.metricsView?.description;
-    // invalid dashboards are not in the catalog
-    const isValid = !!catalogEntry;
-    return {
-      name,
-      title,
-      description,
-      isValid,
-    };
-  });
-
-  return dashboardListings;
-}
-
-export function useDashboardListItems(instanceId: string): Readable<{
-  items: DashboardListItem[];
-  isSuccess: boolean;
-}> {
-  return derived(
-    [
-      createRuntimeServiceListFiles(instanceId, {
-        glob: "dashboards/*.yaml",
-      }),
-      createRuntimeServiceListCatalogEntries(instanceId, {
-        type: "OBJECT_TYPE_METRICS_VIEW",
-      }),
-    ],
-    ([dashboardFiles, dashboardCatalogEntries]) => {
-      if (!dashboardFiles.isSuccess || !dashboardCatalogEntries.isSuccess)
-        return {
-          isSuccess: false,
-          items: [],
-        };
-
-      return {
-        isSuccess: true,
-        items: getDashboardListItemsFromFilesAndCatalogEntries(
-          dashboardFiles?.data?.paths ?? [],
-          dashboardCatalogEntries?.data?.entries ?? []
-        ),
-      };
+export function useDashboards(instanceId: string) {
+  return createRuntimeServiceListCatalogEntries(
+    instanceId,
+    {
+      type: "OBJECT_TYPE_METRICS_VIEW",
+    },
+    {
+      query: {
+        select: (data) => {
+          return data.entries.map((entry) => entry.metricsView);
+        },
+      },
     }
   );
 }

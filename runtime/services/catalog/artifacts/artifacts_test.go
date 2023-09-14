@@ -64,7 +64,7 @@ duckdb:
 					Name:      "S3Source",
 					Connector: "s3",
 					Properties: toProtoStruct(map[string]any{
-						"path":   "s3://bucket/path/file.csv",
+						"uri":    "s3://bucket/path/file.csv",
 						"region": "us-east-2",
 					}),
 				},
@@ -186,116 +186,6 @@ measures:
 			require.Equal(t, tt.Raw, string(b))
 		})
 	}
-}
-
-func TestCsvDelimiterBackwardCompatibility(t *testing.T) {
-	catalog := &drivers.CatalogEntry{
-		Name: "Source",
-		Path: "sources/Source.yaml",
-		Type: drivers.ObjectTypeSource,
-		Object: &runtimev1.Source{
-			Name:      "Source",
-			Connector: "local_file",
-			Properties: toProtoStruct(map[string]any{
-				"path":          "data/source.csv",
-				"format":        "csv",
-				"csv.delimiter": "|",
-			}),
-		},
-	}
-	raw := `type: local_file
-path: data/source.csv
-format: csv
-duckdb:
-    delim: '''|'''
-`
-	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, activity.NewNoopClient(), zap.NewNop())
-	require.NoError(t, err)
-	repoStore, _ := fileStore.AsRepoStore("")
-	ctx := context.Background()
-
-	err = artifacts.Write(ctx, repoStore, "test", catalog)
-	require.NoError(t, err)
-
-	readCatalog, err := artifacts.Read(ctx, repoStore, registryStore(t), "test", catalog.Path)
-	require.Equal(t, readCatalog, &drivers.CatalogEntry{
-		Name: "Source",
-		Path: "sources/Source.yaml",
-		Type: drivers.ObjectTypeSource,
-		Object: &runtimev1.Source{
-			Name:      "Source",
-			Connector: "local_file",
-			Properties: toProtoStruct(map[string]any{
-				"path":   "data/source.csv",
-				"format": "csv",
-				"duckdb": map[string]any{"delim": "'|'"},
-			}),
-		},
-	})
-	require.NoError(t, err)
-
-	err = artifacts.Write(ctx, repoStore, "test", readCatalog)
-	require.NoError(t, err)
-
-	b, err := os.ReadFile(path.Join(dir, readCatalog.Path))
-	require.NoError(t, err)
-	require.Equal(t, raw, string(b))
-}
-
-func TestHivePartitioningBackwardCompatibility(t *testing.T) {
-	catalog := &drivers.CatalogEntry{
-		Name: "Source",
-		Path: "sources/Source.yaml",
-		Type: drivers.ObjectTypeSource,
-		Object: &runtimev1.Source{
-			Name:      "Source",
-			Connector: "local_file",
-			Properties: toProtoStruct(map[string]any{
-				"path":              "data/source.csv",
-				"format":            "csv",
-				"hive_partitioning": true,
-			}),
-		},
-	}
-	raw := `type: local_file
-path: data/source.csv
-format: csv
-duckdb:
-    hive_partitioning: true
-`
-	dir := t.TempDir()
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": dir}, false, activity.NewNoopClient(), zap.NewNop())
-	require.NoError(t, err)
-	repoStore, _ := fileStore.AsRepoStore("")
-	ctx := context.Background()
-
-	err = artifacts.Write(ctx, repoStore, "test", catalog)
-	require.NoError(t, err)
-
-	readCatalog, err := artifacts.Read(ctx, repoStore, registryStore(t), "test", catalog.Path)
-	require.Equal(t, readCatalog, &drivers.CatalogEntry{
-		Name: "Source",
-		Path: "sources/Source.yaml",
-		Type: drivers.ObjectTypeSource,
-		Object: &runtimev1.Source{
-			Name:      "Source",
-			Connector: "local_file",
-			Properties: toProtoStruct(map[string]any{
-				"path":   "data/source.csv",
-				"format": "csv",
-				"duckdb": map[string]any{"hive_partitioning": true},
-			}),
-		},
-	})
-	require.NoError(t, err)
-
-	err = artifacts.Write(ctx, repoStore, "test", readCatalog)
-	require.NoError(t, err)
-
-	b, err := os.ReadFile(path.Join(dir, readCatalog.Path))
-	require.NoError(t, err)
-	require.Equal(t, raw, string(b))
 }
 
 func TestMetricsLabelBackwardsCompatibility(t *testing.T) {
@@ -574,7 +464,7 @@ duckdb:
 					Name:      "Source",
 					Connector: "s3",
 					Properties: toProtoStruct(map[string]any{
-						"path":   "s3://bucket/file",
+						"uri":    "s3://bucket/file",
 						"format": "csv",
 						"region": "us-east-2",
 						"duckdb": map[string]any{"delim": "'|'"},

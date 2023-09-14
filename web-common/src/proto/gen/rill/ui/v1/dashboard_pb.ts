@@ -55,9 +55,9 @@ export class DashboardState extends Message<DashboardState> {
   selectedDimension?: string;
 
   /**
-   * @generated from field: optional bool show_comparison = 7;
+   * @generated from field: optional bool show_time_comparison = 7;
    */
-  showComparison?: boolean;
+  showTimeComparison?: boolean;
 
   /**
    * Selected measures and dimensions to be shown
@@ -110,6 +110,11 @@ export class DashboardState extends Message<DashboardState> {
    */
   leaderboardSortType?: DashboardState_LeaderboardSortType;
 
+  /**
+   * @generated from field: optional string comparison_dimension = 17;
+   */
+  comparisonDimension?: string;
+
   constructor(data?: PartialMessage<DashboardState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -124,7 +129,7 @@ export class DashboardState extends Message<DashboardState> {
     { no: 4, name: "compare_time_range", kind: "message", T: DashboardTimeRange },
     { no: 5, name: "leaderboard_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 6, name: "selected_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 7, name: "show_comparison", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 7, name: "show_time_comparison", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 8, name: "visible_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 9, name: "all_measures_visible", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 10, name: "visible_dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
@@ -134,6 +139,7 @@ export class DashboardState extends Message<DashboardState> {
     { no: 14, name: "scrub_range", kind: "message", T: DashboardTimeRange, opt: true },
     { no: 15, name: "leaderboard_sort_direction", kind: "enum", T: proto3.getEnumType(DashboardState_LeaderboardSortDirection), opt: true },
     { no: 16, name: "leaderboard_sort_type", kind: "enum", T: proto3.getEnumType(DashboardState_LeaderboardSortType), opt: true },
+    { no: 17, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardState {

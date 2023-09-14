@@ -29,13 +29,13 @@
   export let itemData: LeaderboardItemData;
   $: label = itemData.label;
   $: measureValue = itemData.value;
-  $: selected = itemData.selected;
+  $: selected = itemData.selectedIndex >= 0;
   $: comparisonValue = itemData.comparisonValue;
 
   export let showContext: LeaderboardContextColumn;
 
   export let atLeastOneActive = false;
-
+  export let isBeingCompared = false;
   export let formattedValue: string;
   export let filterExcludeMode;
 
@@ -112,7 +112,7 @@
 
 <Tooltip location="right">
   <button
-    class="flex flex-row w-full text-left transition-color"
+    class="flex flex-row items-center w-full text-left transition-color"
     on:blur={onLeave}
     on:click={(e) => {
       if (e.shiftKey) return;
@@ -128,7 +128,12 @@
     transition:slide|local={{ duration: 200 }}
     use:shiftClickAction
   >
-    <LeaderboardItemFilterIcon {excluded} {selected} />
+    <LeaderboardItemFilterIcon
+      {isBeingCompared}
+      {excluded}
+      selectionIndex={itemData?.selectedIndex}
+      defaultComparedIndex={itemData?.defaultComparedIndex}
+    />
     <BarAndLabel
       {color}
       justify={false}

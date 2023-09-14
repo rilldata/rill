@@ -8,6 +8,7 @@ import (
 
 	"github.com/dgraph-io/ristretto"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/singleflight"
 	"go.opentelemetry.io/otel"
@@ -61,14 +62,15 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 
 	// Skip caching for specific named drivers.
 	// TODO: Make this configurable with a default provided by the driver.
-	inst, err := r.FindInstance(ctx, instanceID)
+	olap, release, err := r.OLAP(ctx, instanceID)
 	if err != nil {
 		return err
 	}
-	c, _ := r.connectorDef(inst, inst.OLAPConnector)
-	if c.Type == "druid" {
+	if olap.Dialect() == drivers.DialectDruid {
+		release()
 		return query.Resolve(ctx, r, instanceID, priority)
 	}
+	release()
 
 	// Get dependency cache keys
 	deps := query.Deps()

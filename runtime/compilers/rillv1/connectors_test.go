@@ -31,7 +31,7 @@ uri: gs://path/to/bar
 `,
 	})
 
-	p, err := Parse(ctx, repo, "", nil)
+	p, err := Parse(ctx, repo, "", "default", nil)
 	require.NoError(t, err)
 
 	cs, err := p.AnalyzeConnectors(ctx)

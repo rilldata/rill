@@ -64,7 +64,6 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	// (If templating was used, we skip DuckDB inference because the DuckDB parser may not be able to parse the templated code.)
 	isDuckDB := false
 	for _, c := range p.DuckDBConnectors {
-		// Note: If the unspecified/default connector is DuckDB, duckDBConnectors will contain the empty string (see Parse).
 		if c == node.Connector {
 			isDuckDB = true
 			break
