@@ -227,7 +227,7 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 		AcquireConnector: func(name string) (drivers.Handle, func(), error) {
 			return nil, nil, fmt.Errorf("this reconciler can't resolve connectors")
 		},
-		Progress:        drivers.NoOpProgress{},
+		Progress:        &progress{},
 		LimitInBytes:    ingestionLimit,
 		RepoRoot:        repo.Root(),
 		AllowHostAccess: allowHostAccess,
