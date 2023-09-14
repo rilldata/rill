@@ -12,9 +12,11 @@ type Transporter interface {
 
 // TransferOptions provide execution context for Transporter.Transfer
 type TransferOptions struct {
-	AcquireConnector func(string) (Handle, func(), error)
-	Progress         Progress
+	AllowHostAccess  bool
+	RepoRoot         string
 	LimitInBytes     int64
+	Progress         Progress
+	AcquireConnector func(string) (Handle, func(), error)
 }
 
 // Progress is an interface for communicating progress info

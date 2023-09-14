@@ -220,12 +220,17 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 		}
 	}()
 
+	env := convertLower(opts.InstanceEnv)
+	allowHostAccess := strings.EqualFold(env["allow_host_access"], "true")
+
 	transferOpts := &drivers.TransferOptions{
 		AcquireConnector: func(name string) (drivers.Handle, func(), error) {
 			return nil, nil, fmt.Errorf("this reconciler can't resolve connectors")
 		},
-		Progress:     drivers.NoOpProgress{},
-		LimitInBytes: ingestionLimit,
+		Progress:        drivers.NoOpProgress{},
+		LimitInBytes:    ingestionLimit,
+		RepoRoot:        repo.Root(),
+		AllowHostAccess: allowHostAccess,
 	}
 
 	err = t.Transfer(ctxWithTimeout, src, sink, transferOpts)
