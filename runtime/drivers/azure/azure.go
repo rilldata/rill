@@ -268,40 +268,20 @@ func (c *Connection) getClient(ctx context.Context, conf *sourceProperties) (*co
 
 	// if c.config.AllowHostAccess {
 	// 	name = os.Getenv("AZURE_STORAGE_ACCOUNT")
-	// 	key = os.Getenv("AZURE_STORAGE_KEY")
-	// }
-
-	// credential, err := azblob.NewSharedKeyCredential(name, key)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// containerURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s", name, conf.url.Host)
-	// var client *container.Client
-	// if key == "" {
-	// 	client, err = container.NewClientWithNoCredential(containerURL, nil)
-	// } else {
-	// 	client, err = container.NewClientWithSharedKeyCredential(containerURL, credential, nil)
-	// }
-	// if err != nil {
-	// 	return nil, err
+	// 	key = os.Getenv("AZURE_STORAGE_SAS_TOKEN")
 	// }
 
 	opts := azureblob.NewDefaultServiceURLOptions()
 	serviceURL, err := azureblob.NewServiceURL(opts)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-
-	c.logger.Named("Console").Info("url is", zap.String("url hai", fmt.Sprintf("serviceURL: %v\n", serviceURL)))
 
 	client, err := azureblob.NewDefaultClient(serviceURL, azureblob.ContainerName(conf.url.Host))
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	c.logger.Named("Console").Info("url is", zap.String("url hai dusra ", fmt.Sprintf("serviceURL: %v\n", client.URL())))
-
+	
 	return client, nil
 }
 
