@@ -142,6 +142,7 @@
         gap-x-3
         justify-items-stretch
         ui-copy
+        w-full
         {textColor}
     "
   style:grid-template-columns="{icon ? "max-content" : ""} auto {$$slots[

@@ -66,7 +66,7 @@ message DashboardState {
   // Focused dimension
   optional string selected_dimension = 6;
 
-  optional bool show_comparison = 7;
+  optional bool show_time_comparison = 7;
 
   // Selected measures and dimensions to be shown
   repeated string visible_measures = 8;
@@ -84,6 +84,8 @@ message DashboardState {
 
   optional LeaderboardSortDirection leaderboard_sort_direction = 15;
   optional LeaderboardSortType leaderboard_sort_type = 16;
+
+  optional string comparison_dimension = 17;
 }
 
 message DashboardTimeRange {

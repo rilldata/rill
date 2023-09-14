@@ -42,7 +42,11 @@
   $: measureIsPercentage = formatPresetEnum === FormatPreset.PERCENTAGE;
 </script>
 
-<div class="flex flex-col pl-1 {withTimeseries ? 'mt-2' : 'justify-between'}">
+<button
+  class="flex flex-col px-2 py-1 text-left {withTimeseries
+    ? 'my-2'
+    : 'justify-between'}"
+>
   <Tooltip distance={16} location="top" alignment="start">
     <h2
       class="break-words line-clamp-2"
@@ -169,4 +173,4 @@
       </div>
     </slot>
   </div>
-</div>
+</button>

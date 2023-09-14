@@ -27,23 +27,42 @@ export type LeaderboardItemData = {
   // selection is not enough to determine if the item is included
   // or excluded; for that we need to know the leaderboard's
   // include/exclude state
-  selected: boolean;
+  selectedIndex: number;
+  defaultComparedIndex: number;
 };
 
 export function prepareLeaderboardItemData(
   values: { value: number; label: string | number }[],
   selectedValues: (string | number)[],
-  comparisonMap: Map<string | number, number>
+  comparisonMap: Map<string | number, number>,
+  excludeMode: boolean,
+  initalCount = 0
 ): LeaderboardItemData[] {
+  let count = initalCount;
+
   return values.map((v) => {
-    const selected =
-      selectedValues.findIndex((value) => value === v.label) >= 0;
+    const selectedIndex = selectedValues.findIndex(
+      (value) => value === v.label
+    );
     const comparisonValue = comparisonMap.get(v.label);
 
+    // Tag values which will be compared by default
+    let defaultComparedIndex = -1;
+
+    if (!excludeMode && count < 3 && !selectedValues.length) {
+      defaultComparedIndex = count;
+      count = count + 1;
+    } else if (excludeMode && count < 3) {
+      if (selectedIndex === -1) {
+        defaultComparedIndex = count;
+        count += 1;
+      }
+    }
     return {
       ...v,
-      selected,
+      selectedIndex,
       comparisonValue,
+      defaultComparedIndex,
     };
   });
 }
