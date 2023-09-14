@@ -61,6 +61,7 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any
 
 type sourceProperties struct {
 	Path    string            `mapstructure:"path"`
+	URI     string            `mapstructure:"uri"`
 	Headers map[string]string `mapstructure:"headers"`
 }
 
@@ -70,6 +71,12 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Backwards compatibility for "uri" renamed to "path"
+	if conf.URI != "" {
+		conf.Path = conf.URI
+	}
+
 	return conf, nil
 }
 
