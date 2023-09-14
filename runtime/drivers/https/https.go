@@ -61,7 +61,7 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any
 
 type sourceProperties struct {
 	Path    string            `mapstructure:"path"`
-	URI     string            `key:"uri"`
+	URI     string            `mapstructure:"uri"`
 	Headers map[string]string `mapstructure:"headers"`
 }
 
