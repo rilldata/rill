@@ -7,7 +7,7 @@
    */
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+  // import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import {
     getFilterForDimension,
     useMetaDimension,
@@ -84,6 +84,8 @@
       ?.in ?? [];
   $: atLeastOneActive = !!activeValues?.length;
 
+  $: console.log("activeValues", activeValues);
+
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
   function selectDimension(dimensionName) {
@@ -110,51 +112,6 @@
   $: contextColumn = $dashboardStore?.leaderboardContextColumn;
 
   $: querySortType = getQuerySortType(sortType);
-
-  //
-  //
-  // ======= dhiraj section
-  let valuesComparedInExcludeMode = [];
-  $: if (isBeingCompared && filterExcludeMode) {
-    let count = 0;
-    valuesComparedInExcludeMode = values
-      .filter((value) => {
-        if (!activeValues.includes(value.label) && count < 3) {
-          count++;
-          return true;
-        }
-        return false;
-      })
-      .map((value) => value.label);
-  } else {
-    valuesComparedInExcludeMode = [];
-  }
-
-  // get all values that are selected but not visible.
-  // we'll put these at the bottom w/ a divider.
-  $: selectedValuesThatAreBelowTheFold = activeValues
-    ?.concat(valuesComparedInExcludeMode)
-    ?.filter((label) => {
-      return (
-        // the value is visible within the fold.
-        !values.slice(0, slice).some((value) => {
-          return value.label === label;
-        })
-      );
-    })
-    .map((label) => {
-      const existingValue = values.find((value) => value.label === label);
-      // return the existing value, or if it does not exist, just return the label.
-      // FIX ME return values for label which are not in the query
-      return existingValue ? { ...existingValue } : { label };
-    })
-    .sort((a, b) => {
-      return b.value - a.value;
-    });
-  //
-  // >>>>>>> main --- dhiraj section END
-  //
-  //
 
   $: sortedQueryBody = {
     dimensionName: dimensionName,
@@ -205,7 +162,8 @@
       ) ?? [],
       slice,
       activeValues,
-      unfilteredTotal
+      unfilteredTotal,
+      filterExcludeMode
     );
 
     aboveTheFold = leaderboardData.aboveTheFold;
@@ -215,31 +173,6 @@
   }
 
   let hovered: boolean;
-  // <<<<<<< HEAD
-  // =======
-  // from dhirajs branch
-
-  $: comparisonMap = new Map(comparisonValues?.map((v) => [v.label, v.value]));
-
-  $: aboveTheFoldItems = prepareLeaderboardItemData_dhiraj(
-    values.slice(0, slice),
-    activeValues,
-    comparisonMap,
-    filterExcludeMode
-  );
-
-  $: defaultComparisonsPresentInAboveFold =
-    aboveTheFoldItems?.filter((item) => item.defaultComparedIndex >= 0)
-      ?.length || 0;
-
-  $: belowTheFoldItems = prepareLeaderboardItemData_dhiraj(
-    selectedValuesThatAreBelowTheFold,
-    activeValues,
-    comparisonMap,
-    filterExcludeMode,
-    defaultComparisonsPresentInAboveFold
-  );
-  // >>>>>>> main
 </script>
 
 {#if sortedQuery}

@@ -62,17 +62,23 @@ export type LeaderboardItemData = {
   // the absolute change from the previous value
   deltaAbs: number | null;
 
-  // selection is not enough to determine if the item is included
-  // or excluded; for that we need to know the leaderboard's
-  // include/exclude state
+  // This is the index of the item from within the list
+  // selected filters in the dashboard store.
+  // This index is retained to keep track of selection color?
+  // Will be -1 if the item is not selected.
+  // IMPORTANT: either this or defaultComparedIndex must be -1 !!!
   selectedIndex: number;
+
+  // This is the list index of a default comparison item.
+  // IMPORTANT: either this or selectedIndex must be -1 !!!
   defaultComparedIndex: number;
 };
 
 function cleanUpComparisonValue(
   v: ComparisonValueWithLabel,
   total: number | null,
-  selected: boolean
+  selectedIndex: number,
+  defaultComparedIndex: number
 ): LeaderboardItemData {
   if (!(Number.isFinite(v.baseValue) || v.baseValue === null)) {
     throw new Error(
@@ -92,8 +98,8 @@ function cleanUpComparisonValue(
       : null,
     deltaRel: Number.isFinite(v.deltaRel) ? (v.deltaRel as number) : null,
     deltaAbs: Number.isFinite(v.deltaAbs) ? (v.deltaAbs as number) : null,
-
-    selected,
+    selectedIndex,
+    defaultComparedIndex,
   };
 }
 
@@ -117,7 +123,8 @@ export function prepareLeaderboardItemData(
   values: ComparisonValueWithLabel[],
   numberAboveTheFold: number,
   selectedValues: (string | number)[],
-  total: number | null
+  total: number | null,
+  excludeMode: boolean
 ): {
   aboveTheFold: LeaderboardItemData[];
   selectedBelowTheFold: LeaderboardItemData[];
@@ -126,32 +133,57 @@ export function prepareLeaderboardItemData(
 } {
   const aboveTheFold: LeaderboardItemData[] = [];
   const selectedBelowTheFold: LeaderboardItemData[] = [];
-  let selectedValuesCopy = [...selectedValues];
+  const comparisonDefaultSelection = getComparisonDefaultSelection(
+    values,
+    selectedValues,
+    excludeMode
+  );
+
+  console.log("excludeMode", excludeMode);
+  console.log("comparisonDefaultSelection", comparisonDefaultSelection);
+
+  // we keep a copy of the selected values array to keep
+  // track of values that the user has selected but that
+  // are not included in the latest filtered results returned
+  // by the API. We'll filter this list as we encounter
+  // selected values that _are_ in the API results.
+  //
+  // We also need to retain the original selection indices
+  let selectedButNotInAPIResults: [string | number, number][] =
+    selectedValues.map((v, i) => [v, i]);
+
   values.forEach((v, i) => {
-    const selected =
-      selectedValuesCopy.findIndex((value) => value === v.dimensionValue) >= 0;
-    // drop the value from the selectedValues array so that we'll
-    // have any left over values that were selected but not included
-    // in the results returned by the API
-    if (selected)
-      selectedValuesCopy = selectedValuesCopy.filter(
-        (value) => value !== v.dimensionValue
+    const selectedIndex = selectedValues.findIndex(
+      (value) => value === v.dimensionValue
+    );
+    // if we have found this selected value in the API results,
+    // remove it from the selectedButNotInAPIResults array
+    if (selectedIndex > -1)
+      selectedButNotInAPIResults = selectedButNotInAPIResults.filter(
+        (value) => value[0] !== v.dimensionValue
       );
 
-    if (!excludeMode && count < 3 && !selectedValues.length) {
-      defaultComparedIndex = count;
-      count = count + 1;
-    } else if (excludeMode && count < 3) {
-      if (selectedIndex === -1) {
-        defaultComparedIndex = count;
-        count += 1;
-      }
-    }
+    const defaultComparedIndex = comparisonDefaultSelection.findIndex(
+      (value) => value === v.dimensionValue
+    );
+    // if we have found this selected value in the API results,
+    // remove it from the selectedButNotInAPIResults array
+
+    const cleanValue = cleanUpComparisonValue(
+      v,
+      total,
+      selectedIndex,
+      defaultComparedIndex
+    );
 
     if (i < numberAboveTheFold) {
-      aboveTheFold.push(cleanUpComparisonValue(v, total, selected));
-    } else if (selected) {
-      selectedBelowTheFold.push(cleanUpComparisonValue(v, total, selected));
+      aboveTheFold.push(cleanValue);
+    } else if (selectedIndex > -1 || defaultComparedIndex > -1) {
+      // Note: only one of selectedIndex or defaultComparedIndex
+      // can be > -1 at one time, so if one is > -1,
+      // it represents either a selected value or a default selection,
+      // and must be included in the below-the-fold list.
+      selectedBelowTheFold.push(cleanValue);
     }
   });
 
@@ -161,10 +193,15 @@ export function prepareLeaderboardItemData(
   // that pushes it out of the top N. In that case, we will follow
   // the previous strategy, and just push a dummy value with only
   // the dimension value and nulls for all measure values.
-  selectedValuesCopy.forEach((v) => {
+  selectedButNotInAPIResults.forEach(([dimensionValue, selectedIndex]) => {
+    const defaultComparedIndex = comparisonDefaultSelection.findIndex(
+      (value) => value === dimensionValue
+    );
+
     selectedBelowTheFold.push({
-      dimensionValue: v,
-      selected: true,
+      dimensionValue,
+      selectedIndex,
+      defaultComparedIndex,
       value: null,
       pctOfTotal: null,
       prevValue: null,
@@ -184,40 +221,39 @@ export function prepareLeaderboardItemData(
   };
 }
 
-export function prepareLeaderboardItemData_dhiraj(
-  values: { value: number; label: string | number }[],
+/**
+ * This returns the "default selection" item labels that
+ * will be used when a leaderboard has a comparison active
+ * but no items have been directly selected *and included*
+ * by the user.
+ *
+ * Thus, there are three cases:
+ * - the leaderboard is in include mode, and there is
+ * a selection, we DO NOT return a _default selection_,
+ * because the user has made an _explicit selection_.
+ *
+ * - the leaderboard is in include mode, and there is
+ * _no selection_, we return the first three items.
+ *
+ * - the leaderboard is in exclude mode, we return the
+ * first three items that are not selected.
+ */
+export function getComparisonDefaultSelection(
+  values: ComparisonValueWithLabel[],
   selectedValues: (string | number)[],
-  comparisonMap: Map<string | number, number>,
-  excludeMode: boolean,
-  initalCount = 0
-): LeaderboardItemData[] {
-  let count = initalCount;
-
-  return values.map((v) => {
-    const selectedIndex = selectedValues.findIndex(
-      (value) => value === v.label
-    );
-    const comparisonValue = comparisonMap.get(v.label);
-
-    // Tag values which will be compared by default
-    let defaultComparedIndex = -1;
-
-    if (!excludeMode && count < 3 && !selectedValues.length) {
-      defaultComparedIndex = count;
-      count = count + 1;
-    } else if (excludeMode && count < 3) {
-      if (selectedIndex === -1) {
-        defaultComparedIndex = count;
-        count += 1;
-      }
+  excludeMode: boolean
+): (string | number)[] {
+  if (!excludeMode) {
+    if (selectedValues.length > 0) {
+      return [];
     }
-    return {
-      ...v,
-      selectedIndex,
-      comparisonValue,
-      defaultComparedIndex,
-    };
-  });
+    return values.slice(0, 3).map((value) => value.dimensionValue);
+  }
+
+  return values
+    .filter((value) => !selectedValues.includes(value.dimensionValue))
+    .map((value) => value.dimensionValue)
+    .slice(0, 3);
 }
 
 /**
