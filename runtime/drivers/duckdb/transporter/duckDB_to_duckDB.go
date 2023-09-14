@@ -75,7 +75,7 @@ func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[s
 
 		conn, release, err := opts.AcquireConnector(uri.Scheme)
 		if err != nil {
-			return fmt.Errorf("sql references s3, but not able to acquire connector: %w", err)
+			return fmt.Errorf("sql references %q, but not able to acquire connector: %w", uri.Scheme, err)
 		}
 		defer release()
 
