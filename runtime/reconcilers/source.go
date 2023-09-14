@@ -393,12 +393,8 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 	if ingestionLimit != nil {
 		opts.LimitInBytes = *ingestionLimit
 	}
-	transferStart := time.Now()
-	err = t.Transfer(ctx, srcConfig, sinkConfig, opts, drivers.NoOpProgress{})
-	if limitExceeded {
-		return drivers.ErrIngestionLimitExceeded
-	}
 
+	transferStart := time.Now()
 	defer func() {
 		transferLatency := time.Since(transferStart).Milliseconds()
 		commonDims := []attribute.KeyValue{
@@ -414,6 +410,10 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 		// TODO: emit the number of bytes ingested (this might be extracted from a progress)
 	}()
 
+	err = t.Transfer(ctx, srcConfig, sinkConfig, opts, drivers.NoOpProgress{})
+	if limitExceeded {
+		return drivers.ErrIngestionLimitExceeded
+	}
 	return err
 }
 

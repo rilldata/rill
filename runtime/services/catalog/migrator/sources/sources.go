@@ -223,11 +223,8 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 			}
 		}
 	}()
+
 	transferStart := time.Now()
-	err = t.Transfer(ctxWithTimeout, src, sink, drivers.NewTransferOpts(drivers.WithLimitInBytes(ingestionLimit)), p)
-	if limitExceeded {
-		return drivers.ErrIngestionLimitExceeded
-	}
 	defer func() {
 		transferLatency := time.Since(transferStart).Milliseconds()
 		commonDims := []attribute.KeyValue{
@@ -243,6 +240,11 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 			ac.Emit(ctx, "ingestion_bytes", float64(p.catalogObj.BytesIngested), commonDims...)
 		}
 	}()
+
+	err = t.Transfer(ctxWithTimeout, src, sink, drivers.NewTransferOpts(drivers.WithLimitInBytes(ingestionLimit)), p)
+	if limitExceeded {
+		return drivers.ErrIngestionLimitExceeded
+	}
 	return err
 }
 
