@@ -52,7 +52,6 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 		return drivers.ErrIngestionLimitExceeded
 	}
 
-	sql, hasSQL := srcProps["sql"].(string)
 	// if sql is specified use ast rewrite to fill in the downloaded files
 	if srcCfg.SQL != "" {
 		return t.ingestDuckDBSQL(ctx, srcCfg.SQL, iterator, sinkCfg, opts, p)
