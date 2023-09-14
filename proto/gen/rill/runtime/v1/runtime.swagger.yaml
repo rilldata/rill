@@ -3998,11 +3998,6 @@ definitions:
         type: integer
         format: int64
         title: materialize_model_delay_seconds makes the project parser delay materialization of updated models
-      duckdbConnectors:
-        type: array
-        items:
-          type: string
-        title: duckdb_connectors is a list of connectors that use DuckDB
   v1ProjectParserState:
     type: object
     properties:
