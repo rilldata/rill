@@ -77,14 +77,8 @@ func forwardKafkaLogEventToLogger(logChan chan kafka.LogEvent, logger zap.Logger
 	}
 }
 
-//Level	Description
-//OFF	Turns off logging.
-//FATAL	Severe errors that cause premature termination.
-//ERROR	Other runtime errors or unexpected conditions.
-//WARN	Runtime situations that are undesirable or unexpected, but not necessarily wrong.
-//INFO	Runtime events of interest at startup and shutdown.
-//DEBUG	Detailed diagnostic information about events.
-//TRACE	Detailed diagnostic information about everything.
+// Log syslog level, lower is more critical
+// https://en.wikipedia.org/wiki/Syslog#Severity_level
 func kafkaLogLevelToZapLevel(level int) zapcore.Level {
 	switch level {
 	case 0, 1, 2:

@@ -126,7 +126,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			case "", "noop":
 				sink = activity.NewNoopSink()
 			case "kafka":
-				sink, err = activity.NewKafkaSink(conf.ActivitySinkKafkaBrokers, conf.ActivitySinkKafkaTopic)
+				sink, err = activity.NewKafkaSink(conf.ActivitySinkKafkaBrokers, conf.ActivitySinkKafkaTopic, *logger)
 				if err != nil {
 					logger.Fatal("failed to create a kafka sink", zap.Error(err))
 				}
