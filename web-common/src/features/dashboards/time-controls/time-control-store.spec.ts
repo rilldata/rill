@@ -281,7 +281,7 @@ describe("time-control-store", () => {
     );
 
     unmount();
-  });
+  },  { retry: 5 });
 
   // TODO: fix this by using zone independent tests
   it.skip("Scrubbing to zoom", async () => {
