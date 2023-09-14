@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/services/catalog"
 	"github.com/rilldata/rill/runtime/services/catalog/testutils"
 	"github.com/stretchr/testify/require"
@@ -377,7 +378,7 @@ func addEmbeddedNewModel(t *testing.T, s *catalog.Service) {
 }
 
 func copyService(t *testing.T, s *catalog.Service) (*catalog.Service, *catalog.ReconcileResult) {
-	sc := catalog.NewService(s.Catalog, s.Repo, s.Olap, s.RegistryStore, s.InstID, nil, catalog.NewMigrationMeta(), func() {})
+	sc := catalog.NewService(s.Catalog, s.Repo, s.Olap, s.RegistryStore, s.InstID, nil, catalog.NewMigrationMeta(), func() {}, activity.NewNoopClient())
 	result, err := sc.Reconcile(context.Background(), catalog.ReconcileConfig{})
 	require.NoError(t, err)
 	return sc, result
