@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
+	"golang.org/x/exp/slog"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -34,12 +36,40 @@ func (r *SourceReconciler) Close(ctx context.Context) error {
 	return nil
 }
 
+func (r *SourceReconciler) AssignSpec(from, to *runtimev1.Resource) error {
+	a := from.GetSource()
+	b := to.GetSource()
+	if a == nil || b == nil {
+		return fmt.Errorf("cannot assign spec from %T to %T", from.Resource, to.Resource)
+	}
+	b.Spec = a.Spec
+	return nil
+}
+
+func (r *SourceReconciler) AssignState(from, to *runtimev1.Resource) error {
+	a := from.GetSource()
+	b := to.GetSource()
+	if a == nil || b == nil {
+		return fmt.Errorf("cannot assign state from %T to %T", from.Resource, to.Resource)
+	}
+	b.Spec = a.Spec
+	return nil
+}
+
+func (r *SourceReconciler) ResetState(res *runtimev1.Resource) error {
+	res.GetSource().State = &runtimev1.SourceState{}
+	return nil
+}
+
 func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName) runtime.ReconcileResult {
-	self, err := r.C.Get(ctx, n)
+	self, err := r.C.Get(ctx, n, true)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
 	src := self.GetSource()
+	if src == nil {
+		return runtime.ReconcileResult{Err: errors.New("not a source")}
+	}
 
 	// The table name to ingest into is derived from the resource name.
 	// We only set src.State.Table after ingestion is complete.
@@ -47,7 +77,7 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	tableName := self.Meta.Name.Name
 
 	// Handle deletion
-	if self.Meta.Deleted {
+	if self.Meta.DeletedOn != nil {
 		olapDropTableIfExists(ctx, r.C, src.State.Connector, src.State.Table, false)
 		olapDropTableIfExists(ctx, r.C, src.State.Connector, r.stagingTableName(tableName), false)
 		return runtime.ReconcileResult{}
@@ -58,13 +88,8 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		// Check if the table exists (it should, but might somehow have been corrupted)
 		t, ok := olapTableInfo(ctx, r.C, src.State.Connector, src.State.Table)
 		if ok && !t.View { // Checking View only out of caution (would indicate very corrupted DB)
-			// Clear any existing table with the new name
-			if t2, ok := olapTableInfo(ctx, r.C, src.State.Connector, tableName); ok {
-				olapDropTableIfExists(ctx, r.C, src.State.Connector, tableName, t2.View)
-			}
-
 			// Rename and update state
-			err = olapRenameTable(ctx, r.C, src.State.Connector, src.State.Table, tableName, false)
+			err = olapForceRenameTable(ctx, r.C, src.State.Connector, src.State.Table, false, tableName)
 			if err != nil {
 				return runtime.ReconcileResult{Err: fmt.Errorf("failed to rename table: %w", err)}
 			}
@@ -77,7 +102,23 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		// Note: Not exiting early. It might need to be (re-)ingested, and we need to set the correct retrigger time based on the refresh schedule.
 	}
 
-	// TODO: Exit if refs have errors
+	// Check refs - stop if any of them are invalid
+	err = checkRefs(ctx, r.C, self.Meta.Refs)
+	if err != nil {
+		if !src.Spec.StageChanges && src.State.Table != "" {
+			// Remove previously ingested table
+			olapDropTableIfExists(ctx, r.C, src.State.Connector, src.State.Table, false)
+			src.State.Connector = ""
+			src.State.Table = ""
+			src.State.SpecHash = ""
+			src.State.RefreshedOn = nil
+			err = r.C.UpdateState(ctx, self.Meta.Name, self)
+			if err != nil {
+				r.C.Logger.Error("refs check: failed to update state", slog.Any("err", err))
+			}
+		}
+		return runtime.ReconcileResult{Err: err}
+	}
 
 	// Use a hash of ingestion-related fields from the spec to determine if we need to re-ingest
 	hash, err := r.ingestionSpecHash(src.Spec)
@@ -138,12 +179,8 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		ingestErr = fmt.Errorf("failed to ingest source: %w", ingestErr)
 	}
 	if ingestErr == nil && src.Spec.StageChanges {
-		// Drop the main table name
-		if t, ok := olapTableInfo(ctx, r.C, connector, tableName); ok {
-			olapDropTableIfExists(ctx, r.C, connector, tableName, t.View)
-		}
 		// Rename staging table to main table
-		err = olapRenameTable(ctx, r.C, connector, stagingTableName, tableName, false)
+		err = olapForceRenameTable(ctx, r.C, connector, stagingTableName, false, tableName)
 		if err != nil {
 			return runtime.ReconcileResult{Err: fmt.Errorf("failed to rename staging table: %w", err)}
 		}
@@ -198,8 +235,7 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 
 	// Reset spec.Trigger
 	if src.Spec.Trigger {
-		src.Spec.Trigger = false
-		err = r.C.UpdateSpec(ctx, self.Meta.Name, self.Meta.Refs, self.Meta.Owner, self.Meta.FilePaths, self)
+		err := r.setTriggerFalse(ctx, n)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
@@ -247,6 +283,26 @@ func (r *SourceReconciler) stagingTableName(table string) string {
 	return "__rill_tmp_src_" + table
 }
 
+// setTriggerFalse sets the source's spec.Trigger to false.
+// Unlike the State, the Spec may be edited concurrently with a Reconcile call, so we need to read and edit it under a lock.
+func (r *SourceReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.ResourceName) error {
+	r.C.Lock(ctx)
+	defer r.C.Unlock(ctx)
+
+	self, err := r.C.Get(ctx, n, false)
+	if err != nil {
+		return err
+	}
+
+	source := self.GetSource()
+	if source == nil {
+		return fmt.Errorf("not a source")
+	}
+
+	source.Spec.Trigger = false
+	return r.C.UpdateSpec(ctx, self.Meta.Name, self)
+}
+
 // ingestSource ingests the source into a table with tableName.
 // It does NOT drop the table if ingestion fails after the table has been created.
 // It will return an error if the sink connector is not an OLAP.
@@ -292,7 +348,7 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 	// TODO: This code is pretty ugly. We should push storage limit tracking into the underlying driver and transporter.
 	var ingestionLimit *int64
 	var limitExceeded bool
-	if olap, ok := sinkConn.AsOLAP(); ok {
+	if olap, ok := sinkConn.AsOLAP(r.C.InstanceID); ok {
 		// Get storage limit
 		inst, err := r.C.Runtime.FindInstance(ctx, r.C.InstanceID)
 		if err != nil {
@@ -343,70 +399,11 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 	return err
 }
 
-func driversSource(conn drivers.Connection, propsPB *structpb.Struct) (drivers.Source, error) {
+func driversSource(conn drivers.Handle, propsPB *structpb.Struct) (map[string]any, error) {
 	props := propsPB.AsMap()
-	switch conn.Driver() {
-	case "s3":
-		return &drivers.BucketSource{
-			// ExtractPolicy: src.Policy, // TODO: Add
-			Properties: props,
-		}, nil
-	case "gcs":
-		return &drivers.BucketSource{
-			// ExtractPolicy: src.Policy, // TODO: Add
-			Properties: props,
-		}, nil
-	case "https":
-		return &drivers.FileSource{
-			Properties: props,
-		}, nil
-	case "local_file":
-		return &drivers.FileSource{
-			Properties: props,
-		}, nil
-	case "motherduck":
-		query, ok := props["sql"].(string)
-		if !ok {
-			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"motherduck\"")
-		}
-		var db string
-		if val, ok := props["db"].(string); ok {
-			db = val
-		}
-
-		return &drivers.DatabaseSource{
-			SQL:      query,
-			Database: db,
-		}, nil
-	case "duckdb":
-		query, ok := props["sql"].(string)
-		if !ok {
-			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"duckdb\"")
-		}
-		return &drivers.DatabaseSource{
-			SQL: query,
-		}, nil
-	case "bigquery":
-		query, ok := props["sql"].(string)
-		if !ok {
-			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"bigquery\"")
-		}
-		return &drivers.DatabaseSource{
-			SQL:   query,
-			Props: props,
-		}, nil
-	default:
-		return nil, fmt.Errorf("source connector %q not supported", conn.Driver())
-	}
+	return props, nil
 }
 
-func driversSink(conn drivers.Connection, tableName string) (drivers.Sink, error) {
-	switch conn.Driver() {
-	case "duckdb":
-		return &drivers.DatabaseSink{
-			Table: tableName,
-		}, nil
-	default:
-		return nil, fmt.Errorf("sink connector %q not supported", conn.Driver())
-	}
+func driversSink(conn drivers.Handle, tableName string) (map[string]any, error) {
+	return map[string]any{"table": tableName}, nil
 }

@@ -5,15 +5,20 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/XSAM/otelsql"
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/duckdb/transporter"
+	activity "github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
 )
@@ -50,13 +55,12 @@ type Driver struct {
 	name string
 }
 
-func (d Driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connection, error) {
-	dsn, ok := config["dsn"].(string)
-	if !ok {
-		return nil, fmt.Errorf("require dsn to open duckdb connection")
+func (d Driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if shared {
+		return nil, fmt.Errorf("duckdb driver can't be shared")
 	}
 
-	cfg, err := newConfig(dsn)
+	cfg, err := newConfig(cfgMap)
 	if err != nil {
 		return nil, err
 	}
@@ -67,14 +71,20 @@ func (d Driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connect
 		olapSemSize = 1
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
 	c := &connection{
-		config:       cfg,
-		logger:       logger,
-		metaSem:      semaphore.NewWeighted(1),
-		olapSem:      priorityqueue.NewSemaphore(olapSemSize),
-		dbCond:       sync.NewCond(&sync.Mutex{}),
-		driverConfig: config,
-		driverName:   d.name,
+		config:         cfg,
+		logger:         logger,
+		activity:       ac,
+		metaSem:        semaphore.NewWeighted(1),
+		olapSem:        priorityqueue.NewSemaphore(olapSemSize),
+		longRunningSem: semaphore.NewWeighted(1), // Currently hard-coded to 1
+		dbCond:         sync.NewCond(&sync.Mutex{}),
+		driverConfig:   cfgMap,
+		driverName:     d.name,
+		shared:         shared,
+		ctx:            ctx,
+		cancel:         cancel,
 	}
 
 	// Open the DB
@@ -94,16 +104,13 @@ func (d Driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connect
 		return nil, err
 	}
 
+	go c.periodicallyEmitStats(time.Minute)
+
 	return c, nil
 }
 
-func (d Driver) Drop(config map[string]any, logger *zap.Logger) error {
-	dsn, ok := config["dsn"].(string)
-	if !ok {
-		return fmt.Errorf("require dsn to drop duckdb connection")
-	}
-
-	cfg, err := newConfig(dsn)
+func (d Driver) Drop(cfgMap map[string]any, logger *zap.Logger) error {
+	cfg, err := newConfig(cfgMap)
 	if err != nil {
 		return err
 	}
@@ -124,7 +131,7 @@ func (d Driver) Spec() drivers.Spec {
 	return spec
 }
 
-func (d Driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
+func (d Driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
 	return false, nil
 }
 
@@ -134,8 +141,9 @@ type connection struct {
 	driverConfig map[string]any
 	driverName   string
 	// config is parsed configs
-	config *config
-	logger *zap.Logger
+	config   *config
+	logger   *zap.Logger
+	activity activity.Client
 	// This driver may issue both OLAP and "meta" queries (like catalog info) against DuckDB.
 	// Meta queries are usually fast, but OLAP queries may take a long time. To enable predictable parallel performance,
 	// we gate queries with semaphores that limits the number of concurrent queries of each type.
@@ -144,6 +152,12 @@ type connection struct {
 	// This creates contention for the same connection in database/sql's pool, but its locks will handle that.
 	metaSem *semaphore.Weighted
 	olapSem *priorityqueue.Semaphore
+	// The OLAP interface additionally provides an option to limit the number of long-running queries, as designated by the caller.
+	// longRunningSem enforces this limitation.
+	longRunningSem *semaphore.Weighted
+	// The OLAP interface also provides an option to acquire a connection "transactionally".
+	// We've run into issues with DuckDB freezing up on transactions, so we just use a lock for now to serialize them (inconsistency in case of crashes is acceptable).
+	txMu sync.RWMutex
 	// If DuckDB encounters a fatal error, all queries will fail until the DB has been reopened.
 	// When dbReopen is set to true, dbCond will be used to stop acquisition of new connections,
 	// and then when dbConnCount becomes 0, the DB will be reopened and dbReopen set to false again.
@@ -152,6 +166,10 @@ type connection struct {
 	dbCond      *sync.Cond
 	dbReopen    bool
 	dbErr       error
+	shared      bool
+	// Cancellable context to control internal processes like emitting the stats
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 // Driver implements drivers.Connection.
@@ -166,6 +184,7 @@ func (c *connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
+	c.cancel()
 	return c.db.Close()
 }
 
@@ -175,17 +194,25 @@ func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 }
 
 // AsCatalogStore Catalog implements drivers.Connection.
-func (c *connection) AsCatalogStore() (drivers.CatalogStore, bool) {
+func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
+	if c.shared {
+		// duckdb catalog is instance specific
+		return nil, false
+	}
 	return c, true
 }
 
 // AsRepoStore Repo implements drivers.Connection.
-func (c *connection) AsRepoStore() (drivers.RepoStore, bool) {
+func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
 
 // AsOLAP OLAP implements drivers.Connection.
-func (c *connection) AsOLAP() (drivers.OLAPStore, bool) {
+func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
+	if c.shared {
+		// duckdb olap is instance specific
+		return nil, false
+	}
 	return c, true
 }
 
@@ -201,8 +228,8 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 }
 
 // AsTransporter implements drivers.Connection.
-func (c *connection) AsTransporter(from, to drivers.Connection) (drivers.Transporter, bool) {
-	olap, _ := to.AsOLAP()
+func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
+	olap, _ := to.AsOLAP("") // if c == to, connection is instance specific
 	if c == to {
 		if from == to {
 			return transporter.NewDuckDBToDuckDB(olap, c.logger), true
@@ -250,6 +277,12 @@ func (c *connection) reopenDB() error {
 		"LOAD 'httpfs'",
 		"SET max_expression_depth TO 250",
 		"SET timezone='UTC'",
+	}
+
+	// We want to set preserve_insertion_order=false in hosted environments only (where source data is never viewed directly). Setting it reduces batch data ingestion time by ~40%.
+	// Hack: Using AllowHostAccess as a proxy indicator for a hosted environment.
+	if !c.config.AllowHostAccess {
+		bootQueries = append(bootQueries, "SET preserve_insertion_order TO false")
 	}
 
 	// DuckDB extensions need to be loaded separately on each connection, but the built-in connection pool in database/sql doesn't enable that.
@@ -320,30 +353,64 @@ func (c *connection) acquireMetaConn(ctx context.Context) (*sqlx.Conn, func() er
 
 // acquireOLAPConn gets a connection from the pool for OLAP queries (i.e. slow queries).
 // It returns a function that puts the connection back in the pool (if applicable).
-func (c *connection) acquireOLAPConn(ctx context.Context, priority int) (*sqlx.Conn, func() error, error) {
+func (c *connection) acquireOLAPConn(ctx context.Context, priority int, longRunning, tx bool) (*sqlx.Conn, func() error, error) {
 	// Try to get conn from context (means the call is wrapped in WithConnection)
 	conn := connFromContext(ctx)
 	if conn != nil {
 		return conn, func() error { return nil }, nil
 	}
 
+	// Acquire long-running semaphore if applicable
+	if longRunning {
+		err := c.longRunningSem.Acquire(ctx, 1)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
 	// Acquire semaphore
 	err := c.olapSem.Acquire(ctx, priority)
 	if err != nil {
+		if longRunning {
+			c.longRunningSem.Release(1)
+		}
 		return nil, nil, err
+	}
+
+	// Poor man's transaction support – see struct docstring for details
+	if tx {
+		c.txMu.Lock()
+	} else {
+		c.txMu.RLock()
 	}
 
 	// Get new conn
 	conn, releaseConn, err := c.acquireConn(ctx)
 	if err != nil {
+		if tx {
+			c.txMu.Unlock()
+		} else {
+			c.txMu.RUnlock()
+		}
 		c.olapSem.Release()
+		if longRunning {
+			c.longRunningSem.Release(1)
+		}
 		return nil, nil, err
 	}
 
 	// Build release func
 	release := func() error {
 		err := releaseConn()
+		if tx {
+			c.txMu.Unlock()
+		} else {
+			c.txMu.RUnlock()
+		}
 		c.olapSem.Release()
+		if longRunning {
+			c.longRunningSem.Release(1)
+		}
 		return err
 	}
 
@@ -408,4 +475,131 @@ func (c *connection) checkErr(err error) error {
 		}
 	}
 	return err
+}
+
+// Periodically collects stats using pragma_database_size() and emits as activity events
+func (c *connection) periodicallyEmitStats(d time.Duration) {
+	if c.activity == nil {
+		// Activity client isn't set, there is no need to report stats
+		return
+	}
+
+	statTicker := time.NewTicker(d)
+	for {
+		select {
+		case <-statTicker.C:
+			var stat dbStat
+			// Obtain a connection, query, release
+			err := func() error {
+				conn, release, err := c.acquireMetaConn(c.ctx)
+				if err != nil {
+					return err
+				}
+				defer func() { _ = release() }()
+				err = conn.GetContext(c.ctx, &stat, "CALL pragma_database_size()")
+				return err
+			}()
+			if err != nil {
+				c.logger.Error("couldn't query DuckDB stats", zap.Error(err))
+				continue
+			}
+
+			// Emit collected stats as activity events
+			commonDims := []attribute.KeyValue{
+				attribute.String("duckdb.name", stat.DatabaseName),
+			}
+
+			dbSize, err := humanReadableSizeToBytes(stat.DatabaseSize)
+			if err != nil {
+				c.logger.Error("couldn't convert duckdb size to bytes", zap.Error(err))
+			} else {
+				c.activity.Emit(c.ctx, "duckdb_size_bytes", dbSize, commonDims...)
+			}
+
+			walSize, err := humanReadableSizeToBytes(stat.WalSize)
+			if err != nil {
+				c.logger.Error("couldn't convert duckdb wal size to bytes", zap.Error(err))
+			} else {
+				c.activity.Emit(c.ctx, "duckdb_wal_size_bytes", walSize, commonDims...)
+			}
+
+			memoryUsage, err := humanReadableSizeToBytes(stat.MemoryUsage)
+			if err != nil {
+				c.logger.Error("couldn't convert duckdb memory usage to bytes", zap.Error(err))
+			} else {
+				c.activity.Emit(c.ctx, "duckdb_memory_usage_bytes", memoryUsage, commonDims...)
+			}
+
+			memoryLimit, err := humanReadableSizeToBytes(stat.MemoryLimit)
+			if err != nil {
+				c.logger.Error("couldn't convert duckdb memory limit to bytes", zap.Error(err))
+			} else {
+				c.activity.Emit(c.ctx, "duckdb_memory_limit_bytes", memoryLimit, commonDims...)
+			}
+
+			c.activity.Emit(c.ctx, "duckdb_block_size_bytes", float64(stat.BlockSize), commonDims...)
+			c.activity.Emit(c.ctx, "duckdb_total_blocks", float64(stat.TotalBlocks), commonDims...)
+			c.activity.Emit(c.ctx, "duckdb_free_blocks", float64(stat.FreeBlocks), commonDims...)
+			c.activity.Emit(c.ctx, "duckdb_used_blocks", float64(stat.UsedBlocks), commonDims...)
+
+			estimatedDBSize, _ := c.EstimateSize()
+			c.activity.Emit(c.ctx, "duckdb_estimated_size_bytes", float64(estimatedDBSize))
+
+		case <-c.ctx.Done():
+			statTicker.Stop()
+			return
+		}
+	}
+}
+
+// Regex to parse human-readable size returned by DuckDB
+var humanReadableSizeRegex = regexp.MustCompile(`^([\d.]+)\s*(\S+)$`)
+
+// Reversed logic of StringUtil::BytesToHumanReadableString
+// see https://github.com/cran/duckdb/blob/master/src/duckdb/src/common/string_util.cpp#L157
+// Examples: 1 bytes, 2 bytes, 1KB, 1MB, 1TB, 1PB
+func humanReadableSizeToBytes(sizeStr string) (float64, error) {
+	var multiplier float64
+
+	match := humanReadableSizeRegex.FindStringSubmatch(sizeStr)
+
+	if match == nil {
+		return 0, fmt.Errorf("invalid size format: '%s'", sizeStr)
+	}
+
+	sizeFloat, err := strconv.ParseFloat(match[1], 64)
+	if err != nil {
+		return 0, err
+	}
+
+	switch match[2] {
+	case "byte", "bytes":
+		multiplier = 1
+	case "KB":
+		multiplier = 1000
+	case "MB":
+		multiplier = 1000 * 1000
+	case "GB":
+		multiplier = 1000 * 1000 * 1000
+	case "TB":
+		multiplier = 1000 * 1000 * 1000 * 1000
+	case "PB":
+		multiplier = 1000 * 1000 * 1000 * 1000 * 1000
+	default:
+		return 0, fmt.Errorf("unknown size unit '%s' in '%s'", match[2], sizeStr)
+	}
+
+	return sizeFloat * multiplier, nil
+}
+
+type dbStat struct {
+	DatabaseName string `db:"database_name"`
+	DatabaseSize string `db:"database_size"`
+	BlockSize    int64  `db:"block_size"`
+	TotalBlocks  int64  `db:"total_blocks"`
+	UsedBlocks   int64  `db:"used_blocks"`
+	FreeBlocks   int64  `db:"free_blocks"`
+	WalSize      string `db:"wal_size"`
+	MemoryUsage  string `db:"memory_usage"`
+	MemoryLimit  string `db:"memory_limit"`
 }

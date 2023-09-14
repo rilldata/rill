@@ -22,16 +22,17 @@ func NewDuckDBToDuckDB(to drivers.OLAPStore, logger *zap.Logger) drivers.Transpo
 
 var _ drivers.Transporter = &duckDBToDuckDB{}
 
-func (t *duckDBToDuckDB) Transfer(ctx context.Context, source drivers.Source, sink drivers.Sink, opts *drivers.TransferOpts, p drivers.Progress) error {
-	src, ok := source.DatabaseSource()
-	if !ok {
-		return fmt.Errorf("type of source should `drivers.DatabaseSource`")
-	}
-	fSink, ok := sink.DatabaseSink()
-	if !ok {
-		return fmt.Errorf("type of source should `drivers.DatabaseSink`")
+func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[string]any, opts *drivers.TransferOpts, p drivers.Progress) error {
+	srcCfg, err := parseSourceProperties(srcProps)
+	if err != nil {
+		return err
 	}
 
-	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %q AS (%s)", fSink.Table, src.SQL)
-	return t.to.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1})
+	sinkCfg, err := parseSinkProperties(sinkProps)
+	if err != nil {
+		return err
+	}
+
+	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s)", safeName(sinkCfg.Table), srcCfg.SQL)
+	return t.to.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1, LongRunning: true})
 }

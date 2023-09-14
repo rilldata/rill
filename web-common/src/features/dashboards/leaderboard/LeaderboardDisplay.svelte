@@ -1,11 +1,10 @@
 <script lang="ts">
   import VirtualizedGrid from "@rilldata/web-common/components/VirtualizedGrid.svelte";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
-  import {
-    useMetaQuery,
-    useModelHasTimeSeries,
-  } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideDimensionsStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     createQueryServiceMetricsViewTotals,
     MetricsViewDimension,
@@ -38,28 +37,22 @@
       (measure) => measure.name === $dashboardStore?.leaderboardMeasureName
     );
 
-  $: metricTimeSeries = useModelHasTimeSeries(
-    $runtime.instanceId,
-    metricViewName
-  );
-  $: hasTimeSeries = $metricTimeSeries.data;
+  const timeControlsStore = useTimeControlStore(getStateManagers());
 
-  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
-  $: timeEnd = $dashboardStore?.selectedTimeRange?.end?.toISOString();
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     $runtime.instanceId,
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      timeStart: hasTimeSeries ? timeStart : undefined,
-      timeEnd: hasTimeSeries ? timeEnd : undefined,
+      timeStart: $timeControlsStore.timeStart,
+      timeEnd: $timeControlsStore.timeEnd,
       filter: $dashboardStore?.filters,
     },
     {
       query: {
         enabled:
           selectedMeasureNames?.length > 0 &&
-          (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
+          $timeControlsStore.ready &&
           !!$dashboardStore?.filters,
       },
     }
@@ -78,12 +71,12 @@
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      timeStart: hasTimeSeries ? timeStart : undefined,
-      timeEnd: hasTimeSeries ? timeEnd : undefined,
+      timeStart: $timeControlsStore.timeStart,
+      timeEnd: $timeControlsStore.timeEnd,
     },
     {
       query: {
-        enabled: hasTimeSeries ? !!timeStart && !!timeEnd : true,
+        enabled: $timeControlsStore.ready,
       },
     }
   );

@@ -25,4 +25,5 @@ Manage users
 * [rill user list](list.md)	 - List
 * [rill user remove](remove.md)	 - Remove
 * [rill user set-role](set-role.md)	 - Set Role
+* [rill user whitelist](whitelist/whitelist.md)	 - Whitelist access by email domain
 

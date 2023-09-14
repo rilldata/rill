@@ -14,7 +14,7 @@
     metricsExplorerStore,
   } from "../dashboard-stores";
   import { useMetaQuery } from "../selectors";
-  import LeaderboardContextColumnToggle from "./LeaderboardContextColumnToggle.svelte";
+  import LeaderboardContextColumnMenu from "./LeaderboardContextColumnMenu.svelte";
 
   export let metricViewName;
 
@@ -80,7 +80,10 @@
     metricsExplorer?.leaderboardContextColumn ===
       LeaderboardContextColumn.PERCENT
   ) {
-    metricsExplorerStore.hideContextColumn(metricViewName);
+    metricsExplorerStore.setContextColumn(
+      metricViewName,
+      LeaderboardContextColumn.HIDDEN
+    );
   }
 
   $: showHideDimensions = createShowHideDimensionsStore(
@@ -118,20 +121,18 @@
         tooltipText="Choose dimensions to display"
       />
 
-      <div class="whitespace-nowrap">showing top values by</div>
+      <div class="whitespace-nowrap">showing</div>
 
       <SelectMenu
         paddingTop={2}
         paddingBottom={2}
         {options}
         {selection}
-        tailwindClasses="overflow-hidden"
         alignment="end"
         on:select={handleMeasureUpdate}
-      >
-        <span class="font-bold truncate">{selection?.main}</span>
-      </SelectMenu>
-      <LeaderboardContextColumnToggle {metricViewName} {validPercentOfTotal} />
+      />
+
+      <LeaderboardContextColumnMenu {metricViewName} {validPercentOfTotal} />
     </div>
   {:else}
     <div

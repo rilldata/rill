@@ -9,6 +9,7 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"go.uber.org/zap"
 )
@@ -35,7 +36,10 @@ var spec = drivers.Spec{
 
 type driver struct{}
 
-func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connection, error) {
+func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if shared {
+		return nil, fmt.Errorf("https driver can't be shared")
+	}
 	conn := &connection{
 		config: config,
 		logger: logger,
@@ -51,7 +55,7 @@ func (d driver) Spec() drivers.Spec {
 	return spec
 }
 
-func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
+func (d driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
 	return true, nil
 }
 
@@ -74,7 +78,7 @@ type connection struct {
 	logger *zap.Logger
 }
 
-var _ drivers.Connection = &connection{}
+var _ drivers.Handle = &connection{}
 
 // Driver implements drivers.Connection.
 func (c *connection) Driver() string {
@@ -97,17 +101,17 @@ func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 }
 
 // Catalog implements drivers.Connection.
-func (c *connection) AsCatalogStore() (drivers.CatalogStore, bool) {
+func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // Repo implements drivers.Connection.
-func (c *connection) AsRepoStore() (drivers.RepoStore, bool) {
+func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
 
 // OLAP implements drivers.Connection.
-func (c *connection) AsOLAP() (drivers.OLAPStore, bool) {
+func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
@@ -127,7 +131,7 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsTransporter implements drivers.Connection.
-func (c *connection) AsTransporter(from, to drivers.Connection) (drivers.Transporter, bool) {
+func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
 	return nil, false
 }
 
@@ -141,8 +145,8 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 }
 
 // FilePaths implements drivers.FileStore
-func (c *connection) FilePaths(ctx context.Context, src *drivers.FileSource) ([]string, error) {
-	conf, err := parseSourceProperties(src.Properties)
+func (c *connection) FilePaths(ctx context.Context, src map[string]any) ([]string, error) {
+	conf, err := parseSourceProperties(src)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
@@ -172,8 +176,7 @@ func (c *connection) FilePaths(ctx context.Context, src *drivers.FileSource) ([]
 		return nil, fmt.Errorf("failed to fetch url %s: %s", conf.Path, resp.Status)
 	}
 
-	// TODO :: I don't like src.Name
-	file, size, err := fileutil.CopyToTempFile(resp.Body, src.Name, extension)
+	file, size, err := fileutil.CopyToTempFile(resp.Body, "", extension)
 	if err != nil {
 		return nil, err
 	}

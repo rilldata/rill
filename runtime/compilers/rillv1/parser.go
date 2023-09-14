@@ -29,7 +29,7 @@ type Resource struct {
 	// Metadata
 	Name    ResourceName
 	Paths   []string
-	Refs    []ResourceName // Derived from rawRefs after parsing (can't contain ResourceKindUnspecified)
+	Refs    []ResourceName // Derived from rawRefs after parsing (can't contain ResourceKindUnspecified). Always sorted.
 	rawRefs []ResourceName // Populated during parsing (may contain ResourceKindUnspecified)
 
 	// Only one of these will be non-nil
@@ -108,6 +108,7 @@ type Diff struct {
 	Added            []ResourceName
 	Modified         []ResourceName
 	ModifiedRillYAML bool
+	ModifiedDotEnv   bool
 	Deleted          []ResourceName
 }
 
@@ -122,6 +123,7 @@ type Parser struct {
 
 	// Output
 	RillYAML  *RillYAML
+	DotEnv    map[string]string
 	Resources map[ResourceName]*Resource
 	Errors    []*runtimev1.ParseError
 
@@ -134,7 +136,7 @@ type Parser struct {
 
 // ParseRillYAML parses only the project's rill.yaml (or rill.yml) file.
 func ParseRillYAML(ctx context.Context, repo drivers.RepoStore, instanceID string) (*RillYAML, error) {
-	paths, err := repo.ListRecursive(ctx, instanceID, "rill.{yaml,yml}")
+	paths, err := repo.ListRecursive(ctx, "rill.{yaml,yml}")
 	if err != nil {
 		return nil, fmt.Errorf("could not list project files: %w", err)
 	}
@@ -162,7 +164,7 @@ func Parse(ctx context.Context, repo drivers.RepoStore, instanceID string, duckD
 		resourcesForUnspecifiedRef: make(map[string][]*Resource),
 	}
 
-	paths, err := p.Repo.ListRecursive(ctx, p.InstanceID, "**/*.{sql,yaml,yml}")
+	paths, err := p.Repo.ListRecursive(ctx, "**/*.{sql,yaml,yml}")
 	if err != nil {
 		return nil, fmt.Errorf("could not list project files: %w", err)
 	}
@@ -208,6 +210,8 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	var deletedResources []*Resource   // Resources deleted in Phase 1 (some may be added back in Phase 2)
 	checkPaths := slices.Clone(paths)  // Paths we should visit in the loop
 	seenPaths := make(map[string]bool) // Paths already visited by the loop
+	modifiedRillYAML := false          // whether rill.yaml file was modified
+	modifiedDotEnv := false            // whether .env file was modified
 	for i := 0; i < len(checkPaths); i++ {
 		// Don't check the same path twice
 		path := normalizePath(checkPaths[i])
@@ -216,24 +220,29 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 		}
 		seenPaths[path] = true
 
-		// Skip files that aren't SQL or YAML
+		// Skip files that aren't SQL or YAML or .env file
 		isSQL := strings.HasSuffix(path, ".sql")
 		isYAML := strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")
-		if !isSQL && !isYAML {
+		isDotEnv := strings.EqualFold(path, "/.env")
+		if !isSQL && !isYAML && !isDotEnv {
 			continue
 		}
 
 		// If a file exists at path, add it to the parse list
-		_, err := p.Repo.Stat(ctx, p.InstanceID, path)
+		_, err := p.Repo.Stat(ctx, path)
 		if err == nil {
 			parsePaths = append(parsePaths, path)
 		} else if !os.IsNotExist(err) {
 			return nil, fmt.Errorf("unexpected file stat error: %w", err)
 		}
 
-		// Check if path is rill.yaml and clear it (so we can re-parse it)
+		// Check if path is rill.yaml or .env and clear it (so we can re-parse it)
 		if path == "/rill.yaml" || path == "/rill.yml" {
+			modifiedRillYAML = true
 			p.RillYAML = nil
+		} else if path == "/.env" {
+			modifiedDotEnv = true
+			p.DotEnv = nil
 		}
 
 		// Since .sql and .yaml files provide context for each other, if one was modified, we need to reparse both.
@@ -272,9 +281,6 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 			}
 		}
 	}
-
-	// Capture if rill.yaml will be updated
-	modifiedRillYAML := p.RillYAML == nil
 
 	// Phase 2: Parse (or reparse) the related paths, adding back resources
 	err := p.parsePaths(ctx, parsePaths)
@@ -318,7 +324,10 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	}
 
 	// Phase 3: Build the diff using p.insertedResources, p.updatedResources and deletedResources
-	diff := &Diff{ModifiedRillYAML: modifiedRillYAML}
+	diff := &Diff{
+		ModifiedRillYAML: modifiedRillYAML,
+		ModifiedDotEnv:   modifiedDotEnv,
+	}
 	for _, resource := range p.insertedResources {
 		addedBack := false
 		for _, deleted := range deletedResources {
@@ -360,12 +369,19 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 	// Then iterate over the sorted paths, processing all paths with the same stem at once (stem = path without extension).
 	slices.Sort(paths)
 	for i := 0; i < len(paths); {
-		// Handle rill.yaml separately (if parsing of rill.yaml fails, we exit early instead of adding a ParseError)
+		// Handle rill.yaml and .env separately (if parsing of rill.yaml fails, we exit early instead of adding a ParseError)
 		path := paths[i]
 		if path == "/rill.yaml" || path == "/rill.yml" {
 			err := p.parseRillYAML(ctx, path)
 			if err != nil {
 				return err
+			}
+			i++
+			continue
+		} else if path == "/.env" {
+			err := p.parseDotEnv(ctx, path)
+			if err != nil {
+				p.addParseError(path, err)
 			}
 			i++
 			continue
@@ -423,7 +439,7 @@ func (p *Parser) parseStemPaths(ctx context.Context, paths []string) error {
 	var yaml, yamlPath, sql, sqlPath string
 	for _, path := range paths {
 		// Load contents
-		data, err := p.Repo.Get(ctx, p.InstanceID, path)
+		data, err := p.Repo.Get(ctx, path)
 		if err != nil {
 			if os.IsNotExist(err) {
 				// This is a dirty parse where a file disappeared during parsing.
@@ -541,6 +557,8 @@ func (p *Parser) inferUnspecifiedRefs(r *Resource) {
 
 		// Rule 4: Skip it
 	}
+
+	slices.SortFunc(refs, func(a, b ResourceName) bool { return a.Kind < b.Kind || a.Kind == b.Kind && a.Name < b.Name })
 
 	r.Refs = refs
 }

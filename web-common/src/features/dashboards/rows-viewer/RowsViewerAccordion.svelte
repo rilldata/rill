@@ -1,5 +1,7 @@
 <script lang="ts">
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import RowsViewer from "./RowsViewer.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
@@ -39,6 +41,7 @@
   );
 
   $: dashboardStore = useDashboardStore(metricViewName);
+  const timeControlsStore = useTimeControlStore(getStateManagers());
 
   $: metricTimeSeries = useModelHasTimeSeries(
     $runtime.instanceId,
@@ -46,12 +49,11 @@
   );
   $: hasTimeSeries = $metricTimeSeries.data;
 
-  $: timeStart = $dashboardStore?.selectedTimeRange?.start?.toISOString();
-  let timeEnd;
+  let timeEnd: string;
   $: {
-    let maybeEnd = $dashboardStore?.selectedTimeRange?.end;
+    let maybeEnd = $timeControlsStore.timeEnd;
     if (maybeEnd) {
-      timeEnd = new Date(maybeEnd.valueOf() + 1).toISOString();
+      timeEnd = new Date(new Date(maybeEnd).valueOf() + 1).toISOString();
     }
   }
 
@@ -66,8 +68,8 @@
           expression: "count(*)",
         },
       ],
-      timeStart: hasTimeSeries ? timeStart : undefined,
-      timeEnd: hasTimeSeries ? timeEnd : undefined,
+      timeStart: $timeControlsStore.timeStart,
+      timeEnd,
       filter: $dashboardStore?.filters,
     },
     {
@@ -76,14 +78,12 @@
           "dashboardFilteredRowsCt",
           metricViewName,
           {
-            timeStart,
+            timeStart: $timeControlsStore.timeStart,
             timeEnd,
             filter: $dashboardStore?.filters,
           },
         ],
-        enabled:
-          (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
-          !!$dashboardStore?.filters,
+        enabled: $timeControlsStore.ready && !!$dashboardStore?.filters,
       },
     }
   );
@@ -103,9 +103,9 @@
 
 <div>
   <button
+    aria-label="Toggle rows viewer"
     class="w-full bg-gray-100 h-7 text-left px-2 border-t border-t-gray-200 text-xs text-gray-800 flex items-center gap-1"
     on:click={toggle}
-    aria-label="Toggle rows viewer"
   >
     {#if isOpen}
       <CaretDownIcon size="14px" />

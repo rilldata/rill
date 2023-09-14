@@ -2,6 +2,8 @@ package reconcilers
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -27,18 +29,49 @@ func (r *RefreshTriggerReconciler) Close(ctx context.Context) error {
 	return nil
 }
 
+func (r *RefreshTriggerReconciler) AssignSpec(from, to *runtimev1.Resource) error {
+	a := from.GetRefreshTrigger()
+	b := to.GetRefreshTrigger()
+	if a == nil || b == nil {
+		return fmt.Errorf("cannot assign spec from %T to %T", from.Resource, to.Resource)
+	}
+	b.Spec = a.Spec
+	return nil
+}
+
+func (r *RefreshTriggerReconciler) AssignState(from, to *runtimev1.Resource) error {
+	a := from.GetRefreshTrigger()
+	b := to.GetRefreshTrigger()
+	if a == nil || b == nil {
+		return fmt.Errorf("cannot assign state from %T to %T", from.Resource, to.Resource)
+	}
+	b.Spec = a.Spec
+	return nil
+}
+
+func (r *RefreshTriggerReconciler) ResetState(res *runtimev1.Resource) error {
+	res.GetRefreshTrigger().State = &runtimev1.RefreshTriggerState{}
+	return nil
+}
+
 func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName) runtime.ReconcileResult {
-	self, err := r.C.Get(ctx, n)
+	self, err := r.C.Get(ctx, n, true)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
 	trigger := self.GetRefreshTrigger()
+	if trigger == nil {
+		return runtime.ReconcileResult{Err: errors.New("not a refresh trigger")}
+	}
 
-	if self.Meta.Deleted {
+	if self.Meta.DeletedOn != nil {
 		return runtime.ReconcileResult{}
 	}
 
-	resources, err := r.C.List(ctx)
+	r.C.Lock(ctx)
+	defer r.C.Unlock(ctx)
+
+	resources, err := r.C.List(ctx, "", false)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
@@ -69,7 +102,7 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 			updated = false
 		}
 		if updated {
-			err = r.C.UpdateSpec(ctx, res.Meta.Name, res.Meta.Refs, res.Meta.Owner, res.Meta.FilePaths, res)
+			err = r.C.UpdateSpec(ctx, res.Meta.Name, res)
 			if err != nil {
 				return runtime.ReconcileResult{Err: err}
 			}

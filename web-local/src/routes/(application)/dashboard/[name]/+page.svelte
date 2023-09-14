@@ -2,7 +2,11 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
-  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import DashboardStateProvider from "@rilldata/web-common/features/dashboards/DashboardStateProvider.svelte";
+  import { resetSelectedMockUserAfterNavigate } from "@rilldata/web-common/features/dashboards/granular-access-policies/resetSelectedMockUserAfterNavigate";
+  import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
+  import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
+  import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
@@ -13,13 +17,12 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { error } from "@sveltejs/kit";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { CATALOG_ENTRY_NOT_FOUND } from "../../../../lib/errors/messages";
-  import DashboardStateProvider from "@rilldata/web-common/features/dashboards/DashboardStateProvider.svelte";
-  import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
-  import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
+
+  const queryClient = useQueryClient();
 
   $: metricViewName = $page.params.name;
-  $: metricsExplorer = useDashboardStore(metricViewName);
 
   $: fileQuery = createRuntimeServiceGetFile(
     $runtime.instanceId,
@@ -42,7 +45,16 @@
     metricViewName,
     {
       query: {
-        onError: () => {
+        onSuccess: (data) => {
+          // Redirect to the `/edit` page if no measures are defined
+          if (
+            !$featureFlags.readOnly &&
+            !data.entry.metricsView.measures?.length
+          ) {
+            goto(`/dashboard/${metricViewName}/edit`);
+          }
+        },
+        onError: (err) => {
           if (!metricViewName) return;
 
           // When the catalog entry doesn't exist, the dashboard config is invalid
@@ -50,11 +62,18 @@
             throw error(400, "Invalid dashboard");
           }
 
+          // When a mock user doesn't have access to the dashboard, stay on the page to show a message
+          if ($selectedMockUserStore !== null && err.response?.status === 404)
+            return;
+
+          // On all other errors, redirect to the `/edit` page
           goto(`/dashboard/${metricViewName}/edit`);
         },
       },
     }
   );
+
+  resetSelectedMockUserAfterNavigate(queryClient);
 </script>
 
 <svelte:head>
@@ -72,7 +91,7 @@
       {#key metricViewName}
         <DashboardStateProvider {metricViewName}>
           <DashboardURLStateProvider {metricViewName}>
-            <Dashboard {metricViewName} hasTitle />
+            <Dashboard {metricViewName} />
           </DashboardURLStateProvider>
         </DashboardStateProvider>
       {/key}

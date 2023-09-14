@@ -317,6 +317,52 @@ func (s *Server) SudoUpdateUserQuotas(ctx context.Context, req *adminv1.SudoUpda
 	return &adminv1.SudoUpdateUserQuotasResponse{User: userToPB(updatedUser)}, nil
 }
 
+// SearchProjectUsers returns a list of users that match the given search/email query.
+func (s *Server) SearchProjectUsers(ctx context.Context, req *adminv1.SearchProjectUsersRequest) (*adminv1.SearchProjectUsersResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
+		attribute.String("args.email_query", req.EmailQuery),
+	)
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
+		return nil, status.Error(codes.PermissionDenied, "not authorized to search project users")
+	}
+
+	token, err := unmarshalPageToken(req.PageToken)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	pageSize := validPageSize(req.PageSize)
+
+	users, err := s.admin.DB.SearchProjectUsers(ctx, proj.ID, req.EmailQuery, token.Val, pageSize)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	nextToken := ""
+	if len(users) >= pageSize {
+		nextToken = marshalPageToken(users[len(users)-1].Email)
+	}
+
+	dtos := make([]*adminv1.User, len(users))
+	for i, user := range users {
+		dtos[i] = userToPB(user)
+	}
+
+	return &adminv1.SearchProjectUsersResponse{
+		Users:         dtos,
+		NextPageToken: nextToken,
+	}, nil
+}
+
 func userToPB(u *database.User) *adminv1.User {
 	return &adminv1.User{
 		Id:          u.ID,

@@ -2,13 +2,14 @@ package bigquery
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"os"
 	"strings"
 
 	"cloud.google.com/go/bigquery"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/gcputil"
 	"go.uber.org/zap"
@@ -37,6 +38,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "project_id",
 			Type:        drivers.StringPropertyType,
+			Required:    true,
 			DisplayName: "Project ID",
 			Description: "Google project ID.",
 			Placeholder: "my-project",
@@ -95,7 +97,10 @@ type configProperties struct {
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }
 
-func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connection, error) {
+func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if shared {
+		return nil, fmt.Errorf("bigquery driver can't be shared")
+	}
 	conf := &configProperties{}
 	err := mapstructure.Decode(config, conf)
 	if err != nil {
@@ -117,7 +122,7 @@ func (d driver) Spec() drivers.Spec {
 	return spec
 }
 
-func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
+func (d driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
 	// gcp provides public access to the data via a project
 	return false, nil
 }
@@ -127,7 +132,7 @@ type Connection struct {
 	logger *zap.Logger
 }
 
-var _ drivers.Connection = &Connection{}
+var _ drivers.Handle = &Connection{}
 
 var _ drivers.SQLStore = &Connection{}
 
@@ -154,17 +159,17 @@ func (c *Connection) AsRegistry() (drivers.RegistryStore, bool) {
 }
 
 // Catalog implements drivers.Connection.
-func (c *Connection) AsCatalogStore() (drivers.CatalogStore, bool) {
+func (c *Connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // Repo implements drivers.Connection.
-func (c *Connection) AsRepoStore() (drivers.RepoStore, bool) {
+func (c *Connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
 
 // OLAP implements drivers.Connection.
-func (c *Connection) AsOLAP() (drivers.OLAPStore, bool) {
+func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
@@ -189,7 +194,7 @@ func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 }
 
 // AsTransporter implements drivers.Connection.
-func (c *Connection) AsTransporter(from, to drivers.Connection) (drivers.Transporter, bool) {
+func (c *Connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
 	return nil, false
 }
 
@@ -199,6 +204,7 @@ func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 
 type sourceProperties struct {
 	ProjectID string `mapstructure:"project_id"`
+	SQL       string `mapstructure:"sql"`
 }
 
 func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
@@ -207,19 +213,19 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 	if err != nil {
 		return nil, err
 	}
+	if conf.SQL == "" {
+		return nil, fmt.Errorf("property 'sql' is mandatory for connector \"bigquery\"")
+	}
 	if conf.ProjectID == "" {
 		conf.ProjectID = bigquery.DetectProjectID
 	}
 	return conf, err
 }
 
-func (c *Connection) createClient(ctx context.Context, props *sourceProperties) (*bigquery.Client, error) {
+func (c *Connection) clientOption(ctx context.Context) ([]option.ClientOption, error) {
 	creds, err := gcputil.Credentials(ctx, c.config.SecretJSON, c.config.AllowHostAccess)
 	if err != nil {
-		if !errors.Is(err, gcputil.ErrNoCredentials) {
-			return nil, err
-		}
-		return bigquery.NewClient(ctx, props.ProjectID)
+		return nil, err
 	}
-	return bigquery.NewClient(ctx, props.ProjectID, option.WithCredentials(creds))
+	return []option.ClientOption{option.WithCredentials(creds)}, nil
 }

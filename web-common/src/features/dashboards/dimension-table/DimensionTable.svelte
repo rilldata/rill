@@ -10,8 +10,12 @@ TableCells – the cell contents.
   import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { createEventDispatcher, setContext } from "svelte";
   import DimensionFilterGutter from "./DimensionFilterGutter.svelte";
-  import { DimensionTableConfig } from "./DimensionTableConfig";
+  import { DimensionTableConfig as config } from "./DimensionTableConfig";
   import DimensionValueHeader from "./DimensionValueHeader.svelte";
+  import {
+    estimateColumnCharacterWidths,
+    estimateColumnSizes,
+  } from "./dimension-table-utils";
 
   const dispatch = createEventDispatcher();
 
@@ -19,6 +23,7 @@ TableCells – the cell contents.
   export let columns: VirtualizedTableColumns[];
   export let selectedValues: Array<unknown> = [];
   export let sortByColumn: string;
+  export let sortAscending: boolean;
   export let dimensionName: string;
   export let excludeMode = false;
 
@@ -40,13 +45,8 @@ TableCells – the cell contents.
 
   /** this is a perceived character width value, in pixels, when our monospace
    * font is 12px high. */
-  const CHARACTER_WIDTH = 7;
-  const CHARACTER_X_PAD = 16 * 2;
-  const HEADER_ICON_WIDTHS = 16;
-  const HEADER_X_PAD = CHARACTER_X_PAD;
-  const HEADER_FLEX_SPACING = 14;
   const CHARACTER_LIMIT_FOR_WRAPPING = 9;
-  const FILTER_COLUMN_WIDTH = DimensionTableConfig.indexWidth;
+  const FILTER_COLUMN_WIDTH = config.indexWidth;
 
   $: selectedIndex = selectedValues
     .map((label) => {
@@ -61,29 +61,12 @@ TableCells – the cell contents.
    * find the largest strings in the column and use that to bootstrap the
    * column widths.
    */
-  let columnWidths: { [key: string]: number } = {};
-  let largestColumnLength = 0;
-  columns.forEach((column, i) => {
-    // get values
-    const values = rows
-      .filter((row) => row[column.name] !== null)
-      .map(
-        (row) =>
-          `${row["__formatted_" + column.name] || row[column.name]}`.length
-      );
-    values.sort();
-    let largest = Math.max(...values);
-    columnWidths[column.name] = largest;
-    if (i != 0) {
-      largestColumnLength = Math.max(
-        largestColumnLength,
-        column.label?.length || column.name.length
-      );
-    }
-  });
+  const { columnWidths, largestColumnLength } = estimateColumnCharacterWidths(
+    columns,
+    rows
+  );
 
   /* check if column header requires extra space for larger column names  */
-  const config = DimensionTableConfig;
   if (largestColumnLength > CHARACTER_LIMIT_FOR_WRAPPING) {
     config.columnHeaderHeight = 46;
   }
@@ -91,9 +74,13 @@ TableCells – the cell contents.
   /* set context for child components */
   setContext("config", config);
 
-  let estimateColumnSize;
+  let estimateColumnSize: number[] = [];
   let measureColumns = [];
-  let dimensionColumn;
+
+  /* Separate out dimension column */
+  $: dimensionColumn = columns?.find((c) => c.name == dimensionName);
+  $: measureColumns = columns?.filter((c) => c.name !== dimensionName);
+
   let horizontalScrolling = false;
 
   $: if (rows && columns) {
@@ -106,43 +93,12 @@ TableCells – the cell contents.
       initialOffset: rowScrollOffset,
     });
 
-    estimateColumnSize = columns.map((column, i) => {
-      if (column.name.includes("delta")) return config.comparisonColumnWidth;
-      if (i != 0) return config.defaultColumnWidth;
-
-      const largestStringLength =
-        columnWidths[column.name] * CHARACTER_WIDTH + CHARACTER_X_PAD;
-
-      /** The header width is largely a function of the total number of characters in the column.*/
-      const headerWidth =
-        (column.label?.length || column.name.length) * CHARACTER_WIDTH +
-        HEADER_ICON_WIDTHS +
-        HEADER_X_PAD +
-        HEADER_FLEX_SPACING;
-
-      /** If the header is bigger than the largestStringLength and that's not at threshold, default to threshold.
-       * This will prevent the case where we have very long column names for very short column values.
-       */
-      let effectiveHeaderWidth =
-        headerWidth > 160 && largestStringLength < 160
-          ? config.minHeaderWidthWhenColumsAreSmall
-          : headerWidth;
-
-      return largestStringLength
-        ? Math.min(
-            config.maxColumnWidth,
-            Math.max(
-              largestStringLength,
-              effectiveHeaderWidth,
-              /** All columns must be minColumnWidth regardless of user settings. */
-              config.minColumnWidth
-            )
-          )
-        : /** if there isn't a longet string length for some reason, let's go with a
-           * default column width. We should not be in this state.
-           */
-          config.defaultColumnWidth;
-    });
+    estimateColumnSize = estimateColumnSizes(
+      columns,
+      columnWidths,
+      containerWidth,
+      config
+    );
 
     const measureColumnSizeSum = estimateColumnSize
       .slice(1)
@@ -153,10 +109,6 @@ TableCells – the cell contents.
       containerWidth - measureColumnSizeSum - FILTER_COLUMN_WIDTH,
       estimateColumnSize[0]
     );
-
-    /* Separate out dimension column */
-    dimensionColumn = columns.find((c) => c.name == dimensionName);
-    measureColumns = columns.filter((c) => c.name !== dimensionName);
 
     columnVirtualizer = createVirtualizer({
       getScrollElement: () => container,
@@ -252,6 +204,7 @@ TableCells – the cell contents.
           selectedColumn={sortByColumn}
           columns={measureColumns}
           fallbackBGClass="bg-white"
+          {sortAscending}
           on:click-column={handleColumnHeaderClick}
         />
 

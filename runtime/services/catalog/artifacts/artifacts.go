@@ -42,7 +42,7 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, registryStore driver
 		return nil, fmt.Errorf("no artifact found for %s", extension)
 	}
 
-	blob, err := repoStore.Get(ctx, instID, filePath)
+	blob, err := repoStore.Get(ctx, filePath)
 	if err != nil {
 		return nil, ErrFileRead
 	}
@@ -55,27 +55,38 @@ func Read(ctx context.Context, repoStore drivers.RepoStore, registryStore driver
 	// Hacky way to set a materialization default
 	materializeDefault, _ := strconv.ParseBool(instance.Variables["__materialize_default"])
 
-	// this is required in order to be able to use .env.KEY and not .KEY in template placeholders
-	env := map[string]map[string]string{"env": instance.ResolveVariables()}
-
-	// Add Sprig template functions (removing functions that leak host info)
-	// Derived from Helm: https://github.com/helm/helm/blob/main/pkg/engine/funcs.go
-	funcMap := sprig.TxtFuncMap()
-	delete(funcMap, "env")
-	delete(funcMap, "expandenv")
-
-	// convert templatised artifact
-	t, err := template.New("source").Funcs(funcMap).Option("missingkey=error").Parse(blob)
-	if err != nil {
-		return nil, err
+	// check if the file is in dashboards folder
+	// hacky way of checking if the file is a metricsview definition, assuming unix file separator
+	components := strings.Split(filePath, "/")
+	isDashboard := false
+	if len(components) > 1 {
+		isDashboard = components[len(components)-2] == "dashboards"
 	}
 
-	bw := new(bytes.Buffer)
-	if err := t.Execute(bw, env); err != nil {
-		return nil, err
+	if !isDashboard {
+		// this is required in order to be able to use .env.KEY and not .KEY in template placeholders
+		env := map[string]map[string]string{"env": instance.ResolveVariables()}
+
+		// Add Sprig template functions (removing functions that leak host info)
+		// Derived from Helm: https://github.com/helm/helm/blob/main/pkg/engine/funcs.go
+		funcMap := sprig.TxtFuncMap()
+		delete(funcMap, "env")
+		delete(funcMap, "expandenv")
+
+		// convert templatised artifact
+		t, err := template.New("source").Funcs(funcMap).Option("missingkey=error").Parse(blob)
+		if err != nil {
+			return nil, err
+		}
+
+		bw := new(bytes.Buffer)
+		if err := t.Execute(bw, env); err != nil {
+			return nil, err
+		}
+		blob = bw.String()
 	}
 
-	catalog, err := artifact.DeSerialise(ctx, filePath, bw.String(), materializeDefault)
+	catalog, err := artifact.DeSerialise(ctx, filePath, blob, materializeDefault)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +111,7 @@ func Write(ctx context.Context, repoStore drivers.RepoStore, instID string, cata
 		return err
 	}
 
-	return repoStore.Put(ctx, instID, catalog.Path, strings.NewReader(blob))
+	return repoStore.Put(ctx, catalog.Path, strings.NewReader(blob))
 }
 
 var regex = regexp.MustCompile("^[a-zA-Z_][a-zA-Z0-9_]*$")

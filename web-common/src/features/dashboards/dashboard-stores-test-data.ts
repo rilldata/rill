@@ -3,8 +3,17 @@ import {
   metricsExplorerStore,
 } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
+import {
+  getOffset,
+  getStartOfPeriod,
+} from "@rilldata/web-common/lib/time/transforms";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import {
+  Period,
+  TimeOffsetType,
+  TimeRangePreset,
+} from "@rilldata/web-common/lib/time/types";
 import {
   MetricsViewDimension,
   MetricsViewMeasure,
@@ -19,6 +28,7 @@ import { get, writable } from "svelte/store";
 import { expect } from "vitest";
 
 export const AD_BIDS_NAME = "AdBids";
+export const AD_BIDS_SOURCE_NAME = "AdBids_Source";
 export const AD_BIDS_MIRROR_NAME = "AdBids_mirror";
 
 export const AD_BIDS_IMPRESSIONS_MEASURE = "impressions";
@@ -27,6 +37,7 @@ export const AD_BIDS_PUBLISHER_COUNT_MEASURE = "publisher_count";
 export const AD_BIDS_PUBLISHER_DIMENSION = "publisher";
 export const AD_BIDS_DOMAIN_DIMENSION = "domain";
 export const AD_BIDS_COUNTRY_DIMENSION = "country";
+export const AD_BIDS_TIMESTAMP_DIMENSION = "timestamp";
 
 export const AD_BIDS_INIT_MEASURES = [
   {
@@ -80,6 +91,13 @@ export const TestTimeConstants = {
   LAST_18_HOURS: new Date(Date.now() - Hour * 18),
   LAST_DAY: new Date(Date.now() - Hour * 24),
 };
+export const TestTimeOffsetConstants = {
+  NOW: getOffsetByHour(TestTimeConstants.NOW),
+  LAST_6_HOURS: getOffsetByHour(TestTimeConstants.LAST_6_HOURS),
+  LAST_12_HOURS: getOffsetByHour(TestTimeConstants.LAST_12_HOURS),
+  LAST_18_HOURS: getOffsetByHour(TestTimeConstants.LAST_18_HOURS),
+  LAST_DAY: getOffsetByHour(TestTimeConstants.LAST_DAY),
+};
 export const AD_BIDS_DEFAULT_TIME_RANGE = {
   name: TimeRangePreset.ALL_TIME,
   interval: V1TimeGrain.TIME_GRAIN_HOUR,
@@ -93,10 +111,15 @@ export const AD_BIDS_DEFAULT_URL_TIME_RANGE = {
   end: undefined,
 };
 
-export const AD_BIDS_INIT = {
+export const AD_BIDS_INIT: V1MetricsView = {
   name: "AdBids",
+  model: "AdBids_Source",
   measures: AD_BIDS_INIT_MEASURES,
   dimensions: AD_BIDS_INIT_DIMENSIONS,
+};
+export const AD_BIDS_INIT_WITH_TIME: V1MetricsView = {
+  ...AD_BIDS_INIT,
+  timeDimension: AD_BIDS_TIMESTAMP_DIMENSION,
 };
 export const AD_BIDS_WITH_DELETED_MEASURE = {
   name: "AdBids",
@@ -187,6 +210,9 @@ export function createDashboardState(
     leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
 
     selectedTimeRange: timeRange,
+
+    dashboardSortType: undefined,
+    sortDirection: undefined,
   };
 }
 
@@ -246,6 +272,7 @@ export function createMetricsMetaQueryMock(
   return mock;
 }
 
+// Wrapper function to simplify assert call
 export function assertMetricsView(
   name: string,
   filters: V1MetricsViewFilter = {
@@ -254,6 +281,17 @@ export function assertMetricsView(
   },
   timeRange: DashboardTimeControls = AD_BIDS_DEFAULT_TIME_RANGE,
   selectedMeasure = AD_BIDS_IMPRESSIONS_MEASURE
+) {
+  assertMetricsViewRaw(name, filters, timeRange, selectedMeasure);
+}
+// Raw assert function without any optional params.
+// This allows us to assert for `undefined`
+// TODO: find a better solution that this hack
+export function assertMetricsViewRaw(
+  name: string,
+  filters: V1MetricsViewFilter,
+  timeRange: DashboardTimeControls,
+  selectedMeasure: string
 ) {
   const metricsView = get(metricsExplorerStore).entities[name];
   expect(metricsView.filters).toEqual(filters);
@@ -273,6 +311,15 @@ export function assertVisiblePartsOfMetricsView(
     expect([...metricsView.visibleDimensionKeys].sort()).toEqual(
       dimensions.sort()
     );
+}
+
+export function getOffsetByHour(time: Date) {
+  return getOffset(
+    getStartOfPeriod(time, Period.HOUR, getLocalIANA()),
+    Period.HOUR,
+    TimeOffsetType.ADD,
+    getLocalIANA()
+  );
 }
 
 export const AD_BIDS_BASE_FILTER = {

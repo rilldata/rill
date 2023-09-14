@@ -17,6 +17,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/update"
 	"github.com/rilldata/rill/cli/pkg/variable"
 	"github.com/rilldata/rill/cli/pkg/web"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -61,9 +62,10 @@ type App struct {
 	ProjectPath           string
 	observabilityShutdown observability.ShutdownFunc
 	loggerCleanUp         func()
+	activity              activity.Client
 }
 
-func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string) (*App, error) {
+func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string, client activity.Client) (*App, error) {
 	logger, cleanupFn := initLogger(verbose, logFormat)
 	// Init Prometheus telemetry
 	shutdown, err := observability.Start(ctx, logger, &observability.Options{
@@ -77,14 +79,23 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 	}
 
 	// Create a local runtime with an in-memory metastore
-	rtOpts := &runtime.Options{
-		ConnectionCacheSize: 100,
-		MetastoreDriver:     "sqlite",
-		MetastoreDSN:        "file:rill?mode=memory&cache=shared",
-		QueryCacheSizeBytes: int64(datasize.MB * 100),
-		AllowHostAccess:     true,
+	systemConnectors := []*runtimev1.Connector{
+		{
+			Type:   "sqlite",
+			Name:   "metastore",
+			Config: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
+		},
 	}
-	rt, err := runtime.New(rtOpts, logger)
+
+	rtOpts := &runtime.Options{
+		ConnectionCacheSize:     100,
+		MetastoreConnector:      "metastore",
+		QueryCacheSizeBytes:     int64(datasize.MB * 100),
+		AllowHostAccess:         true,
+		SystemConnectors:        systemConnectors,
+		SecurityEngineCacheSize: 1000,
+	}
+	rt, err := runtime.New(rtOpts, logger, client)
 	if err != nil {
 		return nil, err
 	}
@@ -109,16 +120,39 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 		return nil, err
 	}
 
+	if reset {
+		err := drivers.Drop(olapDriver, map[string]any{"dsn": olapDSN}, logger)
+		if err != nil {
+			return nil, fmt.Errorf("failed to clean OLAP: %w", err)
+		}
+	}
+
+	// Set default DuckDB pool size to 4
+	olapCfg := map[string]string{"dsn": olapDSN}
+	if olapDriver == "duckdb" {
+		olapCfg["pool_size"] = "4"
+	}
+
 	// Create instance with its repo set to the project directory
 	inst := &drivers.Instance{
-		ID:           DefaultInstanceID,
-		Annotations:  map[string]string{},
-		OLAPDriver:   olapDriver,
-		OLAPDSN:      olapDSN,
-		RepoDriver:   "file",
-		RepoDSN:      projectPath,
-		EmbedCatalog: olapDriver == "duckdb",
-		Variables:    parsedVariables,
+		ID:            DefaultInstanceID,
+		Annotations:   map[string]string{},
+		OLAPConnector: "olap",
+		RepoConnector: "repo",
+		EmbedCatalog:  olapDriver == "duckdb",
+		Variables:     parsedVariables,
+		Connectors: []*runtimev1.Connector{
+			{
+				Type:   "file",
+				Name:   "repo",
+				Config: map[string]string{"dsn": projectPath},
+			},
+			{
+				Type:   olapDriver,
+				Name:   "olap",
+				Config: olapCfg,
+			},
+		},
 	}
 	err = rt.CreateInstance(ctx, inst)
 	if err != nil {
@@ -137,6 +171,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose bool, olapDriver, o
 		ProjectPath:           projectPath,
 		observabilityShutdown: shutdown,
 		loggerCleanUp:         cleanupFn,
+		activity:              client,
 	}
 	return app, nil
 }
@@ -155,10 +190,11 @@ func (a *App) Close() error {
 }
 
 func (a *App) IsProjectInit() bool {
-	repo, err := a.Runtime.Repo(a.Context, a.Instance.ID)
+	repo, release, err := a.Runtime.Repo(a.Context, a.Instance.ID)
 	if err != nil {
 		panic(err) // checks in New should ensure it never happens
 	}
+	defer release()
 
 	c := rillv1beta.New(repo, a.Instance.ID)
 	return c.IsInit(a.Context)
@@ -255,7 +291,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		AllowedOrigins:  []string{"*"},
 		ServePrometheus: true,
 	}
-	runtimeServer, err := runtimeserver.NewServer(ctx, opts, a.Runtime, serverLogger, ratelimit.NewNoop(), activity.NewNoopClient())
+	runtimeServer, err := runtimeserver.NewServer(ctx, opts, a.Runtime, serverLogger, ratelimit.NewNoop(), a.activity)
 	if err != nil {
 		return err
 	}

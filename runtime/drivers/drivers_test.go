@@ -6,6 +6,7 @@ import (
 
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
@@ -19,7 +20,7 @@ import (
 // This should be the only "real" test in the package. Other tests should be added
 // as subtests of TestAll.
 func TestAll(t *testing.T) {
-	var matrix = []func(t *testing.T, fn func(driver string, dsn string)) error{
+	var matrix = []func(t *testing.T, fn func(driver string, shared bool, cfg map[string]any)) error{
 		withDuckDB,
 		withFile,
 		withPostgres,
@@ -28,9 +29,9 @@ func TestAll(t *testing.T) {
 	}
 
 	for _, withDriver := range matrix {
-		err := withDriver(t, func(driver string, dsn string) {
+		err := withDriver(t, func(driver string, shared bool, cfg map[string]any) {
 			// Open
-			conn, err := drivers.Open(driver, map[string]any{"dsn": dsn}, zap.NewNop())
+			conn, err := drivers.Open(driver, cfg, shared, activity.NewNoopClient(), zap.NewNop())
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 
@@ -45,13 +46,13 @@ func TestAll(t *testing.T) {
 			if registry, ok := conn.AsRegistry(); ok {
 				t.Run("registry_"+driver, func(t *testing.T) { testRegistry(t, registry) })
 			}
-			if catalog, ok := conn.AsCatalogStore(); ok {
+			if catalog, ok := conn.AsCatalogStore(""); ok {
 				t.Run("catalog_"+driver, func(t *testing.T) { testCatalog(t, catalog) })
 			}
-			if repo, ok := conn.AsRepoStore(); ok {
+			if repo, ok := conn.AsRepoStore(""); ok {
 				t.Run("repo_"+driver, func(t *testing.T) { testRepo(t, repo) })
 			}
-			if olap, ok := conn.AsOLAP(); ok {
+			if olap, ok := conn.AsOLAP(""); ok {
 				t.Run("olap_"+driver, func(t *testing.T) { testOLAP(t, olap) })
 			}
 
@@ -62,26 +63,26 @@ func TestAll(t *testing.T) {
 	}
 }
 
-func withDuckDB(t *testing.T, fn func(driver string, dsn string)) error {
-	fn("duckdb", "?access_mode=read_write&rill_pool_size=4")
+func withDuckDB(t *testing.T, fn func(driver string, shared bool, cfg map[string]any)) error {
+	fn("duckdb", false, map[string]any{"dsn": "?access_mode=read_write", "pool_size": 4})
 	return nil
 }
 
-func withFile(t *testing.T, fn func(driver string, dsn string)) error {
+func withFile(t *testing.T, fn func(driver string, shared bool, cfg map[string]any)) error {
 	dsn := t.TempDir()
-	fn("file", dsn)
+	fn("file", false, map[string]any{"dsn": dsn})
 	return nil
 }
 
-func withPostgres(t *testing.T, fn func(driver string, dsn string)) error {
+func withPostgres(t *testing.T, fn func(driver string, shared bool, cfg map[string]any)) error {
 	pg := pgtestcontainer.New(t)
 	defer pg.Terminate(t)
 
-	fn("postgres", pg.DatabaseURL)
+	fn("postgres", true, map[string]any{"dsn": pg.DatabaseURL})
 	return nil
 }
 
-func withSQLite(t *testing.T, fn func(driver string, dsn string)) error {
-	fn("sqlite", ":memory:")
+func withSQLite(t *testing.T, fn func(driver string, shared bool, cfg map[string]any)) error {
+	fn("sqlite", true, map[string]any{"dsn": ":memory:"})
 	return nil
 }

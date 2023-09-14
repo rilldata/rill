@@ -15,6 +15,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
@@ -85,15 +86,19 @@ type configProperties struct {
 }
 
 // Open implements drivers.Driver
-func (d driver) Open(config map[string]any, logger *zap.Logger) (drivers.Connection, error) {
-	conf := &configProperties{}
-	err := mapstructure.Decode(config, conf)
+func (d driver) Open(cfgMap map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if shared {
+		return nil, fmt.Errorf("s3 driver can't be shared")
+	}
+
+	cfg := &configProperties{}
+	err := mapstructure.Decode(cfgMap, cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	conn := &Connection{
-		config: conf,
+		config: cfg,
 		logger: logger,
 	}
 	return conn, nil
@@ -108,17 +113,13 @@ func (d driver) Spec() drivers.Spec {
 	return spec
 }
 
-func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
-	b, ok := src.BucketSource()
-	if !ok {
-		return false, fmt.Errorf("require bucket source")
-	}
-	conf, err := parseSourceProperties(b.Properties)
+func (d driver) HasAnonymousSourceAccess(ctx context.Context, props map[string]any, logger *zap.Logger) (bool, error) {
+	conf, err := parseSourceProperties(props)
 	if err != nil {
 		return false, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	c, err := d.Open(map[string]any{}, logger)
+	c, err := d.Open(map[string]any{}, false, activity.NewNoopClient(), logger)
 	if err != nil {
 		return false, err
 	}
@@ -139,7 +140,7 @@ type Connection struct {
 	logger *zap.Logger
 }
 
-var _ drivers.Connection = &Connection{}
+var _ drivers.Handle = &Connection{}
 
 // Driver implements drivers.Connection.
 func (c *Connection) Driver() string {
@@ -149,7 +150,7 @@ func (c *Connection) Driver() string {
 // Config implements drivers.Connection.
 func (c *Connection) Config() map[string]any {
 	m := make(map[string]any, 0)
-	_ = mapstructure.Decode(c.config, m)
+	_ = mapstructure.Decode(c.config, &m)
 	return m
 }
 
@@ -164,17 +165,17 @@ func (c *Connection) AsRegistry() (drivers.RegistryStore, bool) {
 }
 
 // Catalog implements drivers.Connection.
-func (c *Connection) AsCatalogStore() (drivers.CatalogStore, bool) {
+func (c *Connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
 // Repo implements drivers.Connection.
-func (c *Connection) AsRepoStore() (drivers.RepoStore, bool) {
+func (c *Connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
 
 // OLAP implements drivers.Connection.
-func (c *Connection) AsOLAP() (drivers.OLAPStore, bool) {
+func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
@@ -194,7 +195,7 @@ func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 // AsTransporter implements drivers.Connection.
-func (c *Connection) AsTransporter(from, to drivers.Connection) (drivers.Transporter, bool) {
+func (c *Connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
 	return nil, false
 }
 
@@ -209,19 +210,21 @@ func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 }
 
 type sourceProperties struct {
-	Path                  string `mapstructure:"path"`
-	AWSRegion             string `mapstructure:"region"`
-	GlobMaxTotalSize      int64  `mapstructure:"glob.max_total_size"`
-	GlobMaxObjectsMatched int    `mapstructure:"glob.max_objects_matched"`
-	GlobMaxObjectsListed  int64  `mapstructure:"glob.max_objects_listed"`
-	GlobPageSize          int    `mapstructure:"glob.page_size"`
-	S3Endpoint            string `mapstructure:"endpoint"`
+	Path                  string         `mapstructure:"path"`
+	AWSRegion             string         `mapstructure:"region"`
+	GlobMaxTotalSize      int64          `mapstructure:"glob.max_total_size"`
+	GlobMaxObjectsMatched int            `mapstructure:"glob.max_objects_matched"`
+	GlobMaxObjectsListed  int64          `mapstructure:"glob.max_objects_listed"`
+	GlobPageSize          int            `mapstructure:"glob.page_size"`
+	S3Endpoint            string         `mapstructure:"endpoint"`
+	Extract               map[string]any `mapstructure:"extract"`
 	url                   *globutil.URL
+	extractPolicy         *rillblob.ExtractPolicy
 }
 
 func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 	conf := &sourceProperties{}
-	err := mapstructure.Decode(props, conf)
+	err := mapstructure.WeakDecode(props, conf)
 	if err != nil {
 		return nil, err
 	}
@@ -234,11 +237,17 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse path %q, %w", conf.Path, err)
 	}
+	conf.url = url
 
 	if url.Scheme != "s3" {
 		return nil, fmt.Errorf("invalid s3 path %q, should start with s3://", conf.Path)
 	}
-	conf.url = url
+
+	conf.extractPolicy, err = rillblob.ParseExtractPolicy(conf.Extract)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse extract config: %w", err)
+	}
+
 	return conf, nil
 }
 
@@ -250,8 +259,8 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 //   - aws_session_token
 //
 // Additionally in case allow_host_credentials is true it looks for credentials stored on host machine as well
-func (c *Connection) DownloadFiles(ctx context.Context, src *drivers.BucketSource) (drivers.FileIterator, error) {
-	conf, err := parseSourceProperties(src.Properties)
+func (c *Connection) DownloadFiles(ctx context.Context, src map[string]any) (drivers.FileIterator, error) {
+	conf, err := parseSourceProperties(src)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
@@ -273,7 +282,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, src *drivers.BucketSourc
 		GlobMaxObjectsListed:  conf.GlobMaxObjectsListed,
 		GlobPageSize:          conf.GlobPageSize,
 		GlobPattern:           conf.url.Path,
-		ExtractPolicy:         src.ExtractPolicy,
+		ExtractPolicy:         conf.extractPolicy,
 	}
 
 	it, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)

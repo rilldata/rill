@@ -4,6 +4,7 @@ This component will draw an axis on the specified side.
 <script lang="ts">
   import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { IntTimesPowerOfTenFormatter } from "@rilldata/web-common/lib/number-formatting/strategies/IntTimesPowerOfTen";
+  import { formatMsInterval } from "@rilldata/web-common/lib/number-formatting/strategies/intervals";
   import { timeFormat } from "d3-time-format";
   import { getContext } from "svelte";
   import { contexts } from "../constants";
@@ -134,6 +135,7 @@ This component will draw an axis on the specified side.
     const millisecondDiff = diff < 1;
     const secondDiff = diff < 60;
     const twoDayDiff = diff / (60 * 60) < 48;
+    const threeDaysDiff = diff / (60 * 60) < 24 * 3;
     const fourDaysDiff = diff / (60 * 60) < 24 * 4;
     const manyDaysDiff = diff / (60 * 60 * 24) < 60;
     const manyMonthsDiff = diff / (60 * 60 * 24) < 3 * 365;
@@ -142,7 +144,7 @@ This component will draw an axis on the specified side.
       return [timeFormat("%M:%S.%L"), timeFormat("%H %d %b %Y")];
     } else if (secondDiff) {
       return [timeFormat("%M:%S"), timeFormat("%H %d %b %Y")];
-    } else if (twoDayDiff) {
+    } else if (twoDayDiff || threeDaysDiff) {
       return [timeFormat("%H:%M"), timeFormat("%d %b %Y")];
     } else if (fourDaysDiff || manyDaysDiff) {
       return [timeFormat("%b %d"), timeFormat("%Y")];
@@ -181,7 +183,10 @@ This component will draw an axis on the specified side.
       onInvalidInput: "consoleWarn",
       padWithInsignificantZeros: false,
     });
-    formatterFunction = (x) => formatter.stringFormat(x);
+    formatterFunction = (x) =>
+      numberKind === "INTERVAL"
+        ? formatMsInterval(x)
+        : formatter.stringFormat(x);
   }
 
   let axisLength;

@@ -5,10 +5,15 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/c2h5oh/datasize"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
 )
 
-const _iteratorBatch = 8
+const (
+	_iteratorBatch            = 32
+	_iteratorBatchSizeInBytes = int64(5 * datasize.GB)
+)
 
 var ErrIngestionLimitExceeded = fmt.Errorf("connectors: source ingestion exceeds limit")
 
@@ -42,13 +47,13 @@ func Register(name string, driver Driver) {
 }
 
 // Open opens a new connection
-func Open(driver string, config map[string]any, logger *zap.Logger) (Connection, error) {
+func Open(driver string, config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (Handle, error) {
 	d, ok := Drivers[driver]
 	if !ok {
 		return nil, fmt.Errorf("unknown driver: %s", driver)
 	}
 
-	conn, err := d.Open(config, logger)
+	conn, err := d.Open(config, shared, client, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -71,18 +76,18 @@ type Driver interface {
 	Spec() Spec
 
 	// Open opens a new connection to an underlying store.
-	Open(config map[string]any, logger *zap.Logger) (Connection, error)
+	Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (Handle, error)
 
 	// Drop tears down a store. Drivers that do not support it return ErrDropNotSupported.
 	Drop(config map[string]any, logger *zap.Logger) error
 
 	// HasAnonymousSourceAccess returns true if external system can be accessed without credentials
-	HasAnonymousSourceAccess(ctx context.Context, src Source, logger *zap.Logger) (bool, error)
+	HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error)
 }
 
-// Connection represents a connection to an underlying DB.
+// Handle represents a connection to an underlying DB.
 // It should implement one or more of RegistryStore, CatalogStore, RepoStore, and OLAPStore.
-type Connection interface {
+type Handle interface {
 	// Driver type (like "duckdb")
 	Driver() string
 
@@ -105,15 +110,15 @@ type Connection interface {
 
 	// AsCatalogStore returns a AsCatalogStore if the driver can serve as such, otherwise returns false.
 	// A catalog is used to store state about migrated/deployed objects (such as sources and metrics views).
-	AsCatalogStore() (CatalogStore, bool)
+	AsCatalogStore(instanceID string) (CatalogStore, bool)
 
 	// AsRepoStore returns a AsRepoStore if the driver can serve as such, otherwise returns false.
 	// A repo stores file artifacts (either in a folder or virtualized in a database).
-	AsRepoStore() (RepoStore, bool)
+	AsRepoStore(instanceID string) (RepoStore, bool)
 
 	// AsOLAP returns an AsOLAP if the driver can serve as such, otherwise returns false.
 	// OLAP stores are where we actually store, transform, and query users' data.
-	AsOLAP() (OLAPStore, bool)
+	AsOLAP(instanceID string) (OLAPStore, bool)
 
 	// AsObjectStore returns an ObjectStore if the driver can serve as such, otherwise returns false.
 	AsObjectStore() (ObjectStore, bool)
@@ -126,7 +131,7 @@ type Connection interface {
 	// Examples:
 	// a) myDuckDB.AsTransporter(myGCS, myDuckDB)
 	// b) myBeam.AsTransporter(myGCS, myS3) // In the future
-	AsTransporter(from Connection, to Connection) (Transporter, bool)
+	AsTransporter(from Handle, to Handle) (Transporter, bool)
 
 	// AsSQLStore returns a SQLStore if the driver can serve as such, otherwise returns false.
 	AsSQLStore() (SQLStore, bool)

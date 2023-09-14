@@ -1,7 +1,7 @@
-import type { V1Connector } from "@rilldata/web-common/runtime-client";
+import type { V1ConnectorSpec } from "@rilldata/web-common/runtime-client";
 import * as yup from "yup";
 
-export function getYupSchema(connector: V1Connector) {
+export function getYupSchema(connector: V1ConnectorSpec) {
   switch (connector.name) {
     case "s3":
       return yup.object().shape({
@@ -67,7 +67,7 @@ export function getYupSchema(connector: V1Connector) {
             "Source name must start with a letter or underscore and contain only letters, numbers, and underscores"
           )
           .required("Source name is required"),
-        project_id: yup.string(),
+        project_id: yup.string().required("project_id is required"),
       });
     default:
       throw new Error(`Unknown connector: ${connector.name}`);

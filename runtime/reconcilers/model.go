@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"golang.org/x/exp/slog"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -33,19 +35,47 @@ func (r *ModelReconciler) Close(ctx context.Context) error {
 	return nil
 }
 
+func (r *ModelReconciler) AssignSpec(from, to *runtimev1.Resource) error {
+	a := from.GetModel()
+	b := to.GetModel()
+	if a == nil || b == nil {
+		return fmt.Errorf("cannot assign spec from %T to %T", from.Resource, to.Resource)
+	}
+	b.Spec = a.Spec
+	return nil
+}
+
+func (r *ModelReconciler) AssignState(from, to *runtimev1.Resource) error {
+	a := from.GetModel()
+	b := to.GetModel()
+	if a == nil || b == nil {
+		return fmt.Errorf("cannot assign state from %T to %T", from.Resource, to.Resource)
+	}
+	b.Spec = a.Spec
+	return nil
+}
+
+func (r *ModelReconciler) ResetState(res *runtimev1.Resource) error {
+	res.GetModel().State = &runtimev1.ModelState{}
+	return nil
+}
+
 func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceName) runtime.ReconcileResult {
-	self, err := r.C.Get(ctx, n)
+	self, err := r.C.Get(ctx, n, true)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
 	model := self.GetModel()
+	if model == nil {
+		return runtime.ReconcileResult{Err: errors.New("not a model")}
+	}
 
 	// The view/table name is derived from the resource name.
 	// We only set src.State.Table after it has been created,
 	tableName := self.Meta.Name.Name
 
 	// Handle deletion
-	if self.Meta.Deleted {
+	if self.Meta.DeletedOn != nil {
 		if t, ok := olapTableInfo(ctx, r.C, model.State.Connector, model.State.Table); ok {
 			olapDropTableIfExists(ctx, r.C, model.State.Connector, model.State.Table, t.View)
 		}
@@ -58,13 +88,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// Handle renames
 	if self.Meta.RenamedFrom != nil {
 		if t, ok := olapTableInfo(ctx, r.C, model.State.Connector, model.State.Table); ok {
-			// Clear any existing table with the new name
-			if t2, ok := olapTableInfo(ctx, r.C, model.State.Connector, tableName); ok {
-				olapDropTableIfExists(ctx, r.C, model.State.Connector, t2.Name, t2.View)
-			}
-
 			// Rename and update state
-			err = olapRenameTable(ctx, r.C, model.State.Connector, model.State.Table, tableName, t.View)
+			err = olapForceRenameTable(ctx, r.C, model.State.Connector, model.State.Table, t.View, tableName)
 			if err != nil {
 				return runtime.ReconcileResult{Err: fmt.Errorf("failed to rename model: %w", err)}
 			}
@@ -77,12 +102,28 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		// Note: Not exiting early. It might need to be created/materialized., and we need to set the correct retrigger time based on the refresh schedule.
 	}
 
-	// TODO: Exit if refs have errors
-
-	// TODO: Incorporate changes to refs in hash – track if refs have changed (deleted, added, or state updated)
+	// Check refs - stop if any of them are invalid
+	err = checkRefs(ctx, r.C, self.Meta.Refs)
+	if err != nil {
+		if !model.Spec.StageChanges && model.State.Table != "" {
+			// Remove previously ingested table
+			if t, ok := olapTableInfo(ctx, r.C, model.State.Connector, model.State.Table); ok {
+				olapDropTableIfExists(ctx, r.C, model.State.Connector, model.State.Table, t.View)
+			}
+			model.State.Connector = ""
+			model.State.Table = ""
+			model.State.SpecHash = ""
+			model.State.RefreshedOn = nil
+			err = r.C.UpdateState(ctx, self.Meta.Name, self)
+			if err != nil {
+				r.C.Logger.Error("refs check: failed to update state", slog.Any("err", err))
+			}
+		}
+		return runtime.ReconcileResult{Err: err}
+	}
 
 	// Use a hash of execution-related fields from the spec to determine if something has changed
-	hash, err := r.executionSpecHash(model.Spec)
+	hash, err := r.executionSpecHash(ctx, self.Meta.Refs, model.Spec)
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to compute hash: %w", err)}
 	}
@@ -108,6 +149,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// Decide if we should trigger an update
 	trigger := model.Spec.Trigger
 	trigger = trigger || model.State.Table == ""
+	trigger = trigger || model.State.Table != tableName
 	trigger = trigger || model.State.RefreshedOn == nil
 	trigger = trigger || model.State.SpecHash != hash
 	trigger = trigger || !exists
@@ -171,12 +213,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		createErr = fmt.Errorf("failed to create model: %w", createErr)
 	}
 	if createErr == nil && stage {
-		// Drop the main view/table
-		if t, ok := olapTableInfo(ctx, r.C, connector, tableName); ok {
-			olapDropTableIfExists(ctx, r.C, connector, t.Name, t.View)
-		}
 		// Rename the staging table to main view/table
-		err = olapRenameTable(ctx, r.C, connector, stagingTableName, tableName, !materialize)
+		err = olapForceRenameTable(ctx, r.C, connector, stagingTableName, !materialize, tableName)
 		if err != nil {
 			return runtime.ReconcileResult{Err: fmt.Errorf("failed to rename staged model: %w", err)}
 		}
@@ -231,8 +269,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 	// Reset spec.Trigger
 	if model.Spec.Trigger {
-		model.Spec.Trigger = false
-		err = r.C.UpdateSpec(ctx, self.Meta.Name, self.Meta.Refs, self.Meta.Owner, self.Meta.FilePaths, self)
+		err := r.setTriggerFalse(ctx, n)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
@@ -269,9 +306,34 @@ func (r *ModelReconciler) delayedMaterializeTime(spec *runtimev1.ModelSpec, sinc
 	return since.Add(time.Duration(spec.MaterializeDelaySeconds) * time.Second), true
 }
 
-// executionSpecHash computes a hash of only those model spec properties that impact execution.
-func (r *ModelReconciler) executionSpecHash(spec *runtimev1.ModelSpec) (string, error) {
+// executionSpecHash computes a hash of only those model properties that impact execution.
+func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtimev1.ResourceName, spec *runtimev1.ModelSpec) (string, error) {
 	hash := md5.New()
+
+	for _, ref := range refs { // Refs are always sorted
+		// Write name
+		_, err := hash.Write([]byte(ref.Kind))
+		if err != nil {
+			return "", err
+		}
+		_, err = hash.Write([]byte(ref.Name))
+		if err != nil {
+			return "", err
+		}
+
+		// Write state version (doesn't matter how the spec or meta has changed, only if/when state changes)
+		r, err := r.C.Get(ctx, ref, false)
+		var stateVersion int64
+		if err == nil {
+			stateVersion = r.Meta.StateVersion
+		} else {
+			stateVersion = -1
+		}
+		err = binary.Write(hash, binary.BigEndian, stateVersion)
+		if err != nil {
+			return "", err
+		}
+	}
 
 	_, err := hash.Write([]byte(spec.Connector))
 	if err != nil {
@@ -301,6 +363,26 @@ func (r *ModelReconciler) executionSpecHash(spec *runtimev1.ModelSpec) (string, 
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
+// setTriggerFalse sets the model's spec.Trigger to false.
+// Unlike the State, the Spec may be edited concurrently with a Reconcile call, so we need to read and edit it under a lock.
+func (r *ModelReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.ResourceName) error {
+	r.C.Lock(ctx)
+	defer r.C.Unlock(ctx)
+
+	self, err := r.C.Get(ctx, n, false)
+	if err != nil {
+		return err
+	}
+
+	model := self.GetModel()
+	if model == nil {
+		return fmt.Errorf("not a model")
+	}
+
+	model.Spec.Trigger = false
+	return r.C.UpdateSpec(ctx, self.Meta.Name, self)
+}
+
 // createModel creates or updates the model in the OLAP connector.
 func (r *ModelReconciler) createModel(ctx context.Context, self *runtimev1.Resource, tableName string, view bool) error {
 	inst, err := r.C.Runtime.FindInstance(ctx, r.C.InstanceID)
@@ -314,7 +396,7 @@ func (r *ModelReconciler) createModel(ctx context.Context, self *runtimev1.Resou
 	var sql string
 	if spec.UsesTemplating {
 		sql, err = compilerv1.ResolveTemplate(spec.Sql, compilerv1.TemplateData{
-			Claims:    map[string]interface{}{},
+			User:      map[string]interface{}{},
 			Variables: inst.ResolveVariables(),
 			Self: compilerv1.TemplateResource{
 				Meta:  self.Meta,
@@ -328,7 +410,7 @@ func (r *ModelReconciler) createModel(ctx context.Context, self *runtimev1.Resou
 				if name.Kind == compilerv1.ResourceKindUnspecified {
 					return compilerv1.TemplateResource{}, fmt.Errorf("can't resolve name %q without kind specified", name.Name)
 				}
-				res, err := r.C.Get(ctx, resourceNameFromCompiler(name))
+				res, err := r.C.Get(ctx, resourceNameFromCompiler(name), false)
 				if err != nil {
 					return compilerv1.TemplateResource{}, err
 				}
@@ -371,7 +453,8 @@ func (r *ModelReconciler) createModel(ctx context.Context, self *runtimev1.Resou
 	}
 
 	return olap.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("CREATE OR REPLACE %s %s AS (%s)", typ, safeSQLName(tableName), sql),
-		Priority: 100,
+		Query:       fmt.Sprintf("CREATE OR REPLACE %s %s AS (%s)", typ, safeSQLName(tableName), sql),
+		Priority:    100,
+		LongRunning: true,
 	})
 }

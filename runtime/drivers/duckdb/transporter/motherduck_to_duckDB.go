@@ -13,13 +13,13 @@ import (
 
 type motherduckToDuckDB struct {
 	to     drivers.OLAPStore
-	from   drivers.Connection
+	from   drivers.Handle
 	logger *zap.Logger
 }
 
 var _ drivers.Transporter = &motherduckToDuckDB{}
 
-func NewMotherduckToDuckDB(from drivers.Connection, to drivers.OLAPStore, logger *zap.Logger) drivers.Transporter {
+func NewMotherduckToDuckDB(from drivers.Handle, to drivers.OLAPStore, logger *zap.Logger) drivers.Transporter {
 	return &motherduckToDuckDB{
 		to:     to,
 		from:   from,
@@ -27,19 +27,20 @@ func NewMotherduckToDuckDB(from drivers.Connection, to drivers.OLAPStore, logger
 	}
 }
 
-// TODO :: should it run count from user_query to set target in progress ?
-func (t *motherduckToDuckDB) Transfer(ctx context.Context, source drivers.Source, sink drivers.Sink, opts *drivers.TransferOpts, p drivers.Progress) error {
-	src, ok := source.DatabaseSource()
-	if !ok {
-		return fmt.Errorf("type of source should `drivers.DatabaseSource`")
+// TODO: should it run count from user_query to set target in progress ?
+func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[string]any, opts *drivers.TransferOpts, p drivers.Progress) error {
+	srcCfg, err := parseSourceProperties(srcProps)
+	if err != nil {
+		return err
 	}
-	fSink, ok := sink.DatabaseSink()
-	if !ok {
-		return fmt.Errorf("type of source should `drivers.DatabaseSink`")
+
+	sinkCfg, err := parseSinkProperties(sinkProps)
+	if err != nil {
+		return err
 	}
 
 	config := t.from.Config()
-	err := t.to.WithConnection(ctx, 1, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
+	err = t.to.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
 		res, err := t.to.Execute(ctx, &drivers.Statement{Query: "SELECT current_database();"})
 		if err != nil {
 			return err
@@ -74,9 +75,9 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, source drivers.Source
 			}
 		}
 
-		names := make([]string, 0)
+		var names []string
 
-		db := src.Database
+		db := srcCfg.Database
 		if db == "" {
 			// get list of all motherduck databases
 			res, err = t.to.Execute(ctx, &drivers.Statement{Query: "SELECT name FROM md_databases();"})
@@ -112,13 +113,13 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, source drivers.Source
 			}(ensuredCtx)
 		}
 
-		if src.SQL == "" {
-			return fmt.Errorf("property \"query\" is mandatory for connector \"motherduck\"")
+		if srcCfg.SQL == "" {
+			return fmt.Errorf("property \"sql\" is mandatory for connector \"motherduck\"")
 		}
 
-		userQuery := strings.TrimSpace(src.SQL)
+		userQuery := strings.TrimSpace(srcCfg.SQL)
 		userQuery, _ = strings.CutSuffix(userQuery, ";") // trim trailing semi colon
-		query := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s AS (%s);", safeName(localDB), safeName(fSink.Table), userQuery)
+		query := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s AS (%s);", safeName(localDB), safeName(sinkCfg.Table), userQuery)
 		return t.to.Exec(ctx, &drivers.Statement{Query: query})
 	})
 	return err

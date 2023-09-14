@@ -11,6 +11,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
@@ -59,24 +60,18 @@ func (m *sourceMigrator) Update(ctx context.Context,
 		return err
 	}
 
-	return olap.WithConnection(ctx, 100, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
-		tx, err := conn.BeginTx(ctx, nil)
-		if err != nil {
-			return err
-		}
-		defer func() { _ = tx.Rollback() }()
-
-		_, err = tx.ExecContext(ctx, fmt.Sprintf("DROP TABLE IF EXISTS %s", apiSource.Name))
+	return olap.WithConnection(ctx, 100, true, true, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("DROP TABLE IF EXISTS %s", apiSource.Name))
 		if err != nil {
 			return err
 		}
 
-		_, err = tx.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %s RENAME TO %s", tempName, apiSource.Name))
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %s RENAME TO %s", tempName, apiSource.Name))
 		if err != nil {
 			return err
 		}
 
-		return tx.Commit()
+		return nil
 	})
 }
 
@@ -122,9 +117,6 @@ func (m *sourceMigrator) IsEqual(ctx context.Context, cat1, cat2 *drivers.Catalo
 	if !isSQLSource && cat1.GetSource().Connector != cat2.GetSource().Connector {
 		return false
 	}
-	if !comparePolicy(cat1.GetSource().GetPolicy(), cat2.GetSource().GetPolicy()) {
-		return false
-	}
 
 	map2 := cat2.GetSource().Properties.AsMap()
 	if isSQLSource {
@@ -133,21 +125,6 @@ func (m *sourceMigrator) IsEqual(ctx context.Context, cat1, cat2 *drivers.Catalo
 	}
 
 	return equal(cat1.GetSource().Properties.AsMap(), map2)
-}
-
-func comparePolicy(p1, p2 *runtimev1.Source_ExtractPolicy) bool {
-	if (p1 != nil) == (p2 != nil) {
-		if p1 != nil {
-			// both non nil
-			return p1.FilesStrategy == p2.FilesStrategy &&
-				p1.FilesLimit == p2.FilesLimit &&
-				p1.RowsStrategy == p2.RowsStrategy &&
-				p1.RowsLimitBytes == p2.RowsLimitBytes
-		}
-		// both nil
-		return true
-	}
-	return false
 }
 
 func (m *sourceMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) (bool, error) {
@@ -186,21 +163,21 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 	}
 
 	logger = logger.With(zap.String("source", name))
-	var srcConnector drivers.Connection
+	var srcConnector drivers.Handle
 
 	if apiSource.Connector == "duckdb" {
-		srcConnector = olap.(drivers.Connection)
+		srcConnector = olap.(drivers.Handle)
 	} else {
 		var err error
 		variables := convertLower(opts.InstanceEnv)
-		srcConnector, err = drivers.Open(apiSource.Connector, connectorVariables(apiSource, variables, repo.Root()), logger)
+		srcConnector, err = drivers.Open(apiSource.Connector, connectorVariables(apiSource, variables, repo.Root()), false, activity.NewNoopClient(), logger)
 		if err != nil {
 			return fmt.Errorf("failed to open driver %w", err)
 		}
 		defer srcConnector.Close()
 	}
 
-	olapConnection := olap.(drivers.Connection)
+	olapConnection := olap.(drivers.Handle)
 	t, ok := olapConnection.AsTransporter(srcConnector, olapConnection)
 	if !ok {
 		t, ok = srcConnector.AsTransporter(srcConnector, olapConnection)
@@ -235,7 +212,7 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 			case <-ctxWithTimeout.Done():
 				return
 			case <-ticker.C:
-				olap, _ := olapConnection.AsOLAP()
+				olap, _ := olapConnection.AsOLAP("") // todo :: check this
 				if size, ok := olap.EstimateSize(); ok && size > ingestionLimit {
 					limitExceeded = true
 					cancel()
@@ -350,72 +327,13 @@ func (p *progress) Observe(val int64, unit drivers.ProgressUnit) {
 	}
 }
 
-func source(connector string, src *runtimev1.Source) (drivers.Source, error) {
+func source(connector string, src *runtimev1.Source) (map[string]any, error) {
 	props := src.Properties.AsMap()
-	switch connector {
-	case "s3":
-		return &drivers.BucketSource{
-			ExtractPolicy: src.Policy,
-			Properties:    props,
-		}, nil
-	case "gcs":
-		return &drivers.BucketSource{
-			ExtractPolicy: src.Policy,
-			Properties:    props,
-		}, nil
-	case "https":
-		return &drivers.FileSource{
-			Properties: props,
-		}, nil
-	case "local_file":
-		return &drivers.FileSource{
-			Properties: props,
-		}, nil
-	case "motherduck":
-		query, ok := props["sql"].(string)
-		if !ok {
-			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"motherduck\"")
-		}
-		var db string
-		if val, ok := props["db"].(string); ok {
-			db = val
-		}
-
-		return &drivers.DatabaseSource{
-			SQL:      query,
-			Database: db,
-		}, nil
-	case "duckdb":
-		query, ok := props["sql"].(string)
-		if !ok {
-			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"duckdb\"")
-		}
-		return &drivers.DatabaseSource{
-			SQL: query,
-		}, nil
-	case "bigquery":
-		query, ok := props["sql"].(string)
-		if !ok {
-			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"bigquery\"")
-		}
-		return &drivers.DatabaseSource{
-			SQL:   query,
-			Props: props,
-		}, nil
-	default:
-		return nil, fmt.Errorf("connector %v not supported", connector)
-	}
+	return props, nil
 }
 
-func sink(connector, tableName string) drivers.Sink {
-	switch connector {
-	case "duckdb":
-		return &drivers.DatabaseSink{
-			Table: tableName,
-		}
-	default:
-		return nil
-	}
+func sink(connector, tableName string) map[string]any {
+	return map[string]any{"table": tableName}
 }
 
 func connectorVariables(src *runtimev1.Source, env map[string]string, repoRoot string) map[string]any {

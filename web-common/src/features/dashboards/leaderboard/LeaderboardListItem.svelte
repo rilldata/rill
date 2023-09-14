@@ -17,14 +17,14 @@
 
   import LeaderboardTooltipContent from "./LeaderboardTooltipContent.svelte";
 
-  import PercentageChange from "../../../components/data-types/PercentageChange.svelte";
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
   import { humanizeDataType } from "../humanize-numbers";
   import LongBarZigZag from "./LongBarZigZag.svelte";
   import {
     LeaderboardItemData,
-    getFormatterValueForPercDiff,
+    formatContextColumnValue,
   } from "./leaderboard-utils";
+  import ContextColumnValue from "./ContextColumnValue.svelte";
 
   export let itemData: LeaderboardItemData;
   $: label = itemData.label;
@@ -51,17 +51,12 @@
 
   $: formattedValue = humanizeDataType(measureValue, formatPreset);
 
-  $: percentChangeFormatted =
-    showContext === LeaderboardContextColumn.DELTA_CHANGE
-      ? getFormatterValueForPercDiff(
-          measureValue && comparisonValue
-            ? measureValue - comparisonValue
-            : null,
-          comparisonValue
-        )
-      : showContext === LeaderboardContextColumn.PERCENT
-      ? getFormatterValueForPercDiff(measureValue, unfilteredTotal)
-      : undefined;
+  $: contextColumnFormattedValue = formatContextColumnValue(
+    itemData,
+    unfilteredTotal,
+    showContext,
+    formatPreset
+  );
 
   $: previousValueString =
     comparisonValue !== undefined && comparisonValue !== null
@@ -119,7 +114,8 @@
   <button
     class="flex flex-row w-full text-left transition-color"
     on:blur={onLeave}
-    on:click={() => {
+    on:click={(e) => {
+      if (e.shiftKey) return;
       dispatch("select-item", {
         label,
       });
@@ -176,14 +172,10 @@
               value={formattedValue || measureValue}
             />
           </div>
-          {#if percentChangeFormatted !== undefined}
-            <div
-              class="text-xs text-gray-500 dark:text-gray-400"
-              style:width="44px"
-            >
-              <PercentageChange value={percentChangeFormatted} />
-            </div>
-          {/if}
+          <ContextColumnValue
+            formattedValue={contextColumnFormattedValue}
+            {showContext}
+          />
         </div>
       </div>
     </BarAndLabel>

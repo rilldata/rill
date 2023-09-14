@@ -111,6 +111,7 @@ type TokenOptions struct {
 	TTL                 time.Duration
 	SystemPermissions   []Permission
 	InstancePermissions map[string][]Permission
+	Attributes          map[string]any
 }
 
 // NewToken issues a new JWT based on the provided options.
@@ -127,6 +128,7 @@ func (i *Issuer) NewToken(opts TokenOptions) (string, error) {
 		},
 		System:    opts.SystemPermissions,
 		Instances: opts.InstancePermissions,
+		Attrs:     opts.Attributes,
 	}
 
 	token := jwt.NewWithClaims(jwt.GetSigningMethod(i.signingKey.Algorithm), claims)
@@ -234,4 +236,17 @@ func (a *Audience) ParseAndValidate(tokenStr string) (Claims, error) {
 	}
 
 	return claims, nil
+}
+
+func NewDevToken(attr map[string]any) (string, error) {
+	claims := &devJWTClaims{
+		Attrs: attr,
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodNone, claims)
+	res, err := token.SignedString(jwt.UnsafeAllowNoneSignatureType)
+	if err != nil {
+		return "", err
+	}
+
+	return res, nil
 }

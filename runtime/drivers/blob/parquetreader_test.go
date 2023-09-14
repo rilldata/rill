@@ -5,12 +5,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/apache/arrow/go/v11/arrow"
-	"github.com/apache/arrow/go/v11/arrow/array"
-	"github.com/apache/arrow/go/v11/arrow/memory"
-	"github.com/apache/arrow/go/v11/parquet/file"
-	"github.com/apache/arrow/go/v11/parquet/pqarrow"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/apache/arrow/go/v13/arrow"
+	"github.com/apache/arrow/go/v13/arrow/array"
+	"github.com/apache/arrow/go/v13/arrow/memory"
+	"github.com/apache/arrow/go/v13/parquet/file"
+	"github.com/apache/arrow/go/v13/parquet/pqarrow"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/stretchr/testify/require"
 	"gocloud.dev/blob"
@@ -34,13 +33,13 @@ func TestDownload(t *testing.T) {
 	}{
 		{
 			name:    "download partial head",
-			args:    args{ctx: context.Background(), bucket: bucket, obj: object, option: &extractOption{strategy: runtimev1.Source_ExtractPolicy_STRATEGY_HEAD, limitInBytes: 1}},
+			args:    args{ctx: context.Background(), bucket: bucket, obj: object, option: &extractOption{strategy: ExtractPolicyStrategyHead, limitInBytes: 1}},
 			wantErr: false,
 			want:    getInt32Array(1024, false),
 		},
 		{
 			name:    "download partial tail",
-			args:    args{ctx: context.Background(), bucket: bucket, obj: object, option: &extractOption{strategy: runtimev1.Source_ExtractPolicy_STRATEGY_TAIL, limitInBytes: 1}},
+			args:    args{ctx: context.Background(), bucket: bucket, obj: object, option: &extractOption{strategy: ExtractPolicyStrategyTail, limitInBytes: 1}},
 			wantErr: false,
 			want:    getInt32Array(2000, false)[1024:],
 		},

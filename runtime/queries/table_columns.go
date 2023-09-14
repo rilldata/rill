@@ -48,16 +48,17 @@ func (q *TableColumns) UnmarshalResult(v any) error {
 }
 
 func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID)
 	if err != nil {
 		return err
 	}
+	defer release()
 
 	if olap.Dialect() != drivers.DialectDuckDB {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	return olap.WithConnection(ctx, priority, func(ctx context.Context, ensuredCtx context.Context, _ *sql.Conn) error {
+	return olap.WithConnection(ctx, priority, false, false, func(ctx context.Context, ensuredCtx context.Context, _ *sql.Conn) error {
 		// views return duplicate column names, so we need to create a temporary table
 		temporaryTableName := tempName("profile_columns_")
 		err = olap.Exec(ctx, &drivers.Statement{

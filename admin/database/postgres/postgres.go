@@ -521,6 +521,25 @@ func (c *connection) FindUsersByEmailPattern(ctx context.Context, emailPattern, 
 	return res, nil
 }
 
+// SearchProjectUsers searches for users that have access to the project.
+func (c *connection) SearchProjectUsers(ctx context.Context, projectID, emailQuery, afterEmail string, limit int) ([]*database.User, error) {
+	var res []*database.User
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT u.* FROM users u
+		WHERE u.id IN (
+			SELECT upr.user_id FROM users_projects_roles upr WHERE upr.project_id=$1
+			UNION
+			SELECT ugu.user_id FROM usergroups_projects_roles ugpr JOIN usergroups_users ugu ON ugpr.usergroup_id = ugu.usergroup_id WHERE ugpr.project_id=$1
+		)
+		AND lower(u.email) LIKE lower($2)
+		AND lower(u.email) > lower($3)
+		ORDER BY lower(u.email) ASC LIMIT $4`, projectID, emailQuery, afterEmail, limit)
+	if err != nil {
+		return nil, parseErr("users", err)
+	}
+	return res, nil
+}
+
 func (c *connection) InsertUser(ctx context.Context, opts *database.InsertUserOptions) (*database.User, error) {
 	if err := database.Validate(opts); err != nil {
 		return nil, err
@@ -593,6 +612,18 @@ func (c *connection) InsertUsergroup(ctx context.Context, opts *database.InsertU
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		INSERT INTO usergroups (org_id, name) VALUES ($1, $2) RETURNING *
 	`, opts.OrgID, opts.Name).StructScan(res)
+	if err != nil {
+		return nil, parseErr("usergroup", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindUsergroupsForUser(ctx context.Context, userID, orgID string) ([]*database.Usergroup, error) {
+	var res []*database.Usergroup
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT ug.* FROM usergroups ug JOIN usergroups_users uug ON ug.id = uug.usergroup_id
+		WHERE uug.user_id = $1 AND ug.org_id = $2
+	`, userID, orgID)
 	if err != nil {
 		return nil, parseErr("usergroup", err)
 	}

@@ -1,6 +1,6 @@
 # Welcome to Rill
 
-Rill is the fastest path from data lake to dashboard. Download Rill to start modeling data and create fast, exploratory dashboards.
+[Rill](https://docs.rilldata.com/) is the fastest path from data lake to dashboard. Download Rill to start modeling data and create fast, exploratory dashboards.
 
 
 
@@ -8,6 +8,17 @@ Rill is the fastest path from data lake to dashboard. Download Rill to start mod
 curl -s https://cdn.rilldata.com/install.sh | bash
 rill start my-rill-project
 ```
+
+
+<h3 align="center">
+  <a href="https://docs.rilldata.com/get-started">Quickstart</a>
+  <span> · </span>
+  <a href="https://docs.rilldata.com/install">Install</a>
+  <span> · </span>
+  <a href="https://docs.rilldata.com/example-projects">Example Projects</a>
+  <span> · </span>
+  <a href="https://bit.ly/3unvA05">Community</a>
+</h3>
 
 ![home-demo](https://github.com/rilldata/rill/assets/5587788/49d17e80-5f27-408c-bbc9-fdbff7b6b627 "829237828")
 
