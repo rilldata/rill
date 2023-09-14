@@ -14,7 +14,7 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 
-export function createDashboardFromModel(
+export function createDashboardFromModelCreator(
   allNamesQuery: CreateQueryResult<Array<string>>,
   navigationTelemetryParams: TelemetryParams | undefined
 ) {

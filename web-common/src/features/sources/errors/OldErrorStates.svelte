@@ -1,22 +1,21 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import { Callout } from "@rilldata/web-common/components/callout";
+  import { createEntityRefresher } from "@rilldata/web-common/features/entity-management/refresh-entity";
+  import { useSource } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { humanReadableErrorMessage } from "@rilldata/web-common/features/sources/modal/errors.js";
-  import { refreshSource } from "@rilldata/web-common/features/sources/refreshSource";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
     createRuntimeServiceGetFile,
     createRuntimeServiceListConnectors,
-    createRuntimeServicePutFileAndReconcile,
-    createRuntimeServiceRefreshAndReconcile,
-    getRuntimeServiceGetCatalogEntryQueryKey,
   } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { parseDocument } from "yaml";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
   import { fileArtifactsStore } from "../../entity-management/file-artifacts-store";
   import { EntityType } from "../../entity-management/types";
+
+  // TODO: is this file needed anymore?
 
   export let sourceName: string;
 
@@ -24,6 +23,7 @@
   $: sourcePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
   $: getSource = createRuntimeServiceGetFile($runtime?.instanceId, sourcePath);
   $: source = parseDocument($getSource?.data?.blob || "{}").toJS();
+  $: getResource = useSource($runtime?.instanceId, sourceName);
 
   $: connectors = createRuntimeServiceListConnectors();
 
@@ -38,25 +38,11 @@
     (name) => name !== "local_file"
   );
 
-  const queryClient = useQueryClient();
-  const createSource = createRuntimeServicePutFileAndReconcile();
-  const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
+  const sourceRefresher = createEntityRefresher();
 
-  const onRefreshClick = async (tableName: string) => {
+  const onRefreshClick = async () => {
     try {
-      await refreshSource(
-        currentConnector?.name,
-        tableName,
-        $runtime?.instanceId,
-        $refreshSourceMutation,
-        $createSource,
-        queryClient
-      );
-      const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
-        $runtime?.instanceId,
-        tableName
-      );
-      await queryClient.refetchQueries(queryKey);
+      await sourceRefresher($getResource.data);
     } catch (err) {
       // no-op
     }
@@ -99,7 +85,7 @@
       type="primary"
       on:click={async () => {
         uploadErrors = undefined;
-        await onRefreshClick(sourceName);
+        await onRefreshClick();
       }}
       >Import a CSV or Parquet file
     </Button>

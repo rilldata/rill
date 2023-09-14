@@ -4,9 +4,9 @@
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
-  import { validateAndRenameEntity } from "@rilldata/web-common/features/entity-management/rename-entity";
+  import { createFileValidatorAndRenamer } from "@rilldata/web-common/features/entity-management/rename-entity";
+  import { useAllEntityNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { createRuntimeServiceRenameFile } from "@rilldata/web-common/runtime-client";
   import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
@@ -15,15 +15,14 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useGetDashboardsForModel } from "../../dashboards/selectors";
   import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
-  import { useAllNames } from "../../entity-management/selectors";
   import ModelWorkspaceCTAs from "./ModelWorkspaceCTAs.svelte";
 
   export let modelName: string;
 
   $: runtimeInstanceId = $runtime.instanceId;
 
-  $: allNamesQuery = useAllNames(runtimeInstanceId);
-  const renameModel = createRuntimeServiceRenameFile();
+  $: allNamesQuery = useAllEntityNames(runtimeInstanceId);
+  $: fileValidatorAndRenamer = createFileValidatorAndRenamer(allNamesQuery);
 
   const outputLayout = getContext(
     "rill:app:output-layout"
@@ -45,13 +44,10 @@
 
   const onChangeCallback = async (e) => {
     if (
-      !(await validateAndRenameEntity(
-        runtimeInstanceId,
+      !(await fileValidatorAndRenamer(
         e.target.value,
         modelName,
-        $allNamesQuery.data,
-        EntityType.Model,
-        renameModel
+        EntityType.Model
       ))
     ) {
       e.target.value = modelName; // resets the input

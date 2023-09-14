@@ -7,14 +7,18 @@
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { MenuItem } from "@rilldata/web-common/components/menu";
   import { Divider } from "@rilldata/web-common/components/menu/index.js";
-  import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { deleteFile } from "@rilldata/web-common/features/entity-management/file-actions";
+  import { createFileDeleter } from "@rilldata/web-common/features/entity-management/file-actions";
   import {
     FileArtifactsData,
     fileArtifactsStore,
   } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
+  import {
+    useDashboardNames,
+    useModelNames,
+    useSourceNames,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { SourceModelValidationStatus } from "@rilldata/web-common/features/metrics-views/errors.js";
@@ -25,7 +29,6 @@
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import {
-    createRuntimeServiceDeleteFileAndReconcile,
     createRuntimeServicePutFileAndReconcile,
     runtimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
@@ -40,19 +43,17 @@
   import { runtime } from "../../runtime-client/runtime-store";
   import AddAssetButton from "../entity-management/AddAssetButton.svelte";
   import RenameAssetModal from "../entity-management/RenameAssetModal.svelte";
-  import { useModelNames } from "../models/selectors";
-  import { useSourceNames } from "../sources/selectors";
 
   $: instanceId = $runtime.instanceId;
 
   $: sourceNames = useSourceNames(instanceId);
   $: modelNames = useModelNames(instanceId);
   $: dashboardNames = useDashboardNames(instanceId);
+  $: fileDeleter = createFileDeleter(dashboardNames);
 
   const queryClient = useQueryClient();
 
   const createDashboard = createRuntimeServicePutFileAndReconcile();
-  const deleteDashboard = createRuntimeServiceDeleteFileAndReconcile();
 
   let showMetricsDefs = true;
 
@@ -142,12 +143,7 @@
       $fileArtifactsStore.entities,
       dashboardName
     );
-    await deleteFile(
-      instanceId,
-      dashboardName,
-      EntityType.MetricsDefinition,
-      $dashboardNames.data
-    );
+    await fileDeleter(dashboardName, EntityType.MetricsDefinition);
 
     // redirect to model when metric is deleted
     const sourceModelName = dashboardData.jsonRepresentation.model;

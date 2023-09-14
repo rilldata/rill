@@ -6,24 +6,25 @@
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
-  import { saveFile } from "@rilldata/web-common/features/entity-management/file-actions";
-  import { validateAndRenameEntity } from "@rilldata/web-common/features/entity-management/rename-entity";
-  import { useSource } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { createFileSaver } from "@rilldata/web-common/features/entity-management/file-actions";
+  import { createEntityRefresher } from "@rilldata/web-common/features/entity-management/refresh-entity";
+  import { createFileValidatorAndRenamer } from "@rilldata/web-common/features/entity-management/rename-entity";
+  import {
+    useAllEntityNames,
+    useSource,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { getRightPanelParams } from "@rilldata/web-common/metrics/service/metrics-helpers";
   import {
     createRuntimeServiceGetFile,
-    createRuntimeServicePutFile,
     createRuntimeServiceRefreshAndReconcile,
-    createRuntimeServiceRenameFile,
-    getRuntimeServiceGetCatalogEntryQueryKey,
     V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
   import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { fade } from "svelte/transition";
+  import { createModelFromSourceCreator } from "web-common/src/features/sources/createModelFromSource";
   import EnterIcon from "../../../components/icons/EnterIcon.svelte";
   import UndoIcon from "../../../components/icons/UndoIcon.svelte";
   import { WorkspaceHeader } from "../../../layout/workspace";
@@ -33,22 +34,18 @@
     fileArtifactsStore,
     getFileArtifactReconciliationErrors,
   } from "../../entity-management/file-artifacts-store";
-  import { useAllNames } from "../../entity-management/selectors";
-  import { createModelFromSourceCreator } from "web-common/src/features/sources/createModelFromSource";
-  import { refreshSource } from "../refreshSource";
   import { useIsSourceUnsaved } from "../selectors";
   import { useSourceStore } from "../sources-store";
 
   export let sourceName: string;
 
-  const queryClient = useQueryClient();
-
   const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
-  const renameSource = createRuntimeServiceRenameFile();
-  const saveSource = createRuntimeServicePutFile();
+  const fileSaver = createFileSaver();
+  const sourceRefresher = createEntityRefresher();
 
-  $: allNamesQuery = useAllNames(runtimeInstanceId);
+  $: allNamesQuery = useAllEntityNames(runtimeInstanceId);
 
+  $: fileValidatorAndRenamer = createFileValidatorAndRenamer(allNamesQuery);
   $: modelFromSourceCreator = createModelFromSourceCreator(
     allNamesQuery,
     getRightPanelParams()
@@ -58,25 +55,19 @@
 
   $: sourceQuery = useSource(runtimeInstanceId, sourceName);
   let source: V1SourceV2;
-  $: source = $sourceQuery.data;
+  $: source = $sourceQuery.data?.source;
 
   $: file = createRuntimeServiceGetFile(
     runtimeInstanceId,
     getFilePathFromNameAndType(sourceName, EntityType.Table)
   );
 
-  let connector: string;
-  $: connector = source?.spec?.sourceConnector;
-
   const onChangeCallback = async (e) => {
     if (
-      !(await validateAndRenameEntity(
-        runtimeInstanceId,
-        e.target.value,
+      !(await fileValidatorAndRenamer(
         sourceName,
-        $allNamesQuery.data,
-        EntityType.Table,
-        renameSource
+        e.target.value,
+        EntityType.Table
       ))
     ) {
       e.target.value = sourceName; // resets the input
@@ -89,12 +80,9 @@
 
   const onSaveAndRefreshClick = async (tableName: string) => {
     overlay.set({ title: `Importing ${tableName}.yaml` });
-    await saveFile(
-      runtimeInstanceId,
-      tableName,
-      EntityType.Table,
-      $sourceStore.clientYAML,
-      saveSource
+    await fileSaver(
+      getFilePathFromNameAndType(tableName, EntityType.Table),
+      $sourceStore.clientYAML
     );
     // TODO: emit telemetry
     //       should it emit only when a source is modified from UI?
@@ -102,26 +90,9 @@
     overlay.set(null);
   };
 
-  const onRefreshClick = async (tableName: string) => {
+  const onRefreshClick = async () => {
     try {
-      // TODO: what is the replacement for refresh in new reconcile?
-      await refreshSource(
-        connector,
-        tableName,
-        runtimeInstanceId,
-        $refreshSourceMutation,
-        $saveSource,
-        queryClient,
-        connector === "s3" || connector === "gcs" || connector === "https"
-          ? source?.spec?.properties?.path
-          : sourceName
-      );
-      // invalidate the "refreshed_on" time
-      const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
-        runtimeInstanceId,
-        tableName
-      );
-      await queryClient.refetchQueries(queryKey);
+      await sourceRefresher($sourceQuery.data);
     } catch (err) {
       // no-op
     }
@@ -181,14 +152,14 @@
         Refreshing...
       {:else}
         <div class="flex items-center pr-2 gap-x-2">
-          {#if $sourceQuery.isSuccess && $sourceQuery.data?.state?.refreshedOn}
+          {#if $sourceQuery.isSuccess && $sourceQuery.data?.meta?.reconcileOn}
             <div
               class="ui-copy-muted"
               style:font-size="11px"
               transition:fade|local={{ duration: 200 }}
             >
               Imported on {formatRefreshedOn(
-                $sourceQuery.data?.state?.refreshedOn
+                $sourceQuery.data?.meta?.reconcileOn
               )}
             </div>
           {/if}
@@ -214,7 +185,7 @@
           on:click={() =>
             isSourceUnsaved
               ? onSaveAndRefreshClick(sourceName)
-              : onRefreshClick(sourceName)}
+              : onRefreshClick()}
           type={isSourceUnsaved ? "primary" : "secondary"}
         >
           <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall(headerWidth)}>

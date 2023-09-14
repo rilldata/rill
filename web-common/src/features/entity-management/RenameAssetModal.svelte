@@ -3,15 +3,14 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { Dialog } from "@rilldata/web-common/components/modal/index";
-  import { renameFile } from "@rilldata/web-common/features/entity-management/rename-entity";
+  import { createFileRenamer } from "@rilldata/web-common/features/entity-management/rename-entity";
+  import { useAllEntityNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
-  import { createRuntimeServiceRenameFile } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { getLabel, getRouteFromName } from "./entity-mappers";
   import { isDuplicateName } from "./name-utils";
-  import { useAllNames } from "./selectors";
 
   export let closeModal: () => void;
   export let entityType: EntityType;
@@ -20,9 +19,8 @@
   let error: string;
 
   $: runtimeInstanceId = $runtime.instanceId;
-  $: allNamesQuery = useAllNames(runtimeInstanceId);
-
-  const renameAsset = createRuntimeServiceRenameFile();
+  $: allNamesQuery = useAllEntityNames(runtimeInstanceId);
+  const fileRenamer = createFileRenamer();
 
   const { form, errors, handleSubmit } = createForm({
     initialValues: {
@@ -46,13 +44,7 @@
         return;
       }
       try {
-        await renameFile(
-          runtimeInstanceId,
-          currentAssetName,
-          values.newName,
-          entityType,
-          renameAsset
-        );
+        await fileRenamer(values.newName, currentAssetName, entityType);
         goto(getRouteFromName(values.newName, entityType), {
           replaceState: true,
         });

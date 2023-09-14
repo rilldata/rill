@@ -1,12 +1,11 @@
 <script lang="ts">
   import type { EditorView } from "@codemirror/view";
+  import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
+  import { useSource } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { setLineStatuses } from "../../../components/editor/line-status";
-  import {
-    fileArtifactsStore,
-    getFileArtifactReconciliationErrors,
-  } from "../../entity-management/file-artifacts-store";
-  import { mapReconciliationErrorsToLines } from "../../metrics-views/errors";
+  import { runtimeErrorToLine } from "../../metrics-views/errors";
   import { useSourceStore } from "../sources-store";
 
   export let sourceName: string;
@@ -25,18 +24,18 @@
     setLineStatuses([], view);
   }
 
+  $: source = useSource($runtime.instanceId, sourceName);
+
   /**
    * Handle errors.
    */
   $: {
-    const reconciliationErrors = getFileArtifactReconciliationErrors(
-      $fileArtifactsStore,
-      `${sourceName}.yaml`
-    );
-    const lineBasedReconciliationErrors = mapReconciliationErrorsToLines(
-      reconciliationErrors,
-      yaml
-    );
+    let lineBasedReconciliationErrors = new Array<LineStatus>();
+    if ($source?.data?.meta?.reconcileError)
+      lineBasedReconciliationErrors = [
+        runtimeErrorToLine($source?.data?.meta?.reconcileError, yaml),
+      ];
+
     if (view) setLineStatuses(lineBasedReconciliationErrors, view);
   }
 </script>

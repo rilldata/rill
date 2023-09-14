@@ -31,7 +31,7 @@
 
   $: sourceQuery = useSource(runtimeInstanceId, sourceName);
   let source: V1SourceV2;
-  $: source = $sourceQuery.data;
+  $: source = $sourceQuery.data?.source;
 
   let showColumns = true;
 

@@ -3,9 +3,9 @@
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
   import {
-    ResourceKind,
     useAllEntityNames,
-    useFilteredEntityNames,
+    useModelNames,
+    useSourceNames,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { getLeftPanelParams } from "@rilldata/web-common/metrics/service/metrics-helpers";
@@ -20,14 +20,8 @@
   import ModelMenuItems from "./ModelMenuItems.svelte";
   import ModelTooltip from "./ModelTooltip.svelte";
 
-  $: sourceNames = useFilteredEntityNames(
-    $runtime.instanceId,
-    ResourceKind.Source
-  );
-  $: modelNames = useFilteredEntityNames(
-    $runtime.instanceId,
-    ResourceKind.Model
-  );
+  $: sourceNames = useSourceNames($runtime.instanceId);
+  $: modelNames = useModelNames($runtime.instanceId);
   $: allEntityNames = useAllEntityNames($runtime.instanceId);
 
   const modelCreator = createModelCreator(getLeftPanelParams());

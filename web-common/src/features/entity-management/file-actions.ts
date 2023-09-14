@@ -9,46 +9,56 @@ import { getNextEntityName } from "@rilldata/web-common/features/entity-manageme
 import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import { appScreen } from "@rilldata/web-common/layout/app-store";
 import { currentHref } from "@rilldata/web-common/layout/navigation/stores";
-import { runtimeServiceDeleteFile } from "@rilldata/web-common/runtime-client";
-import type { createRuntimeServicePutFile } from "@rilldata/web-common/runtime-client";
+import {
+  createRuntimeServicePutFile,
+  createRuntimeServiceDeleteFile,
+} from "@rilldata/web-common/runtime-client";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 
-export async function saveFile(
-  instanceId: string,
-  name: string,
-  type: EntityType,
-  blob: string,
-  saveMutation: ReturnType<typeof createRuntimeServicePutFile>
-) {
-  const filePath = getFilePathFromNameAndType(name, type);
+export function createFileSaver() {
+  const saveFileMutation = createRuntimeServicePutFile();
 
-  await get(saveMutation).mutateAsync({
-    instanceId,
-    data: {
-      blob,
-      create: false,
-      createOnly: false,
-    },
-    path: filePath,
-  });
+  return async (path: string, blob: string) => {
+    return get(saveFileMutation).mutateAsync({
+      instanceId: get(runtime).instanceId,
+      path,
+      data: {
+        blob,
+        create: false,
+        createOnly: false,
+      },
+    });
+  };
 }
 
-export async function deleteFile(
-  instanceId: string,
-  name: string,
-  type: EntityType,
-  names: Array<string>
+export function createFileDeleter(
+  entityNamesQuery: CreateQueryResult<Array<string>>
 ) {
-  const path = getFilePathFromNameAndType(name, type);
-  await runtimeServiceDeleteFile(instanceId, path);
+  const deleteFileMutation = createRuntimeServiceDeleteFile();
 
-  notifications.send({ message: `Deleted ${getLabel(type)} ${name}` });
+  return async (
+    name: string,
+    type: EntityType,
+    path = getFilePathFromNameAndType(name, type)
+  ) => {
+    await get(deleteFileMutation).mutateAsync({
+      instanceId: get(runtime).instanceId,
+      path,
+    });
 
-  // only redirect if the deleted entity is in focus
-  if (get(appScreen)?.name !== name) return;
+    notifications.send({ message: `Deleted ${getLabel(type)} ${name}` });
 
-  const route = getRouteFromName(getNextEntityName(names, name), type);
-  /** set the href store so the menu selection has an immediate visual update. */
-  currentHref.set(route);
-  goto(route);
+    // only redirect if the deleted entity is in focus
+    if (get(appScreen)?.name !== name) return;
+
+    const route = getRouteFromName(
+      getNextEntityName(get(entityNamesQuery).data, name),
+      type
+    );
+    /** set the href store so the menu selection has an immediate visual update. */
+    currentHref.set(route);
+    goto(route);
+  };
 }

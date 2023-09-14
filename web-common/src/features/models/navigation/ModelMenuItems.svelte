@@ -1,35 +1,21 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import { Divider, MenuItem } from "@rilldata/web-common/components/menu";
-  import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { deleteFile } from "@rilldata/web-common/features/entity-management/file-actions";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { createFileDeleter } from "@rilldata/web-common/features/entity-management/file-actions";
+  import {
+    useDashboardNames,
+    useModel,
+    useModelNames,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { appScreen } from "@rilldata/web-common/layout/app-store";
+  import { createDashboardFromModelCreator } from "@rilldata/web-common/features/models/createDashboardFromModel";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
-  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
-  import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
-  import {
-    MetricsEventScreenName,
-    MetricsEventSpace,
-  } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import {
-    createRuntimeServiceGetCatalogEntry,
-    createRuntimeServicePutFileAndReconcile,
-    V1Model,
-    V1ReconcileResponse,
-  } from "@rilldata/web-common/runtime-client";
-  import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import { getLeftPanelParams } from "@rilldata/web-common/metrics/service/metrics-helpers";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { getName } from "../../entity-management/name-utils";
-  import { generateDashboardYAMLForModel } from "../../metrics-views/metrics-internal-store";
-  import { useModelNames } from "../selectors";
 
   export let modelName: string;
   // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
@@ -37,88 +23,40 @@
 
   const dispatch = createEventDispatcher();
 
-  const queryClient = useQueryClient();
-
-  const createFileMutation = createRuntimeServicePutFileAndReconcile();
-
   $: modelNames = useModelNames($runtime.instanceId);
   $: dashboardNames = useDashboardNames($runtime.instanceId);
-  $: modelQuery = createRuntimeServiceGetCatalogEntry(
-    $runtime.instanceId,
-    modelName
+  $: fileDeleter = createFileDeleter(modelNames);
+  $: dashboardFromModelCreator = createDashboardFromModelCreator(
+    dashboardNames,
+    getLeftPanelParams()
   );
-  let model: V1Model;
-  $: model = $modelQuery.data?.entry?.model;
-  $: hasNoModelCatalog = !model;
 
-  const createDashboardFromModel = (modelName: string) => {
+  $: modelQuery = useModel($runtime.instanceId, modelName);
+  $: hasError = !!$modelQuery.data.meta.reconcileError;
+
+  const createDashboardFromModel = async (modelName: string) => {
     overlay.set({
       title: "Creating a dashboard for " + modelName,
     });
-    const newDashboardName = getName(
-      `${modelName}_dashboard`,
-      $dashboardNames.data
-    );
-    const dashboardYAML = generateDashboardYAMLForModel(
-      model,
-      newDashboardName
-    );
-    $createFileMutation.mutate(
-      {
-        data: {
-          instanceId: $runtime.instanceId,
-          path: getFilePathFromNameAndType(
-            newDashboardName,
-            EntityType.MetricsDefinition
-          ),
-          blob: dashboardYAML,
-          create: true,
-          createOnly: true,
-          strict: false,
-        },
-      },
-      {
-        onSuccess: (resp: V1ReconcileResponse) => {
-          fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-          goto(`/dashboard/${newDashboardName}`);
-          const previousActiveEntity = $appScreen?.type;
-          behaviourEvent.fireNavigationEvent(
-            newDashboardName,
-            BehaviourEventMedium.Menu,
-            MetricsEventSpace.LeftPanel,
-            previousActiveEntity,
-            MetricsEventScreenName.Dashboard
-          );
-          return invalidateAfterReconcile(
-            queryClient,
-            $runtime.instanceId,
-            resp
-          );
-        },
-        onError: (err) => {
-          console.error(err);
-        },
-        onSettled: () => {
-          overlay.set(null);
-          toggleMenu(); // unmount component
-        },
-      }
-    );
+    await dashboardFromModelCreator($modelQuery.data, modelName);
+
+    // TODO: should this wait till everything is finished?
+    overlay.set(null);
+    toggleMenu(); // unmount component
   };
 
   const handleDeleteModel = async (modelName: string) => {
-    await deleteFile(
-      $runtime.instanceId,
+    await fileDeleter(
       modelName,
       EntityType.Model,
-      $modelNames.data
+      getFilePathFromNameAndType(modelName, EntityType.Model)
     );
     toggleMenu();
   };
 </script>
 
 <MenuItem
-  disabled={hasNoModelCatalog}
+  disabled={hasError}
   icon
   on:select={() => createDashboardFromModel(modelName)}
   propogateSelect={false}
@@ -126,7 +64,7 @@
   <Explore slot="icon" />
   Autogenerate dashboard
   <svelte:fragment slot="description">
-    {#if hasNoModelCatalog}
+    {#if hasError}
       Model has errors
     {/if}
   </svelte:fragment>
