@@ -26,6 +26,7 @@ This component needs to do the following:
   import CustomTimeRangeInput from "./CustomTimeRangeInput.svelte";
   import CustomTimeRangeMenuItem from "./CustomTimeRangeMenuItem.svelte";
   import SelectorButton from "./SelectorButton.svelte";
+  import ClockCircle from "@rilldata/web-common/components/icons/ClockCircle.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -129,10 +130,13 @@ This component needs to do the following:
         toggleFloatingElement();
       }}
     >
-      <span class="font-normal">
-        {showComparison ? "Comparing to" : ""}
-        <span class="font-bold">{label}</span>
-      </span>
+      <div class="flex items-center gap-x-3">
+        <span class="ui-copy-icon"><ClockCircle size="16px" /></span>
+        <span
+          style:transform="translateY(-1px)"
+          class="font-normal justify-center">{label}</span
+        >
+      </div>
     </SelectorButton>
     <TooltipContent maxWidth="220px" slot="tooltip-content">
       Select a time range to compare to the selected time range
@@ -144,21 +148,6 @@ This component needs to do the following:
     on:escape={toggleFloatingElement}
     slot="floating-element"
   >
-    <MenuItem
-      on:before-select={() => {
-        intermediateSelection = NO_COMPARISON_LABEL;
-      }}
-      on:select={() => {
-        dispatch("disable-comparison");
-        toggleFloatingElement();
-      }}
-      selected={!showComparison}
-    >
-      <span class:font-bold={intermediateSelection === NO_COMPARISON_LABEL}>
-        {NO_COMPARISON_LABEL}
-      </span>
-    </MenuItem>
-    <Divider />
     {#each options as option}
       {@const preset = TIME_COMPARISON[option.name]}
       <MenuItem

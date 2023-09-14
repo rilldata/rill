@@ -23,6 +23,9 @@ const migrateTimeout = 30 * time.Second
 
 // connectionCache is a thread-safe cache for open connections.
 // Connections should preferably be opened only via the connection cache.
+//
+// TODO: It opens connections async, but it will close them sync when evicted. If a handle's close hangs, this can block the cache.
+// We should move the closing to the background. However, it must then handle the case of trying to re-open a connection that's currently closing in the background.
 type connectionCache struct {
 	size             int
 	runtime          *Runtime
@@ -258,7 +261,7 @@ func (c *connectionCache) openAndMigrate(ctx context.Context, instanceID, driver
 	return handle, nil
 }
 
-// evict removes the connection from cache and closes the connection
+// evict removes the connection from cache and closes the connection.
 func (c *connectionCache) evict(ctx context.Context, instanceID, driver string, config map[string]any) bool {
 	c.lock.Lock()
 	defer c.lock.Unlock()

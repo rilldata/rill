@@ -195,7 +195,7 @@ SELECT * FROM {{ ref "m2" }}
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", []string{""})
+	p, err := Parse(ctx, repo, "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -234,7 +234,7 @@ FRO m1
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", []string{""})
+	p, err := Parse(ctx, repo, "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, nil, errors)
 }
@@ -273,7 +273,7 @@ SELECT 1
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", []string{""})
+	p, err := Parse(ctx, repo, "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, errors)
 }
@@ -285,7 +285,7 @@ func TestReparse(t *testing.T) {
 
 	// Create empty project
 	repo := makeRepo(t, map[string]string{`rill.yaml`: ``})
-	p, err := Parse(ctx, repo, "", []string{""})
+	p, err := Parse(ctx, repo, "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, nil, nil)
 
@@ -430,7 +430,7 @@ func TestRefInferrence(t *testing.T) {
 		// model foo
 		`models/foo.sql`: `SELECT * FROM bar`,
 	})
-	p, err := Parse(ctx, repo, "", []string{""})
+	p, err := Parse(ctx, repo, "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{foo}, nil)
 
@@ -505,7 +505,7 @@ materialize: true
 		},
 	}
 	repo := makeRepo(b, files)
-	p, err := Parse(ctx, repo, "", []string{""})
+	p, err := Parse(ctx, repo, "", "", []string{""})
 	require.NoError(b, err)
 	requireResourcesAndErrors(b, p, resources, nil)
 
@@ -568,7 +568,7 @@ SELECT * FROM m2
 	// Parse
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", []string{""})
+	p, err := Parse(ctx, repo, "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{m1, m2, m3, embed}, nil)
 

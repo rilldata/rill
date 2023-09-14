@@ -13,6 +13,11 @@
   export let selectedColumn: string = null;
   export let fallbackBGClass = "";
 
+  // set this prop to control sorting arrow externally.
+  // if undefined, sorting arrow is toggled within the
+  // cell header component.
+  export let sortAscending: boolean = undefined;
+
   const getColumnHeaderProps = (header) => {
     const name = columns[header.index]?.label || columns[header.index]?.name;
     const isEnableResizeDefined = "enableResize" in columns[header.index];
@@ -61,6 +66,7 @@
       {header}
       {noPin}
       {showDataIcon}
+      {sortAscending}
       on:pin={() => {
         dispatch("pin", columns[header.index]);
       }}

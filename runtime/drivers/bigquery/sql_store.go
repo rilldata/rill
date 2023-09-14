@@ -26,12 +26,12 @@ const rowGroupBufferSize = int64(datasize.MB) * 512
 const _jsonDownloadLimitBytes = 100 * int64(datasize.MB)
 
 // Query implements drivers.SQLStore
-func (c *Connection) Query(ctx context.Context, props map[string]any, sql string) (drivers.RowIterator, error) {
+func (c *Connection) Query(ctx context.Context, props map[string]any) (drivers.RowIterator, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
 // QueryAsFiles implements drivers.SQLStore
-func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, sql string, opt *drivers.QueryOption, p drivers.Progress) (drivers.FileIterator, error) {
+func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt *drivers.QueryOption, p drivers.Progress) (drivers.FileIterator, error) {
 	srcProps, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, sql
 	}
 
 	now := time.Now()
-	q := client.Query(sql)
+	q := client.Query(srcProps.SQL)
 	it, err := q.Read(ctx)
 	if err != nil && !strings.Contains(err.Error(), "Syntax error") {
 		// close the read storage API client
@@ -70,7 +70,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, sql
 			return nil, fmt.Errorf("failed to create bigquery client: %w", err)
 		}
 
-		q := client.Query(sql)
+		q := client.Query(srcProps.SQL)
 		it, err = q.Read(ctx)
 	}
 	if err != nil {
@@ -117,6 +117,10 @@ func (f *fileIterator) HasNext() bool {
 
 // KeepFilesUntilClose implements drivers.FileIterator.
 func (f *fileIterator) KeepFilesUntilClose(keepFilesUntilClose bool) {
+}
+
+func (f *fileIterator) NextBatchSize(sizeInBytes int64) ([]string, error) {
+	return f.NextBatch(1)
 }
 
 // NextBatch implements drivers.FileIterator.

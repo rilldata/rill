@@ -137,7 +137,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 	inst := &drivers.Instance{
 		ID:            DefaultInstanceID,
 		Annotations:   map[string]string{},
-		OLAPConnector: "olap",
+		OLAPConnector: olapDriver,
 		RepoConnector: "repo",
 		EmbedCatalog:  olapDriver == "duckdb",
 		Variables:     parsedVariables,
@@ -149,7 +149,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 			},
 			{
 				Type:   olapDriver,
-				Name:   "olap",
+				Name:   olapDriver,
 				Config: olapCfg,
 			},
 		},

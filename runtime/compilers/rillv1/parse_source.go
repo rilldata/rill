@@ -9,6 +9,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/robfig/cron/v3"
+	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -24,7 +25,7 @@ type sourceYAML struct {
 // parseSource parses a source definition and adds the resulting resource to p.Resources.
 func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 	// If the source has SQL and hasn't specified a connector, we treat it as a model
-	if node.SQL != "" && node.Connector == "" {
+	if node.SQL != "" && node.ConnectorInferred {
 		return p.parseModel(ctx, node)
 	}
 
@@ -66,13 +67,18 @@ func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 	}
 
 	// Backward compatibility
-	if tmp.Type != "" && node.Connector == "" {
+	if tmp.Type != "" {
 		node.Connector = tmp.Type
 	}
 
+	// Backward compatibility: when the default connector is "olap", and it's a DuckDB connector, a source with connector "duckdb" should run on it
+	if p.DefaultConnector == "olap" && node.Connector == "duckdb" && slices.Contains(p.DuckDBConnectors, p.DefaultConnector) {
+		node.Connector = "olap"
+	}
+
 	// Validate the source has a connector
-	if node.Connector == "" {
-		return fmt.Errorf("must specify a connector")
+	if node.ConnectorInferred {
+		return fmt.Errorf("must explicitly specify a connector for sources")
 	}
 
 	props, err := structpb.NewStruct(tmp.Properties)
@@ -84,8 +90,9 @@ func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 	// NOTE: After calling upsertResource, an error must not be returned. Any validation should be done before calling it.
 	r := p.upsertResource(ResourceKindSource, node.Name, node.Paths, node.Refs...)
 	r.SourceSpec.Properties = mergeStructPB(r.SourceSpec.Properties, props)
+	r.SourceSpec.SinkConnector = p.DefaultConnector // Sink connector not currently configurable
 	if node.Connector != "" {
-		r.SourceSpec.SourceConnector = node.Connector // Source connector. Sink connector not currently configurable.
+		r.SourceSpec.SourceConnector = node.Connector // Source connector
 	}
 	if timeout != 0 {
 		r.SourceSpec.TimeoutSeconds = uint32(timeout.Seconds())

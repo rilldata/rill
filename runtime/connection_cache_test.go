@@ -34,7 +34,7 @@ func TestConnectionCache(t *testing.T) {
 
 	inst := &drivers.Instance{
 		ID:            "default1",
-		OLAPConnector: "olap",
+		OLAPConnector: "duckdb",
 		RepoConnector: "repo",
 		EmbedCatalog:  true,
 		Connectors: []*runtimev1.Connector{
@@ -45,7 +45,7 @@ func TestConnectionCache(t *testing.T) {
 			},
 			{
 				Type:   "duckdb",
-				Name:   "olap",
+				Name:   "duckdb",
 				Config: map[string]string{"dsn": ""},
 			},
 		},
@@ -276,7 +276,7 @@ func (*mockDriver) Drop(config map[string]any, logger *zap.Logger) error {
 }
 
 // HasAnonymousSourceAccess implements drivers.Driver.
-func (*mockDriver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
+func (*mockDriver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
 	panic("unimplemented")
 }
 
@@ -374,7 +374,7 @@ func NewTestRunTimeWithInst(t *testing.T) *Runtime {
 func createInstance(t *testing.T, rt *Runtime, instanceId string) {
 	inst := &drivers.Instance{
 		ID:            instanceId,
-		OLAPConnector: "olap",
+		OLAPConnector: "duckdb",
 		RepoConnector: "repo",
 		EmbedCatalog:  true,
 		Connectors: []*runtimev1.Connector{
@@ -385,7 +385,7 @@ func createInstance(t *testing.T, rt *Runtime, instanceId string) {
 			},
 			{
 				Type:   "duckdb",
-				Name:   "olap",
+				Name:   "duckdb",
 				Config: map[string]string{"dsn": ""},
 			},
 		},

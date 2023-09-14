@@ -6,7 +6,7 @@ import type {
 import { streamingFetchWrapper } from "@rilldata/web-common/runtime-client/fetch-streaming-wrapper";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { asyncWait } from "@rilldata/web-local/lib/util/waitUtils";
+import { asyncWait } from "@rilldata/web-common/lib/waitUtils";
 import { get, Unsubscriber } from "svelte/store";
 
 type WatchResponse =

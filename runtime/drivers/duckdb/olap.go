@@ -30,14 +30,14 @@ func (c *connection) Dialect() drivers.Dialect {
 	return drivers.DialectDuckDB
 }
 
-func (c *connection) WithConnection(ctx context.Context, priority int, fn drivers.WithConnectionFunc) error {
+func (c *connection) WithConnection(ctx context.Context, priority int, longRunning, tx bool, fn drivers.WithConnectionFunc) error {
 	// Check not nested
 	if connFromContext(ctx) != nil {
 		panic("nested WithConnection")
 	}
 
 	// Acquire connection
-	conn, release, err := c.acquireOLAPConn(ctx, priority)
+	conn, release, err := c.acquireOLAPConn(ctx, priority, longRunning, tx)
 	if err != nil {
 		return err
 	}
@@ -116,7 +116,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 	}()
 
 	// Acquire connection
-	conn, release, err := c.acquireOLAPConn(ctx, stmt.Priority)
+	conn, release, err := c.acquireOLAPConn(ctx, stmt.Priority, stmt.LongRunning, false)
 	acquiredTime = time.Now()
 	if err != nil {
 		return nil, err

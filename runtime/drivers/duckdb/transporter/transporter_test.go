@@ -19,7 +19,7 @@ type mockObjectStore struct {
 	mockIterator drivers.FileIterator
 }
 
-func (m *mockObjectStore) DownloadFiles(ctx context.Context, src *drivers.BucketSource) (drivers.FileIterator, error) {
+func (m *mockObjectStore) DownloadFiles(ctx context.Context, srcProps map[string]any) (drivers.FileIterator, error) {
 	return m.mockIterator, nil
 }
 
@@ -33,6 +33,11 @@ func (m *mockIterator) Close() error {
 }
 
 func (m *mockIterator) NextBatch(limit int) ([]string, error) {
+	m.index += 1
+	return m.batches[m.index-1], nil
+}
+
+func (m *mockIterator) NextBatchSize(sizeInBytes int64) ([]string, error) {
 	m.index += 1
 	return m.batches[m.index-1], nil
 }
@@ -159,18 +164,14 @@ mum,8.2`)
 			ctx := context.Background()
 			tr := transporter.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
 
-			var src *drivers.BucketSource
+			var src map[string]any
 			if test.query {
-				src = &drivers.BucketSource{
-					Properties: map[string]any{"sql": "select * from read_csv_auto('path',union_by_name=true,sample_size=200000)"},
-				}
+				src = map[string]any{"sql": "select * from read_csv_auto('path',union_by_name=true,sample_size=200000)"}
 			} else {
-				src = &drivers.BucketSource{
-					Properties: map[string]any{"allow_schema_relaxation": true},
-				}
+				src = map[string]any{"allow_schema_relaxation": true}
 			}
 
-			err = tr.Transfer(ctx, src, &drivers.DatabaseSink{Table: test.name}, drivers.NewTransferOpts(),
+			err = tr.Transfer(ctx, src, map[string]any{"table": test.name}, drivers.NewTransferOpts(),
 				drivers.NoOpProgress{})
 			require.NoError(t, err, "no err expected test %s", test.name)
 
@@ -309,16 +310,14 @@ mum,8.2`)
 			ctx := context.Background()
 			tr := transporter.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
 
-			var src *drivers.BucketSource
+			var src map[string]any
 			if test.query {
-				src = &drivers.BucketSource{
-					Properties: map[string]any{"sql": "select * from read_csv_auto('path')"},
-				}
+				src = map[string]any{"sql": "select * from read_csv_auto('path')"}
 			} else {
-				src = &drivers.BucketSource{}
+				src = map[string]any{}
 			}
 
-			err = tr.Transfer(ctx, src, &drivers.DatabaseSink{Table: test.name},
+			err = tr.Transfer(ctx, src, map[string]any{"table": test.name},
 				drivers.NewTransferOpts(), drivers.NoOpProgress{})
 			if test.hasError {
 				require.Error(t, err, fmt.Errorf("error expected for %s got nil", test.name))
@@ -411,18 +410,14 @@ func TestIterativeParquetIngestionWithVariableSchema(t *testing.T) {
 			ctx := context.Background()
 			tr := transporter.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
 
-			var src *drivers.BucketSource
+			var src map[string]any
 			if test.query {
-				src = &drivers.BucketSource{
-					Properties: map[string]any{"sql": "select * from read_parquet('path',union_by_name=true,hive_partitioning=true)"},
-				}
+				src = map[string]any{"sql": "select * from read_parquet('path',union_by_name=true,hive_partitioning=true)"}
 			} else {
-				src = &drivers.BucketSource{
-					Properties: map[string]any{"allow_schema_relaxation": true},
-				}
+				src = map[string]any{"allow_schema_relaxation": true}
 			}
 
-			err := tr.Transfer(ctx, src, &drivers.DatabaseSink{Table: test.name},
+			err := tr.Transfer(ctx, src, map[string]any{"table": test.name},
 				drivers.NewTransferOpts(), drivers.NoOpProgress{})
 			require.NoError(t, err)
 
@@ -557,18 +552,14 @@ func TestIterativeJSONIngestionWithVariableSchema(t *testing.T) {
 			ctx := context.Background()
 			tr := transporter.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
 
-			var src *drivers.BucketSource
+			var src map[string]any
 			if test.query {
-				src = &drivers.BucketSource{
-					Properties: map[string]any{"sql": "select * from read_json('path',format='auto',union_by_name=true,auto_detect=true,sample_size=200000)"},
-				}
+				src = map[string]any{"sql": "select * from read_json('path',format='auto',union_by_name=true,auto_detect=true,sample_size=200000)"}
 			} else {
-				src = &drivers.BucketSource{
-					Properties: map[string]any{"allow_schema_relaxation": true},
-				}
+				src = map[string]any{"allow_schema_relaxation": true}
 			}
 
-			err := tr.Transfer(ctx, src, &drivers.DatabaseSink{Table: test.name},
+			err := tr.Transfer(ctx, src, map[string]any{"table": test.name},
 				drivers.NewTransferOpts(), drivers.NoOpProgress{})
 			require.NoError(t, err, "no err expected test %s", test.name)
 

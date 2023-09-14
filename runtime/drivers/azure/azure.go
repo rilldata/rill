@@ -99,12 +99,8 @@ func (d driver) Spec() drivers.Spec {
 	return spec
 }
 
-func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
-	b, ok := src.BucketSource()
-	if !ok {
-		return false, fmt.Errorf("require bucket source")
-	}
-	conf, err := parseSourceProperties(b.Properties)
+func (d driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
+	conf, err := parseSourceProperties(src)
 	if err != nil {
 		return false, fmt.Errorf("failed to parse config: %w", err)
 	}
@@ -198,8 +194,8 @@ func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 }
 
 // DownloadFiles returns a file iterator over objects stored in azure blob storage.
-func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSource) (drivers.FileIterator, error) {
-	conf, err := parseSourceProperties(source.Properties)
+func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (drivers.FileIterator, error) {
+	conf, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
@@ -224,7 +220,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSo
 		GlobMaxObjectsListed:  conf.GlobMaxObjectsListed,
 		GlobPageSize:          conf.GlobPageSize,
 		GlobPattern:           conf.url.Path,
-		ExtractPolicy:         source.ExtractPolicy,
+		ExtractPolicy:         conf.extractPolicy,
 	}
 
 	iter, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
@@ -236,12 +232,15 @@ func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSo
 }
 
 type sourceProperties struct {
-	Path                  string `key:"path"`
-	GlobMaxTotalSize      int64  `mapstructure:"glob.max_total_size"`
-	GlobMaxObjectsMatched int    `mapstructure:"glob.max_objects_matched"`
-	GlobMaxObjectsListed  int64  `mapstructure:"glob.max_objects_listed"`
-	GlobPageSize          int    `mapstructure:"glob.page_size"`
+	Path                  string         `mapstructure:"path"`
+	URI                   string         `mapstructure:"uri"`
+	Extract               map[string]any `mapstructure:"extract"`
+	GlobMaxTotalSize      int64          `mapstructure:"glob.max_total_size"`
+	GlobMaxObjectsMatched int            `mapstructure:"glob.max_objects_matched"`
+	GlobMaxObjectsListed  int64          `mapstructure:"glob.max_objects_listed"`
+	GlobPageSize          int            `mapstructure:"glob.page_size"`
 	url                   *globutil.URL
+	extractPolicy         *rillblob.ExtractPolicy
 }
 
 func parseSourceProperties(props map[string]any) (*sourceProperties, error) {

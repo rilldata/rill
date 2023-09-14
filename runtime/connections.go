@@ -13,7 +13,12 @@ import (
 func (r *Runtime) AcquireSystemHandle(ctx context.Context, connector string) (drivers.Handle, func(), error) {
 	for _, c := range r.opts.SystemConnectors {
 		if c.Name == connector {
-			return r.connCache.get(ctx, "", c.Type, r.connectorConfig(c.Name, c.Config, nil), true)
+			cfg := make(map[string]any, len(c.Config)+1)
+			for k, v := range c.Config {
+				cfg[strings.ToLower(k)] = v
+			}
+			cfg["allow_host_access"] = r.opts.AllowHostAccess
+			return r.connCache.get(ctx, "", c.Type, cfg, true)
 		}
 	}
 	return nil, nil, fmt.Errorf("connector %s doesn't exist", connector)
@@ -21,38 +26,22 @@ func (r *Runtime) AcquireSystemHandle(ctx context.Context, connector string) (dr
 
 // AcquireHandle returns instance specific handle
 func (r *Runtime) AcquireHandle(ctx context.Context, instanceID, connector string) (drivers.Handle, func(), error) {
-	instance, err := r.FindInstance(ctx, instanceID)
+	driver, cfg, err := r.connectorConfig(ctx, instanceID, connector)
 	if err != nil {
 		return nil, nil, err
 	}
-
-	if c, err := r.connectorDef(instance, connector); err == nil {
-		return r.connCache.get(ctx, instanceID, c.Type, r.connectorConfig(connector, c.Config, instance.ResolveVariables()), false)
-	}
-
-	// neither defined in rill.yaml nor set in instance, directly used in source
-	return r.connCache.get(ctx, instanceID, connector, r.connectorConfig(connector, nil, instance.ResolveVariables()), false)
+	return r.connCache.get(ctx, instanceID, driver, cfg, false)
 }
 
 // EvictHandle flushes the db handle for the specific connector from the cache
 func (r *Runtime) EvictHandle(ctx context.Context, instanceID, connector string, drop bool) error {
-	instance, err := r.FindInstance(ctx, instanceID)
+	driver, cfg, err := r.connectorConfig(ctx, instanceID, connector)
 	if err != nil {
 		return err
 	}
-
-	var driverType string
-	var connectorConfig map[string]any
-	if c, err := r.connectorDef(instance, connector); err == nil {
-		driverType = c.Type
-		connectorConfig = r.connectorConfig(connector, c.Config, instance.ResolveVariables())
-	} else {
-		driverType = connector
-		connectorConfig = r.connectorConfig(connector, nil, instance.ResolveVariables())
-	}
-	r.connCache.evict(ctx, instanceID, driverType, connectorConfig)
+	r.connCache.evict(ctx, instanceID, driver, cfg)
 	if drop {
-		return drivers.Drop(driverType, connectorConfig, r.logger)
+		return drivers.Drop(driver, cfg, r.logger)
 	}
 	return nil
 }
@@ -168,39 +157,101 @@ func (r *Runtime) NewCatalogService(ctx context.Context, instanceID string) (*ca
 	return catalog.NewService(catalogStore, repoStore, olapStore, registry, instanceID, r.logger, migrationMetadata, releaseFunc), nil
 }
 
-func (r *Runtime) connectorDef(inst *drivers.Instance, name string) (*runtimev1.Connector, error) {
+func (r *Runtime) connectorConfig(ctx context.Context, instanceID, name string) (string, map[string]any, error) {
+	inst, err := r.FindInstance(ctx, instanceID)
+	if err != nil {
+		return "", nil, err
+	}
+
+	// Search for connector definition in instance
+	var connector *runtimev1.Connector
 	for _, c := range inst.Connectors {
-		// set in instance
 		if c.Name == name {
-			return c, nil
+			connector = c
+			break
 		}
 	}
 
-	// defined in rill.yaml
-	for _, c := range inst.ProjectConnectors {
-		if c.Name == name {
-			return c, nil
+	// Search for connector definition in rill.yaml
+	if connector == nil {
+		for _, c := range inst.ProjectConnectors {
+			if c.Name == name {
+				connector = c
+				break
+			}
 		}
 	}
-	return nil, fmt.Errorf("connector %s doesn't exist", name)
+
+	// Search for implicit connectors (where the name matches a driver name)
+	if connector == nil {
+		_, ok := drivers.Drivers[name]
+		if ok {
+			connector = &runtimev1.Connector{
+				Type: name,
+				Name: name,
+			}
+		}
+	}
+
+	// Return if search for connector was unsuccessful
+	if connector == nil {
+		return "", nil, fmt.Errorf("unknown connector %q", name)
+	}
+
+	// Build connector config
+	cfg := make(map[string]any)
+
+	// Apply config from definition
+	for key, value := range connector.Config {
+		cfg[strings.ToLower(key)] = value
+	}
+
+	// Instance variables matching the format "connector.name.var" are applied to the connector config
+	vars := inst.ResolveVariables()
+	prefix := fmt.Sprintf("connector.%s.", name)
+	for k, v := range vars {
+		if after, found := strings.CutPrefix(k, prefix); found {
+			cfg[strings.ToLower(after)] = v
+		}
+	}
+
+	// For backwards compatibility, certain root-level variables apply to certain implicit connectors.
+	// NOTE: This switches on connector.Name, not connector.Type, because this only applies to implicit connectors.
+	switch connector.Name {
+	case "s3":
+		setIfNil(cfg, "aws_access_key_id", vars["aws_access_key_id"])
+		setIfNil(cfg, "aws_secret_access_key", vars["aws_secret_access_key"])
+		setIfNil(cfg, "aws_session_token", vars["aws_session_token"])
+	case "gcs":
+		setIfNil(cfg, "google_application_credentials", vars["google_application_credentials"])
+	case "bigquery":
+		setIfNil(cfg, "google_application_credentials", vars["google_application_credentials"])
+	case "motherduck":
+		setIfNil(cfg, "token", vars["token"])
+		setIfNil(cfg, "dsn", "")
+	}
+
+	// Apply built-in connector config
+	cfg["allow_host_access"] = r.opts.AllowHostAccess
+
+	// The "local_file" connector needs to know the repo root.
+	// TODO: This is an ugly hack. But how can we get rid of it?
+	if connector.Name == "local_file" {
+		if inst.RepoConnector != "local_file" { // The RepoConnector shouldn't be named "local_file", but let's still try to avoid infinite recursion
+			repo, release, err := r.Repo(ctx, instanceID)
+			if err != nil {
+				return "", nil, err
+			}
+			cfg["dsn"] = repo.Root()
+			release()
+		}
+	}
+
+	return connector.Type, cfg, nil
 }
 
-// TODO :: these can also be generated during reconcile itself ?
-func (r *Runtime) connectorConfig(name string, def, variables map[string]string) map[string]any {
-	vars := make(map[string]any)
-	for key, value := range def {
-		vars[strings.ToLower(key)] = value
+func setIfNil(m map[string]any, key string, value any) {
+	if _, ok := m[key]; !ok {
+		m[key] = value
 	}
-
-	// connector variables are of format connector.name.var
-	prefix := fmt.Sprintf("connector.%s.", name)
-	for key, value := range variables {
-		if strings.EqualFold(key, "allow_host_access") { // global variable
-			vars[strings.ToLower(key)] = value
-		} else if after, found := strings.CutPrefix(key, prefix); found { // connector specific variable
-			vars[strings.ToLower(after)] = value
-		}
-	}
-	vars["allow_host_access"] = r.opts.AllowHostAccess
-	return vars
 }

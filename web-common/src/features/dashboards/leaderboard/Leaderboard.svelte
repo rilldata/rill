@@ -7,7 +7,6 @@
    */
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import {
     getFilterForDimension,
@@ -21,7 +20,6 @@
     MetricsViewDimension,
     MetricsViewMeasure,
   } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { SortDirection } from "../proto-state/derived-types";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
@@ -44,8 +42,6 @@
   export let isSummableMeasure = false;
 
   let slice = 7;
-
-  const queryClient = useQueryClient();
 
   $: dashboardStore = useDashboardStore(metricViewName);
 
@@ -86,18 +82,23 @@
 
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
-  function toggleFilterMode() {
-    cancelDashboardQueries(queryClient, metricViewName);
-    metricsExplorerStore.toggleFilterMode(metricViewName, dimensionName);
-  }
-
   function selectDimension(dimensionName) {
     metricsExplorerStore.setMetricDimensionName(metricViewName, dimensionName);
+  }
+
+  function toggleComparisonDimension(dimensionName, isBeingCompared) {
+    metricsExplorerStore.setComparisonDimension(
+      metricViewName,
+      isBeingCompared ? undefined : dimensionName
+    );
   }
 
   function toggleSortDirection() {
     metricsExplorerStore.toggleSortDirection(metricViewName);
   }
+
+  $: isBeingCompared =
+    $dashboardStore?.selectedComparisonDimension === dimensionName;
 
   $: sortAscending = $dashboardStore.sortDirection === SortDirection.ASCENDING;
   $: topListQuery = createQueryServiceMetricsViewToplist(
@@ -137,9 +138,26 @@
       })) ?? [];
   }
 
+  let valuesComparedInExcludeMode = [];
+  $: if (isBeingCompared && filterExcludeMode) {
+    let count = 0;
+    valuesComparedInExcludeMode = values
+      .filter((value) => {
+        if (!activeValues.includes(value.label) && count < 3) {
+          count++;
+          return true;
+        }
+        return false;
+      })
+      .map((value) => value.label);
+  } else {
+    valuesComparedInExcludeMode = [];
+  }
+
   // get all values that are selected but not visible.
   // we'll put these at the bottom w/ a divider.
   $: selectedValuesThatAreBelowTheFold = activeValues
+    ?.concat(valuesComparedInExcludeMode)
     ?.filter((label) => {
       return (
         // the value is visible within the fold.
@@ -158,11 +176,13 @@
       return b.value - a.value;
     });
 
+  $: contextColumn = $dashboardStore?.leaderboardContextColumn;
   // Compose the comparison /toplist query
   $: showTimeComparison =
-    $dashboardStore?.leaderboardContextColumn ===
-      LeaderboardContextColumn.DELTA_PERCENT &&
+    (contextColumn === LeaderboardContextColumn.DELTA_PERCENT ||
+      contextColumn === LeaderboardContextColumn.DELTA_ABSOLUTE) &&
     $timeControlsStore?.showComparison;
+
   $: showPercentOfTotal =
     $dashboardStore?.leaderboardContextColumn ===
     LeaderboardContextColumn.PERCENT;
@@ -220,13 +240,20 @@
   $: aboveTheFoldItems = prepareLeaderboardItemData(
     values.slice(0, slice),
     activeValues,
-    comparisonMap
+    comparisonMap,
+    filterExcludeMode
   );
+
+  $: defaultComparisonsPresentInAboveFold =
+    aboveTheFoldItems?.filter((item) => item.defaultComparedIndex >= 0)
+      ?.length || 0;
 
   $: belowTheFoldItems = prepareLeaderboardItemData(
     selectedValuesThatAreBelowTheFold,
     activeValues,
-    comparisonMap
+    comparisonMap,
+    filterExcludeMode,
+    defaultComparisonsPresentInAboveFold
   );
 </script>
 
@@ -237,12 +264,12 @@
     on:mouseleave={() => (hovered = false)}
   >
     <LeaderboardHeader
-      {showTimeComparison}
-      {showPercentOfTotal}
+      {contextColumn}
       isFetching={$topListQuery.isFetching}
       {displayName}
-      on:toggle-filter-mode={toggleFilterMode}
-      {filterExcludeMode}
+      on:toggle-dimension-comparison={() =>
+        toggleComparisonDimension(dimensionName, isBeingCompared)}
+      {isBeingCompared}
       {hovered}
       {sortAscending}
       dimensionDescription={dimension?.description}
@@ -257,6 +284,7 @@
             {itemData}
             {showContext}
             {atLeastOneActive}
+            {isBeingCompared}
             {filterExcludeMode}
             {unfilteredTotal}
             {isSummableMeasure}
@@ -275,6 +303,7 @@
               {itemData}
               {showContext}
               {atLeastOneActive}
+              {isBeingCompared}
               {filterExcludeMode}
               {isSummableMeasure}
               {referenceValue}

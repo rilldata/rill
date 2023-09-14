@@ -73,17 +73,18 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, log
 
 	ctx, cancel := context.WithCancel(context.Background())
 	c := &connection{
-		config:       cfg,
-		logger:       logger,
-		activity:     ac,
-		metaSem:      semaphore.NewWeighted(1),
-		olapSem:      priorityqueue.NewSemaphore(olapSemSize),
-		dbCond:       sync.NewCond(&sync.Mutex{}),
-		driverConfig: cfgMap,
-		driverName:   d.name,
-		shared:       shared,
-		ctx:          ctx,
-		cancel:       cancel,
+		config:         cfg,
+		logger:         logger,
+		activity:       ac,
+		metaSem:        semaphore.NewWeighted(1),
+		olapSem:        priorityqueue.NewSemaphore(olapSemSize),
+		longRunningSem: semaphore.NewWeighted(1), // Currently hard-coded to 1
+		dbCond:         sync.NewCond(&sync.Mutex{}),
+		driverConfig:   cfgMap,
+		driverName:     d.name,
+		shared:         shared,
+		ctx:            ctx,
+		cancel:         cancel,
 	}
 
 	// Open the DB
@@ -130,7 +131,7 @@ func (d Driver) Spec() drivers.Spec {
 	return spec
 }
 
-func (d Driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
+func (d Driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
 	return false, nil
 }
 
@@ -151,6 +152,12 @@ type connection struct {
 	// This creates contention for the same connection in database/sql's pool, but its locks will handle that.
 	metaSem *semaphore.Weighted
 	olapSem *priorityqueue.Semaphore
+	// The OLAP interface additionally provides an option to limit the number of long-running queries, as designated by the caller.
+	// longRunningSem enforces this limitation.
+	longRunningSem *semaphore.Weighted
+	// The OLAP interface also provides an option to acquire a connection "transactionally".
+	// We've run into issues with DuckDB freezing up on transactions, so we just use a lock for now to serialize them (inconsistency in case of crashes is acceptable).
+	txMu sync.RWMutex
 	// If DuckDB encounters a fatal error, all queries will fail until the DB has been reopened.
 	// When dbReopen is set to true, dbCond will be used to stop acquisition of new connections,
 	// and then when dbConnCount becomes 0, the DB will be reopened and dbReopen set to false again.
@@ -272,6 +279,12 @@ func (c *connection) reopenDB() error {
 		"SET timezone='UTC'",
 	}
 
+	// We want to set preserve_insertion_order=false in hosted environments only (where source data is never viewed directly). Setting it reduces batch data ingestion time by ~40%.
+	// Hack: Using AllowHostAccess as a proxy indicator for a hosted environment.
+	if !c.config.AllowHostAccess {
+		bootQueries = append(bootQueries, "SET preserve_insertion_order TO false")
+	}
+
 	// DuckDB extensions need to be loaded separately on each connection, but the built-in connection pool in database/sql doesn't enable that.
 	// So we use go-duckdb's custom connector to pass a callback that it invokes for each new connection.
 	connector, err := duckdb.NewConnector(c.config.DSN, func(execer driver.ExecerContext) error {
@@ -340,30 +353,64 @@ func (c *connection) acquireMetaConn(ctx context.Context) (*sqlx.Conn, func() er
 
 // acquireOLAPConn gets a connection from the pool for OLAP queries (i.e. slow queries).
 // It returns a function that puts the connection back in the pool (if applicable).
-func (c *connection) acquireOLAPConn(ctx context.Context, priority int) (*sqlx.Conn, func() error, error) {
+func (c *connection) acquireOLAPConn(ctx context.Context, priority int, longRunning, tx bool) (*sqlx.Conn, func() error, error) {
 	// Try to get conn from context (means the call is wrapped in WithConnection)
 	conn := connFromContext(ctx)
 	if conn != nil {
 		return conn, func() error { return nil }, nil
 	}
 
+	// Acquire long-running semaphore if applicable
+	if longRunning {
+		err := c.longRunningSem.Acquire(ctx, 1)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
 	// Acquire semaphore
 	err := c.olapSem.Acquire(ctx, priority)
 	if err != nil {
+		if longRunning {
+			c.longRunningSem.Release(1)
+		}
 		return nil, nil, err
+	}
+
+	// Poor man's transaction support – see struct docstring for details
+	if tx {
+		c.txMu.Lock()
+	} else {
+		c.txMu.RLock()
 	}
 
 	// Get new conn
 	conn, releaseConn, err := c.acquireConn(ctx)
 	if err != nil {
+		if tx {
+			c.txMu.Unlock()
+		} else {
+			c.txMu.RUnlock()
+		}
 		c.olapSem.Release()
+		if longRunning {
+			c.longRunningSem.Release(1)
+		}
 		return nil, nil, err
 	}
 
 	// Build release func
 	release := func() error {
 		err := releaseConn()
+		if tx {
+			c.txMu.Unlock()
+		} else {
+			c.txMu.RUnlock()
+		}
 		c.olapSem.Release()
+		if longRunning {
+			c.longRunningSem.Release(1)
+		}
 		return err
 	}
 

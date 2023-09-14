@@ -6,6 +6,8 @@ export enum LeaderboardContextColumn {
   PERCENT = "percent",
   // show percent change of the value compared to the previous time range
   DELTA_PERCENT = "delta_change",
+  // show absolute change of the value compared to the previous time range
+  DELTA_ABSOLUTE = "delta_absolute",
   // Do not show the context column
   HIDDEN = "hidden",
 }

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
 
-  export let type: "primary" | "secondary" | "text" = "primary";
+  export let type: "primary" | "secondary" | "highlighted" | "text" = "primary";
   export let status: "info" | "error" = "info";
   export let disabled = false;
   export let compact = false;
@@ -23,6 +23,8 @@
       primary: `bg-gray-800 border border-gray-800 hover:bg-gray-900 hover:border-gray-900 text-gray-100 hover:text-white focus:ring-blue-300`,
       secondary:
         "text-gray-500 border border-gray-400 hover:bg-gray-200 hover:text-gray-600 hover:border-gray-500 focus:ring-blue-300",
+      highlighted:
+        "text-gray-500 border border-gray-200 hover:bg-gray-200 hover:text-gray-600 hover:border-gray-200 focus:ring-blue-300 shadow-lg rounded-sm h-8 ",
       text: "text-gray-900 hover:bg-gray-300 focus:ring-blue-300",
     },
     error: {
@@ -35,7 +37,7 @@
   };
 
   export function buttonClasses({
-    /** one of thwee: primary, secondary, text */
+    /** one of four: primary, secondary, highlighted, text */
     type = "primary",
     compact = false,
     status = "info",
@@ -51,10 +53,12 @@
   ${disabledClasses}
   `;
   }
+
+  const height = type === "highlighted" ? "32px" : compact ? "auto" : "28px";
 </script>
 
 <button
-  style:height={compact ? "auto" : "28px"}
+  style:height
   {disabled}
   class={buttonClasses({ type, compact, status })}
   on:click={handleClick}

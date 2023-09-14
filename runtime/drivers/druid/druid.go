@@ -52,7 +52,7 @@ func (d driver) Spec() drivers.Spec {
 	return drivers.Spec{}
 }
 
-func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
+func (d driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
 	return false, fmt.Errorf("not implemented")
 }
 
@@ -129,4 +129,8 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 
 func (c *connection) EstimateSize() (int64, bool) {
 	return 0, false
+}
+
+func (c *connection) AcquireLongRunning(ctx context.Context) (func(), error) {
+	return func() {}, nil
 }
