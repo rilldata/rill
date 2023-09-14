@@ -81,7 +81,7 @@ func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[s
 
 		objStore, ok := conn.AsObjectStore()
 		if !ok {
-			return fmt.Errorf("expected s3 connector to implement ObjectStore")
+			return fmt.Errorf("expected connector %q to implement ObjectStore", uri.Scheme)
 		}
 
 		srcProps["path"] = ref.Paths[0]
