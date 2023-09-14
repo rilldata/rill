@@ -41,7 +41,7 @@ func Test_sqlextensionToDuckDB_Transfer(t *testing.T) {
 		logger: zap.NewNop(),
 	}
 	query := fmt.Sprintf("SELECT * FROM sqlite_scan('%s', 't');", dbPath)
-	err = tr.Transfer(context.Background(), &drivers.DatabaseSource{SQL: query}, &drivers.DatabaseSink{Table: "test"}, &drivers.TransferOpts{}, drivers.NoOpProgress{})
+	err = tr.Transfer(context.Background(), map[string]any{"sql": query}, map[string]any{"table": "test"}, &drivers.TransferOpts{}, drivers.NoOpProgress{})
 	require.NoError(t, err)
 
 	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT count(*) from test"})
