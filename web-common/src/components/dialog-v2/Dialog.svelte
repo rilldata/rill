@@ -18,7 +18,7 @@
   <div
     class="transform p-6 bg-white rounded-sm border border-slate-300 flex flex-col {width}"
   >
-    <DialogTitle class="text-gray-800 text-lg font-semibold leading-7 mb-4">
+    <DialogTitle class="text-gray-800 text-lg font-semibold leading-7 mb-2">
       <slot name="title" />
     </DialogTitle>
     <slot name="body" />

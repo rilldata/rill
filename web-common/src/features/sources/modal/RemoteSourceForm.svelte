@@ -4,7 +4,6 @@
   import InformationalField from "@rilldata/web-common/components/forms/InformationalField.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
-  import DialogFooter from "@rilldata/web-common/components/modal/dialog/DialogFooter.svelte";
   import {
     ConnectorSpecProperty,
     ConnectorSpecPropertyType,
@@ -94,9 +93,9 @@
   <form
     on:submit|preventDefault={handleSubmit}
     id="remote-source-{connector.name}-form"
-    class="px-4 pb-2 flex-grow overflow-y-auto"
+    class="pb-2 flex-grow overflow-y-auto"
   >
-    <div class="pt-4 pb-2">
+    <div class="pb-2">
       Need help? Refer to our
       <a
         href="https://docs.rilldata.com/develop/import-data"
@@ -149,18 +148,15 @@
       </div>
     {/each}
   </form>
-  <div class="bg-gray-100 border-t border-gray-300">
-    <DialogFooter>
-      <div class="flex items-center space-x-2">
-        <Button
-          type="primary"
-          submitForm
-          form="remote-source-{connector.name}-form"
-          disabled={$isSubmitting}
-        >
-          Add source
-        </Button>
-      </div>
-    </DialogFooter>
+  <div class="flex items-center space-x-2">
+    <div class="grow" />
+    <Button
+      type="primary"
+      submitForm
+      form="remote-source-{connector.name}-form"
+      disabled={$isSubmitting}
+    >
+      Add source
+    </Button>
   </div>
 </div>
