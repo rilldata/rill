@@ -102,7 +102,8 @@
   }
 </script>
 
-<Dialog {open} on:close={onCancelDialog} widthOverride="w-[562px]">
+<!-- This precise width fits exactly 3 connectors per line  -->
+<Dialog {open} on:close={onCancelDialog} widthOverride="w-[560px]">
   <div slot="title">
     {#if step === 1}
       Add a source
@@ -133,7 +134,7 @@
   <div slot="body" class="flex flex-col gap-y-4">
     {#if step === 1}
       {#if $connectors.data}
-        <div class="flex gap-4 flex-wrap">
+        <div class="grid grid-cols-3 gap-4">
           {#each $connectors.data.connectors as connector}
             <button
               id={connector.name}
