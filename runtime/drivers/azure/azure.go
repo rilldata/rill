@@ -200,7 +200,6 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	// Permission error will be thrown while iterating the bucket object, default error will be for az login, considering that as primary auth
 	client, err := c.getClient(ctx, conf)
 	if err != nil {
 		return nil, err
@@ -223,6 +222,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 		ExtractPolicy:         conf.extractPolicy,
 	}
 
+	// Permission error will be thrown while iterating the bucket object, default error will be for az login, considering that as primary auth
 	iter, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
 	if err != nil {
 		return nil, err
@@ -284,10 +284,9 @@ func (c *Connection) getClient(ctx context.Context, conf *sourceProperties) (*co
 			opts.SASToken = c.config.SASToken
 		}
 	}
-
+	
 	var client *container.Client
 	if opts.SASToken != "" {
-		c.logger.Named("Console").Info("Using Azure Blob Storage with env credentials")
 		serviceURL, err := azureblob.NewServiceURL(opts)
 		if err != nil {
 			return nil, err
@@ -298,15 +297,12 @@ func (c *Connection) getClient(ctx context.Context, conf *sourceProperties) (*co
 			return nil, err
 		}
 	} else {
-		c.logger.Named("Console").Info("Using Azure Blob Storage without env credentials")
 		// Create container url of the Azure Storage account.
-		url := fmt.Sprintf("https://%s.blob.core.windows.net", c.config.Account)
-
+		url := fmt.Sprintf("https://%s.blob.core.windows.net", opts.AccountName)
 		credential, err := azidentity.NewDefaultAzureCredential(nil)
 		if err != nil {
 			return nil, err
 		}
-
 		azblobClient, err := azblob.NewClient(url, credential, nil)
 		if err != nil {
 			return nil, err
