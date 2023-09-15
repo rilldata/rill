@@ -72,9 +72,7 @@
     </ol>
     <AddSourceModal
       open={showAddSourceModal}
-      on:close={() => {
-        showAddSourceModal = false;
-      }}
+      on:close={() => (showAddSourceModal = false)}
     />
   </div>
 </WorkspaceContainer>
