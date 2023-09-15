@@ -32,8 +32,12 @@
   const TAB_ORDER = [
     "gcs",
     "s3",
+    // azure_blob_storage
+    // duckdb
     "bigquery",
+    // athena
     "motherduck",
+    // postgres
     "local_file",
     "https",
   ];
@@ -41,8 +45,12 @@
   const ICONS = {
     gcs: GoogleCloudStorage,
     s3: AmazonS3,
+    // azure_blob_storage: MicrosoftAzureBlobStorage,
+    // duckdb: DuckDB,
     bigquery: GoogleBigQuery,
+    // athena: AmazonAthena,
     motherduck: MotherDuck,
+    // postgres: Postgres,
     local_file: LocalFile,
     https: Https,
   };
