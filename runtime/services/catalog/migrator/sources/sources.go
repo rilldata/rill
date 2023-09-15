@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"os"
 	"reflect"
 	"strings"
 	"time"
@@ -363,12 +362,7 @@ func connectorVariables(src *runtimev1.Source, env map[string]string, repoRoot s
 	case "bigquery":
 		vars["google_application_credentials"] = env["google_application_credentials"]
 	case "postgres":
-		props := src.Properties.AsMap()
-		if dsn, ok := props["pg_database_url"]; ok {
-			vars["dsn"] = dsn
-		} else if allowHostAccess, _ := vars["allow_host_access"].(bool); allowHostAccess {
-			vars["dsn"] = os.Getenv("PG_DATABASE_URL")
-		}
+		vars["database_url"] = env["database_url"]
 	}
 	return vars
 }

@@ -2,15 +2,11 @@ package postgres
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
-
-	// Load postgres driver
-	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
 func init() {
@@ -31,18 +27,18 @@ var spec = drivers.Spec{
 			Placeholder: "select * from table;",
 		},
 		{
-			Key:         "pg_database_url",
+			Key:         "database_url",
 			DisplayName: "Postgress Connection String",
 			Type:        drivers.StringPropertyType,
 			Required:    false,
 			Href:        "https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING",
-			Placeholder: "postgresql://user:password@localhost/mydb",
-			Hint:        "Either set this or configure PG_DATABASE_URL env variable.",
+			Placeholder: "postgresql://postgres:postgres@localhost:5432/postgres",
+			Hint:        "Either set this or pass --env connectors.postgres.database_url=... to rill start",
 		},
 	},
 	ConfigProperties: []drivers.PropertySchema{
 		{
-			Key:    "pg_database_url",
+			Key:    "database_url",
 			Secret: true,
 		},
 	},
@@ -51,17 +47,8 @@ var spec = drivers.Spec{
 type driver struct{}
 
 func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
-	dsn, ok := config["dsn"].(string)
-	if !ok {
-		return nil, fmt.Errorf("require dsn to open sqlite connection")
-	}
-
-	db, err := sqlx.Connect("pgx", dsn)
-	if err != nil {
-		return nil, err
-	}
+	// actual db connection is opened during query
 	return &connection{
-		db:     db,
 		config: config,
 	}, nil
 }

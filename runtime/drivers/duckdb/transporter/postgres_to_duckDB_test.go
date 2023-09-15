@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap"
 
 	// Load postgres driver
-	_ "github.com/jackc/pgx/v4/stdlib"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
 )
 
@@ -66,7 +66,7 @@ func allDataTypesTest(t *testing.T, db *sql.DB, dbURL string) {
 	_, err := db.ExecContext(ctx, sqlStmt)
 	require.NoError(t, err)
 
-	handle, err := drivers.Open("postgres", map[string]any{"dsn": dbURL}, false, activity.NewNoopClient(), zap.NewNop())
+	handle, err := drivers.Open("postgres", map[string]any{"database_url": dbURL}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, handle)
 
@@ -96,7 +96,7 @@ func compositeTypesTest(t *testing.T, db *sql.DB, dbURL string) {
 	_, err := db.ExecContext(ctx, compositeSQl)
 	require.NoError(t, err)
 
-	handle, err := drivers.Open("postgres", map[string]any{"dsn": dbURL}, false, activity.NewNoopClient(), zap.NewNop())
+	handle, err := drivers.Open("postgres", map[string]any{"database_url": dbURL}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, handle)
 

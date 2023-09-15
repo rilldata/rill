@@ -2,27 +2,42 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	sqldriver "database/sql/driver"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	"golang.org/x/exp/slices"
 
 	// load pgx driver
-	_ "github.com/jackc/pgx/v4/stdlib"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 // Query implements drivers.SQLStore
 func (c *connection) Query(ctx context.Context, props map[string]any) (drivers.RowIterator, error) {
-	sql, ok := props["sql"].(string)
-	if !ok {
-		return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"motherduck\"")
+	srcProps, err := parseSourceProperties(props)
+	if err != nil {
+		return nil, err
 	}
 
-	res, err := c.db.QueryxContext(ctx, sql)
+	var dsn string
+	if srcProps.DatabaseURL != "" { // get from src properties
+		dsn = srcProps.DatabaseURL
+	} else if url, ok := c.config["database_url"].(string); ok && url != "" { // get from driver configs
+		dsn = url
+	} else {
+		return nil, fmt.Errorf("require database_url to open postgres connection")
+	}
+
+	if c.db, err = sqlx.Connect("pgx", dsn); err != nil {
+		return nil, err
+	}
+
+	res, err := c.db.QueryxContext(ctx, srcProps.SQL)
 	if err != nil {
 		return nil, err
 	}
@@ -32,15 +47,11 @@ func (c *connection) Query(ctx context.Context, props map[string]any) (drivers.R
 		return nil, err
 	}
 
-	slices.SortFunc(schema.Fields, func(a, b *runtimev1.StructType_Field) bool {
-		return a.Name < b.Name
-	})
-
 	return &rowIterator{
-		rows:   res,
-		schema: schema,
-		row:    make([]sqldriver.Value, len(schema.Fields)),
-		rowMap: make(map[string]any, len(schema.Fields)),
+		rows:    res,
+		schema:  schema,
+		row:     make([]sqldriver.Value, len(schema.Fields)),
+		nextRow: make([]any, len(schema.Fields)),
 	}, nil
 }
 
@@ -53,8 +64,8 @@ type rowIterator struct {
 	rows   *sqlx.Rows
 	schema *runtimev1.StructType
 
-	row    []sqldriver.Value
-	rowMap map[string]any
+	row     []sqldriver.Value
+	nextRow []any
 }
 
 // Close implements drivers.RowIterator.
@@ -68,17 +79,21 @@ func (r *rowIterator) Next(ctx context.Context) ([]sqldriver.Value, error) {
 		if r.rows.Err() == nil {
 			return nil, drivers.ErrIteratorDone
 		}
+		if errors.Is(r.rows.Err(), sql.ErrNoRows) {
+			return nil, fmt.Errorf("no results found for the query")
+		}
 		return nil, r.rows.Err()
 	}
 
-	err := r.rows.MapScan(r.rowMap)
+	for i := 0; i < len(r.nextRow); i++ {
+		r.nextRow[i] = &r.row[i]
+	}
+
+	err := r.rows.Scan(r.nextRow...)
 	if err != nil {
 		return nil, err
 	}
 
-	for i, field := range r.schema.Fields {
-		r.row[i] = r.rowMap[field.Name]
-	}
 	return r.row, nil
 }
 
@@ -150,10 +165,8 @@ func databaseTypeToPB(dbt string, nullable bool) *runtimev1.Type {
 		t.Code = runtimev1.Type_CODE_INT32
 	case "INTERVAL":
 		t.Code = runtimev1.Type_CODE_STRING // TODO - Consider adding interval type
-	case "JSON":
+	case "JSON", "JSONB":
 		t.Code = runtimev1.Type_CODE_JSON
-	case "JSONB":
-		t.Code = runtimev1.Type_CODE_BYTES
 	case "NUMERIC", "DECIMAL":
 		t.Code = runtimev1.Type_CODE_STRING
 	case "REAL", "FLOAT4":
@@ -187,4 +200,21 @@ func databaseTypeToPB(dbt string, nullable bool) *runtimev1.Type {
 
 	// Done
 	return t
+}
+
+type sourceProperties struct {
+	SQL         string `mapstructure:"sql"`
+	DatabaseURL string `mapstructure:"database_url"`
+}
+
+func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
+	conf := &sourceProperties{}
+	err := mapstructure.Decode(props, conf)
+	if err != nil {
+		return nil, err
+	}
+	if conf.SQL == "" {
+		return nil, fmt.Errorf("property 'sql' is mandatory for connector \"postgres\"")
+	}
+	return conf, err
 }
