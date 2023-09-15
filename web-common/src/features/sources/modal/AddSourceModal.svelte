@@ -92,6 +92,7 @@
       $appScreen,
       MetricsEventSpace.Modal
     );
+    resetModal();
     dispatch("close");
   }
 </script>
