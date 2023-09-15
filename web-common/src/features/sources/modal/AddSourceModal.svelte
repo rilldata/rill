@@ -85,7 +85,12 @@
 
   const dispatch = createEventDispatcher();
 
-  function onDialogClose() {
+  function onCompleteDialog() {
+    resetModal();
+    dispatch("close");
+  }
+
+  function onCancelDialog() {
     behaviourEvent?.fireSourceTriggerEvent(
       BehaviourEventAction.SourceCancel,
       BehaviourEventMedium.Button,
@@ -97,7 +102,7 @@
   }
 </script>
 
-<Dialog {open} on:close={onDialogClose} widthOverride="w-[562px]">
+<Dialog {open} on:close={onCancelDialog} widthOverride="w-[562px]">
   <div slot="title">
     {#if step === 1}
       Add a source
@@ -131,6 +136,7 @@
         <div class="flex gap-4 flex-wrap">
           {#each $connectors.data.connectors as connector}
             <button
+              id={connector.name}
               on:click={() => goToConnectorForm(connector)}
               class="w-40 h-20 rounded border border-gray-300 justify-center items-center gap-2.5 inline-flex hover:bg-gray-100 cursor-pointer"
             >
@@ -148,14 +154,17 @@
     {:else if step === 2}
       {#if selectedConnector}
         {#if selectedConnector.name === "local_file"}
-          <LocalSourceUpload on:close />
+          <LocalSourceUpload on:close={onCompleteDialog} />
         {:else}
-          <RemoteSourceForm connector={selectedConnector} on:close />
+          <RemoteSourceForm
+            connector={selectedConnector}
+            on:close={onCompleteDialog}
+          />
         {/if}
       {/if}
 
       {#if requestConnector}
-        <RequestConnectorForm on:close />
+        <RequestConnectorForm on:close={onCompleteDialog} />
       {/if}
     {/if}
   </div>
