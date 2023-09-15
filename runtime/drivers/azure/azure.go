@@ -200,7 +200,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	// Permission error will be thrown while iterating the bucket object, default error will be for az login, considering that as primary authenticaion
+	// Permission error will be thrown while iterating the bucket object, default error will be for az login, considering that as primary auth
 	client, err := c.getClient(ctx, conf)
 	if err != nil {
 		return nil, err
