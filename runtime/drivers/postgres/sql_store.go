@@ -48,10 +48,10 @@ func (c *connection) Query(ctx context.Context, props map[string]any) (drivers.R
 	}
 
 	return &rowIterator{
-		rows:    res,
-		schema:  schema,
-		row:     make([]sqldriver.Value, len(schema.Fields)),
-		nextRow: make([]any, len(schema.Fields)),
+		rows:       res,
+		schema:     schema,
+		row:        make([]sqldriver.Value, len(schema.Fields)),
+		scannedRow: make([]any, len(schema.Fields)),
 	}, nil
 }
 
@@ -64,8 +64,8 @@ type rowIterator struct {
 	rows   *sqlx.Rows
 	schema *runtimev1.StructType
 
-	row     []sqldriver.Value
-	nextRow []any
+	row        []sqldriver.Value
+	scannedRow []any
 }
 
 // Close implements drivers.RowIterator.
@@ -85,13 +85,23 @@ func (r *rowIterator) Next(ctx context.Context) ([]sqldriver.Value, error) {
 		return nil, r.rows.Err()
 	}
 
-	for i := 0; i < len(r.nextRow); i++ {
-		r.nextRow[i] = &r.row[i]
+	for i := 0; i < len(r.scannedRow); i++ {
+		r.scannedRow[i] = &r.row[i]
 	}
 
-	err := r.rows.Scan(r.nextRow...)
+	err := r.rows.Scan(r.scannedRow...)
 	if err != nil {
 		return nil, err
+	}
+
+	for i, field := range r.schema.Fields {
+		if field.Type.Code == runtimev1.Type_CODE_JSON {
+			if val, ok := r.row[i].([]byte); ok {
+				// json types are scanned as bytes
+				// duckdb appender needs it in format string since it calls relevant appender API basis go datatype
+				r.row[i] = string(val)
+			}
+		}
 	}
 
 	return r.row, nil
@@ -142,7 +152,8 @@ func databaseTypeToPB(dbt string, nullable bool) *runtimev1.Type {
 	// type of array of base types being with _ like _FLOAT8
 	if strings.HasPrefix(dbt, "_") {
 		// TODO :: use lists once appender supports it
-		t.Code = runtimev1.Type_CODE_JSON
+		// lists are scanned as '{1,2,3,4}' which is not valid json
+		t.Code = runtimev1.Type_CODE_STRING
 		return t
 	}
 
@@ -192,7 +203,7 @@ func databaseTypeToPB(dbt string, nullable bool) *runtimev1.Type {
 	case "VARCHAR":
 		t.Code = runtimev1.Type_CODE_STRING
 	case "POINT", "LINE", "LSEG", "BOX", "PATH", "POLYGON", "CIRCLE":
-		t.Code = runtimev1.Type_CODE_JSON // postgres predefined struct types, move to struct once appender supports structs
+		t.Code = runtimev1.Type_CODE_STRING
 	default:
 		// There are many datatypes in postgres, convert all to string
 		t.Code = runtimev1.Type_CODE_STRING
