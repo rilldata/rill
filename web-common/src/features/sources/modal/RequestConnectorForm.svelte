@@ -6,13 +6,30 @@
 
   const dispatch = createEventDispatcher();
 
+  const FORM_ID = "1P9sP1jxjFcMqDzxsweIrZiU7pFUgRY452S3Nk7cEeao";
+  const GOOGLE_FORM_ENDPOINT = `https://docs.google.com/forms/d/${FORM_ID}`;
+  const REQUEST_FIELD_ID = "entry.849552298";
+
   const { form, errors, handleChange, handleSubmit, isSubmitting } = createForm(
     {
-      initialValues: {},
+      initialValues: {
+        request: "",
+      },
       onSubmit: async (values) => {
-        // TODO: create a Google Form for this
-        console.log("submitting form", values);
-        dispatch("close");
+        // Following the approach here: https://stackoverflow.com/questions/51995070/post-data-to-a-google-form-with-ajax
+        const submitFormEndpoint = `${GOOGLE_FORM_ENDPOINT}/formResponse?${REQUEST_FIELD_ID}=${values.request}&submit=Submit`;
+        try {
+          await fetch(submitFormEndpoint, {
+            method: "GET",
+            mode: "no-cors",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+          });
+          dispatch("close");
+        } catch (e) {
+          console.error(e);
+        }
       },
     }
   );
