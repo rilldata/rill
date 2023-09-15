@@ -125,13 +125,12 @@
   </div>
 {/if}
 
-{#if showAddSourceModal}
-  <AddSourceModal
-    on:close={() => {
-      showAddSourceModal = false;
-    }}
-  />
-{/if}
+<AddSourceModal
+  open={showAddSourceModal}
+  on:close={() => {
+    showAddSourceModal = false;
+  }}
+/>
 {#if showRenameTableModal}
   <RenameAssetModal
     entityType={EntityType.Table}

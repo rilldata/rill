@@ -70,12 +70,11 @@
         </li>
       {/each}
     </ol>
-    {#if showAddSourceModal}
-      <AddSourceModal
-        on:close={() => {
-          showAddSourceModal = false;
-        }}
-      />
-    {/if}
+    <AddSourceModal
+      open={showAddSourceModal}
+      on:close={() => {
+        showAddSourceModal = false;
+      }}
+    />
   </div>
 </WorkspaceContainer>
