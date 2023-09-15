@@ -9,7 +9,7 @@
   import AmazonS3 from "../../../components/icons/connectors/AmazonS3.svelte";
   import GoogleBigQuery from "../../../components/icons/connectors/GoogleBigQuery.svelte";
   import GoogleCloudStorage from "../../../components/icons/connectors/GoogleCloudStorage.svelte";
-  import Http from "../../../components/icons/connectors/HTTP.svelte";
+  import Https from "../../../components/icons/connectors/HTTPS.svelte";
   import LocalFile from "../../../components/icons/connectors/LocalFile.svelte";
   import MotherDuck from "../../../components/icons/connectors/MotherDuck.svelte";
   import { appScreen } from "../../../layout/app-store";
@@ -44,7 +44,7 @@
     bigquery: GoogleBigQuery,
     motherduck: MotherDuck,
     local_file: LocalFile,
-    https: Http,
+    https: Https,
   };
 
   const connectors = createRuntimeServiceListConnectors({
