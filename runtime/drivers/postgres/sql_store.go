@@ -30,7 +30,7 @@ func (c *connection) Query(ctx context.Context, props map[string]any) (drivers.R
 	} else if url, ok := c.config["database_url"].(string); ok && url != "" { // get from driver configs
 		dsn = url
 	} else {
-		return nil, fmt.Errorf("require database_url to open postgres connection")
+		return nil, fmt.Errorf("require database_url to open postgres connection. Either set database_url in source yaml or pass --env connectors.postgres.database_url=... to rill start")
 	}
 
 	if c.db, err = sqlx.Connect("pgx", dsn); err != nil {

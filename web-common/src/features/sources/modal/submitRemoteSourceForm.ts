@@ -65,7 +65,7 @@ export async function submitRemoteSourceForm(
       switch (key) {
         case "project_id":
           return [key, value];
-        case "pg_database_url":
+        case "database_url":
           return [key, value];
         default:
           return [fromYupFriendlyKey(key), value];

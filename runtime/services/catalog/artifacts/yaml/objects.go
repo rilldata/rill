@@ -45,7 +45,7 @@ type Source struct {
 	SQL                         string         `yaml:"sql,omitempty" mapstructure:"sql,omitempty"`
 	DB                          string         `yaml:"db,omitempty" mapstructure:"db,omitempty"`
 	ProjectID                   string         `yaml:"project_id,omitempty" mapstructure:"project_id,omitempty"`
-	PostgresDatabaseURL         string         `yaml:"pg_database_url,omitempty" mapstructure:"pg_database_url,omitempty"`
+	PostgresDatabaseURL         string         `yaml:"database_url,omitempty" mapstructure:"database_url,omitempty"`
 }
 
 type MetricsView struct {
@@ -209,7 +209,7 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 	}
 
 	if source.PostgresDatabaseURL != "" {
-		props["pg_database_url"] = source.PostgresDatabaseURL
+		props["database_url"] = source.PostgresDatabaseURL
 	}
 
 	propsPB, err := structpb.NewStruct(props)

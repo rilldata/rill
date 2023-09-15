@@ -92,7 +92,10 @@ func (c *connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
-	return c.db.Close()
+	if c.db != nil {
+		return c.db.Close()
+	}
+	return nil
 }
 
 // Registry implements drivers.Connection.
