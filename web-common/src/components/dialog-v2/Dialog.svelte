@@ -13,7 +13,7 @@
 
 <Dialog {open} on:close class="fixed inset-0 flex items-center justify-center">
   <DialogOverlay
-    class="fixed inset-0 bg-gray-300 transition-opacity opacity-30"
+    class="fixed inset-0 bg-gray-400 transition-opacity opacity-40"
   />
   <div
     class="transform p-6 bg-white rounded-sm border border-slate-300 flex flex-col {width}"
