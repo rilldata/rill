@@ -58,8 +58,7 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map
 	if limitInBytes == 0 {
 		limitInBytes = math.MaxInt64
 	}
-
-	iter, err := s.from.QueryAsFiles(ctx, srcProps, &drivers.QueryOption{TotalLimitInBytes: opts.LimitInBytes}, opts.Progress)
+	iter, err := s.from.QueryAsFiles(ctx, srcProps, &drivers.QueryOption{TotalLimitInBytes: limitInBytes}, opts.Progress)
 	if err != nil {
 		return err
 	}

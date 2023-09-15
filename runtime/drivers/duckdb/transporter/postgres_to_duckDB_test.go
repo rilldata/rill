@@ -76,7 +76,7 @@ func allDataTypesTest(t *testing.T, db *sql.DB, dbURL string) {
 	olap, _ := to.AsOLAP("")
 
 	tr := NewSQLStoreToDuckDB(sqlStore, olap, zap.NewNop())
-	err = tr.Transfer(ctx, map[string]any{"sql": "select * from all_datatypes;"}, map[string]any{"table": "sink"}, &drivers.TransferOpts{}, drivers.NoOpProgress{})
+	err = tr.Transfer(ctx, map[string]any{"sql": "select * from all_datatypes;"}, map[string]any{"table": "sink"}, &drivers.TransferOptions{Progress: drivers.NoOpProgress{}})
 	require.NoError(t, err)
 }
 
@@ -106,6 +106,6 @@ func compositeTypesTest(t *testing.T, db *sql.DB, dbURL string) {
 	olap, _ := to.AsOLAP("")
 
 	tr := NewSQLStoreToDuckDB(sqlStore, olap, zap.NewNop())
-	err = tr.Transfer(ctx, map[string]any{"sql": "select * from on_hand;"}, map[string]any{"table": "sink"}, &drivers.TransferOpts{}, drivers.NoOpProgress{})
+	err = tr.Transfer(ctx, map[string]any{"sql": "select * from on_hand;"}, map[string]any{"table": "sink"}, &drivers.TransferOptions{Progress: drivers.NoOpProgress{}})
 	require.NoError(t, err)
 }

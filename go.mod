@@ -39,6 +39,7 @@ require (
 	github.com/hashicorp/go-version v1.6.0
 	github.com/hashicorp/golang-lru v0.6.0
 	github.com/jackc/pgconn v1.14.0
+	github.com/jackc/pgx/v4 v4.17.2
 	github.com/jackc/pgx/v5 v5.4.3
 	github.com/jinzhu/copier v0.3.5
 	github.com/jmoiron/sqlx v1.3.5
@@ -86,7 +87,10 @@ require (
 	moul.io/zapfilter v1.7.0
 )
 
-require google.golang.org/genproto v0.0.0-20230530153820-e85fd2cbaebc // indirect
+require (
+	github.com/jackc/pgtype v1.12.0 // indirect
+	google.golang.org/genproto v0.0.0-20230530153820-e85fd2cbaebc // indirect
+)
 
 require (
 	cloud.google.com/go v0.110.2 // indirect
