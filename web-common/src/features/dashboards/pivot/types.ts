@@ -20,6 +20,7 @@ export type PivotConfig = {
   colSets: PivotColumnSet[];
   rowJoinType: "flat" | "nest";
   sort: any; // TBD
+  expanded: any[];
 };
 
 export type PivotPos = {

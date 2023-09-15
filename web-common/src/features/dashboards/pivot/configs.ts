@@ -23,6 +23,7 @@ export const tdd: PivotConfig = {
   ],
   rowJoinType: "flat",
   sort: null,
+  expanded: [],
 };
 
 export const basicPivot: PivotConfig = {
@@ -57,4 +58,40 @@ export const basicPivot: PivotConfig = {
   ],
   rowJoinType: "flat",
   sort: null,
+  expanded: [],
+};
+
+export const basicNestedPivot: PivotConfig = {
+  rowDims: [
+    {
+      def: "Dim100",
+    },
+    {
+      def: "Dim3",
+    },
+  ],
+  colSets: [
+    {
+      dims: [],
+      measures: [{ def: "TotalMeasure" }],
+    },
+    {
+      dims: [
+        {
+          def: "Dim100",
+        },
+      ],
+      measures: [
+        {
+          def: "MeasureA",
+        },
+        {
+          def: "MeasureB",
+        },
+      ],
+    },
+  ],
+  rowJoinType: "nest",
+  sort: null,
+  expanded: [0, 1, 4, 66],
 };

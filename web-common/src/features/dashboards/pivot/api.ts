@@ -124,50 +124,82 @@ export function getRowHeaders(config: PivotConfig, y0: number, y1: number) {
 }
 
 const dimNames = ["DimA", "DimB", "DimC", "DimD", "DimE"];
-const EXPANDED = [0, 1, 4];
-const CUMULATIVE_EXPANDED = EXPANDED.reduce((acc, curr) => {
-  const prev = acc.at(-1);
-  if (prev === undefined) return [curr];
-  else return [...acc, curr + 3 * acc.length];
-}, []);
 
-export const fetchMockRowData = (block, delay) => async () => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        block: block,
-        // For nested data, one way to do it is use cumulative_expanded
-        // with a for loop, and basically add multiple rows in 1 pass for expanded + jump the index ahead
-        // as opposed to do thing this Array 50 method.
-        // will need a function to do loop. or maybe flatMap would work as well...just need an early exit OR can just slice array at end
-        data: Array.from(Array(50).keys()).map((y) => {
-          const parentRow = (block[0] + y) % 4 === 0;
-          const rowGroupIdx = Math.floor((block[0] + y) / 4);
-          const isExpanded = EXPANDED.includes(rowGroupIdx);
-          if (isExpanded) {
-            if (parentRow) return [`- ${dimNames[0]}_${rowGroupIdx}`];
-            else return ["", `${dimNames[1]}_${block[0] + y}`];
-          } else return [`+ ${dimNames[0]}_${block[0] + y}`];
-        }),
-        //   Array.from(Array(2).keys()).map(
-        //     // (x) => `${dimNames[x]}_${x},${block[0] + y}`
-        //     (x) => {
-        //       const parentRow = (block[0] + y) % 4 === 0;
-        //       const rowGroupIdx = Math.floor((block[0] + y) / 4);
-        //       if(parentRow) {
-        //         if(x === 0) return `${dimNames[x]}_${rowGroupIdx}`;
-        //         else return
-        //       }
-        //       if (x === 0) {
-        //         return `${dimNames[x]}_${Math.floor((block[0] + y) / 3)}`;
-        //       } else return `${dimNames[x]}_${block[0] + y}`;
-        //     }
-        //   )
-        // ),
-      });
-    }, delay);
-  });
-};
+export function getFlatRowHeaders(config: PivotConfig, y0: number, y1: number) {
+  const meta = getMetadata(config);
+  // Hack: Add zero width space character to every other line to prevent row merging (for flat tables)
+  // see https://github.com/finos/regular-table/issues/193
+  let data = Array.from(Array(meta.rowCt).keys()).map((y) =>
+    Array.from(Array(2).keys()).map(
+      (x) => `${dimNames[x]}_${x},${y}${y % 2 === 0 ? "\u200B" : ""}`
+    )
+  );
+  return data.slice(y0, y1);
+}
+
+export function getNestedRowHeaders(
+  config: PivotConfig,
+  y0: number,
+  y1: number
+) {
+  const meta = getMetadata(config);
+  let parentIdx = 0;
+  let data = [];
+  for (var i = 0; i < meta.rowCt; ) {
+    if (config.expanded.includes(parentIdx)) {
+      // data.push([`- ${dimNames[0]}_${parentIdx}`]);
+      data.push([
+        {
+          expandable: true,
+          isExpanded: true,
+          text: `${dimNames[0]}_${parentIdx}`,
+          idx: parentIdx,
+        },
+      ]);
+      for (var j = 0; j < 3; j++) {
+        data.push([
+          "",
+          {
+            text: `${dimNames[1]}_${j}`,
+            idx: j,
+            parentIdx,
+          },
+        ]);
+      }
+      i += 4;
+    } else {
+      // data.push([`+ ${dimNames[0]}_${parentIdx}`]);
+      data.push([
+        {
+          expandable: true,
+          isExpanded: false,
+          text: `${dimNames[0]}_${parentIdx}`,
+          idx: parentIdx,
+        },
+      ]);
+      i++;
+    }
+    parentIdx++;
+  }
+  return data.slice(y0, y1);
+}
+
+const JITTER = 0;
+
+export const fetchMockRowData =
+  (block, config: PivotConfig, delay) => async () => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          block: block,
+          data:
+            config.rowJoinType === "flat"
+              ? getFlatRowHeaders(config, block[0], block[1])
+              : getNestedRowHeaders(config, block[0], block[1]),
+        });
+      }, delay + Math.random() * JITTER);
+    });
+  };
 
 export const fetchMockColumnData = (block, config, delay) => async () => {
   return new Promise((resolve) => {
@@ -176,7 +208,7 @@ export const fetchMockColumnData = (block, config, delay) => async () => {
         block: block,
         data: getColumnHeaders(config, block[0], block[1]),
       });
-    }, delay);
+    }, delay + Math.random() * JITTER);
   });
 };
 
@@ -190,6 +222,6 @@ export const fetchMockBodyData = (block, delay) => async () => {
           range(block.x[0], block.x[1], (x) => `${x},${y}`)
         ),
       });
-    }, delay);
+    }, delay + Math.random() * JITTER);
   });
 };

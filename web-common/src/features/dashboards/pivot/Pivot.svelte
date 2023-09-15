@@ -2,37 +2,45 @@
   import "regular-table";
   import "regular-table/dist/css/material.css";
   import { basicPivot } from "./configs";
-  import { getColumnHeaders, getMetadata, getRowHeaders } from "./api";
   import { createEventDispatcher } from "svelte";
-  import type { PivotDataProvider } from "./pivot-data-provider";
   import type { PivotPos } from "./types";
-  import { isEmptyPos, range } from "./util";
-  import type { ColumnDataProvider } from "./column-data-provider";
-  import type { RowDataProvider } from "./row-data-provider";
-  import type { BodyDataProvider } from "./body-data-provider";
-  import Row from "@rilldata/web-common/components/virtualized-table/core/Row.svelte";
+  import { isEmptyPos } from "./util";
+  import { Any } from "@bufbuild/protobuf";
 
   // TODO: replace with w-full once you have fixed widths
   const LOADING_EL = `<div class="w-8 h-4 bg-gray-100 rounded loading-cell"/>`;
   const LOADING_EL_FW = `<div class="min-w-8 w-8 h-4 bg-gray-100 rounded loading-cell"/>`;
 
-  export let rowHeaderDataProvider: RowDataProvider;
-  export let columnHeaderDataProvider: ColumnDataProvider;
-  export let bodyDataProvider: BodyDataProvider;
-
-  // const getRowHeaderData = (pos: PivotPos) =>
-  //   rowHeaderDataProvider.getData(pos);
-  // $: rowHeaderQuery = rowHeaderDataProvider.query;
-
-  // const getBodyData = (pos: PivotPos) => bodyDataProvider.getData(pos);
-  // $: bodyQuery = bodyDataProvider.query;
+  export let getColumnHeaderData: (pos: PivotPos) => any = () => [];
+  export let getRowHeaderData: (pos: PivotPos) => any = () => [];
+  export let getBodyData: (pos: PivotPos) => any = () => [];
+  export let rowCount = 0;
+  export let columnCount = 0;
+  export let rowHeaderDepth = 0;
+  export let columnHeaderDepth = 0;
+  export let onMouseDown: (evt: MouseEvent, table: any) => any = undefined;
 
   const dispatch = createEventDispatcher();
 
-  const config = basicPivot;
-  $: metadata = getMetadata(config);
+  let table = undefined;
+  let SKIP_CACHE = false;
+  const getSkipCache = () => SKIP_CACHE;
+  const setSkipCache = (v) => {
+    SKIP_CACHE = v;
+  };
 
-  let table;
+  export let api = {
+    initialized: false,
+    draw() {
+      if (this.initialized) {
+        this.getTable().draw();
+      }
+    },
+    getTable() {
+      return table;
+    },
+  };
+
   const cachedState = {
     pos: {
       x0: 0,
@@ -49,16 +57,13 @@
     if (!isEmptyPos({ x0, x1, y0, y1 })) {
       cachedState.pos = { x0, x1, y0, y1 };
     }
-    const depth = 2;
-    const placeholderEvenColumnHeader = new Array(depth).fill("LOADING");
-    const placeholderOddColumnHeader = new Array(depth).fill("\u200BLOADING");
-    let column_headers =
-      columnHeaderDataProvider.getData({
-        x0,
-        x1,
-        y0,
-        y1,
-      })?.data ?? [];
+    const placeholderEvenColumnHeader = new Array(columnHeaderDepth).fill(
+      "LOADING"
+    );
+    const placeholderOddColumnHeader = new Array(columnHeaderDepth).fill(
+      "\u200BLOADING"
+    );
+    let column_headers = getColumnHeaderData({ x0, x1, y0, y1 });
     // Replace any nulls with loading placeholders
     for (let i = 0; i < column_headers.length; i++) {
       if (!column_headers[i]) {
@@ -67,16 +72,17 @@
       }
     }
 
-    const rowDepth = 2;
-    const placeholderEvenRowHeader = new Array(rowDepth)
+    const placeholderEvenRowHeader = new Array(rowHeaderDepth)
       .fill("LOADING")
       .map((_, i) => `${i % 2 ? "\u200B" : ""}LOADING`);
     const placeholderOddRowHeader = [
       ...placeholderEvenRowHeader.slice(1),
       placeholderEvenRowHeader.at(0),
     ];
-    let row_headers =
-      rowHeaderDataProvider.getData({ x0, x1, y0, y1 })?.data ?? [];
+    let row_headers = getRowHeaderData({ x0, x1, y0, y1 });
+    // if (!isEmptyPos({ x0, x1, y0, y1 }))
+    //   console.log({ row_headers: row_headers.slice() });
+
     row_headers.forEach((r, i) => {
       if (!r) {
         row_headers[i] =
@@ -84,8 +90,7 @@
       }
     });
 
-    let data = bodyDataProvider.getData({ x0, x1, y0, y1 }).data;
-    const placeholderData = new Array(x1 - x0).fill("LOADING");
+    let data = getBodyData({ x0, x1, y0, y1 });
     // Replace nulls with loading placeholders
     data.forEach((c, i) => {
       c.forEach((r, j) => {
@@ -96,11 +101,9 @@
     });
 
     const dataSlice = {
-      num_rows: metadata.rowCt,
-      num_columns: metadata.colCt,
+      num_rows: rowCount,
+      num_columns: columnCount,
       data,
-      // placeholder body data, overwrite during styling step
-      // data: range(x0, x1, (x) => range(y0, y1, (y) => `${y},${x}`)),
       row_headers,
       column_headers,
     };
@@ -112,13 +115,22 @@
     const meta = table.getMeta(th);
     const x = meta.row_header_x;
     const y = meta.y;
+    const value = meta.value;
     th.setAttribute("__col", String(x));
     th.setAttribute("__row", String(y));
     if (meta.value === "LOADING" || meta.value === "\u200BLOADING")
       th.innerHTML = LOADING_EL_FW;
-    else if (x === 0) {
-      th.innerHTML = `<div class="xborder-t xborder-b" style=" height: 100%; padding-top: 3px;">${meta.value}</div>`;
+    else if (typeof meta.value === "string") {
+    } else {
+      if (value.expandable) {
+        th.innerHTML = `<div class="cursor-pointer" pivot-expandable>${
+          value.isExpanded ? "–" : "+"
+        } ${meta.value.text}</div>`;
+      } else th.innerHTML = meta.value.text;
     }
+    // else if (x === 0) {
+    //   th.innerHTML = `<div class="xborder-t xborder-b" style=" height: 100%; padding-top: 3px;">${meta.value}</div>`;
+    // }
   }
 
   function map_td(td: Element) {
@@ -145,6 +157,21 @@
     if (table) {
       table.setDataListener(reactiveDataListener);
       table.draw();
+      api.initialized = true;
+    }
+  }
+
+  $: prevOnMouseDown = undefined;
+  const getPrevOnMouseDown = () => prevOnMouseDown;
+  $: {
+    if (table && onMouseDown) {
+      const handler = (evt: MouseEvent) => onMouseDown(evt, table);
+      table.addEventListener("mousedown", handler);
+      const prevHandler = getPrevOnMouseDown();
+      if (prevHandler) {
+        table.removeEventListener("mousedown", prevHandler);
+      }
+      prevOnMouseDown = handler;
     }
   }
 
@@ -162,6 +189,7 @@
         for (const th of table.querySelectorAll("thead th")) {
           map_column_th(th);
         }
+
         dispatch("pos", getCachedPos());
       });
     }
@@ -176,74 +204,8 @@
       table.draw();
     }, 0);
   };
-
-  // let lastSeenRowQuery = null;
-  // const getLastSeenRowQuery = () => lastSeenRowQuery;
-  // $: {
-  //   // If data and we haven't drawn this data already, redraw the table
-  //   if (
-  //     $rowHeaderQuery.data &&
-  //     $rowHeaderQuery.data !== getLastSeenRowQuery()
-  //   ) {
-  //     lastSeenRowQuery = $rowHeaderQuery.data;
-
-  //     console.log("DRAW ROWS");
-  //     table.draw();
-  //     // forceDraw();
-  //   }
-  // }
-
-  const rowDataStore = rowHeaderDataProvider.data;
-  $: {
-    if (table && $rowDataStore) {
-      console.count("DRAW ROWS");
-      table.draw();
-    }
-  }
-
-  const columnDataStore = columnHeaderDataProvider.data;
-  $: {
-    if (table && $columnDataStore) {
-      console.count("DRAW COLUMNS");
-      // TODO: any way to skip this draw if we know reading from cache will suffice?
-      table.draw();
-      // forceDraw();
-
-      // Example of infinite scroll. expand available columns when reaching end
-      // if ($columnHeaderQuery.data.block[0] >= 175) {
-      //   metadata.colCt = 500;
-      // }
-    }
-  }
-
-  const bodyDataStore = bodyDataProvider.data;
-  $: {
-    if (table && $bodyDataStore) {
-      console.count("DRAW BODY");
-      table.draw();
-    }
-  }
-
-  // let lastSeenBodyData = null;
-  // const getLastSeenBodyData = () => lastSeenBodyData;
-  // $: {
-  //   if ($bodyQuery.data && getLastSeenBodyData() !== $bodyQuery.data) {
-  //     lastSeenBodyData = $bodyQuery.data;
-  //     // table.draw();
-  //     // console.log("DRAW BODY");
-  //   }
-  // }
-
-  $: {
-    console.log({ metadata });
-  }
 </script>
 
-<div class="max-h-64 overflow-auto w-fit">
-  <pre>
-  {JSON.stringify(basicPivot, null, 2)}
-</pre>
-</div>
 <div class="border m-8 relative" style="height: 400px; width: 100%">
   <regular-table class="w-full h-full tdd-table" bind:this={table} />
 </div>

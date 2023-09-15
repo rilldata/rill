@@ -99,3 +99,19 @@ export function merge2DBlocks(blocks) {
   }
   return mergedData;
 }
+
+export function transpose2DArray(matrix: any[][]) {
+  const numRows = matrix[0].length;
+  const numCols = matrix.length;
+  const transposed = new Array(numRows)
+    .fill(null)
+    .map(() => new Array(numCols));
+
+  for (let i = 0; i < matrix.length; i++) {
+    for (let j = 0; j < matrix[i].length; j++) {
+      transposed[j][i] = matrix[i][j];
+    }
+  }
+
+  return transposed;
+}
