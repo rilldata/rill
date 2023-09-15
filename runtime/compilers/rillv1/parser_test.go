@@ -195,7 +195,7 @@ SELECT * FROM {{ ref "m2" }}
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", []string{""})
+	p, err := Parse(ctx, repo, "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -234,7 +234,7 @@ FRO m1
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", []string{""})
+	p, err := Parse(ctx, repo, "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, nil, errors)
 }
@@ -273,7 +273,7 @@ SELECT 1
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", []string{""})
+	p, err := Parse(ctx, repo, "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, errors)
 }
@@ -285,7 +285,7 @@ func TestReparse(t *testing.T) {
 
 	// Create empty project
 	repo := makeRepo(t, map[string]string{`rill.yaml`: ``})
-	p, err := Parse(ctx, repo, "", []string{""})
+	p, err := Parse(ctx, repo, "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, nil, nil)
 
@@ -430,7 +430,7 @@ func TestRefInferrence(t *testing.T) {
 		// model foo
 		`models/foo.sql`: `SELECT * FROM bar`,
 	})
-	p, err := Parse(ctx, repo, "", []string{""})
+	p, err := Parse(ctx, repo, "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{foo}, nil)
 
@@ -505,7 +505,7 @@ materialize: true
 		},
 	}
 	repo := makeRepo(b, files)
-	p, err := Parse(ctx, repo, "", []string{""})
+	p, err := Parse(ctx, repo, "", "", []string{""})
 	require.NoError(b, err)
 	requireResourcesAndErrors(b, p, resources, nil)
 
@@ -516,71 +516,6 @@ materialize: true
 		require.NoError(b, err)
 		require.Empty(b, p.Errors)
 	}
-}
-
-func TestEmbeddedSources(t *testing.T) {
-	// Expected
-	files := map[string]string{
-		`rill.yaml`: ``,
-		`sources/m1.sql`: `
-SELECT * FROM "s3://bucket/path"
-`,
-		`models/m2.sql`: `
-SELECT * FROM "s3://bucket/path"
-`,
-		`models/m3.sql`: `
-SELECT * FROM m2
-`,
-	}
-	m1 := &Resource{
-		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
-		Refs:  []ResourceName{{Kind: ResourceKindSource, Name: "embed_b3d6beea4bcd7d8ef3970707a4ddbabb"}},
-		Paths: []string{"/sources/m1.sql"},
-		ModelSpec: &runtimev1.ModelSpec{
-			Sql: "SELECT * FROM embed_b3d6beea4bcd7d8ef3970707a4ddbabb",
-		},
-	}
-	m2 := &Resource{
-		Name:  ResourceName{Kind: ResourceKindModel, Name: "m2"},
-		Refs:  []ResourceName{{Kind: ResourceKindSource, Name: "embed_b3d6beea4bcd7d8ef3970707a4ddbabb"}},
-		Paths: []string{"/models/m2.sql"},
-		ModelSpec: &runtimev1.ModelSpec{
-			Sql: "SELECT * FROM embed_b3d6beea4bcd7d8ef3970707a4ddbabb",
-		},
-	}
-	m3 := &Resource{
-		Name:  ResourceName{Kind: ResourceKindModel, Name: "m3"},
-		Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m2"}},
-		Paths: []string{"/models/m3.sql"},
-		ModelSpec: &runtimev1.ModelSpec{
-			Sql: "SELECT * FROM m2",
-		},
-	}
-	embed := &Resource{
-		Name:  ResourceName{Kind: ResourceKindSource, Name: "embed_b3d6beea4bcd7d8ef3970707a4ddbabb"},
-		Paths: []string{"/sources/m1.sql", "/models/m2.sql"},
-		SourceSpec: &runtimev1.SourceSpec{
-			SourceConnector: "s3",
-			Properties:      must(structpb.NewStruct(map[string]any{"path": "s3://bucket/path"})),
-		},
-	}
-
-	// Parse
-	ctx := context.Background()
-	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", []string{""})
-	require.NoError(t, err)
-	requireResourcesAndErrors(t, p, []*Resource{m1, m2, m3, embed}, nil)
-
-	// Delete m1
-	embed.Paths = []string{"/models/m2.sql"}
-	deleteRepo(t, repo, m1.Paths...)
-	diff, err := p.Reparse(ctx, m1.Paths)
-	require.NoError(t, err)
-	requireResourcesAndErrors(t, p, []*Resource{m2, m3, embed}, nil)
-	require.ElementsMatch(t, []ResourceName{}, diff.Added)
-	require.ElementsMatch(t, []ResourceName{embed.Name, m2.Name, m3.Name}, diff.Modified)
-	require.ElementsMatch(t, []ResourceName{m1.Name}, diff.Deleted)
 }
 
 func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {

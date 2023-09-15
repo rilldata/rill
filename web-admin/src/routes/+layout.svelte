@@ -11,9 +11,10 @@
     QueryClient,
     QueryClientProvider,
   } from "@tanstack/svelte-query";
-  import { globalErrorCallback } from "../components/errors/error-utils";
-  import ErrorBoundary from "../components/errors/ErrorBoundary.svelte";
-  import TopNavigationBar from "../components/navigation/TopNavigationBar.svelte";
+  import { globalErrorCallback } from "../features/errors/error-utils";
+  import ErrorBoundary from "../features/errors/ErrorBoundary.svelte";
+  import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
+  import { clearViewedAsUserAfterNavigate } from "../features/view-as-user/clearViewedAsUser";
 
   const queryClient = new QueryClient({
     queryCache: new QueryCache({
@@ -38,6 +39,7 @@
   });
 
   beforeNavigate(retainFeaturesFlags);
+  clearViewedAsUserAfterNavigate(queryClient);
 </script>
 
 <svelte:head>

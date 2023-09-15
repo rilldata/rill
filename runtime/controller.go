@@ -10,6 +10,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/dag2"
 	"github.com/rilldata/rill/runtime/pkg/schedule"
 	"go.uber.org/zap"
@@ -39,6 +40,7 @@ type Reconciler interface {
 	Close(ctx context.Context) error
 	AssignSpec(from, to *runtimev1.Resource) error
 	AssignState(from, to *runtimev1.Resource) error
+	ResetState(r *runtimev1.Resource) error
 	Reconcile(ctx context.Context, n *runtimev1.ResourceName) ReconcileResult
 }
 
@@ -69,6 +71,7 @@ type Controller struct {
 	Runtime     *Runtime
 	InstanceID  string
 	Logger      *slog.Logger
+	Activity    activity.Client
 	mu          sync.RWMutex
 	running     atomic.Bool
 	reconcilers map[string]Reconciler
@@ -283,21 +286,21 @@ func (c *Controller) Run(ctx context.Context) error {
 
 // Get returns a resource by name.
 // Soft-deleted resources (i.e. resources where DeletedOn != nil) are not returned.
-func (c *Controller) Get(ctx context.Context, name *runtimev1.ResourceName) (*runtimev1.Resource, error) {
+func (c *Controller) Get(ctx context.Context, name *runtimev1.ResourceName, clone bool) (*runtimev1.Resource, error) {
 	c.checkRunning()
 	c.lock(ctx, true)
 	defer c.unlock(ctx, true)
-	return c.catalog.get(name, false)
+	return c.catalog.get(name, false, clone)
 }
 
 // List returns a list of resources of the specified kind.
 // If kind is empty, all resources are returned.
 // Soft-deleted resources (i.e. resources where DeletedOn != nil) are not returned.
-func (c *Controller) List(ctx context.Context, kind string) ([]*runtimev1.Resource, error) {
+func (c *Controller) List(ctx context.Context, kind string, clone bool) ([]*runtimev1.Resource, error) {
 	c.checkRunning()
 	c.lock(ctx, true)
 	defer c.unlock(ctx, true)
-	return c.catalog.list(kind, false)
+	return c.catalog.list(kind, false, clone)
 }
 
 // SubscribeCallback is the callback type passed to Subscribe.
@@ -343,7 +346,7 @@ func (c *Controller) Create(ctx context.Context, name *runtimev1.ResourceName, r
 	// A deleted resource with the same name may exist and be running. If so, we first cancel it.
 	requeued := false
 	if inv, ok := c.invocations[nameStr(name)]; ok {
-		r, err := c.catalog.get(name, true)
+		r, err := c.catalog.get(name, true, false)
 		if err != nil {
 			return fmt.Errorf("internal: got catalog error for reconciling resource: %w", err)
 		}
@@ -409,7 +412,7 @@ func (c *Controller) UpdateName(ctx context.Context, name, newName, owner *runti
 		c.enqueue(name)
 	}
 
-	r, err := c.catalog.get(name, true)
+	r, err := c.catalog.get(name, true, false)
 	if err != nil {
 		return err
 	}
@@ -660,7 +663,7 @@ func (c *Controller) isReconcilerForResource(ctx context.Context, n *runtimev1.R
 // It does nothing if the resource is not currently being renamed (RenamedFrom == nil).
 // It must be called while c.mu is held.
 func (c *Controller) safeMutateRenamed(n *runtimev1.ResourceName) error {
-	r, err := c.catalog.get(n, true)
+	r, err := c.catalog.get(n, true, false)
 	if err != nil {
 		if errors.Is(err, drivers.ErrResourceNotFound) {
 			return nil
@@ -678,7 +681,7 @@ func (c *Controller) safeMutateRenamed(n *runtimev1.ResourceName) error {
 		return err
 	}
 
-	_, err = c.catalog.get(renamedFrom, true)
+	_, err = c.catalog.get(renamedFrom, true, false)
 	if err == nil {
 		// A new resource with the name of the old one has been created in the mean time, so no delete is necessary (reconciler will bring to desired state).
 		return nil
@@ -712,7 +715,7 @@ func (c *Controller) safeRename(from, to *runtimev1.ResourceName) error {
 	// There's a collision if to matches RenamedFrom of another resource.
 	collision := false
 	for _, n := range c.catalog.renamed {
-		r, err := c.catalog.get(n, true)
+		r, err := c.catalog.get(n, true, false)
 		if err != nil {
 			return fmt.Errorf("internal: failed to get renamed resource %v: %w", n, err)
 		}
@@ -729,7 +732,7 @@ func (c *Controller) safeRename(from, to *runtimev1.ResourceName) error {
 
 	// Collision, do a create+delete instead of a rename
 	// (since creation might fail if the name is taken, whereas the delete is almost certain to succeed)
-	r, err := c.catalog.get(from, true)
+	r, err := c.catalog.get(from, true, false)
 	if err != nil {
 		return err
 	}
@@ -803,6 +806,7 @@ func (c *Controller) processQueue() error {
 }
 
 // markPending marks a resource and its descendents as pending.
+// It also clears errors on every resource marked pending - it would be confusing to show an old error after a change has been made that may fix it.
 // It returns true if it already now knows that the resource can't be scheduled and will be re-triggered later (e.g. by being added to a waitlist).
 // It must be called while c.mu is held.
 func (c *Controller) markPending(n *runtimev1.ResourceName) (bool, error) {
@@ -810,7 +814,7 @@ func (c *Controller) markPending(n *runtimev1.ResourceName) (bool, error) {
 	c.timeline.Remove(n)
 
 	// Get resource
-	r, err := c.catalog.get(n, true)
+	r, err := c.catalog.get(n, true, false)
 	if err != nil {
 		if errors.Is(err, drivers.ErrResourceNotFound) {
 			return true, nil
@@ -826,7 +830,11 @@ func (c *Controller) markPending(n *runtimev1.ResourceName) (bool, error) {
 		return true, nil
 	}
 
-	// Not running - mark pending
+	// Not running - clear error and mark pending
+	err = c.catalog.updateError(n, nil)
+	if err != nil {
+		return false, err
+	}
 	err = c.catalog.updateStatus(n, runtimev1.ReconcileStatus_RECONCILE_STATUS_PENDING, time.Time{})
 	if err != nil {
 		return false, err
@@ -849,13 +857,17 @@ func (c *Controller) markPending(n *runtimev1.ResourceName) (bool, error) {
 	// Ensure all descendents get marked pending and cancel any running descendents.
 	descendentRunning := false
 	err = c.catalog.dag.Visit(n, func(ds string, dn *runtimev1.ResourceName) error {
-		dr, err := c.catalog.get(dn, true)
+		dr, err := c.catalog.get(dn, true, false)
 		if err != nil {
 			return fmt.Errorf("error getting dag node %q: %w", ds, err)
 		}
 		switch dr.Meta.ReconcileStatus {
 		case runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE:
-			// Mark it pending
+			// Clear error and mark it pending
+			err = c.catalog.updateError(n, nil)
+			if err != nil {
+				return fmt.Errorf("error updating dag node %q: %w", ds, err)
+			}
 			err = c.catalog.updateStatus(dn, runtimev1.ReconcileStatus_RECONCILE_STATUS_PENDING, time.Time{})
 			if err != nil {
 				return fmt.Errorf("error updating dag node %q: %w", ds, err)
@@ -904,7 +916,7 @@ func (c *Controller) markPending(n *runtimev1.ResourceName) (bool, error) {
 // The implementation relies on the key invariant that all resources awaiting to be reconciled have status=pending, *including descendents of a resource with status=pending*.
 // This is ensured through the assignment of status=pending in markPending.
 func (c *Controller) trySchedule(n *runtimev1.ResourceName) (bool, error) {
-	r, err := c.catalog.get(n, true)
+	r, err := c.catalog.get(n, true, false)
 	if err != nil {
 		if errors.Is(err, drivers.ErrResourceNotFound) {
 			return true, nil
@@ -915,7 +927,7 @@ func (c *Controller) trySchedule(n *runtimev1.ResourceName) (bool, error) {
 	// Return true if any parents are pending or running
 	parents := c.catalog.dag.Parents(n, true)
 	for _, pn := range parents {
-		p, err := c.catalog.get(pn, true)
+		p, err := c.catalog.get(pn, true, false)
 		if err != nil {
 			return false, fmt.Errorf("internal: error getting present parent %q: %w", nameStr(pn), err)
 		}
@@ -999,7 +1011,7 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 // - and, for itself if inv.reschedule is true
 // - and, for its children in the DAG if inv.reschedule is false
 func (c *Controller) processCompletedInvocation(inv *invocation) error {
-	r, err := c.catalog.get(inv.name, true)
+	r, err := c.catalog.get(inv.name, true, false)
 	if err != nil {
 		return err
 	}
@@ -1070,7 +1082,7 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 
 	// Enqueue items from waitlist that haven't been updated (and hence re-triggered in the meantime).
 	for _, e := range inv.waitlist {
-		r, err := c.catalog.get(e.name, true)
+		r, err := c.catalog.get(e.name, true, false)
 		if err != nil {
 			if errors.Is(err, drivers.ErrResourceNotFound) {
 				continue

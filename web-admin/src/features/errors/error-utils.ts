@@ -7,19 +7,42 @@ import { ADMIN_URL } from "../../client/http-client";
 import { ErrorStoreState, errorStore } from "./error-store";
 
 export function globalErrorCallback(error: AxiosError): void {
+  const isProjectPage = get(page).route.id === "/[organization]/[project]";
+  const isDashboardPage =
+    get(page).route.id === "/[organization]/[project]/[dashboard]";
+
+  // Special handling for some errors on the Project page
+  if (isProjectPage) {
+    // If "repository not found", ignore the error and show the page
+    if (
+      error.response.status === 400 &&
+      (error.response.data as RpcStatus).message === "repository not found"
+    ) {
+      return;
+    }
+  }
+
+  // Special handling for some errors on the Dashboard page
+  if (isDashboardPage) {
+    // If a dashboard wasn't found, let +page.svelte handle the error.
+    // Because the project may be reconciling, in which case we want to show a loading spinner not a 404.
+    if (
+      error.response.status === 404 &&
+      (error.response.data as RpcStatus).message === "not found"
+    ) {
+      return;
+    }
+
+    // When a JWT doesn't permit access to a metrics view, the metrics view APIs return 401s.
+    // In this scenario, `GetCatalog` returns a 404. We ignore the 401s so we can show the 404.
+    if (error.response.status === 401) {
+      return;
+    }
+  }
+
   // If Unauthorized, redirect to login page
   if (error.response.status === 401) {
     goto(`${ADMIN_URL}/auth/login?redirect=${window.origin}`);
-    return;
-  }
-
-  // If on a Project page, and "repository not found", ignore the error and show the page
-  const isProjectPage = get(page).route.id === "/[organization]/[project]";
-  if (
-    isProjectPage &&
-    error.response.status === 400 &&
-    (error.response.data as RpcStatus).message === "repository not found"
-  ) {
     return;
   }
 

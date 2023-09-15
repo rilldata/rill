@@ -130,3 +130,7 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 func (c *connection) EstimateSize() (int64, bool) {
 	return 0, false
 }
+
+func (c *connection) AcquireLongRunning(ctx context.Context) (func(), error) {
+	return func() {}, nil
+}

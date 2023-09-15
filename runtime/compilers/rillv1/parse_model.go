@@ -2,18 +2,11 @@ package rillv1
 
 import (
 	"context"
-	"crypto/md5"
-	"encoding/hex"
 	"fmt"
-	"net/url"
 	"strings"
 	"time"
 
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
-	"github.com/rilldata/rill/runtime/pkg/pbutil"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // modelYAML is the raw structure of a Model resource defined in YAML (does not include common fields)
@@ -23,8 +16,7 @@ type modelYAML struct {
 	Refresh      *scheduleYAML `yaml:"refresh" mapstructure:"refresh"`
 	ParserConfig struct {
 		DuckDB struct {
-			InferRefs      *bool `yaml:"infer_refs" mapstructure:"infer_refs"`
-			RewriteSources *bool `yaml:"rewrite_sources" mapstructure:"rewrite_sources"`
+			InferRefs *bool `yaml:"infer_refs" mapstructure:"infer_refs"`
 		} `yaml:"duckdb" mapstructure:"duckdb"`
 	} `yaml:"parser"`
 }
@@ -60,11 +52,10 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		return err
 	}
 
-	// If the connector is a DuckDB connector, extract info using DuckDB SQL parsing. This also supports rewriting embedded sources.
+	// If the connector is a DuckDB connector, extract info using DuckDB SQL parsing.
 	// (If templating was used, we skip DuckDB inference because the DuckDB parser may not be able to parse the templated code.)
 	isDuckDB := false
 	for _, c := range p.DuckDBConnectors {
-		// Note: If the unspecified/default connector is DuckDB, duckDBConnectors will contain the empty string (see Parse).
 		if c == node.Connector {
 			isDuckDB = true
 			break
@@ -74,74 +65,23 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	if tmp.ParserConfig.DuckDB.InferRefs != nil {
 		duckDBInferRefs = *tmp.ParserConfig.DuckDB.InferRefs
 	}
-	duckDBRewriteSources := true
-	if tmp.ParserConfig.DuckDB.RewriteSources != nil {
-		duckDBRewriteSources = *tmp.ParserConfig.DuckDB.RewriteSources
-	}
 	refs := node.Refs
-	embeddedSources := make(map[ResourceName]*runtimev1.SourceSpec)
-	if isDuckDB && !node.SQLUsesTemplating && node.SQL != "" && (duckDBInferRefs || duckDBRewriteSources) {
+	if isDuckDB && !node.SQLUsesTemplating && node.SQL != "" && duckDBInferRefs {
 		// Parse the SQL
 		ast, err := duckdbsql.Parse(node.SQL)
 		if err != nil {
 			return pathError{path: node.SQLPath, err: newDuckDBError(err)}
 		}
 
-		// Scan SQL for table references. Track references in refs and rewrite table functions into embedded sources.
-		err = ast.RewriteTableRefs(func(t *duckdbsql.TableRef) (*duckdbsql.TableRef, bool) {
-			// Don't rewrite aliases
-			if t.LocalAlias {
-				return nil, false
+		// Scan SQL for table references, tracking references in refs
+		for _, t := range ast.GetTableRefs() {
+			if !t.LocalAlias && t.Name != "" && t.Function == "" && len(t.Paths) == 0 {
+				refs = append(refs, ResourceName{Name: t.Name})
 			}
-
-			// If embedded sources is enabled, parse it and add it to embeddedSources.
-			// Also array of paths in read_ methods is not supported right now. So ignore when we have more than 1 path.
-			if duckDBRewriteSources && len(t.Paths) < 2 {
-				name, spec, ok := parseEmbeddedSource(t, node.Connector)
-				if ok {
-					if embeddedSources[name] == nil {
-						spec.TimeoutSeconds = uint32(timeout.Seconds())
-						embeddedSources[name] = spec
-						refs = append(refs, name)
-					}
-					return &duckdbsql.TableRef{Name: name.Name}, true
-				}
-			}
-
-			// Not an embedded source. Add it to refs if it's a regular table reference.
-			if duckDBInferRefs {
-				if t.Name != "" && t.Function == "" && len(t.Paths) == 0 {
-					refs = append(refs, ResourceName{Name: t.Name})
-				}
-			}
-			return nil, false
-		})
-		if err != nil {
-			return pathError{path: node.SQLPath, err: fmt.Errorf("error rewriting table refs: %w", err)}
 		}
-
-		// Update data to the rewritten SQL
-		sql, err := ast.Format()
-		if err != nil {
-			return pathError{path: node.SQLPath, err: fmt.Errorf("failed to format DuckDB SQL: %w", err)}
-		}
-		node.SQL = sql
 	}
 
 	// NOTE: After calling upsertResource, an error must not be returned. Any validation should be done before calling it.
-
-	// Add the embedded sources
-	for name, spec := range embeddedSources {
-		r := p.upsertResource(ResourceKindSource, name.Name, node.Paths)
-
-		// Since the same source may be referenced in multiple models with different TimeoutSeconds, coerce it to the lowest timeout of any referencing model.
-		if spec.TimeoutSeconds == 0 || spec.TimeoutSeconds > r.SourceSpec.TimeoutSeconds {
-			spec.TimeoutSeconds = r.SourceSpec.TimeoutSeconds
-		}
-
-		// Since the embedded source's name is a hash of its parameters, we don't merge values into the existing spec.
-		r.SourceSpec = spec
-	}
 
 	// Upsert the model
 	r := p.upsertResource(ResourceKindModel, node.Name, node.Paths, refs...)
@@ -162,100 +102,11 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		r.ModelSpec.RefreshSchedule = schedule
 	}
 
-	// parseSource calls parseModel for SQL sources without a connector. Materialize such models if they don't use embedded sources.
-	if node.Kind == ResourceKindSource && r.ModelSpec.Materialize == nil && len(embeddedSources) == 0 {
+	// parseSource calls parseModel for SQL sources without a connector. Materialize such models.
+	if node.Kind == ResourceKindSource && r.ModelSpec.Materialize == nil {
 		b := true
 		r.ModelSpec.Materialize = &b
 	}
 
 	return nil
-}
-
-// parseEmbeddedSource parses a table reference extracted from a DuckDB SQL query to a source spec.
-// The returned name is derived from a hash of the source spec. It will be stable for any other table reference with equivalent path and properties.
-func parseEmbeddedSource(t *duckdbsql.TableRef, sinkConnector string) (ResourceName, *runtimev1.SourceSpec, bool) {
-	// The name can also potentially be a path
-	var path string
-	switch len(t.Paths) {
-	case 0:
-		path = t.Name
-	case 1:
-		path = t.Paths[0]
-	default:
-		// list of paths not supported right now
-		return ResourceName{}, nil, false
-	}
-
-	// NOTE: Using url.Parse is a little hacky. The first path component will be parsed as the host (so don't rely on uri.Path!)
-	uri, err := url.Parse(path)
-	if err != nil {
-		return ResourceName{}, nil, false
-	}
-
-	// Applying some heuristics to determine if it's a path or just a table name.
-	// If not a function and no protocol is in the path, we'll assume it's just a table name.
-	if t.Function == "" && uri.Scheme == "" {
-		return ResourceName{}, nil, false
-	}
-
-	if uri.Scheme == "" {
-		uri.Scheme = "local_file"
-	}
-
-	_, ok := drivers.Connectors[uri.Scheme]
-	if !ok {
-		return ResourceName{}, nil, false
-	}
-
-	// TODO: Add support in DuckDB source for passing table function name directly, instead of "format".
-	var format string
-	switch t.Function {
-	case "":
-		format = ""
-	case "read_parquet":
-		format = "parquet"
-	case "read_json", "read_json_auto", "read_ndjson", "read_ndjson_auto", "read_json_objects", "read_json_objects_auto", "read_ndjson_objects":
-		format = "json"
-	case "read_csv", "read_csv_auto":
-		format = "csv"
-	default:
-		return ResourceName{}, nil, false
-	}
-
-	props := make(map[string]any)
-	props["path"] = path
-	if format != "" {
-		props["format"] = format
-	}
-	if t.Properties != nil {
-		props["duckdb"] = t.Properties
-	}
-
-	propsPB, err := structpb.NewStruct(props)
-	if err != nil {
-		return ResourceName{}, nil, false
-	}
-
-	spec := &runtimev1.SourceSpec{}
-	spec.SourceConnector = uri.Scheme
-	spec.SinkConnector = sinkConnector
-	spec.Properties = propsPB
-
-	hash := md5.New()
-	err = pbutil.WriteHash(structpb.NewStructValue(propsPB), hash)
-	if err != nil {
-		return ResourceName{}, nil, false
-	}
-	_, err = hash.Write([]byte(spec.SourceConnector))
-	if err != nil {
-		return ResourceName{}, nil, false
-	}
-	_, err = hash.Write([]byte(spec.SinkConnector))
-	if err != nil {
-		return ResourceName{}, nil, false
-	}
-
-	name := ResourceName{Kind: ResourceKindSource, Name: "embed_" + hex.EncodeToString(hash.Sum(nil))}
-
-	return name, spec, true
 }

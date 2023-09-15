@@ -17,26 +17,25 @@
 
   import LeaderboardTooltipContent from "./LeaderboardTooltipContent.svelte";
 
-  import PercentageChange from "../../../components/data-types/PercentageChange.svelte";
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
   import { humanizeDataType } from "../humanize-numbers";
   import LongBarZigZag from "./LongBarZigZag.svelte";
   import {
-    CONTEXT_COLUMN_WIDTH,
     LeaderboardItemData,
-    getFormatterValueForPercDiff,
+    formatContextColumnValue,
   } from "./leaderboard-utils";
+  import ContextColumnValue from "./ContextColumnValue.svelte";
 
   export let itemData: LeaderboardItemData;
   $: label = itemData.label;
   $: measureValue = itemData.value;
-  $: selected = itemData.selected;
+  $: selected = itemData.selectedIndex >= 0;
   $: comparisonValue = itemData.comparisonValue;
 
   export let showContext: LeaderboardContextColumn;
 
   export let atLeastOneActive = false;
-
+  export let isBeingCompared = false;
   export let formattedValue: string;
   export let filterExcludeMode;
 
@@ -52,17 +51,12 @@
 
   $: formattedValue = humanizeDataType(measureValue, formatPreset);
 
-  $: percentChangeFormatted =
-    showContext === LeaderboardContextColumn.DELTA_PERCENT
-      ? getFormatterValueForPercDiff(
-          measureValue && comparisonValue
-            ? measureValue - comparisonValue
-            : null,
-          comparisonValue
-        )
-      : showContext === LeaderboardContextColumn.PERCENT
-      ? getFormatterValueForPercDiff(measureValue, unfilteredTotal)
-      : undefined;
+  $: contextColumnFormattedValue = formatContextColumnValue(
+    itemData,
+    unfilteredTotal,
+    showContext,
+    formatPreset
+  );
 
   $: previousValueString =
     comparisonValue !== undefined && comparisonValue !== null
@@ -118,7 +112,7 @@
 
 <Tooltip location="right">
   <button
-    class="flex flex-row w-full text-left transition-color"
+    class="flex flex-row items-center w-full text-left transition-color"
     on:blur={onLeave}
     on:click={(e) => {
       if (e.shiftKey) return;
@@ -134,7 +128,12 @@
     transition:slide|local={{ duration: 200 }}
     use:shiftClickAction
   >
-    <LeaderboardItemFilterIcon {excluded} {selected} />
+    <LeaderboardItemFilterIcon
+      {isBeingCompared}
+      {excluded}
+      selectionIndex={itemData?.selectedIndex}
+      defaultComparedIndex={itemData?.defaultComparedIndex}
+    />
     <BarAndLabel
       {color}
       justify={false}
@@ -178,14 +177,10 @@
               value={formattedValue || measureValue}
             />
           </div>
-          {#if percentChangeFormatted !== undefined}
-            <div
-              class="text-xs text-gray-500 dark:text-gray-400"
-              style:width={CONTEXT_COLUMN_WIDTH + "px"}
-            >
-              <PercentageChange value={percentChangeFormatted} />
-            </div>
-          {/if}
+          <ContextColumnValue
+            formattedValue={contextColumnFormattedValue}
+            {showContext}
+          />
         </div>
       </div>
     </BarAndLabel>

@@ -41,6 +41,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   // FIXME – this is a different prop than elsewhere
   export let lineColor = "hsla(217,60%, 55%, 1)";
   export let areaColor = "hsla(217,70%, 80%, .4)";
+  export let lineClasses = "";
 
   const id = guidGenerator();
 
@@ -129,6 +130,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
       <path
         stroke-width={$lineThickness}
         stroke={lineColor}
+        class={lineClasses}
         d={dt}
         id="segments-line"
         fill="none"

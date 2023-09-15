@@ -411,7 +411,7 @@ func (s *Service) createInStore(ctx context.Context, item *MigrationItem) error 
 
 	// create in olap
 	err = s.wrapMigrator(item.CatalogInFile, func() error {
-		return migrator.Create(ctx, s.Olap, s.Repo, opts, item.CatalogInFile, s.logger)
+		return migrator.Create(ctx, s.Olap, s.Repo, opts, item.CatalogInFile, s.logger, s.activity)
 	})
 	if err != nil {
 		return err
@@ -489,7 +489,7 @@ func (s *Service) updateInStore(ctx context.Context, item *MigrationItem) error 
 				InstanceEnv:               inst.ResolveVariables(),
 				IngestStorageLimitInBytes: ingestionLimit,
 			}
-			return migrator.Update(ctx, s.Olap, s.Repo, opts, item.CatalogInStore, item.CatalogInFile, s.logger)
+			return migrator.Update(ctx, s.Olap, s.Repo, opts, item.CatalogInStore, item.CatalogInFile, s.logger, s.activity)
 		})
 		if err != nil {
 			return err

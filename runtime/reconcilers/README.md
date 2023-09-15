@@ -37,4 +37,4 @@
 - Calls to `Reconcile` can run for a long time (as long as they respond quickly to a cancelled `ctx`).
 - `Reconcile` should strive to keep a resource's `.State` correct at all times because it may be accessed while `Reconcile` is running to resolve API requests (such as dashboard queries).
 - The `Reconciler` struct is shared for all resources of the registered kind for a given instance ID. This enables it to cache (ephemeral) state in-between invocations for optimization.
-
+- The resource's meta and spec (but not state) may be updated concurrently. Calls to `Get` return a clone of the resource, but if the reconciler update's the resource's meta or spec, it must use a lock to read and update it.

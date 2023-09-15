@@ -28,8 +28,8 @@ func NewMotherduckToDuckDB(from drivers.Handle, to drivers.OLAPStore, logger *za
 }
 
 // TODO: should it run count from user_query to set target in progress ?
-func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[string]any, opts *drivers.TransferOpts, p drivers.Progress) error {
-	srcCfg, err := parseSourceProperties(srcProps)
+func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[string]any, opts *drivers.TransferOptions) error {
+	srcCfg, err := parseDBSourceProperties(srcProps)
 	if err != nil {
 		return err
 	}
@@ -40,7 +40,7 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 	}
 
 	config := t.from.Config()
-	err = t.to.WithConnection(ctx, 1, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
+	err = t.to.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
 		res, err := t.to.Execute(ctx, &drivers.Statement{Query: "SELECT current_database();"})
 		if err != nil {
 			return err

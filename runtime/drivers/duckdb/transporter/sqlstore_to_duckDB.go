@@ -6,6 +6,7 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/marcboeker/go-duckdb"
@@ -16,7 +17,10 @@ import (
 	"go.uber.org/zap"
 )
 
-const _batchSize = 10000
+const (
+	_sqlStoreIteratorBatchSize = 32
+	_batchSize                 = 10000
+)
 
 type sqlStoreToDuckDB struct {
 	to     drivers.OLAPStore
@@ -34,7 +38,7 @@ func NewSQLStoreToDuckDB(from drivers.SQLStore, to drivers.OLAPStore, logger *za
 	}
 }
 
-func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[string]any, opts *drivers.TransferOpts, p drivers.Progress) (transferErr error) {
+func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[string]any, opts *drivers.TransferOptions) (transferErr error) {
 	sinkCfg, err := parseSinkProperties(sinkProps)
 	if err != nil {
 		return err
@@ -47,10 +51,15 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map
 		}
 	} else { // no error consume rowIterator
 		defer rowIter.Close()
-		return s.transferFromRowIterator(ctx, rowIter, sinkCfg.Table, p)
+		return s.transferFromRowIterator(ctx, rowIter, sinkCfg.Table, opts.Progress)
 	}
 
-	iter, err := s.from.QueryAsFiles(ctx, srcProps, &drivers.QueryOption{TotalLimitInBytes: opts.LimitInBytes}, p)
+	limitInBytes := opts.LimitInBytes
+	if limitInBytes == 0 {
+		limitInBytes = math.MaxInt64
+	}
+
+	iter, err := s.from.QueryAsFiles(ctx, srcProps, &drivers.QueryOption{TotalLimitInBytes: opts.LimitInBytes}, opts.Progress)
 	if err != nil {
 		return err
 	}
@@ -69,7 +78,7 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map
 	// to consuming fileIterator in objectStore_to_duckDB
 	// both can be refactored to follow same path
 	for iter.HasNext() {
-		files, err := iter.NextBatch(opts.IteratorBatch)
+		files, err := iter.NextBatch(_sqlStoreIteratorBatchSize)
 		if err != nil {
 			return err
 		}
@@ -88,7 +97,7 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map
 			query = fmt.Sprintf("INSERT INTO %s (SELECT * FROM %s);", safeName(sinkCfg.Table), from)
 		}
 
-		if err := s.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1}); err != nil {
+		if err := s.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1, LongRunning: true}); err != nil {
 			return err
 		}
 	}
@@ -118,7 +127,7 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 		return err
 	}
 
-	return s.to.WithConnection(ctx, 1, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
+	return s.to.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
 		return rawConn(conn, func(conn driver.Conn) error {
 			a, err := duckdb.NewAppenderFromConn(conn, "", table)
 			if err != nil {
