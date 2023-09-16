@@ -1993,28 +1993,6 @@ paths:
           type: boolean
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/sync:
-    post:
-      summary: |-
-        TriggerSync syncronizes the instance's catalog with the underlying OLAP's information schema.
-        If the instance has exposed=true, tables found in the information schema will be added to the catalog.
-      operationId: RuntimeService_TriggerSync
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1TriggerSyncResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-      tags:
-        - RuntimeService
   /v1/instances/{instanceId}/trigger:
     post:
       summary: |-
@@ -4751,22 +4729,6 @@ definitions:
   v1TriggerRefreshResponse:
     type: object
     title: Response message for RuntimeService.TriggerRefresh
-  v1TriggerSyncResponse:
-    type: object
-    properties:
-      objectsCount:
-        type: integer
-        format: int64
-      objectsAddedCount:
-        type: integer
-        format: int64
-      objectsUpdatedCount:
-        type: integer
-        format: int64
-      objectsRemovedCount:
-        type: integer
-        format: int64
-    title: Response message for RuntimeService.TriggerSync
   v1TypeCode:
     type: string
     enum:

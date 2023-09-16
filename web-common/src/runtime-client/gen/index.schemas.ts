@@ -472,13 +472,6 @@ export const V1TypeCode = {
   CODE_UUID: "CODE_UUID",
 } as const;
 
-export interface V1TriggerSyncResponse {
-  objectsCount?: number;
-  objectsAddedCount?: number;
-  objectsUpdatedCount?: number;
-  objectsRemovedCount?: number;
-}
-
 export interface V1TriggerRefreshResponse {
   [key: string]: any;
 }

@@ -45,7 +45,6 @@ const (
 	RuntimeService_ListCatalogEntries_FullMethodName      = "/rill.runtime.v1.RuntimeService/ListCatalogEntries"
 	RuntimeService_GetCatalogEntry_FullMethodName         = "/rill.runtime.v1.RuntimeService/GetCatalogEntry"
 	RuntimeService_TriggerRefresh_FullMethodName          = "/rill.runtime.v1.RuntimeService/TriggerRefresh"
-	RuntimeService_TriggerSync_FullMethodName             = "/rill.runtime.v1.RuntimeService/TriggerSync"
 	RuntimeService_Reconcile_FullMethodName               = "/rill.runtime.v1.RuntimeService/Reconcile"
 	RuntimeService_PutFileAndReconcile_FullMethodName     = "/rill.runtime.v1.RuntimeService/PutFileAndReconcile"
 	RuntimeService_DeleteFileAndReconcile_FullMethodName  = "/rill.runtime.v1.RuntimeService/DeleteFileAndReconcile"
@@ -115,9 +114,6 @@ type RuntimeServiceClient interface {
 	// It currently only supports sources (which will be re-ingested), but will also support materialized models in the future.
 	// It does not respond until the refresh has completed (will move to async jobs when the task scheduler is in place).
 	TriggerRefresh(ctx context.Context, in *TriggerRefreshRequest, opts ...grpc.CallOption) (*TriggerRefreshResponse, error)
-	// TriggerSync syncronizes the instance's catalog with the underlying OLAP's information schema.
-	// If the instance has exposed=true, tables found in the information schema will be added to the catalog.
-	TriggerSync(ctx context.Context, in *TriggerSyncRequest, opts ...grpc.CallOption) (*TriggerSyncResponse, error)
 	// Reconcile applies a full set of artifacts from a repo to the catalog and infra.
 	// It attempts to infer a minimal number of migrations to apply to reconcile the current state with
 	// the desired state expressed in the artifacts. Any existing objects not described in the submitted
@@ -448,15 +444,6 @@ func (c *runtimeServiceClient) TriggerRefresh(ctx context.Context, in *TriggerRe
 	return out, nil
 }
 
-func (c *runtimeServiceClient) TriggerSync(ctx context.Context, in *TriggerSyncRequest, opts ...grpc.CallOption) (*TriggerSyncResponse, error) {
-	out := new(TriggerSyncResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_TriggerSync_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *runtimeServiceClient) Reconcile(ctx context.Context, in *ReconcileRequest, opts ...grpc.CallOption) (*ReconcileResponse, error) {
 	out := new(ReconcileResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_Reconcile_FullMethodName, in, out, opts...)
@@ -580,9 +567,6 @@ type RuntimeServiceServer interface {
 	// It currently only supports sources (which will be re-ingested), but will also support materialized models in the future.
 	// It does not respond until the refresh has completed (will move to async jobs when the task scheduler is in place).
 	TriggerRefresh(context.Context, *TriggerRefreshRequest) (*TriggerRefreshResponse, error)
-	// TriggerSync syncronizes the instance's catalog with the underlying OLAP's information schema.
-	// If the instance has exposed=true, tables found in the information schema will be added to the catalog.
-	TriggerSync(context.Context, *TriggerSyncRequest) (*TriggerSyncResponse, error)
 	// Reconcile applies a full set of artifacts from a repo to the catalog and infra.
 	// It attempts to infer a minimal number of migrations to apply to reconcile the current state with
 	// the desired state expressed in the artifacts. Any existing objects not described in the submitted
@@ -684,9 +668,6 @@ func (UnimplementedRuntimeServiceServer) GetCatalogEntry(context.Context, *GetCa
 }
 func (UnimplementedRuntimeServiceServer) TriggerRefresh(context.Context, *TriggerRefreshRequest) (*TriggerRefreshResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TriggerRefresh not implemented")
-}
-func (UnimplementedRuntimeServiceServer) TriggerSync(context.Context, *TriggerSyncRequest) (*TriggerSyncResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method TriggerSync not implemented")
 }
 func (UnimplementedRuntimeServiceServer) Reconcile(context.Context, *ReconcileRequest) (*ReconcileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Reconcile not implemented")
@@ -1199,24 +1180,6 @@ func _RuntimeService_TriggerRefresh_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RuntimeService_TriggerSync_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TriggerSyncRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).TriggerSync(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RuntimeService_TriggerSync_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).TriggerSync(ctx, req.(*TriggerSyncRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _RuntimeService_Reconcile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ReconcileRequest)
 	if err := dec(in); err != nil {
@@ -1441,10 +1404,6 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "TriggerRefresh",
 			Handler:    _RuntimeService_TriggerRefresh_Handler,
-		},
-		{
-			MethodName: "TriggerSync",
-			Handler:    _RuntimeService_TriggerSync_Handler,
 		},
 		{
 			MethodName: "Reconcile",

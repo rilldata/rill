@@ -64,7 +64,6 @@ import type {
   RuntimeServiceListResourcesParams,
   RuntimeServiceWatchResources200,
   RuntimeServiceWatchResourcesParams,
-  V1TriggerSyncResponse,
   V1CreateTriggerResponse,
   RuntimeServiceCreateTriggerBody,
   V1PingResponse,
@@ -2309,72 +2308,6 @@ export const createRuntimeServiceWatchResources = <
   return query;
 };
 
-/**
- * @summary TriggerSync syncronizes the instance's catalog with the underlying OLAP's information schema.
-If the instance has exposed=true, tables found in the information schema will be added to the catalog.
- */
-export const runtimeServiceTriggerSync = (instanceId: string) => {
-  return httpClient<V1TriggerSyncResponse>({
-    url: `/v1/instances/${instanceId}/sync`,
-    method: "post",
-  });
-};
-
-export const getRuntimeServiceTriggerSyncMutationOptions = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceTriggerSync>>,
-    TError,
-    { instanceId: string },
-    TContext
-  >;
-}): CreateMutationOptions<
-  Awaited<ReturnType<typeof runtimeServiceTriggerSync>>,
-  TError,
-  { instanceId: string },
-  TContext
-> => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceTriggerSync>>,
-    { instanceId: string }
-  > = (props) => {
-    const { instanceId } = props ?? {};
-
-    return runtimeServiceTriggerSync(instanceId);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type RuntimeServiceTriggerSyncMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceTriggerSync>>
->;
-
-export type RuntimeServiceTriggerSyncMutationError = RpcStatus;
-
-/**
- * @summary TriggerSync syncronizes the instance's catalog with the underlying OLAP's information schema.
-If the instance has exposed=true, tables found in the information schema will be added to the catalog.
- */
-export const createRuntimeServiceTriggerSync = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceTriggerSync>>,
-    TError,
-    { instanceId: string },
-    TContext
-  >;
-}) => {
-  const mutationOptions = getRuntimeServiceTriggerSyncMutationOptions(options);
-
-  return createMutation(mutationOptions);
-};
 /**
  * @summary CreateTrigger creates a trigger in the catalog.
 Triggers are ephemeral resources that will be cleaned up by the controller.

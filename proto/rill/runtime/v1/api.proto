@@ -185,12 +185,6 @@ service RuntimeService {
     option (google.api.http) = {post: "/v1/instances/{instance_id}/catalog/{name}/refresh"};
   }
 
-  // TriggerSync syncronizes the instance's catalog with the underlying OLAP's information schema.
-  // If the instance has exposed=true, tables found in the information schema will be added to the catalog.
-  rpc TriggerSync(TriggerSyncRequest) returns (TriggerSyncResponse) {
-    option (google.api.http) = {post: "/v1/instances/{instance_id}/sync"};
-  }
-
   // Reconcile applies a full set of artifacts from a repo to the catalog and infra.
   // It attempts to infer a minimal number of migrations to apply to reconcile the current state with
   // the desired state expressed in the artifacts. Any existing objects not described in the submitted
