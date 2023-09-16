@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -14,53 +13,43 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+// NOTE: Lots of ugly code in here. It's just temporary backwards compatibility.
 
 // ListCatalogEntries implements RuntimeService.
 func (s *Server) ListCatalogEntries(ctx context.Context, req *runtimev1.ListCatalogEntriesRequest) (*runtimev1.ListCatalogEntriesResponse, error) {
-	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.String("args.type", req.Type.String()),
-	)
-
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
-
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
-		return nil, ErrForbidden
+	var kind string
+	switch req.Type {
+	case runtimev1.ObjectType_OBJECT_TYPE_UNSPECIFIED:
+		kind = ""
+	case runtimev1.ObjectType_OBJECT_TYPE_SOURCE:
+		kind = runtime.ResourceKindSource
+	case runtimev1.ObjectType_OBJECT_TYPE_MODEL:
+		kind = runtime.ResourceKindModel
+	case runtimev1.ObjectType_OBJECT_TYPE_METRICS_VIEW:
+		kind = runtime.ResourceKindMetricsView
+	default:
+		return nil, errors.New("unsupported object type")
 	}
 
-	entries, err := s.runtime.ListCatalogEntries(ctx, req.InstanceId, pbToObjectType(req.Type))
+	res, err := s.ListResources(ctx, &runtimev1.ListResourcesRequest{
+		InstanceId: req.InstanceId,
+		Kind:       kind,
+	})
 	if err != nil {
-		return nil, status.Error(codes.Unknown, err.Error())
+		return nil, err
 	}
 
 	var pbs []*runtimev1.CatalogEntry
-	for _, entry := range entries {
-		var pb *runtimev1.CatalogEntry
-		if req.Type == runtimev1.ObjectType_OBJECT_TYPE_METRICS_VIEW || entry.IsMetricsView() {
-			mv := entry.GetMetricsView()
-			security, err := s.runtime.ResolveMetricsViewSecurity(auth.GetClaims(ctx).Attributes(), req.InstanceId, mv, entry.UpdatedOn)
-			if err != nil {
-				return nil, err
-			}
-
-			if security != nil && !security.Access {
-				continue
-			}
-			newMv := filterDimensionsAndMeasures(security, mv)
-			pb, err = mvCatalogObjectToPB(entry, newMv)
-			if err != nil {
-				return nil, status.Error(codes.Unknown, err.Error())
-			}
-		} else {
-			pb, err = catalogObjectToPB(entry)
-			if err != nil {
-				return nil, status.Error(codes.Unknown, err.Error())
-			}
+	for _, r := range res.Resources {
+		pb, err := s.resourceToEntry(ctx, req.InstanceId, r)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-		pbs = append(pbs, pb)
+		if pb != nil {
+			pbs = append(pbs, pb)
+		}
 	}
 
 	return &runtimev1.ListCatalogEntriesResponse{Entries: pbs}, nil
@@ -68,101 +57,53 @@ func (s *Server) ListCatalogEntries(ctx context.Context, req *runtimev1.ListCata
 
 // GetCatalogEntry implements RuntimeService.
 func (s *Server) GetCatalogEntry(ctx context.Context, req *runtimev1.GetCatalogEntryRequest) (*runtimev1.GetCatalogEntryResponse, error) {
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.name", req.Name),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
-
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
 		return nil, ErrForbidden
 	}
 
-	entry, err := s.runtime.GetCatalogEntry(ctx, req.InstanceId, req.Name)
+	ctrl, err := s.runtime.Controller(req.InstanceId)
 	if err != nil {
-		if errors.Is(err, drivers.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "not found")
-		}
-		return nil, status.Error(codes.Unknown, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	var pb *runtimev1.CatalogEntry
-	if entry.Type == drivers.ObjectTypeMetricsView || entry.IsMetricsView() {
-		mv := entry.GetMetricsView()
-		security, err := s.runtime.ResolveMetricsViewSecurity(auth.GetClaims(ctx).Attributes(), req.InstanceId, mv, entry.UpdatedOn)
+	kinds := []string{
+		runtime.ResourceKindSource,
+		runtime.ResourceKindModel,
+		runtime.ResourceKindMetricsView,
+	}
+
+	for _, k := range kinds {
+		r, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: k, Name: req.Name}, false)
 		if err != nil {
-			return nil, err
+			if errors.Is(err, drivers.ErrResourceNotFound) {
+				continue
+			}
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 
-		if security != nil && !security.Access {
-			return nil, status.Error(codes.NotFound, "not found")
-		}
-
-		newMv := filterDimensionsAndMeasures(security, mv)
-		pb, err = mvCatalogObjectToPB(entry, newMv)
+		r, access, err := s.applySecurityPolicy(ctx, req.InstanceId, r)
 		if err != nil {
-			return nil, status.Error(codes.Unknown, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-	} else {
-		pb, err = catalogObjectToPB(entry)
+		if !access {
+			return nil, status.Error(codes.NotFound, "resource not found")
+		}
+
+		pb, err := s.resourceToEntry(ctx, req.InstanceId, r)
 		if err != nil {
-			return nil, status.Error(codes.Unknown, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
+
+		return &runtimev1.GetCatalogEntryResponse{Entry: pb}, nil
 	}
 
-	return &runtimev1.GetCatalogEntryResponse{Entry: pb}, nil
-}
-
-// Filters the dimensions and measures of a metrics view based on the security policy, if something is filtered out, it creates a new metrics view
-// otherwise it returns the original metrics view
-func filterDimensionsAndMeasures(policy *runtime.ResolvedMetricsViewSecurity, mv *runtimev1.MetricsView) *runtimev1.MetricsView {
-	if policy == nil {
-		return mv
-	}
-	allowedDims := make([]*runtimev1.MetricsView_Dimension, 0)
-	allowedMeasures := make([]*runtimev1.MetricsView_Measure, 0)
-
-	if len(policy.Include) > 0 {
-		allowed := make(map[string]bool)
-		for _, include := range policy.Include {
-			allowed[include] = true
-		}
-		for _, dim := range mv.Dimensions {
-			if allowed[dim.Name] {
-				allowedDims = append(allowedDims, dim)
-			}
-		}
-		for _, measure := range mv.Measures {
-			if allowed[measure.Name] {
-				allowedMeasures = append(allowedMeasures, measure)
-			}
-		}
-		newMv := proto.Clone(mv).(*runtimev1.MetricsView)
-		newMv.Dimensions = allowedDims
-		newMv.Measures = allowedMeasures
-		return newMv
-	} else if len(policy.Exclude) > 0 {
-		restricted := make(map[string]bool)
-		for _, exclude := range policy.Exclude {
-			restricted[exclude] = true
-		}
-		for _, dim := range mv.Dimensions {
-			if !restricted[dim.Name] {
-				allowedDims = append(allowedDims, dim)
-			}
-		}
-		for _, measure := range mv.Measures {
-			if !restricted[measure.Name] {
-				allowedMeasures = append(allowedMeasures, measure)
-			}
-		}
-		newMv := proto.Clone(mv).(*runtimev1.MetricsView)
-		newMv.Dimensions = allowedDims
-		newMv.Measures = allowedMeasures
-		return newMv
-	}
-	return mv
+	return nil, status.Error(codes.NotFound, "resource not found")
 }
 
 // Reconcile implements RuntimeService.
@@ -322,90 +263,139 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *runtimev1.TriggerRefre
 	return &runtimev1.TriggerRefreshResponse{}, nil
 }
 
-// TriggerSync implements RuntimeService.
-func (s *Server) TriggerSync(ctx context.Context, req *runtimev1.TriggerSyncRequest) (*runtimev1.TriggerSyncResponse, error) {
-	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-	)
+func (s *Server) resourceToEntry(ctx context.Context, instanceID string, r *runtimev1.Resource) (*runtimev1.CatalogEntry, error) {
+	var path string
+	if len(r.Meta.FilePaths) != 0 {
+		path = r.Meta.FilePaths[0]
+	}
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	var parents []string
+	for _, ref := range r.Meta.Refs {
+		parents = append(parents, ref.Name)
+	}
 
-	err := s.runtime.SyncExistingTables(ctx, req.InstanceId)
+	res := &runtimev1.CatalogEntry{
+		Name:        r.Meta.Name.Name,
+		Path:        path,
+		Parents:     parents,
+		CreatedOn:   r.Meta.CreatedOn,
+		UpdatedOn:   r.Meta.SpecUpdatedOn,
+		RefreshedOn: r.Meta.StateUpdatedOn,
+	}
+
+	olap, release, err := s.runtime.OLAP(ctx, instanceID)
 	if err != nil {
-		return nil, status.Error(codes.FailedPrecondition, err.Error())
+		return nil, err
 	}
+	defer release()
 
-	// Done
-	// TODO: This should return stats about synced tables. However, it will be refactored into reconcile, so no need to fix this now.
-	return &runtimev1.TriggerSyncResponse{}, nil
-}
-
-func pbToObjectType(in runtimev1.ObjectType) drivers.ObjectType {
-	switch in {
-	case runtimev1.ObjectType_OBJECT_TYPE_UNSPECIFIED:
-		return drivers.ObjectTypeUnspecified
-	case runtimev1.ObjectType_OBJECT_TYPE_TABLE:
-		return drivers.ObjectTypeTable
-	case runtimev1.ObjectType_OBJECT_TYPE_SOURCE:
-		return drivers.ObjectTypeSource
-	case runtimev1.ObjectType_OBJECT_TYPE_MODEL:
-		return drivers.ObjectTypeModel
-	case runtimev1.ObjectType_OBJECT_TYPE_METRICS_VIEW:
-		return drivers.ObjectTypeMetricsView
-	}
-	panic(fmt.Errorf("unhandled object type %s", in))
-}
-
-func catalogObjectToPB(obj *drivers.CatalogEntry) (*runtimev1.CatalogEntry, error) {
-	catalog := &runtimev1.CatalogEntry{
-		Name:        obj.Name,
-		Path:        obj.Path,
-		Embedded:    obj.Embedded,
-		Parents:     obj.Parents,
-		Children:    obj.Children,
-		CreatedOn:   timestamppb.New(obj.CreatedOn),
-		UpdatedOn:   timestamppb.New(obj.UpdatedOn),
-		RefreshedOn: timestamppb.New(obj.RefreshedOn),
-	}
-
-	switch obj.Type {
-	case drivers.ObjectTypeTable:
-		catalog.Object = &runtimev1.CatalogEntry_Table{
-			Table: obj.GetTable(),
+	switch r.Meta.Name.Kind {
+	case runtime.ResourceKindSource:
+		src := r.GetSource()
+		if src.State.Table == "" {
+			return nil, nil
 		}
-	case drivers.ObjectTypeSource:
-		catalog.Object = &runtimev1.CatalogEntry_Source{
-			Source: obj.GetSource(),
+		t, err := olap.InformationSchema().Lookup(ctx, src.State.Table)
+		if err != nil {
+			return nil, err
 		}
-	case drivers.ObjectTypeModel:
-		catalog.Object = &runtimev1.CatalogEntry_Model{
-			Model: obj.GetModel(),
+		res.Object = &runtimev1.CatalogEntry_Source{
+			Source: &runtimev1.Source{
+				Name:           r.Meta.Name.Name,
+				Connector:      src.Spec.SourceConnector,
+				Properties:     src.Spec.Properties,
+				Schema:         t.Schema,
+				TimeoutSeconds: int32(src.Spec.TimeoutSeconds),
+			},
 		}
-	case drivers.ObjectTypeMetricsView:
-		catalog.Object = &runtimev1.CatalogEntry_MetricsView{
-			MetricsView: obj.GetMetricsView(),
+	case runtime.ResourceKindModel:
+		mdl := r.GetModel()
+		if mdl.State.Table == "" {
+			return nil, nil
+		}
+		t, err := olap.InformationSchema().Lookup(ctx, mdl.State.Table)
+		if err != nil {
+			return nil, err
+		}
+		materialize := false
+		if mdl.Spec.Materialize != nil {
+			materialize = *mdl.Spec.Materialize
+		}
+		res.Object = &runtimev1.CatalogEntry_Model{
+			Model: &runtimev1.Model{
+				Name:        r.Meta.Name.Name,
+				Sql:         mdl.Spec.Sql,
+				Dialect:     runtimev1.Model_DIALECT_DUCKDB,
+				Schema:      t.Schema,
+				Materialize: materialize,
+			},
+		}
+	case runtime.ResourceKindMetricsView:
+		mv := r.GetMetricsView()
+		if mv.State.ValidSpec == nil {
+			return nil, nil
+		}
+		var dims []*runtimev1.MetricsView_Dimension
+		for _, d := range mv.State.ValidSpec.Dimensions {
+			dims = append(dims, &runtimev1.MetricsView_Dimension{
+				Name:        d.Name,
+				Label:       d.Label,
+				Description: d.Description,
+				Column:      d.Column,
+			})
+		}
+		var ms []*runtimev1.MetricsView_Measure
+		for _, m := range mv.State.ValidSpec.Measures {
+			ms = append(ms, &runtimev1.MetricsView_Measure{
+				Name:                m.Name,
+				Label:               m.Label,
+				Expression:          m.Expression,
+				Description:         m.Description,
+				Format:              m.Format,
+				ValidPercentOfTotal: m.ValidPercentOfTotal,
+			})
+		}
+		var security *runtimev1.MetricsView_Security
+		if mv.State.ValidSpec.Security != nil {
+			var includes []*runtimev1.MetricsView_Security_FieldCondition
+			for _, inc := range mv.State.ValidSpec.Security.Include {
+				includes = append(includes, &runtimev1.MetricsView_Security_FieldCondition{
+					Condition: inc.Condition,
+					Names:     inc.Names,
+				})
+			}
+			var excludes []*runtimev1.MetricsView_Security_FieldCondition
+			for _, exc := range mv.State.ValidSpec.Security.Exclude {
+				excludes = append(excludes, &runtimev1.MetricsView_Security_FieldCondition{
+					Condition: exc.Condition,
+					Names:     exc.Names,
+				})
+			}
+			security = &runtimev1.MetricsView_Security{
+				Access:    mv.State.ValidSpec.Security.Access,
+				RowFilter: mv.State.ValidSpec.Security.RowFilter,
+				Include:   includes,
+				Exclude:   excludes,
+			}
+		}
+		res.Object = &runtimev1.CatalogEntry_MetricsView{
+			MetricsView: &runtimev1.MetricsView{
+				Name:               r.Meta.Name.Name,
+				TimeDimension:      mv.State.ValidSpec.TimeDimension,
+				Dimensions:         dims,
+				Measures:           ms,
+				Label:              mv.State.ValidSpec.Title,
+				Description:        mv.State.ValidSpec.Description,
+				SmallestTimeGrain:  mv.State.ValidSpec.SmallestTimeGrain,
+				DefaultTimeRange:   mv.State.ValidSpec.DefaultTimeRange,
+				AvailableTimeZones: mv.State.ValidSpec.AvailableTimeZones,
+				Security:           security,
+			},
 		}
 	default:
-		panic("not implemented")
+		// Don't need to support other types here
+		return nil, nil
 	}
 
-	return catalog, nil
-}
-
-func mvCatalogObjectToPB(obj *drivers.CatalogEntry, mv *runtimev1.MetricsView) (*runtimev1.CatalogEntry, error) {
-	catalog := &runtimev1.CatalogEntry{
-		Name:        obj.Name,
-		Path:        obj.Path,
-		Embedded:    obj.Embedded,
-		Parents:     obj.Parents,
-		Children:    obj.Children,
-		CreatedOn:   timestamppb.New(obj.CreatedOn),
-		UpdatedOn:   timestamppb.New(obj.UpdatedOn),
-		RefreshedOn: timestamppb.New(obj.RefreshedOn),
-	}
-
-	catalog.Object = &runtimev1.CatalogEntry_MetricsView{
-		MetricsView: mv,
-	}
-	return catalog, nil
+	return res, nil
 }

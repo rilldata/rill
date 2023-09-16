@@ -45,7 +45,7 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 		return nil, ErrForbidden
 	}
 
-	inst, err := s.runtime.FindInstance(ctx, req.InstanceId)
+	inst, err := s.runtime.Instance(ctx, req.InstanceId)
 	if err != nil {
 		if errors.Is(err, drivers.ErrNotFound) {
 			return nil, status.Error(codes.InvalidArgument, "instance not found")
@@ -113,7 +113,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		return nil, ErrForbidden
 	}
 
-	oldInst, err := s.runtime.FindInstance(ctx, req.InstanceId)
+	oldInst, err := s.runtime.Instance(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func (s *Server) EditInstanceVariables(ctx context.Context, req *runtimev1.EditI
 		return nil, ErrForbidden
 	}
 
-	oldInst, err := s.runtime.FindInstance(ctx, req.InstanceId)
+	oldInst, err := s.runtime.Instance(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +194,7 @@ func (s *Server) EditInstanceAnnotations(ctx context.Context, req *runtimev1.Edi
 		return nil, ErrForbidden
 	}
 
-	oldInst, err := s.runtime.FindInstance(ctx, req.InstanceId)
+	oldInst, err := s.runtime.Instance(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}

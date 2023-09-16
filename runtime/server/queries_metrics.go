@@ -427,7 +427,7 @@ func validateInlineMeasures(ms []*runtimev1.InlineMeasure) error {
 	return nil
 }
 
-func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsView, *runtime.ResolvedMetricsViewSecurity, error) {
+func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsViewSpec, *runtime.ResolvedMetricsViewSecurity, error) {
 	mv, lastUpdatedOn, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
 	if err != nil {
 		return nil, nil, err
@@ -445,15 +445,24 @@ func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, 
 }
 
 // returns the metrics view and the time the catalog was last updated
-func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.MetricsView, time.Time, error) {
-	obj, err := rt.GetCatalogEntry(ctx, instanceID, name)
+func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.MetricsViewSpec, time.Time, error) {
+	ctrl, err := rt.Controller(instanceID)
 	if err != nil {
 		return nil, time.Time{}, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	mv := obj.GetMetricsView()
+	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
+	if err != nil {
+		return nil, time.Time{}, status.Error(codes.InvalidArgument, err.Error())
+	}
 
-	return mv, obj.UpdatedOn, nil
+	mv := res.GetMetricsView()
+	spec := mv.State.ValidSpec
+	if spec == nil {
+		return nil, time.Time{}, status.Errorf(codes.InvalidArgument, "metrics view %q is invalid", name)
+	}
+
+	return spec, res.Meta.StateUpdatedOn.AsTime(), nil
 }
 
 func checkFieldAccess(field string, policy *runtime.ResolvedMetricsViewSecurity) bool {
