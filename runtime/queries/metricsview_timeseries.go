@@ -29,7 +29,7 @@ type MetricsViewTimeSeries struct {
 	Filter             *runtimev1.MetricsViewFilter         `json:"filter,omitempty"`
 	TimeGranularity    runtimev1.TimeGrain                  `json:"time_granularity,omitempty"`
 	TimeZone           string                               `json:"time_zone,omitempty"`
-	MetricsView        *runtimev1.MetricsView               `json:"-"`
+	MetricsView        *runtimev1.MetricsViewSpec           `json:"-"`
 	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity `json:"security"`
 
 	Result *runtimev1.MetricsViewTimeSeriesResponse `json:"-"`
@@ -45,8 +45,10 @@ func (q *MetricsViewTimeSeries) Key() string {
 	return fmt.Sprintf("MetricsViewTimeSeries:%s", r)
 }
 
-func (q *MetricsViewTimeSeries) Deps() []string {
-	return []string{q.MetricsViewName}
+func (q *MetricsViewTimeSeries) Deps() []*runtimev1.ResourceName {
+	return []*runtimev1.ResourceName{
+		{Kind: runtime.ResourceKindMetricsView, Name: q.MetricsViewName},
+	}
 }
 
 func (q *MetricsViewTimeSeries) MarshalResult() *runtime.QueryResult {
@@ -122,15 +124,15 @@ func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime,
 	return nil
 }
 
-func (q *MetricsViewTimeSeries) generateFilename(mv *runtimev1.MetricsView) string {
-	filename := strings.ReplaceAll(mv.Model, `"`, `_`)
+func (q *MetricsViewTimeSeries) generateFilename(mv *runtimev1.MetricsViewSpec) string {
+	filename := strings.ReplaceAll(mv.Table, `"`, `_`)
 	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
 		filename += "_filtered"
 	}
 	return filename
 }
 
-func (q *MetricsViewTimeSeries) resolveDuckDB(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsView, priority int, policy *runtime.ResolvedMetricsViewSecurity) error {
+func (q *MetricsViewTimeSeries) resolveDuckDB(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsViewSpec, priority int, policy *runtime.ResolvedMetricsViewSecurity) error {
 	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
 	if err != nil {
 		return err
@@ -142,7 +144,7 @@ func (q *MetricsViewTimeSeries) resolveDuckDB(ctx context.Context, rt *runtime.R
 	}
 
 	tsq := &ColumnTimeseries{
-		TableName:           mv.Model,
+		TableName:           mv.Table,
 		TimestampColumnName: mv.TimeDimension,
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
 			Start:    q.TimeStart,
@@ -170,7 +172,7 @@ func (q *MetricsViewTimeSeries) resolveDuckDB(ctx context.Context, rt *runtime.R
 	return nil
 }
 
-func toColumnTimeseriesMeasures(measures []*runtimev1.MetricsView_Measure) ([]*runtimev1.ColumnTimeSeriesRequest_BasicMeasure, error) {
+func toColumnTimeseriesMeasures(measures []*runtimev1.MetricsViewSpec_MeasureV2) ([]*runtimev1.ColumnTimeSeriesRequest_BasicMeasure, error) {
 	res := make([]*runtimev1.ColumnTimeSeriesRequest_BasicMeasure, len(measures))
 	for i, m := range measures {
 		res[i] = &runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
@@ -181,7 +183,7 @@ func toColumnTimeseriesMeasures(measures []*runtimev1.MetricsView_Measure) ([]*r
 	return res, nil
 }
 
-func (q *MetricsViewTimeSeries) resolveDruid(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsView, priority int, policy *runtime.ResolvedMetricsViewSecurity) error {
+func (q *MetricsViewTimeSeries) resolveDruid(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsViewSpec, priority int, policy *runtime.ResolvedMetricsViewSecurity) error {
 	sql, tsAlias, args, err := q.buildDruidMetricsTimeseriesSQL(mv, policy)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
@@ -247,7 +249,7 @@ func (q *MetricsViewTimeSeries) resolveDruid(ctx context.Context, olap drivers.O
 	return nil
 }
 
-func (q *MetricsViewTimeSeries) buildDruidMetricsTimeseriesSQL(mv *runtimev1.MetricsView, policy *runtime.ResolvedMetricsViewSecurity) (string, string, []any, error) {
+func (q *MetricsViewTimeSeries) buildDruidMetricsTimeseriesSQL(mv *runtimev1.MetricsViewSpec, policy *runtime.ResolvedMetricsViewSecurity) (string, string, []any, error) {
 	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
 	if err != nil {
 		return "", "", nil, err
@@ -293,7 +295,7 @@ func (q *MetricsViewTimeSeries) buildDruidMetricsTimeseriesSQL(mv *runtimev1.Met
 		tsSpecifier,
 		tsAlias,
 		strings.Join(selectCols, ", "),
-		mv.Model,
+		mv.Table,
 		whereClause,
 	)
 

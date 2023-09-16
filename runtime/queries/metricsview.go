@@ -26,15 +26,15 @@ import (
 )
 
 // resolveMeasures returns the selected measures
-func resolveMeasures(mv *runtimev1.MetricsView, inlines []*runtimev1.InlineMeasure, selectedNames []string) ([]*runtimev1.MetricsView_Measure, error) {
+func resolveMeasures(mv *runtimev1.MetricsViewSpec, inlines []*runtimev1.InlineMeasure, selectedNames []string) ([]*runtimev1.MetricsViewSpec_MeasureV2, error) {
 	// Build combined measures
-	ms := make([]*runtimev1.MetricsView_Measure, len(selectedNames))
+	ms := make([]*runtimev1.MetricsViewSpec_MeasureV2, len(selectedNames))
 	for i, n := range selectedNames {
 		found := false
 		// Search in the inlines (take precedence)
 		for _, m := range inlines {
 			if m.Name == n {
-				ms[i] = &runtimev1.MetricsView_Measure{
+				ms[i] = &runtimev1.MetricsViewSpec_MeasureV2{
 					Name:       m.Name,
 					Expression: m.Expression,
 				}
@@ -141,7 +141,7 @@ func structTypeToMetricsViewColumn(v *runtimev1.StructType) []*runtimev1.Metrics
 // buildFilterClauseForMetricsViewFilter builds a SQL string of conditions joined with AND.
 // Unless the result is empty, it is prefixed with "AND".
 // I.e. it has the format "AND (...) AND (...) ...".
-func buildFilterClauseForMetricsViewFilter(mv *runtimev1.MetricsView, filter *runtimev1.MetricsViewFilter, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
+func buildFilterClauseForMetricsViewFilter(mv *runtimev1.MetricsViewSpec, filter *runtimev1.MetricsViewFilter, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
 	var clauses []string
 	var args []any
 
@@ -171,7 +171,7 @@ func buildFilterClauseForMetricsViewFilter(mv *runtimev1.MetricsView, filter *ru
 }
 
 // buildFilterClauseForConditions returns a string with the format "AND (...) AND (...) ..."
-func buildFilterClauseForConditions(mv *runtimev1.MetricsView, conds []*runtimev1.MetricsViewFilter_Cond, exclude bool, dialect drivers.Dialect) (string, []any, error) {
+func buildFilterClauseForConditions(mv *runtimev1.MetricsViewSpec, conds []*runtimev1.MetricsViewFilter_Cond, exclude bool, dialect drivers.Dialect) (string, []any, error) {
 	var clauses []string
 	var args []any
 
@@ -191,7 +191,7 @@ func buildFilterClauseForConditions(mv *runtimev1.MetricsView, conds []*runtimev
 }
 
 // buildFilterClauseForCondition returns a string with the format "AND (...)"
-func buildFilterClauseForCondition(mv *runtimev1.MetricsView, cond *runtimev1.MetricsViewFilter_Cond, exclude bool, dialect drivers.Dialect) (string, []any, error) {
+func buildFilterClauseForCondition(mv *runtimev1.MetricsViewSpec, cond *runtimev1.MetricsViewFilter_Cond, exclude bool, dialect drivers.Dialect) (string, []any, error) {
 	var clauses []string
 	var args []any
 
@@ -320,7 +320,7 @@ func convertToXLSXValue(pbvalue *structpb.Value) (interface{}, error) {
 	}
 }
 
-func metricsViewDimensionToSafeColumn(mv *runtimev1.MetricsView, dimName string) (string, error) {
+func metricsViewDimensionToSafeColumn(mv *runtimev1.MetricsViewSpec, dimName string) (string, error) {
 	dimName = strings.ToLower(dimName)
 	for _, dimension := range mv.Dimensions {
 		if strings.EqualFold(dimension.Name, dimName) {
@@ -335,7 +335,7 @@ func metricsViewDimensionToSafeColumn(mv *runtimev1.MetricsView, dimName string)
 	return "", fmt.Errorf("dimension %s not found", dimName)
 }
 
-func metricsViewMeasureExpression(mv *runtimev1.MetricsView, measureName string) (string, error) {
+func metricsViewMeasureExpression(mv *runtimev1.MetricsViewSpec, measureName string) (string, error) {
 	for _, measure := range mv.Measures {
 		if strings.EqualFold(measure.Name, measureName) {
 			return measure.Expression, nil
@@ -540,7 +540,7 @@ func writeParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, 
 	return err
 }
 
-func duckDBCopyExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions, sql string, args []any, filename string, olap drivers.OLAPStore, mv *runtimev1.MetricsView, exportFormat runtimev1.ExportFormat) error {
+func duckDBCopyExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions, sql string, args []any, filename string, olap drivers.OLAPStore, mv *runtimev1.MetricsViewSpec, exportFormat runtimev1.ExportFormat) error {
 	var extension string
 	switch exportFormat {
 	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
@@ -583,8 +583,8 @@ func duckDBCopyExport(ctx context.Context, rt *runtime.Runtime, instanceID strin
 	return err
 }
 
-func (q *MetricsViewRows) generateFilename(mv *runtimev1.MetricsView) string {
-	filename := strings.ReplaceAll(mv.Model, `"`, `_`)
+func (q *MetricsViewRows) generateFilename(mv *runtimev1.MetricsViewSpec) string {
+	filename := strings.ReplaceAll(mv.Table, `"`, `_`)
 	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
 		filename += "_filtered"
 	}

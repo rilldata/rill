@@ -48,7 +48,7 @@ func New(t TestingT) *runtime.Runtime {
 		SystemConnectors:        systemConnectors,
 		SecurityEngineCacheSize: 100,
 	}
-	rt, err := runtime.New(opts, zap.NewNop(), nil)
+	rt, err := runtime.New(context.Background(), opts, zap.NewNop(), nil)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		rt.Close()

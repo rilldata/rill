@@ -24,7 +24,7 @@ type MetricsViewRows struct {
 	Limit              *int64                               `json:"limit,omitempty"`
 	Offset             int64                                `json:"offset,omitempty"`
 	TimeZone           string                               `json:"time_zone,omitempty"`
-	MetricsView        *runtimev1.MetricsView               `json:"-"`
+	MetricsView        *runtimev1.MetricsViewSpec           `json:"-"`
 	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity `json:"security"`
 
 	Result *runtimev1.MetricsViewRowsResponse `json:"-"`
@@ -40,8 +40,10 @@ func (q *MetricsViewRows) Key() string {
 	return fmt.Sprintf("MetricsViewRows:%s", r)
 }
 
-func (q *MetricsViewRows) Deps() []string {
-	return []string{q.MetricsViewName}
+func (q *MetricsViewRows) Deps() []*runtimev1.ResourceName {
+	return []*runtimev1.ResourceName{
+		{Kind: runtime.ResourceKindMetricsView, Name: q.MetricsViewName},
+	}
 }
 
 func (q *MetricsViewRows) MarshalResult() *runtime.QueryResult {
@@ -75,7 +77,7 @@ func (q *MetricsViewRows) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
-	timeRollupColumnName, err := q.resolveTimeRollupColumnName(ctx, rt, instanceID, priority, q.MetricsView)
+	timeRollupColumnName, err := q.resolveTimeRollupColumnName(ctx, olap, instanceID, priority, q.MetricsView)
 	if err != nil {
 		return err
 	}
@@ -112,7 +114,7 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 				return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 			}
 
-			timeRollupColumnName, err := q.resolveTimeRollupColumnName(ctx, rt, instanceID, opts.Priority, q.MetricsView)
+			timeRollupColumnName, err := q.resolveTimeRollupColumnName(ctx, olap, instanceID, opts.Priority, q.MetricsView)
 			if err != nil {
 				return err
 			}
@@ -142,7 +144,7 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 	return nil
 }
 
-func (q *MetricsViewRows) generalExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions, olap drivers.OLAPStore, mv *runtimev1.MetricsView) error {
+func (q *MetricsViewRows) generalExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions, olap drivers.OLAPStore, mv *runtimev1.MetricsViewSpec) error {
 	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
 	if err != nil {
 		return err
@@ -173,19 +175,15 @@ func (q *MetricsViewRows) generalExport(ctx context.Context, rt *runtime.Runtime
 // The rollup column name takes the format "{time dimension name}__{granularity}[optional number]".
 // The optional number is appended in case of collision with an existing column name.
 // It returns an empty string for cases where no time rollup should be calculated (such as when q.TimeGranularity is not set).
-func (q *MetricsViewRows) resolveTimeRollupColumnName(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, mv *runtimev1.MetricsView) (string, error) {
+func (q *MetricsViewRows) resolveTimeRollupColumnName(ctx context.Context, olap drivers.OLAPStore, instanceID string, priority int, mv *runtimev1.MetricsViewSpec) (string, error) {
 	// Skip if no time info is available
 	if mv.TimeDimension == "" || q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 		return "", nil
 	}
 
-	entry, err := rt.GetCatalogEntry(ctx, instanceID, mv.Model)
+	t, err := olap.InformationSchema().Lookup(ctx, mv.Table)
 	if err != nil {
 		return "", err
-	}
-	model := entry.GetModel()
-	if model == nil {
-		return "", fmt.Errorf("model %q not found for metrics view %q", mv.Model, mv.Name)
 	}
 
 	// Create name stem
@@ -200,7 +198,7 @@ func (q *MetricsViewRows) resolveTimeRollupColumnName(ctx context.Context, rt *r
 
 		// Do a case-insensitive search for the candidate name
 		found := false
-		for _, col := range model.Schema.Fields {
+		for _, col := range t.Schema.Fields {
 			if strings.EqualFold(candidate, col.Name) {
 				found = true
 				break
@@ -216,7 +214,7 @@ func (q *MetricsViewRows) resolveTimeRollupColumnName(ctx context.Context, rt *r
 	return "", nil
 }
 
-func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect, timeRollupColumnName string, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
+func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, timeRollupColumnName string, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
 	whereClause := "1=1"
 	args := []any{}
 	if mv.TimeDimension != "" {
@@ -283,7 +281,7 @@ func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsView, dialect
 
 	sql := fmt.Sprintf("SELECT %s FROM %q WHERE %s %s %s OFFSET %d",
 		strings.Join(selectColumns, ","),
-		mv.Model,
+		mv.Table,
 		whereClause,
 		orderClause,
 		limitClause,

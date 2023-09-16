@@ -6,6 +6,7 @@ import (
 	"io"
 	"reflect"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 )
@@ -21,8 +22,11 @@ func (q *TableCardinality) Key() string {
 	return fmt.Sprintf("TableCardinality:%s", q.TableName)
 }
 
-func (q *TableCardinality) Deps() []string {
-	return []string{q.TableName}
+func (q *TableCardinality) Deps() []*runtimev1.ResourceName {
+	return []*runtimev1.ResourceName{
+		{Kind: runtime.ResourceKindSource, Name: q.TableName},
+		{Kind: runtime.ResourceKindModel, Name: q.TableName},
+	}
 }
 
 func (q *TableCardinality) MarshalResult() *runtime.QueryResult {
