@@ -95,7 +95,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 		SystemConnectors:        systemConnectors,
 		SecurityEngineCacheSize: 1000,
 	}
-	rt, err := runtime.New(rtOpts, logger, client)
+	rt, err := runtime.New(ctx, rtOpts, logger, client)
 	if err != nil {
 		return nil, err
 	}
@@ -202,51 +202,43 @@ func (a *App) IsProjectInit() bool {
 
 func (a *App) Reconcile(strict bool) error {
 	a.Logger.Named("console").Infof("Hydrating project '%s'", a.ProjectPath)
-	res, err := a.Runtime.Reconcile(a.Context, a.Instance.ID, nil, nil, false, false)
-	if err != nil {
-		return err
-	}
-	if a.Context.Err() != nil {
-		a.Logger.Errorf("Hydration canceled")
-	}
-	for _, path := range res.AffectedPaths {
-		a.Logger.Named("console").Infof("Reconciled: %s", path)
-	}
-	for _, merr := range res.Errors {
-		a.Logger.Errorf("%s: %s", merr.FilePath, merr.Message)
-	}
-	if len(res.Errors) == 0 {
-		a.Logger.Named("console").Infof("Hydration completed!")
-	} else if strict {
-		a.Logger.Fatalf("Hydration failed")
-	} else {
-		a.Logger.Named("console").Infof("Hydration failed")
-	}
-	return nil
-}
 
-func (a *App) ReconcileSource(sourcePath string) error {
-	a.Logger.Named("console").Infof("Reconciling source and impacted models in project '%s'", a.ProjectPath)
-	paths := []string{sourcePath}
-	res, err := a.Runtime.Reconcile(a.Context, a.Instance.ID, paths, paths, false, false)
-	if err != nil {
-		return err
-	}
+	err := a.Runtime.WaitUntilIdle(a.Context, a.Instance.ID)
 	if a.Context.Err() != nil {
 		a.Logger.Errorf("Hydration canceled")
 		return nil
 	}
-	for _, path := range res.AffectedPaths {
-		a.Logger.Named("console").Infof("Reconciled: %s", path)
+	if err != nil {
+		return err
 	}
-	for _, merr := range res.Errors {
-		a.Logger.Errorf("%s: %s", merr.FilePath, merr.Message)
+
+	controller, err := a.Runtime.Controller(a.Instance.ID)
+	if err != nil {
+		return err
 	}
-	if len(res.Errors) == 0 {
-		a.Logger.Named("console").Infof("Hydration completed!")
-	} else {
+
+	rs, err := controller.List(a.Context, "", false)
+	if err != nil {
+		return err
+	}
+
+	hasError := false
+	for _, r := range rs {
+		if r.Meta.ReconcileError != "" {
+			hasError = true
+			break
+		}
+	}
+
+	if hasError {
 		a.Logger.Named("console").Infof("Hydration failed")
+		if strict {
+			return fmt.Errorf("strict mode exit")
+		}
+	} else {
+		a.Logger.Named("console").Infof("Hydration completed!")
 	}
+
 	return nil
 }
 

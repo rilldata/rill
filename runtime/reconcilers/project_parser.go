@@ -127,7 +127,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	}
 
 	// Get instance
-	inst, err := r.C.Runtime.FindInstance(ctx, r.C.InstanceID)
+	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to find instance: %w", err)}
 	}
@@ -239,7 +239,7 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, self *run
 
 // reconcileProjectConfig updates instance config derived from rill.yaml and .env
 func (r *ProjectParserReconciler) reconcileProjectConfig(ctx context.Context, parser *compilerv1.Parser) error {
-	inst, err := r.C.Runtime.FindInstance(ctx, r.C.InstanceID)
+	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
 	if err != nil {
 		return err
 	}

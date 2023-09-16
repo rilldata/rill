@@ -358,7 +358,7 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 	var limitExceeded bool
 	if olap, ok := sinkConn.AsOLAP(r.C.InstanceID); ok {
 		// Get storage limit
-		inst, err := r.C.Runtime.FindInstance(ctx, r.C.InstanceID)
+		inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
 		if err != nil {
 			return err
 		}

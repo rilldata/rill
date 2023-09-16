@@ -7,7 +7,6 @@ import (
 
 	"github.com/rilldata/rill/runtime/drivers"
 	_ "github.com/rilldata/rill/runtime/drivers/s3"
-	"github.com/rilldata/rill/runtime/services/catalog"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
@@ -17,7 +16,7 @@ func TestAcquireHandle(t *testing.T) {
 	ctx := context.Background()
 
 	// set some env variable in instance
-	inst, err := rt.FindInstance(ctx, id)
+	inst, err := rt.Instance(ctx, id)
 	require.NoError(t, err)
 	inst.Variables = map[string]string{"aws_secret_access_key": "yyyy"}
 	require.NoError(t, rt.EditInstance(ctx, inst))
@@ -41,11 +40,6 @@ env:
   allow_host_access: false
 `,
 	})
-
-	svc, err := rt.NewCatalogService(ctx, inst.ID)
-	require.NoError(t, err)
-	svc.Reconcile(ctx, catalog.ReconcileConfig{ChangedPaths: []string{"rill.yaml"}})
-	require.NoError(t, err)
 
 	handle, _, err := rt.AcquireHandle(ctx, id, "my-s3")
 	require.NoError(t, err)

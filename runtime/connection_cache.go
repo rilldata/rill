@@ -40,10 +40,11 @@ type connectionCache struct {
 }
 
 type connWithRef struct {
-	handle drivers.Handle
-	err    error
-	refs   int
-	ready  chan struct{}
+	instanceID string
+	handle     drivers.Handle
+	err        error
+	refs       int
+	ready      chan struct{}
 }
 
 func newConnectionCache(size int, logger *zap.Logger, rt *Runtime, ac activity.Client) *connectionCache {
@@ -158,8 +159,9 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver string, co
 	// Cached conn not found, open a new one
 	if !ok {
 		conn = &connWithRef{
-			refs:  1, // Since refs is assumed to already have been incremented when checking conn.ready
-			ready: make(chan struct{}),
+			instanceID: instanceID,
+			refs:       1, // Since refs is assumed to already have been incremented when checking conn.ready
+			ready:      make(chan struct{}),
 		}
 		c.acquired[key] = conn
 
@@ -237,7 +239,7 @@ func (c *connectionCache) openAndMigrate(ctx context.Context, instanceID, driver
 
 	activityClient := c.activity
 	if !shared {
-		inst, err := c.runtime.FindInstance(ctx, instanceID)
+		inst, err := c.runtime.Instance(ctx, instanceID)
 		if err != nil {
 			return nil, err
 		}
@@ -261,35 +263,49 @@ func (c *connectionCache) openAndMigrate(ctx context.Context, instanceID, driver
 	return handle, nil
 }
 
-// evict removes the connection from cache and closes the connection.
-func (c *connectionCache) evict(ctx context.Context, instanceID, driver string, config map[string]any) bool {
+// evictAll closes all connections for an instance.
+func (c *connectionCache) evictAll(ctx context.Context, instanceID string) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
 	if c.closed {
-		return false
+		return
 	}
 
-	key := instanceID + driver + generateKey(config)
-	conn, ok := c.lru.Get(key)
-	if !ok {
-		conn, ok = c.acquired[key]
-	}
-	if ok {
-		conn := conn.(*connWithRef)
+	for key, conn := range c.acquired {
+		if conn.instanceID != instanceID {
+			continue
+		}
+
 		if conn.handle != nil {
 			err := conn.handle.Close()
 			if err != nil {
 				c.logger.Error("connection cache: failed to close cached connection", zap.Error(err), zap.String("instance", instanceID), observability.ZapCtx(ctx))
 			}
 			conn.handle = nil
-			conn.err = fmt.Errorf("connection evicted") // Defensive, should never happen
+			conn.err = fmt.Errorf("connection evicted") // Defensive, should never be accessed
 		}
-		c.lru.Remove(key)
+
 		delete(c.acquired, key)
 	}
 
-	return ok
+	for key, conn := range c.lru.Keys() {
+		conn := conn.(*connWithRef)
+		if conn.instanceID != instanceID {
+			continue
+		}
+
+		if conn.handle != nil {
+			err := conn.handle.Close()
+			if err != nil {
+				c.logger.Error("connection cache: failed to close cached connection", zap.Error(err), zap.String("instance", instanceID), observability.ZapCtx(ctx))
+			}
+			conn.handle = nil
+			conn.err = fmt.Errorf("connection evicted") // Defensive, should never be accessed
+		}
+
+		c.lru.Remove(key)
+	}
 }
 
 func generateKey(m map[string]any) string {

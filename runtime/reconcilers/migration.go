@@ -95,7 +95,7 @@ func (r *MigrationReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 }
 
 func (r *MigrationReconciler) executeMigration(ctx context.Context, self *runtimev1.Resource, version uint32) error {
-	inst, err := r.C.Runtime.FindInstance(ctx, r.C.InstanceID)
+	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
 	if err != nil {
 		return err
 	}

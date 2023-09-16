@@ -385,7 +385,7 @@ func (r *ModelReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Reso
 
 // createModel creates or updates the model in the OLAP connector.
 func (r *ModelReconciler) createModel(ctx context.Context, self *runtimev1.Resource, tableName string, view bool) error {
-	inst, err := r.C.Runtime.FindInstance(ctx, r.C.InstanceID)
+	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
 	if err != nil {
 		return err
 	}

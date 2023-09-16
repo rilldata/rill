@@ -33,6 +33,9 @@ const (
 // errCyclicDependency is set as the error on resources that can't be reconciled due to a cyclic dependency
 var errCyclicDependency = errors.New("cannot be reconciled due to cyclic dependency")
 
+// errControllerNotRunning is returned from controller functions that require the controller to be running
+var errControllerNotRunning = errors.New("controller is not running")
+
 // Reconciler implements reconciliation logic for all resources of a specific kind.
 // Reconcilers are managed and invoked by a Controller.
 type Reconciler interface {
@@ -90,7 +93,7 @@ type Controller struct {
 }
 
 // NewController creates a new Controller
-func NewController(ctx context.Context, rt *Runtime, instanceID string, logger *zap.Logger) (*Controller, error) {
+func NewController(rt *Runtime, instanceID string, logger *zap.Logger) (*Controller, error) {
 	c := &Controller{
 		Runtime:        rt,
 		InstanceID:     instanceID,
@@ -107,12 +110,6 @@ func NewController(ctx context.Context, rt *Runtime, instanceID string, logger *
 	logger = logger.With(zap.String("instance_id", instanceID))
 	c.Logger = slog.New(zapslog.NewHandler(logger.Core()))
 
-	cc, err := newCatalogCache(ctx, c, instanceID)
-	if err != nil {
-		return nil, err
-	}
-	c.catalog = cc
-
 	return c, nil
 }
 
@@ -121,12 +118,18 @@ func NewController(ctx context.Context, rt *Runtime, instanceID string, logger *
 // The implementation centers around these internal functions: enqueue, processQueue, schedule, and processCompletedInvocation.
 // See their docstrings for further details.
 func (c *Controller) Run(ctx context.Context) error {
+	cc, err := newCatalogCache(ctx, c, c.InstanceID)
+	if err != nil {
+		return fmt.Errorf("failed to create catalog cache: %w", err)
+	}
+	c.catalog = cc
+
 	if c.running.Swap(true) {
 		panic("controller is already running")
 	}
 
 	// Check we are still the leader
-	err := c.catalog.checkLeader(ctx)
+	err = c.catalog.checkLeader(ctx)
 	if err != nil {
 		return err
 	}
@@ -265,6 +268,9 @@ func (c *Controller) Run(ctx context.Context) error {
 	}
 	c.mu.Unlock()
 
+	// Mark closed (no more catalog writes after this)
+	c.running.Store(false)
+
 	// Allow 10 seconds for flushing the catalog
 	ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -278,14 +284,21 @@ func (c *Controller) Run(ctx context.Context) error {
 	}
 	c.mu.Unlock()
 
-	c.running.Store(false)
 	return closeErr
+}
+
+// WaitUntilIdle returns when the controller is idle (i.e. no reconcilers are pending or running).
+func (c *Controller) WaitUntilIdle(ctx context.Context) {
+	// TODO: Implement
+	panic("not implemented")
 }
 
 // Get returns a resource by name.
 // Soft-deleted resources (i.e. resources where DeletedOn != nil) are not returned.
 func (c *Controller) Get(ctx context.Context, name *runtimev1.ResourceName, clone bool) (*runtimev1.Resource, error) {
-	c.checkRunning()
+	if err := c.checkRunning(); err != nil {
+		return nil, err
+	}
 	c.lock(ctx, true)
 	defer c.unlock(ctx, true)
 	return c.catalog.get(name, false, clone)
@@ -295,7 +308,9 @@ func (c *Controller) Get(ctx context.Context, name *runtimev1.ResourceName, clon
 // If kind is empty, all resources are returned.
 // Soft-deleted resources (i.e. resources where DeletedOn != nil) are not returned.
 func (c *Controller) List(ctx context.Context, kind string, clone bool) ([]*runtimev1.Resource, error) {
-	c.checkRunning()
+	if err := c.checkRunning(); err != nil {
+		return nil, err
+	}
 	c.lock(ctx, true)
 	defer c.unlock(ctx, true)
 	return c.catalog.list(kind, false, clone)
@@ -307,7 +322,9 @@ type SubscribeCallback func(e runtimev1.ResourceEvent, n *runtimev1.ResourceName
 // Subscribe registers a callback that will receive resource update events.
 // The callback is invoked in the same goroutine as the call to Subscribe (so multiple callbacks can't be invoked concurrently).
 func (c *Controller) Subscribe(ctx context.Context, fn SubscribeCallback) error {
-	c.checkRunning()
+	if err := c.checkRunning(); err != nil {
+		return err
+	}
 
 	id := fmt.Sprintf("%v", fn)
 	ch := make(chan map[string]catalogEvent)
@@ -337,7 +354,9 @@ func (c *Controller) Subscribe(ctx context.Context, fn SubscribeCallback) error 
 // Create creates a resource and enqueues it for reconciliation.
 // If a resource with the same name is currently being deleted, the deletion will be cancelled.
 func (c *Controller) Create(ctx context.Context, name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths []string, r *runtimev1.Resource) error {
-	c.checkRunning()
+	if err := c.checkRunning(); err != nil {
+		return err
+	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 
@@ -370,7 +389,9 @@ func (c *Controller) Create(ctx context.Context, name *runtimev1.ResourceName, r
 // UpdateMeta updates a resource's meta fields and enqueues it for reconciliation.
 // If called from outside the resource's reconciler and the resource is currently reconciling, the current reconciler will be cancelled first.
 func (c *Controller) UpdateMeta(ctx context.Context, name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths []string) error {
-	c.checkRunning()
+	if err := c.checkRunning(); err != nil {
+		return err
+	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 
@@ -401,7 +422,9 @@ func (c *Controller) UpdateMeta(ctx context.Context, name *runtimev1.ResourceNam
 // UpdateName renames a resource and updates annotations, and enqueues it for reconciliation.
 // If called from outside the resource's reconciler and the resource is currently reconciling, the current reconciler will be cancelled first.
 func (c *Controller) UpdateName(ctx context.Context, name, newName, owner *runtimev1.ResourceName, paths []string) error {
-	c.checkRunning()
+	if err := c.checkRunning(); err != nil {
+		return err
+	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 
@@ -431,7 +454,9 @@ func (c *Controller) UpdateName(ctx context.Context, name, newName, owner *runti
 // UpdateSpec updates a resource's spec and enqueues it for reconciliation.
 // If called from outside the resource's reconciler and the resource is currently reconciling, the current reconciler will be cancelled first.
 func (c *Controller) UpdateSpec(ctx context.Context, name *runtimev1.ResourceName, r *runtimev1.Resource) error {
-	c.checkRunning()
+	if err := c.checkRunning(); err != nil {
+		return err
+	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 
@@ -457,7 +482,9 @@ func (c *Controller) UpdateSpec(ctx context.Context, name *runtimev1.ResourceNam
 // It can only be called from within the resource's reconciler.
 // NOTE: Calls to UpdateState succeed even if ctx is cancelled. This enables cancelled reconcilers to update state before finishing.
 func (c *Controller) UpdateState(ctx context.Context, name *runtimev1.ResourceName, r *runtimev1.Resource) error {
-	c.checkRunning()
+	if err := c.checkRunning(); err != nil {
+		return err
+	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 
@@ -476,7 +503,9 @@ func (c *Controller) UpdateState(ctx context.Context, name *runtimev1.ResourceNa
 // UpdateError updates a resource's error.
 // Unlike UpdateMeta and UpdateSpec, it does not cancel or enqueue reconciliation for the resource.
 func (c *Controller) UpdateError(ctx context.Context, name *runtimev1.ResourceName, reconcileErr error) error {
-	c.checkRunning()
+	if err := c.checkRunning(); err != nil {
+		return err
+	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 
@@ -492,7 +521,9 @@ func (c *Controller) UpdateError(ctx context.Context, name *runtimev1.ResourceNa
 // Once the deleting reconciliation has been completed, the resource will be hard deleted.
 // If Delete is called from the resource's own reconciler, the resource will be hard deleted immediately (and the calling reconcile's ctx will be canceled immediately).
 func (c *Controller) Delete(ctx context.Context, name *runtimev1.ResourceName) error {
-	c.checkRunning()
+	if err := c.checkRunning(); err != nil {
+		return err
+	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 
@@ -519,7 +550,9 @@ func (c *Controller) Delete(ctx context.Context, name *runtimev1.ResourceName) e
 
 // Flush forces a flush of the controller's catalog changes to persistent storage.
 func (c *Controller) Flush(ctx context.Context) error {
-	c.checkRunning()
+	if err := c.checkRunning(); err != nil {
+		return err
+	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 
@@ -529,7 +562,9 @@ func (c *Controller) Flush(ctx context.Context) error {
 // Reconcile enqueues a resource for reconciliation.
 // If the resource is currently reconciling, the current reconciler will be cancelled first.
 func (c *Controller) Reconcile(ctx context.Context, name *runtimev1.ResourceName) error {
-	c.checkRunning()
+	if err := c.checkRunning(); err != nil {
+		return err
+	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 	c.cancelIfRunning(name, false)
@@ -540,7 +575,9 @@ func (c *Controller) Reconcile(ctx context.Context, name *runtimev1.ResourceName
 // Cancel cancels the current invocation of a resource's reconciler (if it's running).
 // It does not re-enqueue the resource for reconciliation.
 func (c *Controller) Cancel(ctx context.Context, name *runtimev1.ResourceName) error {
-	c.checkRunning()
+	if err := c.checkRunning(); err != nil {
+		return err
+	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 	c.cancelIfRunning(name, false)
@@ -616,10 +653,11 @@ func (c *Controller) reconciler(resourceKind string) Reconciler {
 }
 
 // checkRunning panics if called when the Controller is not running.
-func (c *Controller) checkRunning() {
+func (c *Controller) checkRunning() error {
 	if !c.running.Load() {
-		panic("controller is not running")
+		return errControllerNotRunning
 	}
+	return nil
 }
 
 // lock locks the controller's mutex, unless ctx belongs to a reconciler invocation that already holds the lock (by having called c.Lock).

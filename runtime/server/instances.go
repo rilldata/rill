@@ -20,7 +20,7 @@ func (s *Server) ListInstances(ctx context.Context, req *runtimev1.ListInstances
 		return nil, ErrForbidden
 	}
 
-	instances, err := s.runtime.FindInstances(ctx)
+	instances, err := s.runtime.Instances(ctx)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

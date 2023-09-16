@@ -270,7 +270,8 @@ func TestRuntime_EditInstance(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			//create instance
+
+			// Create instance
 			inst := &drivers.Instance{
 				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
@@ -289,11 +290,13 @@ func TestRuntime_EditInstance(t *testing.T) {
 				},
 			}
 			require.NoError(t, rt.CreateInstance(context.Background(), inst))
-			// load all caches
-			svc, err := rt.NewCatalogService(ctx, inst.ID)
-			require.NoError(t, err)
 
-			// edit instance
+			// Acquire OLAP (to make sure it's opened)
+			_, release, err := rt.OLAP(ctx, inst.ID)
+			require.NoError(t, err)
+			release()
+
+			// Edit instance
 			tt.inst.ID = inst.ID
 			err = rt.EditInstance(ctx, tt.inst)
 			if (err != nil) != tt.wantErr {
@@ -303,8 +306,8 @@ func TestRuntime_EditInstance(t *testing.T) {
 				return
 			}
 
-			// verify db instances are correctly updated
-			newInst, err := rt.FindInstance(ctx, inst.ID)
+			// Verify db instances are correctly updated
+			newInst, err := rt.Instance(ctx, inst.ID)
 			require.NoError(t, err)
 			require.Equal(t, inst.ID, newInst.ID)
 			require.Equal(t, tt.savedInst.OLAPConnector, newInst.OLAPConnector)
@@ -315,16 +318,20 @@ func TestRuntime_EditInstance(t *testing.T) {
 			require.Greater(t, time.Since(newInst.CreatedOn), time.Since(newInst.UpdatedOn))
 			require.Equal(t, tt.savedInst.Variables, newInst.Variables)
 
-			// verify older olap connection is closed
+			// Verify older olap connection is closed
 			driver, cfg, err := rt.connectorConfig(ctx, inst.ID, inst.OLAPConnector)
 			_, ok := rt.connCache.acquired[inst.ID+driver+generateKey(cfg)]
 			require.Equal(t, false, ok)
 			driver, cfg, err = rt.connectorConfig(ctx, inst.ID, inst.RepoConnector)
 			_, ok = rt.connCache.acquired[inst.ID+driver+generateKey(cfg)]
 			require.Equal(t, false, ok)
-			_, ok = rt.migrationMetaCache.cache.Get(inst.ID)
-			require.Equal(t, false, ok)
-			_, err = svc.Olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM rill.migration_version"})
+
+			// Verify new olap connection is opened
+			olap, release, err := rt.OLAP(ctx, inst.ID)
+			require.NoError(t, err)
+			defer release()
+
+			_, err = olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM rill.migration_version"})
 			require.Equal(t, true, err != nil)
 		})
 	}
@@ -366,28 +373,15 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 				},
 			}
 			require.NoError(t, rt.CreateInstance(context.Background(), inst))
-			// load all caches
-			svc, err := rt.NewCatalogService(ctx, inst.ID)
+
+			// Acquire OLAP
+			olap, release, err := rt.OLAP(ctx, inst.ID)
 			require.NoError(t, err)
+			defer release()
 
 			// ingest some data
-			require.NoError(t, svc.Olap.Exec(ctx, &drivers.Statement{Query: "CREATE TABLE data(id INTEGER, name VARCHAR)"}))
-			require.NoError(t, svc.Olap.Exec(ctx, &drivers.Statement{Query: "INSERT INTO data VALUES (1, 'Mark'), (2, 'Hannes')"}))
-			require.NoError(t, svc.Catalog.CreateEntry(ctx, &drivers.CatalogEntry{
-				Name: "data",
-				Type: drivers.ObjectTypeTable,
-				Object: &runtimev1.Table{
-					Name:    "data",
-					Managed: true,
-				},
-			}))
-			require.ErrorContains(t, svc.Catalog.CreateEntry(ctx, &drivers.CatalogEntry{
-				Name: "data",
-				Type: drivers.ObjectTypeModel,
-				Object: &runtimev1.Model{
-					Name: "data",
-				},
-			}), "catalog entry with name \"data\" already exists")
+			require.NoError(t, olap.Exec(ctx, &drivers.Statement{Query: "CREATE TABLE data(id INTEGER, name VARCHAR)"}))
+			require.NoError(t, olap.Exec(ctx, &drivers.Statement{Query: "INSERT INTO data VALUES (1, 'Mark'), (2, 'Hannes')"}))
 
 			// delete instance
 			err = rt.DeleteInstance(ctx, tt.instanceID, tt.dropDB)
@@ -399,15 +393,13 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 			}
 
 			// verify db is correctly cleared
-			_, err = rt.FindInstance(ctx, inst.ID)
+			_, err = rt.Instance(ctx, inst.ID)
 			require.Error(t, err)
 
 			// verify older olap connection is closed and cache updated
 			require.False(t, rt.connCache.lru.Contains(inst.ID+"duckdb"+fmt.Sprintf("dsn:%s ", dbFile)))
 			require.False(t, rt.connCache.lru.Contains(inst.ID+"file"+fmt.Sprintf("dsn:%s ", repodsn)))
-			_, ok := rt.migrationMetaCache.cache.Get(inst.ID)
-			require.False(t, ok)
-			_, err = svc.Olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM rill.migration_version"})
+			_, err = olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM rill.migration_version"})
 			require.True(t, err != nil)
 
 			// verify db file is dropped if requested
@@ -455,10 +447,7 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 	require.NoError(t, err)
 
 	// Close OLAP connection
-	driver, cfg, err := rt.connectorConfig(ctx, inst.ID, inst.OLAPConnector)
-	require.NoError(t, err)
-	evicted := rt.connCache.evict(ctx, inst.ID, driver, cfg)
-	require.True(t, evicted)
+	rt.connCache.evictAll(ctx, inst.ID)
 
 	// Corrupt database file
 	err = os.WriteFile(dbpath, []byte("corrupted"), 0644)
@@ -495,7 +484,7 @@ func NewTestRunTime(t *testing.T) *Runtime {
 		AllowHostAccess:         true,
 		SystemConnectors:        globalConnectors,
 	}
-	rt, err := New(opts, zap.NewNop(), nil)
+	rt, err := New(context.Background(), opts, zap.NewNop(), nil)
 	t.Cleanup(func() {
 		rt.Close()
 	})
