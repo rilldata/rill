@@ -3,6 +3,7 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
+  import { notifications } from "../../../components/notifications";
 
   const dispatch = createEventDispatcher();
 
@@ -27,6 +28,9 @@
             },
           });
           dispatch("close");
+          notifications.send({
+            message: "Thanks for your request!",
+          });
         } catch (e) {
           console.error(e);
         }
