@@ -2,7 +2,10 @@
   import { page } from "$app/stores";
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
-  import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
+  import {
+    useModelNames,
+    useSourceNames,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { getLeftPanelParams } from "@rilldata/web-common/metrics/service/metrics-helpers";
   import { createRuntimeServiceListCatalogEntries } from "@rilldata/web-common/runtime-client";
   import { flip } from "svelte/animate";
@@ -20,7 +23,6 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import AddAssetButton from "../../entity-management/AddAssetButton.svelte";
   import { EntityType } from "../../entity-management/types";
-  import { useModelNames } from "../../models/selectors";
   import { createModelFromSourceCreator } from "web-common/src/features/sources/createModelFromSource";
   import AddSourceModal from "../modal/AddSourceModal.svelte";
   import SourceMenuItems from "./SourceMenuItems.svelte";

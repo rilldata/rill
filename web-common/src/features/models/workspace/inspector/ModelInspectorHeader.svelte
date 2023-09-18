@@ -1,8 +1,8 @@
 <script lang="ts">
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { useModel } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { useEmbeddedSources } from "@rilldata/web-common/features/sources/selectors";
   import {
     formatBigNumberPercentage,
     formatInteger,
@@ -10,9 +10,8 @@
   import {
     createQueryServiceTableCardinality,
     createQueryServiceTableColumns,
-    createRuntimeServiceGetCatalogEntry,
     createRuntimeServiceListCatalogEntries,
-    V1Model,
+    V1ModelV2,
     V1TableCardinalityResponse,
   } from "@rilldata/web-common/runtime-client";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
@@ -26,12 +25,9 @@
   export let modelName: string;
   export let containerWidth = 0;
 
-  $: getModel = createRuntimeServiceGetCatalogEntry(
-    $runtime.instanceId,
-    modelName
-  );
-  let model: V1Model;
-  $: model = $getModel?.data?.entry?.model;
+  $: modelQuery = useModel($runtime.instanceId, modelName);
+  let model: V1ModelV2;
+  $: model = $modelQuery?.data?.model;
 
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
@@ -40,11 +36,9 @@
   let sourceTableReferences;
 
   // get source table references.
-  $: if (model?.sql) {
-    sourceTableReferences = getTableReferences(model.sql);
+  $: if (model?.spec?.sql) {
+    sourceTableReferences = getTableReferences(model?.spec?.sql);
   }
-
-  $: embeddedSources = useEmbeddedSources($runtime.instanceId);
 
   // get the cardinalitie & table information.
   let cardinalityQueries: Array<CreateQueryResult<number>> = [];
@@ -117,11 +111,10 @@
   );
 
   let modelCardinalityQuery: CreateQueryResult<V1TableCardinalityResponse>;
-  $: if (model?.name)
-    modelCardinalityQuery = createQueryServiceTableCardinality(
-      $runtime.instanceId,
-      model?.name
-    );
+  $: modelCardinalityQuery = createQueryServiceTableCardinality(
+    $runtime.instanceId,
+    modelName
+  );
   let outputRowCardinalityValue: number;
   $: outputRowCardinalityValue = Number(
     $modelCardinalityQuery?.data?.cardinality ?? 0

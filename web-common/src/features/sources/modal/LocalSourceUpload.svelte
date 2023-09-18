@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
+  import { useModelNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import {
     openFileUploadDialog,
     uploadTableFiles,
@@ -11,7 +12,6 @@
   import { createRuntimeServiceUnpackEmpty } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { useModelNames } from "../../models/selectors";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
   import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
   import { compileCreateSourceYAML } from "../sourceUtils";
