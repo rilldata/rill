@@ -284,7 +284,7 @@ func (c *Connection) getClient(ctx context.Context, conf *sourceProperties) (*co
 			opts.SASToken = c.config.SASToken
 		}
 	}
-	
+
 	var client *container.Client
 	if opts.SASToken != "" {
 		serviceURL, err := azureblob.NewServiceURL(opts)
