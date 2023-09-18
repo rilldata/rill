@@ -586,7 +586,6 @@ func (c *Controller) Reconcile(ctx context.Context, name *runtimev1.ResourceName
 	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
-	c.cancelIfRunning(name, false)
 	c.enqueue(name)
 	return nil
 }
@@ -1051,6 +1050,16 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 	}
 	c.invocations[nameStr(n)] = inv
 
+	// Log invocation
+	logArgs := []any{slog.String("name", n.Name), slog.String("kind", n.Kind)}
+	if inv.isDelete {
+		logArgs = append(logArgs, slog.Bool("deleted", inv.isDelete))
+	}
+	if inv.isRename {
+		logArgs = append(logArgs, slog.String("renamed_from", r.Meta.RenamedFrom.Name))
+	}
+	c.Logger.Info("Reconciling resource", logArgs...)
+
 	// Start reconcile in background
 	ctx = contextWithInvocation(ctx, inv)
 	reconciler := c.reconciler(n.Kind) // fetched outside of goroutine to keep access under mutex
@@ -1084,6 +1093,25 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 // - and, for itself if inv.reschedule is true
 // - and, for its children in the DAG if inv.reschedule is false
 func (c *Controller) processCompletedInvocation(inv *invocation) error {
+	// Log result
+	logArgs := []any{slog.String("name", inv.name.Name), slog.String("kind", inv.name.Kind)}
+	logError := false
+	if inv.cancelled {
+		logArgs = append(logArgs, slog.Bool("cancelled", inv.cancelled))
+	}
+	if !inv.result.Retrigger.IsZero() {
+		logArgs = append(logArgs, slog.String("retrigger_on", inv.result.Retrigger.Format(time.RFC3339)))
+	}
+	if inv.result.Err != nil {
+		logArgs = append(logArgs, slog.Any("error", inv.result.Err))
+		logError = true
+	}
+	if logError {
+		c.Logger.Error("Finished reconciling resource", logArgs...)
+	} else {
+		c.Logger.Info("Finished reconciling resource", logArgs...)
+	}
+
 	r, err := c.catalog.get(inv.name, true, false)
 	if err != nil {
 		return err
