@@ -12,11 +12,11 @@ import (
 type KafkaSink struct {
 	producer *kafka.Producer
 	topic    string
-	logger   zap.Logger
+	logger   *zap.Logger
 	logChan  chan kafka.LogEvent
 }
 
-func NewKafkaSink(brokers, topic string, logger zap.Logger) (*KafkaSink, error) {
+func NewKafkaSink(brokers, topic string, logger *zap.Logger) (*KafkaSink, error) {
 	logChan := make(chan kafka.LogEvent, 100)
 	producer, err := kafka.NewProducer(&kafka.ConfigMap{
 		"bootstrap.servers":      brokers,
@@ -64,7 +64,7 @@ func (s *KafkaSink) Close() error {
 	return nil
 }
 
-func forwardKafkaLogEventToLogger(logChan chan kafka.LogEvent, logger zap.Logger) {
+func forwardKafkaLogEventToLogger(logChan chan kafka.LogEvent, logger *zap.Logger) {
 	for logEvent := range logChan {
 		zapLevel := kafkaLogLevelToZapLevel(logEvent.Level)
 		if logger.Core().Enabled(zapLevel) {
