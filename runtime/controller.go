@@ -18,18 +18,6 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// Built-in resource kinds
-const (
-	ResourceKindProjectParser  string = "rill.runtime.v1.ProjectParser"
-	ResourceKindSource         string = "rill.runtime.v1.SourceV2"
-	ResourceKindModel          string = "rill.runtime.v1.ModelV2"
-	ResourceKindMetricsView    string = "rill.runtime.v1.MetricsViewV2"
-	ResourceKindMigration      string = "rill.runtime.v1.Migration"
-	ResourceKindPullTrigger    string = "rill.runtime.v1.PullTrigger"
-	ResourceKindRefreshTrigger string = "rill.runtime.v1.RefreshTrigger"
-	ResourceKindBucketPlanner  string = "rill.runtime.v1.BucketPlanner"
-)
-
 // errCyclicDependency is set as the error on resources that can't be reconciled due to a cyclic dependency
 var errCyclicDependency = errors.New("cannot be reconciled due to cyclic dependency")
 
@@ -74,7 +62,10 @@ type Controller struct {
 	InstanceID  string
 	Logger      *slog.Logger
 	mu          sync.RWMutex
-	running     atomic.Bool
+	running     atomic.Bool   // Indicates if the controller is running
+	ready       chan struct{} // Closed when the controller transitions to running
+	idle        bool          // Indicates if the controller currently has any pending or running invocations
+	idleCh      chan struct{} // Closed when the controller transitions to idle
 	reconcilers map[string]Reconciler
 	catalog     *catalogCache
 	// subscribers tracks subscribers to catalog events.
@@ -97,6 +88,7 @@ func NewController(rt *Runtime, instanceID string, logger *zap.Logger) (*Control
 	c := &Controller{
 		Runtime:        rt,
 		InstanceID:     instanceID,
+		ready:          make(chan struct{}),
 		reconcilers:    make(map[string]Reconciler),
 		subscribers:    make(map[string]chan map[string]catalogEvent),
 		queue:          make(map[string]*runtimev1.ResourceName),
@@ -104,6 +96,8 @@ func NewController(rt *Runtime, instanceID string, logger *zap.Logger) (*Control
 		timeline:       schedule.New[string, *runtimev1.ResourceName](nameStr),
 		invocations:    make(map[string]*invocation),
 		completed:      make(chan *invocation),
+		idle:           false,
+		idleCh:         make(chan struct{}),
 	}
 
 	// TODO: Setup the logger to duplicate logs to a) the Zap logger, b) an in-memory buffer that exposes the logs over the API
@@ -143,6 +137,9 @@ func (c *Controller) Run(ctx context.Context) error {
 	}
 	c.mu.Unlock()
 
+	// Open for business
+	close(c.ready)
+
 	// Ticker for periodically flushing catalog changes
 	flushTicker := time.NewTicker(10 * time.Second)
 	defer flushTicker.Stop()
@@ -174,6 +171,12 @@ func (c *Controller) Run(ctx context.Context) error {
 		timelineTimer.Reset(d)
 	}
 
+	// c.idle is initially false, but if the catalog is initially empty, it will not immediately be checked in the event loop.
+	// So check it now.
+	c.mu.Lock()
+	c.checkIdle()
+	c.mu.Unlock()
+
 	// Run event loop
 	var stop bool
 	var loopErr error
@@ -181,6 +184,7 @@ func (c *Controller) Run(ctx context.Context) error {
 		select {
 		case <-c.queueUpdatedCh: // There are resources we should schedule
 			c.mu.Lock()
+			c.checkIdle()
 			err := c.processQueue()
 			if err != nil {
 				loopErr = err
@@ -196,6 +200,7 @@ func (c *Controller) Run(ctx context.Context) error {
 				loopErr = err
 				stop = true
 			}
+			c.checkIdle()
 			c.mu.Unlock()
 		case <-timelineTimer.C: // A previous reconciler invocation asked to be re-scheduled now
 			c.mu.Lock()
@@ -287,10 +292,24 @@ func (c *Controller) Run(ctx context.Context) error {
 	return closeErr
 }
 
+// WaitUntilReady returns when the controller is ready to process catalog operations
+func (c *Controller) WaitUntilReady(ctx context.Context) {
+	select {
+	case <-c.ready:
+	case <-ctx.Done():
+	}
+}
+
 // WaitUntilIdle returns when the controller is idle (i.e. no reconcilers are pending or running).
 func (c *Controller) WaitUntilIdle(ctx context.Context) {
-	// TODO: Implement
-	panic("not implemented")
+	c.mu.RLock()
+	idleCh := c.idleCh
+	c.mu.RUnlock()
+
+	select {
+	case <-idleCh:
+	case <-ctx.Done():
+	}
 }
 
 // Get returns a resource by name.
@@ -658,6 +677,24 @@ func (c *Controller) checkRunning() error {
 		return errControllerNotRunning
 	}
 	return nil
+}
+
+// checkIdle opens and closes c.idleCh based on the controller's state.
+// c.idleCh is closed when the controller becomes idle and is reset when the controller becomes active.
+// If the controller's state hasn't changed, it does nothing.
+// It must be called with c.mu held.
+func (c *Controller) checkIdle() {
+	// We're idle if both the queue and invocations are empty.
+	idle := len(c.queue) == 0 && len(c.invocations) == 0
+
+	// Handle if idleness changed
+	if c.idle && !idle {
+		c.idle = false
+		c.idleCh = make(chan struct{})
+	} else if !c.idle && idle {
+		c.idle = true
+		close(c.idleCh)
+	}
 }
 
 // lock locks the controller's mutex, unless ctx belongs to a reconciler invocation that already holds the lock (by having called c.Lock).
