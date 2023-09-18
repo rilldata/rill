@@ -142,10 +142,22 @@ func (m *sourceMigrator) Update(ctx context.Context,
 }
 
 func (m *sourceMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalogObj *drivers.CatalogEntry) error {
+	tbl, err := olap.InformationSchema().Lookup(ctx, from)
+	if err != nil {
+		return err
+	}
+
+	// NOTE :: underlying tables are not dropped so will lead to data leak
+	var typ string
+	if tbl.View {
+		typ = "VIEW"
+	} else {
+		typ = "TABLE"
+	}
 	if strings.EqualFold(from, catalogObj.Name) {
 		tempName := fmt.Sprintf("__rill_temp_%s", from)
 		err := olap.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("ALTER TABLE %s RENAME TO %s", from, tempName),
+			Query:    fmt.Sprintf("ALTER %s %s RENAME TO %s", typ, from, tempName),
 			Priority: 100,
 		})
 		if err != nil {
@@ -155,7 +167,7 @@ func (m *sourceMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, fro
 	}
 
 	return olap.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("ALTER TABLE %s RENAME TO %s", from, catalogObj.Name),
+		Query:    fmt.Sprintf("ALTER %s %s RENAME TO %s", typ, from, catalogObj.Name),
 		Priority: 100,
 	})
 }
