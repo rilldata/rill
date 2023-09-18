@@ -1,44 +1,30 @@
 import {
+  ResourceKind,
+  useFilteredEntityNames,
+  useResource,
+} from "@rilldata/web-common/features/entity-management/resource-selectors";
+import {
   createRuntimeServiceGetFile,
   createRuntimeServiceListCatalogEntries,
-  createRuntimeServiceListFiles,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { parse } from "yaml";
 import { getFilePathFromNameAndType } from "../entity-management/entity-mappers";
 import { EntityType } from "../entity-management/types";
 
-/**
- * Calls {@link createRuntimeServiceListFiles} using glob to select only sources.
- * Returns just the source names from the files.
- */
-export function useSourceNames(instanceId: string) {
-  return createRuntimeServiceListFiles(
-    instanceId,
-    {
-      glob: "{sources,models,dashboards}/*.{yaml,sql}",
-    },
-    {
-      query: {
-        // refetchInterval: 1000,
-        select: (data) =>
-          data.paths
-            ?.filter((path) => path.includes("sources/"))
-            .map((path) => path.replace("/sources/", "").replace(".yaml", ""))
-            // sort alphabetically case-insensitive
-            .sort((a, b) =>
-              a.localeCompare(b, undefined, { sensitivity: "base" })
-            ),
-      },
-    }
-  );
-}
-
 export type SourceFromYaml = {
   type: string;
   uri?: string;
   path?: string;
 };
+
+export function useSourceNames(instanceId: string) {
+  return useFilteredEntityNames(instanceId, ResourceKind.Source);
+}
+
+export function useSource(instanceId: string, name: string) {
+  return useResource(instanceId, name, ResourceKind.Source);
+}
 
 export function useSourceFromYaml(instanceId: string, filePath: string) {
   return createRuntimeServiceGetFile(instanceId, filePath, {

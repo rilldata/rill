@@ -1,6 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
+
+  import { useModelNames } from "@rilldata/web-common/features/models/selectors";
   import {
     openFileUploadDialog,
     uploadTableFiles,
@@ -18,7 +20,6 @@
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { SourceConnectionType } from "../../../metrics/service/SourceEventTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { useModelNames } from "../../models/selectors";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
   import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
   import {

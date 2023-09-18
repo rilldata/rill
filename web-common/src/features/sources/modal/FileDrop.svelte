@@ -1,6 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import Overlay from "@rilldata/web-common/components/overlay/Overlay.svelte";
+
+  import { useModelNames } from "@rilldata/web-common/features/models/selectors";
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
   import {
     createRuntimeServicePutFileAndReconcile,
@@ -12,7 +14,6 @@
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { SourceConnectionType } from "../../../metrics/service/SourceEventTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { useModelNames } from "../../models/selectors";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
   import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
   import {

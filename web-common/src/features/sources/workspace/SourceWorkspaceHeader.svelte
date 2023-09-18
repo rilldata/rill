@@ -19,7 +19,9 @@
     createRuntimeServiceRenameFileAndReconcile,
     getRuntimeServiceGetCatalogEntryQueryKey,
     V1CatalogEntry,
+    V1Resource,
     V1Source,
+    V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
   import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -48,7 +50,7 @@
   import { createModelFromSourceV2 } from "../createModel";
   import { refreshSource } from "../refreshSource";
   import { saveAndRefresh } from "../saveAndRefresh";
-  import { useIsSourceUnsaved } from "../selectors";
+  import { useIsSourceUnsaved, useSource } from "../selectors";
   import { useSourceStore } from "../sources-store";
 
   export let sourceName: string;
@@ -60,22 +62,17 @@
   const createSource = createRuntimeServicePutFileAndReconcile();
 
   $: runtimeInstanceId = $runtime.instanceId;
-  $: getSource = createRuntimeServiceGetCatalogEntry(
-    runtimeInstanceId,
-    sourceName
-  );
+  $: sourceQuery = useSource(runtimeInstanceId, sourceName);
   $: file = createRuntimeServiceGetFile(
     runtimeInstanceId,
     getFilePathFromNameAndType(sourceName, EntityType.Table)
   );
 
-  let entry: V1CatalogEntry;
-  let source: V1Source;
-  $: entry = $getSource?.data?.entry;
-  $: source = entry?.source;
+  let source: V1SourceV2;
+  $: source = $sourceQuery.data?.source;
 
   let connector: string;
-  $: connector = $getSource.data?.entry?.source?.connector as string;
+  $: connector = source?.state?.connector;
 
   $: allNamesQuery = useAllNames(runtimeInstanceId);
 
@@ -134,10 +131,8 @@
         $refreshSourceMutation,
         $createSource,
         queryClient,
-        source?.connector === "s3" ||
-          source?.connector === "gcs" ||
-          source?.connector === "https"
-          ? source?.properties?.path
+        connector === "s3" || connector === "gcs" || connector === "https"
+          ? source?.spec.properties?.path
           : sourceName
       );
       // invalidate the "refreshed_on" time
@@ -209,15 +204,13 @@
         Refreshing...
       {:else}
         <div class="flex items-center pr-2 gap-x-2">
-          {#if $getSource.isSuccess && $getSource.data?.entry?.refreshedOn}
+          {#if $sourceQuery && source?.state?.refreshedOn}
             <div
               class="ui-copy-muted"
               style:font-size="11px"
               transition:fade|local={{ duration: 200 }}
             >
-              Imported on {formatRefreshedOn(
-                $getSource.data?.entry?.refreshedOn
-              )}
+              Imported on {formatRefreshedOn(source?.state?.refreshedOn)}
             </div>
           {/if}
         </div>
@@ -226,9 +219,9 @@
     <svelte:fragment slot="cta">
       <PanelCTA side="right">
         <Button
+          disabled={!isSourceUnsaved}
           on:click={() => onRevertChanges()}
           type="secondary"
-          disabled={!isSourceUnsaved}
         >
           <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall(headerWidth)}>
             <UndoIcon size="14px" />
@@ -261,8 +254,8 @@
           </ResponsiveButtonText>
         </Button>
         <Button
-          on:click={handleCreateModelFromSource}
           disabled={isSourceUnsaved || hasReconciliationErrors}
+          on:click={handleCreateModelFromSource}
         >
           <ResponsiveButtonText collapse={isHeaderWidthSmall(headerWidth)}>
             Create model

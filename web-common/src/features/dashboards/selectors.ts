@@ -1,36 +1,19 @@
+import {
+  ResourceKind,
+  useFilteredEntityNames,
+} from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
-  V1MetricsView,
-  V1MetricsViewFilter,
+  createQueryServiceMetricsViewTimeRange,
   createRuntimeServiceGetCatalogEntry,
   createRuntimeServiceListCatalogEntries,
-  createRuntimeServiceListFiles,
-  createQueryServiceMetricsViewTimeRange,
+  V1MetricsView,
+  V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryOptions } from "@tanstack/svelte-query";
 
 export function useDashboardNames(instanceId: string) {
-  return createRuntimeServiceListFiles(
-    instanceId,
-    {
-      glob: "{sources,models,dashboards}/*.{yaml,sql}",
-    },
-    {
-      query: {
-        // refetchInterval: 1000,
-        select: (data) =>
-          data.paths
-            ?.filter((path) => path.includes("dashboards/"))
-            .map((path) =>
-              path.replace("/dashboards/", "").replace(".yaml", "")
-            )
-            // sort alphabetically case-insensitive
-            .sort((a, b) =>
-              a.localeCompare(b, undefined, { sensitivity: "base" })
-            ),
-      },
-    }
-  );
+  return useFilteredEntityNames(instanceId, ResourceKind.MetricsView);
 }
 
 export const useMetaQuery = <T = V1MetricsView>(
