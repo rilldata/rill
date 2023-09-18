@@ -350,48 +350,6 @@ export class ProjectParser extends Message<ProjectParser> {
  * @generated from message rill.runtime.v1.ProjectParserSpec
  */
 export class ProjectParserSpec extends Message<ProjectParserSpec> {
-  /**
-   * compiler identifies the project parser to use
-   *
-   * @generated from field: string compiler = 1;
-   */
-  compiler = "";
-
-  /**
-   * watch makes the project parser watch for and incrementally parse changed files
-   *
-   * @generated from field: bool watch = 2;
-   */
-  watch = false;
-
-  /**
-   * stage_changes sets stage_changes on created sources and models 
-   *
-   * @generated from field: bool stage_changes = 3;
-   */
-  stageChanges = false;
-
-  /**
-   * stream_source_ingestion
-   *
-   * @generated from field: bool source_stream_ingestion = 4;
-   */
-  sourceStreamIngestion = false;
-
-  /**
-   * model_default_materialize sets a default for whether or not to materialize a model, if not explicitly set in the model
-   *
-   * @generated from field: bool model_default_materialize = 5;
-   */
-  modelDefaultMaterialize = false;
-
-  /**
-   * materialize_model_delay_seconds makes the project parser delay materialization of updated models
-   *
-   * @generated from field: uint32 model_materialize_delay_seconds = 6;
-   */
-  modelMaterializeDelaySeconds = 0;
-
   constructor(data?: PartialMessage<ProjectParserSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -400,12 +358,6 @@ export class ProjectParserSpec extends Message<ProjectParserSpec> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.ProjectParserSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "compiler", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "watch", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 3, name: "stage_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 4, name: "source_stream_ingestion", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 5, name: "model_default_materialize", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 6, name: "model_materialize_delay_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectParserSpec {
@@ -439,11 +391,6 @@ export class ProjectParserState extends Message<ProjectParserState> {
    */
   currentCommitSha = "";
 
-  /**
-   * @generated from field: repeated string changed_paths = 3;
-   */
-  changedPaths: string[] = [];
-
   constructor(data?: PartialMessage<ProjectParserState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -454,7 +401,6 @@ export class ProjectParserState extends Message<ProjectParserState> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "parse_errors", kind: "message", T: ParseError, repeated: true },
     { no: 2, name: "current_commit_sha", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "changed_paths", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectParserState {

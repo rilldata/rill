@@ -55,25 +55,11 @@ message ProjectParser {
   ProjectParserState state = 2;
 }
 
-message ProjectParserSpec {
-  // compiler identifies the project parser to use
-  string compiler = 1;
-  // watch makes the project parser watch for and incrementally parse changed files
-  bool watch = 2;
-  // stage_changes sets stage_changes on created sources and models 
-  bool stage_changes = 3;
-  // stream_source_ingestion
-  bool source_stream_ingestion = 4;
-  // model_default_materialize sets a default for whether or not to materialize a model, if not explicitly set in the model
-  bool model_default_materialize = 5;
-  // materialize_model_delay_seconds makes the project parser delay materialization of updated models
-  uint32 model_materialize_delay_seconds = 6;
-}
+message ProjectParserSpec {}
 
 message ProjectParserState {
   repeated ParseError parse_errors = 1;
   string current_commit_sha = 2;
-  repeated string changed_paths = 3;
 }
 
 message SourceV2 {

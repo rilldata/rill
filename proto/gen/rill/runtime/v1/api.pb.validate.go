@@ -301,13 +301,63 @@ func (m *Instance) validate(all bool) error {
 
 	// no validation rules for RepoConnector
 
-	// no validation rules for EmbedCatalog
+	if all {
+		switch v := interface{}(m.GetCreatedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, InstanceValidationError{
+					field:  "CreatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, InstanceValidationError{
+					field:  "CreatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetCreatedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return InstanceValidationError{
+				field:  "CreatedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
-	// no validation rules for Variables
-
-	// no validation rules for ProjectVariables
-
-	// no validation rules for IngestionLimitBytes
+	if all {
+		switch v := interface{}(m.GetUpdatedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, InstanceValidationError{
+					field:  "UpdatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, InstanceValidationError{
+					field:  "UpdatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetUpdatedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return InstanceValidationError{
+				field:  "UpdatedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	for idx, item := range m.GetConnectors() {
 		_, _ = idx, item
@@ -342,6 +392,58 @@ func (m *Instance) validate(all bool) error {
 		}
 
 	}
+
+	for idx, item := range m.GetProjectConnectors() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, InstanceValidationError{
+						field:  fmt.Sprintf("ProjectConnectors[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, InstanceValidationError{
+						field:  fmt.Sprintf("ProjectConnectors[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return InstanceValidationError{
+					field:  fmt.Sprintf("ProjectConnectors[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for Variables
+
+	// no validation rules for ProjectVariables
+
+	// no validation rules for Annotations
+
+	// no validation rules for EmbedCatalog
+
+	// no validation rules for IngestionLimitBytes
+
+	// no validation rules for WatchRepo
+
+	// no validation rules for StageChanges
+
+	// no validation rules for ModelDefaultMaterialize
+
+	// no validation rules for ModelMaterializeDelaySeconds
 
 	if len(errors) > 0 {
 		return InstanceMultiError(errors)
@@ -1058,14 +1160,6 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	// no validation rules for RepoConnector
 
-	// no validation rules for EmbedCatalog
-
-	// no validation rules for Variables
-
-	// no validation rules for IngestionLimitBytes
-
-	// no validation rules for Annotations
-
 	for idx, item := range m.GetConnectors() {
 		_, _ = idx, item
 
@@ -1099,6 +1193,22 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for Variables
+
+	// no validation rules for Annotations
+
+	// no validation rules for EmbedCatalog
+
+	// no validation rules for IngestionLimitBytes
+
+	// no validation rules for WatchRepo
+
+	// no validation rules for StageChanges
+
+	// no validation rules for ModelDefaultMaterialize
+
+	// no validation rules for ModelMaterializeDelaySeconds
 
 	if len(errors) > 0 {
 		return CreateInstanceRequestMultiError(errors)
@@ -1615,6 +1725,22 @@ func (m *EditInstanceRequest) validate(all bool) error {
 
 	if m.IngestionLimitBytes != nil {
 		// no validation rules for IngestionLimitBytes
+	}
+
+	if m.WatchRepo != nil {
+		// no validation rules for WatchRepo
+	}
+
+	if m.StageChanges != nil {
+		// no validation rules for StageChanges
+	}
+
+	if m.ModelDefaultMaterialize != nil {
+		// no validation rules for ModelDefaultMaterialize
+	}
+
+	if m.ModelMaterializeDelaySeconds != nil {
+		// no validation rules for ModelMaterializeDelaySeconds
 	}
 
 	if len(errors) > 0 {

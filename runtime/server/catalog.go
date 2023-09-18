@@ -118,6 +118,8 @@ func (s *Server) Reconcile(ctx context.Context, req *runtimev1.ReconcileRequest)
 		return nil, ErrForbidden
 	}
 
+	// TODO: Add PullTrigger; WaitUntilIdle; return controllerToLegacyStatus
+
 	res, err := s.runtime.Reconcile(ctx, req.InstanceId, req.ChangedPaths, req.ForcedPaths, req.Dry, req.Strict)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -146,6 +148,8 @@ func (s *Server) PutFileAndReconcile(ctx context.Context, req *runtimev1.PutFile
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+
+	// TODO: Sleep 0.5 sec (for watch to pick  up); WaitUntilIdle; return controllerToLegacyStatus
 
 	changedPaths := []string{req.Path}
 	res, err := s.runtime.Reconcile(ctx, req.InstanceId, changedPaths, nil, req.Dry, req.Strict)

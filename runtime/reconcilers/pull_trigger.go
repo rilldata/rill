@@ -62,7 +62,7 @@ func (r *PullTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		return runtime.ReconcileResult{}
 	}
 
-	err = r.C.Reconcile(ctx, GlobalProjectParserName)
+	err = r.C.Reconcile(ctx, runtime.GlobalProjectParserName)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}

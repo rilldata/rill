@@ -1166,18 +1166,6 @@ func (m *ProjectParserSpec) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Compiler
-
-	// no validation rules for Watch
-
-	// no validation rules for StageChanges
-
-	// no validation rules for SourceStreamIngestion
-
-	// no validation rules for ModelDefaultMaterialize
-
-	// no validation rules for ModelMaterializeDelaySeconds
-
 	if len(errors) > 0 {
 		return ProjectParserSpecMultiError(errors)
 	}

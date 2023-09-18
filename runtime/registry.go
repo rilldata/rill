@@ -6,10 +6,26 @@ import (
 	"fmt"
 	"sync"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 )
+
+// Built-in resource kinds
+const (
+	ResourceKindProjectParser  string = "rill.runtime.v1.ProjectParser"
+	ResourceKindSource         string = "rill.runtime.v1.SourceV2"
+	ResourceKindModel          string = "rill.runtime.v1.ModelV2"
+	ResourceKindMetricsView    string = "rill.runtime.v1.MetricsViewV2"
+	ResourceKindMigration      string = "rill.runtime.v1.Migration"
+	ResourceKindPullTrigger    string = "rill.runtime.v1.PullTrigger"
+	ResourceKindRefreshTrigger string = "rill.runtime.v1.RefreshTrigger"
+	ResourceKindBucketPlanner  string = "rill.runtime.v1.BucketPlanner"
+)
+
+// GlobalProjectParserName
+var GlobalProjectParserName = &runtimev1.ResourceName{Kind: ResourceKindProjectParser, Name: "parser"}
 
 // Instances returns all instances managed by the runtime.
 func (r *Runtime) Instances(ctx context.Context) ([]*drivers.Instance, error) {
@@ -141,6 +157,14 @@ func newRegistryCache(ctx context.Context, rt *Runtime, registry drivers.Registr
 		r.add(inst)
 	}
 
+	for _, inst := range r.instances {
+		if inst.controller == nil {
+			continue
+		}
+		inst.controller.WaitUntilReady(ctx)
+		r.ensureProjectParser(ctx, inst.instance.ID)
+	}
+
 	return r, nil
 }
 
@@ -213,6 +237,7 @@ func (r *registryCache) create(ctx context.Context, inst *drivers.Instance) erro
 	}
 
 	r.add(inst)
+	r.ensureProjectParser(ctx, inst.ID)
 
 	return nil
 }
@@ -268,6 +293,34 @@ func (r *registryCache) delete(ctx context.Context, instanceID string) (chan str
 	iwc.cancel()
 
 	return iwc.closed, nil
+}
+
+func (r *registryCache) ensureProjectParser(ctx context.Context, instanceID string) {
+	r.mu.RLock()
+	iwc := r.instances[instanceID]
+	r.mu.RUnlock()
+	if iwc.controller == nil {
+		return
+	}
+	iwc.controller.WaitUntilReady(ctx)
+
+	_, err := iwc.controller.Get(ctx, GlobalProjectParserName, false)
+	if err == nil {
+		return
+	}
+	if !errors.Is(err, drivers.ErrNotFound) {
+		r.logger.Error("could not get project parser", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
+		return
+	}
+
+	err = iwc.controller.Create(ctx, GlobalProjectParserName, nil, nil, nil, &runtimev1.Resource{
+		Resource: &runtimev1.Resource_ProjectParser{
+			ProjectParser: &runtimev1.ProjectParser{Spec: &runtimev1.ProjectParserSpec{}},
+		},
+	})
+	if err != nil {
+		r.logger.Error("could not create project parser", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
+	}
 }
 
 func (r *registryCache) restartController(iwc *instanceWithController) {

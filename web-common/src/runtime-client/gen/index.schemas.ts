@@ -343,10 +343,14 @@ See message Instance for field descriptions.
 export type RuntimeServiceEditInstanceBody = {
   olapConnector?: string;
   repoConnector?: string;
-  embedCatalog?: boolean;
-  ingestionLimitBytes?: string;
   connectors?: V1Connector[];
   annotations?: RuntimeServiceEditInstanceBodyAnnotations;
+  embedCatalog?: boolean;
+  ingestionLimitBytes?: string;
+  watchRepo?: boolean;
+  stageChanges?: boolean;
+  modelDefaultMaterialize?: boolean;
+  modelMaterializeDelaySeconds?: number;
 };
 
 export type RuntimeServiceEditInstanceVariablesBodyVariables = {
@@ -739,6 +743,22 @@ export interface V1RefreshTrigger {
   state?: V1RefreshTriggerState;
 }
 
+/**
+ * ReconcileError represents an error encountered while running Reconcile.
+ */
+export interface V1ReconcileError {
+  code?: V1ReconcileErrorCode;
+  message?: string;
+  filePath?: string;
+  /** Property path of the error in the code artifact (if any).
+It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
+It only applies to structured code artifacts (i.e. YAML).
+Only applicable if file_path is set. */
+  propertyPath?: string[];
+  startLocation?: V1ReconcileErrorCharLocation;
+  endLocation?: V1ReconcileErrorCharLocation;
+}
+
 export interface V1RefreshAndReconcileResponse {
   /** Errors encountered during reconciliation. If strict = false, any path in
 affected_paths without an error can be assumed to have been reconciled succesfully. */
@@ -804,22 +824,6 @@ export const V1ReconcileErrorCode = {
 export interface V1ReconcileErrorCharLocation {
   line?: number;
   column?: number;
-}
-
-/**
- * ReconcileError represents an error encountered while running Reconcile.
- */
-export interface V1ReconcileError {
-  code?: V1ReconcileErrorCode;
-  message?: string;
-  filePath?: string;
-  /** Property path of the error in the code artifact (if any).
-It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
-It only applies to structured code artifacts (i.e. YAML).
-Only applicable if file_path is set. */
-  propertyPath?: string[];
-  startLocation?: V1ReconcileErrorCharLocation;
-  endLocation?: V1ReconcileErrorCharLocation;
 }
 
 export type V1QueryResponseDataItem = { [key: string]: any };
@@ -920,16 +924,10 @@ export interface V1PullTrigger {
 export interface V1ProjectParserState {
   parseErrors?: V1ParseError[];
   currentCommitSha?: string;
-  changedPaths?: string[];
 }
 
 export interface V1ProjectParserSpec {
-  compiler?: string;
-  watch?: boolean;
-  stageChanges?: boolean;
-  sourceStreamIngestion?: boolean;
-  modelDefaultMaterialize?: boolean;
-  modelMaterializeDelaySeconds?: number;
+  [key: string]: any;
 }
 
 export interface V1ProjectParser {
@@ -1069,6 +1067,16 @@ export interface V1MetricsViewTotalsRequest {
 
 export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
 
+export interface V1MetricsViewToplistResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewToplistResponseDataItem[];
+}
+
+export interface V1MetricsViewTimeSeriesResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1TimeSeriesValue[];
+}
+
 export interface V1MetricsViewTimeSeriesRequest {
   instanceId?: string;
   metricsViewName?: string;
@@ -1110,6 +1118,18 @@ export interface V1MetricsViewSort {
   ascending?: boolean;
 }
 
+export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
+
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
+}
+
+export interface V1MetricsViewFilter {
+  include?: MetricsViewFilterCond[];
+  exclude?: MetricsViewFilterCond[];
+}
+
 export interface V1MetricsViewToplistRequest {
   instanceId?: string;
   metricsViewName?: string;
@@ -1123,18 +1143,6 @@ export interface V1MetricsViewToplistRequest {
   sort?: V1MetricsViewSort[];
   filter?: V1MetricsViewFilter;
   priority?: number;
-}
-
-export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
-
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
-}
-
-export interface V1MetricsViewFilter {
-  include?: MetricsViewFilterCond[];
-  exclude?: MetricsViewFilterCond[];
 }
 
 export interface V1MetricsViewRowsRequest {
@@ -1210,16 +1218,6 @@ export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
   nullable?: boolean;
-}
-
-export interface V1MetricsViewToplistResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewToplistResponseDataItem[];
-}
-
-export interface V1MetricsViewTimeSeriesResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1TimeSeriesValue[];
 }
 
 export interface V1MetricsViewAggregationSort {
@@ -1330,6 +1328,8 @@ export interface V1IssueDevJWTResponse {
   jwt?: string;
 }
 
+export type V1InstanceAnnotations = { [key: string]: string };
+
 export type V1InstanceProjectVariables = { [key: string]: string };
 
 export type V1InstanceVariables = { [key: string]: string };
@@ -1345,17 +1345,20 @@ just a single instance.
 export interface V1Instance {
   instanceId?: string;
   olapConnector?: string;
-  /** Connector name for repo driver(typically called : repo). 
-Repo driver is for reading/editing code artifacts. This enables virtualizing a file system in a cloud setting. */
   repoConnector?: string;
-  /** If true, the runtime will store the instance's catalog in its OLAP store instead
-of in the runtime's metadata store. Currently only supported for the duckdb driver. */
-  embedCatalog?: boolean;
+  createdOn?: string;
+  updatedOn?: string;
+  connectors?: V1Connector[];
+  projectConnectors?: V1Connector[];
   variables?: V1InstanceVariables;
   projectVariables?: V1InstanceProjectVariables;
+  annotations?: V1InstanceAnnotations;
+  embedCatalog?: boolean;
   ingestionLimitBytes?: string;
-  /** bare minimum connectors required by the instance. */
-  connectors?: V1Connector[];
+  watchRepo?: boolean;
+  stageChanges?: boolean;
+  modelDefaultMaterialize?: boolean;
+  modelMaterializeDelaySeconds?: number;
 }
 
 export interface V1InlineMeasure {
@@ -1510,11 +1513,15 @@ export interface V1CreateInstanceRequest {
   instanceId?: string;
   olapConnector?: string;
   repoConnector?: string;
-  embedCatalog?: boolean;
-  variables?: V1CreateInstanceRequestVariables;
-  ingestionLimitBytes?: string;
-  annotations?: V1CreateInstanceRequestAnnotations;
   connectors?: V1Connector[];
+  variables?: V1CreateInstanceRequestVariables;
+  annotations?: V1CreateInstanceRequestAnnotations;
+  embedCatalog?: boolean;
+  ingestionLimitBytes?: string;
+  watchRepo?: boolean;
+  stageChanges?: boolean;
+  modelDefaultMaterialize?: boolean;
+  modelMaterializeDelaySeconds?: number;
 }
 
 /**

@@ -454,11 +454,6 @@ paths:
                 type: string
               repoConnector:
                 type: string
-              embedCatalog:
-                type: boolean
-              ingestionLimitBytes:
-                type: string
-                format: int64
               connectors:
                 type: array
                 items:
@@ -468,6 +463,20 @@ paths:
                 type: object
                 additionalProperties:
                   type: string
+              embedCatalog:
+                type: boolean
+              ingestionLimitBytes:
+                type: string
+                format: int64
+              watchRepo:
+                type: boolean
+              stageChanges:
+                type: boolean
+              modelDefaultMaterialize:
+                type: boolean
+              modelMaterializeDelaySeconds:
+                type: integer
+                format: int64
             description: |-
               Request message for RuntimeService.EditInstance.
               See message Instance for field descriptions.
@@ -2935,24 +2944,33 @@ definitions:
         type: string
       repoConnector:
         type: string
-      embedCatalog:
-        type: boolean
-      variables:
-        type: object
-        additionalProperties:
-          type: string
-      ingestionLimitBytes:
-        type: string
-        format: int64
-      annotations:
-        type: object
-        additionalProperties:
-          type: string
       connectors:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1Connector'
+      variables:
+        type: object
+        additionalProperties:
+          type: string
+      annotations:
+        type: object
+        additionalProperties:
+          type: string
+      embedCatalog:
+        type: boolean
+      ingestionLimitBytes:
+        type: string
+        format: int64
+      watchRepo:
+        type: boolean
+      stageChanges:
+        type: boolean
+      modelDefaultMaterialize:
+        type: boolean
+      modelMaterializeDelaySeconds:
+        type: integer
+        format: int64
     description: |-
       Request message for RuntimeService.CreateInstance.
       See message Instance for field descriptions.
@@ -3151,38 +3169,52 @@ definitions:
     properties:
       instanceId:
         type: string
-        title: Identifier (UUID)
       olapConnector:
         type: string
-        title: 'OLAP connector name (typically called : olap )'
       repoConnector:
         type: string
-        description: "Connector name for repo driver(typically called : repo). \nRepo driver is for reading/editing code artifacts. This enables virtualizing a file system in a cloud setting."
-      embedCatalog:
-        type: boolean
-        description: |-
-          If true, the runtime will store the instance's catalog in its OLAP store instead
-          of in the runtime's metadata store. Currently only supported for the duckdb driver.
-      variables:
-        type: object
-        additionalProperties:
-          type: string
-        title: instance specific variables
-      projectVariables:
-        type: object
-        additionalProperties:
-          type: string
-        title: project defaults
-      ingestionLimitBytes:
+      createdOn:
         type: string
-        format: int64
-        title: ingestion limit across all sources, 0 means no limit
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
       connectors:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1Connector'
-        description: bare minimum connectors required by the instance.
+      projectConnectors:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Connector'
+      variables:
+        type: object
+        additionalProperties:
+          type: string
+      projectVariables:
+        type: object
+        additionalProperties:
+          type: string
+      annotations:
+        type: object
+        additionalProperties:
+          type: string
+      embedCatalog:
+        type: boolean
+      ingestionLimitBytes:
+        type: string
+        format: int64
+      watchRepo:
+        type: boolean
+      stageChanges:
+        type: boolean
+      modelDefaultMaterialize:
+        type: boolean
+      modelMaterializeDelaySeconds:
+        type: integer
+        format: int64
     description: |-
       Instance represents a single data project, meaning one set of code artifacts,
       one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
@@ -3956,26 +3988,6 @@ definitions:
         $ref: '#/definitions/v1ProjectParserState'
   v1ProjectParserSpec:
     type: object
-    properties:
-      compiler:
-        type: string
-        title: compiler identifies the project parser to use
-      watch:
-        type: boolean
-        title: watch makes the project parser watch for and incrementally parse changed files
-      stageChanges:
-        type: boolean
-        title: stage_changes sets stage_changes on created sources and models
-      sourceStreamIngestion:
-        type: boolean
-        title: stream_source_ingestion
-      modelDefaultMaterialize:
-        type: boolean
-        title: model_default_materialize sets a default for whether or not to materialize a model, if not explicitly set in the model
-      modelMaterializeDelaySeconds:
-        type: integer
-        format: int64
-        title: materialize_model_delay_seconds makes the project parser delay materialization of updated models
   v1ProjectParserState:
     type: object
     properties:
@@ -3986,10 +3998,6 @@ definitions:
           $ref: '#/definitions/v1ParseError'
       currentCommitSha:
         type: string
-      changedPaths:
-        type: array
-        items:
-          type: string
   v1PullTrigger:
     type: object
     properties:

@@ -136,11 +136,8 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 	// Create instance with its repo set to the project directory
 	inst := &drivers.Instance{
 		ID:            DefaultInstanceID,
-		Annotations:   map[string]string{},
 		OLAPConnector: olapDriver,
 		RepoConnector: "repo",
-		EmbedCatalog:  olapDriver == "duckdb",
-		Variables:     parsedVariables,
 		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",
@@ -153,6 +150,11 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 				Config: olapCfg,
 			},
 		},
+		Variables:                    parsedVariables,
+		Annotations:                  map[string]string{},
+		EmbedCatalog:                 olapDriver == "duckdb",
+		WatchRepo:                    true,
+		ModelMaterializeDelaySeconds: 30,
 	}
 	err = rt.CreateInstance(ctx, inst)
 	if err != nil {

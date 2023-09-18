@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ListInstances implements RuntimeService.
@@ -60,6 +61,7 @@ func (s *Server) GetInstance(ctx context.Context, req *runtimev1.GetInstanceRequ
 
 // CreateInstance implements RuntimeService.
 func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstanceRequest) (*runtimev1.CreateInstanceResponse, error) {
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.olap_connector", req.OlapConnector),
@@ -67,21 +69,23 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		attribute.StringSlice("args.connectors", toString(req.Connectors)),
 	)
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
-
 	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
 		return nil, ErrForbidden
 	}
 
 	inst := &drivers.Instance{
-		ID:                  req.InstanceId,
-		OLAPConnector:       req.OlapConnector,
-		RepoConnector:       req.RepoConnector,
-		EmbedCatalog:        req.EmbedCatalog,
-		Variables:           req.Variables,
-		IngestionLimitBytes: req.IngestionLimitBytes,
-		Annotations:         req.Annotations,
-		Connectors:          req.Connectors,
+		ID:                           req.InstanceId,
+		OLAPConnector:                req.OlapConnector,
+		RepoConnector:                req.RepoConnector,
+		Connectors:                   req.Connectors,
+		Variables:                    req.Variables,
+		Annotations:                  req.Annotations,
+		EmbedCatalog:                 req.EmbedCatalog,
+		IngestionLimitBytes:          req.IngestionLimitBytes,
+		WatchRepo:                    req.WatchRepo,
+		StageChanges:                 req.StageChanges,
+		ModelDefaultMaterialize:      req.ModelDefaultMaterialize,
+		ModelMaterializeDelaySeconds: req.ModelMaterializeDelaySeconds,
 	}
 
 	err := s.runtime.CreateInstance(ctx, inst)
@@ -96,6 +100,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 
 // EditInstance implements RuntimeService.
 func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRequest) (*runtimev1.EditInstanceResponse, error) {
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 	observability.AddRequestAttributes(ctx, attribute.String("args.instance_id", req.InstanceId))
 	if req.OlapConnector != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.olap_connector", *req.OlapConnector))
@@ -107,8 +112,6 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		observability.AddRequestAttributes(ctx, attribute.StringSlice("args.connectors", toString(req.Connectors)))
 	}
 
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
-
 	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
 		return nil, ErrForbidden
 	}
@@ -118,24 +121,31 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		return nil, err
 	}
 
+	connectors := req.Connectors
+	if len(connectors) == 0 { // connectors not changed
+		connectors = oldInst.Connectors
+	}
+
 	annotations := req.Annotations
 	if len(annotations) == 0 { // annotations not changed
 		annotations = oldInst.Annotations
 	}
 
 	inst := &drivers.Instance{
-		ID:                  req.InstanceId,
-		OLAPConnector:       valOrDefault(req.OlapConnector, oldInst.OLAPConnector),
-		RepoConnector:       valOrDefault(req.RepoConnector, oldInst.RepoConnector),
-		EmbedCatalog:        valOrDefault(req.EmbedCatalog, oldInst.EmbedCatalog),
-		Variables:           oldInst.Variables,
-		IngestionLimitBytes: valOrDefault(req.IngestionLimitBytes, oldInst.IngestionLimitBytes),
-		Annotations:         annotations,
-	}
-	if len(req.Connectors) == 0 {
-		inst.Connectors = oldInst.Connectors
-	} else {
-		inst.Connectors = req.Connectors
+		ID:                           req.InstanceId,
+		OLAPConnector:                valOrDefault(req.OlapConnector, oldInst.OLAPConnector),
+		RepoConnector:                valOrDefault(req.RepoConnector, oldInst.RepoConnector),
+		Connectors:                   connectors,
+		ProjectConnectors:            oldInst.ProjectConnectors,
+		Variables:                    oldInst.Variables,
+		ProjectVariables:             oldInst.ProjectVariables,
+		Annotations:                  annotations,
+		EmbedCatalog:                 valOrDefault(req.EmbedCatalog, oldInst.EmbedCatalog),
+		IngestionLimitBytes:          valOrDefault(req.IngestionLimitBytes, oldInst.IngestionLimitBytes),
+		WatchRepo:                    valOrDefault(req.WatchRepo, oldInst.WatchRepo),
+		StageChanges:                 valOrDefault(req.StageChanges, oldInst.StageChanges),
+		ModelDefaultMaterialize:      valOrDefault(req.ModelDefaultMaterialize, oldInst.ModelDefaultMaterialize),
+		ModelMaterializeDelaySeconds: valOrDefault(req.ModelMaterializeDelaySeconds, oldInst.ModelMaterializeDelaySeconds),
 	}
 
 	err = s.runtime.EditInstance(ctx, inst)
@@ -164,14 +174,20 @@ func (s *Server) EditInstanceVariables(ctx context.Context, req *runtimev1.EditI
 	}
 
 	inst := &drivers.Instance{
-		ID:                  req.InstanceId,
-		OLAPConnector:       oldInst.OLAPConnector,
-		RepoConnector:       oldInst.RepoConnector,
-		EmbedCatalog:        oldInst.EmbedCatalog,
-		IngestionLimitBytes: oldInst.IngestionLimitBytes,
-		Variables:           req.Variables,
-		Annotations:         oldInst.Annotations,
-		Connectors:          oldInst.Connectors,
+		ID:                           req.InstanceId,
+		OLAPConnector:                oldInst.OLAPConnector,
+		RepoConnector:                oldInst.RepoConnector,
+		Connectors:                   oldInst.Connectors,
+		ProjectConnectors:            oldInst.ProjectConnectors,
+		Variables:                    req.Variables,
+		ProjectVariables:             oldInst.ProjectVariables,
+		Annotations:                  oldInst.Annotations,
+		EmbedCatalog:                 oldInst.EmbedCatalog,
+		IngestionLimitBytes:          oldInst.IngestionLimitBytes,
+		WatchRepo:                    oldInst.WatchRepo,
+		StageChanges:                 oldInst.StageChanges,
+		ModelDefaultMaterialize:      oldInst.ModelDefaultMaterialize,
+		ModelMaterializeDelaySeconds: oldInst.ModelMaterializeDelaySeconds,
 	}
 
 	err = s.runtime.EditInstance(ctx, inst)
@@ -200,14 +216,20 @@ func (s *Server) EditInstanceAnnotations(ctx context.Context, req *runtimev1.Edi
 	}
 
 	inst := &drivers.Instance{
-		ID:                  req.InstanceId,
-		OLAPConnector:       oldInst.OLAPConnector,
-		RepoConnector:       oldInst.RepoConnector,
-		EmbedCatalog:        oldInst.EmbedCatalog,
-		IngestionLimitBytes: oldInst.IngestionLimitBytes,
-		Variables:           oldInst.Variables,
-		Connectors:          oldInst.Connectors,
-		Annotations:         req.Annotations,
+		ID:                           req.InstanceId,
+		OLAPConnector:                oldInst.OLAPConnector,
+		RepoConnector:                oldInst.RepoConnector,
+		Connectors:                   oldInst.Connectors,
+		ProjectConnectors:            oldInst.ProjectConnectors,
+		Variables:                    oldInst.Variables,
+		ProjectVariables:             oldInst.ProjectVariables,
+		Annotations:                  req.Annotations,
+		EmbedCatalog:                 oldInst.EmbedCatalog,
+		IngestionLimitBytes:          oldInst.IngestionLimitBytes,
+		WatchRepo:                    oldInst.WatchRepo,
+		StageChanges:                 oldInst.StageChanges,
+		ModelDefaultMaterialize:      oldInst.ModelDefaultMaterialize,
+		ModelMaterializeDelaySeconds: oldInst.ModelMaterializeDelaySeconds,
 	}
 
 	err = s.runtime.EditInstance(ctx, inst)
@@ -243,14 +265,22 @@ func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstan
 
 func instanceToPB(inst *drivers.Instance) *runtimev1.Instance {
 	return &runtimev1.Instance{
-		InstanceId:          inst.ID,
-		OlapConnector:       inst.OLAPConnector,
-		RepoConnector:       inst.RepoConnector,
-		EmbedCatalog:        inst.EmbedCatalog,
-		Variables:           inst.Variables,
-		ProjectVariables:    inst.ProjectVariables,
-		IngestionLimitBytes: inst.IngestionLimitBytes,
-		Connectors:          inst.Connectors,
+		InstanceId:                   inst.ID,
+		OlapConnector:                inst.OLAPConnector,
+		RepoConnector:                inst.RepoConnector,
+		CreatedOn:                    timestamppb.New(inst.CreatedOn),
+		UpdatedOn:                    timestamppb.New(inst.UpdatedOn),
+		Connectors:                   inst.Connectors,
+		ProjectConnectors:            inst.ProjectConnectors,
+		Variables:                    inst.Variables,
+		ProjectVariables:             inst.ProjectVariables,
+		Annotations:                  inst.Annotations,
+		EmbedCatalog:                 inst.EmbedCatalog,
+		IngestionLimitBytes:          inst.IngestionLimitBytes,
+		WatchRepo:                    inst.WatchRepo,
+		StageChanges:                 inst.StageChanges,
+		ModelDefaultMaterialize:      inst.ModelDefaultMaterialize,
+		ModelMaterializeDelaySeconds: inst.ModelMaterializeDelaySeconds,
 	}
 }
 

@@ -15,8 +15,6 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-var GlobalProjectParserName = &runtimev1.ResourceName{Kind: runtime.ResourceKindProjectParser, Name: "parser"}
-
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindProjectParser, newProjectParser)
 }
@@ -96,11 +94,6 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 		return runtime.ReconcileResult{}
 	}
 
-	// Check pp.Spec.Compiler
-	if pp.Spec.Compiler != compilerv1.Version {
-		return runtime.ReconcileResult{Err: fmt.Errorf("unsupported compiler %q", pp.Spec.Compiler)}
-	}
-
 	// Get and sync repo
 	repo, release, err := r.C.Runtime.Repo(ctx, r.C.InstanceID)
 	if err != nil {
@@ -147,13 +140,13 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	}
 
 	// Do the actual reconciliation of parsed resources and catalog resources
-	err = r.reconcileParser(ctx, self, parser, nil)
+	err = r.reconcileParser(ctx, inst, self, parser, nil)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
 
 	// Exit if not watching
-	if !pp.Spec.Watch {
+	if !inst.WatchRepo {
 		return runtime.ReconcileResult{}
 	}
 
@@ -175,7 +168,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 		// NOTE: Parse errors are not returned here (they're stored in p.Errors). Errors returned from Reparse are mainly file system errors.
 		diff, err := parser.Reparse(ctx, changedPaths)
 		if err == nil {
-			err = r.reconcileParser(ctx, self, parser, diff)
+			err = r.reconcileParser(ctx, inst, self, parser, diff)
 		}
 		if err != nil {
 			reparseErr = err
@@ -200,7 +193,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 }
 
 // reconcileParser reconciles a parser's output with the current resources in the catalog.
-func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, self *runtimev1.Resource, parser *compilerv1.Parser, diff *compilerv1.Diff) error {
+func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *drivers.Instance, self *runtimev1.Resource, parser *compilerv1.Parser, diff *compilerv1.Diff) error {
 	// Update state from rill.yaml and .env
 	if diff == nil || diff.ModifiedRillYAML || diff.ModifiedDotEnv {
 		err := r.reconcileProjectConfig(ctx, parser)
@@ -232,9 +225,9 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, self *run
 	r.C.Lock(ctx)
 	defer r.C.Unlock(ctx)
 	if diff != nil {
-		return r.reconcileResourcesDiff(ctx, self, parser, diff)
+		return r.reconcileResourcesDiff(ctx, inst, self, parser, diff)
 	}
-	return r.reconcileResources(ctx, self, parser)
+	return r.reconcileResources(ctx, inst, self, parser)
 }
 
 // reconcileProjectConfig updates instance config derived from rill.yaml and .env
@@ -262,7 +255,7 @@ func (r *ProjectParserReconciler) reconcileProjectConfig(ctx context.Context, pa
 }
 
 // reconcileResources creates, updates and deletes resources as necessary to match the parser's output with the current resources in the catalog.
-func (r *ProjectParserReconciler) reconcileResources(ctx context.Context, self *runtimev1.Resource, parser *compilerv1.Parser) error {
+func (r *ProjectParserReconciler) reconcileResources(ctx context.Context, inst *drivers.Instance, self *runtimev1.Resource, parser *compilerv1.Parser) error {
 	// Gather resources to delete so we can check for renames.
 	var deleteResources []*runtimev1.Resource
 
@@ -279,7 +272,7 @@ func (r *ProjectParserReconciler) reconcileResources(ctx context.Context, self *
 		// If the existing resource is in the parser output, update it.
 		if ok {
 			seen[n] = true
-			err = r.putParserResourceDef(ctx, self, def, rr)
+			err = r.putParserResourceDef(ctx, inst, self, def, rr)
 			if err != nil {
 				return err
 			}
@@ -315,7 +308,7 @@ func (r *ProjectParserReconciler) reconcileResources(ctx context.Context, self *
 		}
 
 		// Insert resource
-		err = r.putParserResourceDef(ctx, self, def, nil)
+		err = r.putParserResourceDef(ctx, inst, self, def, nil)
 		if err != nil {
 			return err
 		}
@@ -338,7 +331,7 @@ func (r *ProjectParserReconciler) reconcileResources(ctx context.Context, self *
 }
 
 // reconcileResourcesDiff is similar to reconcileResources, but uses a diff from parser.Reparse instead of doing a full comparison of all resources.
-func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, self *runtimev1.Resource, parser *compilerv1.Parser, diff *compilerv1.Diff) error {
+func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, inst *drivers.Instance, self *runtimev1.Resource, parser *compilerv1.Parser, diff *compilerv1.Diff) error {
 	// Gather resource to delete so we can check for renames.
 	deleteResources := make([]*runtimev1.Resource, 0, len(diff.Deleted))
 	for _, n := range diff.Deleted {
@@ -356,7 +349,7 @@ func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, se
 			return err
 		}
 		def := parser.Resources[n]
-		err = r.putParserResourceDef(ctx, self, def, existing)
+		err = r.putParserResourceDef(ctx, inst, self, def, existing)
 		if err != nil {
 			return err
 		}
@@ -384,7 +377,7 @@ func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, se
 		}
 
 		// Insert resource
-		err := r.putParserResourceDef(ctx, self, def, nil)
+		err := r.putParserResourceDef(ctx, inst, self, def, nil)
 		if err != nil {
 			return err
 		}
@@ -409,28 +402,26 @@ func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, se
 // putParserResourceDef creates or updates a resource in the catalog based on a parser resource definition.
 // It does an insert if existing is nil, otherwise it does an update.
 // If existing is not nil, it compares values and only updates meta/spec values if they have changed (ensuring stable resource version numbers).
-func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, self *runtimev1.Resource, def *compilerv1.Resource, existing *runtimev1.Resource) error {
-	// NOTE: Some resource config is not set in code files, but instead exist on the ProjectParser.
+func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst *drivers.Instance, self *runtimev1.Resource, def *compilerv1.Resource, existing *runtimev1.Resource) error {
+	// NOTE: Some resource config is not set in code files, but instead exist on the Instance.
 	// E.g. stage_changes, stream_source_ingestion, materialize_model_default, etc.
 	// Those fields are applied to the resource specs in this function.
-	pp := self.GetProjectParser()
 
 	// Make resource spec to insert/update.
 	// res should be nil if no spec changes are needed.
 	var res *runtimev1.Resource
 	switch def.Name.Kind {
 	case compilerv1.ResourceKindSource:
-		def.SourceSpec.StageChanges = pp.Spec.StageChanges
-		def.SourceSpec.StreamIngestion = pp.Spec.SourceStreamIngestion
+		def.SourceSpec.StageChanges = inst.StageChanges
 		if existing == nil || !equalSourceSpec(existing.GetSource().Spec, def.SourceSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Source{Source: &runtimev1.SourceV2{Spec: def.SourceSpec}}}
 		}
 	case compilerv1.ResourceKindModel:
-		def.ModelSpec.StageChanges = pp.Spec.StageChanges
+		def.ModelSpec.StageChanges = inst.StageChanges
 		if def.ModelSpec.Materialize == nil {
-			def.ModelSpec.Materialize = &pp.Spec.ModelDefaultMaterialize
+			def.ModelSpec.Materialize = &inst.ModelDefaultMaterialize
 		}
-		def.ModelSpec.MaterializeDelaySeconds = pp.Spec.ModelMaterializeDelaySeconds
+		def.ModelSpec.MaterializeDelaySeconds = inst.ModelMaterializeDelaySeconds
 		if existing == nil || !equalModelSpec(existing.GetModel().Spec, def.ModelSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Model{Model: &runtimev1.ModelV2{Spec: def.ModelSpec}}}
 		}
