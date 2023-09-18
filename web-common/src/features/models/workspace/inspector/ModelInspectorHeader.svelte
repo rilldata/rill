@@ -2,7 +2,11 @@
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { useModel } from "@rilldata/web-common/features/models/selectors";
+  import {
+    useModel,
+    useModels,
+  } from "@rilldata/web-common/features/models/selectors";
+  import { useSources } from "@rilldata/web-common/features/sources/selectors";
   import {
     formatBigNumberPercentage,
     formatInteger,
@@ -10,7 +14,6 @@
   import {
     createQueryServiceTableCardinality,
     createQueryServiceTableColumns,
-    createRuntimeServiceListCatalogEntries,
     V1ModelV2,
     V1TableCardinalityResponse,
   } from "@rilldata/web-common/runtime-client";
@@ -44,47 +47,34 @@
   let cardinalityQueries: Array<CreateQueryResult<number>> = [];
   let sourceProfileColumns: Array<CreateQueryResult<number>> = [];
 
-  $: getAllSources = createRuntimeServiceListCatalogEntries(
-    $runtime?.instanceId,
-    {
-      type: "OBJECT_TYPE_SOURCE",
-    }
-  );
+  $: getAllSources = useSources($runtime?.instanceId);
 
-  $: getAllModels = createRuntimeServiceListCatalogEntries(
-    $runtime?.instanceId,
-    {
-      type: "OBJECT_TYPE_MODEL",
-    }
-  );
+  $: getAllModels = useModels($runtime?.instanceId);
 
   // for each reference, match to an existing model or source,
   $: referencedThings = getMatchingReferencesAndEntries(
     modelName,
     sourceTableReferences,
-    [
-      ...($getAllSources?.data?.entries || []),
-      ...($getAllModels?.data?.entries || []),
-    ]
+    [...($getAllSources?.data || []), ...($getAllModels?.data || [])]
   ); // TODO: update using resource APIs
   $: if (sourceTableReferences?.length) {
     // first, pull out all references that are in the catalog.
 
     // then get the cardinalities.
-    cardinalityQueries = referencedThings?.map(([entity, _reference]) => {
+    cardinalityQueries = referencedThings?.map(([resource]) => {
       return createQueryServiceTableCardinality(
         $runtime?.instanceId,
-        entity.name,
+        resource.meta.name.name,
         {},
         { query: { select: (data) => +data?.cardinality || 0 } }
       );
     });
 
     // then we'll get the total number of columns for comparison.
-    sourceProfileColumns = referencedThings?.map(([entity]) => {
+    sourceProfileColumns = referencedThings?.map(([resource]) => {
       return createQueryServiceTableColumns(
         $runtime?.instanceId,
-        entity.name,
+        resource.meta.name.name,
         {},
         { query: { select: (data) => data?.profileColumns?.length || 0 } }
       );

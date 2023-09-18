@@ -1,19 +1,22 @@
 import {
   ResourceKind,
+  useFilteredEntities,
   useFilteredEntityNames,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   createQueryServiceTableColumns,
-  createRuntimeServiceGetCatalogEntry,
   createRuntimeServiceGetFile,
   getRuntimeServiceListFilesQueryKey,
   runtimeServiceListFiles,
-  StructTypeField,
   V1ListFilesResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/query-core";
 import { TIMESTAMPS } from "../../lib/duckdb-data-types";
+
+export function useModels(instanceId: string) {
+  return useFilteredEntities(instanceId, ResourceKind.Model);
+}
 
 export function useModelNames(instanceId: string) {
   return useFilteredEntityNames(instanceId, ResourceKind.Model);

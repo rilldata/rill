@@ -49,8 +49,8 @@
     rectangularSelection,
   } from "@codemirror/view";
   import { Debounce } from "@rilldata/web-common/features/models/utils/Debounce";
+  import { useAllSourceColumns } from "@rilldata/web-common/features/sources/selectors";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
-  import { createRuntimeServiceListCatalogEntries } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher, onMount } from "svelte";
   import { editorTheme } from "../../../components/editor/theme";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -82,27 +82,18 @@
 
   let autocompleteCompartment = new Compartment();
 
-  $: sourceCatalogsQuery = createRuntimeServiceListCatalogEntries(
-    $runtime.instanceId,
-    {
-      type: "OBJECT_TYPE_SOURCE",
-    }
-  ); // TODO: use get column to set the schema for editor
+  $: allSourceColumns = useAllSourceColumns($runtime?.instanceId);
 
   let schema: { [table: string]: string[] };
 
   /** Track embedded sources separately*/
-  let embeddedSources = [];
-  $: if ($sourceCatalogsQuery?.data?.entries) {
+  let embeddedSources = []; // TODO: remove embedded sources support
+  $: if ($allSourceColumns?.length) {
     schema = {};
-    embeddedSources = [];
-    for (const sourceTable of $sourceCatalogsQuery.data.entries) {
-      const sourceIdentifier = sourceTable?.embedded
-        ? sourceTable?.source?.properties?.path
-        : sourceTable?.name;
-      if (sourceTable?.embedded) embeddedSources.push(sourceIdentifier);
+    for (const sourceTable of $allSourceColumns) {
+      const sourceIdentifier = sourceTable?.tableName;
       schema[sourceIdentifier] =
-        sourceTable.source?.schema?.fields?.map((field) => field.name) ?? [];
+        sourceTable.profileColumns?.map((c) => c.name) ?? [];
     }
   }
 

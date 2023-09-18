@@ -3,6 +3,7 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { Dialog } from "@rilldata/web-common/components/modal/index";
+  import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createForm } from "svelte-forms-lib";
@@ -12,7 +13,6 @@
   import { renameFileArtifact } from "./actions";
   import { getLabel, getRouteFromName } from "./entity-mappers";
   import { isDuplicateName } from "./name-utils";
-  import { useAllNames } from "./selectors";
 
   export let closeModal: () => void;
   export let entityType: EntityType;

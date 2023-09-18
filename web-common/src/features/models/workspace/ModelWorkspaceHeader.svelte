@@ -6,6 +6,7 @@
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { createRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
@@ -22,7 +23,6 @@
     getRouteFromName,
   } from "../../entity-management/entity-mappers";
   import { isDuplicateName } from "../../entity-management/name-utils";
-  import { useAllNames } from "../../entity-management/selectors";
   import ModelWorkspaceCTAs from "./ModelWorkspaceCTAs.svelte";
 
   export let modelName: string;
@@ -91,9 +91,9 @@
 </script>
 
 <WorkspaceHeader
-  let:width
   {...{ titleInput: formatModelName(titleInput), onChangeCallback }}
   appRunning={$appQueryStatusStore}
+  let:width
 >
   <svelte:fragment slot="workspace-controls">
     <IconButton
@@ -116,10 +116,10 @@
     <PanelCTA side="right">
       <ModelWorkspaceCTAs
         availableDashboards={$availableDashboards?.data}
-        suppressTooltips={contextMenuOpen}
-        {modelName}
         {collapse}
         {modelHasError}
+        {modelName}
+        suppressTooltips={contextMenuOpen}
       />
     </PanelCTA>
   </svelte:fragment>

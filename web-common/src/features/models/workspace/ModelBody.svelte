@@ -14,7 +14,6 @@
     getEmbeddedReferences,
     Reference,
   } from "@rilldata/web-common/features/models/utils/get-table-references";
-  import { useEmbeddedSources } from "@rilldata/web-common/features/sources/selectors";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import {
@@ -76,11 +75,9 @@
   let sanitizedQuery: string;
   $: sanitizedQuery = sanitizeQuery(modelSql ?? "");
 
-  $: sourceCatalogsQuery = useEmbeddedSources($runtime?.instanceId);
-  let embeddedSourceCatalogs: Map<string, V1CatalogEntry>;
-  $: embeddedSourceCatalogs = getMapFromArray(
-    $sourceCatalogsQuery?.data ?? [],
-    (entity) => entity.source.properties.path?.toLowerCase()
+  let embeddedSourceCatalogs: Map<string, V1CatalogEntry>; // TODO: cleanup embedded sources
+  $: embeddedSourceCatalogs = getMapFromArray([], (entity) =>
+    entity.source.properties.path?.toLowerCase()
   ) as Map<string, V1CatalogEntry>;
 
   let embeddedSourceErrors: Array<string>;

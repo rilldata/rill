@@ -8,6 +8,7 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
+  import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
@@ -46,7 +47,6 @@
     getFileArtifactReconciliationErrors,
   } from "../../entity-management/file-artifacts-store";
   import { isDuplicateName } from "../../entity-management/name-utils";
-  import { useAllNames } from "../../entity-management/selectors";
   import { createModelFromSourceV2 } from "../createModel";
   import { refreshSource } from "../refreshSource";
   import { saveAndRefresh } from "../saveAndRefresh";

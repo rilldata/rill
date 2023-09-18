@@ -5,10 +5,7 @@
 
   import { useModelNames } from "@rilldata/web-common/features/models/selectors";
   import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
-  import {
-    createRuntimeServiceListCatalogEntries,
-    createRuntimeServicePutFileAndReconcile,
-  } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
@@ -71,8 +68,7 @@
     renameTableName = tableName;
   };
 
-  $: catalogQuery = createRuntimeServiceListCatalogEntries($runtime.instanceId);
-  $: hasNoAssets = $catalogQuery?.data?.entries.length === 0;
+  $: hasNoAssets = $sourceNames.data?.length === 0;
 </script>
 
 <NavigationHeader bind:show={showTables} toggleText="sources"

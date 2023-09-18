@@ -1,6 +1,10 @@
+import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import {
   createRuntimeServiceGetResource,
+  createRuntimeServiceListFiles,
   createRuntimeServiceListResources,
+  V1ListResourcesResponse,
+  V1Resource,
 } from "@rilldata/web-common/runtime-client";
 
 export enum ResourceKind {
@@ -29,7 +33,11 @@ export function useResource(
   );
 }
 
-export function useFilteredEntityNames(instanceId: string, kind: ResourceKind) {
+export function useFilteredEntities<T = Array<V1Resource>>(
+  instanceId: string,
+  kind: ResourceKind,
+  selector?: (data: V1ListResourcesResponse) => T
+) {
   return createRuntimeServiceListResources(
     instanceId,
     {
@@ -37,14 +45,19 @@ export function useFilteredEntityNames(instanceId: string, kind: ResourceKind) {
     },
     {
       query: {
-        select: (data) => data.resources.map((res) => res.meta.name.name),
+        select: selector,
       },
     }
   );
 }
 
-// TODO: replace usage of this with appropriate ones for de-duping names
-export function useAllEntityNames(instanceId: string) {
+export function useFilteredEntityNames(instanceId: string, kind: ResourceKind) {
+  return useFilteredEntities<Array<string>>(instanceId, kind, (data) =>
+    data.resources.map((res) => res.meta.name.name)
+  );
+}
+
+export function useAllNames(instanceId: string) {
   return createRuntimeServiceListResources(
     instanceId,
     {},
