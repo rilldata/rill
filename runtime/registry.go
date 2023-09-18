@@ -48,8 +48,7 @@ func (r *Runtime) WaitUntilIdle(ctx context.Context, instanceID string) error {
 	if err != nil {
 		return err
 	}
-	ctrl.WaitUntilIdle(ctx)
-	return nil
+	return ctrl.WaitUntilIdle(ctx)
 }
 
 // CreateInstance creates a new instance and starts a controller for it.
@@ -161,7 +160,10 @@ func newRegistryCache(ctx context.Context, rt *Runtime, registry drivers.Registr
 		if inst.controller == nil {
 			continue
 		}
-		inst.controller.WaitUntilReady(ctx)
+		err := inst.controller.WaitUntilReady(ctx)
+		if err != nil {
+			return nil, err
+		}
 		r.ensureProjectParser(ctx, inst.instance.ID)
 	}
 
@@ -302,9 +304,12 @@ func (r *registryCache) ensureProjectParser(ctx context.Context, instanceID stri
 	if iwc.controller == nil {
 		return
 	}
-	iwc.controller.WaitUntilReady(ctx)
+	err := iwc.controller.WaitUntilReady(ctx)
+	if err != nil {
+		return
+	}
 
-	_, err := iwc.controller.Get(ctx, GlobalProjectParserName, false)
+	_, err = iwc.controller.Get(ctx, GlobalProjectParserName, false)
 	if err == nil {
 		return
 	}

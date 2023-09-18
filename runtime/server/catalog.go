@@ -3,7 +3,9 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -11,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
+	"golang.org/x/exp/maps"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -108,51 +111,72 @@ func (s *Server) GetCatalogEntry(ctx context.Context, req *runtimev1.GetCatalogE
 
 // Reconcile implements RuntimeService.
 func (s *Server) Reconcile(ctx context.Context, req *runtimev1.ReconcileRequest) (*runtimev1.ReconcileResponse, error) {
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 	)
-
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditInstance) {
 		return nil, ErrForbidden
 	}
 
-	// TODO: Add PullTrigger; WaitUntilIdle; return controllerToLegacyStatus
-
-	res, err := s.runtime.Reconcile(ctx, req.InstanceId, req.ChangedPaths, req.ForcedPaths, req.Dry, req.Strict)
+	ctrl, err := s.runtime.Controller(req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &runtimev1.ReconcileResponse{
-		Errors:        res.Errors,
-		AffectedPaths: res.AffectedPaths,
-	}, nil
+	since := time.Now()
+
+	err = ctrl.Reconcile(ctx, runtime.GlobalProjectParserName)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	err = ctrl.WaitUntilIdle(ctx)
+	if ctx.Err() != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return s.controllerToLegacyReconcileStatus(ctx, ctrl, since)
 }
 
 // PutFileAndReconcile implements RuntimeService.
 func (s *Server) PutFileAndReconcile(ctx context.Context, req *runtimev1.PutFileAndReconcileRequest) (*runtimev1.PutFileAndReconcileResponse, error) {
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 	)
-
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	claims := auth.GetClaims(ctx)
 	if !claims.CanInstance(req.InstanceId, auth.EditRepo) || !claims.CanInstance(req.InstanceId, auth.EditInstance) {
 		return nil, ErrForbidden
 	}
 
-	err := s.runtime.PutFile(ctx, req.InstanceId, req.Path, strings.NewReader(req.Blob), req.Create, req.CreateOnly)
+	ctrl, err := s.runtime.Controller(req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// TODO: Sleep 0.5 sec (for watch to pick  up); WaitUntilIdle; return controllerToLegacyStatus
+	since := time.Now()
 
-	changedPaths := []string{req.Path}
-	res, err := s.runtime.Reconcile(ctx, req.InstanceId, changedPaths, nil, req.Dry, req.Strict)
+	err = s.runtime.PutFile(ctx, req.InstanceId, req.Path, strings.NewReader(req.Blob), req.Create, req.CreateOnly)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	select {
+	case <-ctx.Done():
+		return nil, status.Error(codes.InvalidArgument, ctx.Err().Error())
+	case <-time.After(500 * time.Millisecond):
+		// Give the watcher 0.5s to pick up the updated file
+	}
+
+	err = ctrl.WaitUntilIdle(ctx)
+	if ctx.Err() != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	res, err := s.controllerToLegacyReconcileStatus(ctx, ctrl, since)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -165,24 +189,41 @@ func (s *Server) PutFileAndReconcile(ctx context.Context, req *runtimev1.PutFile
 
 // RenameFileAndReconcile implements RuntimeService.
 func (s *Server) RenameFileAndReconcile(ctx context.Context, req *runtimev1.RenameFileAndReconcileRequest) (*runtimev1.RenameFileAndReconcileResponse, error) {
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 	)
-
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	claims := auth.GetClaims(ctx)
 	if !claims.CanInstance(req.InstanceId, auth.EditRepo) || !claims.CanInstance(req.InstanceId, auth.EditInstance) {
 		return nil, ErrForbidden
 	}
 
-	err := s.runtime.RenameFile(ctx, req.InstanceId, req.FromPath, req.ToPath)
+	ctrl, err := s.runtime.Controller(req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	changedPaths := []string{req.FromPath, req.ToPath}
-	res, err := s.runtime.Reconcile(ctx, req.InstanceId, changedPaths, nil, req.Dry, req.Strict)
+	since := time.Now()
+
+	err = s.runtime.RenameFile(ctx, req.InstanceId, req.FromPath, req.ToPath)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	select {
+	case <-ctx.Done():
+		return nil, status.Error(codes.InvalidArgument, ctx.Err().Error())
+	case <-time.After(500 * time.Millisecond):
+		// Give the watcher 0.5s to pick up the updated file
+	}
+
+	err = ctrl.WaitUntilIdle(ctx)
+	if ctx.Err() != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	res, err := s.controllerToLegacyReconcileStatus(ctx, ctrl, since)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -195,24 +236,34 @@ func (s *Server) RenameFileAndReconcile(ctx context.Context, req *runtimev1.Rena
 
 // DeleteFileAndReconcile implements RuntimeService.
 func (s *Server) DeleteFileAndReconcile(ctx context.Context, req *runtimev1.DeleteFileAndReconcileRequest) (*runtimev1.DeleteFileAndReconcileResponse, error) {
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 	)
-
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	claims := auth.GetClaims(ctx)
 	if !claims.CanInstance(req.InstanceId, auth.EditRepo) || !claims.CanInstance(req.InstanceId, auth.EditInstance) {
 		return nil, ErrForbidden
 	}
 
-	err := s.runtime.DeleteFile(ctx, req.InstanceId, req.Path)
+	ctrl, err := s.runtime.Controller(req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	changedPaths := []string{req.Path}
-	res, err := s.runtime.Reconcile(ctx, req.InstanceId, changedPaths, nil, req.Dry, req.Strict)
+	since := time.Now()
+
+	err = s.runtime.DeleteFile(ctx, req.InstanceId, req.Path)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	err = ctrl.WaitUntilIdle(ctx)
+	if ctx.Err() != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	res, err := s.controllerToLegacyReconcileStatus(ctx, ctrl, since)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -225,18 +276,60 @@ func (s *Server) DeleteFileAndReconcile(ctx context.Context, req *runtimev1.Dele
 
 // RefreshAndReconcile implements RuntimeService.
 func (s *Server) RefreshAndReconcile(ctx context.Context, req *runtimev1.RefreshAndReconcileRequest) (*runtimev1.RefreshAndReconcileResponse, error) {
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 	)
-
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditInstance) {
 		return nil, ErrForbidden
 	}
 
-	changedPaths := []string{req.Path}
-	res, err := s.runtime.Reconcile(ctx, req.InstanceId, changedPaths, changedPaths, req.Dry, req.Strict)
+	ctrl, err := s.runtime.Controller(req.InstanceId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	rs, err := ctrl.List(ctx, runtime.ResourceKindSource, false)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	var names []*runtimev1.ResourceName
+	for _, r := range rs {
+		for _, p := range r.Meta.FilePaths {
+			if p == req.Path {
+				names = append(names, r.Meta.Name)
+				break
+			}
+		}
+	}
+
+	since := time.Now()
+
+	trgName := &runtimev1.ResourceName{
+		Kind: runtime.ResourceKindRefreshTrigger,
+		Name: fmt.Sprintf("trigger_adhoc_%s", time.Now().Format("200601021504059999")),
+	}
+
+	err = ctrl.Create(ctx, trgName, nil, nil, nil, &runtimev1.Resource{
+		Resource: &runtimev1.Resource_RefreshTrigger{
+			RefreshTrigger: &runtimev1.RefreshTrigger{
+				Spec: &runtimev1.RefreshTriggerSpec{
+					OnlyNames: names,
+				},
+			},
+		},
+	})
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	err = ctrl.WaitUntilIdle(ctx)
+	if ctx.Err() != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	res, err := s.controllerToLegacyReconcileStatus(ctx, ctrl, since)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -249,19 +342,41 @@ func (s *Server) RefreshAndReconcile(ctx context.Context, req *runtimev1.Refresh
 
 // TriggerRefresh implements RuntimeService.
 func (s *Server) TriggerRefresh(ctx context.Context, req *runtimev1.TriggerRefreshRequest) (*runtimev1.TriggerRefreshResponse, error) {
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 	)
-
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditInstance) {
 		return nil, ErrForbidden
 	}
 
-	err := s.runtime.RefreshSource(ctx, req.InstanceId, req.Name)
+	ctrl, err := s.runtime.Controller(req.InstanceId)
 	if err != nil {
-		return nil, status.Error(codes.FailedPrecondition, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	trgName := &runtimev1.ResourceName{
+		Kind: runtime.ResourceKindRefreshTrigger,
+		Name: fmt.Sprintf("trigger_adhoc_%s", time.Now().Format("200601021504059999")),
+	}
+
+	err = ctrl.Create(ctx, trgName, nil, nil, nil, &runtimev1.Resource{
+		Resource: &runtimev1.Resource_RefreshTrigger{
+			RefreshTrigger: &runtimev1.RefreshTrigger{
+				Spec: &runtimev1.RefreshTriggerSpec{
+					OnlyNames: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindSource, Name: req.Name}},
+				},
+			},
+		},
+	})
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	err = ctrl.WaitUntilIdle(ctx)
+	if ctx.Err() != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return &runtimev1.TriggerRefreshResponse{}, nil
@@ -402,4 +517,53 @@ func (s *Server) resourceToEntry(ctx context.Context, instanceID string, r *runt
 	}
 
 	return res, nil
+}
+
+func (s *Server) controllerToLegacyReconcileStatus(ctx context.Context, ctrl *runtime.Controller, since time.Time) (*runtimev1.ReconcileResponse, error) {
+	rs, err := ctrl.List(ctx, "", false)
+	if err != nil {
+		return nil, err
+	}
+
+	affectedPaths := make(map[string]bool)
+	var errs []*runtimev1.ReconcileError
+
+	for _, r := range rs {
+		if r.Meta.Name.Kind == runtime.ResourceKindProjectParser {
+			pp := r.GetProjectParser()
+			for _, perr := range pp.State.ParseErrors {
+				errs = append(errs, &runtimev1.ReconcileError{
+					Code:     runtimev1.ReconcileError_CODE_SYNTAX,
+					Message:  perr.Message,
+					FilePath: perr.FilePath,
+				})
+			}
+			continue
+		}
+
+		switch r.Meta.Name.Kind {
+		case runtime.ResourceKindSource, runtime.ResourceKindModel, runtime.ResourceKindMetricsView:
+		default:
+			continue
+		}
+
+		if r.Meta.SpecUpdatedOn.AsTime().Before(since) && r.Meta.StateUpdatedOn.AsTime().Before(since) {
+			continue
+		}
+
+		if r.Meta.ReconcileError != "" {
+			for _, p := range r.Meta.FilePaths {
+				affectedPaths[p] = true
+			}
+			errs = append(errs, &runtimev1.ReconcileError{
+				Code:    runtimev1.ReconcileError_CODE_UNSPECIFIED,
+				Message: r.Meta.ReconcileError,
+			})
+		}
+	}
+
+	return &runtimev1.ReconcileResponse{
+		AffectedPaths: maps.Keys(affectedPaths),
+		Errors:        errs,
+	}, nil
 }

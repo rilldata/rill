@@ -293,15 +293,16 @@ func (c *Controller) Run(ctx context.Context) error {
 }
 
 // WaitUntilReady returns when the controller is ready to process catalog operations
-func (c *Controller) WaitUntilReady(ctx context.Context) {
+func (c *Controller) WaitUntilReady(ctx context.Context) error {
 	select {
 	case <-c.ready:
 	case <-ctx.Done():
 	}
+	return ctx.Err()
 }
 
 // WaitUntilIdle returns when the controller is idle (i.e. no reconcilers are pending or running).
-func (c *Controller) WaitUntilIdle(ctx context.Context) {
+func (c *Controller) WaitUntilIdle(ctx context.Context) error {
 	c.mu.RLock()
 	idleCh := c.idleCh
 	c.mu.RUnlock()
@@ -310,6 +311,7 @@ func (c *Controller) WaitUntilIdle(ctx context.Context) {
 	case <-idleCh:
 	case <-ctx.Done():
 	}
+	return ctx.Err()
 }
 
 // Get returns a resource by name.
