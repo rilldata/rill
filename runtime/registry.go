@@ -24,8 +24,8 @@ const (
 	ResourceKindBucketPlanner  string = "rill.runtime.v1.BucketPlanner"
 )
 
-// GlobalProjectParserName
-var GlobalProjectParserName = &runtimev1.ResourceName{Kind: ResourceKindProjectParser, Name: "parser"}
+// GlobalProjectParserName is the name of the instance-global project parser resource that is created for each new instance.
+var GlobalProjectParserName = &runtimev1.ResourceName{Kind: ResourceKindProjectParser, Name: "project_parser"}
 
 // Instances returns all instances managed by the runtime.
 func (r *Runtime) Instances(ctx context.Context) ([]*drivers.Instance, error) {

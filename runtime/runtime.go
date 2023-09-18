@@ -43,6 +43,8 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, client activity
 		securityEngine: newSecurityEngine(opts.SecurityEngineCacheSize, logger),
 	}
 
+	rt.connCache = newConnectionCache(opts.ConnectionCacheSize, logger, rt, client)
+
 	store, _, err := rt.AcquireSystemHandle(ctx, opts.MetastoreConnector)
 	if err != nil {
 		return nil, err
@@ -53,8 +55,6 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, client activity
 	if !ok {
 		return nil, fmt.Errorf("metastore must be a valid registry")
 	}
-
-	rt.connCache = newConnectionCache(opts.ConnectionCacheSize, logger, rt, client)
 
 	rt.registryCache, err = newRegistryCache(ctx, rt, reg, logger)
 	if err != nil {
