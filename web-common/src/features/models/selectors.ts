@@ -1,7 +1,7 @@
 import {
   ResourceKind,
-  useFilteredEntities,
-  useFilteredEntityNames,
+  useFilteredResources,
+  useFilteredResourceNames,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
@@ -15,11 +15,11 @@ import type { QueryClient } from "@tanstack/query-core";
 import { TIMESTAMPS } from "../../lib/duckdb-data-types";
 
 export function useModels(instanceId: string) {
-  return useFilteredEntities(instanceId, ResourceKind.Model);
+  return useFilteredResources(instanceId, ResourceKind.Model);
 }
 
 export function useModelNames(instanceId: string) {
-  return useFilteredEntityNames(instanceId, ResourceKind.Model);
+  return useFilteredResourceNames(instanceId, ResourceKind.Model);
 }
 
 export function useModel(instanceId: string, name: string) {

@@ -1,7 +1,7 @@
 import {
   ResourceKind,
-  useFilteredEntities,
-  useFilteredEntityNames,
+  useFilteredResources,
+  useFilteredResourceNames,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
@@ -22,11 +22,11 @@ export type SourceFromYaml = {
 };
 
 export function useSources(instanceId: string) {
-  return useFilteredEntities(instanceId, ResourceKind.Source);
+  return useFilteredResources(instanceId, ResourceKind.Source);
 }
 
 export function useSourceNames(instanceId: string) {
-  return useFilteredEntityNames(instanceId, ResourceKind.Source);
+  return useFilteredResourceNames(instanceId, ResourceKind.Source);
 }
 
 export function useSource(instanceId: string, name: string) {

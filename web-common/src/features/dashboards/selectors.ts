@@ -1,6 +1,6 @@
 import {
   ResourceKind,
-  useFilteredEntityNames,
+  useFilteredResourceNames,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
@@ -13,7 +13,7 @@ import {
 import type { CreateQueryOptions } from "@tanstack/svelte-query";
 
 export function useDashboardNames(instanceId: string) {
-  return useFilteredEntityNames(instanceId, ResourceKind.MetricsView);
+  return useFilteredResourceNames(instanceId, ResourceKind.MetricsView);
 }
 
 export const useMetaQuery = <T = V1MetricsView>(

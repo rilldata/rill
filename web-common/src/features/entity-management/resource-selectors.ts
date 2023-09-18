@@ -1,7 +1,5 @@
-import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import {
   createRuntimeServiceGetResource,
-  createRuntimeServiceListFiles,
   createRuntimeServiceListResources,
   V1ListResourcesResponse,
   V1Resource,
@@ -33,7 +31,7 @@ export function useResource(
   );
 }
 
-export function useFilteredEntities<T = Array<V1Resource>>(
+export function useFilteredResources<T = Array<V1Resource>>(
   instanceId: string,
   kind: ResourceKind,
   selector?: (data: V1ListResourcesResponse) => T
@@ -51,8 +49,11 @@ export function useFilteredEntities<T = Array<V1Resource>>(
   );
 }
 
-export function useFilteredEntityNames(instanceId: string, kind: ResourceKind) {
-  return useFilteredEntities<Array<string>>(instanceId, kind, (data) =>
+export function useFilteredResourceNames(
+  instanceId: string,
+  kind: ResourceKind
+) {
+  return useFilteredResources<Array<string>>(instanceId, kind, (data) =>
     data.resources.map((res) => res.meta.name.name)
   );
 }
