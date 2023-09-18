@@ -11,6 +11,7 @@ import (
 	"github.com/c2h5oh/datasize"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
@@ -484,7 +485,7 @@ func NewTestRunTime(t *testing.T) *Runtime {
 		AllowHostAccess:         true,
 		SystemConnectors:        globalConnectors,
 	}
-	rt, err := New(context.Background(), opts, zap.NewNop(), nil)
+	rt, err := New(context.Background(), opts, zap.NewNop(), activity.NewNoopClient())
 	t.Cleanup(func() {
 		rt.Close()
 	})

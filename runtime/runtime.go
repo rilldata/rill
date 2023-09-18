@@ -26,6 +26,7 @@ type Options struct {
 type Runtime struct {
 	opts           *Options
 	logger         *zap.Logger
+	activity       activity.Client
 	metastore      drivers.Handle
 	registryCache  *registryCache
 	connCache      *connectionCache
@@ -37,6 +38,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, client activity
 	rt := &Runtime{
 		opts:           opts,
 		logger:         logger,
+		activity:       client,
 		queryCache:     newQueryCache(opts.QueryCacheSizeBytes),
 		securityEngine: newSecurityEngine(opts.SecurityEngineCacheSize, logger),
 	}

@@ -10,6 +10,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/dag2"
 	"github.com/rilldata/rill/runtime/pkg/schedule"
 	"go.uber.org/zap"
@@ -61,6 +62,7 @@ type Controller struct {
 	Runtime     *Runtime
 	InstanceID  string
 	Logger      *slog.Logger
+	Activity    activity.Client
 	mu          sync.RWMutex
 	running     atomic.Bool   // Indicates if the controller is running
 	ready       chan struct{} // Closed when the controller transitions to running
