@@ -1,14 +1,14 @@
 import {
   ResourceKind,
   useFilteredResourceNames,
+  useFilteredResources,
+  useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   createQueryServiceMetricsViewTimeRange,
-  createRuntimeServiceGetCatalogEntry,
-  createRuntimeServiceListCatalogEntries,
-  V1MetricsView,
   V1MetricsViewFilter,
+  V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryOptions } from "@tanstack/svelte-query";
 
@@ -16,21 +16,31 @@ export function useDashboardNames(instanceId: string) {
   return useFilteredResourceNames(instanceId, ResourceKind.MetricsView);
 }
 
-export const useMetaQuery = <T = V1MetricsView>(
+export function useDashboard(instanceId: string, metricViewName: string) {
+  return useResource(instanceId, metricViewName, ResourceKind.MetricsView);
+}
+
+/**
+ * Gets the valid metrics view spec. Only to be used in displaying a dashboard.
+ * Use {@link useDashboard} in the metrics view editor and other use cases.
+ */
+export const useMetaQuery = <T = V1MetricsViewSpec>(
   instanceId: string,
   metricViewName: string,
-  selector?: (meta: V1MetricsView) => T
+  selector?: (meta: V1MetricsViewSpec) => T
 ) => {
-  return createRuntimeServiceGetCatalogEntry(instanceId, metricViewName, {
-    query: {
-      select: (data) =>
-        selector
-          ? selector(data?.entry?.metricsView)
-          : data?.entry?.metricsView,
-    },
-  });
+  return useResource(
+    instanceId,
+    metricViewName,
+    ResourceKind.MetricsView,
+    (data) =>
+      selector
+        ? selector(data.metricsView?.state?.validSpec)
+        : data.metricsView?.state?.validSpec
+  );
 };
 
+// TODO: cleanup usage of useModelHasTimeSeries and useModelAllTimeRange
 export const useModelHasTimeSeries = (
   instanceId: string,
   metricViewName: string
@@ -119,17 +129,7 @@ export const useGetDashboardsForModel = (
   instanceId: string,
   modelName: string
 ) => {
-  return createRuntimeServiceListCatalogEntries(
-    instanceId,
-    { type: "OBJECT_TYPE_METRICS_VIEW" },
-    {
-      query: {
-        select(data) {
-          return data?.entries?.filter(
-            (entry) => entry?.metricsView?.model === modelName
-          );
-        },
-      },
-    }
+  return useFilteredResources(instanceId, ResourceKind.MetricsView, (data) =>
+    data.resources.filter((res) => res.metricsView?.spec?.table === modelName)
   );
 };

@@ -1,19 +1,12 @@
 <script lang="ts">
   import type { EditorView } from "@codemirror/view";
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
-  import {
-    createRuntimeServiceGetCatalogEntry,
-    createRuntimeServiceGetFile,
-  } from "@rilldata/web-common/runtime-client";
+  import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
+  import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import MetricsEditorContainer from "./MetricsEditorContainer.svelte";
-
   import { setLineStatuses } from "@rilldata/web-common/components/editor/line-status";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import {
-    fileArtifactsStore,
-    getFileArtifactReconciliationErrors,
-  } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { mapReconciliationErrorsToLines } from "../../errors";
@@ -51,36 +44,38 @@
     getFilePathFromNameAndType(metricsDefName, EntityType.MetricsDefinition)
   );
 
-  $: catalogQuery = createRuntimeServiceGetCatalogEntry(
-    $runtime.instanceId,
-    metricsDefName
-  );
+  $: dashboard = useDashboard($runtime.instanceId, metricsDefName);
 
   $: yaml = $fileQuery.data?.blob || "";
-  $: runtimeErrors = getFileArtifactReconciliationErrors(
-    $fileArtifactsStore,
-    `${metricsDefName}.yaml`
-  );
 
   $: lineBasedRuntimeErrors = mapReconciliationErrorsToLines(
-    runtimeErrors,
+    $dashboard.data?.meta?.reconcileError,
     yaml
   );
   /** display the main error (the first in this array) at the bottom */
-  $: mainError = [...lineBasedRuntimeErrors, ...(runtimeErrors || [])]?.at(0);
+  $: mainError = [
+    ...lineBasedRuntimeErrors,
+    ...($dashboard.data?.meta?.reconcileError
+      ? [$dashboard.data?.meta?.reconcileError as any] // TODO: revisit error
+      : []),
+  ]?.at(0);
 
   let view: EditorView;
   /** If the errors change, run the following transaction. */
-  $: if (view && !$catalogQuery?.isFetching && $catalogQuery?.isError)
+  $: if (
+    view &&
+    !$dashboard.isFetching &&
+    ($dashboard.isError || $dashboard.data?.meta?.reconcileError)
+  )
     setLineStatuses(lineBasedRuntimeErrors, view);
 </script>
 
 <MetricsEditorContainer error={yaml?.length ? mainError : undefined}>
   <YAMLEditor
     bind:this={editor}
-    content={yaml}
     bind:view
-    on:update={updateMetrics}
+    content={yaml}
     extensions={[placeholderElements.extension]}
+    on:update={updateMetrics}
   />
 </MetricsEditorContainer>

@@ -13,15 +13,11 @@
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import {
-    createRuntimeServiceGetCatalogEntry,
     createRuntimeServiceGetFile,
     createRuntimeServicePutFileAndReconcile,
     createRuntimeServiceRefreshAndReconcile,
     createRuntimeServiceRenameFileAndReconcile,
     getRuntimeServiceGetCatalogEntryQueryKey,
-    V1CatalogEntry,
-    V1Resource,
-    V1Source,
     V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
   import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";

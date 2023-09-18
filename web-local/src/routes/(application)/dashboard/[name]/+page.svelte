@@ -40,6 +40,7 @@
     }
   );
 
+  // TODO: use resource API
   $: catalogQuery = createRuntimeServiceGetCatalogEntry(
     $runtime.instanceId,
     metricViewName,

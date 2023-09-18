@@ -61,6 +61,7 @@ export function runtimeErrorToLine(message: string, yaml: string): LineStatus {
   return { line: null, message, level: "error" };
 }
 
+// TODO: double check error
 export function mapReconciliationErrorsToLines(
   errors,
   yaml: string

@@ -12,10 +12,11 @@ export enum ResourceKind {
   // TODO: do a correct map based on backend code
 }
 
-export function useResource(
+export function useResource<T = V1Resource>(
   instanceId: string,
   name: string,
-  kind: ResourceKind
+  kind: ResourceKind,
+  selector?: (data: V1Resource) => T
 ) {
   return createRuntimeServiceGetResource(
     instanceId,
@@ -25,7 +26,8 @@ export function useResource(
     },
     {
       query: {
-        select: (data) => data?.resource,
+        select: (data) =>
+          selector ? selector(data?.resource) : data?.resource,
       },
     }
   );
@@ -34,7 +36,7 @@ export function useResource(
 export function useFilteredResources<T = Array<V1Resource>>(
   instanceId: string,
   kind: ResourceKind,
-  selector?: (data: V1ListResourcesResponse) => T
+  selector: (data: V1ListResourcesResponse) => T = (data) => data.resources as T
 ) {
   return createRuntimeServiceListResources(
     instanceId,
