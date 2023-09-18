@@ -2,7 +2,10 @@ package azure
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/url"
+	"os"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
@@ -38,9 +41,9 @@ var spec = drivers.Spec{
 			Hint:        "Glob patterns are supported",
 		},
 		{
-			Key:         "azure.storage.account",
-			DisplayName: "Azure Storage Account",
-			Description: "Azure Storage Account inferred from your local environment.",
+			Key:         "azure.credentials",
+			DisplayName: "Azure credentials",
+			Description: "Azure credentials inferred from your local environment.",
 			Type:        drivers.InformationalPropertyType,
 			Hint:        "Set your local credentials: <code>az login</code> Click to learn more.",
 			Href:        "https://docs.rilldata.com/develop/import-data#configure-credentials-for-azure",
@@ -65,13 +68,11 @@ var spec = drivers.Spec{
 type driver struct{}
 
 type configProperties struct {
-	Account         string `mapstructure:"azure_storage_account"`
-	Key             string `mapstructure:"azure_storage_key"`
-	SASToken        string `mapstructure:"azure_storage_sas_token"`
-	StorageDomain   string `mapstructure:"azure_storage_domain,default:blob.core.windows.net"`
-	IsCDN           bool   `mapstructure:"azure_storage_is_cdn,default:false"`
-	IsLocalEmulator bool   `mapstructure:"azure_storage_is_local_emulator,default:false"`
-	AllowHostAccess bool   `mapstructure:"allow_host_access"`
+	Account          string `mapstructure:"azure_storage_account"`
+	Key              string `mapstructure:"azure_storage_key"`
+	SASToken         string `mapstructure:"azure_storage_sas_token"`
+	ConnectionString string `mapstructure:"azure_storage_connection_string"`
+	AllowHostAccess  bool   `mapstructure:"allow_host_access"`
 }
 
 func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -252,63 +253,89 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 	if !doublestar.ValidatePattern(conf.Path) {
 		return nil, fmt.Errorf("glob pattern %s is invalid", conf.Path)
 	}
-	url, err := globutil.ParseBucketURL(conf.Path)
+	bucketURL, err := globutil.ParseBucketURL(conf.Path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse path %q, %w", conf.Path, err)
 	}
-	if url.Scheme != "azblob" {
-		return nil, fmt.Errorf("invalid scheme %q in path %q", url.Scheme, conf.Path)
+	if bucketURL.Scheme != "azblob" {
+		return nil, fmt.Errorf("invalid scheme %q in path %q", bucketURL.Scheme, conf.Path)
 	}
 
-	conf.url = url
+	conf.url = bucketURL
 	return conf, nil
 }
 
 // getClient returns a new azure blob client.
 func (c *Connection) getClient(ctx context.Context, conf *sourceProperties) (*container.Client, error) {
-	var opts *azureblob.ServiceURLOptions
-	if c.config.AllowHostAccess {
-		opts = azureblob.NewDefaultServiceURLOptions()
-	} else {
-		opts = &azureblob.ServiceURLOptions{
-			AccountName:     c.config.Account,
-			StorageDomain:   c.config.StorageDomain,
-			IsCDN:           c.config.IsCDN,
-			IsLocalEmulator: c.config.IsLocalEmulator,
-			SASToken:        c.config.Key,
-		}
+	var client *container.Client
+	var accountName, accountKey, sasToken, connectionString string
+	azClientOpts := &container.ClientOptions{}
 
-		if c.config.Key != "" {
-			opts.SASToken = c.config.Key
-		} else {
-			opts.SASToken = c.config.SASToken
-		}
+	if c.config.AllowHostAccess {
+		accountName = os.Getenv("AZURE_STORAGE_ACCOUNT")
+		accountKey = os.Getenv("AZURE_STORAGE_KEY")
+		sasToken = os.Getenv("AZURE_STORAGE_SAS_TOKEN")
+		connectionString = os.Getenv("AZURE_STORAGE_CONNECTION_STRING")
+	} else {
+		accountName = c.config.Account
+		accountKey = c.config.Key
+		sasToken = c.config.SASToken
+		// Added it as per azure blob client implementation, can remove if not required
+		connectionString = c.config.ConnectionString
 	}
 
-	var client *container.Client
-	if opts.SASToken != "" {
-		serviceURL, err := azureblob.NewServiceURL(opts)
+	if accountName != "" {
+		svcURL := fmt.Sprintf("https://%s.blob.core.windows.net", accountName)
+		containerURL, err := url.JoinPath(svcURL, conf.url.Host)
 		if err != nil {
 			return nil, err
 		}
+		if accountKey != "" {
+			sharedKeyCred, err := azblob.NewSharedKeyCredential(accountName, accountKey)
+			if err != nil {
+				return nil, fmt.Errorf("failed azblob.NewSharedKeyCredential: %w", err)
+			}
 
-		client, err = azureblob.NewDefaultClient(serviceURL, azureblob.ContainerName(conf.url.Host))
+			client, err = container.NewClientWithSharedKeyCredential(containerURL, sharedKeyCred, azClientOpts)
+			if err != nil {
+				return nil, fmt.Errorf("failed container.NewClientWithSharedKeyCredential: %w", err)
+			}
+		} else if sasToken != "" {
+			serviceURL, err := azureblob.NewServiceURL(&azureblob.ServiceURLOptions{
+				AccountName: accountName,
+				SASToken:    sasToken,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			containerURL, err := url.JoinPath(string(serviceURL), conf.url.Host)
+			if err != nil {
+				return nil, err
+			}
+
+			client, err = container.NewClientWithNoCredential(containerURL, azClientOpts)
+			if err != nil {
+				return nil, fmt.Errorf("failed container.NewClientWithNoCredential: %w", err)
+			}
+		} else {
+			cred, err := azidentity.NewDefaultAzureCredential(nil)
+			if err != nil {
+				return nil, fmt.Errorf("failed azidentity.NewDefaultAzureCredential: %w", err)
+			}
+			client, err = container.NewClient(containerURL, cred, azClientOpts)
+			if err != nil {
+				return nil, fmt.Errorf("failed container.NewClient: %w", err)
+			}
+		}
+	} else if connectionString != "" {
+		var err error
+		client, err = container.NewClientFromConnectionString(connectionString, conf.url.Host, azClientOpts)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed container.NewClientFromConnectionString: %w", err)
 		}
 	} else {
-		// Create container url of the Azure Storage account.
-		url := fmt.Sprintf("https://%s.blob.core.windows.net", opts.AccountName)
-		credential, err := azidentity.NewDefaultAzureCredential(nil)
-		if err != nil {
-			return nil, err
-		}
-		azblobClient, err := azblob.NewClient(url, credential, nil)
-		if err != nil {
-			return nil, err
-		}
-
-		client = azblobClient.ServiceClient().NewContainerClient(conf.url.Host)
+		return nil, errors.New("internal error, no account name")
 	}
 
 	return client, nil
@@ -316,7 +343,11 @@ func (c *Connection) getClient(ctx context.Context, conf *sourceProperties) (*co
 
 func (c *Connection) openBucketWithNoCredentials(ctx context.Context, conf *sourceProperties) (*blob.Bucket, error) {
 	// Create containerURL object.
-	containerURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s", c.config.Account, conf.url.Host)
+	serviceURL := fmt.Sprintf("https://%s.blob.core.windows.net", c.config.Account)
+	containerURL, err := url.JoinPath(serviceURL, conf.url.Host)
+	if err != nil {
+		return nil, err
+	}
 	client, err := container.NewClientWithNoCredential(containerURL, nil)
 	if err != nil {
 		return nil, err
