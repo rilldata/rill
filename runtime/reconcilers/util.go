@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -112,9 +113,16 @@ func olapDropTableIfExists(ctx context.Context, c *runtime.Controller, connector
 
 			var tableName string
 			var lastErr error
+			srcRegex, err := regexp.Compile(fmt.Sprintf("__%s_[0-9]+$", table))
+			if err != nil {
+				return err
+			}
 			for rows.Next() {
 				if err := rows.Scan(&tableName); err != nil {
 					break
+				}
+				if !srcRegex.MatchString(tableName) {
+					continue
 				}
 				if _, err = conn.ExecContext(ensuredCtx, fmt.Sprintf("DROP TABLE IF EXISTS rill_sources.%s", safeSQLName(tableName))); err != nil {
 					lastErr = err

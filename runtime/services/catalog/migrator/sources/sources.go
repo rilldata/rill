@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
 	"time"
 
@@ -103,14 +104,21 @@ func (m *sourceMigrator) Update(ctx context.Context,
 		}
 
 		// query all previous tables and drop tables, ignore any error, it is okay for these queries to fail
-		rows, err := conn.QueryContext(ensuredCtx, fmt.Sprintf("SELECT table_name FROM information_schema.tables WHERE table_schema='rill_sources' AND regexp_full_match(table_name, '__%s_[0-9]*')", apiSource.Name))
+		rows, err := conn.QueryContext(ensuredCtx, "SELECT table_name FROM information_schema.tables WHERE table_schema='rill_sources'")
 		if err == nil {
 			var tableName string
+			srcRegex, err := regexp.Compile(fmt.Sprintf("__%s_[0-9]+$", apiSource.Name))
+			if err != nil {
+				return err
+			}
 			for rows.Next() {
 				if err := rows.Scan(&tableName); err != nil {
 					break
 				}
 				if tableName == newTableName {
+					continue
+				}
+				if !srcRegex.MatchString(tableName) {
 					continue
 				}
 				_, err = conn.ExecContext(ensuredCtx, fmt.Sprintf("DROP TABLE IF EXISTS rill_sources.%s", safeName(tableName)))
@@ -475,18 +483,25 @@ func dropIfExists(ctx context.Context, olap drivers.OLAPStore, name string, drop
 			if err != nil {
 				return err
 			}
-			rows, err := conn.QueryContext(ensuredCtx, fmt.Sprintf("SELECT table_name FROM information_schema.tables WHERE table_schema='rill_sources' AND regexp_full_match(table_name, '__%s_[0-9]*')", name))
+			rows, err := conn.QueryContext(ensuredCtx, "SELECT table_name FROM information_schema.tables WHERE table_schema='rill_sources'")
 			if err != nil {
 				return err
 			}
 
 			var tableName string
 			var lastErr error
+			srcRegex, err := regexp.Compile(fmt.Sprintf("__%s_[0-9]+$", name))
+			if err != nil {
+				return err
+			}
 			for rows.Next() {
 				if err := rows.Scan(&tableName); err != nil {
 					break
 				}
-				if _, err = conn.ExecContext(ensuredCtx, fmt.Sprintf("DROP TABLE IF EXISTS rill_sources.%s", tableName)); err != nil {
+				if !srcRegex.MatchString(tableName) {
+					continue
+				}
+				if _, err = conn.ExecContext(ensuredCtx, fmt.Sprintf("DROP TABLE IF EXISTS rill_sources.%s", safeName(tableName))); err != nil {
 					lastErr = err
 				}
 			}
