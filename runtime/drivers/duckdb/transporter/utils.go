@@ -11,7 +11,9 @@ import (
 )
 
 type sinkProperties struct {
-	Table string `mapstructure:"table"`
+	Table         string `mapstructure:"table"`
+	Schema        string `mapstructure:"schema"`
+	FullTableName string `mapstructure:"_"`
 }
 
 func parseSinkProperties(props map[string]any) (*sinkProperties, error) {
@@ -19,6 +21,7 @@ func parseSinkProperties(props map[string]any) (*sinkProperties, error) {
 	if err := mapstructure.Decode(props, cfg); err != nil {
 		return nil, fmt.Errorf("failed to parse sink properties: %w", err)
 	}
+	cfg.FullTableName = fullTableName(cfg)
 	return cfg, nil
 }
 
@@ -233,6 +236,13 @@ func fileSize(paths []string) int64 {
 		}
 	}
 	return size
+}
+
+func fullTableName(sinkCfg *sinkProperties) string {
+	if sinkCfg.Schema == "" {
+		return safeName(sinkCfg.Table)
+	}
+	return fmt.Sprintf("%s.%s", safeName(sinkCfg.Schema), safeName(sinkCfg.Table))
 }
 
 func quoteName(name string) string {

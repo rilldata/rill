@@ -101,7 +101,7 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 				return err
 			}
 
-			query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", safeName(sinkCfg.Table), from)
+			query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", sinkCfg.FullTableName, from)
 			if err := t.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1, LongRunning: true}); err != nil {
 				return err
 			}
@@ -143,9 +143,9 @@ func (a *appender) appendData(ctx context.Context, files []string, format string
 
 	var query string
 	if a.allowSchemaRelaxation {
-		query = fmt.Sprintf("INSERT INTO %s BY NAME (SELECT * FROM %s);", safeName(a.sink.Table), from)
+		query = fmt.Sprintf("INSERT INTO %s BY NAME (SELECT * FROM %s);", a.sink.FullTableName, from)
 	} else {
-		query = fmt.Sprintf("INSERT INTO %s (SELECT * FROM %s);", safeName(a.sink.Table), from)
+		query = fmt.Sprintf("INSERT INTO %s (SELECT * FROM %s);", a.sink.FullTableName, from)
 	}
 	a.logger.Debug("generated query", zap.String("query", query), observability.ZapCtx(ctx))
 	err = a.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1, LongRunning: true})
@@ -160,7 +160,7 @@ func (a *appender) appendData(ctx context.Context, files []string, format string
 		return fmt.Errorf("failed to update schema %w", err)
 	}
 
-	query = fmt.Sprintf("INSERT INTO %s BY NAME (SELECT * FROM %s);", safeName(a.sink.Table), from)
+	query = fmt.Sprintf("INSERT INTO %s BY NAME (SELECT * FROM %s);", a.sink.FullTableName, from)
 	a.logger.Debug("generated query", zap.String("query", query), observability.ZapCtx(ctx))
 	return a.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1, LongRunning: true})
 }
@@ -175,7 +175,7 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 	}
 
 	// combined schema
-	qry := fmt.Sprintf("DESCRIBE ((SELECT * FROM %s limit 0) UNION ALL BY NAME (SELECT * FROM %s limit 0));", safeName(a.sink.Table), from)
+	qry := fmt.Sprintf("DESCRIBE ((SELECT * FROM %s limit 0) UNION ALL BY NAME (SELECT * FROM %s limit 0));", a.sink.FullTableName, from)
 	unionSchema, err := a.scanSchemaFromQuery(ctx, qry)
 	if err != nil {
 		return err
@@ -183,7 +183,7 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 
 	// current schema
 	if a.tableSchema == nil {
-		a.tableSchema, err = a.scanSchemaFromQuery(ctx, fmt.Sprintf("DESCRIBE %s;", safeName(a.sink.Table)))
+		a.tableSchema, err = a.scanSchemaFromQuery(ctx, fmt.Sprintf("DESCRIBE %s;", a.sink.FullTableName))
 		if err != nil {
 			return err
 		}
@@ -222,7 +222,7 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 
 	for colName, colType := range newCols {
 		a.tableSchema[colName] = colType
-		qry := fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", safeName(a.sink.Table), safeName(colName), colType)
+		qry := fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", a.sink.FullTableName, safeName(colName), colType)
 		if err := a.to.Exec(ctx, &drivers.Statement{Query: qry, LongRunning: true}); err != nil {
 			return err
 		}
@@ -230,7 +230,7 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 
 	for colName, colType := range colTypeChanged {
 		a.tableSchema[colName] = colType
-		qry := fmt.Sprintf("ALTER TABLE %s ALTER COLUMN %s SET DATA TYPE %s", safeName(a.sink.Table), safeName(colName), colType)
+		qry := fmt.Sprintf("ALTER TABLE %s ALTER COLUMN %s SET DATA TYPE %s", a.sink.FullTableName, safeName(colName), colType)
 		if err := a.to.Exec(ctx, &drivers.Statement{Query: qry, LongRunning: true}); err != nil {
 			return err
 		}
@@ -314,7 +314,7 @@ func (t *objectStoreToDuckDB) ingestDuckDBSQL(ctx context.Context, originalSQL s
 	}
 
 	st := time.Now()
-	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s);", dbSink.Table, sql)
+	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s);", dbSink.FullTableName, sql)
 	err = t.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1, LongRunning: true})
 	if err != nil {
 		return err

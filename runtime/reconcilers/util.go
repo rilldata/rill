@@ -99,17 +99,32 @@ func olapDropTableIfExists(ctx context.Context, c *runtime.Controller, connector
 	}
 	defer release()
 
-	var typ string
-	if view {
-		typ = "VIEW"
-	} else {
-		typ = "TABLE"
-	}
+	_ = olap.WithConnection(ctx, 100, false, false, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
+		if view {
+			_, err = conn.ExecContext(ctx, fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(table)))
+			if err != nil {
+				return err
+			}
+			rows, err := conn.QueryContext(ensuredCtx, fmt.Sprintf("SELECT table_name FROM information_schema.tables WHERE table_schema='rill_sources' AND table_name = '%%%s%%'", safeSQLName(table)))
+			if err != nil {
+				return err
+			}
 
-	_ = olap.Exec(ctx, &drivers.Statement{
-		Query:       fmt.Sprintf("DROP %s IF EXISTS %s", typ, safeSQLName(table)),
-		Priority:    100,
-		LongRunning: true,
+			var tableName string
+			var lastErr error
+			for rows.Next() {
+				if err := rows.Scan(&tableName); err != nil {
+					break
+				}
+				if _, err = conn.ExecContext(ensuredCtx, fmt.Sprintf("DROP TABLE IF EXISTS rill_sources.%s", safeSQLName(tableName))); err != nil {
+					lastErr = err
+				}
+			}
+			return lastErr
+		}
+		// table
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("DROP TABLE IF EXISTS %s", safeSQLName(table)))
+		return err
 	})
 }
 

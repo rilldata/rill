@@ -136,6 +136,7 @@ func TestServer_UpdateLimit_UNION(t *testing.T) {
 func prepareOLAPStore(t *testing.T) drivers.OLAPStore {
 	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write", "pool_size": 4}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
+	require.NoError(t, conn.Migrate(context.Background()))
 	olap, ok := conn.AsOLAP("")
 	require.True(t, ok)
 	return olap

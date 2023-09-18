@@ -48,7 +48,7 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map
 	defer iter.Close()
 
 	start := time.Now()
-	s.logger.Info("started transfer from local file to duckdb", zap.String("sink_table", sinkCfg.Table), observability.ZapCtx(ctx))
+	s.logger.Info("started transfer from local file to duckdb", zap.String("sink_table", sinkCfg.FullTableName), observability.ZapCtx(ctx))
 	defer func() {
 		s.logger.Info("transfer finished",
 			zap.Duration("duration", time.Since(start)),
@@ -73,10 +73,10 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map
 
 		var query string
 		if create {
-			query = fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", safeName(sinkCfg.Table), from)
+			query = fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", fullTableName(sinkCfg), from)
 			create = false
 		} else {
-			query = fmt.Sprintf("INSERT INTO %s (SELECT * FROM %s);", safeName(sinkCfg.Table), from)
+			query = fmt.Sprintf("INSERT INTO %s (SELECT * FROM %s);", fullTableName(sinkCfg), from)
 		}
 
 		if err := s.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1, LongRunning: true}); err != nil {

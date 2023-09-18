@@ -119,7 +119,7 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 
 		userQuery := strings.TrimSpace(srcCfg.SQL)
 		userQuery, _ = strings.CutSuffix(userQuery, ";") // trim trailing semi colon
-		query := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s AS (%s);", safeName(localDB), safeName(sinkCfg.Table), userQuery)
+		query := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s AS (%s);", safeName(localDB), sinkCfg.FullTableName, userQuery)
 		return t.to.Exec(ctx, &drivers.Statement{Query: query})
 	})
 	return err

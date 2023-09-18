@@ -37,7 +37,25 @@ func (m *sourceMigrator) Create(
 	logger *zap.Logger,
 	ac activity.Client,
 ) error {
-	return ingestSource(ctx, olap, repo, opts, catalogObj, "", logger, ac)
+	name := catalogObj.GetSource().Name
+	newTableName := fmt.Sprintf("__%s_%s", name, fmt.Sprint(time.Now().UnixMilli()))
+	err := ingestSource(ctx, olap, repo, opts, catalogObj, "rill_sources", newTableName, logger, ac)
+	if err != nil {
+		return err
+	}
+
+	// drop existing table to ensure create or replace view succeeds
+	err = dropIfExists(ctx, olap, name, false)
+	if err != nil {
+		return err
+	}
+
+	fullTableName := fmt.Sprintf("rill_sources.%s", safeName(newTableName))
+	// create view on the ingested table
+	return olap.Exec(ctx, &drivers.Statement{
+		Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s AS SELECT * FROM %s", safeName(name), fullTableName),
+		Priority: 1,
+	})
 }
 
 func (m *sourceMigrator) Update(ctx context.Context,
@@ -49,33 +67,60 @@ func (m *sourceMigrator) Update(ctx context.Context,
 	ac activity.Client,
 ) error {
 	apiSource := newCatalogObj.GetSource()
-
-	tempName := fmt.Sprintf("__rill_temp_%s", apiSource.Name)
-
-	err := ingestSource(ctx, olap, repo, opts, newCatalogObj, tempName, logger, ac)
+	newTableName := fmt.Sprintf("__%s_%s", apiSource.Name, fmt.Sprint(time.Now().UnixMilli()))
+	fullTableName := fmt.Sprintf("rill_sources.%s", safeName(newTableName))
+	err := ingestSource(ctx, olap, repo, opts, newCatalogObj, "rill_sources", newTableName, logger, ac)
 	if err != nil {
 		// cleanup of temp table. can exist and still error out in incremental ingestion
 		_ = olap.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s", tempName),
+			Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s", fullTableName),
 			Priority: 100,
 		})
 		// return the original error. error for dropping is less important for the user
 		return err
 	}
 
-	return olap.WithConnection(ctx, 100, true, true, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
-		_, err = conn.ExecContext(ctx, fmt.Sprintf("DROP TABLE IF EXISTS %s", apiSource.Name))
+	// drop existing table to ensure create or replace view succeeds
+	err = dropIfExists(ctx, olap, apiSource.Name, false)
+	if err != nil {
+		return err
+	}
+	err = olap.WithConnection(ctx, 100, true, true, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
+		// create view on the ingested table
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("CREATE OR REPLACE VIEW %s AS SELECT * FROM %s", safeName(apiSource.Name), fullTableName))
 		if err != nil {
 			return err
 		}
 
-		_, err = conn.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %s RENAME TO %s", tempName, apiSource.Name))
-		if err != nil {
-			return err
+		// query all previous tables and drop tables, ignore any error, it is okay for these queries to fail
+		rows, err := conn.QueryContext(ctx, fmt.Sprintf("SELECT table_name FROM information_schema.tables WHERE table_schema='rill_sources' AND table_name LIKE '%%%s%%'", apiSource.Name))
+		if err == nil {
+			var tableName string
+			for rows.Next() {
+				if err := rows.Scan(&tableName); err != nil {
+					break
+				}
+				if tableName == newTableName {
+					continue
+				}
+				_, err = conn.ExecContext(ctx, fmt.Sprintf("DROP TABLE IF EXISTS rill_sources.%s", safeName(tableName)))
+				if err != nil {
+					logger.Info("drop table failed", zap.Error(err))
+				}
+			}
 		}
-
 		return nil
 	})
+	if err != nil {
+		// cleanup of temp table if view creation failed
+		_ = olap.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s", fullTableName),
+			Priority: 100,
+		})
+		// return the original error. error for dropping is less important for the user
+		return err
+	}
+	return nil
 }
 
 func (m *sourceMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalogObj *drivers.CatalogEntry) error {
@@ -98,10 +143,7 @@ func (m *sourceMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, fro
 }
 
 func (m *sourceMigrator) Delete(ctx context.Context, olap drivers.OLAPStore, catalogObj *drivers.CatalogEntry) error {
-	return olap.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s", catalogObj.Name),
-		Priority: 100,
-	})
+	return dropIfExists(ctx, olap, catalogObj.Name, true)
 }
 
 func (m *sourceMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) ([]string, []*drivers.CatalogEntry) {
@@ -149,7 +191,7 @@ func convertLower(in map[string]string) map[string]string {
 }
 
 func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts migrator.Options,
-	catalogObj *drivers.CatalogEntry, name string, logger *zap.Logger, ac activity.Client,
+	catalogObj *drivers.CatalogEntry, schema, name string, logger *zap.Logger, ac activity.Client,
 ) (outErr error) {
 	apiSource := catalogObj.GetSource()
 	if name == "" {
@@ -194,7 +236,7 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 		return err
 	}
 
-	sink := sink(olapConnection.Driver(), name)
+	sink := sink(olapConnection.Driver(), schema, name)
 
 	timeout := _defaultIngestTimeout
 	if apiSource.GetTimeoutSeconds() > 0 {
@@ -366,8 +408,8 @@ func source(connector string, src *runtimev1.Source) (map[string]any, error) {
 	return props, nil
 }
 
-func sink(connector, tableName string) map[string]any {
-	return map[string]any{"table": tableName}
+func sink(connector, schemaName, tableName string) map[string]any {
+	return map[string]any{"table": tableName, "schema": schemaName}
 }
 
 func connectorVariables(src *runtimev1.Source, env map[string]string, repoRoot string) map[string]any {
@@ -395,4 +437,51 @@ func connectorVariables(src *runtimev1.Source, env map[string]string, repoRoot s
 
 func equal(s, o map[string]any) bool {
 	return reflect.DeepEqual(s, o)
+}
+
+func safeName(name string) string {
+	if name == "" {
+		return name
+	}
+	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(name, "\"", "\"\""))
+}
+
+func dropIfExists(ctx context.Context, olap drivers.OLAPStore, name string, dropView bool) error {
+	tbl, err := olap.InformationSchema().Lookup(ctx, name)
+	if err != nil {
+		if errors.Is(err, drivers.ErrNotFound) {
+			return nil
+		}
+		return err
+	}
+
+	return olap.WithConnection(ctx, 100, false, false, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
+		if !tbl.View {
+			// table
+			_, err = conn.ExecContext(ctx, fmt.Sprintf("DROP TABLE IF EXISTS %s", safeName(name)))
+			return err
+		} else if dropView {
+			_, err = conn.ExecContext(ctx, fmt.Sprintf("DROP VIEW IF EXISTS %s", safeName(name)))
+			if err != nil {
+				return err
+			}
+			rows, err := conn.QueryContext(ensuredCtx, fmt.Sprintf("SELECT table_name FROM information_schema.tables WHERE table_schema='rill_sources' AND table_name LIKE '%%%s%%'", name))
+			if err != nil {
+				return err
+			}
+
+			var tableName string
+			var lastErr error
+			for rows.Next() {
+				if err := rows.Scan(&tableName); err != nil {
+					break
+				}
+				if _, err = conn.ExecContext(ensuredCtx, fmt.Sprintf("DROP TABLE IF EXISTS rill_sources.%s", tableName)); err != nil {
+					lastErr = err
+				}
+			}
+			return lastErr
+		}
+		return nil
+	})
 }

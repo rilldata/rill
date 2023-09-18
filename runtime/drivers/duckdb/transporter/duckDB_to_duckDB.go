@@ -97,7 +97,7 @@ func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[s
 		srcCfg.SQL = sql
 	}
 
-	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s)", safeName(sinkCfg.Table), srcCfg.SQL)
+	qry := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s)", sinkCfg.FullTableName, srcCfg.SQL)
 	return t.to.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1, LongRunning: true})
 }
 
