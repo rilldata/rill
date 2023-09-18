@@ -10,6 +10,7 @@
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { useModel } from "@rilldata/web-common/features/models/selectors";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
@@ -18,7 +19,6 @@
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import {
-    createRuntimeServiceGetCatalogEntry,
     createRuntimeServicePutFileAndReconcile,
     V1ReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
@@ -32,11 +32,8 @@
   export let hasError = false;
   export let collapse = false;
 
-  $: getModel = createRuntimeServiceGetCatalogEntry(
-    $runtime.instanceId,
-    modelName
-  );
-  $: model = $getModel.data?.entry?.model;
+  $: modelQuery = useModel($runtime.instanceId, modelName);
+  $: model = $modelQuery.data?.model;
   $: dashboardNames = useDashboardNames($runtime.instanceId);
 
   const queryClient = useQueryClient();
@@ -51,7 +48,7 @@
       $dashboardNames.data
     );
     const dashboardYAML = generateDashboardYAMLForModel(
-      model,
+      model as any, // TODO
       newDashboardName
     );
 

@@ -12,6 +12,7 @@
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { useModelNames } from "@rilldata/web-common/features/models/selectors";
   import {
+    useSource,
     useSourceFromYaml,
     useSourceNames,
   } from "@rilldata/web-common/features/sources/selectors";
@@ -25,12 +26,11 @@
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import {
     createRuntimeServiceDeleteFileAndReconcile,
-    createRuntimeServiceGetCatalogEntry,
     createRuntimeServicePutFileAndReconcile,
     createRuntimeServiceRefreshAndReconcile,
     getRuntimeServiceGetCatalogEntryQueryKey,
     V1ReconcileResponse,
-    V1Source,
+    V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
   import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -53,15 +53,12 @@
 
   const dispatch = createEventDispatcher();
 
-  $: getSource = createRuntimeServiceGetCatalogEntry(
-    runtimeInstanceId,
-    sourceName
-  );
-  let source: V1Source;
-  $: source = $getSource?.data?.entry?.source;
-  $: embedded = $getSource?.data?.entry?.embedded;
-  $: path = source?.properties?.path;
-  $: hasNoSourceCatalog = !source;
+  $: sourceQuery = useSource(runtimeInstanceId, sourceName);
+  let source: V1SourceV2;
+  $: source = $sourceQuery.data?.source;
+  $: embedded = false; // TODO: remove embedded support
+  $: path = source?.spec?.properties?.path;
+  $: sourceHasError = !$sourceQuery.data?.meta?.reconcileError;
 
   $: sourceFromYaml = useSourceFromYaml(
     $runtime.instanceId,
@@ -157,7 +154,7 @@
 
   const onRefreshSource = async (tableName: string) => {
     const connector: string =
-      $getSource?.data?.entry.source?.connector ?? $sourceFromYaml.data?.type;
+      source?.state?.connector ?? $sourceFromYaml.data?.type;
     if (!connector) {
       // if parse failed or there is no catalog entry, we cannot refresh source
       // TODO: show the import source modal with fixed tableName
@@ -172,7 +169,7 @@
         $createEntityMutation,
         queryClient,
         connector === "s3" || connector === "gcs" || connector === "https"
-          ? source?.properties?.path
+          ? path
           : sourceName
       );
 
@@ -199,7 +196,7 @@
 </MenuItem>
 
 <MenuItem
-  disabled={hasNoSourceCatalog}
+  disabled={sourceHasError}
   icon
   on:select={() => handleCreateDashboardFromSource(sourceName)}
   propogateSelect={false}
@@ -207,13 +204,13 @@
   <Explore slot="icon" />
   Autogenerate dashboard
   <svelte:fragment slot="description">
-    {#if hasNoSourceCatalog}
+    {#if sourceHasError}
       Source has errors
     {/if}
   </svelte:fragment>
 </MenuItem>
 
-{#if $getSource?.data?.entry?.source?.connector === "local_file"}
+{#if source?.state?.connector === "local_file"}
   <MenuItem icon on:select={() => onRefreshSource(sourceName)}>
     <svelte:fragment slot="icon">
       <Import />

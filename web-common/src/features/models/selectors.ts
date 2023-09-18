@@ -4,6 +4,7 @@ import {
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
+  createQueryServiceTableColumns,
   createRuntimeServiceGetCatalogEntry,
   createRuntimeServiceGetFile,
   getRuntimeServiceListFilesQueryKey,
@@ -58,12 +59,17 @@ export function useModelTimestampColumns(
   instanceId: string,
   modelName: string
 ) {
-  return createRuntimeServiceGetCatalogEntry(instanceId, modelName, {
-    query: {
-      select: (data) =>
-        data?.entry?.model?.schema?.fields?.filter((field: StructTypeField) =>
-          TIMESTAMPS.has(field.type.code as string)
-        ) ?? [].map((field) => field.name),
-    },
-  });
+  return createQueryServiceTableColumns(
+    instanceId,
+    modelName,
+    {},
+    {
+      query: {
+        select: (data) =>
+          data.profileColumns
+            ?.filter((c) => TIMESTAMPS.has(c.type))
+            .map((c) => c.name) ?? [],
+      },
+    }
+  );
 }

@@ -18,9 +18,8 @@
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import {
     createRuntimeServiceDeleteFileAndReconcile,
-    createRuntimeServiceGetCatalogEntry,
     createRuntimeServicePutFileAndReconcile,
-    V1Model,
+    V1ModelV2,
     V1ReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
   import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
@@ -30,7 +29,7 @@
   import { deleteFileArtifact } from "../../entity-management/actions";
   import { getName } from "../../entity-management/name-utils";
   import { generateDashboardYAMLForModel } from "../../metrics-views/metrics-internal-store";
-  import { useModelNames } from "../selectors";
+  import { useModel, useModelNames } from "../selectors";
 
   export let modelName: string;
   // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
@@ -45,13 +44,10 @@
 
   $: modelNames = useModelNames($runtime.instanceId);
   $: dashboardNames = useDashboardNames($runtime.instanceId);
-  $: modelQuery = createRuntimeServiceGetCatalogEntry(
-    $runtime.instanceId,
-    modelName
-  );
-  let model: V1Model;
-  $: model = $modelQuery.data?.entry?.model;
-  $: hasNoModelCatalog = !model;
+  $: modelQuery = useModel($runtime.instanceId, modelName);
+  let model: V1ModelV2;
+  $: model = $modelQuery.data?.model;
+  $: modelHasError = !$modelQuery.data?.meta?.reconcileError;
 
   const createDashboardFromModel = (modelName: string) => {
     overlay.set({
@@ -62,7 +58,7 @@
       $dashboardNames.data
     );
     const dashboardYAML = generateDashboardYAMLForModel(
-      model,
+      model as any, // TODO
       newDashboardName
     );
     $createFileMutation.mutate(
@@ -123,7 +119,7 @@
 </script>
 
 <MenuItem
-  disabled={hasNoModelCatalog}
+  disabled={modelHasError}
   icon
   on:select={() => createDashboardFromModel(modelName)}
   propogateSelect={false}
@@ -131,7 +127,7 @@
   <Explore slot="icon" />
   Autogenerate dashboard
   <svelte:fragment slot="description">
-    {#if hasNoModelCatalog}
+    {#if modelHasError}
       Model has errors
     {/if}
   </svelte:fragment>

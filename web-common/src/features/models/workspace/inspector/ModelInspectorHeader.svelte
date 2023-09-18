@@ -2,7 +2,7 @@
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { useEmbeddedSources } from "@rilldata/web-common/features/sources/selectors";
+  import { useModel } from "@rilldata/web-common/features/models/selectors";
   import {
     formatBigNumberPercentage,
     formatInteger,
@@ -10,9 +10,8 @@
   import {
     createQueryServiceTableCardinality,
     createQueryServiceTableColumns,
-    createRuntimeServiceGetCatalogEntry,
     createRuntimeServiceListCatalogEntries,
-    V1Model,
+    V1ModelV2,
     V1TableCardinalityResponse,
   } from "@rilldata/web-common/runtime-client";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
@@ -26,12 +25,9 @@
   export let modelName: string;
   export let containerWidth = 0;
 
-  $: getModel = createRuntimeServiceGetCatalogEntry(
-    $runtime.instanceId,
-    modelName
-  );
-  let model: V1Model;
-  $: model = $getModel?.data?.entry?.model;
+  $: modelQuery = useModel($runtime.instanceId, modelName);
+  let model: V1ModelV2;
+  $: model = $modelQuery?.data?.model;
 
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
@@ -40,13 +36,11 @@
   let sourceTableReferences;
 
   // get source table references.
-  $: if (model?.sql) {
-    sourceTableReferences = getTableReferences(model.sql);
+  $: if (model?.spec?.sql) {
+    sourceTableReferences = getTableReferences(model?.spec?.sql);
   }
 
-  $: embeddedSources = useEmbeddedSources($runtime.instanceId);
-
-  // get the cardinalitie & table information.
+  // get the cardinality & table information.
   let cardinalityQueries: Array<CreateQueryResult<number>> = [];
   let sourceProfileColumns: Array<CreateQueryResult<number>> = [];
 
@@ -72,7 +66,7 @@
       ...($getAllSources?.data?.entries || []),
       ...($getAllModels?.data?.entries || []),
     ]
-  );
+  ); // TODO: update using resource APIs
   $: if (sourceTableReferences?.length) {
     // first, pull out all references that are in the catalog.
 
@@ -115,13 +109,16 @@
     },
     0
   );
+  $: modelColumns = createQueryServiceTableColumns(
+    $runtime?.instanceId,
+    modelName
+  );
 
   let modelCardinalityQuery: CreateQueryResult<V1TableCardinalityResponse>;
-  $: if (model?.name)
-    modelCardinalityQuery = createQueryServiceTableCardinality(
-      $runtime.instanceId,
-      model?.name
-    );
+  $: modelCardinalityQuery = createQueryServiceTableCardinality(
+    $runtime.instanceId,
+    modelName
+  );
   let outputRowCardinalityValue: number;
   $: outputRowCardinalityValue = Number(
     $modelCardinalityQuery?.data?.cardinality ?? 0
@@ -139,7 +136,7 @@
     return rollup !== Infinity && rollup !== -Infinity && !isNaN(number);
   }
 
-  $: outputColumnNum = model?.schema?.fields?.length ?? 0;
+  $: outputColumnNum = $modelColumns.data?.profileColumns?.length ?? 0;
   $: columnDelta = outputColumnNum - $sourceColumns;
 
   $: modelHasError = !!modelError;
