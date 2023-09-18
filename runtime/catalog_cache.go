@@ -240,7 +240,11 @@ func (c *catalogCache) create(name *runtimev1.ResourceName, refs []*runtimev1.Re
 		r.Meta.Version = existing.Meta.Version + 1
 		r.Meta.SpecVersion = existing.Meta.SpecVersion + 1
 	}
-	err := c.ctrl.reconciler(name.Kind).ResetState(r)
+	err := c.ctrl.reconciler(name.Kind).AssignSpec(r, r) // Self-assign spec through reconciler to ensure spec and kind have matching types
+	if err != nil {
+		return err
+	}
+	err = c.ctrl.reconciler(name.Kind).ResetState(r)
 	if err != nil {
 		return err
 	}
