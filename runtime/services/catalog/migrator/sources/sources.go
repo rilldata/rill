@@ -103,7 +103,7 @@ func (m *sourceMigrator) Update(ctx context.Context,
 		}
 
 		// query all previous tables and drop tables, ignore any error, it is okay for these queries to fail
-		rows, err := conn.QueryContext(ensuredCtx, fmt.Sprintf("SELECT table_name FROM information_schema.tables WHERE table_schema='rill_sources' AND table_name LIKE '%%%s%%'", apiSource.Name))
+		rows, err := conn.QueryContext(ensuredCtx, fmt.Sprintf("SELECT table_name FROM information_schema.tables WHERE table_schema='rill_sources' AND regexp_full_match(table_name, '__%s_[0-9]*')", apiSource.Name))
 		if err == nil {
 			var tableName string
 			for rows.Next() {
@@ -475,7 +475,7 @@ func dropIfExists(ctx context.Context, olap drivers.OLAPStore, name string, drop
 			if err != nil {
 				return err
 			}
-			rows, err := conn.QueryContext(ensuredCtx, fmt.Sprintf("SELECT table_name FROM information_schema.tables WHERE table_schema='rill_sources' AND table_name LIKE '%%%s%%'", name))
+			rows, err := conn.QueryContext(ensuredCtx, fmt.Sprintf("SELECT table_name FROM information_schema.tables WHERE table_schema='rill_sources' AND regexp_full_match(table_name, '__%s_[0-9]*')", name))
 			if err != nil {
 				return err
 			}
