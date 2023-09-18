@@ -105,7 +105,7 @@ func olapDropTableIfExists(ctx context.Context, c *runtime.Controller, connector
 			if err != nil {
 				return err
 			}
-			rows, err := conn.QueryContext(ensuredCtx, fmt.Sprintf("SELECT table_name FROM information_schema.tables WHERE table_schema='rill_sources' AND table_name = '%%%s%%'", safeSQLName(table)))
+			rows, err := conn.QueryContext(ensuredCtx, fmt.Sprintf("SELECT table_name FROM information_schema.tables WHERE table_schema='rill_sources' AND table_name LIKE '%%%s%%'", safeSQLName(table)))
 			if err != nil {
 				return err
 			}

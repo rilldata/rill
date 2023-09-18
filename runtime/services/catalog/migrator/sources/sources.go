@@ -52,10 +52,20 @@ func (m *sourceMigrator) Create(
 
 	fullTableName := fmt.Sprintf("rill_sources.%s", safeName(newTableName))
 	// create view on the ingested table
-	return olap.Exec(ctx, &drivers.Statement{
+	err = olap.Exec(ctx, &drivers.Statement{
 		Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s AS SELECT * FROM %s", safeName(name), fullTableName),
 		Priority: 1,
 	})
+	if err != nil {
+		// cleanup of temp table if view creation failed
+		_ = olap.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s", fullTableName),
+			Priority: 100,
+		})
+		// return the original error. error for dropping is less important for the user
+		return err
+	}
+	return nil
 }
 
 func (m *sourceMigrator) Update(ctx context.Context,
@@ -93,7 +103,7 @@ func (m *sourceMigrator) Update(ctx context.Context,
 		}
 
 		// query all previous tables and drop tables, ignore any error, it is okay for these queries to fail
-		rows, err := conn.QueryContext(ctx, fmt.Sprintf("SELECT table_name FROM information_schema.tables WHERE table_schema='rill_sources' AND table_name LIKE '%%%s%%'", apiSource.Name))
+		rows, err := conn.QueryContext(ensuredCtx, fmt.Sprintf("SELECT table_name FROM information_schema.tables WHERE table_schema='rill_sources' AND table_name LIKE '%%%s%%'", apiSource.Name))
 		if err == nil {
 			var tableName string
 			for rows.Next() {
@@ -103,9 +113,9 @@ func (m *sourceMigrator) Update(ctx context.Context,
 				if tableName == newTableName {
 					continue
 				}
-				_, err = conn.ExecContext(ctx, fmt.Sprintf("DROP TABLE IF EXISTS rill_sources.%s", safeName(tableName)))
+				_, err = conn.ExecContext(ensuredCtx, fmt.Sprintf("DROP TABLE IF EXISTS rill_sources.%s", safeName(tableName)))
 				if err != nil {
-					logger.Info("drop table failed", zap.Error(err))
+					logger.Info("drop table failed", zap.String("table", tableName), zap.Error(err))
 				}
 			}
 		}
