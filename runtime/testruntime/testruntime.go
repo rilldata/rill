@@ -99,9 +99,11 @@ func NewInstanceWithModel(t TestingT, name, sql string) (*runtime.Runtime, strin
 	err := rt.PutFile(context.Background(), instanceID, path, strings.NewReader(sql), true, false)
 	require.NoError(t, err)
 
-	res, err := rt.Reconcile(context.Background(), instanceID, nil, nil, false, false)
+	ctrl, err := rt.Controller(instanceID)
 	require.NoError(t, err)
-	require.Empty(t, res.Errors)
+
+	err = ctrl.Reconcile(context.Background(), runtime.GlobalProjectParserName)
+	require.NoError(t, err)
 
 	return rt, instanceID
 }
@@ -136,9 +138,11 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 	require.NoError(t, err)
 	require.NotEmpty(t, inst.ID)
 
-	res, err := rt.Reconcile(context.Background(), inst.ID, nil, nil, false, false)
+	ctrl, err := rt.Controller(inst.ID)
 	require.NoError(t, err)
-	require.Empty(t, res.Errors)
+
+	err = ctrl.Reconcile(context.Background(), runtime.GlobalProjectParserName)
+	require.NoError(t, err)
 
 	return rt, inst.ID
 }
