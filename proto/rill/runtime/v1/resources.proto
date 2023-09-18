@@ -5,6 +5,13 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "rill/runtime/v1/time_grain.proto";
 
+enum ReconcileStatus {
+  RECONCILE_STATUS_UNSPECIFIED = 0;
+  RECONCILE_STATUS_IDLE = 1;
+  RECONCILE_STATUS_PENDING = 2;
+  RECONCILE_STATUS_RUNNING = 3;
+}
+
 message Resource {
   ResourceMeta meta = 1;
   oneof resource {
@@ -25,17 +32,17 @@ message ResourceMeta {
   repeated ResourceName refs = 2;
   optional ResourceName owner = 3;
   repeated string file_paths = 4;
-  bool deleted = 7;
-  optional ResourceName renamed_from = 13;
-  string reconcile_error = 8;
   int64 version = 15;
-  int64 meta_version = 14;
   int64 spec_version = 5;
   int64 state_version = 6;
   google.protobuf.Timestamp created_on = 9;
   google.protobuf.Timestamp spec_updated_on = 10;
   google.protobuf.Timestamp state_updated_on = 11;
   optional google.protobuf.Timestamp deleted_on = 12;
+  ReconcileStatus reconcile_status = 16;
+  string reconcile_error = 8;
+  google.protobuf.Timestamp reconcile_on = 17;
+  optional ResourceName renamed_from = 13;
 }
 
 message ResourceName {
@@ -61,8 +68,6 @@ message ProjectParserSpec {
   bool model_default_materialize = 5;
   // materialize_model_delay_seconds makes the project parser delay materialization of updated models
   uint32 model_materialize_delay_seconds = 6;
-  // duckdb_connectors is a list of connectors that use DuckDB
-  repeated string duckdb_connectors = 7;
 }
 
 message ProjectParserState {
@@ -142,6 +147,21 @@ message MetricsViewSpec {
     string format = 5;
     bool valid_percent_of_total = 6;
   }
+  // Security for the dashboard
+  message SecurityV2 {
+    // Dashboard level access condition
+    string access = 1;
+    // row level access condition
+    string row_filter = 2;
+    // Dimension/measure level access condition
+    message FieldConditionV2 {
+      string condition = 1;
+      repeated string names = 2;
+    }
+    // either one of include or exclude will be specified
+    repeated FieldConditionV2 include = 3;
+    repeated FieldConditionV2 exclude = 4;
+  }
   // Connector containing the table
   string connector = 1;
   // Name of the table the metrics view is based on
@@ -162,6 +182,8 @@ message MetricsViewSpec {
   string default_time_range = 9;
   // Available time zones list preferred time zones using IANA location identifiers
   repeated string available_time_zones = 10;
+  // Security for the dashboard
+  SecurityV2 security = 11;
 }
 
 message MetricsViewState {

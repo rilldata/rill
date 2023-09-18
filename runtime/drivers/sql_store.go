@@ -13,7 +13,15 @@ var ErrIteratorDone = errors.New("empty iterator")
 // In future the results can be produced in other formats like arrow as well.
 // May be call it DataWarehouse to differentiate from OLAP or postgres?
 type SQLStore interface {
-	Query(ctx context.Context, props map[string]any, sql string) (RowIterator, error)
+	// Query returns driver.RowIterator to iterate over results row by row
+	Query(ctx context.Context, props map[string]any) (RowIterator, error)
+	// QueryAsFiles downloads results into files and returns an iterator to iterate over them
+	QueryAsFiles(ctx context.Context, props map[string]any, opt *QueryOption, p Progress) (FileIterator, error)
+}
+
+type QueryOption struct {
+	// TotalLimitInBytes rerpresent the max limit on the bytes that should be downloaded in a file
+	TotalLimitInBytes int64
 }
 
 // RowIterator returns an iterator to iterate over result of a sql query

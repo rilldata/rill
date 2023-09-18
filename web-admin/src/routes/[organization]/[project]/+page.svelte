@@ -2,9 +2,9 @@
   import { page } from "$app/stores";
   import VerticalScrollContainer from "@rilldata/web-common/layout/VerticalScrollContainer.svelte";
   import { createAdminServiceGetProject } from "../../../client";
-  import DashboardList from "../../../components/projects/DashboardList.svelte";
-  import ProjectHero from "../../../components/projects/ProjectHero.svelte";
-  import RedeployProjectCta from "../../../components/projects/RedeployProjectCTA.svelte";
+  import DashboardList from "../../../features/projects/DashboardList.svelte";
+  import ProjectHero from "../../../features/projects/ProjectHero.svelte";
+  import RedeployProjectCta from "../../../features/projects/RedeployProjectCTA.svelte";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;

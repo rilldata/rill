@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/apache/arrow/go/v11/arrow"
-	"github.com/apache/arrow/go/v11/arrow/array"
-	"github.com/apache/arrow/go/v11/arrow/memory"
-	"github.com/apache/arrow/go/v11/parquet"
-	"github.com/apache/arrow/go/v11/parquet/compress"
-	"github.com/apache/arrow/go/v11/parquet/file"
-	"github.com/apache/arrow/go/v11/parquet/pqarrow"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/apache/arrow/go/v13/arrow"
+	"github.com/apache/arrow/go/v13/arrow/array"
+	"github.com/apache/arrow/go/v13/arrow/memory"
+	"github.com/apache/arrow/go/v13/parquet"
+	"github.com/apache/arrow/go/v13/parquet/compress"
+	"github.com/apache/arrow/go/v13/parquet/file"
+	"github.com/apache/arrow/go/v13/parquet/pqarrow"
 	"github.com/rilldata/rill/runtime/pkg/arrayutil"
 	"github.com/rilldata/rill/runtime/pkg/container"
 	"gocloud.dev/blob"
@@ -82,7 +81,7 @@ func downloadParquet(ctx context.Context, bucket *blob.Bucket, obj *blob.ListObj
 // estimateRecords estimates the number of rows to fetch based on extract policy
 // each arrow.Record will hold batchSize number of rows
 func estimateRecords(ctx context.Context, reader *file.Reader, pqToArrowReader *pqarrow.FileReader, config *extractOption) ([]arrow.Record, error) {
-	rowIndexes := arrayutil.RangeInt(0, reader.NumRowGroups(), config.strategy == runtimev1.Source_ExtractPolicy_STRATEGY_TAIL)
+	rowIndexes := arrayutil.RangeInt(0, reader.NumRowGroups(), config.strategy == ExtractPolicyStrategyTail)
 
 	var (
 		// row group indices that we need
@@ -133,12 +132,12 @@ func estimateRecords(ctx context.Context, reader *file.Reader, pqToArrowReader *
 	return c.Items(), nil
 }
 
-func containerForRecordLimiting(strategy runtimev1.Source_ExtractPolicy_Strategy, limit int) (container.Container[arrow.Record], error) {
+func containerForRecordLimiting(strategy ExtractPolicyStrategy, limit int) (container.Container[arrow.Record], error) {
 	switch strategy {
-	case runtimev1.Source_ExtractPolicy_STRATEGY_TAIL:
-		return container.NewFIFO(limit, func(rec arrow.Record) { rec.Release() })
-	case runtimev1.Source_ExtractPolicy_STRATEGY_HEAD:
+	case ExtractPolicyStrategyHead:
 		return container.NewBounded[arrow.Record](limit)
+	case ExtractPolicyStrategyTail:
+		return container.NewFIFO(limit, func(rec arrow.Record) { rec.Release() })
 	default:
 		// No option selected - this should not be used for partial downloads though
 		// in case of no extract policy we should be directly downloading the entire file

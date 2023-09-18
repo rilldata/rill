@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -57,21 +58,40 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	// Build instance config
 	instanceID := strings.ReplaceAll(uuid.New().String(), "-", "")
 	olapDriver := opts.ProdOLAPDriver
-	olapDSN := opts.ProdOLAPDSN
+	olapConfig := map[string]string{}
 	var embedCatalog bool
 	var ingestionLimit int64
-	if olapDriver == "duckdb" {
-		if olapDSN != "" {
+	switch olapDriver {
+	case "duckdb":
+		if opts.ProdOLAPDSN != "" {
 			return nil, fmt.Errorf("passing a DSN is not allowed for driver 'duckdb'")
 		}
 		if opts.ProdSlots == 0 {
 			return nil, fmt.Errorf("slot count can't be 0 for driver 'duckdb'")
 		}
 
+		olapConfig["dsn"] = fmt.Sprintf("%s.db?max_memory=%dGB", path.Join(alloc.DataDir, instanceID), alloc.MemoryGB)
+		olapConfig["pool_size"] = strconv.Itoa(alloc.CPU)
 		embedCatalog = true
 		ingestionLimit = alloc.StorageBytes
+	case "duckdb-vip":
+		if opts.ProdOLAPDSN != "" {
+			return nil, fmt.Errorf("passing a DSN is not allowed for driver 'duckdb-vip'")
+		}
+		if opts.ProdSlots == 0 {
+			return nil, fmt.Errorf("slot count can't be 0 for driver 'duckdb-vip'")
+		}
 
-		olapDSN = fmt.Sprintf("%s.db?rill_pool_size=%d&threads=%d&max_memory=%dGB", path.Join(alloc.DataDir, instanceID), alloc.CPU, alloc.CPU, alloc.MemoryGB)
+		// NOTE: Rewriting to a "duckdb" driver without CPU, memory, or storage limits
+		olapDriver = "duckdb"
+		olapConfig["dsn"] = fmt.Sprintf("%s.db", path.Join(alloc.DataDir, instanceID))
+		olapConfig["pool_size"] = "8"
+		embedCatalog = true
+		ingestionLimit = 0
+	default:
+		olapConfig["dsn"] = opts.ProdOLAPDSN
+		embedCatalog = false
+		ingestionLimit = 0
 	}
 
 	// Open a runtime client
@@ -84,17 +104,17 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
 		InstanceId:          instanceID,
-		OlapDriver:          "olap",
-		RepoDriver:          "repo",
+		OlapConnector:       olapDriver,
+		RepoConnector:       "repo",
 		EmbedCatalog:        embedCatalog,
 		Variables:           opts.ProdVariables,
 		IngestionLimitBytes: ingestionLimit,
 		Annotations:         opts.Annotations.toMap(),
 		Connectors: []*runtimev1.Connector{
 			{
-				Name:   "olap",
+				Name:   olapDriver,
 				Type:   olapDriver,
-				Config: map[string]string{"dsn": olapDSN},
+				Config: olapConfig,
 			},
 			{
 				Name:   "repo",

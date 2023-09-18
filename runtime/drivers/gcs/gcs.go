@@ -12,6 +12,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/gcputil"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
@@ -96,7 +97,7 @@ type configProperties struct {
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }
 
-func (d driver) Open(config map[string]any, shared bool, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("gcs driver can't be shared")
 	}
@@ -121,13 +122,8 @@ func (d driver) Spec() drivers.Spec {
 	return spec
 }
 
-func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
-	b, ok := src.BucketSource()
-	if !ok {
-		return false, fmt.Errorf("require bucket source")
-	}
-
-	conf, err := parseSourceProperties(b.Properties)
+func (d driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
+	conf, err := parseSourceProperties(src)
 	if err != nil {
 		return false, fmt.Errorf("failed to parse config: %w", err)
 	}
@@ -142,35 +138,50 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source
 }
 
 type sourceProperties struct {
-	Path                  string `key:"path"`
-	GlobMaxTotalSize      int64  `mapstructure:"glob.max_total_size"`
-	GlobMaxObjectsMatched int    `mapstructure:"glob.max_objects_matched"`
-	GlobMaxObjectsListed  int64  `mapstructure:"glob.max_objects_listed"`
-	GlobPageSize          int    `mapstructure:"glob.page_size"`
+	Path                  string         `mapstructure:"path"`
+	URI                   string         `mapstructure:"uri"`
+	Extract               map[string]any `mapstructure:"extract"`
+	GlobMaxTotalSize      int64          `mapstructure:"glob.max_total_size"`
+	GlobMaxObjectsMatched int            `mapstructure:"glob.max_objects_matched"`
+	GlobMaxObjectsListed  int64          `mapstructure:"glob.max_objects_listed"`
+	GlobPageSize          int            `mapstructure:"glob.page_size"`
 	url                   *globutil.URL
+	extractPolicy         *rillblob.ExtractPolicy
 }
 
 func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 	conf := &sourceProperties{}
-	err := mapstructure.Decode(props, conf)
+	err := mapstructure.WeakDecode(props, conf)
 	if err != nil {
 		return nil, err
 	}
+
+	// Backwards compatibility for "uri" renamed to "path"
+	if conf.URI != "" {
+		conf.Path = conf.URI
+	}
+
 	if !doublestar.ValidatePattern(conf.Path) {
 		// ideally this should be validated at much earlier stage
 		// keeping it here to have gcs specific validations
 		return nil, fmt.Errorf("glob pattern %s is invalid", conf.Path)
 	}
+
 	url, err := globutil.ParseBucketURL(conf.Path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse path %q, %w", conf.Path, err)
 	}
+	conf.url = url
 
 	if url.Scheme != "gs" {
 		return nil, fmt.Errorf("invalid gcs path %q, should start with gs://", conf.Path)
 	}
 
-	conf.url = url
+	conf.extractPolicy, err = rillblob.ParseExtractPolicy(conf.Extract)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse extract config: %w", err)
+	}
+
 	return conf, nil
 }
 
@@ -250,8 +261,8 @@ func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 // DownloadFiles returns a file iterator over objects stored in gcs.
 // The credential json is read from config google_application_credentials.
 // Additionally in case `allow_host_credentials` is true it looks for "Application Default Credentials" as well
-func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSource) (drivers.FileIterator, error) {
-	conf, err := parseSourceProperties(source.Properties)
+func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (drivers.FileIterator, error) {
+	conf, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
@@ -273,7 +284,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, source *drivers.BucketSo
 		GlobMaxObjectsListed:  conf.GlobMaxObjectsListed,
 		GlobPageSize:          conf.GlobPageSize,
 		GlobPattern:           conf.url.Path,
-		ExtractPolicy:         source.ExtractPolicy,
+		ExtractPolicy:         conf.extractPolicy,
 	}
 
 	iter, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)

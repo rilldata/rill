@@ -10,6 +10,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	"github.com/rilldata/rill/runtime/drivers/duckdb/transporter"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -18,7 +19,7 @@ type mockObjectStore struct {
 	mockIterator drivers.FileIterator
 }
 
-func (m *mockObjectStore) DownloadFiles(ctx context.Context, src *drivers.BucketSource) (drivers.FileIterator, error) {
+func (m *mockObjectStore) DownloadFiles(ctx context.Context, srcProps map[string]any) (drivers.FileIterator, error) {
 	return m.mockIterator, nil
 }
 
@@ -32,6 +33,11 @@ func (m *mockIterator) Close() error {
 }
 
 func (m *mockIterator) NextBatch(limit int) ([]string, error) {
+	m.index += 1
+	return m.batches[m.index-1], nil
+}
+
+func (m *mockIterator) NextBatchSize(sizeInBytes int64) ([]string, error) {
 	m.index += 1
 	return m.batches[m.index-1], nil
 }
@@ -158,19 +164,14 @@ mum,8.2`)
 			ctx := context.Background()
 			tr := transporter.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
 
-			var src *drivers.BucketSource
+			var src map[string]any
 			if test.query {
-				src = &drivers.BucketSource{
-					Properties: map[string]any{"sql": "select * from read_csv_auto('path',union_by_name=true,sample_size=200000)"},
-				}
+				src = map[string]any{"sql": "select * from read_csv_auto('path',union_by_name=true,sample_size=200000)"}
 			} else {
-				src = &drivers.BucketSource{
-					Properties: map[string]any{"allow_schema_relaxation": true},
-				}
+				src = map[string]any{"allow_schema_relaxation": true}
 			}
 
-			err = tr.Transfer(ctx, src, &drivers.DatabaseSink{Table: test.name}, drivers.NewTransferOpts(),
-				drivers.NoOpProgress{})
+			err = tr.Transfer(ctx, src, map[string]any{"table": test.name}, mockTransferOptions())
 			require.NoError(t, err, "no err expected test %s", test.name)
 
 			var count int
@@ -308,17 +309,14 @@ mum,8.2`)
 			ctx := context.Background()
 			tr := transporter.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
 
-			var src *drivers.BucketSource
+			var src map[string]any
 			if test.query {
-				src = &drivers.BucketSource{
-					Properties: map[string]any{"sql": "select * from read_csv_auto('path')"},
-				}
+				src = map[string]any{"sql": "select * from read_csv_auto('path')"}
 			} else {
-				src = &drivers.BucketSource{}
+				src = map[string]any{}
 			}
 
-			err = tr.Transfer(ctx, src, &drivers.DatabaseSink{Table: test.name},
-				drivers.NewTransferOpts(), drivers.NoOpProgress{})
+			err = tr.Transfer(ctx, src, map[string]any{"table": test.name}, mockTransferOptions())
 			if test.hasError {
 				require.Error(t, err, fmt.Errorf("error expected for %s got nil", test.name))
 			} else {
@@ -410,19 +408,14 @@ func TestIterativeParquetIngestionWithVariableSchema(t *testing.T) {
 			ctx := context.Background()
 			tr := transporter.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
 
-			var src *drivers.BucketSource
+			var src map[string]any
 			if test.query {
-				src = &drivers.BucketSource{
-					Properties: map[string]any{"sql": "select * from read_parquet('path',union_by_name=true,hive_partitioning=true)"},
-				}
+				src = map[string]any{"sql": "select * from read_parquet('path',union_by_name=true,hive_partitioning=true)"}
 			} else {
-				src = &drivers.BucketSource{
-					Properties: map[string]any{"allow_schema_relaxation": true},
-				}
+				src = map[string]any{"allow_schema_relaxation": true}
 			}
 
-			err := tr.Transfer(ctx, src, &drivers.DatabaseSink{Table: test.name},
-				drivers.NewTransferOpts(), drivers.NoOpProgress{})
+			err := tr.Transfer(ctx, src, map[string]any{"table": test.name}, mockTransferOptions())
 			require.NoError(t, err)
 
 			var count int
@@ -556,19 +549,14 @@ func TestIterativeJSONIngestionWithVariableSchema(t *testing.T) {
 			ctx := context.Background()
 			tr := transporter.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
 
-			var src *drivers.BucketSource
+			var src map[string]any
 			if test.query {
-				src = &drivers.BucketSource{
-					Properties: map[string]any{"sql": "select * from read_json('path',format='auto',union_by_name=true,auto_detect=true,sample_size=200000)"},
-				}
+				src = map[string]any{"sql": "select * from read_json('path',format='auto',union_by_name=true,auto_detect=true,sample_size=200000)"}
 			} else {
-				src = &drivers.BucketSource{
-					Properties: map[string]any{"allow_schema_relaxation": true},
-				}
+				src = map[string]any{"allow_schema_relaxation": true}
 			}
 
-			err := tr.Transfer(ctx, src, &drivers.DatabaseSink{Table: test.name},
-				drivers.NewTransferOpts(), drivers.NoOpProgress{})
+			err := tr.Transfer(ctx, src, map[string]any{"table": test.name}, mockTransferOptions())
 			require.NoError(t, err, "no err expected test %s", test.name)
 
 			var count int
@@ -598,9 +586,19 @@ func TestIterativeJSONIngestionWithVariableSchema(t *testing.T) {
 }
 
 func runOLAPStore(t *testing.T) drivers.OLAPStore {
-	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, false, zap.NewNop())
+	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	olap, canServe := conn.AsOLAP("")
 	require.True(t, canServe)
 	return olap
+}
+
+func mockTransferOptions() *drivers.TransferOptions {
+	return &drivers.TransferOptions{
+		AllowHostAccess: true,
+		Progress:        drivers.NoOpProgress{},
+		AcquireConnector: func(name string) (drivers.Handle, func(), error) {
+			return nil, nil, fmt.Errorf("not found")
+		},
+	}
 }

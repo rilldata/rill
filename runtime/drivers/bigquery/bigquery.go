@@ -2,7 +2,6 @@ package bigquery
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -10,6 +9,7 @@ import (
 	"cloud.google.com/go/bigquery"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/gcputil"
 	"go.uber.org/zap"
@@ -38,6 +38,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "project_id",
 			Type:        drivers.StringPropertyType,
+			Required:    true,
 			DisplayName: "Project ID",
 			Description: "Google project ID.",
 			Placeholder: "my-project",
@@ -96,7 +97,7 @@ type configProperties struct {
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }
 
-func (d driver) Open(config map[string]any, shared bool, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("bigquery driver can't be shared")
 	}
@@ -121,7 +122,7 @@ func (d driver) Spec() drivers.Spec {
 	return spec
 }
 
-func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
+func (d driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
 	// gcp provides public access to the data via a project
 	return false, nil
 }
@@ -203,6 +204,7 @@ func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 
 type sourceProperties struct {
 	ProjectID string `mapstructure:"project_id"`
+	SQL       string `mapstructure:"sql"`
 }
 
 func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
@@ -211,19 +213,19 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 	if err != nil {
 		return nil, err
 	}
+	if conf.SQL == "" {
+		return nil, fmt.Errorf("property 'sql' is mandatory for connector \"bigquery\"")
+	}
 	if conf.ProjectID == "" {
 		conf.ProjectID = bigquery.DetectProjectID
 	}
 	return conf, err
 }
 
-func (c *Connection) createClient(ctx context.Context, props *sourceProperties) (*bigquery.Client, error) {
+func (c *Connection) clientOption(ctx context.Context) ([]option.ClientOption, error) {
 	creds, err := gcputil.Credentials(ctx, c.config.SecretJSON, c.config.AllowHostAccess)
 	if err != nil {
-		if !errors.Is(err, gcputil.ErrNoCredentials) {
-			return nil, err
-		}
-		return bigquery.NewClient(ctx, props.ProjectID)
+		return nil, err
 	}
-	return bigquery.NewClient(ctx, props.ProjectID, option.WithCredentials(creds))
+	return []option.ClientOption{option.WithCredentials(creds)}, nil
 }

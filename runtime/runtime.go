@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -13,11 +14,12 @@ import (
 )
 
 type Options struct {
-	ConnectionCacheSize int
-	MetastoreConnector  string
-	QueryCacheSizeBytes int64
-	AllowHostAccess     bool
-	SafeSourceRefresh   bool
+	ConnectionCacheSize     int
+	MetastoreConnector      string
+	QueryCacheSizeBytes     int64
+	SecurityEngineCacheSize int
+	AllowHostAccess         bool
+	SafeSourceRefresh       bool
 	// SystemConnectors are drivers whose handles are shared with all instances
 	SystemConnectors []*runtimev1.Connector
 }
@@ -28,16 +30,20 @@ type Runtime struct {
 	connCache          *connectionCache
 	migrationMetaCache *migrationMetaCache
 	queryCache         *queryCache
+	securityEngine     *securityEngine
+	activity           activity.Client
 }
 
 func New(opts *Options, logger *zap.Logger, client activity.Client) (*Runtime, error) {
 	rt := &Runtime{
 		opts:               opts,
 		logger:             logger,
-		connCache:          newConnectionCache(opts.ConnectionCacheSize, logger, client),
 		migrationMetaCache: newMigrationMetaCache(math.MaxInt),
 		queryCache:         newQueryCache(opts.QueryCacheSizeBytes),
+		securityEngine:     newSecurityEngine(opts.SecurityEngineCacheSize, logger),
+		activity:           client,
 	}
+	rt.connCache = newConnectionCache(opts.ConnectionCacheSize, logger, rt, client)
 	store, _, err := rt.AcquireSystemHandle(context.Background(), opts.MetastoreConnector)
 	if err != nil {
 		return nil, err
@@ -62,4 +68,19 @@ func (r *Runtime) Close() error {
 		r.connCache.Close(),
 		r.queryCache.close(),
 	)
+}
+
+func (r *Runtime) Controller(instanceID string) (*Controller, error) {
+	panic("not implemented")
+}
+
+func (r *Runtime) ResolveMetricsViewSecurity(attributes map[string]any, instanceID string, mv *runtimev1.MetricsView, lastUpdatedOn time.Time) (*ResolvedMetricsViewSecurity, error) {
+	return r.securityEngine.resolveMetricsViewSecurity(attributes, instanceID, mv, lastUpdatedOn)
+}
+
+func (r *Runtime) ResolveMetricsViewSecurityV2(attributes map[string]any, instanceID string, mv *runtimev1.MetricsViewSpec, lastUpdatedOn time.Time) (*ResolvedMetricsViewSecurity, error) {
+	// TODO: Implement actual checks when deprecating ResolveMetricsViewSecurity
+	return &ResolvedMetricsViewSecurity{
+		Access: true,
+	}, nil
 }

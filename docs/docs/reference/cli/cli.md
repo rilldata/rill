@@ -1,5 +1,5 @@
 ---
-title: CLI Commmands
+title: CLI usage
 sidebar_position: 15
 ---
 ## rill
@@ -26,4 +26,5 @@ Rill CLI
 * [rill start](start.md)	 - Build project and start web app
 * [rill user](user/user.md)	 - Manage users
 * [rill version](version.md)	 - Show rill version
+* [rill whoami](whoami.md)	 - Show current user
 

@@ -29,7 +29,7 @@ type Resource struct {
 	// Metadata
 	Name    ResourceName
 	Paths   []string
-	Refs    []ResourceName // Derived from rawRefs after parsing (can't contain ResourceKindUnspecified)
+	Refs    []ResourceName // Derived from rawRefs after parsing (can't contain ResourceKindUnspecified). Always sorted.
 	rawRefs []ResourceName // Populated during parsing (may contain ResourceKindUnspecified)
 
 	// Only one of these will be non-nil
@@ -108,6 +108,7 @@ type Diff struct {
 	Added            []ResourceName
 	Modified         []ResourceName
 	ModifiedRillYAML bool
+	ModifiedDotEnv   bool
 	Deleted          []ResourceName
 }
 
@@ -118,10 +119,12 @@ type Parser struct {
 	// Options
 	Repo             drivers.RepoStore
 	InstanceID       string
+	DefaultConnector string
 	DuckDBConnectors []string
 
 	// Output
 	RillYAML  *RillYAML
+	DotEnv    map[string]string
 	Resources map[ResourceName]*Resource
 	Errors    []*runtimev1.ParseError
 
@@ -151,11 +154,12 @@ func ParseRillYAML(ctx context.Context, repo drivers.RepoStore, instanceID strin
 // Parse creates a new parser and parses the entire project.
 //
 // Note on SQL parsing: For DuckDB SQL specifically, the parser can use a SQL parser to extract refs and annotations (instead of relying on templating or YAML).
-// To enable SQL parsing for a connector, pass it in duckDBConnectors. If DuckDB SQL parsing should be used on files where no connector is specified, put an empty string in duckDBConnectors.
-func Parse(ctx context.Context, repo drivers.RepoStore, instanceID string, duckDBConnectors []string) (*Parser, error) {
+// To enable SQL parsing for a connector, pass it in duckDBConnectors. If DuckDB SQL parsing should be used on files where no connector is specified, put the defaultConnector in duckDBConnectors.
+func Parse(ctx context.Context, repo drivers.RepoStore, instanceID, defaultConnector string, duckDBConnectors []string) (*Parser, error) {
 	p := &Parser{
 		Repo:                       repo,
 		InstanceID:                 instanceID,
+		DefaultConnector:           defaultConnector,
 		DuckDBConnectors:           duckDBConnectors,
 		Resources:                  make(map[ResourceName]*Resource),
 		resourcesForPath:           make(map[string][]*Resource),
@@ -208,6 +212,8 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	var deletedResources []*Resource   // Resources deleted in Phase 1 (some may be added back in Phase 2)
 	checkPaths := slices.Clone(paths)  // Paths we should visit in the loop
 	seenPaths := make(map[string]bool) // Paths already visited by the loop
+	modifiedRillYAML := false          // whether rill.yaml file was modified
+	modifiedDotEnv := false            // whether .env file was modified
 	for i := 0; i < len(checkPaths); i++ {
 		// Don't check the same path twice
 		path := normalizePath(checkPaths[i])
@@ -216,10 +222,11 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 		}
 		seenPaths[path] = true
 
-		// Skip files that aren't SQL or YAML
+		// Skip files that aren't SQL or YAML or .env file
 		isSQL := strings.HasSuffix(path, ".sql")
 		isYAML := strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")
-		if !isSQL && !isYAML {
+		isDotEnv := strings.EqualFold(path, "/.env")
+		if !isSQL && !isYAML && !isDotEnv {
 			continue
 		}
 
@@ -231,9 +238,13 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 			return nil, fmt.Errorf("unexpected file stat error: %w", err)
 		}
 
-		// Check if path is rill.yaml and clear it (so we can re-parse it)
+		// Check if path is rill.yaml or .env and clear it (so we can re-parse it)
 		if path == "/rill.yaml" || path == "/rill.yml" {
+			modifiedRillYAML = true
 			p.RillYAML = nil
+		} else if path == "/.env" {
+			modifiedDotEnv = true
+			p.DotEnv = nil
 		}
 
 		// Since .sql and .yaml files provide context for each other, if one was modified, we need to reparse both.
@@ -272,9 +283,6 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 			}
 		}
 	}
-
-	// Capture if rill.yaml will be updated
-	modifiedRillYAML := p.RillYAML == nil
 
 	// Phase 2: Parse (or reparse) the related paths, adding back resources
 	err := p.parsePaths(ctx, parsePaths)
@@ -318,7 +326,10 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	}
 
 	// Phase 3: Build the diff using p.insertedResources, p.updatedResources and deletedResources
-	diff := &Diff{ModifiedRillYAML: modifiedRillYAML}
+	diff := &Diff{
+		ModifiedRillYAML: modifiedRillYAML,
+		ModifiedDotEnv:   modifiedDotEnv,
+	}
 	for _, resource := range p.insertedResources {
 		addedBack := false
 		for _, deleted := range deletedResources {
@@ -360,12 +371,19 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 	// Then iterate over the sorted paths, processing all paths with the same stem at once (stem = path without extension).
 	slices.Sort(paths)
 	for i := 0; i < len(paths); {
-		// Handle rill.yaml separately (if parsing of rill.yaml fails, we exit early instead of adding a ParseError)
+		// Handle rill.yaml and .env separately (if parsing of rill.yaml fails, we exit early instead of adding a ParseError)
 		path := paths[i]
 		if path == "/rill.yaml" || path == "/rill.yml" {
 			err := p.parseRillYAML(ctx, path)
 			if err != nil {
 				return err
+			}
+			i++
+			continue
+		} else if path == "/.env" {
+			err := p.parseDotEnv(ctx, path)
+			if err != nil {
+				p.addParseError(path, err)
 			}
 			i++
 			continue
@@ -541,6 +559,8 @@ func (p *Parser) inferUnspecifiedRefs(r *Resource) {
 
 		// Rule 4: Skip it
 	}
+
+	slices.SortFunc(refs, func(a, b ResourceName) bool { return a.Kind < b.Kind || a.Kind == b.Kind && a.Name < b.Name })
 
 	r.Refs = refs
 }

@@ -13,13 +13,13 @@ import {
   isProfilingQuery,
   isTableProfilingQuery,
 } from "@rilldata/web-common/runtime-client/query-matcher";
-import type { QueryClient } from "@tanstack/svelte-query";
+import type { Query, QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 
 // invalidation helpers
 
 export function invalidateRuntimeQueries(queryClient: QueryClient) {
-  return queryClient.invalidateQueries({
+  return queryClient.resetQueries({
     predicate: (query) =>
       typeof query.queryKey[0] === "string" &&
       query.queryKey[0].startsWith("/v1/instances"),
@@ -125,6 +125,43 @@ export const invalidateMetricsViewData = (
     type: "active",
   });
 };
+
+export async function invalidateAllMetricsViews(
+  queryClient: QueryClient,
+  instanceId: string
+) {
+  // First, refetch the catalog entries (which returns the available dimensions and measures)
+  await queryClient.refetchQueries({
+    predicate: (query) =>
+      typeof query.queryKey[0] === "string" &&
+      query.queryKey[0].startsWith(`/v1/instances/${instanceId}/catalog`),
+  });
+
+  // Second, reset queries for all metrics views. This will cause the active queries to refetch.
+  // Note: This is a confusing hack. At time of writing, neither `queryClient.refetchQueries`
+  // nor `queryClient.invalidateQueries` were working as expected. Perhaps there's a race condition somewhere.
+  queryClient.resetQueries({
+    predicate: (query: Query) => {
+      return (
+        typeof query.queryKey[0] === "string" &&
+        query.queryKey[0].startsWith(
+          `/v1/instances/${instanceId}/queries/metrics-views`
+        )
+      );
+    },
+  });
+
+  // Additionally, reset the queries for the rows viewer, which have custom query keys
+  queryClient.resetQueries({
+    predicate: (query: Query) => {
+      return (
+        typeof query.queryKey[0] === "string" &&
+        (query.queryKey[0].startsWith(`dashboardFilteredRowsCt`) ||
+          query.queryKey[0].startsWith(`dashboardAllRowsCt`))
+      );
+    },
+  });
+}
 
 export async function invalidateProfilingQueries(
   queryClient: QueryClient,

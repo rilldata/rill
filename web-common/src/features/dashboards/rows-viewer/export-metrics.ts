@@ -1,6 +1,7 @@
+import type { TimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { get } from "svelte/store";
 import { runtime } from "../../../runtime-client/runtime-store";
-import { useDashboardStore, useFetchTimeRange } from "../dashboard-stores";
+import { useDashboardStore } from "../dashboard-stores";
 import type {
   V1ExportFormat,
   createQueryServiceExport,
@@ -10,16 +11,19 @@ export default async function exportMetrics({
   query,
   metricViewName,
   format,
+  timeControlStore,
 }: {
   query: ReturnType<typeof createQueryServiceExport>;
   metricViewName: string;
   format: V1ExportFormat;
+  // we need this from argument since getContext is called to get the state managers
+  // which cannot run outside of component initialisation
+  timeControlStore: TimeControlStore;
 }) {
   const dashboardStore = useDashboardStore(metricViewName);
-  const fetchTimeStore = useFetchTimeRange(metricViewName);
+  const timeControlState = get(timeControlStore);
 
   const dashboard = get(dashboardStore);
-  const time = get(fetchTimeStore);
   const result = await get(query).mutateAsync({
     instanceId: get(runtime).instanceId,
     data: {
@@ -28,8 +32,8 @@ export default async function exportMetrics({
         instanceId: get(runtime).instanceId,
         metricsViewName: metricViewName,
         filter: dashboard.filters,
-        timeStart: time?.start?.toISOString(),
-        timeEnd: time?.end?.toISOString(),
+        timeStart: timeControlState.timeStart,
+        timeEnd: timeControlState.timeEnd,
       },
     },
   });

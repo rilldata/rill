@@ -11,9 +11,11 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -33,8 +35,9 @@ func (m *sourceMigrator) Create(
 	opts migrator.Options,
 	catalogObj *drivers.CatalogEntry,
 	logger *zap.Logger,
+	ac activity.Client,
 ) error {
-	return ingestSource(ctx, olap, repo, opts, catalogObj, "", logger)
+	return ingestSource(ctx, olap, repo, opts, catalogObj, "", logger, ac)
 }
 
 func (m *sourceMigrator) Update(ctx context.Context,
@@ -43,12 +46,13 @@ func (m *sourceMigrator) Update(ctx context.Context,
 	opts migrator.Options,
 	oldCatalogObj, newCatalogObj *drivers.CatalogEntry,
 	logger *zap.Logger,
+	ac activity.Client,
 ) error {
 	apiSource := newCatalogObj.GetSource()
 
 	tempName := fmt.Sprintf("__rill_temp_%s", apiSource.Name)
 
-	err := ingestSource(ctx, olap, repo, opts, newCatalogObj, tempName, logger)
+	err := ingestSource(ctx, olap, repo, opts, newCatalogObj, tempName, logger, ac)
 	if err != nil {
 		// cleanup of temp table. can exist and still error out in incremental ingestion
 		_ = olap.Exec(ctx, &drivers.Statement{
@@ -59,24 +63,18 @@ func (m *sourceMigrator) Update(ctx context.Context,
 		return err
 	}
 
-	return olap.WithConnection(ctx, 100, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
-		tx, err := conn.BeginTx(ctx, nil)
-		if err != nil {
-			return err
-		}
-		defer func() { _ = tx.Rollback() }()
-
-		_, err = tx.ExecContext(ctx, fmt.Sprintf("DROP TABLE IF EXISTS %s", apiSource.Name))
+	return olap.WithConnection(ctx, 100, true, true, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("DROP TABLE IF EXISTS %s", apiSource.Name))
 		if err != nil {
 			return err
 		}
 
-		_, err = tx.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %s RENAME TO %s", tempName, apiSource.Name))
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %s RENAME TO %s", tempName, apiSource.Name))
 		if err != nil {
 			return err
 		}
 
-		return tx.Commit()
+		return nil
 	})
 }
 
@@ -122,9 +120,6 @@ func (m *sourceMigrator) IsEqual(ctx context.Context, cat1, cat2 *drivers.Catalo
 	if !isSQLSource && cat1.GetSource().Connector != cat2.GetSource().Connector {
 		return false
 	}
-	if !comparePolicy(cat1.GetSource().GetPolicy(), cat2.GetSource().GetPolicy()) {
-		return false
-	}
 
 	map2 := cat2.GetSource().Properties.AsMap()
 	if isSQLSource {
@@ -133,21 +128,6 @@ func (m *sourceMigrator) IsEqual(ctx context.Context, cat1, cat2 *drivers.Catalo
 	}
 
 	return equal(cat1.GetSource().Properties.AsMap(), map2)
-}
-
-func comparePolicy(p1, p2 *runtimev1.Source_ExtractPolicy) bool {
-	if (p1 != nil) == (p2 != nil) {
-		if p1 != nil {
-			// both non nil
-			return p1.FilesStrategy == p2.FilesStrategy &&
-				p1.FilesLimit == p2.FilesLimit &&
-				p1.RowsStrategy == p2.RowsStrategy &&
-				p1.RowsLimitBytes == p2.RowsLimitBytes
-		}
-		// both nil
-		return true
-	}
-	return false
 }
 
 func (m *sourceMigrator) ExistsInOlap(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) (bool, error) {
@@ -169,8 +149,8 @@ func convertLower(in map[string]string) map[string]string {
 }
 
 func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts migrator.Options,
-	catalogObj *drivers.CatalogEntry, name string, logger *zap.Logger,
-) error {
+	catalogObj *drivers.CatalogEntry, name string, logger *zap.Logger, ac activity.Client,
+) (outErr error) {
 	apiSource := catalogObj.GetSource()
 	if name == "" {
 		name = apiSource.Name
@@ -193,7 +173,7 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 	} else {
 		var err error
 		variables := convertLower(opts.InstanceEnv)
-		srcConnector, err = drivers.Open(apiSource.Connector, connectorVariables(apiSource, variables, repo.Root()), false, logger)
+		srcConnector, err = drivers.Open(apiSource.Connector, connectorVariables(apiSource, variables, repo.Root()), false, activity.NewNoopClient(), logger)
 		if err != nil {
 			return fmt.Errorf("failed to open driver %w", err)
 		}
@@ -225,7 +205,6 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 	defer cancel()
 
 	ingestionLimit := opts.IngestStorageLimitInBytes
-	p := &progress{}
 	limitExceeded := false
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)
@@ -243,7 +222,39 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 			}
 		}
 	}()
-	err = t.Transfer(ctxWithTimeout, src, sink, drivers.NewTransferOpts(drivers.WithLimitInBytes(ingestionLimit)), p)
+
+	env := convertLower(opts.InstanceEnv)
+	allowHostAccess := strings.EqualFold(env["allow_host_access"], "true")
+
+	p := &progress{}
+	transferOpts := &drivers.TransferOptions{
+		AcquireConnector: func(name string) (drivers.Handle, func(), error) {
+			return nil, nil, fmt.Errorf("this reconciler can't resolve connectors")
+		},
+		Progress:        p,
+		LimitInBytes:    ingestionLimit,
+		RepoRoot:        repo.Root(),
+		AllowHostAccess: allowHostAccess,
+	}
+
+	transferStart := time.Now()
+	defer func() {
+		transferLatency := time.Since(transferStart).Milliseconds()
+		commonDims := []attribute.KeyValue{
+			attribute.String("source", srcConnector.Driver()),
+			attribute.String("destination", olapConnection.Driver()),
+			attribute.Bool("cancelled", errors.Is(outErr, context.Canceled)),
+			attribute.Bool("failed", outErr != nil),
+			attribute.Bool("limit_exceeded", limitExceeded),
+			attribute.Int64("limit_bytes", ingestionLimit),
+		}
+		ac.Emit(ctx, "ingestion_ms", float64(transferLatency), commonDims...)
+		if p.unit == drivers.ProgressUnitByte {
+			ac.Emit(ctx, "ingestion_bytes", float64(p.catalogObj.BytesIngested), commonDims...)
+		}
+	}()
+
+	err = t.Transfer(ctxWithTimeout, src, sink, transferOpts)
 	if limitExceeded {
 		return drivers.ErrIngestionLimitExceeded
 	}
@@ -350,72 +361,13 @@ func (p *progress) Observe(val int64, unit drivers.ProgressUnit) {
 	}
 }
 
-func source(connector string, src *runtimev1.Source) (drivers.Source, error) {
+func source(connector string, src *runtimev1.Source) (map[string]any, error) {
 	props := src.Properties.AsMap()
-	switch connector {
-	case "s3":
-		return &drivers.BucketSource{
-			ExtractPolicy: src.Policy,
-			Properties:    props,
-		}, nil
-	case "gcs":
-		return &drivers.BucketSource{
-			ExtractPolicy: src.Policy,
-			Properties:    props,
-		}, nil
-	case "https":
-		return &drivers.FileSource{
-			Properties: props,
-		}, nil
-	case "local_file":
-		return &drivers.FileSource{
-			Properties: props,
-		}, nil
-	case "motherduck":
-		query, ok := props["sql"].(string)
-		if !ok {
-			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"motherduck\"")
-		}
-		var db string
-		if val, ok := props["db"].(string); ok {
-			db = val
-		}
-
-		return &drivers.DatabaseSource{
-			SQL:      query,
-			Database: db,
-		}, nil
-	case "duckdb":
-		query, ok := props["sql"].(string)
-		if !ok {
-			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"duckdb\"")
-		}
-		return &drivers.DatabaseSource{
-			SQL: query,
-		}, nil
-	case "bigquery":
-		query, ok := props["sql"].(string)
-		if !ok {
-			return nil, fmt.Errorf("property \"sql\" is mandatory for connector \"bigquery\"")
-		}
-		return &drivers.DatabaseSource{
-			SQL:   query,
-			Props: props,
-		}, nil
-	default:
-		return nil, fmt.Errorf("connector %v not supported", connector)
-	}
+	return props, nil
 }
 
-func sink(connector, tableName string) drivers.Sink {
-	switch connector {
-	case "duckdb":
-		return &drivers.DatabaseSink{
-			Table: tableName,
-		}
-	default:
-		return nil
-	}
+func sink(connector, tableName string) map[string]any {
+	return map[string]any{"table": tableName}
 }
 
 func connectorVariables(src *runtimev1.Source, env map[string]string, repoRoot string) map[string]any {

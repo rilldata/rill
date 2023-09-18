@@ -95,3 +95,36 @@ export function getOrderedStartEnd(start: Date, stop: Date) {
     return { start, end: stop };
   }
 }
+
+export function getFilterForComparedDimension(
+  dimensionName,
+  filters,
+  topListValues
+) {
+  // Check if we have an excluded filter for the dimension
+  const excludedFilter = filters.exclude.find((d) => d.name === dimensionName);
+
+  let excludedValues = [];
+  if (excludedFilter) {
+    excludedValues = excludedFilter.in;
+  }
+
+  // Remove excluded values from top list
+  const includedValues = topListValues
+    ?.filter((d) => !excludedValues.includes(d))
+    ?.slice(0, 3);
+
+  // Add dimension to filter
+  const updatedFilter = {
+    ...filters,
+    include: [
+      ...filters.include,
+      {
+        name: dimensionName,
+        in: includedValues,
+      },
+    ],
+  };
+
+  return { includedValues, updatedFilter };
+}

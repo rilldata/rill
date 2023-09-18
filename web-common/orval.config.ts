@@ -43,6 +43,11 @@ export default defineConfig({
               useQuery: true,
             },
           },
+          QueryService_MetricsViewAggregation: {
+            query: {
+              useQuery: true,
+            },
+          },
           QueryService_MetricsViewTotals: {
             query: {
               useQuery: true,
@@ -54,6 +59,11 @@ export default defineConfig({
             },
           },
           QueryService_MetricsViewToplist: {
+            query: {
+              useQuery: true,
+            },
+          },
+          QueryService_MetricsViewComparisonToplist: {
             query: {
               useQuery: true,
             },

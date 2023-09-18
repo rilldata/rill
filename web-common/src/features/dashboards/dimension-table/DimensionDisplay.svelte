@@ -13,23 +13,19 @@
     useMetaQuery,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
-  import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
-  import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
-  import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     createQueryServiceMetricsViewToplist,
     createQueryServiceMetricsViewTotals,
     MetricsViewDimension,
-    MetricsViewFilterCond,
     MetricsViewMeasure,
+    V1MetricsViewToplistResponseDataItem,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import {
-    metricsExplorerStore,
-    useDashboardStore,
-    useFetchTimeRange,
-  } from "../dashboard-stores";
+  import { SortDirection } from "../proto-state/derived-types";
+  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import { humanizeGroupByColumns, FormatPreset } from "../humanize-numbers";
   import {
     computeComparisonValues,
@@ -62,17 +58,17 @@
   $: dimensionColumn = dimension?.column || dimension?.name;
 
   $: dashboardStore = useDashboardStore(metricViewName);
-  $: fetchTimeStore = useFetchTimeRange(metricViewName);
+
+  const timeControlsStore = useTimeControlStore(getStateManagers());
 
   $: leaderboardMeasureName = $dashboardStore?.leaderboardMeasureName;
+  $: isBeingCompared =
+    $dashboardStore?.selectedComparisonDimension === dimensionName;
   $: leaderboardMeasureQuery = useMetaMeasure(
     instanceId,
     metricViewName,
     leaderboardMeasureName
   );
-
-  let excludeValues: Array<MetricsViewFilterCond>;
-  $: excludeValues = $dashboardStore?.filters.exclude;
 
   $: excludeMode =
     $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
@@ -96,8 +92,7 @@
     $dashboardStore?.visibleMeasureKeys.has(m.name)
   );
 
-  $: sortByColumn = $leaderboardMeasureQuery.data?.name;
-  $: sortDirection = sortDirection || "desc";
+  $: sortAscending = $dashboardStore.sortDirection === SortDirection.ASCENDING;
 
   $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricViewName);
   $: hasTimeSeries = $metricTimeSeries.data;
@@ -113,56 +108,28 @@
     {
       dimensionName: dimensionName,
       measureNames: selectedMeasureNames,
-      timeStart: hasTimeSeries ? timeStart : undefined,
-      timeEnd: hasTimeSeries ? timeEnd : undefined,
+      timeStart: $timeControlsStore.timeStart,
+      timeEnd: $timeControlsStore.timeEnd,
       filter: filterSet,
       limit: "250",
       offset: "0",
       sort: [
         {
-          name: sortByColumn,
-          ascending: sortDirection === "asc",
+          name: leaderboardMeasureName,
+          ascending: sortAscending,
         },
       ],
     },
     {
       query: {
         enabled:
-          (hasTimeSeries ? !!timeStart && !!timeEnd : true) &&
-          !!filterSet &&
-          !!sortByColumn &&
-          !!sortDirection,
+          $timeControlsStore.ready && !!filterSet && !!leaderboardMeasureName,
       },
     }
   );
 
-  // the timeRangeName is the key to a selected time range's associated presets.
-  $: timeRangeName = $dashboardStore?.selectedTimeRange?.name;
-
   // Compose the comparison /toplist query
-  $: displayComparison =
-    timeRangeName &&
-    $dashboardStore?.showComparison &&
-    // wait for the start time to be available
-    // TODO: Move to better handling of undefined store values
-    $fetchTimeStore?.start;
-
-  $: comparisonTimeRange =
-    displayComparison &&
-    getComparisonRange(
-      $fetchTimeStore?.start,
-      $fetchTimeStore?.end,
-      ($dashboardStore?.selectedComparisonTimeRange
-        ?.name as TimeComparisonOption) ||
-        (DEFAULT_TIME_RANGES[timeRangeName]
-          .defaultComparison as TimeComparisonOption)
-    );
-  $: comparisonTimeStart =
-    isFinite(comparisonTimeRange?.start?.getTime()) &&
-    comparisonTimeRange.start.toISOString();
-  $: comparisonTimeEnd =
-    isFinite(comparisonTimeRange?.end?.getTime()) &&
-    comparisonTimeRange.end.toISOString();
+  $: displayComparison = $timeControlsStore.showComparison;
   $: comparisonFilterSet = getFilterForComparisonTable(
     filterForDimension,
     dimensionName,
@@ -174,44 +141,39 @@
     metricViewName,
     {
       dimensionName: dimensionName,
-      measureNames: [sortByColumn],
-      timeStart: comparisonTimeStart,
-      timeEnd: comparisonTimeEnd,
+      measureNames: [leaderboardMeasureName],
+      timeStart: $timeControlsStore.comparisonTimeStart,
+      timeEnd: $timeControlsStore.comparisonTimeEnd,
       filter: comparisonFilterSet,
       limit: "250",
       offset: "0",
       sort: [
         {
-          name: sortByColumn,
-          ascending: sortDirection === "asc",
+          name: leaderboardMeasureName,
+          ascending: sortAscending,
         },
       ],
     },
     {
       query: {
         enabled: Boolean(
-          displayComparison &&
-            !!comparisonTimeStart &&
-            !!comparisonTimeEnd &&
-            !!comparisonFilterSet
+          $timeControlsStore.showComparison && !!comparisonFilterSet
         ),
       },
     }
   );
 
-  $: timeStart = $fetchTimeStore?.start?.toISOString();
-  $: timeEnd = $fetchTimeStore?.end?.toISOString();
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     metricViewName,
     {
       measureNames: selectedMeasureNames,
-      timeStart: hasTimeSeries ? timeStart : undefined,
-      timeEnd: hasTimeSeries ? timeEnd : undefined,
+      timeStart: $timeControlsStore.timeStart,
+      timeEnd: $timeControlsStore.timeEnd,
     },
     {
       query: {
-        enabled: hasTimeSeries ? !!timeStart && !!timeEnd : true,
+        enabled: $timeControlsStore.ready,
       },
     }
   );
@@ -228,7 +190,7 @@
     });
   }
 
-  let values = [];
+  let values: V1MetricsViewToplistResponseDataItem[] = [];
   let columns = [];
   let measureNames = [];
 
@@ -244,13 +206,19 @@
           $dashboardStore.visibleMeasureKeys.has(name)
       );
 
-    const selectedMeasure = allMeasures.find((m) => m.name === sortByColumn);
-    const sortByColumnIndex = columnNames.indexOf(sortByColumn);
+    const selectedMeasure = allMeasures.find(
+      (m) => m.name === leaderboardMeasureName
+    );
+    const sortByColumnIndex = columnNames.indexOf(leaderboardMeasureName);
     // Add comparison columns if available
     let percentOfTotalSpliceIndex = 1;
     if (displayComparison) {
       percentOfTotalSpliceIndex = 2;
-      columnNames.splice(sortByColumnIndex + 1, 0, `${sortByColumn}_delta`);
+      columnNames.splice(
+        sortByColumnIndex + 1,
+        0,
+        `${leaderboardMeasureName}_delta`
+      );
 
       // Only push percentage delta column if selected measure is not a percentage
       if (selectedMeasure?.format != FormatPreset.PERCENTAGE) {
@@ -258,7 +226,7 @@
         columnNames.splice(
           sortByColumnIndex + 2,
           0,
-          `${sortByColumn}_delta_perc`
+          `${leaderboardMeasureName}_delta_perc`
         );
       }
     }
@@ -266,7 +234,7 @@
       columnNames.splice(
         sortByColumnIndex + percentOfTotalSpliceIndex,
         0,
-        `${sortByColumn}_percent_of_total`
+        `${leaderboardMeasureName}_percent_of_total`
       );
     }
 
@@ -326,15 +294,22 @@
     const columnName = event.detail;
     if (!measureNames.includes(columnName)) return;
 
-    if (columnName === sortByColumn) {
-      sortDirection = sortDirection === "desc" ? "asc" : "desc";
+    if (columnName === leaderboardMeasureName) {
+      metricsExplorerStore.toggleSortDirection(metricViewName);
     } else {
       metricsExplorerStore.setLeaderboardMeasureName(
         metricViewName,
         columnName
       );
-      sortDirection = "desc";
+      metricsExplorerStore.setSortDescending(metricViewName);
     }
+  }
+
+  function toggleComparisonDimension(dimensionName, isBeingCompared) {
+    metricsExplorerStore.setComparisonDimension(
+      metricViewName,
+      isBeingCompared ? undefined : dimensionName
+    );
   }
 
   $: if ($comparisonTopListQuery?.data && values.length && displayComparison) {
@@ -351,8 +326,8 @@
     $leaderboardMeasureQuery?.data as MetricsViewMeasure
   )?.validPercentOfTotal;
 
-  $: if (validPercentOfTotal && values.length && sortByColumn) {
-    const referenceValue = $totalsQuery.data?.data?.[sortByColumn];
+  $: if (validPercentOfTotal && values.length && leaderboardMeasureName) {
+    const referenceValue = $totalsQuery.data?.data?.[leaderboardMeasureName];
     values = computePercentOfTotal(
       values,
       referenceValue,
@@ -392,11 +367,15 @@
         <DimensionTable
           on:select-item={(event) => onSelectItem(event)}
           on:sort={(event) => onSortByColumn(event)}
+          on:toggle-dimension-comparison={() =>
+            toggleComparisonDimension(dimensionName, isBeingCompared)}
+          {sortAscending}
           dimensionName={dimensionColumn}
+          {isBeingCompared}
           {columns}
           {selectedValues}
           rows={values}
-          {sortByColumn}
+          sortByColumn={leaderboardMeasureName}
           {excludeMode}
         />
       </div>

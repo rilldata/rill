@@ -43,8 +43,9 @@ type ColumnTimeseries struct {
 	Result              *ColumnTimeseriesResult                           `json:"-"`
 
 	// MetricsView-related fields. These can be removed when MetricsViewTimeSeries is refactored to a standalone implementation.
-	MetricsView       *runtimev1.MetricsView       `json:"-"`
-	MetricsViewFilter *runtimev1.MetricsViewFilter `json:"filters"`
+	MetricsView       *runtimev1.MetricsView               `json:"-"`
+	MetricsViewFilter *runtimev1.MetricsViewFilter         `json:"filters"`
+	MetricsViewPolicy *runtime.ResolvedMetricsViewSecurity `json:"security"`
 }
 
 var _ runtime.Query = &ColumnTimeseries{}
@@ -54,7 +55,7 @@ func (q *ColumnTimeseries) Key() string {
 	if err != nil {
 		panic(err)
 	}
-	return fmt.Sprintf("ColumnTimeseries:%s", string(r))
+	return fmt.Sprintf("ColumnTimeseries:%s", r)
 }
 
 func (q *ColumnTimeseries) Deps() []string {
@@ -98,8 +99,8 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		return nil
 	}
 
-	return olap.WithConnection(ctx, priority, func(ctx context.Context, ensuredCtx context.Context, _ *sql.Conn) error {
-		filter, args, err := buildFilterClauseForMetricsViewFilter(q.MetricsView, q.MetricsViewFilter, olap.Dialect())
+	return olap.WithConnection(ctx, priority, false, false, func(ctx context.Context, ensuredCtx context.Context, _ *sql.Conn) error {
+		filter, args, err := buildFilterClauseForMetricsViewFilter(q.MetricsView, q.MetricsViewFilter, olap.Dialect(), q.MetricsViewPolicy)
 		if err != nil {
 			return err
 		}

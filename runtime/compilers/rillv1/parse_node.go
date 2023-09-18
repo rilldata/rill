@@ -22,6 +22,7 @@ type Node struct {
 	YAMLRaw           string
 	YAMLPath          string
 	Connector         string
+	ConnectorInferred bool
 	SQL               string
 	SQLPath           string
 	SQLAnnotations    map[string]any
@@ -222,6 +223,12 @@ func (p *Parser) parseStem(ctx context.Context, paths []string, ymlPath, yml, sq
 			}
 			return nil, pathError{path: path, err: errors.New("resource kind not specified and could not be inferred from context")}
 		}
+	}
+
+	// If connector wasn't set explicitly, default to DefaultConnector
+	if res.Connector == "" {
+		res.Connector = p.DefaultConnector
+		res.ConnectorInferred = true
 	}
 
 	return res, nil

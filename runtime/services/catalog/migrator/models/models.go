@@ -8,6 +8,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
 	"go.uber.org/zap"
@@ -19,7 +20,7 @@ func init() {
 
 type modelMigrator struct{}
 
-func (m *modelMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts migrator.Options, catalogObj *drivers.CatalogEntry, logger *zap.Logger) error {
+func (m *modelMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts migrator.Options, catalogObj *drivers.CatalogEntry, logger *zap.Logger, ac activity.Client) error {
 	sql := catalogObj.GetModel().Sql
 	materialize := catalogObj.GetModel().Materialize
 	materializeType := getMaterializeType(materialize)
@@ -34,7 +35,7 @@ func (m *modelMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo
 	})
 }
 
-func (m *modelMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts migrator.Options, oldCatalogObj, newCatalogObj *drivers.CatalogEntry, logger *zap.Logger) error {
+func (m *modelMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts migrator.Options, oldCatalogObj, newCatalogObj *drivers.CatalogEntry, logger *zap.Logger, ac activity.Client) error {
 	if oldCatalogObj.Name != newCatalogObj.Name {
 		// should not happen but just to be sure
 		return errors.New("update is called but model name has changed")
@@ -52,7 +53,7 @@ func (m *modelMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo
 		}
 	}
 	// re-create to ensure column checks and/or re-materialization in case underlying source changed
-	return m.Create(ctx, olap, repo, opts, newCatalogObj, logger)
+	return m.Create(ctx, olap, repo, opts, newCatalogObj, logger, nil)
 }
 
 func getMaterializeType(materialize bool) string {

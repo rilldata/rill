@@ -61,6 +61,9 @@ curl -s <https://cdn.rilldata.com/install.sh> | bash
 You can download platform-specific binaries from our [releases page on Github](https://github.com/rilldata/rill/releases). A manual download will not make Rill Developer globally accessible, so you'll need to reference the full path of the binary when executing CLI commands.
 
 ## Frequently Asked Questions 
+### How do I upgrade Rill to the latest version?
+If you installed Rill using the installation script described above, you can upgrade by running `rill upgrade` or by re-running the installation script.
+
 ### Rill cannot be opened because it is from an unidentified developer.
 This occurs when Rill binary is downloaded via browser. You need to change the permissions to make it executable and remove it from Apple Developer identification quarantine. 
 Below CLI commands will help you to do that: 

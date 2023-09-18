@@ -22,7 +22,7 @@ import {
 } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
 import {
   DashboardState,
-  DashboardState_DashboardLeaderboardContextColumn,
+  DashboardState_LeaderboardContextColumn,
   DashboardTimeRange,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
@@ -34,14 +34,14 @@ import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 // TODO: make a follow up PR to use the one from the proto directly
 const LeaderboardContextColumnMap: Record<
   LeaderboardContextColumn,
-  DashboardState_DashboardLeaderboardContextColumn
+  DashboardState_LeaderboardContextColumn
 > = {
   [LeaderboardContextColumn.PERCENT]:
-    DashboardState_DashboardLeaderboardContextColumn.PERCENT,
-  [LeaderboardContextColumn.DELTA_CHANGE]:
-    DashboardState_DashboardLeaderboardContextColumn.DELTA_CHANGE,
+    DashboardState_LeaderboardContextColumn.PERCENT,
+  [LeaderboardContextColumn.DELTA_PERCENT]:
+    DashboardState_LeaderboardContextColumn.DELTA_PERCENT,
   [LeaderboardContextColumn.HIDDEN]:
-    DashboardState_DashboardLeaderboardContextColumn.HIDDEN,
+    DashboardState_LeaderboardContextColumn.HIDDEN,
 };
 
 export function getProtoFromDashboardState(
@@ -67,7 +67,10 @@ export function getProtoFromDashboardState(
   if (metrics.lastDefinedScrubRange) {
     state.scrubRange = toScrubProto(metrics.lastDefinedScrubRange);
   }
-  state.showComparison = Boolean(metrics.showComparison);
+  state.showTimeComparison = Boolean(metrics.showTimeComparison);
+  if (metrics.selectedComparisonDimension) {
+    state.comparisonDimension = metrics.selectedComparisonDimension;
+  }
   if (metrics.selectedTimezone) {
     state.selectedTimezone = metrics.selectedTimezone;
   }
@@ -93,6 +96,13 @@ export function getProtoFromDashboardState(
   if (metrics.leaderboardContextColumn) {
     state.leaderboardContextColumn =
       LeaderboardContextColumnMap[metrics.leaderboardContextColumn];
+  }
+
+  if (metrics.sortDirection) {
+    state.leaderboardSortDirection = metrics.sortDirection;
+  }
+  if (metrics.dashboardSortType) {
+    state.leaderboardSortType = metrics.dashboardSortType;
   }
 
   const message = new DashboardState(state);

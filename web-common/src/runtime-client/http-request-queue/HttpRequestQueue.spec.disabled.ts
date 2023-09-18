@@ -7,7 +7,7 @@ import {
 import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
 import { UrlExtractorRegex } from "@rilldata/web-common/runtime-client/http-request-queue/HttpRequestQueue";
 import type { RequestQueueEntry } from "@rilldata/web-common/runtime-client/http-request-queue/HttpRequestQueueTypes";
-import { asyncWait, waitUntil } from "@rilldata/web-local/lib/util/waitUtils";
+import { asyncWait, waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import Mock = jest.Mock;
 
 // skipping because there is too much instability due to race conditions

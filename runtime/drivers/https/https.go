@@ -9,6 +9,7 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"go.uber.org/zap"
 )
@@ -35,7 +36,7 @@ var spec = drivers.Spec{
 
 type driver struct{}
 
-func (d driver) Open(config map[string]any, shared bool, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("https driver can't be shared")
 	}
@@ -54,12 +55,13 @@ func (d driver) Spec() drivers.Spec {
 	return spec
 }
 
-func (d driver) HasAnonymousSourceAccess(ctx context.Context, src drivers.Source, logger *zap.Logger) (bool, error) {
+func (d driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
 	return true, nil
 }
 
 type sourceProperties struct {
 	Path    string            `mapstructure:"path"`
+	URI     string            `mapstructure:"uri"`
 	Headers map[string]string `mapstructure:"headers"`
 }
 
@@ -69,6 +71,12 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Backwards compatibility for "uri" renamed to "path"
+	if conf.URI != "" {
+		conf.Path = conf.URI
+	}
+
 	return conf, nil
 }
 
@@ -144,8 +152,8 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 }
 
 // FilePaths implements drivers.FileStore
-func (c *connection) FilePaths(ctx context.Context, src *drivers.FileSource) ([]string, error) {
-	conf, err := parseSourceProperties(src.Properties)
+func (c *connection) FilePaths(ctx context.Context, src map[string]any) ([]string, error) {
+	conf, err := parseSourceProperties(src)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
@@ -175,8 +183,7 @@ func (c *connection) FilePaths(ctx context.Context, src *drivers.FileSource) ([]
 		return nil, fmt.Errorf("failed to fetch url %s: %s", conf.Path, resp.Status)
 	}
 
-	// TODO :: I don't like src.Name
-	file, size, err := fileutil.CopyToTempFile(resp.Body, src.Name, extension)
+	file, size, err := fileutil.CopyToTempFile(resp.Body, "", extension)
 	if err != nil {
 		return nil, err
 	}

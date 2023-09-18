@@ -98,6 +98,29 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - RuntimeService
+  /v1/connectors/scan:
+    get:
+      summary: |-
+        ScanConnectors scans the artifacts for connectors and returns information about
+        the connectors referenced in the artifacts. The information includes name,type and
+        credentials for the connector.
+      operationId: ConnectorService_ScanConnectors
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ScanConnectorsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
   /v1/delete-and-reconcile:
     post:
       summary: DeleteFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
@@ -117,6 +140,40 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1DeleteFileAndReconcileRequest'
+      tags:
+        - RuntimeService
+  /v1/dev-jwt:
+    get:
+      operationId: RuntimeService_IssueDevJWT
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1IssueDevJWTResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: name
+          in: query
+          required: false
+          type: string
+        - name: email
+          in: query
+          required: false
+          type: string
+        - name: groups
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+        - name: admin
+          in: query
+          required: false
+          type: boolean
       tags:
         - RuntimeService
   /v1/examples:
@@ -393,9 +450,9 @@ paths:
           schema:
             type: object
             properties:
-              olapDriver:
+              olapConnector:
                 type: string
-              repoDriver:
+              repoConnector:
                 type: string
               embedCatalog:
                 type: boolean
@@ -946,11 +1003,77 @@ paths:
                 format: int64
               format:
                 $ref: '#/definitions/v1ExportFormat'
+              metricsViewAggregationRequest:
+                $ref: '#/definitions/v1MetricsViewAggregationRequest'
               metricsViewToplistRequest:
                 $ref: '#/definitions/v1MetricsViewToplistRequest'
               metricsViewRowsRequest:
                 $ref: '#/definitions/v1MetricsViewRowsRequest'
+              metricsViewTimeSeriesRequest:
+                $ref: '#/definitions/v1MetricsViewTimeSeriesRequest'
             title: Request message for QueryService.Export
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsView}/aggregation:
+    post:
+      summary: MetricsViewAggregation is a generic API for running group-by queries against a metrics view.
+      operationId: QueryService_MetricsViewAggregation
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewAggregationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsView
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              dimensions:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewAggregationDimension'
+              measures:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewAggregationMeasure'
+              sort:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewAggregationSort'
+              timeStart:
+                type: string
+                format: date-time
+              timeEnd:
+                type: string
+                format: date-time
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
+              limit:
+                type: string
+                format: int64
+              offset:
+                type: string
+                format: int64
+              priority:
+                type: integer
+                format: int32
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
@@ -1830,24 +1953,7 @@ paths:
           in: path
           required: true
           type: string
-        - name: refFilter.kind
-          in: query
-          required: false
-          type: string
-        - name: refFilter.name
-          in: query
-          required: false
-          type: string
-        - name: prefixFilter.kind
-          in: query
-          required: false
-          type: string
-        - name: prefixFilter.name
-          in: query
-          required: false
-          type: string
-        - name: annotationsFilter
-          description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
+        - name: kind
           in: query
           required: false
           type: string
@@ -1877,27 +1983,14 @@ paths:
           in: path
           required: true
           type: string
-        - name: refFilter.kind
+        - name: kind
           in: query
           required: false
           type: string
-        - name: refFilter.name
+        - name: replay
           in: query
           required: false
-          type: string
-        - name: prefixFilter.kind
-          in: query
-          required: false
-          type: string
-        - name: prefixFilter.name
-          in: query
-          required: false
-          type: string
-        - name: annotationsFilter
-          description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
-          in: query
-          required: false
-          type: string
+          type: boolean
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/sync:
@@ -2196,6 +2289,13 @@ paths:
       tags:
         - ConnectorService
 definitions:
+  BucketExtractPolicyStrategy:
+    type: string
+    enum:
+      - STRATEGY_UNSPECIFIED
+      - STRATEGY_HEAD
+      - STRATEGY_TAIL
+    default: STRATEGY_UNSPECIFIED
   ColumnTimeSeriesRequestBasicMeasure:
     type: object
     properties:
@@ -2285,6 +2385,27 @@ definitions:
       validPercentOfTotal:
         type: boolean
     title: Measures are aggregated computed values
+  MetricsViewSecurity:
+    type: object
+    properties:
+      access:
+        type: string
+        title: Dashboard level access condition
+      rowFilter:
+        type: string
+        title: row level access condition
+      include:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/SecurityFieldCondition'
+        title: either one of include or exclude will be specified
+      exclude:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/SecurityFieldCondition'
+    title: Security for the metrics view
   MetricsViewSpecDimensionV2:
     type: object
     properties:
@@ -2313,6 +2434,27 @@ definitions:
       validPercentOfTotal:
         type: boolean
     title: Measures are aggregated computed values
+  MetricsViewSpecSecurityV2:
+    type: object
+    properties:
+      access:
+        type: string
+        title: Dashboard level access condition
+      rowFilter:
+        type: string
+        title: row level access condition
+      include:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/SecurityV2FieldConditionV2'
+        title: either one of include or exclude will be specified
+      exclude:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/SecurityV2FieldConditionV2'
+    title: Security for the dashboard
   ModelDialect:
     type: string
     enum:
@@ -2355,33 +2497,26 @@ definitions:
       count:
         type: integer
         format: int32
-  SourceExtractPolicy:
+  SecurityFieldCondition:
     type: object
     properties:
-      rowsStrategy:
-        $ref: '#/definitions/SourceExtractPolicyStrategy'
-        title: strategy for selecting rows in a file
-      rowsLimitBytes:
+      condition:
         type: string
-        format: uint64
-        title: |-
-          could in future add: uint64 rows_limit = n;
-          limit on data fetched in bytes
-      filesStrategy:
-        $ref: '#/definitions/SourceExtractPolicyStrategy'
-        title: strategy for selecting files
-      filesLimit:
+      names:
+        type: array
+        items:
+          type: string
+    title: Dimension/measure access condition
+  SecurityV2FieldConditionV2:
+    type: object
+    properties:
+      condition:
         type: string
-        format: uint64
-        title: limit on number of files
-    title: Extract policy for glob connectors
-  SourceExtractPolicyStrategy:
-    type: string
-    enum:
-      - STRATEGY_UNSPECIFIED
-      - STRATEGY_HEAD
-      - STRATEGY_TAIL
-    default: STRATEGY_UNSPECIFIED
+      names:
+        type: array
+        items:
+          type: string
+    title: Dimension/measure level access condition
   StructTypeField:
     type: object
     properties:
@@ -2486,22 +2621,15 @@ definitions:
     type: object
     properties:
       rowsStrategy:
-        $ref: '#/definitions/v1BucketExtractPolicyStrategy'
+        $ref: '#/definitions/BucketExtractPolicyStrategy'
       rowsLimitBytes:
         type: string
         format: uint64
       filesStrategy:
-        $ref: '#/definitions/v1BucketExtractPolicyStrategy'
+        $ref: '#/definitions/BucketExtractPolicyStrategy'
       filesLimit:
         type: string
         format: uint64
-  v1BucketExtractPolicyStrategy:
-    type: string
-    enum:
-      - STRATEGY_UNSPECIFIED
-      - STRATEGY_HEAD
-      - STRATEGY_TAIL
-    default: STRATEGY_UNSPECIFIED
   v1BucketPlanner:
     type: object
     properties:
@@ -2519,6 +2647,13 @@ definitions:
     properties:
       region:
         type: string
+  v1BuiltinMeasure:
+    type: string
+    enum:
+      - BUILTIN_MEASURE_UNSPECIFIED
+      - BUILTIN_MEASURE_COUNT
+      - BUILTIN_MEASURE_COUNT_DISTINCT
+    default: BUILTIN_MEASURE_UNSPECIFIED
   v1CatalogEntry:
     type: object
     properties:
@@ -2818,9 +2953,9 @@ definitions:
     properties:
       instanceId:
         type: string
-      olapDriver:
+      olapConnector:
         type: string
-      repoDriver:
+      repoConnector:
         type: string
       embedCatalog:
         type: boolean
@@ -3039,14 +3174,12 @@ definitions:
       instanceId:
         type: string
         title: Identifier (UUID)
-      olapDriver:
+      olapConnector:
         type: string
-        title: 'Driver to connect to for OLAP (options: duckdb, druid)'
-      repoDriver:
+        title: 'OLAP connector name (typically called : olap )'
+      repoConnector:
         type: string
-        description: |-
-          Driver for reading/editing code artifacts (options: file, metastore, github).
-          This enables virtualizing a file system in a cloud setting.
+        description: "Connector name for repo driver(typically called : repo). \nRepo driver is for reading/editing code artifacts. This enables virtualizing a file system in a cloud setting."
       embedCatalog:
         type: boolean
         description: |-
@@ -3079,6 +3212,12 @@ definitions:
       the runtime. They enable one runtime deployment to serve not only multiple data
       projects, but also multiple tenants. On local, the runtime will usually have
       just a single instance.
+  v1IssueDevJWTResponse:
+    type: object
+    properties:
+      jwt:
+        type: string
+    title: Response message for RuntimeService.IssueDevJWT
   v1ListCatalogEntriesResponse:
     type: object
     properties:
@@ -3203,7 +3342,84 @@ definitions:
         items:
           type: string
         description: Available time zones list preferred time zones using IANA location identifiers.
+      security:
+        $ref: '#/definitions/MetricsViewSecurity'
+        title: Security for the dashboard
     title: Metrics view is the internal representation of a metrics view definition
+  v1MetricsViewAggregationDimension:
+    type: object
+    properties:
+      name:
+        type: string
+      timeGrain:
+        $ref: '#/definitions/v1TimeGrain'
+      timeZone:
+        type: string
+  v1MetricsViewAggregationMeasure:
+    type: object
+    properties:
+      name:
+        type: string
+      builtinMeasure:
+        $ref: '#/definitions/v1BuiltinMeasure'
+      builtinMeasureArgs:
+        type: array
+        items: {}
+  v1MetricsViewAggregationRequest:
+    type: object
+    properties:
+      instanceId:
+        type: string
+      metricsView:
+        type: string
+      dimensions:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewAggregationDimension'
+      measures:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewAggregationMeasure'
+      sort:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewAggregationSort'
+      timeStart:
+        type: string
+        format: date-time
+      timeEnd:
+        type: string
+        format: date-time
+      filter:
+        $ref: '#/definitions/v1MetricsViewFilter'
+      limit:
+        type: string
+        format: int64
+      offset:
+        type: string
+        format: int64
+      priority:
+        type: integer
+        format: int32
+  v1MetricsViewAggregationResponse:
+    type: object
+    properties:
+      schema:
+        $ref: '#/definitions/v1StructType'
+      data:
+        type: array
+        items:
+          type: object
+  v1MetricsViewAggregationSort:
+    type: object
+    properties:
+      name:
+        type: string
+      desc:
+        type: boolean
   v1MetricsViewColumn:
     type: object
     properties:
@@ -3408,6 +3624,9 @@ definitions:
         items:
           type: string
         title: Available time zones list preferred time zones using IANA location identifiers
+      security:
+        $ref: '#/definitions/MetricsViewSpecSecurityV2'
+        title: Security for the dashboard
   v1MetricsViewState:
     type: object
     properties:
@@ -3779,11 +3998,6 @@ definitions:
         type: integer
         format: int64
         title: materialize_model_delay_seconds makes the project parser delay materialization of updated models
-      duckdbConnectors:
-        type: array
-        items:
-          type: string
-        title: duckdb_connectors is a list of connectors that use DuckDB
   v1ProjectParserState:
     type: object
     properties:
@@ -3871,6 +4085,8 @@ definitions:
         type: integer
         format: int32
         description: Since response could out of order `key` is used to co-relate a specific response to request.
+      metricsViewAggregationRequest:
+        $ref: '#/definitions/v1MetricsViewAggregationRequest'
       metricsViewToplistRequest:
         $ref: '#/definitions/v1MetricsViewToplistRequest'
       metricsViewComparisonToplistRequest:
@@ -3915,6 +4131,8 @@ definitions:
         format: int32
       error:
         type: string
+      metricsViewAggregationResponse:
+        $ref: '#/definitions/v1MetricsViewAggregationResponse'
       metricsViewToplistResponse:
         $ref: '#/definitions/v1MetricsViewToplistResponse'
       metricsViewComparisonToplistResponse:
@@ -4045,6 +4263,14 @@ definitions:
           executing the reconciliation. If changed_paths was empty, this will include all
           code artifacts in the repo.
     title: Response message for RuntimeService.Reconcile
+  v1ReconcileStatus:
+    type: string
+    enum:
+      - RECONCILE_STATUS_UNSPECIFIED
+      - RECONCILE_STATUS_IDLE
+      - RECONCILE_STATUS_PENDING
+      - RECONCILE_STATUS_RUNNING
+    default: RECONCILE_STATUS_UNSPECIFIED
   v1RefreshAndReconcileRequest:
     type: object
     properties:
@@ -4168,10 +4394,8 @@ definitions:
     type: string
     enum:
       - RESOURCE_EVENT_UNSPECIFIED
-      - RESOURCE_EVENT_ADDED
-      - RESOURCE_EVENT_UPDATED_SPEC
-      - RESOURCE_EVENT_UPDATED_STATE
-      - RESOURCE_EVENT_DELETED
+      - RESOURCE_EVENT_WRITE
+      - RESOURCE_EVENT_DELETE
     default: RESOURCE_EVENT_UNSPECIFIED
   v1ResourceMeta:
     type: object
@@ -4189,16 +4413,7 @@ definitions:
         type: array
         items:
           type: string
-      deleted:
-        type: boolean
-      renamedFrom:
-        $ref: '#/definitions/v1ResourceName'
-      reconcileError:
-        type: string
       version:
-        type: string
-        format: int64
-      metaVersion:
         type: string
         format: int64
       specVersion:
@@ -4219,6 +4434,15 @@ definitions:
       deletedOn:
         type: string
         format: date-time
+      reconcileStatus:
+        $ref: '#/definitions/v1ReconcileStatus'
+      reconcileError:
+        type: string
+      reconcileOn:
+        type: string
+        format: date-time
+      renamedFrom:
+        $ref: '#/definitions/v1ResourceName'
   v1ResourceName:
     type: object
     properties:
@@ -4270,6 +4494,24 @@ definitions:
         format: int64
       isDir:
         type: boolean
+  v1ScanConnectorsResponse:
+    type: object
+    properties:
+      connectors:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ScannedConnector'
+  v1ScannedConnector:
+    type: object
+    properties:
+      name:
+        type: string
+      type:
+        type: string
+      hasAnonymousAccess:
+        type: boolean
+        title: reports whether access is present without any credentials
   v1Schedule:
     type: object
     properties:
@@ -4293,9 +4535,6 @@ definitions:
       schema:
         $ref: '#/definitions/v1StructType'
         title: Detected schema of the source
-      policy:
-        $ref: '#/definitions/SourceExtractPolicy'
-        title: extraction policy for the source
       timeoutSeconds:
         type: integer
         format: int32
@@ -4583,7 +4822,9 @@ definitions:
   v1WatchResourcesResponse:
     type: object
     properties:
-      resource:
-        $ref: '#/definitions/v1Resource'
       event:
         $ref: '#/definitions/v1ResourceEvent'
+      name:
+        $ref: '#/definitions/v1ResourceName'
+      resource:
+        $ref: '#/definitions/v1Resource'

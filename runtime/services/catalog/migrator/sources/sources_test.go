@@ -11,6 +11,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/services/catalog"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
 	_ "github.com/rilldata/rill/runtime/services/catalog/migrator/sources"
@@ -90,11 +91,11 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, false, zap.NewNop())
+	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	olap, _ := conn.AsOLAP("")
 
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathRel}, false, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathRel}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	repo, _ := fileStore.AsRepoStore("")
 
@@ -120,7 +121,7 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 					Properties: p,
 				},
 			}
-			err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+			err = m.Create(ctx, olap, repo, opts, source, zap.NewNop(), activity.NewNoopClient())
 			require.NoError(t, err)
 
 			var count int
@@ -152,11 +153,11 @@ func TestConnectorWithoutRootAccess(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, false, zap.NewNop())
+	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	olap, _ := conn.AsOLAP("")
 
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathRel}, false, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathRel}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	repo, _ := fileStore.AsRepoStore("")
 
@@ -178,7 +179,7 @@ func TestConnectorWithoutRootAccess(t *testing.T) {
 					Properties: p,
 				},
 			}
-			err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+			err = m.Create(ctx, olap, repo, opts, source, zap.NewNop(), activity.NewNoopClient())
 			if tt.isError {
 				require.Error(t, err, "file connector cannot ingest source: path is outside repo root")
 				return
@@ -203,12 +204,12 @@ func TestCSVDelimiter(t *testing.T) {
 	testDelimiterCsvPath := filepath.Join(testdataPathAbs, "test-delimiter.csv")
 
 	ctx := context.Background()
-	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, false, zap.NewNop())
+	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	defer conn.Close()
 	olap, _ := conn.AsOLAP("")
 
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathAbs}, false, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathAbs}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	defer fileStore.Close()
 	repo, _ := fileStore.AsRepoStore("")
@@ -231,7 +232,7 @@ func TestCSVDelimiter(t *testing.T) {
 			Properties: p,
 		},
 	}
-	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM foo"})
@@ -245,7 +246,7 @@ func TestCSVDelimiter(t *testing.T) {
 
 func TestFileFormatAndDelimiter(t *testing.T) {
 	ctx := context.Background()
-	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, false, zap.NewNop())
+	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	olap, _ := conn.AsOLAP("")
 
@@ -291,7 +292,7 @@ func TestFileFormatAndDelimiter(t *testing.T) {
 					Properties: p,
 				},
 			}
-			err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+			err = m.Create(ctx, olap, repo, opts, source, zap.NewNop(), activity.NewNoopClient())
 			require.NoError(t, err)
 
 			rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM foo"})
@@ -363,7 +364,7 @@ columns={id:'INTEGER',name:'VARCHAR',country:'VARCHAR',city:'VARCHAR'})`, filePa
 					Properties: p,
 				},
 			}
-			err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+			err = m.Create(ctx, olap, repo, opts, source, zap.NewNop(), activity.NewNoopClient())
 			require.NoError(t, err)
 
 			rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM csv_source"})
@@ -408,7 +409,7 @@ func TestJsonIngestionDefault(t *testing.T) {
 			Properties: p,
 		},
 	}
-	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM json_source"})
@@ -453,7 +454,7 @@ func TestJsonIngestionWithColumns(t *testing.T) {
 			Properties: p,
 		},
 	}
-	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM json_source"})
@@ -498,7 +499,7 @@ func TestJsonIngestionWithLessColumns(t *testing.T) {
 			Properties: p,
 		},
 	}
-	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	require.NoError(t, err)
@@ -588,7 +589,7 @@ auto_detect=false,sample_size=-1,dateformat='iso',timestampformat='iso',format='
 					Properties: p,
 				},
 			}
-			err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+			err = m.Create(ctx, olap, repo, opts, source, zap.NewNop(), activity.NewNoopClient())
 			require.NoError(t, err)
 
 			rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM json_source"})
@@ -637,7 +638,7 @@ func TestJsonIngestionWithInvalidParam(t *testing.T) {
 			Properties: p,
 		},
 	}
-	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop(), activity.NewNoopClient())
 	require.Error(t, err, "Invalid named parameter \"invalid_param\" for function read_json")
 }
 
@@ -805,7 +806,7 @@ func TestPropertiesEqualsSQLSources(t *testing.T) {
 
 func TestSqlIngestionWithFiltersAndColumns(t *testing.T) {
 	ctx := context.Background()
-	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, false, zap.NewNop())
+	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	olap, _ := conn.AsOLAP("")
 	m := migrator.Migrators[drivers.ObjectTypeSource]
@@ -834,7 +835,7 @@ from read_csv_auto('%s') where publisher in ('Yahoo', 'Google')`, testCsvPath)
 			Properties: p,
 		},
 	}
-	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM csv_source"})
@@ -880,7 +881,7 @@ func createFilePath(t *testing.T, dirPath string, fileName string) string {
 }
 
 func runOLAPStore(t *testing.T) drivers.OLAPStore {
-	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, false, zap.NewNop())
+	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write"}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	olap, canServe := conn.AsOLAP("")
 	require.True(t, canServe)
@@ -888,7 +889,7 @@ func runOLAPStore(t *testing.T) drivers.OLAPStore {
 }
 
 func runRepoStore(t *testing.T, testdataPathAbs string) drivers.RepoStore {
-	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathAbs}, false, zap.NewNop())
+	fileStore, err := drivers.Open("file", map[string]any{"dsn": testdataPathAbs}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	repo, _ := fileStore.AsRepoStore("")
 	return repo

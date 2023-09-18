@@ -18,17 +18,19 @@ import (
 )
 
 type MetricsViewTimeSeries struct {
-	MetricsViewName string                       `json:"metrics_view_name,omitempty"`
-	MeasureNames    []string                     `json:"measure_names,omitempty"`
-	InlineMeasures  []*runtimev1.InlineMeasure   `json:"inline_measures,omitempty"`
-	TimeStart       *timestamppb.Timestamp       `json:"time_start,omitempty"`
-	TimeEnd         *timestamppb.Timestamp       `json:"time_end,omitempty"`
-	Limit           int64                        `json:"limit,omitempty"`
-	Offset          int64                        `json:"offset,omitempty"`
-	Sort            []*runtimev1.MetricsViewSort `json:"sort,omitempty"`
-	Filter          *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
-	TimeGranularity runtimev1.TimeGrain          `json:"time_granularity,omitempty"`
-	TimeZone        string                       `json:"time_zone,omitempty"`
+	MetricsViewName    string                               `json:"metrics_view_name,omitempty"`
+	MeasureNames       []string                             `json:"measure_names,omitempty"`
+	InlineMeasures     []*runtimev1.InlineMeasure           `json:"inline_measures,omitempty"`
+	TimeStart          *timestamppb.Timestamp               `json:"time_start,omitempty"`
+	TimeEnd            *timestamppb.Timestamp               `json:"time_end,omitempty"`
+	Limit              int64                                `json:"limit,omitempty"`
+	Offset             int64                                `json:"offset,omitempty"`
+	Sort               []*runtimev1.MetricsViewSort         `json:"sort,omitempty"`
+	Filter             *runtimev1.MetricsViewFilter         `json:"filter,omitempty"`
+	TimeGranularity    runtimev1.TimeGrain                  `json:"time_granularity,omitempty"`
+	TimeZone           string                               `json:"time_zone,omitempty"`
+	MetricsView        *runtimev1.MetricsView               `json:"-"`
+	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity `json:"security"`
 
 	Result *runtimev1.MetricsViewTimeSeriesResponse `json:"-"`
 }
@@ -40,7 +42,7 @@ func (q *MetricsViewTimeSeries) Key() string {
 	if err != nil {
 		panic(err)
 	}
-	return fmt.Sprintf("MetricsViewTimeSeries:%s", string(r))
+	return fmt.Sprintf("MetricsViewTimeSeries:%s", r)
 }
 
 func (q *MetricsViewTimeSeries) Deps() []string {
@@ -64,12 +66,7 @@ func (q *MetricsViewTimeSeries) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	mv, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
-	if err != nil {
-		return err
-	}
-
-	if mv.TimeDimension == "" {
+	if q.MetricsView.TimeDimension == "" {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
@@ -81,9 +78,9 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
-		return q.resolveDuckDB(ctx, rt, instanceID, mv, priority)
+		return q.resolveDuckDB(ctx, rt, instanceID, q.MetricsView, priority, q.ResolvedMVSecurity)
 	case drivers.DialectDruid:
-		return q.resolveDruid(ctx, olap, mv, priority)
+		return q.resolveDruid(ctx, olap, q.MetricsView, priority, q.ResolvedMVSecurity)
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
@@ -95,13 +92,8 @@ func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime,
 		return err
 	}
 
-	mv, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
-	if err != nil {
-		return err
-	}
-
 	if opts.PreWriteHook != nil {
-		err = opts.PreWriteHook(q.generateFilename(mv))
+		err = opts.PreWriteHook(q.generateFilename(q.MetricsView))
 		if err != nil {
 			return err
 		}
@@ -109,10 +101,10 @@ func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime,
 
 	tmp := make([]*structpb.Struct, 0, len(q.Result.Data))
 	meta := append([]*runtimev1.MetricsViewColumn{{
-		Name: mv.TimeDimension,
+		Name: q.MetricsView.TimeDimension,
 	}}, q.Result.Meta...)
 	for _, dt := range q.Result.Data {
-		dt.Records.Fields[mv.TimeDimension] = structpb.NewStringValue(dt.Ts.AsTime().Format(time.RFC3339Nano))
+		dt.Records.Fields[q.MetricsView.TimeDimension] = structpb.NewStringValue(dt.Ts.AsTime().Format(time.RFC3339Nano))
 		tmp = append(tmp, dt.Records)
 	}
 
@@ -138,7 +130,7 @@ func (q *MetricsViewTimeSeries) generateFilename(mv *runtimev1.MetricsView) stri
 	return filename
 }
 
-func (q *MetricsViewTimeSeries) resolveDuckDB(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsView, priority int) error {
+func (q *MetricsViewTimeSeries) resolveDuckDB(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsView, priority int, policy *runtime.ResolvedMetricsViewSecurity) error {
 	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
 	if err != nil {
 		return err
@@ -161,6 +153,7 @@ func (q *MetricsViewTimeSeries) resolveDuckDB(ctx context.Context, rt *runtime.R
 		MetricsView:       mv,
 		MetricsViewFilter: q.Filter,
 		TimeZone:          q.TimeZone,
+		MetricsViewPolicy: policy,
 	}
 	err = rt.Query(ctx, instanceID, tsq, priority)
 	if err != nil {
@@ -188,8 +181,8 @@ func toColumnTimeseriesMeasures(measures []*runtimev1.MetricsView_Measure) ([]*r
 	return res, nil
 }
 
-func (q *MetricsViewTimeSeries) resolveDruid(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsView, priority int) error {
-	sql, tsAlias, args, err := q.buildDruidMetricsTimeseriesSQL(mv)
+func (q *MetricsViewTimeSeries) resolveDruid(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsView, priority int, policy *runtime.ResolvedMetricsViewSecurity) error {
+	sql, tsAlias, args, err := q.buildDruidMetricsTimeseriesSQL(mv, policy)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -254,7 +247,7 @@ func (q *MetricsViewTimeSeries) resolveDruid(ctx context.Context, olap drivers.O
 	return nil
 }
 
-func (q *MetricsViewTimeSeries) buildDruidMetricsTimeseriesSQL(mv *runtimev1.MetricsView) (string, string, []any, error) {
+func (q *MetricsViewTimeSeries) buildDruidMetricsTimeseriesSQL(mv *runtimev1.MetricsView, policy *runtime.ResolvedMetricsViewSecurity) (string, string, []any, error) {
 	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
 	if err != nil {
 		return "", "", nil, err
@@ -278,7 +271,7 @@ func (q *MetricsViewTimeSeries) buildDruidMetricsTimeseriesSQL(mv *runtimev1.Met
 	}
 
 	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, drivers.DialectDruid)
+		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, drivers.DialectDruid, policy)
 		if err != nil {
 			return "", "", nil, err
 		}

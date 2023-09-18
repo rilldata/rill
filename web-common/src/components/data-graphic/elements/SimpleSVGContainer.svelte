@@ -56,6 +56,7 @@ to the props.
   on:scrub-move
   use:mousePositionToDomain
   on:click
+  on:contextmenu
   width={$config.width}
   height={$config.height}
 >
