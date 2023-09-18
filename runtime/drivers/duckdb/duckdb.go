@@ -491,7 +491,7 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 			estimatedDBSize, _ := c.EstimateSize()
 			c.activity.Emit(c.ctx, "duckdb_estimated_size_bytes", float64(estimatedDBSize))
 
-			// Motherduck drive doesn't provide pragma stats
+			// Motherduck driver doesn't provide pragma stats
 			if c.driverName == "motherduck" {
 				continue
 			}
