@@ -139,9 +139,6 @@ export function prepareLeaderboardItemData(
     excludeMode
   );
 
-  console.log("excludeMode", excludeMode);
-  console.log("comparisonDefaultSelection", comparisonDefaultSelection);
-
   // we keep a copy of the selected values array to keep
   // track of values that the user has selected but that
   // are not included in the latest filtered results returned
