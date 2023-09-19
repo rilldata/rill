@@ -45,7 +45,7 @@ func (r *RefreshTriggerReconciler) AssignState(from, to *runtimev1.Resource) err
 	if a == nil || b == nil {
 		return fmt.Errorf("cannot assign state from %T to %T", from.Resource, to.Resource)
 	}
-	b.Spec = a.Spec
+	b.State = a.State
 	return nil
 }
 

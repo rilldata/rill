@@ -2,6 +2,7 @@ package runtime_test
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -111,27 +112,29 @@ func requireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.
 	require.Equal(t, a.Resource, b.Resource, "for resource %q", a.Meta.Name)
 }
 
-func requireCatalog(t testing.TB, rt *runtime.Runtime, id string, resources, reconcileErrs, parseErrs int) {
+func requireCatalog(t testing.TB, rt *runtime.Runtime, id string, resources, lenReconcileErrs, lenParseErrs int) {
 	ctrl, err := rt.Controller(id)
 	require.NoError(t, err)
 
 	rs, err := ctrl.List(context.Background(), "", false)
 	require.NoError(t, err)
 
-	var seenReconcileErrs, seenParseErrs int
+	var reconcileErrs, parseErrs []string
 	for _, r := range rs {
 		if r.Meta.ReconcileError != "" {
-			seenReconcileErrs++
+			reconcileErrs = append(reconcileErrs, fmt.Sprintf("%s/%s: %s", r.Meta.Name.Kind, r.Meta.Name.Name, r.Meta.ReconcileError))
 		}
 
 		if r.Meta.Name.Kind == runtime.ResourceKindProjectParser {
-			seenParseErrs += len(r.GetProjectParser().State.ParseErrors)
+			for _, pe := range r.GetProjectParser().State.ParseErrors {
+				parseErrs = append(parseErrs, fmt.Sprintf("%s: %s", pe.FilePath, pe.Message))
+			}
 		}
 	}
 
+	require.Equal(t, lenParseErrs, len(parseErrs), fmt.Sprintf("parse errors: %s", strings.Join(parseErrs, "\n")))
+	require.Equal(t, lenReconcileErrs, len(reconcileErrs), fmt.Sprintf("reconcile errors: %s", strings.Join(reconcileErrs, "\n")))
 	require.Equal(t, resources, len(rs), "resources")
-	require.Equal(t, reconcileErrs, seenReconcileErrs, "reconcile errors")
-	require.Equal(t, parseErrs, seenParseErrs, "parse errors")
 }
 
 func dumpCatalog(t testing.TB, rt *runtime.Runtime, id string) {

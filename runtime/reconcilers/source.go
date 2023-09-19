@@ -53,7 +53,7 @@ func (r *SourceReconciler) AssignState(from, to *runtimev1.Resource) error {
 	if a == nil || b == nil {
 		return fmt.Errorf("cannot assign state from %T to %T", from.Resource, to.Resource)
 	}
-	b.Spec = a.Spec
+	b.State = a.State
 	return nil
 }
 
