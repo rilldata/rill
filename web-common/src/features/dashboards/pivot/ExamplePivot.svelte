@@ -313,12 +313,6 @@
   }
 </script>
 
-<div class="max-h-64 overflow-auto w-fit">
-  <pre>
-  {JSON.stringify($config, null, 2)}
-</pre>
-</div>
-
 <button on:click={() => config.set(structuredClone(basicPivot))}
   >Flat rows</button
 >
