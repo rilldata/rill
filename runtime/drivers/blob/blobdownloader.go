@@ -176,7 +176,6 @@ func (it *blobIterator) NextBatchSize(sizeInBytes int64) ([]string, error) {
 	g.SetLimit(_concurrentBlobDownloadLimit)
 
 	var totalSizeInBytes int64
-	start := it.index
 	for ; it.index < len(it.objects) && totalSizeInBytes < sizeInBytes; it.index++ {
 		obj := it.objects[it.index]
 		totalSizeInBytes += obj.obj.Size
@@ -244,7 +243,7 @@ func (it *blobIterator) NextBatchSize(sizeInBytes int64) ([]string, error) {
 
 	// clients can make changes to slice if passing the same slice that iterator holds
 	// creating a copy since we want to delete all these files on next batch/close
-	result := make([]string, it.index-start)
+	result := make([]string, len(it.localFiles))
 	copy(result, it.localFiles)
 	return result, nil
 }
