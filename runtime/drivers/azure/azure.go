@@ -62,6 +62,10 @@ var spec = drivers.Spec{
 			Key:    "azure_storage_sas_token",
 			Secret: true,
 		},
+		{
+			Key:    "azure_storage_connection_string",
+			Secret: true,
+		},
 	},
 }
 
@@ -269,7 +273,6 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 func (c *Connection) getClient(ctx context.Context, conf *sourceProperties) (*container.Client, error) {
 	var client *container.Client
 	var accountName, accountKey, sasToken, connectionString string
-	azClientOpts := &container.ClientOptions{}
 
 	if c.config.AllowHostAccess {
 		accountName = os.Getenv("AZURE_STORAGE_ACCOUNT")
@@ -280,7 +283,6 @@ func (c *Connection) getClient(ctx context.Context, conf *sourceProperties) (*co
 		accountName = c.config.Account
 		accountKey = c.config.Key
 		sasToken = c.config.SASToken
-		// Added it as per azure blob client implementation, can remove if not required
 		connectionString = c.config.ConnectionString
 	}
 
@@ -296,7 +298,7 @@ func (c *Connection) getClient(ctx context.Context, conf *sourceProperties) (*co
 				return nil, fmt.Errorf("failed azblob.NewSharedKeyCredential: %w", err)
 			}
 
-			client, err = container.NewClientWithSharedKeyCredential(containerURL, sharedKeyCred, azClientOpts)
+			client, err = container.NewClientWithSharedKeyCredential(containerURL, sharedKeyCred, nil)
 			if err != nil {
 				return nil, fmt.Errorf("failed container.NewClientWithSharedKeyCredential: %w", err)
 			}
@@ -314,28 +316,30 @@ func (c *Connection) getClient(ctx context.Context, conf *sourceProperties) (*co
 				return nil, err
 			}
 
-			client, err = container.NewClientWithNoCredential(containerURL, azClientOpts)
+			client, err = container.NewClientWithNoCredential(containerURL, nil)
 			if err != nil {
 				return nil, fmt.Errorf("failed container.NewClientWithNoCredential: %w", err)
 			}
 		} else {
-			cred, err := azidentity.NewDefaultAzureCredential(nil)
+			cred, err := azidentity.NewDefaultAzureCredential(&azidentity.DefaultAzureCredentialOptions{
+				DisableInstanceDiscovery: true,
+			})
 			if err != nil {
 				return nil, fmt.Errorf("failed azidentity.NewDefaultAzureCredential: %w", err)
 			}
-			client, err = container.NewClient(containerURL, cred, azClientOpts)
+			client, err = container.NewClient(containerURL, cred, nil)
 			if err != nil {
 				return nil, fmt.Errorf("failed container.NewClient: %w", err)
 			}
 		}
 	} else if connectionString != "" {
 		var err error
-		client, err = container.NewClientFromConnectionString(connectionString, conf.url.Host, azClientOpts)
+		client, err = container.NewClientFromConnectionString(connectionString, conf.url.Host, nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed container.NewClientFromConnectionString: %w", err)
 		}
 	} else {
-		return nil, errors.New("internal error, no account name")
+		return nil, drivers.NewPermissionDeniedError(fmt.Sprintf("can't access remote host without credentials, err:%v", errors.New("no credentials provided")))
 	}
 
 	return client, nil
