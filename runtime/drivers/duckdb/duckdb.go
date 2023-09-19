@@ -18,7 +18,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers/duckdb/transporter"
 	activity "github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
-	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
 )
@@ -478,6 +477,7 @@ func (c *connection) checkErr(err error) error {
 }
 
 // Periodically collects stats using pragma_database_size() and emits as activity events
+// nolint
 func (c *connection) periodicallyEmitStats(d time.Duration) {
 	if c.activity == nil {
 		// Activity client isn't set, there is no need to report stats
@@ -491,64 +491,67 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 			estimatedDBSize, _ := c.EstimateSize()
 			c.activity.Emit(c.ctx, "duckdb_estimated_size_bytes", float64(estimatedDBSize))
 
-			// Motherduck driver doesn't provide pragma stats
-			if c.driverName == "motherduck" {
-				continue
-			}
+			// NOTE :: running CALL pragma_database_size() while duckdb is ingesting data is causing the WAL file to explode.
+			// Commenting the below code for now. Verify with next duckdb release
 
-			var stat dbStat
-			// Obtain a connection, query, release
-			err := func() error {
-				conn, release, err := c.acquireMetaConn(c.ctx)
-				if err != nil {
-					return err
-				}
-				defer func() { _ = release() }()
-				err = conn.GetContext(c.ctx, &stat, "CALL pragma_database_size()")
-				return err
-			}()
-			if err != nil {
-				c.logger.Error("couldn't query DuckDB stats", zap.Error(err))
-				continue
-			}
+			// // Motherduck driver doesn't provide pragma stats
+			// if c.driverName == "motherduck" {
+			// 	continue
+			// }
 
-			// Emit collected stats as activity events
-			commonDims := []attribute.KeyValue{
-				attribute.String("duckdb.name", stat.DatabaseName),
-			}
+			// var stat dbStat
+			// // Obtain a connection, query, release
+			// err := func() error {
+			// 	conn, release, err := c.acquireMetaConn(c.ctx)
+			// 	if err != nil {
+			// 		return err
+			// 	}
+			// 	defer func() { _ = release() }()
+			// 	err = conn.GetContext(c.ctx, &stat, "CALL pragma_database_size()")
+			// 	return err
+			// }()
+			// if err != nil {
+			// 	c.logger.Error("couldn't query DuckDB stats", zap.Error(err))
+			// 	continue
+			// }
 
-			dbSize, err := humanReadableSizeToBytes(stat.DatabaseSize)
-			if err != nil {
-				c.logger.Error("couldn't convert duckdb size to bytes", zap.Error(err))
-			} else {
-				c.activity.Emit(c.ctx, "duckdb_size_bytes", dbSize, commonDims...)
-			}
+			// // Emit collected stats as activity events
+			// commonDims := []attribute.KeyValue{
+			// 	attribute.String("duckdb.name", stat.DatabaseName),
+			// }
 
-			walSize, err := humanReadableSizeToBytes(stat.WalSize)
-			if err != nil {
-				c.logger.Error("couldn't convert duckdb wal size to bytes", zap.Error(err))
-			} else {
-				c.activity.Emit(c.ctx, "duckdb_wal_size_bytes", walSize, commonDims...)
-			}
+			// dbSize, err := humanReadableSizeToBytes(stat.DatabaseSize)
+			// if err != nil {
+			// 	c.logger.Error("couldn't convert duckdb size to bytes", zap.Error(err))
+			// } else {
+			// 	c.activity.Emit(c.ctx, "duckdb_size_bytes", dbSize, commonDims...)
+			// }
 
-			memoryUsage, err := humanReadableSizeToBytes(stat.MemoryUsage)
-			if err != nil {
-				c.logger.Error("couldn't convert duckdb memory usage to bytes", zap.Error(err))
-			} else {
-				c.activity.Emit(c.ctx, "duckdb_memory_usage_bytes", memoryUsage, commonDims...)
-			}
+			// walSize, err := humanReadableSizeToBytes(stat.WalSize)
+			// if err != nil {
+			// 	c.logger.Error("couldn't convert duckdb wal size to bytes", zap.Error(err))
+			// } else {
+			// 	c.activity.Emit(c.ctx, "duckdb_wal_size_bytes", walSize, commonDims...)
+			// }
 
-			memoryLimit, err := humanReadableSizeToBytes(stat.MemoryLimit)
-			if err != nil {
-				c.logger.Error("couldn't convert duckdb memory limit to bytes", zap.Error(err))
-			} else {
-				c.activity.Emit(c.ctx, "duckdb_memory_limit_bytes", memoryLimit, commonDims...)
-			}
+			// memoryUsage, err := humanReadableSizeToBytes(stat.MemoryUsage)
+			// if err != nil {
+			// 	c.logger.Error("couldn't convert duckdb memory usage to bytes", zap.Error(err))
+			// } else {
+			// 	c.activity.Emit(c.ctx, "duckdb_memory_usage_bytes", memoryUsage, commonDims...)
+			// }
 
-			c.activity.Emit(c.ctx, "duckdb_block_size_bytes", float64(stat.BlockSize), commonDims...)
-			c.activity.Emit(c.ctx, "duckdb_total_blocks", float64(stat.TotalBlocks), commonDims...)
-			c.activity.Emit(c.ctx, "duckdb_free_blocks", float64(stat.FreeBlocks), commonDims...)
-			c.activity.Emit(c.ctx, "duckdb_used_blocks", float64(stat.UsedBlocks), commonDims...)
+			// memoryLimit, err := humanReadableSizeToBytes(stat.MemoryLimit)
+			// if err != nil {
+			// 	c.logger.Error("couldn't convert duckdb memory limit to bytes", zap.Error(err))
+			// } else {
+			// 	c.activity.Emit(c.ctx, "duckdb_memory_limit_bytes", memoryLimit, commonDims...)
+			// }
+
+			// c.activity.Emit(c.ctx, "duckdb_block_size_bytes", float64(stat.BlockSize), commonDims...)
+			// c.activity.Emit(c.ctx, "duckdb_total_blocks", float64(stat.TotalBlocks), commonDims...)
+			// c.activity.Emit(c.ctx, "duckdb_free_blocks", float64(stat.FreeBlocks), commonDims...)
+			// c.activity.Emit(c.ctx, "duckdb_used_blocks", float64(stat.UsedBlocks), commonDims...)
 
 		case <-c.ctx.Done():
 			statTicker.Stop()
@@ -558,11 +561,13 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 }
 
 // Regex to parse human-readable size returned by DuckDB
+// nolint
 var humanReadableSizeRegex = regexp.MustCompile(`^([\d.]+)\s*(\S+)$`)
 
 // Reversed logic of StringUtil::BytesToHumanReadableString
 // see https://github.com/cran/duckdb/blob/master/src/duckdb/src/common/string_util.cpp#L157
 // Examples: 1 bytes, 2 bytes, 1KB, 1MB, 1TB, 1PB
+// nolint
 func humanReadableSizeToBytes(sizeStr string) (float64, error) {
 	var multiplier float64
 
@@ -597,6 +602,7 @@ func humanReadableSizeToBytes(sizeStr string) (float64, error) {
 	return sizeFloat * multiplier, nil
 }
 
+// nolint
 type dbStat struct {
 	DatabaseName string `db:"database_name"`
 	DatabaseSize string `db:"database_size"`
