@@ -8,6 +8,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 )
@@ -56,10 +57,11 @@ func (r *Runtime) CreateInstance(ctx context.Context, inst *drivers.Instance) er
 	return r.registryCache.create(ctx, inst)
 }
 
-// EditInstance edits an existing instance. Calling it will cause the instance's controller to be re-opened and evict all cached connections for the instance.
+// EditInstance edits an existing instance.
+// If restartController is true, the instance's controller will be re-opened and all cached connections for the instance will be evicted.
 // Until the controller and connections have been closed and re-opened, calls related to the instance may return transient errors.
-func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance) error {
-	return r.registryCache.edit(ctx, inst)
+func (r *Runtime) EditInstance(ctx context.Context, inst *drivers.Instance, restartController bool) error {
+	return r.registryCache.edit(ctx, inst, restartController)
 }
 
 // DeleteInstance deletes an instance and stops its controller.
@@ -115,6 +117,7 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 // It ensures that a controller is started for every instance, and that a controller is completely stopped before getting restarted when edited.
 type registryCache struct {
 	logger        *zap.Logger
+	activity      activity.Client
 	rt            *Runtime
 	store         drivers.RegistryStore
 	mu            sync.RWMutex
@@ -135,11 +138,12 @@ type instanceWithController struct {
 	closed chan struct{}
 }
 
-func newRegistryCache(ctx context.Context, rt *Runtime, registry drivers.RegistryStore, logger *zap.Logger) (*registryCache, error) {
+func newRegistryCache(ctx context.Context, rt *Runtime, registry drivers.RegistryStore, logger *zap.Logger, ac activity.Client) (*registryCache, error) {
 	baseCtx, baseCtxCancel := context.WithCancel(context.Background())
 
 	r := &registryCache{
 		logger:        logger,
+		activity:      ac,
 		rt:            rt,
 		store:         registry,
 		instances:     make(map[string]*instanceWithController),
@@ -257,7 +261,7 @@ func (r *registryCache) add(inst *drivers.Instance) {
 	r.restartController(iwc)
 }
 
-func (r *registryCache) edit(ctx context.Context, inst *drivers.Instance) error {
+func (r *registryCache) edit(ctx context.Context, inst *drivers.Instance, restartController bool) error {
 	err := r.store.EditInstance(ctx, inst)
 	if err != nil {
 		return err
@@ -272,7 +276,9 @@ func (r *registryCache) edit(ctx context.Context, inst *drivers.Instance) error 
 	}
 
 	iwc.instance = inst
-	r.restartController(iwc)
+	if restartController {
+		r.restartController(iwc)
+	}
 
 	return nil
 }
@@ -313,7 +319,7 @@ func (r *registryCache) ensureProjectParser(ctx context.Context, instanceID stri
 	if err == nil {
 		return
 	}
-	if !errors.Is(err, drivers.ErrNotFound) {
+	if !errors.Is(err, drivers.ErrResourceNotFound) {
 		r.logger.Error("could not get project parser", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 		return
 	}
@@ -339,7 +345,7 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 
 	// Reset execution state
 	// NOTE: Duplicating this here and in the goroutine to ensure there's no moment where the mutex is unlocked and neither of controller or controllerErr is set.
-	iwc.controller, iwc.controllerErr = NewController(r.rt, iwc.instance.ID, r.logger)
+	iwc.controller, iwc.controllerErr = NewController(r.rt, iwc.instance.ID, r.logger, r.activity)
 	iwc.ctx, iwc.cancel = context.WithCancel(r.baseCtx)
 	iwc.reopen = false
 	iwc.closed = make(chan struct{})
@@ -377,7 +383,7 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 			// Reopening – reset execution state and proceed to next loop iteration
 			// NOTE: Not resetting iwc.closed (keeping it open)
 			r.mu.Lock()
-			iwc.controller, iwc.controllerErr = NewController(r.rt, iwc.instance.ID, r.logger)
+			iwc.controller, iwc.controllerErr = NewController(r.rt, iwc.instance.ID, r.logger, r.activity)
 			iwc.ctx, iwc.cancel = context.WithCancel(r.baseCtx)
 			iwc.reopen = false
 			if iwc.controllerErr != nil {

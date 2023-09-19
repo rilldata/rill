@@ -237,6 +237,16 @@ func (r *ProjectParserReconciler) reconcileProjectConfig(ctx context.Context, pa
 		return err
 	}
 
+	conns := make([]*runtimev1.Connector, len(parser.RillYAML.Connectors))
+	for _, c := range parser.RillYAML.Connectors {
+		conns = append(conns, &runtimev1.Connector{
+			Type:   c.Type,
+			Name:   c.Name,
+			Config: c.Defaults,
+		})
+	}
+	inst.ProjectConnectors = conns
+
 	vars := make(map[string]string)
 	for _, v := range parser.RillYAML.Variables {
 		vars[v.Name] = v.Default
@@ -244,9 +254,12 @@ func (r *ProjectParserReconciler) reconcileProjectConfig(ctx context.Context, pa
 	for k, v := range parser.DotEnv {
 		vars[k] = v
 	}
-
 	inst.ProjectVariables = vars
-	err = r.C.Runtime.EditInstance(ctx, inst)
+
+	// TODO: Passing "false" guards against infinite cancellations and restarts of the controller,
+	// but it also ignores potential consistency issues where we update connector config without evicting cached connctions,
+	// or where we update variables and don't re-evaluate all resources.
+	err = r.C.Runtime.EditInstance(ctx, inst, false)
 	if err != nil {
 		return err
 	}
@@ -266,6 +279,12 @@ func (r *ProjectParserReconciler) reconcileResources(ctx context.Context, inst *
 	}
 	seen := make(map[compilerv1.ResourceName]bool, len(resources))
 	for _, rr := range resources {
+		// Skip if the resource was not created by the parser.
+		// If a code file is added for a currently ad-hoc resource, the putParserResourceDef call for it will fail.
+		if !equalResourceName(rr.Meta.Owner, self.Meta.Name) {
+			continue
+		}
+
 		n := resourceNameToCompiler(rr.Meta.Name).Normalized()
 		def, ok := parser.Resources[n]
 
@@ -279,10 +298,8 @@ func (r *ProjectParserReconciler) reconcileResources(ctx context.Context, inst *
 			continue
 		}
 
-		// If the existing resource is not in the parser output, delete it, but only if it was previously created by self.
-		if equalResourceName(rr.Meta.Owner, self.Meta.Name) {
-			deleteResources = append(deleteResources, rr)
-		}
+		// If the existing resource is not in the parser output, delete it
+		deleteResources = append(deleteResources, rr)
 	}
 
 	// Insert resources for the parser outputs that were not seen when passing over the existing resources
@@ -557,7 +574,7 @@ func resourceNameToCompiler(name *runtimev1.ResourceName) compilerv1.ResourceNam
 }
 
 func equalResourceName(a, b *runtimev1.ResourceName) bool {
-	return a.Kind == b.Kind && strings.EqualFold(a.Name, b.Name)
+	return a != nil && b != nil && a.Kind == b.Kind && strings.EqualFold(a.Name, b.Name)
 }
 
 func equalResourceNames(a, b []*runtimev1.ResourceName) bool {

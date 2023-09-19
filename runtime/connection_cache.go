@@ -289,8 +289,13 @@ func (c *connectionCache) evictAll(ctx context.Context, instanceID string) {
 		delete(c.acquired, key)
 	}
 
-	for key, conn := range c.lru.Keys() {
-		conn := conn.(*connWithRef)
+	for _, key := range c.lru.Keys() {
+		connT, ok := c.lru.Get(key)
+		if !ok {
+			panic("connection cache: key not found in LRU")
+		}
+		conn := connT.(*connWithRef)
+
 		if conn.instanceID != instanceID {
 			continue
 		}

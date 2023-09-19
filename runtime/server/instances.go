@@ -148,7 +148,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		ModelMaterializeDelaySeconds: valOrDefault(req.ModelMaterializeDelaySeconds, oldInst.ModelMaterializeDelaySeconds),
 	}
 
-	err = s.runtime.EditInstance(ctx, inst)
+	err = s.runtime.EditInstance(ctx, inst, true)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -190,7 +190,7 @@ func (s *Server) EditInstanceVariables(ctx context.Context, req *runtimev1.EditI
 		ModelMaterializeDelaySeconds: oldInst.ModelMaterializeDelaySeconds,
 	}
 
-	err = s.runtime.EditInstance(ctx, inst)
+	err = s.runtime.EditInstance(ctx, inst, true)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -232,7 +232,7 @@ func (s *Server) EditInstanceAnnotations(ctx context.Context, req *runtimev1.Edi
 		ModelMaterializeDelaySeconds: oldInst.ModelMaterializeDelaySeconds,
 	}
 
-	err = s.runtime.EditInstance(ctx, inst)
+	err = s.runtime.EditInstance(ctx, inst, true)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

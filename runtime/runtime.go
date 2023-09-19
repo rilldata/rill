@@ -34,16 +34,16 @@ type Runtime struct {
 	securityEngine *securityEngine
 }
 
-func New(ctx context.Context, opts *Options, logger *zap.Logger, client activity.Client) (*Runtime, error) {
+func New(ctx context.Context, opts *Options, logger *zap.Logger, ac activity.Client) (*Runtime, error) {
 	rt := &Runtime{
 		opts:           opts,
 		logger:         logger,
-		activity:       client,
+		activity:       ac,
 		queryCache:     newQueryCache(opts.QueryCacheSizeBytes),
 		securityEngine: newSecurityEngine(opts.SecurityEngineCacheSize, logger),
 	}
 
-	rt.connCache = newConnectionCache(opts.ConnectionCacheSize, logger, rt, client)
+	rt.connCache = newConnectionCache(opts.ConnectionCacheSize, logger, rt, ac)
 
 	store, _, err := rt.AcquireSystemHandle(ctx, opts.MetastoreConnector)
 	if err != nil {
@@ -56,7 +56,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, client activity
 		return nil, fmt.Errorf("metastore must be a valid registry")
 	}
 
-	rt.registryCache, err = newRegistryCache(ctx, rt, reg, logger)
+	rt.registryCache, err = newRegistryCache(ctx, rt, reg, logger, ac)
 	if err != nil {
 		return nil, err
 	}

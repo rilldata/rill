@@ -16,9 +16,17 @@ import (
 	"go.uber.org/zap"
 
 	// Load database drivers for testing.
+	_ "github.com/rilldata/rill/runtime/drivers/bigquery"
+	_ "github.com/rilldata/rill/runtime/drivers/druid"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
+	_ "github.com/rilldata/rill/runtime/drivers/gcs"
+	_ "github.com/rilldata/rill/runtime/drivers/github"
+	_ "github.com/rilldata/rill/runtime/drivers/https"
+	_ "github.com/rilldata/rill/runtime/drivers/postgres"
+	_ "github.com/rilldata/rill/runtime/drivers/s3"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
+	_ "github.com/rilldata/rill/runtime/reconcilers"
 )
 
 // TestingT satisfies both *testing.T and *testing.B.
@@ -32,40 +40,57 @@ type TestingT interface {
 
 // New returns a runtime configured for use in tests.
 func New(t TestingT) *runtime.Runtime {
-	systemConnectors := []*runtimev1.Connector{
-		{
-			Type: "sqlite",
-			Name: "metastore",
-			// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
-			// "cache=shared" is needed to prevent threading problems.
-			Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
-		},
-	}
 	opts := &runtime.Options{
+		MetastoreConnector: "metastore",
+		SystemConnectors: []*runtimev1.Connector{
+			{
+				Type: "sqlite",
+				Name: "metastore",
+				// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
+				// "cache=shared" is needed to prevent threading problems.
+				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
+			},
+		},
 		ConnectionCacheSize:     100,
-		MetastoreConnector:      "metastore",
 		QueryCacheSizeBytes:     int64(datasize.MB * 100),
-		AllowHostAccess:         true,
-		SystemConnectors:        systemConnectors,
 		SecurityEngineCacheSize: 100,
+		AllowHostAccess:         true,
 	}
-	rt, err := runtime.New(context.Background(), opts, zap.NewNop(), activity.NewNoopClient())
+
+	logger := zap.NewNop()
+	// nolint
+	// logger, err := zap.NewDevelopment()
+	// require.NoError(t, err)
+
+	rt, err := runtime.New(context.Background(), opts, logger, activity.NewNoopClient())
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		rt.Close()
-	})
+	t.Cleanup(func() { rt.Close() })
+
 	return rt
 }
 
-// NewInstance creates a runtime and an instance for use in tests.
-// The instance's repo is a temp directory that will be cleared when the tests finish.
+// NewInstance is a convenience wrapper around NewInstanceWithOptions, using sensible defaults for most tests.
 func NewInstance(t TestingT) (*runtime.Runtime, string) {
+	return NewInstanceWithOptions(t, InstanceOptions{})
+}
+
+// InstanceOptions enables configuration of the instance options that are configurable in tests.
+type InstanceOptions struct {
+	IngestionLimitBytes          int64
+	WatchRepo                    bool
+	StageChanges                 bool
+	ModelDefaultMaterialize      bool
+	ModelMaterializeDelaySeconds uint32
+}
+
+// NewInstanceWithOptions creates a runtime and an instance for use in tests.
+// The instance's repo is a temp directory that will be cleared when the tests finish.
+func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime, string) {
 	rt := New(t)
 
 	inst := &drivers.Instance{
 		OLAPConnector: "duckdb",
 		RepoConnector: "repo",
-		EmbedCatalog:  true,
 		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",
@@ -78,11 +103,29 @@ func NewInstance(t TestingT) (*runtime.Runtime, string) {
 				Config: map[string]string{"dsn": ""},
 			},
 		},
+		EmbedCatalog:                 true,
+		IngestionLimitBytes:          opts.IngestionLimitBytes,
+		WatchRepo:                    opts.WatchRepo,
+		StageChanges:                 opts.StageChanges,
+		ModelDefaultMaterialize:      opts.ModelDefaultMaterialize,
+		ModelMaterializeDelaySeconds: opts.ModelMaterializeDelaySeconds,
 	}
 
 	err := rt.CreateInstance(context.Background(), inst)
 	require.NoError(t, err)
 	require.NotEmpty(t, inst.ID)
+
+	ctrl, err := rt.Controller(inst.ID)
+	require.NoError(t, err)
+
+	_, err = ctrl.Get(context.Background(), runtime.GlobalProjectParserName, false)
+	require.NoError(t, err)
+
+	err = ctrl.WaitUntilReady(context.Background())
+	require.NoError(t, err)
+
+	err = ctrl.WaitUntilIdle(context.Background())
+	require.NoError(t, err)
 
 	err = rt.PutFile(context.Background(), inst.ID, "rill.yaml", strings.NewReader(""), true, false)
 	require.NoError(t, err)

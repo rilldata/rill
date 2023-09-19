@@ -53,18 +53,19 @@ func newCatalogCache(ctx context.Context, ctrl *Controller, instanceID string) (
 	}
 
 	c := &catalogCache{
-		ctrl:      ctrl,
-		store:     store,
-		release:   release,
-		version:   v,
-		resources: make(map[string]map[string]*runtimev1.Resource),
-		dirty:     make(map[string]*runtimev1.ResourceName),
-		stored:    make(map[string]bool),
-		dag:       dag2.New(nameStr),
-		cyclic:    make(map[string]*runtimev1.ResourceName),
-		renamed:   make(map[string]*runtimev1.ResourceName),
-		deleted:   make(map[string]*runtimev1.ResourceName),
-		events:    make(map[string]catalogEvent),
+		ctrl:        ctrl,
+		store:       store,
+		release:     release,
+		version:     v,
+		resources:   make(map[string]map[string]*runtimev1.Resource),
+		dirty:       make(map[string]*runtimev1.ResourceName),
+		stored:      make(map[string]bool),
+		dag:         dag2.New(nameStr),
+		cyclic:      make(map[string]*runtimev1.ResourceName),
+		renamed:     make(map[string]*runtimev1.ResourceName),
+		deleted:     make(map[string]*runtimev1.ResourceName),
+		events:      make(map[string]catalogEvent),
+		hasEventsCh: make(chan struct{}, 1),
 	}
 
 	rs, err := store.FindResources(ctx)
@@ -357,7 +358,11 @@ func (c *catalogCache) updateError(name *runtimev1.ResourceName, reconcileErr er
 		return err
 	}
 	// NOTE: No need to unlink/link because no indexed fields are edited.
-	r.Meta.ReconcileError = reconcileErr.Error()
+	if reconcileErr == nil {
+		r.Meta.ReconcileError = ""
+	} else {
+		r.Meta.ReconcileError = reconcileErr.Error()
+	}
 	r.Meta.Version++
 	r.Meta.StateVersion++
 	r.Meta.StateUpdatedOn = timestamppb.Now()

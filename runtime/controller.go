@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/schedule"
 	"go.uber.org/zap"
 	"go.uber.org/zap/exp/zapslog"
+	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slog"
 	"google.golang.org/protobuf/proto"
 )
@@ -86,20 +88,20 @@ type Controller struct {
 }
 
 // NewController creates a new Controller
-func NewController(rt *Runtime, instanceID string, logger *zap.Logger) (*Controller, error) {
+func NewController(rt *Runtime, instanceID string, logger *zap.Logger, ac activity.Client) (*Controller, error) {
 	c := &Controller{
 		Runtime:        rt,
 		InstanceID:     instanceID,
+		Activity:       ac,
 		ready:          make(chan struct{}),
+		idleCh:         make(chan struct{}),
 		reconcilers:    make(map[string]Reconciler),
 		subscribers:    make(map[string]chan map[string]catalogEvent),
 		queue:          make(map[string]*runtimev1.ResourceName),
-		queueUpdatedCh: make(chan struct{}),
+		queueUpdatedCh: make(chan struct{}, 1),
 		timeline:       schedule.New[string, *runtimev1.ResourceName](nameStr),
 		invocations:    make(map[string]*invocation),
 		completed:      make(chan *invocation),
-		idle:           false,
-		idleCh:         make(chan struct{}),
 	}
 
 	// TODO: Setup the logger to duplicate logs to a) the Zap logger, b) an in-memory buffer that exposes the logs over the API
@@ -139,9 +141,6 @@ func (c *Controller) Run(ctx context.Context) error {
 	}
 	c.mu.Unlock()
 
-	// Open for business
-	close(c.ready)
-
 	// Ticker for periodically flushing catalog changes
 	flushTicker := time.NewTicker(10 * time.Second)
 	defer flushTicker.Stop()
@@ -178,6 +177,9 @@ func (c *Controller) Run(ctx context.Context) error {
 	c.mu.Lock()
 	c.checkIdle()
 	c.mu.Unlock()
+
+	// Open for business
+	close(c.ready)
 
 	// Run event loop
 	var stop bool
@@ -244,23 +246,35 @@ func (c *Controller) Run(ctx context.Context) error {
 	}
 
 	// Cancel all running invocations
-	c.mu.Lock()
+	c.mu.RLock()
 	for _, inv := range c.invocations {
 		inv.cancel(false)
 	}
-	c.mu.Unlock()
+	c.mu.RUnlock()
 
 	// Allow 10 seconds for closing invocations and reconcilers
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// Wait for all invocations to finish
-	for _, inv := range c.invocations {
+	// Need to consume all the cancelled invocation completions (otherwise, they will hang on sending to c.completed)
+	for {
+		c.mu.RLock()
+		if len(c.invocations) == 0 {
+			c.mu.RUnlock()
+			break
+		}
+		c.mu.RUnlock()
 		select {
-		case <-inv.done:
-			continue
+		case inv := <-c.completed:
+			c.mu.Lock()
+			err = c.processCompletedInvocation(inv)
+			if err != nil {
+				c.Logger.Warn("failed to process completed invocation during shutdown", slog.Any("error", err))
+			}
+			c.mu.Unlock()
 		case <-ctx.Done():
-			closeErr = fmt.Errorf("timed out waiting for reconcile to finish for resource %q", nameStr(inv.name))
+			err = fmt.Errorf("timed out waiting for reconcile to finish for resources: %v", maps.Keys(c.invocations))
+			closeErr = errors.Join(closeErr, err)
 		}
 	}
 
@@ -277,6 +291,21 @@ func (c *Controller) Run(ctx context.Context) error {
 
 	// Mark closed (no more catalog writes after this)
 	c.running.Store(false)
+
+	// Ensure anything waiting for WaitUntilIdle is notified
+	c.mu.Lock()
+	if !c.idle {
+		c.idle = true
+		close(c.idleCh)
+	}
+	c.mu.Unlock()
+
+	// Close all subscribers
+	c.mu.Lock()
+	for _, ch := range c.subscribers {
+		close(ch)
+	}
+	c.mu.Unlock()
 
 	// Allow 10 seconds for flushing the catalog
 	ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
@@ -305,6 +334,10 @@ func (c *Controller) WaitUntilReady(ctx context.Context) error {
 
 // WaitUntilIdle returns when the controller is idle (i.e. no reconcilers are pending or running).
 func (c *Controller) WaitUntilIdle(ctx context.Context) error {
+	if err := c.checkRunning(); err != nil {
+		return err
+	}
+
 	c.mu.RLock()
 	idleCh := c.idleCh
 	c.mu.RUnlock()
@@ -364,7 +397,10 @@ func (c *Controller) Subscribe(ctx context.Context, fn SubscribeCallback) error 
 
 	for {
 		select {
-		case events := <-ch:
+		case events, ok := <-ch:
+			if !ok {
+				return fmt.Errorf("controller closed")
+			}
 			for _, e := range events {
 				fn(e.event, e.name, e.resource)
 			}
@@ -835,6 +871,7 @@ func (c *Controller) safeRename(from, to *runtimev1.ResourceName) error {
 func (c *Controller) enqueue(name *runtimev1.ResourceName) {
 	c.queue[nameStr(name)] = name
 	c.setQueueUpdated()
+	c.checkIdle()
 }
 
 // setQueueUpdated notifies the event loop that the queue has been updated and needs to be processed.
@@ -1071,6 +1108,10 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 		defer func() {
 			// Catch panics and set as error
 			if r := recover(); r != nil {
+				stack := make([]byte, 64<<10)
+				stack = stack[:runtime.Stack(stack, false)]
+				c.Logger.Error("panic in reconciler", slog.String("name", n.Name), slog.String("kind", n.Kind), slog.Any("error", r), slog.String("stack", string(stack)))
+
 				inv.result = ReconcileResult{Err: fmt.Errorf("panic: %v", r)}
 				if inv.holdsLock {
 					c.Unlock(ctx)

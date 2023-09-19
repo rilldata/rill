@@ -299,7 +299,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 
 			// Edit instance
 			tt.inst.ID = inst.ID
-			err = rt.EditInstance(ctx, tt.inst)
+			err = rt.EditInstance(ctx, tt.inst, true)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Runtime.EditInstance() error = %v, wantErr %v", err, tt.wantErr)
 			}

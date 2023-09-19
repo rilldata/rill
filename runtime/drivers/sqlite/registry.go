@@ -243,7 +243,7 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 			repo_connector = $3,
 			updated_on = $4,
 			connectors = $5,
-			project_connectors = $6 
+			project_connectors = $6,
 			variables = $7,
 			project_variables = $8,
 			annotations = $9,
