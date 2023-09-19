@@ -179,9 +179,10 @@ func (it *blobIterator) NextBatchSize(sizeInBytes int64) ([]string, error) {
 	for ; it.index < len(it.objects) && totalSizeInBytes < sizeInBytes; it.index++ {
 		obj := it.objects[it.index]
 		totalSizeInBytes += obj.obj.Size
+		// need to create file by maintaining same dir path as in glob for hivepartition support
+		filename := filepath.Join(it.tempDir, obj.obj.Key)
+		it.localFiles = append(it.localFiles, filename)
 		g.Go(func() error {
-			// need to create file by maintaining same dir path as in glob for hivepartition support
-			filename := filepath.Join(it.tempDir, obj.obj.Key)
 			if err := os.MkdirAll(filepath.Dir(filename), os.ModePerm); err != nil {
 				return err
 			}
@@ -192,7 +193,6 @@ func (it *blobIterator) NextBatchSize(sizeInBytes int64) ([]string, error) {
 			}
 			defer file.Close()
 
-			it.localFiles = append(it.localFiles, file.Name())
 			ext := filepath.Ext(obj.obj.Key)
 			partialReader, isPartialDownloadSupported := _partialDownloadReaders[ext]
 			downloadFull := obj.full || !isPartialDownloadSupported
