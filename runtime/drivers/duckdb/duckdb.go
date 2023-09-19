@@ -488,6 +488,14 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 	for {
 		select {
 		case <-statTicker.C:
+			estimatedDBSize, _ := c.EstimateSize()
+			c.activity.Emit(c.ctx, "duckdb_estimated_size_bytes", float64(estimatedDBSize))
+
+			// Motherduck driver doesn't provide pragma stats
+			if c.driverName == "motherduck" {
+				continue
+			}
+
 			var stat dbStat
 			// Obtain a connection, query, release
 			err := func() error {
@@ -541,9 +549,6 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 			c.activity.Emit(c.ctx, "duckdb_total_blocks", float64(stat.TotalBlocks), commonDims...)
 			c.activity.Emit(c.ctx, "duckdb_free_blocks", float64(stat.FreeBlocks), commonDims...)
 			c.activity.Emit(c.ctx, "duckdb_used_blocks", float64(stat.UsedBlocks), commonDims...)
-
-			estimatedDBSize, _ := c.EstimateSize()
-			c.activity.Emit(c.ctx, "duckdb_estimated_size_bytes", float64(estimatedDBSize))
 
 		case <-c.ctx.Done():
 			statTicker.Stop()
