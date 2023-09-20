@@ -160,7 +160,10 @@ func (it *blobIterator) Close() error {
 		_ = it.grp.Wait() // wait for background calls to complete
 	}
 	// remove temp dir since recursive paths created have to be removed as well
-	err := os.RemoveAll(it.tempDir)
+	var err error
+	if it.tempDir != "" {
+		err = os.RemoveAll(it.tempDir)
+	}
 	if bucketCloseErr := it.bucket.Close(); bucketCloseErr != nil {
 		return bucketCloseErr
 	}
