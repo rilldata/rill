@@ -6,10 +6,11 @@
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { useModel } from "@rilldata/web-common/features/models/selectors";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
@@ -18,7 +19,6 @@
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import {
-    createRuntimeServiceGetCatalogEntry,
     createRuntimeServicePutFileAndReconcile,
     V1ReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
@@ -32,12 +32,9 @@
   export let hasError = false;
   export let collapse = false;
 
-  $: getModel = createRuntimeServiceGetCatalogEntry(
-    $runtime.instanceId,
-    modelName
-  );
-  $: model = $getModel.data?.entry?.model;
-  $: dashboardNames = useDashboardNames($runtime.instanceId);
+  $: modelQuery = useModel($runtime.instanceId, modelName);
+  $: model = $modelQuery.data?.model;
+  $: dashboardNames = useDashboardFileNames($runtime.instanceId);
 
   const queryClient = useQueryClient();
   const createFileMutation = createRuntimeServicePutFileAndReconcile();
@@ -51,7 +48,7 @@
       $dashboardNames.data
     );
     const dashboardYAML = generateDashboardYAMLForModel(
-      model,
+      model as any, // TODO
       newDashboardName
     );
 

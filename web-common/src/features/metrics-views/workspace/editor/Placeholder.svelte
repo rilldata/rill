@@ -9,7 +9,7 @@
     generateDashboardYAMLForModel,
     initBlankDashboardYAML,
   } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
-  import { useModelNames } from "@rilldata/web-common/features/models/selectors";
+  import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import {
     getRuntimeServiceGetCatalogEntryQueryKey,
     runtimeServiceGetCatalogEntry,
@@ -23,7 +23,7 @@
   export let metricsName: string;
   export let view: EditorView = undefined;
 
-  $: models = useModelNames($runtime.instanceId);
+  $: models = useModelFileNames($runtime.instanceId);
 
   const queryClient = useQueryClient();
 
@@ -108,21 +108,21 @@
 
 <div class="whitespace-normal">
   Auto-generate a <WithTogglableFloatingElement
+    distance={8}
     inline
     let:toggleFloatingElement
-    distance={8}
   >
     <button
-      disabled={!$models?.data?.length}
       class={buttonClasses}
+      disabled={!$models?.data?.length}
       on:click={toggleFloatingElement}
       >metrics configuration from an existing model</button
     >,
     <Menu
       dark
-      slot="floating-element"
       on:click-outside={toggleFloatingElement}
       on:escape={toggleFloatingElement}
+      slot="floating-element"
     >
       {#each $models?.data as model}
         <MenuItem
@@ -137,9 +137,9 @@
     </Menu>
   </WithTogglableFloatingElement>
   <button
+    class={buttonClasses}
     on:click={async () => {
       onCreateSkeletonMetricsConfig();
-    }}
-    class={buttonClasses}>start with a skeleton</button
+    }}>start with a skeleton</button
   >, or just start typing.
 </div>

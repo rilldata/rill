@@ -1,11 +1,12 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
+  import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import {
     openFileUploadDialog,
     uploadTableFiles,
   } from "@rilldata/web-common/features/sources/modal/file-upload";
-  import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
+  import { useSourceFileNames } from "@rilldata/web-common/features/sources/selectors";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import {
@@ -18,7 +19,6 @@
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { SourceConnectionType } from "../../../metrics/service/SourceEventTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { useModelNames } from "../../models/selectors";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
   import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
   import {
@@ -35,8 +35,8 @@
 
   $: runtimeInstanceId = $runtime.instanceId;
 
-  $: sourceNames = useSourceNames(runtimeInstanceId);
-  $: modelNames = useModelNames(runtimeInstanceId);
+  $: sourceNames = useSourceFileNames(runtimeInstanceId);
+  $: modelNames = useModelFileNames(runtimeInstanceId);
   $: isProjectInitialized = useIsProjectInitialized(runtimeInstanceId);
 
   const createSourceMutation = createRuntimeServicePutFileAndReconcile();

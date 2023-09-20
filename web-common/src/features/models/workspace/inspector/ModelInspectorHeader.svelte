@@ -2,7 +2,11 @@
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { useEmbeddedSources } from "@rilldata/web-common/features/sources/selectors";
+  import {
+    useModel,
+    useModels,
+  } from "@rilldata/web-common/features/models/selectors";
+  import { useSources } from "@rilldata/web-common/features/sources/selectors";
   import {
     formatBigNumberPercentage,
     formatInteger,
@@ -10,9 +14,7 @@
   import {
     createQueryServiceTableCardinality,
     createQueryServiceTableColumns,
-    createRuntimeServiceGetCatalogEntry,
-    createRuntimeServiceListCatalogEntries,
-    V1Model,
+    V1ModelV2,
     V1TableCardinalityResponse,
   } from "@rilldata/web-common/runtime-client";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
@@ -26,12 +28,9 @@
   export let modelName: string;
   export let containerWidth = 0;
 
-  $: getModel = createRuntimeServiceGetCatalogEntry(
-    $runtime.instanceId,
-    modelName
-  );
-  let model: V1Model;
-  $: model = $getModel?.data?.entry?.model;
+  $: modelQuery = useModel($runtime.instanceId, modelName);
+  let model: V1ModelV2;
+  $: model = $modelQuery?.data?.model;
 
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
@@ -40,57 +39,42 @@
   let sourceTableReferences;
 
   // get source table references.
-  $: if (model?.sql) {
-    sourceTableReferences = getTableReferences(model.sql);
+  $: if (model?.spec?.sql) {
+    sourceTableReferences = getTableReferences(model?.spec?.sql);
   }
 
-  $: embeddedSources = useEmbeddedSources($runtime.instanceId);
-
-  // get the cardinalitie & table information.
+  // get the cardinality & table information.
   let cardinalityQueries: Array<CreateQueryResult<number>> = [];
   let sourceProfileColumns: Array<CreateQueryResult<number>> = [];
 
-  $: getAllSources = createRuntimeServiceListCatalogEntries(
-    $runtime?.instanceId,
-    {
-      type: "OBJECT_TYPE_SOURCE",
-    }
-  );
+  $: getAllSources = useSources($runtime?.instanceId);
 
-  $: getAllModels = createRuntimeServiceListCatalogEntries(
-    $runtime?.instanceId,
-    {
-      type: "OBJECT_TYPE_MODEL",
-    }
-  );
+  $: getAllModels = useModels($runtime?.instanceId);
 
   // for each reference, match to an existing model or source,
   $: referencedThings = getMatchingReferencesAndEntries(
     modelName,
     sourceTableReferences,
-    [
-      ...($getAllSources?.data?.entries || []),
-      ...($getAllModels?.data?.entries || []),
-    ]
-  );
+    [...($getAllSources?.data || []), ...($getAllModels?.data || [])]
+  ); // TODO: update using resource APIs
   $: if (sourceTableReferences?.length) {
     // first, pull out all references that are in the catalog.
 
     // then get the cardinalities.
-    cardinalityQueries = referencedThings?.map(([entity, _reference]) => {
+    cardinalityQueries = referencedThings?.map(([resource]) => {
       return createQueryServiceTableCardinality(
         $runtime?.instanceId,
-        entity.name,
+        resource.meta.name.name,
         {},
         { query: { select: (data) => +data?.cardinality || 0 } }
       );
     });
 
     // then we'll get the total number of columns for comparison.
-    sourceProfileColumns = referencedThings?.map(([entity]) => {
+    sourceProfileColumns = referencedThings?.map(([resource]) => {
       return createQueryServiceTableColumns(
         $runtime?.instanceId,
-        entity.name,
+        resource.meta.name.name,
         {},
         { query: { select: (data) => data?.profileColumns?.length || 0 } }
       );
@@ -115,13 +99,16 @@
     },
     0
   );
+  $: modelColumns = createQueryServiceTableColumns(
+    $runtime?.instanceId,
+    modelName
+  );
 
   let modelCardinalityQuery: CreateQueryResult<V1TableCardinalityResponse>;
-  $: if (model?.name)
-    modelCardinalityQuery = createQueryServiceTableCardinality(
-      $runtime.instanceId,
-      model?.name
-    );
+  $: modelCardinalityQuery = createQueryServiceTableCardinality(
+    $runtime.instanceId,
+    modelName
+  );
   let outputRowCardinalityValue: number;
   $: outputRowCardinalityValue = Number(
     $modelCardinalityQuery?.data?.cardinality ?? 0
@@ -139,7 +126,7 @@
     return rollup !== Infinity && rollup !== -Infinity && !isNaN(number);
   }
 
-  $: outputColumnNum = model?.schema?.fields?.length ?? 0;
+  $: outputColumnNum = $modelColumns.data?.profileColumns?.length ?? 0;
   $: columnDelta = outputColumnNum - $sourceColumns;
 
   $: modelHasError = !!modelError;

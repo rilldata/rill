@@ -3,6 +3,8 @@
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
+  import { useSourceFileNames } from "@rilldata/web-common/features/sources/selectors";
   import { createRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { slide } from "svelte/transition";
@@ -12,14 +14,12 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import AddAssetButton from "../../entity-management/AddAssetButton.svelte";
   import { getName } from "../../entity-management/name-utils";
-  import { useSourceNames } from "../../sources/selectors";
   import { createModel } from "../createModel";
-  import { useModelNames } from "../selectors";
   import ModelMenuItems from "./ModelMenuItems.svelte";
   import ModelTooltip from "./ModelTooltip.svelte";
 
-  $: sourceNames = useSourceNames($runtime.instanceId);
-  $: modelNames = useModelNames($runtime.instanceId);
+  $: sourceNames = useSourceFileNames($runtime.instanceId);
+  $: modelNames = useModelFileNames($runtime.instanceId);
 
   const queryClient = useQueryClient();
 

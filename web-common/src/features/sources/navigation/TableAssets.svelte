@@ -2,11 +2,10 @@
   import { page } from "$app/stores";
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
-  import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
-  import {
-    createRuntimeServiceListCatalogEntries,
-    createRuntimeServicePutFileAndReconcile,
-  } from "@rilldata/web-common/runtime-client";
+
+  import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
+  import { useSourceFileNames } from "@rilldata/web-common/features/sources/selectors";
+  import { createRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
@@ -23,14 +22,13 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import AddAssetButton from "../../entity-management/AddAssetButton.svelte";
   import { EntityType } from "../../entity-management/types";
-  import { useModelNames } from "../../models/selectors";
   import { createModelFromSource } from "../createModel";
   import AddSourceModal from "../modal/AddSourceModal.svelte";
   import SourceMenuItems from "./SourceMenuItems.svelte";
   import SourceTooltip from "./SourceTooltip.svelte";
 
-  $: sourceNames = useSourceNames($runtime.instanceId);
-  $: modelNames = useModelNames($runtime.instanceId);
+  $: sourceNames = useSourceFileNames($runtime.instanceId);
+  $: modelNames = useModelFileNames($runtime.instanceId);
   const createModelMutation = createRuntimeServicePutFileAndReconcile();
 
   const queryClient = useQueryClient();
@@ -70,8 +68,7 @@
     renameTableName = tableName;
   };
 
-  $: catalogQuery = createRuntimeServiceListCatalogEntries($runtime.instanceId);
-  $: hasNoAssets = $catalogQuery?.data?.entries.length === 0;
+  $: hasNoAssets = $sourceNames.data?.length === 0;
 </script>
 
 <NavigationHeader bind:show={showTables} toggleText="sources"
@@ -126,8 +123,8 @@
 {/if}
 
 <AddSourceModal
-  open={showAddSourceModal}
   on:close={() => (showAddSourceModal = false)}
+  open={showAddSourceModal}
 />
 {#if showRenameTableModal}
   <RenameAssetModal

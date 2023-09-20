@@ -1,3 +1,4 @@
+import { resourcesStore } from "@rilldata/web-common/features/entity-management/resources-store";
 import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-request-client";
 import {
   getRuntimeServiceGetFileQueryKey,
@@ -43,6 +44,7 @@ function handleWatchFileResponse(
       queryClient.removeQueries(
         getRuntimeServiceGetFileQueryKey(instanceId, res.path)
       );
+      resourcesStore.deleteFile(res.path);
       break;
   }
   // TODO: should this be throttled?
@@ -50,6 +52,8 @@ function handleWatchFileResponse(
 }
 
 async function invalidateAllFiles(queryClient: QueryClient) {
+  // TODO: reset project parser errors
+
   const instanceId = get(runtime).instanceId;
   queryClient.removeQueries({
     type: "inactive",

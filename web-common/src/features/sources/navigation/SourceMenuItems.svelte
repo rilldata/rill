@@ -7,12 +7,15 @@
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import { Divider, MenuItem } from "@rilldata/web-common/components/menu";
-  import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
+  import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import {
+    useSource,
+    useSourceFileNames,
     useSourceFromYaml,
-    useSourceNames,
   } from "@rilldata/web-common/features/sources/selectors";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
@@ -24,12 +27,11 @@
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import {
     createRuntimeServiceDeleteFileAndReconcile,
-    createRuntimeServiceGetCatalogEntry,
     createRuntimeServicePutFileAndReconcile,
     createRuntimeServiceRefreshAndReconcile,
     getRuntimeServiceGetCatalogEntryQueryKey,
     V1ReconcileResponse,
-    V1Source,
+    V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
   import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -38,7 +40,6 @@
   import { deleteFileArtifact } from "../../entity-management/actions";
   import { getName } from "../../entity-management/name-utils";
   import { EntityType } from "../../entity-management/types";
-  import { useModelNames } from "../../models/selectors";
   import { useCreateDashboardFromSource } from "../createDashboard";
   import { createModelFromSource } from "../createModel";
   import { refreshSource } from "../refreshSource";
@@ -46,6 +47,7 @@
   export let sourceName: string;
   // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
   export let toggleMenu: () => void;
+  $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
 
   const queryClient = useQueryClient();
 
@@ -53,24 +55,18 @@
 
   const dispatch = createEventDispatcher();
 
-  $: getSource = createRuntimeServiceGetCatalogEntry(
-    runtimeInstanceId,
-    sourceName
-  );
-  let source: V1Source;
-  $: source = $getSource?.data?.entry?.source;
-  $: embedded = $getSource?.data?.entry?.embedded;
-  $: path = source?.properties?.path;
-  $: hasNoSourceCatalog = !source;
+  $: sourceQuery = useSource(runtimeInstanceId, sourceName);
+  let source: V1SourceV2;
+  $: source = $sourceQuery.data?.source;
+  $: embedded = false; // TODO: remove embedded support
+  $: path = source?.spec?.properties?.path;
+  $: sourceHasError = getFileHasErrors(runtimeInstanceId, filePath);
 
-  $: sourceFromYaml = useSourceFromYaml(
-    $runtime.instanceId,
-    getFilePathFromNameAndType(sourceName, EntityType.Table)
-  );
+  $: sourceFromYaml = useSourceFromYaml($runtime.instanceId, filePath);
 
-  $: sourceNames = useSourceNames($runtime.instanceId);
-  $: modelNames = useModelNames($runtime.instanceId);
-  $: dashboardNames = useDashboardNames($runtime.instanceId);
+  $: sourceNames = useSourceFileNames($runtime.instanceId);
+  $: modelNames = useModelFileNames($runtime.instanceId);
+  $: dashboardNames = useDashboardFileNames($runtime.instanceId);
 
   const deleteSource = createRuntimeServiceDeleteFileAndReconcile();
   const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
@@ -157,7 +153,7 @@
 
   const onRefreshSource = async (tableName: string) => {
     const connector: string =
-      $getSource?.data?.entry.source?.connector ?? $sourceFromYaml.data?.type;
+      source?.state?.connector ?? $sourceFromYaml.data?.type;
     if (!connector) {
       // if parse failed or there is no catalog entry, we cannot refresh source
       // TODO: show the import source modal with fixed tableName
@@ -172,7 +168,7 @@
         $createEntityMutation,
         queryClient,
         connector === "s3" || connector === "gcs" || connector === "https"
-          ? source?.properties?.path
+          ? path
           : sourceName
       );
 
@@ -199,7 +195,7 @@
 </MenuItem>
 
 <MenuItem
-  disabled={hasNoSourceCatalog}
+  disabled={$sourceHasError}
   icon
   on:select={() => handleCreateDashboardFromSource(sourceName)}
   propogateSelect={false}
@@ -207,13 +203,13 @@
   <Explore slot="icon" />
   Autogenerate dashboard
   <svelte:fragment slot="description">
-    {#if hasNoSourceCatalog}
+    {#if $sourceHasError}
       Source has errors
     {/if}
   </svelte:fragment>
 </MenuItem>
 
-{#if $getSource?.data?.entry?.source?.connector === "local_file"}
+{#if source?.state?.connector === "local_file"}
   <MenuItem icon on:select={() => onRefreshSource(sourceName)}>
     <svelte:fragment slot="icon">
       <Import />

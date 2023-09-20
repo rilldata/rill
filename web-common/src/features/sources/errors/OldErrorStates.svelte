@@ -18,6 +18,8 @@
   import { fileArtifactsStore } from "../../entity-management/file-artifacts-store";
   import { EntityType } from "../../entity-management/types";
 
+  // TODO: remove this file since it is not used
+
   export let sourceName: string;
 
   let sourcePath: string;

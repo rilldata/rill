@@ -3,19 +3,16 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { Dialog } from "@rilldata/web-common/components/modal/index";
+  import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
-  import {
-    createRuntimeServiceGetCatalogEntry,
-    createRuntimeServiceRenameFileAndReconcile,
-  } from "../../runtime-client";
+  import { createRuntimeServiceRenameFileAndReconcile } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { renameFileArtifact } from "./actions";
   import { getLabel, getRouteFromName } from "./entity-mappers";
   import { isDuplicateName } from "./name-utils";
-  import { useAllNames } from "./selectors";
 
   export let closeModal: () => void;
   export let entityType: EntityType;
@@ -26,10 +23,6 @@
   let error: string;
 
   $: runtimeInstanceId = $runtime.instanceId;
-  $: getCatalog = createRuntimeServiceGetCatalogEntry(
-    runtimeInstanceId,
-    currentAssetName
-  );
   $: allNamesQuery = useAllNames(runtimeInstanceId);
 
   const renameAsset = createRuntimeServiceRenameFileAndReconcile();
