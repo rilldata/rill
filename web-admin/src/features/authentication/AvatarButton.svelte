@@ -10,8 +10,8 @@
   import { createPopperActions } from "svelte-popperjs";
   import { createAdminServiceGetCurrentUser } from "../../client";
   import { ADMIN_URL } from "../../client/http-client";
-  import ProjectAccessControls from "../../features/projects/ProjectAccessControls.svelte";
-  import ViewAsUserMenuItem from "../../features/view-as-user/ViewAsUserMenuItem.svelte";
+  import ProjectAccessControls from "../projects/ProjectAccessControls.svelte";
+  import ViewAsUserMenuItem from "../view-as-user/ViewAsUserMenuItem.svelte";
 
   const user = createAdminServiceGetCurrentUser();
 

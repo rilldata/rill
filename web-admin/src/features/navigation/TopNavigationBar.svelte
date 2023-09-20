@@ -6,8 +6,8 @@
   import { createAdminServiceGetCurrentUser } from "../../client";
   import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
   import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
+  import AvatarButton from "../authentication/AvatarButton.svelte";
   import SignIn from "../authentication/SignIn.svelte";
-  import UserButton from "../authentication/UserButton.svelte";
   import { isErrorStoreEmpty } from "../errors/error-store";
   import Breadcrumbs from "./Breadcrumbs.svelte";
 
@@ -51,7 +51,7 @@
     {#if $user.isSuccess}
       <div>
         {#if $user.data && $user.data.user}
-          <UserButton />
+          <AvatarButton />
         {:else}
           <SignIn />
         {/if}
