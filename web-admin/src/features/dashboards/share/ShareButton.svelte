@@ -5,6 +5,7 @@
     PopoverPanel,
   } from "@rgossiaux/svelte-headlessui";
   import { Button } from "@rilldata/web-common/components/button";
+  import Link from "@rilldata/web-common/components/icons/Link.svelte";
   import { Menu } from "@rilldata/web-common/components/menu";
   import MenuItem from "@rilldata/web-common/components/menu/core/MenuItem.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
@@ -40,11 +41,17 @@
     <Menu minWidth="0px" focusOnMount={false} paddingBottom={0} paddingTop={0}>
       <MenuItem
         focusOnMount={false}
+        icon
         on:select={() => {
           handleCopyLink();
           close(undefined);
-        }}>Copy shareable link</MenuItem
+        }}
       >
+        <svelte:fragment slot="icon">
+          <Link size="16px" className="text-gray-900" />
+        </svelte:fragment>
+        Copy shareable link
+      </MenuItem>
     </Menu>
   </PopoverPanel>
 </Popover>
