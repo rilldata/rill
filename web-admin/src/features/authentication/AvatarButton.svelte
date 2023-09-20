@@ -15,13 +15,20 @@
 
   const user = createAdminServiceGetCurrentUser();
 
+  function handleDocumentation() {
+    window.open("https://docs.rilldata.com", "_blank");
+  }
+
+  function handleAskForHelp() {
+    window.open(
+      "https://discord.com/invite/ngVV4KzEGv?utm_source=rill&utm_medium=rill-cloud-avatar-menu",
+      "_blank"
+    );
+  }
+
   function handleLogOut() {
     const loginWithRedirect = `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`;
     window.location.href = `${ADMIN_URL}/auth/logout?redirect=${loginWithRedirect}`;
-  }
-
-  function handleDocumentation() {
-    window.open("https://docs.rilldata.com", "_blank");
   }
 
   const isDev = process.env.NODE_ENV === "development";
@@ -69,14 +76,15 @@
       <MenuItem
         on:select={() => {
           // handleClose();
-          handleLogOut();
-        }}>Logout</MenuItem
+          handleDocumentation();
+        }}>Documentation</MenuItem
       >
+      <MenuItem on:select={() => handleAskForHelp()}>Ask for help</MenuItem>
       <MenuItem
         on:select={() => {
           // handleClose();
-          handleDocumentation();
-        }}>Documentation</MenuItem
+          handleLogOut();
+        }}>Logout</MenuItem
       >
     </Menu>
   </PopoverPanel>

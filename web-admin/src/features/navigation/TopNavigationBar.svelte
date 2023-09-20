@@ -43,11 +43,6 @@
     {#if $viewAsUserStore}
       <ViewAsUserChip />
     {/if}
-    <a
-      class="font-medium"
-      href="https://discord.com/invite/ngVV4KzEGv?utm_source=rill&utm_medium=rill-cloud-nav"
-      >Ask for help</a
-    >
     {#if $user.isSuccess}
       <div>
         {#if $user.data && $user.data.user}
