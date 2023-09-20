@@ -30,8 +30,8 @@ export async function uploadFile(
 ) {
   // add table button
   await page.locator("button#add-table").click();
-  // click local file tab
-  await page.getByRole("tab", { name: "Local file" }).click();
+  // click local file button
+  await page.locator("button#local_file").click();
   // wait for file chooser while clicking on upload button
   const [fileChooser] = await Promise.all([
     page.waitForEvent("filechooser"),

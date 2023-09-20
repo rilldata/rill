@@ -28,6 +28,7 @@ const (
 	ConnectorService_GCSListObjects_FullMethodName        = "/rill.runtime.v1.ConnectorService/GCSListObjects"
 	ConnectorService_GCSGetCredentialsInfo_FullMethodName = "/rill.runtime.v1.ConnectorService/GCSGetCredentialsInfo"
 	ConnectorService_OLAPListTables_FullMethodName        = "/rill.runtime.v1.ConnectorService/OLAPListTables"
+	ConnectorService_OLAPGetTable_FullMethodName          = "/rill.runtime.v1.ConnectorService/OLAPGetTable"
 	ConnectorService_BigQueryListDatasets_FullMethodName  = "/rill.runtime.v1.ConnectorService/BigQueryListDatasets"
 	ConnectorService_BigQueryListTables_FullMethodName    = "/rill.runtime.v1.ConnectorService/BigQueryListTables"
 )
@@ -56,6 +57,8 @@ type ConnectorServiceClient interface {
 	GCSGetCredentialsInfo(ctx context.Context, in *GCSGetCredentialsInfoRequest, opts ...grpc.CallOption) (*GCSGetCredentialsInfoResponse, error)
 	// OLAPListTables list all tables across all databases on motherduck
 	OLAPListTables(ctx context.Context, in *OLAPListTablesRequest, opts ...grpc.CallOption) (*OLAPListTablesResponse, error)
+	// OLAPGetTable returns metadata about a table or view in an OLAP
+	OLAPGetTable(ctx context.Context, in *OLAPGetTableRequest, opts ...grpc.CallOption) (*OLAPGetTableResponse, error)
 	// BigQueryListDatasets list all datasets in a bigquery project
 	BigQueryListDatasets(ctx context.Context, in *BigQueryListDatasetsRequest, opts ...grpc.CallOption) (*BigQueryListDatasetsResponse, error)
 	// BigQueryListTables list all tables in a bigquery project:dataset
@@ -151,6 +154,15 @@ func (c *connectorServiceClient) OLAPListTables(ctx context.Context, in *OLAPLis
 	return out, nil
 }
 
+func (c *connectorServiceClient) OLAPGetTable(ctx context.Context, in *OLAPGetTableRequest, opts ...grpc.CallOption) (*OLAPGetTableResponse, error) {
+	out := new(OLAPGetTableResponse)
+	err := c.cc.Invoke(ctx, ConnectorService_OLAPGetTable_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *connectorServiceClient) BigQueryListDatasets(ctx context.Context, in *BigQueryListDatasetsRequest, opts ...grpc.CallOption) (*BigQueryListDatasetsResponse, error) {
 	out := new(BigQueryListDatasetsResponse)
 	err := c.cc.Invoke(ctx, ConnectorService_BigQueryListDatasets_FullMethodName, in, out, opts...)
@@ -193,6 +205,8 @@ type ConnectorServiceServer interface {
 	GCSGetCredentialsInfo(context.Context, *GCSGetCredentialsInfoRequest) (*GCSGetCredentialsInfoResponse, error)
 	// OLAPListTables list all tables across all databases on motherduck
 	OLAPListTables(context.Context, *OLAPListTablesRequest) (*OLAPListTablesResponse, error)
+	// OLAPGetTable returns metadata about a table or view in an OLAP
+	OLAPGetTable(context.Context, *OLAPGetTableRequest) (*OLAPGetTableResponse, error)
 	// BigQueryListDatasets list all datasets in a bigquery project
 	BigQueryListDatasets(context.Context, *BigQueryListDatasetsRequest) (*BigQueryListDatasetsResponse, error)
 	// BigQueryListTables list all tables in a bigquery project:dataset
@@ -230,6 +244,9 @@ func (UnimplementedConnectorServiceServer) GCSGetCredentialsInfo(context.Context
 }
 func (UnimplementedConnectorServiceServer) OLAPListTables(context.Context, *OLAPListTablesRequest) (*OLAPListTablesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method OLAPListTables not implemented")
+}
+func (UnimplementedConnectorServiceServer) OLAPGetTable(context.Context, *OLAPGetTableRequest) (*OLAPGetTableResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method OLAPGetTable not implemented")
 }
 func (UnimplementedConnectorServiceServer) BigQueryListDatasets(context.Context, *BigQueryListDatasetsRequest) (*BigQueryListDatasetsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BigQueryListDatasets not implemented")
@@ -412,6 +429,24 @@ func _ConnectorService_OLAPListTables_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ConnectorService_OLAPGetTable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(OLAPGetTableRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConnectorServiceServer).OLAPGetTable(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConnectorService_OLAPGetTable_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConnectorServiceServer).OLAPGetTable(ctx, req.(*OLAPGetTableRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ConnectorService_BigQueryListDatasets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(BigQueryListDatasetsRequest)
 	if err := dec(in); err != nil {
@@ -490,6 +525,10 @@ var ConnectorService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "OLAPListTables",
 			Handler:    _ConnectorService_OLAPListTables_Handler,
+		},
+		{
+			MethodName: "OLAPGetTable",
+			Handler:    _ConnectorService_OLAPGetTable_Handler,
 		},
 		{
 			MethodName: "BigQueryListDatasets",

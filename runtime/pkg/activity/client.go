@@ -73,6 +73,7 @@ func NewBufferedClient(opts BufferedClientOptions) Client {
 		buffer:     make([]Event, 0, opts.BufferSize),
 		bufferSize: opts.BufferSize,
 		stop:       make(chan struct{}),
+		logger:     opts.Logger,
 	}
 
 	go client.init()
