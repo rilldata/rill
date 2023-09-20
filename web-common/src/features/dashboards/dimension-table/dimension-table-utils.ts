@@ -4,9 +4,9 @@ import { PERC_DIFF } from "../../../components/data-types/type-utils";
 import type {
   MetricsViewDimension,
   MetricsViewMeasure,
-  V1MetricsViewColumn,
   V1MetricsViewComparisonRow,
   V1MetricsViewComparisonValue,
+  V1MetricsViewFilter,
   V1MetricsViewToplistResponse,
   V1MetricsViewToplistResponseDataItem,
 } from "../../../runtime-client";
@@ -292,10 +292,9 @@ export function prepareVirtualizedTableColumns(
   referenceValues: { string: number },
   dimension: MetricsViewDimension,
 
-  columnsMeta: V1MetricsViewColumn[],
+  inputColumnNames: string[],
   timeComparison: boolean,
-  validPercentOfTotal: boolean,
-  visibleMeasureKeys: Set<string>
+  validPercentOfTotal: boolean
 ): VirtualizedTableColumns[] {
   const measureNames = allMeasures.map((m) => m.name);
   const selectedMeasure = allMeasures.find(
@@ -303,14 +302,17 @@ export function prepareVirtualizedTableColumns(
   );
   const dimensionColumn = getDimensionColumn(dimension);
 
-  const columnNames = getDimensionTableColumnNames(
-    columnsMeta,
-    selectedMeasure,
-    dimensionColumn,
+  // copy column names so we don't mutate the original
+  const columnNames = [...inputColumnNames];
+
+  addContextColumnNames(
+    columnNames,
     timeComparison,
     validPercentOfTotal,
-    visibleMeasureKeys
+    selectedMeasure
   );
+  // Make dimension the first column
+  columnNames.unshift(dimensionColumn);
 
   return columnNames
     .map((columnName) => {
@@ -351,30 +353,25 @@ export function prepareVirtualizedTableColumns(
     .filter((column) => !!column);
 }
 
-export function getDimensionTableColumnNames(
-  columnsMeta: V1MetricsViewColumn[],
-  selectedMeasure: MetricsViewMeasure,
-  dimensionColumn: string,
-  timeComparison: boolean,
-  validPercentOfTotal: boolean,
-  visibleMeasureKeys: Set<string>
-): string[] {
-  const columnNames: Array<string> = columnsMeta
-    .map((c) => c.name)
-    .filter((name) => name !== dimensionColumn && visibleMeasureKeys.has(name));
+// export function getDimensionTableColumnNames(
+//   columnNames: string[],
+//   selectedMeasure: MetricsViewMeasure,
+//   dimensionColumn: string,
+//   timeComparison: boolean,
+//   validPercentOfTotal: boolean
+// ): string[] {
+//   addContextColumnNames(
+//     columnNames,
+//     timeComparison,
+//     validPercentOfTotal,
+//     selectedMeasure
+//   );
 
-  addContextColumnNames(
-    columnNames,
-    timeComparison,
-    validPercentOfTotal,
-    selectedMeasure
-  );
+//   // Make dimension the first column
+//   columnNames.unshift(dimensionColumn);
 
-  // Make dimension the first column
-  columnNames.unshift(dimensionColumn);
-
-  return columnNames;
-}
+//   return columnNames;
+// }
 
 /**
  * Splices the context column names into the list of dimension
@@ -427,6 +424,9 @@ export function prepareDimensionTableRows(
   addPercentOfTotal: boolean,
   unfilteredTotal: number
 ): DimensionTableRow[] {
+  if (!queryRows || !queryRows.length) return [];
+  // console.log("queryRows", queryRows);
+
   const formatMap = Object.fromEntries(
     measures.map((m) => [m.name, m.format as FormatPreset])
   );
@@ -480,6 +480,25 @@ export function prepareDimensionTableRows(
 
     return rowOut;
   });
-  console.log("tableRows", tableRows);
+  // console.log("tableRows", tableRows);
   return tableRows;
+}
+
+export function getSelectedRowIndicesFromFilters(
+  rows: DimensionTableRow[],
+  filters: V1MetricsViewFilter,
+  dimensionName: string,
+  excludeMode: boolean
+): number[] {
+  const selectedDimValues =
+    ((excludeMode
+      ? filters.exclude.find((d) => d.name === dimensionName)?.in
+      : filters.include.find((d) => d.name === dimensionName)
+          ?.in) as string[]) ?? [];
+
+  return selectedDimValues
+    .map((label) => {
+      return rows.findIndex((row) => row[dimensionName] === label);
+    })
+    .filter((i) => i >= 0);
 }

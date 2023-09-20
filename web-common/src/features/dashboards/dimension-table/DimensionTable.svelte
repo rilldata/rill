@@ -16,12 +16,15 @@ TableCells – the cell contents.
     estimateColumnCharacterWidths,
     estimateColumnSizes,
   } from "./dimension-table-utils";
+  import type { DimensionTableRow } from "./dimension-table-types";
 
   const dispatch = createEventDispatcher();
 
-  export let rows;
+  export let rows: DimensionTableRow[];
   export let columns: VirtualizedTableColumns[];
   export let selectedValues: Array<unknown> = [];
+  export let selectedIndex2: number[] = [];
+
   export let sortByColumn: string;
   export let sortAscending: boolean;
   export let dimensionName: string;

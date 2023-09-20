@@ -17,17 +17,17 @@
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     createQueryServiceMetricsViewComparisonToplist,
-    createQueryServiceMetricsViewToplist,
     createQueryServiceMetricsViewTotals,
     MetricsViewDimension,
     MetricsViewMeasure,
+    V1MetricsViewComparisonRow,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { SortDirection } from "../proto-state/derived-types";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import {
-    getFilterForComparisonTable,
+    getSelectedRowIndicesFromFilters,
     prepareDimensionTableRows,
     prepareVirtualizedTableColumns,
     updateFilterOnSearch,
@@ -39,9 +39,6 @@
     isSummableMeasure,
     prepareSortedQueryBody,
   } from "../dashboard-utils";
-
-  import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
-  // import { getQuerySortType } from "../leaderboard/leaderboard-utils";
 
   export let metricViewName: string;
   export let dimensionName: string;
@@ -83,18 +80,37 @@
     $dashboardStore?.filters,
     dimensionName
   );
+  $: filterSet = updateFilterOnSearch(
+    filterForDimension,
+    searchText,
+    dimensionName
+  );
+
+  // $: console.log({
+  //   searchText,
+  //   "$dashboardStore?.filters": $dashboardStore?.filters,
+  //   filterForDimension,
+  //   filterSet,
+  // });
 
   $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
 
   let selectedValues: Array<unknown>;
   $: selectedValues =
     (excludeMode
-      ? $dashboardStore?.filters.exclude.find((d) => d.name === dimension?.name)
+      ? $dashboardStore?.filters.exclude.find((d) => d.name === dimensionName)
           ?.in
-      : $dashboardStore?.filters.include.find((d) => d.name === dimension?.name)
+      : $dashboardStore?.filters.include.find((d) => d.name === dimensionName)
           ?.in) ?? [];
 
-  $: console.log("filters", $dashboardStore?.filters);
+  $: selectedIndex2 = getSelectedRowIndicesFromFilters(
+    newRows,
+    $dashboardStore?.filters,
+    dimensionName,
+    excludeMode
+  );
+
+  // $: console.log({ selectedValues, selectedIndex2 });
 
   $: allMeasures = $metaQuery.data?.measures.filter((m) =>
     $dashboardStore?.visibleMeasureKeys.has(m.name)
@@ -105,71 +121,8 @@
   $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricViewName);
   $: hasTimeSeries = $metricTimeSeries.data;
 
-  $: filterSet = updateFilterOnSearch(
-    filterForDimension,
-    searchText,
-    dimension?.name
-  );
-  $: topListQuery = createQueryServiceMetricsViewToplist(
-    instanceId,
-    metricViewName,
-    {
-      dimensionName: dimensionName,
-      measureNames: selectedMeasureNames,
-      timeStart: $timeControlsStore.timeStart,
-      timeEnd: $timeControlsStore.timeEnd,
-      filter: filterSet,
-      limit: "250",
-      offset: "0",
-      sort: [
-        {
-          name: leaderboardMeasureName,
-          ascending: sortAscending,
-        },
-      ],
-    },
-    {
-      query: {
-        enabled:
-          $timeControlsStore.ready && !!filterSet && !!leaderboardMeasureName,
-      },
-    }
-  );
-
   // Compose the comparison /toplist query
   $: timeComparison = $timeControlsStore.showComparison;
-  $: comparisonFilterSet = getFilterForComparisonTable(
-    filterForDimension,
-    dimensionName,
-    dimensionColumn,
-    $topListQuery?.data?.data
-  );
-  $: comparisonTopListQuery = createQueryServiceMetricsViewToplist(
-    $runtime.instanceId,
-    metricViewName,
-    {
-      dimensionName: dimensionName,
-      measureNames: [leaderboardMeasureName],
-      timeStart: $timeControlsStore.comparisonTimeStart,
-      timeEnd: $timeControlsStore.comparisonTimeEnd,
-      filter: comparisonFilterSet,
-      limit: "250",
-      offset: "0",
-      sort: [
-        {
-          name: leaderboardMeasureName,
-          ascending: sortAscending,
-        },
-      ],
-    },
-    {
-      query: {
-        enabled: Boolean(
-          $timeControlsStore.showComparison && !!comparisonFilterSet
-        ),
-      },
-    }
-  );
 
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     instanceId,
@@ -195,20 +148,15 @@
     });
   }
 
-  let columns: VirtualizedTableColumns[] = [];
-
-  $: if (!$topListQuery?.isFetching && dimension) {
-    columns = prepareVirtualizedTableColumns(
-      allMeasures,
-      leaderboardMeasureName,
-      referenceValues,
-      dimension,
-      $topListQuery?.data?.meta || [],
-      timeComparison,
-      validPercentOfTotal,
-      $dashboardStore.visibleMeasureKeys
-    );
-  }
+  $: columns = prepareVirtualizedTableColumns(
+    allMeasures,
+    leaderboardMeasureName,
+    referenceValues,
+    dimension,
+    [...$dashboardStore.visibleMeasureKeys],
+    timeComparison,
+    validPercentOfTotal
+  );
 
   $: validPercentOfTotal = (
     $leaderboardMeasureQuery?.data as MetricsViewMeasure
@@ -223,7 +171,7 @@
     leaderboardMeasureName,
     $dashboardStore.dashboardSortType,
     sortAscending,
-    filterForDimension
+    filterSet
   );
 
   $: sortedQuery = createQueryServiceMetricsViewComparisonToplist(
@@ -237,26 +185,38 @@
     }
   );
 
-  $: unfilteredTotal = $totalsQuery.data?.data?.[leaderboardMeasureName];
+  $: unfilteredTotal = $totalsQuery?.data?.data?.[leaderboardMeasureName] ?? 0;
 
-  $: newRows = $sortedQuery?.isFetching
-    ? []
-    : prepareDimensionTableRows(
-        $sortedQuery?.data?.rows,
-        allMeasures,
-        leaderboardMeasureName,
-        dimensionColumn,
-        timeComparison,
-        validPercentOfTotal,
-        unfilteredTotal
-      );
+  let sortedQueryData: V1MetricsViewComparisonRow[] = [];
+  $: {
+    if (!$sortedQuery?.isFetching) {
+      sortedQueryData = $sortedQuery?.data?.rows;
+    }
+  }
+
+  // $: sortedQueryData = $sortedQuery?.data?.rows ?? [];
+
+  $: console.log("query data", {
+    sortedQueryData,
+    "sortedQuery raw data": $sortedQuery?.data?.rows,
+  });
+
+  $: newRows = prepareDimensionTableRows(
+    sortedQueryData,
+    allMeasures,
+    leaderboardMeasureName,
+    dimensionColumn,
+    timeComparison,
+    validPercentOfTotal,
+    unfilteredTotal
+  );
 
   ////////////////////////////
 
   function onSelectItem(event) {
     const label = newRows[event.detail][dimensionColumn];
     cancelDashboardQueries(queryClient, metricViewName);
-    metricsExplorerStore.toggleFilter(metricViewName, dimension?.name, label);
+    metricsExplorerStore.toggleFilter(metricViewName, dimensionName, label);
   }
 
   function onSortByColumn(event) {
@@ -282,14 +242,14 @@
   }
 </script>
 
-{#if topListQuery}
+{#if sortedQuery}
   <div class="h-full flex flex-col" style:min-width="365px">
     <div class="flex-none" style:height="50px">
       <DimensionHeader
         {metricViewName}
         {dimensionName}
         {excludeMode}
-        isFetching={$topListQuery?.isFetching}
+        isFetching={$sortedQuery?.isFetching}
         on:search={(event) => {
           searchText = event.detail;
         }}
@@ -308,6 +268,7 @@
           {isBeingCompared}
           {columns}
           {selectedValues}
+          {selectedIndex2}
           rows={newRows}
           sortByColumn={leaderboardMeasureName}
           {excludeMode}
