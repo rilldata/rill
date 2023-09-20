@@ -19,7 +19,7 @@ func TestAcquireHandle(t *testing.T) {
 	inst.Variables = map[string]string{"aws_secret_access_key": "yyyy"}
 	require.NoError(t, rt.EditInstance(ctx, inst, true))
 
-	putFiles(t, rt, id, map[string]string{
+	testruntime.PutFiles(t, rt, id, map[string]string{
 		`rill.yaml`: `
 title: Hello world
 description: This project says hello to the world

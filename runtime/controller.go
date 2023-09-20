@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -264,9 +265,12 @@ func (c *Controller) Run(ctx context.Context) error {
 			break
 		}
 		c.mu.RUnlock()
+
+		stop := false
 		select {
 		case inv := <-c.completed:
 			c.mu.Lock()
+			log.Printf("HANGING ON: %v", inv.name)
 			err = c.processCompletedInvocation(inv)
 			if err != nil {
 				c.Logger.Warn("failed to process completed invocation during shutdown", slog.Any("error", err))
@@ -275,6 +279,10 @@ func (c *Controller) Run(ctx context.Context) error {
 		case <-ctx.Done():
 			err = fmt.Errorf("timed out waiting for reconcile to finish for resources: %v", maps.Keys(c.invocations))
 			closeErr = errors.Join(closeErr, err)
+			stop = true // can't use break inside a select
+		}
+		if stop {
+			break
 		}
 	}
 
@@ -421,7 +429,7 @@ func (c *Controller) Create(ctx context.Context, name *runtimev1.ResourceName, r
 
 	// A deleted resource with the same name may exist and be running. If so, we first cancel it.
 	requeued := false
-	if inv, ok := c.invocations[nameStr(name)]; ok {
+	if inv, ok := c.invocations[nameStr(name)]; ok && !inv.deletedSelf {
 		r, err := c.catalog.get(name, true, false)
 		if err != nil {
 			return fmt.Errorf("internal: got catalog error for reconciling resource: %w", err)
@@ -492,9 +500,16 @@ func (c *Controller) UpdateName(ctx context.Context, name, newName, owner *runti
 		c.enqueue(name)
 	}
 
-	r, err := c.catalog.get(name, true, false)
+	// Check resource exists (otherwise, DAG lookup may panic)
+	r, err := c.catalog.get(name, false, false)
 	if err != nil {
 		return err
+	}
+
+	// All resources pointing to the old name need to be reconciled (they'll pointing to a void resource after this)
+	ns := c.catalog.dag.Children(name)
+	for _, n := range ns {
+		c.enqueue(n)
 	}
 
 	err = c.safeRename(name, newName)
@@ -505,6 +520,12 @@ func (c *Controller) UpdateName(ctx context.Context, name, newName, owner *runti
 	err = c.catalog.updateMeta(newName, r.Meta.Refs, owner, paths)
 	if err != nil {
 		return err
+	}
+
+	// We updated a name, so it may have broken previous cyclic references
+	ns = c.catalog.retryCyclicRefs()
+	for _, n := range ns {
+		c.enqueue(n)
 	}
 
 	return nil
@@ -588,21 +609,44 @@ func (c *Controller) Delete(ctx context.Context, name *runtimev1.ResourceName) e
 
 	c.cancelIfRunning(name, false)
 
+	// Check resource exists (otherwise, DAG lookup may panic)
+	_, err := c.catalog.get(name, false, false)
+	if err != nil {
+		return err
+	}
+
+	// All resources pointing to deleted resource need to be reconciled (they'll pointing to a void resource after this)
+	ns := c.catalog.dag.Children(name)
+	for _, n := range ns {
+		c.enqueue(n)
+	}
+
 	if c.isReconcilerForResource(ctx, name) {
-		return c.catalog.delete(name)
+		inv := invocationFromContext(ctx)
+		inv.deletedSelf = true
+		err := c.catalog.delete(name)
+		if err != nil {
+			return err
+		}
+	} else {
+		err := c.catalog.clearRenamedFrom(name) // Avoid resource being marked both deleted and renamed
+		if err != nil {
+			return err
+		}
+
+		err = c.catalog.updateDeleted(name)
+		if err != nil {
+			return err
+		}
+
+		c.enqueue(name)
 	}
 
-	err := c.catalog.clearRenamedFrom(name) // Avoid resource being marked both deleted and renamed
-	if err != nil {
-		return err
+	// We removed a name, so it may have broken previous cyclic references
+	ns = c.catalog.retryCyclicRefs()
+	for _, n := range ns {
+		c.enqueue(n)
 	}
-
-	err = c.catalog.updateDeleted(name)
-	if err != nil {
-		return err
-	}
-
-	c.enqueue(name)
 
 	return nil
 }
@@ -1086,7 +1130,6 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 		name:     n,
 		isDelete: r.Meta.DeletedOn != nil,
 		isRename: r.Meta.RenamedFrom != nil,
-		done:     make(chan struct{}),
 		cancelFn: cancel,
 	}
 	c.invocations[nameStr(n)] = inv
@@ -1138,6 +1181,9 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 // - and, for itself if inv.reschedule is true
 // - and, for its children in the DAG if inv.reschedule is false
 func (c *Controller) processCompletedInvocation(inv *invocation) error {
+	// Cleanup - must remove it from c.invocations before any error conditions can occur (otherwise, closing the event loop can hang)
+	delete(c.invocations, nameStr(inv.name))
+
 	// Log result
 	logArgs := []any{slog.String("name", inv.name.Name), slog.String("kind", inv.name.Kind)}
 	logError := false
@@ -1159,8 +1205,12 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 
 	r, err := c.catalog.get(inv.name, true, false)
 	if err != nil {
-		return err
+		// Self-deletes are immediately hard deletes. So only return the error if it's not a self-delete.
+		if !(inv.deletedSelf && errors.Is(err, drivers.ErrResourceNotFound)) {
+			return err
+		}
 	}
+	// NOTE: Due to self-deletes, r may be nil!
 
 	if inv.isDelete {
 		// Trigger processQueue - there may be items in the queue waiting for all deletes to finish
@@ -1168,18 +1218,21 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 			c.setQueueUpdated()
 		}
 
-		// Extra checks in case item was re-created during deletion or deleted during a normal reconciling
-		if r.Meta.DeletedOn != nil && !inv.cancelled {
+		// Extra checks in case item was re-created during deletion, or deleted during a normal reconciling (in which case this is just a cancellation of the normal reconcile, not the result of deletion)
+		if r != nil && r.Meta.DeletedOn != nil && !inv.cancelled {
+			if inv.result.Err != nil {
+				c.Logger.Error("got error while deleting resource", slog.String("name", nameStr(r.Meta.Name)), slog.Any("error", inv.result.Err))
+			}
+
 			err = c.catalog.delete(r.Meta.Name)
 			if err != nil {
 				return err
 			}
-			if inv.result.Err != nil {
-				c.Logger.Error("got error while deleting resource", slog.String("name", nameStr(r.Meta.Name)), slog.Any("error", inv.result.Err))
-			}
-			return nil
+
+			r = nil
 		}
 	}
+	// NOTE: r will be nil after here if it was deleted. Continuing in case there's a waitlist waiting for the deletion.
 
 	if inv.isRename {
 		// Trigger processQueue - there may be items in the queue waiting for all renames to finish
@@ -1188,7 +1241,7 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 		}
 
 		// Extra checks in case item was cancelled during renaming
-		if r.Meta.RenamedFrom != nil && !inv.cancelled {
+		if r != nil && r.Meta.RenamedFrom != nil && !inv.cancelled {
 			err = c.catalog.clearRenamedFrom(r.Meta.Name)
 			if err != nil {
 				return err
@@ -1197,9 +1250,9 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 	}
 
 	// Track retrigger time
-	if !inv.result.Retrigger.IsZero() {
+	if r != nil && !inv.result.Retrigger.IsZero() {
 		if inv.result.Retrigger.After(time.Now()) {
-			c.timeline.Set(inv.name, inv.result.Retrigger)
+			c.timeline.Set(r.Meta.Name, inv.result.Retrigger)
 		} else {
 			// If retrigger requested before now, we'll just reschedule directly
 			inv.reschedule = true
@@ -1207,41 +1260,40 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 		}
 	}
 
-	// Update status and error
-	err = c.catalog.updateStatus(inv.name, runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE, inv.result.Retrigger)
-	if err != nil {
-		return err
+	// Update status and error (unless r was deleted, in which case r == nil)
+	if r != nil {
+		err = c.catalog.updateStatus(r.Meta.Name, runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE, inv.result.Retrigger)
+		if err != nil {
+			return err
+		}
+		err = c.catalog.updateError(r.Meta.Name, inv.result.Err)
+		if err != nil {
+			return err
+		}
 	}
-	err = c.catalog.updateError(inv.name, inv.result.Err)
-	if err != nil {
-		return err
-	}
-
-	// Cleanup
-	close(inv.done)
-	delete(c.invocations, nameStr(inv.name))
 
 	// Let the dominos fall
-	if inv.reschedule {
+	if r != nil && inv.reschedule {
 		c.enqueue(inv.name)
 	}
 
 	// Enqueue items from waitlist that haven't been updated (and hence re-triggered in the meantime).
 	for _, e := range inv.waitlist {
-		r, err := c.catalog.get(e.name, true, false)
+		wr, err := c.catalog.get(e.name, true, false)
 		if err != nil {
 			if errors.Is(err, drivers.ErrResourceNotFound) {
 				continue
 			}
 			return err
 		}
-		if r.Meta.SpecVersion == e.specVersion {
+		if wr.Meta.SpecVersion == e.specVersion {
 			c.enqueue(e.name)
 		}
 	}
 
-	// When a parent is done, we enqueue its children (unless rescheduling since the children would be blocked anyway)
-	if !inv.reschedule {
+	// If not a delete, we re-enqueue its children (unless we're rescheduling, since then the children would be blocked anyway).
+	// For deletes (r == nil), the children are already enqueued when c.Delete(...) is called.
+	if r != nil && !inv.reschedule {
 		for _, rn := range c.catalog.dag.Children(inv.name) {
 			c.enqueue(rn)
 		}
@@ -1262,16 +1314,16 @@ func (c *Controller) cancelIfRunning(n *runtimev1.ResourceName, reschedule bool)
 
 // invocation represents a running reconciler invocation for a specific resource.
 type invocation struct {
-	name       *runtimev1.ResourceName
-	isDelete   bool
-	isRename   bool
-	done       chan struct{}
-	cancelFn   context.CancelFunc
-	cancelled  bool
-	reschedule bool
-	holdsLock  bool
-	waitlist   map[string]waitlistEntry
-	result     ReconcileResult
+	name        *runtimev1.ResourceName
+	isDelete    bool
+	isRename    bool
+	cancelFn    context.CancelFunc
+	cancelled   bool
+	reschedule  bool
+	holdsLock   bool
+	deletedSelf bool
+	waitlist    map[string]waitlistEntry
+	result      ReconcileResult
 }
 
 // waitlistEntry represents an entry in an invocation's waitlist.
