@@ -407,6 +407,12 @@ export type ConnectorServiceScanConnectorsParams = {
   instanceId?: string;
 };
 
+export type ConnectorServiceOLAPGetTableParams = {
+  instanceId?: string;
+  connector?: string;
+  table?: string;
+};
+
 export type ConnectorServiceBigQueryListTablesParams = {
   instanceId?: string;
   connector?: string;
@@ -965,6 +971,11 @@ export const V1ObjectType = {
 
 export interface V1OLAPListTablesResponse {
   tables?: V1TableInfo[];
+}
+
+export interface V1OLAPGetTableResponse {
+  schema?: V1StructType;
+  view?: boolean;
 }
 
 export interface V1NumericStatistics {

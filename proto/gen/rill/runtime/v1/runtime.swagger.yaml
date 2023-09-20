@@ -98,6 +98,34 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - RuntimeService
+  /v1/connectors/olap/table:
+    get:
+      summary: OLAPGetTable returns metadata about a table or view in an OLAP
+      operationId: ConnectorService_OLAPGetTable
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1OLAPGetTableResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
+        - name: table
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
   /v1/connectors/scan:
     get:
       summary: |-
@@ -3931,6 +3959,13 @@ definitions:
     description: |-
       Response for QueryService.ColumnNumericHistogram, QueryService.ColumnDescriptiveStatistics and QueryService.ColumnCardinality.
       Message will have either numericHistogramBins, numericStatistics or numericOutliers set.
+  v1OLAPGetTableResponse:
+    type: object
+    properties:
+      schema:
+        $ref: '#/definitions/v1StructType'
+      view:
+        type: boolean
   v1OLAPListTablesResponse:
     type: object
     properties:

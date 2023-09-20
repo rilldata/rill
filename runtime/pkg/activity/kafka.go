@@ -4,23 +4,36 @@ import (
 	"context"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 // KafkaSink sinks events to a Kafka cluster.
 type KafkaSink struct {
 	producer *kafka.Producer
 	topic    string
+	logger   *zap.Logger
+	logChan  chan kafka.LogEvent
 }
 
-func NewKafkaSink(brokers, topic string) (*KafkaSink, error) {
-	producer, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": brokers})
+func NewKafkaSink(brokers, topic string, logger *zap.Logger) (*KafkaSink, error) {
+	logChan := make(chan kafka.LogEvent, 100)
+	producer, err := kafka.NewProducer(&kafka.ConfigMap{
+		"bootstrap.servers":      brokers,
+		"go.logs.channel.enable": true,
+		"go.logs.channel":        logChan,
+	})
 	if err != nil {
 		return nil, err
 	}
 
+	go forwardKafkaLogEventToLogger(logChan, logger)
+
 	return &KafkaSink{
 		producer: producer,
 		topic:    topic,
+		logger:   logger,
+		logChan:  logChan,
 	}, nil
 }
 
@@ -47,5 +60,38 @@ func (s *KafkaSink) Sink(_ context.Context, events []Event) error {
 func (s *KafkaSink) Close() error {
 	s.producer.Flush(100)
 	s.producer.Close()
+	close(s.logChan)
 	return nil
+}
+
+func forwardKafkaLogEventToLogger(logChan chan kafka.LogEvent, logger *zap.Logger) {
+	for logEvent := range logChan {
+		zapLevel := kafkaLogLevelToZapLevel(logEvent.Level)
+		if logger.Core().Enabled(zapLevel) {
+			fields := []zapcore.Field{
+				zap.String("kafka.producer.client.name", logEvent.Name),
+				zap.String("kafka.producer.tag", logEvent.Tag),
+			}
+			logger.Log(zapLevel, logEvent.Message, fields...)
+		}
+	}
+}
+
+// Log syslog level, lower is more critical
+// https://en.wikipedia.org/wiki/Syslog#Severity_level
+func kafkaLogLevelToZapLevel(level int) zapcore.Level {
+	switch level {
+	case 0, 1, 2:
+		return zap.FatalLevel
+	case 3:
+		return zap.ErrorLevel
+	case 4:
+		return zap.WarnLevel
+	case 5, 6:
+		return zap.InfoLevel
+	case 7:
+		return zap.DebugLevel
+	default:
+		return zap.DebugLevel // Default to debug for unrecognized levels
+	}
 }
