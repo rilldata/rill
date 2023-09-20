@@ -34,7 +34,7 @@
 >
   {#if $selectedMockUserStore === null}
     <button
-      class="px-3 py-2 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600 items-center"
+      class="px-3 py-1.5 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600 items-center"
       on:click={toggleFloatingElement}
     >
       <EyeIcon size={"16px"} />
