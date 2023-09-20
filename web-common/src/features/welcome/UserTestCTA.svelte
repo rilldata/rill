@@ -5,8 +5,8 @@
     Earn $200 as a Rill user research participant!
   </div>
   <div class="font-medium">
-    Let us observe for an hour while you use Rill, and get a $200 Amazon gift
-    card.
+    Let us observe you for an hour while you use Rill, and get a $200 Amazon
+    gift card.
     <a href="https://forms.gle/FGc7rmS42xK8xoGC9" target="_blank">Sign up</a>
   </div>
 </div>
