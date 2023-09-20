@@ -24,17 +24,23 @@ type sourceYAML struct {
 
 // parseSource parses a source definition and adds the resulting resource to p.Resources.
 func (p *Parser) parseSource(ctx context.Context, node *Node) error {
-	// If the source has SQL and hasn't specified a connector, we treat it as a model
-	if node.SQL != "" && node.ConnectorInferred {
-		return p.parseModel(ctx, node)
-	}
-
 	// Parse YAML
 	tmp := &sourceYAML{}
 	if node.YAML != nil {
 		if err := node.YAML.Decode(tmp); err != nil {
 			return pathError{path: node.YAMLPath, err: newYAMLError(err)}
 		}
+	}
+
+	// Backward compatibility: "type:" is an alias for "connector:"
+	if tmp.Type != "" {
+		node.Connector = tmp.Type
+		node.ConnectorInferred = false
+	}
+
+	// If the source has SQL and hasn't specified a connector, we treat it as a model
+	if node.SQL != "" && node.ConnectorInferred {
+		return p.parseModel(ctx, node)
 	}
 
 	// Override YAML config with SQL annotations
@@ -64,11 +70,6 @@ func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 	schedule, err := parseScheduleYAML(tmp.Refresh)
 	if err != nil {
 		return err
-	}
-
-	// Backward compatibility
-	if tmp.Type != "" {
-		node.Connector = tmp.Type
 	}
 
 	// Backward compatibility: when the default connector is "olap", and it's a DuckDB connector, a source with connector "duckdb" should run on it
