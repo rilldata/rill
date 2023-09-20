@@ -37,16 +37,18 @@ var _partialDownloadReaders = map[string]string{
 
 // implements connector.FileIterator
 type blobIterator struct {
-	ctx        context.Context
-	opts       *Options
-	logger     *zap.Logger
-	bucket     *blob.Bucket
-	objects    []*objectWithPlan
-	batchCount int
+	ctx    context.Context
+	cancel func()
+	opts   *Options
+	logger *zap.Logger
+	bucket *blob.Bucket
 
-	lastBatch []string
 	// all localfiles are created in this dir
-	tempDir         string
+	tempDir string
+	objects []*objectWithPlan
+	// number of files to download in background
+	batchCount      int
+	lastBatch       []string
 	grp             *errgroup.Group
 	downloadedFiles chan downloadedFile
 	err             error // any error in download
@@ -116,8 +118,10 @@ func (opts *Options) validateLimits(size int64, matchCount int, fetched int64) e
 func NewIterator(ctx context.Context, bucket *blob.Bucket, opts Options, l *zap.Logger) (drivers.FileIterator, error) {
 	opts.validate()
 
+	ctxWithCancel, cancel := context.WithCancel(ctx)
 	it := &blobIterator{
-		ctx:       ctx,
+		ctx:       ctxWithCancel,
+		cancel:    cancel,
 		bucket:    bucket,
 		opts:      &opts,
 		logger:    l,
@@ -151,6 +155,7 @@ func NewIterator(ctx context.Context, bucket *blob.Bucket, opts Options, l *zap.
 
 // Close frees the resources
 func (it *blobIterator) Close() error {
+	it.cancel()
 	if it.grp != nil {
 		_ = it.grp.Wait() // wait for background calls to complete
 	}
@@ -204,7 +209,7 @@ func (it *blobIterator) Next() ([]string, error) {
 			break
 		}
 		it.lastBatch = append(it.lastBatch, fileName.fileName)
-		totalSizeInBytes += fileName.size
+		totalSizeInBytes += fileName.sizeInBytes
 	}
 	// clients can make changes to slice if passing the same slice that iterator holds
 	// creating a copy since we want to delete all these files on next batch/close
@@ -305,7 +310,7 @@ func (it *blobIterator) init() {
 				stop = true
 			} else {
 				// we may download partial file as well but its fine to use full object size and not call os.Stat since we are anyways not interested in exact values
-				it.downloadedFiles <- downloadedFile{fileName: filename, size: obj.obj.Size}
+				it.downloadedFiles <- downloadedFile{fileName: filename, sizeInBytes: obj.obj.Size}
 			}
 			return err
 		})
@@ -379,6 +384,7 @@ func (it *blobIterator) plan() ([]*objectWithPlan, error) {
 	if size < it.opts.BatchSizeBytes { // need to ingest complete batch in one go
 		it.batchCount = _concurrentBlobDownloadLimit
 	} else {
+		// may be just keep it some factor of _concurrentBlobDownloadLimit ?
 		it.batchCount = int(it.opts.BatchSizeBytes/(size/int64(matchCount))) + 1
 	}
 
@@ -425,6 +431,6 @@ func downloadObject(ctx context.Context, bucket *blob.Bucket, objpath string, fi
 }
 
 type downloadedFile struct {
-	fileName string // full file name with path
-	size     int64
+	fileName    string // file name with path
+	sizeInBytes int64
 }
