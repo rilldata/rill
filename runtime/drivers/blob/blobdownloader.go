@@ -2,6 +2,7 @@ package blob
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -37,14 +38,19 @@ var _partialDownloadReaders = map[string]string{
 // implements connector.FileIterator
 type blobIterator struct {
 	ctx        context.Context
+	opts       *Options
+	logger     *zap.Logger
 	bucket     *blob.Bucket
 	objects    []*objectWithPlan
-	index      int
-	localFiles []string
+	batchCount int
+
+	lastBatch []string
 	// all localfiles are created in this dir
-	tempDir string
-	opts    *Options
-	logger  *zap.Logger
+	tempDir         string
+	grp             *errgroup.Group
+	downloadedFiles chan downloadedFile
+	err             error // any error in download
+
 	// data is already fetched during planning stage itself for single file cases
 	// TODO :: refactor this to return a different iterator maybe ?
 	nextPaths []string
@@ -65,6 +71,8 @@ type Options struct {
 	StorageLimitInBytes int64
 	// Retain files and only delete during close
 	KeepFilesUntilClose bool
+	// BatchSizeBytes is the combined size of all files returned in one call to next()
+	BatchSizeBytes int64
 }
 
 // sets defaults if not set by user
@@ -81,6 +89,10 @@ func (opts *Options) validate() {
 	}
 	if opts.GlobPageSize == 0 {
 		opts.GlobPageSize = 1000
+	}
+	if opts.BatchSizeBytes == 0 {
+		// 5 GB
+		opts.BatchSizeBytes = 5 * 1024 * 1024 * 1024
 	}
 }
 
@@ -105,10 +117,11 @@ func NewIterator(ctx context.Context, bucket *blob.Bucket, opts Options, l *zap.
 	opts.validate()
 
 	it := &blobIterator{
-		ctx:    ctx,
-		bucket: bucket,
-		opts:   &opts,
-		logger: l,
+		ctx:       ctx,
+		bucket:    bucket,
+		opts:      &opts,
+		logger:    l,
+		lastBatch: make([]string, 0),
 	}
 
 	tempDir, err := os.MkdirTemp(os.TempDir(), "blob_ingestion")
@@ -125,8 +138,8 @@ func NewIterator(ctx context.Context, bucket *blob.Bucket, opts Options, l *zap.
 	}
 	it.objects = objects
 	if len(objects) == 1 {
-		it.nextPaths, err = it.NextBatch(1)
-		it.index = 0
+		it.nextPaths, err = it.Next()
+		it.err = nil
 		if err != nil {
 			it.Close()
 			return nil, err
@@ -138,6 +151,9 @@ func NewIterator(ctx context.Context, bucket *blob.Bucket, opts Options, l *zap.
 
 // Close frees the resources
 func (it *blobIterator) Close() error {
+	if it.grp != nil {
+		_ = it.grp.Wait() // wait for background calls to complete
+	}
 	// remove temp dir since recursive paths created have to be removed as well
 	err := os.RemoveAll(it.tempDir)
 	if bucketCloseErr := it.bucket.Close(); bucketCloseErr != nil {
@@ -148,205 +164,53 @@ func (it *blobIterator) Close() error {
 
 // HasNext returns true if iterator has more data
 func (it *blobIterator) HasNext() bool {
-	return it.index < len(it.objects)
+	return it.err == nil
 }
 
-// NextBatchSize downloads next n files and copies to local directory
-func (it *blobIterator) NextBatchSize(sizeInBytes int64) ([]string, error) {
+// Next downloads next n files and copies to local directory
+func (it *blobIterator) Next() ([]string, error) {
 	if !it.HasNext() {
-		return nil, io.EOF
+		return nil, it.err
 	}
-	if len(it.nextPaths) != 0 {
+	if len(it.nextPaths) != 0 { // single file path
 		paths := it.nextPaths
-		it.index += len(paths)
 		it.nextPaths = nil
+		it.err = io.EOF
 		return paths, nil
 	}
 
+	if it.downloadedFiles == nil {
+		// start downloading files
+		it.downloadedFiles = make(chan downloadedFile, it.batchCount)
+		go func() {
+			it.init()
+		}()
+	}
 	if !it.opts.KeepFilesUntilClose {
 		// delete files created in last iteration
-		fileutil.ForceRemoveFiles(it.localFiles)
+		fileutil.ForceRemoveFiles(it.lastBatch)
 	}
 
-	// new slice creation is not necessary on every iteration
-	// but there may be cases where n in first batch is different from n in next batch
-	// to keep things easy creating a new slice every time
-	it.localFiles = make([]string, 0)
-	g, grpCtx := errgroup.WithContext(it.ctx)
-	g.SetLimit(_concurrentBlobDownloadLimit)
-
+	it.lastBatch = it.lastBatch[:0]
 	var totalSizeInBytes int64
-	for ; it.index < len(it.objects) && totalSizeInBytes < sizeInBytes; it.index++ {
-		obj := it.objects[it.index]
-		totalSizeInBytes += obj.obj.Size
-		// need to create file by maintaining same dir path as in glob for hivepartition support
-		filename := filepath.Join(it.tempDir, obj.obj.Key)
-		it.localFiles = append(it.localFiles, filename)
-		g.Go(func() error {
-			if err := os.MkdirAll(filepath.Dir(filename), os.ModePerm); err != nil {
-				return err
+	var err error
+	for totalSizeInBytes < it.opts.BatchSizeBytes {
+		fileName, ok := <-it.downloadedFiles
+		if !ok { // channel is closed
+			err = it.err
+			if errors.Is(err, it.err) {
+				err = nil
 			}
-
-			file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, os.ModePerm)
-			if err != nil {
-				return err
-			}
-			defer file.Close()
-
-			ext := filepath.Ext(obj.obj.Key)
-			partialReader, isPartialDownloadSupported := _partialDownloadReaders[ext]
-			downloadFull := obj.full || !isPartialDownloadSupported
-
-			// Collect metrics of download size and time
-			startTime := time.Now()
-			defer func() {
-				size := obj.obj.Size
-				st, err := file.Stat()
-				if err == nil {
-					size = st.Size()
-				}
-
-				duration := time.Since(startTime)
-				it.logger.Info("download complete", zap.String("object", obj.obj.Key), zap.Duration("duration", duration), observability.ZapCtx(it.ctx))
-				drivers.RecordDownloadMetrics(grpCtx, &drivers.DownloadMetrics{
-					Connector: "blob",
-					Ext:       ext,
-					Partial:   !downloadFull,
-					Duration:  duration,
-					Size:      size,
-				})
-			}()
-
-			// download full file
-			if downloadFull {
-				return downloadObject(grpCtx, it.bucket, obj.obj.Key, file)
-			}
-			// download partial file
-			// check if, for smaller size we can download entire file
-			switch partialReader {
-			case "parquet":
-				return downloadParquet(grpCtx, it.bucket, obj.obj, obj.extractOption, file)
-			case "csv":
-				return downloadText(grpCtx, it.bucket, obj.obj, &textExtractOption{extractOption: obj.extractOption, hasCSVHeader: true}, file)
-			case "json":
-				return downloadText(grpCtx, it.bucket, obj.obj, &textExtractOption{extractOption: obj.extractOption, hasCSVHeader: false}, file)
-			default:
-				// should not reach here
-				panic(fmt.Errorf("partial download not supported for extension %q", ext))
-			}
-		})
+			break
+		}
+		it.lastBatch = append(it.lastBatch, fileName.fileName)
+		totalSizeInBytes += fileName.size
 	}
-
-	if err := g.Wait(); err != nil {
-		return nil, err
-	}
-
 	// clients can make changes to slice if passing the same slice that iterator holds
 	// creating a copy since we want to delete all these files on next batch/close
-	result := make([]string, len(it.localFiles))
-	copy(result, it.localFiles)
-	return result, nil
-}
-
-// NextBatch downloads next n files and copies to local directory
-func (it *blobIterator) NextBatch(n int) ([]string, error) {
-	if !it.HasNext() {
-		return nil, io.EOF
-	}
-	if len(it.nextPaths) != 0 {
-		paths := it.nextPaths
-		it.index += len(paths)
-		it.nextPaths = nil
-		return paths, nil
-	}
-
-	if !it.opts.KeepFilesUntilClose {
-		// delete files created in last iteration
-		fileutil.ForceRemoveFiles(it.localFiles)
-	}
-	start := it.index
-	end := it.index + n
-	if end > len(it.objects) {
-		end = len(it.objects)
-	}
-	it.index = end
-
-	// new slice creation is not necessary on every iteration
-	// but there may be cases where n in first batch is different from n in next batch
-	// to keep things easy creating a new slice every time
-	it.localFiles = make([]string, end-start)
-	g, grpCtx := errgroup.WithContext(it.ctx)
-	g.SetLimit(_concurrentBlobDownloadLimit)
-	for i, obj := range it.objects[start:end] {
-		obj := obj
-		index := start + i // with repect to object slice
-		g.Go(func() error {
-			// need to create file by maintaining same dir path as in glob for hivepartition support
-			filename := filepath.Join(it.tempDir, obj.obj.Key)
-			if err := os.MkdirAll(filepath.Dir(filename), os.ModePerm); err != nil {
-				return err
-			}
-
-			file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, os.ModePerm)
-			if err != nil {
-				return err
-			}
-			defer file.Close()
-
-			it.localFiles[index-start] = file.Name()
-			ext := filepath.Ext(obj.obj.Key)
-			partialReader, isPartialDownloadSupported := _partialDownloadReaders[ext]
-			downloadFull := obj.full || !isPartialDownloadSupported
-
-			// Collect metrics of download size and time
-			startTime := time.Now()
-			defer func() {
-				size := obj.obj.Size
-				st, err := file.Stat()
-				if err == nil {
-					size = st.Size()
-				}
-
-				duration := time.Since(startTime)
-				it.logger.Info("download complete", zap.String("object", obj.obj.Key), zap.Duration("duration", duration), observability.ZapCtx(it.ctx))
-				drivers.RecordDownloadMetrics(grpCtx, &drivers.DownloadMetrics{
-					Connector: "blob",
-					Ext:       ext,
-					Partial:   !downloadFull,
-					Duration:  duration,
-					Size:      size,
-				})
-			}()
-
-			// download full file
-			if downloadFull {
-				return downloadObject(grpCtx, it.bucket, obj.obj.Key, file)
-			}
-			// download partial file
-			// check if, for smaller size we can download entire file
-			switch partialReader {
-			case "parquet":
-				return downloadParquet(grpCtx, it.bucket, obj.obj, obj.extractOption, file)
-			case "csv":
-				return downloadText(grpCtx, it.bucket, obj.obj, &textExtractOption{extractOption: obj.extractOption, hasCSVHeader: true}, file)
-			case "json":
-				return downloadText(grpCtx, it.bucket, obj.obj, &textExtractOption{extractOption: obj.extractOption, hasCSVHeader: false}, file)
-			default:
-				// should not reach here
-				panic(fmt.Errorf("partial download not supported for extension %q", ext))
-			}
-		})
-	}
-
-	if err := g.Wait(); err != nil {
-		return nil, err
-	}
-
-	result := make([]string, end-start)
-	// clients can make changes to slice if passing the same slice that iterator holds
-	// creating a copy since we want to delete all these files on next batch/close
-	copy(result, it.localFiles)
-	return result, nil
+	result := make([]string, len(it.lastBatch))
+	copy(result, it.lastBatch)
+	return result, err
 }
 
 func (it *blobIterator) Size(unit drivers.ProgressUnit) (int64, bool) {
@@ -371,6 +235,86 @@ func (it *blobIterator) Size(unit drivers.ProgressUnit) (int64, bool) {
 
 func (it *blobIterator) KeepFilesUntilClose(keepFilesUntilClose bool) {
 	it.opts.KeepFilesUntilClose = keepFilesUntilClose
+}
+
+func (it *blobIterator) init() {
+	g, grpCtx := errgroup.WithContext(it.ctx)
+	it.grp = g
+	g.SetLimit(_concurrentBlobDownloadLimit)
+	var stop bool
+	for i := 0; i < len(it.objects) && !stop; i++ {
+		obj := it.objects[i]
+		g.Go(func() error {
+			// need to create file by maintaining same dir path as in glob for hivepartition support
+			filename := filepath.Join(it.tempDir, obj.obj.Key)
+			if err := os.MkdirAll(filepath.Dir(filename), os.ModePerm); err != nil {
+				return err
+			}
+
+			file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, os.ModePerm)
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+
+			ext := filepath.Ext(obj.obj.Key)
+			partialReader, isPartialDownloadSupported := _partialDownloadReaders[ext]
+			downloadFull := obj.full || !isPartialDownloadSupported
+
+			// Collect metrics of download size and time
+			startTime := time.Now()
+			defer func() {
+				size := obj.obj.Size
+				st, err := file.Stat()
+				if err == nil {
+					size = st.Size()
+				}
+
+				duration := time.Since(startTime)
+				it.logger.Info("download complete", zap.String("object", obj.obj.Key), zap.Duration("duration", duration), observability.ZapCtx(it.ctx))
+				drivers.RecordDownloadMetrics(grpCtx, &drivers.DownloadMetrics{
+					Connector: "blob",
+					Ext:       ext,
+					Partial:   !downloadFull,
+					Duration:  duration,
+					Size:      size,
+				})
+			}()
+
+			if downloadFull {
+				// download full file
+				err = downloadObject(grpCtx, it.bucket, obj.obj.Key, file)
+			} else {
+				// download partial file
+				// check if, for smaller size we can download entire file
+				switch partialReader {
+				case "parquet":
+					err = downloadParquet(grpCtx, it.bucket, obj.obj, obj.extractOption, file)
+				case "csv":
+					err = downloadText(grpCtx, it.bucket, obj.obj, &textExtractOption{extractOption: obj.extractOption, hasCSVHeader: true}, file)
+				case "json":
+					err = downloadText(grpCtx, it.bucket, obj.obj, &textExtractOption{extractOption: obj.extractOption, hasCSVHeader: false}, file)
+				default:
+					// should not reach here
+					panic(fmt.Errorf("partial download not supported for extension %q", ext))
+				}
+			}
+
+			if err != nil {
+				// found an error stop triggering download of other files
+				stop = true
+			} else {
+				// we may download partial file as well but its fine to use full object size and not call os.Stat since we are anyways not interested in exact values
+				it.downloadedFiles <- downloadedFile{fileName: filename, size: obj.obj.Size}
+			}
+			return err
+		})
+	}
+	it.err = g.Wait()
+	if it.err == nil { // all files downloaded
+		it.err = io.EOF
+	}
+	close(it.downloadedFiles)
 }
 
 // todo :: ideally planner should take ownership of the bucket and return an iterator with next returning objectWithPlan
@@ -400,6 +344,7 @@ func (it *blobIterator) plan() ([]*objectWithPlan, error) {
 		if err := it.opts.validateLimits(size, 1, 1); err != nil {
 			return nil, err
 		}
+		it.batchCount = 1
 		return planner.items(), nil
 	}
 	it.logger.Info("planner started", zap.String("glob", it.opts.GlobPattern), zap.String("prefix", listOpts.Prefix), observability.ZapCtx(it.ctx))
@@ -426,12 +371,20 @@ func (it *blobIterator) plan() ([]*objectWithPlan, error) {
 		}
 	}
 
-	it.logger.Info("planner completed", zap.String("glob", it.opts.GlobPattern), zap.Int64("listed_objects", fetched), zap.Int("matched", matchCount), zap.Int64("bytes_matched", size), observability.ZapCtx(it.ctx))
-
 	items := planner.items()
 	if len(items) == 0 {
 		return nil, fmt.Errorf("no files found for glob pattern %q", it.opts.GlobPattern)
 	}
+
+	if size < it.opts.BatchSizeBytes { // need to ingest complete batch in one go
+		it.batchCount = _concurrentBlobDownloadLimit
+	} else {
+		it.batchCount = int(it.opts.BatchSizeBytes/(size/int64(matchCount))) + 1
+	}
+
+	it.logger.Info("planner completed", zap.String("glob", it.opts.GlobPattern), zap.Int64("listed_objects", fetched),
+		zap.Int("matched", matchCount), zap.Int64("bytes_matched", size),
+		zap.Int64("batch_size", it.opts.BatchSizeBytes), zap.Int("batch_count", it.batchCount), observability.ZapCtx(it.ctx))
 	return items, nil
 }
 
@@ -469,4 +422,9 @@ func downloadObject(ctx context.Context, bucket *blob.Bucket, objpath string, fi
 
 	_, err = io.Copy(file, rc)
 	return err
+}
+
+type downloadedFile struct {
+	fileName string // full file name with path
+	size     int64
 }

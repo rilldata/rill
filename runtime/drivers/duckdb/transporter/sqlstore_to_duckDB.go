@@ -12,8 +12,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const _sqlStoreIteratorBatchSize = 32
-
 type sqlStoreToDuckDB struct {
 	to     drivers.OLAPStore
 	from   drivers.SQLStore
@@ -60,7 +58,7 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map
 	// to consuming fileIterator in objectStore_to_duckDB
 	// both can be refactored to follow same path
 	for iter.HasNext() {
-		files, err := iter.NextBatch(_sqlStoreIteratorBatchSize)
+		files, err := iter.Next()
 		if err != nil {
 			return err
 		}

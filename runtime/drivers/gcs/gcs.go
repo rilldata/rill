@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
+	"github.com/c2h5oh/datasize"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
@@ -145,6 +146,7 @@ type sourceProperties struct {
 	GlobMaxObjectsMatched int            `mapstructure:"glob.max_objects_matched"`
 	GlobMaxObjectsListed  int64          `mapstructure:"glob.max_objects_listed"`
 	GlobPageSize          int            `mapstructure:"glob.page_size"`
+	BatchSize             string         `mapstructure:"batch_size"`
 	url                   *globutil.URL
 	extractPolicy         *rillblob.ExtractPolicy
 }
@@ -277,6 +279,10 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 		return nil, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, err)
 	}
 
+	batchSize, err := datasize.ParseString(conf.BatchSize)
+	if err != nil {
+		return nil, err
+	}
 	// prepare fetch configs
 	opts := rillblob.Options{
 		GlobMaxTotalSize:      conf.GlobMaxTotalSize,
@@ -285,6 +291,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 		GlobPageSize:          conf.GlobPageSize,
 		GlobPattern:           conf.url.Path,
 		ExtractPolicy:         conf.extractPolicy,
+		BatchSizeBytes:        int64(batchSize.Bytes()),
 	}
 
 	iter, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)

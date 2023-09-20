@@ -32,12 +32,7 @@ func (m *mockIterator) Close() error {
 	return nil
 }
 
-func (m *mockIterator) NextBatch(limit int) ([]string, error) {
-	m.index += 1
-	return m.batches[m.index-1], nil
-}
-
-func (m *mockIterator) NextBatchSize(sizeInBytes int64) ([]string, error) {
+func (m *mockIterator) Next() ([]string, error) {
 	m.index += 1
 	return m.batches[m.index-1], nil
 }

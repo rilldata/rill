@@ -119,13 +119,9 @@ func (f *fileIterator) HasNext() bool {
 func (f *fileIterator) KeepFilesUntilClose(keepFilesUntilClose bool) {
 }
 
-func (f *fileIterator) NextBatchSize(sizeInBytes int64) ([]string, error) {
-	return f.NextBatch(1)
-}
-
-// NextBatch implements drivers.FileIterator.
+// Next implements drivers.FileIterator.
 // TODO :: currently it downloads all records in a single file. Need to check if it is efficient to ingest a single file with size in tens of GBs or more.
-func (f *fileIterator) NextBatch(limit int) ([]string, error) {
+func (f *fileIterator) Next() ([]string, error) {
 	// storage API not available so can't read as arrow records. Read results row by row and dump in a json file.
 	if !f.bqIter.IsAccelerated() {
 		f.logger.Info("downloading results in json file", observability.ZapCtx(f.ctx))

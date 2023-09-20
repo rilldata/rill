@@ -7,15 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 )
-
-const _objectStoreIteratorBatchSizeInBytes = int64(5 * datasize.GB)
 
 type objectStoreToDuckDB struct {
 	to     drivers.OLAPStore
@@ -74,13 +71,8 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 
 	a := newAppender(t.to, sinkCfg, srcCfg.DuckDB, srcCfg.AllowSchemaRelaxation, t.logger)
 
-	batchSize := _objectStoreIteratorBatchSizeInBytes
-	if srcCfg.BatchSizeBytes != 0 {
-		batchSize = srcCfg.BatchSizeBytes
-	}
-
 	for iterator.HasNext() {
-		files, err := iterator.NextBatchSize(batchSize)
+		files, err := iterator.Next()
 		if err != nil {
 			return err
 		}
@@ -263,15 +255,10 @@ func (a *appender) scanSchemaFromQuery(ctx context.Context, qry string) (map[str
 }
 
 func (t *objectStoreToDuckDB) ingestDuckDBSQL(ctx context.Context, originalSQL string, iterator drivers.FileIterator, srcCfg *fileSourceProperties, dbSink *sinkProperties, opts *drivers.TransferOptions) error {
-	batchSize := _objectStoreIteratorBatchSizeInBytes
-	if srcCfg.BatchSizeBytes != 0 {
-		batchSize = srcCfg.BatchSizeBytes
-	}
-
 	iterator.KeepFilesUntilClose(true)
 	allFiles := make([]string, 0)
 	for iterator.HasNext() {
-		files, err := iterator.NextBatchSize(batchSize)
+		files, err := iterator.Next()
 		if err != nil {
 			return err
 		}

@@ -92,7 +92,7 @@ func TestFetchFileNames(t *testing.T) {
 			paths := make([]string, 0)
 			defer fileutil.ForceRemoveFiles(paths)
 			for it.HasNext() {
-				next, err := it.NextBatch(8)
+				next, err := it.Next()
 				require.NoError(t, err)
 				paths = append(paths, next...)
 			}
@@ -159,7 +159,7 @@ func TestFetchFileNamesWithParitionLimits(t *testing.T) {
 			paths := make([]string, 0)
 			defer fileutil.ForceRemoveFiles(paths)
 			for it.HasNext() {
-				next, err := it.NextBatch(8)
+				next, err := it.Next()
 				require.NoError(t, err)
 				paths = append(paths, next...)
 			}
