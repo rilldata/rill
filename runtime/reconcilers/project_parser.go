@@ -237,7 +237,7 @@ func (r *ProjectParserReconciler) reconcileProjectConfig(ctx context.Context, pa
 		return err
 	}
 
-	conns := make([]*runtimev1.Connector, len(parser.RillYAML.Connectors))
+	conns := make([]*runtimev1.Connector, 0, len(parser.RillYAML.Connectors))
 	for _, c := range parser.RillYAML.Connectors {
 		conns = append(conns, &runtimev1.Connector{
 			Type:   c.Type,

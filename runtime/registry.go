@@ -43,6 +43,15 @@ func (r *Runtime) Controller(instanceID string) (*Controller, error) {
 	return r.registryCache.getController(instanceID)
 }
 
+// WaitUntilReady waits until the instance's controller is ready (open for catalog calls).
+func (r *Runtime) WaitUntilReady(ctx context.Context, instanceID string) error {
+	ctrl, err := r.Controller(instanceID)
+	if err != nil {
+		return err
+	}
+	return ctrl.WaitUntilReady(ctx)
+}
+
 // WaitUntilIdle waits until the instance's controller is idle (not reconciling any resources).
 func (r *Runtime) WaitUntilIdle(ctx context.Context, instanceID string) error {
 	ctrl, err := r.Controller(instanceID)

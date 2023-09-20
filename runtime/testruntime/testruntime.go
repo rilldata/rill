@@ -72,6 +72,7 @@ func New(t TestingT) *runtime.Runtime {
 // InstanceOptions enables configuration of the instance options that are configurable in tests.
 type InstanceOptions struct {
 	Files                        map[string]string
+	Variables                    map[string]string
 	IngestionLimitBytes          int64
 	WatchRepo                    bool
 	StageChanges                 bool
@@ -100,6 +101,7 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 				Config: map[string]string{"dsn": ""},
 			},
 		},
+		Variables:                    opts.Variables,
 		EmbedCatalog:                 true,
 		IngestionLimitBytes:          opts.IngestionLimitBytes,
 		WatchRepo:                    opts.WatchRepo,

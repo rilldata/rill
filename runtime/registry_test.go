@@ -20,7 +20,7 @@ import (
 func TestRuntime_EditInstance(t *testing.T) {
 	repodsn := t.TempDir()
 	newRepodsn := t.TempDir()
-	rt := NewTestRunTime(t)
+	rt := newTestRuntime(t)
 	tests := []struct {
 		name      string
 		inst      *drivers.Instance
@@ -51,7 +51,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
 				EmbedCatalog:  true,
-				Variables:     map[string]string{"connectors.s3.region": "us-east-1", "allow_host_access": "true"},
+				Variables:     map[string]string{"connectors.s3.region": "us-east-1"},
 				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
@@ -90,7 +90,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				OLAPConnector: "olap1",
 				RepoConnector: "repo1",
 				EmbedCatalog:  true,
-				Variables:     map[string]string{"host": "localhost", "allow_host_access": "true"},
+				Variables:     map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
@@ -110,7 +110,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 			inst: &drivers.Instance{
 				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
-				EmbedCatalog:  false,
+				EmbedCatalog:  true,
 				Variables:     map[string]string{"connectors.s3.region": "us-east-1"},
 				Connectors: []*runtimev1.Connector{
 					{
@@ -128,8 +128,8 @@ func TestRuntime_EditInstance(t *testing.T) {
 			savedInst: &drivers.Instance{
 				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
-				EmbedCatalog:  false,
-				Variables:     map[string]string{"connectors.s3.region": "us-east-1", "allow_host_access": "true"},
+				EmbedCatalog:  true,
+				Variables:     map[string]string{"connectors.s3.region": "us-east-1"},
 				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
@@ -149,7 +149,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 			inst: &drivers.Instance{
 				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
-				EmbedCatalog:  false,
+				EmbedCatalog:  true,
 				Variables:     map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.Connector{
 					{
@@ -167,8 +167,8 @@ func TestRuntime_EditInstance(t *testing.T) {
 			savedInst: &drivers.Instance{
 				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
-				EmbedCatalog:  false,
-				Variables:     map[string]string{"host": "localhost", "allow_host_access": "true"},
+				EmbedCatalog:  true,
+				Variables:     map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
@@ -188,7 +188,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 			inst: &drivers.Instance{
 				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
-				EmbedCatalog:  false,
+				EmbedCatalog:  true,
 				Variables:     map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.Connector{
 					{
@@ -206,8 +206,8 @@ func TestRuntime_EditInstance(t *testing.T) {
 			savedInst: &drivers.Instance{
 				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
-				EmbedCatalog:  false,
-				Variables:     map[string]string{"host": "localhost", "allow_host_access": "true"},
+				EmbedCatalog:  true,
+				Variables:     map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
@@ -227,7 +227,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 			inst: &drivers.Instance{
 				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
-				EmbedCatalog:  false,
+				EmbedCatalog:  true,
 				Variables:     map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.Connector{
 					{
@@ -248,8 +248,8 @@ func TestRuntime_EditInstance(t *testing.T) {
 			savedInst: &drivers.Instance{
 				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
-				EmbedCatalog:  false,
-				Variables:     map[string]string{"host": "localhost", "allow_host_access": "true"},
+				EmbedCatalog:  true,
+				Variables:     map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
@@ -291,9 +291,10 @@ func TestRuntime_EditInstance(t *testing.T) {
 				},
 			}
 			require.NoError(t, rt.CreateInstance(context.Background(), inst))
+			rt.WaitUntilReady(ctx, inst.ID)
 
 			// Acquire OLAP (to make sure it's opened)
-			_, release, err := rt.OLAP(ctx, inst.ID)
+			firstOlap, release, err := rt.OLAP(ctx, inst.ID)
 			require.NoError(t, err)
 			release()
 
@@ -307,6 +308,10 @@ func TestRuntime_EditInstance(t *testing.T) {
 				return
 			}
 
+			// Wait for controller restart
+			time.Sleep(100 * time.Millisecond)
+			rt.WaitUntilReady(ctx, inst.ID)
+
 			// Verify db instances are correctly updated
 			newInst, err := rt.Instance(ctx, inst.ID)
 			require.NoError(t, err)
@@ -319,28 +324,22 @@ func TestRuntime_EditInstance(t *testing.T) {
 			require.Greater(t, time.Since(newInst.CreatedOn), time.Since(newInst.UpdatedOn))
 			require.Equal(t, tt.savedInst.Variables, newInst.Variables)
 
-			// Verify older olap connection is closed
-			driver, cfg, err := rt.connectorConfig(ctx, inst.ID, inst.OLAPConnector)
-			_, ok := rt.connCache.acquired[inst.ID+driver+generateKey(cfg)]
-			require.Equal(t, false, ok)
-			driver, cfg, err = rt.connectorConfig(ctx, inst.ID, inst.RepoConnector)
-			_, ok = rt.connCache.acquired[inst.ID+driver+generateKey(cfg)]
-			require.Equal(t, false, ok)
-
 			// Verify new olap connection is opened
 			olap, release, err := rt.OLAP(ctx, inst.ID)
 			require.NoError(t, err)
 			defer release()
-
 			_, err = olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM rill.migration_version"})
-			require.Equal(t, true, err != nil)
+			require.NoError(t, err)
+
+			// Verify new olap is not the old one
+			require.NotEqual(t, firstOlap, olap)
 		})
 	}
 }
 
 func TestRuntime_DeleteInstance(t *testing.T) {
 	repodsn := t.TempDir()
-	rt := NewTestRunTime(t)
+	rt := newTestRuntime(t)
 	tests := []struct {
 		name       string
 		instanceID string
@@ -374,6 +373,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 				},
 			}
 			require.NoError(t, rt.CreateInstance(context.Background(), inst))
+			rt.WaitUntilReady(ctx, inst.ID)
 
 			// Acquire OLAP
 			olap, release, err := rt.OLAP(ctx, inst.ID)
@@ -415,7 +415,7 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 
 	// Prepare
 	ctx := context.Background()
-	rt := NewTestRunTime(t)
+	rt := newTestRuntime(t)
 	dbpath := filepath.Join(t.TempDir(), "test.db")
 
 	// Create instance
@@ -466,7 +466,7 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 }
 
 // New returns a runtime configured for use in tests.
-func NewTestRunTime(t *testing.T) *Runtime {
+func newTestRuntime(t *testing.T) *Runtime {
 	globalConnectors := []*runtimev1.Connector{
 		{
 			Type: "sqlite",

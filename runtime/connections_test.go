@@ -10,17 +10,9 @@ import (
 )
 
 func TestAcquireHandle(t *testing.T) {
-	rt, id := testruntime.NewInstance(t)
-	ctx := context.Background()
-
-	// set some env variable in instance
-	inst, err := rt.Instance(ctx, id)
-	require.NoError(t, err)
-	inst.Variables = map[string]string{"aws_secret_access_key": "yyyy"}
-	require.NoError(t, rt.EditInstance(ctx, inst, true))
-
-	testruntime.PutFiles(t, rt, id, map[string]string{
-		`rill.yaml`: `
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			`rill.yaml`: `
 title: Hello world
 description: This project says hello to the world
 
@@ -35,7 +27,12 @@ env:
   foo: bar
   allow_host_access: false
 `,
+		},
+		Variables: map[string]string{
+			"aws_secret_access_key": "yyyy",
+		},
 	})
+	ctx := context.Background()
 
 	handle, _, err := rt.AcquireHandle(ctx, id, "my-s3")
 	require.NoError(t, err)
