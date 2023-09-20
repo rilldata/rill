@@ -229,16 +229,17 @@ func (c *catalogCache) create(name *runtimev1.ResourceName, refs []*runtimev1.Re
 		c.unlink(existing) // If creating a resource that's currently soft-deleted, it'll be like the previous delete never happened.
 	}
 	r.Meta = &runtimev1.ResourceMeta{
-		Name:           name,
-		Refs:           refs,
-		FilePaths:      paths,
-		Owner:          owner,
-		Version:        1,
-		SpecVersion:    1,
-		StateVersion:   1,
-		CreatedOn:      timestamppb.Now(),
-		SpecUpdatedOn:  timestamppb.Now(),
-		StateUpdatedOn: timestamppb.Now(),
+		Name:            name,
+		Refs:            refs,
+		FilePaths:       paths,
+		Owner:           owner,
+		Version:         1,
+		SpecVersion:     1,
+		StateVersion:    1,
+		CreatedOn:       timestamppb.Now(),
+		SpecUpdatedOn:   timestamppb.Now(),
+		StateUpdatedOn:  timestamppb.Now(),
+		ReconcileStatus: runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE,
 	}
 	if existing != nil {
 		r.Meta.Version = existing.Meta.Version + 1

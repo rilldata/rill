@@ -20,7 +20,7 @@ func PutFiles(t testing.TB, rt *runtime.Runtime, id string, files map[string]str
 	defer release()
 
 	for path, data := range files {
-		err := repo.Put(ctx, path, strings.NewReader(data))
+		err := repo.Put(ctx, path, strings.NewReader(strings.TrimSpace(data)))
 		require.NoError(t, err)
 	}
 }
