@@ -9,7 +9,7 @@
 <BackgroundImage>
   <div in:fly={{ duration: 1600, delay: 400, y: 8 }}>
     <div
-      class="flex flex-col items-center gap-y-8 py-16 2xl:py-32 px-10 2xl:px-20"
+      class="flex flex-col items-center gap-y-8 py-16 2xl:py-20 px-10 2xl:px-20"
     >
       <TitleContent />
       <div
