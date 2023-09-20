@@ -23,8 +23,8 @@ type Service struct {
 	Email          *email.Client
 	Used           *usedFlusher
 	Github         Github
+	Logger         *zap.Logger
 	opts           *Options
-	logger         *zap.Logger
 	issuer         *auth.Issuer
 	closeCtx       context.Context
 	closeCtxCancel context.CancelFunc
@@ -73,7 +73,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		Github:         github,
 		Used:           newUsedFlusher(logger, db),
 		opts:           opts,
-		logger:         logger,
+		Logger:         logger,
 		issuer:         issuer,
 		closeCtx:       ctx,
 		closeCtxCancel: cancel,

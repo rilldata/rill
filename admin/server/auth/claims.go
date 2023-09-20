@@ -2,12 +2,14 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/pkg/authtoken"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"go.uber.org/zap"
 )
 
 // OwnerType is an enum of types of claim owners
@@ -172,7 +174,10 @@ func (c *authTokenClaims) ProjectPermissions(ctx context.Context, orgID, project
 		err = fmt.Errorf("unexpected token type %q", c.token.Token().Type)
 	}
 	if err != nil {
-		panic(fmt.Errorf("failed to get project permissions: %w", err))
+		if !errors.Is(err, ctx.Err()) {
+			c.admin.Logger.Error("failed to get project permissions", zap.Error(err))
+		}
+		return &adminv1.ProjectPermissions{}
 	}
 
 	c.projectPermissionsCache[projectID] = perm
@@ -197,7 +202,10 @@ func (c *authTokenClaims) organizationPermissionsUnsafe(ctx context.Context, org
 		err = fmt.Errorf("unexpected token type %q", c.token.Token().Type)
 	}
 	if err != nil {
-		panic(fmt.Errorf("failed to get org permissions: %w", err))
+		if !errors.Is(err, ctx.Err()) {
+			c.admin.Logger.Error("failed to get organization permissions", zap.Error(err))
+		}
+		return &adminv1.OrganizationPermissions{}
 	}
 
 	c.orgPermissionsCache[orgID] = perm
