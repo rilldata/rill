@@ -7,14 +7,15 @@
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import { Divider, MenuItem } from "@rilldata/web-common/components/menu";
-  import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
-  import { useModelNames } from "@rilldata/web-common/features/models/selectors";
+  import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
+  import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import {
     useSource,
+    useSourceFileNames,
     useSourceFromYaml,
-    useSourceNames,
   } from "@rilldata/web-common/features/sources/selectors";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
@@ -46,6 +47,7 @@
   export let sourceName: string;
   // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
   export let toggleMenu: () => void;
+  $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
 
   const queryClient = useQueryClient();
 
@@ -58,16 +60,13 @@
   $: source = $sourceQuery.data?.source;
   $: embedded = false; // TODO: remove embedded support
   $: path = source?.spec?.properties?.path;
-  $: sourceHasError = !$sourceQuery.data?.meta?.reconcileError;
+  $: sourceHasError = getFileHasErrors(runtimeInstanceId, filePath);
 
-  $: sourceFromYaml = useSourceFromYaml(
-    $runtime.instanceId,
-    getFilePathFromNameAndType(sourceName, EntityType.Table)
-  );
+  $: sourceFromYaml = useSourceFromYaml($runtime.instanceId, filePath);
 
-  $: sourceNames = useSourceNames($runtime.instanceId);
-  $: modelNames = useModelNames($runtime.instanceId);
-  $: dashboardNames = useDashboardNames($runtime.instanceId);
+  $: sourceNames = useSourceFileNames($runtime.instanceId);
+  $: modelNames = useModelFileNames($runtime.instanceId);
+  $: dashboardNames = useDashboardFileNames($runtime.instanceId);
 
   const deleteSource = createRuntimeServiceDeleteFileAndReconcile();
   const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
@@ -196,7 +195,7 @@
 </MenuItem>
 
 <MenuItem
-  disabled={sourceHasError}
+  disabled={$sourceHasError}
   icon
   on:select={() => handleCreateDashboardFromSource(sourceName)}
   propogateSelect={false}
@@ -204,7 +203,7 @@
   <Explore slot="icon" />
   Autogenerate dashboard
   <svelte:fragment slot="description">
-    {#if sourceHasError}
+    {#if $sourceHasError}
       Source has errors
     {/if}
   </svelte:fragment>

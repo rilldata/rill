@@ -1,4 +1,5 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { resourcesStore } from "@rilldata/web-common/features/entity-management/resources-store";
 import {
   getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
@@ -47,11 +48,19 @@ export function invalidateResourceResponse(
 
   // only re-fetch list queries for kinds in `MainEntities` and is ture
   if (MainEntities[res.name.kind]) {
+    resourcesStore.setResource(res.resource);
     queryClient.refetchQueries(
       // we only use individual kind's queries
       getRuntimeServiceListResourcesQueryKey(instanceId, {
         kind: res.name.kind,
       })
+    );
+  } else if (
+    res.name.kind === ResourceKind.ProjectParser &&
+    res.resource.projectParser?.state?.parseErrors
+  ) {
+    resourcesStore.setProjectParseErrors(
+      res.resource.projectParser.state.parseErrors
     );
   }
 }

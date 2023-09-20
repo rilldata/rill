@@ -9,6 +9,7 @@
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
@@ -38,10 +39,6 @@
     getFilePathFromNameAndType,
     getRouteFromName,
   } from "../../entity-management/entity-mappers";
-  import {
-    fileArtifactsStore,
-    getFileArtifactReconciliationErrors,
-  } from "../../entity-management/file-artifacts-store";
   import { isDuplicateName } from "../../entity-management/name-utils";
   import { createModelFromSourceV2 } from "../createModel";
   import { refreshSource } from "../refreshSource";
@@ -50,6 +47,7 @@
   import { useSourceStore } from "../sources-store";
 
   export let sourceName: string;
+  $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
 
   const queryClient = useQueryClient();
 
@@ -59,10 +57,7 @@
 
   $: runtimeInstanceId = $runtime.instanceId;
   $: sourceQuery = useSource(runtimeInstanceId, sourceName);
-  $: file = createRuntimeServiceGetFile(
-    runtimeInstanceId,
-    getFilePathFromNameAndType(sourceName, EntityType.Table)
-  );
+  $: file = createRuntimeServiceGetFile(runtimeInstanceId, filePath);
 
   let source: V1SourceV2;
   $: source = $sourceQuery.data?.source;
@@ -175,14 +170,7 @@
     );
   };
 
-  let hasReconciliationErrors: boolean;
-  $: {
-    const reconciliationErrors = getFileArtifactReconciliationErrors(
-      $fileArtifactsStore,
-      `${sourceName}.yaml`
-    );
-    hasReconciliationErrors = reconciliationErrors?.length > 0;
-  }
+  $: hasErrors = getFileHasErrors($runtime.instanceId, filePath);
 
   function isHeaderWidthSmall(width: number) {
     return width < 800;
@@ -250,7 +238,7 @@
           </ResponsiveButtonText>
         </Button>
         <Button
-          disabled={isSourceUnsaved || hasReconciliationErrors}
+          disabled={isSourceUnsaved || $hasErrors}
           on:click={handleCreateModelFromSource}
         >
           <ResponsiveButtonText collapse={isHeaderWidthSmall(headerWidth)}>

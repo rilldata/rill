@@ -1,3 +1,4 @@
+import { useMainEntityFiles } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
   ResourceKind,
   useFilteredResources,
@@ -27,6 +28,10 @@ export function useSources(instanceId: string) {
 
 export function useSourceNames(instanceId: string) {
   return useFilteredResourceNames(instanceId, ResourceKind.Source);
+}
+
+export function useSourceFileNames(instanceId: string) {
+  return useMainEntityFiles(instanceId, "sources", ".yaml");
 }
 
 export function useSource(instanceId: string, name: string) {

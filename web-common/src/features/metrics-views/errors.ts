@@ -1,4 +1,8 @@
 import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
+import type {
+  V1ParseError,
+  V1ReconcileError,
+} from "@rilldata/web-common/runtime-client";
 
 export enum ValidationState {
   OK = "OK",
@@ -63,12 +67,21 @@ export function runtimeErrorToLine(message: string, yaml: string): LineStatus {
 
 // TODO: double check error
 export function mapReconciliationErrorsToLines(
-  errors,
+  errors: Array<V1ParseError>,
   yaml: string
 ): LineStatus[] {
   if (!errors) return [];
   return errors
     .map((error) => {
+      if (error.startLocation) {
+        // if line is provided, no need to parse
+        // TODO: check if we need to strip anything
+        return {
+          line: error.startLocation.line,
+          message: error.message,
+          level: "error",
+        };
+      }
       return runtimeErrorToLine(error.message, yaml);
     })
     .filter((error) => error.message !== ConfigErrors.Malformed);

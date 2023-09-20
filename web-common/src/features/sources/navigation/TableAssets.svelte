@@ -3,8 +3,8 @@
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
 
-  import { useModelNames } from "@rilldata/web-common/features/models/selectors";
-  import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
+  import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
+  import { useSourceFileNames } from "@rilldata/web-common/features/sources/selectors";
   import { createRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { flip } from "svelte/animate";
@@ -27,8 +27,8 @@
   import SourceMenuItems from "./SourceMenuItems.svelte";
   import SourceTooltip from "./SourceTooltip.svelte";
 
-  $: sourceNames = useSourceNames($runtime.instanceId);
-  $: modelNames = useModelNames($runtime.instanceId);
+  $: sourceNames = useSourceFileNames($runtime.instanceId);
+  $: modelNames = useModelFileNames($runtime.instanceId);
   const createModelMutation = createRuntimeServicePutFileAndReconcile();
 
   const queryClient = useQueryClient();
@@ -123,8 +123,8 @@
 {/if}
 
 <AddSourceModal
-  open={showAddSourceModal}
   on:close={() => (showAddSourceModal = false)}
+  open={showAddSourceModal}
 />
 {#if showRenameTableModal}
   <RenameAssetModal

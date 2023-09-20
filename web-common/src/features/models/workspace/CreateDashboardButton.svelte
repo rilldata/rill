@@ -6,7 +6,7 @@
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
@@ -34,7 +34,7 @@
 
   $: modelQuery = useModel($runtime.instanceId, modelName);
   $: model = $modelQuery.data?.model;
-  $: dashboardNames = useDashboardNames($runtime.instanceId);
+  $: dashboardNames = useDashboardFileNames($runtime.instanceId);
 
   const queryClient = useQueryClient();
   const createFileMutation = createRuntimeServicePutFileAndReconcile();

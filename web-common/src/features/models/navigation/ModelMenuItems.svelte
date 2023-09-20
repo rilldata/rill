@@ -4,7 +4,7 @@
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import { Divider, MenuItem } from "@rilldata/web-common/components/menu";
-  import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
@@ -29,7 +29,7 @@
   import { deleteFileArtifact } from "../../entity-management/actions";
   import { getName } from "../../entity-management/name-utils";
   import { generateDashboardYAMLForModel } from "../../metrics-views/metrics-internal-store";
-  import { useModel, useModelNames } from "../selectors";
+  import { useModel, useModelFileNames } from "../selectors";
 
   export let modelName: string;
   // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
@@ -42,8 +42,8 @@
   const deleteModel = createRuntimeServiceDeleteFileAndReconcile();
   const createFileMutation = createRuntimeServicePutFileAndReconcile();
 
-  $: modelNames = useModelNames($runtime.instanceId);
-  $: dashboardNames = useDashboardNames($runtime.instanceId);
+  $: modelNames = useModelFileNames($runtime.instanceId);
+  $: dashboardNames = useDashboardFileNames($runtime.instanceId);
   $: modelQuery = useModel($runtime.instanceId, modelName);
   let model: V1ModelV2;
   $: model = $modelQuery.data?.model;

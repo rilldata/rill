@@ -1,3 +1,4 @@
+import { useMainEntityFiles } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
   ResourceKind,
   useFilteredResources,
@@ -20,6 +21,10 @@ export function useModels(instanceId: string) {
 
 export function useModelNames(instanceId: string) {
   return useFilteredResourceNames(instanceId, ResourceKind.Model);
+}
+
+export function useModelFileNames(instanceId: string) {
+  return useMainEntityFiles(instanceId, "models", ".sql");
 }
 
 export function useModel(instanceId: string, name: string) {

@@ -1,3 +1,4 @@
+import { useMainEntityFiles } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
   ResourceKind,
   useFilteredResourceNames,
@@ -14,6 +15,10 @@ import type { CreateQueryOptions } from "@tanstack/svelte-query";
 
 export function useDashboardNames(instanceId: string) {
   return useFilteredResourceNames(instanceId, ResourceKind.MetricsView);
+}
+
+export function useDashboardFileNames(instanceId: string) {
+  return useMainEntityFiles(instanceId, "dashboards", ".yaml");
 }
 
 export function useDashboard(instanceId: string, metricViewName: string) {

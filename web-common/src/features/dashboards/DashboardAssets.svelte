@@ -7,7 +7,7 @@
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { MenuItem } from "@rilldata/web-common/components/menu";
   import { Divider } from "@rilldata/web-common/components/menu/index.js";
-  import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { deleteFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import {
@@ -18,8 +18,8 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { SourceModelValidationStatus } from "@rilldata/web-common/features/metrics-views/errors.js";
-  import { useModelNames } from "@rilldata/web-common/features/models/selectors";
-  import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
+  import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
+  import { useSourceFileNames } from "@rilldata/web-common/features/sources/selectors";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
@@ -45,9 +45,9 @@
 
   $: instanceId = $runtime.instanceId;
 
-  $: sourceNames = useSourceNames(instanceId);
-  $: modelNames = useModelNames(instanceId);
-  $: dashboardNames = useDashboardNames(instanceId);
+  $: sourceNames = useSourceFileNames(instanceId);
+  $: modelNames = useModelFileNames(instanceId);
+  $: dashboardNames = useDashboardFileNames(instanceId);
 
   const queryClient = useQueryClient();
 

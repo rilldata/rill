@@ -29,6 +29,7 @@ export function useResource<T = V1Resource>(
       query: {
         select: (data) =>
           selector ? selector(data?.resource) : data?.resource,
+        enabled: !!name && !!kind,
       },
     }
   );
