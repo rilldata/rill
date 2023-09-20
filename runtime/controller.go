@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -270,7 +269,6 @@ func (c *Controller) Run(ctx context.Context) error {
 		select {
 		case inv := <-c.completed:
 			c.mu.Lock()
-			log.Printf("HANGING ON: %v", inv.name)
 			err = c.processCompletedInvocation(inv)
 			if err != nil {
 				c.Logger.Warn("failed to process completed invocation during shutdown", slog.Any("error", err))
@@ -328,6 +326,9 @@ func (c *Controller) Run(ctx context.Context) error {
 	}
 	c.mu.Unlock()
 
+	if closeErr != nil {
+		c.Logger.Error("controller closed with error", slog.Any("error", closeErr))
+	}
 	return closeErr
 }
 
@@ -365,7 +366,11 @@ func (c *Controller) Get(ctx context.Context, name *runtimev1.ResourceName, clon
 	}
 	c.lock(ctx, true)
 	defer c.unlock(ctx, true)
-	return c.catalog.get(name, false, clone)
+
+	// We don't return soft-deleted resources, unless the lookup is from the reconciler itself (which may be executing the delete).
+	withDeleted := c.isReconcilerForResource(ctx, name)
+
+	return c.catalog.get(name, withDeleted, clone)
 }
 
 // List returns a list of resources of the specified kind.
@@ -966,7 +971,7 @@ func (c *Controller) processQueue() error {
 // It also clears errors on every resource marked pending - it would be confusing to show an old error after a change has been made that may fix it.
 // It returns true if it already now knows that the resource can't be scheduled and will be re-triggered later (e.g. by being added to a waitlist).
 // It must be called while c.mu is held.
-func (c *Controller) markPending(n *runtimev1.ResourceName) (bool, error) {
+func (c *Controller) markPending(n *runtimev1.ResourceName) (skip bool, err error) {
 	// Remove from timeline (if present)
 	c.timeline.Remove(n)
 
@@ -995,6 +1000,11 @@ func (c *Controller) markPending(n *runtimev1.ResourceName) (bool, error) {
 	err = c.catalog.updateStatus(n, runtimev1.ReconcileStatus_RECONCILE_STATUS_PENDING, time.Time{})
 	if err != nil {
 		return false, err
+	}
+
+	// Skipping cycle and descendent checks if it's a resource deletion (because deleted resources are not tracked in the DAG)
+	if r.Meta.DeletedOn != nil {
+		return false, nil
 	}
 
 	// If resource is cyclic, set error and skip it
@@ -1060,7 +1070,7 @@ func (c *Controller) markPending(n *runtimev1.ResourceName) (bool, error) {
 		return true, nil
 	}
 
-	// Proceed to maybeSchedule
+	// Proceed to trySchedule
 	return false, nil
 }
 
@@ -1072,7 +1082,7 @@ func (c *Controller) markPending(n *runtimev1.ResourceName) (bool, error) {
 //
 // The implementation relies on the key invariant that all resources awaiting to be reconciled have status=pending, *including descendents of a resource with status=pending*.
 // This is ensured through the assignment of status=pending in markPending.
-func (c *Controller) trySchedule(n *runtimev1.ResourceName) (bool, error) {
+func (c *Controller) trySchedule(n *runtimev1.ResourceName) (success bool, err error) {
 	r, err := c.catalog.get(n, true, false)
 	if err != nil {
 		if errors.Is(err, drivers.ErrResourceNotFound) {
@@ -1081,15 +1091,19 @@ func (c *Controller) trySchedule(n *runtimev1.ResourceName) (bool, error) {
 		return false, err
 	}
 
-	// Return true if any parents are pending or running
-	parents := c.catalog.dag.Parents(n, true)
+	// Return true if any parents are pending or running.
+	// NOTE: Only getting parents if it's not a deletion (deleted resources are not tracked in the DAG).
+	var parents []*runtimev1.ResourceName
+	if r.Meta.DeletedOn == nil {
+		parents = c.catalog.dag.Parents(n, true)
+	}
 	for _, pn := range parents {
-		p, err := c.catalog.get(pn, true, false)
+		p, err := c.catalog.get(pn, false, false)
 		if err != nil {
 			return false, fmt.Errorf("internal: error getting present parent %q: %w", nameStr(pn), err)
 		}
 		if p.Meta.ReconcileStatus != runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE {
-			// When the parent has completed running, processCimpletedInvocation will enqueue its children and we'll run again.
+			// When the parent has completed running, processCompletedInvocation will enqueue its children and we'll run again.
 			return true, nil
 		}
 	}
@@ -1213,11 +1227,6 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 	// NOTE: Due to self-deletes, r may be nil!
 
 	if inv.isDelete {
-		// Trigger processQueue - there may be items in the queue waiting for all deletes to finish
-		if len(c.catalog.deleted) == 0 {
-			c.setQueueUpdated()
-		}
-
 		// Extra checks in case item was re-created during deletion, or deleted during a normal reconciling (in which case this is just a cancellation of the normal reconcile, not the result of deletion)
 		if r != nil && r.Meta.DeletedOn != nil && !inv.cancelled {
 			if inv.result.Err != nil {
@@ -1231,21 +1240,26 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 
 			r = nil
 		}
+
+		// Trigger processQueue - there may be items in the queue waiting for all deletes to finish
+		if len(c.catalog.deleted) == 0 {
+			c.setQueueUpdated()
+		}
 	}
 	// NOTE: r will be nil after here if it was deleted. Continuing in case there's a waitlist waiting for the deletion.
 
 	if inv.isRename {
-		// Trigger processQueue - there may be items in the queue waiting for all renames to finish
-		if len(c.catalog.renamed) == 0 {
-			c.setQueueUpdated()
-		}
-
 		// Extra checks in case item was cancelled during renaming
 		if r != nil && r.Meta.RenamedFrom != nil && !inv.cancelled {
 			err = c.catalog.clearRenamedFrom(r.Meta.Name)
 			if err != nil {
 				return err
 			}
+		}
+
+		// Trigger processQueue - there may be items in the queue waiting for all renames to finish
+		if len(c.catalog.renamed) == 0 {
+			c.setQueueUpdated()
 		}
 	}
 

@@ -338,7 +338,7 @@ func (c *catalogCache) updateSpec(name *runtimev1.ResourceName, from *runtimev1.
 // updateState updates the state field of a resource.
 // It uses the state from the passed resource and disregards its other fields.
 func (c *catalogCache) updateState(name *runtimev1.ResourceName, from *runtimev1.Resource) error {
-	r, err := c.get(name, false, false)
+	r, err := c.get(name, true, false)
 	if err != nil {
 		return err
 	}
@@ -357,7 +357,7 @@ func (c *catalogCache) updateState(name *runtimev1.ResourceName, from *runtimev1
 
 // updateError updates the reconcile_error field of a resource.
 func (c *catalogCache) updateError(name *runtimev1.ResourceName, reconcileErr error) error {
-	r, err := c.get(name, false, false)
+	r, err := c.get(name, true, false)
 	if err != nil {
 		return err
 	}
@@ -449,15 +449,22 @@ func (c *catalogCache) link(r *runtimev1.Resource) {
 // unlink reverses a previous call to link.
 func (c *catalogCache) unlink(r *runtimev1.Resource) {
 	s := nameStr(r.Meta.Name)
-	if _, ok := c.deleted[s]; ok {
-		return
+
+	if r.Meta.RenamedFrom != nil {
+		delete(c.renamed, s)
+	}
+
+	if r.Meta.DeletedOn == nil {
+		if _, ok := c.cyclic[s]; ok {
+			delete(c.cyclic, s)
+		} else {
+			c.dag.Remove(r.Meta.Name)
+		}
+	} else {
+		delete(c.deleted, s)
 	}
 
 	delete(c.resources[r.Meta.Name.Kind], strings.ToLower(r.Meta.Name.Name))
-	c.dag.Remove(r.Meta.Name)
-	delete(c.cyclic, s)
-	delete(c.deleted, s)
-	delete(c.renamed, s)
 }
 
 // clone clones a resource such that it is safe to mutate without affecting a cached resource.

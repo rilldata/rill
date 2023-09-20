@@ -115,8 +115,63 @@ measures:
 		},
 	})
 
-	// Drop source, check errors
-	// Add source back, check propagates
+	// Add syntax error in source, check downstream resources error
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/sources/foo.yaml": `
+type: local_file
+path
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 2, 1)
+
+	// Verify the model (errored and state cleared)
+	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
+		Meta: &runtimev1.ResourceMeta{
+			Name:           &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "bar"},
+			Owner:          runtime.GlobalProjectParserName,
+			FilePaths:      []string{"/models/bar.sql"},
+			ReconcileError: "Table with name foo does not exist",
+		},
+		Resource: &runtimev1.Resource_Model{
+			Model: &runtimev1.ModelV2{
+				Spec: &runtimev1.ModelSpec{
+					Connector:   "duckdb",
+					Sql:         "SELECT * FROM foo",
+					Materialize: &falsy,
+				},
+				State: &runtimev1.ModelState{},
+			},
+		},
+	})
+	testruntime.RequireNoOLAPTable(t, rt, id, "bar")
+
+	// Verify the metrics view (errored and state cleared)
+	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
+		Meta: &runtimev1.ResourceMeta{
+			Name:           &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "foobar"},
+			Refs:           []*runtimev1.ResourceName{{Kind: runtime.ResourceKindModel, Name: "bar"}},
+			Owner:          runtime.GlobalProjectParserName,
+			FilePaths:      []string{"/dashboards/foobar.yaml"},
+			ReconcileError: "does not exist",
+		},
+		Resource: &runtimev1.Resource_MetricsView{
+			MetricsView: &runtimev1.MetricsViewV2{
+				Spec:  mvSpec,
+				State: &runtimev1.MetricsViewState{},
+			},
+		},
+	})
+
+	// Fix source, check downstream resources succeed
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/sources/foo.yaml": `
+type: local_file
+path: data/foo.csv
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 }
 
 func TestSource(t *testing.T) {
