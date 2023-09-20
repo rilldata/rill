@@ -1,14 +1,15 @@
+import type { SvelteComponent } from "svelte";
+
 export interface ProfileColumn {
   name: string;
   type: string;
-  conceptualType: string;
   largestStringLength?: number;
   summary?: ProfileColumnSummary | any;
   nullCount?: number;
 }
 
 export interface VirtualizedTableColumns extends ProfileColumn {
-  label?: string;
+  label?: string | typeof SvelteComponent;
   total?: number;
   description?: string;
   enableResize?: boolean;

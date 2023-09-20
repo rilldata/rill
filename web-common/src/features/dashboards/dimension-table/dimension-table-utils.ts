@@ -2,17 +2,26 @@ import DeltaChange from "@rilldata/web-common/features/dashboards/dimension-tabl
 import DeltaChangePercentage from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChangePercentage.svelte";
 import { PERC_DIFF } from "../../../components/data-types/type-utils";
 import type {
+  MetricsViewDimension,
   MetricsViewMeasure,
+  V1MetricsViewColumn,
+  V1MetricsViewComparisonRow,
+  V1MetricsViewComparisonValue,
   V1MetricsViewToplistResponse,
   V1MetricsViewToplistResponseDataItem,
 } from "../../../runtime-client";
 import {
   FormatPreset,
   formatMeasurePercentageDifference,
+  humanizeDimTableValue,
 } from "../humanize-numbers";
 import PercentOfTotal from "./PercentOfTotal.svelte";
 import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
 import type { VirtualizedTableConfig } from "@rilldata/web-common/components/virtualized-table/types";
+// import type { DimensionTableColumnMetadata } from "./dimension-table-types";
+import type { SvelteComponent } from "svelte";
+import { getDimensionColumn } from "../dashboard-utils";
+import type { DimensionTableRow } from "./dimension-table-types";
 
 /** Returns an updated filter set for a given dimension on search */
 export function updateFilterOnSearch(
@@ -152,24 +161,29 @@ export function computePercentOfTotal(
 export function getComparisonProperties(
   measureName: string,
   selectedMeasure: MetricsViewMeasure
-) {
+): {
+  component: typeof SvelteComponent;
+  type: string;
+  format: string;
+  description: string;
+} {
   if (measureName.includes("_delta_perc"))
     return {
-      label: DeltaChangePercentage,
+      component: DeltaChangePercentage,
       type: "RILL_PERCENTAGE_CHANGE",
       format: FormatPreset.PERCENTAGE,
       description: "Perc. change over comparison period",
     };
   else if (measureName.includes("_delta")) {
     return {
-      label: DeltaChange,
+      component: DeltaChange,
       type: "RILL_CHANGE",
       format: selectedMeasure.format,
       description: "Change over comparison period",
     };
   } else if (measureName.includes("_percent_of_total")) {
     return {
-      label: PercentOfTotal,
+      component: PercentOfTotal,
       type: "RILL_PERCENTAGE_CHANGE",
       format: FormatPreset.PERCENTAGE,
       description: "Percent of total",
@@ -270,4 +284,202 @@ export function estimateColumnSizes(
   );
 
   return estimateColumnSize;
+}
+
+export function prepareVirtualizedTableColumns(
+  allMeasures: MetricsViewMeasure[],
+  leaderboardMeasureName: string,
+  referenceValues: { string: number },
+  dimension: MetricsViewDimension,
+
+  columnsMeta: V1MetricsViewColumn[],
+  timeComparison: boolean,
+  validPercentOfTotal: boolean,
+  visibleMeasureKeys: Set<string>
+): VirtualizedTableColumns[] {
+  const measureNames = allMeasures.map((m) => m.name);
+  const selectedMeasure = allMeasures.find(
+    (m) => m.name === leaderboardMeasureName
+  );
+  const dimensionColumn = getDimensionColumn(dimension);
+
+  const columnNames = getDimensionTableColumnNames(
+    columnsMeta,
+    selectedMeasure,
+    dimensionColumn,
+    timeComparison,
+    validPercentOfTotal,
+    visibleMeasureKeys
+  );
+
+  return columnNames
+    .map((columnName) => {
+      if (measureNames.includes(columnName)) {
+        // Handle all regular measures
+        const measure = allMeasures.find((m) => m.name === columnName);
+        return {
+          name: columnName,
+          type: "INT",
+          label: measure?.label || measure?.expression,
+          description: measure?.description,
+          total: referenceValues[measure.name] || 0,
+          enableResize: false,
+          format: measure?.format,
+        };
+      } else if (columnName === dimensionColumn) {
+        // Handle dimension column
+        return {
+          name: columnName,
+          type: "VARCHAR",
+          label: dimension?.label,
+          enableResize: true,
+        };
+      } else if (selectedMeasure) {
+        // Handle delta and delta_perc
+        const comparison = getComparisonProperties(columnName, selectedMeasure);
+        return {
+          name: columnName,
+          type: comparison.type,
+          label: comparison.component,
+          description: comparison.description,
+          enableResize: false,
+          format: comparison.format,
+        };
+      }
+      return undefined;
+    })
+    .filter((column) => !!column);
+}
+
+export function getDimensionTableColumnNames(
+  columnsMeta: V1MetricsViewColumn[],
+  selectedMeasure: MetricsViewMeasure,
+  dimensionColumn: string,
+  timeComparison: boolean,
+  validPercentOfTotal: boolean,
+  visibleMeasureKeys: Set<string>
+): string[] {
+  const columnNames: Array<string> = columnsMeta
+    .map((c) => c.name)
+    .filter((name) => name !== dimensionColumn && visibleMeasureKeys.has(name));
+
+  addContextColumnNames(
+    columnNames,
+    timeComparison,
+    validPercentOfTotal,
+    selectedMeasure
+  );
+
+  // Make dimension the first column
+  columnNames.unshift(dimensionColumn);
+
+  return columnNames;
+}
+
+/**
+ * Splices the context column names into the list of dimension
+ * table column names.
+ *
+ * This mutates the columnNames array.
+ */
+export function addContextColumnNames(
+  columnNames: string[],
+  timeComparison: boolean,
+  validPercentOfTotal: boolean,
+  selectedMeasure: MetricsViewMeasure
+) {
+  const name = selectedMeasure?.name;
+
+  const sortByColumnIndex = columnNames.indexOf(name);
+  // Add comparison columns if available
+  let percentOfTotalSpliceIndex = 1;
+  if (timeComparison) {
+    percentOfTotalSpliceIndex = 2;
+    columnNames.splice(sortByColumnIndex + 1, 0, `${name}_delta`);
+
+    // Only push percentage delta column if selected measure is not a percentage
+    if (selectedMeasure?.format != FormatPreset.PERCENTAGE) {
+      percentOfTotalSpliceIndex = 3;
+      columnNames.splice(sortByColumnIndex + 2, 0, `${name}_delta_perc`);
+    }
+  }
+  if (validPercentOfTotal) {
+    columnNames.splice(
+      sortByColumnIndex + percentOfTotalSpliceIndex,
+      0,
+      `${name}_percent_of_total`
+    );
+  }
+}
+
+/**
+ * This function prepares the data for the dimension table
+ * from data returned by the createQueryServiceMetricsViewComparisonToplist
+ * API.
+ *
+ */
+export function prepareDimensionTableRows(
+  queryRows: V1MetricsViewComparisonRow[],
+  measures: MetricsViewMeasure[],
+  activeMeasureName: string,
+  dimensionColumn: string,
+  addDeltas: boolean,
+  addPercentOfTotal: boolean,
+  unfilteredTotal: number
+): DimensionTableRow[] {
+  const formatMap = Object.fromEntries(
+    measures.map((m) => [m.name, m.format as FormatPreset])
+  );
+
+  const tableRows: DimensionTableRow[] = queryRows.map((row) => {
+    const rawVals: [string, number][] = row.measureValues.map((m) => [
+      m.measureName,
+      m.baseValue as number,
+    ]);
+
+    const formattedVals: [string, string | number][] = row.measureValues.map(
+      (m) => [
+        "__formatted_" + m.measureName,
+        humanizeDimTableValue(m.baseValue as number, formatMap[m.measureName]),
+      ]
+    );
+
+    const rowOut: DimensionTableRow = Object.fromEntries([
+      [dimensionColumn, row.dimensionValue as string],
+      ...rawVals,
+      ...formattedVals,
+    ]);
+
+    if (addDeltas) {
+      const activeMeasure = row.measureValues.find(
+        (m) => m.measureName === activeMeasureName
+      ) as V1MetricsViewComparisonValue;
+
+      rowOut[`${activeMeasureName}_delta`] = humanizeDimTableValue(
+        activeMeasure.deltaAbs as number,
+        formatMap[activeMeasureName]
+      );
+      rowOut[`${activeMeasureName}_delta_perc`] =
+        formatMeasurePercentageDifference(activeMeasure.deltaRel as number);
+    }
+
+    if (addPercentOfTotal) {
+      const activeMeasure = row.measureValues.find(
+        (m) => m.measureName === activeMeasureName
+      ) as V1MetricsViewComparisonValue;
+      const value = activeMeasure.baseValue as number;
+
+      if (unfilteredTotal === 0 || !unfilteredTotal) {
+        rowOut[activeMeasureName + "_percent_of_total"] =
+          PERC_DIFF.CURRENT_VALUE_NO_DATA;
+      } else {
+        rowOut[activeMeasureName + "_percent_of_total"] =
+          formatMeasurePercentageDifference(value / unfilteredTotal);
+      }
+    }
+
+    return rowOut;
+  });
+  console.log("tableRows", tableRows);
+  return tableRows;
 }

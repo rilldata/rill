@@ -16,6 +16,7 @@
   import { FormatPreset } from "../humanize-numbers";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
+  import { isSummableMeasure } from "../dashboard-utils";
 
   export let metricViewName: string;
 
@@ -149,10 +150,7 @@
         <!-- the single virtual element -->
         <Leaderboard
           {formatPreset}
-          isSummableMeasure={activeMeasure?.expression
-            .toLowerCase()
-            ?.includes("count(") ||
-            activeMeasure?.expression?.toLowerCase()?.includes("sum(")}
+          isSummableMeasure={isSummableMeasure(activeMeasure)}
           {metricViewName}
           dimensionName={item.name}
           on:expand={() => {

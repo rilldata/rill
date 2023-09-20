@@ -27,10 +27,14 @@
   import {
     LeaderboardItemData,
     getLabeledComparisonFromComparisonRow,
-    getQuerySortType,
+    // getQuerySortType,
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
   import LeaderboardListItem from "./LeaderboardListItem.svelte";
+  import {
+    getDimensionColumn,
+    prepareSortedQueryBody,
+  } from "../dashboard-utils";
 
   export let metricViewName: string;
   export let dimensionName: string;
@@ -62,7 +66,7 @@
   let dimension: MetricsViewDimension;
   $: dimension = $dimensionQuery?.data;
   $: displayName = dimension?.label || dimension?.name;
-  $: dimensionColumn = dimension?.column || dimension?.name;
+  $: dimensionColumn = getDimensionColumn(dimension);
 
   $: measureQuery = useMetaMeasure(
     $runtime.instanceId,
@@ -103,38 +107,20 @@
   $: isBeingCompared =
     $dashboardStore?.selectedComparisonDimension === dimensionName;
 
-  $: isBeingCompared =
-    $dashboardStore?.selectedComparisonDimension === dimensionName;
+  $: contextColumn = $dashboardStore?.leaderboardContextColumn;
 
   $: sortAscending = $dashboardStore.sortDirection === SortDirection.ASCENDING;
   $: sortType = $dashboardStore.dashboardSortType;
 
-  $: contextColumn = $dashboardStore?.leaderboardContextColumn;
-
-  $: querySortType = getQuerySortType(sortType);
-
-  $: sortedQueryBody = {
-    dimensionName: dimensionName,
-    measureNames: [measure?.name],
-    baseTimeRange: {
-      start: $timeControlsStore.timeStart,
-      end: $timeControlsStore.timeEnd,
-    },
-    comparisonTimeRange: {
-      start: $timeControlsStore.comparisonTimeStart,
-      end: $timeControlsStore.comparisonTimeEnd,
-    },
-    sort: [
-      {
-        ascending: sortAscending,
-        measureName: measure?.name,
-        type: querySortType,
-      },
-    ],
-    filter: filterForDimension,
-    limit: "250",
-    offset: "0",
-  };
+  $: sortedQueryBody = prepareSortedQueryBody(
+    dimensionName,
+    [measure?.name],
+    $timeControlsStore,
+    measure?.name,
+    sortType,
+    sortAscending,
+    filterForDimension
+  );
 
   $: sortedQueryEnabled = $timeControlsStore.ready && !!filterForDimension;
 
