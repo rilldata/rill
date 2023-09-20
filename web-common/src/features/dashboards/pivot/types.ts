@@ -20,6 +20,7 @@ export type PivotConfig = {
   colSets: PivotColumnSet[];
   rowJoinType: "flat" | "nest";
   sort: any; // TBD
+  // showTotalRows: boolean;
   expanded: any[];
 };
 
@@ -29,3 +30,10 @@ export type PivotPos = {
   y0: number;
   y1: number;
 };
+
+export type PivotRenderCallback = (data: {
+  x: number;
+  y: number;
+  value: any;
+  element: HTMLElement;
+}) => string | void;

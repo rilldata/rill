@@ -9,18 +9,18 @@
     getBodyData,
   } from "./data-providers";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import type { PivotRenderCallback } from "@rilldata/web-common/features/dashboards/pivot/types";
 
   let config = writable(structuredClone(basicPivot));
   $: metadata = getMetadata($config);
-  let table;
 
   $: getRowHeaderData = createRowHeaderDataGetter($config);
   $: getColumnHeaderData = createColumnHeaderDataGetter($config);
 
-  const renderCell = (data) => {
+  const renderCell: PivotRenderCallback = (data) => {
     // Can add styles/classes directly to the cell
-    data.element.classList.toggle("bg-gray-50", data.y % 2);
-    data.element.classList.add("text-right");
+    data.element.classList.toggle("bg-gray-50", Boolean(data.y % 2));
+    data.element.classList.add("text-right", "my-cell");
 
     // Can manipulate attributes of cell
     // data.element.setAttribute(...);
@@ -31,17 +31,17 @@
     //   : data.value;
   };
 
-  const renderColumnHeader = (data) => {
+  const renderColumnHeader: PivotRenderCallback = (data) => {
     if (data.y === 1) {
       data.element.classList.add("text-right");
     }
   };
 
-  const renderFlatRowHeader = ({ element }) => {
+  const renderFlatRowHeader: PivotRenderCallback = ({ element }) => {
     element.classList.add("truncate");
   };
 
-  const renderNestedRowHeader = (data) => {
+  const renderNestedRowHeader: PivotRenderCallback = (data) => {
     data.element.classList.add("truncate");
     if (data.value === "") return data.value;
     if (data.value.expandable) {
@@ -89,10 +89,12 @@
     }
   };
 
+  let pivot;
+
   // Make sure to force a redraw when the data changes, or the scroll position could get messed up
   $: {
     $config;
-    if (table) table.draw();
+    pivot?.draw();
   }
 </script>
 
@@ -105,23 +107,25 @@
       >Nested rows</Button
     >
   </div>
-  <Pivot
-    bind:api={table}
-    {getRowHeaderData}
-    {getColumnHeaderData}
-    {getBodyData}
-    rowCount={metadata.rowCt}
-    columnCount={metadata.colCt}
-    rowHeaderDepth={2}
-    columnHeaderDepth={2}
-    {renderCell}
-    {renderColumnHeader}
-    {renderRowHeader}
-    {renderRowCorner}
-    {getColumnWidth}
-    {getRowHeaderWidth}
-    onMouseDown={handleMouseDown}
-  />
+  <div class="relative h-96 w-full">
+    <Pivot
+      bind:this={pivot}
+      rowCount={metadata.rowCt}
+      columnCount={metadata.colCt}
+      rowHeaderDepth={2}
+      columnHeaderDepth={2}
+      {getRowHeaderData}
+      {getColumnHeaderData}
+      {getBodyData}
+      {renderCell}
+      {renderColumnHeader}
+      {renderRowHeader}
+      {renderRowCorner}
+      {getColumnWidth}
+      {getRowHeaderWidth}
+      onMouseDown={handleMouseDown}
+    />
+  </div>
 </div>
 
 <style>

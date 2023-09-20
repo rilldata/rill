@@ -12,7 +12,6 @@
   import { basicNestedPivot, basicPivot } from "./configs";
   import { transpose2DArray } from "./util";
   import { writable } from "svelte/store";
-  import JsonIcon from "@rilldata/web-common/components/icons/JsonIcon.svelte";
 
   let pos = { x0: 0, x1: 0, y0: 0, y1: 0 };
   const handlePos = (evt) => {
@@ -24,7 +23,6 @@
   const ROW_BLOCK_SIZE = 50;
   const COL_BLOCK_SIZE = 50;
   $: metadata = getMetadata($config);
-  let table;
 
   const queryClient = useQueryClient();
   const cache = queryClient.getQueryCache();
@@ -88,10 +86,11 @@
     return data;
   };
 
+  let pivot;
   $: {
-    if (table && $rowQueries) {
+    if ($rowQueries) {
       console.count("DRAW ROWS");
-      table.draw();
+      pivot?.draw();
     }
   }
 
@@ -155,9 +154,9 @@
     return data;
   };
   $: {
-    if (table && $columnQueries) {
+    if (pivot && $columnQueries) {
       // console.count("DRAW COLUMNS");
-      table.draw();
+      pivot.draw();
     }
   }
 
@@ -245,9 +244,9 @@
     return data.length > 0 ? transpose2DArray(data) : data;
   };
   $: {
-    if (table && $bodyQueries) {
+    if (pivot && $bodyQueries) {
       // console.count("DRAW BODY");
-      table.draw();
+      pivot.draw();
     }
   }
 
@@ -322,15 +321,17 @@
 <button on:click={() => table.trigger()}>trigger</button>
 <!-- {getColumnHeaderData}
   {getBodyData} -->
-<Pivot
-  bind:api={table}
-  on:pos={handlePos}
-  onMouseDown={handleMouseDown}
-  {getRowHeaderData}
-  {getColumnHeaderData}
-  {getBodyData}
-  rowCount={metadata.rowCt}
-  columnCount={metadata.colCt}
-  rowHeaderDepth={2}
-  columnHeaderDepth={2}
-/>
+<div class="h-96 w-full relative">
+  <Pivot
+    bind:this={pivot}
+    on:pos={handlePos}
+    onMouseDown={handleMouseDown}
+    {getRowHeaderData}
+    {getColumnHeaderData}
+    {getBodyData}
+    rowCount={metadata.rowCt}
+    columnCount={metadata.colCt}
+    rowHeaderDepth={2}
+    columnHeaderDepth={2}
+  />
+</div>

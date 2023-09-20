@@ -1,13 +1,14 @@
 <script lang="ts">
   import "regular-table";
   import "regular-table/dist/css/material.css";
-  import { createEventDispatcher } from "svelte";
-  import type { PivotPos } from "./types";
-  import { isEmptyPos } from "./util";
+  import { createEventDispatcher, onMount } from "svelte";
+  import type { PivotPos, PivotRenderCallback } from "./types";
+  import { isEmptyPos, range } from "./util";
 
-  // TODO: replace with w-full once you have fixed widths
-  const LOADING_EL = `<div class="w-8 h-4 bg-gray-100 rounded loading-cell"/>`;
-  const LOADING_EL_FW = `<div class="min-w-8 w-8 h-4 bg-gray-100 rounded loading-cell"/>`;
+  const LOADING_CELL = {
+    isLoader: true,
+    value: `<div class="h-4 bg-gray-100 rounded loading-cell" style="width: 100%; min-width: 32px;"/>`,
+  };
 
   export let getColumnHeaderData: (pos: PivotPos) => any = () => [];
   export let getRowHeaderData: (pos: PivotPos) => any = () => [];
@@ -17,25 +18,10 @@
   export let rowHeaderDepth = 0;
   export let columnHeaderDepth = 0;
   export let onMouseDown: (evt: MouseEvent, table: any) => any = undefined;
-  export let renderCell: ({ x, y, value, element }) => string | void = () => {};
-  export let renderColumnHeader: ({
-    x,
-    y,
-    value,
-    element,
-  }) => string | void = () => {};
-  export let renderRowHeader: ({
-    x,
-    y,
-    value,
-    element,
-  }) => string | void = () => {};
-  export let renderRowCorner: ({
-    x,
-    y,
-    value,
-    element,
-  }) => string | void = () => {};
+  export let renderCell: PivotRenderCallback = () => {};
+  export let renderColumnHeader: PivotRenderCallback = () => {};
+  export let renderRowHeader: PivotRenderCallback = () => {};
+  export let renderRowCorner: PivotRenderCallback = () => {};
   export let rowHeight = 24;
   export let getColumnWidth: (x: number) => number | void = () => {};
   export let getRowHeaderWidth: (x: number) => number | void = () => {};
@@ -43,18 +29,10 @@
   const dispatch = createEventDispatcher();
 
   let table = undefined;
-
-  export let api = {
-    initialized: false,
-    draw() {
-      if (this.initialized) {
-        this.getTable().draw();
-      }
-    },
-    getTable() {
-      return table;
-    },
-  };
+  let initialized = false;
+  export function draw() {
+    if (initialized) table.draw();
+  }
 
   let pos = {
     x0: 0,
@@ -67,34 +45,24 @@
     if (!isEmptyPos({ x0, x1, y0, y1 })) {
       pos = { x0, x1, y0, y1 };
     }
-    const placeholderEvenColumnHeader = new Array(columnHeaderDepth).fill(
-      "LOADING"
-    );
-    const placeholderOddColumnHeader = new Array(columnHeaderDepth).fill(
-      "\u200BLOADING"
-    );
+
     let column_headers = getColumnHeaderData({ x0, x1, y0, y1 });
     // Replace any nulls with loading placeholders
     for (let i = 0; i < column_headers.length; i++) {
       if (!column_headers[i]) {
-        column_headers[i] =
-          i % 2 ? placeholderEvenColumnHeader : placeholderOddColumnHeader;
+        column_headers[i] = range(0, columnHeaderDepth, () =>
+          structuredClone(LOADING_CELL)
+        );
       }
     }
 
-    const placeholderEvenRowHeader = new Array(rowHeaderDepth)
-      .fill("LOADING")
-      .map((_, i) => `${i % 2 ? "\u200B" : ""}LOADING`);
-    const placeholderOddRowHeader = [
-      ...placeholderEvenRowHeader.slice(1),
-      placeholderEvenRowHeader.at(0),
-    ];
     let row_headers = getRowHeaderData({ x0, x1, y0, y1 });
-
+    // Replace any null rows with loading placeholders
     row_headers.forEach((r, i) => {
       if (!r) {
-        row_headers[i] =
-          i % 2 ? placeholderEvenRowHeader : placeholderOddRowHeader;
+        row_headers[i] = range(0, rowHeaderDepth, () =>
+          structuredClone(LOADING_CELL)
+        );
       }
     });
 
@@ -103,7 +71,7 @@
     data.forEach((c, i) => {
       c.forEach((r, j) => {
         if (!r) {
-          data[i][j] = "LOADING";
+          data[i][j] = LOADING_CELL;
         }
       });
     });
@@ -133,8 +101,9 @@
       th.style.maxWidth = `${maybeWidth}px`;
     }
 
-    if (meta.value === "LOADING" || meta.value === "\u200BLOADING")
-      th.innerHTML = LOADING_EL_FW;
+    if (meta.value.isLoader) {
+      th.innerHTML = meta.value.value;
+    }
 
     const maybeVal = renderRowHeader({
       x,
@@ -157,8 +126,10 @@
       td.style.maxWidth = `${maybeWidth}px`;
     }
 
-    if (td.textContent === "LOADING" || td.textContent === "\u200BLOADING")
-      td.innerHTML = LOADING_EL_FW;
+    if (value.isLoader) {
+      td.innerHTML = value.value;
+    }
+
     const maybeVal = renderCell({ x, y, value, element: td });
     if (maybeVal) td.innerHTML = maybeVal;
   }
@@ -179,8 +150,10 @@
       }
     }
 
-    if (th.textContent === "LOADING" || th.textContent === "\u200BLOADING")
-      th.innerHTML = LOADING_EL_FW;
+    if (meta.value.isLoader) {
+      th.innerHTML = meta.value.value;
+    }
+
     const maybeVal = renderColumnHeader({
       x,
       y,
@@ -215,7 +188,7 @@
     if (table) {
       table.setDataListener(reactiveDataListener);
       table.draw();
-      api.initialized = true;
+      initialized = true;
     }
   }
 
@@ -259,7 +232,6 @@
       lastColumnSizer !== getColumnWidth ||
       lastRowHeaderSizer !== getRowHeaderWidth
     ) {
-      console.log("invalidate");
       table.invalidate();
       lastColumnSizer = getColumnWidth;
       lastRowHeaderSizer = getRowHeaderWidth;
@@ -267,19 +239,15 @@
 
     dispatch("pos", pos);
   }
-  $: {
-    if (table) {
-      table.addStyleListener(styleListener);
-    }
-  }
+
+  onMount(() => {
+    table.addStyleListener(styleListener);
+  });
 
   $: cssVarStyles = `--row-height: ${rowHeight}px;`;
 </script>
 
-<div
-  class="border relative"
-  style={`height: 400px; width: 100%; ${cssVarStyles}`}
->
+<div class="border relative w-full h-full" style={cssVarStyles}>
   <regular-table class="w-full h-full tdd-table" bind:this={table} />
 </div>
 
@@ -301,51 +269,9 @@
 
   :global(regular-table tr td) {
     height: var(--row-height);
-    /* width: 60px;
-    min-width: 60px;
-    max-width: 60px;
-    padding-block: 0px;
-    padding: 0px;
-    text-align: right;
-    background-color: white; */
-  }
-
-  :global(.tdd-table tbody tr td) {
-    /* background-color: initial; */
-    /* background-color: white;
-    color: black; */
-    /* padding-inline: 8px; */
-  }
-
-  /* Figure out how to get rid of that stupid hover color, or at least customize it */
-  :global(.tdd-table tbody tr:hover td) {
-    /* background-color: transparent; */
   }
 
   :global(regular-table thead th) {
     height: var(--row-height);
-  }
-
-  /* Example of fixing column width in the header */
-  :global(
-      regular-table
-        thead
-        tr:last-child
-        th:not([__col="0"]):not(.rt-group-corner)
-    ) {
-    /* min-width: 70px !important;
-    width: 70px;
-    max-width: 70px; */
-  }
-
-  :global(regular-table thead tr:last-child th[__col="0"]) {
-    /* min-width: 92px !important;
-    width: 92px;
-    max-width: 92px; */
-  }
-
-  :global(regular-table tbody th[__col="0"]) {
-    /* color: red; */
-    /* border-bottom: 1px solid black; */
   }
 </style>

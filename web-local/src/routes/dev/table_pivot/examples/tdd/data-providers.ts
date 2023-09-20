@@ -70,21 +70,24 @@ export function createColumnHeaderDataGetter(config: PivotConfig) {
   };
 }
 
+const MOCK_BODY = range(0, MOCK_COL_CT, (y) =>
+  range(
+    0,
+    MOCK_ROW_CT,
+    (x) =>
+      faker.commerce.price({ min: 1, max: 4, dec: 0, symbol: "" }) +
+      "." +
+      faker.commerce.price({ min: 10, max: 99, dec: 0 })
+  )
+);
+
 export function getBodyData(pos: PivotPos) {
-  // console.log({ pos });
   /* 
     Important: regular-table expects body data in columnar format,
     aka an array of arrays where outer array is the columns,
     inner array is the row values for a specific column
   */
-  return range(pos.x0, pos.x1, (y) =>
-    range(
-      pos.y0,
-      pos.y1,
-      (x) =>
-        faker.commerce.price({ min: 1, max: 4, dec: 0, symbol: "$" }) +
-        "." +
-        faker.commerce.price({ min: 10, max: 99, dec: 0 })
-    )
+  return MOCK_BODY.slice(pos.x0, pos.x1).map((row) =>
+    row.slice(pos.y0, pos.y1)
   );
 }
