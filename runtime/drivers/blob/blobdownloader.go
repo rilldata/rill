@@ -268,24 +268,6 @@ func (it *blobIterator) init() {
 
 			// Collect metrics of download size and time
 			startTime := time.Now()
-			defer func() {
-				size := obj.obj.Size
-				st, err := file.Stat()
-				if err == nil {
-					size = st.Size()
-				}
-
-				duration := time.Since(startTime)
-				it.logger.Info("download complete", zap.String("object", obj.obj.Key), zap.Duration("duration", duration), observability.ZapCtx(it.ctx))
-				drivers.RecordDownloadMetrics(grpCtx, &drivers.DownloadMetrics{
-					Connector: "blob",
-					Ext:       ext,
-					Partial:   !downloadFull,
-					Duration:  duration,
-					Size:      size,
-				})
-			}()
-
 			if downloadFull {
 				// download full file
 				err = downloadObject(grpCtx, it.bucket, obj.obj.Key, file)
@@ -308,11 +290,25 @@ func (it *blobIterator) init() {
 			if err != nil {
 				// found an error stop triggering download of other files
 				stop = true
-			} else {
-				// we may download partial file as well but its fine to use full object size and not call os.Stat since we are anyways not interested in exact values
-				it.downloadedFiles <- downloadedFile{fileName: filename, sizeInBytes: obj.obj.Size}
+				return err
 			}
-			return err
+
+			duration := time.Since(startTime)
+			size := obj.obj.Size
+			st, err := file.Stat()
+			if err == nil {
+				size = st.Size()
+			}
+			it.logger.Info("download complete", zap.String("object", obj.obj.Key), zap.Duration("duration", duration), observability.ZapCtx(it.ctx))
+			drivers.RecordDownloadMetrics(grpCtx, &drivers.DownloadMetrics{
+				Connector: "blob",
+				Ext:       ext,
+				Partial:   !downloadFull,
+				Duration:  duration,
+				Size:      size,
+			})
+			it.downloadedFiles <- downloadedFile{fileName: filename, sizeInBytes: size}
+			return nil
 		})
 	}
 	it.err = g.Wait()
