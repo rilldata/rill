@@ -150,7 +150,8 @@ func (c *authTokenClaims) OrganizationPermissions(ctx context.Context, orgID str
 	c.Lock()
 	defer c.Unlock()
 
-	return c.organizationPermissionsUnsafe(ctx, orgID)
+	perms, _ := c.organizationPermissionsUnsafe(ctx, orgID)
+	return perms
 }
 
 func (c *authTokenClaims) ProjectPermissions(ctx context.Context, orgID, projectID string) *adminv1.ProjectPermissions {
@@ -162,7 +163,10 @@ func (c *authTokenClaims) ProjectPermissions(ctx context.Context, orgID, project
 		return perm
 	}
 
-	orgPerms := c.organizationPermissionsUnsafe(ctx, orgID)
+	orgPerms, ok := c.organizationPermissionsUnsafe(ctx, orgID)
+	if !ok {
+		return &adminv1.ProjectPermissions{}
+	}
 
 	var err error
 	switch c.token.Token().Type {
@@ -186,10 +190,10 @@ func (c *authTokenClaims) ProjectPermissions(ctx context.Context, orgID, project
 
 // organizationPermissionsUnsafe resolves organization permissions.
 // organizationPermissionsUnsafe accesses the cache without locking, so it should only be called from a function that already has a lock.
-func (c *authTokenClaims) organizationPermissionsUnsafe(ctx context.Context, orgID string) *adminv1.OrganizationPermissions {
+func (c *authTokenClaims) organizationPermissionsUnsafe(ctx context.Context, orgID string) (*adminv1.OrganizationPermissions, bool) {
 	perm, ok := c.orgPermissionsCache[orgID]
 	if ok {
-		return perm
+		return perm, true
 	}
 
 	var err error
@@ -205,9 +209,9 @@ func (c *authTokenClaims) organizationPermissionsUnsafe(ctx context.Context, org
 		if !errors.Is(err, ctx.Err()) {
 			c.admin.Logger.Error("failed to get organization permissions", zap.Error(err))
 		}
-		return &adminv1.OrganizationPermissions{}
+		return &adminv1.OrganizationPermissions{}, false
 	}
 
 	c.orgPermissionsCache[orgID] = perm
-	return perm
+	return perm, true
 }
