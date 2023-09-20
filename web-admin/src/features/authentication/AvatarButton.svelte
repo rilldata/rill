@@ -50,7 +50,7 @@
     <img
       src={$user.data?.user?.photoUrl}
       alt="avatar"
-      class="h-7 rounded-full cursor-pointer"
+      class="h-7 inline-flex items-center rounded-full cursor-pointer"
       referrerpolicy={isDev ? "no-referrer" : ""}
     />
   </PopoverButton>
