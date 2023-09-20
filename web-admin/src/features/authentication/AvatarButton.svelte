@@ -58,7 +58,7 @@
     use={[popperRef2, [popperContent1, popperOptions1]]}
     class="max-w-fit absolute z-[1000]"
   >
-    <Menu minWidth="0px" focusOnMount={false}>
+    <Menu minWidth="0px" focusOnMount={false} paddingBottom={0} paddingTop={0}>
       {#if $page.params.organization && $page.params.project && $page.params.dashboard}
         <ProjectAccessControls
           organization={$page.params.organization}
@@ -74,13 +74,17 @@
       {/if}
 
       <MenuItem
+        focusOnMount={false}
         on:select={() => {
           // handleClose();
           handleDocumentation();
         }}>Documentation</MenuItem
       >
-      <MenuItem on:select={() => handleAskForHelp()}>Ask for help</MenuItem>
+      <MenuItem focusOnMount={false} on:select={() => handleAskForHelp()}
+        >Ask for help</MenuItem
+      >
       <MenuItem
+        focusOnMount={false}
         on:select={() => {
           // handleClose();
           handleLogOut();

@@ -37,8 +37,9 @@
     class="max-w-fit absolute z-[1000]"
     let:close
   >
-    <Menu minWidth="0px" focusOnMount={false}>
+    <Menu minWidth="0px" focusOnMount={false} paddingBottom={0} paddingTop={0}>
       <MenuItem
+        focusOnMount={false}
         on:select={() => {
           handleCopyLink();
           close(undefined);
