@@ -104,9 +104,13 @@ func NewController(rt *Runtime, instanceID string, logger *zap.Logger, ac activi
 		completed:      make(chan *invocation),
 	}
 
+	// Hacky way to customize the logger for local vs. hosted
 	// TODO: Setup the logger to duplicate logs to a) the Zap logger, b) an in-memory buffer that exposes the logs over the API
-	logger = logger.With(zap.String("instance_id", instanceID))
-	c.Logger = slog.New(zapslog.NewHandler(logger.Core()))
+	if !rt.AllowHostAccess() {
+		logger = logger.With(zap.String("instance_id", instanceID))
+		logger = logger.Named("console")
+	}
+	c.Logger = slog.New(zapslog.HandlerOptions{LoggerName: "console"}.New(logger.Core()))
 
 	return c, nil
 }

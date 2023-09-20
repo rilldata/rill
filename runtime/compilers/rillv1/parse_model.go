@@ -2,6 +2,7 @@ package rillv1
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -50,6 +51,11 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	schedule, err := parseScheduleYAML(tmp.Refresh)
 	if err != nil {
 		return err
+	}
+
+	// Validate SQL
+	if strings.TrimSpace(node.SQL) == "" {
+		return errors.New("no SQL provided")
 	}
 
 	// If the connector is a DuckDB connector, extract info using DuckDB SQL parsing.
