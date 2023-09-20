@@ -17,7 +17,7 @@ import (
 // Built-in parser limits
 var (
 	maxFiles    = 10000
-	maxFileSize = 8192 // 8kb
+	maxFileSize = 1 << 14 // 16kb
 )
 
 // ErrInvalidProject indicates a project without a rill.yaml file
@@ -439,6 +439,7 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 func (p *Parser) parseStemPaths(ctx context.Context, paths []string) error {
 	// Load YAML and SQL contents
 	var yaml, yamlPath, sql, sqlPath string
+	var found bool
 	for _, path := range paths {
 		// Load contents
 		data, err := p.Repo.Get(ctx, path)
@@ -464,6 +465,7 @@ func (p *Parser) parseStemPaths(ctx context.Context, paths []string) error {
 		if strings.HasSuffix(path, ".sql") {
 			sql = data
 			sqlPath = path
+			found = true
 			continue
 		}
 		if strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") {
@@ -477,9 +479,15 @@ func (p *Parser) parseStemPaths(ctx context.Context, paths []string) error {
 			}
 			yaml = data
 			yamlPath = path
+			found = true
 			continue
 		}
 		// The unhandled case should never happen, just being defensive
+	}
+
+	// There's a few cases above where we don't find YAML or SQL contents. It's fine to just skip the file in those cases.
+	if !found {
+		return nil
 	}
 
 	// Parse the SQL/YAML file pair to a Node, then parse the Node to p.Resources.
