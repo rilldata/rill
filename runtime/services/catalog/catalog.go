@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/dag"
 	"go.uber.org/zap"
 )
@@ -17,6 +18,7 @@ type Service struct {
 	RegistryStore drivers.RegistryStore
 	InstID        string
 	logger        *zap.Logger
+	activity      activity.Client
 
 	Meta        *MigrationMeta
 	releaseFunc func()
@@ -31,6 +33,7 @@ func NewService(
 	logger *zap.Logger,
 	m *MigrationMeta,
 	release func(),
+	ac activity.Client,
 ) *Service {
 	if logger == nil {
 		logger = zap.NewNop()
@@ -45,6 +48,7 @@ func NewService(
 		RegistryStore: registry,
 		InstID:        instID,
 		logger:        logger,
+		activity:      ac,
 		Meta:          m,
 		releaseFunc:   release,
 	}

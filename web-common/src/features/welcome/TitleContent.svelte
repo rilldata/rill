@@ -49,11 +49,8 @@
       Add data
     </div>
   </button>
-  {#if showAddSourceModal}
-    <AddSourceModal
-      on:close={() => {
-        showAddSourceModal = false;
-      }}
-    />
-  {/if}
+  <AddSourceModal
+    open={showAddSourceModal}
+    on:close={() => (showAddSourceModal = false)}
+  />
 </section>

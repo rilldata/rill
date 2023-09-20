@@ -203,7 +203,7 @@ func GetService(t *testing.T) (*catalog.Service, string) {
 	err = repo.Put(context.Background(), "rill.yaml", strings.NewReader(""))
 	require.NoError(t, err)
 
-	return catalog.NewService(catalogObject, repo, olap, registryStore(t), "test", nil, catalog.NewMigrationMeta(), func() {}), dir
+	return catalog.NewService(catalogObject, repo, olap, registryStore(t), "test", nil, catalog.NewMigrationMeta(), func() {}, activity.NewNoopClient()), dir
 }
 
 func registryStore(t *testing.T) drivers.RegistryStore {

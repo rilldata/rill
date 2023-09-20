@@ -12,8 +12,37 @@ import {
   FormatterOptionsIntTimesPowerOfTenStrategy,
 } from "../humanizer-types";
 import { numberPartsToString } from "../utils/number-parts-utils";
-import { smallestPrecisionMagnitude } from "../utils/smallest-precision-magnitude";
 
+/**
+ * detects whether a number is within a floating point error
+ * of a single digit multiple of a power of ten.
+ */
+export const closeToIntTimesPowerOfTen = (x: number) =>
+  Math.abs(
+    x / 10 ** orderOfMagnitude(x) - Math.round(x / 10 ** orderOfMagnitude(x))
+  ) < 1e-6;
+
+/**
+ * This formatter handles numbers that MUST BE (*) a single digit
+ * integer multiple of a power of ten, such as the output of
+ * d3 scale ticks.
+ *
+ * Valid examples: 0.000040000, 1, 800, 6000, 5000000
+ *
+ * Invalid examples: 0.00004300, -12000, 180000, 503000
+ *
+ * (*) CAVEAT: Because of floating point errors, we accept numbers
+ * that are very close to a single digit multiple of a power of ten.
+ *
+ * The number will be formatted
+ * with a short scale suffix or an or engineering order
+ * of magnitude (a multiple of three). If the magnitude
+ * is 10^0, no suffix is used.
+ *
+ * A formatter using this strategy can be set to throw an error
+ * or log a warning if a of a non integer multiple of a power
+ * of ten given as an input.
+ */
 export class IntTimesPowerOfTenFormatter implements Formatter {
   options: FormatterOptionsCommon & FormatterOptionsIntTimesPowerOfTenStrategy;
   initialSample: number[];
@@ -56,9 +85,9 @@ export class IntTimesPowerOfTenFormatter implements Formatter {
       numParts = { int: "0", dot: "", frac: "", suffix: "" };
     } else {
       if (onInvalidInput === "consoleWarn" || onInvalidInput === "throw") {
-        // valid inputs must have only one digit of precision
-        // -- i.e, the leading OoM must match the OoM of the most precise digit
-        if (orderOfMagnitude(x) !== smallestPrecisionMagnitude(x)) {
+        // valid inputs must already be close to a single digit
+        //  integer multiple of a power of ten
+        if (!closeToIntTimesPowerOfTen(x)) {
           const msg = `recieved invalid input for IntTimesPowerOfTenFormatter: ${x}`;
           if (onInvalidInput === "consoleWarn") {
             console.warn(msg);

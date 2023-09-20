@@ -1,5 +1,5 @@
 <script lang="ts">
-  import ProjectAccessControls from "@rilldata/web-admin/components/projects/ProjectAccessControls.svelte";
+  import ProjectAccessControls from "@rilldata/web-admin/features/projects/ProjectAccessControls.svelte";
   import CLICommandDisplay from "@rilldata/web-common/components/commands/CLICommandDisplay.svelte";
 
   export let organization: string;

@@ -11,6 +11,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
@@ -48,7 +49,7 @@ func New(t TestingT) *runtime.Runtime {
 		SystemConnectors:        systemConnectors,
 		SecurityEngineCacheSize: 100,
 	}
-	rt, err := runtime.New(opts, zap.NewNop(), nil)
+	rt, err := runtime.New(opts, zap.NewNop(), activity.NewNoopClient())
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		rt.Close()

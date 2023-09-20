@@ -20,7 +20,7 @@ func init() {
 }
 
 var spec = drivers.Spec{
-	DisplayName: "http(s)",
+	DisplayName: "https",
 	Description: "Connect to a remote file.",
 	SourceProperties: []drivers.PropertySchema{
 		{

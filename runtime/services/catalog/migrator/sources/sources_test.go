@@ -124,7 +124,7 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 					Properties: p,
 				},
 			}
-			err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+			err = m.Create(ctx, olap, repo, opts, source, zap.NewNop(), activity.NewNoopClient())
 			require.NoError(t, err)
 
 			var count int
@@ -182,7 +182,7 @@ func TestConnectorWithoutRootAccess(t *testing.T) {
 					Properties: p,
 				},
 			}
-			err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+			err = m.Create(ctx, olap, repo, opts, source, zap.NewNop(), activity.NewNoopClient())
 			if tt.isError {
 				require.Error(t, err, "file connector cannot ingest source: path is outside repo root")
 				return
@@ -235,7 +235,7 @@ func TestCSVDelimiter(t *testing.T) {
 			Properties: p,
 		},
 	}
-	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM foo"})
@@ -295,7 +295,7 @@ func TestFileFormatAndDelimiter(t *testing.T) {
 					Properties: p,
 				},
 			}
-			err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+			err = m.Create(ctx, olap, repo, opts, source, zap.NewNop(), activity.NewNoopClient())
 			require.NoError(t, err)
 
 			rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM foo"})
@@ -367,7 +367,7 @@ columns={id:'INTEGER',name:'VARCHAR',country:'VARCHAR',city:'VARCHAR'})`, filePa
 					Properties: p,
 				},
 			}
-			err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+			err = m.Create(ctx, olap, repo, opts, source, zap.NewNop(), activity.NewNoopClient())
 			require.NoError(t, err)
 
 			rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM csv_source"})
@@ -412,7 +412,7 @@ func TestJsonIngestionDefault(t *testing.T) {
 			Properties: p,
 		},
 	}
-	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM json_source"})
@@ -457,7 +457,7 @@ func TestJsonIngestionWithColumns(t *testing.T) {
 			Properties: p,
 		},
 	}
-	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM json_source"})
@@ -502,7 +502,7 @@ func TestJsonIngestionWithLessColumns(t *testing.T) {
 			Properties: p,
 		},
 	}
-	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	require.NoError(t, err)
@@ -592,7 +592,7 @@ auto_detect=false,sample_size=-1,dateformat='iso',timestampformat='iso',format='
 					Properties: p,
 				},
 			}
-			err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+			err = m.Create(ctx, olap, repo, opts, source, zap.NewNop(), activity.NewNoopClient())
 			require.NoError(t, err)
 
 			rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM json_source"})
@@ -641,7 +641,7 @@ func TestJsonIngestionWithInvalidParam(t *testing.T) {
 			Properties: p,
 		},
 	}
-	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop(), activity.NewNoopClient())
 	require.Error(t, err, "Invalid named parameter \"invalid_param\" for function read_json")
 }
 
@@ -838,7 +838,7 @@ from read_csv_auto('%s') where publisher in ('Yahoo', 'Google')`, testCsvPath)
 			Properties: p,
 		},
 	}
-	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop())
+	err = m.Create(ctx, olap, repo, opts, source, zap.NewNop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{Query: "SELECT * FROM csv_source"})

@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/rilldata/rill/runtime/services/catalog/migrator"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -34,8 +35,9 @@ func (m *sourceMigrator) Create(
 	opts migrator.Options,
 	catalogObj *drivers.CatalogEntry,
 	logger *zap.Logger,
+	ac activity.Client,
 ) error {
-	return ingestSource(ctx, olap, repo, opts, catalogObj, "", logger)
+	return ingestSource(ctx, olap, repo, opts, catalogObj, "", logger, ac)
 }
 
 func (m *sourceMigrator) Update(ctx context.Context,
@@ -44,12 +46,13 @@ func (m *sourceMigrator) Update(ctx context.Context,
 	opts migrator.Options,
 	oldCatalogObj, newCatalogObj *drivers.CatalogEntry,
 	logger *zap.Logger,
+	ac activity.Client,
 ) error {
 	apiSource := newCatalogObj.GetSource()
 
 	tempName := fmt.Sprintf("__rill_temp_%s", apiSource.Name)
 
-	err := ingestSource(ctx, olap, repo, opts, newCatalogObj, tempName, logger)
+	err := ingestSource(ctx, olap, repo, opts, newCatalogObj, tempName, logger, ac)
 	if err != nil {
 		// cleanup of temp table. can exist and still error out in incremental ingestion
 		_ = olap.Exec(ctx, &drivers.Statement{
@@ -146,8 +149,8 @@ func convertLower(in map[string]string) map[string]string {
 }
 
 func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts migrator.Options,
-	catalogObj *drivers.CatalogEntry, name string, logger *zap.Logger,
-) error {
+	catalogObj *drivers.CatalogEntry, name string, logger *zap.Logger, ac activity.Client,
+) (outErr error) {
 	apiSource := catalogObj.GetSource()
 	if name == "" {
 		name = apiSource.Name
@@ -202,7 +205,6 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 	defer cancel()
 
 	ingestionLimit := opts.IngestStorageLimitInBytes
-	p := &progress{}
 	limitExceeded := false
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)
@@ -220,7 +222,39 @@ func ingestSource(ctx context.Context, olap drivers.OLAPStore, repo drivers.Repo
 			}
 		}
 	}()
-	err = t.Transfer(ctxWithTimeout, src, sink, drivers.NewTransferOpts(drivers.WithLimitInBytes(ingestionLimit)), p)
+
+	env := convertLower(opts.InstanceEnv)
+	allowHostAccess := strings.EqualFold(env["allow_host_access"], "true")
+
+	p := &progress{}
+	transferOpts := &drivers.TransferOptions{
+		AcquireConnector: func(name string) (drivers.Handle, func(), error) {
+			return nil, nil, fmt.Errorf("this reconciler can't resolve connectors")
+		},
+		Progress:        p,
+		LimitInBytes:    ingestionLimit,
+		RepoRoot:        repo.Root(),
+		AllowHostAccess: allowHostAccess,
+	}
+
+	transferStart := time.Now()
+	defer func() {
+		transferLatency := time.Since(transferStart).Milliseconds()
+		commonDims := []attribute.KeyValue{
+			attribute.String("source", srcConnector.Driver()),
+			attribute.String("destination", olapConnection.Driver()),
+			attribute.Bool("cancelled", errors.Is(outErr, context.Canceled)),
+			attribute.Bool("failed", outErr != nil),
+			attribute.Bool("limit_exceeded", limitExceeded),
+			attribute.Int64("limit_bytes", ingestionLimit),
+		}
+		ac.Emit(ctx, "ingestion_ms", float64(transferLatency), commonDims...)
+		if p.unit == drivers.ProgressUnitByte {
+			ac.Emit(ctx, "ingestion_bytes", float64(p.catalogObj.BytesIngested), commonDims...)
+		}
+	}()
+
+	err = t.Transfer(ctxWithTimeout, src, sink, transferOpts)
 	if limitExceeded {
 		return drivers.ErrIngestionLimitExceeded
 	}
