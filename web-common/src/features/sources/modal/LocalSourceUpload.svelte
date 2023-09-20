@@ -122,7 +122,7 @@
   }
 </script>
 
-<div class="grid place-items-center h-full">
+<div class="grid place-items-center h-44">
   <Button on:click={handleOpenFileDialog} type="primary"
     >Upload a CSV, JSON or Parquet file
   </Button>
