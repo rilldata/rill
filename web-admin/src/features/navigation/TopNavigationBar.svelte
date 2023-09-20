@@ -8,10 +8,13 @@
   import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
   import AvatarButton from "../authentication/AvatarButton.svelte";
   import SignIn from "../authentication/SignIn.svelte";
+  import ShareButton from "../dashboards/share/ShareButton.svelte";
   import { isErrorStoreEmpty } from "../errors/error-store";
   import Breadcrumbs from "./Breadcrumbs.svelte";
+  import { isDashboardPage } from "./nav-utils";
 
   $: organization = $page.params.organization;
+  $: onDashboardPage = isDashboardPage($page);
 
   const user = createAdminServiceGetCurrentUser();
 </script>
@@ -39,18 +42,19 @@
   {:else}
     <div />
   {/if}
-  <div class="flex gap-x-3 items-center">
+  <div class="flex gap-x-4 items-center">
     {#if $viewAsUserStore}
       <ViewAsUserChip />
     {/if}
+    {#if onDashboardPage}
+      <ShareButton />
+    {/if}
     {#if $user.isSuccess}
-      <div>
-        {#if $user.data && $user.data.user}
-          <AvatarButton />
-        {:else}
-          <SignIn />
-        {/if}
-      </div>
+      {#if $user.data && $user.data.user}
+        <AvatarButton />
+      {:else}
+        <SignIn />
+      {/if}
     {/if}
   </div>
 </div>
