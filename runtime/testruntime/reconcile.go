@@ -125,12 +125,14 @@ func RequireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.
 	require.NotEmpty(t, b.Meta.SpecUpdatedOn.AsTime())
 	require.NotEmpty(t, b.Meta.StateUpdatedOn.AsTime())
 	require.Nil(t, b.Meta.DeletedOn)
+	require.Equal(t, a.Meta.ReconcileError, b.Meta.ReconcileError)
+
+	// Not comparing these fields because they are not stable:
 	// require.Equal(t, a.Meta.ReconcileStatus, b.Meta.ReconcileStatus)
-	// require.Equal(t, a.Meta.ReconcileError, b.Meta.ReconcileError)
 	// require.Equal(t, a.Meta.ReconcileOn, b.Meta.ReconcileOn)
 	// require.Equal(t, a.Meta.RenamedFrom, b.Meta.RenamedFrom)
 
-	// Some kind-specific fields are ephemeral. We reset those to stable values before comparing.
+	// Some kind-specific fields are not stable. We reset those to stable values before comparing.
 	switch b.Meta.Name.Kind {
 	case runtime.ResourceKindSource:
 		state := b.GetSource().State
