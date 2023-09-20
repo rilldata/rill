@@ -45,6 +45,7 @@ type Source struct {
 	SQL                         string         `yaml:"sql,omitempty" mapstructure:"sql,omitempty"`
 	DB                          string         `yaml:"db,omitempty" mapstructure:"db,omitempty"`
 	ProjectID                   string         `yaml:"project_id,omitempty" mapstructure:"project_id,omitempty"`
+	AccountName                 string         `yaml:"account_name,omitempty" mapstructure:"account_name,omitempty"`
 }
 
 type MetricsView struct {
@@ -205,6 +206,10 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 
 	if source.ProjectID != "" {
 		props["project_id"] = source.ProjectID
+	}
+
+	if source.AccountName != "" {
+		props["account_name"] = source.AccountName
 	}
 
 	propsPB, err := structpb.NewStruct(props)

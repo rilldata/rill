@@ -17,7 +17,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"go.uber.org/zap"
-	"gocloud.dev/blob"
 	"gocloud.dev/blob/azureblob"
 )
 
@@ -39,6 +38,13 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			Required:    true,
 			Hint:        "Glob patterns are supported",
+		},
+		{
+			Key:         "account_name",
+			DisplayName: "Account name",
+			Description: "Azure storage account name.",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
 		},
 		{
 			Key:         "azure.credentials",
@@ -105,24 +111,7 @@ func (d driver) Spec() drivers.Spec {
 }
 
 func (d driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
-	conf, err := parseSourceProperties(src)
-	if err != nil {
-		return false, fmt.Errorf("failed to parse config: %w", err)
-	}
-
-	c, err := d.Open(map[string]any{}, false, activity.NewNoopClient(), logger)
-	if err != nil {
-		return false, err
-	}
-
-	conn := c.(*Connection)
-	bucketObj, err := conn.openBucketWithNoCredentials(ctx, conf)
-	if err != nil {
-		return false, fmt.Errorf("failed to open container %q, %w", conf.url.Host, err)
-	}
-	defer bucketObj.Close()
-
-	return bucketObj.IsAccessible(ctx)
+	return false, nil
 }
 
 type Connection struct {
@@ -227,7 +216,6 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 		ExtractPolicy:         conf.extractPolicy,
 	}
 
-	// Permission error will be thrown while iterating the bucket object, default error will be for az login, considering that as primary auth
 	iter, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
 	if err != nil {
 		return nil, err
@@ -238,6 +226,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 
 type sourceProperties struct {
 	Path                  string         `mapstructure:"path"`
+	AccountName           string         `mapstructure:"account_name"`
 	URI                   string         `mapstructure:"uri"`
 	Extract               map[string]any `mapstructure:"extract"`
 	GlobMaxTotalSize      int64          `mapstructure:"glob.max_total_size"`
@@ -271,7 +260,6 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 
 // getClient returns a new azure blob client.
 func (c *Connection) getClient(ctx context.Context, conf *sourceProperties) (*container.Client, error) {
-	var client *container.Client
 	var accountName, accountKey, sasToken, connectionString string
 
 	if c.config.AllowHostAccess {
@@ -298,10 +286,12 @@ func (c *Connection) getClient(ctx context.Context, conf *sourceProperties) (*co
 				return nil, fmt.Errorf("failed azblob.NewSharedKeyCredential: %w", err)
 			}
 
-			client, err = container.NewClientWithSharedKeyCredential(containerURL, sharedKeyCred, nil)
+			client, err := container.NewClientWithSharedKeyCredential(containerURL, sharedKeyCred, nil)
 			if err != nil {
 				return nil, fmt.Errorf("failed container.NewClientWithSharedKeyCredential: %w", err)
 			}
+
+			return client, nil
 		} else if sasToken != "" {
 			serviceURL, err := azureblob.NewServiceURL(&azureblob.ServiceURLOptions{
 				AccountName: accountName,
@@ -316,10 +306,12 @@ func (c *Connection) getClient(ctx context.Context, conf *sourceProperties) (*co
 				return nil, err
 			}
 
-			client, err = container.NewClientWithNoCredential(containerURL, nil)
+			client, err := container.NewClientWithNoCredential(containerURL, nil)
 			if err != nil {
 				return nil, fmt.Errorf("failed container.NewClientWithNoCredential: %w", err)
 			}
+
+			return client, nil
 		} else {
 			cred, err := azidentity.NewDefaultAzureCredential(&azidentity.DefaultAzureCredentialOptions{
 				DisableInstanceDiscovery: true,
@@ -327,41 +319,34 @@ func (c *Connection) getClient(ctx context.Context, conf *sourceProperties) (*co
 			if err != nil {
 				return nil, fmt.Errorf("failed azidentity.NewDefaultAzureCredential: %w", err)
 			}
-			client, err = container.NewClient(containerURL, cred, nil)
+			client, err := container.NewClient(containerURL, cred, nil)
 			if err != nil {
 				return nil, fmt.Errorf("failed container.NewClient: %w", err)
 			}
+
+			return client, nil
 		}
 	} else if connectionString != "" {
 		var err error
-		client, err = container.NewClientFromConnectionString(connectionString, conf.url.Host, nil)
+		client, err := container.NewClientFromConnectionString(connectionString, conf.url.Host, nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed container.NewClientFromConnectionString: %w", err)
 		}
+
+		return client, nil
+	} else if conf.AccountName != "" {
+		svcURL := fmt.Sprintf("https://%s.blob.core.windows.net", conf.AccountName)
+		containerURL, err := url.JoinPath(svcURL, conf.url.Host)
+		if err != nil {
+			return nil, err
+		}
+		client, err := container.NewClientWithNoCredential(containerURL, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed container.NewClientWithNoCredential: %w", err)
+		}
+
+		return client, nil
 	} else {
 		return nil, drivers.NewPermissionDeniedError(fmt.Sprintf("can't access remote host without credentials, err:%v", errors.New("no credentials provided")))
 	}
-
-	return client, nil
-}
-
-func (c *Connection) openBucketWithNoCredentials(ctx context.Context, conf *sourceProperties) (*blob.Bucket, error) {
-	// Create containerURL object.
-	serviceURL := fmt.Sprintf("https://%s.blob.core.windows.net", c.config.Account)
-	containerURL, err := url.JoinPath(serviceURL, conf.url.Host)
-	if err != nil {
-		return nil, err
-	}
-	client, err := container.NewClientWithNoCredential(containerURL, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create a *blob.Bucket.
-	bucketObj, err := azureblob.OpenBucket(ctx, client, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return bucketObj, nil
 }
