@@ -6,11 +6,12 @@ import {
 } from "@rilldata/web-common/runtime-client";
 
 export enum ResourceKind {
-  Source = "source",
-  Model = "model",
-  MetricsView = "metricsview",
-  // TODO: do a correct map based on backend code
+  ProjectParser = "rill.runtime.v1.ProjectParser",
+  Source = "rill.runtime.v1.SourceV2",
+  Model = "rill.runtime.v1.ModelV2",
+  MetricsView = "rill.runtime.v1.MetricsViewV2",
 }
+export const SingletonProjectParserName = "project_parser";
 
 export function useResource<T = V1Resource>(
   instanceId: string,
@@ -30,6 +31,14 @@ export function useResource<T = V1Resource>(
           selector ? selector(data?.resource) : data?.resource,
       },
     }
+  );
+}
+
+export function useProjectParser(instanceId: string) {
+  return useResource(
+    instanceId,
+    SingletonProjectParserName,
+    ResourceKind.ProjectParser
   );
 }
 
