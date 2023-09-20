@@ -227,6 +227,66 @@ path: data/foo.csv
 	testruntime.RequireOLAPTableCount(t, rt, id, "foo", 1)
 }
 
+func TestSourceRefreshSchedule(t *testing.T) {
+	// Add source with refresh schedule
+	// Verify it gets retriggered after the delay
+}
+
+func TestSourceAndModelNameCollission(t *testing.T) {
+
+}
+
+func TestModelMaterialize(t *testing.T) {
+	// Create model
+	// Make materialized, verify is table
+	// Make not materialized, verify is view
+}
+
+func TestModelCTE(t *testing.T) {
+	// Create a model that references a source
+	// Add CTE with same name as source, verify no ref to source anymore
+}
+
+func TestRename(t *testing.T) {
+	// Create source and model
+	// Rename the model, verify success
+	// Rename the model to different case, verify success
+	// Add model referencing new name, Rename the source to new name, verify old model breaks and new one works
+	// Rename model A to B and model B to A, verify success
+	// Rename model A to B and source B to A, verify success
+}
+
+func TestInterdependence(t *testing.T) {
+	// Test D -> C, D -> A, C -> A,B (-> = refs)
+	// Test error propagation on source error
+}
+
+func TestCycles(t *testing.T) {
+	// Test A -> B, B -> A
+	// Break cycle by deleting, verify changed errors
+
+	// Test A -> B, B -> C, C -> A
+	// Break cycle by changing to source, verify success
+}
+
+func TestMetricsView(t *testing.T) {
+	// Create model and metrics view, verify success
+	// Break model, verify metrics view not valid
+}
+
+func TestStageChanges(t *testing.T) {
+	// Create source, model, metrics view
+	// Break source, verify model and metrics view have errors, but are valid
+}
+
+func TestWatch(t *testing.T) {
+	// Create instance with watch
+	// Create source, wait and verify
+	// Create model, wait and verify
+	// Create metrics view, wait and verify
+	// Drop source, wait and verify
+}
+
 func must[T any](v T, err error) T {
 	if err != nil {
 		panic(err)

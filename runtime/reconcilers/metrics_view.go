@@ -67,8 +67,8 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 
 	validateErr := r.validate(ctx, mv.Spec)
 
-	if errors.Is(validateErr, ctx.Err()) {
-		return runtime.ReconcileResult{Err: validateErr}
+	if ctx.Err() != nil {
+		return runtime.ReconcileResult{Err: errors.Join(validateErr, ctx.Err())}
 	}
 
 	if validateErr == nil {
