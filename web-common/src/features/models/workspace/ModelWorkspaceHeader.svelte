@@ -8,9 +8,7 @@
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { createRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import { WorkspaceHeader } from "../../../layout/workspace";
@@ -30,8 +28,6 @@
   $: runtimeInstanceId = $runtime.instanceId;
 
   $: allNamesQuery = useAllNames(runtimeInstanceId);
-  const queryClient = useQueryClient();
-  const renameModel = createRuntimeServiceRenameFileAndReconcile();
 
   const outputLayout = getContext(
     "rill:app:output-layout"

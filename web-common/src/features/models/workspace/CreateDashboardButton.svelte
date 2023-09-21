@@ -7,8 +7,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers.js";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useModel } from "@rilldata/web-common/features/models/selectors";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
@@ -19,11 +18,9 @@
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import {
-    createRuntimeServicePutFileAndReconcile,
-    V1ReconcileResponse,
+    createConnectorServiceOLAPGetTable,
+    createRuntimeServicePutFile,
   } from "@rilldata/web-common/runtime-client";
-  import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { getName } from "../../entity-management/name-utils";
   import { generateDashboardYAMLForModel } from "../../metrics-views/metrics-internal-store";
@@ -36,8 +33,13 @@
   $: model = $modelQuery.data?.model;
   $: dashboardNames = useDashboardFileNames($runtime.instanceId);
 
-  const queryClient = useQueryClient();
-  const createFileMutation = createRuntimeServicePutFileAndReconcile();
+  $: modelSchema = createConnectorServiceOLAPGetTable({
+    instanceId: $runtime.instanceId,
+    table: model?.state?.table,
+    connector: model?.state?.connector,
+  });
+
+  const createFileMutation = createRuntimeServicePutFile();
 
   async function handleCreateDashboard() {
     overlay.set({
@@ -48,27 +50,26 @@
       $dashboardNames.data
     );
     const dashboardYAML = generateDashboardYAMLForModel(
-      model as any, // TODO
+      modelName,
+      $modelSchema.data?.schema,
       newDashboardName
     );
 
     $createFileMutation.mutate(
       {
+        instanceId: $runtime.instanceId,
+        path: getFileAPIPathFromNameAndType(
+          newDashboardName,
+          EntityType.MetricsDefinition
+        ),
         data: {
-          instanceId: $runtime.instanceId,
-          path: getFilePathFromNameAndType(
-            newDashboardName,
-            EntityType.MetricsDefinition
-          ),
           blob: dashboardYAML,
           create: true,
           createOnly: true,
-          strict: false,
         },
       },
       {
-        onSuccess: (resp: V1ReconcileResponse) => {
-          fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
+        onSuccess: () => {
           goto(`/dashboard/${newDashboardName}`);
           behaviourEvent.fireNavigationEvent(
             newDashboardName,
@@ -76,11 +77,6 @@
             MetricsEventSpace.RightPanel,
             MetricsEventScreenName.Model,
             MetricsEventScreenName.Dashboard
-          );
-          return invalidateAfterReconcile(
-            queryClient,
-            $runtime.instanceId,
-            resp
           );
         },
         onError: (err) => {

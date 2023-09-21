@@ -51,6 +51,7 @@
   import { Debounce } from "@rilldata/web-common/features/models/utils/Debounce";
   import { useAllSourceColumns } from "@rilldata/web-common/features/sources/selectors";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher, onMount } from "svelte";
   import { editorTheme } from "../../../components/editor/theme";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -61,6 +62,7 @@
   export let selections: SelectionRange[] = [];
   export let focusOnMount = false;
 
+  const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
   const QUERY_UPDATE_DEBOUNCE_TIMEOUT = 0; // disables debouncing
@@ -82,7 +84,7 @@
 
   let autocompleteCompartment = new Compartment();
 
-  $: allSourceColumns = useAllSourceColumns($runtime?.instanceId);
+  $: allSourceColumns = useAllSourceColumns(queryClient, $runtime?.instanceId);
 
   let schema: { [table: string]: string[] };
 

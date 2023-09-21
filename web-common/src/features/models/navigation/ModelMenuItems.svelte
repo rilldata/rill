@@ -5,8 +5,7 @@
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import { Divider, MenuItem } from "@rilldata/web-common/components/menu";
   import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
@@ -17,13 +16,10 @@
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import {
-    createRuntimeServiceDeleteFileAndReconcile,
-    createRuntimeServicePutFileAndReconcile,
+    createConnectorServiceOLAPGetTable,
+    createRuntimeServicePutFile,
     V1ModelV2,
-    V1ReconcileResponse,
   } from "@rilldata/web-common/runtime-client";
-  import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
@@ -37,9 +33,7 @@
 
   const dispatch = createEventDispatcher();
 
-  const queryClient = useQueryClient();
-
-  const createFileMutation = createRuntimeServicePutFileAndReconcile();
+  const createFileMutation = createRuntimeServicePutFile();
 
   $: modelNames = useModelFileNames($runtime.instanceId);
   $: dashboardNames = useDashboardFileNames($runtime.instanceId);
@@ -47,6 +41,12 @@
   let model: V1ModelV2;
   $: model = $modelQuery.data?.model;
   $: modelHasError = !$modelQuery.data?.meta?.reconcileError;
+
+  $: modelSchema = createConnectorServiceOLAPGetTable({
+    instanceId: $runtime.instanceId,
+    table: model.state.table,
+    connector: model.state.connector,
+  });
 
   const createDashboardFromModel = (modelName: string) => {
     overlay.set({
@@ -57,26 +57,25 @@
       $dashboardNames.data
     );
     const dashboardYAML = generateDashboardYAMLForModel(
-      model as any, // TODO
+      modelName,
+      $modelSchema.data?.schema,
       newDashboardName
     );
     $createFileMutation.mutate(
       {
+        instanceId: $runtime.instanceId,
+        path: getFileAPIPathFromNameAndType(
+          newDashboardName,
+          EntityType.MetricsDefinition
+        ),
         data: {
-          instanceId: $runtime.instanceId,
-          path: getFilePathFromNameAndType(
-            newDashboardName,
-            EntityType.MetricsDefinition
-          ),
           blob: dashboardYAML,
           create: true,
           createOnly: true,
-          strict: false,
         },
       },
       {
-        onSuccess: (resp: V1ReconcileResponse) => {
-          fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
+        onSuccess: () => {
           goto(`/dashboard/${newDashboardName}`);
           const previousActiveEntity = $appScreen?.type;
           behaviourEvent.fireNavigationEvent(
@@ -85,11 +84,6 @@
             MetricsEventSpace.LeftPanel,
             previousActiveEntity,
             MetricsEventScreenName.Dashboard
-          );
-          return invalidateAfterReconcile(
-            queryClient,
-            $runtime.instanceId,
-            resp
           );
         },
         onError: (err) => {

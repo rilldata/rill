@@ -56,7 +56,7 @@
     modelName,
     sourceTableReferences,
     [...($getAllSources?.data || []), ...($getAllModels?.data || [])]
-  ); // TODO: update using resource APIs
+  );
   $: if (sourceTableReferences?.length) {
     // first, pull out all references that are in the catalog.
 

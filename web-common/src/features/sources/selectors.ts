@@ -10,7 +10,7 @@ import {
   createRuntimeServiceGetFile,
   V1ProfileColumn,
 } from "@rilldata/web-common/runtime-client";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
+import type { CreateQueryResult, QueryClient } from "@tanstack/svelte-query";
 import { derived, Readable } from "svelte/store";
 import { parse } from "yaml";
 import { getFilePathFromNameAndType } from "../entity-management/entity-mappers";
@@ -72,16 +72,18 @@ type TableColumnsWithName = {
 };
 
 export function useAllSourceColumns(
+  queryClient: QueryClient,
   instanceId: string
 ): Readable<Array<TableColumnsWithName>> {
   return derived([useSources(instanceId)], ([allSources], set) => {
     if (!allSources.data?.length) {
       set([]);
+      return;
     }
 
     derived(
       allSources.data.map((r) =>
-        createTableColumnsWithName(instanceId, r.meta.name.name)
+        createTableColumnsWithName(queryClient, instanceId, r.meta.name.name)
       ),
       (sourceColumnResponses) =>
         sourceColumnResponses.filter((res) => !!res.data).map((res) => res.data)
@@ -93,6 +95,7 @@ export function useAllSourceColumns(
  * Fetches columns and adds the table name. By using the selector the results will be cached.
  */
 function createTableColumnsWithName(
+  queryClient: QueryClient,
   instanceId: string,
   tableName: string
 ): CreateQueryResult<TableColumnsWithName> {
@@ -108,6 +111,7 @@ function createTableColumnsWithName(
             profileColumns: data.profileColumns,
           };
         },
+        queryClient,
       },
     }
   );
