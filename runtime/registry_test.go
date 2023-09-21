@@ -309,7 +309,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 			}
 
 			// Wait for controller restart
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(500 * time.Millisecond)
 			rt.WaitUntilReady(ctx, inst.ID)
 
 			// Verify db instances are correctly updated
