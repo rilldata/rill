@@ -2,7 +2,9 @@ package transporter
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"math"
 	"time"
 
@@ -57,9 +59,12 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map
 	// TODO :: iteration over fileiterator is similar(apart from no schema changes possible here)
 	// to consuming fileIterator in objectStore_to_duckDB
 	// both can be refactored to follow same path
-	for iter.HasNext() {
+	for {
 		files, err := iter.Next()
 		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
 			return err
 		}
 

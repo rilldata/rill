@@ -173,14 +173,9 @@ func (it *blobIterator) Close() error {
 	return err
 }
 
-// HasNext returns true if iterator has more data
-func (it *blobIterator) HasNext() bool {
-	return it.err == nil
-}
-
 // Next downloads next n files and copies to local directory
 func (it *blobIterator) Next() ([]string, error) {
-	if !it.HasNext() {
+	if it.err != nil {
 		return nil, it.err
 	}
 	if len(it.nextPaths) != 0 { // single file path
@@ -197,14 +192,18 @@ func (it *blobIterator) Next() ([]string, error) {
 			it.init()
 		}()
 	}
+
 	if !it.opts.KeepFilesUntilClose {
-		// delete files created in last iteration
+		// delete files created in previous iteration
 		fileutil.ForceRemoveFiles(it.lastBatch)
 	}
-
 	files, ok := <-it.files
 	if !ok {
-		it.err = io.EOF
+		if it.err == nil {
+			// downloaded successfully
+			it.err = io.EOF
+		}
+		return nil, it.err
 	}
 	it.lastBatch = files
 	// clients can make changes to slice if passing the same slice that iterator holds

@@ -15,8 +15,6 @@ type FileIterator interface {
 	// Next returns a list of file downloaded from external sources
 	// and cleanups file created in previous batch
 	Next() ([]string, error)
-	// HasNext can be utlisied to check if iterator has more elements left
-	HasNext() bool
 	// Size returns size of data downloaded in unit.
 	// Returns 0,false if not able to compute size in given unit
 	Size(unit ProgressUnit) (int64, bool)

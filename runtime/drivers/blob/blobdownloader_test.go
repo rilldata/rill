@@ -2,6 +2,8 @@ package blob
 
 import (
 	"context"
+	"errors"
+	"io"
 	"os"
 	"testing"
 
@@ -35,31 +37,31 @@ func TestFetchFileNames(t *testing.T) {
 	}{
 		{
 			name:    "single file found",
-			args:    args{context.Background(), prepareBucket(t), Options{GlobPattern: "2020/01/01/aata.txt", StorageLimitInBytes: TenGB}},
+			args:    args{context.Background(), prepareBucket(t), Options{GlobPattern: "2020/01/01/aata.txt", StorageLimitInBytes: TenGB, KeepFilesUntilClose: true}},
 			want:    map[string]struct{}{"hello": {}},
 			wantErr: false,
 		},
 		{
 			name:    "recursive glob",
-			args:    args{context.Background(), prepareBucket(t), Options{GlobPattern: "2020/**/*.txt", StorageLimitInBytes: TenGB}},
+			args:    args{context.Background(), prepareBucket(t), Options{GlobPattern: "2020/**/*.txt", StorageLimitInBytes: TenGB, KeepFilesUntilClose: true}},
 			want:    map[string]struct{}{"hello": {}, "world": {}, "writing": {}, "test": {}},
 			wantErr: false,
 		},
 		{
 			name:    "non recursive glob",
-			args:    args{context.Background(), prepareBucket(t), Options{GlobPattern: "2020/0?/0[1-3]/{a,b}ata.txt", StorageLimitInBytes: TenGB}},
+			args:    args{context.Background(), prepareBucket(t), Options{GlobPattern: "2020/0?/0[1-3]/{a,b}ata.txt", StorageLimitInBytes: TenGB, KeepFilesUntilClose: true}},
 			want:    map[string]struct{}{"hello": {}, "world": {}},
 			wantErr: false,
 		},
 		{
 			name:    "glob absent",
-			args:    args{context.Background(), prepareBucket(t), Options{GlobPattern: "2020/**/*.csv", StorageLimitInBytes: TenGB}},
+			args:    args{context.Background(), prepareBucket(t), Options{GlobPattern: "2020/**/*.csv", StorageLimitInBytes: TenGB, KeepFilesUntilClose: true}},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "total size limit",
-			args:    args{context.Background(), prepareBucket(t), Options{GlobMaxTotalSize: 1, GlobPattern: "2020/**", StorageLimitInBytes: TenGB}},
+			args:    args{context.Background(), prepareBucket(t), Options{GlobMaxTotalSize: 1, GlobPattern: "2020/**", StorageLimitInBytes: TenGB, KeepFilesUntilClose: true}},
 			want:    nil,
 			wantErr: true,
 		},
@@ -91,8 +93,11 @@ func TestFetchFileNames(t *testing.T) {
 
 			paths := make([]string, 0)
 			defer fileutil.ForceRemoveFiles(paths)
-			for it.HasNext() {
+			for {
 				next, err := it.Next()
+				if errors.Is(err, io.EOF) {
+					break
+				}
 				require.NoError(t, err)
 				paths = append(paths, next...)
 			}
@@ -126,7 +131,7 @@ func TestFetchFileNamesWithParitionLimits(t *testing.T) {
 			name: "listing head limits",
 			args: args{context.Background(),
 				prepareBucket(t),
-				Options{ExtractPolicy: &ExtractPolicy{FilesStrategy: ExtractPolicyStrategyHead, FilesLimit: 2}, GlobPattern: "2020/**", StorageLimitInBytes: TenGB},
+				Options{ExtractPolicy: &ExtractPolicy{FilesStrategy: ExtractPolicyStrategyHead, FilesLimit: 2}, GlobPattern: "2020/**", StorageLimitInBytes: TenGB, KeepFilesUntilClose: true},
 			},
 			want:    map[string]struct{}{"hello": {}, "world": {}},
 			wantErr: false,
@@ -136,7 +141,7 @@ func TestFetchFileNamesWithParitionLimits(t *testing.T) {
 			args: args{
 				context.Background(),
 				prepareBucket(t),
-				Options{ExtractPolicy: &ExtractPolicy{FilesStrategy: ExtractPolicyStrategyTail, FilesLimit: 2}, GlobPattern: "2020/**", StorageLimitInBytes: TenGB},
+				Options{ExtractPolicy: &ExtractPolicy{FilesStrategy: ExtractPolicyStrategyTail, FilesLimit: 2}, GlobPattern: "2020/**", StorageLimitInBytes: TenGB, KeepFilesUntilClose: true},
 			},
 			want:    map[string]struct{}{"test": {}, "writing": {}},
 			wantErr: false,
@@ -158,8 +163,11 @@ func TestFetchFileNamesWithParitionLimits(t *testing.T) {
 
 			paths := make([]string, 0)
 			defer fileutil.ForceRemoveFiles(paths)
-			for it.HasNext() {
+			for {
 				next, err := it.Next()
+				if errors.Is(err, io.EOF) {
+					break
+				}
 				require.NoError(t, err)
 				paths = append(paths, next...)
 			}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -71,9 +72,12 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 
 	a := newAppender(t.to, sinkCfg, srcCfg.DuckDB, srcCfg.AllowSchemaRelaxation, t.logger)
 
-	for iterator.HasNext() {
+	for {
 		files, err := iterator.Next()
 		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
 			return err
 		}
 
@@ -257,9 +261,12 @@ func (a *appender) scanSchemaFromQuery(ctx context.Context, qry string) (map[str
 func (t *objectStoreToDuckDB) ingestDuckDBSQL(ctx context.Context, originalSQL string, iterator drivers.FileIterator, srcCfg *fileSourceProperties, dbSink *sinkProperties, opts *drivers.TransferOptions) error {
 	iterator.KeepFilesUntilClose(true)
 	allFiles := make([]string, 0)
-	for iterator.HasNext() {
+	for {
 		files, err := iterator.Next()
 		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
 			return err
 		}
 		allFiles = append(allFiles, files...)
