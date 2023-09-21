@@ -17,6 +17,7 @@
   import { fly } from "svelte/transition";
   import Spinner from "../../entity-management/Spinner.svelte";
   import { metricsExplorerStore } from "../dashboard-stores";
+  import ExportDimensionTableDataButton from "./ExportDimensionTableDataButton.svelte";
 
   export let metricViewName: string;
   export let dimensionName: string;
@@ -121,5 +122,7 @@
         </button>
       </div>
     {/if}
+
+    <ExportDimensionTableDataButton {metricViewName} />
   </div>
 </div>
