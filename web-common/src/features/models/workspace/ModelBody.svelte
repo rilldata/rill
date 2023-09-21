@@ -7,6 +7,7 @@
     getFilePathFromNameAndType,
   } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { getAllErrorsForFile } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import type { QueryHighlightState } from "@rilldata/web-common/features/models/query-highlight-store";
   import {
@@ -53,7 +54,6 @@
   let showPreview = true;
   let modelPath: string;
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
-  $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
   $: modelSqlQuery = createRuntimeServiceGetFile(runtimeInstanceId, modelPath);
 
   $: modelEmpty = useModelFileIsEmpty(runtimeInstanceId, modelName);
@@ -63,6 +63,13 @@
 
   let sanitizedQuery: string;
   $: sanitizedQuery = sanitizeQuery(modelSql ?? "");
+
+  $: allErrors = getAllErrorsForFile(
+    queryClient,
+    $runtime.instanceId,
+    modelPath
+  );
+  $: modelError = $allErrors?.[0]?.message;
 
   const outputLayout = getContext(
     "rill:app:output-layout"
