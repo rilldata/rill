@@ -90,6 +90,7 @@ func (c *catalogCache) close(ctx context.Context) error {
 
 // flush flushes changes to the underlying store.
 // Unlike other catalog functions, it is safe to call flush concurrently with calls to get and list (i.e. under a read lock).
+// However, it is not safe to call flush concurrently with other calls to flush.
 func (c *catalogCache) flush(ctx context.Context) error {
 	for s, n := range c.dirty {
 		r, err := c.get(n, true, false)
@@ -113,12 +114,16 @@ func (c *catalogCache) flush(ctx context.Context) error {
 		if c.stored[s] {
 			// Updating
 			err = c.store.UpdateResource(ctx, c.version, resourceToDriver(r))
+			if err != nil {
+				return err
+			}
 		} else {
 			// Creating
 			err = c.store.CreateResource(ctx, c.version, resourceToDriver(r))
-		}
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
+			c.stored[s] = true
 		}
 
 		delete(c.dirty, s)
