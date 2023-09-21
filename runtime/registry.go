@@ -26,7 +26,7 @@ const (
 )
 
 // GlobalProjectParserName is the name of the instance-global project parser resource that is created for each new instance.
-var GlobalProjectParserName = &runtimev1.ResourceName{Kind: ResourceKindProjectParser, Name: "project_parser"}
+var GlobalProjectParserName = &runtimev1.ResourceName{Kind: ResourceKindProjectParser, Name: "parser"}
 
 // Instances returns all instances managed by the runtime.
 func (r *Runtime) Instances(ctx context.Context) ([]*drivers.Instance, error) {
@@ -41,6 +41,15 @@ func (r *Runtime) Instance(ctx context.Context, instanceID string) (*drivers.Ins
 // Controller returns the controller for the given instance. If the controller stopped with a fatal error, that error will be returned here until it's restarted.
 func (r *Runtime) Controller(instanceID string) (*Controller, error) {
 	return r.registryCache.getController(instanceID)
+}
+
+// WaitUntilReady waits until the instance's controller is ready (open for catalog calls).
+func (r *Runtime) WaitUntilReady(ctx context.Context, instanceID string) error {
+	ctrl, err := r.Controller(instanceID)
+	if err != nil {
+		return err
+	}
+	return ctrl.WaitUntilReady(ctx)
 }
 
 // WaitUntilIdle waits until the instance's controller is idle (not reconciling any resources).

@@ -53,6 +53,25 @@ func TestPanics(t *testing.T) {
 	require.Panics(t, func() { d.Children(2) })
 }
 
+func TestParents(t *testing.T) {
+	d := New(hash)
+	require.True(t, d.Add(1, 2))
+	require.True(t, d.Add(2, 3))
+	require.True(t, d.Add(3))
+	require.Len(t, d.vertices, 3)
+
+	// Remove 3, check it's a non-present parent
+	d.Remove(3)
+	require.ElementsMatch(t, []int{3}, d.Parents(2, false))
+	require.ElementsMatch(t, []int{}, d.Parents(2, true))
+
+	// Add 3 back and remove 2, then add 2 back without a reference to 3 and check
+	require.True(t, d.Add(3))
+	d.Remove(2)
+	require.True(t, d.Add(2))
+	require.Len(t, d.Parents(2, false), 0)
+}
+
 func hash(i int) int {
 	return i
 }

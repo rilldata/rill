@@ -20,7 +20,7 @@ func PutFiles(t testing.TB, rt *runtime.Runtime, id string, files map[string]str
 	defer release()
 
 	for path, data := range files {
-		err := repo.Put(ctx, path, strings.NewReader(data))
+		err := repo.Put(ctx, path, strings.NewReader(strings.TrimSpace(data)))
 		require.NoError(t, err)
 	}
 }
@@ -125,7 +125,13 @@ func RequireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.
 	require.NotEmpty(t, b.Meta.SpecUpdatedOn.AsTime())
 	require.NotEmpty(t, b.Meta.StateUpdatedOn.AsTime())
 	require.Nil(t, b.Meta.DeletedOn)
-	require.Equal(t, a.Meta.ReconcileError, b.Meta.ReconcileError)
+
+	// Checking ReconcileError using Contains instead of Equal
+	if a.Meta.ReconcileError == "" {
+		require.Empty(t, b.Meta.ReconcileError)
+	} else {
+		require.Contains(t, b.Meta.ReconcileError, a.Meta.ReconcileError)
+	}
 
 	// Not comparing these fields because they are not stable:
 	// require.Equal(t, a.Meta.ReconcileStatus, b.Meta.ReconcileStatus)

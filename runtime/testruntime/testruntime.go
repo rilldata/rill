@@ -3,9 +3,9 @@ package testruntime
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	goruntime "runtime"
-	"strings"
 
 	"github.com/c2h5oh/datasize"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -69,13 +69,10 @@ func New(t TestingT) *runtime.Runtime {
 	return rt
 }
 
-// NewInstance is a convenience wrapper around NewInstanceWithOptions, using sensible defaults for most tests.
-func NewInstance(t TestingT) (*runtime.Runtime, string) {
-	return NewInstanceWithOptions(t, InstanceOptions{})
-}
-
 // InstanceOptions enables configuration of the instance options that are configurable in tests.
 type InstanceOptions struct {
+	Files                        map[string]string
+	Variables                    map[string]string
 	IngestionLimitBytes          int64
 	WatchRepo                    bool
 	StageChanges                 bool
@@ -88,6 +85,7 @@ type InstanceOptions struct {
 func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime, string) {
 	rt := New(t)
 
+	tmpDir := t.TempDir()
 	inst := &drivers.Instance{
 		OLAPConnector: "duckdb",
 		RepoConnector: "repo",
@@ -95,7 +93,7 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 			{
 				Type:   "file",
 				Name:   "repo",
-				Config: map[string]string{"dsn": t.TempDir()},
+				Config: map[string]string{"dsn": tmpDir},
 			},
 			{
 				Type:   "duckdb",
@@ -103,12 +101,19 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 				Config: map[string]string{"dsn": ""},
 			},
 		},
+		Variables:                    opts.Variables,
 		EmbedCatalog:                 true,
 		IngestionLimitBytes:          opts.IngestionLimitBytes,
 		WatchRepo:                    opts.WatchRepo,
 		StageChanges:                 opts.StageChanges,
 		ModelDefaultMaterialize:      opts.ModelDefaultMaterialize,
 		ModelMaterializeDelaySeconds: opts.ModelMaterializeDelaySeconds,
+	}
+
+	for path, data := range opts.Files {
+		abs := filepath.Join(tmpDir, path)
+		require.NoError(t, os.MkdirAll(filepath.Dir(abs), os.ModePerm))
+		require.NoError(t, os.WriteFile(abs, []byte(data), 0o644))
 	}
 
 	err := rt.CreateInstance(context.Background(), inst)
@@ -127,28 +132,26 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 	err = ctrl.WaitUntilIdle(context.Background())
 	require.NoError(t, err)
 
-	err = rt.PutFile(context.Background(), inst.ID, "rill.yaml", strings.NewReader(""), true, false)
-	require.NoError(t, err)
-
 	return rt, inst.ID
+}
+
+// NewInstance is a convenience wrapper around NewInstanceWithOptions, using defaults sensible for most tests.
+func NewInstance(t TestingT) (*runtime.Runtime, string) {
+	return NewInstanceWithOptions(t, InstanceOptions{
+		Files: map[string]string{"rill.yaml": ""},
+	})
 }
 
 // NewInstanceWithModel creates a runtime and an instance for use in tests.
 // The passed model name and SQL SELECT statement will be loaded into the instance.
 func NewInstanceWithModel(t TestingT, name, sql string) (*runtime.Runtime, string) {
-	rt, instanceID := NewInstance(t)
-
 	path := filepath.Join("models", name+".sql")
-	err := rt.PutFile(context.Background(), instanceID, path, strings.NewReader(sql), true, false)
-	require.NoError(t, err)
-
-	ctrl, err := rt.Controller(instanceID)
-	require.NoError(t, err)
-
-	err = ctrl.Reconcile(context.Background(), runtime.GlobalProjectParserName)
-	require.NoError(t, err)
-
-	return rt, instanceID
+	return NewInstanceWithOptions(t, InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			path:        sql,
+		},
+	})
 }
 
 // NewInstanceForProject creates a runtime and an instance for use in tests.
@@ -158,23 +161,24 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 	rt := New(t)
 
 	_, currentFile, _, _ := goruntime.Caller(0)
+	projectPath := filepath.Join(currentFile, "..", "testdata", name)
 
 	inst := &drivers.Instance{
 		OLAPConnector: "duckdb",
 		RepoConnector: "repo",
-		EmbedCatalog:  true,
 		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",
 				Name:   "repo",
-				Config: map[string]string{"dsn": filepath.Join(currentFile, "..", "testdata", name)},
+				Config: map[string]string{"dsn": projectPath},
 			},
 			{
 				Type:   "duckdb",
 				Name:   "duckdb",
-				Config: map[string]string{"dsn": "?access_mode=read_write"},
+				Config: map[string]string{"dsn": ""},
 			},
 		},
+		EmbedCatalog: true,
 	}
 
 	err := rt.CreateInstance(context.Background(), inst)
@@ -184,7 +188,13 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 	ctrl, err := rt.Controller(inst.ID)
 	require.NoError(t, err)
 
-	err = ctrl.Reconcile(context.Background(), runtime.GlobalProjectParserName)
+	_, err = ctrl.Get(context.Background(), runtime.GlobalProjectParserName, false)
+	require.NoError(t, err)
+
+	err = ctrl.WaitUntilReady(context.Background())
+	require.NoError(t, err)
+
+	err = ctrl.WaitUntilIdle(context.Background())
 	require.NoError(t, err)
 
 	return rt, inst.ID

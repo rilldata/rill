@@ -135,11 +135,11 @@ func (c *connection) UpdateResource(ctx context.Context, v int64, r drivers.Reso
 
 	_, err = conn.ExecContext(
 		ctx,
-		"UPDATE rill.catalogv2 SET kind=?, name=?, data=?, updated_on=?) VALUES (?, ?, ?, ?)",
-		r.Kind,
-		r.Name,
+		"UPDATE rill.catalogv2 SET data=?, updated_on=? WHERE kind=? AND name=?",
 		r.Data,
 		time.Now(),
+		r.Kind,
+		r.Name,
 	)
 	if err != nil {
 		return c.checkErr(err)

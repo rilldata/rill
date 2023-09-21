@@ -109,6 +109,7 @@ func (d DAG[K, V]) Remove(val V) {
 		} else {
 			delete(p.children, k)
 		}
+		delete(v.parents, pk)
 	}
 
 	if len(v.children) > 0 {
