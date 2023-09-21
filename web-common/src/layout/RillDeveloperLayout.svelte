@@ -3,7 +3,6 @@
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import { projectShareStore } from "@rilldata/web-common/features/dashboards/dashboard-stores.js";
   import DeployDashboardOverlay from "@rilldata/web-common/features/dashboards/workspace/DeployDashboardOverlay.svelte";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { resourcesStore } from "@rilldata/web-common/features/entity-management/resources-store";
   import { addReconcilingOverlay } from "@rilldata/web-common/features/entity-management/sync-file-system";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
@@ -12,7 +11,6 @@
   import { duplicateSourceName } from "@rilldata/web-common/features/sources/sources-store";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import { initMetrics } from "@rilldata/web-common/metrics/initMetrics";
-  import { runtimeServiceListResources } from "@rilldata/web-common/runtime-client";
   import type { ApplicationBuildMetadata } from "@rilldata/web-local/lib/application-state-stores/build-metadata";
   import { getContext, onMount } from "svelte";
   import type { Writable } from "svelte/store";
@@ -38,24 +36,7 @@
       commitHash: config.build_commit,
     });
 
-    const resourcesResp = await runtimeServiceListResources(config.instance_id);
-    for (const resource of resourcesResp.resources) {
-      switch (resource.meta.name.kind) {
-        case ResourceKind.Source:
-        case ResourceKind.Model:
-        case ResourceKind.MetricsView:
-          resourcesStore.setResource(resource);
-          break;
-
-        case ResourceKind.ProjectParser:
-          if (resource.projectParser?.state?.parseErrors) {
-            resourcesStore.setProjectParseErrors(
-              resource.projectParser?.state?.parseErrors
-            );
-          }
-          break;
-      }
-    }
+    return resourcesStore.init(config.instance_id);
   });
 
   // Bidirectional sync is disabled for now

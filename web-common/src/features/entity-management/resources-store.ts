@@ -2,6 +2,7 @@ import {
   ResourceKind,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { runtimeServiceListResources } from "@rilldata/web-common/runtime-client";
 import type {
   V1ParseError,
   V1Resource,
@@ -27,7 +28,27 @@ const { update, subscribe } = writable({
 } as ResourcesState);
 
 const resourcesStoreReducers = {
-  // TODO: set this on mount to get the initial errors
+  async init(instanceId: string) {
+    const resourcesResp = await runtimeServiceListResources(instanceId);
+    for (const resource of resourcesResp.resources) {
+      switch (resource.meta.name.kind) {
+        case ResourceKind.Source:
+        case ResourceKind.Model:
+        case ResourceKind.MetricsView:
+          this.setResource(resource);
+          break;
+
+        case ResourceKind.ProjectParser:
+          if (resource.projectParser?.state?.parseErrors) {
+            this.setProjectParseErrors(
+              resource.projectParser?.state?.parseErrors
+            );
+          }
+          break;
+      }
+    }
+  },
+
   setProjectParseErrors(parseErrors: Array<V1ParseError>) {
     const errors: Record<string, Array<V1ParseError>> = {};
     for (const parseError of parseErrors) {
