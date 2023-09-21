@@ -44,8 +44,8 @@
 
   $: modelSchema = createConnectorServiceOLAPGetTable({
     instanceId: $runtime.instanceId,
-    table: model.state.table,
-    connector: model.state.connector,
+    table: model?.state?.table,
+    connector: model?.state?.connector,
   });
 
   const createDashboardFromModel = (modelName: string) => {

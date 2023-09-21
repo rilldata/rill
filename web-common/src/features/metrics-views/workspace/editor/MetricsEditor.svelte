@@ -2,14 +2,15 @@
   import type { EditorView } from "@codemirror/view";
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
+  import { getAllErrorsForFile } from "@rilldata/web-common/features/entity-management/resources-store";
   import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import MetricsEditorContainer from "./MetricsEditorContainer.svelte";
   import { setLineStatuses } from "@rilldata/web-common/components/editor/line-status";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { useQueryClient } from "@tanstack/svelte-query";
-  import { mapReconciliationErrorsToLines } from "../../errors";
+  import { mapParseErrorsToLines } from "../../errors";
   import { createPlaceholder } from "./create-placeholder";
   import { createUpdateMetricsCallback } from "./update-metrics";
 
@@ -30,28 +31,30 @@
   /** create an updateMetrics event callback based on the queryClient
    * and metricsDefName.
    */
-  const updateMetrics = createUpdateMetricsCallback(
-    queryClient,
-    metricsDefName
+  const updateMetrics = createUpdateMetricsCallback(metricsDefName);
+
+  $: filePath = getFilePathFromNameAndType(
+    metricsDefName,
+    EntityType.MetricsDefinition
   );
+
+  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath);
+
+  $: dashboard = useDashboard($runtime.instanceId, metricsDefName);
+
+  // get the yaml blob from the file.
+  $: yaml = $fileQuery.data?.blob || "";
 
   /**
    * Handle errors.
    */
-  // get the yaml blob from the file.
-  $: fileQuery = createRuntimeServiceGetFile(
+  $: allErrors = getAllErrorsForFile(
+    queryClient,
     $runtime.instanceId,
-    getFilePathFromNameAndType(metricsDefName, EntityType.MetricsDefinition)
+    filePath
   );
 
-  $: dashboard = useDashboard($runtime.instanceId, metricsDefName);
-
-  $: yaml = $fileQuery.data?.blob || "";
-
-  $: lineBasedRuntimeErrors = mapReconciliationErrorsToLines(
-    $dashboard.data?.meta?.reconcileError,
-    yaml
-  );
+  $: lineBasedRuntimeErrors = mapParseErrorsToLines($allErrors, yaml);
   /** display the main error (the first in this array) at the bottom */
   $: mainError = [
     ...lineBasedRuntimeErrors,

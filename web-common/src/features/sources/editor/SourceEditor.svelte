@@ -7,7 +7,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { setLineStatuses } from "../../../components/editor/line-status";
-  import { mapReconciliationErrorsToLines } from "../../metrics-views/errors";
+  import { mapParseErrorsToLines } from "../../metrics-views/errors";
   import { useSourceStore } from "../sources-store";
 
   export let sourceName: string;
@@ -39,7 +39,7 @@
    * Handle errors.
    */
   $: {
-    const lineBasedReconciliationErrors = mapReconciliationErrorsToLines(
+    const lineBasedReconciliationErrors = mapParseErrorsToLines(
       $allErrors,
       yaml
     );
