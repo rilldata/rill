@@ -157,7 +157,11 @@ func (it *blobIterator) Close() error {
 	it.err = fmt.Errorf("closed iterator")
 	// drain the channel
 	if it.files != nil {
-		<-it.files
+		select {
+		case <-it.files:
+		default:
+			break
+		}
 	}
 	if it.grp != nil {
 		_ = it.grp.Wait() // wait for background calls to complete and then delete temp directory
