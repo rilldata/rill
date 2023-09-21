@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -160,7 +161,6 @@ func (it *blobIterator) Close() error {
 		select {
 		case <-it.files:
 		default:
-			break
 		}
 	}
 	if it.grp != nil {
@@ -248,6 +248,7 @@ func (it *blobIterator) init() {
 	var stop bool
 	files := make([]string, 0)
 	var sizeInBytes int64
+	var wg sync.WaitGroup
 	for i := 0; i < len(it.objects) && !stop; i++ {
 		select {
 		case <-it.ctx.Done():
@@ -260,7 +261,9 @@ func (it *blobIterator) init() {
 			// need to create file by maintaining same dir path as in glob for hivepartition support
 			filename := filepath.Join(it.tempDir, obj.obj.Key)
 			files = append(files, filename)
+			wg.Add(1)
 			g.Go(func() error {
+				defer wg.Done()
 				if err := os.MkdirAll(filepath.Dir(filename), os.ModePerm); err != nil {
 					return err
 				}
@@ -318,17 +321,21 @@ func (it *blobIterator) init() {
 				})
 				return nil
 			})
+			// check if we have downloaded enough data and can be pushed to the channel
 			if sizeInBytes >= it.opts.BatchSizeBytes {
-				it.err = g.Wait()
-				if it.err != nil {
+				wg.Wait()
+				if stop { // download failed, exit
+					it.err = g.Wait()
 					close(it.files)
 					return
 				}
 				it.files <- files
 				files = make([]string, 0)
+				sizeInBytes = 0
 			}
 		}
 	}
+	// final batch
 	it.err = g.Wait()
 	if it.err == nil && len(files) != 0 {
 		it.files <- files
