@@ -252,6 +252,7 @@ func (it *blobIterator) init() {
 	for i := 0; i < len(it.objects) && !stop; i++ {
 		select {
 		case <-it.ctx.Done():
+			it.err = it.ctx.Err()
 			close(it.files)
 			return
 		default:
@@ -325,7 +326,7 @@ func (it *blobIterator) init() {
 			if sizeInBytes >= it.opts.BatchSizeBytes {
 				wg.Wait()
 				if stop { // download failed, exit
-					it.err = g.Wait()
+					it.err = g.Wait() // get the failure error
 					close(it.files)
 					return
 				}
