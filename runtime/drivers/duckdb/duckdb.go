@@ -25,11 +25,31 @@ import (
 func init() {
 	drivers.Register("duckdb", Driver{name: "duckdb"})
 	drivers.Register("motherduck", Driver{name: "motherduck"})
+	drivers.RegisterAsConnector("duckdb", Driver{name: "duckdb"})
 	drivers.RegisterAsConnector("motherduck", Driver{name: "motherduck"})
 }
 
-// spec for duckdb as motherduck connector
 var spec = drivers.Spec{
+	DisplayName: "DuckDB",
+	Description: "Create a DuckDB SQL source.",
+	SourceProperties: []drivers.PropertySchema{
+		{
+			Key:         "sql",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "SQL",
+			Description: "DuckDB SQL query.",
+			Placeholder: "select * from read_csv('data/file.csv', header=true);",
+		},
+	},
+	ConfigProperties: []drivers.PropertySchema{
+		{
+			Key: "dsn",
+		},
+	},
+}
+
+var motherduckSpec = drivers.Spec{
 	DisplayName: "MotherDuck",
 	Description: "Import data from MotherDuck.",
 	SourceProperties: []drivers.PropertySchema{
@@ -127,6 +147,9 @@ func (d Driver) Drop(cfgMap map[string]any, logger *zap.Logger) error {
 }
 
 func (d Driver) Spec() drivers.Spec {
+	if d.name == "motherduck" {
+		return motherduckSpec
+	}
 	return spec
 }
 

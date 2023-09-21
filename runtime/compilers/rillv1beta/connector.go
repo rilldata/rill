@@ -65,6 +65,10 @@ func ExtractConnectors(ctx context.Context, projectPath string) ([]*Connector, e
 	// keeping a map to dedup connectors
 	connectorMap := make(map[key][]*runtimev1.Source)
 	for _, src := range allSources {
+		if src.Connector == "duckdb" {
+			// TODO: Until we can extract embedded connector info and assess whether they have anon access or not
+			continue
+		}
 		connector, ok := drivers.Connectors[src.Connector]
 		if !ok {
 			return nil, fmt.Errorf("no source connector defined for type %q", src.Connector)
