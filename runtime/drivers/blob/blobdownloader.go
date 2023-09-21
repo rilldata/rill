@@ -2,7 +2,6 @@ package blob
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -35,6 +34,8 @@ var _partialDownloadReaders = map[string]string{
 	".json":    "json",
 }
 
+type fileBatch []string
+
 // implements connector.FileIterator
 type blobIterator struct {
 	ctx    context.Context
@@ -44,14 +45,12 @@ type blobIterator struct {
 	bucket *blob.Bucket
 
 	// all localfiles are created in this dir
-	tempDir string
-	objects []*objectWithPlan
-	// number of files to download in background
-	batchCount      int
-	lastBatch       []string
-	grp             *errgroup.Group
-	downloadedFiles chan downloadedFile
-	err             error // any error in download
+	tempDir   string
+	objects   []*objectWithPlan
+	lastBatch []string
+	grp       *errgroup.Group
+	files     chan fileBatch
+	err       error // any error in download
 
 	// data is already fetched during planning stage itself for single file cases
 	// TODO :: refactor this to return a different iterator maybe ?
@@ -120,12 +119,11 @@ func NewIterator(ctx context.Context, bucket *blob.Bucket, opts Options, l *zap.
 
 	ctxWithCancel, cancel := context.WithCancel(ctx)
 	it := &blobIterator{
-		ctx:       ctxWithCancel,
-		cancel:    cancel,
-		bucket:    bucket,
-		opts:      &opts,
-		logger:    l,
-		lastBatch: make([]string, 0),
+		ctx:    ctxWithCancel,
+		cancel: cancel,
+		bucket: bucket,
+		opts:   &opts,
+		logger: l,
 	}
 
 	tempDir, err := os.MkdirTemp(os.TempDir(), "blob_ingestion")
@@ -156,6 +154,11 @@ func NewIterator(ctx context.Context, bucket *blob.Bucket, opts Options, l *zap.
 // Close frees the resources
 func (it *blobIterator) Close() error {
 	it.cancel()
+	it.err = fmt.Errorf("closed iterator")
+	// drain the channel
+	if it.files != nil {
+		<-it.files
+	}
 	if it.grp != nil {
 		_ = it.grp.Wait() // wait for background calls to complete
 	}
@@ -187,9 +190,9 @@ func (it *blobIterator) Next() ([]string, error) {
 		return paths, nil
 	}
 
-	if it.downloadedFiles == nil {
+	if it.files == nil {
 		// start downloading files
-		it.downloadedFiles = make(chan downloadedFile, it.batchCount)
+		it.files = make(chan fileBatch)
 		go func() {
 			it.init()
 		}()
@@ -199,26 +202,16 @@ func (it *blobIterator) Next() ([]string, error) {
 		fileutil.ForceRemoveFiles(it.lastBatch)
 	}
 
-	it.lastBatch = it.lastBatch[:0]
-	var totalSizeInBytes int64
-	var err error
-	for totalSizeInBytes < it.opts.BatchSizeBytes {
-		fileName, ok := <-it.downloadedFiles
-		if !ok { // channel is closed
-			err = it.err
-			if errors.Is(err, it.err) {
-				err = nil
-			}
-			break
-		}
-		it.lastBatch = append(it.lastBatch, fileName.fileName)
-		totalSizeInBytes += fileName.sizeInBytes
+	files, ok := <-it.files
+	if !ok {
+		it.err = io.EOF
 	}
+	it.lastBatch = files
 	// clients can make changes to slice if passing the same slice that iterator holds
 	// creating a copy since we want to delete all these files on next batch/close
 	result := make([]string, len(it.lastBatch))
 	copy(result, it.lastBatch)
-	return result, err
+	return result, nil
 }
 
 func (it *blobIterator) Size(unit drivers.ProgressUnit) (int64, bool) {
@@ -250,11 +243,16 @@ func (it *blobIterator) init() {
 	it.grp = g
 	g.SetLimit(_concurrentBlobDownloadLimit)
 	var stop bool
+	files := make([]string, 0)
+	var sizeInBytes int64
 	for i := 0; i < len(it.objects) && !stop; i++ {
 		obj := it.objects[i]
+		// we can download partial file as well but its okay to use full object size since its okay to not have exact size
+		sizeInBytes += obj.obj.Size
+		// need to create file by maintaining same dir path as in glob for hivepartition support
+		filename := filepath.Join(it.tempDir, obj.obj.Key)
+		files = append(files, filename)
 		g.Go(func() error {
-			// need to create file by maintaining same dir path as in glob for hivepartition support
-			filename := filepath.Join(it.tempDir, obj.obj.Key)
 			if err := os.MkdirAll(filepath.Dir(filename), os.ModePerm); err != nil {
 				return err
 			}
@@ -310,15 +308,23 @@ func (it *blobIterator) init() {
 				Duration:  duration,
 				Size:      size,
 			})
-			it.downloadedFiles <- downloadedFile{fileName: filename, sizeInBytes: size}
 			return nil
 		})
+		if sizeInBytes >= it.opts.BatchSizeBytes {
+			it.err = g.Wait()
+			if it.err != nil {
+				close(it.files)
+				return
+			}
+			it.files <- files
+			files = make([]string, 0)
+		}
 	}
 	it.err = g.Wait()
-	if it.err == nil { // all files downloaded
-		it.err = io.EOF
+	if it.err == nil && len(files) != 0 {
+		it.files <- files
 	}
-	close(it.downloadedFiles)
+	close(it.files)
 }
 
 // todo :: ideally planner should take ownership of the bucket and return an iterator with next returning objectWithPlan
@@ -348,7 +354,6 @@ func (it *blobIterator) plan() ([]*objectWithPlan, error) {
 		if err := it.opts.validateLimits(size, 1, 1); err != nil {
 			return nil, err
 		}
-		it.batchCount = 1
 		return planner.items(), nil
 	}
 	it.logger.Info("planner started", zap.String("glob", it.opts.GlobPattern), zap.String("prefix", listOpts.Prefix), observability.ZapCtx(it.ctx))
@@ -380,16 +385,9 @@ func (it *blobIterator) plan() ([]*objectWithPlan, error) {
 		return nil, fmt.Errorf("no files found for glob pattern %q", it.opts.GlobPattern)
 	}
 
-	if size < it.opts.BatchSizeBytes { // need to ingest complete batch in one go
-		it.batchCount = _concurrentBlobDownloadLimit
-	} else {
-		// may be just keep it some factor of _concurrentBlobDownloadLimit ?
-		it.batchCount = int(it.opts.BatchSizeBytes/(size/int64(matchCount))) + 1
-	}
-
 	it.logger.Info("planner completed", zap.String("glob", it.opts.GlobPattern), zap.Int64("listed_objects", fetched),
-		zap.Int("matched", matchCount), zap.Int64("bytes_matched", size),
-		zap.Int64("batch_size", it.opts.BatchSizeBytes), zap.Int("batch_count", it.batchCount), observability.ZapCtx(it.ctx))
+		zap.Int("matched", matchCount), zap.Int64("bytes_matched", size), zap.Int64("batch_size", it.opts.BatchSizeBytes),
+		observability.ZapCtx(it.ctx))
 	return items, nil
 }
 
@@ -427,9 +425,4 @@ func downloadObject(ctx context.Context, bucket *blob.Bucket, objpath string, fi
 
 	_, err = io.Copy(file, rc)
 	return err
-}
-
-type downloadedFile struct {
-	fileName    string // file name with path
-	sizeInBytes int64
 }
