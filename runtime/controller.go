@@ -207,6 +207,8 @@ func (c *Controller) Run(ctx context.Context) error {
 			if err != nil {
 				loopErr = err
 				stop = true
+			} else {
+				resetTimelineTimer()
 			}
 			c.checkIdle()
 			c.mu.Unlock()
