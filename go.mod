@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/storage v1.31.0
 	github.com/AlecAivazis/survey/v2 v2.3.6
 	github.com/Andrew-M-C/go.jsonvalue v1.3.4
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.7.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.3.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.1.0
 	github.com/Masterminds/sprig/v3 v3.2.3
@@ -89,7 +90,6 @@ require (
 )
 
 require (
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.7.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.3.0 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect

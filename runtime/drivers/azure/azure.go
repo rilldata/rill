@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
@@ -218,7 +220,27 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 
 	iter, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
 	if err != nil {
-		return nil, err
+		var respErr *azcore.ResponseError
+		errors.As(err, &respErr)
+		if respErr.RawResponse.StatusCode == http.StatusForbidden && respErr.ErrorCode == "AuthorizationPermissionMismatch" {
+			c.logger.Named("Console").Warn("Azure Blob Storage account does not have permission to list blobs. Falling back to anonymous access.")
+			client, err = c.createAnonymousClient(ctx, conf)
+			if err != nil {
+				return nil, err
+			}
+
+			bucketObj, err = azureblob.OpenBucket(ctx, client, nil)
+			if err != nil {
+				return nil, err
+			}
+
+			iter, err = rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
+		}
+
+		// check again
+		if errors.As(err, &respErr) && respErr.StatusCode == http.StatusForbidden {
+			return nil, drivers.NewPermissionDeniedError(fmt.Sprintf("failed to create iterator: %v", respErr))
+		}
 	}
 
 	return iter, nil
@@ -274,7 +296,21 @@ func (c *Connection) getClient(ctx context.Context, conf *sourceProperties) (*co
 		connectionString = c.config.ConnectionString
 	}
 
-	if accountName != "" {
+	if conf.AccountName != "" {
+		accountName = conf.AccountName
+	} else {
+		conf.AccountName = accountName
+	}
+
+	if connectionString != "" {
+		var err error
+		client, err := container.NewClientFromConnectionString(connectionString, conf.url.Host, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed container.NewClientFromConnectionString: %w", err)
+		}
+
+		return client, nil
+	} else if accountName != "" {
 		svcURL := fmt.Sprintf("https://%s.blob.core.windows.net", accountName)
 		containerURL, err := url.JoinPath(svcURL, conf.url.Host)
 		if err != nil {
@@ -326,27 +362,22 @@ func (c *Connection) getClient(ctx context.Context, conf *sourceProperties) (*co
 
 			return client, nil
 		}
-	} else if connectionString != "" {
-		var err error
-		client, err := container.NewClientFromConnectionString(connectionString, conf.url.Host, nil)
-		if err != nil {
-			return nil, fmt.Errorf("failed container.NewClientFromConnectionString: %w", err)
-		}
-
-		return client, nil
-	} else if conf.AccountName != "" {
-		svcURL := fmt.Sprintf("https://%s.blob.core.windows.net", conf.AccountName)
-		containerURL, err := url.JoinPath(svcURL, conf.url.Host)
-		if err != nil {
-			return nil, err
-		}
-		client, err := container.NewClientWithNoCredential(containerURL, nil)
-		if err != nil {
-			return nil, fmt.Errorf("failed container.NewClientWithNoCredential: %w", err)
-		}
-
-		return client, nil
 	} else {
 		return nil, drivers.NewPermissionDeniedError(fmt.Sprintf("can't access remote host without credentials, err:%v", errors.New("no credentials provided")))
 	}
+}
+
+// Create anonymous azure blob client.
+func (c *Connection) createAnonymousClient(ctx context.Context, conf *sourceProperties) (*container.Client, error) {
+	svcURL := fmt.Sprintf("https://%s.blob.core.windows.net", conf.AccountName)
+	containerURL, err := url.JoinPath(svcURL, conf.url.Host)
+	if err != nil {
+		return nil, err
+	}
+	client, err := container.NewClientWithNoCredential(containerURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed container.NewClientWithNoCredential: %w", err)
+	}
+
+	return client, nil
 }
