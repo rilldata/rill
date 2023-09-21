@@ -27,6 +27,7 @@ var ErrResourceNotFound = errors.New("controller: resource not found")
 var ErrResourceAlreadyExists = errors.New("controller: resource already exists")
 
 // CatalogStore is implemented by drivers capable of storing catalog info for a specific instance.
+// Implementations should treat resource kinds as case sensitive, but resource names as case insensitive.
 type CatalogStore interface {
 	NextControllerVersion(ctx context.Context) (int64, error)
 	CheckControllerVersion(ctx context.Context, v int64) error

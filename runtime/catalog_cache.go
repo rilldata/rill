@@ -20,6 +20,7 @@ import (
 //
 // catalogCache additionally provides various indexes of the resources: a DAG, map of soft-deleted resources, map of renamed resources.
 // It is not thread-safe, but it protects against split-brain scenarios by erroring if the underlying store is mutated by another catalog cache.
+// The catalogCache treats resource names as case insensitive.
 type catalogCache struct {
 	ctrl    *Controller
 	store   drivers.CatalogStore
@@ -522,9 +523,9 @@ func (c *catalogCache) resetEvents() {
 	c.events = make(map[string]catalogEvent)
 }
 
-// nameStr returns a string representation of a resource name.
+// nameStr returns a normalized string representation of a resource name.
 func nameStr(r *runtimev1.ResourceName) string {
-	return fmt.Sprintf("%s/%s", r.Kind, r.Name)
+	return fmt.Sprintf("%s/%s", r.Kind, strings.ToLower(r.Name))
 }
 
 // resourceFromDriver converts a drivers.Resource to a proto resource.

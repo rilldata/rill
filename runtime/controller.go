@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -823,7 +824,7 @@ func (c *Controller) isReconcilerForResource(ctx context.Context, n *runtimev1.R
 	if inv == nil {
 		return false
 	}
-	return proto.Equal(inv.name, n)
+	return inv.name.Kind == n.Kind && strings.EqualFold(inv.name.Name, n.Name) // NOTE: More efficient, but equivalent to: nameStr(inv.name) == nameStr(n)
 }
 
 // safeMutateRenamed makes it safe to mutate a resource that's currently being renamed by changing the rename to a delete+create.
@@ -850,7 +851,9 @@ func (c *Controller) safeMutateRenamed(n *runtimev1.ResourceName) error {
 
 	_, err = c.catalog.get(renamedFrom, true, false)
 	if err == nil {
-		// A new resource with the name of the old one has been created in the mean time, so no delete is necessary (reconciler will bring to desired state).
+		// Either a new resource with the name of the old one has been created in the mean time,
+		// or the rename just changed the casing of the name.
+		// In either case, no delete is necessary (reconciler will bring to desired state).
 		return nil
 	}
 
@@ -874,7 +877,8 @@ func (c *Controller) safeMutateRenamed(n *runtimev1.ResourceName) error {
 // safeRename resolves collisions by changing some renames to deletes+creates, which works because processQueue ensures deletes are run before creates and renames.
 // It must be called while c.mu is held.
 func (c *Controller) safeRename(from, to *runtimev1.ResourceName) error {
-	// Just to be safe
+	// Just to be safe.
+	// NOTE: Not a case insensitive comparison, since we actually want to rename in cases where the casing changed.
 	if proto.Equal(from, to) {
 		return nil
 	}
@@ -886,7 +890,7 @@ func (c *Controller) safeRename(from, to *runtimev1.ResourceName) error {
 		if err != nil {
 			return fmt.Errorf("internal: failed to get renamed resource %v: %w", n, err)
 		}
-		if proto.Equal(to, r.Meta.RenamedFrom) {
+		if nameStr(to) == nameStr(r.Meta.RenamedFrom) {
 			collision = true
 			break
 		}
@@ -897,8 +901,17 @@ func (c *Controller) safeRename(from, to *runtimev1.ResourceName) error {
 		return c.catalog.rename(from, to)
 	}
 
-	// Collision, do a create+delete instead of a rename
-	// (since creation might fail if the name is taken, whereas the delete is almost certain to succeed)
+	// There's a collision.
+
+	// Handle the case where a resource was renamed from e.g. Aa to AA, and then while reconciling, is again renamed from AA to aA.
+	// In this case, we still do a normal rename and rely on the reconciler to sort it out.
+	if nameStr(from) == nameStr(to) {
+		return c.catalog.rename(from, to)
+	}
+
+	// Do a create+delete instead of a rename.
+	// This is safe because processQueue ensures deletes are run before creates.
+	// NOTE: Doing the create first, since creation might fail if the name is taken, whereas the delete is almost certain to succeed.
 	r, err := c.catalog.get(from, true, false)
 	if err != nil {
 		return err
