@@ -26,7 +26,7 @@ const (
 )
 
 // GlobalProjectParserName is the name of the instance-global project parser resource that is created for each new instance.
-var GlobalProjectParserName = &runtimev1.ResourceName{Kind: ResourceKindProjectParser, Name: "project_parser"}
+var GlobalProjectParserName = &runtimev1.ResourceName{Kind: ResourceKindProjectParser, Name: "parser"}
 
 // Instances returns all instances managed by the runtime.
 func (r *Runtime) Instances(ctx context.Context) ([]*drivers.Instance, error) {

@@ -205,14 +205,15 @@ func (a *App) IsProjectInit() bool {
 func (a *App) Reconcile(strict bool) error {
 	a.Logger.Named("console").Infof("Hydrating project '%s'", a.ProjectPath)
 
-	err := a.Runtime.WaitUntilIdle(a.Context, a.Instance.ID)
-	if a.Context.Err() != nil {
-		a.Logger.Errorf("Hydration canceled")
-		return nil
-	}
-	if err != nil {
-		return err
-	}
+	// TODO: Add back when we can avoid waiting for the project parser to finish
+	// err := a.Runtime.WaitUntilIdle(a.Context, a.Instance.ID)
+	// if a.Context.Err() != nil {
+	// 	a.Logger.Errorf("Hydration canceled")
+	// 	return nil
+	// }
+	// if err != nil {
+	// 	return err
+	// }
 
 	controller, err := a.Runtime.Controller(a.Instance.ID)
 	if err != nil {

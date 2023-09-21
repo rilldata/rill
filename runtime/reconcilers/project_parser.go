@@ -140,7 +140,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	}
 
 	// Do the actual reconciliation of parsed resources and catalog resources
-	err = r.reconcileParser(ctx, inst, self, parser, nil)
+	err = r.reconcileParser(ctx, inst, self, parser, nil, nil)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
@@ -168,7 +168,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 		// NOTE: Parse errors are not returned here (they're stored in p.Errors). Errors returned from Reparse are mainly file system errors.
 		diff, err := parser.Reparse(ctx, changedPaths)
 		if err == nil {
-			err = r.reconcileParser(ctx, inst, self, parser, diff)
+			err = r.reconcileParser(ctx, inst, self, parser, diff, changedPaths)
 		}
 		if err != nil {
 			reparseErr = err
@@ -193,7 +193,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 }
 
 // reconcileParser reconciles a parser's output with the current resources in the catalog.
-func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *drivers.Instance, self *runtimev1.Resource, parser *compilerv1.Parser, diff *compilerv1.Diff) error {
+func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *drivers.Instance, self *runtimev1.Resource, parser *compilerv1.Parser, diff *compilerv1.Diff, changedPaths []string) error {
 	// Update state from rill.yaml and .env
 	if diff == nil || diff.ModifiedRillYAML || diff.ModifiedDotEnv {
 		err := r.reconcileProjectConfig(ctx, parser)
@@ -208,6 +208,19 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 	err := r.C.UpdateState(ctx, self.Meta.Name, self)
 	if err != nil {
 		return err
+	}
+
+	// Log parse errors
+	if diff == nil {
+		for _, e := range parser.Errors {
+			r.C.Logger.Error("Parser error", slog.String("path", e.FilePath), slog.String("err", e.Message))
+		}
+	} else {
+		for _, e := range parser.Errors {
+			if slices.Contains(changedPaths, e.FilePath) {
+				r.C.Logger.Error("Parser error", slog.String("path", e.FilePath), slog.String("err", e.Message))
+			}
+		}
 	}
 
 	// Set an error without returning to mark if there are parse errors (if not, force error to nil in case there previously were parse errors)
