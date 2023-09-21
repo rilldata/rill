@@ -174,6 +174,7 @@ func (c *Controller) Run(ctx context.Context) error {
 			d = time.Nanosecond
 		}
 
+		d += time.Second // Add a second to avoid rapid cancellations due to micro differences in schedule time
 		timelineTimer.Reset(d)
 	}
 

@@ -367,12 +367,16 @@ func (c *catalogCache) updateError(name *runtimev1.ResourceName, reconcileErr er
 	if err != nil {
 		return err
 	}
-	// NOTE: No need to unlink/link because no indexed fields are edited.
-	if reconcileErr == nil {
-		r.Meta.ReconcileError = ""
-	} else {
-		r.Meta.ReconcileError = reconcileErr.Error()
+	var errStr string
+	if reconcileErr != nil {
+		errStr = reconcileErr.Error()
 	}
+	if r.Meta.ReconcileError == errStr {
+		// Since bumping the state version usually invalidates derived things, we don't want to do it redundantly.
+		return nil
+	}
+	// NOTE: No need to unlink/link because no indexed fields are edited.
+	r.Meta.ReconcileError = errStr
 	r.Meta.Version++
 	r.Meta.StateVersion++
 	r.Meta.StateUpdatedOn = timestamppb.Now()
