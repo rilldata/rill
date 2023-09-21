@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -110,11 +111,6 @@ func (f *fileIterator) Close() error {
 	return os.Remove(f.tempFilePath)
 }
 
-// HasNext implements drivers.FileIterator.
-func (f *fileIterator) HasNext() bool {
-	return !f.downloaded
-}
-
 // KeepFilesUntilClose implements drivers.FileIterator.
 func (f *fileIterator) KeepFilesUntilClose(keepFilesUntilClose bool) {
 }
@@ -122,6 +118,9 @@ func (f *fileIterator) KeepFilesUntilClose(keepFilesUntilClose bool) {
 // Next implements drivers.FileIterator.
 // TODO :: currently it downloads all records in a single file. Need to check if it is efficient to ingest a single file with size in tens of GBs or more.
 func (f *fileIterator) Next() ([]string, error) {
+	if f.downloaded {
+		return nil, io.EOF
+	}
 	// storage API not available so can't read as arrow records. Read results row by row and dump in a json file.
 	if !f.bqIter.IsAccelerated() {
 		f.logger.Info("downloading results in json file", observability.ZapCtx(f.ctx))
