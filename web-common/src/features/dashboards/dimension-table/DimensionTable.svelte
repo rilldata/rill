@@ -23,7 +23,7 @@ TableCells – the cell contents.
   export let rows: DimensionTableRow[];
   export let columns: VirtualizedTableColumns[];
   export let selectedValues: Array<unknown> = [];
-  export let selectedIndex2: number[] = [];
+  // export let selectedIndex2: number[] = [];
 
   export let sortByColumn: string;
   export let sortAscending: boolean;
