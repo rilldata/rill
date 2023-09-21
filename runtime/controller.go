@@ -1168,7 +1168,7 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 	c.invocations[nameStr(n)] = inv
 
 	// Log invocation
-	logArgs := []any{slog.String("name", n.Name), slog.String("kind", n.Kind)}
+	logArgs := []any{slog.String("name", n.Name), slog.String("kind", unqualifiedKind(n.Kind))}
 	if inv.isDelete {
 		logArgs = append(logArgs, slog.Bool("deleted", inv.isDelete))
 	}
@@ -1218,7 +1218,7 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 	delete(c.invocations, nameStr(inv.name))
 
 	// Log result
-	logArgs := []any{slog.String("name", inv.name.Name), slog.String("kind", inv.name.Kind)}
+	logArgs := []any{slog.String("name", inv.name.Name), slog.String("kind", unqualifiedKind(inv.name.Kind))}
 	logError := false
 	if inv.cancelled {
 		logArgs = append(logArgs, slog.Bool("cancelled", inv.cancelled))
@@ -1231,9 +1231,9 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 		logError = true
 	}
 	if logError {
-		c.Logger.Error("Finished reconciling resource", logArgs...)
+		c.Logger.Error("Reconciled resource", logArgs...)
 	} else {
-		c.Logger.Info("Finished reconciling resource", logArgs...)
+		c.Logger.Info("Reconciled resource", logArgs...)
 	}
 
 	r, err := c.catalog.get(inv.name, true, false)
@@ -1405,4 +1405,14 @@ func invocationFromContext(ctx context.Context) *invocation {
 		return inv.(*invocation)
 	}
 	return nil
+}
+
+// unqualifiedKind removes the protobuf package name from a kind.
+// E.g. "rill.runtime.v1.Source" -> "Source".
+func unqualifiedKind(k string) string {
+	idx := strings.LastIndex(k, ".")
+	if idx >= 0 {
+		return k[idx+1:]
+	}
+	return k
 }
