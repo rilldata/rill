@@ -160,7 +160,7 @@ func (it *blobIterator) Close() error {
 		<-it.files
 	}
 	if it.grp != nil {
-		_ = it.grp.Wait() // wait for background calls to complete
+		_ = it.grp.Wait() // wait for background calls to complete and then delete temp directory
 	}
 	// remove temp dir since recursive paths created have to be removed as well
 	var err error
@@ -245,78 +245,84 @@ func (it *blobIterator) init() {
 	files := make([]string, 0)
 	var sizeInBytes int64
 	for i := 0; i < len(it.objects) && !stop; i++ {
-		obj := it.objects[i]
-		// we can download partial file as well but its okay to use full object size since its okay to not have exact size
-		sizeInBytes += obj.obj.Size
-		// need to create file by maintaining same dir path as in glob for hivepartition support
-		filename := filepath.Join(it.tempDir, obj.obj.Key)
-		files = append(files, filename)
-		g.Go(func() error {
-			if err := os.MkdirAll(filepath.Dir(filename), os.ModePerm); err != nil {
-				return err
-			}
-
-			file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, os.ModePerm)
-			if err != nil {
-				return err
-			}
-			defer file.Close()
-
-			ext := filepath.Ext(obj.obj.Key)
-			partialReader, isPartialDownloadSupported := _partialDownloadReaders[ext]
-			downloadFull := obj.full || !isPartialDownloadSupported
-
-			// Collect metrics of download size and time
-			startTime := time.Now()
-			if downloadFull {
-				// download full file
-				err = downloadObject(grpCtx, it.bucket, obj.obj.Key, file)
-			} else {
-				// download partial file
-				// check if, for smaller size we can download entire file
-				switch partialReader {
-				case "parquet":
-					err = downloadParquet(grpCtx, it.bucket, obj.obj, obj.extractOption, file)
-				case "csv":
-					err = downloadText(grpCtx, it.bucket, obj.obj, &textExtractOption{extractOption: obj.extractOption, hasCSVHeader: true}, file)
-				case "json":
-					err = downloadText(grpCtx, it.bucket, obj.obj, &textExtractOption{extractOption: obj.extractOption, hasCSVHeader: false}, file)
-				default:
-					// should not reach here
-					panic(fmt.Errorf("partial download not supported for extension %q", ext))
+		select {
+		case <-it.ctx.Done():
+			close(it.files)
+			return
+		default:
+			obj := it.objects[i]
+			// we can download partial file as well but its okay to use full object size since its okay to not have exact size
+			sizeInBytes += obj.obj.Size
+			// need to create file by maintaining same dir path as in glob for hivepartition support
+			filename := filepath.Join(it.tempDir, obj.obj.Key)
+			files = append(files, filename)
+			g.Go(func() error {
+				if err := os.MkdirAll(filepath.Dir(filename), os.ModePerm); err != nil {
+					return err
 				}
-			}
 
-			if err != nil {
-				// found an error stop triggering download of other files
-				stop = true
-				return err
-			}
+				file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, os.ModePerm)
+				if err != nil {
+					return err
+				}
+				defer file.Close()
 
-			duration := time.Since(startTime)
-			size := obj.obj.Size
-			st, err := file.Stat()
-			if err == nil {
-				size = st.Size()
-			}
-			it.logger.Info("download complete", zap.String("object", obj.obj.Key), zap.Duration("duration", duration), observability.ZapCtx(it.ctx))
-			drivers.RecordDownloadMetrics(grpCtx, &drivers.DownloadMetrics{
-				Connector: "blob",
-				Ext:       ext,
-				Partial:   !downloadFull,
-				Duration:  duration,
-				Size:      size,
+				ext := filepath.Ext(obj.obj.Key)
+				partialReader, isPartialDownloadSupported := _partialDownloadReaders[ext]
+				downloadFull := obj.full || !isPartialDownloadSupported
+
+				// Collect metrics of download size and time
+				startTime := time.Now()
+				if downloadFull {
+					// download full file
+					err = downloadObject(grpCtx, it.bucket, obj.obj.Key, file)
+				} else {
+					// download partial file
+					// check if, for smaller size we can download entire file
+					switch partialReader {
+					case "parquet":
+						err = downloadParquet(grpCtx, it.bucket, obj.obj, obj.extractOption, file)
+					case "csv":
+						err = downloadText(grpCtx, it.bucket, obj.obj, &textExtractOption{extractOption: obj.extractOption, hasCSVHeader: true}, file)
+					case "json":
+						err = downloadText(grpCtx, it.bucket, obj.obj, &textExtractOption{extractOption: obj.extractOption, hasCSVHeader: false}, file)
+					default:
+						// should not reach here
+						panic(fmt.Errorf("partial download not supported for extension %q", ext))
+					}
+				}
+
+				if err != nil {
+					// found an error stop triggering download of other files
+					stop = true
+					return err
+				}
+
+				duration := time.Since(startTime)
+				size := obj.obj.Size
+				st, err := file.Stat()
+				if err == nil {
+					size = st.Size()
+				}
+				it.logger.Info("download complete", zap.String("object", obj.obj.Key), zap.Duration("duration", duration), observability.ZapCtx(it.ctx))
+				drivers.RecordDownloadMetrics(grpCtx, &drivers.DownloadMetrics{
+					Connector: "blob",
+					Ext:       ext,
+					Partial:   !downloadFull,
+					Duration:  duration,
+					Size:      size,
+				})
+				return nil
 			})
-			return nil
-		})
-		if sizeInBytes >= it.opts.BatchSizeBytes {
-			it.err = g.Wait()
-			if it.err != nil {
-				close(it.files)
-				return
+			if sizeInBytes >= it.opts.BatchSizeBytes {
+				it.err = g.Wait()
+				if it.err != nil {
+					close(it.files)
+					return
+				}
+				it.files <- files
+				files = make([]string, 0)
 			}
-			it.files <- files
-			files = make([]string, 0)
 		}
 	}
 	it.err = g.Wait()
