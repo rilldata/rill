@@ -295,7 +295,7 @@
     if (!measureNames.includes(columnName)) return;
 
     if (columnName === leaderboardMeasureName) {
-      metricsExplorerStore.toggleSortDirection(metricViewName);
+      metricsExplorerStore.toggleSort(metricViewName);
     } else {
       metricsExplorerStore.setLeaderboardMeasureName(
         metricViewName,
