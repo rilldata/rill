@@ -1,8 +1,11 @@
 // Mock apis
 
-import { getBlock } from "../time-dimension-details/util";
-import type { PivotColumnSet, PivotConfig, PivotDimension } from "./types";
-import { range } from "./util";
+import type {
+  PivotColumnSet,
+  PivotConfig,
+  PivotDimension,
+} from "@rilldata/web-common/features/dashboards/pivot/types";
+import { range } from "../util";
 
 function getDimensionCardinality(dim: string) {
   return parseInt(dim.split("Dim").at(1));
