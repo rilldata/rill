@@ -9,7 +9,6 @@
   import { Divider, MenuItem } from "@rilldata/web-common/components/menu";
   import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import {
@@ -26,13 +25,9 @@
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import {
-    createRuntimeServicePutFileAndReconcile,
-    createRuntimeServiceRefreshAndReconcile,
     getRuntimeServiceGetCatalogEntryQueryKey,
-    V1ReconcileResponse,
     V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
-  import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -72,7 +67,6 @@
   $: dashboardNames = useDashboardFileNames($runtime.instanceId);
 
   const createDashboardFromSourceMutation = useCreateDashboardFromSource();
-  const createFileMutation = createRuntimeServicePutFileAndReconcile();
 
   const handleDeleteSource = async (tableName: string) => {
     await deleteFileArtifact(
@@ -88,12 +82,10 @@
     try {
       const previousActiveEntity = $appScreen?.type;
       const newModelName = await createModelFromSource(
-        queryClient,
         runtimeInstanceId,
         $modelNames.data,
         sourceName,
-        embedded ? `"${path}"` : sourceName,
-        $createFileMutation
+        embedded ? `"${path}"` : sourceName
       );
 
       behaviourEvent.fireNavigationEvent(
@@ -121,14 +113,13 @@
       {
         data: {
           instanceId: $runtime.instanceId,
-          sourceName,
+          sourceResource: $sourceQuery.data,
           newModelName,
           newDashboardName,
         },
       },
       {
-        onSuccess: async (resp: V1ReconcileResponse) => {
-          fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
+        onSuccess: async () => {
           goto(`/dashboard/${newDashboardName}`);
           const previousActiveEntity = $appScreen?.type;
           behaviourEvent.fireNavigationEvent(
@@ -138,7 +129,6 @@
             previousActiveEntity,
             MetricsEventScreenName.Dashboard
           );
-          return invalidateAfterReconcile(queryClient, runtimeInstanceId, resp);
         },
         onSettled: () => {
           overlay.set(null);

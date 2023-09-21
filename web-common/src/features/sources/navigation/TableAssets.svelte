@@ -2,11 +2,8 @@
   import { page } from "$app/stores";
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
-
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import { useSourceFileNames } from "@rilldata/web-common/features/sources/selectors";
-  import { createRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
   import { appScreen } from "../../../layout/app-store";
@@ -29,9 +26,6 @@
 
   $: sourceNames = useSourceFileNames($runtime.instanceId);
   $: modelNames = useModelFileNames($runtime.instanceId);
-  const createModelMutation = createRuntimeServicePutFileAndReconcile();
-
-  const queryClient = useQueryClient();
 
   let showTables = true;
 
@@ -50,12 +44,10 @@
 
   const queryHandler = async (tableName: string) => {
     await createModelFromSource(
-      queryClient,
       $runtime.instanceId,
       $modelNames.data,
       tableName,
-      tableName,
-      $createModelMutation
+      tableName
     );
     // TODO: fire telemetry
   };

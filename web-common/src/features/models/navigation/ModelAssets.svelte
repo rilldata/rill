@@ -5,8 +5,6 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import { useSourceFileNames } from "@rilldata/web-common/features/sources/selectors";
-  import { createRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import NavigationEntry from "../../../layout/navigation/NavigationEntry.svelte";
@@ -21,19 +19,10 @@
   $: sourceNames = useSourceFileNames($runtime.instanceId);
   $: modelNames = useModelFileNames($runtime.instanceId);
 
-  const queryClient = useQueryClient();
-
-  const createModelMutation = createRuntimeServicePutFileAndReconcile();
-
   let showModels = true;
 
   async function handleAddModel() {
-    await createModel(
-      queryClient,
-      $runtime.instanceId,
-      getName("model", $modelNames.data),
-      $createModelMutation
-    );
+    await createModel($runtime.instanceId, getName("model", $modelNames.data));
     // if the models are not visible in the assets list, show them.
     if (!showModels) {
       showModels = true;
