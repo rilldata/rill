@@ -13,7 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/athena/types"
 	s3v2 "github.com/aws/aws-sdk-go-v2/service/s3"
 	s3v2types "github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/eapache/go-resiliency/retrier"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -311,22 +310,28 @@ func (c *Connection) unload(ctx context.Context, client *athena.Client, cfg aws.
 		return err
 	}
 
-	r := retrier.New(retrier.ConstantBackoff(int(5*time.Minute/time.Second), time.Second), nil) // 5 minutes timeout
-	return r.RunCtx(ctx, func(ctx context.Context) error {
-		status, err := client.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{
-			QueryExecutionId: athenaExecution.QueryExecutionId,
-		})
-		if err != nil {
-			return err
-		}
+	tm := time.NewTimer(5 * time.Minute)
+	defer tm.Stop()
+	for {
+		select {
+		case <-tm.C:
+			fmt.Errorf("Athena ingestion timeout")
+		default:
+			status, err := client.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{
+				QueryExecutionId: athenaExecution.QueryExecutionId,
+			})
+			if err != nil {
+				return err
+			}
 
-		state := status.QueryExecution.Status.State
+			state := status.QueryExecution.Status.State
 
-		if state == types.QueryExecutionStateSucceeded || state == types.QueryExecutionStateCancelled {
-			return nil
-		} else if state == types.QueryExecutionStateFailed {
-			return fmt.Errorf("Athena query execution failed %s", *status.QueryExecution.Status.AthenaError.ErrorMessage)
+			if state == types.QueryExecutionStateSucceeded || state == types.QueryExecutionStateCancelled {
+				return nil
+			} else if state == types.QueryExecutionStateFailed {
+				return fmt.Errorf("Athena query execution failed %s", *status.QueryExecution.Status.AthenaError.ErrorMessage)
+			}
 		}
-		return fmt.Errorf("Athena ingestion timeout")
-	})
+		time.Sleep(time.Second)
+	}
 }
