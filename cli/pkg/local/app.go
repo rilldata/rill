@@ -66,7 +66,10 @@ type App struct {
 }
 
 func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string, client activity.Client) (*App, error) {
+	// Setup logger
 	logger, cleanupFn := initLogger(verbose, logFormat)
+	sugarLogger := logger.Sugar()
+
 	// Init Prometheus telemetry
 	shutdown, err := observability.Start(ctx, logger, &observability.Options{
 		MetricsExporter: observability.PrometheusExporter,
@@ -133,6 +136,9 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 		olapCfg["pool_size"] = "4"
 	}
 
+	// Print start status – need to do it before creating the instance, since doing so immediately starts the controller
+	sugarLogger.Named("console").Infof("Hydrating project '%s'", projectPath)
+
 	// Create instance with its repo set to the project directory
 	inst := &drivers.Instance{
 		ID:            DefaultInstanceID,
@@ -166,7 +172,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 		Context:               ctx,
 		Runtime:               rt,
 		Instance:              inst,
-		Logger:                logger.Sugar(),
+		Logger:                sugarLogger,
 		BaseLogger:            logger,
 		Version:               ver,
 		Verbose:               verbose,
@@ -203,8 +209,6 @@ func (a *App) IsProjectInit() bool {
 }
 
 func (a *App) Reconcile(strict bool) error {
-	a.Logger.Named("console").Infof("Hydrating project '%s'", a.ProjectPath)
-
 	// TODO: Add back when we can avoid waiting for the project parser to finish
 	// err := a.Runtime.WaitUntilIdle(a.Context, a.Instance.ID)
 	// if a.Context.Err() != nil {
