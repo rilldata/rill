@@ -52,7 +52,6 @@
   const queryClient = useQueryClient();
 
   const createDashboard = createRuntimeServicePutFileAndReconcile();
-  const deleteDashboard = createRuntimeServiceDeleteFileAndReconcile();
 
   let showMetricsDefs = true;
 
@@ -143,12 +142,9 @@
       dashboardName
     );
     await deleteFileArtifact(
-      queryClient,
       instanceId,
       dashboardName,
       EntityType.MetricsDefinition,
-      $deleteDashboard,
-      $appScreen,
       $dashboardNames.data
     );
 

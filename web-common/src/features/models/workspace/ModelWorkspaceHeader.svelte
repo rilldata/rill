@@ -72,12 +72,10 @@
       const toName = e.target.value;
       const entityType = EntityType.Model;
       await renameFileArtifact(
-        queryClient,
         runtimeInstanceId,
         modelName,
         toName,
-        entityType,
-        $renameModel
+        entityType
       );
       goto(getRouteFromName(toName, entityType), {
         replaceState: true,

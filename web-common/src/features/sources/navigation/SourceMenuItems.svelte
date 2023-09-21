@@ -26,7 +26,6 @@
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import {
-    createRuntimeServiceDeleteFileAndReconcile,
     createRuntimeServicePutFileAndReconcile,
     createRuntimeServiceRefreshAndReconcile,
     getRuntimeServiceGetCatalogEntryQueryKey,
@@ -60,7 +59,11 @@
   $: source = $sourceQuery.data?.source;
   $: embedded = false; // TODO: remove embedded support
   $: path = source?.spec?.properties?.path;
-  $: sourceHasError = getFileHasErrors(runtimeInstanceId, filePath);
+  $: sourceHasError = getFileHasErrors(
+    queryClient,
+    runtimeInstanceId,
+    filePath
+  );
 
   $: sourceFromYaml = useSourceFromYaml($runtime.instanceId, filePath);
 
@@ -68,20 +71,14 @@
   $: modelNames = useModelFileNames($runtime.instanceId);
   $: dashboardNames = useDashboardFileNames($runtime.instanceId);
 
-  const deleteSource = createRuntimeServiceDeleteFileAndReconcile();
-  const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
-  const createEntityMutation = createRuntimeServicePutFileAndReconcile();
   const createDashboardFromSourceMutation = useCreateDashboardFromSource();
   const createFileMutation = createRuntimeServicePutFileAndReconcile();
 
   const handleDeleteSource = async (tableName: string) => {
     await deleteFileArtifact(
-      queryClient,
       runtimeInstanceId,
       tableName,
       EntityType.Table,
-      $deleteSource,
-      $appScreen,
       $sourceNames.data
     );
     toggleMenu();
@@ -164,9 +161,6 @@
         connector,
         tableName,
         runtimeInstanceId,
-        $refreshSourceMutation,
-        $createEntityMutation,
-        queryClient,
         connector === "s3" || connector === "gcs" || connector === "https"
           ? path
           : sourceName

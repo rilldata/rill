@@ -50,12 +50,10 @@
       }
       try {
         await renameFileArtifact(
-          queryClient,
           runtimeInstanceId,
           currentAssetName,
           values.newName,
-          entityType,
-          $renameAsset
+          entityType
         );
         goto(getRouteFromName(values.newName, entityType), {
           replaceState: true,

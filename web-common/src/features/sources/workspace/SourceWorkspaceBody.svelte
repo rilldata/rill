@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ConnectedPreviewTable } from "@rilldata/web-common/components/preview-table";
   import { useResourceForFile } from "@rilldata/web-common/features/entity-management/resources-store";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import HorizontalSplitter from "../../../layout/workspace/HorizontalSplitter.svelte";
@@ -16,6 +17,7 @@
   export let sourceName: string;
   $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
 
+  const queryClient = useQueryClient();
   const sourceStore = useSourceStore(sourceName);
 
   $: file = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
@@ -28,7 +30,7 @@
   $: yaml = $file.data?.blob || "";
 
   // Get only reconcile errors here. File parse errors are shown inline
-  $: source = useResourceForFile($runtime.instanceId, filePath);
+  $: source = useResourceForFile(queryClient, $runtime.instanceId, filePath);
   $: reconcileError = $source.data?.meta?.reconcileError;
 
   // Layout state

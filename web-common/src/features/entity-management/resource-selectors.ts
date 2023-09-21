@@ -4,6 +4,7 @@ import {
   V1ListResourcesResponse,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
+import type { QueryClient } from "@tanstack/svelte-query";
 
 export enum ResourceKind {
   ProjectParser = "rill.runtime.v1.ProjectParser",
@@ -17,7 +18,8 @@ export function useResource<T = V1Resource>(
   instanceId: string,
   name: string,
   kind: ResourceKind,
-  selector?: (data: V1Resource) => T
+  selector?: (data: V1Resource) => T,
+  queryClient?: QueryClient
 ) {
   return createRuntimeServiceGetResource(
     instanceId,
@@ -30,6 +32,7 @@ export function useResource<T = V1Resource>(
         select: (data) =>
           selector ? selector(data?.resource) : data?.resource,
         enabled: !!name && !!kind,
+        queryClient,
       },
     }
   );

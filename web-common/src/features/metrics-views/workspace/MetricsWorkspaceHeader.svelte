@@ -39,14 +39,7 @@
     try {
       const toName = e.target.value;
       const type = EntityType.MetricsDefinition;
-      await renameFileArtifact(
-        queryClient,
-        runtimeInstanceId,
-        metricsDefName,
-        toName,
-        type,
-        $renameMetricsDef
-      );
+      await renameFileArtifact(runtimeInstanceId, metricsDefName, toName, type);
       goto(`/dashboard/${toName}/edit`, { replaceState: true });
     } catch (err) {
       console.error(err.response.data.message);

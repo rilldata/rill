@@ -15,7 +15,7 @@ import {
 import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
-import { get } from "svelte/types/runtime/store";
+import { get } from "svelte/store";
 
 const MainEntities: {
   [kind in ResourceKind]?: boolean;

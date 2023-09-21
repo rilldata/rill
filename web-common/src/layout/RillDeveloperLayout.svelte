@@ -3,7 +3,8 @@
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import { projectShareStore } from "@rilldata/web-common/features/dashboards/dashboard-stores.js";
   import DeployDashboardOverlay from "@rilldata/web-common/features/dashboards/workspace/DeployDashboardOverlay.svelte";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { resourcesStore } from "@rilldata/web-common/features/entity-management/resources-store";
   import { addReconcilingOverlay } from "@rilldata/web-common/features/entity-management/sync-file-system";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import DuplicateSource from "@rilldata/web-common/features/sources/modal/DuplicateSource.svelte";
@@ -11,10 +12,10 @@
   import { duplicateSourceName } from "@rilldata/web-common/features/sources/sources-store";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import { initMetrics } from "@rilldata/web-common/metrics/initMetrics";
+  import { runtimeServiceListResources } from "@rilldata/web-common/runtime-client";
   import type { ApplicationBuildMetadata } from "@rilldata/web-local/lib/application-state-stores/build-metadata";
   import { getContext, onMount } from "svelte";
   import type { Writable } from "svelte/store";
-  import { getArtifactErrors } from "../features/entity-management/getArtifactErrors";
   import PreparingImport from "../features/sources/modal/PreparingImport.svelte";
   import WelcomePageRedirect from "../features/welcome/WelcomePageRedirect.svelte";
   import { runtimeServiceGetConfig } from "../runtime-client/manual-clients";
@@ -37,8 +38,24 @@
       commitHash: config.build_commit,
     });
 
-    const res = await getArtifactErrors(config.instance_id);
-    fileArtifactsStore.setErrors(res.affectedPaths, res.errors);
+    const resourcesResp = await runtimeServiceListResources(config.instance_id);
+    for (const resource of resourcesResp.resources) {
+      switch (resource.meta.name.kind) {
+        case ResourceKind.Source:
+        case ResourceKind.Model:
+        case ResourceKind.MetricsView:
+          resourcesStore.setResource(resource);
+          break;
+
+        case ResourceKind.ProjectParser:
+          if (resource.projectParser?.state?.parseErrors) {
+            resourcesStore.setProjectParseErrors(
+              resource.projectParser?.state?.parseErrors
+            );
+          }
+          break;
+      }
+    }
   });
 
   // Bidirectional sync is disabled for now

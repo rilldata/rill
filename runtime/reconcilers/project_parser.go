@@ -378,7 +378,7 @@ func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, in
 		if err != nil {
 			return err
 		}
-		def := parser.Resources[n]
+		def := parser.Resources[n.Normalized()]
 		err = r.putParserResourceDef(ctx, inst, self, def, existing)
 		if err != nil {
 			return err
@@ -387,7 +387,7 @@ func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, in
 
 	// Inserts
 	for _, n := range diff.Added {
-		def := parser.Resources[n]
+		def := parser.Resources[n.Normalized()]
 
 		// Rename if possible
 		renamed := false

@@ -34,6 +34,25 @@ export function getFilePathFromNameAndType(
       );
   }
 }
+// Temporary solution for the issue with leading `/` for these files.
+// TODO: find a solution that works across backend and frontend
+export function getFileAPIPathFromNameAndType(
+  name: string,
+  type: EntityType
+): string {
+  switch (type) {
+    case EntityType.Table:
+      return `sources/${name}.yaml`;
+    case EntityType.Model:
+      return `models/${name}.sql`;
+    case EntityType.MetricsDefinition:
+      return `dashboards/${name}.yaml`;
+    default:
+      throw new Error(
+        "type must be either 'Table', 'Model', or 'MetricsDefinition'"
+      );
+  }
+}
 
 export function getNameFromFile(fileName: string): string {
   // TODO: do we need a library here?

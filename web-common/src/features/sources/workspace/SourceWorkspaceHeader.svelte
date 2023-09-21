@@ -15,9 +15,7 @@
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import {
     createRuntimeServiceGetFile,
-    createRuntimeServicePutFileAndReconcile,
     createRuntimeServiceRefreshAndReconcile,
-    createRuntimeServiceRenameFileAndReconcile,
     getRuntimeServiceGetCatalogEntryQueryKey,
     V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
@@ -51,9 +49,7 @@
 
   const queryClient = useQueryClient();
 
-  const renameSource = createRuntimeServiceRenameFileAndReconcile();
   const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
-  const createSource = createRuntimeServicePutFileAndReconcile();
 
   $: runtimeInstanceId = $runtime.instanceId;
   $: sourceQuery = useSource(runtimeInstanceId, sourceName);
@@ -88,12 +84,10 @@
       const toName = e.target.value;
       const entityType = EntityType.Table;
       await renameFileArtifact(
-        queryClient,
         runtimeInstanceId,
         sourceName,
         toName,
-        entityType,
-        $renameSource
+        entityType
       );
       goto(getRouteFromName(toName, entityType), {
         replaceState: true,
@@ -109,7 +103,7 @@
 
   const onSaveAndRefreshClick = async (tableName: string) => {
     overlay.set({ title: `Importing ${tableName}.yaml` });
-    await saveAndRefresh(queryClient, tableName, $sourceStore.clientYAML);
+    await saveAndRefresh(tableName, $sourceStore.clientYAML);
     overlay.set(null);
   };
 
@@ -119,9 +113,6 @@
         connector,
         tableName,
         runtimeInstanceId,
-        $refreshSourceMutation,
-        $createSource,
-        queryClient,
         connector === "s3" || connector === "gcs" || connector === "https"
           ? source?.spec.properties?.path
           : sourceName
@@ -170,7 +161,7 @@
     );
   };
 
-  $: hasErrors = getFileHasErrors($runtime.instanceId, filePath);
+  $: hasErrors = getFileHasErrors(queryClient, $runtime.instanceId, filePath);
 
   function isHeaderWidthSmall(width: number) {
     return width < 800;

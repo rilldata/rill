@@ -749,22 +749,6 @@ export interface V1RefreshTrigger {
   state?: V1RefreshTriggerState;
 }
 
-/**
- * ReconcileError represents an error encountered while running Reconcile.
- */
-export interface V1ReconcileError {
-  code?: V1ReconcileErrorCode;
-  message?: string;
-  filePath?: string;
-  /** Property path of the error in the code artifact (if any).
-It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
-It only applies to structured code artifacts (i.e. YAML).
-Only applicable if file_path is set. */
-  propertyPath?: string[];
-  startLocation?: V1ReconcileErrorCharLocation;
-  endLocation?: V1ReconcileErrorCharLocation;
-}
-
 export interface V1RefreshAndReconcileResponse {
   /** Errors encountered during reconciliation. If strict = false, any path in
 affected_paths without an error can be assumed to have been reconciled succesfully. */
@@ -830,6 +814,22 @@ export const V1ReconcileErrorCode = {
 export interface V1ReconcileErrorCharLocation {
   line?: number;
   column?: number;
+}
+
+/**
+ * ReconcileError represents an error encountered while running Reconcile.
+ */
+export interface V1ReconcileError {
+  code?: V1ReconcileErrorCode;
+  message?: string;
+  filePath?: string;
+  /** Property path of the error in the code artifact (if any).
+It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
+It only applies to structured code artifacts (i.e. YAML).
+Only applicable if file_path is set. */
+  propertyPath?: string[];
+  startLocation?: V1ReconcileErrorCharLocation;
+  endLocation?: V1ReconcileErrorCharLocation;
 }
 
 export type V1QueryResponseDataItem = { [key: string]: any };

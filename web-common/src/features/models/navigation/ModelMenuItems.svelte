@@ -39,7 +39,6 @@
 
   const queryClient = useQueryClient();
 
-  const deleteModel = createRuntimeServiceDeleteFileAndReconcile();
   const createFileMutation = createRuntimeServicePutFileAndReconcile();
 
   $: modelNames = useModelFileNames($runtime.instanceId);
@@ -106,12 +105,9 @@
 
   const handleDeleteModel = async (modelName: string) => {
     await deleteFileArtifact(
-      queryClient,
       $runtime.instanceId,
       modelName,
       EntityType.Model,
-      $deleteModel,
-      $appScreen,
       $modelNames.data
     );
     toggleMenu();

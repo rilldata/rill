@@ -7,8 +7,6 @@
   import {
     createRuntimeServiceGetFile,
     createRuntimeServiceListConnectors,
-    createRuntimeServicePutFileAndReconcile,
-    createRuntimeServiceRefreshAndReconcile,
     getRuntimeServiceGetCatalogEntryQueryKey,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -41,18 +39,13 @@
   );
 
   const queryClient = useQueryClient();
-  const createSource = createRuntimeServicePutFileAndReconcile();
-  const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
 
   const onRefreshClick = async (tableName: string) => {
     try {
       await refreshSource(
         currentConnector?.name,
         tableName,
-        $runtime?.instanceId,
-        $refreshSourceMutation,
-        $createSource,
-        queryClient
+        $runtime?.instanceId
       );
       const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
         $runtime?.instanceId,

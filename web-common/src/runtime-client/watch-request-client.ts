@@ -70,7 +70,8 @@ export class WatchRequestClient<Res extends WatchResponse> {
       } catch (err) {
         console.log(err);
         // TODO: make this smarter
-        await asyncWait(2000);
+        // await asyncWait(2000);
+        return;
       }
     }
   }

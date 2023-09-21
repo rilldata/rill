@@ -7,8 +7,9 @@ import type {
   V1Resource,
   V1ResourceName,
 } from "@rilldata/web-common/runtime-client";
+import type { QueryClient } from "@tanstack/svelte-query";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { derived, get, Readable, writable } from "svelte/store";
+import { derived, Readable, writable } from "svelte/store";
 
 /**
  * Global resources store that maps file name to a resource and parse errors.
@@ -77,6 +78,7 @@ export function getResourceNameForFile(filePath: string) {
 }
 
 export function useResourceForFile(
+  queryClient: QueryClient,
   instanceId: string,
   filePath: string
 ): CreateQueryResult<V1Resource> {
@@ -84,18 +86,24 @@ export function useResourceForFile(
     useResource(
       instanceId,
       resourceName?.name,
-      resourceName?.kind as ResourceKind
+      resourceName?.kind as ResourceKind,
+      undefined,
+      queryClient
     ).subscribe(set)
   );
 }
 
 // TODO: memoize?
 export function getAllErrorsForFile(
+  queryClient: QueryClient,
   instanceId: string,
   filePath: string
 ): Readable<Array<V1ParseError>> {
   return derived(
-    [getParseErrorsForFile(filePath), useResourceForFile(instanceId, filePath)],
+    [
+      getParseErrorsForFile(filePath),
+      useResourceForFile(queryClient, instanceId, filePath),
+    ],
     ([parseErrors, resource]) => {
       if (resource.isFetching || resource.isError) {
         // TODO: what should the error be for failed get resource API
@@ -118,11 +126,12 @@ export function getAllErrorsForFile(
 }
 
 export function getFileHasErrors(
+  queryClient: QueryClient,
   instanceId: string,
   filePath: string
 ): Readable<boolean> {
   return derived(
-    [getAllErrorsForFile(instanceId, filePath)],
+    [getAllErrorsForFile(queryClient, instanceId, filePath)],
     ([errors]) => errors.length > 0
   );
 }
