@@ -274,7 +274,7 @@ func (a *App) Reconcile(strict bool) (err error) {
 	}
 
 	if hasError {
-		a.Logger.Named("console").Infof("Hydration failed")
+		a.Logger.Named("console").Errorf("Hydration failed")
 		if strict {
 			return fmt.Errorf("strict mode exit")
 		}

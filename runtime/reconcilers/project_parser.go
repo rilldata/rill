@@ -195,7 +195,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 		}
 	})
 	if reparseErr != nil {
-		err = fmt.Errorf("re-parse failed: %w", err)
+		err = fmt.Errorf("re-parse failed: %w", reparseErr)
 	} else if err != nil {
 		if errors.Is(err, ctx.Err()) {
 			// The controller cancelled the context. It means pp.Spec was changed. Will be rescheduled.
@@ -206,7 +206,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 
 	// If the watch failed, we return without rescheduling.
 	// TODO: Should we have some kind of retry?
-	r.C.Logger.Error("stopped watching for file changes", slog.String("err", err.Error()))
+	r.C.Logger.Error("Stopped watching for file changes", slog.String("err", err.Error()))
 	return runtime.ReconcileResult{Err: err}
 }
 

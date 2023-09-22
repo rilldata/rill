@@ -549,6 +549,7 @@ func (c *Controller) UpdateName(ctx context.Context, name, newName, owner *runti
 	if err != nil {
 		return err
 	}
+	c.enqueue(newName)
 
 	err = c.catalog.updateMeta(newName, r.Meta.Refs, owner, paths)
 	if err != nil {
@@ -1310,7 +1311,7 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 		errorLevel = true
 	}
 	if errorLevel {
-		c.Logger.Error("Reconciled resource", logArgs...)
+		c.Logger.Error("Reconcile failed", logArgs...)
 	} else if !inv.isHidden {
 		c.Logger.Info("Reconciled resource", logArgs...)
 	}
