@@ -7,7 +7,6 @@ import type {
   V1MetricsViewComparisonRow,
   V1MetricsViewComparisonValue,
   V1MetricsViewFilter,
-  V1MetricsViewToplistResponse,
   V1MetricsViewToplistResponseDataItem,
 } from "../../../runtime-client";
 import {
@@ -67,88 +66,6 @@ export function getDimensionFilterWithSearch(
   const filterForDimension = getFilterForDimension(filters, dimensionName);
 
   return updateFilterOnSearch(filterForDimension, searchText, dimensionName);
-}
-
-/** Returns a filter set which takes the current filter set for the
- * dimension table and updates it to get all the same dimension values
- * in a previous period */
-export function getFilterForComparsion(
-  filterForDimension,
-  dimensionName,
-  filterValues
-) {
-  const comparisonFilterSet = JSON.parse(JSON.stringify(filterForDimension));
-
-  if (!filterValues.length) return comparisonFilterSet;
-
-  let foundDimension = false;
-  comparisonFilterSet["include"].forEach((filter) => {
-    if (filter.name === dimensionName) {
-      foundDimension = true;
-      filter.in = filterValues;
-    }
-  });
-
-  if (!foundDimension) {
-    comparisonFilterSet["include"].push({
-      name: dimensionName,
-      in: filterValues,
-    });
-  }
-  return comparisonFilterSet;
-}
-
-export function getFilterForComparisonTable(
-  filterForDimension,
-  dimensionName,
-  dimensionColumn,
-  values
-) {
-  if (!values || !values.length) return filterForDimension;
-  const filterValues = values.map((v) => v[dimensionColumn]);
-  return getFilterForComparsion(
-    filterForDimension,
-    dimensionName,
-    filterValues
-  );
-}
-
-/** Takes previous and current data to construct comparison data
- * with fields named measure_x_delta and measure_x_delta_perc */
-export function computeComparisonValues(
-  comparisonData: V1MetricsViewToplistResponse,
-  values: V1MetricsViewToplistResponseDataItem[],
-  dimensionName: string,
-  dimensionColumn: string,
-  measureName: string
-) {
-  if (comparisonData?.meta?.length !== 2) return values;
-
-  const dimensionToValueMap = new Map(
-    comparisonData?.data?.map((obj) => [obj[dimensionColumn], obj[measureName]])
-  );
-
-  for (const value of values) {
-    const prevValue = dimensionToValueMap.get(value[dimensionColumn]);
-
-    if (prevValue === undefined) {
-      value[measureName + "_delta"] = null;
-      value[measureName + "_delta_perc"] = PERC_DIFF.PREV_VALUE_NO_DATA;
-    } else if (prevValue === null) {
-      value[measureName + "_delta"] = null;
-      value[measureName + "_delta_perc"] = PERC_DIFF.PREV_VALUE_NULL;
-    } else if (prevValue === 0) {
-      value[measureName + "_delta"] = value[measureName];
-      value[measureName + "_delta_perc"] = PERC_DIFF.PREV_VALUE_ZERO;
-    } else {
-      value[measureName + "_delta"] = value[measureName] - prevValue;
-      value[measureName + "_delta_perc"] = formatMeasurePercentageDifference(
-        (value[measureName] - prevValue) / prevValue
-      );
-    }
-  }
-
-  return values;
 }
 
 export function computePercentOfTotal(
@@ -363,26 +280,6 @@ export function prepareVirtualizedTableColumns(
     })
     .filter((column) => !!column);
 }
-
-// export function getDimensionTableColumnNames(
-//   columnNames: string[],
-//   selectedMeasure: MetricsViewMeasure,
-//   dimensionColumn: string,
-//   timeComparison: boolean,
-//   validPercentOfTotal: boolean
-// ): string[] {
-//   addContextColumnNames(
-//     columnNames,
-//     timeComparison,
-//     validPercentOfTotal,
-//     selectedMeasure
-//   );
-
-//   // Make dimension the first column
-//   columnNames.unshift(dimensionColumn);
-
-//   return columnNames;
-// }
 
 /**
  * Splices the context column names into the list of dimension
