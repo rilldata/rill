@@ -20,6 +20,7 @@ import (
 //
 // catalogCache additionally provides various indexes of the resources: a DAG, map of soft-deleted resources, map of renamed resources.
 // It is not thread-safe, but it protects against split-brain scenarios by erroring if the underlying store is mutated by another catalog cache.
+// The catalogCache treats resource names as case insensitive.
 type catalogCache struct {
 	ctrl    *Controller
 	store   drivers.CatalogStore
@@ -90,6 +91,7 @@ func (c *catalogCache) close(ctx context.Context) error {
 
 // flush flushes changes to the underlying store.
 // Unlike other catalog functions, it is safe to call flush concurrently with calls to get and list (i.e. under a read lock).
+// However, it is not safe to call flush concurrently with other calls to flush.
 func (c *catalogCache) flush(ctx context.Context) error {
 	for s, n := range c.dirty {
 		r, err := c.get(n, true, false)
@@ -113,12 +115,16 @@ func (c *catalogCache) flush(ctx context.Context) error {
 		if c.stored[s] {
 			// Updating
 			err = c.store.UpdateResource(ctx, c.version, resourceToDriver(r))
+			if err != nil {
+				return err
+			}
 		} else {
 			// Creating
 			err = c.store.CreateResource(ctx, c.version, resourceToDriver(r))
-		}
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
+			c.stored[s] = true
 		}
 
 		delete(c.dirty, s)
@@ -361,12 +367,16 @@ func (c *catalogCache) updateError(name *runtimev1.ResourceName, reconcileErr er
 	if err != nil {
 		return err
 	}
-	// NOTE: No need to unlink/link because no indexed fields are edited.
-	if reconcileErr == nil {
-		r.Meta.ReconcileError = ""
-	} else {
-		r.Meta.ReconcileError = reconcileErr.Error()
+	var errStr string
+	if reconcileErr != nil {
+		errStr = reconcileErr.Error()
 	}
+	if r.Meta.ReconcileError == errStr {
+		// Since bumping the state version usually invalidates derived things, we don't want to do it redundantly.
+		return nil
+	}
+	// NOTE: No need to unlink/link because no indexed fields are edited.
+	r.Meta.ReconcileError = errStr
 	r.Meta.Version++
 	r.Meta.StateVersion++
 	r.Meta.StateUpdatedOn = timestamppb.Now()
@@ -517,9 +527,9 @@ func (c *catalogCache) resetEvents() {
 	c.events = make(map[string]catalogEvent)
 }
 
-// nameStr returns a string representation of a resource name.
+// nameStr returns a normalized string representation of a resource name.
 func nameStr(r *runtimev1.ResourceName) string {
-	return fmt.Sprintf("%s/%s", r.Kind, r.Name)
+	return fmt.Sprintf("%s/%s", r.Kind, strings.ToLower(r.Name))
 }
 
 // resourceFromDriver converts a drivers.Resource to a proto resource.

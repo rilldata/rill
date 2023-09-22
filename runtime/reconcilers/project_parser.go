@@ -302,6 +302,7 @@ func (r *ProjectParserReconciler) reconcileResources(ctx context.Context, inst *
 		def, ok := parser.Resources[n]
 
 		// If the existing resource is in the parser output, update it.
+		// NOTE: putParserResourceDef renames if the casing of the name has changed.
 		if ok {
 			seen[n] = true
 			err = r.putParserResourceDef(ctx, inst, self, def, rr)
@@ -477,6 +478,14 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 	n := resourceNameFromCompiler(def.Name)
 	if existing == nil {
 		return r.C.Create(ctx, n, refs, self.Meta.Name, def.Paths, res)
+	}
+
+	// The name may have changed to a different case (e.g. aAa -> Aaa)
+	if n.Kind == existing.Meta.Name.Kind && n.Name != existing.Meta.Name.Name {
+		err := r.C.UpdateName(ctx, existing.Meta.Name, n, self.Meta.Name, def.Paths)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Update meta if refs or file paths changed

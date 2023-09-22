@@ -133,23 +133,6 @@ func olapForceRenameTable(ctx context.Context, c *runtime.Controller, connector,
 	existingTo, _ := olap.InformationSchema().Lookup(ctx, toName)
 
 	return olap.WithConnection(ctx, 100, true, true, func(ctx context.Context, ensuredCtx context.Context, conn *sql.Conn) error {
-		// Drop the existing table at toName
-		if existingTo != nil {
-			var typ string
-			if existingTo.View {
-				typ = "VIEW"
-			} else {
-				typ = "TABLE"
-			}
-
-			err := olap.Exec(ctx, &drivers.Statement{
-				Query: fmt.Sprintf("DROP %s IF EXISTS %s", typ, safeSQLName(existingTo.Name)),
-			})
-			if err != nil {
-				return err
-			}
-		}
-
 		// Infer SQL keyword for the table type
 		var typ string
 		if fromIsView {
@@ -173,6 +156,23 @@ func olapForceRenameTable(ctx context.Context, c *runtime.Controller, connector,
 				return err
 			}
 			fromName = tmpName
+		}
+
+		// Drop the existing table at toName
+		if existingTo != nil {
+			var existingTyp string
+			if existingTo.View {
+				existingTyp = "VIEW"
+			} else {
+				existingTyp = "TABLE"
+			}
+
+			err := olap.Exec(ctx, &drivers.Statement{
+				Query: fmt.Sprintf("DROP %s IF EXISTS %s", existingTyp, safeSQLName(existingTo.Name)),
+			})
+			if err != nil {
+				return err
+			}
 		}
 
 		// Do the rename
