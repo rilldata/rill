@@ -2299,6 +2299,247 @@ var _ interface {
 	ErrorName() string
 } = TableInfoValidationError{}
 
+// Validate checks the field values on OLAPGetTableRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *OLAPGetTableRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on OLAPGetTableRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// OLAPGetTableRequestMultiError, or nil if none found.
+func (m *OLAPGetTableRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *OLAPGetTableRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	// no validation rules for Connector
+
+	// no validation rules for Table
+
+	if len(errors) > 0 {
+		return OLAPGetTableRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// OLAPGetTableRequestMultiError is an error wrapping multiple validation
+// errors returned by OLAPGetTableRequest.ValidateAll() if the designated
+// constraints aren't met.
+type OLAPGetTableRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m OLAPGetTableRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m OLAPGetTableRequestMultiError) AllErrors() []error { return m }
+
+// OLAPGetTableRequestValidationError is the validation error returned by
+// OLAPGetTableRequest.Validate if the designated constraints aren't met.
+type OLAPGetTableRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e OLAPGetTableRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e OLAPGetTableRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e OLAPGetTableRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e OLAPGetTableRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e OLAPGetTableRequestValidationError) ErrorName() string {
+	return "OLAPGetTableRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e OLAPGetTableRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sOLAPGetTableRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = OLAPGetTableRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = OLAPGetTableRequestValidationError{}
+
+// Validate checks the field values on OLAPGetTableResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *OLAPGetTableResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on OLAPGetTableResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// OLAPGetTableResponseMultiError, or nil if none found.
+func (m *OLAPGetTableResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *OLAPGetTableResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetSchema()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, OLAPGetTableResponseValidationError{
+					field:  "Schema",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, OLAPGetTableResponseValidationError{
+					field:  "Schema",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetSchema()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return OLAPGetTableResponseValidationError{
+				field:  "Schema",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for View
+
+	if len(errors) > 0 {
+		return OLAPGetTableResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// OLAPGetTableResponseMultiError is an error wrapping multiple validation
+// errors returned by OLAPGetTableResponse.ValidateAll() if the designated
+// constraints aren't met.
+type OLAPGetTableResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m OLAPGetTableResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m OLAPGetTableResponseMultiError) AllErrors() []error { return m }
+
+// OLAPGetTableResponseValidationError is the validation error returned by
+// OLAPGetTableResponse.Validate if the designated constraints aren't met.
+type OLAPGetTableResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e OLAPGetTableResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e OLAPGetTableResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e OLAPGetTableResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e OLAPGetTableResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e OLAPGetTableResponseValidationError) ErrorName() string {
+	return "OLAPGetTableResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e OLAPGetTableResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sOLAPGetTableResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = OLAPGetTableResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = OLAPGetTableResponseValidationError{}
+
 // Validate checks the field values on BigQueryListDatasetsRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.

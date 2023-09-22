@@ -138,8 +138,8 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any
 }
 
 type sourceProperties struct {
-	Path                  string         `key:"path"`
-	URI                   string         `key:"uri"`
+	Path                  string         `mapstructure:"path"`
+	URI                   string         `mapstructure:"uri"`
 	Extract               map[string]any `mapstructure:"extract"`
 	GlobMaxTotalSize      int64          `mapstructure:"glob.max_total_size"`
 	GlobMaxObjectsMatched int            `mapstructure:"glob.max_objects_matched"`

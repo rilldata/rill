@@ -3,9 +3,9 @@
     createAdminServiceGetProject,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
-  import { getDashboardsForProject } from "@rilldata/web-admin/components/projects/dashboards";
-  import { invalidateDashboardsQueries } from "@rilldata/web-admin/components/projects/invalidations";
-  import { useProjectDeploymentStatus } from "@rilldata/web-admin/components/projects/selectors";
+  import { getDashboardsForProject } from "@rilldata/web-admin/features/projects/dashboards";
+  import { invalidateDashboardsQueries } from "@rilldata/web-admin/features/projects/invalidations";
+  import { useProjectDeploymentStatus } from "@rilldata/web-admin/features/projects/selectors";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
   import InfoCircleFilled from "@rilldata/web-common/components/icons/InfoCircleFilled.svelte";

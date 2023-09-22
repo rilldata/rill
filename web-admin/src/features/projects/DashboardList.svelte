@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getDashboardsForProject } from "@rilldata/web-admin/components/projects/dashboards";
+  import { getDashboardsForProject } from "@rilldata/web-admin/features/projects/dashboards";
   import DashboardIcon from "@rilldata/web-common/components/icons/DashboardIcon.svelte";
   import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
   import {
