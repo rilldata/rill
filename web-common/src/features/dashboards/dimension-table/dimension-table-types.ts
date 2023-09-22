@@ -10,11 +10,11 @@ import type { NumberParts } from "@rilldata/web-common/lib/number-formatting/hum
  *
  * Each row will have the following key/value pairs:
  *
- * 1) dimension:
+ * 1) for the dimension:
  *    - key: dimension name //FIXME: could cause key collisions
  *    - value: dimension value for this row
  *
- * 2) measures:
+ * 2) for the measures:
  *    - key: the `name` field from the YAML e.g. `measure_1`, `total`, ect
  *    - value: the raw measure value
  *
@@ -25,7 +25,7 @@ import type { NumberParts } from "@rilldata/web-common/lib/number-formatting/hum
  *    - value: the raw value of the context column,
  *      or a NumberParts or PERC_DIFF for percent of total and delta
  *
- * 4) formatted strings:
+ * 4) additional formatted strings:
  *    - key: the YAML `name` of each measure with `__formatted_` prepended.
  *      Context columns are included here as well.
  *    - value: the formatted string for the measure or context column.
