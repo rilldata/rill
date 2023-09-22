@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
     useModel,
@@ -17,6 +17,7 @@
     V1ModelV2,
     V1TableCardinalityResponse,
   } from "@rilldata/web-common/runtime-client";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
   import { derived } from "svelte/store";
   import { COLUMN_PROFILE_CONFIG } from "../../../../layout/config";
@@ -28,12 +29,18 @@
   export let modelName: string;
   export let containerWidth = 0;
 
+  const queryClient = useQueryClient();
+
   $: modelQuery = useModel($runtime.instanceId, modelName);
   let model: V1ModelV2;
   $: model = $modelQuery?.data?.model;
 
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
-  $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
+  $: modelHasError = getFileHasErrors(
+    queryClient,
+    $runtime.instanceId,
+    modelPath
+  );
 
   let rollup: number;
   let sourceTableReferences;
@@ -128,18 +135,16 @@
 
   $: outputColumnNum = $modelColumns.data?.profileColumns?.length ?? 0;
   $: columnDelta = outputColumnNum - $sourceColumns;
-
-  $: modelHasError = !!modelError;
 </script>
 
 <div class="grow text-right px-4 pb-4 pt-2" style:height="56px">
   <!-- top row: row analysis -->
   <div
     class="flex flex-row items-center justify-between"
-    class:text-gray-300={modelHasError}
+    class:text-gray-300={$modelHasError}
   >
-    <div class="text-gray-500" class:text-gray-500={modelHasError}>
-      <WithModelResultTooltip {modelHasError}>
+    <div class="text-gray-500" class:text-gray-500={$modelHasError}>
+      <WithModelResultTooltip modelHasError={$modelHasError}>
         <div>
           {#if validRollup(rollup)}
             {#if isNaN(rollup)}
@@ -187,10 +192,10 @@
   <!-- bottom row: column analysis -->
 
   <div class="flex flex-row justify-between">
-    <WithModelResultTooltip {modelHasError}>
+    <WithModelResultTooltip modelHasError={$modelHasError}>
       <div
-        class:font-normal={modelHasError}
-        class:text-gray-500={modelHasError}
+        class:font-normal={$modelHasError}
+        class:text-gray-500={$modelHasError}
       >
         {#if columnDelta > 0}
           {`${formatInteger(columnDelta)} column${

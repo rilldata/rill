@@ -6,9 +6,19 @@ import { createRuntimeServiceListFiles } from "@rilldata/web-common/runtime-clie
  */
 export function useMainEntityFiles(
   instanceId: string,
-  prefix: "sources" | "models" | "dashboards",
-  extension: ".yaml" | ".sql"
+  prefix: "sources" | "models" | "dashboards"
 ) {
+  let extension: string;
+  switch (prefix) {
+    case "sources":
+    case "dashboards":
+      extension = ".yaml";
+      break;
+
+    case "models":
+      extension = ".sql";
+  }
+
   return createRuntimeServiceListFiles(
     instanceId,
     {

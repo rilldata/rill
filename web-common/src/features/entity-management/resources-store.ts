@@ -1,5 +1,6 @@
 import {
   ResourceKind,
+  useProjectParser,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { runtimeServiceListResources } from "@rilldata/web-common/runtime-client";
@@ -13,18 +14,16 @@ import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, Readable, writable } from "svelte/store";
 
 /**
- * Global resources store that maps file name to a resource and parse errors.
+ * Global resources store that maps file name to a resource.
  */
 export type ResourcesState = {
   // this is just a mapping of file path to resource name
   // storing the entire resource is not necessary since tanstack query will do that for the get resource api
   resources: Record<string, V1ResourceName>;
-  errors: Record<string, Array<V1ParseError>>;
 };
 
 const { update, subscribe } = writable({
   resources: {},
-  errors: {},
 } as ResourcesState);
 
 const resourcesStoreReducers = {
@@ -37,32 +36,8 @@ const resourcesStoreReducers = {
         case ResourceKind.MetricsView:
           this.setResource(resource);
           break;
-
-        case ResourceKind.ProjectParser:
-          if (resource.projectParser?.state?.parseErrors) {
-            this.setProjectParseErrors(
-              resource.projectParser?.state?.parseErrors
-            );
-          }
-          break;
       }
     }
-  },
-
-  setProjectParseErrors(parseErrors: Array<V1ParseError>) {
-    const errors: Record<string, Array<V1ParseError>> = {};
-    for (const parseError of parseErrors) {
-      if (errors[parseError.filePath]) {
-        errors[parseError.filePath].push(parseError);
-      } else {
-        errors[parseError.filePath] = [parseError];
-      }
-    }
-
-    update((state) => {
-      state.errors = errors;
-      return state;
-    });
   },
 
   setResource(resource: V1Resource) {
@@ -77,7 +52,6 @@ const resourcesStoreReducers = {
   deleteFile(filePath: string) {
     update((state) => {
       if (state.resources[filePath]) delete state.resources[filePath];
-      if (state.errors[filePath]) delete state.errors[filePath];
       return state;
     });
   },
@@ -89,10 +63,6 @@ export const resourcesStore: ResourcesStore = {
   subscribe,
   ...resourcesStoreReducers,
 };
-
-export function getParseErrorsForFile(filePath: string) {
-  return derived([resourcesStore], ([state]) => state.errors[filePath] ?? []);
-}
 
 export function getResourceNameForFile(filePath: string) {
   return derived([resourcesStore], ([state]) => state.resources[filePath]);
@@ -122,16 +92,21 @@ export function getAllErrorsForFile(
 ): Readable<Array<V1ParseError>> {
   return derived(
     [
-      getParseErrorsForFile(filePath),
+      useProjectParser(queryClient, instanceId),
       useResourceForFile(queryClient, instanceId, filePath),
     ],
-    ([parseErrors, resource]) => {
-      if (resource.isFetching || resource.isError) {
+    ([projectParser, resource]) => {
+      if (
+        projectParser.isFetching ||
+        projectParser.isError ||
+        resource.isFetching ||
+        resource.isError
+      ) {
         // TODO: what should the error be for failed get resource API
-        return [...parseErrors];
+        return [];
       }
       return [
-        ...parseErrors,
+        ...(projectParser.data?.projectParser?.state?.parseErrors ?? []),
         ...(resource.data?.meta?.reconcileError
           ? [
               {

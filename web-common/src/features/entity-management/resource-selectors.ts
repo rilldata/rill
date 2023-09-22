@@ -38,11 +38,13 @@ export function useResource<T = V1Resource>(
   );
 }
 
-export function useProjectParser(instanceId: string) {
+export function useProjectParser(queryClient: QueryClient, instanceId: string) {
   return useResource(
     instanceId,
     SingletonProjectParserName,
-    ResourceKind.ProjectParser
+    ResourceKind.ProjectParser,
+    undefined,
+    queryClient
   );
 }
 

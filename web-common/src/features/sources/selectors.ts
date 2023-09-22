@@ -31,7 +31,7 @@ export function useSourceNames(instanceId: string) {
 }
 
 export function useSourceFileNames(instanceId: string) {
-  return useMainEntityFiles(instanceId, "sources", ".yaml");
+  return useMainEntityFiles(instanceId, "sources");
 }
 
 export function useSource(instanceId: string, name: string) {

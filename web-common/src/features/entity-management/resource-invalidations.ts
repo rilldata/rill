@@ -17,21 +17,26 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 
-const MainEntities: {
+const MainResources: {
   [kind in ResourceKind]?: boolean;
 } = {
-  [ResourceKind.ProjectParser]: false,
   [ResourceKind.Source]: true,
   [ResourceKind.Model]: true,
   [ResourceKind.MetricsView]: true,
+};
+const UsedResources: {
+  [kind in ResourceKind]?: boolean;
+} = {
+  [ResourceKind.ProjectParser]: false,
+  ...MainResources,
 };
 
 export function invalidateResourceResponse(
   queryClient: QueryClient,
   res: V1WatchResourcesResponse
 ) {
-  // only process for the `ResourceKind` present in `MainEntities`
-  if (!(res.name.kind in MainEntities)) return;
+  // only process for the `ResourceKind` present in `UsedResources`
+  if (!UsedResources[res.name.kind]) return;
 
   const instanceId = get(runtime).instanceId;
   // invalidations will wait until the re-fetched query is completed
@@ -46,23 +51,15 @@ export function invalidateResourceResponse(
       break;
   }
 
-  // only re-fetch list queries for kinds in `MainEntities` and is ture
-  if (MainEntities[res.name.kind]) {
-    resourcesStore.setResource(res.resource);
-    queryClient.refetchQueries(
-      // we only use individual kind's queries
-      getRuntimeServiceListResourcesQueryKey(instanceId, {
-        kind: res.name.kind,
-      })
-    );
-  } else if (
-    res.name.kind === ResourceKind.ProjectParser &&
-    res.resource.projectParser?.state?.parseErrors
-  ) {
-    resourcesStore.setProjectParseErrors(
-      res.resource.projectParser.state.parseErrors
-    );
-  }
+  // only re-fetch list queries for kinds in `MainResources` and is ture
+  if (!MainResources[res.name.kind]) return;
+  resourcesStore.setResource(res.resource);
+  return queryClient.refetchQueries(
+    // we only use individual kind's queries
+    getRuntimeServiceListResourcesQueryKey(instanceId, {
+      kind: res.name.kind,
+    })
+  );
 }
 
 async function invalidateResource(

@@ -18,7 +18,7 @@ export function useDashboardNames(instanceId: string) {
 }
 
 export function useDashboardFileNames(instanceId: string) {
-  return useMainEntityFiles(instanceId, "dashboards", ".yaml");
+  return useMainEntityFiles(instanceId, "dashboards");
 }
 
 export function useDashboard(instanceId: string, metricViewName: string) {

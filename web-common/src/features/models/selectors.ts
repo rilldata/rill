@@ -24,7 +24,7 @@ export function useModelNames(instanceId: string) {
 }
 
 export function useModelFileNames(instanceId: string) {
-  return useMainEntityFiles(instanceId, "models", ".sql");
+  return useMainEntityFiles(instanceId, "models");
 }
 
 export function useModel(instanceId: string, name: string) {

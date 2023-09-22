@@ -5,10 +5,11 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import { WorkspaceHeader } from "../../../layout/workspace";
@@ -25,6 +26,8 @@
 
   export let modelName: string;
 
+  const queryClient = useQueryClient();
+
   $: runtimeInstanceId = $runtime.instanceId;
 
   $: allNamesQuery = useAllNames(runtimeInstanceId);
@@ -33,8 +36,11 @@
     "rill:app:output-layout"
   ) as Writable<LayoutElement>;
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
-  $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
-  $: modelHasError = !!modelError;
+  $: modelHasError = getFileHasErrors(
+    queryClient,
+    runtimeInstanceId,
+    modelPath
+  );
 
   let contextMenuOpen = false;
 
@@ -111,7 +117,7 @@
       <ModelWorkspaceCTAs
         availableDashboards={$availableDashboards?.data}
         {collapse}
-        {modelHasError}
+        modelHasError={$modelHasError}
         {modelName}
         suppressTooltips={contextMenuOpen}
       />
