@@ -22,6 +22,7 @@ import type { VirtualizedTableConfig } from "@rilldata/web-common/components/vir
 import type { SvelteComponent } from "svelte";
 import { getDimensionColumn } from "../dashboard-utils";
 import type { DimensionTableRow } from "./dimension-table-types";
+import { getFilterForDimension } from "../selectors";
 
 /** Returns an updated filter set for a given dimension on search */
 export function updateFilterOnSearch(
@@ -56,6 +57,16 @@ export function updateFilterOnSearch(
     });
   }
   return filterSet;
+}
+
+export function getDimensionFilterWithSearch(
+  filters: V1MetricsViewFilter,
+  searchText: string,
+  dimensionName: string
+) {
+  const filterForDimension = getFilterForDimension(filters, dimensionName);
+
+  return updateFilterOnSearch(filterForDimension, searchText, dimensionName);
 }
 
 /** Returns a filter set which takes the current filter set for the

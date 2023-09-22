@@ -7,11 +7,9 @@
    */
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
-    getFilterForDimension,
     useMetaDimension,
     useMetaMeasure,
     useMetaQuery,
-    useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -20,17 +18,15 @@
     createQueryServiceMetricsViewTotals,
     MetricsViewDimension,
     MetricsViewMeasure,
-    V1MetricsViewComparisonRow,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { SortDirection } from "../proto-state/derived-types";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import {
-    getSelectedRowIndicesFromFilters,
+    getDimensionFilterWithSearch,
     prepareDimensionTableRows,
     prepareVirtualizedTableColumns,
-    updateFilterOnSearch,
   } from "./dimension-table-utils";
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
@@ -56,6 +52,7 @@
     metricViewName,
     dimensionName
   );
+
   let dimension: MetricsViewDimension;
   $: dimension = $dimensionQuery?.data;
   $: dimensionColumn = getDimensionColumn(dimension);
@@ -67,26 +64,26 @@
   $: leaderboardMeasureName = $dashboardStore?.leaderboardMeasureName;
   $: isBeingCompared =
     $dashboardStore?.selectedComparisonDimension === dimensionName;
+
   $: leaderboardMeasureQuery = useMetaMeasure(
     instanceId,
     metricViewName,
     leaderboardMeasureName
   );
 
+  $: validPercentOfTotal = (
+    $leaderboardMeasureQuery?.data as MetricsViewMeasure
+  )?.validPercentOfTotal;
+
   $: excludeMode =
     $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
 
-  $: filterForDimension = getFilterForDimension(
+  $: filterSet = getDimensionFilterWithSearch(
     $dashboardStore?.filters,
-    dimensionName
-  );
-  $: filterSet = updateFilterOnSearch(
-    filterForDimension,
     searchText,
     dimensionName
   );
 
-  // let selectedValues: Array<unknown>;
   $: selectedValues =
     (excludeMode
       ? $dashboardStore?.filters.exclude.find((d) => d.name === dimensionName)
@@ -100,9 +97,6 @@
 
   $: sortAscending = $dashboardStore.sortDirection === SortDirection.ASCENDING;
 
-  $: metricTimeSeries = useModelHasTimeSeries(instanceId, metricViewName);
-
-  // Compose the comparison /toplist query
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     metricViewName,
@@ -117,6 +111,8 @@
       },
     }
   );
+
+  $: unfilteredTotal = $totalsQuery?.data?.data?.[leaderboardMeasureName] ?? 0;
 
   let referenceValues: { string: number } = {};
   $: if ($totalsQuery?.data?.data) {
@@ -137,14 +133,6 @@
     validPercentOfTotal
   );
 
-  $: validPercentOfTotal = (
-    $leaderboardMeasureQuery?.data as MetricsViewMeasure
-  )?.validPercentOfTotal;
-
-  // $: validPercentOfTotal = $leaderboardMeasureQuery?.data?.validPercentOfTotal;
-
-  //////////////////////////// SORTED QUERY
-
   $: sortedQueryBody = prepareSortedQueryBody(
     dimensionName,
     $dashboardStore?.selectedMeasureNames,
@@ -161,12 +149,10 @@
     sortedQueryBody,
     {
       query: {
-        enabled: $timeControlsStore.ready && !!filterForDimension,
+        enabled: $timeControlsStore.ready && !!filterSet,
       },
     }
   );
-
-  $: unfilteredTotal = $totalsQuery?.data?.data?.[leaderboardMeasureName] ?? 0;
 
   $: newRows = prepareDimensionTableRows(
     $sortedQuery?.data?.rows,
