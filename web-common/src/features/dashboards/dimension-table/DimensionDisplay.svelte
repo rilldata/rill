@@ -21,7 +21,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { SortDirection } from "../proto-state/derived-types";
+  import { SortDirection, SortType } from "../proto-state/derived-types";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import {
     getDimensionFilterWithSearch,
@@ -173,11 +173,17 @@
   }
 
   function onSortByColumn(event) {
+    console.log("onSortByColumn", event.detail);
     const columnName = event.detail;
-    if (!allMeasures.map((m) => m.name).includes(columnName)) return;
 
-    if (columnName === leaderboardMeasureName) {
-      metricsExplorerStore.toggleSort(metricViewName);
+    if (columnName === leaderboardMeasureName + "_delta") {
+      metricsExplorerStore.toggleSort(metricViewName, SortType.DELTA_ABSOLUTE);
+    } else if (columnName === leaderboardMeasureName + "_delta_perc") {
+      metricsExplorerStore.toggleSort(metricViewName, SortType.DELTA_PERCENT);
+    } else if (columnName === leaderboardMeasureName + "_percent_of_total") {
+      metricsExplorerStore.toggleSort(metricViewName, SortType.PERCENT);
+    } else if (columnName === leaderboardMeasureName) {
+      metricsExplorerStore.toggleSort(metricViewName, SortType.VALUE);
     } else {
       metricsExplorerStore.setLeaderboardMeasureName(
         metricViewName,
