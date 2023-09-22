@@ -74,8 +74,8 @@ export function getYupSchema(connector: V1ConnectorSpec) {
         path: yup
           .string()
           .matches(
-            /^azblob:\/\//,
-            "Must be an Azure URI (e.g. azblob://container/path)"
+            /^azure:\/\//,
+            "Must be an Azure URI (e.g. azure://container/path)"
           )
           .required("Path is required"),
         sourceName: yup

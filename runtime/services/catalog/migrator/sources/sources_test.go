@@ -89,7 +89,7 @@ func TestConnectorWithSourceVariations(t *testing.T) {
 		//	"sql": `select * from read_csv_auto('gs://scratch.rilldata.com/rill-developer/AdBids.csv.gz')`,
 		//}},
 		//{"duckdb", "", map[string]any{
-		//	"sql": `select * from read_parquet('azblob/rill-test/AdBids.parquet')`,
+		//	"sql": `select * from read_parquet('azure/rill-test/AdBids.parquet')`,
 		//}},
 	}
 

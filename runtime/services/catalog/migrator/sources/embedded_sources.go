@@ -55,7 +55,7 @@ func parseEmbeddedSourceConnector(path string) (string, string, bool) {
 			connector = "s3"
 		case "gs":
 			connector = "gcs"
-		case "azblob":
+		case "azure":
 			connector = "azure"
 		default:
 			return "", "", false
