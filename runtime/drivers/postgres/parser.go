@@ -271,6 +271,7 @@ func (m *uuidMapper) value(pgxVal any) (any, error) {
 	}
 }
 
+// TODO :: test numeric mapper
 type numericMapper struct{}
 
 func (m *numericMapper) runtimeType() *runtimev1.Type {
@@ -311,7 +312,7 @@ func (m *jsonMapper) runtimeType() *runtimev1.Type {
 func (m *jsonMapper) value(pgxVal any) (any, error) {
 	switch b := pgxVal.(type) {
 	case []byte:
-		return b, nil
+		return string(b), nil
 	case map[string]any:
 		enc, err := json.Marshal(b)
 		if err != nil {

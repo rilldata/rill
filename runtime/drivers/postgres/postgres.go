@@ -3,7 +3,6 @@ package postgres
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
@@ -66,8 +65,6 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any
 }
 
 type connection struct {
-	conn   *pgx.Conn
-	ctx    context.Context
 	config map[string]any
 }
 
@@ -93,9 +90,6 @@ func (c *connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
-	if c.conn != nil {
-		return c.conn.Close(c.ctx)
-	}
 	return nil
 }
 

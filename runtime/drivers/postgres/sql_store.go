@@ -8,12 +8,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-
-	// load pgx driver
-	"github.com/jackc/pgx/v5"
 )
 
 // Query implements drivers.SQLStore
@@ -32,12 +31,12 @@ func (c *connection) Query(ctx context.Context, props map[string]any) (drivers.R
 		return nil, fmt.Errorf("require database_url to open postgres connection. Either set database_url in source yaml or pass --env connectors.postgres.database_url=... to rill start")
 	}
 
-	if c.conn, err = pgx.Connect(ctx, dsn); err != nil {
+	conn, err := pgx.Connect(ctx, dsn)
+	if err != nil {
 		return nil, err
 	}
-	c.ctx = ctx
 
-	res, err := c.conn.Query(ctx, srcProps.SQL)
+	res, err := conn.Query(ctx, srcProps.SQL)
 	if err != nil {
 		return nil, err
 	}
@@ -48,6 +47,7 @@ func (c *connection) Query(ctx context.Context, props map[string]any) (drivers.R
 	}
 
 	return &rowIterator{
+		conn:         conn,
 		rows:         res,
 		schema:       schema,
 		fieldMappers: mappers,
@@ -61,6 +61,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 }
 
 type rowIterator struct {
+	conn   *pgx.Conn
 	rows   pgx.Rows
 	schema *runtimev1.StructType
 
@@ -71,19 +72,21 @@ type rowIterator struct {
 // Close implements drivers.RowIterator.
 func (r *rowIterator) Close() error {
 	r.rows.Close()
+	r.conn.Close(context.Background())
 	return nil
 }
 
 // Next implements drivers.RowIterator.
 func (r *rowIterator) Next(ctx context.Context) ([]sqldriver.Value, error) {
 	if !r.rows.Next() {
-		if r.rows.Err() == nil {
+		err := r.rows.Err()
+		if err == nil {
 			return nil, drivers.ErrIteratorDone
 		}
-		if errors.Is(r.rows.Err(), sql.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("no results found for the query")
 		}
-		return nil, r.rows.Err()
+		return nil, err
 	}
 
 	vals, err := r.rows.Values()
@@ -128,8 +131,9 @@ func rowsToSchema(r pgx.Rows) (*runtimev1.StructType, []mapper, error) {
 
 	mappers := make([]mapper, len(fds))
 	fields := make([]*runtimev1.StructType_Field, len(fds))
+	typeMap := conn.TypeMap()
 	for i, fd := range fds {
-		dt, err := columnTypeDatabaseTypeName(conn, fds[i].DataTypeOID)
+		dt, err := columnTypeDatabaseTypeName(typeMap, fds[i].DataTypeOID)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -148,8 +152,8 @@ func rowsToSchema(r pgx.Rows) (*runtimev1.StructType, []mapper, error) {
 }
 
 // columnTypeDatabaseTypeName returns the database system type name. If the name is unknown the OID is returned.
-func columnTypeDatabaseTypeName(conn *pgx.Conn, datatypeOID uint32) (string, error) {
-	if dt, ok := conn.TypeMap().TypeForOID(datatypeOID); ok {
+func columnTypeDatabaseTypeName(typeMap *pgtype.Map, datatypeOID uint32) (string, error) {
+	if dt, ok := typeMap.TypeForOID(datatypeOID); ok {
 		return strings.ToLower(dt.Name), nil
 	}
 	return "", fmt.Errorf("custom datatypes are not supported")
