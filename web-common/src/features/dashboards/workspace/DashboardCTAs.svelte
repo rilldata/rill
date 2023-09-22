@@ -13,9 +13,9 @@
   } from "../../../metrics/service/MetricsTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { featureFlags } from "../../feature-flags";
-  import { projectShareStore } from "../dashboard-stores";
   import { useDashboardPolicyCheck } from "../granular-access-policies/useDashboardPolicyCheck";
   import ViewAsButton from "../granular-access-policies/ViewAsButton.svelte";
+  import DeployDashboardCta from "./DeployDashboardCTA.svelte";
 
   export let metricViewName: string;
 
@@ -38,9 +38,7 @@
     );
   }
 
-  function deployModal() {
-    projectShareStore.set(true);
-  }
+  let showDeployDashboardModal = false;
 </script>
 
 <PanelCTA side="right">
@@ -57,10 +55,17 @@
       </TooltipContent>
     </Tooltip>
     <Tooltip distance={8}>
-      <Button on:click={deployModal} type="primary">Deploy</Button>
+      <Button on:click={() => (showDeployDashboardModal = true)} type="primary">
+        Deploy
+      </Button>
       <TooltipContent slot="tooltip-content">
         Deploy this dashboard to Rill Cloud
       </TooltipContent>
     </Tooltip>
   {/if}
 </PanelCTA>
+
+<DeployDashboardCta
+  open={showDeployDashboardModal}
+  on:close={() => (showDeployDashboardModal = false)}
+/>
