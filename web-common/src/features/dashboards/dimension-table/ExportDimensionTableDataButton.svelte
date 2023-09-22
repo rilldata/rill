@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { IconButton } from "@rilldata/web-common/components/button";
+  import {
+    Button,
+    IconSpaceFixer,
+  } from "@rilldata/web-common/components/button";
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import Export from "@rilldata/web-common/components/icons/Export.svelte";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
@@ -36,19 +39,18 @@
   on:close={() => (exportMenuOpen = false)}
   on:open={() => (exportMenuOpen = true)}
 >
-  <IconButton
-    ariaLabel="Export data"
-    tooltipLocation="left"
-    disableTooltip={exportMenuOpen}
+  <Button
     on:click={(evt) => {
       evt.stopPropagation();
       toggleFloatingElement();
     }}
-    ><span class="text-gray-800">
-      <Export size="18px" />
-    </span>
-    <svelte:fragment slot="tooltip-content">Export data</svelte:fragment>
-  </IconButton>
+    type="text"
+  >
+    <IconSpaceFixer pullRight>
+      <Export size="14px" />
+    </IconSpaceFixer>
+    Export
+  </Button>
   <Menu
     minWidth=""
     on:click-outside={toggleFloatingElement}
