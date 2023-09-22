@@ -240,6 +240,7 @@ export type QueryServiceExportBody = {
   metricsViewToplistRequest?: V1MetricsViewToplistRequest;
   metricsViewRowsRequest?: V1MetricsViewRowsRequest;
   metricsViewTimeSeriesRequest?: V1MetricsViewTimeSeriesRequest;
+  metricsViewComparisonToplistRequest?: V1MetricsViewComparisonToplistRequest;
 };
 
 export type QueryServiceColumnDescriptiveStatisticsParams = {

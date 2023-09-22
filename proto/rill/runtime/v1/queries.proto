@@ -209,6 +209,7 @@ message ExportRequest {
     MetricsViewToplistRequest metrics_view_toplist_request = 4;
     MetricsViewRowsRequest metrics_view_rows_request = 5;
     MetricsViewTimeSeriesRequest metrics_view_time_series_request = 6;
+    MetricsViewComparisonToplistRequest metrics_view_comparison_toplist_request = 8;
   }
 }
 
