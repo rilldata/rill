@@ -190,11 +190,18 @@ func (a *App) Close() error {
 
 	err := a.observabilityShutdown(ctx)
 	if err != nil {
-		fmt.Printf("telemetry shutdown failed: %s\n", err.Error())
+		a.Logger.Named("console").Error("Observability shutdown failed", zap.Error(err))
+	}
+
+	err = a.Runtime.Close()
+	if err != nil {
+		a.Logger.Named("console").Error("Graceful shutdown failed", zap.Error(err))
+	} else {
+		a.Logger.Named("console").Info("Rill shutdown gracefully")
 	}
 
 	a.loggerCleanUp()
-	return a.Runtime.Close()
+	return nil
 }
 
 func (a *App) IsProjectInit() bool {
@@ -321,7 +328,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	if err != nil {
 		return fmt.Errorf("server crashed: %w", err)
 	}
-	a.Logger.Named("console").Info("Rill shutdown gracefully")
+
 	return nil
 }
 
@@ -503,6 +510,7 @@ func initLogger(isVerbose bool, logFormat LogFormat) (logger *zap.Logger, cleanu
 		encCfg := zap.NewDevelopmentEncoderConfig()
 		encCfg.NameKey = zapcore.OmitKey
 		encCfg.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		encCfg.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02T15:04:05.000")
 		consoleEncoder = zapcore.NewConsoleEncoder(encCfg)
 	}
 

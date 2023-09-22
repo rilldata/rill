@@ -1161,10 +1161,11 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 	// Track invocation
 	ctx, cancel := context.WithCancel(context.Background())
 	inv := &invocation{
-		name:     n,
-		isDelete: r.Meta.DeletedOn != nil,
-		isRename: r.Meta.RenamedFrom != nil,
-		cancelFn: cancel,
+		name:      n,
+		isDelete:  r.Meta.DeletedOn != nil,
+		isRename:  r.Meta.RenamedFrom != nil,
+		startedOn: time.Now(),
+		cancelFn:  cancel,
 	}
 	c.invocations[nameStr(n)] = inv
 
@@ -1219,7 +1220,14 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 	delete(c.invocations, nameStr(inv.name))
 
 	// Log result
-	logArgs := []any{slog.String("name", inv.name.Name), slog.String("kind", unqualifiedKind(inv.name.Kind))}
+	logArgs := []any{
+		slog.String("name", inv.name.Name),
+		slog.String("kind", unqualifiedKind(inv.name.Kind)),
+	}
+	elapsed := time.Since(inv.startedOn).Round(time.Millisecond)
+	if elapsed > 0 {
+		logArgs = append(logArgs, slog.String("elapsed", elapsed.String()))
+	}
 	logError := false
 	if inv.cancelled {
 		logArgs = append(logArgs, slog.Bool("cancelled", inv.cancelled))
@@ -1351,6 +1359,7 @@ type invocation struct {
 	name        *runtimev1.ResourceName
 	isDelete    bool
 	isRename    bool
+	startedOn   time.Time
 	cancelFn    context.CancelFunc
 	cancelled   bool
 	reschedule  bool
@@ -1413,7 +1422,9 @@ func invocationFromContext(ctx context.Context) *invocation {
 func unqualifiedKind(k string) string {
 	idx := strings.LastIndex(k, ".")
 	if idx >= 0 {
-		return k[idx+1:]
+		k = k[idx+1:]
 	}
+	// TEMP: Trim the "V2" suffix. TODO: Remove when dropping the suffixes.
+	k = strings.TrimSuffix(k, "V2")
 	return k
 }
