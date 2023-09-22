@@ -53,14 +53,8 @@
   }
 </script>
 
-<div
-  class="grid grid-auto-cols justify-between grid-flow-col items-center p-1 pb-3"
->
-  <button
-    class="flex flex-row items-center"
-    on:click={() => goBackToLeaderboard()}
-    style:grid-column-gap=".4rem"
-  >
+<div class="flex justify-between items-center p-1">
+  <button class="flex items-center" on:click={() => goBackToLeaderboard()}>
     {#if isFetching}
       <div>
         <Spinner size="16px" status={EntityStatus.Running} />
@@ -73,13 +67,10 @@
     {/if}
   </button>
 
-  <div
-    class="flex items-center"
-    style:cursor="pointer"
-    style:grid-column-gap=".4rem"
-  >
+  <!-- We fix the height to avoid a layout shift when the Search component is expanded. -->
+  <div class="flex items-center gap-x-5 cursor-pointer h-9">
     <Tooltip distance={16} location="left">
-      <div class="mr-3 ui-copy-icon" style:grid-column-gap=".4rem">
+      <div class="flex items-center gap-x-1 ui-copy-icon">
         <Switch checked={excludeMode} on:click={() => toggleFilterMode()}>
           Exclude
         </Switch>
@@ -99,25 +90,20 @@
 
     {#if !searchToggle}
       <button
-        class="flex items-center ui-copy-icon"
+        class="flex items-center gap-x-1 ui-copy-icon"
         in:fly={{ x: 10, duration: 300 }}
-        style:grid-column-gap=".2rem"
         on:click={() => (searchToggle = !searchToggle)}
       >
         <SearchIcon size="16px" />
-        <span> Search </span>
+        <span>Search</span>
       </button>
     {:else}
       <div
         transition:slideRight|local={{ leftOffset: 8 }}
-        class="flex items-center"
+        class="flex items-center gap-x-1"
       >
         <Search bind:value={searchText} on:input={onSearch} />
-        <button
-          class="ui-copy-icon"
-          style:cursor="pointer"
-          on:click={() => closeSearchBar()}
-        >
+        <button class="ui-copy-icon" on:click={() => closeSearchBar()}>
           <Close />
         </button>
       </div>
