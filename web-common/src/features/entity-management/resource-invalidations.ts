@@ -18,16 +18,16 @@ import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 
 const MainResources: {
-  [kind in ResourceKind]?: boolean;
+  [kind in ResourceKind]?: true;
 } = {
   [ResourceKind.Source]: true,
   [ResourceKind.Model]: true,
   [ResourceKind.MetricsView]: true,
 };
 const UsedResources: {
-  [kind in ResourceKind]?: boolean;
+  [kind in ResourceKind]?: true;
 } = {
-  [ResourceKind.ProjectParser]: false,
+  [ResourceKind.ProjectParser]: true,
   ...MainResources,
 };
 
@@ -38,6 +38,9 @@ export function invalidateResourceResponse(
   // only process for the `ResourceKind` present in `UsedResources`
   if (!UsedResources[res.name.kind]) return;
 
+  console.log(
+    `[${res.resource.meta.reconcileStatus}] ${res.name.kind}/${res.name.name}`
+  );
   const instanceId = get(runtime).instanceId;
   // invalidations will wait until the re-fetched query is completed
   // so, we should not `await` here

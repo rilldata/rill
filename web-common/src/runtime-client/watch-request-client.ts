@@ -1,3 +1,4 @@
+import { ExponentialBackoffTracker } from "@rilldata/web-common/runtime-client/exponential-backoff-tracker";
 import type {
   V1WatchFilesResponse,
   V1WatchLogsResponse,
@@ -6,7 +7,6 @@ import type {
 import { streamingFetchWrapper } from "@rilldata/web-common/runtime-client/fetch-streaming-wrapper";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { asyncWait } from "@rilldata/web-common/lib/waitUtils";
 import { get, Unsubscriber } from "svelte/store";
 
 type WatchResponse =
@@ -25,7 +25,8 @@ export class WatchRequestClient<Res extends WatchResponse> {
   public constructor(
     private readonly getUrl: (runtime: Runtime) => string,
     private readonly onResponse: (res: Res) => void | Promise<void>,
-    private readonly onReconnect: () => void | Promise<void>
+    private readonly onReconnect: () => void | Promise<void>,
+    private readonly tracker = ExponentialBackoffTracker.createBasicTracker()
   ) {}
 
   public start(): Unsubscriber {
@@ -68,10 +69,9 @@ export class WatchRequestClient<Res extends WatchResponse> {
           else if (res.result) this.onResponse(res.result);
         }
       } catch (err) {
-        console.log(err);
-        // TODO: make this smarter
-        // await asyncWait(2000);
-        return;
+        if (!(await this.tracker.failed())) {
+          return;
+        }
       }
     }
   }

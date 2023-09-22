@@ -5,7 +5,14 @@
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import { Divider, MenuItem } from "@rilldata/web-common/components/menu";
   import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
-  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import {
+    getFileAPIPathFromNameAndType,
+    getFilePathFromNameAndType,
+  } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import {
+    getAllErrorsForFile,
+    getFileHasErrors,
+  } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
@@ -20,6 +27,7 @@
     createRuntimeServicePutFile,
     V1ModelV2,
   } from "@rilldata/web-common/runtime-client";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
@@ -30,7 +38,9 @@
   export let modelName: string;
   // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
   export let toggleMenu: () => void;
+  $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
 
+  const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
   const createFileMutation = createRuntimeServicePutFile();
@@ -40,7 +50,16 @@
   $: modelQuery = useModel($runtime.instanceId, modelName);
   let model: V1ModelV2;
   $: model = $modelQuery.data?.model;
-  $: modelHasError = !$modelQuery.data?.meta?.reconcileError;
+  $: allErrors = getAllErrorsForFile(
+    queryClient,
+    $runtime.instanceId,
+    modelPath
+  );
+  $: modelHasError = getFileHasErrors(
+    queryClient,
+    $runtime.instanceId,
+    modelPath
+  );
 
   $: modelSchema = createConnectorServiceOLAPGetTable({
     instanceId: $runtime.instanceId,
@@ -109,7 +128,7 @@
 </script>
 
 <MenuItem
-  disabled={modelHasError}
+  disabled={$modelHasError}
   icon
   on:select={() => createDashboardFromModel(modelName)}
   propogateSelect={false}
@@ -117,7 +136,7 @@
   <Explore slot="icon" />
   Autogenerate dashboard
   <svelte:fragment slot="description">
-    {#if modelHasError}
+    {#if $modelHasError}
       Model has errors
     {/if}
   </svelte:fragment>

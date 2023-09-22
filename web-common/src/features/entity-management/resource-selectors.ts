@@ -12,7 +12,7 @@ export enum ResourceKind {
   Model = "rill.runtime.v1.ModelV2",
   MetricsView = "rill.runtime.v1.MetricsViewV2",
 }
-export const SingletonProjectParserName = "project_parser";
+export const SingletonProjectParserName = "parser";
 
 export function useResource<T = V1Resource>(
   instanceId: string,

@@ -73,15 +73,15 @@ export function useResourceForFile(
   instanceId: string,
   filePath: string
 ): CreateQueryResult<V1Resource> {
-  return derived([getResourceNameForFile(filePath)], ([resourceName], set) =>
-    useResource(
+  return derived([getResourceNameForFile(filePath)], ([resourceName], set) => {
+    return useResource(
       instanceId,
       resourceName?.name,
       resourceName?.kind as ResourceKind,
       undefined,
       queryClient
-    ).subscribe(set)
-  );
+    ).subscribe(set);
+  });
 }
 
 // TODO: memoize?
