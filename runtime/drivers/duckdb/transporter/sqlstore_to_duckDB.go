@@ -132,7 +132,12 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 			if err != nil {
 				return err
 			}
-			defer a.Close()
+			defer func() {
+				err = a.Close()
+				if err != nil {
+					s.logger.Error("appender closed failed", zap.Error(err))
+				}
+			}()
 
 			for num := 0; ; num++ {
 				select {
@@ -230,7 +235,8 @@ func pbTypeToDuckDB(t *runtimev1.Type) (string, error) {
 	case runtimev1.Type_CODE_DECIMAL:
 		return "DECIMAL", nil
 	case runtimev1.Type_CODE_JSON:
-		return "JSON", nil
+		// keeping type as json but appending varchar using the appender API causes duckdb invalid vector error intermittently
+		return "VARCHAR", nil
 	case runtimev1.Type_CODE_UUID:
 		return "UUID", nil
 	default:

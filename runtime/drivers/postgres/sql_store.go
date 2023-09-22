@@ -8,13 +8,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 
 	// load pgx driver
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5"
 )
 
 // Query implements drivers.SQLStore
@@ -33,25 +32,26 @@ func (c *connection) Query(ctx context.Context, props map[string]any) (drivers.R
 		return nil, fmt.Errorf("require database_url to open postgres connection. Either set database_url in source yaml or pass --env connectors.postgres.database_url=... to rill start")
 	}
 
-	if c.db, err = sqlx.Connect("pgx", dsn); err != nil {
+	if c.conn, err = pgx.Connect(ctx, dsn); err != nil {
 		return nil, err
 	}
+	c.ctx = ctx
 
-	res, err := c.db.QueryxContext(ctx, srcProps.SQL)
+	res, err := c.conn.Query(ctx, srcProps.SQL)
 	if err != nil {
 		return nil, err
 	}
 
-	schema, err := rowsToSchema(res)
+	schema, mappers, err := rowsToSchema(res)
 	if err != nil {
 		return nil, err
 	}
 
 	return &rowIterator{
-		rows:       res,
-		schema:     schema,
-		row:        make([]sqldriver.Value, len(schema.Fields)),
-		scannedRow: make([]any, len(schema.Fields)),
+		rows:         res,
+		schema:       schema,
+		fieldMappers: mappers,
+		row:          make([]sqldriver.Value, len(schema.Fields)),
 	}, nil
 }
 
@@ -61,16 +61,17 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 }
 
 type rowIterator struct {
-	rows   *sqlx.Rows
+	rows   pgx.Rows
 	schema *runtimev1.StructType
 
-	row        []sqldriver.Value
-	scannedRow []any
+	row          []sqldriver.Value
+	fieldMappers []mapper
 }
 
 // Close implements drivers.RowIterator.
 func (r *rowIterator) Close() error {
-	return r.rows.Close()
+	r.rows.Close()
+	return nil
 }
 
 // Next implements drivers.RowIterator.
@@ -85,22 +86,20 @@ func (r *rowIterator) Next(ctx context.Context) ([]sqldriver.Value, error) {
 		return nil, r.rows.Err()
 	}
 
-	for i := 0; i < len(r.scannedRow); i++ {
-		r.scannedRow[i] = &r.row[i]
-	}
-
-	err := r.rows.Scan(r.scannedRow...)
+	vals, err := r.rows.Values()
 	if err != nil {
 		return nil, err
 	}
 
-	for i, field := range r.schema.Fields {
-		if field.Type.Code == runtimev1.Type_CODE_JSON {
-			if val, ok := r.row[i].([]byte); ok {
-				// json types are scanned as bytes
-				// duckdb appender needs it in format string since it calls relevant appender API basis go datatype
-				r.row[i] = string(val)
-			}
+	for i := range r.schema.Fields {
+		mapper := r.fieldMappers[i]
+		if vals[i] == nil {
+			r.row[i] = nil
+			continue
+		}
+		r.row[i], err = mapper.value(vals[i])
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -119,98 +118,41 @@ func (r *rowIterator) Size(unit drivers.ProgressUnit) (uint64, bool) {
 
 var _ drivers.RowIterator = &rowIterator{}
 
-func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
-	if r == nil {
-		return nil, drivers.ErrIteratorDone
+func rowsToSchema(r pgx.Rows) (*runtimev1.StructType, []mapper, error) {
+	fds := r.FieldDescriptions()
+	conn := r.Conn()
+	if conn == nil {
+		// not possible but keeping it for graceful failures
+		return nil, nil, fmt.Errorf("nil pgx conn")
 	}
 
-	cts, err := r.ColumnTypes()
-	if err != nil {
-		return nil, err
-	}
-
-	fields := make([]*runtimev1.StructType_Field, len(cts))
-	for i, ct := range cts {
-		nullable, ok := ct.Nullable()
+	mappers := make([]mapper, len(fds))
+	fields := make([]*runtimev1.StructType_Field, len(fds))
+	for i, fd := range fds {
+		dt, err := columnTypeDatabaseTypeName(conn, fds[i].DataTypeOID)
+		if err != nil {
+			return nil, nil, err
+		}
+		mapper, ok := oidToMapperMap[dt]
 		if !ok {
-			nullable = true
+			return nil, nil, fmt.Errorf("datatype %q is not supported", dt)
 		}
-
+		mappers[i] = mapper
 		fields[i] = &runtimev1.StructType_Field{
-			Name: ct.Name(),
-			Type: databaseTypeToPB(ct.DatabaseTypeName(), nullable),
+			Name: fd.Name,
+			Type: mapper.runtimeType(),
 		}
 	}
 
-	return &runtimev1.StructType{Fields: fields}, nil
+	return &runtimev1.StructType{Fields: fields}, mappers, nil
 }
 
-// Refer table for superset of types https://www.postgresql.org/docs/current/datatype.html
-func databaseTypeToPB(dbt string, nullable bool) *runtimev1.Type {
-	t := &runtimev1.Type{Nullable: nullable}
-
-	// type of array of base types being with _ like _FLOAT8
-	if strings.HasPrefix(dbt, "_") {
-		// TODO :: use lists once appender supports it
-		// lists are scanned as '{1,2,3,4}' which is not valid json
-		t.Code = runtimev1.Type_CODE_STRING
-		return t
+// columnTypeDatabaseTypeName returns the database system type name. If the name is unknown the OID is returned.
+func columnTypeDatabaseTypeName(conn *pgx.Conn, datatypeOID uint32) (string, error) {
+	if dt, ok := conn.TypeMap().TypeForOID(datatypeOID); ok {
+		return strings.ToLower(dt.Name), nil
 	}
-
-	switch dbt {
-	case "BIGINT", "INT8", "BIGSERIAL", "SERIAL8":
-		t.Code = runtimev1.Type_CODE_INT64
-	case "BIT", "BIT VARYING", "VARBIT":
-		t.Code = runtimev1.Type_CODE_STRING // TODO bitstring type once appender supports it
-	case "BOOLEAN", "BOOL":
-		t.Code = runtimev1.Type_CODE_BOOL
-	case "BYTEA":
-		t.Code = runtimev1.Type_CODE_BYTES
-	case "CHARACTER", "CHARACTER VARYING", "BPCHAR":
-		t.Code = runtimev1.Type_CODE_STRING // TODO separate datatypes for fixed length and variable length string
-	case "DATE":
-		t.Code = runtimev1.Type_CODE_DATE
-	case "DOUBLE PRECISION", "FLOAT8":
-		t.Code = runtimev1.Type_CODE_FLOAT64
-	case "INTEGER", "INT", "INT4":
-		t.Code = runtimev1.Type_CODE_INT32
-	case "INTERVAL":
-		t.Code = runtimev1.Type_CODE_STRING // TODO - Consider adding interval type
-	case "JSON", "JSONB":
-		t.Code = runtimev1.Type_CODE_JSON
-	case "NUMERIC", "DECIMAL":
-		t.Code = runtimev1.Type_CODE_STRING
-	case "REAL", "FLOAT4":
-		t.Code = runtimev1.Type_CODE_FLOAT32
-	case "SMALLINT", "INT2", "SMALLSERIAL", "SERIAL2":
-		t.Code = runtimev1.Type_CODE_INT16
-	case "SERIAL", "SERIAL4":
-		t.Code = runtimev1.Type_CODE_INT32
-	case "TEXT":
-		t.Code = runtimev1.Type_CODE_STRING
-	case "TIME":
-		t.Code = runtimev1.Type_CODE_TIME
-	case "TIME WITH TIME ZONE":
-		t.Code = runtimev1.Type_CODE_TIMESTAMP
-	case "TIMESTAMP":
-		t.Code = runtimev1.Type_CODE_TIME
-	case "TIMESTAMP WITH TIME ZONE":
-		t.Code = runtimev1.Type_CODE_TIMESTAMP
-	case "TIMESTAMPTZ":
-		t.Code = runtimev1.Type_CODE_TIMESTAMP
-	case "UUID":
-		t.Code = runtimev1.Type_CODE_UUID
-	case "VARCHAR":
-		t.Code = runtimev1.Type_CODE_STRING
-	case "POINT", "LINE", "LSEG", "BOX", "PATH", "POLYGON", "CIRCLE":
-		t.Code = runtimev1.Type_CODE_STRING
-	default:
-		// There are many datatypes in postgres, convert all to string
-		t.Code = runtimev1.Type_CODE_STRING
-	}
-
-	// Done
-	return t
+	return "", fmt.Errorf("custom datatypes are not supported")
 }
 
 type sourceProperties struct {

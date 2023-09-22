@@ -20,33 +20,31 @@ var sqlStmt = `CREATE TABLE all_datatypes (
 	id serial PRIMARY KEY,
 	name text,
 	age integer,
-	salary numeric(10,2),
 	is_married boolean,
 	date_of_birth date,
 	time_of_day time,
 	created_at timestamp,
-	ip_address inet,
-	mac_address macaddr,
+	json json,
 	json_data jsonb,
 	bit bit,
 	bit_varying bit varying,
 	character character,
 	character_varying character varying,
-	daterange daterange,
-	geometric point,
-	interval interval,
-	money money,
-	numeric numeric,
-	real real,
+	bpchar bpchar(10),
 	smallint smallint,
 	text text,
-	timetz timetz,
 	timestamptz timestamptz,
-	uuid uuid
+	float4 float4,
+	float8 float8,
+	int2 int2,
+	int4 int4,
+	int8 int8,
+	int8_array int8[],
+	timestamptz_array timestamptz[]
   );
-  INSERT INTO all_datatypes (name, age, salary, is_married, date_of_birth, time_of_day, created_at, ip_address, mac_address, json_data, bit, bit_varying, character, character_varying, daterange, geometric, interval, money, numeric, real, smallint, text, timetz, timestamptz, uuid)
+  INSERT INTO all_datatypes (name, age, is_married, date_of_birth, time_of_day, created_at, json, json_data, bit,bit_varying, character, character_varying, bpchar, smallint, text, timestamptz, float4, float8, int2, int4, int8, int8_array, timestamptz_array)
   VALUES
-	('John Doe', 30, 100000, true, '1983-03-08', '12:00:00', '2023-09-12 12:46:55', '192.168.1.1', 'AA:BB:CC:DD:EE:FF', '{"name": "John Doe", "age": 30, "salary": 100000}', b'1', b'10101010', 'a', 'ab', daterange('2018-01-01', '2018-12-31', '[]'), '(1,2)', interval '1 DAY', '100.00', 123.45, 6.78, 123, 'This is a text string.', '2022-09-12 12:46:55+00:00', '2023-09-12 12:46:55+05:30', '292a485f-a56a-4938-8f1a-bbbbbbbbbbb1'::UUID);  
+	('John Doe', 30, true, '1983-03-08', '12:00:00', '2023-09-12 12:46:55', '{"name": "John Doe", "age": 30, "salary": 100000}', '{"name": "John Doe", "age": 30, "salary": 100000}', b'1',b'10101010', 'a', 'ab', 'abcd', 123, 'This is a text string.', '2023-09-12 12:46:55+05:30', 23.2, 123.45, 1, 1234, 1234567, Array[1234567, 7654312], Array[timestamp'2023-09-12 12:46:55+05:30', timestamp'2023-10-12 12:46:55+05:30']);  
   `
 
 func TestTransfer(t *testing.T) {
@@ -58,7 +56,6 @@ func TestTransfer(t *testing.T) {
 	defer db.Close()
 
 	t.Run("AllDataTypes", func(t *testing.T) { allDataTypesTest(t, db, pg.DatabaseURL) })
-	t.Run("CompositeTypes", func(t *testing.T) { compositeTypesTest(t, db, pg.DatabaseURL) })
 }
 
 func allDataTypesTest(t *testing.T, db *sql.DB, dbURL string) {
@@ -71,41 +68,22 @@ func allDataTypesTest(t *testing.T, db *sql.DB, dbURL string) {
 	require.NotNil(t, handle)
 
 	sqlStore, _ := handle.AsSQLStore()
-	to, err := drivers.Open("duckdb", map[string]any{"dsn": ""}, false, activity.NewNoopClient(), zap.NewNop())
+	to, err := drivers.Open("duckdb", map[string]any{"dsn": "/Users/kanshul/Documents/projects/rill-developer/stage.db"}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	olap, _ := to.AsOLAP("")
 
 	tr := NewSQLStoreToDuckDB(sqlStore, olap, zap.NewNop())
 	err = tr.Transfer(ctx, map[string]any{"sql": "select * from all_datatypes;"}, map[string]any{"table": "sink"}, &drivers.TransferOptions{Progress: drivers.NoOpProgress{}})
 	require.NoError(t, err)
-}
-
-var compositeSQl = `CREATE TYPE inventory_item AS (
-    name            text,
-    supplier_id     integer,
-    price           numeric
-);
-CREATE TABLE on_hand (
-    item      inventory_item,
-    count     integer
-);
-INSERT INTO on_hand VALUES (ROW('fuzzy dice', 42, 1.99), 1000);`
-
-func compositeTypesTest(t *testing.T, db *sql.DB, dbURL string) {
-	ctx := context.Background()
-	_, err := db.ExecContext(ctx, compositeSQl)
+	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "select count(*) from sink"})
 	require.NoError(t, err)
+	for res.Next() {
+		var count int
+		err = res.Rows.Scan(&count)
+		require.NoError(t, err)
+		require.Equal(t, count, 1)
+	}
+	require.NoError(t, to.Close())
 
-	handle, err := drivers.Open("postgres", map[string]any{"database_url": dbURL}, false, activity.NewNoopClient(), zap.NewNop())
-	require.NoError(t, err)
-	require.NotNil(t, handle)
-
-	sqlStore, _ := handle.AsSQLStore()
-	to, err := drivers.Open("duckdb", map[string]any{"dsn": ""}, false, activity.NewNoopClient(), zap.NewNop())
-	require.NoError(t, err)
-	olap, _ := to.AsOLAP("")
-
-	tr := NewSQLStoreToDuckDB(sqlStore, olap, zap.NewNop())
-	err = tr.Transfer(ctx, map[string]any{"sql": "select * from on_hand;"}, map[string]any{"table": "sink"}, &drivers.TransferOptions{Progress: drivers.NoOpProgress{}})
 	require.NoError(t, err)
 }
