@@ -376,6 +376,9 @@ func (c *Controller) Get(ctx context.Context, name *runtimev1.ResourceName, clon
 	if err := c.checkRunning(); err != nil {
 		return nil, err
 	}
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
 	c.lock(ctx, true)
 	defer c.unlock(ctx, true)
 
@@ -391,6 +394,9 @@ func (c *Controller) Get(ctx context.Context, name *runtimev1.ResourceName, clon
 func (c *Controller) List(ctx context.Context, kind string, clone bool) ([]*runtimev1.Resource, error) {
 	if err := c.checkRunning(); err != nil {
 		return nil, err
+	}
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
 	}
 	c.lock(ctx, true)
 	defer c.unlock(ctx, true)
@@ -442,6 +448,9 @@ func (c *Controller) Create(ctx context.Context, name *runtimev1.ResourceName, r
 	if err := c.checkRunning(); err != nil {
 		return err
 	}
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 
@@ -477,6 +486,9 @@ func (c *Controller) UpdateMeta(ctx context.Context, name *runtimev1.ResourceNam
 	if err := c.checkRunning(); err != nil {
 		return err
 	}
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 
@@ -509,6 +521,9 @@ func (c *Controller) UpdateMeta(ctx context.Context, name *runtimev1.ResourceNam
 func (c *Controller) UpdateName(ctx context.Context, name, newName, owner *runtimev1.ResourceName, paths []string) error {
 	if err := c.checkRunning(); err != nil {
 		return err
+	}
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
@@ -555,6 +570,9 @@ func (c *Controller) UpdateSpec(ctx context.Context, name *runtimev1.ResourceNam
 	if err := c.checkRunning(); err != nil {
 		return err
 	}
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 
@@ -583,6 +601,7 @@ func (c *Controller) UpdateState(ctx context.Context, name *runtimev1.ResourceNa
 	if err := c.checkRunning(); err != nil {
 		return err
 	}
+	// Must not check ctx.Err(). See NOTE above.
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 
@@ -604,6 +623,9 @@ func (c *Controller) UpdateError(ctx context.Context, name *runtimev1.ResourceNa
 	if err := c.checkRunning(); err != nil {
 		return err
 	}
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 
@@ -621,6 +643,9 @@ func (c *Controller) UpdateError(ctx context.Context, name *runtimev1.ResourceNa
 func (c *Controller) Delete(ctx context.Context, name *runtimev1.ResourceName) error {
 	if err := c.checkRunning(); err != nil {
 		return err
+	}
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
@@ -674,6 +699,9 @@ func (c *Controller) Flush(ctx context.Context) error {
 	if err := c.checkRunning(); err != nil {
 		return err
 	}
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 
@@ -686,6 +714,9 @@ func (c *Controller) Reconcile(ctx context.Context, name *runtimev1.ResourceName
 	if err := c.checkRunning(); err != nil {
 		return err
 	}
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 	c.enqueue(name)
@@ -697,6 +728,9 @@ func (c *Controller) Reconcile(ctx context.Context, name *runtimev1.ResourceName
 func (c *Controller) Cancel(ctx context.Context, name *runtimev1.ResourceName) error {
 	if err := c.checkRunning(); err != nil {
 		return err
+	}
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)

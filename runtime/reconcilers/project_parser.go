@@ -242,10 +242,11 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 	}
 
 	// Set an error without returning to mark if there are parse errors (if not, force error to nil in case there previously were parse errors)
+	var parseErrsErr error
 	if len(parser.Errors) > 0 {
-		err = fmt.Errorf("encountered parser errors")
+		parseErrsErr = fmt.Errorf("encountered parser errors")
 	}
-	err = r.C.UpdateError(ctx, self.Meta.Name, err)
+	err = r.C.UpdateError(ctx, self.Meta.Name, parseErrsErr)
 	if err != nil {
 		return err
 	}
@@ -258,7 +259,12 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 	if diff != nil {
 		return r.reconcileResourcesDiff(ctx, inst, self, parser, diff)
 	}
-	return r.reconcileResources(ctx, inst, self, parser)
+
+	err = r.reconcileResources(ctx, inst, self, parser)
+	if err != nil {
+		return err
+	}
+	return parseErrsErr // Keep the parseErrsErr in this case
 }
 
 // reconcileProjectConfig updates instance config derived from rill.yaml and .env
