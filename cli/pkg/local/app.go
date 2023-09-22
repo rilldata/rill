@@ -3,6 +3,7 @@ package local
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -215,18 +216,46 @@ func (a *App) IsProjectInit() bool {
 	return c.IsInit(a.Context)
 }
 
-func (a *App) Reconcile(strict bool) error {
-	// TODO: Add back when we can avoid waiting for the project parser to finish
-	// err := a.Runtime.WaitUntilIdle(a.Context, a.Instance.ID)
-	// if a.Context.Err() != nil {
-	// 	a.Logger.Errorf("Hydration canceled")
-	// 	return nil
-	// }
-	// if err != nil {
-	// 	return err
-	// }
+func (a *App) Reconcile(strict bool) (err error) {
+	defer func() {
+		if a.Context.Err() != nil {
+			a.Logger.Errorf("Hydration canceled")
+			err = nil
+		}
+	}()
+
+	err = a.Runtime.WaitUntilReady(a.Context, a.Instance.ID)
+	if err != nil {
+		return err
+	}
 
 	controller, err := a.Runtime.Controller(a.Instance.ID)
+	if err != nil {
+		return err
+	}
+
+	// We need to do some extra work to ensure we don't return until all resources have been reconciled.
+	// We know the global project parser is created and becomes PENDING immediately.
+	// We can't call WaitUntilIdle until it has initially parsed and created the resources for the project.
+	// So we poll for it's state to transition to Watching (or for its status to become IDLE, representing a fatal error).
+	for {
+		if a.Context.Err() != nil {
+			return nil
+		}
+
+		r, err := controller.Get(a.Context, runtime.GlobalProjectParserName, false)
+		if err != nil {
+			return fmt.Errorf("could not find project parser: %w", err)
+		}
+
+		if r.Meta.ReconcileStatus == runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE || r.GetProjectParser().State.Watching {
+			break
+		}
+
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	err = a.Runtime.WaitUntilIdle(a.Context, a.Instance.ID, true)
 	if err != nil {
 		return err
 	}
@@ -325,7 +354,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 
 	// Run the server
 	err = group.Wait()
-	if err != nil {
+	if err != nil && !errors.Is(err, context.Canceled) {
 		return fmt.Errorf("server crashed: %w", err)
 	}
 

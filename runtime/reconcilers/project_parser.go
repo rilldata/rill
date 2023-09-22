@@ -67,6 +67,12 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 		return runtime.ReconcileResult{Err: errors.New("not a project parser")}
 	}
 
+	// Reset watching to false (in case of a crash during a previous watch)
+	pp.State.Watching = false
+	if err = r.C.UpdateState(ctx, n, self); err != nil {
+		return runtime.ReconcileResult{Err: err}
+	}
+
 	// Does not support renames
 	if self.Meta.RenamedFrom != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("project parser cannot be renamed")}
@@ -149,6 +155,18 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	if !inst.WatchRepo {
 		return runtime.ReconcileResult{}
 	}
+
+	// Set watching to true and add a defer to ensure it's set to false on exit
+	pp.State.Watching = true
+	if err = r.C.UpdateState(ctx, n, self); err != nil {
+		return runtime.ReconcileResult{Err: err}
+	}
+	defer func() {
+		pp.State.Watching = false
+		if err = r.C.UpdateState(ctx, n, self); err != nil {
+			r.C.Logger.Error("failed to update watch state", slog.Any("error", err))
+		}
+	}()
 
 	// Start a watcher that incrementally reparses the project.
 	// This is a blocking and long-running call, which is supported by the controller.
@@ -477,7 +495,7 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 	// Create and return if not updating
 	n := resourceNameFromCompiler(def.Name)
 	if existing == nil {
-		return r.C.Create(ctx, n, refs, self.Meta.Name, def.Paths, res)
+		return r.C.Create(ctx, n, refs, self.Meta.Name, def.Paths, false, res)
 	}
 
 	// The name may have changed to a different case (e.g. aAa -> Aaa)

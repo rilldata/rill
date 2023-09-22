@@ -6,7 +6,10 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"time"
 )
+
+const httpShutdownTimeout = 15 * time.Second
 
 // ServeHTTP serves a HTTP server and performs a graceful shutdown if/when ctx is cancelled.
 func ServeHTTP(ctx context.Context, server *http.Server, port int) error {
@@ -35,7 +38,9 @@ func ServeHTTP(ctx context.Context, server *http.Server, port int) error {
 	if serveErr == nil {
 		// server.Serve always returns a non-nil err, so this must be a cancel on the parent ctx.
 		// We perform a graceful shutdown.
-		serveErr = server.Shutdown(context.Background())
+		ctx, cancel := context.WithTimeout(context.Background(), httpShutdownTimeout)
+		defer cancel()
+		serveErr = server.Shutdown(ctx)
 	}
 
 	return serveErr

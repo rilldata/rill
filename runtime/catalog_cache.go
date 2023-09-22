@@ -226,7 +226,7 @@ func (c *catalogCache) list(kind string, withDeleted, clone bool) ([]*runtimev1.
 // It will error if a resource with the same name already exists.
 // If a soft-deleted resource exists with the same name, it will be overwritten (no longer deleted).
 // The passed resource should only have its spec populated. The meta and state fields will be populated by this function.
-func (c *catalogCache) create(name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths []string, r *runtimev1.Resource) error {
+func (c *catalogCache) create(name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths []string, hidden bool, r *runtimev1.Resource) error {
 	existing, _ := c.get(name, true, false)
 	if existing != nil {
 		if existing.Meta.DeletedOn == nil {
@@ -237,8 +237,9 @@ func (c *catalogCache) create(name *runtimev1.ResourceName, refs []*runtimev1.Re
 	r.Meta = &runtimev1.ResourceMeta{
 		Name:            name,
 		Refs:            refs,
-		FilePaths:       paths,
 		Owner:           owner,
+		FilePaths:       paths,
+		Hidden:          hidden,
 		Version:         1,
 		SpecVersion:     1,
 		StateVersion:    1,

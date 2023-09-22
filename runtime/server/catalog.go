@@ -132,7 +132,14 @@ func (s *Server) Reconcile(ctx context.Context, req *runtimev1.ReconcileRequest)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	err = ctrl.WaitUntilIdle(ctx)
+	select {
+	case <-ctx.Done():
+		return nil, status.Error(codes.InvalidArgument, ctx.Err().Error())
+	case <-time.After(500 * time.Millisecond):
+		// Give it 0.5s to create the derived resources
+	}
+
+	err = ctrl.WaitUntilIdle(ctx, true)
 	if ctx.Err() != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -171,7 +178,7 @@ func (s *Server) PutFileAndReconcile(ctx context.Context, req *runtimev1.PutFile
 		// Give the watcher 0.5s to pick up the updated file
 	}
 
-	err = ctrl.WaitUntilIdle(ctx)
+	err = ctrl.WaitUntilIdle(ctx, true)
 	if ctx.Err() != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -218,7 +225,7 @@ func (s *Server) RenameFileAndReconcile(ctx context.Context, req *runtimev1.Rena
 		// Give the watcher 0.5s to pick up the updated file
 	}
 
-	err = ctrl.WaitUntilIdle(ctx)
+	err = ctrl.WaitUntilIdle(ctx, true)
 	if ctx.Err() != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -258,7 +265,7 @@ func (s *Server) DeleteFileAndReconcile(ctx context.Context, req *runtimev1.Dele
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	err = ctrl.WaitUntilIdle(ctx)
+	err = ctrl.WaitUntilIdle(ctx, true)
 	if ctx.Err() != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -311,7 +318,7 @@ func (s *Server) RefreshAndReconcile(ctx context.Context, req *runtimev1.Refresh
 		Name: fmt.Sprintf("trigger_adhoc_%s", time.Now().Format("200601021504059999")),
 	}
 
-	err = ctrl.Create(ctx, trgName, nil, nil, nil, &runtimev1.Resource{
+	err = ctrl.Create(ctx, trgName, nil, nil, nil, true, &runtimev1.Resource{
 		Resource: &runtimev1.Resource_RefreshTrigger{
 			RefreshTrigger: &runtimev1.RefreshTrigger{
 				Spec: &runtimev1.RefreshTriggerSpec{
@@ -324,7 +331,7 @@ func (s *Server) RefreshAndReconcile(ctx context.Context, req *runtimev1.Refresh
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	err = ctrl.WaitUntilIdle(ctx)
+	err = ctrl.WaitUntilIdle(ctx, true)
 	if ctx.Err() != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -361,7 +368,7 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *runtimev1.TriggerRefre
 		Name: fmt.Sprintf("trigger_adhoc_%s", time.Now().Format("200601021504059999")),
 	}
 
-	err = ctrl.Create(ctx, trgName, nil, nil, nil, &runtimev1.Resource{
+	err = ctrl.Create(ctx, trgName, nil, nil, nil, true, &runtimev1.Resource{
 		Resource: &runtimev1.Resource_RefreshTrigger{
 			RefreshTrigger: &runtimev1.RefreshTrigger{
 				Spec: &runtimev1.RefreshTriggerSpec{
@@ -374,7 +381,7 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *runtimev1.TriggerRefre
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	err = ctrl.WaitUntilIdle(ctx)
+	err = ctrl.WaitUntilIdle(ctx, true)
 	if ctx.Err() != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

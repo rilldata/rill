@@ -4033,6 +4033,8 @@ definitions:
           $ref: '#/definitions/v1ParseError'
       currentCommitSha:
         type: string
+      watching:
+        type: boolean
   v1PullTrigger:
     type: object
     properties:
@@ -4434,6 +4436,8 @@ definitions:
         type: array
         items:
           type: string
+      hidden:
+        type: boolean
       version:
         type: string
         format: int64

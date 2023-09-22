@@ -53,12 +53,12 @@ func (r *Runtime) WaitUntilReady(ctx context.Context, instanceID string) error {
 }
 
 // WaitUntilIdle waits until the instance's controller is idle (not reconciling any resources).
-func (r *Runtime) WaitUntilIdle(ctx context.Context, instanceID string) error {
+func (r *Runtime) WaitUntilIdle(ctx context.Context, instanceID string, ignoreHidden bool) error {
 	ctrl, err := r.Controller(instanceID)
 	if err != nil {
 		return err
 	}
-	return ctrl.WaitUntilIdle(ctx)
+	return ctrl.WaitUntilIdle(ctx, ignoreHidden)
 }
 
 // CreateInstance creates a new instance and starts a controller for it.
@@ -333,7 +333,7 @@ func (r *registryCache) ensureProjectParser(ctx context.Context, instanceID stri
 		return
 	}
 
-	err = iwc.controller.Create(ctx, GlobalProjectParserName, nil, nil, nil, &runtimev1.Resource{
+	err = iwc.controller.Create(ctx, GlobalProjectParserName, nil, nil, nil, true, &runtimev1.Resource{
 		Resource: &runtimev1.Resource_ProjectParser{
 			ProjectParser: &runtimev1.ProjectParser{Spec: &runtimev1.ProjectParserSpec{}},
 		},
