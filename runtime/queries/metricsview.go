@@ -554,6 +554,9 @@ func duckDBCopyExport(ctx context.Context, rt *runtime.Runtime, instanceID strin
 	defer os.Remove(tmpPath)
 
 	sql = fmt.Sprintf("COPY (%s) TO '%s'", sql, tmpPath)
+	if extension == "csv" {
+		sql += " (FORMAT CSV, HEADER)"
+	}
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:            sql,

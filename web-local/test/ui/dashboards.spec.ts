@@ -7,8 +7,8 @@ import {
   createDashboardFromModel,
   createDashboardFromSource,
   metricsViewRequestFilterMatcher,
+  waitForComparisonTopLists,
   waitForTimeSeries,
-  waitForTopLists,
 } from "./utils/dashboardHelpers";
 import {
   assertAdBidsDashboard,
@@ -48,7 +48,7 @@ test.describe("dashboard", () => {
         true
       ),
       waitForTimeSeries(page, "AdBids_model_dashboard"),
-      waitForTopLists(page, "AdBids_model_dashboard", ["domain"]),
+      waitForComparisonTopLists(page, "AdBids_model_dashboard", ["domain"]),
       createDashboardFromModel(page, "AdBids_model"),
     ]);
     await assertAdBidsDashboard(page);
@@ -62,7 +62,7 @@ test.describe("dashboard", () => {
       );
     await Promise.all([
       waitForTimeSeries(page, "AdBids_model_dashboard", domainFilterMatcher),
-      waitForTopLists(
+      waitForComparisonTopLists(
         page,
         "AdBids_model_dashboard",
         ["domain"],

@@ -106,7 +106,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 	}
 
 	// Log project creation
-	s.logger.Info("created project", zap.String("id", proj.ID), zap.String("name", proj.Name), zap.String("org", org.Name), zap.String("user_id", userID))
+	s.Logger.Info("created project", zap.String("id", proj.ID), zap.String("name", proj.Name), zap.String("org", org.Name), zap.String("user_id", userID))
 
 	// Trigger reconcile
 	err = s.TriggerReconcile(ctx, depl)
@@ -144,7 +144,7 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 // It runs a reconcile if deployment parameters (like branch or variables) have been changed and reconcileDeployment is set.
 func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions) (*database.Project, error) {
 	if proj.Region != opts.Region || proj.ProdSlots != opts.ProdSlots { // require new deployments
-		s.logger.Info("recreating deployment", observability.ZapCtx(ctx))
+		s.Logger.Info("recreating deployment", observability.ZapCtx(ctx))
 		var oldDepl *database.Deployment
 		var err error
 		if proj.ProdDeploymentID != nil {
@@ -184,7 +184,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 
 		if oldDepl != nil {
 			if err := s.teardownDeployment(context.Background(), proj, oldDepl); err != nil {
-				s.logger.Error("could not delete old deployment", zap.Error(err), observability.ZapCtx(ctx))
+				s.Logger.Error("could not delete old deployment", zap.Error(err), observability.ZapCtx(ctx))
 			}
 		}
 
@@ -218,7 +218,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID))
 
 	if impactsDeployments {
-		s.logger.Info("updating deployments", observability.ZapCtx(ctx))
+		s.Logger.Info("updating deployments", observability.ZapCtx(ctx))
 		ds, err := s.DB.FindDeploymentsForProject(ctx, proj.ID)
 		if err != nil {
 			return nil, err
@@ -376,7 +376,7 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 	if prevDepl != nil {
 		err = s.teardownDeployment(ctx, proj, prevDepl)
 		if err != nil {
-			s.logger.Error("trigger redeploy: could not teardown old deployment", zap.String("deployment_id", prevDepl.ID), zap.Error(err), observability.ZapCtx(ctx))
+			s.Logger.Error("trigger redeploy: could not teardown old deployment", zap.String("deployment_id", prevDepl.ID), zap.Error(err), observability.ZapCtx(ctx))
 		}
 	}
 
@@ -396,12 +396,12 @@ func (s *Service) TriggerReconcile(ctx context.Context, depl *database.Deploymen
 	s.reconcileWg.Add(1)
 	go func() {
 		defer s.reconcileWg.Done()
-		s.logger.Info("reconcile: starting", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
+		s.Logger.Info("reconcile: starting", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
 		err := s.triggerReconcile(s.closeCtx, depl) // Use s.closeCtx to cancel if the service is stopped
 		if err == nil {
-			s.logger.Info("reconcile: completed", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
+			s.Logger.Info("reconcile: completed", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
 		} else {
-			s.logger.Error("reconcile: failed", zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
+			s.Logger.Error("reconcile: failed", zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
 		}
 	}()
 	return nil
@@ -457,12 +457,12 @@ func (s *Service) TriggerRefreshSources(ctx context.Context, depl *database.Depl
 	s.reconcileWg.Add(1)
 	go func() {
 		defer s.reconcileWg.Done()
-		s.logger.Info("refresh sources: starting", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
+		s.Logger.Info("refresh sources: starting", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
 		err := s.triggerRefreshSources(s.closeCtx, depl, sources) // Use s.closeCtx to cancel if the service is stopped
 		if err == nil {
-			s.logger.Info("refresh sources: completed", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
+			s.Logger.Info("refresh sources: completed", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
 		} else {
-			s.logger.Error("refresh sources: failed", zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
+			s.Logger.Error("refresh sources: failed", zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
 		}
 	}()
 	return nil
