@@ -59,7 +59,7 @@ func (t *fileStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps ma
 	}
 
 	// Ingest data
-	from, err := sourceReader(localPaths, format, srcCfg.DuckDB, false)
+	from, err := sourceReader(localPaths, format, srcCfg.DuckDB)
 	if err != nil {
 		return err
 	}

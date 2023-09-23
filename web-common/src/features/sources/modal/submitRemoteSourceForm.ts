@@ -64,8 +64,8 @@ export async function submitRemoteSourceForm(
     Object.entries(values).map(([key, value]) => {
       switch (key) {
         case "project_id":
-        case "athena_output_location":
-        case "athena_workgroup":
+        case "output_location":
+        case "workgroup":
           return [key, value];
         default:
           return [fromYupFriendlyKey(key), value];

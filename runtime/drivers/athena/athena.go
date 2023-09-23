@@ -2,23 +2,12 @@ package athena
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	awsconfig "github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/service/athena"
-	"github.com/aws/aws-sdk-go-v2/service/athena/types"
-	s3v2 "github.com/aws/aws-sdk-go-v2/service/s3"
-	s3v2types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
-	"gocloud.dev/blob"
-	"gocloud.dev/blob/s3blob"
 )
 
 func init() {
@@ -40,17 +29,24 @@ var spec = drivers.Spec{
 			Placeholder: "select * from catalog.table;",
 		},
 		{
-			Key:         "athena_output_location",
+			Key:         "output_location",
 			DisplayName: "S3 output location",
-			Description: "Oputut location for query results in S3.",
+			Description: "Output location for query results in S3.",
 			Placeholder: "s3://bucket-name/path/",
 			Type:        drivers.StringPropertyType,
-			Required:    true,
+			Required:    false,
 		},
 		{
-			Key:         "athena_workgroup",
+			Key:         "workgroup",
 			DisplayName: "AWS Athena workgroup",
 			Description: "AWS Athena workgroup to use for queries.",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+		},
+		{
+			Key:         "region",
+			DisplayName: "AWS region",
+			Description: "AWS region to connect to Athena and the output location.",
 			Type:        drivers.StringPropertyType,
 			Required:    false,
 		},
@@ -69,14 +65,7 @@ var spec = drivers.Spec{
 
 type driver struct{}
 
-type configProperties struct {
-	AccessKeyID     string `mapstructure:"aws_access_key_id"`
-	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
-	SessionToken    string `mapstructure:"aws_access_token"`
-	AllowHostAccess bool   `mapstructure:"allow_host_access"`
-}
-
-func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(config map[string]any, shared bool, _ activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("athena driver can't be shared")
 	}
@@ -103,22 +92,6 @@ func (d driver) Spec() drivers.Spec {
 
 func (d driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
 	return false, nil
-}
-
-type sourceProperties struct {
-	SQL            string `mapstructure:"sql"`
-	OutputLocation string `mapstructure:"athena_output_location"`
-	WorkGroup      string `mapstructure:"athena_workgroup"`
-}
-
-func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
-	conf := &sourceProperties{}
-	err := mapstructure.Decode(props, conf)
-	if err != nil {
-		return nil, err
-	}
-
-	return conf, nil
 }
 
 type Connection struct {
@@ -194,144 +167,9 @@ func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return c, true
 }
 
-func cleanPath(ctx context.Context, cfg aws.Config, bucketName, prefix string) error {
-	s3client := s3v2.NewFromConfig(cfg)
-	out, err := s3client.ListObjectsV2(ctx, &s3v2.ListObjectsV2Input{
-		Bucket: &bucketName,
-		Prefix: &prefix,
-	})
-	if err != nil {
-		return err
-	}
-
-	if len(out.Contents) > 1000 { // aws error is opaque here
-		return fmt.Errorf("too many objects to delete %d from %s", len(out.Contents), "s3://"+bucketName+"/"+prefix)
-	}
-
-	ids := make([]s3v2types.ObjectIdentifier, 0, len(out.Contents))
-	for _, o := range out.Contents {
-		ids = append(ids, s3v2types.ObjectIdentifier{
-			Key: o.Key,
-		})
-	}
-	_, err = s3client.DeleteObjects(ctx, &s3v2.DeleteObjectsInput{
-		Bucket: &bucketName,
-		Delete: &s3v2types.Delete{
-			Objects: ids,
-		},
-	})
-	return err
-}
-
-type janitorIterator struct {
-	drivers.FileIterator
-	ctx        context.Context
-	cfg        aws.Config
-	bucketName string
-	unloadPath string
-}
-
-func (ci janitorIterator) Close() error {
-	err := ci.FileIterator.Close()
-	if err != nil {
-		return err
-	}
-
-	return cleanPath(ci.ctx, ci.cfg, ci.bucketName, ci.unloadPath)
-}
-
-func (c *Connection) newCfg(ctx context.Context) (aws.Config, error) {
-	var cfg aws.Config
-	var err error
-	if c.config.AllowHostAccess {
-		cfg, err = awsconfig.LoadDefaultConfig(
-			ctx,
-		)
-	} else {
-		cfg, err = awsconfig.LoadDefaultConfig(
-			ctx,
-			awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(c.config.AccessKeyID, c.config.SecretAccessKey, c.config.SessionToken)),
-		)
-	}
-	if err != nil {
-		return aws.Config{}, err
-	}
-
-	return cfg, nil
-}
-
-func (c *Connection) openBucket(ctx context.Context, conf *sourceProperties, bucket string) (*blob.Bucket, error) {
-	cfg, err := c.newCfg(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	s3client := s3v2.NewFromConfig(cfg)
-	return s3blob.OpenBucketV2(ctx, s3client, bucket, nil)
-}
-
-func resolveOutputLocation(ctx context.Context, client *athena.Client, conf *sourceProperties) (string, error) {
-	if conf.OutputLocation != "" {
-		return conf.OutputLocation, nil
-	} else if conf.WorkGroup != "" {
-		wo, err := client.GetWorkGroup(ctx, &athena.GetWorkGroupInput{
-			WorkGroup: aws.String(conf.WorkGroup),
-		})
-		if err != nil {
-			return "", err
-		}
-		return *wo.WorkGroup.Configuration.ResultConfiguration.OutputLocation, nil
-	}
-
-	return "", errors.New("Athena output location or Athena workgroup is required")
-}
-
-func (c *Connection) unload(ctx context.Context, client *athena.Client, cfg aws.Config, conf *sourceProperties, unloadLocation string) error {
-	finalSQL := fmt.Sprintf("UNLOAD (%s) TO '%s' WITH (format = 'PARQUET')", conf.SQL, unloadLocation)
-
-	resultConfig := &types.ResultConfiguration{
-		OutputLocation: aws.String(conf.OutputLocation),
-	}
-
-	executeParams := &athena.StartQueryExecutionInput{
-		QueryString:         aws.String(finalSQL),
-		ResultConfiguration: resultConfig,
-	}
-
-	if conf.WorkGroup != "" {
-		executeParams = &athena.StartQueryExecutionInput{
-			QueryString: aws.String(finalSQL),
-			WorkGroup:   aws.String(conf.WorkGroup),
-		}
-	}
-
-	athenaExecution, err := client.StartQueryExecution(ctx, executeParams)
-	if err != nil {
-		return err
-	}
-
-	tm := time.NewTimer(5 * time.Minute)
-	defer tm.Stop()
-	for {
-		select {
-		case <-tm.C:
-			fmt.Errorf("Athena ingestion timeout")
-		default:
-			status, err := client.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{
-				QueryExecutionId: athenaExecution.QueryExecutionId,
-			})
-			if err != nil {
-				return err
-			}
-
-			state := status.QueryExecution.Status.State
-
-			if state == types.QueryExecutionStateSucceeded || state == types.QueryExecutionStateCancelled {
-				return nil
-			} else if state == types.QueryExecutionStateFailed {
-				return fmt.Errorf("Athena query execution failed %s", *status.QueryExecution.Status.AthenaError.ErrorMessage)
-			}
-		}
-		time.Sleep(time.Second)
-	}
+type configProperties struct {
+	AccessKeyID     string `mapstructure:"aws_access_key_id"`
+	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
+	SessionToken    string `mapstructure:"aws_access_token"`
+	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }

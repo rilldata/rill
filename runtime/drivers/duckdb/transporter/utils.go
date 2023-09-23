@@ -98,12 +98,12 @@ func parseFileSourceProperties(props map[string]any) (*fileSourceProperties, err
 	return cfg, nil
 }
 
-func sourceReader(paths []string, format string, ingestionProps map[string]any, fromAthena bool) (string, error) {
+func sourceReader(paths []string, format string, ingestionProps map[string]any) (string, error) {
 	// Generate a "read" statement
 	if containsAny(format, []string{".csv", ".tsv", ".txt"}) {
 		// CSV reader
 		return generateReadCsvStatement(paths, ingestionProps)
-	} else if strings.Contains(format, ".parquet") || fromAthena {
+	} else if strings.Contains(format, ".parquet") {
 		// Parquet reader
 		return generateReadParquetStatement(paths, ingestionProps)
 	} else if containsAny(format, []string{".json", ".ndjson"}) {

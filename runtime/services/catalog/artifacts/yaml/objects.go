@@ -45,8 +45,8 @@ type Source struct {
 	SQL                         string         `yaml:"sql,omitempty" mapstructure:"sql,omitempty"`
 	DB                          string         `yaml:"db,omitempty" mapstructure:"db,omitempty"`
 	ProjectID                   string         `yaml:"project_id,omitempty" mapstructure:"project_id,omitempty"`
-	AthenaOutputLocation        string         `yaml:"athena_output_location,omitempty" mapstructure:"athena_output_location,omitempty"`
-	AthenaWorkgroup             string         `yaml:"athena_workgroup,omitempty" mapstructure:"athena_workgroup,omitempty"`
+	AthenaOutputLocation        string         `yaml:"output_location,omitempty" mapstructure:"output_location,omitempty"`
+	AthenaWorkgroup             string         `yaml:"workgroup,omitempty" mapstructure:"workgroup,omitempty"`
 }
 
 type MetricsView struct {
@@ -210,11 +210,11 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 	}
 
 	if source.AthenaOutputLocation != "" {
-		props["athena_output_location"] = source.AthenaOutputLocation
+		props["output_location"] = source.AthenaOutputLocation
 	}
 
 	if source.AthenaWorkgroup != "" {
-		props["athena_workgroup"] = source.AthenaWorkgroup
+		props["workgroup"] = source.AthenaWorkgroup
 	}
 
 	propsPB, err := structpb.NewStruct(props)

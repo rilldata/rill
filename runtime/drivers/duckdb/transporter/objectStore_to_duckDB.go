@@ -96,7 +96,7 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 				return err
 			}
 		} else {
-			from, err := sourceReader(files, format, srcCfg.DuckDB, false)
+			from, err := sourceReader(files, format, srcCfg.DuckDB)
 			if err != nil {
 				return err
 			}
@@ -136,7 +136,7 @@ func newAppender(to drivers.OLAPStore, sink *sinkProperties, ingestionProps map[
 }
 
 func (a *appender) appendData(ctx context.Context, files []string, format string) error {
-	from, err := sourceReader(files, format, a.ingestionProps, false)
+	from, err := sourceReader(files, format, a.ingestionProps)
 	if err != nil {
 		return err
 	}

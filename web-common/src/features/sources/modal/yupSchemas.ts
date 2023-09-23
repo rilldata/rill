@@ -79,8 +79,8 @@ export function getYupSchema(connector: V1ConnectorSpec) {
             "Source name must start with a letter or underscore and contain only letters, numbers, and underscores"
           )
           .required("Source name is required"),
-        athena_output_location: yup.string().required(),
-        athena_workgroup: yup.string(),
+        output_location: yup.string(),
+        workgroup: yup.string(),
       });
 
     default:
