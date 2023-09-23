@@ -104,6 +104,7 @@ for (let i = 0; i < data.metadata.pivotColumnCt; i++) {
 
 // Mock data fetch
 export const fetchData = (block, delay) => async () => {
+  console.log(block);
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve({

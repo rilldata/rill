@@ -19,6 +19,7 @@
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
   import DashboardCTAs from "./DashboardCTAs.svelte";
   import DashboardTitle from "./DashboardTitle.svelte";
+  import TimeDimensionDetailsTable from "@rilldata/web-common/features/dashboards/time-dimension-details/TimeDimensionDetailsTable.svelte";
 
   export let metricViewName: string;
   export let leftMargin = undefined;
@@ -28,11 +29,15 @@
   $: metricsExplorer = useDashboardStore(metricViewName);
 
   $: selectedDimensionName = $metricsExplorer?.selectedDimensionName;
+  $: expandedMeasureName = $metricsExplorer?.expandedMeasureName;
   $: metricTimeSeries = useModelHasTimeSeries(
     $runtime.instanceId,
     metricViewName
   );
   $: hasTimeSeries = $metricTimeSeries.data;
+
+  // flex-row flex-col
+  $: dashboardAlignment = expandedMeasureName ? "col" : "row";
 
   // the navigationVisibilityTween is a tweened value that is used
   // to animate the extra padding that needs to be added to the
@@ -99,10 +104,13 @@
     <MockUserHasNoAccess />
   {:else}
     <div
-      class="flex gap-x-1 h-full overflow-hidden"
+      class="flex gap-x-1 h-full overflow-hidden flex-{dashboardAlignment}"
       style:padding-left={leftSide}
     >
-      <div class="overflow-y-scroll pb-8 flex-none">
+      <div
+        class:fixed-metric-height={expandedMeasureName}
+        class="overflow-y-scroll pb-8 flex-none"
+      >
         {#key metricViewName}
           {#if hasTimeSeries}
             <MetricsTimeSeriesCharts
@@ -116,7 +124,9 @@
       </div>
 
       <div class="overflow-y-hidden px-4 grow">
-        {#if selectedDimensionName}
+        {#if expandedMeasureName}
+          <TimeDimensionDetailsTable />
+        {:else if selectedDimensionName}
           <DimensionDisplay
             {metricViewName}
             dimensionName={selectedDimensionName}
@@ -132,3 +142,9 @@
     {/if}
   {/if}
 </section>
+
+<style>
+  .fixed-metric-height {
+    height: 300px;
+  }
+</style>

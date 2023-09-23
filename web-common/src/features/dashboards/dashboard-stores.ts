@@ -88,7 +88,10 @@ export interface MetricsExplorerEntity {
   // user selected time range
   selectedTimeRange?: DashboardTimeControls;
 
-  // user selected scrub range
+  // the name of the measure that is currently being expanded
+  expandedMeasureName?: string;
+
+  // user selected scrub range on the time series chart
   selectedScrubRange?: ScrubRange;
   lastDefinedScrubRange?: ScrubRange;
 
@@ -368,6 +371,12 @@ const metricViewReducers = {
   setLeaderboardMeasureName(name: string, measureName: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.leaderboardMeasureName = measureName;
+    });
+  },
+
+  setExpandedMeasureName(name: string, measureName: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.expandedMeasureName = measureName;
     });
   },
 

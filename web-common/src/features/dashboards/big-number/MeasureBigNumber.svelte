@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { createEventDispatcher } from "svelte";
   import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
@@ -16,7 +17,6 @@
     FormatPreset,
     humanizeDataTypeExpanded,
   } from "../humanize-numbers";
-
   export let value: number;
   export let comparisonOption: TimeComparisonOption = undefined;
   export let comparisonValue: number = undefined;
@@ -27,6 +27,8 @@
   export let description: string = undefined;
   export let withTimeseries = true;
   export let formatPreset: string; // workaround, since unable to cast `string` to `FormatPreset` within MetricsTimeSeriesCharts.svelte's `#each` block
+
+  const dispatch = createEventDispatcher();
 
   $: formatPresetEnum = (formatPreset as FormatPreset) || FormatPreset.HUMANIZE;
   $: valueIsPresent = value !== undefined && value !== null;
@@ -43,7 +45,8 @@
 </script>
 
 <button
-  class="flex flex-col px-2 py-1 text-left {withTimeseries
+  on:click={() => dispatch("expand-measure")}
+  class="flex flex-col px-2 py-1 text-left hover:bg-gray-100 {withTimeseries
     ? 'my-2'
     : 'justify-between'}"
 >

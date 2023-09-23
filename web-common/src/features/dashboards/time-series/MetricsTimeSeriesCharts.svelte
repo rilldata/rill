@@ -3,7 +3,10 @@
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
-  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import {
+    metricsExplorerStore,
+    useDashboardStore,
+  } from "@rilldata/web-common/features/dashboards/dashboard-stores";
   import { getFilterForComparedDimension, prepareTimeSeries } from "./utils";
   import {
     humanizeDataType,
@@ -36,6 +39,7 @@
   import MeasureChart from "./MeasureChart.svelte";
   import MeasureZoom from "./MeasureZoom.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
+  import BackToOverview from "@rilldata/web-common/features/dashboards/time-series/BackToOverview.svelte";
 
   export let metricViewName;
   export let workspaceWidth: number;
@@ -47,20 +51,45 @@
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
 
+  $: showHideMeasures = createShowHideMeasuresStore(metricViewName, metaQuery);
+
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
   $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
+  $: expandedMeasureName = $dashboardStore?.expandedMeasureName;
   $: comparisonDimension = $dashboardStore?.selectedComparisonDimension;
   $: showComparison = !comparisonDimension && $timeControlsStore.showComparison;
   $: interval =
     $timeControlsStore.selectedTimeRange?.interval ??
     $timeControlsStore.minTimeGrain;
 
+  // List of measures which will be shown on the dashboard
+  let renderedMeasures = [];
+  $: {
+    if (expandedMeasureName) {
+      renderedMeasures = $metaQuery.data?.measures.filter(
+        (measure) => measure.name === expandedMeasureName
+      );
+    } else {
+      renderedMeasures = $metaQuery.data?.measures.filter(
+        (_, i) => $showHideMeasures.selectedItems[i]
+      );
+    }
+  }
+
+  $: renderedMeasureNames = renderedMeasures.map((measure) => measure.name);
+
+  // List of measures which will be queried
+  // In case we on expanded view, only query the for that measure
+  $: queriedMeasureNames = expandedMeasureName
+    ? renderedMeasureNames
+    : selectedMeasureNames;
+
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     $runtime.instanceId,
     metricViewName,
     {
-      measureNames: selectedMeasureNames,
+      measureNames: queriedMeasureNames,
       timeStart: $timeControlsStore.timeStart,
       timeEnd: $timeControlsStore.timeEnd,
       filter: $dashboardStore?.filters,
@@ -68,7 +97,7 @@
     {
       query: {
         enabled:
-          selectedMeasureNames?.length > 0 &&
+          queriedMeasureNames?.length > 0 &&
           $timeControlsStore.ready &&
           !!$dashboardStore?.filters,
       },
@@ -79,7 +108,7 @@
     instanceId,
     metricViewName,
     {
-      measureNames: selectedMeasureNames,
+      measureNames: queriedMeasureNames,
       timeStart: $timeControlsStore.comparisonTimeStart,
       timeEnd: $timeControlsStore.comparisonTimeEnd,
       filter: $dashboardStore?.filters,
@@ -118,7 +147,7 @@
       instanceId,
       metricViewName,
       {
-        measureNames: selectedMeasureNames,
+        measureNames: queriedMeasureNames,
         filter: $dashboardStore?.filters,
         timeStart: $timeControlsStore.adjustedStart,
         timeEnd: $timeControlsStore.adjustedEnd,
@@ -131,7 +160,7 @@
         instanceId,
         metricViewName,
         {
-          measureNames: selectedMeasureNames,
+          measureNames: queriedMeasureNames,
           filter: $dashboardStore?.filters,
           timeStart: $timeControlsStore.comparisonAdjustedStart,
           timeEnd: $timeControlsStore.comparisonAdjustedEnd,
@@ -262,22 +291,16 @@
     }
 
     allDimQuery = getDimensionValueTimeSeries(
+      getStateManagers(),
       includedValues,
-      instanceId,
-      metricViewName,
-      comparisonDimension,
-      selectedMeasureNames,
-      filters,
-      $timeControlsStore.adjustedStart,
-      $timeControlsStore.adjustedEnd,
-      interval,
-      $dashboardStore?.selectedTimezone
+      queriedMeasureNames,
+      filters
     );
   }
 
-  $: dimensionData = comparisonDimension ? $allDimQuery : [];
+  $: console.log($allDimQuery);
 
-  $: showHideMeasures = createShowHideMeasuresStore(metricViewName, metaQuery);
+  $: dimensionData = comparisonDimension ? $allDimQuery : [];
 
   const toggleMeasureVisibility = (e) => {
     showHideMeasures.toggleVisibility(e.detail.name);
@@ -290,17 +313,26 @@
   };
 </script>
 
-<TimeSeriesChartContainer end={endValue} start={startValue} {workspaceWidth}>
+<TimeSeriesChartContainer
+  enableFullWidth={Boolean(expandedMeasureName)}
+  end={endValue}
+  start={startValue}
+  {workspaceWidth}
+>
   <div class="bg-white sticky top-0 flex pl-1" style="z-index:100">
-    <SeachableFilterButton
-      label="Measures"
-      on:deselect-all={setAllMeasuresNotVisible}
-      on:item-clicked={toggleMeasureVisibility}
-      on:select-all={setAllMeasuresVisible}
-      selectableItems={$showHideMeasures.selectableItems}
-      selectedItems={$showHideMeasures.selectedItems}
-      tooltipText="Choose measures to display"
-    />
+    {#if expandedMeasureName}
+      <BackToOverview {metricViewName} />
+    {:else}
+      <SeachableFilterButton
+        label="Measures"
+        on:deselect-all={setAllMeasuresNotVisible}
+        on:item-clicked={toggleMeasureVisibility}
+        on:select-all={setAllMeasuresVisible}
+        selectableItems={$showHideMeasures.selectableItems}
+        selectedItems={$showHideMeasures.selectedItems}
+        tooltipText="Choose measures to display"
+      />
+    {/if}
   </div>
   <div
     class="bg-white sticky left-0 top-0 overflow-visible"
@@ -323,9 +355,9 @@
     {/if}
   </div>
   <!-- bignumbers and line charts -->
-  {#if $metaQuery.data?.measures}
+  {#if renderedMeasures.length}
     <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
-    {#each $metaQuery.data?.measures.filter((_, i) => $showHideMeasures.selectedItems[i]) as measure (measure.name)}
+    {#each renderedMeasures as measure (measure.name)}
       <!-- FIXME: I can't select the big number by the measure id. -->
       {@const bigNum = $totalsQuery?.data?.data?.[measure.name]}
       {@const comparisonValue = totalsComparisons?.[measure.name]}
@@ -335,8 +367,13 @@
           : undefined}
       {@const formatPreset =
         FormatPreset[measure?.format] || FormatPreset.HUMANIZE}
-      <!-- FIXME: I can't select a time series by measure id. -->
       <MeasureBigNumber
+        on:expand-measure={() => {
+          metricsExplorerStore.setExpandedMeasureName(
+            metricViewName,
+            measure.name
+          );
+        }}
         value={bigNum}
         {showComparison}
         comparisonOption={$timeControlsStore?.selectedComparisonTimeRange?.name}

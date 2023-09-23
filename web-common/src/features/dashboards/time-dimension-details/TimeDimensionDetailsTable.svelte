@@ -10,10 +10,15 @@
     HEADER_HEIGHT,
     ROW_HEIGHT,
   } from "./constants";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { useTimeSeriesDataStore } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
 
   // Store of state to share between line chart and table
   let store = createTimeDimensionDetailsStore();
 
+  const timeSeriesDataStore = useTimeSeriesDataStore(getStateManagers());
+
+  $: console.log($timeSeriesDataStore);
   createTDDContext({
     store,
     headers: data.headers,
@@ -33,11 +38,9 @@
   const bodyStyle = `padding-left: ${FILTER_OVERFLOW_WIDTH}px;`;
 </script>
 
-<h1>Store</h1>
-<pre style="max-height: 200px; overflow: auto; width: fit-content;">
+<!-- <pre style="max-height: 200px; overflow: auto; width: fit-content;">
   {JSON.stringify($store, null, 2)}
-</pre>
-<h1>Table</h1>
+</pre> -->
 <Pivot
   height={400}
   rowCt={data.metadata.rowCt}
