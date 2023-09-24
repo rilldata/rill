@@ -119,9 +119,11 @@ const expectedData = [
     measure_0: 25,
     measure_0_delta: 0,
     measure_0_delta_perc: {
-      int: 0,
-      neg: "",
+      dot: "",
+      frac: "",
+      int: "0",
       percent: "%",
+      suffix: "",
     },
   },
   {

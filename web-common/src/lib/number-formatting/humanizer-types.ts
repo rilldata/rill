@@ -8,6 +8,7 @@ export type NumberParts = {
   frac: string;
   suffix: string;
   percent?: "%";
+  approxZero?: boolean;
 };
 
 export type NumericRange = {
@@ -38,6 +39,8 @@ export type RichFormatNumber = {
  */
 export enum NumberKind {
   DOLLAR = "DOLLAR",
+  // NOTE: PERCENT formatter assumes numbers have not
+  // already been multiplied by 100
   PERCENT = "PERCENT",
   INTERVAL = "INTERVAL",
   ANY = "ANY",
