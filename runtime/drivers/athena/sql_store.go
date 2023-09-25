@@ -129,20 +129,14 @@ func (c *Connection) unload(ctx context.Context, client *athena.Client, conf *so
 		QueryString: aws.String(finalSQL),
 	}
 
-	// If output_location is set, use it and don't set workgroup because the workgroup can override the output location
-	// Otherwise use specified workgroup or the "primary" workgroup
-	// see https://docs.aws.amazon.com/athena/latest/ug/querying.html
 	if conf.OutputLocation != "" {
 		executeParams.ResultConfiguration = &types2.ResultConfiguration{
 			OutputLocation: aws.String(conf.OutputLocation),
 		}
-	} else {
-		workgroup := conf.Workgroup
-		if workgroup == "" {
-			// fallback to "primary" (default) workgroup if no workgroup is specified
-			workgroup = "primary"
-		}
-		executeParams.WorkGroup = aws.String(workgroup)
+	}
+
+	if conf.Workgroup != "" { // primary is used if nothing is set
+		executeParams.WorkGroup = aws.String(conf.Workgroup)
 	}
 
 	queryExecutionOutput, err := client.StartQueryExecution(ctx, executeParams)
