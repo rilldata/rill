@@ -51,7 +51,7 @@ export default async function exportToplist({
           },
         ],
         filter: dashboard.filters,
-        limit: "250",
+        limit: undefined, // the backend handles export limits
         offset: "0",
       },
     },
