@@ -93,8 +93,8 @@ func (opts *Options) validate() {
 		opts.GlobPageSize = 1000
 	}
 	if opts.BatchSizeBytes == 0 {
-		// 5 GB
-		opts.BatchSizeBytes = 5 * 1024 * 1024 * 1024
+		// 2 GB
+		opts.BatchSizeBytes = 2 * 1024 * 1024 * 1024
 	}
 }
 
