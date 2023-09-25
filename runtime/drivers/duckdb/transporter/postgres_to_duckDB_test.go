@@ -45,7 +45,7 @@ var sqlStmt = `CREATE TABLE all_datatypes (
   );
   INSERT INTO all_datatypes (name, age, is_married, date_of_birth, time_of_day, created_at, json, json_data, bit,bit_varying, character, character_varying, bpchar, smallint, text, timestamptz, float4, float8, int2, int4, int8, int8_array, timestamptz_array, emp_salary)
   VALUES
-	('John Doe', 30, true, '1983-03-08', '12:00:00', '2023-09-12 12:46:55', '{"name": "John Doe", "age": 30, "salary": 100000}', '{"name": "John Doe", "age": 30, "salary": 100000}', b'1',b'10101010', 'a', 'ab', 'abcd', 123, 'This is a text string.', '2023-09-12 12:46:55+05:30', 23.2, 123.45, 1, 1234, 1234567, Array[1234567, 7654312], Array[timestamp'2023-09-12 12:46:55+05:30', timestamp'2023-10-12 12:46:55+05:30'], 38500000000000.7123);  
+	('John Doe', 30, true, '1983-03-08', '12:35:00', '2023-09-12 12:46:55', '{"name": "John Doe", "age": 30, "salary": 100000}', '{"name": "John Doe", "age": 30, "salary": 100000}', b'1',b'10101010', 'a', 'ab', 'abcd', 123, 'This is a text string.', '2023-09-12 12:46:55+05:30', 23.2, 123.45, 1, 1234, 1234567, Array[1234567, 7654312], Array[timestamp'2023-09-12 12:46:55+05:30', timestamp'2023-10-12 12:46:55+05:30'], 38500000000000.71256565656563);  
   `
 
 func TestTransfer(t *testing.T) {
@@ -69,7 +69,7 @@ func allDataTypesTest(t *testing.T, db *sql.DB, dbURL string) {
 	require.NotNil(t, handle)
 
 	sqlStore, _ := handle.AsSQLStore()
-	to, err := drivers.Open("duckdb", map[string]any{"dsn": "/Users/kanshul/Documents/projects/rill-developer/stage.db"}, false, activity.NewNoopClient(), zap.NewNop())
+	to, err := drivers.Open("duckdb", map[string]any{"dsn": ""}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	olap, _ := to.AsOLAP("")
 
