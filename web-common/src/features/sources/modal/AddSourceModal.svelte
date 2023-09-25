@@ -61,12 +61,14 @@
       select: (data) => {
         data.connectors =
           data.connectors &&
-          data.connectors.filter(
-            // Only show connectors in TAB_ORDER
-            (a) => TAB_ORDER.indexOf(a.name) >= 0
-          ).sort(
-            (a, b) => TAB_ORDER.indexOf(a.name) - TAB_ORDER.indexOf(b.name)
-          );
+          data.connectors
+            .filter(
+              // Only show connectors in TAB_ORDER
+              (a) => TAB_ORDER.indexOf(a.name) >= 0
+            )
+            .sort(
+              (a, b) => TAB_ORDER.indexOf(a.name) - TAB_ORDER.indexOf(b.name)
+            );
         return data;
       },
     },
