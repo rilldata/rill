@@ -38,11 +38,14 @@ func (c *connection) Query(ctx context.Context, props map[string]any) (drivers.R
 
 	res, err := conn.Query(ctx, srcProps.SQL)
 	if err != nil {
+		conn.Close(ctx)
 		return nil, err
 	}
 
 	schema, mappers, err := rowsToSchema(res)
 	if err != nil {
+		res.Close()
+		conn.Close(ctx)
 		return nil, err
 	}
 
@@ -72,8 +75,7 @@ type rowIterator struct {
 // Close implements drivers.RowIterator.
 func (r *rowIterator) Close() error {
 	r.rows.Close()
-	r.conn.Close(context.Background())
-	return nil
+	return r.conn.Close(context.Background())
 }
 
 // Next implements drivers.RowIterator.
