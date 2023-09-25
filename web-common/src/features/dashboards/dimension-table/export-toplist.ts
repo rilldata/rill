@@ -1,12 +1,13 @@
 import type { TimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { SortDirection } from "../proto-state/derived-types";
-import { get } from "svelte/store";
-import { runtime } from "../../../runtime-client/runtime-store";
-import { useDashboardStore } from "../dashboard-stores";
 import type {
   V1ExportFormat,
   createQueryServiceExport,
 } from "@rilldata/web-common/runtime-client";
+import { get } from "svelte/store";
+import { runtime } from "../../../runtime-client/runtime-store";
+import { useDashboardStore } from "../dashboard-stores";
+import { getQuerySortType } from "../leaderboard/leaderboard-utils";
+import { SortDirection } from "../proto-state/derived-types";
 
 export default async function exportToplist({
   query,
@@ -29,22 +30,29 @@ export default async function exportToplist({
     instanceId: get(runtime).instanceId,
     data: {
       format,
-      metricsViewToplistRequest: {
+      metricsViewComparisonToplistRequest: {
         instanceId: get(runtime).instanceId,
         metricsViewName: metricViewName,
         dimensionName: dashboard.selectedDimensionName,
         measureNames: dashboard.selectedMeasureNames,
-        timeStart: timeControlState.timeStart,
-        timeEnd: timeControlState.timeEnd,
-        limit: "250",
-        offset: "0",
+        baseTimeRange: {
+          start: timeControlState.timeStart,
+          end: timeControlState.timeEnd,
+        },
+        comparisonTimeRange: {
+          start: timeControlState.comparisonTimeStart,
+          end: timeControlState.comparisonTimeEnd,
+        },
         sort: [
           {
-            name: dashboard.leaderboardMeasureName,
+            measureName: dashboard.leaderboardMeasureName,
             ascending: dashboard.sortDirection === SortDirection.ASCENDING,
+            type: getQuerySortType(dashboard.dashboardSortType),
           },
         ],
         filter: dashboard.filters,
+        limit: "250",
+        offset: "0",
       },
     },
   });
