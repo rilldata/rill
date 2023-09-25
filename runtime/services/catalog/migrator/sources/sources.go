@@ -389,6 +389,9 @@ func connectorVariables(src *runtimev1.Source, env map[string]string, repoRoot s
 		vars["dsn"] = repoRoot
 	case "bigquery":
 		vars["google_application_credentials"] = env["google_application_credentials"]
+	case "postgres":
+		// this is only required till sources can't call AcquireHandle directly
+		vars["database_url"] = env["connectors.postgres.database_url"]
 	}
 	return vars
 }

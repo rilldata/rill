@@ -67,6 +67,8 @@ export async function submitRemoteSourceForm(
         case "output_location":
         case "workgroup":
           return [key, value];
+        case "database_url":
+          return [key, value];
         default:
           return [fromYupFriendlyKey(key), value];
       }
