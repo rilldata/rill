@@ -135,12 +135,13 @@ func (c *Connection) unload(ctx context.Context, client *athena.Client, conf *so
 		return err
 	}
 
-	tm := time.NewTimer(5 * time.Minute)
-	defer tm.Stop()
 	for {
 		select {
-		case <-tm.C:
-			return fmt.Errorf("Athena ingestion timed out")
+		case <-ctx.Done():
+			_, err = client.StopQueryExecution(ctx, &athena.StopQueryExecutionInput{
+				QueryExecutionId: queryExecutionOutput.QueryExecutionId,
+			})
+			return errors.Join(ctx.Err(), err)
 		default:
 			status, err := client.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{
 				QueryExecutionId: queryExecutionOutput.QueryExecutionId,
@@ -150,8 +151,10 @@ func (c *Connection) unload(ctx context.Context, client *athena.Client, conf *so
 			}
 
 			switch status.QueryExecution.Status.State {
-			case types2.QueryExecutionStateSucceeded, types2.QueryExecutionStateCancelled:
+			case types2.QueryExecutionStateSucceeded:
 				return nil
+			case types2.QueryExecutionStateCancelled:
+				return fmt.Errorf("Athena query execution cancelled")
 			case types2.QueryExecutionStateFailed:
 				return fmt.Errorf("Athena query execution failed %s", *status.QueryExecution.Status.AthenaError.ErrorMessage)
 			}
