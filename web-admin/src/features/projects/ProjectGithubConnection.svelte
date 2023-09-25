@@ -37,9 +37,12 @@
             {repoName}
           </a>
           {#if subpath}
-            <span class="text-gray-800 text-[11px] leading-4">
-              /{subpath}
-            </span>
+            <div class="flex items-center">
+              <span class="font-mono">subpath</span>
+              <span class="text-gray-800">
+                : /{subpath}
+              </span>
+            </div>
           {/if}
         </div>
       </div>
