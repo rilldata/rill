@@ -32,7 +32,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
   public start(): Unsubscriber {
     const unsubscribe = runtime.subscribe((runtimeState) => {
       this.controller?.abort();
-      if (!runtimeState?.host || !runtimeState?.instanceId) return;
+      if (!runtimeState?.instanceId) return;
 
       this.maintainConnection();
     });

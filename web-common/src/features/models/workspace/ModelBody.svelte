@@ -6,7 +6,6 @@
     getFileAPIPathFromNameAndType,
     getFilePathFromNameAndType,
   } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
   import { getAllErrorsForFile } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import type { QueryHighlightState } from "@rilldata/web-common/features/models/query-highlight-store";
@@ -24,7 +23,7 @@
   import type { LayoutElement } from "../../../layout/workspace/types";
   import { httpRequestQueue } from "../../../runtime-client/http-client";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { useModelFileIsEmpty } from "../selectors";
+  import { useModel, useModelFileIsEmpty } from "../selectors";
   import { sanitizeQuery } from "../utils/sanitize-query";
   import Editor from "./Editor.svelte";
 
@@ -70,6 +69,9 @@
     modelPath
   );
   $: modelError = $allErrors?.[0]?.message;
+
+  $: modelQuery = useModel(runtimeInstanceId, modelName);
+  $: hasModelResource = !!$modelQuery.data?.model;
 
   const outputLayout = getContext(
     "rill:app:output-layout"
@@ -118,8 +120,10 @@
   let errors = [];
   $: {
     errors = [];
-    if (modelError) errors.push(modelError);
-    if (runtimeError) errors.push(runtimeError.message);
+    // only add error if sql is present
+    if (modelError && modelSql !== "") errors.push(modelError);
+    // only add runtime error if there is a resource
+    if (hasModelResource && runtimeError) errors.push(runtimeError.message);
   }
 </script>
 

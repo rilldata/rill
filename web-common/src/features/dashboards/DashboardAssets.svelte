@@ -27,7 +27,6 @@
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import {
-    createRuntimeServiceDeleteFileAndReconcile,
     createRuntimeServicePutFileAndReconcile,
     runtimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";

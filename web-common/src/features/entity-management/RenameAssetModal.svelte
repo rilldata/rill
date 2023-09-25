@@ -5,10 +5,8 @@
   import { Dialog } from "@rilldata/web-common/components/modal/index";
   import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
-  import { createRuntimeServiceRenameFileAndReconcile } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { renameFileArtifact } from "./actions";
   import { getLabel, getRouteFromName } from "./entity-mappers";
@@ -18,14 +16,10 @@
   export let entityType: EntityType;
   export let currentAssetName: string;
 
-  const queryClient = useQueryClient();
-
   let error: string;
 
   $: runtimeInstanceId = $runtime.instanceId;
   $: allNamesQuery = useAllNames(runtimeInstanceId);
-
-  const renameAsset = createRuntimeServiceRenameFileAndReconcile();
 
   const { form, errors, handleSubmit } = createForm({
     initialValues: {

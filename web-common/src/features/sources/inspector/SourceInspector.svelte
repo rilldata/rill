@@ -47,7 +47,6 @@
   let columnCount;
   let nullPercentage;
 
-  $: console.log(source);
   $: connectorType = formatConnectorType(source);
   $: fileExtension = getFileExtension(source);
 
