@@ -115,16 +115,16 @@ func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, in
 			}
 
 			filename := q.generateFilename(q.MetricsView)
-			if err := duckDBCopyExport(ctx, rt, instanceID, w, opts, sql, args, filename, olap, q.MetricsView, opts.Format); err != nil {
+			if err := duckDBCopyExport(ctx, w, opts, sql, args, filename, olap, opts.Format); err != nil {
 				return err
 			}
 		} else {
-			if err := q.generalExport(ctx, rt, instanceID, w, opts, olap, q.MetricsView); err != nil {
+			if err := q.generalExport(ctx, rt, instanceID, w, opts, q.MetricsView); err != nil {
 				return err
 			}
 		}
 	case drivers.DialectDruid:
-		if err := q.generalExport(ctx, rt, instanceID, w, opts, olap, q.MetricsView); err != nil {
+		if err := q.generalExport(ctx, rt, instanceID, w, opts, q.MetricsView); err != nil {
 			return err
 		}
 	default:
@@ -134,7 +134,7 @@ func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, in
 	return nil
 }
 
-func (q *MetricsViewToplist) generalExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions, olap drivers.OLAPStore, mv *runtimev1.MetricsView) error {
+func (q *MetricsViewToplist) generalExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions, mv *runtimev1.MetricsView) error {
 	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
 	if err != nil {
 		return err
@@ -162,7 +162,8 @@ func (q *MetricsViewToplist) generalExport(ctx context.Context, rt *runtime.Runt
 }
 
 func (q *MetricsViewToplist) generateFilename(mv *runtimev1.MetricsView) string {
-	filename := strings.ReplaceAll(mv.Model, `"`, `_`)
+	filename := strings.ReplaceAll(mv.Name, `"`, `_`)
+	filename += "_" + q.DimensionName
 	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
 		filename += "_filtered"
 	}
