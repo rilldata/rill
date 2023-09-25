@@ -97,7 +97,8 @@ type blobIterator struct {
 
 	ctx         context.Context
 	cancel      func()
-	downloadsCh chan downloadResult
+	batchCh     chan []string       // Channel for batches of downloaded files (buffers up to BatchSizeBytes)
+	downloadsCh chan downloadResult // Channel for individual downloaded files
 	downloadErr error
 }
 
@@ -122,9 +123,10 @@ func NewIterator(ctx context.Context, bucket *blob.Bucket, opts Options, l *zap.
 		logger:      l,
 		bucket:      bucket,
 		tempDir:     tempDir,
-		downloadsCh: make(chan downloadResult),
 		ctx:         ctx,
 		cancel:      cancel,
+		batchCh:     make(chan []string),
+		downloadsCh: make(chan downloadResult),
 	}
 
 	objects, err := it.plan()
@@ -134,8 +136,12 @@ func NewIterator(ctx context.Context, bucket *blob.Bucket, opts Options, l *zap.
 	}
 	it.objects = objects
 
-	// Start download files in the background
+	// Start download of individual files in the background.
 	go it.downloadFiles()
+
+	// Start batching of downloaded files in the background.
+	// By batching in the background, we can background fetch a dynamic number of files until BatchSizeBytes is reached.
+	go it.batchDownloads()
 
 	// For cases where there's only one file, we want to prefetch it to return the error early (from NewIterator instead of Next)
 	if len(objects) == 1 {
@@ -156,13 +162,13 @@ func (it *blobIterator) KeepFilesUntilClose(keepFilesUntilClose bool) {
 }
 
 func (it *blobIterator) Close() error {
-	// Cancel the background downloads (this will eventually close downloadsCh)
+	// Cancel the background downloads (this will eventually close downloadsCh, which eventually closes batchCh)
 	it.cancel()
 
-	// Drain downloadsCh until it's closed (to avoid the background goroutine hanging forever)
+	// Drain batchCh until it's closed (to avoid the background goroutine hanging forever)
 	var stop bool
 	for !stop {
-		_, ok := <-it.downloadsCh
+		_, ok := <-it.batchCh
 		if !ok {
 			stop = true
 		}
@@ -213,31 +219,14 @@ func (it *blobIterator) Next() ([]string, error) {
 		fileutil.ForceRemoveFiles(it.lastBatch)
 	}
 
-	// Get a batch of files
-	var batch []string
-	var batchBytes int64
-	for {
-		// Get a downloaded file
-		res, ok := <-it.downloadsCh
-		if !ok {
-			// The channel is closed, we're either done or a download errored.
-			if it.downloadErr != nil {
-				return nil, it.downloadErr
-			}
-			if len(batch) > 0 {
-				break
-			}
-			return nil, io.EOF
+	// Get next batch
+	batch, ok := <-it.batchCh
+	if !ok {
+		// The channel is closed, we're either done or a download errored.
+		if it.downloadErr != nil {
+			return nil, it.downloadErr
 		}
-
-		// Append to batch
-		batch = append(batch, res.path)
-		batchBytes += res.bytes
-
-		// Return batch if it's full
-		if batchBytes >= it.opts.BatchSizeBytes {
-			break
-		}
+		return nil, io.EOF
 	}
 
 	// Track the batch for cleanup in the next iteration
@@ -412,6 +401,36 @@ func (it *blobIterator) downloadFiles() {
 	// If there was an error in the loop, it takes precedence (the error from g.Wait() is probably a ctx cancellation in that case)
 	if loopErr != nil {
 		it.downloadErr = loopErr
+	}
+}
+
+func (it *blobIterator) batchDownloads() {
+	// Ensure batchCh is closed when this function returns. This ensures Next() and Close() don't hang.
+	defer close(it.batchCh)
+
+	var batch []string
+	var batchBytes int64
+	for {
+		// Get a new download
+		res, ok := <-it.downloadsCh
+		if !ok {
+			// Channel closed means no more downloads.
+			if it.downloadErr == nil && len(batch) > 0 {
+				it.batchCh <- batch
+			}
+			return
+		}
+
+		// Append to batch
+		batch = append(batch, res.path)
+		batchBytes += res.bytes
+
+		// Send batch if it's full
+		if batchBytes >= it.opts.BatchSizeBytes {
+			it.batchCh <- batch
+			batch = nil
+			batchBytes = 0
+		}
 	}
 }
 
