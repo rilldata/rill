@@ -68,7 +68,7 @@ func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[s
 	// If the path is an object store reference, rewrite to objectStoreToDuckDB transporter.
 	// TODO: This is pretty hacky and we should ideally break the relevant object store functionality out into a util function that we can use here.
 	// (Or consider rethinking how object store connectors work in general.)
-	if uri.Scheme == "s3" || uri.Scheme == "gs" {
+	if uri.Scheme == "s3" || uri.Scheme == "gs" || uri.Scheme == "azure" {
 		if uri.Scheme == "gs" {
 			uri.Scheme = "gcs"
 		}

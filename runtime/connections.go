@@ -231,6 +231,11 @@ func (r *Runtime) connectorConfig(ctx context.Context, instanceID, name string) 
 		setIfNil(cfg, "aws_access_key_id", vars["aws_access_key_id"])
 		setIfNil(cfg, "aws_secret_access_key", vars["aws_secret_access_key"])
 		setIfNil(cfg, "aws_session_token", vars["aws_session_token"])
+	case "azure":
+		setIfNil(cfg, "azure_storage_account", vars["azure_storage_account"])
+		setIfNil(cfg, "azure_storage_key", vars["azure_storage_key"])
+		setIfNil(cfg, "azure_storage_sas_token", vars["azure_storage_sas_token"])
+		setIfNil(cfg, "azure_storage_connection_string", vars["azure_storage_connection_string"])
 	case "gcs":
 		setIfNil(cfg, "google_application_credentials", vars["google_application_credentials"])
 	case "bigquery":

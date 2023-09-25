@@ -43,7 +43,7 @@ var spec = drivers.Spec{
 			Hint:        "Glob patterns are supported",
 		},
 		{
-			Key:         "account_name",
+			Key:         "account",
 			DisplayName: "Account name",
 			Description: "Azure storage account name.",
 			Type:        drivers.StringPropertyType,
@@ -235,7 +235,8 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 			return nil, err
 		}
 
-		if respErr.RawResponse.StatusCode == http.StatusForbidden && respErr.ErrorCode == "AuthorizationPermissionMismatch" {
+		// Should check for the error code to be sure that the error is due to permission issue??
+		if respErr.RawResponse.StatusCode == http.StatusForbidden && (respErr.ErrorCode == "AuthorizationPermissionMismatch" || respErr.ErrorCode == "AuthenticationFailed") {
 			c.logger.Named("Console").Warn("Azure Blob Storage account does not have permission to list blobs. Falling back to anonymous access.")
 			client, err = c.createAnonymousClient(ctx, conf)
 			if err != nil {
@@ -261,7 +262,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 
 type sourceProperties struct {
 	Path                  string         `mapstructure:"path"`
-	AccountName           string         `mapstructure:"account_name"`
+	Account               string         `mapstructure:"account"`
 	URI                   string         `mapstructure:"uri"`
 	Extract               map[string]any `mapstructure:"extract"`
 	GlobMaxTotalSize      int64          `mapstructure:"glob.max_total_size"`
@@ -279,11 +280,11 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 		return nil, err
 	}
 	if !doublestar.ValidatePattern(conf.Path) {
-		return nil, fmt.Errorf("glob pattern %s is invalid", conf.Path)
+		return nil, fmt.Errorf("glob pattern %q is invalid", conf.Path)
 	}
 	bucketURL, err := globutil.ParseBucketURL(conf.Path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse path %q, %w", conf.Path, err)
+		return nil, fmt.Errorf("failed to parse path %q: %w", conf.Path, err)
 	}
 	if bucketURL.Scheme != "azure" {
 		return nil, fmt.Errorf("invalid scheme %q in path %q", bucketURL.Scheme, conf.Path)
@@ -295,18 +296,19 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 
 // getClient returns a new azure blob client.
 func (c *Connection) getClient(ctx context.Context, conf *sourceProperties) (*container.Client, error) {
-	var accountName, accountKey, sasToken, connectionString string
+	var accountKey, sasToken, connectionString string
+
+	accountName, err := c.getAccountName(ctx, conf)
+	if err != nil {
+		return nil, err
+	}
 
 	if c.config.AllowHostAccess {
-		accountName = os.Getenv("AZURE_STORAGE_ACCOUNT")
 		accountKey = os.Getenv("AZURE_STORAGE_KEY")
 		sasToken = os.Getenv("AZURE_STORAGE_SAS_TOKEN")
 		connectionString = os.Getenv("AZURE_STORAGE_CONNECTION_STRING")
 	}
 
-	if c.config.Account != "" {
-		accountName = c.config.Account
-	}
 	if c.config.Key != "" {
 		accountKey = c.config.Key
 	}
@@ -315,12 +317,6 @@ func (c *Connection) getClient(ctx context.Context, conf *sourceProperties) (*co
 	}
 	if c.config.ConnectionString != "" {
 		connectionString = c.config.ConnectionString
-	}
-
-	if conf.AccountName != "" {
-		accountName = conf.AccountName
-	} else {
-		conf.AccountName = accountName
 	}
 
 	if connectionString != "" {
@@ -387,12 +383,17 @@ func (c *Connection) getClient(ctx context.Context, conf *sourceProperties) (*co
 		return client, nil
 	}
 
-	return nil, drivers.NewPermissionDeniedError(fmt.Sprintf("can't access remote host without credentials, err:%v", errors.New("no credentials provided")))
+	return nil, drivers.NewPermissionDeniedError("can't access remote host without credentials: no credentials provided")
 }
 
 // Create anonymous azure blob client.
 func (c *Connection) createAnonymousClient(ctx context.Context, conf *sourceProperties) (*container.Client, error) {
-	svcURL := fmt.Sprintf("https://%s.blob.core.windows.net", conf.AccountName)
+	accountName, err := c.getAccountName(ctx, conf)
+	if err != nil {
+		return nil, err
+	}
+
+	svcURL := fmt.Sprintf("https://%s.blob.core.windows.net", accountName)
 	containerURL, err := url.JoinPath(svcURL, conf.url.Host)
 	if err != nil {
 		return nil, err
@@ -407,7 +408,11 @@ func (c *Connection) createAnonymousClient(ctx context.Context, conf *sourceProp
 
 func (c *Connection) openBucketWithNoCredentials(ctx context.Context, conf *sourceProperties) (*blob.Bucket, error) {
 	// Create containerURL object.
-	containerURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s", conf.AccountName, conf.url.Host)
+	accountName, err := c.getAccountName(ctx, conf)
+	if err != nil {
+		return nil, err
+	}
+	containerURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s", accountName, conf.url.Host)
 	client, err := container.NewClientWithNoCredential(containerURL, nil)
 	if err != nil {
 		return nil, err
@@ -420,4 +425,20 @@ func (c *Connection) openBucketWithNoCredentials(ctx context.Context, conf *sour
 	}
 
 	return bucketObj, nil
+}
+
+func (c *Connection) getAccountName(ctx context.Context, conf *sourceProperties) (string, error) {
+	if conf.Account != "" {
+		return conf.Account, nil
+	}
+
+	if c.config.Account != "" {
+		return c.config.Account, nil
+	}
+
+	if c.config.AllowHostAccess {
+		return os.Getenv("AZURE_STORAGE_ACCOUNT"), nil
+	}
+
+	return "", errors.New("account name not found")
 }
