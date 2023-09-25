@@ -615,10 +615,10 @@ func (q *MetricsViewComparisonToplist) generalExport(ctx context.Context, rt *ru
 	if !isTimeRangeNil(q.ComparisonTimeRange) {
 		for i, m := range q.Result.Rows[0].MeasureValues {
 			meta[1+i*4] = &runtimev1.MetricsViewColumn{
-				Name: fmt.Sprintf("%s_base_value", m.MeasureName),
+				Name: m.MeasureName,
 			}
 			meta[2+i*4] = &runtimev1.MetricsViewColumn{
-				Name: fmt.Sprintf("%s_comparison_value", m.MeasureName),
+				Name: fmt.Sprintf("%s__previous", m.MeasureName),
 			}
 			meta[3+i*4] = &runtimev1.MetricsViewColumn{
 				Name: fmt.Sprintf("%s_delta_abs", m.MeasureName),
@@ -630,7 +630,7 @@ func (q *MetricsViewComparisonToplist) generalExport(ctx context.Context, rt *ru
 	} else {
 		for i, m := range q.Result.Rows[0].MeasureValues {
 			meta[1+i] = &runtimev1.MetricsViewColumn{
-				Name: fmt.Sprintf("%s_value", m.MeasureName),
+				Name: m.MeasureName,
 			}
 		}
 	}
@@ -646,14 +646,15 @@ func (q *MetricsViewComparisonToplist) generalExport(ctx context.Context, rt *ru
 				},
 			},
 		}
+		comparison := !isTimeRangeNil(q.ComparisonTimeRange)
 		for _, m := range row.MeasureValues {
-			if !isTimeRangeNil(q.ComparisonTimeRange) {
-				data[i].Fields[fmt.Sprintf("%s_base_value", m.MeasureName)] = &structpb.Value{
+			if comparison {
+				data[i].Fields[m.MeasureName] = &structpb.Value{
 					Kind: &structpb.Value_NumberValue{
 						NumberValue: m.BaseValue.GetNumberValue(),
 					},
 				}
-				data[i].Fields[fmt.Sprintf("%s_comparison_value", m.MeasureName)] = &structpb.Value{
+				data[i].Fields[fmt.Sprintf("%s__previous", m.MeasureName)] = &structpb.Value{
 					Kind: &structpb.Value_NumberValue{
 						NumberValue: m.ComparisonValue.GetNumberValue(),
 					},
@@ -669,7 +670,7 @@ func (q *MetricsViewComparisonToplist) generalExport(ctx context.Context, rt *ru
 					},
 				}
 			} else {
-				data[i].Fields[fmt.Sprintf("%s_value", m.MeasureName)] = &structpb.Value{
+				data[i].Fields[m.MeasureName] = &structpb.Value{
 					Kind: &structpb.Value_NumberValue{
 						NumberValue: m.BaseValue.GetNumberValue(),
 					},
@@ -693,7 +694,7 @@ func (q *MetricsViewComparisonToplist) generalExport(ctx context.Context, rt *ru
 }
 
 func (q *MetricsViewComparisonToplist) generateFilename(mv *runtimev1.MetricsView) string {
-	filename := strings.ReplaceAll(mv.Model, `"`, `_`)
+	filename := strings.ReplaceAll(mv.Name, `"`, `_`)
 	filename += "_" + q.DimensionName
 	if q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
 		filename += "_filtered"

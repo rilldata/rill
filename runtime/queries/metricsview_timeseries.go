@@ -123,7 +123,7 @@ func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime,
 }
 
 func (q *MetricsViewTimeSeries) generateFilename(mv *runtimev1.MetricsView) string {
-	filename := strings.ReplaceAll(mv.Model, `"`, `_`)
+	filename := strings.ReplaceAll(mv.Name, `"`, `_`)
 	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
 		filename += "_filtered"
 	}

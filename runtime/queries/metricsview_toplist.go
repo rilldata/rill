@@ -162,7 +162,7 @@ func (q *MetricsViewToplist) generalExport(ctx context.Context, rt *runtime.Runt
 }
 
 func (q *MetricsViewToplist) generateFilename(mv *runtimev1.MetricsView) string {
-	filename := strings.ReplaceAll(mv.Model, `"`, `_`)
+	filename := strings.ReplaceAll(mv.Name, `"`, `_`)
 	filename += "_" + q.DimensionName
 	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
 		filename += "_filtered"
