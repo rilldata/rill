@@ -33,16 +33,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, _ *
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	// Determine AWS region if it is not specified
-	determineAWSRegion := conf.AWSRegion == ""
-
-	awsRegion := conf.AWSRegion
-	if determineAWSRegion {
-		// AWS region is not specified, use 'us-east-1' for now
-		awsRegion = "us-east-1"
-	}
-
-	awsConfig, err := c.awsConfig(ctx, awsRegion)
+	awsConfig, err := c.awsConfig(ctx, conf.AWSRegion)
 	if err != nil {
 		return nil, err
 	}
@@ -66,22 +57,6 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, _ *
 	unloadURL := outputURL.JoinPath(unloadFolderName)
 	unloadLocation := unloadURL.String()
 	unloadPath := strings.TrimPrefix(unloadURL.Path, "/")
-
-	// Determine actual AWS region and update the config if needed
-	if determineAWSRegion {
-		actualRegion, err := getActualAWSRegion(ctx, awsConfig, bucketName)
-		if err != nil {
-			return nil, err
-		}
-
-		if awsRegion != actualRegion {
-			awsRegion = actualRegion
-			awsConfig, err = c.awsConfig(ctx, awsRegion)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
 
 	cleanUp := func() error {
 		return deleteObjectsInPrefix(ctx, awsConfig, bucketName, unloadPath)
@@ -116,10 +91,11 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, _ *
 }
 
 func (c *Connection) awsConfig(ctx context.Context, awsRegion string) (aws.Config, error) {
-	loadOptions := make([]func(*config.LoadOptions) error, 0)
-
-	if awsRegion != "" {
-		loadOptions = append(loadOptions, config.WithDefaultRegion(awsRegion))
+	loadOptions := []func(*config.LoadOptions) error{
+		// Setting the default region to an empty string, will result in the default region value being ignored
+		config.WithDefaultRegion("us-east-1"),
+		// Setting the region to an empty string, will result in the region value being ignored
+		config.WithRegion(awsRegion),
 	}
 
 	// If one of the static properties is specified: access key, secret key, or session token, use static credentials,
@@ -221,23 +197,6 @@ func resolveOutputLocation(ctx context.Context, client *athena.Client, conf *sou
 	}
 
 	return "", fmt.Errorf("either output_location or workgroup with an output location must be set")
-}
-
-func getActualAWSRegion(ctx context.Context, awsConfig aws.Config, bucketName string) (string, error) {
-	s3client := s3.NewFromConfig(awsConfig)
-
-	resp, err := s3client.GetBucketLocation(ctx, &s3.GetBucketLocationInput{
-		Bucket: &bucketName,
-	})
-	if err != nil {
-		return "", err
-	}
-
-	actualRegion := string(resp.LocationConstraint)
-	if actualRegion == "" { // For US East (N. Virginia) region
-		actualRegion = "us-east-1"
-	}
-	return actualRegion, nil
 }
 
 func openBucket(ctx context.Context, cfg aws.Config, bucket string) (*blob.Bucket, error) {
