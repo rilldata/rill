@@ -12,6 +12,7 @@
   import Https from "../../../components/icons/connectors/HTTPS.svelte";
   import LocalFile from "../../../components/icons/connectors/LocalFile.svelte";
   import MotherDuck from "../../../components/icons/connectors/MotherDuck.svelte";
+  import Postgres from "../../../components/icons/connectors/Postgres.svelte";
   import { appScreen } from "../../../layout/app-store";
   import { behaviourEvent } from "../../../metrics/initMetrics";
   import {
@@ -37,8 +38,8 @@
     "bigquery",
     // athena
     "motherduck",
+    "postgres",
     "sqlite",
-    // postgres
     "local_file",
     "https",
   ];
@@ -51,7 +52,7 @@
     bigquery: GoogleBigQuery,
     // athena: AmazonAthena,
     motherduck: MotherDuck,
-    // postgres: Postgres,
+    postgres: Postgres,
     local_file: LocalFile,
     https: Https,
   };

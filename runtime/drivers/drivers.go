@@ -29,6 +29,8 @@ var ErrNotFound = errors.New("driver: not found")
 // ErrDropNotSupported indicates the driver doesn't support dropping its underlying store.
 var ErrDropNotSupported = errors.New("driver: drop not supported")
 
+var ErrNotImplemented = errors.New("driver: not implemented")
+
 // Drivers is a registry of drivers.
 var Drivers = make(map[string]Driver)
 

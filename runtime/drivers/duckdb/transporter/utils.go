@@ -1,6 +1,8 @@
 package transporter
 
 import (
+	"database/sql"
+	"database/sql/driver"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,6 +11,24 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/mitchellh/mapstructure"
 )
+
+// rawConn is similar to *sql.Conn.Raw, but additionally unwraps otelsql (which we use for instrumentation).
+func rawConn(conn *sql.Conn, f func(driver.Conn) error) error {
+	return conn.Raw(func(raw any) error {
+		// For details, see: https://github.com/XSAM/otelsql/issues/98
+		if c, ok := raw.(interface{ Raw() driver.Conn }); ok {
+			raw = c.Raw()
+		}
+
+		// This is currently guaranteed, but adding check to be safe
+		driverConn, ok := raw.(driver.Conn)
+		if !ok {
+			return fmt.Errorf("internal: did not obtain a driver.Conn")
+		}
+
+		return f(driverConn)
+	})
+}
 
 type sinkProperties struct {
 	Table string `mapstructure:"table"`
