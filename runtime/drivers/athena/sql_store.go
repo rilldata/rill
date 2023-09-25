@@ -50,9 +50,9 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, _ *
 	}
 
 	// outputLocation s3://bucket/path
-	// unloadLocation s3://bucket/path/rill_tmp_<uuid>
-	// unloadPath path/rill_tmp_<uuid>
-	unloadFolderName := "rill_tmp_" + uuid.New().String()
+	// unloadLocation s3://bucket/path/rill-tmp-<uuid>
+	// unloadPath path/rill-tmp-<uuid>
+	unloadFolderName := "rill-tmp-" + uuid.New().String()
 	bucketName := outputURL.Hostname()
 	unloadURL := outputURL.JoinPath(unloadFolderName)
 	unloadLocation := unloadURL.String()
