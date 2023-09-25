@@ -108,7 +108,7 @@ func (c *Connection) awsConfig(ctx context.Context, awsRegion string) (aws.Confi
 }
 
 func (c *Connection) unload(ctx context.Context, client *athena.Client, conf *sourceProperties, unloadLocation string) error {
-	finalSQL := fmt.Sprintf("UNLOAD (%s) TO '%s' WITH (format = 'PARQUET')", conf.SQL, unloadLocation)
+	finalSQL := fmt.Sprintf("UNLOAD (%s\n) TO '%s' WITH (format = 'PARQUET')", conf.SQL, unloadLocation)
 
 	executeParams := &athena.StartQueryExecutionInput{
 		QueryString: aws.String(finalSQL),
