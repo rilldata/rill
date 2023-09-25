@@ -38,7 +38,8 @@
   const bodyStyle = `padding-left: ${FILTER_OVERFLOW_WIDTH}px;`;
 </script>
 
-<!-- <pre style="max-height: 200px; overflow: auto; width: fit-content;">
+<!-- <h1>Store</h1>
+<pre style="max-height: 200px; overflow: auto; width: fit-content;">
   {JSON.stringify($store, null, 2)}
 </pre> -->
 <Pivot

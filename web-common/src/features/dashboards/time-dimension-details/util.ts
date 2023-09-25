@@ -16,3 +16,38 @@ export const getBlock = (blockSize: number, start: number, end: number) => {
   }
   return [startBlock, endBlock];
 };
+
+export const getBlocks = (blockSize: number, start: number, end: number) => {
+  const blocks: number[][] = [];
+  let block = getBlock(blockSize, start, start);
+  blocks.push(block);
+  while (block[1] < end) {
+    block = getBlock(blockSize, block[0] + blockSize, block[1] + blockSize);
+    blocks.push(block);
+  }
+  return blocks;
+};
+
+export const get2DBlocks = ({
+  blockSizeX,
+  blockSizeY,
+  x0,
+  x1,
+  y0,
+  y1,
+}: {
+  blockSizeX: number;
+  blockSizeY: number;
+  x0: number;
+  x1: number;
+  y0: number;
+  y1: number;
+}) => {
+  const rowBlocks = getBlocks(blockSizeY, y0, y1);
+  return rowBlocks.flatMap((rowBlock) =>
+    getBlocks(blockSizeX, x0, x1).map((colBlock) => ({
+      x: colBlock,
+      y: rowBlock,
+    }))
+  );
+};

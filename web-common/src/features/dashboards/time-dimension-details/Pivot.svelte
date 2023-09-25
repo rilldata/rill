@@ -90,7 +90,7 @@
     style={`height: ${headerHeight}px;`}
   >
     <div role="presentation" class="flex">
-      {#each fixedColumnsToRender as col (col.index)}
+      {#each fixedColumnsToRender as col}
         <div
           role="cell"
           style={getCellWrapperStyle({ size: headerHeight }, col)}
@@ -110,7 +110,7 @@
       class="absolute left-0"
       style={`transform: translate3d(${-scrollLeft}px, 0px, 0px)`}
     >
-      {#each nonFixedColumnsToRender as col (col.index)}
+      {#each nonFixedColumnsToRender as col}
         <div
           role="cell"
           style={getCellWrapperStyle({ size: headerHeight }, col)}
@@ -138,13 +138,13 @@
     class="relative"
     style={`height: ${$rowVirtualizer?.getTotalSize()}px; width: ${$columnVirtualizer?.getTotalSize()}px;`}
   >
-    {#each $rowVirtualizer.getVirtualItems() as row (row.index)}
+    {#each $rowVirtualizer.getVirtualItems() as row}
       <div
         role="row"
         class="absolute left-0 w-full flex"
         style={`height: ${row.size}px; transform: translateY(${row.start}px);`}
       >
-        {#each columnsToRender as col (col.index)}
+        {#each columnsToRender as col}
           <div role="cell" style={getCellWrapperStyle(row, col)}>
             <svelte:component
               this={cellComponent}
