@@ -314,8 +314,11 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 		var columnsTuple string
 		if dialect != drivers.DialectDruid {
 			columnsTuple = fmt.Sprintf(
-				"base.%[1]s, comparison.%[1]s, base.%[1]s - comparison.%[1]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE",
+				"base.%[1]s, comparison.%[1]s AS %[2]s, base.%[1]s - comparison.%[1]s AS %[3]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[4]s",
 				safeName(m.Name),
+				safeName(m.Name+"__previous"),
+				safeName(m.Name+"__delta_abs"),
+				safeName(m.Name+"__delta_rel"),
 			)
 		} else {
 			columnsTuple = fmt.Sprintf(
@@ -408,7 +411,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 	var sql string
 	if dialect != drivers.DialectDruid {
 		sql = fmt.Sprintf(`
-		SELECT COALESCE(base.%[2]s, comparison.%[2]s), %[9]s FROM 
+		SELECT COALESCE(base.%[2]s, comparison.%[2]s) AS %[10]s, %[9]s FROM 
 			(
 				SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s
 			) base
@@ -425,15 +428,16 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 		OFFSET
 			%[8]d
 		`,
-			subSelectClause,       // 1
-			colName,               // 2
-			mv.Model,              // 3
-			baseWhereClause,       // 4
-			comparisonWhereClause, // 5
-			orderClause,           // 6
-			q.Limit,               // 7
-			q.Offset,              // 8
-			finalSelectClause,     // 9
+			subSelectClause,           // 1
+			colName,                   // 2
+			mv.Model,                  // 3
+			baseWhereClause,           // 4
+			comparisonWhereClause,     // 5
+			orderClause,               // 6
+			q.Limit,                   // 7
+			q.Offset,                  // 8
+			finalSelectClause,         // 9
+			safeName(q.DimensionName), // 10
 		)
 	} else {
 		/*
@@ -621,10 +625,10 @@ func (q *MetricsViewComparisonToplist) generalExport(ctx context.Context, rt *ru
 				Name: fmt.Sprintf("%s__previous", m.MeasureName),
 			}
 			meta[3+i*4] = &runtimev1.MetricsViewColumn{
-				Name: fmt.Sprintf("%s_delta_abs", m.MeasureName),
+				Name: fmt.Sprintf("%s__delta_abs", m.MeasureName),
 			}
 			meta[4+i*4] = &runtimev1.MetricsViewColumn{
-				Name: fmt.Sprintf("%s_delta_rel", m.MeasureName),
+				Name: fmt.Sprintf("%s__delta_rel", m.MeasureName),
 			}
 		}
 	} else {
@@ -659,12 +663,12 @@ func (q *MetricsViewComparisonToplist) generalExport(ctx context.Context, rt *ru
 						NumberValue: m.ComparisonValue.GetNumberValue(),
 					},
 				}
-				data[i].Fields[fmt.Sprintf("%s_delta_abs", m.MeasureName)] = &structpb.Value{
+				data[i].Fields[fmt.Sprintf("%s__delta_abs", m.MeasureName)] = &structpb.Value{
 					Kind: &structpb.Value_NumberValue{
 						NumberValue: m.DeltaAbs.GetNumberValue(),
 					},
 				}
-				data[i].Fields[fmt.Sprintf("%s_delta_rel", m.MeasureName)] = &structpb.Value{
+				data[i].Fields[fmt.Sprintf("%s__delta_rel", m.MeasureName)] = &structpb.Value{
 					Kind: &structpb.Value_NumberValue{
 						NumberValue: m.DeltaRel.GetNumberValue(),
 					},
