@@ -247,11 +247,16 @@
   $: cssVarStyles = `--row-height: ${rowHeight}px;`;
 </script>
 
-<div class="border relative w-full h-full" style={cssVarStyles}>
+<div class="relative w-full h-full" style={cssVarStyles}>
   <regular-table class="w-full h-full tdd-table" bind:this={table} />
 </div>
 
 <style>
+  :global(regular-table) {
+    padding-left: 0px;
+    padding-right: 0px;
+  }
+
   :global(regular-table table) {
     table-layout: fixed;
     border-collapse: collapse;

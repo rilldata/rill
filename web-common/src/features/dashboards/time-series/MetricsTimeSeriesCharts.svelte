@@ -7,27 +7,22 @@
     metricsExplorerStore,
     useDashboardStore,
   } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-  import { getFilterForComparedDimension, prepareTimeSeries } from "./utils";
+  import { prepareTimeSeries } from "./utils";
   import {
     humanizeDataType,
     FormatPreset,
     nicelyFormattedTypesToNumberKind,
   } from "@rilldata/web-common/features/dashboards/humanize-numbers";
-  import {
-    getFilterForDimension,
-    useMetaQuery,
-  } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-  import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import {
     createQueryServiceMetricsViewTimeSeries,
-    createQueryServiceMetricsViewToplist,
     createQueryServiceMetricsViewTotals,
     V1MetricsViewTimeSeriesResponse,
   } from "@rilldata/web-common/runtime-client";
@@ -226,79 +221,13 @@
     endValue = adjustedChartValue?.end;
   }
 
-  let topListQuery;
   $: if (comparisonDimension && $timeControlsStore.ready) {
-    const dimensionFilters = $dashboardStore.filters.include.filter(
-      (filter) => filter.name === comparisonDimension
-    );
-    if (dimensionFilters) {
-      includedValues = dimensionFilters[0]?.in.slice(0, 7) || [];
-    }
-
-    if (includedValues.length === 0) {
-      // TODO: Create a central store for topList
-      // Fetch top values for the dimension
-      const filterForDimension = getFilterForDimension(
-        $dashboardStore?.filters,
-        comparisonDimension
-      );
-      topListQuery = createQueryServiceMetricsViewToplist(
-        $runtime.instanceId,
-        metricViewName,
-        {
-          dimensionName: comparisonDimension,
-          measureNames: [$dashboardStore?.leaderboardMeasureName],
-          timeStart: $timeControlsStore.timeStart,
-          timeEnd: $timeControlsStore.timeEnd,
-          filter: filterForDimension,
-          limit: "250",
-          offset: "0",
-          sort: [
-            {
-              name: $dashboardStore?.leaderboardMeasureName,
-              ascending:
-                $dashboardStore.sortDirection === SortDirection.ASCENDING,
-            },
-          ],
-        },
-        {
-          query: {
-            enabled: $timeControlsStore.ready && !!filterForDimension,
-          },
-        }
-      );
-    }
-  }
-
-  $: if (
-    includedValues?.length ||
-    (topListQuery && !$topListQuery?.isFetching)
-  ) {
-    let filters = $dashboardStore.filters;
-
-    // Handle case when there are no included filters for the dimension
-    if (!includedValues?.length) {
-      const columnName = $topListQuery?.data?.meta[0]?.name;
-      const topListValues = $topListQuery?.data?.data.map((d) => d[columnName]);
-
-      const computedFilter = getFilterForComparedDimension(
-        comparisonDimension,
-        $dashboardStore?.filters,
-        topListValues
-      );
-      filters = computedFilter?.updatedFilter;
-      includedValues = computedFilter?.includedValues;
-    }
-
+    console.log("comparisondimension", comparisonDimension);
     allDimQuery = getDimensionValueTimeSeries(
       getStateManagers(),
-      includedValues,
-      queriedMeasureNames,
-      filters
+      queriedMeasureNames
     );
   }
-
-  $: console.log($allDimQuery);
 
   $: dimensionData = comparisonDimension ? $allDimQuery : [];
 

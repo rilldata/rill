@@ -8,12 +8,10 @@ import { derived, type Readable } from "svelte/store";
 import {
   V1MetricsViewTimeSeriesResponse,
   createQueryServiceMetricsViewTimeSeries,
-  createQueryServiceMetricsViewToplist,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { prepareTimeSeries } from "@rilldata/web-common/features/dashboards/time-series/utils";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 
 export type TimeSeriesDataState = {
   isFetching: boolean;
@@ -24,50 +22,6 @@ export type TimeSeriesDataState = {
 };
 
 export type TimeSeriesDataStore = Readable<TimeSeriesDataState>;
-
-// TODO: Colacate with leaderboard and other toplist store
-function createMetricsTopList(
-  ctx: StateManagers,
-  dimensionName: string,
-  measures,
-  filters
-) {
-  return derived(
-    [
-      ctx.runtime,
-      ctx.metricsViewName,
-      ctx.dashboardStore,
-      useTimeControlStore(ctx),
-    ],
-    ([runtime, name, dashboardStore, timeControls], set) => {
-      createQueryServiceMetricsViewToplist(
-        runtime.instanceId,
-        name,
-        {
-          dimensionName: dimensionName,
-          measureNames: measures,
-          timeStart: timeControls.timeStart,
-          timeEnd: timeControls.timeEnd,
-          filter: filters,
-          limit: "250",
-          offset: "0",
-          sort: [
-            {
-              name: dashboardStore.leaderboardMeasureName,
-              ascending:
-                dashboardStore.sortDirection === SortDirection.ASCENDING,
-            },
-          ],
-        },
-        {
-          query: {
-            enabled: timeControls.ready && !!filters,
-          },
-        }
-      ).subscribe(set);
-    }
-  );
-}
 
 function createMetricsViewTimeSeries(
   ctx: StateManagers,
@@ -108,54 +62,6 @@ function createMetricsViewTimeSeries(
       ).subscribe(set)
   );
 }
-
-// function getDimensionDataQuery() {
-//   let includedValues;
-//   let allDimQuery;
-
-//   if (comparisonDimension && $timeControlsStore.ready) {
-//     const dimensionFilters = $dashboardStore.filters.include.filter(
-//       (filter) => filter.name === comparisonDimension
-//     );
-//     if (dimensionFilters) {
-//       includedValues = dimensionFilters[0]?.in.slice(0, 7) || [];
-//     }
-
-//     if (includedValues.length === 0) {
-//       // TODO: Create a central store for topList
-//       // Fetch top values for the dimension
-//       const filterForDimension = getFilterForDimension(
-//         $dashboardStore?.filters,
-//         comparisonDimension
-//       );
-//       topListQuery = createQueryServiceMetricsViewToplist(
-//         $runtime.instanceId,
-//         metricViewName,
-//         {
-//           dimensionName: comparisonDimension,
-//           measureNames: [$dashboardStore?.leaderboardMeasureName],
-//           timeStart: $timeControlsStore.timeStart,
-//           timeEnd: $timeControlsStore.timeEnd,
-//           filter: filterForDimension,
-//           limit: "250",
-//           offset: "0",
-//           sort: [
-//             {
-//               name: $dashboardStore?.leaderboardMeasureName,
-//               ascending:
-//                 $dashboardStore.sortDirection === SortDirection.ASCENDING,
-//             },
-//           ],
-//         },
-//         {
-//           query: {
-//             enabled: $timeControlsStore.ready && !!filterForDimension,
-//           },
-//         }
-//       );
-//     }
-//   }
-// }
 
 export function createTimeSeriesDataStore(ctx: StateManagers) {
   return derived(

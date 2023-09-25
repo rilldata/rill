@@ -25,7 +25,7 @@ const createSpark = (
 </svg>`;
 
 // When using row headers, be careful not to accidentally merge cells
-const rowHeaderData = range(0, MOCK_ROW_CT, (i) => [
+const rowHeaderData = range(0, MOCK_ROW_CT, (_) => [
   // Dim
   {
     value: faker.commerce.productName(),
@@ -36,7 +36,7 @@ const rowHeaderData = range(0, MOCK_ROW_CT, (i) => [
       faker.commerce.price({ min: 10, max: 100, dec: 0, symbol: "$" }) +
       "." +
       faker.commerce.price({ min: 10, max: 99, dec: 0 }),
-    spark: createSpark(range(0, 7, (i) => Math.random())),
+    spark: createSpark(range(0, 7, (_) => Math.random())),
   },
   // Measure percent of total
   {
