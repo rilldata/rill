@@ -143,6 +143,12 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
+		limit := request.Limit
+		// if query limit is set and is less than request limit use it
+		if (r.Limit > 0 && limit == nil) || (r.Limit > 0 && limit != nil && r.Limit < *limit) {
+			limit = &r.Limit
+		}
+
 		q = &queries.MetricsViewToplist{
 			MetricsViewName:    r.MetricsViewName,
 			DimensionName:      r.DimensionName,
@@ -152,7 +158,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			TimeEnd:            r.TimeEnd,
 			Sort:               r.Sort,
 			Filter:             r.Filter,
-			Limit:              request.Limit,
+			Limit:              limit,
 			MetricsView:        mv,
 			ResolvedMVSecurity: security,
 		}
@@ -209,6 +215,58 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			TimeZone:           r.TimeZone,
 			MetricsView:        mv,
 			ResolvedMVSecurity: security,
+		}
+	case *runtimev1.ExportRequest_MetricsViewComparisonToplistRequest:
+		r := v.MetricsViewComparisonToplistRequest
+
+		mv, security, err := resolveMVAndSecurity(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName)
+		if err != nil {
+			if errors.Is(err, ErrForbidden) {
+				http.Error(w, "action not allowed", http.StatusUnauthorized)
+				return
+			}
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if !checkFieldAccess(r.DimensionName, security) {
+			http.Error(w, "action not allowed", http.StatusUnauthorized)
+			return
+		}
+
+		// validate measures access
+		for _, m := range r.MeasureNames {
+			if !checkFieldAccess(m, security) {
+				http.Error(w, "action not allowed", http.StatusUnauthorized)
+				return
+			}
+		}
+
+		err = validateInlineMeasures(r.InlineMeasures)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		limit := r.Limit
+		// if request limit is set and is less than query limit use it
+		if request.Limit != nil && *request.Limit < limit {
+			limit = *request.Limit
+		}
+
+		q = &queries.MetricsViewComparisonToplist{
+			MetricsViewName:     r.MetricsViewName,
+			DimensionName:       r.DimensionName,
+			MeasureNames:        r.MeasureNames,
+			InlineMeasures:      r.InlineMeasures,
+			BaseTimeRange:       r.BaseTimeRange,
+			ComparisonTimeRange: r.ComparisonTimeRange,
+			Limit:               limit,
+			Offset:              r.Offset,
+			Sort:                r.Sort,
+			Filter:              r.Filter,
+			MetricsView:         mv,
+			ResolvedMVSecurity:  security,
 		}
 	default:
 		http.Error(w, fmt.Sprintf("unsupported request type: %s", reflect.TypeOf(v).Name()), http.StatusBadRequest)

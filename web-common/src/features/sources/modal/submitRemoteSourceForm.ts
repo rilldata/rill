@@ -66,6 +66,8 @@ export async function submitRemoteSourceForm(
         case "project_id":
         case "account":
           return [key, value];
+        case "database_url":
+          return [key, value];
         default:
           return [fromYupFriendlyKey(key), value];
       }

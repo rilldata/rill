@@ -78,6 +78,11 @@ export function getYupSchema(connector: V1ConnectorSpec) {
             "Must be an Azure URI (e.g. azure://container/path)"
           )
           .required("Path is required"),
+        account: yup.string(),
+      });
+    case "postgres":
+      return yup.object().shape({
+        sql: yup.string().required("sql is required"),
         sourceName: yup
           .string()
           .matches(
@@ -85,7 +90,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
             "Source name must start with a letter or underscore and contain only letters, numbers, and underscores"
           )
           .required("Source name is required"),
-        account: yup.string(),
+        database_url: yup.string(),
       });
     default:
       throw new Error(`Unknown connector: ${connector.name}`);

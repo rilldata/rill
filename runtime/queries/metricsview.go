@@ -540,7 +540,7 @@ func writeParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, 
 	return err
 }
 
-func duckDBCopyExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions, sql string, args []any, filename string, olap drivers.OLAPStore, mv *runtimev1.MetricsView, exportFormat runtimev1.ExportFormat) error {
+func duckDBCopyExport(ctx context.Context, w io.Writer, opts *runtime.ExportOptions, sql string, args []any, filename string, olap drivers.OLAPStore, exportFormat runtimev1.ExportFormat) error {
 	var extension string
 	switch exportFormat {
 	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
@@ -554,6 +554,9 @@ func duckDBCopyExport(ctx context.Context, rt *runtime.Runtime, instanceID strin
 	defer os.Remove(tmpPath)
 
 	sql = fmt.Sprintf("COPY (%s) TO '%s'", sql, tmpPath)
+	if extension == "csv" {
+		sql += " (FORMAT CSV, HEADER)"
+	}
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:            sql,

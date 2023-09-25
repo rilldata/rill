@@ -220,7 +220,7 @@ func (s *Service) processGithubPush(ctx context.Context, event *github.PushEvent
 		if project.ProdDeploymentID != nil {
 			depl, err := s.DB.FindDeployment(ctx, *project.ProdDeploymentID)
 			if err != nil {
-				s.logger.Error("process github event: could not find deployment", zap.String("project_id", project.ID), zap.Error(err), observability.ZapCtx(ctx))
+				s.Logger.Error("process github event: could not find deployment", zap.String("project_id", project.ID), zap.Error(err), observability.ZapCtx(ctx))
 				continue
 			}
 
@@ -245,12 +245,12 @@ func (s *Service) processGithubInstallationEvent(ctx context.Context, event *git
 			return fmt.Errorf("nil installation")
 		}
 
-		s.logger.Info("github webhook: started processing", zap.String("action", event.GetAction()), zap.Int64("installation_id", installation.GetID()), observability.ZapCtx(ctx))
+		s.Logger.Info("github webhook: started processing", zap.String("action", event.GetAction()), zap.Int64("installation_id", installation.GetID()), observability.ZapCtx(ctx))
 		if err := s.deleteProjectsForInstallation(ctx, installation.GetID()); err != nil {
-			s.logger.Error("github webhook: failed to delete project for installation", zap.Int64("installation_id", installation.GetID()), zap.Error(err), observability.ZapCtx(ctx))
+			s.Logger.Error("github webhook: failed to delete project for installation", zap.Int64("installation_id", installation.GetID()), zap.Error(err), observability.ZapCtx(ctx))
 			return err
 		}
-		s.logger.Info("github webhook: processed successfully", zap.String("action", event.GetAction()), zap.Int64("installation_id", installation.GetID()), observability.ZapCtx(ctx))
+		s.Logger.Info("github webhook: processed successfully", zap.String("action", event.GetAction()), zap.Int64("installation_id", installation.GetID()), observability.ZapCtx(ctx))
 	}
 	return nil
 }
@@ -262,14 +262,14 @@ func (s *Service) processGithubInstallationRepositoriesEvent(ctx context.Context
 		// no handling as of now
 	case "removed":
 		var multiErr error
-		s.logger.Info("github webhook: processing removed repositories", observability.ZapCtx(ctx))
+		s.Logger.Info("github webhook: processing removed repositories", observability.ZapCtx(ctx))
 		for _, repo := range event.RepositoriesRemoved {
 			if err := s.deleteProjectsForRepo(ctx, repo); err != nil {
 				multiErr = multierr.Combine(multiErr, err)
-				s.logger.Error("github webhook: failed to delete projects for repo", zap.String("repo", *repo.HTMLURL), zap.Error(err), observability.ZapCtx(ctx))
+				s.Logger.Error("github webhook: failed to delete projects for repo", zap.String("repo", *repo.HTMLURL), zap.Error(err), observability.ZapCtx(ctx))
 			}
 		}
-		s.logger.Info("github webhook: processing removed repositories completed", observability.ZapCtx(ctx))
+		s.Logger.Info("github webhook: processing removed repositories completed", observability.ZapCtx(ctx))
 		return multiErr
 	}
 	return nil

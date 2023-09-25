@@ -4,6 +4,7 @@
   import MultiMetricMouseoverLabel from "@rilldata/web-common/components/data-graphic/marks/MultiMetricMouseoverLabel.svelte";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/features/dashboards/humanize-numbers";
   import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
+  import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
   import { fade } from "svelte/transition";
   export let point;
   export let xAccessor;
@@ -29,9 +30,8 @@
 
   $: diffLabel =
     isDiffValid &&
-    formatMeasurePercentageDifference(
-      (y - comparisonY) / comparisonY,
-      "stringFormat"
+    numberPartsToString(
+      formatMeasurePercentageDifference((y - comparisonY) / comparisonY)
     );
 
   let lastAvailableCurrentY = 0;
