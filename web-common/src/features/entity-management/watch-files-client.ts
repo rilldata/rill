@@ -30,6 +30,7 @@ function handleWatchFileResponse(
   )
     return;
 
+  console.log(`[${res.event}] ${res.path}`);
   const instanceId = get(runtime).instanceId;
   // invalidations will wait until the re-fetched query is completed
   // so, we should not `await` here on `refetchQueries`

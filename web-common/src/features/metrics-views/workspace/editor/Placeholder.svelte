@@ -12,6 +12,7 @@
   } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import {
+    connectorServiceOLAPGetTable,
     getConnectorServiceOLAPGetTableQueryKey,
     getRuntimeServiceGetResourceQueryKey,
     runtimeServiceGetResource,
@@ -45,15 +46,24 @@
           "name.kind": ResourceKind.Model,
         }),
     });
-    const schema = await queryClient.fetchQuery({
+    const schemaResp = await queryClient.fetchQuery({
       queryKey: getConnectorServiceOLAPGetTableQueryKey({
         instanceId,
         table: model.resource.model.state.table,
         connector: model.resource.model.state.connector,
       }),
+      queryFn: () =>
+        connectorServiceOLAPGetTable({
+          instanceId,
+          table: model.resource.model.state.table,
+          connector: model.resource.model.state.connector,
+        }),
     });
 
-    const dashboardYAML = generateDashboardYAMLForModel(modelName, schema);
+    const dashboardYAML = generateDashboardYAMLForModel(
+      modelName,
+      schemaResp.schema
+    );
 
     await runtimeServicePutFile(
       $runtime.instanceId,

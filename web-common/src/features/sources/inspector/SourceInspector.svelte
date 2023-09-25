@@ -47,7 +47,8 @@
   let columnCount;
   let nullPercentage;
 
-  $: connectorType = formatConnectorType(source?.state?.connector);
+  $: console.log(source);
+  $: connectorType = formatConnectorType(source);
   $: fileExtension = getFileExtension(source);
 
   $: cardinalityQuery = createQueryServiceTableCardinality(

@@ -109,14 +109,7 @@
 
   const onRefreshClick = async (tableName: string) => {
     try {
-      await refreshSource(
-        connector,
-        tableName,
-        runtimeInstanceId,
-        connector === "s3" || connector === "gcs" || connector === "https"
-          ? source?.spec.properties?.path
-          : sourceName
-      );
+      await refreshSource(connector, tableName, runtimeInstanceId);
       // invalidate the "refreshed_on" time
       const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
         runtimeInstanceId,

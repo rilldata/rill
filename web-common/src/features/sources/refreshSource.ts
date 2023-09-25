@@ -5,29 +5,18 @@ import {
   uploadFile,
 } from "@rilldata/web-common/features/sources/modal/file-upload";
 import { compileCreateSourceYAML } from "@rilldata/web-common/features/sources/sourceUtils";
-import { overlay } from "@rilldata/web-common/layout/overlay-store";
 import {
   runtimeServicePutFile,
   runtimeServiceTriggerRefresh,
 } from "@rilldata/web-common/runtime-client";
 
-export async function refreshAndReconcile(
-  sourceName: string,
-  instanceId: string,
-  displayName = undefined
-) {
-  overlay.set({ title: `Importing ${displayName || sourceName}` });
-  return runtimeServiceTriggerRefresh(instanceId, sourceName);
-}
-
 export async function refreshSource(
   connector: string,
   sourceName: string,
-  instanceId: string,
-  displayName = undefined
+  instanceId: string
 ) {
   if (connector !== "local_file") {
-    return refreshAndReconcile(sourceName, instanceId, displayName);
+    return runtimeServiceTriggerRefresh(instanceId, sourceName);
   }
 
   // different logic for the file connector
@@ -35,7 +24,6 @@ export async function refreshSource(
   const files = await openFileUploadDialog(false);
   if (!files.length) return Promise.reject();
 
-  overlay.set({ title: `Importing ${sourceName}` });
   const filePath = await uploadFile(instanceId, files[0]);
   if (filePath === null) {
     return Promise.reject();

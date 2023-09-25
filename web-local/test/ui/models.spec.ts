@@ -5,7 +5,6 @@ import {
   renameEntityUsingMenu,
   updateCodeEditor,
 } from "./utils/commonHelpers";
-import { createAdBidsModel } from "./utils/dataSpecifcHelpers";
 import {
   TestEntityType,
   waitForProfiling,
@@ -99,10 +98,5 @@ test.describe("models", () => {
     await gotoEntity(page, "AdBids_model");
     // make sure error has propagated
     await wrapRetryAssertion(() => modelHasError(page, true, "Catalog Error"));
-  });
-
-  test("Embedded source", async ({ page }) => {
-    await page.goto("/");
-    await createAdBidsModel(page);
   });
 });

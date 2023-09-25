@@ -106,7 +106,9 @@ export function getAllErrorsForFile(
         return [];
       }
       return [
-        ...(projectParser.data?.projectParser?.state?.parseErrors ?? []),
+        ...(projectParser.data?.projectParser?.state?.parseErrors ?? []).filter(
+          (e) => e.filePath === filePath
+        ),
         ...(resource.data?.meta?.reconcileError
           ? [
               {

@@ -9,8 +9,8 @@ export function getFileExtension(source: V1SourceV2): string {
   return "";
 }
 
-export function formatConnectorType(connectorType: string) {
-  switch (connectorType) {
+export function formatConnectorType(source: V1SourceV2) {
+  switch (source?.state?.connector) {
     case "s3":
       return "S3";
     case "gcs":

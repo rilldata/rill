@@ -32,7 +32,8 @@ export const useMetaQuery = <T = V1MetricsViewSpec>(
         (data) =>
           selector
             ? selector(data.metricsView?.state?.validSpec)
-            : data.metricsView?.state?.validSpec
+            : data.metricsView?.state?.validSpec,
+        ctx.queryClient
       ).subscribe(set);
     }
   );

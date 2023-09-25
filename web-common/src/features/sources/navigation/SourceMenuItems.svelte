@@ -147,14 +147,7 @@
       return;
     }
     try {
-      await refreshSource(
-        connector,
-        tableName,
-        runtimeInstanceId,
-        connector === "s3" || connector === "gcs" || connector === "https"
-          ? path
-          : sourceName
-      );
+      await refreshSource(connector, tableName, runtimeInstanceId);
 
       // invalidate the data preview (async)
       // TODO: use new runtime approach
