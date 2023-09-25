@@ -14,7 +14,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-func Test_sqlextensionToDuckDB_Transfer(t *testing.T) {
+func Test_sqliteToDuckDB_Transfer(t *testing.T) {
 	tempDir := t.TempDir()
 
 	dbPath := fmt.Sprintf("%s.db", tempDir)

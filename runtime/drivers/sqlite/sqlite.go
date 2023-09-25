@@ -58,7 +58,7 @@ func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
 func (d driver) Spec() drivers.Spec {
 	return drivers.Spec{
 		DisplayName: "SQLite",
-		Description: "Import data from SQLite table to DuckDB.",
+		Description: "Import data from SQLite table to DuckDB using duckdb SQLite scanner.",
 		SourceProperties: []drivers.PropertySchema{
 			{
 				Key:         "sql",
