@@ -233,17 +233,17 @@ func (it *blobIterator) Next() ([]string, error) {
 		return nil, io.EOF
 	}
 
-	func (it *blobIterator) Format() string {
-	return it.opts.Format
-}
-
-// Track the batch for cleanup in the next iteration
+	// Track the batch for cleanup in the next iteration
 	it.lastBatch = batch
 
 	// Clients may change the slice. Creating a copy to ensure we delete the files on next batch/close.
 	result := make([]string, len(batch))
 	copy(result, batch)
 	return result, nil
+}
+
+func (it *blobIterator) Format() string {
+	return it.opts.Format
 }
 
 // TODO: Ideally planner should take ownership of the bucket and return an iterator with next returning objectWithPlan
@@ -467,6 +467,10 @@ func (it *prefetchedIterator) Next() ([]string, error) {
 	}
 	it.done = true
 	return it.batch, nil
+}
+
+func (it *prefetchedIterator) Format() string {
+	return it.underlying.Format()
 }
 
 // downloadResult represents a successfully downloaded file
