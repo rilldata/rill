@@ -7,7 +7,11 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
-  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers.js";
+  import {
+    getFileAPIPathFromNameAndType,
+    getFilePathFromNameAndType,
+  } from "@rilldata/web-common/features/entity-management/entity-mappers.js";
+  import { waitForResource } from "@rilldata/web-common/features/entity-management/resource-status-utils";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useModel } from "@rilldata/web-common/features/models/selectors";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
@@ -21,6 +25,7 @@
     createConnectorServiceOLAPGetTable,
     createRuntimeServicePutFile,
   } from "@rilldata/web-common/runtime-client";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { getName } from "../../entity-management/name-utils";
   import { generateDashboardYAMLForModel } from "../../metrics-views/metrics-internal-store";
@@ -28,6 +33,8 @@
   export let modelName: string;
   export let hasError = false;
   export let collapse = false;
+
+  const queryClient = useQueryClient();
 
   $: modelQuery = useModel($runtime.instanceId, modelName);
   $: model = $modelQuery.data?.model;
@@ -69,7 +76,15 @@
         },
       },
       {
-        onSuccess: () => {
+        onSuccess: async () => {
+          await waitForResource(
+            queryClient,
+            $runtime.instanceId,
+            getFilePathFromNameAndType(
+              newDashboardName,
+              EntityType.MetricsDefinition
+            )
+          );
           goto(`/dashboard/${newDashboardName}`);
           behaviourEvent.fireNavigationEvent(
             newDashboardName,

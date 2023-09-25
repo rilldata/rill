@@ -1,16 +1,20 @@
-import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+import {
+  getFileAPIPathFromNameAndType,
+  getFilePathFromNameAndType,
+} from "@rilldata/web-common/features/entity-management/entity-mappers";
+import { waitForResource } from "@rilldata/web-common/features/entity-management/resource-status-utils";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
   connectorServiceOLAPGetTable,
   RpcStatus,
   runtimeServicePutFile,
-  V1PutFileResponse,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import {
   createMutation,
   CreateMutationOptions,
   MutationFunction,
+  useQueryClient,
 } from "@tanstack/svelte-query";
 import { generateDashboardYAMLForModel } from "../metrics-views/metrics-internal-store";
 
@@ -26,16 +30,17 @@ export const useCreateDashboardFromSource = <
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<Promise<V1PutFileResponse>>,
+    Awaited<Promise<void>>,
     TError,
     { data: CreateDashboardFromSourceRequest },
     TContext
   >;
 }) => {
   const { mutation: mutationOptions } = options ?? {};
+  const queryClient = mutationOptions?.queryClient ?? useQueryClient();
 
   const mutationFn: MutationFunction<
-    Awaited<Promise<V1PutFileResponse>>,
+    Awaited<Promise<void>>,
     { data: CreateDashboardFromSourceRequest }
   > = async (props) => {
     const { data } = props ?? {};
@@ -67,7 +72,7 @@ export const useCreateDashboardFromSource = <
       data.newDashboardName
     );
 
-    return runtimeServicePutFile(
+    await runtimeServicePutFile(
       data.instanceId,
       getFileAPIPathFromNameAndType(
         data.newDashboardName,
@@ -79,10 +84,18 @@ export const useCreateDashboardFromSource = <
         createOnly: true,
       }
     );
+    await waitForResource(
+      queryClient,
+      data.instanceId,
+      getFilePathFromNameAndType(
+        data.newDashboardName,
+        EntityType.MetricsDefinition
+      )
+    );
   };
 
   return createMutation<
-    Awaited<Promise<V1PutFileResponse>>,
+    Awaited<Promise<void>>,
     TError,
     { data: CreateDashboardFromSourceRequest },
     TContext

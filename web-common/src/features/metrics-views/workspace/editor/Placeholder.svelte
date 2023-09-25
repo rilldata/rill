@@ -3,8 +3,12 @@
   import { skipDebounceAnnotation } from "@rilldata/web-common/components/editor/annotations";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
-  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import {
+    getFileAPIPathFromNameAndType,
+    getFilePathFromNameAndType,
+  } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { waitForResource } from "@rilldata/web-common/features/entity-management/resource-status-utils";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
     generateDashboardYAMLForModel,
@@ -73,6 +77,11 @@
         create: true,
         createOnly: true,
       }
+    );
+    await waitForResource(
+      queryClient,
+      $runtime.instanceId,
+      getFilePathFromNameAndType(metricsName, EntityType.MetricsDefinition)
     );
     /**
      * go ahead and optimistically update the editor view.

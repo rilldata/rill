@@ -9,6 +9,7 @@
     getFileAPIPathFromNameAndType,
     getFilePathFromNameAndType,
   } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { waitForResource } from "@rilldata/web-common/features/entity-management/resource-status-utils";
   import {
     getAllErrorsForFile,
     getFileHasErrors,
@@ -94,7 +95,15 @@
         },
       },
       {
-        onSuccess: () => {
+        onSuccess: async () => {
+          await waitForResource(
+            queryClient,
+            $runtime.instanceId,
+            getFilePathFromNameAndType(
+              newDashboardName,
+              EntityType.MetricsDefinition
+            )
+          );
           goto(`/dashboard/${newDashboardName}`);
           const previousActiveEntity = $appScreen?.type;
           behaviourEvent.fireNavigationEvent(
