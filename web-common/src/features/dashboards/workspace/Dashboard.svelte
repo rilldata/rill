@@ -20,6 +20,7 @@
   import DashboardCTAs from "./DashboardCTAs.svelte";
   import DashboardTitle from "./DashboardTitle.svelte";
   import TimeDimensionDetailsTable from "@rilldata/web-common/features/dashboards/time-dimension-details/TimeDimensionDetailsTable.svelte";
+  import TddNew from "@rilldata/web-common/features/dashboards/time-dimension-details/TDDNew.svelte";
 
   export let metricViewName: string;
   export let leftMargin = undefined;
@@ -125,7 +126,7 @@
 
       <div class="overflow-y-hidden px-4 grow">
         {#if expandedMeasureName}
-          <TimeDimensionDetailsTable />
+          <TddNew />
         {:else if selectedDimensionName}
           <DimensionDisplay
             {metricViewName}
