@@ -17,6 +17,8 @@ import type {
   ConnectorServiceBigQueryListDatasetsParams,
   V1BigQueryListTablesResponse,
   ConnectorServiceBigQueryListTablesParams,
+  V1OLAPGetTableResponse,
+  ConnectorServiceOLAPGetTableParams,
   V1ScanConnectorsResponse,
   ConnectorServiceScanConnectorsParams,
   V1GCSListObjectsResponse,
@@ -194,6 +196,90 @@ export const createConnectorServiceBigQueryListTables = <
   }
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getConnectorServiceBigQueryListTablesQueryOptions(
+    params,
+    options
+  );
+
+  const query = createQuery(queryOptions) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+};
+
+/**
+ * @summary OLAPGetTable returns metadata about a table or view in an OLAP
+ */
+export const connectorServiceOLAPGetTable = (
+  params?: ConnectorServiceOLAPGetTableParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1OLAPGetTableResponse>({
+    url: `/v1/connectors/olap/table`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getConnectorServiceOLAPGetTableQueryKey = (
+  params?: ConnectorServiceOLAPGetTableParams
+) => [`/v1/connectors/olap/table`, ...(params ? [params] : [])] as const;
+
+export const getConnectorServiceOLAPGetTableQueryOptions = <
+  TData = Awaited<ReturnType<typeof connectorServiceOLAPGetTable>>,
+  TError = RpcStatus
+>(
+  params?: ConnectorServiceOLAPGetTableParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof connectorServiceOLAPGetTable>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryOptions<
+  Awaited<ReturnType<typeof connectorServiceOLAPGetTable>>,
+  TError,
+  TData
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getConnectorServiceOLAPGetTableQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof connectorServiceOLAPGetTable>>
+  > = ({ signal }) => connectorServiceOLAPGetTable(params, signal);
+
+  return { queryKey, queryFn, ...queryOptions };
+};
+
+export type ConnectorServiceOLAPGetTableQueryResult = NonNullable<
+  Awaited<ReturnType<typeof connectorServiceOLAPGetTable>>
+>;
+export type ConnectorServiceOLAPGetTableQueryError = RpcStatus;
+
+/**
+ * @summary OLAPGetTable returns metadata about a table or view in an OLAP
+ */
+export const createConnectorServiceOLAPGetTable = <
+  TData = Awaited<ReturnType<typeof connectorServiceOLAPGetTable>>,
+  TError = RpcStatus
+>(
+  params?: ConnectorServiceOLAPGetTableParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof connectorServiceOLAPGetTable>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const queryOptions = getConnectorServiceOLAPGetTableQueryOptions(
     params,
     options
   );

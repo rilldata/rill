@@ -68,8 +68,6 @@ message ProjectParserSpec {
   bool model_default_materialize = 5;
   // materialize_model_delay_seconds makes the project parser delay materialization of updated models
   uint32 model_materialize_delay_seconds = 6;
-  // duckdb_connectors is a list of connectors that use DuckDB
-  repeated string duckdb_connectors = 7;
 }
 
 message ProjectParserState {

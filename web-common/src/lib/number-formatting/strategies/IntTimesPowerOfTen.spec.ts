@@ -1,5 +1,8 @@
 import { FormatterFactoryOptions, NumberKind } from "../humanizer-types";
-import { IntTimesPowerOfTenFormatter } from "./IntTimesPowerOfTen";
+import {
+  IntTimesPowerOfTenFormatter,
+  closeToIntTimesPowerOfTen,
+} from "./IntTimesPowerOfTen";
 import { describe, it, expect } from "vitest";
 
 const baseOptions: FormatterFactoryOptions = {
@@ -8,6 +11,74 @@ const baseOptions: FormatterFactoryOptions = {
   numberKind: NumberKind.ANY,
   onInvalidInput: "doNothing",
 };
+
+const closeToIntTimesPowerOfTenCases: [number, boolean][] = [
+  [0.00009999999999999, true],
+  [0.00019999999999999, true],
+  [0.00039999999999999, true],
+  [0.00000999999999999, true],
+  [0.9999999999999999, true],
+  [0.0030000000003, true],
+
+  [0, true],
+  [0, true],
+  [0, true],
+
+  [1, true],
+  [1, true],
+  [1, true],
+
+  [30_000_000, true],
+  [30_000_000, true],
+  [30_000_000, true],
+
+  [10_000, true],
+  [10_000, true],
+  [10_000, true],
+
+  [10, true],
+  [10, true],
+  [10, true],
+
+  [0.005, true],
+  [0.005, true],
+  [0.005, true],
+
+  [0.000_000_200, true],
+  [0.000_000_200, true],
+  [0.000_000_200, true],
+
+  [12_320_000, false],
+  [12_320_000, false],
+  [12_320_000, false],
+
+  [12_000, false],
+  [12_000, false],
+  [12_000, false],
+
+  [12_320, false],
+  [12_320, false],
+  [12_320, false],
+  [12.23, false],
+  [12.23, false],
+  [12.23, false],
+
+  [0.001432, false],
+  [0.001423, false],
+  [0.001423, false],
+
+  [0.000_000_234_32, false],
+  [0.000_000_234_32, false],
+  [0.000_000_234_32, false],
+];
+
+describe("closeToIntTimesPowerOfTen correctly detects whether numbers are close to a single digit multiple of a power of 10", () => {
+  closeToIntTimesPowerOfTenCases.forEach(([input, output]) => {
+    it(`closeToIntTimesPowerOfTen correct for: ${input}`, () => {
+      expect(closeToIntTimesPowerOfTen(input)).toEqual(output);
+    });
+  });
+});
 
 const testCases: [
   number,
@@ -22,6 +93,10 @@ const testCases: [
   [0, {}, "0"],
   [0, { numberKind: NumberKind.DOLLAR }, "$0"],
   [0, { numberKind: NumberKind.PERCENT }, "0%"],
+
+  [1, {}, "1"],
+  [1, { numberKind: NumberKind.DOLLAR }, "$1"],
+  [1, { numberKind: NumberKind.PERCENT }, "100%"],
 
   [30_000_000, {}, "30M"],
   [30_000_000, { numberKind: NumberKind.DOLLAR }, "$30M"],
@@ -91,13 +166,34 @@ const errorCases: [
 
 describe("default formatter, throws on invalid inputs", () => {
   errorCases.forEach(([input, options]) => {
-    it(`throws an errof for input: ${input}`, () => {
+    it(`throws an error for input: ${input}`, () => {
       const formatter = new IntTimesPowerOfTenFormatter([input], {
         ...baseOptions,
         ...options,
         ...{ onInvalidInput: "throw" },
       });
       expect(() => formatter.stringFormat(input)).toThrow();
+    });
+  });
+});
+
+const closeCases: [number, string][] = [
+  [0.00009999999999999, "100e-6"],
+  [0.00019999999999999, "200e-6"],
+  [0.00039999999999999, "400e-6"],
+  [0.00000999999999999, "10e-6"],
+  [0.9999999999999999, "1"],
+  [0.0030000000003, "3e-3"],
+];
+
+describe("IntTimesPowerOfTenFormatter handles cases within an rounding error", () => {
+  closeCases.forEach(([input, output]) => {
+    it(`returns the correct split string in case: ${input}, and does not throw an error`, () => {
+      const formatter = new IntTimesPowerOfTenFormatter([input], {
+        ...baseOptions,
+        ...{ onInvalidInput: "throw" },
+      });
+      expect(formatter.stringFormat(input)).toEqual(output);
     });
   });
 });

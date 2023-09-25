@@ -7,16 +7,10 @@
     Axis,
     Grid,
   } from "@rilldata/web-common/components/data-graphic/guides";
-  import {
-    ClippedChunkedLine,
-    ChunkedLine,
-  } from "@rilldata/web-common/components/data-graphic/marks";
   import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
-  import { previousValueStore } from "@rilldata/web-common/lib/store-utils";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { extent } from "d3-array";
   import { cubicOut } from "svelte/easing";
-  import { writable } from "svelte/store";
   import { fly } from "svelte/transition";
   import MeasureValueMouseover from "./MeasureValueMouseover.svelte";
   import {
@@ -32,8 +26,10 @@
   import { contexts } from "@rilldata/web-common/components/data-graphic/constants";
   import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-  import MeasureScrub from "@rilldata/web-common/features/dashboards/time-series/MeasureScrub.svelte";
+  import MeasureScrub from "./MeasureScrub.svelte";
+  import ChartBody from "./ChartBody.svelte";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import DimensionValueMouseover from "@rilldata/web-common/features/dashboards/time-series/DimensionValueMouseover.svelte";
 
   export let metricViewName: string;
   export let width: number = undefined;
@@ -48,6 +44,7 @@
 
   export let showComparison = false;
   export let data;
+  export let dimensionData;
   export let xAccessor = "ts";
   export let labelAccessor = "label";
   export let yAccessor = "value";
@@ -74,14 +71,6 @@
 
   $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
 
-  $: mainLineColor = hasSubrangeSelected
-    ? "hsla(217, 10%, 60%, 1)"
-    : "hsla(217,60%, 55%, 1)";
-
-  $: areaColor = hasSubrangeSelected
-    ? "hsla(225, 20%, 80%, .2)"
-    : "hsla(217,70%, 80%, .4)";
-
   $: scrubStartCords = $xScale(scrubStart);
   $: scrubEndCords = $xScale(scrubEnd);
   $: mouseOverCords = $xScale(mouseoverValue?.x);
@@ -102,6 +91,12 @@
     );
   }
 
+  $: isComparingDimension = Boolean(dimensionData?.length);
+
+  /**
+   * TODO: Optimize this such that we don't need to fetch main chart data
+   * when comparing dimensions
+   */
   $: [xExtentMin, xExtentMax] = extent(data, (d) => d[xAccessor]);
   $: [yExtentMin, yExtentMax] = extent(data, (d) => d[yAccessor]);
   let comparisonExtents;
@@ -114,6 +109,31 @@
     yExtentMax = Math.max(yExtentMax, comparisonExtents[1] || yExtentMax);
   }
 
+  /** if we have dimension data, factor that into the extents */
+
+  let isFetchingDimensions = false;
+
+  $: if (isComparingDimension) {
+    let dimExtents = dimensionData.map((d) =>
+      extent(d?.data || [], (datum) => datum[yAccessor])
+    );
+
+    yExtentMin = dimExtents
+      .map((e) => e[0])
+      .reduce(
+        (min, curr) => Math.min(min, isNaN(curr) ? Infinity : curr),
+        Infinity
+      );
+    yExtentMax = dimExtents
+      .map((e) => e[1])
+      .reduce(
+        (max, curr) => Math.max(max, isNaN(curr) ? -Infinity : curr),
+        -Infinity
+      );
+
+    isFetchingDimensions = dimensionData.some((d) => d?.isFetching);
+  }
+
   $: [internalYMin, internalYMax] = niceMeasureExtents(
     [
       yMin !== undefined ? yMin : yExtentMin,
@@ -124,32 +144,6 @@
 
   $: internalXMin = xMin || xExtentMin;
   $: internalXMax = xMax || xExtentMax;
-  // we delay the tween if previousYMax < yMax
-  let yMaxStore = writable(yExtentMax);
-  let previousYMax = previousValueStore(yMaxStore);
-
-  $: yMaxStore.set(yExtentMax);
-  const timeRangeKey = writable(`${xMin}-${xMax}`);
-
-  const previousTimeRangeKey = previousValueStore(timeRangeKey);
-
-  // FIXME: move this function to utils.ts
-  /** reset the keys to trigger animations on time range changes */
-  let syncTimeRangeKey;
-  $: {
-    timeRangeKey.set(`${xMin}-${xMax}`);
-    if ($previousTimeRangeKey !== $timeRangeKey) {
-      if (syncTimeRangeKey) clearTimeout(syncTimeRangeKey);
-      syncTimeRangeKey = setTimeout(() => {
-        previousTimeRangeKey.set($timeRangeKey);
-      }, 400);
-    }
-  }
-
-  $: delay =
-    $previousTimeRangeKey === $timeRangeKey && $previousYMax < yExtentMax
-      ? 100
-      : 0;
 
   function inBounds(min, max, value) {
     return value >= min && value <= max;
@@ -224,57 +218,19 @@
     <Axis {numberKind} side="right" />
     <Grid />
     <Body>
-      <!-- key on the time range itself to prevent weird tweening animations.
-    We'll need to migrate this to a more robust solution once we've figured out
-    the right way to "tile" together a time series with multiple pages of data.
-    -->
-      {#key $timeRangeKey}
-        {#if showComparison}
-          <g
-            class="transition-opacity"
-            class:opacity-80={mouseoverValue?.x}
-            class:opacity-40={!mouseoverValue?.x}
-          >
-            <ChunkedLine
-              area={false}
-              lineColor={`hsl(217, 10%, 60%)`}
-              delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
-              duration={hasSubrangeSelected ||
-              $timeRangeKey !== $previousTimeRangeKey
-                ? 0
-                : 200}
-              {data}
-              {xAccessor}
-              yAccessor="comparison.{yAccessor}"
-            />
-          </g>
-        {/if}
-        <ChunkedLine
-          lineColor={mainLineColor}
-          {areaColor}
-          delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
-          duration={hasSubrangeSelected ||
-          $timeRangeKey !== $previousTimeRangeKey
-            ? 0
-            : 200}
-          {data}
-          {xAccessor}
-          {yAccessor}
-        />
-        {#if hasSubrangeSelected}
-          <ClippedChunkedLine
-            start={Math.min(scrubStart, scrubEnd)}
-            end={Math.max(scrubStart, scrubEnd)}
-            lineColor="hsla(217,60%, 55%, 1)"
-            areaColor="hsla(217,70%, 80%, .4)"
-            delay={0}
-            duration={0}
-            {data}
-            {xAccessor}
-            {yAccessor}
-          />
-        {/if}
-      {/key}
+      <ChartBody
+        {xMin}
+        {xMax}
+        {yExtentMax}
+        {showComparison}
+        isHovering={mouseoverValue?.x}
+        {data}
+        {dimensionData}
+        {xAccessor}
+        {yAccessor}
+        {scrubStart}
+        {scrubEnd}
+      />
       <line
         class="stroke-blue-200"
         x1={config.plotLeft}
@@ -283,7 +239,7 @@
         y2={yScale(0)}
       />
     </Body>
-    {#if !isScrubbing && mouseoverValue?.x}
+    {#if !isScrubbing && mouseoverValue?.x && !isFetchingDimensions}
       <WithRoundToTimegrain
         strategy={TimeRoundingStrategy.PREVIOUS}
         value={mouseoverValue.x}
@@ -322,14 +278,24 @@
               {/if}
             </g>
             <g transition:fly|local={{ duration: 100, x: -4 }}>
-              <MeasureValueMouseover
-                {point}
-                {xAccessor}
-                {yAccessor}
-                {showComparison}
-                {mouseoverFormat}
-                {numberKind}
-              />
+              {#if isComparingDimension}
+                <DimensionValueMouseover
+                  {point}
+                  {xAccessor}
+                  {yAccessor}
+                  {dimensionData}
+                  {mouseoverFormat}
+                />
+              {:else}
+                <MeasureValueMouseover
+                  {point}
+                  {xAccessor}
+                  {yAccessor}
+                  {showComparison}
+                  {mouseoverFormat}
+                  {numberKind}
+                />
+              {/if}
             </g>
           {/if}
         </WithBisector>

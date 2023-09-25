@@ -21,11 +21,7 @@
 
   let dataType;
   $: {
-    if (type === "RILL_PERCENTAGE_CHANGE") {
-      dataType = PercentageChange;
-    } else if (type === "RILL_CHANGE") {
-      dataType = MeasureChange;
-    } else if (NUMERICS.has(type)) {
+    if (NUMERICS.has(type)) {
       dataType = Number;
     } else if (TIMESTAMPS.has(type)) {
       dataType = Timestamp;
@@ -38,12 +34,24 @@
   }
 </script>
 
-<svelte:component
-  this={dataType}
-  isNull={isNull || value === null}
-  {inTable}
-  {customStyle}
-  {dark}
-  {type}
-  {value}
-/>
+<!--
+NOTE:
+PercentageChange  and MeasureChange don't take a `type` prop,
+so instantiating these directly clears a ton of warnings
+about unknown props.
+-->
+{#if type === "RILL_PERCENTAGE_CHANGE"}
+  <PercentageChange {value} {isNull} {inTable} {customStyle} {dark} />
+{:else if type === "RILL_CHANGE"}
+  <MeasureChange {value} {isNull} {inTable} {customStyle} {dark} />
+{:else}
+  <svelte:component
+    this={dataType}
+    isNull={isNull || value === null}
+    {inTable}
+    {customStyle}
+    {dark}
+    {type}
+    {value}
+  />
+{/if}

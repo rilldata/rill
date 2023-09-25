@@ -104,7 +104,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
 		InstanceId:          instanceID,
-		OlapConnector:       "olap",
+		OlapConnector:       olapDriver,
 		RepoConnector:       "repo",
 		EmbedCatalog:        embedCatalog,
 		Variables:           opts.ProdVariables,
@@ -112,7 +112,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		Annotations:         opts.Annotations.toMap(),
 		Connectors: []*runtimev1.Connector{
 			{
-				Name:   "olap",
+				Name:   olapDriver,
 				Type:   olapDriver,
 				Config: olapConfig,
 			},
@@ -214,7 +214,7 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 	}
 
 	if err := s.triggerReconcile(ctx, depl); err != nil {
-		s.logger.Error("failed to trigger reconcile", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
+		s.Logger.Error("failed to trigger reconcile", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
 		return err
 	}
 	return nil
@@ -231,25 +231,25 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 		return nil
 	}
 
-	s.logger.Info("hibernate: starting", zap.Int("deployments", len(depls)))
+	s.Logger.Info("hibernate: starting", zap.Int("deployments", len(depls)))
 
 	for _, depl := range depls {
 		if depl.Status == database.DeploymentStatusReconciling && time.Since(depl.UpdatedOn) < 30*time.Minute {
-			s.logger.Info("hibernate: skipping deployment because it is reconciling", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
+			s.Logger.Info("hibernate: skipping deployment because it is reconciling", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
 			continue
 		}
 
 		proj, err := s.DB.FindProject(ctx, depl.ProjectID)
 		if err != nil {
-			s.logger.Error("hibernate: find project error", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
+			s.Logger.Error("hibernate: find project error", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
 			continue
 		}
 
-		s.logger.Info("hibernate: deleting deployment", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID))
+		s.Logger.Info("hibernate: deleting deployment", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID))
 
 		err = s.teardownDeployment(ctx, proj, depl)
 		if err != nil {
-			s.logger.Error("hibernate: teardown deployment error", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
+			s.Logger.Error("hibernate: teardown deployment error", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
 			continue
 		}
 
@@ -272,7 +272,7 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 		}
 	}
 
-	s.logger.Info("hibernate: completed", zap.Int("deployments", len(depls)))
+	s.Logger.Info("hibernate: completed", zap.Int("deployments", len(depls)))
 
 	return nil
 }

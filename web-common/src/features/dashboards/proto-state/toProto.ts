@@ -40,6 +40,8 @@ const LeaderboardContextColumnMap: Record<
     DashboardState_LeaderboardContextColumn.PERCENT,
   [LeaderboardContextColumn.DELTA_PERCENT]:
     DashboardState_LeaderboardContextColumn.DELTA_PERCENT,
+  [LeaderboardContextColumn.DELTA_ABSOLUTE]:
+    DashboardState_LeaderboardContextColumn.DELTA_ABSOLUTE,
   [LeaderboardContextColumn.HIDDEN]:
     DashboardState_LeaderboardContextColumn.HIDDEN,
 };
@@ -67,7 +69,10 @@ export function getProtoFromDashboardState(
   if (metrics.lastDefinedScrubRange) {
     state.scrubRange = toScrubProto(metrics.lastDefinedScrubRange);
   }
-  state.showComparison = Boolean(metrics.showComparison);
+  state.showTimeComparison = Boolean(metrics.showTimeComparison);
+  if (metrics.selectedComparisonDimension) {
+    state.comparisonDimension = metrics.selectedComparisonDimension;
+  }
   if (metrics.selectedTimezone) {
     state.selectedTimezone = metrics.selectedTimezone;
   }

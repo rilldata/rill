@@ -28,6 +28,8 @@ const LeaderboardContextColumnReverseMap: Record<
     LeaderboardContextColumn.PERCENT,
   [DashboardState_LeaderboardContextColumn.DELTA_PERCENT]:
     LeaderboardContextColumn.DELTA_PERCENT,
+  [DashboardState_LeaderboardContextColumn.DELTA_ABSOLUTE]:
+    LeaderboardContextColumn.DELTA_ABSOLUTE,
   [DashboardState_LeaderboardContextColumn.HIDDEN]:
     LeaderboardContextColumn.HIDDEN,
 };
@@ -63,7 +65,7 @@ export function getDashboardStateFromProto(
       dashboard.compareTimeRange
     );
   }
-  entity.showComparison = Boolean(dashboard.showComparison);
+  entity.showTimeComparison = Boolean(dashboard.showTimeComparison);
 
   entity.selectedTimeRange = dashboard.timeRange
     ? fromTimeRangeProto(dashboard.timeRange)
@@ -86,6 +88,10 @@ export function getDashboardStateFromProto(
   }
   if (dashboard.selectedDimension) {
     entity.selectedDimensionName = dashboard.selectedDimension;
+  }
+
+  if (dashboard.comparisonDimension) {
+    entity.selectedComparisonDimension = dashboard.comparisonDimension;
   }
 
   if (dashboard.selectedTimezone) {

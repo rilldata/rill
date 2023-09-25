@@ -176,13 +176,13 @@ func (it *blobIterator) NextBatchSize(sizeInBytes int64) ([]string, error) {
 	g.SetLimit(_concurrentBlobDownloadLimit)
 
 	var totalSizeInBytes int64
-	start := it.index
 	for ; it.index < len(it.objects) && totalSizeInBytes < sizeInBytes; it.index++ {
 		obj := it.objects[it.index]
 		totalSizeInBytes += obj.obj.Size
+		// need to create file by maintaining same dir path as in glob for hivepartition support
+		filename := filepath.Join(it.tempDir, obj.obj.Key)
+		it.localFiles = append(it.localFiles, filename)
 		g.Go(func() error {
-			// need to create file by maintaining same dir path as in glob for hivepartition support
-			filename := filepath.Join(it.tempDir, obj.obj.Key)
 			if err := os.MkdirAll(filepath.Dir(filename), os.ModePerm); err != nil {
 				return err
 			}
@@ -193,7 +193,6 @@ func (it *blobIterator) NextBatchSize(sizeInBytes int64) ([]string, error) {
 			}
 			defer file.Close()
 
-			it.localFiles = append(it.localFiles, file.Name())
 			ext := filepath.Ext(obj.obj.Key)
 			partialReader, isPartialDownloadSupported := _partialDownloadReaders[ext]
 			downloadFull := obj.full || !isPartialDownloadSupported
@@ -244,7 +243,7 @@ func (it *blobIterator) NextBatchSize(sizeInBytes int64) ([]string, error) {
 
 	// clients can make changes to slice if passing the same slice that iterator holds
 	// creating a copy since we want to delete all these files on next batch/close
-	result := make([]string, it.index-start)
+	result := make([]string, len(it.localFiles))
 	copy(result, it.localFiles)
 	return result, nil
 }

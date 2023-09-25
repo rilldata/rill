@@ -1,7 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { useProjectDeploymentStatus } from "@rilldata/web-admin/components/projects/selectors";
+  import { useDashboards } from "@rilldata/web-admin/features/projects/dashboards";
+  import { useProjectDeploymentStatus } from "@rilldata/web-admin/features/projects/selectors";
   import { Tag } from "@rilldata/web-common/components/tag";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
@@ -11,7 +12,6 @@
     createAdminServiceListOrganizations,
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
-  import { useDashboards } from "../projects/dashboards";
   import BreadcrumbItem from "./BreadcrumbItem.svelte";
   import OrganizationAvatar from "./OrganizationAvatar.svelte";
 

@@ -62,6 +62,8 @@
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
   $: leaderboardMeasureName = $dashboardStore?.leaderboardMeasureName;
+  $: isBeingCompared =
+    $dashboardStore?.selectedComparisonDimension === dimensionName;
   $: leaderboardMeasureQuery = useMetaMeasure(
     instanceId,
     metricViewName,
@@ -293,7 +295,7 @@
     if (!measureNames.includes(columnName)) return;
 
     if (columnName === leaderboardMeasureName) {
-      metricsExplorerStore.toggleSortDirection(metricViewName);
+      metricsExplorerStore.toggleSort(metricViewName);
     } else {
       metricsExplorerStore.setLeaderboardMeasureName(
         metricViewName,
@@ -301,6 +303,13 @@
       );
       metricsExplorerStore.setSortDescending(metricViewName);
     }
+  }
+
+  function toggleComparisonDimension(dimensionName, isBeingCompared) {
+    metricsExplorerStore.setComparisonDimension(
+      metricViewName,
+      isBeingCompared ? undefined : dimensionName
+    );
   }
 
   $: if ($comparisonTopListQuery?.data && values.length && displayComparison) {
@@ -358,8 +367,11 @@
         <DimensionTable
           on:select-item={(event) => onSelectItem(event)}
           on:sort={(event) => onSortByColumn(event)}
+          on:toggle-dimension-comparison={() =>
+            toggleComparisonDimension(dimensionName, isBeingCompared)}
           {sortAscending}
           dimensionName={dimensionColumn}
+          {isBeingCompared}
           {columns}
           {selectedValues}
           rows={values}

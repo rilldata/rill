@@ -5,12 +5,6 @@ sidebar_label: "Secure: Access policies"
 sidebar_position: 40
 ---
 
-:::caution
-
-This is an experimental feature.
-
-:::
-
 Rill supports granular access policies for dashboards. They allow the dashboard developer to configure dashboard-level, row-level and column-level restrictions based on user attributes such as email address and domain. Some of the typical use cases include:
 
 - Restricting access to certain dashboards to admin users

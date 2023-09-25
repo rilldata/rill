@@ -11,6 +11,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
@@ -48,7 +49,7 @@ func New(t TestingT) *runtime.Runtime {
 		SystemConnectors:        systemConnectors,
 		SecurityEngineCacheSize: 100,
 	}
-	rt, err := runtime.New(opts, zap.NewNop(), nil)
+	rt, err := runtime.New(opts, zap.NewNop(), activity.NewNoopClient())
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		rt.Close()
@@ -62,7 +63,7 @@ func NewInstance(t TestingT) (*runtime.Runtime, string) {
 	rt := New(t)
 
 	inst := &drivers.Instance{
-		OLAPConnector: "olap",
+		OLAPConnector: "duckdb",
 		RepoConnector: "repo",
 		EmbedCatalog:  true,
 		Connectors: []*runtimev1.Connector{
@@ -73,7 +74,7 @@ func NewInstance(t TestingT) (*runtime.Runtime, string) {
 			},
 			{
 				Type:   "duckdb",
-				Name:   "olap",
+				Name:   "duckdb",
 				Config: map[string]string{"dsn": ""},
 			},
 		},
@@ -114,7 +115,7 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 	_, currentFile, _, _ := goruntime.Caller(0)
 
 	inst := &drivers.Instance{
-		OLAPConnector: "olap",
+		OLAPConnector: "duckdb",
 		RepoConnector: "repo",
 		EmbedCatalog:  true,
 		Connectors: []*runtimev1.Connector{
@@ -125,7 +126,7 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 			},
 			{
 				Type:   "duckdb",
-				Name:   "olap",
+				Name:   "duckdb",
 				Config: map[string]string{"dsn": "?access_mode=read_write"},
 			},
 		},

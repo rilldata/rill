@@ -6,12 +6,14 @@
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import Spinner from "../../entity-management/Spinner.svelte";
-  import LeaderboardOptionsMenu from "../leaderboard/LeaderboardOptionsMenu.svelte";
+  import DimensionCompareMenu from "./DimensionCompareMenu.svelte";
   import Delta from "@rilldata/web-common/components/icons/Delta.svelte";
   import PieChart from "@rilldata/web-common/components/icons/PieChart.svelte";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import { createEventDispatcher } from "svelte";
   import { LeaderboardContextColumn } from "../leaderboard-context-column";
+  import { contextColumnWidth } from "./leaderboard-utils";
+  import { SortType } from "../proto-state/derived-types";
 
   export let displayName: string;
   export let isFetching: boolean;
@@ -19,25 +21,15 @@
   export let hovered: boolean;
   export let contextColumn: LeaderboardContextColumn;
   export let sortAscending: boolean;
+  export let sortType: SortType;
+  export let isBeingCompared: boolean;
 
-  export let filterExcludeMode: boolean;
-
-  let optionsMenuActive = false;
   const dispatch = createEventDispatcher();
-
-  $: contextColumnWidth = (contextColumn: LeaderboardContextColumn) => {
-    switch (contextColumn) {
-      case LeaderboardContextColumn.DELTA_ABSOLUTE:
-        return "54px";
-      case LeaderboardContextColumn.DELTA_PERCENT:
-      case LeaderboardContextColumn.PERCENT:
-        return "44px";
-      case LeaderboardContextColumn.HIDDEN:
-        return "0px";
-      default:
-        throw new Error("Invalid context column, all cases must be handled");
-    }
-  };
+  $: contextColumnSortType = {
+    [LeaderboardContextColumn.DELTA_PERCENT]: SortType.DELTA_PERCENT,
+    [LeaderboardContextColumn.DELTA_ABSOLUTE]: SortType.DELTA_ABSOLUTE,
+    [LeaderboardContextColumn.PERCENT]: SortType.PERCENT,
+  }[contextColumn];
 
   $: arrowTransform = sortAscending ? "scale(1 -1)" : "scale(1 1)";
 </script>
@@ -46,13 +38,12 @@
   <div class="grid place-items-center" style:height="22px" style:width="22px">
     {#if isFetching}
       <Spinner size="16px" status={EntityStatus.Running} />
-    {:else if hovered || optionsMenuActive}
+    {:else if hovered || isBeingCompared}
       <div style="position:relative; height:100%; width:100%; ">
         <div style="position: absolute; ">
-          <LeaderboardOptionsMenu
-            bind:optionsMenuActive
-            on:toggle-filter-mode
-            {filterExcludeMode}
+          <DimensionCompareMenu
+            {isBeingCompared}
+            on:toggle-dimension-comparison
           />
         </div>
       </div>
@@ -109,18 +100,23 @@
         </TooltipContent>
       </Tooltip>
     </div>
+
     <div class="shrink flex flex-row items-center gap-x-4">
       <button
-        on:click={() => dispatch("toggle-sort-direction")}
-        class="shrink flex flex-row items-center"
-        aria-label="Toggle sort order for all leaderboards"
+        on:click={() => dispatch("toggle-sort", SortType.VALUE)}
+        class="shrink flex flex-row items-center justify-end"
+        aria-label="Toggle sort leaderboards by value"
       >
-        # <ArrowDown transform={arrowTransform} />
+        #{#if sortType === SortType.VALUE}
+          <ArrowDown transform={arrowTransform} />
+        {/if}
       </button>
 
       {#if contextColumn !== LeaderboardContextColumn.HIDDEN}
-        <div
+        <button
+          on:click={() => dispatch("toggle-sort", contextColumnSortType)}
           class="shrink flex flex-row items-center justify-end"
+          aria-label="Toggle sort leaderboards by context column"
           style:width={contextColumnWidth(contextColumn)}
         >
           {#if contextColumn === LeaderboardContextColumn.DELTA_PERCENT}
@@ -129,8 +125,10 @@
             <Delta />
           {:else if contextColumn === LeaderboardContextColumn.PERCENT}
             <PieChart /> %
+          {/if}{#if sortType !== SortType.VALUE}
+            <ArrowDown transform={arrowTransform} />
           {/if}
-        </div>
+        </button>
       {/if}
     </div>
   </div>

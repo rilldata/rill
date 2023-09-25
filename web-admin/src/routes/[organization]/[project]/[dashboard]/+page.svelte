@@ -4,9 +4,9 @@
     createAdminServiceGetProject,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
-  import { getDashboardsForProject } from "@rilldata/web-admin/components/projects/dashboards";
-  import { invalidateDashboardsQueries } from "@rilldata/web-admin/components/projects/invalidations";
-  import { useProjectDeploymentStatus } from "@rilldata/web-admin/components/projects/selectors";
+  import { getDashboardsForProject } from "@rilldata/web-admin/features/projects/dashboards";
+  import { invalidateDashboardsQueries } from "@rilldata/web-admin/features/projects/invalidations";
+  import { useProjectDeploymentStatus } from "@rilldata/web-admin/features/projects/selectors";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardStateProvider from "@rilldata/web-common/features/dashboards/DashboardStateProvider.svelte";
   import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
@@ -18,8 +18,8 @@
   import type { QueryError } from "@rilldata/web-common/runtime-client/error";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { errorStore } from "../../../../components/errors/error-store";
-  import ProjectBuilding from "../../../../components/projects/ProjectBuilding.svelte";
+  import { errorStore } from "../../../../features/errors/error-store";
+  import ProjectBuilding from "../../../../features/projects/ProjectBuilding.svelte";
 
   const queryClient = useQueryClient();
 
@@ -72,7 +72,7 @@
   $: isDashboardOK = $dashboard.isSuccess;
   $: isDashboardNotFound =
     $dashboard.isError &&
-    ($dashboard.error as QueryError)?.response?.status === 400;
+    ($dashboard.error as QueryError)?.response?.status === 404;
   // isDashboardErrored // We'll reinstate this case once we integrate the new Reconcile
 
   // If no dashboard is found, show a 404 page

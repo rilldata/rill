@@ -3,6 +3,7 @@ package transporter
 import (
 	"context"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
@@ -10,6 +11,8 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 )
+
+const _sqlStoreIteratorBatchSize = 32
 
 type sqlStoreToDuckDB struct {
 	to     drivers.OLAPStore
@@ -27,13 +30,18 @@ func NewSQLStoreToDuckDB(from drivers.SQLStore, to drivers.OLAPStore, logger *za
 	}
 }
 
-func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[string]any, opts *drivers.TransferOpts, p drivers.Progress) (transferErr error) {
+func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[string]any, opts *drivers.TransferOptions) (transferErr error) {
 	sinkCfg, err := parseSinkProperties(sinkProps)
 	if err != nil {
 		return err
 	}
 
-	iter, err := s.from.QueryAsFiles(ctx, srcProps, &drivers.QueryOption{TotalLimitInBytes: opts.LimitInBytes}, p)
+	limitInBytes := opts.LimitInBytes
+	if limitInBytes == 0 {
+		limitInBytes = math.MaxInt64
+	}
+
+	iter, err := s.from.QueryAsFiles(ctx, srcProps, &drivers.QueryOption{TotalLimitInBytes: limitInBytes}, opts.Progress)
 	if err != nil {
 		return err
 	}
@@ -52,7 +60,7 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map
 	// to consuming fileIterator in objectStore_to_duckDB
 	// both can be refactored to follow same path
 	for iter.HasNext() {
-		files, err := iter.NextBatch(opts.IteratorBatch)
+		files, err := iter.NextBatch(_sqlStoreIteratorBatchSize)
 		if err != nil {
 			return err
 		}

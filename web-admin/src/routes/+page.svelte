@@ -4,9 +4,9 @@
     createAdminServiceGetCurrentUser,
     createAdminServiceListOrganizations,
   } from "../client";
-  import AuthRedirect from "../components/authentication/AuthRedirect.svelte";
-  import WelcomeMessage from "../components/home/WelcomeMessage.svelte";
-  import OrganizationList from "../components/organizations/OrganizationList.svelte";
+  import AuthRedirect from "../features/authentication/AuthRedirect.svelte";
+  import WelcomeMessage from "../features/home/WelcomeMessage.svelte";
+  import OrganizationList from "../features/organizations/OrganizationList.svelte";
 
   const user = createAdminServiceGetCurrentUser();
   const orgs = createAdminServiceListOrganizations();

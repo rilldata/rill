@@ -27,15 +27,15 @@
   import ContextColumnValue from "./ContextColumnValue.svelte";
 
   export let itemData: LeaderboardItemData;
-  $: label = itemData.label;
+  $: label = itemData.dimensionValue;
   $: measureValue = itemData.value;
-  $: selected = itemData.selected;
-  $: comparisonValue = itemData.comparisonValue;
+  $: selected = itemData.selectedIndex >= 0;
+  $: comparisonValue = itemData.prevValue;
 
-  export let showContext: LeaderboardContextColumn;
+  export let contextColumn: LeaderboardContextColumn;
 
   export let atLeastOneActive = false;
-
+  export let isBeingCompared = false;
   export let formattedValue: string;
   export let filterExcludeMode;
 
@@ -46,15 +46,11 @@
   /** for summable measures, this is the value we use to calculate the bar % to fill */
   export let referenceValue;
 
-  /** the unfilteredTotal is used to compute the "percent of total" context value*/
-  export let unfilteredTotal: number;
-
   $: formattedValue = humanizeDataType(measureValue, formatPreset);
 
   $: contextColumnFormattedValue = formatContextColumnValue(
     itemData,
-    unfilteredTotal,
-    showContext,
+    contextColumn,
     formatPreset
   );
 
@@ -112,7 +108,7 @@
 
 <Tooltip location="right">
   <button
-    class="flex flex-row w-full text-left transition-color"
+    class="flex flex-row items-center w-full text-left transition-color"
     on:blur={onLeave}
     on:click={(e) => {
       if (e.shiftKey) return;
@@ -128,7 +124,12 @@
     transition:slide|local={{ duration: 200 }}
     use:shiftClickAction
   >
-    <LeaderboardItemFilterIcon {excluded} {selected} />
+    <LeaderboardItemFilterIcon
+      {isBeingCompared}
+      {excluded}
+      selectionIndex={itemData?.selectedIndex}
+      defaultComparedIndex={itemData?.defaultComparedIndex}
+    />
     <BarAndLabel
       {color}
       justify={false}
@@ -174,7 +175,7 @@
           </div>
           <ContextColumnValue
             formattedValue={contextColumnFormattedValue}
-            {showContext}
+            {contextColumn}
           />
         </div>
       </div>
