@@ -130,21 +130,12 @@
   };
 </script>
 
-<<<<<<< HEAD
-<button
-  class={_class}
-  on:mouseenter={handleMouseEnter}
-  on:mouseleave={handleMouseLeave}
-  on:click={handleClick}
->
-=======
 <!-- 
    on:mouseenter={handleMouseEnter}
   on:mouseleave={handleMouseLeave}
   on:click={handleClick}
  -->
 <button class={_class}>
->>>>>>> feat/pivot
   {#if cellComponent && !cellData.isLoading}
     <svelte:component
       this={cellComponent}
