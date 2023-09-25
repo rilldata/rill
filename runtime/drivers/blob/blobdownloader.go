@@ -151,6 +151,10 @@ func NewIterator(ctx context.Context, bucket *blob.Bucket, opts Options, l *zap.
 	return it, nil
 }
 
+func (it *blobIterator) KeepFilesUntilClose(keepFilesUntilClose bool) {
+	it.opts.KeepFilesUntilClose = keepFilesUntilClose
+}
+
 func (it *blobIterator) Close() error {
 	// Cancel the background downloads (this will eventually close downloadsCh)
 	it.cancel()
@@ -181,10 +185,6 @@ func (it *blobIterator) Close() error {
 	}
 
 	return closeErr
-}
-
-func (it *blobIterator) KeepFilesUntilClose(keepFilesUntilClose bool) {
-	it.opts.KeepFilesUntilClose = keepFilesUntilClose
 }
 
 func (it *blobIterator) Size(unit drivers.ProgressUnit) (int64, bool) {
@@ -426,12 +426,12 @@ func (it *prefetchedIterator) KeepFilesUntilClose(keep bool) {
 	// Nothing to do – already set on the underlying iterator
 }
 
-func (it *prefetchedIterator) Size(unit drivers.ProgressUnit) (int64, bool) {
-	return it.underlying.Size(unit)
-}
-
 func (it *prefetchedIterator) Close() error {
 	return it.underlying.Close()
+}
+
+func (it *prefetchedIterator) Size(unit drivers.ProgressUnit) (int64, bool) {
+	return it.underlying.Size(unit)
 }
 
 func (it *prefetchedIterator) Next() ([]string, error) {
