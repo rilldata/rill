@@ -65,6 +65,8 @@ type Options struct {
 	StorageLimitInBytes int64
 	// Retain files and only delete during close
 	KeepFilesUntilClose bool
+	// General blob format (json, csv, parquet, etc)
+	Format string
 }
 
 // sets defaults if not set by user
@@ -371,6 +373,10 @@ func (it *blobIterator) Size(unit drivers.ProgressUnit) (int64, bool) {
 
 func (it *blobIterator) KeepFilesUntilClose(keepFilesUntilClose bool) {
 	it.opts.KeepFilesUntilClose = keepFilesUntilClose
+}
+
+func (it *blobIterator) Format() string {
+	return it.opts.Format
 }
 
 // todo :: ideally planner should take ownership of the bucket and return an iterator with next returning objectWithPlan

@@ -27,4 +27,7 @@ type FileIterator interface {
 	// KeepFilesUntilClose marks the iterator to keep the files until close is called.
 	// This is used when the entire list of files is used at once in certain cases.
 	KeepFilesUntilClose(keepFilesUntilClose bool)
+	// Format returns general file format (json, csv, parquet, etc)
+	// Returns an empty string if there is no general format
+	Format() string
 }

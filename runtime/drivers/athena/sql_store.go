@@ -74,6 +74,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, _ *
 
 	opts := rillblob.Options{
 		GlobPattern: unloadPath + "/**",
+		Format:      "parquet",
 	}
 
 	it, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
