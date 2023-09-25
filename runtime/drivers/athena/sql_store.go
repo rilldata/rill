@@ -58,18 +58,18 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, _ *
 	unloadLocation := unloadURL.String()
 	unloadPath := strings.TrimPrefix(unloadURL.Path, "/")
 
-	cleanUp := func() error {
+	cleanupFn := func() error {
 		return deleteObjectsInPrefix(ctx, awsConfig, bucketName, unloadPath)
 	}
 
 	err = c.unload(ctx, client, conf, unloadLocation)
 	if err != nil {
-		return nil, errors.Join(fmt.Errorf("failed to unload: %w", err), cleanUp())
+		return nil, errors.Join(fmt.Errorf("failed to unload: %w", err), cleanupFn())
 	}
 
 	bucketObj, err := openBucket(ctx, awsConfig, bucketName)
 	if err != nil {
-		return nil, errors.Join(fmt.Errorf("cannot open bucket %q: %w", bucketName, err), cleanUp())
+		return nil, errors.Join(fmt.Errorf("cannot open bucket %q: %w", bucketName, err), cleanupFn())
 	}
 
 	opts := rillblob.Options{
@@ -78,15 +78,12 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, _ *
 
 	it, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
 	if err != nil {
-		return nil, errors.Join(fmt.Errorf("cannot download parquet output %q %w", opts.GlobPattern, err), cleanUp())
+		return nil, errors.Join(fmt.Errorf("cannot download parquet output %q %w", opts.GlobPattern, err), cleanupFn())
 	}
 
 	return autoDeleteFileIterator{
 		FileIterator: it,
-		ctx:          ctx,
-		unloadPath:   unloadPath,
-		bucketName:   bucketName,
-		cfg:          awsConfig,
+		cleanupFn:    cleanupFn,
 	}, nil
 }
 
@@ -260,17 +257,14 @@ type sourceProperties struct {
 
 type autoDeleteFileIterator struct {
 	drivers.FileIterator
-	ctx        context.Context
-	cfg        aws.Config
-	bucketName string
-	unloadPath string
+	cleanupFn func() error
 }
 
-func (ci autoDeleteFileIterator) Close() error {
-	err := ci.FileIterator.Close()
+func (i autoDeleteFileIterator) Close() error {
+	err := i.FileIterator.Close()
 	if err != nil {
 		return err
 	}
 
-	return deleteObjectsInPrefix(ci.ctx, ci.cfg, ci.bucketName, ci.unloadPath)
+	return i.cleanupFn()
 }
