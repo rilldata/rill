@@ -27,7 +27,7 @@ func (c *Connection) Query(_ context.Context, _ map[string]any) (drivers.RowIter
 	return nil, drivers.ErrNotImplemented
 }
 
-func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, _ *drivers.QueryOption, _ drivers.Progress) (drivers.FileIterator, error) {
+func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, _ *drivers.QueryOption, _ drivers.Progress) (outIt drivers.FileIterator, outErr error) {
 	conf, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
@@ -64,12 +64,26 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, _ *
 
 	err = c.unload(ctx, client, conf, unloadLocation)
 	if err != nil {
-		return nil, errors.Join(fmt.Errorf("failed to unload: %w", err), cleanupFn())
+		unloadErr := fmt.Errorf("failed to unload: %w", err)
+		cleanupErr := cleanupFn()
+		if cleanupErr != nil {
+			cleanupErr = fmt.Errorf("cleanup error: %w", cleanupErr)
+		}
+		return nil, errors.Join(unloadErr, cleanupErr)
 	}
+
+	defer func() {
+		if outErr != nil {
+			cleanupErr := cleanupFn()
+			if cleanupErr != nil {
+				outErr = errors.Join(outErr, fmt.Errorf("cleanup error: %w", cleanupErr))
+			}
+		}
+	}()
 
 	bucketObj, err := openBucket(ctx, awsConfig, bucketName)
 	if err != nil {
-		return nil, errors.Join(fmt.Errorf("cannot open bucket %q: %w", bucketName, err), cleanupFn())
+		return nil, fmt.Errorf("cannot open bucket %q: %w", bucketName, err)
 	}
 
 	opts := rillblob.Options{
@@ -79,7 +93,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, _ *
 
 	it, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
 	if err != nil {
-		return nil, errors.Join(fmt.Errorf("cannot download parquet output %q %w", opts.GlobPattern, err), cleanupFn())
+		return nil, fmt.Errorf("cannot download parquet output %q %w", opts.GlobPattern, err)
 	}
 
 	return autoDeleteFileIterator{
