@@ -1,10 +1,5 @@
 <script lang="ts">
-  import {
-    Button,
-    IconSpaceFixer,
-  } from "@rilldata/web-common/components/button";
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
-  import Export from "@rilldata/web-common/components/icons/Export.svelte";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -12,6 +7,7 @@
     createQueryServiceExport,
     V1ExportFormat,
   } from "@rilldata/web-common/runtime-client";
+  import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import exportToplist from "./export-toplist";
 
   export let metricViewName: string;
@@ -39,18 +35,19 @@
   on:close={() => (exportMenuOpen = false)}
   on:open={() => (exportMenuOpen = true)}
 >
-  <Button
+  <button
     on:click={(evt) => {
       evt.stopPropagation();
       toggleFloatingElement();
     }}
-    type="text"
+    class="h-6 px-1.5 py-px flex items-center gap-[3px] rounded-sm hover:bg-gray-200 text-gray-800"
   >
-    <IconSpaceFixer pullRight>
-      <Export size="14px" />
-    </IconSpaceFixer>
     Export
-  </Button>
+    <CaretDownIcon
+      size="10px"
+      className="transition-transform {exportMenuOpen && '-rotate-180'}"
+    />
+  </button>
   <Menu
     minWidth=""
     on:click-outside={toggleFloatingElement}
