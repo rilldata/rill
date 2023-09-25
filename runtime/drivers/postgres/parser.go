@@ -204,21 +204,6 @@ func (m *int64Mapper) value(pgxVal any) (any, error) {
 	}
 }
 
-type uint32Mapper struct{}
-
-func (m *uint32Mapper) runtimeType() *runtimev1.Type {
-	return &runtimev1.Type{Code: runtimev1.Type_CODE_UINT32}
-}
-
-func (m *uint32Mapper) value(pgxVal any) (any, error) {
-	switch b := pgxVal.(type) {
-	case uint32:
-		return b, nil
-	default:
-		return nil, fmt.Errorf("uint32Mapper: unsupported type %v", b)
-	}
-}
-
 type timeMapper struct{}
 
 func (m *timeMapper) runtimeType() *runtimev1.Type {
@@ -271,11 +256,10 @@ func (m *uuidMapper) value(pgxVal any) (any, error) {
 	}
 }
 
-// TODO :: test numeric mapper
 type numericMapper struct{}
 
 func (m *numericMapper) runtimeType() *runtimev1.Type {
-	return &runtimev1.Type{Code: runtimev1.Type_CODE_DECIMAL}
+	return &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}
 }
 
 func (m *numericMapper) value(pgxVal any) (any, error) {
@@ -285,7 +269,11 @@ func (m *numericMapper) value(pgxVal any) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		return f.MarshalJSON()
+		bytes, err := f.MarshalJSON()
+		if err != nil {
+			return nil, err
+		}
+		return string(bytes), nil
 	case pgtype.Float64Valuer:
 		f, err := b.Float64Value()
 		if err != nil {
