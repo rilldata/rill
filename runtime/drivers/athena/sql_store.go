@@ -24,7 +24,7 @@ import (
 )
 
 func (c *Connection) Query(_ context.Context, _ map[string]any) (drivers.RowIterator, error) {
-	return nil, fmt.Errorf("not implemented")
+	return nil, drivers.ErrNotImplemented
 }
 
 func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, _ *drivers.QueryOption, _ drivers.Progress) (drivers.FileIterator, error) {
