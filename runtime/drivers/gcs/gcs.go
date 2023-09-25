@@ -137,6 +137,10 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any
 	return bucketObj.IsAccessible(ctx)
 }
 
+func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error) {
+	return nil, nil
+}
+
 type sourceProperties struct {
 	Path                  string         `mapstructure:"path"`
 	URI                   string         `mapstructure:"uri"`

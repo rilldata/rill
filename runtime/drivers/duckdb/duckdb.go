@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql/driver"
 	"fmt"
+	"net/url"
 	"os"
 	"regexp"
 	"strconv"
@@ -17,6 +18,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/duckdb/transporter"
 	activity "github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
@@ -155,6 +157,47 @@ func (d Driver) Spec() drivers.Spec {
 
 func (d Driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
 	return false, nil
+}
+
+func (d Driver) TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error) {
+	// The "sql" property of a DuckDB source can reference other connectors like S3.
+	// We try to extract those and return them here.
+	// We will in most error cases just return nil and let errors be handled during source ingestion.
+
+	sql, ok := src["sql"].(string)
+	if !ok {
+		return nil, nil
+	}
+
+	ast, err := duckdbsql.Parse(sql)
+	if err != nil {
+		return nil, nil
+	}
+
+	res := make([]string, 0)
+
+	refs := ast.GetTableRefs()
+	for _, ref := range refs {
+		if len(ref.Paths) == 0 {
+			continue
+		}
+
+		uri, err := url.Parse(ref.Paths[0])
+		if err != nil {
+			return nil, err
+		}
+
+		switch uri.Scheme {
+		case "s3", "azure":
+			res = append(res, uri.Scheme)
+		case "gs":
+			res = append(res, "gcs")
+		default:
+			// Ignore
+		}
+	}
+
+	return res, nil
 }
 
 type connection struct {

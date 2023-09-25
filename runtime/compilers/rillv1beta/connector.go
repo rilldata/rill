@@ -65,18 +65,33 @@ func ExtractConnectors(ctx context.Context, projectPath string) ([]*Connector, e
 	// keeping a map to dedup connectors
 	connectorMap := make(map[key][]*runtimev1.Source)
 	for _, src := range allSources {
-		if src.Connector == "duckdb" {
-			// TODO: Until we can extract embedded connector info and assess whether they have anon access or not
-			continue
-		}
 		connector, ok := drivers.Connectors[src.Connector]
 		if !ok {
 			return nil, fmt.Errorf("no source connector defined for type %q", src.Connector)
 		}
+
 		// ignoring error since failure to resolve this should not break the deployment flow
 		// this can fail under cases such as full or host/bucket of URI is a variable
-		access, _ := connector.HasAnonymousSourceAccess(ctx, src.Properties.AsMap(), zap.NewNop())
-		c := key{Name: src.Connector, Type: src.Connector, AnonymousAccess: access}
+		var access bool
+		if src.Connector != "duckdb" {
+			access, _ = connector.HasAnonymousSourceAccess(ctx, src.Properties.AsMap(), zap.NewNop())
+		}
+
+		driverType := src.Connector
+		if src.Connector == "duckdb" {
+			conns, err := connector.TertiarySourceConnectors(ctx, src.Properties.AsMap(), zap.NewNop())
+			if err != nil {
+				return nil, fmt.Errorf("error in getting tertiary source connectors for duckdb: %w", err)
+			}
+			if len(conns) == 0 {
+				// Regularly duckdb source, no need to track
+				continue
+			}
+
+			driverType = conns[0]
+		}
+
+		c := key{Name: driverType, Type: driverType, AnonymousAccess: access}
 		srcs, ok := connectorMap[c]
 		if !ok {
 			srcs = make([]*runtimev1.Source, 0)

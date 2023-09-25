@@ -77,6 +77,9 @@ type Driver interface {
 
 	// HasAnonymousSourceAccess returns true if external system can be accessed without credentials
 	HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error)
+
+	// TertiarySourceConnectors returns a list of connectors required to resolve a source, excluding the source and sink connectors.
+	TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error)
 }
 
 // Handle represents a connection to an underlying DB.

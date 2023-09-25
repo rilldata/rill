@@ -6,6 +6,7 @@ import (
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 )
 
@@ -20,65 +21,17 @@ type Connector struct {
 
 // AnalyzeConnectors extracts connector metadata from a Rill project
 func (p *Parser) AnalyzeConnectors(ctx context.Context) ([]*Connector, error) {
-	// Group resources by connector
-	connectorResources := make(map[string][]*Resource)
-	for _, r := range p.Resources {
-		if r.SourceSpec != nil {
-			name := r.SourceSpec.SourceConnector
-			connectorResources[name] = append(connectorResources[name], r)
-			if r.SourceSpec.SourceConnector != r.SourceSpec.SinkConnector {
-				name = r.SourceSpec.SinkConnector
-				connectorResources[name] = append(connectorResources[name], r)
-			}
-		} else if r.ModelSpec != nil {
-			name := r.ModelSpec.Connector
-			connectorResources[name] = append(connectorResources[name], r)
-		} else if r.MigrationSpec != nil {
-			name := r.MigrationSpec.Connector
-			connectorResources[name] = append(connectorResources[name], r)
-		}
-		// NOTE: If we add more resource kinds that use connectors, add connector extraction here
+	a := &connectorAnalyzer{
+		parser: p,
+		result: make(map[string]*Connector),
 	}
 
-	// Build output
-	res := make([]*Connector, 0, len(connectorResources))
-	for name, resources := range connectorResources {
-		// Skip default connector
-		if name == p.DefaultConnector {
-			continue
-		}
-
-		// Get connector
-		driver, connector, err := p.connectorForName(name)
-		if err != nil {
-			return nil, err
-		}
-
-		// Check if all resources have anon access
-		anonAccess := true
-		for _, r := range resources {
-			// Only sources can have anon access (not sinks)
-			if r.SourceSpec == nil || r.SourceSpec.SourceConnector != name {
-				anonAccess = false
-				break
-			}
-			// Poll for anon access
-			res, _ := connector.HasAnonymousSourceAccess(ctx, r.SourceSpec.Properties.AsMap(), zap.NewNop())
-			if !res {
-				anonAccess = false
-				break
-			}
-		}
-
-		// Add connector info to output
-		res = append(res, &Connector{
-			Driver:          driver,
-			Name:            name,
-			Spec:            connector.Spec(),
-			Resources:       resources,
-			AnonymousAccess: anonAccess,
-		})
+	err := a.analyze(ctx)
+	if err != nil {
+		return nil, err
 	}
+
+	res := maps.Values(a.result)
 
 	// Sort output to ensure deterministic ordering
 	slices.SortFunc(res, func(a, b *Connector) bool {
@@ -88,11 +41,116 @@ func (p *Parser) AnalyzeConnectors(ctx context.Context) ([]*Connector, error) {
 	return res, nil
 }
 
+// connectorAnalyzer implements logic for extracting connector metadata from a parser
+type connectorAnalyzer struct {
+	parser *Parser
+	result map[string]*Connector
+}
+
+// analyze is the entrypoint for connector analysis. After running it, you can access the result.
+func (a *connectorAnalyzer) analyze(ctx context.Context) error {
+	for _, r := range a.parser.Resources {
+		err := a.analyzeResource(ctx, r)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// analyzeResource extracts connector metadata for a single resource.
+// NOTE: If we add more resource kinds that use connectors, add connector extraction logic here.
+func (a *connectorAnalyzer) analyzeResource(ctx context.Context, r *Resource) error {
+	if r.SourceSpec != nil {
+		return a.analyzeSource(ctx, r)
+	} else if r.ModelSpec != nil {
+		return a.trackConnector(r.ModelSpec.Connector, r, false)
+	} else if r.MigrationSpec != nil {
+		return a.trackConnector(r.MigrationSpec.Connector, r, false)
+	}
+	// Other resource kinds currently don't use connectors.
+	return nil
+}
+
+// analyzeSource extracts connector metadata for a source resource.
+// The logic for extracting metadata from sources is more complex than for other resource kinds, hence the separate function.
+func (a *connectorAnalyzer) analyzeSource(ctx context.Context, r *Resource) error {
+	// No analysis necessary for the sink connector
+	err := a.trackConnector(r.SourceSpec.SinkConnector, r, false)
+	if err != nil {
+		return err
+	}
+
+	// Prep for analyzing SourceConnector
+	spec := r.SourceSpec
+	srcProps := spec.Properties.AsMap()
+	_, sourceConnector, err := a.connectorForName(spec.SourceConnector)
+	if err != nil {
+		return err
+	}
+
+	// Check if we have anonymous access (unless we already know that we don't)
+	var anonAccess bool
+	if res, ok := a.result[spec.SourceConnector]; !ok || res.AnonymousAccess {
+		anonAccess, _ = sourceConnector.HasAnonymousSourceAccess(ctx, srcProps, zap.NewNop())
+	}
+
+	// Track the source connector
+	err = a.trackConnector(spec.SourceConnector, r, anonAccess)
+	if err != nil {
+		return err
+	}
+
+	// Track any tertiary connectors (like a DuckDB source referencing S3 in its SQL).
+	// NOTE: Not checking anonymous access for these since we don't know what properties to use.
+	// TODO: Can we solve that issue?
+	otherConnectors, _ := sourceConnector.TertiarySourceConnectors(ctx, srcProps, zap.NewNop())
+	for _, connector := range otherConnectors {
+		err := a.trackConnector(connector, r, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// trackConnector tracks a connector and an associated resource in the analyzer's result map
+func (a *connectorAnalyzer) trackConnector(connector string, r *Resource, anonAccess bool) error {
+	if connector == a.parser.DefaultConnector {
+		return nil
+	}
+
+	res, ok := a.result[connector]
+	if !ok {
+		driver, driverConnector, err := a.connectorForName(connector)
+		if err != nil {
+			return err
+		}
+
+		res = &Connector{
+			Driver:          driver,
+			Name:            connector,
+			Spec:            driverConnector.Spec(),
+			AnonymousAccess: true,
+		}
+
+		a.result[connector] = res
+	}
+
+	res.Resources = append(res.Resources, r)
+	if !anonAccess {
+		res.AnonymousAccess = false
+	}
+
+	return nil
+}
+
 // connectorForName resolves a connector name to a connector driver
-func (p *Parser) connectorForName(name string) (string, drivers.Driver, error) {
+func (a *connectorAnalyzer) connectorForName(name string) (string, drivers.Driver, error) {
 	// Unless overridden in rill.yaml, the connector name is the driver name
 	driver := name
-	for _, c := range p.RillYAML.Connectors {
+	for _, c := range a.parser.RillYAML.Connectors {
 		if c.Name == name {
 			driver = c.Type
 			break
