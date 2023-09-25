@@ -74,7 +74,7 @@ func (d driver) Spec() drivers.Spec {
 }
 
 func (d driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
-	return false, nil
+	return true, nil
 }
 
 type connection struct {

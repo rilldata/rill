@@ -233,9 +233,6 @@ func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter
 		if from == to {
 			return transporter.NewDuckDBToDuckDB(olap, c.logger), true
 		}
-		if from.Driver() == "sqlite" {
-			return transporter.NewSQLExtensionToDuckDB(from, olap, c.logger), true
-		}
 		if from.Driver() == "motherduck" {
 			return transporter.NewMotherduckToDuckDB(from, olap, c.logger), true
 		}
@@ -277,6 +274,8 @@ func (c *connection) reopenDB() error {
 		"LOAD 'parquet'",
 		"INSTALL 'httpfs'",
 		"LOAD 'httpfs'",
+		"INSTALL 'sqlite'",
+		"LOAD 'sqlite'",
 		"SET max_expression_depth TO 250",
 		"SET timezone='UTC'",
 	}

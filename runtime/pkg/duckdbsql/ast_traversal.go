@@ -175,7 +175,7 @@ func (a *AST) traverseTableFunction(parent astNode, childKey string) {
 	case "read_csv_auto", "read_csv",
 		"read_parquet",
 		"read_json", "read_json_auto", "read_json_objects", "read_json_objects_auto",
-		"read_ndjson_objects", "read_ndjson", "read_ndjson_auto":
+		"read_ndjson_objects", "read_ndjson", "read_ndjson_auto", "sqlite_scan":
 		ref.Paths = getListOfValues[string](arguments[0])
 	default:
 		// only read_... are supported for now

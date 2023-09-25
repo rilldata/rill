@@ -37,6 +37,7 @@
     "bigquery",
     // athena
     "motherduck",
+    "sqlite",
     // postgres
     "local_file",
     "https",

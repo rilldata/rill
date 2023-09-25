@@ -29,19 +29,16 @@ func Test_sqlextensionToDuckDB_Transfer(t *testing.T) {
 	require.NoError(t, err)
 	db.Close()
 
-	from, err := drivers.Open("sqlite", map[string]any{"dsn": ""}, false, activity.NewNoopClient(), zap.NewNop())
-	require.NoError(t, err)
 	to, err := drivers.Open("duckdb", map[string]any{"dsn": ""}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	olap, _ := to.AsOLAP("")
 
-	tr := &sqlextensionToDuckDB{
+	tr := &duckDBToDuckDB{
 		to:     olap,
-		from:   from,
 		logger: zap.NewNop(),
 	}
 	query := fmt.Sprintf("SELECT * FROM sqlite_scan('%s', 't');", dbPath)
-	err = tr.Transfer(context.Background(), map[string]any{"sql": query}, map[string]any{"table": "test"}, &drivers.TransferOpts{}, drivers.NoOpProgress{})
+	err = tr.Transfer(context.Background(), map[string]any{"sql": query}, map[string]any{"table": "test"}, &drivers.TransferOptions{Progress: drivers.NoOpProgress{}})
 	require.NoError(t, err)
 
 	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT count(*) from test"})
