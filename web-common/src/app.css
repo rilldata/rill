@@ -171,6 +171,6 @@ body {
 }
 
 a {
-  @apply text-blue-500;
+  @apply text-blue-500 hover:text-blue-600 font-medium;
 }
 
