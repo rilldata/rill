@@ -466,7 +466,7 @@ func (r *ModelReconciler) createModel(ctx context.Context, self *runtimev1.Resou
 	}
 
 	return olap.Exec(ctx, &drivers.Statement{
-		Query:       fmt.Sprintf("CREATE OR REPLACE %s %s AS (%s)", typ, safeSQLName(tableName), sql),
+		Query:       fmt.Sprintf("CREATE OR REPLACE %s %s AS (%s\n)", typ, safeSQLName(tableName), sql),
 		Priority:    100,
 		LongRunning: true,
 	})

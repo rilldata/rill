@@ -120,7 +120,7 @@ func NewController(rt *Runtime, instanceID string, logger *zap.Logger, ac activi
 
 // Run starts and runs the controller's event loop. It returns when ctx is cancelled or an unrecoverable error occurs.
 // The event loop schedules/invokes resource reconciliation and periodically flushes catalog changes to persistent storage.
-// The implementation centers around these internal functions: enqueue, processQueue, schedule, and processCompletedInvocation.
+// The implementation centers around these internal functions: enqueue, processQueue (uses markPending, trySchedule, invoke), and processCompletedInvocation.
 // See their docstrings for further details.
 func (c *Controller) Run(ctx context.Context) error {
 	cc, err := newCatalogCache(ctx, c, c.InstanceID)

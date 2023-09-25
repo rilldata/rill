@@ -15,6 +15,8 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+var errParseErrors = errors.New("encountered parse errors")
+
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindProjectParser, newProjectParser)
 }
@@ -142,18 +144,18 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	// Parse the project
 	parser, err := compilerv1.Parse(ctx, repo, r.C.InstanceID, inst.OLAPConnector, duckdbConnectors)
 	if err != nil {
-		return runtime.ReconcileResult{Err: fmt.Errorf("failed to parse repo: %w", err)}
+		return runtime.ReconcileResult{Err: fmt.Errorf("failed to parse: %w", err)}
 	}
 
 	// Do the actual reconciliation of parsed resources and catalog resources
 	err = r.reconcileParser(ctx, inst, self, parser, nil, nil)
-	if err != nil {
+
+	// If err is not for parse errors, always return. Otherwise, only return it if we're not watching for changes.
+	if err != nil && !errors.Is(err, errParseErrors) {
 		return runtime.ReconcileResult{Err: err}
 	}
-
-	// Exit if not watching
 	if !inst.WatchRepo {
-		return runtime.ReconcileResult{}
+		return runtime.ReconcileResult{Err: err}
 	}
 
 	// Set watching to true and add a defer to ensure it's set to false on exit
@@ -188,7 +190,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 		if err == nil {
 			err = r.reconcileParser(ctx, inst, self, parser, diff, changedPaths)
 		}
-		if err != nil {
+		if err != nil && !errors.Is(err, errParseErrors) {
 			reparseErr = err
 			cancel()
 			return
@@ -244,7 +246,7 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 	// Set an error without returning to mark if there are parse errors (if not, force error to nil in case there previously were parse errors)
 	var parseErrsErr error
 	if len(parser.Errors) > 0 {
-		parseErrsErr = fmt.Errorf("encountered parser errors")
+		parseErrsErr = errParseErrors
 	}
 	err = r.C.UpdateError(ctx, self.Meta.Name, parseErrsErr)
 	if err != nil {
@@ -257,7 +259,11 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 	r.C.Lock(ctx)
 	defer r.C.Unlock(ctx)
 	if diff != nil {
-		return r.reconcileResourcesDiff(ctx, inst, self, parser, diff)
+		err = r.reconcileResourcesDiff(ctx, inst, self, parser, diff)
+		if err != nil {
+			return err
+		}
+		return parseErrsErr // Keep the parseErrsErr in this case
 	}
 
 	err = r.reconcileResources(ctx, inst, self, parser)

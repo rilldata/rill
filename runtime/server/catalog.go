@@ -507,6 +507,7 @@ func (s *Server) resourceToEntry(ctx context.Context, instanceID string, r *runt
 		res.Object = &runtimev1.CatalogEntry_MetricsView{
 			MetricsView: &runtimev1.MetricsView{
 				Name:               r.Meta.Name.Name,
+				Model:              mv.State.ValidSpec.Table,
 				TimeDimension:      mv.State.ValidSpec.TimeDimension,
 				Dimensions:         dims,
 				Measures:           ms,
