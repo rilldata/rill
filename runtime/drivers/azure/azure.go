@@ -230,14 +230,11 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 
 	iter, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
 	if err != nil {
+		// If the err is due to not using the anonymous client for a public container, we want to retry.
 		var respErr *azcore.ResponseError
-		if !errors.As(err, &respErr) {
-			return nil, err
-		}
-
-		// Should check for the error code to be sure that the error is due to permission issue??
-		if respErr.RawResponse.StatusCode == http.StatusForbidden && (respErr.ErrorCode == "AuthorizationPermissionMismatch" || respErr.ErrorCode == "AuthenticationFailed") {
+		if errors.As(err, &respErr) && respErr.RawResponse.StatusCode == http.StatusForbidden && (respErr.ErrorCode == "AuthorizationPermissionMismatch" || respErr.ErrorCode == "AuthenticationFailed") {
 			c.logger.Named("Console").Warn("Azure Blob Storage account does not have permission to list blobs. Falling back to anonymous access.")
+
 			client, err = c.createAnonymousClient(ctx, conf)
 			if err != nil {
 				return nil, err
@@ -251,9 +248,13 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 			iter, err = rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
 		}
 
-		// check again
-		if errors.As(err, &respErr) && respErr.StatusCode == http.StatusForbidden {
-			return nil, drivers.NewPermissionDeniedError(fmt.Sprintf("failed to create iterator: %v", respErr))
+		// If there's still an err, return it
+		if err != nil {
+			respErr = nil
+			if errors.As(err, &respErr) && respErr.StatusCode == http.StatusForbidden {
+				return nil, drivers.NewPermissionDeniedError(fmt.Sprintf("failed to create iterator: %v", respErr))
+			}
+			return nil, err
 		}
 	}
 
