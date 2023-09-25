@@ -131,6 +131,8 @@ func NewIterator(ctx context.Context, bucket *blob.Bucket, opts Options, l *zap.
 
 	objects, err := it.plan()
 	if err != nil {
+		// close batchCh since it.Close waits on batchCh
+		close(it.batchCh)
 		it.Close()
 		return nil, err
 	}
