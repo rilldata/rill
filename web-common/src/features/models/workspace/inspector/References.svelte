@@ -12,6 +12,7 @@
     createRuntimeServiceListCatalogEntries,
   } from "@rilldata/web-common/runtime-client";
   import * as classes from "@rilldata/web-local/lib/util/component-classes";
+
   import { getContext } from "svelte";
   import { derived, writable } from "svelte/store";
   import { slide } from "svelte/transition";
@@ -97,10 +98,7 @@
     </div>
 
     {#if showSourceTables}
-      <div
-        transition:slide={{ duration: LIST_SLIDE_DURATION }}
-        class="mt-2"
-      >
+      <div transition:slide={{ duration: LIST_SLIDE_DURATION }} class="mt-2">
         {#each $referencedWithMetadata as reference}
           {#if reference?.entry?.embedded}
             <EmbeddedSourceReference
