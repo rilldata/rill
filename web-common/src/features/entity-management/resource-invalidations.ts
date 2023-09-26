@@ -1,10 +1,8 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { resourcesStore } from "@rilldata/web-common/features/entity-management/resources-store";
-import { ReconcileStatus } from "@rilldata/web-common/proto/gen/rill/runtime/v1/resources_pb";
 import {
   getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
-  V1GetResourceResponse,
   V1ReconcileStatus,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
