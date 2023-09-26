@@ -10,15 +10,10 @@
     HEADER_HEIGHT,
     ROW_HEIGHT,
   } from "./constants";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { useTimeSeriesDataStore } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
 
   // Store of state to share between line chart and table
   let store = createTimeDimensionDetailsStore();
 
-  const timeSeriesDataStore = useTimeSeriesDataStore(getStateManagers());
-
-  $: console.log($timeSeriesDataStore);
   createTDDContext({
     store,
     headers: data.headers,

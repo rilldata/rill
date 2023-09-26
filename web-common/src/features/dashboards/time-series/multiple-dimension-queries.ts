@@ -84,6 +84,7 @@ export function getDimensionValuesForComparison(
                 enabled:
                   timeControls.ready &&
                   !!dashboardStore?.selectedComparisonDimension,
+                queryClient: ctx.queryClient,
               },
             }
           ),

@@ -222,7 +222,6 @@
   }
 
   $: if (comparisonDimension && $timeControlsStore.ready) {
-    console.log("comparisondimension", comparisonDimension);
     allDimQuery = getDimensionValueTimeSeries(
       getStateManagers(),
       queriedMeasureNames

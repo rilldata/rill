@@ -12,13 +12,14 @@ import {
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { prepareTimeSeries } from "@rilldata/web-common/features/dashboards/time-series/utils";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+import { getDimensionValueTimeSeries } from "./multiple-dimension-queries";
 
 export type TimeSeriesDataState = {
   isFetching: boolean;
 
   // Computed prepared data for charts and table
   timeSeriesData?: unknown[];
-  dimensionData?: unknown[];
+  dimensionData?: unknown;
 };
 
 export type TimeSeriesDataStore = Readable<TimeSeriesDataState>;
@@ -96,9 +97,14 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
         comparisonTimeSeries = createMetricsViewTimeSeries(ctx, measures, true);
       }
 
+      let dimensionTimeSeries;
+      if (dashboardStore?.selectedComparisonDimension) {
+        dimensionTimeSeries = getDimensionValueTimeSeries(ctx, measures);
+      }
+
       return derived(
-        [primaryTimeSeries, comparisonTimeSeries],
-        ([primary, comparison]) => {
+        [primaryTimeSeries, comparisonTimeSeries, dimensionTimeSeries],
+        ([primary, comparison, dimension]) => {
           let timeSeriesData = primary?.data?.data;
 
           if (!primary.isFetching) {
@@ -112,7 +118,7 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
           return {
             isFetching: false,
             timeSeriesData,
-            dimensionData: [],
+            dimensionData: dimension || [],
           };
         }
       ).subscribe(set);
