@@ -172,10 +172,31 @@ func (a *AST) traverseTableFunction(parent astNode, childKey string) {
 	// TODO: add to local alias
 
 	switch functionName {
+	case "sqlite_scan":
+		a.newFromNode(node, parent, childKey, ref)
+		ref.Params = make([]string, 0)
+		for _, argument := range arguments {
+			typ := toString(argument, astKeyType)
+			switch typ {
+			case "VALUE_CONSTANT":
+				ref.Params = append(ref.Params, getListOfValues[string](argument)...)
+			case "COLUMN_REF":
+				columnNames := toArray(argument, astKeyColumnNames)
+				for _, column := range columnNames {
+					ref.Params = append(ref.Params, column.(string))
+				}
+			default:
+			}
+		}
+		if len(ref.Params) >= 1 {
+			// first param is path to local db file
+			ref.Paths = ref.Params[:1]
+		}
+		return
 	case "read_csv_auto", "read_csv",
 		"read_parquet",
 		"read_json", "read_json_auto", "read_json_objects", "read_json_objects_auto",
-		"read_ndjson_objects", "read_ndjson", "read_ndjson_auto", "sqlite_scan":
+		"read_ndjson_objects", "read_ndjson", "read_ndjson_auto":
 		ref.Paths = getListOfValues[string](arguments[0])
 	default:
 		// only read_... are supported for now

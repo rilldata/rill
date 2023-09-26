@@ -61,13 +61,20 @@ func (d driver) Spec() drivers.Spec {
 		Description: "Import data from SQLite into DuckDB.",
 		SourceProperties: []drivers.PropertySchema{
 			{
-				Key:         "sql",
+				Key:         "db",
 				Type:        drivers.StringPropertyType,
 				Required:    true,
-				DisplayName: "SQL",
-				Description: "Query to extract data from SQLite",
-				Placeholder: "SELECT * FROM sqlite_scan('sqlite.db', 'film');",
-				Hint:        "https://duckdb.org/docs/extensions/sqlite_scanner#querying-individual-tables",
+				DisplayName: "DB",
+				Description: "Path to SQLite db file",
+				Placeholder: "sqlite.db",
+			},
+			{
+				Key:         "table",
+				Type:        drivers.StringPropertyType,
+				Required:    true,
+				DisplayName: "Table",
+				Description: "SQLite table name",
+				Placeholder: "table",
 			},
 		},
 	}

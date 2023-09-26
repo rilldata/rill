@@ -59,7 +59,8 @@ export function getYupSchema(connector: V1ConnectorSpec) {
       });
     case "sqlite":
       return yup.object().shape({
-        sql: yup.string().required("sql is required"),
+        db: yup.string().required("db is required"),
+        table: yup.string().required("table is required"),
         sourceName: yup
           .string()
           .matches(

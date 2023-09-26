@@ -290,6 +290,8 @@ func mergeFromParsedQuery(apiSource *runtimev1.Source, env map[string]string, re
 		return errors.New("invalid source, only a single path for source is supported")
 	}
 
+	// TODO :: it looks at path to determine connector which is not correct for sqlite_scan
+	// but it works since behaviour is same as local_file
 	p, c, ok := parseEmbeddedSourceConnector(ref.Paths[0])
 	if !ok {
 		return errors.New("unknown source")
@@ -334,6 +336,7 @@ func rewriteLocalRelativePath(ast *duckdbsql.AST, repoRoot string, allowRootAcce
 			Function:   table.Function,
 			Paths:      newPaths,
 			Properties: table.Properties,
+			Params:     table.Params,
 		}, true
 	})
 	if resolveErr != nil {
@@ -384,8 +387,6 @@ func connectorVariables(src *runtimev1.Source, env map[string]string, repoRoot s
 		vars["google_application_credentials"] = env["google_application_credentials"]
 	case "motherduck":
 		vars["token"] = env["token"]
-		vars["dsn"] = ""
-	case "sqlite":
 		vars["dsn"] = ""
 	case "local_file":
 		vars["dsn"] = repoRoot

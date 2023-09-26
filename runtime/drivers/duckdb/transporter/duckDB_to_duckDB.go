@@ -119,6 +119,7 @@ func rewriteLocalPaths(ast *duckdbsql.AST, basePath string, allowHostAccess bool
 			Function:   t.Function,
 			Paths:      res,
 			Properties: t.Properties,
+			Params:     t.Params,
 		}, true
 	})
 	if resolveErr != nil {

@@ -62,6 +62,15 @@ func (sn *selectNode) rewriteLimit(limit, offset int) error {
 	return nil
 }
 
+func (fn *fromNode) rewriteToSqliteScanFunction(name string, params []string) error {
+	baseTable, err := createSqliteScanTableFunction(params, fn.ast)
+	if err != nil {
+		return err
+	}
+	fn.parent[fn.childKey] = baseTable
+	return nil
+}
+
 func createBaseTable(name string, ast astNode) (astNode, error) {
 	// TODO: validation and fill in other fields from ast
 	var n astNode
@@ -356,4 +365,38 @@ func createFunctionCall(key, name, schema string) (astNode, error) {
   "catalog": ""
 }`, key, name, schema)), &n)
 	return n, err
+}
+
+func createSqliteScanTableFunction(params []string, ast astNode) (astNode, error) {
+	var n astNode
+	err := json.Unmarshal([]byte(`{
+  "type": "TABLE_FUNCTION",
+  "alias": "",
+  "sample": null,
+  "function": {},
+  "column_name_alias": []
+}`), &n)
+	if err != nil {
+		return nil, err
+	}
+
+	fn, err := createFunctionCall("", "sqlite_scan", "")
+	if err != nil {
+		return nil, err
+	}
+	n[astKeyFunction] = fn
+
+	var list []astNode
+	for _, v := range params {
+		vn, err := createGenericValue("", v)
+		if err != nil {
+			return nil, err
+		}
+		if vn == nil {
+			continue
+		}
+		list = append(list, vn)
+	}
+	fn[astKeyChildren] = list
+	return n, nil
 }
