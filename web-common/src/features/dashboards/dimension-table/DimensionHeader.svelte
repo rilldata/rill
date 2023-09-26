@@ -90,7 +90,7 @@
 
     {#if !searchToggle}
       <button
-        class="flex items-center gap-x-1 text-gray-800"
+        class="flex items-center gap-x-1 text-gray-700"
         in:fly={{ x: 10, duration: 300 }}
         on:click={() => (searchToggle = !searchToggle)}
       >
