@@ -6,8 +6,10 @@
   } from "@rgossiaux/svelte-headlessui";
 
   export let open: boolean;
+  export let titleMarginBottomOverride: string = null;
   export let widthOverride: string = null;
 
+  let titleMarginBottom = titleMarginBottomOverride ?? "mb-2";
   let width = widthOverride ?? "max-w-lg w-full";
 </script>
 
@@ -18,7 +20,9 @@
   <div
     class="transform p-6 bg-white rounded-sm border border-slate-300 flex flex-col {width}"
   >
-    <DialogTitle class="text-gray-800 text-lg font-semibold leading-7 mb-2">
+    <DialogTitle
+      class="text-gray-800 text-lg font-semibold leading-7 {titleMarginBottom}"
+    >
       <slot name="title" />
     </DialogTitle>
     <slot name="body" />

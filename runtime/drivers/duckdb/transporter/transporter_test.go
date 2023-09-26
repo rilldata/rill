@@ -3,6 +3,7 @@ package transporter_test
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -32,18 +33,12 @@ func (m *mockIterator) Close() error {
 	return nil
 }
 
-func (m *mockIterator) NextBatch(limit int) ([]string, error) {
+func (m *mockIterator) Next() ([]string, error) {
+	if m.index == len(m.batches) {
+		return nil, io.EOF
+	}
 	m.index += 1
 	return m.batches[m.index-1], nil
-}
-
-func (m *mockIterator) NextBatchSize(sizeInBytes int64) ([]string, error) {
-	m.index += 1
-	return m.batches[m.index-1], nil
-}
-
-func (m *mockIterator) HasNext() bool {
-	return m.index < len(m.batches)
 }
 
 func (m *mockIterator) Size(unit drivers.ProgressUnit) (int64, bool) {
@@ -51,6 +46,10 @@ func (m *mockIterator) Size(unit drivers.ProgressUnit) (int64, bool) {
 }
 
 func (m *mockIterator) KeepFilesUntilClose(keepFilesUntilClose bool) {
+}
+
+func (m *mockIterator) Format() string {
+	return ""
 }
 
 var _ drivers.FileIterator = &mockIterator{}

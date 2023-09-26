@@ -25,7 +25,7 @@
 
 <Popover>
   <PopoverButton class="w-full text-left">
-    <MenuItem animateSelect={false}>
+    <MenuItem animateSelect={false} focusOnMount={false}>
       View as
       <CaretDownIcon
         className="transform -rotate-90"
