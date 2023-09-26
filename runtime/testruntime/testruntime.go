@@ -129,7 +129,7 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 	err = ctrl.WaitUntilReady(context.Background())
 	require.NoError(t, err)
 
-	err = ctrl.WaitUntilIdle(context.Background())
+	err = ctrl.WaitUntilIdle(context.Background(), false)
 	require.NoError(t, err)
 
 	return rt, inst.ID
@@ -194,7 +194,7 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 	err = ctrl.WaitUntilReady(context.Background())
 	require.NoError(t, err)
 
-	err = ctrl.WaitUntilIdle(context.Background())
+	err = ctrl.WaitUntilIdle(context.Background(), false)
 	require.NoError(t, err)
 
 	return rt, inst.ID

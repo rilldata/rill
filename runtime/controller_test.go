@@ -123,7 +123,7 @@ path
 `,
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
-	testruntime.RequireReconcileState(t, rt, id, 3, 2, 1)
+	testruntime.RequireReconcileState(t, rt, id, 3, 3, 1)
 
 	// Verify the model (errored and state cleared)
 	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{

@@ -201,7 +201,7 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 		Name: fmt.Sprintf("trigger_adhoc_%s", time.Now().Format("200601021504059999")),
 	}
 
-	err = ctrl.Create(ctx, n, nil, nil, nil, r)
+	err = ctrl.Create(ctx, n, nil, nil, nil, true, r)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, fmt.Errorf("failed to create trigger: %w", err).Error())
 	}

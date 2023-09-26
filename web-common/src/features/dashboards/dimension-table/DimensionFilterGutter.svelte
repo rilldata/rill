@@ -39,7 +39,7 @@
   }
 
   function showCircleIcon(index) {
-    if (excludeMode && selectedIndex.length) {
+    if (isBeingCompared && excludeMode && selectedIndex.length) {
       if (selectedIndex.includes(index)) {
         return false;
       } else {

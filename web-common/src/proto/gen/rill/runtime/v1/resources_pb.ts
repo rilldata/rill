@@ -164,6 +164,11 @@ export class ResourceMeta extends Message<ResourceMeta> {
   filePaths: string[] = [];
 
   /**
+   * @generated from field: bool hidden = 7;
+   */
+  hidden = false;
+
+  /**
    * @generated from field: int64 version = 15;
    */
   version = protoInt64.zero;
@@ -230,6 +235,7 @@ export class ResourceMeta extends Message<ResourceMeta> {
     { no: 2, name: "refs", kind: "message", T: ResourceName, repeated: true },
     { no: 3, name: "owner", kind: "message", T: ResourceName, opt: true },
     { no: 4, name: "file_paths", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 7, name: "hidden", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 15, name: "version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 5, name: "spec_version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 6, name: "state_version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
@@ -391,6 +397,11 @@ export class ProjectParserState extends Message<ProjectParserState> {
    */
   currentCommitSha = "";
 
+  /**
+   * @generated from field: bool watching = 3;
+   */
+  watching = false;
+
   constructor(data?: PartialMessage<ProjectParserState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -401,6 +412,7 @@ export class ProjectParserState extends Message<ProjectParserState> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "parse_errors", kind: "message", T: ParseError, repeated: true },
     { no: 2, name: "current_commit_sha", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "watching", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectParserState {

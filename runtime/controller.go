@@ -69,12 +69,14 @@ type Controller struct {
 	mu          sync.RWMutex
 	running     atomic.Bool   // Indicates if the controller is running
 	ready       chan struct{} // Closed when the controller transitions to running
-	idle        bool          // Indicates if the controller currently has any pending or running invocations
-	idleCh      chan struct{} // Closed when the controller transitions to idle
 	reconcilers map[string]Reconciler
 	catalog     *catalogCache
 	// subscribers tracks subscribers to catalog events.
-	subscribers map[string]chan map[string]catalogEvent
+	subscribers      map[int]chan map[string]catalogEvent
+	nextSubscriberID int
+	// idleWaits tracks goroutines waiting for the controller to become idle.
+	idleWaits      map[int]idleWait
+	nextIdleWaitID int
 	// queue contains names waiting to be scheduled.
 	// It's not a real queue because we usually schedule the whole queue on each call to processQueue.
 	queue          map[string]*runtimev1.ResourceName
@@ -95,9 +97,9 @@ func NewController(rt *Runtime, instanceID string, logger *zap.Logger, ac activi
 		InstanceID:     instanceID,
 		Activity:       ac,
 		ready:          make(chan struct{}),
-		idleCh:         make(chan struct{}),
 		reconcilers:    make(map[string]Reconciler),
-		subscribers:    make(map[string]chan map[string]catalogEvent),
+		subscribers:    make(map[int]chan map[string]catalogEvent),
+		idleWaits:      make(map[int]idleWait),
 		queue:          make(map[string]*runtimev1.ResourceName),
 		queueUpdatedCh: make(chan struct{}, 1),
 		timeline:       schedule.New[string, *runtimev1.ResourceName](nameStr),
@@ -118,7 +120,7 @@ func NewController(rt *Runtime, instanceID string, logger *zap.Logger, ac activi
 
 // Run starts and runs the controller's event loop. It returns when ctx is cancelled or an unrecoverable error occurs.
 // The event loop schedules/invokes resource reconciliation and periodically flushes catalog changes to persistent storage.
-// The implementation centers around these internal functions: enqueue, processQueue, schedule, and processCompletedInvocation.
+// The implementation centers around these internal functions: enqueue, processQueue (uses markPending, trySchedule, invoke), and processCompletedInvocation.
 // See their docstrings for further details.
 func (c *Controller) Run(ctx context.Context) error {
 	cc, err := newCatalogCache(ctx, c, c.InstanceID)
@@ -178,12 +180,6 @@ func (c *Controller) Run(ctx context.Context) error {
 		timelineTimer.Reset(d)
 	}
 
-	// c.idle is initially false, but if the catalog is initially empty, it will not immediately be checked in the event loop.
-	// So check it now.
-	c.mu.Lock()
-	c.checkIdle()
-	c.mu.Unlock()
-
 	// Open for business
 	close(c.ready)
 
@@ -194,7 +190,6 @@ func (c *Controller) Run(ctx context.Context) error {
 		select {
 		case <-c.queueUpdatedCh: // There are resources we should schedule
 			c.mu.Lock()
-			c.checkIdle()
 			err := c.processQueue()
 			if err != nil {
 				loopErr = err
@@ -202,6 +197,7 @@ func (c *Controller) Run(ctx context.Context) error {
 			} else {
 				resetTimelineTimer()
 			}
+			c.checkIdleWaits()
 			c.mu.Unlock()
 		case inv := <-c.completed: // A reconciler invocation has completed
 			c.mu.Lock()
@@ -212,7 +208,7 @@ func (c *Controller) Run(ctx context.Context) error {
 			} else {
 				resetTimelineTimer()
 			}
-			c.checkIdle()
+			c.checkIdleWaits()
 			c.mu.Unlock()
 		case <-timelineTimer.C: // A previous reconciler invocation asked to be re-scheduled now
 			c.mu.Lock()
@@ -306,11 +302,10 @@ func (c *Controller) Run(ctx context.Context) error {
 	// Mark closed (no more catalog writes after this)
 	c.running.Store(false)
 
-	// Ensure anything waiting for WaitUntilIdle is notified
+	// Ensure anything waiting for WaitUntilIdle is notified (not calling checkIdleWaits because the queue may not be empty when closing)
 	c.mu.Lock()
-	if !c.idle {
-		c.idle = true
-		close(c.idleCh)
+	for _, iw := range c.idleWaits {
+		close(iw.ch)
 	}
 	c.mu.Unlock()
 
@@ -350,18 +345,27 @@ func (c *Controller) WaitUntilReady(ctx context.Context) error {
 }
 
 // WaitUntilIdle returns when the controller is idle (i.e. no reconcilers are pending or running).
-func (c *Controller) WaitUntilIdle(ctx context.Context) error {
+func (c *Controller) WaitUntilIdle(ctx context.Context, ignoreHidden bool) error {
 	if err := c.checkRunning(); err != nil {
 		return err
 	}
 
-	c.mu.RLock()
-	idleCh := c.idleCh
-	c.mu.RUnlock()
+	ch := make(chan struct{})
+
+	c.mu.Lock()
+	id := c.nextIdleWaitID
+	c.nextIdleWaitID++
+	c.idleWaits[id] = idleWait{ch: ch, ignoreHidden: ignoreHidden}
+	c.checkIdleWaits() // we might be idle already, in which case this will immediately close the channel
+	c.mu.Unlock()
 
 	select {
-	case <-idleCh:
+	case <-ch:
+		// No cleanup necessary - checkIdleWaits removes the wait from idleWaits
 	case <-ctx.Done():
+		c.mu.Lock()
+		delete(c.idleWaits, id)
+		c.mu.Unlock()
 	}
 	return ctx.Err()
 }
@@ -371,6 +375,9 @@ func (c *Controller) WaitUntilIdle(ctx context.Context) error {
 func (c *Controller) Get(ctx context.Context, name *runtimev1.ResourceName, clone bool) (*runtimev1.Resource, error) {
 	if err := c.checkRunning(); err != nil {
 		return nil, err
+	}
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
 	}
 	c.lock(ctx, true)
 	defer c.unlock(ctx, true)
@@ -388,6 +395,9 @@ func (c *Controller) List(ctx context.Context, kind string, clone bool) ([]*runt
 	if err := c.checkRunning(); err != nil {
 		return nil, err
 	}
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
 	c.lock(ctx, true)
 	defer c.unlock(ctx, true)
 	return c.catalog.list(kind, false, clone)
@@ -403,10 +413,11 @@ func (c *Controller) Subscribe(ctx context.Context, fn SubscribeCallback) error 
 		return err
 	}
 
-	id := fmt.Sprintf("%v", fn)
 	ch := make(chan map[string]catalogEvent)
 
 	c.mu.Lock()
+	id := c.nextSubscriberID
+	c.nextSubscriberID++
 	c.subscribers[id] = ch
 	c.mu.Unlock()
 
@@ -433,9 +444,12 @@ func (c *Controller) Subscribe(ctx context.Context, fn SubscribeCallback) error 
 
 // Create creates a resource and enqueues it for reconciliation.
 // If a resource with the same name is currently being deleted, the deletion will be cancelled.
-func (c *Controller) Create(ctx context.Context, name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths []string, r *runtimev1.Resource) error {
+func (c *Controller) Create(ctx context.Context, name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths []string, hidden bool, r *runtimev1.Resource) error {
 	if err := c.checkRunning(); err != nil {
 		return err
+	}
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
@@ -455,7 +469,7 @@ func (c *Controller) Create(ctx context.Context, name *runtimev1.ResourceName, r
 		requeued = true
 	}
 
-	err := c.catalog.create(name, refs, owner, paths, r)
+	err := c.catalog.create(name, refs, owner, paths, hidden, r)
 	if err != nil {
 		return err
 	}
@@ -471,6 +485,9 @@ func (c *Controller) Create(ctx context.Context, name *runtimev1.ResourceName, r
 func (c *Controller) UpdateMeta(ctx context.Context, name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths []string) error {
 	if err := c.checkRunning(); err != nil {
 		return err
+	}
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
@@ -505,6 +522,9 @@ func (c *Controller) UpdateName(ctx context.Context, name, newName, owner *runti
 	if err := c.checkRunning(); err != nil {
 		return err
 	}
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 
@@ -529,6 +549,7 @@ func (c *Controller) UpdateName(ctx context.Context, name, newName, owner *runti
 	if err != nil {
 		return err
 	}
+	c.enqueue(newName)
 
 	err = c.catalog.updateMeta(newName, r.Meta.Refs, owner, paths)
 	if err != nil {
@@ -549,6 +570,9 @@ func (c *Controller) UpdateName(ctx context.Context, name, newName, owner *runti
 func (c *Controller) UpdateSpec(ctx context.Context, name *runtimev1.ResourceName, r *runtimev1.Resource) error {
 	if err := c.checkRunning(); err != nil {
 		return err
+	}
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
@@ -578,6 +602,7 @@ func (c *Controller) UpdateState(ctx context.Context, name *runtimev1.ResourceNa
 	if err := c.checkRunning(); err != nil {
 		return err
 	}
+	// Must not check ctx.Err(). See NOTE above.
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 
@@ -599,6 +624,9 @@ func (c *Controller) UpdateError(ctx context.Context, name *runtimev1.ResourceNa
 	if err := c.checkRunning(); err != nil {
 		return err
 	}
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 
@@ -616,6 +644,9 @@ func (c *Controller) UpdateError(ctx context.Context, name *runtimev1.ResourceNa
 func (c *Controller) Delete(ctx context.Context, name *runtimev1.ResourceName) error {
 	if err := c.checkRunning(); err != nil {
 		return err
+	}
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
@@ -669,6 +700,9 @@ func (c *Controller) Flush(ctx context.Context) error {
 	if err := c.checkRunning(); err != nil {
 		return err
 	}
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 
@@ -681,6 +715,9 @@ func (c *Controller) Reconcile(ctx context.Context, name *runtimev1.ResourceName
 	if err := c.checkRunning(); err != nil {
 		return err
 	}
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
 	c.enqueue(name)
@@ -692,6 +729,9 @@ func (c *Controller) Reconcile(ctx context.Context, name *runtimev1.ResourceName
 func (c *Controller) Cancel(ctx context.Context, name *runtimev1.ResourceName) error {
 	if err := c.checkRunning(); err != nil {
 		return err
+	}
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 	c.lock(ctx, false)
 	defer c.unlock(ctx, false)
@@ -775,21 +815,50 @@ func (c *Controller) checkRunning() error {
 	return nil
 }
 
-// checkIdle opens and closes c.idleCh based on the controller's state.
-// c.idleCh is closed when the controller becomes idle and is reset when the controller becomes active.
-// If the controller's state hasn't changed, it does nothing.
-// It must be called with c.mu held.
-func (c *Controller) checkIdle() {
-	// We're idle if both the queue and invocations are empty.
-	idle := len(c.queue) == 0 && len(c.invocations) == 0
+// idleWait represents a caller waiting for the controller to become idle.
+// If ignoreHidden is true, the controller will be considered idle if all running invocations are for hidden resources.
+type idleWait struct {
+	ch           chan struct{}
+	ignoreHidden bool
+}
 
-	// Handle if idleness changed
-	if c.idle && !idle {
-		c.idle = false
-		c.idleCh = make(chan struct{})
-	} else if !c.idle && idle {
-		c.idle = true
-		close(c.idleCh)
+// checkIdleWaits checks registered idleWaits and removes any that can be satisfied.
+// It must be called with c.mu held.
+func (c *Controller) checkIdleWaits() {
+	if len(c.idleWaits) == 0 {
+		return
+	}
+
+	// Generally, we're idle if: len(c.queue) == 0 && len(c.invocations) == 0
+	// But we need to do some other extra checks to handle ignoreHidden.
+
+	// The queue is processed rapidly, so we don't check ignoreHidden against it.
+	if len(c.queue) != 0 {
+		return // Not idle
+	}
+
+	// Look for non-hidden invocations
+	found := false
+	for _, inv := range c.invocations {
+		if inv.isHidden {
+			continue
+		}
+		found = true
+		break
+	}
+	if found {
+		return // Not idle
+	}
+	// We now know that all invocations (if any) are hidden.
+
+	// Check individual waits
+	for k, iw := range c.idleWaits {
+		if !iw.ignoreHidden && len(c.invocations) != 0 {
+			continue
+		}
+
+		delete(c.idleWaits, k)
+		close(iw.ch)
 	}
 }
 
@@ -859,7 +928,7 @@ func (c *Controller) safeMutateRenamed(n *runtimev1.ResourceName) error {
 	}
 
 	// Create a new resource with the old name, so we can delete it separately.
-	err = c.catalog.create(renamedFrom, r.Meta.Refs, r.Meta.Owner, r.Meta.FilePaths, r)
+	err = c.catalog.create(renamedFrom, r.Meta.Refs, r.Meta.Owner, r.Meta.FilePaths, r.Meta.Hidden, r)
 	if err != nil {
 		return err
 	}
@@ -918,7 +987,7 @@ func (c *Controller) safeRename(from, to *runtimev1.ResourceName) error {
 		return err
 	}
 
-	err = c.catalog.create(to, r.Meta.Refs, r.Meta.Owner, r.Meta.FilePaths, r)
+	err = c.catalog.create(to, r.Meta.Refs, r.Meta.Owner, r.Meta.FilePaths, r.Meta.Hidden, r)
 	if err != nil {
 		return err
 	}
@@ -940,7 +1009,6 @@ func (c *Controller) safeRename(from, to *runtimev1.ResourceName) error {
 func (c *Controller) enqueue(name *runtimev1.ResourceName) {
 	c.queue[nameStr(name)] = name
 	c.setQueueUpdated()
-	c.checkIdle()
 }
 
 // setQueueUpdated notifies the event loop that the queue has been updated and needs to be processed.
@@ -1161,22 +1229,26 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 	// Track invocation
 	ctx, cancel := context.WithCancel(context.Background())
 	inv := &invocation{
-		name:     n,
-		isDelete: r.Meta.DeletedOn != nil,
-		isRename: r.Meta.RenamedFrom != nil,
-		cancelFn: cancel,
+		name:      n,
+		isHidden:  r.Meta.Hidden,
+		isDelete:  r.Meta.DeletedOn != nil,
+		isRename:  r.Meta.RenamedFrom != nil,
+		startedOn: time.Now(),
+		cancelFn:  cancel,
 	}
 	c.invocations[nameStr(n)] = inv
 
 	// Log invocation
-	logArgs := []any{slog.String("name", n.Name), slog.String("kind", unqualifiedKind(n.Kind))}
-	if inv.isDelete {
-		logArgs = append(logArgs, slog.Bool("deleted", inv.isDelete))
+	if !inv.isHidden {
+		logArgs := []any{slog.String("name", n.Name), slog.String("kind", unqualifiedKind(n.Kind))}
+		if inv.isDelete {
+			logArgs = append(logArgs, slog.Bool("deleted", inv.isDelete))
+		}
+		if inv.isRename {
+			logArgs = append(logArgs, slog.String("renamed_from", r.Meta.RenamedFrom.Name))
+		}
+		c.Logger.Info("Reconciling resource", logArgs...)
 	}
-	if inv.isRename {
-		logArgs = append(logArgs, slog.String("renamed_from", r.Meta.RenamedFrom.Name))
-	}
-	c.Logger.Info("Reconciling resource", logArgs...)
 
 	// Start reconcile in background
 	ctx = contextWithInvocation(ctx, inv)
@@ -1219,21 +1291,28 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 	delete(c.invocations, nameStr(inv.name))
 
 	// Log result
-	logArgs := []any{slog.String("name", inv.name.Name), slog.String("kind", unqualifiedKind(inv.name.Kind))}
-	logError := false
-	if inv.cancelled {
-		logArgs = append(logArgs, slog.Bool("cancelled", inv.cancelled))
+	logArgs := []any{
+		slog.String("name", inv.name.Name),
+		slog.String("kind", unqualifiedKind(inv.name.Kind)),
+	}
+	elapsed := time.Since(inv.startedOn).Round(time.Millisecond)
+	if elapsed > 0 {
+		logArgs = append(logArgs, slog.Duration("elapsed", elapsed))
 	}
 	if !inv.result.Retrigger.IsZero() {
 		logArgs = append(logArgs, slog.String("retrigger_on", inv.result.Retrigger.Format(time.RFC3339)))
 	}
-	if inv.result.Err != nil {
-		logArgs = append(logArgs, slog.Any("error", inv.result.Err))
-		logError = true
+	if inv.cancelled {
+		logArgs = append(logArgs, slog.Bool("cancelled", inv.cancelled))
 	}
-	if logError {
-		c.Logger.Error("Reconciled resource", logArgs...)
-	} else {
+	errorLevel := false
+	if inv.result.Err != nil && !errors.Is(inv.result.Err, context.Canceled) {
+		logArgs = append(logArgs, slog.Any("error", inv.result.Err))
+		errorLevel = true
+	}
+	if errorLevel {
+		c.Logger.Error("Reconcile failed", logArgs...)
+	} else if !inv.isHidden {
 		c.Logger.Info("Reconciled resource", logArgs...)
 	}
 
@@ -1349,8 +1428,10 @@ func (c *Controller) cancelIfRunning(n *runtimev1.ResourceName, reschedule bool)
 // invocation represents a running reconciler invocation for a specific resource.
 type invocation struct {
 	name        *runtimev1.ResourceName
+	isHidden    bool
 	isDelete    bool
 	isRename    bool
+	startedOn   time.Time
 	cancelFn    context.CancelFunc
 	cancelled   bool
 	reschedule  bool
@@ -1413,7 +1494,9 @@ func invocationFromContext(ctx context.Context) *invocation {
 func unqualifiedKind(k string) string {
 	idx := strings.LastIndex(k, ".")
 	if idx >= 0 {
-		return k[idx+1:]
+		k = k[idx+1:]
 	}
+	// TEMP: Trim the "V2" suffix. TODO: Remove when dropping the suffixes.
+	k = strings.TrimSuffix(k, "V2")
 	return k
 }

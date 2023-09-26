@@ -15,6 +15,8 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+var errParseErrors = errors.New("encountered parse errors")
+
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindProjectParser, newProjectParser)
 }
@@ -65,6 +67,12 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	pp := self.GetProjectParser()
 	if pp == nil {
 		return runtime.ReconcileResult{Err: errors.New("not a project parser")}
+	}
+
+	// Reset watching to false (in case of a crash during a previous watch)
+	pp.State.Watching = false
+	if err = r.C.UpdateState(ctx, n, self); err != nil {
+		return runtime.ReconcileResult{Err: err}
 	}
 
 	// Does not support renames
@@ -136,19 +144,31 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	// Parse the project
 	parser, err := compilerv1.Parse(ctx, repo, r.C.InstanceID, inst.OLAPConnector, duckdbConnectors)
 	if err != nil {
-		return runtime.ReconcileResult{Err: fmt.Errorf("failed to parse repo: %w", err)}
+		return runtime.ReconcileResult{Err: fmt.Errorf("failed to parse: %w", err)}
 	}
 
 	// Do the actual reconciliation of parsed resources and catalog resources
 	err = r.reconcileParser(ctx, inst, self, parser, nil, nil)
-	if err != nil {
+
+	// If err is not for parse errors, always return. Otherwise, only return it if we're not watching for changes.
+	if err != nil && !errors.Is(err, errParseErrors) {
+		return runtime.ReconcileResult{Err: err}
+	}
+	if !inst.WatchRepo {
 		return runtime.ReconcileResult{Err: err}
 	}
 
-	// Exit if not watching
-	if !inst.WatchRepo {
-		return runtime.ReconcileResult{}
+	// Set watching to true and add a defer to ensure it's set to false on exit
+	pp.State.Watching = true
+	if err = r.C.UpdateState(ctx, n, self); err != nil {
+		return runtime.ReconcileResult{Err: err}
 	}
+	defer func() {
+		pp.State.Watching = false
+		if err = r.C.UpdateState(ctx, n, self); err != nil {
+			r.C.Logger.Error("failed to update watch state", slog.Any("error", err))
+		}
+	}()
 
 	// Start a watcher that incrementally reparses the project.
 	// This is a blocking and long-running call, which is supported by the controller.
@@ -170,14 +190,14 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 		if err == nil {
 			err = r.reconcileParser(ctx, inst, self, parser, diff, changedPaths)
 		}
-		if err != nil {
+		if err != nil && !errors.Is(err, errParseErrors) {
 			reparseErr = err
 			cancel()
 			return
 		}
 	})
 	if reparseErr != nil {
-		err = fmt.Errorf("re-parse failed: %w", err)
+		err = fmt.Errorf("re-parse failed: %w", reparseErr)
 	} else if err != nil {
 		if errors.Is(err, ctx.Err()) {
 			// The controller cancelled the context. It means pp.Spec was changed. Will be rescheduled.
@@ -188,7 +208,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 
 	// If the watch failed, we return without rescheduling.
 	// TODO: Should we have some kind of retry?
-	r.C.Logger.Error("stopped watching for file changes", slog.String("err", err.Error()))
+	r.C.Logger.Error("Stopped watching for file changes", slog.String("err", err.Error()))
 	return runtime.ReconcileResult{Err: err}
 }
 
@@ -224,10 +244,11 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 	}
 
 	// Set an error without returning to mark if there are parse errors (if not, force error to nil in case there previously were parse errors)
+	var parseErrsErr error
 	if len(parser.Errors) > 0 {
-		err = fmt.Errorf("encountered parser errors")
+		parseErrsErr = errParseErrors
 	}
-	err = r.C.UpdateError(ctx, self.Meta.Name, err)
+	err = r.C.UpdateError(ctx, self.Meta.Name, parseErrsErr)
 	if err != nil {
 		return err
 	}
@@ -238,9 +259,18 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 	r.C.Lock(ctx)
 	defer r.C.Unlock(ctx)
 	if diff != nil {
-		return r.reconcileResourcesDiff(ctx, inst, self, parser, diff)
+		err = r.reconcileResourcesDiff(ctx, inst, self, parser, diff)
+		if err != nil {
+			return err
+		}
+		return parseErrsErr // Keep the parseErrsErr in this case
 	}
-	return r.reconcileResources(ctx, inst, self, parser)
+
+	err = r.reconcileResources(ctx, inst, self, parser)
+	if err != nil {
+		return err
+	}
+	return parseErrsErr // Keep the parseErrsErr in this case
 }
 
 // reconcileProjectConfig updates instance config derived from rill.yaml and .env
@@ -477,7 +507,7 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 	// Create and return if not updating
 	n := resourceNameFromCompiler(def.Name)
 	if existing == nil {
-		return r.C.Create(ctx, n, refs, self.Meta.Name, def.Paths, res)
+		return r.C.Create(ctx, n, refs, self.Meta.Name, def.Paths, false, res)
 	}
 
 	// The name may have changed to a different case (e.g. aAa -> Aaa)

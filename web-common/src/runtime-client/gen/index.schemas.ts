@@ -678,6 +678,7 @@ export interface V1ResourceMeta {
   refs?: V1ResourceName[];
   owner?: V1ResourceName;
   filePaths?: string[];
+  hidden?: boolean;
   version?: string;
   specVersion?: string;
   stateVersion?: string;
@@ -930,6 +931,7 @@ export interface V1PullTrigger {
 export interface V1ProjectParserState {
   parseErrors?: V1ParseError[];
   currentCommitSha?: string;
+  watching?: boolean;
 }
 
 export interface V1ProjectParserSpec {

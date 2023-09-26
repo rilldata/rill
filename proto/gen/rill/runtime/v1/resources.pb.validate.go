@@ -581,6 +581,8 @@ func (m *ResourceMeta) validate(all bool) error {
 
 	}
 
+	// no validation rules for Hidden
+
 	// no validation rules for Version
 
 	// no validation rules for SpecVersion
@@ -1303,6 +1305,8 @@ func (m *ProjectParserState) validate(all bool) error {
 	}
 
 	// no validation rules for CurrentCommitSha
+
+	// no validation rules for Watching
 
 	if len(errors) > 0 {
 		return ProjectParserStateMultiError(errors)

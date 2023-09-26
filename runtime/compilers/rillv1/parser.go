@@ -21,7 +21,7 @@ var (
 )
 
 // ErrInvalidProject indicates a project without a rill.yaml file
-var ErrInvalidProject = errors.New("parser: not a valid project (rill.yaml not found)")
+var ErrInvalidProject = errors.New("not a valid project (rill.yaml not found)")
 
 // Resource parsed from code files.
 // One file may output multiple resources and multiple files may contribute config to one resource.

@@ -175,6 +175,7 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	}
 
 	// Execute ingestion
+	r.C.Logger.Info("Ingesting source data", slog.String("name", n.Name), slog.String("connector", connector))
 	ingestErr := r.ingestSource(ctx, src.Spec, stagingTableName)
 	if ingestErr != nil {
 		ingestErr = fmt.Errorf("failed to ingest source: %w", ingestErr)
