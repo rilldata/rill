@@ -42,6 +42,10 @@ README.md
 docs
 *.json
 *.cjs
+*.toml
+.eslintignore
+.gitkeep
+*.yaml
 _redirects
 Makefile
 
