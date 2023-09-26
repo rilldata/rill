@@ -7,25 +7,25 @@ import {
   removeIfExists,
 } from "@rilldata/web-common/lib/arrayUtils";
 import { getTimeComparisonParametersForComponent } from "@rilldata/web-common/lib/time/comparisons";
-import type {
-  ScrubRange,
-  TimeRange,
-} from "@rilldata/web-common/lib/time/types";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
-import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
 import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
 import {
-  convertTimeRangePreset,
   ISODurationToTimePreset,
+  convertTimeRangePreset,
 } from "@rilldata/web-common/lib/time/ranges";
-import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
+import type {
+  DashboardTimeControls,
+  ScrubRange,
+  TimeComparisonOption,
+  TimeRange,
+} from "@rilldata/web-common/lib/time/types";
 import type {
   V1ColumnTimeRangeResponse,
   V1MetricsView,
   V1MetricsViewFilter,
+  V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
-import { derived, get, Readable, Writable, writable } from "svelte/store";
+import { Readable, derived, get, writable } from "svelte/store";
 import { SortDirection, SortType } from "./proto-state/derived-types";
 
 export interface LeaderboardValue {
@@ -740,5 +740,3 @@ function setSelectedScrubRange(
 
   metricsExplorer.selectedScrubRange = scrubRange;
 }
-
-export const projectShareStore: Writable<boolean> = writable(false);
