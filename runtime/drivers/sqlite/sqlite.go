@@ -17,6 +17,7 @@ import (
 
 func init() {
 	drivers.Register("sqlite", driver{})
+	drivers.RegisterAsConnector("sqlite", driver{})
 }
 
 type driver struct{}
@@ -55,11 +56,32 @@ func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
 }
 
 func (d driver) Spec() drivers.Spec {
-	return drivers.Spec{}
+	return drivers.Spec{
+		DisplayName: "SQLite",
+		Description: "Import data from SQLite into DuckDB.",
+		SourceProperties: []drivers.PropertySchema{
+			{
+				Key:         "db",
+				Type:        drivers.StringPropertyType,
+				Required:    true,
+				DisplayName: "DB",
+				Description: "Path to SQLite db file",
+				Placeholder: "sqlite.db",
+			},
+			{
+				Key:         "table",
+				Type:        drivers.StringPropertyType,
+				Required:    true,
+				DisplayName: "Table",
+				Description: "SQLite table name",
+				Placeholder: "table",
+			},
+		},
+	}
 }
 
 func (d driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
-	return false, nil
+	return true, nil
 }
 
 type connection struct {

@@ -30,6 +30,14 @@ export function compileCreateSourceYAML(
       values.sql = buildDuckDbQuery(values.path as string);
       delete values.path;
       break;
+    case "sqlite":
+      connectorName = "duckdb";
+      values.sql = `SELECT * FROM sqlite_scan('${values.db as string}', '${
+        values.table as string
+      }');`;
+      delete values.db;
+      delete values.table;
+      break;
   }
 
   const compiledKeyValues = Object.entries(values)

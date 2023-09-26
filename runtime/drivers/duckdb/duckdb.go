@@ -274,6 +274,8 @@ func (c *connection) reopenDB() error {
 		"LOAD 'parquet'",
 		"INSTALL 'httpfs'",
 		"LOAD 'httpfs'",
+		"INSTALL 'sqlite'",
+		"LOAD 'sqlite'",
 		"SET max_expression_depth TO 250",
 		"SET timezone='UTC'",
 	}
