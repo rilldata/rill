@@ -376,7 +376,7 @@ func connectorVariables(src *runtimev1.Source, env map[string]string, repoRoot s
 		"allow_host_access": strings.EqualFold(env["allow_host_access"], "true"),
 	}
 	switch connector {
-	case "s3":
+	case "s3", "athena":
 		vars["aws_access_key_id"] = env["aws_access_key_id"]
 		vars["aws_secret_access_key"] = env["aws_secret_access_key"]
 		vars["aws_session_token"] = env["aws_session_token"]

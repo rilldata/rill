@@ -87,6 +87,10 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map
 		}
 
 		format := fileutil.FullExt(files[0])
+		if iter.Format() != "" {
+			format += "." + iter.Format()
+		}
+
 		from, err := sourceReader(files, format, make(map[string]any))
 		if err != nil {
 			return err
