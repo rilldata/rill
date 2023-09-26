@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/symmetriccrypto"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"google.golang.org/grpc/codes"
@@ -32,12 +34,12 @@ func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*run
 		}
 	}
 
-	r, err := proto.Marshal(req)
+	tkn, err := s.generateDownloadToken(req, auth.GetClaims(ctx).Attributes())
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to generate download token: %s", err.Error())
 	}
 
-	out := fmt.Sprintf("/v1/download?%s=%s", "request", base64.URLEncoding.EncodeToString(r))
+	out := fmt.Sprintf("/v1/download?token=%s", tkn)
 
 	return &runtimev1.ExportResponse{
 		DownloadUrlPath: out,
@@ -45,21 +47,10 @@ func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*run
 }
 
 func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
-	marshalled, err := base64.URLEncoding.DecodeString(req.URL.Query().Get("request"))
+	rawTkn := req.URL.Query().Get("token")
+	request, attrs, err := s.parseDownloadToken(rawTkn)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to parse request: %s", err), http.StatusBadRequest)
-		return
-	}
-
-	request := &runtimev1.ExportRequest{}
-	err = proto.Unmarshal(marshalled, request)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to parse request: %s", err), http.StatusBadRequest)
-		return
-	}
-
-	if !auth.GetClaims(req.Context()).CanInstance(request.InstanceId, auth.ReadMetrics) {
-		http.Error(w, "action not allowed", http.StatusUnauthorized)
+		http.Error(w, fmt.Sprintf("failed to parse download token: %s", err.Error()), http.StatusBadRequest)
 		return
 	}
 
@@ -72,7 +63,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	switch v := request.Request.(type) {
 	case *runtimev1.ExportRequest_MetricsViewAggregationRequest:
 		r := v.MetricsViewAggregationRequest
-		mv, security, err := resolveMVAndSecurity(req.Context(), s.runtime, request.InstanceId, r.MetricsView)
+		mv, security, err := resolveMVAndSecurityFromAttributes(req.Context(), s.runtime, request.InstanceId, r.MetricsView, attrs)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -115,7 +106,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	case *runtimev1.ExportRequest_MetricsViewToplistRequest:
 		r := v.MetricsViewToplistRequest
 
-		mv, security, err := resolveMVAndSecurity(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName)
+		mv, security, err := resolveMVAndSecurityFromAttributes(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName, attrs)
 		if err != nil {
 			if errors.Is(err, ErrForbidden) {
 				http.Error(w, "action not allowed", http.StatusUnauthorized)
@@ -164,7 +155,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		}
 	case *runtimev1.ExportRequest_MetricsViewRowsRequest:
 		r := v.MetricsViewRowsRequest
-		mv, security, err := resolveMVAndSecurity(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName)
+		mv, security, err := resolveMVAndSecurityFromAttributes(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName, attrs)
 		if err != nil {
 			if errors.Is(err, ErrForbidden) {
 				http.Error(w, "action not allowed", http.StatusUnauthorized)
@@ -188,7 +179,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	case *runtimev1.ExportRequest_MetricsViewTimeSeriesRequest:
 		r := v.MetricsViewTimeSeriesRequest
 
-		mv, security, err := resolveMVAndSecurity(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName)
+		mv, security, err := resolveMVAndSecurityFromAttributes(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName, attrs)
 		if err != nil {
 			if errors.Is(err, ErrForbidden) {
 				http.Error(w, "action not allowed", http.StatusUnauthorized)
@@ -219,7 +210,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	case *runtimev1.ExportRequest_MetricsViewComparisonToplistRequest:
 		r := v.MetricsViewComparisonToplistRequest
 
-		mv, security, err := resolveMVAndSecurity(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName)
+		mv, security, err := resolveMVAndSecurityFromAttributes(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName, attrs)
 		if err != nil {
 			if errors.Is(err, ErrForbidden) {
 				http.Error(w, "action not allowed", http.StatusUnauthorized)
@@ -301,4 +292,66 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+// downloadTokenEncoder is an in-memory symmetric cryptography encoder for download tokens.
+// TODO: Replace it with a stable environment-configured key. And multiple key versions for key rotation.
+var downloadTokenEncoder = symmetriccrypto.Must(symmetriccrypto.NewEphemeralEncoder(32))
+
+// downloadTokenJSON is the non-encrypted JSON representation of a download token.
+type downloadTokenJSON struct {
+	Request    []byte         `json:"req"`
+	Attributes map[string]any `json:"attrs"`
+}
+
+// generateDownloadToken generates and encrypts a download token for the given request and attributes.
+func (s *Server) generateDownloadToken(req *runtimev1.ExportRequest, attrs map[string]any) (string, error) {
+	r, err := proto.Marshal(req)
+	if err != nil {
+		return "", err
+	}
+
+	tknJSON := downloadTokenJSON{
+		Request:    r,
+		Attributes: attrs,
+	}
+
+	data, err := json.Marshal(tknJSON)
+	if err != nil {
+		return "", err
+	}
+
+	res, err := downloadTokenEncoder.Encrypt(data)
+	if err != nil {
+		return "", err
+	}
+
+	return base64.URLEncoding.EncodeToString(res), nil
+}
+
+// parseDownloadToken decrypts and parses a download token and returns the request and attributes.
+func (s *Server) parseDownloadToken(tkn string) (*runtimev1.ExportRequest, map[string]any, error) {
+	data, err := base64.URLEncoding.DecodeString(tkn)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	decrypted, err := downloadTokenEncoder.Decrypt(data)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	tknJSON := downloadTokenJSON{}
+	err = json.Unmarshal(decrypted, &tknJSON)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	req := &runtimev1.ExportRequest{}
+	err = proto.Unmarshal(tknJSON.Request, req)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return req, tknJSON.Attributes, nil
 }

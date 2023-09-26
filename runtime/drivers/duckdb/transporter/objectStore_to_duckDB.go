@@ -297,6 +297,7 @@ func (t *objectStoreToDuckDB) ingestDuckDBSQL(ctx context.Context, originalSQL s
 			Paths:      allFiles,
 			Function:   table.Function,
 			Properties: table.Properties,
+			Params:     table.Params,
 		}, true
 	})
 	if err != nil {

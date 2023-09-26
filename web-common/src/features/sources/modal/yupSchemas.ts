@@ -57,6 +57,18 @@ export function getYupSchema(connector: V1ConnectorSpec) {
           )
           .required("Source name is required"),
       });
+    case "sqlite":
+      return yup.object().shape({
+        db: yup.string().required("db is required"),
+        table: yup.string().required("table is required"),
+        sourceName: yup
+          .string()
+          .matches(
+            /^[a-zA-Z_][a-zA-Z0-9_]*$/,
+            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores"
+          )
+          .required("Source name is required"),
+      });
     case "bigquery":
       return yup.object().shape({
         sql: yup.string().required("sql is required"),
@@ -69,6 +81,17 @@ export function getYupSchema(connector: V1ConnectorSpec) {
           .required("Source name is required"),
         project_id: yup.string().required("project_id is required"),
       });
+    case "azure":
+      return yup.object().shape({
+        path: yup
+          .string()
+          .matches(
+            /^azure:\/\//,
+            "Must be an Azure URI (e.g. azure://container/path)"
+          )
+          .required("Path is required"),
+        account: yup.string(),
+      });
     case "postgres":
       return yup.object().shape({
         sql: yup.string().required("sql is required"),
@@ -80,6 +103,19 @@ export function getYupSchema(connector: V1ConnectorSpec) {
           )
           .required("Source name is required"),
         database_url: yup.string(),
+      });
+    case "athena":
+      return yup.object().shape({
+        sql: yup.string().required("sql is required"),
+        sourceName: yup
+          .string()
+          .matches(
+            /^[a-zA-Z_][a-zA-Z0-9_]*$/,
+            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores"
+          )
+          .required("Source name is required"),
+        output_location: yup.string(),
+        workgroup: yup.string(),
       });
     default:
       throw new Error(`Unknown connector: ${connector.name}`);

@@ -219,6 +219,10 @@ func (f *fileIterator) Size(unit drivers.ProgressUnit) (int64, bool) {
 	}
 }
 
+func (f *fileIterator) Format() string {
+	return ""
+}
+
 func (f *fileIterator) downloadAsJSONFile() error {
 	tf := time.Now()
 	defer func() {

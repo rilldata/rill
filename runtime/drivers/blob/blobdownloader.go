@@ -50,6 +50,8 @@ type Options struct {
 	KeepFilesUntilClose bool
 	// BatchSizeBytes is the combined size of all files returned in one call to next()
 	BatchSizeBytes int64
+	// General blob format (json, csv, parquet, etc)
+	Format string
 }
 
 // sets defaults if not set by user
@@ -238,6 +240,10 @@ func (it *blobIterator) Next() ([]string, error) {
 	result := make([]string, len(batch))
 	copy(result, batch)
 	return result, nil
+}
+
+func (it *blobIterator) Format() string {
+	return it.opts.Format
 }
 
 // TODO: Ideally planner should take ownership of the bucket and return an iterator with next returning objectWithPlan
@@ -461,6 +467,10 @@ func (it *prefetchedIterator) Next() ([]string, error) {
 	}
 	it.done = true
 	return it.batch, nil
+}
+
+func (it *prefetchedIterator) Format() string {
+	return it.underlying.Format()
 }
 
 // downloadResult represents a successfully downloaded file

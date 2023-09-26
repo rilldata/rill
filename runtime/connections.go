@@ -227,10 +227,15 @@ func (r *Runtime) connectorConfig(ctx context.Context, instanceID, name string) 
 	// For backwards compatibility, certain root-level variables apply to certain implicit connectors.
 	// NOTE: This switches on connector.Name, not connector.Type, because this only applies to implicit connectors.
 	switch connector.Name {
-	case "s3":
+	case "s3", "athena":
 		setIfNil(cfg, "aws_access_key_id", vars["aws_access_key_id"])
 		setIfNil(cfg, "aws_secret_access_key", vars["aws_secret_access_key"])
 		setIfNil(cfg, "aws_session_token", vars["aws_session_token"])
+	case "azure":
+		setIfNil(cfg, "azure_storage_account", vars["azure_storage_account"])
+		setIfNil(cfg, "azure_storage_key", vars["azure_storage_key"])
+		setIfNil(cfg, "azure_storage_sas_token", vars["azure_storage_sas_token"])
+		setIfNil(cfg, "azure_storage_connection_string", vars["azure_storage_connection_string"])
 	case "gcs":
 		setIfNil(cfg, "google_application_credentials", vars["google_application_credentials"])
 	case "bigquery":
