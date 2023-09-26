@@ -114,7 +114,7 @@ TableCells – the cell contents.
     );
   }
 
-  $: columnVirtualizer = createVirtualizer<unknown, VirtualizedTableColumns>({
+  $: columnVirtualizer = createVirtualizer<any, VirtualizedTableColumns>({
     getScrollElement: () => container,
     horizontal: true,
     count: measureColumns.length,

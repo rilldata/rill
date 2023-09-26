@@ -7,9 +7,11 @@ import type { TimeControlState } from "./time-controls/time-control-store";
 import { getQuerySortType } from "./leaderboard/leaderboard-utils";
 import type { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 
-export function isSummableMeasure(measure: MetricsViewMeasure) {
-  measure?.expression.toLowerCase()?.includes("count(") ||
-    measure?.expression?.toLowerCase()?.includes("sum(");
+export function isSummableMeasure(measure: MetricsViewMeasure): boolean {
+  return (
+    measure?.expression.toLowerCase()?.includes("count(") ||
+    measure?.expression?.toLowerCase()?.includes("sum(")
+  );
 }
 
 /**

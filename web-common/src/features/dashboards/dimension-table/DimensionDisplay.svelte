@@ -114,7 +114,7 @@
 
   $: unfilteredTotal = $totalsQuery?.data?.data?.[leaderboardMeasureName] ?? 0;
 
-  let referenceValues: { string: number } = {};
+  let referenceValues: { [key: string]: number } = {};
   $: if ($totalsQuery?.data?.data) {
     allMeasures.map((m) => {
       if (isSummableMeasure(m)) {
@@ -169,7 +169,7 @@
   ////////////////////////////
 
   function onSelectItem(event) {
-    const label = newRows[event.detail][dimensionColumn];
+    const label = newRows[event.detail][dimensionColumn] as string;
     cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.toggleFilter(metricViewName, dimensionName, label);
   }
