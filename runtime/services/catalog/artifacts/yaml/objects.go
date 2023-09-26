@@ -47,6 +47,8 @@ type Source struct {
 	ProjectID                   string         `yaml:"project_id,omitempty" mapstructure:"project_id,omitempty"`
 	AccountName                 string         `yaml:"account,omitempty" mapstructure:"account,omitempty"`
 	PostgresDatabaseURL         string         `yaml:"database_url,omitempty" mapstructure:"database_url,omitempty"`
+	AthenaOutputLocation        string         `yaml:"output_location,omitempty" mapstructure:"output_location,omitempty"`
+	AthenaWorkgroup             string         `yaml:"workgroup,omitempty" mapstructure:"workgroup,omitempty"`
 }
 
 type MetricsView struct {
@@ -215,6 +217,14 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 
 	if source.PostgresDatabaseURL != "" {
 		props["database_url"] = source.PostgresDatabaseURL
+	}
+
+	if source.AthenaOutputLocation != "" {
+		props["output_location"] = source.AthenaOutputLocation
+	}
+
+	if source.AthenaWorkgroup != "" {
+		props["workgroup"] = source.AthenaWorkgroup
 	}
 
 	propsPB, err := structpb.NewStruct(props)

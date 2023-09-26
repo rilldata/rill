@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/bmatcuk/doublestar/v4"
+	"github.com/c2h5oh/datasize"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
@@ -219,6 +220,7 @@ type sourceProperties struct {
 	GlobPageSize          int            `mapstructure:"glob.page_size"`
 	S3Endpoint            string         `mapstructure:"endpoint"`
 	Extract               map[string]any `mapstructure:"extract"`
+	BatchSize             string         `mapstructure:"batch_size"`
 	url                   *globutil.URL
 	extractPolicy         *rillblob.ExtractPolicy
 }
@@ -281,6 +283,10 @@ func (c *Connection) DownloadFiles(ctx context.Context, src map[string]any) (dri
 		return nil, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, err)
 	}
 
+	batchSize, err := datasize.ParseString(conf.BatchSize)
+	if err != nil {
+		return nil, err
+	}
 	// prepare fetch configs
 	opts := rillblob.Options{
 		GlobMaxTotalSize:      conf.GlobMaxTotalSize,
@@ -289,6 +295,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, src map[string]any) (dri
 		GlobPageSize:          conf.GlobPageSize,
 		GlobPattern:           conf.url.Path,
 		ExtractPolicy:         conf.extractPolicy,
+		BatchSizeBytes:        int64(batchSize.Bytes()),
 	}
 
 	it, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)

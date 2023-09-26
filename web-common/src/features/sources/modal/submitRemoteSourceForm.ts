@@ -65,6 +65,8 @@ export async function submitRemoteSourceForm(
       switch (key) {
         case "project_id":
         case "account":
+        case "output_location":
+        case "workgroup":
           return [key, value];
         case "database_url":
           return [key, value];

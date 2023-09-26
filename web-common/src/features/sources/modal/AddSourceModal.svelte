@@ -24,6 +24,7 @@
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RemoteSourceForm from "./RemoteSourceForm.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
+  import AmazonAthena from "@rilldata/web-common/components/icons/connectors/AmazonAthena.svelte";
 
   export let open: boolean;
 
@@ -37,7 +38,7 @@
     "azure",
     // duckdb
     "bigquery",
-    // athena
+    "athena",
     "motherduck",
     "postgres",
     "local_file",
@@ -50,7 +51,7 @@
     azure: MicrosoftAzureBlobStorage,
     // duckdb: DuckDB,
     bigquery: GoogleBigQuery,
-    // athena: AmazonAthena,
+    athena: AmazonAthena,
     motherduck: MotherDuck,
     postgres: Postgres,
     local_file: LocalFile,
