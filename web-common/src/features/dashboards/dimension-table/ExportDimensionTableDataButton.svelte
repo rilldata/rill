@@ -8,16 +8,17 @@
     V1ExportFormat,
   } from "@rilldata/web-common/runtime-client";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
-  import exportMetrics from "./export-metrics";
+  import exportToplist from "./export-toplist";
 
-  export let metricViewName;
+  export let metricViewName: string;
+
   let exportMenuOpen = false;
 
   const timeControlStore = useTimeControlStore(getStateManagers());
 
   const exportDash = createQueryServiceExport();
-  const handleExportMetrics = async (format: V1ExportFormat) => {
-    exportMetrics({
+  const handleExportTopList = async (format: V1ExportFormat) => {
+    exportToplist({
       metricViewName,
       query: exportDash,
       format,
@@ -30,12 +31,11 @@
   alignment="end"
   distance={8}
   let:toggleFloatingElement
-  location="top"
+  location="bottom"
   on:close={() => (exportMenuOpen = false)}
   on:open={() => (exportMenuOpen = true)}
 >
   <button
-    aria-label="Export model data"
     on:click={(evt) => {
       evt.stopPropagation();
       toggleFloatingElement();
@@ -57,7 +57,7 @@
     <MenuItem
       on:select={() => {
         toggleFloatingElement();
-        handleExportMetrics("EXPORT_FORMAT_CSV");
+        handleExportTopList("EXPORT_FORMAT_CSV");
       }}
     >
       Export as CSV
@@ -65,7 +65,7 @@
     <MenuItem
       on:select={() => {
         toggleFloatingElement();
-        handleExportMetrics("EXPORT_FORMAT_PARQUET");
+        handleExportTopList("EXPORT_FORMAT_PARQUET");
       }}
     >
       Export as Parquet
@@ -73,7 +73,7 @@
     <MenuItem
       on:select={() => {
         toggleFloatingElement();
-        handleExportMetrics("EXPORT_FORMAT_XLSX");
+        handleExportTopList("EXPORT_FORMAT_XLSX");
       }}
     >
       Export as XLSX
