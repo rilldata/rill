@@ -32,7 +32,9 @@ export function compileCreateSourceYAML(
       break;
     case "sqlite":
       connectorName = "duckdb";
-      values.sql = `SELECT * FROM sqlite_scan('${values.db as string}', '${values.table as string}');`
+      values.sql = `SELECT * FROM sqlite_scan('${values.db as string}', '${
+        values.table as string
+      }');`;
       delete values.db;
       delete values.table;
       break;
