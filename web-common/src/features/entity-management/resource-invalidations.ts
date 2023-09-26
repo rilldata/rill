@@ -1,9 +1,11 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { resourcesStore } from "@rilldata/web-common/features/entity-management/resources-store";
+import { ReconcileStatus } from "@rilldata/web-common/proto/gen/rill/runtime/v1/resources_pb";
 import {
   getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
   V1GetResourceResponse,
+  V1ReconcileStatus,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import type { V1WatchResourcesResponse } from "@rilldata/web-common/runtime-client";
@@ -36,7 +38,12 @@ export function invalidateResourceResponse(
   res: V1WatchResourcesResponse
 ) {
   // only process for the `ResourceKind` present in `UsedResources`
-  if (!UsedResources[res.name.kind]) return;
+  if (
+    !UsedResources[res.name.kind] ||
+    res.resource.meta.reconcileStatus !==
+      V1ReconcileStatus.RECONCILE_STATUS_IDLE
+  )
+    return;
 
   console.log(
     `[${res.resource.meta.reconcileStatus}] ${res.name.kind}/${res.name.name}`

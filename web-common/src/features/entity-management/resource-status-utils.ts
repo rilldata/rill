@@ -104,7 +104,7 @@ export function getResourceStatusStore(
 
       return {
         status:
-          resourceResp.data.meta.reconcileStatus ===
+          resourceResp.data?.meta?.reconcileStatus ===
           V1ReconcileStatus.RECONCILE_STATUS_IDLE
             ? ResourceStatus.Idle
             : ResourceStatus.Busy,
