@@ -302,7 +302,7 @@ func mergeFromParsedQuery(apiSource *runtimev1.Source, env map[string]string, re
 		if err != nil {
 			return err
 		}
-	case "s3", "gcs":
+	case "s3", "gcs", "azure":
 		apiSource.Connector = c
 		props["path"] = p
 	default:

@@ -7,6 +7,7 @@
   import { createEventDispatcher } from "svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import AmazonS3 from "../../../components/icons/connectors/AmazonS3.svelte";
+  import MicrosoftAzureBlobStorage from "../../../components/icons/connectors/MicrosoftAzureBlobStorage.svelte";
   import GoogleBigQuery from "../../../components/icons/connectors/GoogleBigQuery.svelte";
   import GoogleCloudStorage from "../../../components/icons/connectors/GoogleCloudStorage.svelte";
   import Https from "../../../components/icons/connectors/HTTPS.svelte";
@@ -35,7 +36,7 @@
   const TAB_ORDER = [
     "gcs",
     "s3",
-    // azure_blob_storage
+    "azure",
     // duckdb
     "bigquery",
     "athena",
@@ -49,7 +50,7 @@
   const ICONS = {
     gcs: GoogleCloudStorage,
     s3: AmazonS3,
-    // azure_blob_storage: MicrosoftAzureBlobStorage,
+    azure: MicrosoftAzureBlobStorage,
     // duckdb: DuckDB,
     bigquery: GoogleBigQuery,
     athena: AmazonAthena,

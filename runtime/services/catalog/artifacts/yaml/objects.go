@@ -45,6 +45,7 @@ type Source struct {
 	SQL                         string         `yaml:"sql,omitempty" mapstructure:"sql,omitempty"`
 	DB                          string         `yaml:"db,omitempty" mapstructure:"db,omitempty"`
 	ProjectID                   string         `yaml:"project_id,omitempty" mapstructure:"project_id,omitempty"`
+	AccountName                 string         `yaml:"account,omitempty" mapstructure:"account,omitempty"`
 	PostgresDatabaseURL         string         `yaml:"database_url,omitempty" mapstructure:"database_url,omitempty"`
 	AthenaOutputLocation        string         `yaml:"output_location,omitempty" mapstructure:"output_location,omitempty"`
 	AthenaWorkgroup             string         `yaml:"workgroup,omitempty" mapstructure:"workgroup,omitempty"`
@@ -208,6 +209,10 @@ func fromSourceArtifact(source *Source, path string) (*drivers.CatalogEntry, err
 
 	if source.ProjectID != "" {
 		props["project_id"] = source.ProjectID
+	}
+
+	if source.AccountName != "" {
+		props["account"] = source.AccountName
 	}
 
 	if source.PostgresDatabaseURL != "" {

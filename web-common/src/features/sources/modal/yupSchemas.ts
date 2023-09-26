@@ -81,6 +81,17 @@ export function getYupSchema(connector: V1ConnectorSpec) {
           .required("Source name is required"),
         project_id: yup.string().required("project_id is required"),
       });
+    case "azure":
+      return yup.object().shape({
+        path: yup
+          .string()
+          .matches(
+            /^azure:\/\//,
+            "Must be an Azure URI (e.g. azure://container/path)"
+          )
+          .required("Path is required"),
+        account: yup.string(),
+      });
     case "postgres":
       return yup.object().shape({
         sql: yup.string().required("sql is required"),
