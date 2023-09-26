@@ -21,6 +21,7 @@ import (
 	"go.uber.org/zap"
 	"gocloud.dev/blob"
 	"gocloud.dev/blob/azureblob"
+	"gocloud.dev/gcerrors"
 )
 
 func init() {
@@ -232,8 +233,8 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 	if err != nil {
 		// If the err is due to not using the anonymous client for a public container, we want to retry.
 		var respErr *azcore.ResponseError
-		c.logger.Named("Console").Info("Error creating iterator", zap.String("err", fmt.Sprintf("%T", errors.Unwrap(err))))
-		if errors.As(err, &respErr) && respErr.RawResponse.StatusCode == http.StatusForbidden && (respErr.ErrorCode == "AuthorizationPermissionMismatch" || respErr.ErrorCode == "AuthenticationFailed") {
+		if gcerrors.Code(err) == gcerrors.Unknown ||
+			(errors.As(err, &respErr) && respErr.RawResponse.StatusCode == http.StatusForbidden && (respErr.ErrorCode == "AuthorizationPermissionMismatch" || respErr.ErrorCode == "AuthenticationFailed")) {
 			c.logger.Named("Console").Warn("Azure Blob Storage account does not have permission to list blobs. Falling back to anonymous access.")
 
 			client, err = c.createAnonymousClient(ctx, conf)
