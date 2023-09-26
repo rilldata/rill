@@ -53,7 +53,7 @@
   }
 </script>
 
-<div class="w-full sticky relative top-0 z-10">
+<div class="w-full relative top-0 z-10">
   {#each virtualColumnItems as header (header.key)}
     {@const props = getColumnHeaderProps(header)}
     <ColumnHeader

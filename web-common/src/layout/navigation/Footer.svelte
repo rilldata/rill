@@ -79,7 +79,10 @@
         >
           <InfoCircle size="16px" />
         </a>
-        <div slot="tooltip-content" transition:fly|global={{ duration: 100, y: 8 }}>
+        <div
+          slot="tooltip-content"
+          transition:fly|global={{ duration: 100, y: 8 }}
+        >
           <TooltipContent>
             <TooltipTitle>
               <svelte:fragment slot="name">Rill Developer</svelte:fragment>
@@ -95,7 +98,7 @@
     version {$appBuildMetaStore.version
       ? $appBuildMetaStore.version
       : "unknown (built from source)"}{$appBuildMetaStore.commitHash
-      ? ` – ${$appBuildMetaStore.commitHash}`
+      ? ` - ${$appBuildMetaStore.commitHash}`
       : ""}
   </div>
 </div>

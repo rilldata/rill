@@ -59,7 +59,7 @@
       </div>
       <div
         class:font-bold={emphasize}
-        class="text-left w-full text-left text-ellipsis overflow-hidden whitespace-nowrap"
+        class="text-left w-full text-ellipsis overflow-hidden whitespace-nowrap"
       >
         <slot name="left" />
       </div>
@@ -96,10 +96,7 @@
     </div>
   </button>
   {#if active && $$slots["details"]}
-    <div
-      class="w-full"
-      transition:slide={{ duration: LIST_SLIDE_DURATION }}
-    >
+    <div class="w-full" transition:slide={{ duration: LIST_SLIDE_DURATION }}>
       <slot name="details" />
     </div>
   {/if}
