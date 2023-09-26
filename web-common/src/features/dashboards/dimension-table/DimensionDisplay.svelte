@@ -26,7 +26,7 @@
   import {
     getDimensionFilterWithSearch,
     prepareDimensionTableRows,
-    prepareVirtualizedTableColumns,
+    prepareVirtualizedDimTableColumns,
   } from "./dimension-table-utils";
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
@@ -123,14 +123,16 @@
     });
   }
 
-  $: columns = prepareVirtualizedTableColumns(
+  $: columns = prepareVirtualizedDimTableColumns(
     allMeasures,
     leaderboardMeasureName,
     referenceValues,
     dimension,
     [...$dashboardStore.visibleMeasureKeys],
     $timeControlsStore.showComparison,
-    validPercentOfTotal
+    validPercentOfTotal,
+    $dashboardStore.dashboardSortType,
+    $dashboardStore.sortDirection
   );
 
   $: sortedQueryBody = prepareSortedQueryBody(
@@ -173,7 +175,6 @@
   }
 
   function onSortByColumn(event) {
-    console.log("onSortByColumn", event.detail);
     const columnName = event.detail;
 
     if (columnName === leaderboardMeasureName + "_delta") {
@@ -189,6 +190,7 @@
         metricViewName,
         columnName
       );
+      metricsExplorerStore.toggleSort(metricViewName, SortType.VALUE);
       metricsExplorerStore.setSortDescending(metricViewName);
     }
   }

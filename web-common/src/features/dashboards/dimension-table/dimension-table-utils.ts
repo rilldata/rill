@@ -22,6 +22,7 @@ import type { SvelteComponent } from "svelte";
 import { getDimensionColumn } from "../dashboard-utils";
 import type { DimensionTableRow } from "./dimension-table-types";
 import { getFilterForDimension } from "../selectors";
+import { SortDirection, SortType } from "../proto-state/derived-types";
 
 /** Returns an updated filter set for a given dimension on search */
 export function updateFilterOnSearch(
@@ -214,7 +215,7 @@ export function estimateColumnSizes(
   return estimateColumnSize;
 }
 
-export function prepareVirtualizedTableColumns(
+export function prepareVirtualizedDimTableColumns(
   allMeasures: MetricsViewMeasure[],
   leaderboardMeasureName: string,
   referenceValues: { string: number },
@@ -222,7 +223,9 @@ export function prepareVirtualizedTableColumns(
 
   inputColumnNames: string[],
   timeComparison: boolean,
-  validPercentOfTotal: boolean
+  validPercentOfTotal: boolean,
+  sortType: SortType,
+  sortDirection: SortDirection
 ): VirtualizedTableColumns[] {
   const measureNames = allMeasures.map((m) => m.name);
   const selectedMeasure = allMeasures.find(
@@ -243,37 +246,66 @@ export function prepareVirtualizedTableColumns(
   columnNames.unshift(dimensionColumn);
 
   return columnNames
-    .map((columnName) => {
-      if (measureNames.includes(columnName)) {
+    .map((name) => {
+      const highlight =
+        name === selectedMeasure.name ||
+        name.endsWith("_delta") ||
+        name.endsWith("_delta_perc") ||
+        name.endsWith("_percent_of_total");
+
+      let sorted = undefined;
+      if (name.endsWith("_delta") && sortType === SortType.DELTA_ABSOLUTE) {
+        sorted = sortDirection;
+      } else if (
+        name.endsWith("_delta_perc") &&
+        sortType === SortType.DELTA_PERCENT
+      ) {
+        sorted = sortDirection;
+      } else if (
+        name.endsWith("_percent_of_total") &&
+        sortType === SortType.PERCENT
+      ) {
+        sorted = sortDirection;
+      } else if (name === selectedMeasure.name && sortType === SortType.VALUE) {
+        sorted = sortDirection;
+      }
+
+      if (measureNames.includes(name)) {
         // Handle all regular measures
-        const measure = allMeasures.find((m) => m.name === columnName);
+        const measure = allMeasures.find((m) => m.name === name);
         return {
-          name: columnName,
+          name,
           type: "INT",
           label: measure?.label || measure?.expression,
           description: measure?.description,
           total: referenceValues[measure.name] || 0,
           enableResize: false,
           format: measure?.format,
+          highlight,
+          sorted,
         };
-      } else if (columnName === dimensionColumn) {
+      } else if (name === dimensionColumn) {
         // Handle dimension column
         return {
-          name: columnName,
+          name,
           type: "VARCHAR",
           label: dimension?.label,
           enableResize: true,
+          highlight,
+          sorted,
         };
       } else if (selectedMeasure) {
         // Handle delta and delta_perc
-        const comparison = getComparisonProperties(columnName, selectedMeasure);
+        const comparison = getComparisonProperties(name, selectedMeasure);
         return {
-          name: columnName,
+          name,
           type: comparison.type,
           label: comparison.component,
           description: comparison.description,
           enableResize: false,
           format: comparison.format,
+          highlight,
+          sorted,
         };
       }
       return undefined;

@@ -15,6 +15,7 @@
   import TooltipDescription from "../../tooltip/TooltipDescription.svelte";
   import type { HeaderPosition, VirtualizedTableConfig } from "../types";
   import StickyHeader from "./StickyHeader.svelte";
+  import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 
   export let pinned = false;
   export let noPin = false;
@@ -25,8 +26,12 @@
   export let header;
   export let position: HeaderPosition = "top";
   export let enableResize = true;
+  // FIXME: pretty sure isSelected can be deprecated in favor of highlight
+
   export let isSelected = false;
   export let bgClass = "";
+  export let highlight: boolean;
+  export let sorted: SortDirection;
   // set this prop to control sorting arrow externally.
   // if undefined, sorting arrow is toggled within the component.
   export let sortAscending: boolean | undefined = undefined;
@@ -51,6 +56,19 @@
   $: columnFontWeight = isSelected
     ? "font-bold"
     : config.columnHeaderFontWeightClass;
+
+  function expandArrowDiv(node, { delay = 0, duration = 100 }) {
+    const w = 12;
+
+    return {
+      delay,
+      duration,
+      css: (t) => {
+        let c = `width: ${t * w}px;`;
+        return c;
+      },
+    };
+  }
 </script>
 
 <StickyHeader
@@ -76,6 +94,7 @@
   on:click={() => {
     // only toggle `isSortingDesc` within the component if
     // sorting is not controlled externally
+    // FIXME is this actually used anywhere?
     if (sortAscending === undefined) {
       if (isSelected) isSortingDesc = !isSortingDesc;
       else isSortingDesc = true;
@@ -162,20 +181,14 @@
       </TooltipContent>
     </Tooltip>
 
-    {#if isDimensionTable}
-      <div class="mt-0.5 ui-copy-icon">
-        {#if isSortingDesc}
-          <div
-            in:fly={{ duration: 200, y: -8 }}
-            style:opacity={isSelected ? 1 : 0}
-          >
+    {#if sorted}
+      <div class="mt-0.5 ui-copy-icon" in:expandArrowDiv out:expandArrowDiv>
+        {#if sorted === SortDirection.DESCENDING}
+          <div in:fly={{ duration: 200, y: -8 }} style:opacity={1}>
             <ArrowDown size="12px" />
           </div>
-        {:else}
-          <div
-            in:fly={{ duration: 200, y: 8 }}
-            style:opacity={isSelected ? 1 : 0}
-          >
+        {:else if sorted === SortDirection.ASCENDING}
+          <div in:fly={{ duration: 200, y: 8 }} style:opacity={1}>
             <ArrowDown transform="scale(1 -1)" size="12px" />
           </div>
         {/if}

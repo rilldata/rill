@@ -7,7 +7,7 @@ TableCells – the cell contents.
   import ColumnHeaders from "@rilldata/web-common/components/virtualized-table/sections/ColumnHeaders.svelte";
   import TableCells from "@rilldata/web-common/components/virtualized-table/sections/TableCells.svelte";
   import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
-  import { createVirtualizer } from "@tanstack/svelte-virtual";
+  import { createVirtualizer, VirtualItem } from "@tanstack/svelte-virtual";
   import { createEventDispatcher, setContext } from "svelte";
   import DimensionFilterGutter from "./DimensionFilterGutter.svelte";
   import { DimensionTableConfig as config } from "./DimensionTableConfig";
@@ -39,10 +39,10 @@ TableCells – the cell contents.
   export let columnOverscanAmount = 5;
 
   let rowVirtualizer;
-  let columnVirtualizer;
+  // let columnVirtualizer;
   let container;
   let virtualRows;
-  let virtualColumns;
+  let virtualColumns: VirtualItem[];
   let virtualWidth;
   let virtualHeight;
   let containerWidth;
@@ -79,11 +79,10 @@ TableCells – the cell contents.
   setContext("config", config);
 
   let estimateColumnSize: number[] = [];
-  let measureColumns = [];
 
   /* Separate out dimension column */
   $: dimensionColumn = columns?.find((c) => c.name == dimensionName);
-  $: measureColumns = columns?.filter((c) => c.name !== dimensionName);
+  $: measureColumns = columns?.filter((c) => c.name !== dimensionName) ?? [];
 
   let horizontalScrolling = false;
 
@@ -113,20 +112,22 @@ TableCells – the cell contents.
       containerWidth - measureColumnSizeSum - FILTER_COLUMN_WIDTH,
       estimateColumnSize[0]
     );
-
-    columnVirtualizer = createVirtualizer({
-      getScrollElement: () => container,
-      horizontal: true,
-      count: measureColumns.length,
-      getItemKey: (index) => measureColumns[index].name,
-      estimateSize: (index) => {
-        return estimateColumnSize[index + 1];
-      },
-      overscan: columnOverscanAmount,
-      paddingStart: estimateColumnSize[0] + FILTER_COLUMN_WIDTH,
-      initialOffset: colScrollOffset,
-    });
   }
+
+  $: columnVirtualizer = createVirtualizer<unknown, VirtualizedTableColumns>({
+    getScrollElement: () => container,
+    horizontal: true,
+    count: measureColumns.length,
+    getItemKey: (index) => measureColumns[index].name,
+    estimateSize: (index) => {
+      return estimateColumnSize[index + 1];
+    },
+    overscan: columnOverscanAmount,
+    paddingStart: estimateColumnSize[0] + FILTER_COLUMN_WIDTH,
+    initialOffset: colScrollOffset,
+  });
+
+  $: svirtualColumns = $columnVirtualizer.getVirtualItems();
 
   $: if (rowVirtualizer) {
     virtualRows = $rowVirtualizer.getVirtualItems();
