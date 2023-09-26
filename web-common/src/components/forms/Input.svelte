@@ -49,7 +49,7 @@
 />
 {#if error}
   <div
-    in:slide|local={{ duration: 200 }}
+    in:slide={{ duration: 200 }}
     class="pl-1 text-red-500 text-xs pt-1"
   >
     {error}

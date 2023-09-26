@@ -73,7 +73,7 @@
       class="absolute"
       style:left="0"
       style:top="0px"
-      transition:hackedLocalKeyFly={{
+      transition:hackedLocalKeyFly|global={{
         [direction === "horizontal" ? "x" : "y"]:
           7.5 * (!active ? 1 : -1) * (reverse ? -1 : 1),
       }}

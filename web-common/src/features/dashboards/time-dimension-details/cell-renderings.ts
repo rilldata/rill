@@ -3,7 +3,7 @@ import DimensionCell from "./DimensionCell.svelte";
 import FormattedNumberCell from "./FormattedNumberCell.svelte";
 
 export type CellRendering = {
-  cellComponent: typeof SvelteComponent;
+  cellComponent: typeof SvelteComponent<any>;
   cellComponentDefaultProps: Record<string, any>;
 };
 

@@ -33,7 +33,7 @@
   }}
 >
   {#if value !== undefined}
-    <span transition:fade|local={{ duration: 75 }}>
+    <span transition:fade={{ duration: 75 }}>
       <FormattedDataType {value} type={column?.type} {isNull} inTable />
     </span>
   {/if}

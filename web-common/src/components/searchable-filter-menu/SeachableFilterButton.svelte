@@ -71,7 +71,7 @@ props as needed.
     <SelectButton {active} disabled={false} on:click={toggleFloatingElement}
       ><strong>{numShownString} {label}</strong></SelectButton
     >
-    <div slot="tooltip-content" transition:fly|local={{ duration: 300, y: 4 }}>
+    <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>
       <TooltipContent maxWidth="400px">
         {tooltipText}
       </TooltipContent>

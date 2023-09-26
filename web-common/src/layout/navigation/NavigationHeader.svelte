@@ -10,7 +10,7 @@
 <div
   class="pl-4 pb-1 pr-2 grid justify-between"
   style="grid-template-columns: auto max-content;"
-  out:slide|local={{ duration: LIST_SLIDE_DURATION }}
+  out:slide={{ duration: LIST_SLIDE_DURATION }}
 >
   <CollapsibleSectionTitle tooltipText={toggleText} bind:active={show}>
     <div class="flex flex-row items-center gap-x-2">

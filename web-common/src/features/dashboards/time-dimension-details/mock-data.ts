@@ -7,7 +7,7 @@ const FIXED_COL_CT = 5;
 
 export type THeaderData = {
   title?: string;
-  component?: typeof SvelteComponent;
+  component?: typeof SvelteComponent<any>;
 };
 
 export const data = {

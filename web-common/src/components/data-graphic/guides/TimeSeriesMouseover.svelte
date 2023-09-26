@@ -45,7 +45,7 @@
     {format}
   />
   {#key showRawValue}
-    <g transition:fly={{ duration: LIST_SLIDE_DURATION, x: -16 }}>
+    <g transition:fly|global={{ duration: LIST_SLIDE_DURATION, x: -16 }}>
       <PointLabel
         {point}
         {xAccessor}

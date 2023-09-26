@@ -28,7 +28,7 @@
   on:focus={onHover}
   on:mouseleave={onLeave}
   on:mouseover={onHover}
-  transition:slide|local={{ duration: 200 }}
+  transition:slide={{ duration: 200 }}
 >
   <BarAndLabel
     {color}

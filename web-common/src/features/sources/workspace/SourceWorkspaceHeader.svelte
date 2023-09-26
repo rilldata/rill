@@ -213,7 +213,7 @@
             <div
               class="ui-copy-muted"
               style:font-size="11px"
-              transition:fade|local={{ duration: 200 }}
+              transition:fade={{ duration: 200 }}
             >
               Imported on {formatRefreshedOn(
                 $getSource.data?.entry?.refreshedOn
@@ -252,7 +252,7 @@
             <div class="flex">
               {#if isSourceUnsaved}<div
                   class="pr-1"
-                  transition:slideRight={{ duration: 250 }}
+                  transition:slideRight|global={{ duration: 250 }}
                 >
                   Save and
                 </div>{/if}

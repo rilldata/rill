@@ -106,7 +106,7 @@
 
   // TODO: with real data, this should be dependent on selected metric
   const format = "0.2f";
-  let cellComponent: typeof SvelteComponent;
+  let cellComponent: typeof SvelteComponent<any>;
   let cellComponentDefaultProps = {};
   $: {
     ({ cellComponent, cellComponentDefaultProps } = getCellComponent(

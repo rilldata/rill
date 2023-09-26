@@ -162,8 +162,8 @@
         {:else if status === EntityStatus.Running}
           <div
             class="{withTimeseries ? '' : 'bottom-0'} absolute p-2"
-            in:receive|local={{ key: "spinner" }}
-            out:send|local={{ key: "spinner" }}
+            in:receive={{ key: "spinner" }}
+            out:send={{ key: "spinner" }}
           >
             <Spinner status={EntityStatus.Running} />
           </div>

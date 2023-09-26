@@ -121,7 +121,7 @@
     on:mouseleave={onLeave}
     on:mouseover={onHover}
     on:shift-click={() => shiftClickHandler(label)}
-    transition:slide|local={{ duration: 200 }}
+    transition:slide={{ duration: 200 }}
     use:shiftClickAction
   >
     <LeaderboardItemFilterIcon
@@ -157,12 +157,12 @@
         >
           <div
             class="flex items-baseline gap-x-1"
-            in:fly={{ duration: 200, y: 4 }}
+            in:fly|global={{ duration: 200, y: 4 }}
           >
             {#if showPreviousTimeValue}
               <span
                 class="inline-block opacity-50"
-                transition:slideRight={{ duration: LIST_SLIDE_DURATION }}
+                transition:slideRight|global={{ duration: LIST_SLIDE_DURATION }}
               >
                 {previousValueString}
                 →

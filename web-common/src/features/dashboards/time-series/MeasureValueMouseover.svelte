@@ -208,7 +208,7 @@
       {/if}
       {#if !showComparison && x !== undefined && y !== null && y !== undefined && !currentPointIsNull}
         <line
-          transition:fade|local={{ duration: 100 }}
+          transition:fade={{ duration: 100 }}
           x1={xArrow}
           x2={xArrow}
           y1={yScale(0)}

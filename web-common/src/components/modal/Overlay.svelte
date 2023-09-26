@@ -6,7 +6,7 @@
 </script>
 
 <div
-  transition:fade={{ duration: 100 }}
+  transition:fade|global={{ duration: 100 }}
   bind:this={element}
   part="overlay"
   class="{bgColor} fixed top-0 right-0 left-0 bottom-0"

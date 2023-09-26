@@ -132,7 +132,7 @@
   style:min-height={minHeight}
   style:max-height={maxHeight}
   style:min-width={minWidth}
-  transition:fade|local={{ duration: 50 }}
+  transition:fade={{ duration: 50 }}
   on:mouseleave={() => {
     $currentItem = undefined;
   }}

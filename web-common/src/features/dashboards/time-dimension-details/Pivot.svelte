@@ -7,8 +7,8 @@
   export let fixedColCt: number;
   export let getColumnWidth: (idx: number) => number;
   export let getRowSize: (idx: number) => number;
-  export let cellComponent: typeof SvelteComponent;
-  export let headerComponent: typeof SvelteComponent;
+  export let cellComponent: typeof SvelteComponent<any>;
+  export let headerComponent: typeof SvelteComponent<any>;
   export let height: number;
   export let headerHeight: number;
   export let headerStyle = "";
