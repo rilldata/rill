@@ -18,10 +18,10 @@ export async function* streamingFetchWrapper<T>(
       signal,
     });
   } catch (err) {
-    return;
+    throw err;
   }
   if (!response.body) {
-    return;
+    throw new Error("No response");
   }
   const reader = response.body.getReader();
   const decoder = new TextDecoder();

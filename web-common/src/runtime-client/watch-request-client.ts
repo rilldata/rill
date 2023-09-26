@@ -69,11 +69,13 @@ export class WatchRequestClient<Res extends WatchResponse> {
           else if (res.result) this.onResponse(res.result);
         }
       } catch (err) {
+        console.log(err);
         if (!(await this.tracker.failed())) {
           return;
         }
       }
     }
+    return;
   }
 
   private getFetchStream(url: string, controller: AbortController) {

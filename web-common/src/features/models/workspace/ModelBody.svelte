@@ -71,7 +71,6 @@
   $: modelError = $allErrors?.[0]?.message;
 
   $: modelQuery = useModel(runtimeInstanceId, modelName);
-  $: hasModelResource = !!$modelQuery.data?.model;
 
   const outputLayout = getContext(
     "rill:app:output-layout"
@@ -118,12 +117,11 @@
   })) as SelectionRange[];
 
   let errors = [];
-  $: {
+  // only add error if sql is present
+  $: if (modelSql !== "") {
     errors = [];
-    // only add error if sql is present
-    if (modelError && modelSql !== "") errors.push(modelError);
-    // only add runtime error if there is a resource
-    if (hasModelResource && runtimeError) errors.push(runtimeError.message);
+    if (modelError) errors.push(modelError);
+    if (runtimeError) errors.push(runtimeError.message);
   }
 </script>
 

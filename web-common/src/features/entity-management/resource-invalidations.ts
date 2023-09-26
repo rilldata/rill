@@ -79,14 +79,11 @@ async function invalidateResource(
 ) {
   const failed = !!resource.meta.reconcileError;
 
-  // set the data directly since we have the full resource already
-  // TODO: test this thoroughly to make sure this doesnt break anything
-  queryClient.setQueryData(
+  queryClient.refetchQueries(
     getRuntimeServiceGetResourceQueryKey(instanceId, {
       "name.name": resource.meta.name.name,
       "name.kind": resource.meta.name.kind,
-    }),
-    { resource } as V1GetResourceResponse
+    })
   );
   switch (resource.meta.name.kind) {
     case ResourceKind.Source:

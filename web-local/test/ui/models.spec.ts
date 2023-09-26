@@ -46,7 +46,7 @@ test.describe("models", () => {
 
     // Query parse error
     await updateCodeEditor(page, "select from AdBids");
-    await wrapRetryAssertion(() => modelHasError(page, true, "Parser Error"));
+    await wrapRetryAssertion(() => modelHasError(page, true, "Catalog Error"));
   });
 
   test("Rename and delete model", async ({ page }) => {

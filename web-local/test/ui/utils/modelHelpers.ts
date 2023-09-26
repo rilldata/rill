@@ -1,4 +1,3 @@
-import { asyncWait } from "@rilldata/web-common/lib/waitUtils";
 import type { Page } from "playwright";
 import { expect } from "@playwright/test";
 import { renameEntityUsingTitle } from "./commonHelpers";
@@ -9,7 +8,6 @@ export async function createModel(page: Page, name: string) {
   // add model button
   await page.locator("button#create-model-button").click();
   await waitForEntity(page, TestEntityType.Model, "model", true);
-  await asyncWait(1000);
   await renameEntityUsingTitle(page, name);
   await waitForEntity(page, TestEntityType.Model, name, true);
 }
