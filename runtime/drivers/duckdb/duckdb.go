@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql/driver"
 	"fmt"
+	"net/url"
 	"os"
 	"regexp"
 	"strconv"
@@ -17,6 +18,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/duckdb/transporter"
 	activity "github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
@@ -25,11 +27,31 @@ import (
 func init() {
 	drivers.Register("duckdb", Driver{name: "duckdb"})
 	drivers.Register("motherduck", Driver{name: "motherduck"})
+	drivers.RegisterAsConnector("duckdb", Driver{name: "duckdb"})
 	drivers.RegisterAsConnector("motherduck", Driver{name: "motherduck"})
 }
 
-// spec for duckdb as motherduck connector
 var spec = drivers.Spec{
+	DisplayName: "DuckDB",
+	Description: "Create a DuckDB SQL source.",
+	SourceProperties: []drivers.PropertySchema{
+		{
+			Key:         "sql",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "SQL",
+			Description: "DuckDB SQL query.",
+			Placeholder: "select * from read_csv('data/file.csv', header=true);",
+		},
+	},
+	ConfigProperties: []drivers.PropertySchema{
+		{
+			Key: "dsn",
+		},
+	},
+}
+
+var motherduckSpec = drivers.Spec{
 	DisplayName: "MotherDuck",
 	Description: "Import data from MotherDuck.",
 	SourceProperties: []drivers.PropertySchema{
@@ -127,11 +149,55 @@ func (d Driver) Drop(cfgMap map[string]any, logger *zap.Logger) error {
 }
 
 func (d Driver) Spec() drivers.Spec {
+	if d.name == "motherduck" {
+		return motherduckSpec
+	}
 	return spec
 }
 
 func (d Driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
 	return false, nil
+}
+
+func (d Driver) TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error) {
+	// The "sql" property of a DuckDB source can reference other connectors like S3.
+	// We try to extract those and return them here.
+	// We will in most error cases just return nil and let errors be handled during source ingestion.
+
+	sql, ok := src["sql"].(string)
+	if !ok {
+		return nil, nil
+	}
+
+	ast, err := duckdbsql.Parse(sql)
+	if err != nil {
+		return nil, nil
+	}
+
+	res := make([]string, 0)
+
+	refs := ast.GetTableRefs()
+	for _, ref := range refs {
+		if len(ref.Paths) == 0 {
+			continue
+		}
+
+		uri, err := url.Parse(ref.Paths[0])
+		if err != nil {
+			return nil, err
+		}
+
+		switch uri.Scheme {
+		case "s3", "azure":
+			res = append(res, uri.Scheme)
+		case "gs":
+			res = append(res, "gcs")
+		default:
+			// Ignore
+		}
+	}
+
+	return res, nil
 }
 
 type connection struct {

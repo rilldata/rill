@@ -64,6 +64,10 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any
 	return false, nil
 }
 
+func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error) {
+	return nil, nil
+}
+
 type connection struct {
 	config map[string]any
 }
