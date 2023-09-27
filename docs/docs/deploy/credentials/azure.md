@@ -73,5 +73,3 @@ If you subsequently add sources that require new credentials (or if you input th
 rill env configure
 ```
 Note that you must `cd` into the Git repository that your project was deployed from before running `rill env configure`.
-
-<!-- Todo need to add details on how to create service account in Azure>
