@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/XSAM/otelsql"
+	"github.com/c2h5oh/datasize"
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -84,6 +85,24 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, log
 	cfg, err := newConfig(cfgMap)
 	if err != nil {
 		return nil, err
+	}
+
+	// We've seen the DuckDB .wal and .tmp files grow to 100s of GBs in some cases.
+	// This prevents recovery after restarts since DuckDB hangs while trying to reprocess the files.
+	// This is a hacky solution that deletes the files (if they exist) before re-opening the DB.
+	// Generally, this should not lead to data loss since reconcile will bring the database back to the correct state.
+	if cfg.DBFilePath != "" {
+		// Always drop the .tmp directory
+		tmpPath := cfg.DBFilePath + ".tmp"
+		_ = os.RemoveAll(tmpPath)
+
+		// Drop the .wal file if it's bigger than 100MB
+		walPath := cfg.DBFilePath + ".wal"
+		if stat, err := os.Stat(walPath); err == nil {
+			if stat.Size() >= 100*int64(datasize.MB) {
+				_ = os.Remove(walPath)
+			}
+		}
 	}
 
 	// See note in connection struct
