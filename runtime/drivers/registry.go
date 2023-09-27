@@ -54,6 +54,8 @@ type Instance struct {
 	ModelDefaultMaterialize bool `db:"model_default_materialize"`
 	// ModelMaterializeDelaySeconds adds a delay before materializing models.
 	ModelMaterializeDelaySeconds uint32 `db:"model_materialize_delay_seconds"`
+	// IgnoreInitialInvalidProjectError indicates whether to ignore an invalid project error when the instance is initially created.
+	IgnoreInitialInvalidProjectError bool `db:"-"`
 }
 
 // ResolveVariables returns the final resolved variables

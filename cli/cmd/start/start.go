@@ -88,18 +88,11 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 
 			client := activity.NewNoopClient()
 
-			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, reset, olapDriver, olapDSN, projectPath, parsedLogFormat, variables, client)
+			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, strict, reset, olapDriver, olapDSN, projectPath, parsedLogFormat, variables, client)
 			if err != nil {
 				return err
 			}
 			defer app.Close()
-
-			if app.IsProjectInit() {
-				err = app.Reconcile(strict)
-				if err != nil {
-					return fmt.Errorf("reconcile project: %w", err)
-				}
-			}
 
 			userID := ""
 			if cfg.IsAuthenticated() {

@@ -20,7 +20,6 @@ import (
 	"github.com/rilldata/rill/cli/pkg/web"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
@@ -66,7 +65,7 @@ type App struct {
 	activity              activity.Client
 }
 
-func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string, client activity.Client) (*App, error) {
+func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string, client activity.Client) (*App, error) {
 	// Setup logger
 	logger, cleanupFn := initLogger(verbose, logFormat)
 	sugarLogger := logger.Sugar()
@@ -138,7 +137,10 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 	}
 
 	// Print start status – need to do it before creating the instance, since doing so immediately starts the controller
-	sugarLogger.Named("console").Infof("Hydrating project '%s'", projectPath)
+	isInit := IsProjectInit(projectPath)
+	if isInit {
+		sugarLogger.Named("console").Infof("Hydrating project '%s'", projectPath)
+	}
 
 	// Create instance with its repo set to the project directory
 	inst := &drivers.Instance{
@@ -157,18 +159,19 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 				Config: olapCfg,
 			},
 		},
-		Variables:                    parsedVariables,
-		Annotations:                  map[string]string{},
-		EmbedCatalog:                 olapDriver == "duckdb",
-		WatchRepo:                    true,
-		ModelMaterializeDelaySeconds: 30,
+		Variables:                        parsedVariables,
+		Annotations:                      map[string]string{},
+		EmbedCatalog:                     olapDriver == "duckdb",
+		WatchRepo:                        true,
+		ModelMaterializeDelaySeconds:     30,
+		IgnoreInitialInvalidProjectError: !isInit, // See ProjectParser reconciler for details
 	}
 	err = rt.CreateInstance(ctx, inst)
 	if err != nil {
 		return nil, err
 	}
 
-	// Done
+	// Create app
 	app := &App{
 		Context:               ctx,
 		Runtime:               rt,
@@ -182,11 +185,21 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 		loggerCleanUp:         cleanupFn,
 		activity:              client,
 	}
+
+	// Wait for the initial reconcile
+	if isInit {
+		err = app.Reconcile(strict)
+		if err != nil {
+			app.Close()
+			return nil, fmt.Errorf("reconcile project: %w", err)
+		}
+	}
+
 	return app, nil
 }
 
 func (a *App) Close() error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	err := a.observabilityShutdown(ctx)
@@ -203,17 +216,6 @@ func (a *App) Close() error {
 
 	a.loggerCleanUp()
 	return nil
-}
-
-func (a *App) IsProjectInit() bool {
-	repo, release, err := a.Runtime.Repo(a.Context, a.Instance.ID)
-	if err != nil {
-		panic(err) // checks in New should ensure it never happens
-	}
-	defer release()
-
-	c := rillv1beta.New(repo, a.Instance.ID)
-	return c.IsInit(a.Context)
 }
 
 func (a *App) Reconcile(strict bool) (err error) {
@@ -491,6 +493,16 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 		// Done
 		w.WriteHeader(http.StatusOK)
 	})
+}
+
+// IsProjectInit checks if the project is initialized by checking if rill.yaml exists in the project directory.
+// It doesn't use any runtime functions since we need the ability to check this before creating the instance.
+func IsProjectInit(projectPath string) bool {
+	rillYAML := filepath.Join(projectPath, "rill.yaml")
+	if _, err := os.Stat(rillYAML); err != nil {
+		return false
+	}
+	return true
 }
 
 func ParseLogFormat(format string) (LogFormat, bool) {
