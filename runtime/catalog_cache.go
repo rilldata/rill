@@ -9,7 +9,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/dag2"
+	"github.com/rilldata/rill/runtime/pkg/dag"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -30,7 +30,7 @@ type catalogCache struct {
 	resources map[string]map[string]*runtimev1.Resource
 	dirty     map[string]*runtimev1.ResourceName
 	stored    map[string]bool
-	dag       dag2.DAG[string, *runtimev1.ResourceName]
+	dag       dag.DAG[string, *runtimev1.ResourceName]
 	cyclic    map[string]*runtimev1.ResourceName
 	renamed   map[string]*runtimev1.ResourceName
 	deleted   map[string]*runtimev1.ResourceName
@@ -61,7 +61,7 @@ func newCatalogCache(ctx context.Context, ctrl *Controller, instanceID string) (
 		resources:   make(map[string]map[string]*runtimev1.Resource),
 		dirty:       make(map[string]*runtimev1.ResourceName),
 		stored:      make(map[string]bool),
-		dag:         dag2.New(nameStr),
+		dag:         dag.New(nameStr),
 		cyclic:      make(map[string]*runtimev1.ResourceName),
 		renamed:     make(map[string]*runtimev1.ResourceName),
 		deleted:     make(map[string]*runtimev1.ResourceName),

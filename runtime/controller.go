@@ -13,7 +13,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
-	"github.com/rilldata/rill/runtime/pkg/dag2"
+	"github.com/rilldata/rill/runtime/pkg/dag"
 	"github.com/rilldata/rill/runtime/pkg/schedule"
 	"go.uber.org/zap"
 	"go.uber.org/zap/exp/zapslog"
@@ -1132,7 +1132,7 @@ func (c *Controller) markPending(n *runtimev1.ResourceName) (skip bool, err erro
 			// If it's pending, we know all its descendents are also pending.
 			// We still need to traverse it to know if any of its descendents are running, but can skip that if we already know a descendent is running (minor optimization).
 			if descendentRunning {
-				return dag2.ErrSkip
+				return dag.ErrSkip
 			}
 			return nil
 		case runtimev1.ReconcileStatus_RECONCILE_STATUS_RUNNING:
@@ -1144,7 +1144,7 @@ func (c *Controller) markPending(n *runtimev1.ResourceName) (skip bool, err erro
 			inv.cancel(false)                        // False means it will go IDLE, but with n in the waitlist it will be marked PENDING again in the next iteration.
 			inv.addToWaitlist(n, r.Meta.SpecVersion) // Ensures n will get revisited when the cancellation is done.
 			descendentRunning = true
-			return dag2.ErrSkip // No need to traverse its children - we know they're all pending.
+			return dag.ErrSkip // No need to traverse its children - we know they're all pending.
 		default:
 			panic(fmt.Errorf("internal: unexpected status %v", dr.Meta.ReconcileStatus))
 		}

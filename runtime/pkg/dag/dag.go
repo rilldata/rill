@@ -1,198 +1,229 @@
 package dag
 
 import (
-	"container/list"
+	"errors"
 	"fmt"
-
-	"github.com/rilldata/rill/runtime/pkg/arrayutil"
-	"golang.org/x/exp/slices"
 )
 
-// DAG is a simple implementation of a directed acyclic graph.
-type DAG struct {
-	NameMap map[string]*Node
+// DAG implements a directed acyclic graph.
+// Its implementation tracks unresolved references and resolves them if possible when new vertices are added.
+// The implementation is not thread safe and panics if used incorrectly.
+// It's based on the implementation in runtime/pkg/dag and should replace it when that package is no longer used.
+type DAG[K comparable, V any] struct {
+	hash     func(V) K
+	vertices map[K]*vertex[K, V]
 }
 
-func NewDAG() *DAG {
-	return &DAG{
-		NameMap: make(map[string]*Node),
+// New initializes a DAG.
+func New[K comparable, V any](hash func(V) K) DAG[K, V] {
+	return DAG[K, V]{
+		hash:     hash,
+		vertices: make(map[K]*vertex[K, V]),
 	}
 }
 
-type Node struct {
-	Name     string
-	Present  bool
-	Parents  map[string]*Node
-	Children map[string]*Node
+type vertex[K comparable, V any] struct {
+	val      V
+	present  bool // True if added directly, false if only referenced by other vertices.
+	parents  map[K]*vertex[K, V]
+	children map[K]*vertex[K, V]
 }
 
-func (d *DAG) Add(name string, dependants []string) (*Node, error) {
-	n := d.getNode(name)
-	n.Present = true
-
-	dependantMap := make(map[string]bool)
-	for _, dependant := range dependants {
-		childrens := d.GetDeepChildren(name)
-		ok := slices.Contains(childrens, dependant)
-		if ok {
-			return nil, fmt.Errorf("encountered circular dependency between %q and %q", name, dependant)
-		}
-
-		dependantMap[dependant] = true
-	}
-
-	for _, parent := range n.Parents {
-		ok := dependantMap[parent.Name]
-		if ok {
-			delete(dependantMap, parent.Name)
-		} else {
-			d.removeChild(parent, name)
-			delete(n.Parents, parent.Name)
-		}
-	}
-
-	for newParent := range dependantMap {
-		n.Parents[newParent] = d.addChild(newParent, n)
-	}
-
-	return n, nil
-}
-
-func (d *DAG) Delete(name string) {
-	n := d.getNode(name)
-	n.Present = false
-	d.deleteBranch(n)
-}
-
-// GetDeepChildren will go down the DAG and get all children in the subtree
-func (d *DAG) GetDeepChildren(name string) []string {
-	children := make([]string, 0)
-
-	n, ok := d.NameMap[name]
+// Add adds a vertex to the DAG.
+// It returns false if adding the vertex would create a cycle.
+// It panics if the vertex is already present.
+func (d DAG[K, V]) Add(val V, parentVals ...V) bool {
+	k := d.hash(val)
+	v, ok := d.vertices[k]
 	if !ok {
-		return []string{}
+		v = &vertex[K, V]{val: val}
 	}
 
-	visited := make(map[string]*Node)
-	// queue of the nodes to visit
-	queue := list.New()
-	queue.PushBack(n)
-	// add the root node to the map of the visited nodes
-	visited[n.Name] = n
+	if v.present {
+		panic(fmt.Errorf("dag: vertex is already present: %v", val))
+	}
 
-	for queue.Len() > 0 {
-		qnode := queue.Front()
-		// iterate through all of its neighbors
-		// mark the visited nodes; enqueue the non-visited
-		for child, node := range qnode.Value.(*Node).Children {
-			if _, ok := visited[child]; !ok {
-				children = append(children, child)
-				visited[child] = node
-				queue.PushBack(node)
+	// If no parents, no need to link or check for cyclic refs.
+	if len(parentVals) == 0 {
+		d.vertices[k] = v
+		v.present = true
+		return true
+	}
+
+	// Build parents map partially (not linked yet).
+	// In the optimistic case, this avoids allocating a redundant parent map for the cycles check.
+	parents := make(map[K]*vertex[K, V], len(parentVals))
+	for _, pv := range parentVals {
+		pk := d.hash(pv)
+		p, ok := d.vertices[pk]
+		if !ok {
+			p = &vertex[K, V]{val: pv}
+		}
+		// Note: not adding to d.vertices until after checks.
+		parents[pk] = p
+	}
+
+	// Check for cycles (there may be existing non-present references to it).
+	if len(v.children) > 0 {
+		visited := make(map[K]bool, len(v.children))
+		found := false
+		_ = d.visit(v, visited, func(ck K, c V) error {
+			_, found = parents[ck]
+			if found {
+				return ErrStop
 			}
+			return nil
+		})
+		if found {
+			return false
 		}
-		queue.Remove(qnode)
 	}
 
-	return children
+	// Link everything
+	d.vertices[k] = v
+	v.present = true
+	v.parents = parents
+	for pk, p := range parents {
+		d.vertices[pk] = p // If it's already there, it's harmless.
+		if p.children == nil {
+			p.children = make(map[K]*vertex[K, V])
+		}
+		p.children[k] = v
+	}
+
+	return true
 }
 
-func (d *DAG) TopologicalSort() []string {
-	visited := make(map[string]bool)
-	stack := make([]string, 0)
-
-	for _, node := range d.NameMap {
-		if visited[node.Name] {
-			continue
-		}
-		stack = d.topologicalSortHelper(node, visited, stack)
+// Remove removes a vertex from the DAG.
+// It panics if the vertex is not present.
+func (d DAG[K, V]) Remove(val V) {
+	k := d.hash(val)
+	v, ok := d.vertices[k]
+	if !ok || !v.present {
+		panic(fmt.Errorf("dag: vertex not found: %v", val))
 	}
 
-	arrayutil.Reverse(stack)
-	return stack
+	for pk, p := range v.parents {
+		if len(p.children) == 1 && !p.present {
+			delete(d.vertices, pk)
+		} else {
+			delete(p.children, k)
+		}
+		delete(v.parents, pk)
+	}
+
+	if len(v.children) > 0 {
+		v.present = false
+	} else {
+		delete(d.vertices, k)
+	}
 }
 
-// GetChildren only returns the immediate children
-func (d *DAG) GetChildren(name string) []string {
-	n, ok := d.NameMap[name]
-	if !ok {
-		return []string{}
-	}
-	children := make([]string, 0)
-	for childName, childNode := range n.Children {
-		if !childNode.Present {
+// Roots return the vertices that have no parents.
+// Vertices with non-present references are not returned.
+func (d DAG[K, V]) Roots() []V {
+	var roots []V
+	for _, v := range d.vertices {
+		if !v.present {
 			continue
 		}
-		children = append(children, childName)
+		if len(v.parents) == 0 {
+			roots = append(roots, v.val)
+		}
 	}
-	return children
+	return roots
 }
 
-// GetParents only returns the immediate parents
-func (d *DAG) GetParents(name string) []string {
-	n := d.getNode(name)
-	parents := make([]string, 0)
-	for _, parent := range n.Parents {
-		if !parent.Present {
-			continue
-		}
-		parents = append(parents, parent.Name)
+// Parents returns the parents of the given value.
+// If present is true, only parents that are present are returned.
+func (d DAG[K, V]) Parents(val V, present bool) []V {
+	k := d.hash(val)
+	v, ok := d.vertices[k]
+	if !ok || !v.present {
+		panic(fmt.Errorf("dag: vertex not found: %v", val))
 	}
+
+	parents := make([]V, 0, len(v.parents))
+	for _, p := range v.parents {
+		if !present || p.present {
+			parents = append(parents, p.val)
+		}
+	}
+
 	return parents
 }
 
-func (d *DAG) Has(name string) bool {
-	_, ok := d.NameMap[name]
-	return ok
+// Children returns the children of the given value.
+func (d DAG[K, V]) Children(val V) []V {
+	k := d.hash(val)
+	v, ok := d.vertices[k]
+	if !ok || !v.present {
+		panic(fmt.Errorf("dag: vertex not found: %v", val))
+	}
+
+	children := make([]V, 0, len(v.children))
+	for _, c := range v.children {
+		// Children always have present=true.
+		children = append(children, c.val)
+	}
+
+	return children
 }
 
-func (d *DAG) addChild(name string, child *Node) *Node {
-	n := d.getNode(name)
-	n.Children[child.Name] = child
-	return n
+// Descendents returns the recursive children of the given value.
+func (d DAG[K, V]) Descendents(val V) []V {
+	var children []V
+	_ = d.Visit(val, func(k K, v V) error {
+		children = append(children, v)
+		return nil
+	})
+	return children
 }
 
-func (d *DAG) removeChild(node *Node, childName string) {
-	delete(node.Children, childName)
+// VisitFunc is invoked for each node when visiting the DAG.
+// If it returns ErrSkip, the children of the node are not visited.
+// If it returns another error, the visitor is stopped.
+type VisitFunc[K comparable, V any] func(K, V) error
+
+// ErrSkip should be returned by a VisitFunc to skip the children of the visited node.
+var ErrSkip = errors.New("dag: skip")
+
+// ErrStop can be returned by a VisitFunc to signal a stopped visit.
+// It does not carry special meaning in this package since any error other than ErrSkip stops a visit.
+var ErrStop = errors.New("dag: stop")
+
+// Visit recursively visits the children of the given value.
+// If the visitor function returns true, the visit is stopped.
+func (d DAG[K, V]) Visit(val V, fn VisitFunc[K, V]) error {
+	k := d.hash(val)
+	v, ok := d.vertices[k]
+	if !ok || !v.present {
+		panic(fmt.Errorf("dag: vertex not found: %v", val))
+	}
+
+	if len(v.children) == 0 {
+		return nil
+	}
+
+	visited := make(map[K]bool, len(v.children))
+	return d.visit(v, visited, fn)
 }
 
-func (d *DAG) getNode(name string) *Node {
-	n, ok := d.NameMap[name]
-	if !ok {
-		n = &Node{
-			Name:     name,
-			Parents:  make(map[string]*Node),
-			Children: make(map[string]*Node),
+func (d DAG[K, V]) visit(v *vertex[K, V], visited map[K]bool, fn VisitFunc[K, V]) error {
+	for ck, c := range v.children {
+		if !visited[ck] {
+			visited[ck] = true
+			err := fn(ck, c.val)
+			if err == nil {
+				err = d.visit(c, visited, fn)
+			}
+			if err != nil {
+				if errors.Is(err, ErrSkip) {
+					continue
+				}
+				return err
+			}
 		}
-		d.NameMap[name] = n
 	}
-	return n
-}
-
-func (d *DAG) deleteBranch(n *Node) {
-	if n.Present || len(n.Children) > 0 {
-		return
-	}
-
-	for _, parent := range n.Parents {
-		d.removeChild(parent, n.Name)
-		d.deleteBranch(parent)
-	}
-
-	delete(d.NameMap, n.Name)
-}
-
-func (d *DAG) topologicalSortHelper(n *Node, visited map[string]bool, stack []string) []string {
-	visited[n.Name] = true
-
-	for _, childNode := range n.Children {
-		if visited[childNode.Name] {
-			continue
-		}
-		stack = d.topologicalSortHelper(childNode, visited, stack)
-	}
-
-	stack = append(stack, n.Name)
-
-	return stack
+	return nil
 }
