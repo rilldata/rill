@@ -12,7 +12,7 @@ export function createUpdateMetricsCallback(
 ): (event: CustomEvent) => void {
   const debounce = createDebouncer();
 
-  const reconcile = createRuntimeServicePutFile();
+  const fileSaver = createRuntimeServicePutFile();
 
   async function reconcileNewMetricsContent(blob: string) {
     const instanceId = get(runtime).instanceId;
@@ -20,7 +20,7 @@ export function createUpdateMetricsCallback(
       metricsDefName,
       EntityType.MetricsDefinition
     );
-    return get(reconcile).mutateAsync({
+    await get(fileSaver).mutateAsync({
       instanceId,
       path: filePath,
       data: {

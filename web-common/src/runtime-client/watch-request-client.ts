@@ -22,6 +22,9 @@ type StreamingFetchResponse<Res extends WatchResponse> = {
 export class WatchRequestClient<Res extends WatchResponse> {
   private controller: AbortController;
 
+  private prevInstanceId: string;
+  private prevHost: string;
+
   public constructor(
     private readonly getUrl: (runtime: Runtime) => string,
     private readonly onResponse: (res: Res) => void | Promise<void>,
@@ -31,6 +34,15 @@ export class WatchRequestClient<Res extends WatchResponse> {
 
   public start(): Unsubscriber {
     const unsubscribe = runtime.subscribe((runtimeState) => {
+      if (
+        runtimeState.instanceId === this.prevInstanceId &&
+        runtimeState.host === this.prevHost
+      ) {
+        return;
+      }
+      this.prevInstanceId = runtimeState.instanceId;
+      this.prevHost = runtimeState.host;
+
       this.controller?.abort();
       if (!runtimeState?.instanceId) return;
 

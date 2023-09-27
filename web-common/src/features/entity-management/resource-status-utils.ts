@@ -8,7 +8,7 @@ import {
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/svelte-query";
-import { derived, Readable } from "svelte/store";
+import { derived, Readable, Unsubscriber } from "svelte/store";
 
 export enum ResourceStatus {
   Idle,
@@ -56,13 +56,15 @@ export function waitForResource(
   filePath: string
 ) {
   return new Promise<void>((resolve) => {
-    const unsub = initialResourceStatusStore(
+    let unsub: Unsubscriber;
+    // eslint-disable-next-line prefer-const
+    unsub = initialResourceStatusStore(
       queryClient,
       instanceId,
       filePath
     ).subscribe((status) => {
       if (status === ResourceStatus.Busy) return;
-      unsub();
+      unsub?.();
       resolve();
     });
   });
