@@ -18,6 +18,7 @@
   } from "@rilldata/web-common/features/sources/selectors";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
@@ -100,7 +101,7 @@
     }
   };
 
-  const handleCreateDashboardFromSource = (sourceName: string) => {
+  const handleCreateDashboardFromSource = async (sourceName: string) => {
     overlay.set({
       title: "Creating a dashboard for " + sourceName,
     });
@@ -109,6 +110,7 @@
       `${sourceName}_dashboard`,
       $dashboardNames.data
     );
+    await waitUntil(() => !!$sourceQuery.data);
     $createDashboardFromSourceMutation.mutate(
       {
         data: {

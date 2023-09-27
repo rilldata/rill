@@ -15,7 +15,7 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
-  import { asyncWait, waitUntil } from "@rilldata/web-common/lib/waitUtils";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {

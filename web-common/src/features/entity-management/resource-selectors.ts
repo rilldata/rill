@@ -7,7 +7,6 @@ import {
   V1Resource,
   V1SourceV2,
 } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
 
 export enum ResourceKind {
