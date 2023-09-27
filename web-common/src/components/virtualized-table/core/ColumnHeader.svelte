@@ -56,19 +56,6 @@
   $: columnFontWeight = isSelected
     ? "font-bold"
     : config.columnHeaderFontWeightClass;
-
-  function expandArrowDiv(node, { delay = 0, duration = 100 }) {
-    const w = 12;
-
-    return {
-      delay,
-      duration,
-      css: (t) => {
-        let c = `width: ${t * w}px;`;
-        return c;
-      },
-    };
-  }
 </script>
 
 <StickyHeader
@@ -182,7 +169,7 @@
     </Tooltip>
 
     {#if sorted}
-      <div class="mt-0.5 ui-copy-icon" in:expandArrowDiv out:expandArrowDiv>
+      <div class="mt-0.5 ui-copy-icon">
         {#if sorted === SortDirection.DESCENDING}
           <div in:fly={{ duration: 200, y: -8 }} style:opacity={1}>
             <ArrowDown size="12px" />
