@@ -1,5 +1,7 @@
 import DeltaChange from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChange.svelte";
 import DeltaChangePercentage from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChangePercentage.svelte";
+import PercentOfTotal from "./PercentOfTotal.svelte";
+
 import { PERC_DIFF } from "../../../components/data-types/type-utils";
 import type {
   MetricsViewDimension,
@@ -14,10 +16,9 @@ import {
   formatMeasurePercentageDifference,
   humanizeDimTableValue,
 } from "../humanize-numbers";
-import PercentOfTotal from "./PercentOfTotal.svelte";
 import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
 import type { VirtualizedTableConfig } from "@rilldata/web-common/components/virtualized-table/types";
-// import type { DimensionTableColumnMetadata } from "./dimension-table-types";
+
 import type { SvelteComponent } from "svelte";
 import { getDimensionColumn } from "../dashboard-utils";
 import type { DimensionTableRow } from "./dimension-table-types";
@@ -365,7 +366,6 @@ export function prepareDimensionTableRows(
   unfilteredTotal: number
 ): DimensionTableRow[] {
   if (!queryRows || !queryRows.length) return [];
-  // console.log("queryRows", queryRows);
 
   const formatMap = Object.fromEntries(
     measures.map((m) => [m.name, m.format as FormatPreset])
@@ -420,7 +420,6 @@ export function prepareDimensionTableRows(
 
     return rowOut;
   });
-  // console.log("tableRows", tableRows);
   return tableRows;
 }
 

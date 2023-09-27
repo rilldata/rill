@@ -166,8 +166,6 @@
     unfilteredTotal
   );
 
-  ////////////////////////////
-
   function onSelectItem(event) {
     const label = newRows[event.detail][dimensionColumn] as string;
     cancelDashboardQueries(queryClient, metricViewName);

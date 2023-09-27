@@ -1,6 +1,3 @@
-// import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
-// import type { SvelteComponent } from "svelte";
-
 import type { PERC_DIFF } from "@rilldata/web-common/components/data-types/type-utils";
 import type { NumberParts } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 

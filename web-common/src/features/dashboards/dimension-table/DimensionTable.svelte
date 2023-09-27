@@ -23,7 +23,6 @@ TableCells – the cell contents.
   export let rows: DimensionTableRow[];
   export let columns: VirtualizedTableColumns[];
   export let selectedValues: Array<unknown> = [];
-  // export let selectedIndex2: number[] = [];
 
   export let sortByColumn: string;
   export let sortAscending: boolean;
@@ -39,7 +38,6 @@ TableCells – the cell contents.
   export let columnOverscanAmount = 5;
 
   let rowVirtualizer;
-  // let columnVirtualizer;
   let container;
   let virtualRows;
   let virtualColumns: VirtualItem[];
@@ -126,8 +124,6 @@ TableCells – the cell contents.
     paddingStart: estimateColumnSize[0] + FILTER_COLUMN_WIDTH,
     initialOffset: colScrollOffset,
   });
-
-  $: svirtualColumns = $columnVirtualizer.getVirtualItems();
 
   $: if (rowVirtualizer) {
     virtualRows = $rowVirtualizer.getVirtualItems();

@@ -27,7 +27,6 @@
   import {
     LeaderboardItemData,
     getLabeledComparisonFromComparisonRow,
-    // getQuerySortType,
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
   import LeaderboardListItem from "./LeaderboardListItem.svelte";
