@@ -444,6 +444,24 @@ func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, 
 	return mv, resolvedSecurity, nil
 }
 
+func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, attrs map[string]any) (*runtimev1.MetricsView, *runtime.ResolvedMetricsViewSecurity, error) {
+	mv, lastUpdatedOn, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	resolvedSecurity, err := rt.ResolveMetricsViewSecurity(attrs, instanceID, mv, lastUpdatedOn)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if resolvedSecurity != nil && !resolvedSecurity.Access {
+		return nil, nil, ErrForbidden
+	}
+
+	return mv, resolvedSecurity, nil
+}
+
 // returns the metrics view and the time the catalog was last updated
 func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.MetricsViewSpec, time.Time, error) {
 	ctrl, err := rt.Controller(instanceID)

@@ -25,10 +25,19 @@ export function compileCreateSourceYAML(
     case "s3":
     case "gcs":
     case "https":
+    case "azure":
     case "local_file":
       connectorName = "duckdb";
       values.sql = buildDuckDbQuery(values.path as string);
       delete values.path;
+      break;
+    case "sqlite":
+      connectorName = "duckdb";
+      values.sql = `SELECT * FROM sqlite_scan('${values.db as string}', '${
+        values.table as string
+      }');`;
+      delete values.db;
+      delete values.table;
       break;
   }
 

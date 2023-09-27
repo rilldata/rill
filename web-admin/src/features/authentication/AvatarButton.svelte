@@ -10,18 +10,25 @@
   import { createPopperActions } from "svelte-popperjs";
   import { createAdminServiceGetCurrentUser } from "../../client";
   import { ADMIN_URL } from "../../client/http-client";
-  import ProjectAccessControls from "../../features/projects/ProjectAccessControls.svelte";
-  import ViewAsUserMenuItem from "../../features/view-as-user/ViewAsUserMenuItem.svelte";
+  import ProjectAccessControls from "../projects/ProjectAccessControls.svelte";
+  import ViewAsUserMenuItem from "../view-as-user/ViewAsUserMenuItem.svelte";
 
   const user = createAdminServiceGetCurrentUser();
+
+  function handleDocumentation() {
+    window.open("https://docs.rilldata.com", "_blank");
+  }
+
+  function handleAskForHelp() {
+    window.open(
+      "https://discord.com/invite/ngVV4KzEGv?utm_source=rill&utm_medium=rill-cloud-avatar-menu",
+      "_blank"
+    );
+  }
 
   function handleLogOut() {
     const loginWithRedirect = `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`;
     window.location.href = `${ADMIN_URL}/auth/logout?redirect=${loginWithRedirect}`;
-  }
-
-  function handleDocumentation() {
-    window.open("https://docs.rilldata.com", "_blank");
   }
 
   const isDev = process.env.NODE_ENV === "development";
@@ -43,7 +50,7 @@
     <img
       src={$user.data?.user?.photoUrl}
       alt="avatar"
-      class="h-7 rounded-full cursor-pointer"
+      class="h-7 inline-flex items-center rounded-full cursor-pointer"
       referrerpolicy={isDev ? "no-referrer" : ""}
     />
   </PopoverButton>
@@ -51,7 +58,7 @@
     use={[popperRef2, [popperContent1, popperOptions1]]}
     class="max-w-fit absolute z-[1000]"
   >
-    <Menu minWidth="0px" focusOnMount={false}>
+    <Menu minWidth="0px" focusOnMount={false} paddingBottom={0} paddingTop={0}>
       {#if $page.params.organization && $page.params.project && $page.params.dashboard}
         <ProjectAccessControls
           organization={$page.params.organization}
@@ -67,16 +74,21 @@
       {/if}
 
       <MenuItem
-        on:select={() => {
-          // handleClose();
-          handleLogOut();
-        }}>Logout</MenuItem
-      >
-      <MenuItem
+        focusOnMount={false}
         on:select={() => {
           // handleClose();
           handleDocumentation();
         }}>Documentation</MenuItem
+      >
+      <MenuItem focusOnMount={false} on:select={() => handleAskForHelp()}
+        >Ask for help</MenuItem
+      >
+      <MenuItem
+        focusOnMount={false}
+        on:select={() => {
+          // handleClose();
+          handleLogOut();
+        }}>Logout</MenuItem
       >
     </Menu>
   </PopoverPanel>

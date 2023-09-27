@@ -1,13 +1,10 @@
 <script lang="ts">
   export let checked = false;
   export let id: string = undefined;
-  export let showBgOnHover = true;
 </script>
 
 <button
-  class="py-1 px-2 rounded flex gap-x-2 cursor-pointer select-none
-  {showBgOnHover ? 'hover:bg-gray-200' : ''}
-"
+  class="rounded flex gap-x-2 cursor-pointer select-none text-gray-700"
   on:click
 >
   <slot name="left" />
@@ -17,6 +14,7 @@
       m-0
       dark:transparent
       checked:bg-gray-700 dark:checked:bg-gray-400
+      cursor-pointer
     "
     role="switch"
     type="checkbox"

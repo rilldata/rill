@@ -7,11 +7,14 @@
   import { createEventDispatcher } from "svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import AmazonS3 from "../../../components/icons/connectors/AmazonS3.svelte";
+  import MicrosoftAzureBlobStorage from "../../../components/icons/connectors/MicrosoftAzureBlobStorage.svelte";
   import GoogleBigQuery from "../../../components/icons/connectors/GoogleBigQuery.svelte";
   import GoogleCloudStorage from "../../../components/icons/connectors/GoogleCloudStorage.svelte";
   import Https from "../../../components/icons/connectors/HTTPS.svelte";
   import LocalFile from "../../../components/icons/connectors/LocalFile.svelte";
   import MotherDuck from "../../../components/icons/connectors/MotherDuck.svelte";
+  import Postgres from "../../../components/icons/connectors/Postgres.svelte";
+  import SQLite from "../../../components/icons/connectors/SQLite.svelte";
   import { appScreen } from "../../../layout/app-store";
   import { behaviourEvent } from "../../../metrics/initMetrics";
   import {
@@ -22,6 +25,7 @@
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RemoteSourceForm from "./RemoteSourceForm.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
+  import AmazonAthena from "@rilldata/web-common/components/icons/connectors/AmazonAthena.svelte";
 
   export let open: boolean;
 
@@ -32,12 +36,13 @@
   const TAB_ORDER = [
     "gcs",
     "s3",
-    // azure_blob_storage
+    "azure",
     // duckdb
     "bigquery",
-    // athena
+    "athena",
     "motherduck",
-    // postgres
+    "postgres",
+    "sqlite",
     "local_file",
     "https",
   ];
@@ -45,12 +50,13 @@
   const ICONS = {
     gcs: GoogleCloudStorage,
     s3: AmazonS3,
-    // azure_blob_storage: MicrosoftAzureBlobStorage,
+    azure: MicrosoftAzureBlobStorage,
     // duckdb: DuckDB,
     bigquery: GoogleBigQuery,
-    // athena: AmazonAthena,
+    athena: AmazonAthena,
     motherduck: MotherDuck,
-    // postgres: Postgres,
+    postgres: Postgres,
+    sqlite: SQLite,
     local_file: LocalFile,
     https: Https,
   };
@@ -61,9 +67,14 @@
       select: (data) => {
         data.connectors =
           data.connectors &&
-          data.connectors.sort(
-            (a, b) => TAB_ORDER.indexOf(a.name) - TAB_ORDER.indexOf(b.name)
-          );
+          data.connectors
+            .filter(
+              // Only show connectors in TAB_ORDER
+              (a) => TAB_ORDER.indexOf(a.name) >= 0
+            )
+            .sort(
+              (a, b) => TAB_ORDER.indexOf(a.name) - TAB_ORDER.indexOf(b.name)
+            );
         return data;
       },
     },

@@ -29,6 +29,8 @@ var ErrNotFound = errors.New("driver: not found")
 // ErrDropNotSupported indicates the driver doesn't support dropping its underlying store.
 var ErrDropNotSupported = errors.New("driver: drop not supported")
 
+var ErrNotImplemented = errors.New("driver: not implemented")
+
 // Drivers is a registry of drivers.
 var Drivers = make(map[string]Driver)
 
@@ -77,6 +79,9 @@ type Driver interface {
 
 	// HasAnonymousSourceAccess returns true if external system can be accessed without credentials
 	HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error)
+
+	// TertiarySourceConnectors returns a list of connectors required to resolve a source, excluding the source and sink connectors.
+	TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error)
 }
 
 // Handle represents a connection to an underlying DB.

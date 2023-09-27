@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import CopyIcon from "@rilldata/web-common/components/icons/CopyIcon.svelte";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
 
   export let command: string;
 
@@ -27,7 +27,7 @@
     on:keydown={copyCommand}
   >
     {#if copied}
-      <Check size="16px" />
+      <Check size="14px" />
     {:else}
       <CopyIcon color="gray-400" size="14px" />
     {/if}

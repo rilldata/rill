@@ -469,7 +469,8 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 		// Proxy request to rill intake
 		proxyReq, err := http.NewRequest(r.Method, "https://intake.rilldata.io/events/data-modeler-metrics", r.Body)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadGateway)
+			a.BaseLogger.Info("failed to create telemetry request", zap.Error(err))
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 
@@ -481,7 +482,8 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 		// Send proxied request
 		resp, err := http.DefaultClient.Do(proxyReq)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadGateway)
+			a.BaseLogger.Info("failed to send telemetry", zap.Error(err))
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 		defer resp.Body.Close()

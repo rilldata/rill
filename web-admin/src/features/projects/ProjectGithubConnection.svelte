@@ -14,6 +14,7 @@
   $: repoName =
     $proj.data?.project?.githubUrl &&
     getRepoNameFromGithubUrl($proj.data.project.githubUrl);
+  $: subpath = $proj.data?.project?.subpath;
 </script>
 
 {#if $proj.data}
@@ -21,31 +22,41 @@
     <span class="uppercase text-gray-500 font-semibold text-[10px] leading-4"
       >Github</span
     >
-    <div>
-      {#if isGithubConnected}
-        <a
-          href={$proj.data?.project?.githubUrl}
-          class="flex items-center gap-x-1 text-gray-800 flex-1 truncate"
-          target="_blank"
-          rel="noreferrer"
-        >
-          <Github className="inline-block w-4 h-4" />
-          <span class="font-semibold text-[12px] leading-5 font-mono truncate">
-            {repoName}
-          </span>
-        </a>
-      {:else}
-        <Tooltip alignment="start" distance={4}>
-          <div class="flex items-center gap-x-1">
-            <AlertCircleOutline className="text-red-400" size={"16px"} />
-            <span>Not connected to a repository</span>
-          </div>
-          <TooltipContent slot="tooltip-content" maxWidth="300px"
-            >This project is no longer connected to a Github repository. This is
-            how we ensure this project is up to date.</TooltipContent
+    {#if isGithubConnected}
+      <div class="flex items-start gap-x-1">
+        <div class="py-0.5">
+          <Github className="w-4 h-4" />
+        </div>
+        <div class="flex flex-col">
+          <a
+            href={$proj.data?.project?.githubUrl}
+            class="text-gray-800 text-[12px] font-semibold font-mono leading-5 truncate"
+            target="_blank"
+            rel="noreferrer"
           >
-        </Tooltip>
-      {/if}
-    </div>
+            {repoName}
+          </a>
+          {#if subpath}
+            <div class="flex items-center">
+              <span class="font-mono">subpath</span>
+              <span class="text-gray-800">
+                : /{subpath}
+              </span>
+            </div>
+          {/if}
+        </div>
+      </div>
+    {:else}
+      <Tooltip alignment="start" distance={4}>
+        <div class="flex items-center gap-x-1">
+          <AlertCircleOutline className="text-red-400" size={"16px"} />
+          <span>Not connected to a repository</span>
+        </div>
+        <TooltipContent slot="tooltip-content" maxWidth="300px"
+          >This project is no longer connected to a Github repository. This is
+          how we ensure this project is up to date.</TooltipContent
+        >
+      </Tooltip>
+    {/if}
   </div>
 {/if}
