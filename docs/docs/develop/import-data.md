@@ -61,7 +61,7 @@ For details about all available properties for all remote connectors, see the sy
 
 ## Authenticating remote sources
 
-Rill requires credentials to connect to remote data sources such as private buckets in S3 or GCS.
+Rill requires credentials to connect to remote data sources such as private buckets in S3, GCS or Azure.
 
 When running Rill locally, Rill attempts to find existing credentials configured on your computer. When deploying projects to Rill Cloud, you must explicitly provide service account credentials with correct access permissions.
 
@@ -113,6 +113,32 @@ If you do not have the AWS CLI installed and authenticated, follow these steps:
     ```
 
 You have now configured AWS access from your local environment. Rill will detect and use your credentials next time you try to ingest a source.
+
+### Configure credentials for Azure blob storage
+
+<!-- WARNING: There are links to this heading in source code. If you change it, find and replace the links. -->
+
+Rill uses the credentials configured in your local environment using the Azure CLI (`az`). Follow these steps to configure it:
+
+1. Open a terminal window and run the following command to check if you already have the Azure CLI installed and authenticated:
+
+    ```bash
+    az account show
+    ```
+
+2. If it did not display information about your Azure account, you can [install the Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) if it is not already installed on your system.
+
+3. After installing the Azure CLI, run the following command to authenticate with your Azure account:
+
+    ```bash
+    az login
+    ```
+
+    Follow the on-screen instructions to complete the login process.
+
+    > If no web browser is available or the web browser fails to open, you may force device code flow with `az login --use-device-code`.
+
+You have now configured Azure access from your local environment. Rill will detect and use your credentials the next time you interact with Azure services.
 
 ### Configure credentials for MotherDuck service
 
