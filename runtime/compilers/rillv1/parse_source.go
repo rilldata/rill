@@ -87,9 +87,13 @@ func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 		return fmt.Errorf("encountered invalid property type: %w", err)
 	}
 
-	// Upsert source (in practice, this will always be an insert)
-	// NOTE: After calling upsertResource, an error must not be returned. Any validation should be done before calling it.
-	r := p.upsertResource(ResourceKindSource, node.Name, node.Paths, node.Refs...)
+	// Track source
+	r, err := p.insertResource(ResourceKindSource, node.Name, node.Paths, node.Refs...)
+	if err != nil {
+		return err
+	}
+	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
+
 	r.SourceSpec.Properties = mergeStructPB(r.SourceSpec.Properties, props)
 	r.SourceSpec.SinkConnector = p.DefaultConnector // Sink connector not currently configurable
 	if node.Connector != "" {

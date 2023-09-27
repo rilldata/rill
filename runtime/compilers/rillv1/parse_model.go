@@ -87,10 +87,13 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		}
 	}
 
-	// NOTE: After calling upsertResource, an error must not be returned. Any validation should be done before calling it.
+	// Insert the model
+	r, err := p.insertResource(ResourceKindModel, node.Name, node.Paths, refs...)
+	if err != nil {
+		return err
+	}
+	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
-	// Upsert the model
-	r := p.upsertResource(ResourceKindModel, node.Name, node.Paths, refs...)
 	if node.SQL != "" {
 		r.ModelSpec.Sql = strings.TrimSpace(node.SQL)
 		r.ModelSpec.UsesTemplating = node.SQLUsesTemplating

@@ -359,8 +359,7 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 // parsePaths is the internal entrypoint for parsing a list of paths.
 // It assumes that the caller has already checked that the paths exist.
 // It also assumes that the caller has already removed any previous resources related to the paths,
-// enabling parsePaths to upsert changes, enabling multiple files to provide data for one resource
-// (like "my-model.sql" and "my-model.yaml").
+// enabling parsePaths to insert changed resources without conflicts.
 func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 	// Check limits
 	if len(paths) > maxFiles {
@@ -419,7 +418,7 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 		if r.Name.Kind == ResourceKindSource {
 			n := ResourceName{Kind: ResourceKindModel, Name: r.Name.Name}.Normalized()
 			if _, ok := p.Resources[n]; ok {
-				modelsWithNameErrs[n.Normalized()] = r.Name.Name
+				modelsWithNameErrs[n] = r.Name.Name
 			}
 		} else if r.Name.Kind == ResourceKindModel {
 			n := ResourceName{Kind: ResourceKindSource, Name: r.Name.Name}.Normalized()
@@ -573,89 +572,70 @@ func (p *Parser) inferUnspecifiedRefs(r *Resource) {
 	r.Refs = refs
 }
 
-// upsertResource inserts or updates a resource in the parser's internal state.
-// Upserting is required since both a YAML and SQL file may contribute information to the same resource.
-// After calling upsertResource, the caller can modify the returned resource's spec, and should be cautious with overriding values that may have been set from another file.
-func (p *Parser) upsertResource(kind ResourceKind, name string, paths []string, refs ...ResourceName) *Resource {
+// insertResource inserts a resource in the parser's internal state.
+// After calling insertResource, the caller can directly modify the returned resource's spec.
+func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, refs ...ResourceName) (*Resource, error) {
 	// Create the resource if not already present (ensures the spec for its kind is never nil)
 	rn := ResourceName{Kind: kind, Name: name}
-	r, ok := p.Resources[rn.Normalized()]
+	_, ok := p.Resources[rn.Normalized()]
 	if ok {
-		// Track in updatedResources, unless it's in insertedResources
+		return nil, fmt.Errorf("name collision: another resource of kind %q is also named %q", rn.Kind, rn.Name)
+	}
+
+	// Dedupe refs (it's not guaranteed by the upstream logic).
+	// Doing a simple dedupe because there usually aren't many refs.
+	var dedupedRefs []ResourceName
+	for _, ref := range refs {
 		found := false
-		for _, ir := range p.insertedResources {
-			if ir.Name.Normalized() == rn.Normalized() {
+		for _, existing := range dedupedRefs {
+			if ref.Normalized() == existing.Normalized() {
 				found = true
 				break
 			}
 		}
 		if !found {
-			for _, ur := range p.updatedResources {
-				if ur.Name.Normalized() == rn.Normalized() {
-					found = true
-					break
-				}
-			}
-			if !found {
-				p.updatedResources = append(p.updatedResources, r)
-			}
-		}
-	} else {
-		// Create new resource and track in insertedResources
-		r = &Resource{Name: rn}
-		p.Resources[rn.Normalized()] = r
-		p.insertedResources = append(p.insertedResources, r)
-		switch kind {
-		case ResourceKindSource:
-			r.SourceSpec = &runtimev1.SourceSpec{}
-		case ResourceKindModel:
-			r.ModelSpec = &runtimev1.ModelSpec{}
-		case ResourceKindMetricsView:
-			r.MetricsViewSpec = &runtimev1.MetricsViewSpec{}
-		case ResourceKindMigration:
-			r.MigrationSpec = &runtimev1.MigrationSpec{}
-		default:
-			panic(fmt.Errorf("unexpected resource kind: %s", kind.String()))
+			dedupedRefs = append(dedupedRefs, ref)
 		}
 	}
+	refs = dedupedRefs
 
-	// Index paths if not already present
+	// Create new resource
+	r := &Resource{
+		Name:    rn,
+		Paths:   paths,
+		rawRefs: refs,
+	}
+	switch kind {
+	case ResourceKindSource:
+		r.SourceSpec = &runtimev1.SourceSpec{}
+	case ResourceKindModel:
+		r.ModelSpec = &runtimev1.ModelSpec{}
+	case ResourceKindMetricsView:
+		r.MetricsViewSpec = &runtimev1.MetricsViewSpec{}
+	case ResourceKindMigration:
+		r.MigrationSpec = &runtimev1.MigrationSpec{}
+	default:
+		panic(fmt.Errorf("unexpected resource kind: %s", kind.String()))
+	}
+
+	// Track it
+	p.Resources[rn.Normalized()] = r
+	p.insertedResources = append(p.insertedResources, r)
+
+	// Index paths
 	for _, path := range paths {
-		found := false
-		for _, p := range r.Paths {
-			if p == path {
-				found = true
-				break
-			}
-		}
-		if !found {
-			r.Paths = append(r.Paths, path)
-			p.resourcesForPath[path] = append(p.resourcesForPath[path], r)
+		p.resourcesForPath[path] = append(p.resourcesForPath[path], r)
+	}
+
+	// Index unspecified refs in p.resourcesForUnspecifiedRef
+	for _, ref := range refs {
+		if ref.Kind == ResourceKindUnspecified {
+			n := strings.ToLower(ref.Name)
+			p.resourcesForUnspecifiedRef[n] = append(p.resourcesForUnspecifiedRef[n], r)
 		}
 	}
 
-	// Add refs that are not already present
-	for _, refA := range refs {
-		found := false
-		for _, refB := range r.rawRefs {
-			if refA.Normalized() == refB.Normalized() {
-				found = true
-				break
-			}
-		}
-		if !found {
-			// Add to r.rawRefs
-			r.rawRefs = append(r.rawRefs, refA)
-
-			// Index in p.resourcesForUnspecifiedRef
-			if refA.Kind == ResourceKindUnspecified {
-				n := strings.ToLower(refA.Name)
-				p.resourcesForUnspecifiedRef[n] = append(p.resourcesForUnspecifiedRef[n], r)
-			}
-		}
-	}
-
-	return r
+	return r, nil
 }
 
 // deleteResource removes a resource from p.Resources as well as all internal indexes.
