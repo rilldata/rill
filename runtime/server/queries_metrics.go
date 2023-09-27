@@ -444,7 +444,7 @@ func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, 
 	return mv, resolvedSecurity, nil
 }
 
-func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, attrs map[string]any) (*runtimev1.MetricsView, *runtime.ResolvedMetricsViewSecurity, error) {
+func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, attrs map[string]any) (*runtimev1.MetricsViewSpec, *runtime.ResolvedMetricsViewSecurity, error) {
 	mv, lastUpdatedOn, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
 	if err != nil {
 		return nil, nil, err
