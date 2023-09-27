@@ -15,7 +15,8 @@ In your Rill project directory, create a `<source_name>.yaml` file in the `sourc
     - **Note** : Rill also supports ingesting data from other storage providers that support S3 API. Refer to the `endpoint` property below.
   - _`gcs`_ — a file available on google cloud platform.
   - _`local_file`_ — a locally available file.
-  - _`motherduck`_ - data stored in motherduck 
+  - _`motherduck`_ - data stored in motherduck
+  - _`athena`_ - a data store defined in Amazon Athena
 
 **`uri`**
  —  the URI of the remote connector you are using for the source _(required for type: http, s3, gcs)_. Rill also supports glob patterns as part of the URI for S3 and GCS.
@@ -27,12 +28,21 @@ In your Rill project directory, create a `<source_name>.yaml` file in the `sourc
  — the _local path_ of the connector you are using for the source relative to your project's root directory.   _(required for type: file)_
 - _`/path/to/file.csv`_ —  the path to your file
 
+**`sql`**
+- Optionally sets the SQL query to extract data from a SQL source (DuckDB/Motherduck/Athena/BigQuery/Postrgres) 
+
 **`region`**
- — Optionally sets the cloud region of the bucket you want to connect to. Only available for S3.
-  - _`us-east-1`_ —  the cloud region identifer
+ — Optionally sets the cloud region of the bucket or Athena you want to connect to. Only available for S3 and Athena.
+  - _`us-east-1`_ —  the cloud region identifier
 
 **`endpoint`**
  — Optionally overrides the S3 endpoint to connect to. This should only be used to connect to S3-compatible services, such as Cloudflare R2 or MinIO.
+
+**`output_location`**
+- Optionally sets the query output location and result files in Athena (Rill removes the result files but an S3 file retention rule for the output location would make sure no orphaned files are left)
+
+**`workgroup`**
+- Optionally sets a workgroup for Athena connector. The workgroup is also used to determine an output location. A workgroup may override `output_location` if [Override client-side settings](https://docs.aws.amazon.com/athena/latest/ug/workgroups-settings-override.html) is turned on for the workgroup.  
 
 **`glob.max_total_size`**
  — Applicable if the URI is a glob pattern. The max allowed total size (in bytes) of all objects matching the glob pattern.
@@ -60,9 +70,6 @@ In your Rill project directory, create a `<source_name>.yaml` file in the `sourc
     - If both `rows` and `files` are specified, each file matching the `files` clause will be extracted according to the `rows` clause.
     - If only `rows` is specified, no limit on number of files is applied. For example, getting a 1 GB `head` extract will download as many files as necessary.
     - If only `files` is specified, each file will be fully ingested.
-
-**`query`**
- — The query is run against data stored on motherduck account and the results are used as source.
 
 **`db`**
  — Optionally set database for motherduck connector.
