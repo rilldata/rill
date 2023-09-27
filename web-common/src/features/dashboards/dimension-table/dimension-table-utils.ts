@@ -219,7 +219,7 @@ export function estimateColumnSizes(
 export function prepareVirtualizedDimTableColumns(
   allMeasures: MetricsViewMeasure[],
   leaderboardMeasureName: string,
-  referenceValues: { string: number },
+  referenceValues: { [key: string]: number },
   dimension: MetricsViewDimension,
 
   inputColumnNames: string[],
