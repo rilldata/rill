@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 type MetricsViewComparisonToplist struct {
@@ -315,8 +316,11 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 		var columnsTuple string
 		if dialect != drivers.DialectDruid {
 			columnsTuple = fmt.Sprintf(
-				"base.%[1]s, comparison.%[1]s, base.%[1]s - comparison.%[1]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE",
+				"base.%[1]s, comparison.%[1]s AS %[2]s, base.%[1]s - comparison.%[1]s AS %[3]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[4]s",
 				safeName(m.Name),
+				safeName(m.Name+"__previous"),
+				safeName(m.Name+"__delta_abs"),
+				safeName(m.Name+"__delta_rel"),
 			)
 		} else {
 			columnsTuple = fmt.Sprintf(
@@ -409,7 +413,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 	var sql string
 	if dialect != drivers.DialectDruid {
 		sql = fmt.Sprintf(`
-		SELECT COALESCE(base.%[2]s, comparison.%[2]s), %[9]s FROM 
+		SELECT COALESCE(base.%[2]s, comparison.%[2]s) AS %[10]s, %[9]s FROM 
 			(
 				SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s
 			) base
@@ -426,15 +430,16 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 		OFFSET
 			%[8]d
 		`,
-			subSelectClause,       // 1
-			colName,               // 2
-			mv.Table,              // 3
-			baseWhereClause,       // 4
-			comparisonWhereClause, // 5
-			orderClause,           // 6
-			q.Limit,               // 7
-			q.Offset,              // 8
-			finalSelectClause,     // 9
+			subSelectClause,           // 1
+			colName,                   // 2
+			mv.Table,                  // 3
+			baseWhereClause,           // 4
+			comparisonWhereClause,     // 5
+			orderClause,               // 6
+			q.Limit,                   // 7
+			q.Offset,                  // 8
+			finalSelectClause,         // 9
+			safeName(q.DimensionName), // 10
 		)
 	} else {
 		/*
@@ -547,7 +552,160 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 }
 
 func (q *MetricsViewComparisonToplist) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
-	return ErrExportNotSupported
+	olap, release, err := rt.OLAP(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+	defer release()
+
+	switch olap.Dialect() {
+	case drivers.DialectDuckDB:
+		if opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV || opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET {
+			var sql string
+			var args []any
+			if !isTimeRangeNil(q.ComparisonTimeRange) {
+				sql, args, err = q.buildMetricsComparisonTopListSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVSecurity)
+				if err != nil {
+					return fmt.Errorf("error building query: %w", err)
+				}
+			} else {
+				sql, args, err = q.buildMetricsTopListSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVSecurity)
+				if err != nil {
+					return fmt.Errorf("error building query: %w", err)
+				}
+			}
+
+			filename := q.generateFilename()
+			if err := duckDBCopyExport(ctx, w, opts, sql, args, filename, olap, opts.Format); err != nil {
+				return err
+			}
+		} else {
+			if err := q.generalExport(ctx, rt, instanceID, w, opts, q.MetricsView); err != nil {
+				return err
+			}
+		}
+	case drivers.DialectDruid:
+		if err := q.generalExport(ctx, rt, instanceID, w, opts, q.MetricsView); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
+	}
+
+	return nil
+}
+
+func (q *MetricsViewComparisonToplist) generalExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions, mv *runtimev1.MetricsViewSpec) error {
+	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
+	if err != nil {
+		return err
+	}
+
+	if opts.PreWriteHook != nil {
+		err = opts.PreWriteHook(q.generateFilename())
+		if err != nil {
+			return err
+		}
+	}
+
+	var metaLen int
+	if !isTimeRangeNil(q.ComparisonTimeRange) {
+		metaLen = len(q.Result.Rows[0].MeasureValues) * 4
+	} else {
+		metaLen = len(q.Result.Rows[0].MeasureValues)
+	}
+	meta := make([]*runtimev1.MetricsViewColumn, metaLen+1)
+	meta[0] = &runtimev1.MetricsViewColumn{
+		Name: q.DimensionName,
+	}
+	if !isTimeRangeNil(q.ComparisonTimeRange) {
+		for i, m := range q.Result.Rows[0].MeasureValues {
+			meta[1+i*4] = &runtimev1.MetricsViewColumn{
+				Name: m.MeasureName,
+			}
+			meta[2+i*4] = &runtimev1.MetricsViewColumn{
+				Name: fmt.Sprintf("%s__previous", m.MeasureName),
+			}
+			meta[3+i*4] = &runtimev1.MetricsViewColumn{
+				Name: fmt.Sprintf("%s__delta_abs", m.MeasureName),
+			}
+			meta[4+i*4] = &runtimev1.MetricsViewColumn{
+				Name: fmt.Sprintf("%s__delta_rel", m.MeasureName),
+			}
+		}
+	} else {
+		for i, m := range q.Result.Rows[0].MeasureValues {
+			meta[1+i] = &runtimev1.MetricsViewColumn{
+				Name: m.MeasureName,
+			}
+		}
+	}
+
+	data := make([]*structpb.Struct, len(q.Result.Rows))
+	for i, row := range q.Result.Rows {
+		data[i] = &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				q.DimensionName: {
+					Kind: &structpb.Value_StringValue{
+						StringValue: row.DimensionValue.GetStringValue(),
+					},
+				},
+			},
+		}
+		comparison := !isTimeRangeNil(q.ComparisonTimeRange)
+		for _, m := range row.MeasureValues {
+			if comparison {
+				data[i].Fields[m.MeasureName] = &structpb.Value{
+					Kind: &structpb.Value_NumberValue{
+						NumberValue: m.BaseValue.GetNumberValue(),
+					},
+				}
+				data[i].Fields[fmt.Sprintf("%s__previous", m.MeasureName)] = &structpb.Value{
+					Kind: &structpb.Value_NumberValue{
+						NumberValue: m.ComparisonValue.GetNumberValue(),
+					},
+				}
+				data[i].Fields[fmt.Sprintf("%s__delta_abs", m.MeasureName)] = &structpb.Value{
+					Kind: &structpb.Value_NumberValue{
+						NumberValue: m.DeltaAbs.GetNumberValue(),
+					},
+				}
+				data[i].Fields[fmt.Sprintf("%s__delta_rel", m.MeasureName)] = &structpb.Value{
+					Kind: &structpb.Value_NumberValue{
+						NumberValue: m.DeltaRel.GetNumberValue(),
+					},
+				}
+			} else {
+				data[i].Fields[m.MeasureName] = &structpb.Value{
+					Kind: &structpb.Value_NumberValue{
+						NumberValue: m.BaseValue.GetNumberValue(),
+					},
+				}
+			}
+		}
+	}
+
+	switch opts.Format {
+	case runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED:
+		return fmt.Errorf("unspecified format")
+	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
+		return writeCSV(meta, data, w)
+	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
+		return writeXLSX(meta, data, w)
+	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
+		return writeParquet(meta, data, w)
+	}
+
+	return nil
+}
+
+func (q *MetricsViewComparisonToplist) generateFilename() string {
+	filename := strings.ReplaceAll(q.MetricsViewName, `"`, `_`)
+	filename += "_" + q.DimensionName
+	if q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
+		filename += "_filtered"
+	}
+	return filename
 }
 
 func validateSort(sorts []*runtimev1.MetricsViewComparisonSort) error {

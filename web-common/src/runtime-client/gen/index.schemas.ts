@@ -240,6 +240,7 @@ export type QueryServiceExportBody = {
   metricsViewToplistRequest?: V1MetricsViewToplistRequest;
   metricsViewRowsRequest?: V1MetricsViewRowsRequest;
   metricsViewTimeSeriesRequest?: V1MetricsViewTimeSeriesRequest;
+  metricsViewComparisonToplistRequest?: V1MetricsViewComparisonToplistRequest;
 };
 
 export type QueryServiceColumnDescriptiveStatisticsParams = {
@@ -958,6 +959,7 @@ export interface V1ParseError {
   message?: string;
   filePath?: string;
   startLocation?: Runtimev1CharLocation;
+  external?: boolean;
 }
 
 export type V1ObjectType = (typeof V1ObjectType)[keyof typeof V1ObjectType];

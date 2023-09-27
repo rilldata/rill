@@ -87,9 +87,13 @@ func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 		return fmt.Errorf("encountered invalid property type: %w", err)
 	}
 
-	// Upsert source (in practice, this will always be an insert)
-	// NOTE: After calling upsertResource, an error must not be returned. Any validation should be done before calling it.
-	r := p.upsertResource(ResourceKindSource, node.Name, node.Paths, node.Refs...)
+	// Track source
+	r, err := p.insertResource(ResourceKindSource, node.Name, node.Paths, node.Refs...)
+	if err != nil {
+		return err
+	}
+	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
+
 	r.SourceSpec.Properties = mergeStructPB(r.SourceSpec.Properties, props)
 	r.SourceSpec.SinkConnector = p.DefaultConnector // Sink connector not currently configurable
 	if node.Connector != "" {
@@ -108,12 +112,12 @@ func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 // scheduleYAML is the raw structure of a refresh schedule clause defined in YAML.
 // This does not represent a stand-alone YAML file, just a partial used in other structs.
 type scheduleYAML struct {
-	Cron   string `yaml:"cron" mapstructure:"cron"`
-	Ticker string `yaml:"ticker" mapstructure:"ticker"`
+	Cron  string `yaml:"cron" mapstructure:"cron"`
+	Every string `yaml:"every" mapstructure:"every"`
 }
 
 func parseScheduleYAML(raw *scheduleYAML) (*runtimev1.Schedule, error) {
-	if raw == nil || (raw.Cron == "" && raw.Ticker == "") {
+	if raw == nil || (raw.Cron == "" && raw.Every == "") {
 		return nil, nil
 	}
 
@@ -126,8 +130,8 @@ func parseScheduleYAML(raw *scheduleYAML) (*runtimev1.Schedule, error) {
 		s.Cron = raw.Cron
 	}
 
-	if raw.Ticker != "" {
-		d, err := parseDuration(raw.Ticker)
+	if raw.Every != "" {
+		d, err := parseDuration(raw.Every)
 		if err != nil {
 			return nil, fmt.Errorf("invalid ticker: %w", err)
 		}

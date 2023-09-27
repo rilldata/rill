@@ -144,6 +144,12 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	// Parse the project
 	parser, err := compilerv1.Parse(ctx, repo, r.C.InstanceID, inst.OLAPConnector, duckdbConnectors)
 	if err != nil {
+		if errors.Is(err, compilerv1.ErrInvalidProject) && inst.IgnoreInitialInvalidProjectError && self.Meta.StateVersion == 1 {
+			// This handles a very specific case - when opening the application on an uninitialized directory, we do not want to an error log for "rill.yaml not found".
+			// But if the user subsequently in the session, after initializing the project, removes rill.yaml, then we DO want to propagate the error.
+			// So we rely on StateVersion == 1 on the first call to the reconciler (the UpdateState calls above do not mutate `self`, which is a cloned object).
+			return runtime.ReconcileResult{}
+		}
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to parse: %w", err)}
 	}
 
@@ -355,7 +361,7 @@ func (r *ProjectParserReconciler) reconcileResources(ctx context.Context, inst *
 		// Rename if possible
 		renamed := false
 		for idx, rr := range deleteResources {
-			renamed, err = r.attemptRename(ctx, self, def, rr)
+			renamed, err = r.attemptRename(ctx, inst, self, def, rr)
 			if err != nil {
 				return err
 			}
@@ -424,7 +430,7 @@ func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, in
 		renamed := false
 		for idx, rr := range deleteResources {
 			var err error
-			renamed, err = r.attemptRename(ctx, self, def, rr)
+			renamed, err = r.attemptRename(ctx, inst, self, def, rr)
 			if err != nil {
 				return err
 			}
@@ -464,25 +470,18 @@ func (r *ProjectParserReconciler) reconcileResourcesDiff(ctx context.Context, in
 // It does an insert if existing is nil, otherwise it does an update.
 // If existing is not nil, it compares values and only updates meta/spec values if they have changed (ensuring stable resource version numbers).
 func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst *drivers.Instance, self *runtimev1.Resource, def *compilerv1.Resource, existing *runtimev1.Resource) error {
-	// NOTE: Some resource config is not set in code files, but instead exist on the Instance.
-	// E.g. stage_changes, stream_source_ingestion, materialize_model_default, etc.
-	// Those fields are applied to the resource specs in this function.
+	// Apply defaults
+	def = applySpecDefaults(inst, def)
 
 	// Make resource spec to insert/update.
 	// res should be nil if no spec changes are needed.
 	var res *runtimev1.Resource
 	switch def.Name.Kind {
 	case compilerv1.ResourceKindSource:
-		def.SourceSpec.StageChanges = inst.StageChanges
 		if existing == nil || !equalSourceSpec(existing.GetSource().Spec, def.SourceSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Source{Source: &runtimev1.SourceV2{Spec: def.SourceSpec}}}
 		}
 	case compilerv1.ResourceKindModel:
-		def.ModelSpec.StageChanges = inst.StageChanges
-		if def.ModelSpec.Materialize == nil {
-			def.ModelSpec.Materialize = &inst.ModelDefaultMaterialize
-		}
-		def.ModelSpec.MaterializeDelaySeconds = inst.ModelMaterializeDelaySeconds
 		if existing == nil || !equalModelSpec(existing.GetModel().Spec, def.ModelSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Model{Model: &runtimev1.ModelV2{Spec: def.ModelSpec}}}
 		}
@@ -544,7 +543,7 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 // attemptRename renames an existing resource if its spec matches a parser resource definition.
 // It returns false if no rename was done.
 // In addition to renaming, it also updates the resource's meta to match the parser resource definition.
-func (r *ProjectParserReconciler) attemptRename(ctx context.Context, self *runtimev1.Resource, def *compilerv1.Resource, existing *runtimev1.Resource) (bool, error) {
+func (r *ProjectParserReconciler) attemptRename(ctx context.Context, inst *drivers.Instance, self *runtimev1.Resource, def *compilerv1.Resource, existing *runtimev1.Resource) (bool, error) {
 	newName := resourceNameFromCompiler(def.Name)
 	if existing.Meta.Name.Kind != newName.Kind {
 		return false, nil
@@ -559,6 +558,9 @@ func (r *ProjectParserReconciler) attemptRename(ctx context.Context, self *runti
 			return false, nil
 		}
 	}
+
+	// Apply defaults before comparing specs
+	def = applySpecDefaults(inst, def)
 
 	// Check spec is the same
 	switch def.Name.Kind {
@@ -593,6 +595,23 @@ func (r *ProjectParserReconciler) attemptRename(ctx context.Context, self *runti
 	}
 
 	return true, nil
+}
+
+// applySpecDefaults applies instance-level default properties to a resource spec.
+func applySpecDefaults(inst *drivers.Instance, def *compilerv1.Resource) *compilerv1.Resource {
+	switch def.Name.Kind {
+	case compilerv1.ResourceKindSource:
+		def.SourceSpec.StageChanges = inst.StageChanges
+	case compilerv1.ResourceKindModel:
+		def.ModelSpec.StageChanges = inst.StageChanges
+		if def.ModelSpec.Materialize == nil {
+			def.ModelSpec.Materialize = &inst.ModelDefaultMaterialize
+		}
+		def.ModelSpec.MaterializeDelaySeconds = inst.ModelMaterializeDelaySeconds
+	default:
+		// Nothing to do
+	}
+	return def
 }
 
 func resourceNameFromCompiler(name compilerv1.ResourceName) *runtimev1.ResourceName {

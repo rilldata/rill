@@ -247,6 +247,7 @@ message ParseError {
   string message = 1;
   string file_path = 2;
   CharLocation start_location = 3;
+  bool external = 4;
 }
 
 message ValidationError {

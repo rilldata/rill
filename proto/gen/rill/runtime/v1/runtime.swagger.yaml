@@ -1048,6 +1048,8 @@ paths:
                 $ref: '#/definitions/v1MetricsViewRowsRequest'
               metricsViewTimeSeriesRequest:
                 $ref: '#/definitions/v1MetricsViewTimeSeriesRequest'
+              metricsViewComparisonToplistRequest:
+                $ref: '#/definitions/v1MetricsViewComparisonToplistRequest'
             title: Request message for QueryService.Export
       tags:
         - QueryService
@@ -3993,6 +3995,8 @@ definitions:
         type: string
       startLocation:
         $ref: '#/definitions/runtimev1CharLocation'
+      external:
+        type: boolean
   v1PingResponse:
     type: object
     properties:

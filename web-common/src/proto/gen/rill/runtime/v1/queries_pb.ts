@@ -308,6 +308,12 @@ export class ExportRequest extends Message<ExportRequest> {
      */
     value: MetricsViewTimeSeriesRequest;
     case: "metricsViewTimeSeriesRequest";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewComparisonToplistRequest metrics_view_comparison_toplist_request = 8;
+     */
+    value: MetricsViewComparisonToplistRequest;
+    case: "metricsViewComparisonToplistRequest";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<ExportRequest>) {
@@ -325,6 +331,7 @@ export class ExportRequest extends Message<ExportRequest> {
     { no: 4, name: "metrics_view_toplist_request", kind: "message", T: MetricsViewToplistRequest, oneof: "request" },
     { no: 5, name: "metrics_view_rows_request", kind: "message", T: MetricsViewRowsRequest, oneof: "request" },
     { no: 6, name: "metrics_view_time_series_request", kind: "message", T: MetricsViewTimeSeriesRequest, oneof: "request" },
+    { no: 8, name: "metrics_view_comparison_toplist_request", kind: "message", T: MetricsViewComparisonToplistRequest, oneof: "request" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExportRequest {

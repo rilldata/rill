@@ -2,35 +2,52 @@ package postgres
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
-
-	// Load postgres driver
-	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
 func init() {
 	drivers.Register("postgres", driver{})
+	drivers.RegisterAsConnector("postgres", driver{})
+}
+
+var spec = drivers.Spec{
+	DisplayName: "Postgres",
+	Description: "Connect to Postgres.",
+	SourceProperties: []drivers.PropertySchema{
+		{
+			Key:         "sql",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "SQL",
+			Description: "Query to extract data from Postgres.",
+			Placeholder: "select * from table;",
+		},
+		{
+			Key:         "database_url",
+			DisplayName: "Postgress Connection String",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			Href:        "https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING",
+			Placeholder: "postgresql://postgres:postgres@localhost:5432/postgres",
+			Hint:        "Either set this or pass --env connectors.postgres.database_url=... to rill start",
+		},
+	},
+	ConfigProperties: []drivers.PropertySchema{
+		{
+			Key:    "database_url",
+			Secret: true,
+		},
+	},
 }
 
 type driver struct{}
 
 func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
-	dsn, ok := config["dsn"].(string)
-	if !ok {
-		return nil, fmt.Errorf("require dsn to open sqlite connection")
-	}
-
-	db, err := sqlx.Connect("pgx", dsn)
-	if err != nil {
-		return nil, err
-	}
+	// actual db connection is opened during query
 	return &connection{
-		db:     db,
 		config: config,
 	}, nil
 }
@@ -40,16 +57,29 @@ func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
 }
 
 func (d driver) Spec() drivers.Spec {
-	return drivers.Spec{}
+	return spec
 }
 
 func (d driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
 	return false, nil
 }
 
+func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error) {
+	return nil, nil
+}
+
 type connection struct {
-	db     *sqlx.DB
 	config map[string]any
+}
+
+// Migrate implements drivers.Connection.
+func (c *connection) Migrate(ctx context.Context) (err error) {
+	return nil
+}
+
+// MigrationStatus implements drivers.Handle.
+func (c *connection) MigrationStatus(ctx context.Context) (current, desired int, err error) {
+	return 0, 0, nil
 }
 
 // Driver implements drivers.Connection.
@@ -64,7 +94,7 @@ func (c *connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
-	return c.db.Close()
+	return nil
 }
 
 // Registry implements drivers.Connection.
@@ -104,5 +134,5 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 
 // AsSQLStore implements drivers.Connection.
 func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
-	return nil, false
+	return c, true
 }

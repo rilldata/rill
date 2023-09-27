@@ -1,8 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
-  import { projectShareStore } from "@rilldata/web-common/features/dashboards/dashboard-stores.js";
-  import DeployDashboardOverlay from "@rilldata/web-common/features/dashboards/workspace/DeployDashboardOverlay.svelte";
   import { resourcesStore } from "@rilldata/web-common/features/entity-management/resources-store";
   import { addReconcilingOverlay } from "@rilldata/web-common/features/entity-management/sync-file-system";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
@@ -90,9 +88,6 @@
 
   {#if $duplicateSourceName !== null}
     <DuplicateSource />
-  {/if}
-  {#if $projectShareStore}
-    <DeployDashboardOverlay />
   {/if}
 
   <div

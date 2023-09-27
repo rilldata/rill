@@ -127,6 +127,18 @@ select * from read_json(
 			},
 		},
 		{
+			"sqlite_scan",
+			`select * from sqlite_scan('mydatabase.db', 'table')`,
+			[]*TableRef{
+				{
+					Function:   "sqlite_scan",
+					Paths:      []string{"mydatabase.db"},
+					Params:     []string{"mydatabase.db", "table"},
+					Properties: make(map[string]any),
+				},
+			},
+		},
+		{
 			"other table functions",
 			`select * from generate_series(TIMESTAMP '2001-04-10', TIMESTAMP '2001-04-11', INTERVAL 30 MINUTE)`,
 			// other table functions are ignored right now
@@ -469,6 +481,19 @@ func TestAST_RewriteWithFunctionRef(t *testing.T) {
 				},
 			},
 			`SELECT * FROM read_csv(main.list_value('/path/to/AdBids.csv'), ("columns" = main.struct_pack(L := main.list_value('INT32', 'INT64'))))`,
+		},
+		{
+			"sqlite_scan",
+			`select * from AdBids`,
+			[]*TableRef{
+				{
+					Function:   "sqlite_scan",
+					Paths:      []string{"/path/to/data.db"},
+					Properties: map[string]any{},
+					Params:     []string{"/path/to/data.db", "table"},
+				},
+			},
+			`SELECT * FROM sqlite_scan('/path/to/data.db', 'table')`,
 		},
 	}
 

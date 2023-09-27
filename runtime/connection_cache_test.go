@@ -280,6 +280,10 @@ func (*mockDriver) HasAnonymousSourceAccess(ctx context.Context, src map[string]
 	panic("unimplemented")
 }
 
+func (*mockDriver) TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error) {
+	return nil, nil
+}
+
 // Open implements drivers.Driver.
 func (m *mockDriver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	m.opened.Add(1)

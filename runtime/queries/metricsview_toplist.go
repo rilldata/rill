@@ -117,7 +117,7 @@ func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, in
 			}
 
 			filename := q.generateFilename(q.MetricsView)
-			if err := duckDBCopyExport(ctx, rt, instanceID, w, opts, sql, args, filename, olap, q.MetricsView, opts.Format); err != nil {
+			if err := duckDBCopyExport(ctx, w, opts, sql, args, filename, olap, opts.Format); err != nil {
 				return err
 			}
 		} else {
@@ -164,7 +164,8 @@ func (q *MetricsViewToplist) generalExport(ctx context.Context, rt *runtime.Runt
 }
 
 func (q *MetricsViewToplist) generateFilename(mv *runtimev1.MetricsViewSpec) string {
-	filename := strings.ReplaceAll(mv.Table, `"`, `_`)
+	filename := strings.ReplaceAll(q.MetricsViewName, `"`, `_`)
+	filename += "_" + q.DimensionName
 	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
 		filename += "_filtered"
 	}
