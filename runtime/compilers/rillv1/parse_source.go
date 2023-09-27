@@ -108,12 +108,12 @@ func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 // scheduleYAML is the raw structure of a refresh schedule clause defined in YAML.
 // This does not represent a stand-alone YAML file, just a partial used in other structs.
 type scheduleYAML struct {
-	Cron   string `yaml:"cron" mapstructure:"cron"`
-	Ticker string `yaml:"ticker" mapstructure:"ticker"`
+	Cron  string `yaml:"cron" mapstructure:"cron"`
+	Every string `yaml:"every" mapstructure:"every"`
 }
 
 func parseScheduleYAML(raw *scheduleYAML) (*runtimev1.Schedule, error) {
-	if raw == nil || (raw.Cron == "" && raw.Ticker == "") {
+	if raw == nil || (raw.Cron == "" && raw.Every == "") {
 		return nil, nil
 	}
 
@@ -126,8 +126,8 @@ func parseScheduleYAML(raw *scheduleYAML) (*runtimev1.Schedule, error) {
 		s.Cron = raw.Cron
 	}
 
-	if raw.Ticker != "" {
-		d, err := parseDuration(raw.Ticker)
+	if raw.Every != "" {
+		d, err := parseDuration(raw.Every)
 		if err != nil {
 			return nil, fmt.Errorf("invalid ticker: %w", err)
 		}
