@@ -275,3 +275,5 @@ replace github.com/apache/calcite-avatica-go/v5 v5.2.0 => github.com/rilldata/ca
 replace cloud.google.com/go/bigquery v1.53.0 => github.com/k-anshul/google-cloud-go/bigquery v0.0.0-20230830110740-57fe623cde03
 
 exclude modernc.org/sqlite v1.18.1
+
+replace github.com/marcboeker/go-duckdb v1.4.1 => github.com/k-anshul/go-duckdb v0.0.0-20230926150504-cfe3e4930463
