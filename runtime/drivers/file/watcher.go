@@ -12,6 +12,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"golang.org/x/exp/maps"
 )
 
 const batchInterval = 250 * time.Millisecond
@@ -26,7 +27,7 @@ type watcher struct {
 	err         error
 	mu          sync.Mutex
 	subscribers map[string]drivers.WatchCallback
-	buffer      []drivers.WatchEvent
+	buffer      map[string]drivers.WatchEvent
 }
 
 func newWatcher(root string) (*watcher, error) {
@@ -40,6 +41,7 @@ func newWatcher(root string) (*watcher, error) {
 		watcher:     fsw,
 		done:        make(chan struct{}),
 		subscribers: make(map[string]drivers.WatchCallback),
+		buffer:      make(map[string]drivers.WatchEvent),
 	}
 
 	err = w.addDir(root, false)
@@ -109,14 +111,16 @@ func (w *watcher) flush() {
 		return
 	}
 
+	events := maps.Values(w.buffer)
+
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
 	for _, fn := range w.subscribers {
-		fn(w.buffer)
+		fn(events)
 	}
 
-	w.buffer = nil
+	w.buffer = make(map[string]drivers.WatchEvent)
 }
 
 func (w *watcher) run() {
@@ -164,7 +168,7 @@ func (w *watcher) runInner() error {
 				we.Dir = err == nil && info.IsDir()
 			}
 
-			w.buffer = append(w.buffer, we)
+			w.buffer[path] = we
 
 			// Calling addDir after appending to w.buffer, to sequence events correctly
 			if we.Dir && e.Has(fsnotify.Create) {
@@ -210,11 +214,11 @@ func (w *watcher) addDir(path string, replay bool) error {
 			}
 			ep = filepath.Join("/", ep)
 
-			w.buffer = append(w.buffer, drivers.WatchEvent{
+			w.buffer[ep] = drivers.WatchEvent{
 				Path: ep,
 				Type: runtimev1.FileEvent_FILE_EVENT_WRITE,
 				Dir:  e.IsDir(),
-			})
+			}
 		}
 
 		if e.IsDir() {
