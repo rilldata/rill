@@ -414,7 +414,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 
 	querySQL := ` -- extract unix time
       WITH Q as (
-        SELECT extract('epoch' from ` + safeTimestampColumnName + `) as t, "` + valueColumn + `"::DOUBLE as v FROM "` + tableName + `"
+        SELECT extract('epoch' from ` + safeTimestampColumnName + `)::BIGINT as t, "` + valueColumn + `"::DOUBLE as v FROM "` + tableName + `"
       ),
       -- generate bounds
       M as (
