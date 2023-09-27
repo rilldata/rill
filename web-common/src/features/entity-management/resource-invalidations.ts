@@ -36,8 +36,10 @@ export function invalidateResourceResponse(
   res: V1WatchResourcesResponse
 ) {
   // only process for the `ResourceKind` present in `UsedResources`
+  if (!UsedResources[res.name.kind]) return;
+  // for main resources only invalidate if it became idle
   if (
-    !UsedResources[res.name.kind] ||
+    MainResources[res.name.kind] &&
     res.resource.meta.reconcileStatus !==
       V1ReconcileStatus.RECONCILE_STATUS_IDLE
   )
@@ -59,7 +61,7 @@ export function invalidateResourceResponse(
       break;
   }
 
-  // only re-fetch list queries for kinds in `MainResources` and is ture
+  // only re-fetch list queries for kinds in `MainResources`
   if (!MainResources[res.name.kind]) return;
   resourcesStore.setResource(res.resource);
   return queryClient.refetchQueries(

@@ -34,14 +34,14 @@ export const useMetaQuery = <T = V1MetricsViewSpec>(
   metricViewName: string,
   selector?: (meta: V1MetricsViewSpec) => T
 ) => {
-  return useResource(
+  return useResource<T>(
     instanceId,
     metricViewName,
     ResourceKind.MetricsView,
     (data) =>
       selector
         ? selector(data.metricsView?.state?.validSpec)
-        : data.metricsView?.state?.validSpec
+        : (data.metricsView?.state?.validSpec as T)
   );
 };
 

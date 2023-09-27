@@ -9,25 +9,20 @@
     getFileAPIPathFromNameAndType,
     getFilePathFromNameAndType,
   } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { useSchemaForTable } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { waitForResource } from "@rilldata/web-common/features/entity-management/resource-status-utils";
-  import {
-    getAllErrorsForFile,
-    getFileHasErrors,
-  } from "@rilldata/web-common/features/entity-management/resources-store";
+  import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
+  import { asyncWait, waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import {
-    createConnectorServiceOLAPGetTable,
-    createRuntimeServicePutFile,
-    V1ModelV2,
-  } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServicePutFile } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -49,26 +44,26 @@
   $: modelNames = useModelFileNames($runtime.instanceId);
   $: dashboardNames = useDashboardFileNames($runtime.instanceId);
   $: modelQuery = useModel($runtime.instanceId, modelName);
-  let model: V1ModelV2;
-  $: model = $modelQuery.data?.model;
-  $: allErrors = getAllErrorsForFile(
-    queryClient,
-    $runtime.instanceId,
-    modelPath
-  );
   $: modelHasError = getFileHasErrors(
     queryClient,
     $runtime.instanceId,
     modelPath
   );
 
-  $: modelSchema = createConnectorServiceOLAPGetTable({
-    instanceId: $runtime.instanceId,
-    table: model?.state?.table,
-    connector: model?.state?.connector,
-  });
+  $: modelSchema = useSchemaForTable(
+    $runtime.instanceId,
+    $modelQuery.data?.model
+  );
+  $: console.log(
+    JSON.stringify($modelQuery.data?.model),
+    $modelSchema.data?.schema
+  );
 
-  const createDashboardFromModel = (modelName: string) => {
+  const createDashboardFromModel = async (modelName: string) => {
+    if (!$modelQuery.data?.model) {
+      return;
+    }
+
     overlay.set({
       title: "Creating a dashboard for " + modelName,
     });
@@ -76,6 +71,7 @@
       `${modelName}_dashboard`,
       $dashboardNames.data
     );
+    await waitUntil(() => !!$modelSchema.data?.schema);
     const dashboardYAML = generateDashboardYAMLForModel(
       modelName,
       $modelSchema.data?.schema,

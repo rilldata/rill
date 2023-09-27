@@ -96,18 +96,13 @@ export function getResourceStatusStore(
         };
       }
 
-      if (projectParserResp.isFetching || resourceResp.isFetching) {
-        return {
-          status: ResourceStatus.Busy,
-        };
-      }
+      const isBusy =
+        resourceResp.isFetching ||
+        resourceResp.data?.meta?.reconcileStatus !==
+          V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
       return {
-        status:
-          resourceResp.data?.meta?.reconcileStatus ===
-          V1ReconcileStatus.RECONCILE_STATUS_IDLE
-            ? ResourceStatus.Idle
-            : ResourceStatus.Busy,
+        status: isBusy ? ResourceStatus.Busy : ResourceStatus.Idle,
         resource: resourceResp.data,
       };
     }

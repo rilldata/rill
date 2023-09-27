@@ -1,9 +1,13 @@
 import {
+  createConnectorServiceOLAPGetTable,
   createRuntimeServiceGetResource,
   createRuntimeServiceListResources,
   V1ListResourcesResponse,
+  V1ModelV2,
   V1Resource,
+  V1SourceV2,
 } from "@rilldata/web-common/runtime-client";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
 
 export enum ResourceKind {
@@ -30,7 +34,7 @@ export function useResource<T = V1Resource>(
     {
       query: {
         select: (data) =>
-          selector ? selector(data?.resource) : data?.resource,
+          (selector ? selector(data?.resource) : data?.resource) as T,
         enabled: !!name && !!kind,
         queryClient,
       },
@@ -82,6 +86,24 @@ export function useAllNames(instanceId: string) {
     {
       query: {
         select: (data) => data.resources.map((res) => res.meta.name.name),
+      },
+    }
+  );
+}
+
+export function useSchemaForTable(
+  instanceId: string,
+  tableSpec: V1ModelV2 | V1SourceV2
+) {
+  return createConnectorServiceOLAPGetTable(
+    {
+      instanceId,
+      table: tableSpec?.state?.table,
+      connector: tableSpec?.state?.connector,
+    },
+    {
+      query: {
+        enabled: !!tableSpec?.state?.table && !!tableSpec?.state?.connector,
       },
     }
   );

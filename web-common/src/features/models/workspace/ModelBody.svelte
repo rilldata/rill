@@ -23,7 +23,7 @@
   import type { LayoutElement } from "../../../layout/workspace/types";
   import { httpRequestQueue } from "../../../runtime-client/http-client";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { useModel, useModelFileIsEmpty } from "../selectors";
+  import { useModelFileIsEmpty } from "../selectors";
   import { sanitizeQuery } from "../utils/sanitize-query";
   import Editor from "./Editor.svelte";
 
@@ -70,8 +70,6 @@
   );
   $: modelError = $allErrors?.[0]?.message;
 
-  $: modelQuery = useModel(runtimeInstanceId, modelName);
-
   const outputLayout = getContext(
     "rill:app:output-layout"
   ) as Writable<LayoutElement>;
@@ -95,7 +93,6 @@
         });
       }
 
-      // TODO: why is the response type not present?
       await $updateModel.mutateAsync({
         instanceId: runtimeInstanceId,
         path: getFileAPIPathFromNameAndType(modelName, EntityType.Model),
@@ -104,9 +101,7 @@
         },
       });
 
-      if (hasChanged) {
-        sanitizedQuery = sanitizeQuery(content);
-      }
+      sanitizedQuery = sanitizeQuery(content);
     } catch (err) {
       console.error(err);
     }
@@ -117,11 +112,13 @@
   })) as SelectionRange[];
 
   let errors = [];
-  // only add error if sql is present
-  $: if (modelSql !== "") {
+  $: {
     errors = [];
-    if (modelError) errors.push(modelError);
-    if (runtimeError) errors.push(runtimeError.message);
+    // only add error if sql is present
+    if (modelSql !== "") {
+      if (modelError) errors.push(modelError);
+      if (runtimeError) errors.push(runtimeError.message);
+    }
   }
 </script>
 

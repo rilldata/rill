@@ -119,7 +119,7 @@ export const invalidateMetricsViewData = (
   // do not re-fetch for failed entities.
   if (failed) return Promise.resolve();
 
-  return queryClient.refetchQueries({
+  return queryClient.resetQueries({
     predicate: (query) =>
       invalidationForMetricsViewData(query, metricsViewName),
     type: "active",
@@ -180,7 +180,7 @@ export async function invalidateProfilingQueries(
     type: "active",
   });
 
-  return queryClient.refetchQueries({
+  return queryClient.resetQueries({
     predicate: (query) => isTableProfilingQuery(query, name),
     type: "active",
   });
