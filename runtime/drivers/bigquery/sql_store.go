@@ -28,7 +28,7 @@ const _jsonDownloadLimitBytes = 100 * int64(datasize.MB)
 
 // Query implements drivers.SQLStore
 func (c *Connection) Query(ctx context.Context, props map[string]any) (drivers.RowIterator, error) {
-	return nil, fmt.Errorf("not implemented")
+	return nil, drivers.ErrNotImplemented
 }
 
 // QueryAsFiles implements drivers.SQLStore
