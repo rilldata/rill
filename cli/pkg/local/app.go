@@ -188,7 +188,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool
 
 	// Wait for the initial reconcile
 	if isInit {
-		err = app.Reconcile(strict)
+		err = app.AwaitInitialReconcile(strict)
 		if err != nil {
 			app.Close()
 			return nil, fmt.Errorf("reconcile project: %w", err)
@@ -218,7 +218,7 @@ func (a *App) Close() error {
 	return nil
 }
 
-func (a *App) Reconcile(strict bool) (err error) {
+func (a *App) AwaitInitialReconcile(strict bool) (err error) {
 	defer func() {
 		if a.Context.Err() != nil {
 			a.Logger.Errorf("Hydration canceled")
