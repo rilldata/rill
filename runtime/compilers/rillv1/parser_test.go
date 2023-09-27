@@ -414,6 +414,55 @@ path: hello
 	require.Equal(t, &Diff{}, diff)
 }
 
+func TestReparseSourceModelCollision(t *testing.T) {
+	// Create project with model m1
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`models/m1.sql`: `
+SELECT 10
+		`,
+	})
+	m1 := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+		Paths: []string{"/models/m1.sql"},
+		ModelSpec: &runtimev1.ModelSpec{
+			Sql: "SELECT 10",
+		},
+	}
+	p, err := Parse(ctx, repo, "", "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{m1}, nil)
+
+	// Add colliding source m1
+	putRepo(t, repo, map[string]string{
+		`sources/m1.yaml`: `
+connector: s3
+path: hello
+`,
+	})
+	s1 := &Resource{
+		Name:  ResourceName{Kind: ResourceKindSource, Name: "m1"},
+		Paths: []string{"/sources/m1.yaml"},
+		SourceSpec: &runtimev1.SourceSpec{
+			SourceConnector: "s3",
+			Properties:      must(structpb.NewStruct(map[string]any{"path": "hello"})),
+		},
+	}
+	diff, err := p.Reparse(ctx, s1.Paths)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{s1}, []*runtimev1.ParseError{
+		{
+			Message:  "model name collides with source \"m1\"",
+			FilePath: "/models/m1.sql",
+		},
+	})
+	require.Equal(t, &Diff{
+		Added:   []ResourceName{s1.Name},
+		Deleted: []ResourceName{m1.Name},
+	}, diff)
+}
+
 func TestRefInferrence(t *testing.T) {
 	// Create model referencing "bar"
 	foo := &Resource{
@@ -538,13 +587,9 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 				break
 			}
 		}
-		if !found {
-			t.Errorf("missing resource %v", want.Name)
-		}
+		require.True(t, found, "missing resource %q", want.Name)
 	}
-	if len(gotResources) > 0 {
-		t.Errorf("unexpected resources: %v", gotResources)
-	}
+	require.True(t, len(gotResources) == 0, "unexpected resources: %v", gotResources)
 
 	// Check errors
 	// NOTE: Assumes there's at most one parse error per file path
@@ -561,13 +606,9 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 				break
 			}
 		}
-		if !found {
-			t.Errorf("missing error for path %q", want.FilePath)
-		}
+		require.True(t, found, "missing error for path %q", want.FilePath)
 	}
-	if len(gotErrors) > 0 {
-		t.Errorf("unexpected errors: %v", gotErrors)
-	}
+	require.True(t, len(gotErrors) == 0, "unexpected errors: %v", gotErrors)
 }
 
 func makeRepo(t testing.TB, files map[string]string) drivers.RepoStore {

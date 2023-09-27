@@ -133,6 +133,7 @@ type Parser struct {
 	resourcesForUnspecifiedRef map[string][]*Resource // Reverse index of Resource.rawRefs where kind=ResourceKindUnspecified
 	insertedResources          []*Resource
 	updatedResources           []*Resource
+	deletedResources           []*Resource
 }
 
 // ParseRillYAML parses only the project's rill.yaml (or rill.yml) file.
@@ -204,12 +205,12 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	// Reset insertedResources and updatedResources on reparse (used to construct Diff)
 	p.insertedResources = nil
 	p.updatedResources = nil
+	p.deletedResources = nil
 
 	// Phase 1: Clear existing state related to the paths.
 	// Identify all paths directly passed and paths indirectly related through resourcesForPath and Resource.Paths.
 	// And delete all resources and parse errors related to those paths.
 	var parsePaths []string            // Paths we should pass to parsePaths
-	var deletedResources []*Resource   // Resources deleted in Phase 1 (some may be added back in Phase 2)
 	checkPaths := slices.Clone(paths)  // Paths we should visit in the loop
 	seenPaths := make(map[string]bool) // Paths already visited by the loop
 	modifiedRillYAML := false          // whether rill.yaml file was modified
@@ -258,10 +259,9 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 		}
 
 		// Remove all resources derived from this path, and add any related paths to the check list
-		rs := slices.Clone(p.resourcesForPath[path]) // Use Clone because deleteResource mutates it
+		rs := slices.Clone(p.resourcesForPath[path]) // Use Clone because deleteResource mutates resourcesForPath
 		for _, resource := range rs {
 			p.deleteResource(resource)
-			deletedResources = append(deletedResources, resource)
 
 			// Make sure we-reparse all paths that contributed to the deleted resource.
 			checkPaths = append(checkPaths, resource.Paths...)
@@ -303,7 +303,7 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 		p.inferUnspecifiedRefs(r)
 	}
 	// ... any unchanged resource that may have an unspecified ref to a deleted resource
-	for _, r1 := range deletedResources {
+	for _, r1 := range p.deletedResources {
 		for _, r2 := range p.resourcesForUnspecifiedRef[strings.ToLower(r1.Name.Name)] {
 			n := r2.Name.Normalized()
 			if !inferRefsSeen[n] {
@@ -325,14 +325,14 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 		}
 	}
 
-	// Phase 3: Build the diff using p.insertedResources, p.updatedResources and deletedResources
+	// Phase 3: Build the diff using p.insertedResources, p.updatedResources and p.deletedResources
 	diff := &Diff{
 		ModifiedRillYAML: modifiedRillYAML,
 		ModifiedDotEnv:   modifiedDotEnv,
 	}
 	for _, resource := range p.insertedResources {
 		addedBack := false
-		for _, deleted := range deletedResources {
+		for _, deleted := range p.deletedResources {
 			if resource.Name.Normalized() == deleted.Name.Normalized() {
 				addedBack = true
 				break
@@ -347,7 +347,7 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	for _, resource := range p.updatedResources {
 		diff.Modified = append(diff.Modified, resource.Name)
 	}
-	for _, deleted := range deletedResources {
+	for _, deleted := range p.deletedResources {
 		if p.Resources[deleted.Name.Normalized()] == nil {
 			diff.Deleted = append(diff.Deleted, deleted.Name)
 		}
@@ -644,17 +644,19 @@ func (p *Parser) deleteResource(r *Resource) {
 	delete(p.Resources, r.Name.Normalized())
 
 	// Remove from p.insertedResources
-	checkUpdatedResources := true
+	foundInInserted := false
 	idx := slices.Index(p.insertedResources, r)
 	if idx >= 0 {
 		p.insertedResources = slices.Delete(p.insertedResources, idx, idx+1)
-		checkUpdatedResources = false
+		foundInInserted = true
 	}
 
 	// Remove from p.updatedResources
-	idx = slices.Index(p.updatedResources, r)
-	if checkUpdatedResources && idx >= 0 {
-		p.updatedResources = slices.Delete(p.updatedResources, idx, idx+1)
+	if !foundInInserted {
+		idx = slices.Index(p.updatedResources, r)
+		if idx >= 0 {
+			p.updatedResources = slices.Delete(p.updatedResources, idx, idx+1)
+		}
 	}
 
 	// Remove from p.resourcesForPath
@@ -687,6 +689,11 @@ func (p *Parser) deleteResource(r *Resource) {
 		} else {
 			p.resourcesForUnspecifiedRef[n] = slices.Delete(rs, idx, idx+1)
 		}
+	}
+
+	// Track in deleted resources (unless it was in insertedResources, in which case it's not a real deletion)
+	if !foundInInserted {
+		p.deletedResources = append(p.deletedResources, r)
 	}
 }
 
