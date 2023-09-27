@@ -8,7 +8,6 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"golang.org/x/exp/slices"
@@ -145,7 +144,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	// Parse the project
 	parser, err := compilerv1.Parse(ctx, repo, r.C.InstanceID, inst.OLAPConnector, duckdbConnectors)
 	if err != nil {
-		if errors.Is(err, rillv1.ErrInvalidProject) && inst.IgnoreInitialInvalidProjectError && self.Meta.StateVersion == 1 {
+		if errors.Is(err, compilerv1.ErrInvalidProject) && inst.IgnoreInitialInvalidProjectError && self.Meta.StateVersion == 1 {
 			// This handles a very specific case - when opening the application on an uninitialized directory, we do not want to an error log for "rill.yaml not found".
 			// But if the user subsequently in the session, after initializing the project, removes rill.yaml, then we DO want to propagate the error.
 			// So we rely on StateVersion == 1 on the first call to the reconciler (the UpdateState calls above do not mutate `self`, which is a cloned object).
