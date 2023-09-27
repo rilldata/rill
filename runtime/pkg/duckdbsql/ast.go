@@ -82,6 +82,12 @@ func (a *AST) RewriteTableRefs(fn func(table *TableRef) (*TableRef, bool)) error
 			}
 		} else if newRef.Function != "" {
 			switch newRef.Function {
+			case "sqlite_scan":
+				newRef.Params[0] = newRef.Paths[0]
+				err := node.rewriteToSqliteScanFunction(newRef.Function, newRef.Params)
+				if err != nil {
+					return err
+				}
 			case "read_csv_auto", "read_csv",
 				"read_parquet",
 				"read_json", "read_json_auto", "read_json_objects", "read_json_objects_auto",
@@ -155,6 +161,8 @@ type TableRef struct {
 	Paths      []string
 	Properties map[string]any
 	LocalAlias bool
+	// Params passed to sqlite_scan
+	Params []string
 }
 
 // ColumnRef has information about a column in the select list of a DuckDB SQL statement

@@ -13,14 +13,14 @@ import (
 	"time"
 
 	"github.com/fatih/color"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"golang.org/x/sync/errgroup"
 
 	// Load postgres driver
-	_ "github.com/jackc/pgx/v4/stdlib"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 var (

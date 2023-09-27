@@ -290,6 +290,8 @@ func mergeFromParsedQuery(apiSource *runtimev1.Source, env map[string]string, re
 		return errors.New("invalid source, only a single path for source is supported")
 	}
 
+	// TODO :: it looks at path to determine connector which is not correct for sqlite_scan
+	// but it works since behaviour is same as local_file
 	p, c, ok := parseEmbeddedSourceConnector(ref.Paths[0])
 	if !ok {
 		return errors.New("unknown source")
@@ -300,7 +302,7 @@ func mergeFromParsedQuery(apiSource *runtimev1.Source, env map[string]string, re
 		if err != nil {
 			return err
 		}
-	case "s3", "gcs":
+	case "s3", "gcs", "azure":
 		apiSource.Connector = c
 		props["path"] = p
 	default:
@@ -334,6 +336,7 @@ func rewriteLocalRelativePath(ast *duckdbsql.AST, repoRoot string, allowRootAcce
 			Function:   table.Function,
 			Paths:      newPaths,
 			Properties: table.Properties,
+			Params:     table.Params,
 		}, true
 	})
 	if resolveErr != nil {
@@ -376,7 +379,7 @@ func connectorVariables(src *runtimev1.Source, env map[string]string, repoRoot s
 		"allow_host_access": strings.EqualFold(env["allow_host_access"], "true"),
 	}
 	switch connector {
-	case "s3":
+	case "s3", "athena":
 		vars["aws_access_key_id"] = env["aws_access_key_id"]
 		vars["aws_secret_access_key"] = env["aws_secret_access_key"]
 		vars["aws_session_token"] = env["aws_session_token"]
@@ -389,6 +392,9 @@ func connectorVariables(src *runtimev1.Source, env map[string]string, repoRoot s
 		vars["dsn"] = repoRoot
 	case "bigquery":
 		vars["google_application_credentials"] = env["google_application_credentials"]
+	case "postgres":
+		// this is only required till sources can't call AcquireHandle directly
+		vars["database_url"] = env["connectors.postgres.database_url"]
 	}
 	return vars
 }
