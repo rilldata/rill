@@ -522,9 +522,12 @@ SELECT * FROM m1
 
 	// Remove colliding model, verify things still work
 	deleteRepo(t, repo, "/models/m1.sql")
-	_, err = p.Reparse(ctx, m1.Paths)
+	diff, err := p.Reparse(ctx, m1.Paths)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{m1Nested, m2}, nil)
+	require.Equal(t, &Diff{
+		Modified: []ResourceName{m1.Name, m2.Name}, // m2 due to ref re-inference
+	}, diff)
 }
 
 func TestRefInferrence(t *testing.T) {
