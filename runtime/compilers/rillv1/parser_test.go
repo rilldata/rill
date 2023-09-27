@@ -461,6 +461,70 @@ path: hello
 		Added:   []ResourceName{s1.Name},
 		Deleted: []ResourceName{m1.Name},
 	}, diff)
+
+	// Remove colliding source, verify model is restored
+	deleteRepo(t, repo, "/sources/m1.yaml")
+	diff, err = p.Reparse(ctx, s1.Paths)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{m1}, nil)
+	require.Equal(t, &Diff{
+		Added:   []ResourceName{m1.Name},
+		Deleted: []ResourceName{s1.Name},
+	}, diff)
+}
+
+func TestReparseNameCollision(t *testing.T) {
+	// Create project with model m1
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`models/m1.sql`: `
+SELECT 10
+		`,
+		`models/nested/m1.sql`: `
+SELECT 20
+		`,
+		`models/m2.sql`: `
+SELECT * FROM m1
+		`,
+	})
+	m1 := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+		Paths: []string{"/models/m1.sql"},
+		ModelSpec: &runtimev1.ModelSpec{
+			Sql: "SELECT 10",
+		},
+	}
+	m1Nested := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+		Paths: []string{"/models/nested/m1.sql"},
+		ModelSpec: &runtimev1.ModelSpec{
+			Sql: "SELECT 20",
+		},
+	}
+	m2 := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "m2"},
+		Paths: []string{"/models/m2.sql"},
+		Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
+		ModelSpec: &runtimev1.ModelSpec{
+			Sql: "SELECT * FROM m1",
+		},
+	}
+	p, err := Parse(ctx, repo, "", "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{m1, m2}, []*runtimev1.ParseError{
+		{
+			Message:  "name collision",
+			FilePath: "/models/nested/m1.sql",
+			External: true,
+		},
+	})
+
+	// Remove colliding model, verify things still work
+	deleteRepo(t, repo, "/models/m1.sql")
+	_, err = p.Reparse(ctx, m1.Paths)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{m1Nested, m2}, nil)
 }
 
 func TestRefInferrence(t *testing.T) {

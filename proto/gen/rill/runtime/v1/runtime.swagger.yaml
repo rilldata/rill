@@ -3995,6 +3995,8 @@ definitions:
         type: string
       startLocation:
         $ref: '#/definitions/runtimev1CharLocation'
+      external:
+        type: boolean
   v1PingResponse:
     type: object
     properties:

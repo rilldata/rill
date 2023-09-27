@@ -959,6 +959,7 @@ export interface V1ParseError {
   message?: string;
   filePath?: string;
   startLocation?: Runtimev1CharLocation;
+  external?: boolean;
 }
 
 export type V1ObjectType = (typeof V1ObjectType)[keyof typeof V1ObjectType];

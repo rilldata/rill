@@ -210,8 +210,13 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	// Phase 1: Clear existing state related to the paths.
 	// Identify all paths directly passed and paths indirectly related through resourcesForPath and Resource.Paths.
 	// And delete all resources and parse errors related to those paths.
-	var parsePaths []string            // Paths we should pass to parsePaths
-	checkPaths := slices.Clone(paths)  // Paths we should visit in the loop
+	var parsePaths []string           // Paths we should pass to parsePaths
+	checkPaths := slices.Clone(paths) // Paths we should visit in the loop
+	for _, perr := range p.Errors {   // Also re-check check paths with external parse errors
+		if perr.External {
+			checkPaths = append(checkPaths, perr.FilePath)
+		}
+	}
 	seenPaths := make(map[string]bool) // Paths already visited by the loop
 	modifiedRillYAML := false          // whether rill.yaml file was modified
 	modifiedDotEnv := false            // whether .env file was modified
@@ -382,7 +387,7 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 		} else if path == "/.env" {
 			err := p.parseDotEnv(ctx, path)
 			if err != nil {
-				p.addParseError(path, err)
+				p.addParseError(path, err, false)
 			}
 			i++
 			continue
@@ -428,7 +433,8 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 		}
 	}
 	for n, s := range modelsWithNameErrs {
-		p.replaceResourceWithError(n, fmt.Errorf("model name collides with source %q", s))
+		// NOTE: Setting external=true because removing the source should restore the model.
+		p.replaceResourceWithError(n, fmt.Errorf("model name collides with source %q", s), true)
 	}
 
 	return nil
@@ -502,15 +508,15 @@ func (p *Parser) parseStemPaths(ctx context.Context, paths []string) error {
 			// If there's an error in either of the YAML or SQL files, we attach a "skipped" error to the other file as well.
 			for _, path := range paths {
 				if path == pathErr.path {
-					p.addParseError(path, err)
+					p.addParseError(path, err, false)
 				} else {
-					p.addParseError(path, fmt.Errorf("skipping file due to error in companion SQL/YAML file"))
+					p.addParseError(path, fmt.Errorf("skipping file due to error in companion SQL/YAML file"), false)
 				}
 			}
 		} else {
 			// Not a path error – we add the error to all paths
 			for _, path := range paths {
-				p.addParseError(path, err)
+				p.addParseError(path, err, false)
 			}
 		}
 	}
@@ -579,7 +585,7 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 	rn := ResourceName{Kind: kind, Name: name}
 	_, ok := p.Resources[rn.Normalized()]
 	if ok {
-		return nil, fmt.Errorf("name collision: another resource of kind %q is also named %q", rn.Kind, rn.Name)
+		return nil, externalError{err: fmt.Errorf("name collision: another resource of kind %q is also named %q", rn.Kind, rn.Name)}
 	}
 
 	// Dedupe refs (it's not guaranteed by the upstream logic).
@@ -698,26 +704,32 @@ func (p *Parser) deleteResource(r *Resource) {
 }
 
 // replaceResourceWithError removes a resource from the parser's internal state and adds a parse error for its paths instead.
-func (p *Parser) replaceResourceWithError(n ResourceName, err error) {
+func (p *Parser) replaceResourceWithError(n ResourceName, err error, external bool) {
 	r := p.Resources[n.Normalized()]
 	p.deleteResource(r)
 	for _, path := range r.Paths {
-		p.addParseError(path, err)
+		p.addParseError(path, err, external)
 	}
 }
 
 // addParseError adds a parse error to the p.Errors
-func (p *Parser) addParseError(path string, err error) {
+func (p *Parser) addParseError(path string, err error, external bool) {
 	var loc *runtimev1.CharLocation
 	var locErr locationError
 	if errors.As(err, &locErr) {
 		loc = locErr.location
 	}
 
+	var extErr externalError
+	if errors.As(err, &extErr) {
+		external = true
+	}
+
 	p.Errors = append(p.Errors, &runtimev1.ParseError{
 		Message:       err.Error(),
 		FilePath:      path,
 		StartLocation: loc,
+		External:      external,
 	})
 }
 
@@ -765,6 +777,20 @@ func (e pathError) Error() string {
 }
 
 func (e pathError) Unwrap() error {
+	return e.err
+}
+
+// externalError wraps an error that should be emitted as a parse error with external=true.
+// This means the error is not with the file itself, but with another file that interferes with it (e.g. name collision).
+type externalError struct {
+	err error
+}
+
+func (e externalError) Error() string {
+	return e.err.Error()
+}
+
+func (e externalError) Unwrap() error {
 	return e.err
 }
 

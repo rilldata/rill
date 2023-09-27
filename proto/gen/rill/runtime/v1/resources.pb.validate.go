@@ -4561,6 +4561,8 @@ func (m *ParseError) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for External
+
 	if len(errors) > 0 {
 		return ParseErrorMultiError(errors)
 	}
