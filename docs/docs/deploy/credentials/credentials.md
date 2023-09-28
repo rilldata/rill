@@ -13,5 +13,6 @@ For instructions on how to create a service account and set credentials in Rill 
 - [Amazon S3](./s3.md)
 - [Google Cloud Storage (GCS)](./gcs.md)
 - [Azure Blob Storage (Azure)](./azure.md)
+- [Postgres](./postgres.md)
 - [MotherDuck](./motherduck.md)
 - [Amazon Athena](./athena.md)
