@@ -14,7 +14,7 @@ How you configure postgres connection string depends on whether you are developi
 
 ### Configure credentials for local development
 
-When working on a local project, you have the option to specify a connection string when running Rill using the `--env <pgx string>` 
+When working on a local project, you have the option to specify a connection string when running Rill using the `--env` flag.
 An example of using this syntax in terminal:
 ```
 rill start --env connectors.postgres.database_url="postgresql://postgres:postgres@localhost:5432/postgres"
