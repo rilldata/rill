@@ -86,7 +86,8 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 			// Deps are approximate, not exact (see docstring for Deps()), so they may not all exist
 			continue
 		}
-		key := fmt.Sprintf("%s:%s:%d", res.Meta.Name.Kind, res.Meta.Name.Name, res.Meta.StateVersion)
+		// Using StateUpdatedOn instead of StateVersion because the state version is reset when the resource is deleted and recreated.
+		key := fmt.Sprintf("%s:%s:%d", res.Meta.Name.Kind, res.Meta.Name.Name, res.Meta.StateUpdatedOn.Seconds)
 		depKeys = append(depKeys, key)
 	}
 
