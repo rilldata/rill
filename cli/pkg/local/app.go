@@ -113,7 +113,6 @@ func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool
 		return nil, err
 	}
 
-	isDefault := false
 	// If the OLAP is the default OLAP (DuckDB in stage.db), we make it relative to the project directory (not the working directory)
 	isDefault := false
 	if olapDriver == DefaultOLAPDriver && olapDSN == DefaultOLAPDSN {
