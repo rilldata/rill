@@ -133,7 +133,9 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, log
 		if c.config.ErrorOnIncompatibleVersion || !strings.Contains(err.Error(), "created with an older, incompatible version of Rill") {
 			return nil, err
 		}
-		c.logger.Named("console").Info("removing db file created using old version")
+
+		c.logger.Named("console").Info("Resetting .db file because it was created with an older, incompatible version of Rill")
+
 		tmpPath := cfg.DBFilePath + ".tmp"
 		_ = os.RemoveAll(tmpPath)
 		walPath := cfg.DBFilePath + ".wal"
