@@ -107,9 +107,8 @@ func olapDropTableIfExists(ctx context.Context, c *runtime.Controller, connector
 	}
 
 	_ = olap.Exec(ctx, &drivers.Statement{
-		Query:       fmt.Sprintf("DROP %s IF EXISTS %s", typ, safeSQLName(table)),
-		Priority:    100,
-		LongRunning: true,
+		Query:    fmt.Sprintf("DROP %s IF EXISTS %s", typ, safeSQLName(table)),
+		Priority: 100,
 	})
 }
 
