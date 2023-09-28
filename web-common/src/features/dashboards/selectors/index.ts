@@ -1,39 +1,39 @@
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
-  createQueryServiceMetricsViewToplist,
-  createRuntimeServiceGetCatalogEntry,
-  RpcStatus,
-  V1MetricsViewToplistResponse,
-  type V1MetricsView,
-  V1ColumnTimeRangeResponse,
+  ResourceKind,
+  useResource,
+} from "@rilldata/web-common/features/entity-management/resource-selectors";
+import {
   createQueryServiceColumnTimeRange,
+  createQueryServiceMetricsViewToplist,
+  RpcStatus,
+  V1ColumnTimeRangeResponse,
+  V1MetricsViewSpec,
+  V1MetricsViewToplistResponse,
 } from "@rilldata/web-common/runtime-client";
-import type { StateManagers } from "../state-managers/state-managers";
-import { derived, Readable } from "svelte/store";
 import type {
   CreateQueryResult,
   QueryObserverResult,
 } from "@tanstack/svelte-query";
+import { derived, Readable } from "svelte/store";
+import type { StateManagers } from "../state-managers/state-managers";
 
-export const useMetaQuery = <T = V1MetricsView>(
+export const useMetaQuery = <T = V1MetricsViewSpec>(
   ctx: StateManagers,
-  selector?: (meta: V1MetricsView) => T
-): Readable<QueryObserverResult<T | V1MetricsView, RpcStatus>> => {
+  selector?: (meta: V1MetricsViewSpec) => T
+): Readable<QueryObserverResult<T | V1MetricsViewSpec, RpcStatus>> => {
   return derived(
     [ctx.runtime, ctx.metricsViewName],
     ([runtime, metricViewName], set) => {
-      return createRuntimeServiceGetCatalogEntry(
+      return useResource(
         runtime.instanceId,
         metricViewName,
-        {
-          query: {
-            select: (data) =>
-              selector
-                ? selector(data?.entry?.metricsView)
-                : data?.entry?.metricsView,
-            queryClient: ctx.queryClient,
-          },
-        }
+        ResourceKind.MetricsView,
+        (data) =>
+          selector
+            ? selector(data.metricsView?.state?.validSpec)
+            : data.metricsView?.state?.validSpec,
+        ctx.queryClient
       ).subscribe(set);
     }
   );
@@ -106,7 +106,7 @@ export function createTimeRangeSummary(
     ([runtime, metricsView], set) =>
       createQueryServiceColumnTimeRange(
         runtime.instanceId,
-        metricsView.data?.model,
+        metricsView.data?.table,
         {
           columnName: metricsView.data?.timeDimension,
         },

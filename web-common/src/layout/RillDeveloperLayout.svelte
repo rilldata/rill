@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { resourcesStore } from "@rilldata/web-common/features/entity-management/resources-store";
   import { addReconcilingOverlay } from "@rilldata/web-common/features/entity-management/sync-file-system";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import DuplicateSource from "@rilldata/web-common/features/sources/modal/DuplicateSource.svelte";
@@ -12,7 +12,6 @@
   import type { ApplicationBuildMetadata } from "@rilldata/web-local/lib/application-state-stores/build-metadata";
   import { getContext, onMount } from "svelte";
   import type { Writable } from "svelte/store";
-  import { getArtifactErrors } from "../features/entity-management/getArtifactErrors";
   import PreparingImport from "../features/sources/modal/PreparingImport.svelte";
   import WelcomePageRedirect from "../features/welcome/WelcomePageRedirect.svelte";
   import { runtimeServiceGetConfig } from "../runtime-client/manual-clients";
@@ -35,8 +34,7 @@
       commitHash: config.build_commit,
     });
 
-    const res = await getArtifactErrors(config.instance_id);
-    fileArtifactsStore.setErrors(res.affectedPaths, res.errors);
+    return resourcesStore.init(config.instance_id);
   });
 
   // Bidirectional sync is disabled for now

@@ -42,6 +42,7 @@
   $: yaml = $fileQuery.data?.blob || "";
 
   let nonStandardError: string | undefined;
+  // TODO: use resource API
   $: catalogQuery = createRuntimeServiceGetCatalogEntry(
     $runtime.instanceId,
     metricViewName,

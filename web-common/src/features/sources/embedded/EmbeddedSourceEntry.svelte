@@ -5,6 +5,8 @@
   import { truncateMiddleText } from "@rilldata/web-common/lib/actions/truncate-middle-text";
   import ConnectorLabel from "./ConnectorLabel.svelte";
 
+  // TODO: remove embedded support
+
   export let connector: string;
   export let path: string;
 
@@ -22,10 +24,10 @@
   </div>
   <div class="w-full overflow-x-hidden">
     <div
-      style:min-width="52px"
-      class=" overflow-hidden whitespace-nowrap"
-      use:truncateMiddleText
       aria-label={path}
+      class=" overflow-hidden whitespace-nowrap"
+      style:min-width="52px"
+      use:truncateMiddleText
     >
       {cutOutProtocol(path)}
     </div>

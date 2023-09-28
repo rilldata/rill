@@ -376,7 +376,7 @@ test.describe("dashboard", () => {
     await updateCodeEditor(page, deleteOnlyMeasureDoc);
     // Check warning message appears, Go to Dashboard is disabled
     await expect(
-      page.getByText("at least one measure should be present")
+      page.getByText("must define at least one measure")
     ).toBeVisible();
 
     await expect(
