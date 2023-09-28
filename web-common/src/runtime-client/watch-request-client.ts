@@ -1,3 +1,4 @@
+import { ExponentialBackoffTracker } from "@rilldata/web-common/runtime-client/exponential-backoff-tracker";
 import type {
   V1WatchFilesResponse,
   V1WatchLogsResponse,
@@ -6,7 +7,6 @@ import type {
 import { streamingFetchWrapper } from "@rilldata/web-common/runtime-client/fetch-streaming-wrapper";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { asyncWait } from "@rilldata/web-common/lib/waitUtils";
 import { get, Unsubscriber } from "svelte/store";
 
 type WatchResponse =
@@ -22,16 +22,29 @@ type StreamingFetchResponse<Res extends WatchResponse> = {
 export class WatchRequestClient<Res extends WatchResponse> {
   private controller: AbortController;
 
+  private prevInstanceId: string;
+  private prevHost: string;
+
   public constructor(
     private readonly getUrl: (runtime: Runtime) => string,
     private readonly onResponse: (res: Res) => void | Promise<void>,
-    private readonly onReconnect: () => void | Promise<void>
+    private readonly onReconnect: () => void | Promise<void>,
+    private readonly tracker = ExponentialBackoffTracker.createBasicTracker()
   ) {}
 
   public start(): Unsubscriber {
     const unsubscribe = runtime.subscribe((runtimeState) => {
+      if (
+        runtimeState.instanceId === this.prevInstanceId &&
+        runtimeState.host === this.prevHost
+      ) {
+        return;
+      }
+      this.prevInstanceId = runtimeState.instanceId;
+      this.prevHost = runtimeState.host;
+
       this.controller?.abort();
-      if (!runtimeState?.host || !runtimeState?.instanceId) return;
+      if (!runtimeState?.instanceId) return;
 
       this.maintainConnection();
     });
@@ -69,10 +82,12 @@ export class WatchRequestClient<Res extends WatchResponse> {
         }
       } catch (err) {
         console.log(err);
-        // TODO: make this smarter
-        await asyncWait(2000);
+        if (!(await this.tracker.failed())) {
+          return;
+        }
       }
     }
+    return;
   }
 
   private getFetchStream(url: string, controller: AbortController) {

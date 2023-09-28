@@ -49,12 +49,9 @@
     rectangularSelection,
   } from "@codemirror/view";
   import { Debounce } from "@rilldata/web-common/features/models/utils/Debounce";
+  import { useAllSourceColumns } from "@rilldata/web-common/features/sources/selectors";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
-  import {
-    createRuntimeServiceGetCatalogEntry,
-    createRuntimeServiceListCatalogEntries,
-    V1Model,
-  } from "@rilldata/web-common/runtime-client";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher, onMount } from "svelte";
   import { editorTheme } from "../../../components/editor/theme";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -65,17 +62,11 @@
   export let selections: SelectionRange[] = [];
   export let focusOnMount = false;
 
+  const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
   const QUERY_UPDATE_DEBOUNCE_TIMEOUT = 0; // disables debouncing
   // const QUERY_SYNC_DEBOUNCE_TIMEOUT = 1000;
-
-  $: getModel = createRuntimeServiceGetCatalogEntry(
-    $runtime.instanceId,
-    modelName
-  );
-  let model: V1Model;
-  $: model = $getModel?.data?.entry?.model;
 
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
@@ -93,27 +84,18 @@
 
   let autocompleteCompartment = new Compartment();
 
-  $: sourceCatalogsQuery = createRuntimeServiceListCatalogEntries(
-    $runtime.instanceId,
-    {
-      type: "OBJECT_TYPE_SOURCE",
-    }
-  );
+  $: allSourceColumns = useAllSourceColumns(queryClient, $runtime?.instanceId);
 
   let schema: { [table: string]: string[] };
 
   /** Track embedded sources separately*/
-  let embeddedSources = [];
-  $: if ($sourceCatalogsQuery?.data?.entries) {
+  let embeddedSources = []; // TODO: remove embedded sources support
+  $: if ($allSourceColumns?.length) {
     schema = {};
-    embeddedSources = [];
-    for (const sourceTable of $sourceCatalogsQuery.data.entries) {
-      const sourceIdentifier = sourceTable?.embedded
-        ? sourceTable?.source?.properties?.path
-        : sourceTable?.name;
-      if (sourceTable?.embedded) embeddedSources.push(sourceIdentifier);
+    for (const sourceTable of $allSourceColumns) {
+      const sourceIdentifier = sourceTable?.tableName;
       schema[sourceIdentifier] =
-        sourceTable.source?.schema?.fields?.map((field) => field.name) ?? [];
+        sourceTable.profileColumns?.map((c) => c.name) ?? [];
     }
   }
 
@@ -294,8 +276,8 @@
     class="editor-container h-full w-full overflow-x-auto"
   >
     <div
-      class="w-full overflow-x-auto h-full"
       bind:this={editorContainerComponent}
+      class="w-full overflow-x-auto h-full"
       on:click={() => {
         /** give the editor focus no matter where we click */
         if (!editor.hasFocus) editor.focus();

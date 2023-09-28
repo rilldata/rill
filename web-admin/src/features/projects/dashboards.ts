@@ -1,9 +1,12 @@
 import type { V1GetProjectResponse } from "@rilldata/web-admin/client";
+import {
+  ResourceKind,
+  useFilteredResources,
+} from "@rilldata/web-common/features/entity-management/resource-selectors";
 import type {
   V1CatalogEntry,
   V1MetricsView,
 } from "@rilldata/web-common/runtime-client";
-import { createRuntimeServiceListCatalogEntries } from "@rilldata/web-common/runtime-client";
 import Axios from "axios";
 
 export interface DashboardListItem {
@@ -13,6 +16,7 @@ export interface DashboardListItem {
   isValid: boolean;
 }
 
+// TODO: use the creator pattern to get rid of the raw call to http endpoint
 export async function getDashboardsForProject(
   projectData: V1GetProjectResponse
 ): Promise<V1MetricsView[]> {
@@ -34,6 +38,7 @@ export async function getDashboardsForProject(
     },
   });
 
+  // TODO: use resource API
   const catalogEntriesResponse = await axios.get(
     `/v1/instances/${projectData.prodDeployment.runtimeInstanceId}/catalog?type=OBJECT_TYPE_METRICS_VIEW`
   );
@@ -49,17 +54,5 @@ export async function getDashboardsForProject(
 }
 
 export function useDashboards(instanceId: string) {
-  return createRuntimeServiceListCatalogEntries(
-    instanceId,
-    {
-      type: "OBJECT_TYPE_METRICS_VIEW",
-    },
-    {
-      query: {
-        select: (data) => {
-          return data.entries.map((entry) => entry.metricsView);
-        },
-      },
-    }
-  );
+  return useFilteredResources(instanceId, ResourceKind.MetricsView);
 }

@@ -1,35 +1,34 @@
+import { useMainEntityFiles } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
-  createRuntimeServiceGetCatalogEntry,
+  ResourceKind,
+  useFilteredResources,
+  useFilteredResourceNames,
+  useResource,
+} from "@rilldata/web-common/features/entity-management/resource-selectors";
+import {
+  createQueryServiceTableColumns,
   createRuntimeServiceGetFile,
-  createRuntimeServiceListFiles,
   getRuntimeServiceListFilesQueryKey,
   runtimeServiceListFiles,
-  StructTypeField,
   V1ListFilesResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/query-core";
 import { TIMESTAMPS } from "../../lib/duckdb-data-types";
 
+export function useModels(instanceId: string) {
+  return useFilteredResources(instanceId, ResourceKind.Model);
+}
+
 export function useModelNames(instanceId: string) {
-  return createRuntimeServiceListFiles(
-    instanceId,
-    {
-      glob: "{sources,models,dashboards}/*.{yaml,sql}",
-    },
-    {
-      query: {
-        // refetchInterval: 1000,
-        select: (data) =>
-          data.paths
-            ?.filter((path) => path.includes("models/"))
-            .map((path) => path.replace("/models/", "").replace(".sql", ""))
-            // sort alphabetically case-insensitive
-            .sort((a, b) =>
-              a.localeCompare(b, undefined, { sensitivity: "base" })
-            ),
-      },
-    }
-  );
+  return useFilteredResourceNames(instanceId, ResourceKind.Model);
+}
+
+export function useModelFileNames(instanceId: string) {
+  return useMainEntityFiles(instanceId, "models");
+}
+
+export function useModel(instanceId: string, name: string) {
+  return useResource(instanceId, name, ResourceKind.Model);
 }
 
 export async function getModelNames(
@@ -68,12 +67,17 @@ export function useModelTimestampColumns(
   instanceId: string,
   modelName: string
 ) {
-  return createRuntimeServiceGetCatalogEntry(instanceId, modelName, {
-    query: {
-      select: (data) =>
-        data?.entry?.model?.schema?.fields?.filter((field: StructTypeField) =>
-          TIMESTAMPS.has(field.type.code as string)
-        ) ?? [].map((field) => field.name),
-    },
-  });
+  return createQueryServiceTableColumns(
+    instanceId,
+    modelName,
+    {},
+    {
+      query: {
+        select: (data) =>
+          data.profileColumns
+            ?.filter((c) => TIMESTAMPS.has(c.type))
+            .map((c) => c.name) ?? [],
+      },
+    }
+  );
 }

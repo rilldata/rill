@@ -1,16 +1,20 @@
 <script lang="ts">
   import type { EditorView } from "@codemirror/view";
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
+  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { getAllErrorsForFile } from "@rilldata/web-common/features/entity-management/resources-store";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { setLineStatuses } from "../../../components/editor/line-status";
-  import {
-    fileArtifactsStore,
-    getFileArtifactReconciliationErrors,
-  } from "../../entity-management/file-artifacts-store";
-  import { mapReconciliationErrorsToLines } from "../../metrics-views/errors";
+  import { mapParseErrorsToLines } from "../../metrics-views/errors";
   import { useSourceStore } from "../sources-store";
 
   export let sourceName: string;
   export let yaml: string;
+  $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
+
+  const queryClient = useQueryClient();
 
   let editor: YAMLEditor;
   let view: EditorView;
@@ -25,16 +29,18 @@
     setLineStatuses([], view);
   }
 
+  $: allErrors = getAllErrorsForFile(
+    queryClient,
+    $runtime.instanceId,
+    filePath
+  );
+
   /**
    * Handle errors.
    */
   $: {
-    const reconciliationErrors = getFileArtifactReconciliationErrors(
-      $fileArtifactsStore,
-      `${sourceName}.yaml`
-    );
-    const lineBasedReconciliationErrors = mapReconciliationErrorsToLines(
-      reconciliationErrors,
+    const lineBasedReconciliationErrors = mapParseErrorsToLines(
+      $allErrors,
       yaml
     );
     if (view) setLineStatuses(lineBasedReconciliationErrors, view);

@@ -4,6 +4,10 @@
   import { useDashboards } from "@rilldata/web-admin/features/projects/dashboards";
   import { useProjectDeploymentStatus } from "@rilldata/web-admin/features/projects/selectors";
   import { Tag } from "@rilldata/web-common/components/tag";
+  import type {
+    V1MetricsViewSpec,
+    V1Resource,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
     createAdminServiceGetCurrentUser,
@@ -44,9 +48,13 @@
   $: isProjectPage = $page.route.id === "/[organization]/[project]";
 
   $: dashboards = useDashboards(instanceId);
-  $: currentDashboard = $dashboards?.data?.find(
-    (listing) => listing.name === $page.params.dashboard
+  let currentResource: V1Resource;
+  $: currentResource = $dashboards?.data?.find(
+    (listing) => listing.meta.name.name === $page.params.dashboard
   );
+  let currentDashboardName = currentResource.meta?.name?.name;
+  let currentDashboard: V1MetricsViewSpec;
+  $: currentDashboard = currentResource?.metricsView?.state?.validSpec;
   $: isDashboardPage =
     $page.route.id === "/[organization]/[project]/[dashboard]";
 </script>
@@ -92,16 +100,18 @@
     {#if currentDashboard}
       <span class="text-gray-600">/</span>
       <BreadcrumbItem
-        label={currentDashboard?.label || currentDashboard.name}
-        href={`/${orgName}/${projectName}/${currentDashboard.name}`}
+        label={currentDashboard?.title || currentDashboardName}
+        href={`/${orgName}/${projectName}/${currentDashboardName}`}
         menuOptions={$dashboards?.data?.length > 1 &&
           $dashboards.data.map((listing) => {
             return {
-              key: listing.name,
-              main: listing?.label || listing.name,
+              key: listing.meta.name.name,
+              main:
+                listing?.metricsView?.state?.validSpec?.title ||
+                listing.meta.name.name,
             };
           })}
-        menuKey={currentDashboard.name}
+        menuKey={currentDashboardName}
         onSelectMenuOption={(dashboard) =>
           goto(`/${orgName}/${projectName}/${dashboard}`)}
         isCurrentPage={isDashboardPage}

@@ -2,30 +2,18 @@
   import type { SelectionRange } from "@codemirror/state";
   import Portal from "@rilldata/web-common/components/Portal.svelte";
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import {
+    getFileAPIPathFromNameAndType,
+    getFilePathFromNameAndType,
+  } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { getAllErrorsForFile } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import type { QueryHighlightState } from "@rilldata/web-common/features/models/query-highlight-store";
   import {
-    embeddedSourcesError,
-    filterKnownEmbeddedSources,
-  } from "@rilldata/web-common/features/models/utils/embedded";
-  import {
-    getEmbeddedReferences,
-    Reference,
-  } from "@rilldata/web-common/features/models/utils/get-table-references";
-  import { useEmbeddedSources } from "@rilldata/web-common/features/sources/selectors";
-  import { overlay } from "@rilldata/web-common/layout/overlay-store";
-  import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
-  import {
     createQueryServiceTableRows,
     createRuntimeServiceGetFile,
-    createRuntimeServicePutFileAndReconcile,
-    getRuntimeServiceGetFileQueryKey,
-    V1CatalogEntry,
-    V1PutFileAndReconcileResponse,
+    createRuntimeServicePutFile,
   } from "@rilldata/web-common/runtime-client";
-  import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
   import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext } from "svelte";
@@ -49,7 +37,7 @@
   );
 
   $: runtimeInstanceId = $runtime.instanceId;
-  const updateModel = createRuntimeServicePutFileAndReconcile();
+  const updateModel = createRuntimeServicePutFile();
 
   const limit = 150;
 
@@ -65,7 +53,6 @@
   let showPreview = true;
   let modelPath: string;
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
-  $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
   $: modelSqlQuery = createRuntimeServiceGetFile(runtimeInstanceId, modelPath);
 
   $: modelEmpty = useModelFileIsEmpty(runtimeInstanceId, modelName);
@@ -76,14 +63,12 @@
   let sanitizedQuery: string;
   $: sanitizedQuery = sanitizeQuery(modelSql ?? "");
 
-  $: sourceCatalogsQuery = useEmbeddedSources($runtime?.instanceId);
-  let embeddedSourceCatalogs: Map<string, V1CatalogEntry>;
-  $: embeddedSourceCatalogs = getMapFromArray(
-    $sourceCatalogsQuery?.data ?? [],
-    (entity) => entity.source.properties.path?.toLowerCase()
-  ) as Map<string, V1CatalogEntry>;
-
-  let embeddedSourceErrors: Array<string>;
+  $: allErrors = getAllErrorsForFile(
+    queryClient,
+    $runtime.instanceId,
+    modelPath
+  );
+  $: modelError = $allErrors?.[0]?.message;
 
   const outputLayout = getContext(
     "rill:app:output-layout"
@@ -97,23 +82,9 @@
 
   async function updateModelContent(content: string) {
     const hasChanged = sanitizeQuery(content) !== sanitizedQuery;
-    let overlayShown = false;
-    let embeddedSources: Array<Reference> = [];
 
     try {
       if (hasChanged) {
-        embeddedSources = getEmbeddedReferences(sanitizeQuery(content));
-        const unknownEmbeddedSources = filterKnownEmbeddedSources(
-          embeddedSources,
-          embeddedSourceCatalogs
-        );
-        if (unknownEmbeddedSources.length > 0) {
-          overlay.set({
-            title: `Caching ${unknownEmbeddedSources.join(",")}`,
-          });
-          overlayShown = true;
-        }
-
         httpRequestQueue.removeByName(modelName);
         // cancel all existing analytical queries currently running.
         await queryClient.cancelQueries({
@@ -122,33 +93,17 @@
         });
       }
 
-      // TODO: why is the response type not present?
-      const resp = (await $updateModel.mutateAsync({
+      await $updateModel.mutateAsync({
+        instanceId: runtimeInstanceId,
+        path: getFileAPIPathFromNameAndType(modelName, EntityType.Model),
         data: {
-          instanceId: runtimeInstanceId,
-          path: modelPath,
           blob: content,
         },
-      })) as V1PutFileAndReconcileResponse;
+      });
 
-      embeddedSourceErrors = embeddedSourcesError(resp.errors, embeddedSources);
-      fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-      if (!resp.errors.length && hasChanged) {
-        sanitizedQuery = sanitizeQuery(content);
-      }
-      await invalidateAfterReconcile(queryClient, $runtime.instanceId, resp);
-      if (resp.affectedPaths.length === 0) {
-        // when backend detects no change, we need to invalidate the file
-        await queryClient.refetchQueries(
-          getRuntimeServiceGetFileQueryKey($runtime.instanceId, modelPath)
-        );
-      }
+      sanitizedQuery = sanitizeQuery(content);
     } catch (err) {
       console.error(err);
-    }
-
-    if (overlayShown) {
-      overlay.set(null);
     }
   }
   $: selections = $queryHighlight?.map((selection) => ({
@@ -159,9 +114,11 @@
   let errors = [];
   $: {
     errors = [];
-    if (embeddedSourceErrors?.length) errors.push(...embeddedSourceErrors);
-    if (modelError) errors.push(modelError);
-    if (runtimeError) errors.push(runtimeError.message);
+    // only add error if sql is present
+    if (modelSql !== "") {
+      if (modelError) errors.push(modelError);
+      if (runtimeError) errors.push(runtimeError.message);
+    }
   }
 </script>
 

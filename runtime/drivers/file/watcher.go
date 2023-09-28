@@ -148,7 +148,7 @@ func (w *watcher) runInner() error {
 			}
 
 			we := drivers.WatchEvent{}
-			if e.Has(fsnotify.Create) || e.Has(fsnotify.Write) {
+			if e.Has(fsnotify.Create) || e.Has(fsnotify.Write) || e.Has(fsnotify.Chmod) {
 				we.Type = runtimev1.FileEvent_FILE_EVENT_WRITE
 			} else if e.Has(fsnotify.Remove) || e.Has(fsnotify.Rename) {
 				we.Type = runtimev1.FileEvent_FILE_EVENT_DELETE
