@@ -25,6 +25,15 @@ func PutFiles(t testing.TB, rt *runtime.Runtime, id string, files map[string]str
 	}
 }
 
+func RenameFile(t testing.TB, rt *runtime.Runtime, id, from, to string) {
+	ctx := context.Background()
+	repo, release, err := rt.Repo(ctx, id)
+	require.NoError(t, err)
+	defer release()
+
+	require.NoError(t, repo.Rename(ctx, from, to))
+}
+
 func DeleteFiles(t testing.TB, rt *runtime.Runtime, id string, files ...string) {
 	ctx := context.Background()
 	repo, release, err := rt.Repo(ctx, id)

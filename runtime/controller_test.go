@@ -316,7 +316,7 @@ path: data/foo.csv
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
 
-	assertTableRows(t, rt, id, "bar", 3) // limit in model should override the limit in the query
+	assertTableRows(t, rt, id, "bar", 1) // limit in model should override the limit in the query
 }
 
 func TestSourceRefreshSchedule(t *testing.T) {
@@ -534,12 +534,113 @@ path: data/foo.csv
 }
 
 func TestRename(t *testing.T) {
-	// Create source and model
-	// Rename the model, verify success
-	// Rename the model to different case, verify success
 	// Add model referencing new name, Rename the source to new name, verify old model breaks and new one works
 	// Rename model A to B and model B to A, verify success
 	// Rename model A to B and source B to A, verify success
+
+	// Create source and model
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/data/foo.csv": `a,b,c,d,e
+1,2,3,4,5
+1,2,3,4,5
+1,2,3,4,5
+`,
+		"/sources/foo.yaml": `
+type: local_file
+path: data/foo.csv
+`,
+		"/models/bar.sql": `SELECT * FROM foo`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
+	falsy := false
+	model := &runtimev1.ModelV2{
+		Spec: &runtimev1.ModelSpec{
+			Connector:   "duckdb",
+			Sql:         "SELECT * FROM foo",
+			Materialize: &falsy,
+		},
+		State: &runtimev1.ModelState{
+			Connector: "duckdb",
+			Table:     "bar",
+		},
+	}
+	modelRes := &runtimev1.Resource{
+		Meta: &runtimev1.ResourceMeta{
+			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "bar"},
+			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindSource, Name: "foo"}},
+			Owner:     runtime.GlobalProjectParserName,
+			FilePaths: []string{"/models/bar.sql"},
+		},
+		Resource: &runtimev1.Resource_Model{
+			Model: model,
+		},
+	}
+	testruntime.RequireResource(t, rt, id, modelRes)
+	assertTableRows(t, rt, id, "bar", 3)
+
+	// Rename the model
+	testruntime.RenameFile(t, rt, id, "/models/bar.sql", "/models/bar_new.sql")
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
+	modelRes.Meta.Name.Name = "bar_new"
+	modelRes.Meta.FilePaths[0] = "/models/bar_new.sql"
+	model.State.Table = "bar_new"
+	testruntime.RequireResource(t, rt, id, modelRes)
+	assertTableRows(t, rt, id, "bar_new", 3)
+
+	// Rename the model to same name but different case
+	testruntime.RenameFile(t, rt, id, "/models/bar_new.sql", "/models/Bar_New.sql")
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
+	modelRes.Meta.Name.Name = "Bar_New"
+	modelRes.Meta.FilePaths[0] = "/models/Bar_New.sql"
+	model.State.Table = "Bar_New"
+	testruntime.RequireResource(t, rt, id, modelRes)
+	assertTableRows(t, rt, id, "Bar_New", 3)
+
+	// Create a model referencing the new model name from before
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/bar_another.sql": `SELECT * FROM Bar_New`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+	anotherModel := &runtimev1.ModelV2{
+		Spec: &runtimev1.ModelSpec{
+			Connector:   "duckdb",
+			Sql:         "SELECT * FROM Bar_New",
+			Materialize: &falsy,
+		},
+		State: &runtimev1.ModelState{
+			Connector: "duckdb",
+			Table:     "bar_another",
+		},
+	}
+	anotherModelRes := &runtimev1.Resource{
+		Meta: &runtimev1.ResourceMeta{
+			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "bar_another"},
+			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindModel, Name: "Bar_New"}},
+			Owner:     runtime.GlobalProjectParserName,
+			FilePaths: []string{"/models/bar_another.sql"},
+		},
+		Resource: &runtimev1.Resource_Model{
+			Model: anotherModel,
+		},
+	}
+	testruntime.RequireResource(t, rt, id, anotherModelRes)
+	assertTableRows(t, rt, id, "bar_another", 3)
+
+	//testruntime.RenameFile(t, rt, id, "/models/Bar_New.sql", "/sources/Bar_New_New.sql")
+	//testruntime.DeleteFiles(t, rt, id, "/models/bar_another.sql")
+	//testruntime.ReconcileParserAndWait(t, rt, id)
+	//testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
+
+	// Rename the source to the model's name
+	testruntime.RenameFile(t, rt, id, "/sources/foo.yaml", "/sources/Bar_New.yaml")
+	testruntime.DeleteFiles(t, rt, id, "/models/Bar_New.sql")
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 1, 1)
 }
 
 func TestInterdependence(t *testing.T) {
