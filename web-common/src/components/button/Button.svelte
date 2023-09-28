@@ -20,9 +20,9 @@
   const disabledClasses = `disabled:cursor-not-allowed disabled:text-gray-700 disabled:bg-gray-200 disabled:border disabled:border-gray-400 disabled:opacity-50`;
   export const levels = {
     info: {
-      primary: `bg-gray-800 border border-gray-800 hover:bg-gray-900 hover:border-gray-900 text-gray-100 hover:text-white focus:ring-blue-300`,
+      primary: `bg-gray-800 text-white border rounded-sm border-gray-800 hover:bg-gray-700 hover:border-gray-700 focus:ring-blue-300`,
       secondary:
-        "text-gray-500 border border-gray-400 hover:bg-gray-200 hover:text-gray-600 hover:border-gray-500 focus:ring-blue-300",
+        "text-gray-800 border rounded-sm border-gray-300 shadow-sm hover:bg-gray-100 hover:text-gray-700 hover:border-gray-300 focus:ring-blue-300",
       highlighted:
         "text-gray-500 border border-gray-200 hover:bg-gray-200 hover:text-gray-600 hover:border-gray-200 focus:ring-blue-300 shadow-lg rounded-sm h-8 ",
       text: "text-gray-900 hover:bg-gray-300 focus:ring-blue-300",
@@ -45,9 +45,8 @@
     customClasses = undefined,
   }) {
     return `
-  ${
-    compact ? "px-2 py-1" : "px-3 py-1"
-  } rounded flex flex-row gap-x-2 items-center transition-transform duration-100
+  ${compact ? "px-2 py-0.5" : "px-3 py-0.5"} text-xs font-normal leading-snug
+ flex flex-row gap-x-2 items-center transition-transform duration-100
   focus:outline-none focus:ring-2
   ${customClasses ? customClasses : levels[status][type]}
   ${disabledClasses}
