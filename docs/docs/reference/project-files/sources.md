@@ -32,10 +32,14 @@ In your Rill project directory, create a `<source_name>.yaml` file in the `sourc
 
 **`sql`**
 <<<<<<< HEAD
+<<<<<<< HEAD
 - Optionally sets the SQL query to extract data from a SQL source (DuckDB/Motherduck/Athena/BigQuery/Postrgres/SQLite) 
 =======
 - Optionally sets the SQL query to extract data from a SQL source (DuckDB/Motherduck/Athena/BigQuery/Postrgres) 
 >>>>>>> 256ef8fcd (Amazon Athena docs (#3145))
+=======
+- Optionally sets the SQL query to extract data from a SQL source (DuckDB/Motherduck/Athena/BigQuery/Postrgres/SQLite) 
+>>>>>>> 3cd04532e (Postgres and SQLite docs (#3147))
 
 **`region`**
  — Optionally sets the cloud region of the bucket or Athena you want to connect to. Only available for S3 and Athena.
