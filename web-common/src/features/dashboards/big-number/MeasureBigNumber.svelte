@@ -31,7 +31,7 @@
   $: formatPresetEnum = (formatPreset as FormatPreset) || FormatPreset.HUMANIZE;
   $: valueIsPresent = value !== undefined && value !== null;
 
-  $: isComparisonPositive = diff && diff >= 0;
+  $: isComparisonPositive = Number.isFinite(diff) && diff >= 0;
   const [send, receive] = crossfade({ fallback: fly });
 
   $: diff = comparisonValue ? value - comparisonValue : false;
