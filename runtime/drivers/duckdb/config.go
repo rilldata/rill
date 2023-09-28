@@ -16,6 +16,8 @@ type config struct {
 	PoolSize int `mapstructure:"pool_size"`
 	// AllowHostAccess denotes whether to limit access to the local environment and file system
 	AllowHostAccess bool `mapstructure:"allow_host_access"`
+	// ErrorOnIncompatibleVersion controls whether to return error or delete DBFile created with older duckdb version.
+	ErrorOnIncompatibleVersion bool `mapstructure:"error_on_incompatible_version"`
 	// DBFilePath is the path where the database is stored. It is inferred from the DSN (can't be provided by user).
 	DBFilePath string `mapstructure:"-"`
 }

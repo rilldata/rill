@@ -130,7 +130,7 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, log
 	// Open the DB
 	err = c.reopenDB()
 	if err != nil {
-		if !strings.Contains(err.Error(), "created with an older, incompatible version of Rill") {
+		if c.config.ErrorOnIncompatibleVersion || !strings.Contains(err.Error(), "created with an older, incompatible version of Rill") {
 			return nil, err
 		}
 		c.logger.Named("console").Info("removing db file created using old version")
