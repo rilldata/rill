@@ -276,4 +276,4 @@ replace cloud.google.com/go/bigquery v1.53.0 => github.com/k-anshul/google-cloud
 
 exclude modernc.org/sqlite v1.18.1
 
-replace github.com/marcboeker/go-duckdb v1.4.1 => github.com/k-anshul/go-duckdb v0.0.0-20230927141352-1762576236ce
+replace github.com/marcboeker/go-duckdb v1.4.1 => github.com/k-anshul/go-duckdb v0.0.0-20230928050328-7f7a8536c36b
