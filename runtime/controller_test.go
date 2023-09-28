@@ -3,10 +3,12 @@ package runtime_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -282,24 +284,253 @@ path: data/foo.csv
 	testruntime.RequireOLAPTableCount(t, rt, id, "foo", 1)
 }
 
+func TestCacheInvalidation(t *testing.T) {
+	// Add source and model
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/data/foo.csv": `a,b,c,d,e
+1,2,3,4,5
+1,2,3,4,5
+1,2,3,4,5
+`,
+		"/sources/foo.yaml": `
+type: local_file
+path: data/foo.csv
+`,
+		"/models/bar.sql": `SELECT * FROM foo`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
+
+	assertTableRows(t, rt, id, "bar", 3)
+
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/bar.sql": `SELECT * FROM foo LIMIT`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 2, 1, 1)
+
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/bar.sql": `SELECT * FROM foo LIMIT 1`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
+
+	assertTableRows(t, rt, id, "bar", 3) // limit in model should override the limit in the query
+}
+
 func TestSourceRefreshSchedule(t *testing.T) {
-	// Add source with refresh schedule
-	// Verify it gets retriggered after the delay
+	// Add source refresh schedule
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/data/foo.csv": `a,b,c,d,e
+1,2,3,4,5
+1,2,3,4,5
+1,2,3,4,5`,
+		"/sources/foo.yaml": `
+type: local_file
+path: data/foo.csv
+refresh:
+  every: 1
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
+	assertTableRows(t, rt, id, "foo", 3)
+
+	// update the data file with only 2 rows
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/data/foo.csv": `a,b,c,d,e
+1,2,3,4,5
+1,2,3,4,5`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	// no change in data just yet
+	assertTableRows(t, rt, id, "foo", 3)
+
+	// wait to make sure the data is ingested
+	time.Sleep(2 * time.Second) // TODO: is there a way to decrease this wait time?
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	// data is changed
+	assertTableRows(t, rt, id, "foo", 2)
 }
 
 func TestSourceAndModelNameCollission(t *testing.T) {
+	// Add source for a file
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/data/foo.csv": `a,b,c,d,e
+1,2,3,4,5
+1,2,3,4,5
+1,2,3,4,5
+`,
+		"/sources/foo.yaml": `
+type: local_file
+path: data/foo.csv
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
+	assertTableRows(t, rt, id, "foo", 3)
 
+	// Create a source with same name within a different folder
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/other_folder/foo.yaml": `
+kind: source
+type: local_file
+path: data/foo.csv
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 2, 1, 1)
+	// Source data is still accessible
+	assertTableRows(t, rt, id, "foo", 3)
+
+	// Deleting the other file marks the other as valid
+	testruntime.DeleteFiles(t, rt, id, "/other_folder/foo.yaml")
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
+	assertTableRows(t, rt, id, "foo", 3)
+
+	// Create a source with same name using `name` annotation
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/sources/foo_1.yaml": `
+name: foo
+type: local_file
+path: data/foo.csv
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 2, 1, 1)
+	assertTableRows(t, rt, id, "foo", 3)
+
+	// Deleting the other file marks the other as valid
+	testruntime.DeleteFiles(t, rt, id, "/sources/foo_1.yaml")
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
+	assertTableRows(t, rt, id, "foo", 3)
+
+	// Create a model with same name as the source
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/foo.sql": `SELECT 1`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 2, 1, 1)
+	// Data is from the source and model did not override it
+	assertTableRows(t, rt, id, "foo", 3)
+
+	// TODO: any other cases?
 }
 
 func TestModelMaterialize(t *testing.T) {
-	// Create model
-	// Make materialized, verify is table
-	// Make not materialized, verify is view
+	// Add a simple model
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/bar.sql": `
+select 1
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
+
+	olap, done, err := rt.OLAP(context.Background(), id)
+	require.NoError(t, err)
+	defer done()
+
+	// Assert that the model is a view
+	assertIsView(t, olap, "bar", true)
+
+	// Mark the model as materialized
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/bar.sql": `
+-- @materialize: true
+select 1
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
+	// Assert that the model is a table now
+	assertIsView(t, olap, "bar", false)
+
+	// Mark the model as not materialized
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/bar.sql": `
+-- @materialize: false
+select 1
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
+	// Assert that the model is back to being a view
+	assertIsView(t, olap, "bar", true)
 }
 
 func TestModelCTE(t *testing.T) {
 	// Create a model that references a source
-	// Add CTE with same name as source, verify no ref to source anymore
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/data/foo.csv": `a,b,c,d,e
+1,2,3,4,5
+1,2,3,4,5
+1,2,3,4,5
+`,
+		"/sources/foo.yaml": `
+type: local_file
+path: data/foo.csv
+`,
+		"/models/bar.sql": `SELECT * FROM foo`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
+	falsy := false
+	model := &runtimev1.ModelV2{
+		Spec: &runtimev1.ModelSpec{
+			Connector:   "duckdb",
+			Sql:         "SELECT * FROM foo",
+			Materialize: &falsy,
+		},
+		State: &runtimev1.ModelState{
+			Connector: "duckdb",
+			Table:     "bar",
+		},
+	}
+	modelRes := &runtimev1.Resource{
+		Meta: &runtimev1.ResourceMeta{
+			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "bar"},
+			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindSource, Name: "foo"}},
+			Owner:     runtime.GlobalProjectParserName,
+			FilePaths: []string{"/models/bar.sql"},
+		},
+		Resource: &runtimev1.Resource_Model{
+			Model: model,
+		},
+	}
+	testruntime.RequireResource(t, rt, id, modelRes)
+	assertTableRows(t, rt, id, "bar", 3)
+
+	// Update model to have a CTE with alias different from the source
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/bar.sql": `with CTEAlias as (select * from foo) select * from CTEAlias`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
+	model.Spec.Sql = `with CTEAlias as (select * from foo) select * from CTEAlias`
+	testruntime.RequireResource(t, rt, id, modelRes)
+	assertTableRows(t, rt, id, "bar", 3)
+
+	// Update model to have a CTE with alias same as the source
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/bar.sql": `with foo as (select * from foo) select * from foo`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
+	model.Spec.Sql = `with foo as (select * from foo) select * from foo`
+	// Refs are removed but the model is valid.
+	// TODO: is this expected?
+	modelRes.Meta.Refs = []*runtimev1.ResourceName{}
+	testruntime.RequireResource(t, rt, id, modelRes)
+	// Data still persists
+	assertTableRows(t, rt, id, "bar", 3)
 }
 
 func TestRename(t *testing.T) {
@@ -347,4 +578,20 @@ func must[T any](v T, err error) T {
 		panic(err)
 	}
 	return v
+}
+
+func assertTableRows(t testing.TB, rt *runtime.Runtime, id, table string, limit int) {
+	q := &queries.TableHead{
+		TableName: table,
+		Limit:     3,
+	}
+	require.NoError(t, rt.Query(context.Background(), id, q, 5))
+	require.Len(t, q.Result, limit)
+}
+
+func assertIsView(t testing.TB, olap drivers.OLAPStore, tableName string, isView bool) {
+	table, err := olap.InformationSchema().Lookup(context.Background(), tableName)
+	require.NoError(t, err)
+	// Assert that the model is a table now
+	require.Equal(t, table.View, isView)
 }
