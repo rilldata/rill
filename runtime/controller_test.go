@@ -282,6 +282,33 @@ path: data/foo.csv
 	testruntime.RequireOLAPTableCount(t, rt, id, "foo", 1)
 }
 
+func TestSimultaneousDeleteRenameCreate(t *testing.T) {
+	// Add bar and foo
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/bar.sql": `SELECT 10`,
+		"/models/foo.sql": `SELECT 20`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
+
+	// Delete bar, rename foo to foo_two, add bazz
+	testruntime.DeleteFiles(t, rt, id,
+		"/models/bar.sql",
+		"/models/foo.sql",
+	)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/foo_two.sql": `SELECT 20`,
+		"/models/bazz.sql":    `SELECT 30`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
+
+	testruntime.RequireNoOLAPTable(t, rt, id, "bar")
+	testruntime.RequireOLAPTable(t, rt, id, "foo_two")
+	testruntime.RequireOLAPTable(t, rt, id, "bazz")
+}
+
 func TestSourceRefreshSchedule(t *testing.T) {
 	// Add source with refresh schedule
 	// Verify it gets retriggered after the delay

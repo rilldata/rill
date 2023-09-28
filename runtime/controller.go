@@ -1020,9 +1020,9 @@ func (c *Controller) setQueueUpdated() {
 	}
 }
 
-// processQueue calls schedule() for each resource in c.queue. It is invoked in each iteration of the event loop.
-// The reason we have the queue and process it from the event loop (instead of calling schedule() directly from enqueue()) is to enable batching of schedule calls during initialization and when Lock/Unlock is used.
-// Batching makes it easier to ensure that parents are scheduled before children when both need to be scheduled.
+// processQueue calls attempts to schedule the resources in c.queue. It is invoked in each iteration of the event loop when there are resources in the queue.
+// The reason we have the queue and process it from the event loop (instead of marking pending and scheduling directly from enqueue()) is to enable batch scheduling during initialization and when Lock/Unlock is used.
+// Batching makes it easier to ensure parents are scheduled before children when both are enqueued at the same time.
 //
 // It must be called while c.mu is held.
 func (c *Controller) processQueue() error {
@@ -1197,15 +1197,17 @@ func (c *Controller) trySchedule(n *runtimev1.ResourceName) (success bool, err e
 	}
 
 	// We want deletes to run before renames or regular reconciles.
-	// Return false if there are pending deletes and this isn't one of them.
-	if len(c.catalog.deleted) != 0 && r.Meta.DeletedOn == nil {
-		return false, nil
-	}
+	// And we want renames to run before regular reconciles.
+	// Return false if there are deleted or renamed resources, and this isn't one of them.
+	// (The resource will be kept in the queue and retried next time processQueue runs.)
+	if r.Meta.DeletedOn == nil {
+		if len(c.catalog.deleted) != 0 {
+			return false, nil
+		}
 
-	// We want renames to run before regular reconciles.
-	// Return false if there are pending renames and this isn't one of them.
-	if len(c.catalog.renamed) != 0 && r.Meta.RenamedFrom == nil {
-		return false, nil
+		if r.Meta.RenamedFrom == nil && len(c.catalog.renamed) != 0 {
+			return false, nil
+		}
 	}
 
 	// Invoke
