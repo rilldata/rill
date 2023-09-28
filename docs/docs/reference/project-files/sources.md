@@ -17,6 +17,8 @@ In your Rill project directory, create a `<source_name>.yaml` file in the `sourc
   - _`local_file`_ — a locally available file.
   - _`motherduck`_ - data stored in motherduck
   - _`athena`_ - a data store defined in Amazon Athena
+  - _`postgres`_ - data stored in Postgres
+  - _`sqlite`_ - data stored in SQLite
 
 **`uri`**
  —  the URI of the remote connector you are using for the source _(required for type: http, s3, gcs)_. Rill also supports glob patterns as part of the URI for S3 and GCS.
@@ -29,7 +31,7 @@ In your Rill project directory, create a `<source_name>.yaml` file in the `sourc
 - _`/path/to/file.csv`_ —  the path to your file
 
 **`sql`**
-- Optionally sets the SQL query to extract data from a SQL source (DuckDB/Motherduck/Athena/BigQuery/Postrgres) 
+- Optionally sets the SQL query to extract data from a SQL source (DuckDB/Motherduck/Athena/BigQuery/Postrgres/SQLite) 
 
 **`region`**
  — Optionally sets the cloud region of the bucket or Athena you want to connect to. Only available for S3 and Athena.
@@ -72,7 +74,10 @@ In your Rill project directory, create a `<source_name>.yaml` file in the `sourc
     - If only `files` is specified, each file will be fully ingested.
 
 **`db`**
- — Optionally set database for motherduck connector.
+ — Optionally set database for motherduck connector or path to SQLite db file.
+
+**`database_url`**
+ — Postgres connection string. Refer Postgres [docs](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING) for format.  
 
 **`duckdb`** – Optionally specify raw parameters to inject into the DuckDB [`read_csv`](https://duckdb.org/docs/data/csv/overview.html), [`read_json`](https://duckdb.org/docs/data/json/overview.html) or [`read_parquet`](https://duckdb.org/docs/data/parquet/overview) statement that Rill generates internally. See the DuckDB [docs](https://duckdb.org/docs/data/overview) for a full list of available parameters. Example usage:
 ```yaml
