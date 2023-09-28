@@ -231,6 +231,7 @@ TableCells – the cell contents.
             {excludeMode}
             {scrolling}
             {horizontalScrolling}
+            on:dimension-sort
             on:select-item={(event) => onSelectItem(event)}
             on:inspect={setActiveIndex}
           />

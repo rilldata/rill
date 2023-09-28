@@ -206,6 +206,10 @@
     }
   }
 
+  function sortByDimensionValue() {
+    metricsExplorerStore.toggleSort(metricViewName, SortType.DIMENSION);
+  }
+
   function toggleComparisonDimension(dimensionName, isBeingCompared) {
     metricsExplorerStore.setComparisonDimension(
       metricViewName,
@@ -233,6 +237,7 @@
         <DimensionTable
           on:select-item={(event) => onSelectItem(event)}
           on:sort={(event) => onSortByColumn(event)}
+          on:dimension-sort={sortByDimensionValue}
           on:toggle-dimension-comparison={() =>
             toggleComparisonDimension(dimensionName, isBeingCompared)}
           {sortAscending}

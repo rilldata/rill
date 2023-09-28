@@ -1,7 +1,7 @@
 <script lang="ts">
   import StickyHeader from "@rilldata/web-common/components/virtualized-table/core/StickyHeader.svelte";
   import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
-  import { getContext } from "svelte";
+  import { createEventDispatcher, getContext } from "svelte";
   import Cell from "../../../components/virtualized-table/core/Cell.svelte";
   import type { VirtualizedTableConfig } from "../../../components/virtualized-table/types";
 
@@ -19,6 +19,7 @@
   export let scrolling;
   export let activeIndex;
   export let excludeMode = false;
+  const dispatch = createEventDispatcher();
 
   $: atLeastOneSelected = !!selectedIndex?.length;
 
@@ -39,6 +40,12 @@
   class="sticky self-start left-6 top-0 z-20"
   style:height="{totalHeight}px"
   style:width="{width}px"
+  on:click={() => {
+    dispatch("dimension-sort");
+  }}
+  on:keydown={() => {
+    dispatch("dimension-sort");
+  }}
 >
   <StickyHeader
     header={{ size: width, start: 0 }}
