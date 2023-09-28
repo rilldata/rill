@@ -198,7 +198,6 @@ TableCells – the cell contents.
         style:width="{virtualWidth}px"
         style:height="{virtualHeight}px"
       >
-        <!-- ColumnHeaders -->
         <ColumnHeaders
           virtualColumnItems={virtualColumns}
           noPin={true}

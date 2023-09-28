@@ -21,16 +21,15 @@
     const column = columns[virtCol.index];
     if (!column) return;
 
-    const columnName = column?.name;
+    const columnName = column.name;
     const value = rows[virtRow.index][columnName];
     return {
       value,
       formattedValue: rows[virtRow.index]["__formatted_" + columnName],
-      type: column?.type,
-      barValue: column?.total ? value / column?.total : 0,
-      rowSelected:
-        selectedIndex.findIndex((tgt) => virtRow?.index === tgt) >= 0,
-      colSelected: column?.highlight,
+      type: column.type,
+      barValue: column.total ? value / column.total : 0,
+      rowSelected: selectedIndex.findIndex((tgt) => virtRow.index === tgt) >= 0,
+      colSelected: column.highlight,
     };
   };
 </script>
@@ -38,7 +37,7 @@
 {#each virtualColumnItems as column (column.key)}
   <Row>
     {#each virtualRowItems as row (`${row.key}-${column.key}`)}
-      {@const rowActive = activeIndex === row?.index}
+      {@const rowActive = activeIndex === row.index}
       <Cell
         {row}
         {column}
