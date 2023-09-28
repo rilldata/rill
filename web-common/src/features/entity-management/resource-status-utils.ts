@@ -80,11 +80,12 @@ export function getResourceStatusStore(
 ): Readable<ResourceStatusState> {
   return derived(
     [
+      getResourceNameForFile(filePath),
       useResourceForFile(queryClient, instanceId, filePath),
       useProjectParser(queryClient, instanceId),
     ],
-    ([resourceResp, projectParserResp]) => {
-      if (projectParserResp.isError) {
+    ([resourceName, resourceResp, projectParserResp]) => {
+      if (!resourceName || projectParserResp.isError) {
         return {
           status: ResourceStatus.Errored,
           error: projectParserResp.error,
