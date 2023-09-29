@@ -328,7 +328,7 @@ path: data/foo.csv
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
-	testruntime.RequireTableRowCount(t, rt, id, "bar", 3)
+	testruntime.RequireOLAPTableCount(t, rt, id, "bar", 3)
 
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/models/bar.sql": `SELECT * FROM foo LIMIT`,
@@ -342,7 +342,7 @@ path: data/foo.csv
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
-	testruntime.RequireTableRowCount(t, rt, id, "bar", 1) // limit in model should override the limit in the query
+	testruntime.RequireOLAPTableCount(t, rt, id, "bar", 1) // limit in model should override the limit in the query
 }
 
 func TestSourceRefreshSchedule(t *testing.T) {
@@ -362,7 +362,7 @@ refresh:
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
-	testruntime.RequireTableRowCount(t, rt, id, "foo", 3)
+	testruntime.RequireOLAPTableCount(t, rt, id, "foo", 3)
 
 	// update the data file with only 2 rows
 	testruntime.PutFiles(t, rt, id, map[string]string{
@@ -372,13 +372,13 @@ refresh:
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	// no change in data just yet
-	testruntime.RequireTableRowCount(t, rt, id, "foo", 3)
+	testruntime.RequireOLAPTableCount(t, rt, id, "foo", 3)
 
 	// wait to make sure the data is ingested
 	time.Sleep(2 * time.Second) // TODO: is there a way to decrease this wait time?
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	// data has changed
-	testruntime.RequireTableRowCount(t, rt, id, "foo", 2)
+	testruntime.RequireOLAPTableCount(t, rt, id, "foo", 2)
 }
 
 func TestSourceAndModelNameCollission(t *testing.T) {
@@ -442,7 +442,7 @@ path: data/foo.csv
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 2, 1, 1)
 	// Data is from the source and model did not override it
-	testruntime.RequireTableRowCount(t, rt, id, "foo", 3)
+	testruntime.RequireOLAPTableCount(t, rt, id, "foo", 3)
 
 	// TODO: any other cases?
 }
@@ -616,8 +616,8 @@ path: data/foo.csv
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
-	testruntime.RequireTableRowCount(t, rt, id, "bar1", 1)
-	testruntime.RequireTableRowCount(t, rt, id, "bar2", 2)
+	testruntime.RequireOLAPTableCount(t, rt, id, "bar1", 1)
+	testruntime.RequireOLAPTableCount(t, rt, id, "bar2", 2)
 
 	time.Sleep(time.Second) // this is needed since we add second to the cache key
 	// Rename model A to B and model B to A, verify success
@@ -625,8 +625,8 @@ path: data/foo.csv
 	testruntime.RenameFile(t, rt, id, "/models/bar1.sql", "/models/bar2.sql")
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
-	testruntime.RequireTableRowCount(t, rt, id, "bar2", 1)
-	testruntime.RequireTableRowCount(t, rt, id, "bar3", 2)
+	testruntime.RequireOLAPTableCount(t, rt, id, "bar2", 1)
+	testruntime.RequireOLAPTableCount(t, rt, id, "bar3", 2)
 }
 
 func TestInterdependence(t *testing.T) {
@@ -662,9 +662,9 @@ measures:
 	metrics, metricsRes := newMetricsView("dash", "bar3", []string{"count(*)", "avg(a)"}, []string{"b", "c"})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 6, 0, 0)
-	testruntime.RequireTableRowCount(t, rt, id, "bar1", 3)
-	testruntime.RequireTableRowCount(t, rt, id, "bar2", 3)
-	testruntime.RequireTableRowCount(t, rt, id, "bar3", 3)
+	testruntime.RequireOLAPTableCount(t, rt, id, "bar1", 3)
+	testruntime.RequireOLAPTableCount(t, rt, id, "bar2", 3)
+	testruntime.RequireOLAPTableCount(t, rt, id, "bar3", 3)
 	testruntime.RequireResource(t, rt, id, metricsRes)
 
 	// Update the source to invalid file
