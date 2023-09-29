@@ -436,7 +436,7 @@ func (c *connection) acquireMetaConn(ctx context.Context) (*sqlx.Conn, func() er
 	}
 
 	// Get new conn
-	conn, releaseConn, err := c.acquireConn(ctx)
+	conn, releaseConn, err := c.acquireConn(ctx, false)
 	if err != nil {
 		c.metaSem.Release(1)
 		return nil, nil, err
@@ -478,21 +478,9 @@ func (c *connection) acquireOLAPConn(ctx context.Context, priority int, longRunn
 		return nil, nil, err
 	}
 
-	// Poor man's transaction support – see struct docstring for details
-	if tx {
-		c.txMu.Lock()
-	} else {
-		c.txMu.RLock()
-	}
-
 	// Get new conn
-	conn, releaseConn, err := c.acquireConn(ctx)
+	conn, releaseConn, err := c.acquireConn(ctx, tx)
 	if err != nil {
-		if tx {
-			c.txMu.Unlock()
-		} else {
-			c.txMu.RUnlock()
-		}
 		c.olapSem.Release()
 		if longRunning {
 			c.longRunningSem.Release(1)
@@ -503,11 +491,6 @@ func (c *connection) acquireOLAPConn(ctx context.Context, priority int, longRunn
 	// Build release func
 	release := func() error {
 		err := releaseConn()
-		if tx {
-			c.txMu.Unlock()
-		} else {
-			c.txMu.RUnlock()
-		}
 		c.olapSem.Release()
 		if longRunning {
 			c.longRunningSem.Release(1)
@@ -520,7 +503,7 @@ func (c *connection) acquireOLAPConn(ctx context.Context, priority int, longRunn
 
 // acquireConn returns a DuckDB connection. It should only be used internally in acquireMetaConn and acquireOLAPConn.
 // acquireConn implements the connection tracking and DB reopening logic described in the struct definition for connection.
-func (c *connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error, error) {
+func (c *connection) acquireConn(ctx context.Context, tx bool) (*sqlx.Conn, func() error, error) {
 	c.dbCond.L.Lock()
 	for {
 		if c.dbErr != nil {
@@ -536,13 +519,39 @@ func (c *connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error,
 	c.dbConnCount++
 	c.dbCond.L.Unlock()
 
+	// Poor man's transaction support – see struct docstring for details.
+	if tx {
+		c.txMu.Lock()
+
+		// When tx is true, and the database is backed by a file, we reopen the database to ensure only one DuckDB connection is open.
+		// This avoids the following issue: https://github.com/duckdb/duckdb/issues/9150
+		if c.config.DBFilePath != "" {
+			err := c.reopenDB()
+			if err != nil {
+				c.txMu.Unlock()
+				return nil, nil, err
+			}
+		}
+	} else {
+		c.txMu.RLock()
+	}
+	releaseTx := func() {
+		if tx {
+			c.txMu.Unlock()
+		} else {
+			c.txMu.RUnlock()
+		}
+	}
+
 	conn, err := c.db.Connx(ctx)
 	if err != nil {
+		releaseTx()
 		return nil, nil, err
 	}
 
 	release := func() error {
 		err := conn.Close()
+		releaseTx()
 		c.dbCond.L.Lock()
 		c.dbConnCount--
 		if c.dbConnCount == 0 && c.dbReopen {
