@@ -25,6 +25,15 @@ func PutFiles(t testing.TB, rt *runtime.Runtime, id string, files map[string]str
 	}
 }
 
+func RenameFile(t testing.TB, rt *runtime.Runtime, id, from, to string) {
+	ctx := context.Background()
+	repo, release, err := rt.Repo(ctx, id)
+	require.NoError(t, err)
+	defer release()
+
+	require.NoError(t, repo.Rename(ctx, from, to))
+}
+
 func DeleteFiles(t testing.TB, rt *runtime.Runtime, id string, files ...string) {
 	ctx := context.Background()
 	repo, release, err := rt.Repo(ctx, id)
@@ -80,6 +89,19 @@ func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.R
 
 	// Check the resource's spec version has increased
 	require.Greater(t, r.Meta.SpecVersion, prevSpecVersion)
+}
+
+func WaitUntilIdle(t testing.TB, rt *runtime.Runtime, id string) {
+	ctrl, err := rt.Controller(id)
+	require.NoError(t, err)
+
+	// Smaller times was not stable on an M1 mac.
+	// TODO: Refactor to wait for the controller to actually be triggered if we ever have instability
+	time.Sleep(time.Second)
+
+	// For now this is only used for continuous watcher. add ignore hidden to param if otherwise
+	err = ctrl.WaitUntilIdle(context.Background(), true)
+	require.NoError(t, err)
 }
 
 func RequireReconcileState(t testing.TB, rt *runtime.Runtime, id string, lenResources, lenReconcileErrs, lenParseErrs int) {
@@ -168,6 +190,25 @@ func DumpResources(t testing.TB, rt *runtime.Runtime, id string) {
 
 	for _, r := range rs {
 		t.Logf("%s/%s: status=%d, stateversion=%d, error=%q", r.Meta.Name.Kind, r.Meta.Name.Name, r.Meta.ReconcileStatus, r.Meta.StateVersion, r.Meta.ReconcileError)
+	}
+}
+
+func RequireParseErrors(t testing.TB, rt *runtime.Runtime, id string, expectedParseErrors map[string]string) {
+	ctrl, err := rt.Controller(id)
+	require.NoError(t, err)
+
+	pp, err := ctrl.Get(context.Background(), runtime.GlobalProjectParserName, true)
+	require.NoError(t, err)
+
+	parseErrs := map[string]string{}
+	for _, pe := range pp.GetProjectParser().State.ParseErrors {
+		parseErrs[pe.FilePath] = pe.Message
+	}
+	require.Len(t, parseErrs, len(expectedParseErrors))
+
+	for f, pe := range parseErrs {
+		// Checking parseError using Contains instead of Equal
+		require.Contains(t, pe, expectedParseErrors[f])
 	}
 }
 
