@@ -508,12 +508,14 @@ func (c *connection) acquireConn(ctx context.Context, tx bool) (*sqlx.Conn, func
 	if tx {
 		c.txMu.Lock()
 
-		// When tx is true, we also reopen the database to ensure only one DuckDB connection is open.
+		// When tx is true, and the database is backed by a file, we reopen the database to ensure only one DuckDB connection is open.
 		// This avoids the following issue: https://github.com/duckdb/duckdb/issues/9150
-		err := c.reopenDB()
-		if err != nil {
-			c.txMu.Unlock()
-			return nil, nil, err
+		if c.config.DBFilePath != "" {
+			err := c.reopenDB()
+			if err != nil {
+				c.txMu.Unlock()
+				return nil, nil, err
+			}
 		}
 	} else {
 		c.txMu.RLock()
