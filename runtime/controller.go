@@ -69,10 +69,11 @@ type Controller struct {
 	mu          sync.RWMutex
 	running     atomic.Bool   // Indicates if the controller is running
 	ready       chan struct{} // Closed when the controller transitions to running
+	closed      chan struct{} // Closed when the controller is closed
 	reconcilers map[string]Reconciler
 	catalog     *catalogCache
 	// subscribers tracks subscribers to catalog events.
-	subscribers      map[int]chan map[string]catalogEvent
+	subscribers      map[int]SubscribeCallback
 	nextSubscriberID int
 	// idleWaits tracks goroutines waiting for the controller to become idle.
 	idleWaits      map[int]idleWait
@@ -97,8 +98,9 @@ func NewController(rt *Runtime, instanceID string, logger *zap.Logger, ac activi
 		InstanceID:     instanceID,
 		Activity:       ac,
 		ready:          make(chan struct{}),
+		closed:         make(chan struct{}),
 		reconcilers:    make(map[string]Reconciler),
-		subscribers:    make(map[int]chan map[string]catalogEvent),
+		subscribers:    make(map[int]SubscribeCallback),
 		idleWaits:      make(map[int]idleWait),
 		queue:          make(map[string]*runtimev1.ResourceName),
 		queueUpdatedCh: make(chan struct{}, 1),
@@ -231,12 +233,20 @@ func (c *Controller) Run(ctx context.Context) error {
 				stop = true
 			}
 		case <-c.catalog.hasEventsCh: // The catalog has events to process
+			// Need a write lock to call resetEvents.
 			c.mu.Lock()
-			for _, ch := range c.subscribers {
-				ch <- c.catalog.events
-			}
+			events := c.catalog.events
 			c.catalog.resetEvents()
 			c.mu.Unlock()
+
+			// Need a read lock to prevent c.subscribers from being modified while we're iterating over it.
+			c.mu.RLock()
+			for _, fn := range c.subscribers {
+				for _, e := range events {
+					fn(e.event, e.name, e.resource)
+				}
+			}
+			c.mu.RUnlock()
 		case <-ctx.Done(): // We've been asked to stop
 			stop = true
 			break
@@ -301,18 +311,12 @@ func (c *Controller) Run(ctx context.Context) error {
 
 	// Mark closed (no more catalog writes after this)
 	c.running.Store(false)
+	close(c.closed)
 
 	// Ensure anything waiting for WaitUntilIdle is notified (not calling checkIdleWaits because the queue may not be empty when closing)
 	c.mu.Lock()
 	for _, iw := range c.idleWaits {
 		close(iw.ch)
-	}
-	c.mu.Unlock()
-
-	// Close all subscribers
-	c.mu.Lock()
-	for _, ch := range c.subscribers {
-		close(ch)
 	}
 	c.mu.Unlock()
 
@@ -363,6 +367,7 @@ func (c *Controller) WaitUntilIdle(ctx context.Context, ignoreHidden bool) error
 	case <-ch:
 		// No cleanup necessary - checkIdleWaits removes the wait from idleWaits
 	case <-ctx.Done():
+		// NOTE: Can't deadlock because ch is never sent to, only closed.
 		c.mu.Lock()
 		delete(c.idleWaits, id)
 		c.mu.Unlock()
@@ -407,18 +412,17 @@ func (c *Controller) List(ctx context.Context, kind string, clone bool) ([]*runt
 type SubscribeCallback func(e runtimev1.ResourceEvent, n *runtimev1.ResourceName, r *runtimev1.Resource)
 
 // Subscribe registers a callback that will receive resource update events.
-// The callback is invoked in the same goroutine as the call to Subscribe (so multiple callbacks can't be invoked concurrently).
+// The same callback function will not be invoked concurrently.
+// The callback function is invoked under a lock and must not call the controller.
 func (c *Controller) Subscribe(ctx context.Context, fn SubscribeCallback) error {
 	if err := c.checkRunning(); err != nil {
 		return err
 	}
 
-	ch := make(chan map[string]catalogEvent)
-
 	c.mu.Lock()
 	id := c.nextSubscriberID
 	c.nextSubscriberID++
-	c.subscribers[id] = ch
+	c.subscribers[id] = fn
 	c.mu.Unlock()
 
 	defer func() {
@@ -429,13 +433,8 @@ func (c *Controller) Subscribe(ctx context.Context, fn SubscribeCallback) error 
 
 	for {
 		select {
-		case events, ok := <-ch:
-			if !ok {
-				return fmt.Errorf("controller closed")
-			}
-			for _, e := range events {
-				fn(e.event, e.name, e.resource)
-			}
+		case <-c.closed:
+			return fmt.Errorf("controller closed")
 		case <-ctx.Done():
 			return ctx.Err()
 		}
