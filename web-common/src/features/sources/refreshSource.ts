@@ -7,9 +7,10 @@ import {
 } from "@rilldata/web-common/features/sources/modal/file-upload";
 import { compileCreateSourceYAML } from "@rilldata/web-common/features/sources/sourceUtils";
 import { overlay } from "@rilldata/web-common/layout/overlay-store";
-import type {
-  V1PutFileAndReconcileResponse,
-  V1RefreshAndReconcileResponse,
+import {
+  runtimeServicePutFileAndReconcile,
+  type V1PutFileAndReconcileResponse,
+  type V1RefreshAndReconcileResponse,
 } from "@rilldata/web-common/runtime-client";
 import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
 import type {
@@ -84,6 +85,43 @@ export async function refreshSource(
       strict: true,
     },
   });
+  invalidateAfterReconcile(queryClient, instanceId, resp);
+  fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
+  return resp;
+}
+
+export async function replaceSourceWithUploadedFile(
+  queryClient: QueryClient,
+  instanceId: string,
+  sourceName: string
+) {
+  const artifactPath = getFilePathFromNameAndType(sourceName, EntityType.Table);
+
+  const files = await openFileUploadDialog(false);
+  if (!files.length) return Promise.reject();
+
+  overlay.set({ title: `Importing ${sourceName}` });
+  const filePath = await uploadFile(instanceId, files[0]);
+  if (filePath === null) {
+    return Promise.reject();
+  }
+
+  const yaml = compileCreateSourceYAML(
+    {
+      sourceName,
+      path: filePath,
+    },
+    "local_file"
+  );
+
+  // Create source
+  const resp = await runtimeServicePutFileAndReconcile({
+    instanceId,
+    path: artifactPath,
+    blob: yaml,
+    strict: true,
+  });
+
   invalidateAfterReconcile(queryClient, instanceId, resp);
   fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
   return resp;
