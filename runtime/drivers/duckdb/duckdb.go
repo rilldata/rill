@@ -536,6 +536,7 @@ func (c *connection) acquireConn(ctx context.Context, tx bool) (*sqlx.Conn, func
 
 	release := func() error {
 		err := conn.Close()
+		releaseTx()
 		c.dbCond.L.Lock()
 		c.dbConnCount--
 		if c.dbConnCount == 0 && c.dbReopen {
@@ -550,7 +551,6 @@ func (c *connection) acquireConn(ctx context.Context, tx bool) (*sqlx.Conn, func
 			c.dbCond.Broadcast()
 		}
 		c.dbCond.L.Unlock()
-		releaseTx()
 		return err
 	}
 
