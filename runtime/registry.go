@@ -160,9 +160,15 @@ func newRegistryCache(ctx context.Context, rt *Runtime, registry drivers.Registr
 		baseCtxCancel: baseCtxCancel,
 	}
 
+	return r, nil
+}
+
+func (r *registryCache) init(ctx context.Context) error {
+	// NOTE: Can't be called from newRegistryCache because rt.registry must be initialized before we start controllers
+
 	insts, err := r.store.FindInstances(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	for _, inst := range insts {
@@ -175,12 +181,12 @@ func newRegistryCache(ctx context.Context, rt *Runtime, registry drivers.Registr
 		}
 		err := inst.controller.WaitUntilReady(ctx)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		r.ensureProjectParser(ctx, inst.instance.ID)
 	}
 
-	return r, nil
+	return nil
 }
 
 func (r *registryCache) close(ctx context.Context) error {

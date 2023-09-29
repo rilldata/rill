@@ -60,6 +60,10 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, ac activity.Cli
 	if err != nil {
 		return nil, err
 	}
+	err = rt.registryCache.init(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	return rt, nil
 }
