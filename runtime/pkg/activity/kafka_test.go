@@ -1,9 +1,9 @@
 package activity
 
 import (
+	"errors"
 	"testing"
 	"time"
-	"errors"
 )
 
 func Test_retry(t *testing.T) {
