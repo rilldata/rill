@@ -2,13 +2,13 @@ package runtime_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -507,29 +507,7 @@ path: data/foo.csv
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
-	falsy := false
-	model := &runtimev1.ModelV2{
-		Spec: &runtimev1.ModelSpec{
-			Connector:   "duckdb",
-			Sql:         "SELECT * FROM foo",
-			Materialize: &falsy,
-		},
-		State: &runtimev1.ModelState{
-			Connector: "duckdb",
-			Table:     "bar",
-		},
-	}
-	modelRes := &runtimev1.Resource{
-		Meta: &runtimev1.ResourceMeta{
-			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "bar"},
-			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindSource, Name: "foo"}},
-			Owner:     runtime.GlobalProjectParserName,
-			FilePaths: []string{"/models/bar.sql"},
-		},
-		Resource: &runtimev1.Resource_Model{
-			Model: model,
-		},
-	}
+	model, modelRes := newModel("SELECT * FROM foo", "bar", "foo")
 	testruntime.RequireResource(t, rt, id, modelRes)
 	testruntime.RequireOLAPTable(t, rt, id, "bar")
 
@@ -577,29 +555,7 @@ path: data/foo.csv
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
-	falsy := false
-	model := &runtimev1.ModelV2{
-		Spec: &runtimev1.ModelSpec{
-			Connector:   "duckdb",
-			Sql:         "SELECT * FROM foo",
-			Materialize: &falsy,
-		},
-		State: &runtimev1.ModelState{
-			Connector: "duckdb",
-			Table:     "bar",
-		},
-	}
-	modelRes := &runtimev1.Resource{
-		Meta: &runtimev1.ResourceMeta{
-			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "bar"},
-			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindSource, Name: "foo"}},
-			Owner:     runtime.GlobalProjectParserName,
-			FilePaths: []string{"/models/bar.sql"},
-		},
-		Resource: &runtimev1.Resource_Model{
-			Model: model,
-		},
-	}
+	model, modelRes := newModel("SELECT * FROM foo", "bar", "foo")
 	testruntime.RequireResource(t, rt, id, modelRes)
 	testruntime.RequireOLAPTable(t, rt, id, "bar")
 
@@ -630,28 +586,8 @@ path: data/foo.csv
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
-	anotherModel := &runtimev1.ModelV2{
-		Spec: &runtimev1.ModelSpec{
-			Connector:   "duckdb",
-			Sql:         "SELECT * FROM Bar_New",
-			Materialize: &falsy,
-		},
-		State: &runtimev1.ModelState{
-			Connector: "duckdb",
-			Table:     "bar_another",
-		},
-	}
-	anotherModelRes := &runtimev1.Resource{
-		Meta: &runtimev1.ResourceMeta{
-			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "bar_another"},
-			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindModel, Name: "Bar_New"}},
-			Owner:     runtime.GlobalProjectParserName,
-			FilePaths: []string{"/models/bar_another.sql"},
-		},
-		Resource: &runtimev1.Resource_Model{
-			Model: anotherModel,
-		},
-	}
+	_, anotherModelRes := newModel("SELECT * FROM Bar_New", "bar_another", "Bar_New")
+	anotherModelRes.Meta.Refs[0].Kind = runtime.ResourceKindModel
 	testruntime.RequireResource(t, rt, id, anotherModelRes)
 	testruntime.RequireOLAPTable(t, rt, id, "bar_another")
 
@@ -662,9 +598,74 @@ path: data/foo.csv
 	testruntime.RequireOLAPTable(t, rt, id, "Bar_New")
 }
 
+func TestRenameToOther(t *testing.T) {
+	// Create source and model
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/data/foo.csv": `a,b,c,d,e
+1,2,3,4,5
+1,2,3,4,5
+1,2,3,4,5
+`,
+		"/sources/foo.yaml": `
+type: local_file
+path: data/foo.csv
+`,
+		"/models/bar1.sql": `SELECT * FROM foo limit 1`,
+		"/models/bar2.sql": `SELECT * FROM foo limit 2`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+	testruntime.RequireTableRowCount(t, rt, id, "bar1", 1)
+	testruntime.RequireTableRowCount(t, rt, id, "bar2", 2)
+
+	// Rename model A to B and model B to A, verify success
+	testruntime.RenameFile(t, rt, id, "/models/bar2.sql", "/models/bar3.sql")
+	testruntime.RenameFile(t, rt, id, "/models/bar1.sql", "/models/bar2.sql")
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+	testruntime.RequireTableRowCount(t, rt, id, "bar2", 1)
+	testruntime.RequireTableRowCount(t, rt, id, "bar3", 2)
+}
+
 func TestInterdependence(t *testing.T) {
 	// Test D -> C, D -> A, C -> A,B (-> = refs)
 	// Test error propagation on source error
+
+	// Create interdependent model
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/data/foo.csv": `a,b,c,d,e
+1,2,3,4,5
+1,2,3,4,5
+1,2,3,4,5
+`,
+		"/sources/foo.yaml": `
+type: local_file
+path: data/foo.csv
+`,
+		"/models/bar1.sql": `SELECT * FROM foo`,
+		"/models/bar2.sql": `SELECT * FROM bar1`,
+		"/models/bar3.sql": `SELECT * FROM bar2`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 5, 0, 0)
+	testruntime.RequireTableRowCount(t, rt, id, "bar1", 3)
+	testruntime.RequireTableRowCount(t, rt, id, "bar2", 3)
+	testruntime.RequireTableRowCount(t, rt, id, "bar3", 3)
+
+	// Update the source to invalid file
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/sources/foo.yaml": `
+type: local_file
+path: data/bar.csv
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 5, 2, 0)
+	testruntime.RequireNoOLAPTable(t, rt, id, "bar1")
+	testruntime.RequireNoOLAPTable(t, rt, id, "bar2")
+	testruntime.RequireNoOLAPTable(t, rt, id, "bar3")
 }
 
 func TestCycles(t *testing.T) {
@@ -700,18 +701,29 @@ func must[T any](v T, err error) T {
 	return v
 }
 
-func assertTableRows(t testing.TB, rt *runtime.Runtime, id, table string, limit int) {
-	q := &queries.TableHead{
-		TableName: table,
-		Limit:     3,
+func newModel(query, name, source string) (*runtimev1.ModelV2, *runtimev1.Resource) {
+	falsy := false
+	model := &runtimev1.ModelV2{
+		Spec: &runtimev1.ModelSpec{
+			Connector:   "duckdb",
+			Sql:         query,
+			Materialize: &falsy,
+		},
+		State: &runtimev1.ModelState{
+			Connector: "duckdb",
+			Table:     name,
+		},
 	}
-	require.NoError(t, rt.Query(context.Background(), id, q, 5))
-	require.Len(t, q.Result, limit)
-}
-
-func assertIsView(t testing.TB, olap drivers.OLAPStore, tableName string, isView bool) {
-	table, err := olap.InformationSchema().Lookup(context.Background(), tableName)
-	require.NoError(t, err)
-	// Assert that the model is a table now
-	require.Equal(t, table.View, isView)
+	modelRes := &runtimev1.Resource{
+		Meta: &runtimev1.ResourceMeta{
+			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: name},
+			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindSource, Name: source}},
+			Owner:     runtime.GlobalProjectParserName,
+			FilePaths: []string{fmt.Sprintf("/models/%s.sql", name)},
+		},
+		Resource: &runtimev1.Resource_Model{
+			Model: model,
+		},
+	}
+	return model, modelRes
 }
