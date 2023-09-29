@@ -91,19 +91,6 @@ func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.R
 	require.Greater(t, r.Meta.SpecVersion, prevSpecVersion)
 }
 
-func WaitUntilIdle(t testing.TB, rt *runtime.Runtime, id string) {
-	ctrl, err := rt.Controller(id)
-	require.NoError(t, err)
-
-	// Smaller times was not stable on an M1 mac.
-	// TODO: Refactor to wait for the controller to actually be triggered if we ever have instability
-	time.Sleep(time.Second)
-
-	// For now this is only used for continuous watcher. add ignore hidden to param if otherwise
-	err = ctrl.WaitUntilIdle(context.Background(), true)
-	require.NoError(t, err)
-}
-
 func RequireReconcileState(t testing.TB, rt *runtime.Runtime, id string, lenResources, lenReconcileErrs, lenParseErrs int) {
 	ctrl, err := rt.Controller(id)
 	require.NoError(t, err)

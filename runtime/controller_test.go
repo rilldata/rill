@@ -1008,6 +1008,18 @@ func TestWatch(t *testing.T) {
 		WatchRepo: true,
 	})
 
+	ctrl, err := rt.Controller(id)
+	require.NoError(t, err)
+
+	// Since we're using WatchRepo, we can't use testruntime.ReconcileParserAndWait.
+	// For now, we'll just add a sleep to give the file watcher time to trigger.
+	// NOTE: Refactor to wait for the controller to actually be triggered if we ever have instability
+	awaitIdle := func() {
+		time.Sleep(2 * time.Second)
+		err = ctrl.WaitUntilIdle(context.Background(), true)
+		require.NoError(t, err)
+	}
+
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/data/foo.csv": `a,b,c,d,e
 1,2,3,4,5
@@ -1019,7 +1031,7 @@ type: local_file
 path: data/foo.csv
 `,
 	})
-	testruntime.WaitUntilIdle(t, rt, id)
+	awaitIdle()
 	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
 	testruntime.RequireOLAPTable(t, rt, id, "foo")
 	_, sourceRes := newSource("foo", "data/foo.csv")
@@ -1028,7 +1040,7 @@ path: data/foo.csv
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/models/bar.sql": `SELECT * FROM foo`,
 	})
-	testruntime.WaitUntilIdle(t, rt, id)
+	awaitIdle()
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
 	testruntime.RequireOLAPTable(t, rt, id, "bar")
 	_, modelRes := newModel("SELECT * FROM foo", "bar", "foo")
@@ -1046,7 +1058,7 @@ measures:
 - expression: avg(a)
 		`,
 	})
-	testruntime.WaitUntilIdle(t, rt, id)
+	awaitIdle()
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 	_, metricsRes := newMetricsView("dash", "bar", []string{"count(*)", "avg(a)"}, []string{"b", "c"})
 	testruntime.RequireResource(t, rt, id, metricsRes)
