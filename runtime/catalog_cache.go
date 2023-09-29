@@ -523,6 +523,7 @@ func (c *catalogCache) addEvent(n *runtimev1.ResourceName, r *runtimev1.Resource
 
 // clearEvents clears all buffered events.
 // It should be called after consuming c.events.
+// It initializes a new event buffer on each call, so it is safe to use a copy of c.events after calling this method.
 func (c *catalogCache) resetEvents() {
 	c.hasEvents = false
 	c.events = make(map[string]catalogEvent)
