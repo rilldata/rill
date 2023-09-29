@@ -212,69 +212,6 @@ func RequireParseErrors(t testing.TB, rt *runtime.Runtime, id string, expectedPa
 	}
 }
 
-func WaitForResource(t testing.TB, rt *runtime.Runtime, id, name, path string) (*runtimev1.Resource, string) {
-	ctrl, err := rt.Controller(id)
-	require.NoError(t, err)
-
-	var res *runtimev1.Resource
-	errStr := ""
-
-	ctx, cancel := context.WithTimeout(context.Background(), 250*time.Millisecond)
-	defer cancel()
-
-	// ignore error since cancelling will cause error as well
-	_ = ctrl.Subscribe(ctx, func(_ runtimev1.ResourceEvent, n *runtimev1.ResourceName, r *runtimev1.Resource) {
-		if n.Name == name && r != nil && r.Meta.ReconcileStatus == runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE {
-			switch r.Resource.(type) {
-			case *runtimev1.Resource_Source:
-				if r.GetSource().State.Table == "" {
-					return
-				}
-
-			case *runtimev1.Resource_Model:
-				if r.GetModel().State.Table == "" {
-					return
-				}
-
-			case *runtimev1.Resource_MetricsView:
-				if r.GetMetricsView().State.ValidSpec == nil {
-					return
-				}
-			}
-			// if the resource is the one we want return
-			res = r
-			cancel()
-		} else if n.Kind == runtime.ResourceKindProjectParser {
-			// else check for errors
-			for _, parseError := range r.GetProjectParser().State.ParseErrors {
-				if parseError.FilePath == path {
-					errStr = parseError.Message
-					cancel()
-					break
-				}
-			}
-		}
-	})
-
-	// Wait for the resource to be saved to the db
-	// TODO: is there a better way?
-	time.Sleep(250 * time.Millisecond)
-
-	return res, errStr
-}
-
-func WaitRequireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.Resource) {
-	_, recErr := WaitForResource(t, rt, id, a.Meta.Name.Name, a.Meta.FilePaths[0])
-	require.Equal(t, recErr, "", "unexpected parse error")
-
-	RequireResource(t, rt, id, a)
-}
-
-func WaitRequireParseError(t testing.TB, rt *runtime.Runtime, id, name, path, err string) {
-	_, recErr := WaitForResource(t, rt, id, name, path)
-	require.Equal(t, recErr, err)
-}
-
 func Must[T any](v T, err error) T {
 	if err != nil {
 		panic(err)
