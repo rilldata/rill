@@ -437,6 +437,7 @@ func (c *Controller) Subscribe(ctx context.Context, fn SubscribeCallback) error 
 				fn(e.event, e.name, e.resource)
 			}
 		case <-ctx.Done():
+			fmt.Println("Done?")
 			return ctx.Err()
 		}
 	}
@@ -1027,6 +1028,8 @@ func (c *Controller) setQueueUpdated() {
 // It must be called while c.mu is held.
 func (c *Controller) processQueue() error {
 	// Mark-sweep like approach - first mark all impacted resources (including descendents) pending, then schedule the ones that have no pending parents.
+
+	fmt.Println(c.queue)
 
 	// Phase 1: Mark items pending and trim queue when possible.
 	for s, n := range c.queue {

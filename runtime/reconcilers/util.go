@@ -106,7 +106,6 @@ func olapDropTableIfExists(ctx context.Context, c *runtime.Controller, connector
 		typ = "TABLE"
 	}
 
-	fmt.Println("Drop table", table)
 	_ = olap.Exec(ctx, &drivers.Statement{
 		Query:    fmt.Sprintf("DROP %s IF EXISTS %s", typ, safeSQLName(table)),
 		Priority: 100,
@@ -175,7 +174,6 @@ func olapForceRenameTable(ctx context.Context, c *runtime.Controller, connector,
 			}
 		}
 
-		fmt.Println("Rename table", fromName, toName)
 		// Do the rename
 		err = olap.Exec(ctx, &drivers.Statement{
 			Query: fmt.Sprintf("ALTER %s %s RENAME TO %s", typ, safeSQLName(fromName), safeSQLName(toName)),

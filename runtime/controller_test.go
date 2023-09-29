@@ -619,6 +619,7 @@ path: data/foo.csv
 	testruntime.RequireTableRowCount(t, rt, id, "bar1", 1)
 	testruntime.RequireTableRowCount(t, rt, id, "bar2", 2)
 
+	time.Sleep(time.Second) // this is needed since we add second to the cache key
 	// Rename model A to B and model B to A, verify success
 	testruntime.RenameFile(t, rt, id, "/models/bar2.sql", "/models/bar3.sql")
 	testruntime.RenameFile(t, rt, id, "/models/bar1.sql", "/models/bar2.sql")
@@ -647,12 +648,24 @@ path: data/foo.csv
 		"/models/bar1.sql": `SELECT * FROM foo`,
 		"/models/bar2.sql": `SELECT * FROM bar1`,
 		"/models/bar3.sql": `SELECT * FROM bar2`,
+		"/dashboards/dash.yaml": `
+title: dash
+model: bar3
+dimensions:
+- column: b
+- column: c
+measures:
+- expression: count(*)
+- expression: avg(a)
+`,
 	})
+	metrics, metricsRes := newMetricsView("dash", "bar3", []string{"count(*)", "avg(a)"}, []string{"b", "c"})
 	testruntime.ReconcileParserAndWait(t, rt, id)
-	testruntime.RequireReconcileState(t, rt, id, 5, 0, 0)
+	testruntime.RequireReconcileState(t, rt, id, 6, 0, 0)
 	testruntime.RequireTableRowCount(t, rt, id, "bar1", 3)
 	testruntime.RequireTableRowCount(t, rt, id, "bar2", 3)
 	testruntime.RequireTableRowCount(t, rt, id, "bar3", 3)
+	testruntime.RequireResource(t, rt, id, metricsRes)
 
 	// Update the source to invalid file
 	testruntime.PutFiles(t, rt, id, map[string]string{
@@ -662,28 +675,325 @@ path: data/bar.csv
 `,
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
-	testruntime.RequireReconcileState(t, rt, id, 5, 2, 0)
+	testruntime.RequireReconcileState(t, rt, id, 6, 5, 0)
 	testruntime.RequireNoOLAPTable(t, rt, id, "bar1")
 	testruntime.RequireNoOLAPTable(t, rt, id, "bar2")
 	testruntime.RequireNoOLAPTable(t, rt, id, "bar3")
+	metricsRes.Meta.ReconcileError = `table "bar3" does not exist`
+	metrics.State = &runtimev1.MetricsViewState{}
+	testruntime.RequireResource(t, rt, id, metricsRes)
 }
 
-func TestCycles(t *testing.T) {
-	// Test A -> B, B -> A
-	// Break cycle by deleting, verify changed errors
+func TestCyclesWithTwoModels(t *testing.T) {
+	// Create cyclic model
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/bar1.sql": `SELECT * FROM bar2`,
+		"/models/bar2.sql": `SELECT * FROM bar1`,
+	})
+	bar1Model, bar1Res := newModel("SELECT * FROM bar2", "bar1", "bar2")
+	bar1Res.Meta.ReconcileError = `dependency`
+	bar1Res.Meta.Refs[0].Kind = runtime.ResourceKindModel
+	bar1Model.State = &runtimev1.ModelState{}
+	bar2Model, bar2Res := newModel("SELECT * FROM bar1", "bar2", "bar1")
+	bar2Res.Meta.ReconcileError = `dependency`
+	bar2Res.Meta.Refs[0].Kind = runtime.ResourceKindModel
+	bar2Model.State = &runtimev1.ModelState{}
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 2, 0)
+	testruntime.RequireResource(t, rt, id, bar1Res)
+	testruntime.RequireResource(t, rt, id, bar2Res)
 
-	// Test A -> B, B -> C, C -> A
-	// Break cycle by changing to source, verify success
+	testruntime.DeleteFiles(t, rt, id, "/models/bar1.sql")
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 2, 1, 0)
+	bar2Res.Meta.ReconcileError = `Catalog Error: Table with name bar1 does not exist!`
+	bar2Res.Meta.Refs = []*runtimev1.ResourceName{}
+	testruntime.RequireResource(t, rt, id, bar2Res)
+}
+
+func TestCyclesWithThreeModels(t *testing.T) {
+	// Create cyclic model
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/data/foo.csv": `a,b,c,d,e
+1,2,3,4,5
+1,2,3,4,5
+1,2,3,4,5
+`,
+		"/sources/foo.yaml": `
+type: local_file
+path: data/foo.csv
+`,
+		"/models/bar1.sql": `SELECT * FROM bar2`,
+		"/models/bar2.sql": `SELECT * FROM bar3`,
+		"/models/bar3.sql": `SELECT * FROM bar1`,
+	})
+	bar1Model, bar1Res := newModel("SELECT * FROM bar2", "bar1", "bar2")
+	bar1Res.Meta.ReconcileError = `dependency`
+	bar1Res.Meta.Refs[0].Kind = runtime.ResourceKindModel
+	bar1Model.State = &runtimev1.ModelState{}
+	bar2Model, bar2Res := newModel("SELECT * FROM bar3", "bar2", "bar3")
+	bar2Res.Meta.ReconcileError = `dependency`
+	bar2Res.Meta.Refs[0].Kind = runtime.ResourceKindModel
+	bar2Model.State = &runtimev1.ModelState{}
+	bar3Model, bar3Res := newModel("SELECT * FROM bar1", "bar3", "bar1")
+	bar3Res.Meta.ReconcileError = `dependency`
+	bar3Res.Meta.Refs[0].Kind = runtime.ResourceKindModel
+	bar3Model.State = &runtimev1.ModelState{}
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 5, 3, 0)
+	testruntime.RequireResource(t, rt, id, bar1Res)
+	testruntime.RequireResource(t, rt, id, bar2Res)
+	testruntime.RequireResource(t, rt, id, bar3Res)
+
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/bar1.sql": `SELECT * FROM bar2`,
+		"/models/bar2.sql": `SELECT * FROM bar3`,
+		"/models/bar3.sql": `SELECT * FROM foo`,
+	})
+	_, bar1Res = newModel("SELECT * FROM bar2", "bar1", "bar2")
+	bar1Res.Meta.Refs[0].Kind = runtime.ResourceKindModel
+	_, bar2Res = newModel("SELECT * FROM bar3", "bar2", "bar3")
+	bar2Res.Meta.Refs[0].Kind = runtime.ResourceKindModel
+	_, bar3Res = newModel("SELECT * FROM foo", "bar3", "foo")
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 5, 0, 0)
+	testruntime.RequireResource(t, rt, id, bar1Res)
+	testruntime.RequireResource(t, rt, id, bar2Res)
+	testruntime.RequireResource(t, rt, id, bar3Res)
 }
 
 func TestMetricsView(t *testing.T) {
-	// Create model and metrics view, verify success
-	// Break model, verify metrics view not valid
+	// Create source and model
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/data/foo.csv": `a,b,c,d,e
+1,2,3,4,5
+1,2,3,4,5
+1,2,3,4,5
+`,
+		"/sources/foo.yaml": `
+type: local_file
+path: data/foo.csv
+`,
+		"/models/bar.sql": `SELECT * FROM foo`,
+		"/dashboards/dash.yaml": `
+title: dash
+model: bar
+dimensions:
+- column: b
+- column: c
+measures:
+- expression: count(*)
+- expression: avg(a)
+`,
+	})
+
+	_, metricsRes := newMetricsView("dash", "bar", []string{"count(*)", "avg(a)"}, []string{"b", "c"})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+	testruntime.RequireResource(t, rt, id, metricsRes)
+
+	// ignore invalid measure and dimension
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/dashboards/dash.yaml": `
+title: dash
+model: bar
+dimensions:
+- column: b
+- column: f
+  ignore: true
+measures:
+- expression: count(*)
+- expression: avg(g)
+  ignore: true
+`,
+	})
+	_, metricsRes = newMetricsView("dash", "bar", []string{"count(*)"}, []string{"b"})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+	testruntime.RequireResource(t, rt, id, metricsRes)
+
+	// no measure, invalid dashboard
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/dashboards/dash.yaml": `
+title: dash
+model: bar
+dimensions:
+- column: b
+- column: f
+  ignore: true
+measures:
+- expression: count(*)
+  ignore: true
+- expression: avg(g)
+  ignore: true
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 1, 1)
+	testruntime.RequireParseErrors(t, rt, id, map[string]string{"/dashboards/dash.yaml": "must define at least one measure"})
+
+	// no dimension. valid dashboard
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/dashboards/dash.yaml": `
+title: dash
+model: bar
+dimensions:
+- column: b
+  ignore: true
+- column: f
+  ignore: true
+measures:
+- expression: count(*)
+- expression: avg(g)
+  ignore: true
+`,
+	})
+	_, metricsRes = newMetricsView("dash", "bar", []string{"count(*)"}, []string{})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+	testruntime.RequireResource(t, rt, id, metricsRes)
+
+	// duplicate measure name, invalid dashboard
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/dashboards/dash.yaml": `
+title: dash
+model: bar
+dimensions:
+- column: b
+- column: c
+measures:
+- expression: count(*)
+  name: m
+- expression: avg(a)
+  name: m
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 1, 1)
+	testruntime.RequireParseErrors(t, rt, id, map[string]string{"/dashboards/dash.yaml": "found duplicate dimension or measure"})
+
+	// duplicate dimension name, invalid dashboard
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/dashboards/dash.yaml": `
+title: dash
+model: bar
+dimensions:
+- column: b
+  name: d
+- column: c
+  name: d
+measures:
+- expression: count(*)
+- expression: avg(a)
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 1, 1)
+	testruntime.RequireParseErrors(t, rt, id, map[string]string{"/dashboards/dash.yaml": "found duplicate dimension or measure"})
+
+	// duplicate cross name between measures and dimensions, invalid dashboard
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/dashboards/dash.yaml": `
+title: dash
+model: bar
+dimensions:
+- column: b
+  name: d
+- column: c
+measures:
+- expression: count(*)
+  name: d
+- expression: avg(a)
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 1, 1)
+	testruntime.RequireParseErrors(t, rt, id, map[string]string{"/dashboards/dash.yaml": "found duplicate dimension or measure"})
+
+	// reset to valid dashboard
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/dashboards/dash.yaml": `
+title: dash
+model: bar
+dimensions:
+- column: b
+- column: c
+measures:
+- expression: count(*)
+- expression: avg(a)
+`,
+	})
+	metrics, metricsRes := newMetricsView("dash", "bar", []string{"count(*)", "avg(a)"}, []string{"b", "c"})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+	testruntime.RequireResource(t, rt, id, metricsRes)
+
+	// Model has error, dashboard has error as well
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/bar.sql": `SELECT * FROM fo`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 2, 0)
+	metricsRes.Meta.ReconcileError = `table "bar" does not exist`
+	metrics.State = &runtimev1.MetricsViewState{}
+	testruntime.RequireResource(t, rt, id, metricsRes)
 }
 
 func TestStageChanges(t *testing.T) {
-	// Create source, model, metrics view
-	// Break source, verify model and metrics view have errors, but are valid
+	// Create source and model
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files:        map[string]string{"rill.yaml": ""},
+		StageChanges: true,
+	})
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/data/foo.csv": `a,b,c,d,e
+1,2,3,4,5
+1,2,3,4,5
+1,2,3,4,5
+`,
+		"/sources/foo.yaml": `
+type: local_file
+path: data/foo.csv
+`,
+		"/models/bar.sql": `SELECT * FROM foo`,
+		"/dashboards/dash.yaml": `
+title: dash
+model: bar
+dimensions:
+- column: b
+- column: c
+measures:
+- expression: count(*)
+- expression: avg(a)
+`,
+	})
+	model, modelRes := newModel("SELECT * FROM foo", "bar", "foo")
+	model.Spec.StageChanges = true
+	_, metricsRes := newMetricsView("dash", "bar", []string{"count(*)", "avg(a)"}, []string{"b", "c"})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+	testruntime.RequireResource(t, rt, id, modelRes)
+	testruntime.RequireResource(t, rt, id, metricsRes)
+
+	// Invalid source
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/sources/foo.yaml": `
+type: local_file
+path: data/bar.csv
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 2, 0)
+	// model has error but table is retained
+	modelRes.Meta.ReconcileError = "dependency error"
+	testruntime.RequireResource(t, rt, id, modelRes)
+	testruntime.RequireOLAPTable(t, rt, id, "foo")
+	// metrics has no error
+	// TODO: is this expected?
+	testruntime.RequireResource(t, rt, id, metricsRes)
 }
 
 func TestWatch(t *testing.T) {
@@ -692,6 +1002,58 @@ func TestWatch(t *testing.T) {
 	// Create model, wait and verify
 	// Create metrics view, wait and verify
 	// Drop source, wait and verify
+
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files:     map[string]string{"rill.yaml": ""},
+		WatchRepo: true,
+	})
+
+	fmt.Println("1")
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/data/foo.csv": `a,b,c,d,e
+1,2,3,4,5
+1,2,3,4,5
+1,2,3,4,5
+`,
+		"/sources/foo.yaml": `
+type: local_file
+path: data/foo.csv
+`,
+	})
+	fmt.Println("2")
+	_, sourceRes := newSource("foo", "data/foo.csv")
+	testruntime.WaitRequireResource(t, rt, id, sourceRes)
+	fmt.Println("3")
+	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
+	testruntime.RequireOLAPTable(t, rt, id, "foo")
+
+	fmt.Println("4")
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/bar.sql": `SELECT * FROM foo`,
+	})
+	_, modelRes := newModel("SELECT * FROM foo", "bar", "foo")
+	testruntime.WaitRequireResource(t, rt, id, modelRes)
+	fmt.Println("5")
+	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
+	testruntime.RequireOLAPTable(t, rt, id, "bar")
+
+	fmt.Println("6")
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/dashboards/dash.yaml": `
+title: dash
+model: bar
+dimensions:
+- column: b
+- column: c
+measures:
+- expression: count(*)
+- expression: avg(a)
+		`,
+	})
+	_, metricsRes := newMetricsView("dash", "bar", []string{"count(*)", "avg(a)"}, []string{"b", "c"})
+	testruntime.WaitRequireResource(t, rt, id, metricsRes)
+	fmt.Println("7")
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 }
 
 func must[T any](v T, err error) T {
@@ -699,6 +1061,31 @@ func must[T any](v T, err error) T {
 		panic(err)
 	}
 	return v
+}
+
+func newSource(name, path string) (*runtimev1.SourceV2, *runtimev1.Resource) {
+	source := &runtimev1.SourceV2{
+		Spec: &runtimev1.SourceSpec{
+			SourceConnector: "local_file",
+			SinkConnector:   "duckdb",
+			Properties:      must(structpb.NewStruct(map[string]any{"path": path})),
+		},
+		State: &runtimev1.SourceState{
+			Connector: "duckdb",
+			Table:     name,
+		},
+	}
+	sourceRes := &runtimev1.Resource{
+		Meta: &runtimev1.ResourceMeta{
+			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindSource, Name: name},
+			Owner:     runtime.GlobalProjectParserName,
+			FilePaths: []string{fmt.Sprintf("/sources/%s.yaml", name)},
+		},
+		Resource: &runtimev1.Resource_Source{
+			Source: source,
+		},
+	}
+	return source, sourceRes
 }
 
 func newModel(query, name, source string) (*runtimev1.ModelV2, *runtimev1.Resource) {
@@ -726,4 +1113,57 @@ func newModel(query, name, source string) (*runtimev1.ModelV2, *runtimev1.Resour
 		},
 	}
 	return model, modelRes
+}
+
+func newMetricsView(name, table string, measures, dimensions []string) (*runtimev1.MetricsViewV2, *runtimev1.Resource) {
+	metrics := &runtimev1.MetricsViewV2{
+		Spec: &runtimev1.MetricsViewSpec{
+			Connector:  "duckdb",
+			Table:      table,
+			Title:      name,
+			Measures:   make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
+			Dimensions: make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
+		},
+		State: &runtimev1.MetricsViewState{
+			ValidSpec: &runtimev1.MetricsViewSpec{
+				Connector:  "duckdb",
+				Table:      table,
+				Title:      name,
+				Measures:   make([]*runtimev1.MetricsViewSpec_MeasureV2, len(measures)),
+				Dimensions: make([]*runtimev1.MetricsViewSpec_DimensionV2, len(dimensions)),
+			},
+		},
+	}
+	for i, measure := range measures {
+		metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
+			Name:       fmt.Sprintf("measure_%d", i),
+			Expression: measure,
+		}
+		metrics.State.ValidSpec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
+			Name:       fmt.Sprintf("measure_%d", i),
+			Expression: measure,
+		}
+	}
+	for i, dimension := range dimensions {
+		metrics.Spec.Dimensions[i] = &runtimev1.MetricsViewSpec_DimensionV2{
+			Name:   dimension,
+			Column: dimension,
+		}
+		metrics.State.ValidSpec.Dimensions[i] = &runtimev1.MetricsViewSpec_DimensionV2{
+			Name:   dimension,
+			Column: dimension,
+		}
+	}
+	metricsRes := &runtimev1.Resource{
+		Meta: &runtimev1.ResourceMeta{
+			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name},
+			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindModel, Name: table}},
+			Owner:     runtime.GlobalProjectParserName,
+			FilePaths: []string{fmt.Sprintf("/dashboards/%s.yaml", name)},
+		},
+		Resource: &runtimev1.Resource_MetricsView{
+			MetricsView: metrics,
+		},
+	}
+	return metrics, metricsRes
 }

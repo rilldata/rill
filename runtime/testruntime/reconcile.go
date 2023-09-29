@@ -180,6 +180,71 @@ func DumpResources(t testing.TB, rt *runtime.Runtime, id string) {
 	}
 }
 
+func RequireParseErrors(t testing.TB, rt *runtime.Runtime, id string, expectedParseErrors map[string]string) {
+	ctrl, err := rt.Controller(id)
+	require.NoError(t, err)
+
+	pp, err := ctrl.Get(context.Background(), runtime.GlobalProjectParserName, true)
+	require.NoError(t, err)
+
+	parseErrs := map[string]string{}
+	for _, pe := range pp.GetProjectParser().State.ParseErrors {
+		parseErrs[pe.FilePath] = pe.Message
+	}
+	require.Len(t, parseErrs, len(expectedParseErrors))
+
+	for f, pe := range parseErrs {
+		// Checking parseError using Contains instead of Equal
+		require.Contains(t, pe, expectedParseErrors[f])
+	}
+}
+
+func WaitForResource(t testing.TB, rt *runtime.Runtime, id, name, path string) (*runtimev1.Resource, string) {
+	ctrl, err := rt.Controller(id)
+	require.NoError(t, err)
+
+	var res *runtimev1.Resource
+	errStr := ""
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	// ignore error since cancelling will cause error as well
+	_ = ctrl.Subscribe(ctx, func(_ runtimev1.ResourceEvent, n *runtimev1.ResourceName, r *runtimev1.Resource) {
+		fmt.Println(n, r)
+		if n.Name == name && r != nil && r.Meta.ReconcileStatus == runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE {
+			// if the resource is the one we want return
+			res = r
+			fmt.Println("Cancel")
+			cancel()
+		} else if n.Kind == runtime.ResourceKindProjectParser {
+			// else check for errors
+			for _, parseError := range r.GetProjectParser().State.ParseErrors {
+				if parseError.FilePath == path {
+					errStr = parseError.Message
+					fmt.Println("Cancel")
+					cancel()
+					break
+				}
+			}
+		}
+	})
+
+	return res, errStr
+}
+
+func WaitRequireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.Resource) {
+	_, recErr := WaitForResource(t, rt, id, a.Meta.Name.Name, a.Meta.FilePaths[0])
+	require.Equal(t, recErr, "", "unexpected parse error")
+
+	RequireResource(t, rt, id, a)
+}
+
+func WaitRequireParseError(t testing.TB, rt *runtime.Runtime, id, name, path, err string) {
+	_, recErr := WaitForResource(t, rt, id, name, path)
+	require.Equal(t, recErr, err)
+}
+
 func Must[T any](v T, err error) T {
 	if err != nil {
 		panic(err)

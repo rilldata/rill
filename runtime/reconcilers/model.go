@@ -114,9 +114,9 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			model.State.Table = ""
 			model.State.SpecHash = ""
 			model.State.RefreshedOn = nil
-			err = r.C.UpdateState(ctx, self.Meta.Name, self)
-			if err != nil {
-				r.C.Logger.Error("refs check: failed to update state", slog.Any("err", err))
+			subErr := r.C.UpdateState(ctx, self.Meta.Name, self)
+			if subErr != nil {
+				r.C.Logger.Error("refs check: failed to update state", slog.Any("err", subErr))
 			}
 		}
 		return runtime.ReconcileResult{Err: err}
@@ -465,7 +465,6 @@ func (r *ModelReconciler) createModel(ctx context.Context, self *runtimev1.Resou
 		typ = "TABLE"
 	}
 
-	fmt.Println("new model", tableName, sql)
 	return olap.Exec(ctx, &drivers.Statement{
 		Query:       fmt.Sprintf("CREATE OR REPLACE %s %s AS (%s\n)", typ, safeSQLName(tableName), sql),
 		Priority:    100,
