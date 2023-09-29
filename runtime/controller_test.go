@@ -284,6 +284,33 @@ path: data/foo.csv
 	testruntime.RequireOLAPTableCount(t, rt, id, "foo", 1)
 }
 
+func TestSimultaneousDeleteRenameCreate(t *testing.T) {
+	// Add bar and foo
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/bar.sql": `SELECT 10`,
+		"/models/foo.sql": `SELECT 20`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
+
+	// Delete bar, rename foo to foo_two, add bazz
+	testruntime.DeleteFiles(t, rt, id,
+		"/models/bar.sql",
+		"/models/foo.sql",
+	)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/foo_two.sql": `SELECT 20`,
+		"/models/bazz.sql":    `SELECT 30`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
+
+	testruntime.RequireNoOLAPTable(t, rt, id, "bar")
+	testruntime.RequireOLAPTable(t, rt, id, "foo_two")
+	testruntime.RequireOLAPTable(t, rt, id, "bazz")
+}
+
 func TestCacheInvalidation(t *testing.T) {
 	// Add source and model
 	rt, id := testruntime.NewInstance(t)
@@ -301,8 +328,7 @@ path: data/foo.csv
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
-
-	assertTableRows(t, rt, id, "bar", 3)
+	testruntime.RequireTableRowCount(t, rt, id, "bar", 3)
 
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/models/bar.sql": `SELECT * FROM foo LIMIT`,
@@ -310,13 +336,13 @@ path: data/foo.csv
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 2, 1, 1)
 
+	time.Sleep(time.Second) // this is needed since we add second to the cache key
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/models/bar.sql": `SELECT * FROM foo LIMIT 1`,
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
-
-	assertTableRows(t, rt, id, "bar", 1) // limit in model should override the limit in the query
+	testruntime.RequireTableRowCount(t, rt, id, "bar", 1) // limit in model should override the limit in the query
 }
 
 func TestSourceRefreshSchedule(t *testing.T) {
@@ -336,7 +362,7 @@ refresh:
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
-	assertTableRows(t, rt, id, "foo", 3)
+	testruntime.RequireTableRowCount(t, rt, id, "foo", 3)
 
 	// update the data file with only 2 rows
 	testruntime.PutFiles(t, rt, id, map[string]string{
@@ -346,13 +372,13 @@ refresh:
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	// no change in data just yet
-	assertTableRows(t, rt, id, "foo", 3)
+	testruntime.RequireTableRowCount(t, rt, id, "foo", 3)
 
 	// wait to make sure the data is ingested
 	time.Sleep(2 * time.Second) // TODO: is there a way to decrease this wait time?
 	testruntime.ReconcileParserAndWait(t, rt, id)
-	// data is changed
-	assertTableRows(t, rt, id, "foo", 2)
+	// data has changed
+	testruntime.RequireTableRowCount(t, rt, id, "foo", 2)
 }
 
 func TestSourceAndModelNameCollission(t *testing.T) {
@@ -371,7 +397,7 @@ path: data/foo.csv
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
-	assertTableRows(t, rt, id, "foo", 3)
+	testruntime.RequireOLAPTable(t, rt, id, "foo")
 
 	// Create a source with same name within a different folder
 	testruntime.PutFiles(t, rt, id, map[string]string{
@@ -383,14 +409,13 @@ path: data/foo.csv
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 2, 1, 1)
-	// Source data is still accessible
-	assertTableRows(t, rt, id, "foo", 3)
+	testruntime.RequireOLAPTable(t, rt, id, "foo")
 
 	// Deleting the other file marks the other as valid
 	testruntime.DeleteFiles(t, rt, id, "/other_folder/foo.yaml")
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
-	assertTableRows(t, rt, id, "foo", 3)
+	testruntime.RequireOLAPTable(t, rt, id, "foo")
 
 	// Create a source with same name using `name` annotation
 	testruntime.PutFiles(t, rt, id, map[string]string{
@@ -402,13 +427,13 @@ path: data/foo.csv
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 2, 1, 1)
-	assertTableRows(t, rt, id, "foo", 3)
+	testruntime.RequireOLAPTable(t, rt, id, "foo")
 
 	// Deleting the other file marks the other as valid
 	testruntime.DeleteFiles(t, rt, id, "/sources/foo_1.yaml")
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
-	assertTableRows(t, rt, id, "foo", 3)
+	testruntime.RequireOLAPTable(t, rt, id, "foo")
 
 	// Create a model with same name as the source
 	testruntime.PutFiles(t, rt, id, map[string]string{
@@ -417,7 +442,7 @@ path: data/foo.csv
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 2, 1, 1)
 	// Data is from the source and model did not override it
-	assertTableRows(t, rt, id, "foo", 3)
+	testruntime.RequireTableRowCount(t, rt, id, "foo", 3)
 
 	// TODO: any other cases?
 }
@@ -438,7 +463,7 @@ select 1
 	defer done()
 
 	// Assert that the model is a view
-	assertIsView(t, olap, "bar", true)
+	testruntime.RequireIsView(t, olap, "bar", true)
 
 	// Mark the model as materialized
 	testruntime.PutFiles(t, rt, id, map[string]string{
@@ -450,7 +475,7 @@ select 1
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
 	// Assert that the model is a table now
-	assertIsView(t, olap, "bar", false)
+	testruntime.RequireIsView(t, olap, "bar", false)
 
 	// Mark the model as not materialized
 	testruntime.PutFiles(t, rt, id, map[string]string{
@@ -462,7 +487,7 @@ select 1
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
 	// Assert that the model is back to being a view
-	assertIsView(t, olap, "bar", true)
+	testruntime.RequireIsView(t, olap, "bar", true)
 }
 
 func TestModelCTE(t *testing.T) {
@@ -506,7 +531,7 @@ path: data/foo.csv
 		},
 	}
 	testruntime.RequireResource(t, rt, id, modelRes)
-	assertTableRows(t, rt, id, "bar", 3)
+	testruntime.RequireOLAPTable(t, rt, id, "bar")
 
 	// Update model to have a CTE with alias different from the source
 	testruntime.PutFiles(t, rt, id, map[string]string{
@@ -516,7 +541,7 @@ path: data/foo.csv
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
 	model.Spec.Sql = `with CTEAlias as (select * from foo) select * from CTEAlias`
 	testruntime.RequireResource(t, rt, id, modelRes)
-	assertTableRows(t, rt, id, "bar", 3)
+	testruntime.RequireOLAPTable(t, rt, id, "bar")
 
 	// Update model to have a CTE with alias same as the source
 	testruntime.PutFiles(t, rt, id, map[string]string{
@@ -525,16 +550,14 @@ path: data/foo.csv
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
 	model.Spec.Sql = `with foo as (select * from foo) select * from foo`
-	// Refs are removed but the model is valid.
-	// TODO: is this expected?
 	modelRes.Meta.Refs = []*runtimev1.ResourceName{}
 	testruntime.RequireResource(t, rt, id, modelRes)
-	// Data still persists
-	assertTableRows(t, rt, id, "bar", 3)
+	// Refs are removed but the model is valid.
+	// TODO: is this expected?
+	testruntime.RequireOLAPTable(t, rt, id, "bar")
 }
 
 func TestRename(t *testing.T) {
-	// Add model referencing new name, Rename the source to new name, verify old model breaks and new one works
 	// Rename model A to B and model B to A, verify success
 	// Rename model A to B and source B to A, verify success
 
@@ -578,7 +601,7 @@ path: data/foo.csv
 		},
 	}
 	testruntime.RequireResource(t, rt, id, modelRes)
-	assertTableRows(t, rt, id, "bar", 3)
+	testruntime.RequireOLAPTable(t, rt, id, "bar")
 
 	// Rename the model
 	testruntime.RenameFile(t, rt, id, "/models/bar.sql", "/models/bar_new.sql")
@@ -588,7 +611,8 @@ path: data/foo.csv
 	modelRes.Meta.FilePaths[0] = "/models/bar_new.sql"
 	model.State.Table = "bar_new"
 	testruntime.RequireResource(t, rt, id, modelRes)
-	assertTableRows(t, rt, id, "bar_new", 3)
+	testruntime.RequireOLAPTable(t, rt, id, "bar_new")
+	testruntime.RequireNoOLAPTable(t, rt, id, "bar")
 
 	// Rename the model to same name but different case
 	testruntime.RenameFile(t, rt, id, "/models/bar_new.sql", "/models/Bar_New.sql")
@@ -598,7 +622,7 @@ path: data/foo.csv
 	modelRes.Meta.FilePaths[0] = "/models/Bar_New.sql"
 	model.State.Table = "Bar_New"
 	testruntime.RequireResource(t, rt, id, modelRes)
-	assertTableRows(t, rt, id, "Bar_New", 3)
+	testruntime.RequireOLAPTable(t, rt, id, "Bar_New")
 
 	// Create a model referencing the new model name from before
 	testruntime.PutFiles(t, rt, id, map[string]string{
@@ -629,18 +653,13 @@ path: data/foo.csv
 		},
 	}
 	testruntime.RequireResource(t, rt, id, anotherModelRes)
-	assertTableRows(t, rt, id, "bar_another", 3)
-
-	//testruntime.RenameFile(t, rt, id, "/models/Bar_New.sql", "/sources/Bar_New_New.sql")
-	//testruntime.DeleteFiles(t, rt, id, "/models/bar_another.sql")
-	//testruntime.ReconcileParserAndWait(t, rt, id)
-	//testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
+	testruntime.RequireOLAPTable(t, rt, id, "bar_another")
 
 	// Rename the source to the model's name
 	testruntime.RenameFile(t, rt, id, "/sources/foo.yaml", "/sources/Bar_New.yaml")
-	testruntime.DeleteFiles(t, rt, id, "/models/Bar_New.sql")
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 1, 1)
+	testruntime.RequireOLAPTable(t, rt, id, "Bar_New")
 }
 
 func TestInterdependence(t *testing.T) {

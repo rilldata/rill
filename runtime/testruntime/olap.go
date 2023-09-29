@@ -48,3 +48,10 @@ func RequireOLAPTableCount(t testing.TB, rt *runtime.Runtime, id, name string, c
 
 	require.Equal(t, count, n)
 }
+
+func RequireIsView(t testing.TB, olap drivers.OLAPStore, tableName string, isView bool) {
+	table, err := olap.InformationSchema().Lookup(context.Background(), tableName)
+	require.NoError(t, err)
+	// Assert that the model is a table now
+	require.Equal(t, table.View, isView)
+}
