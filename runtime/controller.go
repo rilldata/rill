@@ -238,7 +238,6 @@ func (c *Controller) Run(ctx context.Context) error {
 			c.catalog.resetEvents()
 			c.mu.Unlock()
 		case <-ctx.Done(): // We've been asked to stop
-			fmt.Println("Done")
 			stop = true
 			break
 		}
@@ -1029,12 +1028,9 @@ func (c *Controller) setQueueUpdated() {
 func (c *Controller) processQueue() error {
 	// Mark-sweep like approach - first mark all impacted resources (including descendents) pending, then schedule the ones that have no pending parents.
 
-	fmt.Println(maps.Keys(c.queue))
-
 	// Phase 1: Mark items pending and trim queue when possible.
 	for s, n := range c.queue {
 		skip, err := c.markPending(n)
-		//fmt.Println("markPending", s, skip, err)
 		if err != nil {
 			return err
 		}
@@ -1046,7 +1042,6 @@ func (c *Controller) processQueue() error {
 	// Phase 2: Ensure scheduling
 	for s, n := range c.queue {
 		ok, err := c.trySchedule(n)
-		//fmt.Println("trySchedule", s, ok, err)
 		if err != nil {
 			return err
 		}
@@ -1204,14 +1199,12 @@ func (c *Controller) trySchedule(n *runtimev1.ResourceName) (success bool, err e
 	// We want deletes to run before renames or regular reconciles.
 	// Return false if there are pending deletes and this isn't one of them.
 	if len(c.catalog.deleted) != 0 && r.Meta.DeletedOn == nil {
-		fmt.Println("Skip cos not delete", r.Meta.Name.String())
 		return false, nil
 	}
 
 	// We want renames to run before regular reconciles.
 	// Return false if there are pending renames and this isn't one of them.
 	if len(c.catalog.renamed) != 0 && r.Meta.RenamedFrom == nil {
-		fmt.Println("Skip cos not rename", r.Meta.Name.String())
 		return false, nil
 	}
 
@@ -1278,7 +1271,6 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 			// Send invocation to event loop for post-processing
 			c.completed <- inv
 		}()
-		fmt.Println("Reconcile", n)
 		// Invoke reconciler
 		inv.result = reconciler.Reconcile(ctx, n)
 	}()
