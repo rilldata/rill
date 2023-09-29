@@ -57,10 +57,10 @@ func New(t TestingT) *runtime.Runtime {
 		AllowHostAccess:         true,
 	}
 
-	//logger := zap.NewNop()
+	logger := zap.NewNop()
 	// nolint
-	logger, err := zap.NewDevelopment()
-	require.NoError(t, err)
+	// logger, err := zap.NewDevelopment()
+	// require.NoError(t, err)
 
 	rt, err := runtime.New(context.Background(), opts, logger, activity.NewNoopClient())
 	require.NoError(t, err)

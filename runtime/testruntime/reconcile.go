@@ -91,6 +91,19 @@ func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.R
 	require.Greater(t, r.Meta.SpecVersion, prevSpecVersion)
 }
 
+func WaitUntilIdle(t testing.TB, rt *runtime.Runtime, id string) {
+	ctrl, err := rt.Controller(id)
+	require.NoError(t, err)
+
+	// Smaller times was not stable on an M1 mac.
+	// TODO: Refactor to wait for the controller to actually be triggered if we ever have instability
+	time.Sleep(time.Second)
+
+	// For now this is only used for continuous watcher. add ignore hidden to param if otherwise
+	err = ctrl.WaitUntilIdle(context.Background(), true)
+	require.NoError(t, err)
+}
+
 func RequireReconcileState(t testing.TB, rt *runtime.Runtime, id string, lenResources, lenReconcileErrs, lenParseErrs int) {
 	ctrl, err := rt.Controller(id)
 	require.NoError(t, err)
@@ -206,29 +219,46 @@ func WaitForResource(t testing.TB, rt *runtime.Runtime, id, name, path string) (
 	var res *runtimev1.Resource
 	errStr := ""
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 250*time.Millisecond)
 	defer cancel()
 
 	// ignore error since cancelling will cause error as well
 	_ = ctrl.Subscribe(ctx, func(_ runtimev1.ResourceEvent, n *runtimev1.ResourceName, r *runtimev1.Resource) {
-		fmt.Println(n, r)
 		if n.Name == name && r != nil && r.Meta.ReconcileStatus == runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE {
+			switch r.Resource.(type) {
+			case *runtimev1.Resource_Source:
+				if r.GetSource().State.Table == "" {
+					return
+				}
+
+			case *runtimev1.Resource_Model:
+				if r.GetModel().State.Table == "" {
+					return
+				}
+
+			case *runtimev1.Resource_MetricsView:
+				if r.GetMetricsView().State.ValidSpec == nil {
+					return
+				}
+			}
 			// if the resource is the one we want return
 			res = r
-			fmt.Println("Cancel")
 			cancel()
 		} else if n.Kind == runtime.ResourceKindProjectParser {
 			// else check for errors
 			for _, parseError := range r.GetProjectParser().State.ParseErrors {
 				if parseError.FilePath == path {
 					errStr = parseError.Message
-					fmt.Println("Cancel")
 					cancel()
 					break
 				}
 			}
 		}
 	})
+
+	// Wait for the resource to be saved to the db
+	// TODO: is there a better way?
+	time.Sleep(250 * time.Millisecond)
 
 	return res, errStr
 }

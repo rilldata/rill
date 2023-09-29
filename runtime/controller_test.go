@@ -1008,7 +1008,6 @@ func TestWatch(t *testing.T) {
 		WatchRepo: true,
 	})
 
-	fmt.Println("1")
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/data/foo.csv": `a,b,c,d,e
 1,2,3,4,5
@@ -1020,24 +1019,21 @@ type: local_file
 path: data/foo.csv
 `,
 	})
-	fmt.Println("2")
-	_, sourceRes := newSource("foo", "data/foo.csv")
-	testruntime.WaitRequireResource(t, rt, id, sourceRes)
-	fmt.Println("3")
+	testruntime.WaitUntilIdle(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
 	testruntime.RequireOLAPTable(t, rt, id, "foo")
+	_, sourceRes := newSource("foo", "data/foo.csv")
+	testruntime.RequireResource(t, rt, id, sourceRes)
 
-	fmt.Println("4")
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/models/bar.sql": `SELECT * FROM foo`,
 	})
-	_, modelRes := newModel("SELECT * FROM foo", "bar", "foo")
-	testruntime.WaitRequireResource(t, rt, id, modelRes)
-	fmt.Println("5")
+	testruntime.WaitUntilIdle(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
 	testruntime.RequireOLAPTable(t, rt, id, "bar")
+	_, modelRes := newModel("SELECT * FROM foo", "bar", "foo")
+	testruntime.RequireResource(t, rt, id, modelRes)
 
-	fmt.Println("6")
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/dashboards/dash.yaml": `
 title: dash
@@ -1050,10 +1046,10 @@ measures:
 - expression: avg(a)
 		`,
 	})
-	_, metricsRes := newMetricsView("dash", "bar", []string{"count(*)", "avg(a)"}, []string{"b", "c"})
-	testruntime.WaitRequireResource(t, rt, id, metricsRes)
-	fmt.Println("7")
+	testruntime.WaitUntilIdle(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+	_, metricsRes := newMetricsView("dash", "bar", []string{"count(*)", "avg(a)"}, []string{"b", "c"})
+	testruntime.RequireResource(t, rt, id, metricsRes)
 }
 
 func must[T any](v T, err error) T {
