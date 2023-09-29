@@ -24,8 +24,11 @@
   import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { fade } from "svelte/transition";
+  import { WithTogglableFloatingElement } from "../../../components/floating-element";
+  import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import EnterIcon from "../../../components/icons/EnterIcon.svelte";
   import UndoIcon from "../../../components/icons/UndoIcon.svelte";
+  import { Menu, MenuItem } from "../../../components/menu";
   import { WorkspaceHeader } from "../../../layout/workspace";
   import { behaviourEvent } from "../../../metrics/initMetrics";
   import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
@@ -46,9 +49,12 @@
   import { isDuplicateName } from "../../entity-management/name-utils";
   import { useAllNames } from "../../entity-management/selectors";
   import { createModelFromSourceV2 } from "../createModel";
-  import { refreshSource } from "../refreshSource";
+  import {
+    refreshSource,
+    replaceSourceWithUploadedFile,
+  } from "../refreshSource";
   import { saveAndRefresh } from "../saveAndRefresh";
-  import { useIsSourceUnsaved } from "../selectors";
+  import { useIsLocalFileConnector, useIsSourceUnsaved } from "../selectors";
   import { useSourceStore } from "../sources-store";
 
   export let sourceName: string;
@@ -152,6 +158,21 @@
     overlay.set(null);
   };
 
+  $: isLocalFileConnectorQuery = useIsLocalFileConnector(
+    $runtime.instanceId,
+    sourceName
+  );
+  $: isLocalFileConnector = $isLocalFileConnectorQuery.data;
+
+  async function onReplaceSource(sourceName: string) {
+    await replaceSourceWithUploadedFile(
+      queryClient,
+      runtimeInstanceId,
+      sourceName
+    );
+    overlay.set(null);
+  }
+
   function formatRefreshedOn(refreshedOn: string) {
     const date = new Date(refreshedOn);
     return date.toLocaleString(undefined, {
@@ -237,29 +258,67 @@
             Revert changes
           </ResponsiveButtonText>
         </Button>
-        <Button
-          label={isSourceUnsaved ? "Save and refresh" : "Refresh"}
-          on:click={() =>
-            isSourceUnsaved
-              ? onSaveAndRefreshClick(sourceName)
-              : onRefreshClick(sourceName)}
-          type={isSourceUnsaved ? "primary" : "secondary"}
+        <WithTogglableFloatingElement
+          alignment="end"
+          distance={8}
+          let:toggleFloatingElement
+          location="bottom"
         >
-          <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall(headerWidth)}>
-            <RefreshIcon size="14px" />
-          </IconSpaceFixer>
-          <ResponsiveButtonText collapse={isHeaderWidthSmall(headerWidth)}>
-            <div class="flex">
-              {#if isSourceUnsaved}<div
-                  class="pr-1"
-                  transition:slideRight={{ duration: 250 }}
-                >
-                  Save and
-                </div>{/if}
-              {#if !isSourceUnsaved}R{:else}r{/if}efresh
-            </div>
-          </ResponsiveButtonText>
-        </Button>
+          <Button
+            label={isSourceUnsaved ? "Save and refresh" : "Refresh"}
+            on:click={() =>
+              isSourceUnsaved
+                ? onSaveAndRefreshClick(sourceName)
+                : isLocalFileConnector
+                ? toggleFloatingElement()
+                : onRefreshClick(sourceName)}
+            type={isSourceUnsaved ? "primary" : "secondary"}
+          >
+            <IconSpaceFixer
+              pullLeft
+              pullRight={isHeaderWidthSmall(headerWidth)}
+            >
+              <RefreshIcon size="14px" />
+            </IconSpaceFixer>
+            <ResponsiveButtonText collapse={isHeaderWidthSmall(headerWidth)}>
+              <div class="flex">
+                {#if isSourceUnsaved}<div
+                    class="pr-1"
+                    transition:slideRight={{ duration: 250 }}
+                  >
+                    Save and
+                  </div>{/if}
+                {#if !isSourceUnsaved}R{:else}r{/if}efresh
+              </div>
+            </ResponsiveButtonText>
+            {#if !isSourceUnsaved && isLocalFileConnector}
+              <CaretDownIcon size="14px" />
+            {/if}
+          </Button>
+          <Menu
+            dark
+            on:click-outside={toggleFloatingElement}
+            on:escape={toggleFloatingElement}
+            slot="floating-element"
+          >
+            <MenuItem
+              on:select={() => {
+                toggleFloatingElement();
+                onRefreshClick(sourceName);
+              }}
+            >
+              Refresh source
+            </MenuItem>
+            <MenuItem
+              on:select={() => {
+                toggleFloatingElement();
+                onReplaceSource(sourceName);
+              }}
+            >
+              Replace source with uploaded file
+            </MenuItem>
+          </Menu>
+        </WithTogglableFloatingElement>
         <Button
           on:click={handleCreateModelFromSource}
           disabled={isSourceUnsaved || hasReconciliationErrors}
