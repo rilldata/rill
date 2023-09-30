@@ -93,6 +93,13 @@
 
   let autocompleteCompartment = new Compartment();
 
+  // Autocomplete: SQL dialect
+  const DuckDBSQL: SQLDialect = SQLDialect.define({
+    keywords:
+      "select from where group by all having order limit sample unnest with window qualify values filter exclude replace like ilike glob as case when then else end in cast left join on not desc asc sum union",
+  });
+
+  // Autocomplete: source tables
   $: sourceCatalogsQuery = createRuntimeServiceListCatalogEntries(
     $runtime.instanceId,
     {
@@ -101,35 +108,36 @@
   );
 
   let schema: { [table: string]: string[] };
-
-  /** Track embedded sources separately*/
-  let embeddedSources = [];
   $: if ($sourceCatalogsQuery?.data?.entries) {
     schema = {};
-    embeddedSources = [];
     for (const sourceTable of $sourceCatalogsQuery.data.entries) {
-      const sourceIdentifier = sourceTable?.embedded
-        ? sourceTable?.source?.properties?.path
-        : sourceTable?.name;
-      if (sourceTable?.embedded) embeddedSources.push(sourceIdentifier);
-      schema[sourceIdentifier] =
+      schema[sourceTable.name] =
         sourceTable.source?.schema?.fields?.map((field) => field.name) ?? [];
     }
   }
 
-  const DuckDBSQL: SQLDialect = SQLDialect.define({
-    keywords:
-      "select from where group by all having order limit sample unnest with window qualify values filter exclude replace like ilike glob as case when then else end in cast left join on not desc asc sum union",
-  });
+  function getTableNameFromFromClause(sql: string): string | null {
+    const fromMatch = sql.toUpperCase().match(/\bFROM\b\s+(\w+)/);
+    const tableName = fromMatch ? fromMatch[1] : null;
+
+    // Get the tableName from the schema map, so we can use the correct case
+    for (const schemaTableName of Object.keys(schema)) {
+      if (schemaTableName.toUpperCase() === tableName) {
+        return schemaTableName;
+      }
+    }
+
+    return null;
+  }
 
   function makeAutocompleteConfig(
     schema: { [table: string]: string[] },
-    _embeddedSources: string[]
+    defaultTable?: string
   ) {
     return autocompletion({
       override: [
         keywordCompletionSource(DuckDBSQL),
-        schemaCompletionSource({ schema }),
+        schemaCompletionSource({ schema, defaultTable }),
       ],
       icons: false,
     });
@@ -181,7 +189,7 @@
           bracketMatching(),
           closeBrackets(),
           autocompleteCompartment.of(
-            makeAutocompleteConfig(schema, embeddedSources)
+            makeAutocompleteConfig(schema, defaultTable)
           ), // a compartment makes the config dynamic
           rectangularSelection(),
           highlightActiveLine(),
@@ -257,12 +265,12 @@
 
   function updateAutocompleteSources(
     schema: { [table: string]: string[] },
-    embeddedSources
+    defaultTable?: string
   ) {
     if (editor) {
       editor.dispatch({
         effects: autocompleteCompartment.reconfigure(
-          makeAutocompleteConfig(schema, embeddedSources)
+          makeAutocompleteConfig(schema, defaultTable)
         ),
       });
     }
@@ -284,7 +292,8 @@
 
   // reactive statements to dynamically update the editor when inputs change
   $: updateEditorContents(content);
-  $: updateAutocompleteSources(schema, embeddedSources);
+  $: defaultTable = getTableNameFromFromClause(content);
+  $: updateAutocompleteSources(schema, defaultTable);
   $: underlineSelection(selections || []);
 </script>
 
