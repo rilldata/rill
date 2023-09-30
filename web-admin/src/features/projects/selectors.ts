@@ -28,9 +28,8 @@ export function useProjectDeploymentStatus(orgName: string, projName: string) {
       refetchInterval: (data) => {
         switch (data) {
           case "DEPLOYMENT_STATUS_PENDING":
-          case "DEPLOYMENT_STATUS_RECONCILING":
-            return PollTimeDuringReconcile;
-
+          // case "DEPLOYMENT_STATUS_RECONCILING":
+          //   return PollTimeDuringReconcile;
           case "DEPLOYMENT_STATUS_ERROR":
           case "DEPLOYMENT_STATUS_UNSPECIFIED":
             return PollTimeDuringError;

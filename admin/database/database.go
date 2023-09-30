@@ -78,7 +78,6 @@ type DB interface {
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
-	UpdateProjectVariables(ctx context.Context, id string, variables map[string]string) (*Project, error)
 	CountProjectsForOrganization(ctx context.Context, orgID string) (int, error)
 
 	FindExpiredDeployments(ctx context.Context) ([]*Deployment, error)
@@ -87,7 +86,7 @@ type DB interface {
 	FindDeploymentByInstanceID(ctx context.Context, instanceID string) (*Deployment, error)
 	InsertDeployment(ctx context.Context, opts *InsertDeploymentOptions) (*Deployment, error)
 	DeleteDeployment(ctx context.Context, id string) error
-	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, logs string) (*Deployment, error)
+	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, msg string) (*Deployment, error)
 	UpdateDeploymentBranch(ctx context.Context, id, branch string) (*Deployment, error)
 	UpdateDeploymentUsedOn(ctx context.Context, ids []string) error
 	CountDeploymentsForOrganization(ctx context.Context, orgID string) (*DeploymentsCount, error)
@@ -311,7 +310,6 @@ const (
 	DeploymentStatusUnspecified DeploymentStatus = 0
 	DeploymentStatusPending     DeploymentStatus = 1
 	DeploymentStatusOK          DeploymentStatus = 2
-	DeploymentStatusReconciling DeploymentStatus = 3
 	DeploymentStatusError       DeploymentStatus = 4
 )
 
@@ -326,7 +324,7 @@ type Deployment struct {
 	RuntimeInstanceID string           `db:"runtime_instance_id"`
 	RuntimeAudience   string           `db:"runtime_audience"`
 	Status            DeploymentStatus `db:"status"`
-	Logs              string           `db:"logs"`
+	StatusMessage     string           `db:"status_message"`
 	CreatedOn         time.Time        `db:"created_on"`
 	UpdatedOn         time.Time        `db:"updated_on"`
 	UsedOn            time.Time        `db:"used_on"`
@@ -341,7 +339,7 @@ type InsertDeploymentOptions struct {
 	RuntimeInstanceID string `validate:"required"`
 	RuntimeAudience   string
 	Status            DeploymentStatus
-	Logs              string
+	StatusMessage     string
 }
 
 // RuntimeSlotsUsed is the result of a ResolveRuntimeSlotsUsed query.

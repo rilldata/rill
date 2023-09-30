@@ -28,12 +28,8 @@ import type {
   V1GetInstanceResponse,
   V1DeleteInstanceResponse,
   RuntimeServiceDeleteInstanceBody,
-  V1EditInstanceVariablesResponse,
-  RuntimeServiceEditInstanceVariablesBody,
   V1EditInstanceResponse,
   RuntimeServiceEditInstanceBody,
-  V1EditInstanceAnnotationsResponse,
-  RuntimeServiceEditInstanceAnnotationsBody,
   V1ListCatalogEntriesResponse,
   RuntimeServiceListCatalogEntriesParams,
   V1GetCatalogEntryResponse,
@@ -673,77 +669,6 @@ export const createRuntimeServiceDeleteInstance = <
   return createMutation(mutationOptions);
 };
 /**
- * @summary EditInstanceVariables edits the instance variable
- */
-export const runtimeServiceEditInstanceVariables = (
-  instanceId: string,
-  runtimeServiceEditInstanceVariablesBody: RuntimeServiceEditInstanceVariablesBody
-) => {
-  return httpClient<V1EditInstanceVariablesResponse>({
-    url: `/v1/instances/${instanceId}`,
-    method: "put",
-    headers: { "Content-Type": "application/json" },
-    data: runtimeServiceEditInstanceVariablesBody,
-  });
-};
-
-export const getRuntimeServiceEditInstanceVariablesMutationOptions = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceEditInstanceVariables>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceEditInstanceVariablesBody },
-    TContext
-  >;
-}): CreateMutationOptions<
-  Awaited<ReturnType<typeof runtimeServiceEditInstanceVariables>>,
-  TError,
-  { instanceId: string; data: RuntimeServiceEditInstanceVariablesBody },
-  TContext
-> => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceEditInstanceVariables>>,
-    { instanceId: string; data: RuntimeServiceEditInstanceVariablesBody }
-  > = (props) => {
-    const { instanceId, data } = props ?? {};
-
-    return runtimeServiceEditInstanceVariables(instanceId, data);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type RuntimeServiceEditInstanceVariablesMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceEditInstanceVariables>>
->;
-export type RuntimeServiceEditInstanceVariablesMutationBody =
-  RuntimeServiceEditInstanceVariablesBody;
-export type RuntimeServiceEditInstanceVariablesMutationError = RpcStatus;
-
-/**
- * @summary EditInstanceVariables edits the instance variable
- */
-export const createRuntimeServiceEditInstanceVariables = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceEditInstanceVariables>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceEditInstanceVariablesBody },
-    TContext
-  >;
-}) => {
-  const mutationOptions =
-    getRuntimeServiceEditInstanceVariablesMutationOptions(options);
-
-  return createMutation(mutationOptions);
-};
-/**
  * @summary EditInstance edits an existing instance
  */
 export const runtimeServiceEditInstance = (
@@ -810,77 +735,6 @@ export const createRuntimeServiceEditInstance = <
   >;
 }) => {
   const mutationOptions = getRuntimeServiceEditInstanceMutationOptions(options);
-
-  return createMutation(mutationOptions);
-};
-/**
- * @summary EditInstanceAnnotations edits the instance annotations
- */
-export const runtimeServiceEditInstanceAnnotations = (
-  instanceId: string,
-  runtimeServiceEditInstanceAnnotationsBody: RuntimeServiceEditInstanceAnnotationsBody
-) => {
-  return httpClient<V1EditInstanceAnnotationsResponse>({
-    url: `/v1/instances/${instanceId}/annotations`,
-    method: "put",
-    headers: { "Content-Type": "application/json" },
-    data: runtimeServiceEditInstanceAnnotationsBody,
-  });
-};
-
-export const getRuntimeServiceEditInstanceAnnotationsMutationOptions = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceEditInstanceAnnotations>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceEditInstanceAnnotationsBody },
-    TContext
-  >;
-}): CreateMutationOptions<
-  Awaited<ReturnType<typeof runtimeServiceEditInstanceAnnotations>>,
-  TError,
-  { instanceId: string; data: RuntimeServiceEditInstanceAnnotationsBody },
-  TContext
-> => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceEditInstanceAnnotations>>,
-    { instanceId: string; data: RuntimeServiceEditInstanceAnnotationsBody }
-  > = (props) => {
-    const { instanceId, data } = props ?? {};
-
-    return runtimeServiceEditInstanceAnnotations(instanceId, data);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type RuntimeServiceEditInstanceAnnotationsMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceEditInstanceAnnotations>>
->;
-export type RuntimeServiceEditInstanceAnnotationsMutationBody =
-  RuntimeServiceEditInstanceAnnotationsBody;
-export type RuntimeServiceEditInstanceAnnotationsMutationError = RpcStatus;
-
-/**
- * @summary EditInstanceAnnotations edits the instance annotations
- */
-export const createRuntimeServiceEditInstanceAnnotations = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceEditInstanceAnnotations>>,
-    TError,
-    { instanceId: string; data: RuntimeServiceEditInstanceAnnotationsBody },
-    TContext
-  >;
-}) => {
-  const mutationOptions =
-    getRuntimeServiceEditInstanceAnnotationsMutationOptions(options);
 
   return createMutation(mutationOptions);
 };
