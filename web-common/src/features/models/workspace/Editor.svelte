@@ -116,7 +116,12 @@
     }
   }
 
-  function getTableNameFromFromClause(sql: string): string | null {
+  function getTableNameFromFromClause(
+    sql: string,
+    schema: { [table: string]: string[] }
+  ): string | null {
+    if (!sql || !schema) return null;
+
     const fromMatch = sql.toUpperCase().match(/\bFROM\b\s+(\w+)/);
     const tableName = fromMatch ? fromMatch[1] : null;
 
@@ -292,7 +297,7 @@
 
   // reactive statements to dynamically update the editor when inputs change
   $: updateEditorContents(content);
-  $: defaultTable = getTableNameFromFromClause(content);
+  $: defaultTable = getTableNameFromFromClause(content, schema);
   $: updateAutocompleteSources(schema, defaultTable);
   $: underlineSelection(selections || []);
 </script>
