@@ -36,8 +36,8 @@
     $projectDeploymentStatus.data ===
     V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING;
   $: isProjectReconciling = false;
-    // $projectDeploymentStatus.data ===
-    // V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING;
+  // $projectDeploymentStatus.data ===
+  // V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING;
   $: isProjectErrored =
     $projectDeploymentStatus.data ===
     V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR;
