@@ -77,7 +77,8 @@ func (q *MetricsViewComparisonToplist) Resolve(ctx context.Context, rt *runtime.
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
-	if err = validateSort(q.Sort); err != nil {
+	err = validateSort(q.Sort)
+	if err != nil {
 		return err
 	}
 
@@ -423,7 +424,6 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 			q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA {
 			joinType = "LEFT OUTER"
 			baseLimitClause = fmt.Sprintf("LIMIT %d", q.Limit)
-
 		} else if q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE {
 			joinType = "RIGHT OUTER"
 			comparisonLimitClause = fmt.Sprintf("LIMIT %d", q.Limit)
