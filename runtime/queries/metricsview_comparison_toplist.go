@@ -413,21 +413,23 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 		q.Limit = 100
 	}
 
+	baseLimitClause := ""
+	comparisonLimitClause := ""
+
 	joinType := "FULL"
 	if q.Approximate {
 		if q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE ||
 			q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA ||
 			q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA {
 			joinType = "LEFT OUTER"
+			baseLimitClause = fmt.Sprintf("LIMIT %d", q.Limit)
+
 		} else if q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE {
 			joinType = "RIGHT OUTER"
+			comparisonLimitClause = fmt.Sprintf("LIMIT %d", q.Limit)
 		}
 	}
 
-	innerLimitClause := ""
-	if q.Approximate {
-		innerLimitClause = fmt.Sprintf("LIMIT %d", q.Limit)
-	}
 	var sql string
 	if dialect != drivers.DialectDruid {
 		sql = fmt.Sprintf(`
@@ -437,7 +439,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 			) base
 		%[11]s JOIN
 			(
-				SELECT %[1]s FROM %[3]q WHERE %[5]s GROUP BY %[2]s %[12]s 
+				SELECT %[1]s FROM %[3]q WHERE %[5]s GROUP BY %[2]s %[13]s 
 			) comparison
 		ON
 				base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
@@ -459,7 +461,8 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 			finalSelectClause,         // 9
 			safeName(q.DimensionName), // 10
 			joinType,                  // 11
-			innerLimitClause,          // 12
+			baseLimitClause,           // 12
+			comparisonLimitClause,     // 12
 		)
 	} else {
 		/*
@@ -491,20 +494,19 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 			LIMIT 10
 		*/
 		// Apache Druid requires that one part of the JOIN fits in memory, that can be achieved by pushing down the limit clause to a subquery (works only if the sorting is based entirely on a single subquery result)
-		if q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE || q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE {
-			leftSubQueryAlias := "base"
-			rightSubQueryAlias := "comparison"
-			leftWhereClause := baseWhereClause
-			rightWhereClause := comparisonWhereClause
+		leftSubQueryAlias := "base"
+		rightSubQueryAlias := "comparison"
+		leftWhereClause := baseWhereClause
+		rightWhereClause := comparisonWhereClause
 
-			if q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE {
-				leftSubQueryAlias = "comparison"
-				rightSubQueryAlias = "base"
-				leftWhereClause = comparisonWhereClause
-				rightWhereClause = baseWhereClause
-			}
+		if q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE {
+			leftSubQueryAlias = "comparison"
+			rightSubQueryAlias = "base"
+			leftWhereClause = comparisonWhereClause
+			rightWhereClause = baseWhereClause
+		}
 
-			sql = fmt.Sprintf(`
+		sql = fmt.Sprintf(`
 				SELECT COALESCE(base.%[2]s, comparison.%[2]s), %[9]s FROM 
 					(
 						SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s ORDER BY %[13]s LIMIT %[10]d OFFSET %[8]d 
@@ -522,50 +524,20 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 				OFFSET
 					%[8]d
 				`,
-				subSelectClause,     // 1
-				colName,             // 2
-				mv.Model,            // 3
-				leftWhereClause,     // 4
-				rightWhereClause,    // 5
-				orderClause,         // 6
-				q.Limit,             // 7
-				q.Offset,            // 8
-				finalSelectClause,   // 9
-				q.Limit*2,           // 10
-				leftSubQueryAlias,   // 11
-				rightSubQueryAlias,  // 12
-				subQueryOrderClause, // 13
-			)
-		} else {
-			sql = fmt.Sprintf(`
-				SELECT COALESCE(base.%[2]s, comparison.%[2]s), %[9]s FROM 
-					(
-						SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s
-					) base
-				FULL JOIN
-					(
-						SELECT %[1]s FROM %[3]q WHERE %[5]s GROUP BY %[2]s
-					) comparison
-				ON
-						base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
-				ORDER BY
-					%[6]s
-				LIMIT
-					%[7]d
-				OFFSET
-					%[8]d
-				`,
-				subSelectClause,       // 1
-				colName,               // 2
-				mv.Model,              // 3
-				baseWhereClause,       // 4
-				comparisonWhereClause, // 5
-				orderClause,           // 6
-				q.Limit,               // 7
-				q.Offset,              // 8
-				finalSelectClause,     // 9
-			)
-		}
+			subSelectClause,     // 1
+			colName,             // 2
+			mv.Model,            // 3
+			leftWhereClause,     // 4
+			rightWhereClause,    // 5
+			orderClause,         // 6
+			q.Limit,             // 7
+			q.Offset,            // 8
+			finalSelectClause,   // 9
+			q.Limit*2,           // 10
+			leftSubQueryAlias,   // 11
+			rightSubQueryAlias,  // 12
+			subQueryOrderClause, // 13
+		)
 	}
 
 	return sql, args, nil
