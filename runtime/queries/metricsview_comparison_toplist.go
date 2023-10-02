@@ -27,6 +27,7 @@ type MetricsViewComparisonToplist struct {
 	Filter              *runtimev1.MetricsViewFilter           `json:"filter,omitempty"`
 	MetricsView         *runtimev1.MetricsView                 `json:"-"`
 	ResolvedMVSecurity  *runtime.ResolvedMetricsViewSecurity   `json:"security"`
+	Approximate         bool                                   `json:"approximate"`
 
 	Result *runtimev1.MetricsViewComparisonToplistResponse `json:"-"`
 }
@@ -74,6 +75,10 @@ func (q *MetricsViewComparisonToplist) Resolve(ctx context.Context, rt *runtime.
 
 	if q.MetricsView.TimeDimension == "" && (!isTimeRangeNil(q.BaseTimeRange) || !isTimeRangeNil(q.ComparisonTimeRange)) {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
+	}
+
+	if err = validateSort(q.Sort); err != nil {
+		return err
 	}
 
 	if !isTimeRangeNil(q.ComparisonTimeRange) {
@@ -408,16 +413,31 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 		q.Limit = 100
 	}
 
+	joinType := "FULL"
+	if q.Approximate {
+		if q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE ||
+			q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA ||
+			q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA {
+			joinType = "LEFT OUTER"
+		} else if q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE {
+			joinType = "RIGHT OUTER"
+		}
+	}
+
+	innerLimitClause := ""
+	if q.Approximate {
+		innerLimitClause = fmt.Sprintf("LIMIT %d", q.Limit)
+	}
 	var sql string
 	if dialect != drivers.DialectDruid {
 		sql = fmt.Sprintf(`
 		SELECT COALESCE(base.%[2]s, comparison.%[2]s) AS %[10]s, %[9]s FROM 
 			(
-				SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s
+				SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s %[12]s 
 			) base
-		FULL JOIN
+		%[11]s JOIN
 			(
-				SELECT %[1]s FROM %[3]q WHERE %[5]s GROUP BY %[2]s
+				SELECT %[1]s FROM %[3]q WHERE %[5]s GROUP BY %[2]s %[12]s 
 			) comparison
 		ON
 				base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
@@ -438,6 +458,8 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 			q.Offset,                  // 8
 			finalSelectClause,         // 9
 			safeName(q.DimensionName), // 10
+			joinType,                  // 11
+			innerLimitClause,          // 12
 		)
 	} else {
 		/*
@@ -710,10 +732,10 @@ func validateSort(sorts []*runtimev1.MetricsViewComparisonSort) error {
 	if len(sorts) == 0 {
 		return fmt.Errorf("sorting is required")
 	}
-	firstSort := sorts[0]
+	firstSort := sorts[0].Type
 
 	for _, s := range sorts {
-		if firstSort != s {
+		if firstSort != s.Type {
 			return fmt.Errorf("diffirent sort types are not supported in a single query")
 		}
 	}
