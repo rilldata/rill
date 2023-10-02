@@ -3,6 +3,7 @@ package rillv1
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"text/template"
 	"text/template/parse"
 
@@ -61,6 +62,7 @@ type TemplateResource struct {
 type TemplateMetadata struct {
 	Refs                     []ResourceName
 	Config                   map[string]any
+	Variables                map[string][]string
 	UsesTemplating           bool
 	ResolvedWithPlaceholders string
 }
@@ -144,6 +146,12 @@ func AnalyzeTemplate(tmpl string) (*TemplateMetadata, error) {
 		return nil, err
 	}
 
+	variables, err := ExtractVariablesFromTemplate(t.Tree)
+	if err != nil {
+		fmt.Printf("failed to extract variables from template: %v\n", err)
+		return nil, err
+	}
+
 	// Check if there is any templating
 	noTemplating := len(t.Root.Nodes) == 0 || len(t.Root.Nodes) == 1 && t.Root.Nodes[0].Type() == parse.NodeText
 
@@ -151,6 +159,7 @@ func AnalyzeTemplate(tmpl string) (*TemplateMetadata, error) {
 	return &TemplateMetadata{
 		Refs:                     maps.Keys(refs),
 		Config:                   config,
+		Variables:                variables,
 		UsesTemplating:           !noTemplating,
 		ResolvedWithPlaceholders: res.String(),
 	}, nil
@@ -277,4 +286,57 @@ func EvaluateBoolExpression(expr string) (bool, error) {
 		return false, fmt.Errorf("failed to evaluate expression: %w", err)
 	}
 	return result, nil
+}
+
+func ExtractVariablesFromTemplate(tree *parse.Tree) (map[string][]string, error) {
+	var variables []string
+	walkNodes(tree.Root, func(n parse.Node) {
+		if vn, ok := n.(*parse.FieldNode); ok {
+			variables = append(variables, joinIdentifiers(vn.Ident))
+		}
+	})
+
+	variablesMap := make(map[string][]string)
+	// Iterate through the variables and split them into key and value and add them to the map
+	for _, variable := range variables {
+		// Split the variable into parts using dot (.) as the separator
+		parts := strings.Split(variable, ".")
+		key := parts[0]
+		value := parts[1]
+
+		variablesMap[key] = append(variablesMap[key], value)
+	}
+
+	return variablesMap, nil
+}
+
+func walkNodes(node parse.Node, fn func(n parse.Node)) {
+	fn(node)
+	switch n := node.(type) {
+	case *parse.ListNode:
+		for _, ln := range n.Nodes {
+			walkNodes(ln, fn)
+		}
+	case *parse.ActionNode:
+		walkNodes(n.Pipe, fn)
+	case *parse.PipeNode:
+		for _, cmd := range n.Cmds {
+			walkNodes(cmd, fn)
+		}
+	case *parse.CommandNode:
+		for _, arg := range n.Args {
+			walkNodes(arg, fn)
+		}
+	}
+}
+
+func joinIdentifiers(ident []string) string {
+	var result string
+	for _, id := range ident {
+		if result != "" {
+			result += "."
+		}
+		result += id
+	}
+	return result
 }
