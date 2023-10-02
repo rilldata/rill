@@ -717,6 +717,11 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_numeric_dim(t *testin
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "numeric_dim",
 		MeasureNames:    []string{"measure_0"},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				MeasureName: "measure_0",
+			},
+		},
 	})
 
 	require.NoError(t, err)
