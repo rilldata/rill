@@ -25,10 +25,7 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import {
-    getRuntimeServiceGetCatalogEntryQueryKey,
-    V1SourceV2,
-  } from "@rilldata/web-common/runtime-client";
+  import type { V1SourceV2 } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -150,17 +147,6 @@
     }
     try {
       await refreshSource(connector, tableName, runtimeInstanceId);
-
-      // invalidate the data preview (async)
-      // TODO: use new runtime approach
-      // Old approach: dataModelerService.dispatch("collectTableInfo", [currentSource?.id]);
-
-      // invalidate the "refreshed_on" time
-      const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
-        runtimeInstanceId,
-        tableName
-      );
-      await queryClient.refetchQueries(queryKey);
     } catch (err) {
       // no-op
     }

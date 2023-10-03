@@ -133,7 +133,6 @@
       <div class="h-full p-5 grid overflow-auto">
         {#key modelName}
           <Editor
-            {modelName}
             content={modelSql}
             {selections}
             focusOnMount={focusEditorOnMount}

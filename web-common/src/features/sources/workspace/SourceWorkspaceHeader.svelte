@@ -16,7 +16,6 @@
   import {
     createRuntimeServiceGetFile,
     createRuntimeServiceRefreshAndReconcile,
-    getRuntimeServiceGetCatalogEntryQueryKey,
     V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
   import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
@@ -110,12 +109,6 @@
   const onRefreshClick = async (tableName: string) => {
     try {
       await refreshSource(connector, tableName, runtimeInstanceId);
-      // invalidate the "refreshed_on" time
-      const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
-        runtimeInstanceId,
-        tableName
-      );
-      await queryClient.refetchQueries(queryKey);
     } catch (err) {
       // no-op
     }

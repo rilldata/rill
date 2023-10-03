@@ -34,7 +34,7 @@ export function useResource<T = V1Resource>(
       query: {
         select: (data) =>
           (selector ? selector(data?.resource) : data?.resource) as T,
-        enabled: !!name && !!kind,
+        enabled: !!instanceId && !!name && !!kind,
         queryClient,
       },
     }

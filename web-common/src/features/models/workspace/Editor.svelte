@@ -56,7 +56,6 @@
   import { editorTheme } from "../../../components/editor/theme";
   import { runtime } from "../../../runtime-client/runtime-store";
 
-  export let modelName: string;
   export let content: string;
   export let editorHeight = 0;
   export let selections: SelectionRange[] = [];
