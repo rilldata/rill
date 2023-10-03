@@ -248,6 +248,26 @@ function syncDimensions(
   }
 }
 
+function setDefaultTimeRange(
+  metricsView: V1MetricsView,
+  metricsExplorer: MetricsExplorerEntity,
+  fullTimeRange: V1ColumnTimeRangeResponse | undefined
+) {
+  // This function implementation mirrors some code in the metricsExplorer.init() function
+  const preset = ISODurationToTimePreset(metricsView.defaultTimeRange, true);
+  const timeZone = get(getLocalUserPreferences()).timeZone;
+  const fullTimeStart = new Date(fullTimeRange.timeRangeSummary.min);
+  const fullTimeEnd = new Date(fullTimeRange.timeRangeSummary.max);
+  const timeRange = convertTimeRangePreset(
+    preset,
+    fullTimeStart,
+    fullTimeEnd,
+    timeZone
+  );
+  metricsExplorer.selectedTimeRange = timeRange;
+  setSelectedScrubRange(metricsExplorer, undefined);
+}
+
 const metricViewReducers = {
   init(
     name: string,
@@ -354,7 +374,11 @@ const metricViewReducers = {
     });
   },
 
-  sync(name: string, metricsView: V1MetricsView) {
+  sync(
+    name: string,
+    metricsView: V1MetricsView,
+    fullTimeRange: V1ColumnTimeRangeResponse | undefined
+  ) {
     if (!name || !metricsView || !metricsView.measures) return;
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       // remove references to non existent measures
@@ -362,6 +386,9 @@ const metricViewReducers = {
 
       // remove references to non existent dimensions
       syncDimensions(metricsView, metricsExplorer);
+
+      // set default time range
+      setDefaultTimeRange(metricsView, metricsExplorer, fullTimeRange);
     });
   },
 
