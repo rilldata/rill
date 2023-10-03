@@ -8,7 +8,6 @@ import (
 
 	"github.com/rilldata/rill/admin/database"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -336,7 +335,8 @@ func (s *Service) TriggerRefreshSources(ctx context.Context, depl *database.Depl
 
 	names := make([]*runtimev1.ResourceName, 0, len(sources))
 	for _, source := range sources {
-		names = append(names, &runtimev1.ResourceName{Kind: runtime.ResourceKindSource, Name: source})
+		// NOTE: When keeping Kind empty, the RefreshTrigger will match both sources and models
+		names = append(names, &runtimev1.ResourceName{Name: source})
 	}
 
 	rt, err := s.openRuntimeClientForDeployment(depl)
