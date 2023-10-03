@@ -11,18 +11,11 @@
     dimensionDescription: "dimension description",
     isFetching: false,
     hovered: false,
-    // showTimeComparison: false,
-    // showPercentOfTotal: false,
-    // filterExcludeMode: false,
-    // sortDescending: true,
-
     contextColumn: LeaderboardContextColumn.HIDDEN,
     sortAscending: false,
     sortType: SortType.VALUE,
     isBeingCompared: false,
   };
-
-  console.log("LeaderboardContextColumn", LeaderboardContextColumn);
 </script>
 
 <Meta
@@ -35,23 +28,6 @@
         type: "boolean",
       },
     },
-
-    // filterExcludeMode: {
-    //   control: {
-    //     type: "boolean",
-    //   },
-    // },
-    // isSummableMeasure: {
-    //   control: {
-    //     type: "boolean",
-    //   },
-    // },
-    // sortDescending: {
-    //   control: {
-    //     type: "boolean",
-    //   },
-    // },
-
     hovered: {
       control: {
         type: "boolean",
