@@ -145,7 +145,7 @@ func (s *Server) TriggerRedeploy(ctx context.Context, req *adminv1.TriggerRedepl
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to manage deployment")
 	}
 
-	err := s.admin.TriggerRedeploy(ctx, proj, depl)
+	_, err := s.admin.TriggerRedeploy(ctx, proj, depl)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

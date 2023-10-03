@@ -355,17 +355,6 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 	return res, nil
 }
 
-func (c *connection) UpdateProjectVariables(ctx context.Context, id string, prodVariables map[string]string) (*database.Project, error) {
-	res := &database.Project{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE projects SET prod_variables=$1, updated_on=now() WHERE id=$2 RETURNING *",
-		prodVariables, id,
-	).StructScan(res)
-	if err != nil {
-		return nil, parseErr("project", err)
-	}
-	return res, nil
-}
-
 func (c *connection) CountProjectsForOrganization(ctx context.Context, orgID string) (int, error) {
 	var count int
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT COUNT(*) FROM projects WHERE org_id = $1", orgID).Scan(&count)
@@ -423,9 +412,9 @@ func (c *connection) InsertDeployment(ctx context.Context, opts *database.Insert
 
 	res := &database.Deployment{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO deployments (project_id, slots, branch, runtime_host, runtime_instance_id, runtime_audience, status, logs)
+		INSERT INTO deployments (project_id, slots, branch, runtime_host, runtime_instance_id, runtime_audience, status, status_message)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-		opts.ProjectID, opts.Slots, opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.Logs,
+		opts.ProjectID, opts.Slots, opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.StatusMessage,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
@@ -438,9 +427,9 @@ func (c *connection) DeleteDeployment(ctx context.Context, id string) error {
 	return checkDeleteRow("deployment", res, err)
 }
 
-func (c *connection) UpdateDeploymentStatus(ctx context.Context, id string, status database.DeploymentStatus, logs string) (*database.Deployment, error) {
+func (c *connection) UpdateDeploymentStatus(ctx context.Context, id string, status database.DeploymentStatus, message string) (*database.Deployment, error) {
 	res := &database.Deployment{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET status=$1, logs=$2, updated_on=now() WHERE id=$3 RETURNING *", status, logs, id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET status=$1, status_message=$2, updated_on=now() WHERE id=$3 RETURNING *", status, message, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
 	}
