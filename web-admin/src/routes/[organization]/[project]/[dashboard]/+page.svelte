@@ -76,7 +76,7 @@
   $: isDashboardNotFound =
     $dashboard.isError &&
     ($dashboard.error as QueryError)?.response?.status === 404;
-  $: isDashboardErrored = !$dashboard.data?.metricsView?.state?.validSpec; // TODO: use valid spec instead
+  $: isDashboardErrored = !$dashboard.data?.metricsView?.state?.validSpec;
 
   // If no dashboard is found, show a 404 page
   $: if (isProjectBuilt && isDashboardNotFound) {
@@ -97,17 +97,19 @@
 
 {#if isProjectBuilding && isDashboardNotFound}
   <ProjectBuilding organization={orgName} project={projectName} />
-{:else if isDashboardErrored}
-  <!-- TODO: we should show the reconcile error -->
-  <ProjectErrored organization={orgName} project={projectName} />
 {:else if isDashboardOK}
-  <StateManagersProvider metricsViewName={dashboardName}>
-    {#key dashboardName}
-      <DashboardStateProvider metricViewName={dashboardName}>
-        <DashboardURLStateProvider metricViewName={dashboardName}>
-          <Dashboard metricViewName={dashboardName} leftMargin={"48px"} />
-        </DashboardURLStateProvider>
-      </DashboardStateProvider>
-    {/key}
-  </StateManagersProvider>
+  {#if isDashboardErrored}
+    <!-- TODO: we should show the reconcile error -->
+    <ProjectErrored organization={orgName} project={projectName} />
+  {:else}
+    <StateManagersProvider metricsViewName={dashboardName}>
+      {#key dashboardName}
+        <DashboardStateProvider metricViewName={dashboardName}>
+          <DashboardURLStateProvider metricViewName={dashboardName}>
+            <Dashboard metricViewName={dashboardName} leftMargin={"48px"} />
+          </DashboardURLStateProvider>
+        </DashboardStateProvider>
+      {/key}
+    </StateManagersProvider>
+  {/if}
 {/if}

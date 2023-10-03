@@ -35,8 +35,9 @@ export class WatchRequestClient<Res extends WatchResponse> {
   public start(): Unsubscriber {
     const unsubscribe = runtime.subscribe((runtimeState) => {
       if (
-        runtimeState.instanceId === this.prevInstanceId &&
-        runtimeState.host === this.prevHost
+        !runtimeState ||
+        (runtimeState.instanceId === this.prevInstanceId &&
+          runtimeState.host === this.prevHost)
       ) {
         return;
       }
