@@ -48,6 +48,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// 1. Print project info
+			cmdutil.PrintlnSuccess("Project info\n")
 			cmdutil.TablePrinter(toRow(proj.Project))
 
 			depl := proj.ProdDeployment
@@ -56,7 +57,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// 2. Print deployment info
-			cmdutil.PrintlnSuccess("Deployment info\n")
+			cmdutil.PrintlnSuccess("\nDeployment info\n")
 			fmt.Printf("  Web: %s\n", proj.Project.FrontendUrl)
 			fmt.Printf("  Runtime: %s\n", depl.RuntimeHost)
 			fmt.Printf("  Instance: %s\n", depl.RuntimeInstanceId)

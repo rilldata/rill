@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
+	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -49,6 +50,12 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+
+	slices.SortFunc(rs, func(a, b *runtimev1.Resource) bool {
+		an := a.Meta.Name
+		bn := b.Meta.Name
+		return an.Kind < bn.Kind || (an.Kind == bn.Kind && an.Name < bn.Name)
+	})
 
 	for i := 0; i < len(rs); i++ {
 		r := rs[i]

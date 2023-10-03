@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"google.golang.org/protobuf/proto"
 )
 
 func init() {
@@ -90,15 +90,12 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 		if len(trigger.Spec.OnlyNames) > 0 {
 			found := false
 			for _, n := range trigger.Spec.OnlyNames {
-				// If Kind is empty, match any kind
-				if n.Kind == "" && n.Name == res.Meta.Name.Name {
-					found = true
-					break
-				}
-				// Check both kind and name
-				if proto.Equal(res.Meta.Name, n) {
-					found = true
-					break
+				if strings.EqualFold(n.Name, res.Meta.Name.Name) {
+					// If Kind is empty, match any kind
+					if n.Kind == "" || n.Kind == res.Meta.Name.Kind {
+						found = true
+						break
+					}
 				}
 			}
 			if !found {
