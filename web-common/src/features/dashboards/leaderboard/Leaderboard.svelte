@@ -170,6 +170,9 @@
     selectedBelowTheFold = leaderboardData.selectedBelowTheFold;
     noAvailableValues = leaderboardData.noAvailableValues;
     showExpandTable = leaderboardData.showExpandTable;
+
+    console.log(displayName, aboveTheFold);
+    console.log(displayName, $sortedQuery?.data?.rows);
   }
 
   let hovered: boolean;

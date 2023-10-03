@@ -86,6 +86,11 @@
     unfilteredTotal = $unfilteredTotalsQuery.data?.data?.[activeMeasure.name];
   }
 
+  $: console.log({
+    unfilteredTotals: $unfilteredTotalsQuery.data?.data,
+    totals: $totalsQuery.data?.data,
+  });
+
   let leaderboardExpanded;
 
   function onSelectItem(event, item: MetricsViewDimension) {
