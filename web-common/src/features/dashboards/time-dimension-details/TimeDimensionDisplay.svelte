@@ -8,7 +8,6 @@
   export let metricViewName;
 
   const timeSeriesDataStore = useTimeSeriesDataStore(getStateManagers());
-
   $: console.log($timeSeriesDataStore);
 
   $: dashboardStore = useDashboardStore(metricViewName);
@@ -16,4 +15,5 @@
 </script>
 
 <TDDHeader {dimensionName} {metricViewName} />
+
 <TddNew />

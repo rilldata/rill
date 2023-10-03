@@ -9,10 +9,6 @@ import { faker } from "@faker-js/faker";
 export const MOCK_ROW_CT = 1000;
 export const MOCK_COL_CT = 100;
 
-const sparkTemplate = `<svg width="34" height="13" viewBox="0 0 34 13" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M1 11.75L5.5 5.75L11.5 8.75L17 5.75L21 11.75L28 1.25L33 11.75" stroke="#9CA3AF"/>
-</svg>`;
-
 const scale = (n: number) => (n * 13).toFixed(2);
 const createSpark = (
   nums: number[]
@@ -57,6 +53,7 @@ const columnHeaderData = range(0, MOCK_COL_CT, (i) => {
 });
 
 export function getRowHeaderData(pos: PivotPos) {
+  console.log(rowHeaderData);
   return rowHeaderData.slice(pos.y0, pos.y1);
 }
 

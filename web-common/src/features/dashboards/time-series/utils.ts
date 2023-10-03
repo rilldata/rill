@@ -100,7 +100,8 @@ export function getOrderedStartEnd(start: Date, stop: Date) {
 export function getFilterForComparedDimension(
   dimensionName: string,
   filters: V1MetricsViewFilter,
-  topListValues: string[]
+  topListValues: string[],
+  sliceCount = 3
 ) {
   // Check if we have an excluded filter for the dimension
   const excludedFilter = filters.exclude.find((d) => d.name === dimensionName);
@@ -113,7 +114,7 @@ export function getFilterForComparedDimension(
   // Remove excluded values from top list
   const includedValues = topListValues
     ?.filter((d) => !excludedValues.includes(d))
-    ?.slice(0, 3);
+    ?.slice(0, sliceCount);
 
   // Add dimension to filter
   const updatedFilter = {

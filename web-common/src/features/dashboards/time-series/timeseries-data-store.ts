@@ -16,10 +16,12 @@ import { getDimensionValueTimeSeries } from "./multiple-dimension-queries";
 
 export type TimeSeriesDataState = {
   isFetching: boolean;
+  hasError: boolean;
 
   // Computed prepared data for charts and table
   timeSeriesData?: unknown[];
-  dimensionData?: unknown;
+  dimensionChartData?: unknown;
+  dimensionTableData?: unknown;
 };
 
 export type TimeSeriesDataStore = Readable<TimeSeriesDataState>;
@@ -58,6 +60,7 @@ function createMetricsViewTimeSeries(
           query: {
             enabled: !!timeControls.ready && !!ctx.dashboardStore,
             queryClient: ctx.queryClient,
+            keepPreviousData: true,
           },
         }
       ).subscribe(set)
@@ -97,14 +100,33 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
         comparisonTimeSeries = createMetricsViewTimeSeries(ctx, measures, true);
       }
 
-      let dimensionTimeSeries;
+      let dimensionTimeSeriesCharts;
+      let dimensionTimeSeriesTable;
       if (dashboardStore?.selectedComparisonDimension) {
-        dimensionTimeSeries = getDimensionValueTimeSeries(ctx, measures);
+        dimensionTimeSeriesCharts = getDimensionValueTimeSeries(
+          ctx,
+          measures,
+          "chart"
+        );
+
+        // Fetch table data only if in TDD view
+        if (dashboardStore?.expandedMeasureName) {
+          dimensionTimeSeriesTable = getDimensionValueTimeSeries(
+            ctx,
+            measures,
+            "table"
+          );
+        }
       }
 
       return derived(
-        [primaryTimeSeries, comparisonTimeSeries, dimensionTimeSeries],
-        ([primary, comparison, dimension]) => {
+        [
+          primaryTimeSeries,
+          comparisonTimeSeries,
+          dimensionTimeSeriesCharts,
+          dimensionTimeSeriesTable,
+        ],
+        ([primary, comparison, dimensionChart, dimensionTable]) => {
           let timeSeriesData = primary?.data?.data;
 
           if (!primary.isFetching) {
@@ -116,9 +138,11 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
             );
           }
           return {
-            isFetching: false,
+            isFetching: false, // FIXME Handle fetching
+            hasError: false, // FIXME Handle errors
             timeSeriesData,
-            dimensionData: dimension || [],
+            dimensionChartData: dimensionChart || [],
+            dimensionTableData: dimensionTable || [],
           };
         }
       ).subscribe(set);

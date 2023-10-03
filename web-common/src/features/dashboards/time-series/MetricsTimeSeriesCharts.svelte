@@ -7,7 +7,6 @@
     metricsExplorerStore,
     useDashboardStore,
   } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-  import { prepareTimeSeries } from "./utils";
   import {
     humanizeDataType,
     FormatPreset,
@@ -21,13 +20,7 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
-  import {
-    createQueryServiceMetricsViewTimeSeries,
-    createQueryServiceMetricsViewTotals,
-    V1MetricsViewTimeSeriesResponse,
-  } from "@rilldata/web-common/runtime-client";
-  import type { CreateQueryResult } from "@tanstack/svelte-query";
-  import { getDimensionValueTimeSeries } from "./multiple-dimension-queries";
+  import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
@@ -35,6 +28,7 @@
   import MeasureZoom from "./MeasureZoom.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   import BackToOverview from "@rilldata/web-common/features/dashboards/time-series/BackToOverview.svelte";
+  import { useTimeSeriesDataStore } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
 
   export let metricViewName;
   export let workspaceWidth: number;
@@ -49,6 +43,7 @@
   $: showHideMeasures = createShowHideMeasuresStore(metricViewName, metaQuery);
 
   const timeControlsStore = useTimeControlStore(getStateManagers());
+  const timeSeriesDataStore = useTimeSeriesDataStore(getStateManagers());
 
   $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
   $: expandedMeasureName = $dashboardStore?.expandedMeasureName;
@@ -118,80 +113,29 @@
   // get the totalsComparisons.
   $: totalsComparisons = $totalsComparisonQuery?.data?.data;
 
-  let timeSeriesQuery: CreateQueryResult<
-    V1MetricsViewTimeSeriesResponse,
-    Error
-  >;
+  let scrubStart;
+  let scrubEnd;
 
-  let timeSeriesComparisonQuery: CreateQueryResult<
-    V1MetricsViewTimeSeriesResponse,
-    Error
-  >;
-
-  let includedValues;
-  let allDimQuery;
-
-  $: if (
-    $dashboardStore &&
-    metaQuery &&
-    $metaQuery.isSuccess &&
-    !$metaQuery.isRefetching &&
-    $timeControlsStore.ready
-  ) {
-    timeSeriesQuery = createQueryServiceMetricsViewTimeSeries(
-      instanceId,
-      metricViewName,
-      {
-        measureNames: queriedMeasureNames,
-        filter: $dashboardStore?.filters,
-        timeStart: $timeControlsStore.adjustedStart,
-        timeEnd: $timeControlsStore.adjustedEnd,
-        timeGranularity: interval,
-        timeZone: $dashboardStore?.selectedTimezone,
-      }
-    );
-    if (showComparison) {
-      timeSeriesComparisonQuery = createQueryServiceMetricsViewTimeSeries(
-        instanceId,
-        metricViewName,
-        {
-          measureNames: queriedMeasureNames,
-          filter: $dashboardStore?.filters,
-          timeStart: $timeControlsStore.comparisonAdjustedStart,
-          timeEnd: $timeControlsStore.comparisonAdjustedEnd,
-          timeGranularity: interval,
-          timeZone: $dashboardStore?.selectedTimezone,
-        }
-      );
-    }
-  }
+  let mouseoverValue = undefined;
+  let startValue: Date;
+  let endValue: Date;
 
   // When changing the timeseries query and the cache is empty, $timeSeriesQuery.data?.data is
   // temporarily undefined as results are fetched.
   // To avoid unmounting TimeSeriesBody, which would cause us to lose our tween animations,
   // we make a copy of the data that avoids `undefined` transition states.
   // TODO: instead, try using svelte-query's `keepPreviousData = True` option.
+
   let dataCopy;
-  let dataComparisonCopy;
-
-  $: if ($timeSeriesQuery?.data?.data) {
-    dataCopy = $timeSeriesQuery.data.data;
+  $: if ($timeSeriesDataStore?.timeSeriesData) {
+    dataCopy = $timeSeriesDataStore.timeSeriesData;
   }
-  $: if ($timeSeriesComparisonQuery?.data?.data)
-    dataComparisonCopy = $timeSeriesComparisonQuery.data.data;
+  $: formattedData = dataCopy;
 
-  // formattedData adjusts the data to account for Javascript's handling of timezones
-  let formattedData;
-  let scrubStart;
-  let scrubEnd;
-  $: if (dataCopy && dataCopy?.length) {
-    formattedData = prepareTimeSeries(
-      dataCopy,
-      dataComparisonCopy,
-      TIME_GRAIN[interval].duration,
-      $dashboardStore.selectedTimezone
-    );
+  $: dimensionData = $timeSeriesDataStore?.dimensionChartData || [];
 
+  // FIXME: move this logic to a function + write tests.
+  $: if ($timeControlsStore.ready) {
     // adjust scrub values for Javascript's timezone changes
     scrubStart = adjustOffsetForZone(
       $dashboardStore?.selectedScrubRange?.start,
@@ -201,14 +145,7 @@
       $dashboardStore?.selectedScrubRange?.end,
       $dashboardStore?.selectedTimezone
     );
-  }
 
-  let mouseoverValue = undefined;
-  let startValue: Date;
-  let endValue: Date;
-
-  // FIXME: move this logic to a function + write tests.
-  $: if ($timeControlsStore.ready) {
     const adjustedChartValue = getAdjustedChartTime(
       $timeControlsStore.selectedTimeRange?.start,
       $timeControlsStore.selectedTimeRange?.end,
@@ -220,15 +157,6 @@
     startValue = adjustedChartValue?.start;
     endValue = adjustedChartValue?.end;
   }
-
-  $: if (comparisonDimension && $timeControlsStore.ready) {
-    allDimQuery = getDimensionValueTimeSeries(
-      getStateManagers(),
-      queriedMeasureNames
-    );
-  }
-
-  $: dimensionData = comparisonDimension ? $allDimQuery : [];
 
   const toggleMeasureVisibility = (e) => {
     showHideMeasures.toggleVisibility(e.detail.name);
@@ -320,7 +248,7 @@
         </svelte:fragment>
       </MeasureBigNumber>
       <div class="time-series-body" style:height="125px">
-        {#if $timeSeriesQuery?.isError}
+        {#if $timeSeriesDataStore?.hasError}
           <div class="p-5"><CrossIcon /></div>
         {:else if formattedData}
           <MeasureChart

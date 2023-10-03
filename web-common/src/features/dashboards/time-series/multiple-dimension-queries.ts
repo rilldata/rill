@@ -17,14 +17,21 @@ import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-st
 import { getFilterForDimension } from "@rilldata/web-common/features/dashboards/selectors";
 
 /***
- * Returns a list of dimension values which will be compared
- * for a given dimension. Use the included values if present,
+ * Returns a list of dimension values which for which to fetch
+ * timeseries data for a given dimension.
+ *
+ * For Overview Page -
+ * Use the included values if present,
  * otherwise fetch the top values for the dimension
+ *
+ * For Time Dimension Detail Page -
+ * Fetch all the top n values for the dimension
  */
+
 export function getDimensionValuesForComparison(
   ctx: StateManagers,
-  dimensionName: string,
-  measures
+  measures,
+  surface: "chart" | "table"
 ): Readable<{
   values: string[];
   filter: V1MetricsViewFilter;
@@ -37,15 +44,21 @@ export function getDimensionValuesForComparison(
       useTimeControlStore(ctx),
     ],
     ([runtime, name, dashboardStore, timeControls], set) => {
+      const dimensionName = dashboardStore?.selectedComparisonDimension;
+      const isInTimeDimensionView = dashboardStore?.expandedMeasureName;
+
       let includedValues = [];
       const dimensionFilters = dashboardStore?.filters?.include?.filter(
         (filter) => filter.name === dimensionName
       );
-      if (dimensionFilters?.length) {
-        includedValues = dimensionFilters[0]?.in.slice(0, 7) || [];
+      if (surface === "chart" && dimensionFilters?.length) {
+        // For TDD view max 11 allowed, for overview max 7 allowed
+        includedValues =
+          dimensionFilters[0]?.in.slice(0, isInTimeDimensionView ? 11 : 7) ||
+          [];
       }
 
-      if (includedValues.length) {
+      if (includedValues.length && surface === "chart") {
         return derived(
           [writable(includedValues), writable(dashboardStore?.filters)],
           ([values, filter]) => {
@@ -102,7 +115,8 @@ export function getDimensionValuesForComparison(
             const computedFilter = getFilterForComparedDimension(
               dimensionName,
               dashboardStore?.filters,
-              topListValues
+              topListValues,
+              surface === "table" ? 250 : 3
             );
 
             return {
@@ -117,14 +131,13 @@ export function getDimensionValuesForComparison(
 }
 
 /***
- * Create a dervied svelte store that fetches the
- * timeseries data for a given dimension value
- *  individually for a given set of dimension values
+ * Fetches the timeseries data for a given dimension
+ * for a infered set of dimension values and measures
  */
-// TODO: Replace this with MetricsViewAggregationRequest API call
 export function getDimensionValueTimeSeries(
   ctx: StateManagers,
-  measures: string[]
+  measures: string[],
+  surface: "chart" | "table"
 ) {
   // if (!values && values.length == 0) return;
 
@@ -134,8 +147,12 @@ export function getDimensionValueTimeSeries(
       ctx.metricsViewName,
       ctx.dashboardStore,
       useTimeControlStore(ctx),
+      getDimensionValuesForComparison(ctx, measures, surface),
     ],
-    ([runtime, metricViewName, dashboardStore, timeStore], set) => {
+    (
+      [runtime, metricViewName, dashboardStore, timeStore, dimensionValues],
+      set
+    ) => {
       const dimensionName = dashboardStore?.selectedComparisonDimension;
 
       const start = timeStore?.adjustedStart;
@@ -147,74 +164,68 @@ export function getDimensionValueTimeSeries(
       if (!dimensionName) return;
 
       return derived(
-        getDimensionValuesForComparison(ctx, dimensionName, measures),
-        (comparisonVals, set) => {
-          return derived(
-            comparisonVals?.values.map((value, i) => {
-              const updatedIncludeFilter = comparisonVals?.filter.include.map(
-                (filter) => {
-                  if (filter.name === dimensionName)
-                    return { name: dimensionName, in: [value] };
-                  else return filter;
-                }
-              );
-              // remove excluded values
-              const updatedExcludeFilter =
-                comparisonVals?.filter.exclude.filter(
-                  (filter) => filter.name !== dimensionName
-                );
-              const updatedFilter = {
-                exclude: updatedExcludeFilter,
-                include: updatedIncludeFilter,
-              };
-
-              return derived(
-                [
-                  writable(value),
-                  createQueryServiceMetricsViewTimeSeries(
-                    runtime.instanceId,
-                    metricViewName,
-                    {
-                      measureNames: measures,
-                      filter: updatedFilter,
-                      timeStart: start,
-                      timeEnd: end,
-                      timeGranularity: interval,
-                      timeZone: zone,
-                    },
-                    {
-                      query: {
-                        enabled: !!timeStore.ready && !!ctx.dashboardStore,
-                        queryClient: ctx.queryClient,
-                      },
-                    }
-                  ),
-                ],
-                ([value, timeseries]) => {
-                  let prepData = timeseries?.data?.data;
-                  if (!timeseries?.isFetching) {
-                    prepData = prepareTimeSeries(
-                      timeseries?.data?.data,
-                      undefined,
-                      TIME_GRAIN[interval].duration,
-                      zone
-                    );
-                  }
-                  return {
-                    value,
-                    strokeClass: "stroke-" + LINE_COLORS[i],
-                    fillClass: "fill-" + CHECKMARK_COLORS[i],
-                    data: prepData,
-                    isFetching: timeseries.isFetching,
-                  };
-                }
-              );
-            }),
-
-            (combos) => {
-              return combos;
+        dimensionValues?.values.map((value, i) => {
+          const updatedIncludeFilter = dimensionValues?.filter.include.map(
+            (filter) => {
+              if (filter.name === dimensionName)
+                return { name: dimensionName, in: [value] };
+              else return filter;
             }
-          ).subscribe(set);
+          );
+          // remove excluded values
+          const updatedExcludeFilter = dimensionValues?.filter.exclude.filter(
+            (filter) => filter.name !== dimensionName
+          );
+          const updatedFilter = {
+            exclude: updatedExcludeFilter,
+            include: updatedIncludeFilter,
+          };
+
+          return derived(
+            [
+              writable(value),
+              createQueryServiceMetricsViewTimeSeries(
+                runtime.instanceId,
+                metricViewName,
+                {
+                  measureNames: measures,
+                  filter: updatedFilter,
+                  timeStart: start,
+                  timeEnd: end,
+                  timeGranularity: interval,
+                  timeZone: zone,
+                },
+                {
+                  query: {
+                    enabled: !!timeStore.ready && !!ctx.dashboardStore,
+                    queryClient: ctx.queryClient,
+                  },
+                }
+              ),
+            ],
+            ([value, timeseries]) => {
+              let prepData = timeseries?.data?.data;
+              if (!timeseries?.isFetching) {
+                prepData = prepareTimeSeries(
+                  timeseries?.data?.data,
+                  undefined,
+                  TIME_GRAIN[interval].duration,
+                  zone
+                );
+              }
+              return {
+                value,
+                strokeClass: "stroke-" + LINE_COLORS[i],
+                fillClass: "fill-" + CHECKMARK_COLORS[i],
+                data: prepData,
+                isFetching: timeseries.isFetching,
+              };
+            }
+          );
+        }),
+
+        (combos) => {
+          return combos;
         }
       ).subscribe(set);
     }
