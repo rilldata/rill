@@ -197,14 +197,20 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver string, co
 	var err error
 	select {
 	case <-conn.ready:
-		err = conn.err
 	case <-ctx.Done():
 		err = ctx.Err() // Will always be non-nil, ensuring releaseConn is called
 	}
+
+	// Lock again for accessing conn
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if err == nil {
+		err = conn.err
+	}
+
 	if err != nil {
-		c.lock.Lock()
 		c.releaseConn(key, conn)
-		c.lock.Unlock()
 		return nil, nil, err
 	}
 

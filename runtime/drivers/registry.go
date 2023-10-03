@@ -61,6 +61,7 @@ type Instance struct {
 // ResolveVariables returns the final resolved variables
 func (i *Instance) ResolveVariables() map[string]string {
 	r := make(map[string]string, len(i.ProjectVariables))
+
 	// set ProjectVariables first i.e. Project defaults
 	for k, v := range i.ProjectVariables {
 		r[k] = v

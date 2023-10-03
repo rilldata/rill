@@ -195,14 +195,17 @@ func TestConnectionCacheMultipleConfigs(t *testing.T) {
 func TestConnectionCacheParallelCalls(t *testing.T) {
 	ctx := context.Background()
 
-	c := newConnectionCache(10, zap.NewNop(), newTestRuntimeWithInst(t), activity.NewNoopClient())
-	defer c.Close()
-
 	m := &mockDriver{}
 	drivers.Register("mock_driver", m)
 	defer func() {
 		delete(drivers.Drivers, "mock_driver")
 	}()
+
+	rt := newTestRuntimeWithInst(t)
+	defer rt.Close()
+
+	c := newConnectionCache(10, zap.NewNop(), rt, activity.NewNoopClient())
+	defer c.Close()
 
 	var wg sync.WaitGroup
 	wg.Add(10)
@@ -224,15 +227,17 @@ func TestConnectionCacheParallelCalls(t *testing.T) {
 func TestConnectionCacheBlockingCalls(t *testing.T) {
 	ctx := context.Background()
 
-	rt := newTestRuntimeWithInst(t)
-	c := newConnectionCache(10, zap.NewNop(), rt, activity.NewNoopClient())
-	defer c.Close()
-
 	m := &mockDriver{}
 	drivers.Register("mock_driver", m)
 	defer func() {
 		delete(drivers.Drivers, "mock_driver")
 	}()
+
+	rt := newTestRuntimeWithInst(t)
+	defer rt.Close()
+
+	c := newConnectionCache(10, zap.NewNop(), rt, activity.NewNoopClient())
+	defer c.Close()
 
 	var wg sync.WaitGroup
 	wg.Add(12)

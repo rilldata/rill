@@ -1020,6 +1020,9 @@ func TestWatch(t *testing.T) {
 		require.NoError(t, err)
 	}
 
+	// Make sure there's time for the watcher to start
+	awaitIdle()
+
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/data/foo.csv": `a,b,c,d,e
 1,2,3,4,5
