@@ -17,7 +17,7 @@ type config struct {
 	// AllowHostAccess denotes whether to limit access to the local environment and file system
 	AllowHostAccess bool `mapstructure:"allow_host_access"`
 	// TableAsView controls if table is modelled as view
-	TableAsView     bool `mapstructure:"table_as_view"`
+	TableAsView bool `mapstructure:"table_as_view"`
 	// DBFilePath is the path where the database is stored. It is inferred from the DSN (can't be provided by user).
 	DBFilePath string `mapstructure:"-"`
 }

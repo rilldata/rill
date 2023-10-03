@@ -417,6 +417,9 @@ func (c *connection) reopenDB() error {
 	}
 	defer conn.Close()
 
+	if c.config.TableAsView {
+		return nil
+	}
 	dir := filepath.Dir(c.config.DBFilePath)
 	// get all .db files in sources directory
 	return doublestar.GlobWalk(os.DirFS(dir), "./*/*.db", func(path string, d fs.DirEntry) error {
