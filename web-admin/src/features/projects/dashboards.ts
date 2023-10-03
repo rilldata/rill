@@ -3,12 +3,7 @@ import {
   ResourceKind,
   useFilteredResources,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import type {
-  V1CatalogEntry,
-  V1MetricsView,
-  V1MetricsViewSpec,
-  V1Resource,
-} from "@rilldata/web-common/runtime-client";
+import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import Axios from "axios";
 
 export interface DashboardListItem {
