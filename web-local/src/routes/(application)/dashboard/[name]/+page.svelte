@@ -12,10 +12,7 @@
     getResourceStatusStore,
     ResourceStatus,
   } from "@rilldata/web-common/features/entity-management/resource-status-utils";
-  import {
-    EntityStatus,
-    EntityType,
-  } from "@rilldata/web-common/features/entity-management/types";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { WorkspaceContainer } from "@rilldata/web-common/layout/workspace";
   import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
