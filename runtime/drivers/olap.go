@@ -27,6 +27,13 @@ type OLAPStore interface {
 	Execute(ctx context.Context, stmt *Statement) (*Result, error)
 	InformationSchema() InformationSchema
 	EstimateSize() (int64, bool)
+
+	CreateTableAsSelect(ctx context.Context, name string, view bool, sql string) error
+	InsertTableAsSelect(ctx context.Context, name string, byName bool, sql string) error
+	DropTable(ctx context.Context, name string, view bool) error
+	RenameTable(ctx context.Context, name, newName string, view bool) error
+	AddTableColumn(ctx context.Context, tableName, columnName string, typ string) error
+	AlterTableColumn(ctx context.Context, tableName, columnName string, newType string) error
 }
 
 // Statement wraps a query to execute against an OLAP driver.

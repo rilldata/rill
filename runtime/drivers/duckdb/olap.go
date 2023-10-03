@@ -2,9 +2,13 @@ package duckdb
 
 import (
 	"context"
+	dbsql "database/sql"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,6 +19,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"go.uber.org/zap"
 )
 
 // Create instruments
@@ -181,6 +186,322 @@ func (c *connection) EstimateSize() (int64, bool) {
 	return fileSize(paths), true
 }
 
+// AddTableColumn implements drivers.OLAPStore.
+func (c *connection) AddTableColumn(ctx context.Context, tableName string, columnName string, typ string) error {
+	if !c.config.TableAsView {
+		return c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("ALTER TABLE %q ADD COLUMN %q %q", safeSQLName(tableName), safeSQLName(columnName), typ),
+			Priority: 1,
+		})
+	}
+
+	version, exist, err := c.tableVersion(ctx, tableName)
+	if err != nil {
+		return err
+	}
+
+	if !exist {
+		return fmt.Errorf("table %q does not exist", tableName)
+	}
+	dbName := fmt.Sprintf("%s_%v", tableName, version)
+	err = c.Exec(ctx, &drivers.Statement{
+		Query:    fmt.Sprintf("ALTER TABLE %s.%s ADD COLUMN %s %q", safeSQLName(dbName), safeSQLName(tableName), safeSQLName(columnName), typ),
+		Priority: 1,
+	})
+	if err != nil {
+		return err
+	}
+
+	// recreate view to propogate schema changes
+	return c.Exec(ctx, &drivers.Statement{
+		Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s AS SELECT * FROM %s.%s", safeSQLName(tableName), safeSQLName(dbName), safeSQLName(tableName)),
+		Priority: 1,
+	})
+}
+
+// AlterTableColumn implements drivers.OLAPStore.
+func (c *connection) AlterTableColumn(ctx context.Context, tableName string, columnName string, newType string) error {
+	if !c.config.TableAsView {
+		return c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("ALTER TABLE %q ALTER %q TYPE %q", tableName, columnName, newType),
+			Priority: 1,
+		})
+	}
+
+	version, exist, err := c.tableVersion(ctx, tableName)
+	if err != nil {
+		return err
+	}
+
+	if !exist {
+		return fmt.Errorf("table %q does not exist", tableName)
+	}
+	dbName := fmt.Sprintf("%s_%v", tableName, version)
+	err = c.Exec(ctx, &drivers.Statement{
+		Query:    fmt.Sprintf("ALTER TABLE %q.%q ALTER %q TYPE %q", dbName, tableName, columnName, newType),
+		Priority: 1,
+	})
+	if err != nil {
+		return err
+	}
+
+	// recreate view to propogate schema changes
+	return c.Exec(ctx, &drivers.Statement{
+		Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s AS SELECT * FROM %s.%s", safeSQLName(tableName), safeSQLName(dbName), safeSQLName(tableName)),
+		Priority: 1,
+	})
+
+}
+
+// CreateTableAsSelect implements drivers.OLAPStore.
+func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string) error {
+	if view {
+		return c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %q AS (%s)", name, sql),
+			Priority: 1,
+		})
+	}
+	if !c.config.TableAsView {
+		return c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %q AS (%s)", name, sql),
+			Priority: 1,
+		})
+	}
+	// create a new db file in /<instanceid>/<name> directory
+	sourceDir := filepath.Join(filepath.Dir(c.config.DBFilePath), name)
+	ok := dirExist(sourceDir)
+	if !ok {
+		if err := os.Mkdir(sourceDir, fs.ModePerm); err != nil {
+			return err
+		}
+	}
+
+	// check if some older version existed previously to detach it later
+	oldVersion, oldVersionExists, _ := c.tableVersion(ctx, name)
+
+	newVersion := fmt.Sprint(time.Now().UnixMilli())
+	dbFile := filepath.Join(sourceDir, fmt.Sprintf("%v.db", newVersion))
+	db := dbName(name, newVersion)
+	// attach new db
+	err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ATTACH '%s' AS %q", dbFile, db)})
+	if err != nil {
+		removeDBFile(dbFile)
+		return err
+	}
+
+	if err := c.Exec(ctx, &drivers.Statement{
+		Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %q.%q AS (%s)", db, name, sql),
+		Priority: 1,
+	}); err != nil {
+		_ = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DETACH %q", db), Priority: 100})
+		removeDBFile(dbFile)
+		return err
+	}
+
+	err = c.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
+		// create view query
+		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %q AS SELECT * FROM %q.%q", name, db, name)})
+		if err != nil {
+			return err
+		}
+
+		if oldVersionExists {
+			oldDB := dbName(name, oldVersion)
+			// ignore these errors since source has been correctly ingested and attached
+			if err = c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("DETACH %q", oldDB)}); err != nil {
+				c.logger.Error("detach failed", zap.String("db", oldDB), zap.Error(err))
+			}
+			removeDBFile(filepath.Join(sourceDir, fmt.Sprintf("%s.db", oldVersion)))
+		}
+		return nil
+	})
+	if err != nil {
+		_ = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DETACH %q", db), Priority: 100})
+		removeDBFile(dbFile)
+		// not cleaning the source directory for graceful failure of repeate create or replace table statements
+	}
+	return err
+}
+
+// DropTable implements drivers.OLAPStore.
+func (c *connection) DropTable(ctx context.Context, name string, view bool) error {
+	if view {
+		return c.Exec(ctx, &drivers.Statement{
+			Query:    "DROP VIEW IF EXISTS ?",
+			Args:     []any{name},
+			Priority: 100,
+		})
+	}
+	if !c.config.TableAsView {
+		return c.Exec(ctx, &drivers.Statement{
+			Query:    "DROP TABLE IF EXISTS ?",
+			Args:     []any{name},
+			Priority: 100,
+		})
+	}
+
+	sourceDir := filepath.Join(filepath.Dir(c.config.DBFilePath), name)
+	err := c.WithConnection(ctx, 100, true, false, func(ctx, ensuredCtx context.Context, conn *dbsql.Conn) error {
+		version, exist, err := c.tableVersion(ctx, name)
+		if err != nil {
+			return err
+		}
+
+		if !exist {
+			return nil
+		}
+		// drop view
+		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP VIEW IF EXISTS %q", name)})
+		if err != nil {
+			return err
+		}
+
+		oldDB := dbName(name, version)
+		return c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("DETACH %q", oldDB)})
+	})
+	if err != nil {
+		return err
+	}
+
+	// delete source directory
+	return os.RemoveAll(sourceDir)
+}
+
+// InsertTableAsSelect implements drivers.OLAPStore.
+func (c *connection) InsertTableAsSelect(ctx context.Context, name string, byName bool, sql string) error {
+	var insertByNameClause string
+	if byName {
+		insertByNameClause = "BY NAME"
+	} else {
+		insertByNameClause = ""
+	}
+
+	if !c.config.TableAsView {
+		return c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("INSERT INTO %q %s (%s)", name, insertByNameClause, sql),
+			Priority: 1,
+		})
+	}
+	version, exist, err := c.tableVersion(ctx, name)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		return fmt.Errorf("table %q does not exist", name)
+	}
+	return c.Exec(ctx, &drivers.Statement{
+		Query:    fmt.Sprintf("INSERT INTO %q.%q %s (%s)", dbName(name, version), name, insertByNameClause, sql),
+		Priority: 1,
+	})
+}
+
+// RenameTable implements drivers.OLAPStore.
+func (c *connection) RenameTable(ctx context.Context, oldName string, newName string, view bool) error {
+	if oldName == newName {
+		// todo check case sensitivity
+		return fmt.Errorf("old and new name are same")
+	}
+	// use ensure context since underlying dir has been renamed
+	return c.WithConnection(ctx, 1, true, true, func(ctx, ensuredCtx context.Context, conn *dbsql.Conn) error {
+		if view {
+			return c.Exec(ctx, &drivers.Statement{
+				Query:    fmt.Sprintf("ALTER VIEW %q RENAME TO %q", oldName, newName),
+				Priority: 1,
+			})
+		}
+		if !c.config.TableAsView {
+			return c.Exec(ctx, &drivers.Statement{
+				Query:    fmt.Sprintf("ALTER TABLE %q RENAME TO %q", oldName, newName),
+				Priority: 1,
+			})
+		}
+
+		newSrcDir := filepath.Join(filepath.Dir(c.config.DBFilePath), newName)
+		// new name should not exist
+		exist := dirExist(newSrcDir)
+		if exist {
+			return fmt.Errorf("table %q already exist", newName)
+		}
+
+		oldVersion, exist, err := c.tableVersion(ctx, oldName)
+		if err != nil {
+			return err
+		}
+		if !exist {
+			return fmt.Errorf("table %q does not exist", oldName)
+		}
+		// detach db
+		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DETACH %s", safeSQLName(dbName(oldName, oldVersion))), Priority: 1})
+		if err != nil {
+			return err
+		}
+
+		// drop view
+		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP VIEW IF EXISTS %q", oldName)})
+		if err != nil {
+			return err
+		}
+
+		// rename dir
+		oldSrcDir := filepath.Join(filepath.Dir(c.config.DBFilePath), oldName)
+		err = os.Rename(oldSrcDir, newSrcDir)
+		if err != nil {
+			return err
+		}
+
+		// rename filename
+		newVersion := fmt.Sprint(time.Now().UnixMilli())
+		newDB := dbName(newName, newVersion)
+		newFilePath := filepath.Join(newSrcDir, fmt.Sprintf("%s.db", newVersion))
+		err = os.Rename(filepath.Join(newSrcDir, fmt.Sprintf("%s.db", oldVersion)), newFilePath)
+		if err != nil {
+			return err
+		}
+
+		// attach new db
+		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ATTACH '%s' AS %q", newFilePath, newDB)})
+		if err != nil {
+			return err
+		}
+
+		// rename underlying table
+		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ALTER TABLE %s.%s RENAME TO %s", safeSQLName(newDB), safeSQLName(oldName), safeSQLName(newName))})
+		if err != nil {
+			return err
+		}
+
+		// change view query
+		return c.Exec(ctx, &drivers.Statement{
+			Query: fmt.Sprintf("CREATE OR REPLACE VIEW %q AS SELECT * FROM %q.%q", newName, newDB, newName),
+		})
+	})
+}
+
+func (c *connection) tableVersion(ctx context.Context, name string) (string, bool, error) {
+	sourceDir := filepath.Join(filepath.Dir(c.config.DBFilePath), name)
+	files, err := os.ReadDir(sourceDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", false, nil
+		}
+		return "", false, err
+	}
+	if len(files) == 0 {
+		return "", false, nil
+	}
+	// os.ReadDir returns files in sorted by name asc
+	// latest version is the last file
+	for i := len(files) - 1; i >= 0; i-- {
+		file := files[i]
+		name, _, found := strings.Cut(file.Name(), ".db")
+		if !found { // .wal or .tmp file
+			continue
+		}
+		return name, true, nil
+	}
+	return "", false, nil
+}
+
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	if r == nil {
 		return nil, nil
@@ -220,4 +541,29 @@ func fileSize(paths []string) int64 {
 		}
 	}
 	return size
+}
+
+func dirExist(dir string) bool {
+	_, err := os.Stat(dir)
+	// error is always a path error
+	return err == nil
+}
+
+func dbName(name string, version string) string {
+	return fmt.Sprintf("%s_%s", name, version)
+}
+
+func removeDBFile(dbFile string) {
+	_ = os.Remove(dbFile)
+	// Hacky approach to remove the wal and tmp file
+	_ = os.Remove(dbFile + ".wal")
+	_ = os.RemoveAll(dbFile + ".tmp")
+}
+
+// safeSQLName returns a quoted SQL identifier.
+func safeSQLName(name string) string {
+	if name == "" {
+		return name
+	}
+	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(name, "\"", "\"\""))
 }

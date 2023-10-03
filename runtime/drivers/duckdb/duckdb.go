@@ -4,8 +4,10 @@ import (
 	"context"
 	"database/sql/driver"
 	"fmt"
+	"io/fs"
 	"net/url"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -13,6 +15,7 @@ import (
 	"time"
 
 	"github.com/XSAM/otelsql"
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/c2h5oh/datasize"
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
@@ -162,6 +165,8 @@ func (d Driver) Drop(cfgMap map[string]any, logger *zap.Logger) error {
 		}
 		// Hacky approach to remove the wal file
 		_ = os.Remove(cfg.DBFilePath + ".wal")
+		// also temove the temp dir
+		_ = os.RemoveAll(cfg.DBFilePath + ".tmp")
 	}
 
 	return nil
@@ -252,9 +257,12 @@ type connection struct {
 	dbErr       error
 	shared      bool
 	// Cancellable context to control internal processes like emitting the stats
-	ctx    context.Context
-	cancel context.CancelFunc
+	ctx        context.Context
+	cancel     context.CancelFunc
+	instanceID string // populated after call to AsOLAP
 }
+
+var _ drivers.OLAPStore = &connection{}
 
 // Driver implements drivers.Connection.
 func (c *connection) Driver() string {
@@ -297,6 +305,7 @@ func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 		// duckdb olap is instance specific
 		return nil, false
 	}
+	c.instanceID = instanceID
 	return c, true
 }
 
@@ -402,7 +411,28 @@ func (c *connection) reopenDB() error {
 	db.SetMaxOpenConns(c.config.PoolSize)
 	c.db = db
 
-	return nil
+	conn, err := db.Connx(context.Background())
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	dir := filepath.Dir(c.config.DBFilePath)
+	// get all .db files in sources directory
+	return doublestar.GlobWalk(os.DirFS(dir), "./*/*.db", func(path string, d fs.DirEntry) error {
+		if d.IsDir() {
+			return nil
+		}
+		name := filepath.Dir(path)
+		version, found := strings.CutSuffix(filepath.Base(path), ".db")
+		if !found {
+			return nil
+		}
+		path = filepath.Join(dir, path)
+		db := dbName(name, version)
+		_, err := conn.ExecContext(context.Background(), fmt.Sprintf("ATTACH '%s' AS %s", path, safeSQLName(db)))
+		return err
+	})
 }
 
 // acquireMetaConn gets a connection from the pool for "meta" queries like catalog and information schema (i.e. fast queries).
