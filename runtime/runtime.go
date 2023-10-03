@@ -85,13 +85,6 @@ func (r *Runtime) ResolveMetricsViewSecurity(attributes map[string]any, instance
 	return r.securityEngine.resolveMetricsViewSecurity(attributes, instanceID, mv, lastUpdatedOn)
 }
 
-func (r *Runtime) ResolveMetricsViewSecurityV2(attributes map[string]any, instanceID string, mv *runtimev1.MetricsViewSpec, lastUpdatedOn time.Time) (*ResolvedMetricsViewSecurity, error) {
-	// TODO: Implement actual checks when deprecating ResolveMetricsViewSecurity
-	return &ResolvedMetricsViewSecurity{
-		Access: true,
-	}, nil
-}
-
 // GetInstanceAttributes fetches an instance and converts its annotations to attributes
 // nil is returned if an error occurred or instance was not found
 func (r *Runtime) GetInstanceAttributes(ctx context.Context, instanceID string) []attribute.KeyValue {

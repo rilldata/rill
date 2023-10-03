@@ -46,7 +46,9 @@
     $runtime.instanceId,
     filePath
   );
+  let showErrorPage = false;
   $: if (metricViewName) {
+    showErrorPage = false;
     if ($resourceStatusStore.status === ResourceStatus.Errored) {
       // When the catalog entry doesn't exist, the dashboard config is invalid
       if ($featureFlags.readOnly) {
@@ -60,6 +62,8 @@
       ) {
         // On all other errors, redirect to the `/edit` page
         goto(`/dashboard/${metricViewName}/edit`);
+      } else {
+        showErrorPage = true;
       }
     } else if ($resourceStatusStore.status === ResourceStatus.Idle) {
       // Redirect to the `/edit` page if no measures are defined
@@ -80,7 +84,7 @@
   <title>Rill Developer | {metricViewName}</title>
 </svelte:head>
 
-{#if $fileQuery.data && $resourceStatusStore.status === ResourceStatus.Idle}
+{#if ($fileQuery.data && $resourceStatusStore.status === ResourceStatus.Idle) || showErrorPage}
   <WorkspaceContainer
     top="0px"
     assetID={metricViewName}

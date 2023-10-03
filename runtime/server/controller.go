@@ -218,7 +218,7 @@ func (s *Server) applySecurityPolicy(ctx context.Context, instID string, r *runt
 		return r, true, nil
 	}
 
-	security, err := s.runtime.ResolveMetricsViewSecurityV2(auth.GetClaims(ctx).Attributes(), instID, mv.State.ValidSpec, r.Meta.StateUpdatedOn.AsTime())
+	security, err := s.runtime.ResolveMetricsViewSecurity(auth.GetClaims(ctx).Attributes(), instID, mv.State.ValidSpec, r.Meta.StateUpdatedOn.AsTime())
 	if err != nil {
 		return nil, false, err
 	}

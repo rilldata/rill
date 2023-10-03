@@ -130,11 +130,11 @@ export async function invalidateAllMetricsViews(
   queryClient: QueryClient,
   instanceId: string
 ) {
-  // First, refetch the catalog entries (which returns the available dimensions and measures)
+  // First, refetch the resource entries (which returns the available dimensions and measures)
   await queryClient.refetchQueries({
     predicate: (query) =>
       typeof query.queryKey[0] === "string" &&
-      query.queryKey[0].startsWith(`/v1/instances/${instanceId}/catalog`),
+      query.queryKey[0].startsWith(`/v1/instances/${instanceId}/resource`),
   });
 
   // Second, reset queries for all metrics views. This will cause the active queries to refetch.
