@@ -4,10 +4,7 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { MetricsWorkspace } from "@rilldata/web-common/features/metrics-views";
-  import {
-    createRuntimeServiceGetCatalogEntry,
-    createRuntimeServiceGetFile,
-  } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { error } from "@sveltejs/kit";
   import { onMount } from "svelte";
@@ -40,27 +37,6 @@
   );
 
   $: yaml = $fileQuery.data?.blob || "";
-
-  let nonStandardError: string | undefined;
-  // TODO: use resource API
-  $: catalogQuery = createRuntimeServiceGetCatalogEntry(
-    $runtime.instanceId,
-    metricViewName,
-    {
-      query: {
-        onError: async (err) => {
-          // If the catalog entry doesn't exist, the dashboard config is invalid
-          // The component should render the specific error
-          if (err.response?.data?.message.includes(CATALOG_ENTRY_NOT_FOUND)) {
-            nonStandardError = err.message;
-          }
-
-          // Throw all other errors
-          throw error(err.response?.status || 500, err.message);
-        },
-      },
-    }
-  );
 </script>
 
 <svelte:head>

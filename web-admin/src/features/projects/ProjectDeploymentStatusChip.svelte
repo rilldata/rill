@@ -10,11 +10,12 @@
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
   import InfoCircleFilled from "@rilldata/web-common/components/icons/InfoCircleFilled.svelte";
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import {
-    getRuntimeServiceListCatalogEntriesQueryKey,
     getRuntimeServiceListFilesQueryKey,
+    getRuntimeServiceListResourcesQueryKey,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -55,8 +56,8 @@
         })
       );
       queryClient.invalidateQueries(
-        getRuntimeServiceListCatalogEntriesQueryKey($runtime?.instanceId, {
-          type: "OBJECT_TYPE_METRICS_VIEW",
+        getRuntimeServiceListResourcesQueryKey($runtime?.instanceId, {
+          kind: ResourceKind.MetricsView,
         })
       );
     }

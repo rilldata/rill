@@ -7,9 +7,7 @@
   import {
     createRuntimeServiceGetFile,
     createRuntimeServiceListConnectors,
-    getRuntimeServiceGetCatalogEntryQueryKey,
   } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { parseDocument } from "yaml";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
@@ -38,8 +36,6 @@
     (name) => name !== "local_file"
   );
 
-  const queryClient = useQueryClient();
-
   const onRefreshClick = async (tableName: string) => {
     try {
       await refreshSource(
@@ -47,18 +43,12 @@
         tableName,
         $runtime?.instanceId
       );
-      const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
-        $runtime?.instanceId,
-        tableName
-      );
-      await queryClient.refetchQueries(queryKey);
     } catch (err) {
       // no-op
     }
     overlay.set(null);
   };
 
-  $: isReconciling = $fileArtifactsStore.entities[sourcePath]?.isReconciling;
   let uploadErrors = undefined;
   $: uploadErrors = $fileArtifactsStore.entities[sourcePath]?.errors;
 </script>

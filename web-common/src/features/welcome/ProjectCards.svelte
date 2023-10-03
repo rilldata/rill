@@ -1,16 +1,10 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import Subheading from "@rilldata/web-common/components/typography/Subheading.svelte";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import Card from "../../components/card/Card.svelte";
   import CardDescription from "../../components/card/CardDescription.svelte";
   import CardTitle from "../../components/card/CardTitle.svelte";
-  import { overlay } from "../../layout/overlay-store";
-  import {
-    createRuntimeServiceReconcile,
-    createRuntimeServiceUnpackExample,
-  } from "../../runtime-client";
-  import { invalidateAfterReconcile } from "../../runtime-client/invalidation";
+  import { createRuntimeServiceUnpackExample } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import EmptyProject from "./EmptyProject.svelte";
   import { behaviourEvent } from "../../metrics/initMetrics";
@@ -19,8 +13,6 @@
     BehaviourEventMedium,
   } from "../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
-
-  const queryClient = useQueryClient();
 
   const EXAMPLES = [
     {
@@ -47,38 +39,9 @@
     },
   ];
 
-  let firstPage: string;
-  const unpackExampleProject = createRuntimeServiceUnpackExample({
-    mutation: {
-      onSuccess: () => {
-        overlay.set({
-          title: "Loading the example project",
-          message: "Hang tight! This might take a minute or two.",
-        });
-        $reconcile.mutate({
-          instanceId: $runtime.instanceId,
-          data: undefined,
-        });
-      },
-    },
-  });
+  const unpackExampleProject = createRuntimeServiceUnpackExample();
 
-  const reconcile = createRuntimeServiceReconcile({
-    mutation: {
-      onSuccess: (response) => {
-        invalidateAfterReconcile(queryClient, $runtime.instanceId, response);
-        goto(firstPage);
-      },
-      onError: (err) => {
-        console.error(err);
-      },
-      onSettled: () => {
-        overlay.set(null);
-      },
-    },
-  });
-
-  function startWithExampleProject(example: (typeof EXAMPLES)[number]) {
+  async function startWithExampleProject(example: (typeof EXAMPLES)[number]) {
     behaviourEvent?.fireSplashEvent(
       BehaviourEventAction.ExampleAdd,
       BehaviourEventMedium.Card,
@@ -86,14 +49,15 @@
       example.name
     );
 
-    firstPage = example.firstPage;
-    $unpackExampleProject.mutate({
+    const firstPage = example.firstPage;
+    await $unpackExampleProject.mutateAsync({
       instanceId: $runtime.instanceId,
       data: {
         name: example.name,
         force: true,
       },
     });
+    goto(firstPage);
   }
 </script>
 

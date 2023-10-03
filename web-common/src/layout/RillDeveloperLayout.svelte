@@ -1,8 +1,6 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import { resourcesStore } from "@rilldata/web-common/features/entity-management/resources-store";
-  import { addReconcilingOverlay } from "@rilldata/web-common/features/entity-management/sync-file-system";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import DuplicateSource from "@rilldata/web-common/features/sources/modal/DuplicateSource.svelte";
   import FileDrop from "@rilldata/web-common/features/sources/modal/FileDrop.svelte";
@@ -36,16 +34,6 @@
 
     return resourcesStore.init(config.instance_id);
   });
-
-  // Bidirectional sync is disabled for now
-  // syncFileSystemPeriodically(
-  //   queryClient,
-  //   runtime,
-  //   featureFlags,
-  //   page,
-  //   fileArtifactsStore
-  // );
-  $: addReconcilingOverlay($page.url.pathname);
 
   let dbRunState = "disconnected";
   let runstateTimer;

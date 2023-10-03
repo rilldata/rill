@@ -52,7 +52,7 @@
   $: currentResource = $dashboards?.data?.find(
     (listing) => listing.meta.name.name === $page.params.dashboard
   );
-  let currentDashboardName = currentResource.meta?.name?.name;
+  let currentDashboardName = currentResource?.meta?.name?.name;
   let currentDashboard: V1MetricsViewSpec;
   $: currentDashboard = currentResource?.metricsView?.state?.validSpec;
   $: isDashboardPage =
