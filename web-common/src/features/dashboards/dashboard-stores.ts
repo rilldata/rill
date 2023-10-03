@@ -254,6 +254,7 @@ function setDefaultTimeRange(
   fullTimeRange: V1ColumnTimeRangeResponse | undefined
 ) {
   // This function implementation mirrors some code in the metricsExplorer.init() function
+  if (!fullTimeRange) return;
   const preset = ISODurationToTimePreset(metricsView.defaultTimeRange, true);
   const timeZone = get(getLocalUserPreferences()).timeZone;
   const fullTimeStart = new Date(fullTimeRange.timeRangeSummary.min);
