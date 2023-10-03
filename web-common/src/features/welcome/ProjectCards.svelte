@@ -4,15 +4,15 @@
   import Card from "../../components/card/Card.svelte";
   import CardDescription from "../../components/card/CardDescription.svelte";
   import CardTitle from "../../components/card/CardTitle.svelte";
-  import { createRuntimeServiceUnpackExample } from "../../runtime-client";
-  import { runtime } from "../../runtime-client/runtime-store";
-  import EmptyProject from "./EmptyProject.svelte";
   import { behaviourEvent } from "../../metrics/initMetrics";
   import {
     BehaviourEventAction,
     BehaviourEventMedium,
   } from "../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
+  import { createRuntimeServiceUnpackExample } from "../../runtime-client";
+  import { runtime } from "../../runtime-client/runtime-store";
+  import EmptyProject from "./EmptyProject.svelte";
 
   const EXAMPLES = [
     {
@@ -61,7 +61,7 @@
   }
 </script>
 
-<section class="flex flex-col items-center gap-y-5 mt-4 mb-6">
+<section class="flex flex-col items-center gap-y-5">
   <Subheading>Or jump right into a project.</Subheading>
   <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
     <EmptyProject />

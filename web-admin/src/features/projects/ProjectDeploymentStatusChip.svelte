@@ -98,17 +98,17 @@
       textClass: "text-purple-600",
       wrapperClass: "bg-purple-50 border-purple-300",
     },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING]: {
-      icon: Spinner,
-      iconProps: {
-        bg: "linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)",
-        className: "text-purple-600 hover:text-purple-500",
-        status: EntityStatus.Running,
-      },
-      text: "syncing",
-      textClass: "text-purple-600",
-      wrapperClass: "bg-purple-50 border-purple-300",
-    },
+    // [V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING]: {
+    //   icon: Spinner,
+    //   iconProps: {
+    //     bg: "linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)",
+    //     className: "text-purple-600 hover:text-purple-500",
+    //     status: EntityStatus.Running,
+    //   },
+    //   text: "syncing",
+    //   textClass: "text-purple-600",
+    //   wrapperClass: "bg-purple-50 border-purple-300",
+    // },
     [V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR]: {
       icon: CancelCircle,
       iconProps: { className: "text-red-600 hover:text-red-500" },

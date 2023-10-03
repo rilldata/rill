@@ -322,20 +322,11 @@ export type RuntimeServiceListCatalogEntriesParams = {
   type?: RuntimeServiceListCatalogEntriesType;
 };
 
-export type RuntimeServiceEditInstanceAnnotationsBodyAnnotations = {
-  [key: string]: string;
-};
-
-/**
- * Request message for RuntimeService.EditInstanceAnnotations.
- */
-export type RuntimeServiceEditInstanceAnnotationsBody = {
-  annotations?: RuntimeServiceEditInstanceAnnotationsBodyAnnotations;
-};
-
 export type RuntimeServiceEditInstanceBodyAnnotations = {
   [key: string]: string;
 };
+
+export type RuntimeServiceEditInstanceBodyVariables = { [key: string]: string };
 
 /**
  * Request message for RuntimeService.EditInstance.
@@ -345,6 +336,7 @@ export type RuntimeServiceEditInstanceBody = {
   olapConnector?: string;
   repoConnector?: string;
   connectors?: V1Connector[];
+  variables?: RuntimeServiceEditInstanceBodyVariables;
   annotations?: RuntimeServiceEditInstanceBodyAnnotations;
   embedCatalog?: boolean;
   ingestionLimitBytes?: string;
@@ -352,17 +344,6 @@ export type RuntimeServiceEditInstanceBody = {
   stageChanges?: boolean;
   modelDefaultMaterialize?: boolean;
   modelMaterializeDelaySeconds?: number;
-};
-
-export type RuntimeServiceEditInstanceVariablesBodyVariables = {
-  [key: string]: string;
-};
-
-/**
- * Request message for RuntimeService.EditInstanceVariables.
- */
-export type RuntimeServiceEditInstanceVariablesBody = {
-  variables?: RuntimeServiceEditInstanceVariablesBodyVariables;
 };
 
 export type RuntimeServiceDeleteInstanceBody = {
@@ -1087,11 +1068,6 @@ export interface V1MetricsViewToplistResponse {
   data?: V1MetricsViewToplistResponseDataItem[];
 }
 
-export interface V1MetricsViewTimeSeriesResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1TimeSeriesValue[];
-}
-
 export interface V1MetricsViewTimeSeriesRequest {
   instanceId?: string;
   metricsViewName?: string;
@@ -1233,6 +1209,11 @@ export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
   nullable?: boolean;
+}
+
+export interface V1MetricsViewTimeSeriesResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1TimeSeriesValue[];
 }
 
 export interface V1MetricsViewAggregationSort {
@@ -1470,15 +1451,7 @@ export interface V1Example {
   description?: string;
 }
 
-export interface V1EditInstanceVariablesResponse {
-  instance?: V1Instance;
-}
-
 export interface V1EditInstanceResponse {
-  instance?: V1Instance;
-}
-
-export interface V1EditInstanceAnnotationsResponse {
   instance?: V1Instance;
 }
 

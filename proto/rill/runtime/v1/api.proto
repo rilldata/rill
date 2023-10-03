@@ -44,22 +44,6 @@ service RuntimeService {
     };
   }
 
-  // EditInstanceVariables edits the instance variable
-  rpc EditInstanceVariables(EditInstanceVariablesRequest) returns (EditInstanceVariablesResponse) {
-    option (google.api.http) = {
-      put: "/v1/instances/{instance_id}",
-      body: "*"
-    };
-  }
-
-  // EditInstanceAnnotations edits the instance annotations
-  rpc EditInstanceAnnotations(EditInstanceAnnotationsRequest) returns (EditInstanceAnnotationsResponse) {
-    option (google.api.http) = {
-      put: "/v1/instances/{instance_id}/annotations",
-      body: "*"
-    };
-  }
-
   // DeleteInstance deletes an instance
   rpc DeleteInstance(DeleteInstanceRequest) returns (DeleteInstanceResponse) {
     option (google.api.http) = {
@@ -354,6 +338,7 @@ message EditInstanceRequest {
   optional string olap_connector = 2;
   optional string repo_connector = 4;
   repeated Connector connectors = 9;
+  map<string, string> variables = 15;
   map<string, string> annotations = 10;
   optional bool embed_catalog = 6;
   optional int64 ingestion_limit_bytes = 8;
@@ -365,28 +350,6 @@ message EditInstanceRequest {
 
 // Response message for RuntimeService.EditInstance
 message EditInstanceResponse {
-  Instance instance = 1;
-}
-
-// Request message for RuntimeService.EditInstanceVariables.
-message EditInstanceVariablesRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  map<string, string> variables = 2;
-}
-
-// Response message for RuntimeService.EditInstanceVariables
-message EditInstanceVariablesResponse {
-  Instance instance = 1;
-}
-
-// Request message for RuntimeService.EditInstanceAnnotations.
-message EditInstanceAnnotationsRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  map<string, string> annotations = 2;
-}
-
-// Response message for RuntimeService.EditInstanceAnnotations
-message EditInstanceAnnotationsResponse {
   Instance instance = 1;
 }
 

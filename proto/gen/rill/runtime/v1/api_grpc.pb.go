@@ -19,39 +19,37 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	RuntimeService_Ping_FullMethodName                    = "/rill.runtime.v1.RuntimeService/Ping"
-	RuntimeService_ListInstances_FullMethodName           = "/rill.runtime.v1.RuntimeService/ListInstances"
-	RuntimeService_GetInstance_FullMethodName             = "/rill.runtime.v1.RuntimeService/GetInstance"
-	RuntimeService_CreateInstance_FullMethodName          = "/rill.runtime.v1.RuntimeService/CreateInstance"
-	RuntimeService_EditInstance_FullMethodName            = "/rill.runtime.v1.RuntimeService/EditInstance"
-	RuntimeService_EditInstanceVariables_FullMethodName   = "/rill.runtime.v1.RuntimeService/EditInstanceVariables"
-	RuntimeService_EditInstanceAnnotations_FullMethodName = "/rill.runtime.v1.RuntimeService/EditInstanceAnnotations"
-	RuntimeService_DeleteInstance_FullMethodName          = "/rill.runtime.v1.RuntimeService/DeleteInstance"
-	RuntimeService_ListFiles_FullMethodName               = "/rill.runtime.v1.RuntimeService/ListFiles"
-	RuntimeService_WatchFiles_FullMethodName              = "/rill.runtime.v1.RuntimeService/WatchFiles"
-	RuntimeService_GetFile_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GetFile"
-	RuntimeService_PutFile_FullMethodName                 = "/rill.runtime.v1.RuntimeService/PutFile"
-	RuntimeService_DeleteFile_FullMethodName              = "/rill.runtime.v1.RuntimeService/DeleteFile"
-	RuntimeService_RenameFile_FullMethodName              = "/rill.runtime.v1.RuntimeService/RenameFile"
-	RuntimeService_ListExamples_FullMethodName            = "/rill.runtime.v1.RuntimeService/ListExamples"
-	RuntimeService_UnpackExample_FullMethodName           = "/rill.runtime.v1.RuntimeService/UnpackExample"
-	RuntimeService_UnpackEmpty_FullMethodName             = "/rill.runtime.v1.RuntimeService/UnpackEmpty"
-	RuntimeService_GetLogs_FullMethodName                 = "/rill.runtime.v1.RuntimeService/GetLogs"
-	RuntimeService_WatchLogs_FullMethodName               = "/rill.runtime.v1.RuntimeService/WatchLogs"
-	RuntimeService_ListResources_FullMethodName           = "/rill.runtime.v1.RuntimeService/ListResources"
-	RuntimeService_WatchResources_FullMethodName          = "/rill.runtime.v1.RuntimeService/WatchResources"
-	RuntimeService_GetResource_FullMethodName             = "/rill.runtime.v1.RuntimeService/GetResource"
-	RuntimeService_CreateTrigger_FullMethodName           = "/rill.runtime.v1.RuntimeService/CreateTrigger"
-	RuntimeService_ListCatalogEntries_FullMethodName      = "/rill.runtime.v1.RuntimeService/ListCatalogEntries"
-	RuntimeService_GetCatalogEntry_FullMethodName         = "/rill.runtime.v1.RuntimeService/GetCatalogEntry"
-	RuntimeService_TriggerRefresh_FullMethodName          = "/rill.runtime.v1.RuntimeService/TriggerRefresh"
-	RuntimeService_Reconcile_FullMethodName               = "/rill.runtime.v1.RuntimeService/Reconcile"
-	RuntimeService_PutFileAndReconcile_FullMethodName     = "/rill.runtime.v1.RuntimeService/PutFileAndReconcile"
-	RuntimeService_DeleteFileAndReconcile_FullMethodName  = "/rill.runtime.v1.RuntimeService/DeleteFileAndReconcile"
-	RuntimeService_RenameFileAndReconcile_FullMethodName  = "/rill.runtime.v1.RuntimeService/RenameFileAndReconcile"
-	RuntimeService_RefreshAndReconcile_FullMethodName     = "/rill.runtime.v1.RuntimeService/RefreshAndReconcile"
-	RuntimeService_ListConnectors_FullMethodName          = "/rill.runtime.v1.RuntimeService/ListConnectors"
-	RuntimeService_IssueDevJWT_FullMethodName             = "/rill.runtime.v1.RuntimeService/IssueDevJWT"
+	RuntimeService_Ping_FullMethodName                   = "/rill.runtime.v1.RuntimeService/Ping"
+	RuntimeService_ListInstances_FullMethodName          = "/rill.runtime.v1.RuntimeService/ListInstances"
+	RuntimeService_GetInstance_FullMethodName            = "/rill.runtime.v1.RuntimeService/GetInstance"
+	RuntimeService_CreateInstance_FullMethodName         = "/rill.runtime.v1.RuntimeService/CreateInstance"
+	RuntimeService_EditInstance_FullMethodName           = "/rill.runtime.v1.RuntimeService/EditInstance"
+	RuntimeService_DeleteInstance_FullMethodName         = "/rill.runtime.v1.RuntimeService/DeleteInstance"
+	RuntimeService_ListFiles_FullMethodName              = "/rill.runtime.v1.RuntimeService/ListFiles"
+	RuntimeService_WatchFiles_FullMethodName             = "/rill.runtime.v1.RuntimeService/WatchFiles"
+	RuntimeService_GetFile_FullMethodName                = "/rill.runtime.v1.RuntimeService/GetFile"
+	RuntimeService_PutFile_FullMethodName                = "/rill.runtime.v1.RuntimeService/PutFile"
+	RuntimeService_DeleteFile_FullMethodName             = "/rill.runtime.v1.RuntimeService/DeleteFile"
+	RuntimeService_RenameFile_FullMethodName             = "/rill.runtime.v1.RuntimeService/RenameFile"
+	RuntimeService_ListExamples_FullMethodName           = "/rill.runtime.v1.RuntimeService/ListExamples"
+	RuntimeService_UnpackExample_FullMethodName          = "/rill.runtime.v1.RuntimeService/UnpackExample"
+	RuntimeService_UnpackEmpty_FullMethodName            = "/rill.runtime.v1.RuntimeService/UnpackEmpty"
+	RuntimeService_GetLogs_FullMethodName                = "/rill.runtime.v1.RuntimeService/GetLogs"
+	RuntimeService_WatchLogs_FullMethodName              = "/rill.runtime.v1.RuntimeService/WatchLogs"
+	RuntimeService_ListResources_FullMethodName          = "/rill.runtime.v1.RuntimeService/ListResources"
+	RuntimeService_WatchResources_FullMethodName         = "/rill.runtime.v1.RuntimeService/WatchResources"
+	RuntimeService_GetResource_FullMethodName            = "/rill.runtime.v1.RuntimeService/GetResource"
+	RuntimeService_CreateTrigger_FullMethodName          = "/rill.runtime.v1.RuntimeService/CreateTrigger"
+	RuntimeService_ListCatalogEntries_FullMethodName     = "/rill.runtime.v1.RuntimeService/ListCatalogEntries"
+	RuntimeService_GetCatalogEntry_FullMethodName        = "/rill.runtime.v1.RuntimeService/GetCatalogEntry"
+	RuntimeService_TriggerRefresh_FullMethodName         = "/rill.runtime.v1.RuntimeService/TriggerRefresh"
+	RuntimeService_Reconcile_FullMethodName              = "/rill.runtime.v1.RuntimeService/Reconcile"
+	RuntimeService_PutFileAndReconcile_FullMethodName    = "/rill.runtime.v1.RuntimeService/PutFileAndReconcile"
+	RuntimeService_DeleteFileAndReconcile_FullMethodName = "/rill.runtime.v1.RuntimeService/DeleteFileAndReconcile"
+	RuntimeService_RenameFileAndReconcile_FullMethodName = "/rill.runtime.v1.RuntimeService/RenameFileAndReconcile"
+	RuntimeService_RefreshAndReconcile_FullMethodName    = "/rill.runtime.v1.RuntimeService/RefreshAndReconcile"
+	RuntimeService_ListConnectors_FullMethodName         = "/rill.runtime.v1.RuntimeService/ListConnectors"
+	RuntimeService_IssueDevJWT_FullMethodName            = "/rill.runtime.v1.RuntimeService/IssueDevJWT"
 )
 
 // RuntimeServiceClient is the client API for RuntimeService service.
@@ -68,10 +66,6 @@ type RuntimeServiceClient interface {
 	CreateInstance(ctx context.Context, in *CreateInstanceRequest, opts ...grpc.CallOption) (*CreateInstanceResponse, error)
 	// EditInstance edits an existing instance
 	EditInstance(ctx context.Context, in *EditInstanceRequest, opts ...grpc.CallOption) (*EditInstanceResponse, error)
-	// EditInstanceVariables edits the instance variable
-	EditInstanceVariables(ctx context.Context, in *EditInstanceVariablesRequest, opts ...grpc.CallOption) (*EditInstanceVariablesResponse, error)
-	// EditInstanceAnnotations edits the instance annotations
-	EditInstanceAnnotations(ctx context.Context, in *EditInstanceAnnotationsRequest, opts ...grpc.CallOption) (*EditInstanceAnnotationsResponse, error)
 	// DeleteInstance deletes an instance
 	DeleteInstance(ctx context.Context, in *DeleteInstanceRequest, opts ...grpc.CallOption) (*DeleteInstanceResponse, error)
 	// ListFiles lists all the files matching a glob in a repo.
@@ -180,24 +174,6 @@ func (c *runtimeServiceClient) CreateInstance(ctx context.Context, in *CreateIns
 func (c *runtimeServiceClient) EditInstance(ctx context.Context, in *EditInstanceRequest, opts ...grpc.CallOption) (*EditInstanceResponse, error) {
 	out := new(EditInstanceResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_EditInstance_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *runtimeServiceClient) EditInstanceVariables(ctx context.Context, in *EditInstanceVariablesRequest, opts ...grpc.CallOption) (*EditInstanceVariablesResponse, error) {
-	out := new(EditInstanceVariablesResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_EditInstanceVariables_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *runtimeServiceClient) EditInstanceAnnotations(ctx context.Context, in *EditInstanceAnnotationsRequest, opts ...grpc.CallOption) (*EditInstanceAnnotationsResponse, error) {
-	out := new(EditInstanceAnnotationsResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_EditInstanceAnnotations_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -521,10 +497,6 @@ type RuntimeServiceServer interface {
 	CreateInstance(context.Context, *CreateInstanceRequest) (*CreateInstanceResponse, error)
 	// EditInstance edits an existing instance
 	EditInstance(context.Context, *EditInstanceRequest) (*EditInstanceResponse, error)
-	// EditInstanceVariables edits the instance variable
-	EditInstanceVariables(context.Context, *EditInstanceVariablesRequest) (*EditInstanceVariablesResponse, error)
-	// EditInstanceAnnotations edits the instance annotations
-	EditInstanceAnnotations(context.Context, *EditInstanceAnnotationsRequest) (*EditInstanceAnnotationsResponse, error)
 	// DeleteInstance deletes an instance
 	DeleteInstance(context.Context, *DeleteInstanceRequest) (*DeleteInstanceResponse, error)
 	// ListFiles lists all the files matching a glob in a repo.
@@ -605,12 +577,6 @@ func (UnimplementedRuntimeServiceServer) CreateInstance(context.Context, *Create
 }
 func (UnimplementedRuntimeServiceServer) EditInstance(context.Context, *EditInstanceRequest) (*EditInstanceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method EditInstance not implemented")
-}
-func (UnimplementedRuntimeServiceServer) EditInstanceVariables(context.Context, *EditInstanceVariablesRequest) (*EditInstanceVariablesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method EditInstanceVariables not implemented")
-}
-func (UnimplementedRuntimeServiceServer) EditInstanceAnnotations(context.Context, *EditInstanceAnnotationsRequest) (*EditInstanceAnnotationsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method EditInstanceAnnotations not implemented")
 }
 func (UnimplementedRuntimeServiceServer) DeleteInstance(context.Context, *DeleteInstanceRequest) (*DeleteInstanceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteInstance not implemented")
@@ -789,42 +755,6 @@ func _RuntimeService_EditInstance_Handler(srv interface{}, ctx context.Context, 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).EditInstance(ctx, req.(*EditInstanceRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RuntimeService_EditInstanceVariables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EditInstanceVariablesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).EditInstanceVariables(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RuntimeService_EditInstanceVariables_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).EditInstanceVariables(ctx, req.(*EditInstanceVariablesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RuntimeService_EditInstanceAnnotations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EditInstanceAnnotationsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).EditInstanceAnnotations(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RuntimeService_EditInstanceAnnotations_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).EditInstanceAnnotations(ctx, req.(*EditInstanceAnnotationsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1332,14 +1262,6 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "EditInstance",
 			Handler:    _RuntimeService_EditInstance_Handler,
-		},
-		{
-			MethodName: "EditInstanceVariables",
-			Handler:    _RuntimeService_EditInstanceVariables_Handler,
-		},
-		{
-			MethodName: "EditInstanceAnnotations",
-			Handler:    _RuntimeService_EditInstanceAnnotations_Handler,
 		},
 		{
 			MethodName: "DeleteInstance",

@@ -790,6 +790,11 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
   connectors: Connector[] = [];
 
   /**
+   * @generated from field: map<string, string> variables = 15;
+   */
+  variables: { [key: string]: string } = {};
+
+  /**
    * @generated from field: map<string, string> annotations = 10;
    */
   annotations: { [key: string]: string } = {};
@@ -836,6 +841,7 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
     { no: 2, name: "olap_connector", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 4, name: "repo_connector", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 9, name: "connectors", kind: "message", T: Connector, repeated: true },
+    { no: 15, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 8, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
@@ -898,174 +904,6 @@ export class EditInstanceResponse extends Message<EditInstanceResponse> {
 
   static equals(a: EditInstanceResponse | PlainMessage<EditInstanceResponse> | undefined, b: EditInstanceResponse | PlainMessage<EditInstanceResponse> | undefined): boolean {
     return proto3.util.equals(EditInstanceResponse, a, b);
-  }
-}
-
-/**
- * Request message for RuntimeService.EditInstanceVariables.
- *
- * @generated from message rill.runtime.v1.EditInstanceVariablesRequest
- */
-export class EditInstanceVariablesRequest extends Message<EditInstanceVariablesRequest> {
-  /**
-   * @generated from field: string instance_id = 1;
-   */
-  instanceId = "";
-
-  /**
-   * @generated from field: map<string, string> variables = 2;
-   */
-  variables: { [key: string]: string } = {};
-
-  constructor(data?: PartialMessage<EditInstanceVariablesRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.EditInstanceVariablesRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceVariablesRequest {
-    return new EditInstanceVariablesRequest().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EditInstanceVariablesRequest {
-    return new EditInstanceVariablesRequest().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EditInstanceVariablesRequest {
-    return new EditInstanceVariablesRequest().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: EditInstanceVariablesRequest | PlainMessage<EditInstanceVariablesRequest> | undefined, b: EditInstanceVariablesRequest | PlainMessage<EditInstanceVariablesRequest> | undefined): boolean {
-    return proto3.util.equals(EditInstanceVariablesRequest, a, b);
-  }
-}
-
-/**
- * Response message for RuntimeService.EditInstanceVariables
- *
- * @generated from message rill.runtime.v1.EditInstanceVariablesResponse
- */
-export class EditInstanceVariablesResponse extends Message<EditInstanceVariablesResponse> {
-  /**
-   * @generated from field: rill.runtime.v1.Instance instance = 1;
-   */
-  instance?: Instance;
-
-  constructor(data?: PartialMessage<EditInstanceVariablesResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.EditInstanceVariablesResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "instance", kind: "message", T: Instance },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceVariablesResponse {
-    return new EditInstanceVariablesResponse().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EditInstanceVariablesResponse {
-    return new EditInstanceVariablesResponse().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EditInstanceVariablesResponse {
-    return new EditInstanceVariablesResponse().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: EditInstanceVariablesResponse | PlainMessage<EditInstanceVariablesResponse> | undefined, b: EditInstanceVariablesResponse | PlainMessage<EditInstanceVariablesResponse> | undefined): boolean {
-    return proto3.util.equals(EditInstanceVariablesResponse, a, b);
-  }
-}
-
-/**
- * Request message for RuntimeService.EditInstanceAnnotations.
- *
- * @generated from message rill.runtime.v1.EditInstanceAnnotationsRequest
- */
-export class EditInstanceAnnotationsRequest extends Message<EditInstanceAnnotationsRequest> {
-  /**
-   * @generated from field: string instance_id = 1;
-   */
-  instanceId = "";
-
-  /**
-   * @generated from field: map<string, string> annotations = 2;
-   */
-  annotations: { [key: string]: string } = {};
-
-  constructor(data?: PartialMessage<EditInstanceAnnotationsRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.EditInstanceAnnotationsRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceAnnotationsRequest {
-    return new EditInstanceAnnotationsRequest().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EditInstanceAnnotationsRequest {
-    return new EditInstanceAnnotationsRequest().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EditInstanceAnnotationsRequest {
-    return new EditInstanceAnnotationsRequest().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: EditInstanceAnnotationsRequest | PlainMessage<EditInstanceAnnotationsRequest> | undefined, b: EditInstanceAnnotationsRequest | PlainMessage<EditInstanceAnnotationsRequest> | undefined): boolean {
-    return proto3.util.equals(EditInstanceAnnotationsRequest, a, b);
-  }
-}
-
-/**
- * Response message for RuntimeService.EditInstanceAnnotations
- *
- * @generated from message rill.runtime.v1.EditInstanceAnnotationsResponse
- */
-export class EditInstanceAnnotationsResponse extends Message<EditInstanceAnnotationsResponse> {
-  /**
-   * @generated from field: rill.runtime.v1.Instance instance = 1;
-   */
-  instance?: Instance;
-
-  constructor(data?: PartialMessage<EditInstanceAnnotationsResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.EditInstanceAnnotationsResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "instance", kind: "message", T: Instance },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceAnnotationsResponse {
-    return new EditInstanceAnnotationsResponse().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EditInstanceAnnotationsResponse {
-    return new EditInstanceAnnotationsResponse().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EditInstanceAnnotationsResponse {
-    return new EditInstanceAnnotationsResponse().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: EditInstanceAnnotationsResponse | PlainMessage<EditInstanceAnnotationsResponse> | undefined, b: EditInstanceAnnotationsResponse | PlainMessage<EditInstanceAnnotationsResponse> | undefined): boolean {
-    return proto3.util.equals(EditInstanceAnnotationsResponse, a, b);
   }
 }
 

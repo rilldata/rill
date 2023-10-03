@@ -135,7 +135,7 @@ func printDeployment(ctx context.Context, c *client.Client, depl *adminv1.Deploy
 	fmt.Printf("Slots: %d\n", depl.Slots)
 	fmt.Printf("Created on: %s\n", depl.CreatedOn.AsTime().Format(time.RFC3339Nano))
 	fmt.Printf("Status: %s\n", depl.Status.String())
-	fmt.Printf("Logs: %s\n", depl.Logs)
+	fmt.Printf("Logs: %s\n", depl.StatusMessage)
 
 	fmt.Println("")
 	fmt.Println("PROJECT")

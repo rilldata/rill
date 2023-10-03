@@ -77,10 +77,26 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 	}
 
 	for _, res := range resources {
+		// Only check sources and models
+		switch res.Meta.Name.Kind {
+		case runtime.ResourceKindSource, runtime.ResourceKindModel:
+			// nothing to do
+		default:
+			// skip
+			continue
+		}
+
+		// Check if it's in OnlyNames
 		if len(trigger.Spec.OnlyNames) > 0 {
 			found := false
 			for _, n := range trigger.Spec.OnlyNames {
-				if n.Kind == "" && n.Name == res.Meta.Name.Name || proto.Equal(res.Meta.Name, n) {
+				// If Kind is empty, match any kind
+				if n.Kind == "" && n.Name == res.Meta.Name.Name {
+					found = true
+					break
+				}
+				// Check both kind and name
+				if proto.Equal(res.Meta.Name, n) {
 					found = true
 					break
 				}
@@ -90,6 +106,7 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 			}
 		}
 
+		// Set Trigger=true
 		updated := true
 		switch res.Meta.Name.Kind {
 		case runtime.ResourceKindSource:

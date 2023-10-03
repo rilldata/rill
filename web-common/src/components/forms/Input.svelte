@@ -45,7 +45,7 @@
   type="text"
   {placeholder}
   autocomplete="off"
-  class="border border-gray-400 rounded px-1 py-2 cursor-pointer focus:outline-blue-500 w-full text-xs"
+  class="border border-gray-400 rounded px-2 py-2 cursor-pointer focus:outline-blue-500 w-full text-xs"
 />
 {#if error}
   <div

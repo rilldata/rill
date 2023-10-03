@@ -173,17 +173,10 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		return nil, status.Error(codes.PermissionDenied, "not allowed to update org")
 	}
 
-	orgNewName := valOrDefault(req.NewName, org.Name)
-
-	if orgNewName != org.Name { // org name changed
-		err := s.admin.UpdateOrgDeploymentAnnotations(ctx, org.ID, orgNewName)
-		if err != nil {
-			return nil, err
-		}
-	}
+	nameChanged := req.NewName != nil && *req.NewName != org.Name
 
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-		Name:                    orgNewName,
+		Name:                    valOrDefault(req.NewName, org.Name),
 		Description:             valOrDefault(req.Description, org.Description),
 		QuotaProjects:           org.QuotaProjects,
 		QuotaDeployments:        org.QuotaDeployments,
@@ -193,6 +186,13 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if nameChanged {
+		err := s.admin.UpdateOrgDeploymentAnnotations(ctx, org)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &adminv1.UpdateOrganizationResponse{

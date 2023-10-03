@@ -126,6 +126,11 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		connectors = oldInst.Connectors
 	}
 
+	variables := req.Variables
+	if len(variables) == 0 { // variables not changed
+		variables = oldInst.Variables
+	}
+
 	annotations := req.Annotations
 	if len(annotations) == 0 { // annotations not changed
 		annotations = oldInst.Annotations
@@ -137,7 +142,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		RepoConnector:                valOrDefault(req.RepoConnector, oldInst.RepoConnector),
 		Connectors:                   connectors,
 		ProjectConnectors:            oldInst.ProjectConnectors,
-		Variables:                    oldInst.Variables,
+		Variables:                    variables,
 		ProjectVariables:             oldInst.ProjectVariables,
 		Annotations:                  annotations,
 		EmbedCatalog:                 valOrDefault(req.EmbedCatalog, oldInst.EmbedCatalog),
@@ -154,90 +159,6 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 	}
 
 	return &runtimev1.EditInstanceResponse{
-		Instance: instanceToPB(inst),
-	}, nil
-}
-
-// EditInstanceVariables implements RuntimeService.
-func (s *Server) EditInstanceVariables(ctx context.Context, req *runtimev1.EditInstanceVariablesRequest) (*runtimev1.EditInstanceVariablesResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.instance_id", req.InstanceId))
-
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
-
-	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
-		return nil, ErrForbidden
-	}
-
-	oldInst, err := s.runtime.Instance(ctx, req.InstanceId)
-	if err != nil {
-		return nil, err
-	}
-
-	inst := &drivers.Instance{
-		ID:                           req.InstanceId,
-		OLAPConnector:                oldInst.OLAPConnector,
-		RepoConnector:                oldInst.RepoConnector,
-		Connectors:                   oldInst.Connectors,
-		ProjectConnectors:            oldInst.ProjectConnectors,
-		Variables:                    req.Variables,
-		ProjectVariables:             oldInst.ProjectVariables,
-		Annotations:                  oldInst.Annotations,
-		EmbedCatalog:                 oldInst.EmbedCatalog,
-		IngestionLimitBytes:          oldInst.IngestionLimitBytes,
-		WatchRepo:                    oldInst.WatchRepo,
-		StageChanges:                 oldInst.StageChanges,
-		ModelDefaultMaterialize:      oldInst.ModelDefaultMaterialize,
-		ModelMaterializeDelaySeconds: oldInst.ModelMaterializeDelaySeconds,
-	}
-
-	err = s.runtime.EditInstance(ctx, inst, true)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	return &runtimev1.EditInstanceVariablesResponse{
-		Instance: instanceToPB(inst),
-	}, nil
-}
-
-// EditInstanceAnnotations implements RuntimeService.
-func (s *Server) EditInstanceAnnotations(ctx context.Context, req *runtimev1.EditInstanceAnnotationsRequest) (*runtimev1.EditInstanceAnnotationsResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.instance_id", req.InstanceId))
-
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
-
-	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
-		return nil, ErrForbidden
-	}
-
-	oldInst, err := s.runtime.Instance(ctx, req.InstanceId)
-	if err != nil {
-		return nil, err
-	}
-
-	inst := &drivers.Instance{
-		ID:                           req.InstanceId,
-		OLAPConnector:                oldInst.OLAPConnector,
-		RepoConnector:                oldInst.RepoConnector,
-		Connectors:                   oldInst.Connectors,
-		ProjectConnectors:            oldInst.ProjectConnectors,
-		Variables:                    oldInst.Variables,
-		ProjectVariables:             oldInst.ProjectVariables,
-		Annotations:                  req.Annotations,
-		EmbedCatalog:                 oldInst.EmbedCatalog,
-		IngestionLimitBytes:          oldInst.IngestionLimitBytes,
-		WatchRepo:                    oldInst.WatchRepo,
-		StageChanges:                 oldInst.StageChanges,
-		ModelDefaultMaterialize:      oldInst.ModelDefaultMaterialize,
-		ModelMaterializeDelaySeconds: oldInst.ModelMaterializeDelaySeconds,
-	}
-
-	err = s.runtime.EditInstance(ctx, inst, true)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	return &runtimev1.EditInstanceAnnotationsResponse{
 		Instance: instanceToPB(inst),
 	}, nil
 }
