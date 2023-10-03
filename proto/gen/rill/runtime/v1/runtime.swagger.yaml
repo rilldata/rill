@@ -3657,6 +3657,12 @@ definitions:
       security:
         $ref: '#/definitions/MetricsViewSpecSecurityV2'
         title: Security for the dashboard
+      firstDayOfWeek:
+        type: integer
+        format: int64
+      firstMonthOfYear:
+        type: integer
+        format: int64
   v1MetricsViewState:
     type: object
     properties:

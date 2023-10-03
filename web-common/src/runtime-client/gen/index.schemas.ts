@@ -1118,6 +1118,8 @@ export interface V1MetricsViewSpec {
   defaultTimeRange?: string;
   availableTimeZones?: string[];
   security?: MetricsViewSpecSecurityV2;
+  firstDayOfWeek?: number;
+  firstMonthOfYear?: number;
 }
 
 export interface V1MetricsViewState {

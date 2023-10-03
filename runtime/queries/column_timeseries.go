@@ -128,6 +128,14 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		args = append([]any{timezone, timeRange.Start.AsTime(), timezone, timeRange.End.AsTime(), timezone}, args...)
 		args = append(args, timezone)
 
+		if q.FirstDayOfWeek > 7 || q.FirstDayOfWeek <= 0 {
+			q.FirstDayOfWeek = 1
+		}
+
+		if q.FirstMonthOfYear > 12 || q.FirstMonthOfYear <= 0 {
+			q.FirstMonthOfYear = 1
+		}
+
 		timeOffsetClause1 := ""
 		timeOffsetClause2 := ""
 		if timeRange.Interval == runtimev1.TimeGrain_TIME_GRAIN_WEEK && q.FirstDayOfWeek > 1 {
