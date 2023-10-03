@@ -65,7 +65,9 @@
 
   async function getDashboardsAndInvalidate() {
     const dashboardListItems = await getDashboardsForProject($proj.data);
-    const dashboardNames = dashboardListItems.map((listing) => listing.name);
+    const dashboardNames = dashboardListItems.map(
+      (listing) => listing.meta.name.name
+    );
     return invalidateDashboardsQueries(queryClient, dashboardNames);
   }
 
