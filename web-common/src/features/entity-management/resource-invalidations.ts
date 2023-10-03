@@ -17,29 +17,29 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 
-const MainResources: {
+export const MainResourceKinds: {
   [kind in ResourceKind]?: true;
 } = {
   [ResourceKind.Source]: true,
   [ResourceKind.Model]: true,
   [ResourceKind.MetricsView]: true,
 };
-const UsedResources: {
+const UsedResourceKinds: {
   [kind in ResourceKind]?: true;
 } = {
   [ResourceKind.ProjectParser]: true,
-  ...MainResources,
+  ...MainResourceKinds,
 };
 
 export function invalidateResourceResponse(
   queryClient: QueryClient,
   res: V1WatchResourcesResponse
 ) {
-  // only process for the `ResourceKind` present in `UsedResources`
-  if (!UsedResources[res.name.kind]) return;
+  // only process for the `ResourceKind` present in `UsedResourceKinds`
+  if (!UsedResourceKinds[res.name.kind]) return;
   // for main resources only invalidate if it became idle
   if (
-    MainResources[res.name.kind] &&
+    MainResourceKinds[res.name.kind] &&
     res.resource.meta.reconcileStatus !==
       V1ReconcileStatus.RECONCILE_STATUS_IDLE
   )
@@ -62,7 +62,7 @@ export function invalidateResourceResponse(
   }
 
   // only re-fetch list queries for kinds in `MainResources`
-  if (!MainResources[res.name.kind]) return;
+  if (!MainResourceKinds[res.name.kind]) return;
   resourcesStore.setResource(res.resource);
   return queryClient.refetchQueries(
     // we only use individual kind's queries

@@ -45,9 +45,11 @@
           <span class="text-red-600 break-all">
             {error.message}
           </span>
-          <span class="text-stone-500 font-semibold shrink-0">
-            {error.filePath}
-          </span>
+          {#if error.filePath}
+            <span class="text-stone-500 font-semibold shrink-0">
+              {error.filePath}
+            </span>
+          {/if}
         </li>
       {/each}
     {/if}
