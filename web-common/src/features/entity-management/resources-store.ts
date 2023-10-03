@@ -99,12 +99,15 @@ export function getAllErrorsForFile(
       if (
         projectParser.isFetching ||
         projectParser.isError ||
-        resource.isFetching ||
-        resource.isError
+        resource.isFetching
       ) {
         // TODO: what should the error be for failed get resource API
         return [];
       }
+      console.log(
+        filePath,
+        projectParser.data?.projectParser?.state?.parseErrors
+      );
       return [
         ...(projectParser.data?.projectParser?.state?.parseErrors ?? []).filter(
           (e) => e.filePath === filePath

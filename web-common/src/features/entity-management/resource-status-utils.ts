@@ -1,5 +1,6 @@
 import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
+  getAllErrorsForFile,
   getResourceNameForFile,
   useResourceForFile,
 } from "@rilldata/web-common/features/entity-management/resources-store";
@@ -80,19 +81,19 @@ export function getResourceStatusStore(
 ): Readable<ResourceStatusState> {
   return derived(
     [
-      getResourceNameForFile(filePath),
       useResourceForFile(queryClient, instanceId, filePath),
+      getAllErrorsForFile(queryClient, instanceId, filePath),
       useProjectParser(queryClient, instanceId),
     ],
-    ([resourceName, resourceResp, projectParserResp]) => {
-      if (!resourceName || projectParserResp.isError) {
+    ([resourceResp, errors, projectParserResp]) => {
+      if (projectParserResp.isError) {
         return {
           status: ResourceStatus.Errored,
           error: projectParserResp.error,
         };
       }
 
-      if (resourceResp.isError || projectParserResp.isError) {
+      if (errors.length || resourceResp.isError || projectParserResp.isError) {
         return {
           status: ResourceStatus.Errored,
           error: resourceResp.error ?? projectParserResp.error,
