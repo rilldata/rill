@@ -130,7 +130,22 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, log
 	// Open the DB
 	err = c.reopenDB()
 	if err != nil {
-		return nil, err
+		if c.config.ErrorOnIncompatibleVersion || !strings.Contains(err.Error(), "created with an older, incompatible version of Rill") {
+			return nil, err
+		}
+
+		c.logger.Named("console").Info("Resetting .db file because it was created with an older, incompatible version of Rill")
+
+		tmpPath := cfg.DBFilePath + ".tmp"
+		_ = os.RemoveAll(tmpPath)
+		walPath := cfg.DBFilePath + ".wal"
+		_ = os.Remove(walPath)
+		_ = os.Remove(cfg.DBFilePath)
+
+		// reopen connection again
+		if err := c.reopenDB(); err != nil {
+			return nil, err
+		}
 	}
 
 	// Return nice error for old macOS versions
