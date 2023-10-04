@@ -93,7 +93,11 @@ export function getResourceStatusStore(
         };
       }
 
-      if (errors.length || resourceResp.isError || projectParserResp.isError) {
+      if (
+        errors.length ||
+        (resourceResp.isError && !resourceResp.isFetching) ||
+        projectParserResp.isError
+      ) {
         return {
           status: ResourceStatus.Errored,
           error: resourceResp.error ?? projectParserResp.error,
