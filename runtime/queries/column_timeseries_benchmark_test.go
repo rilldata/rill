@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func BenchmarkMetricsViewsTimeSeries_hourly(b *testing.B) {
+func BenchmarkTimeSeries_hourly(b *testing.B) {
 	rt, instanceID, mv := prepareEnvironment(b)
 	q := &ColumnTimeseries{
 		TableName:           "ad_bids",
@@ -33,7 +33,7 @@ func BenchmarkMetricsViewsTimeSeries_hourly(b *testing.B) {
 		require.NotEmpty(b, q.Result)
 	}
 }
-func BenchmarkMetricsViewsTimeSeries_daily(b *testing.B) {
+func BenchmarkTimeSeries_daily(b *testing.B) {
 	rt, instanceID, mv := prepareEnvironment(b)
 	q := &ColumnTimeseries{
 		TableName:           "ad_bids",
@@ -58,7 +58,7 @@ func BenchmarkMetricsViewsTimeSeries_daily(b *testing.B) {
 	}
 }
 
-func BenchmarkMetricsViewsTimeSeries_weekly(b *testing.B) {
+func BenchmarkTimeSeries_weekly(b *testing.B) {
 	rt, instanceID, mv := prepareEnvironment(b)
 	q := &ColumnTimeseries{
 		TableName:           "ad_bids",
@@ -82,7 +82,7 @@ func BenchmarkMetricsViewsTimeSeries_weekly(b *testing.B) {
 		require.NotEmpty(b, q.Result)
 	}
 }
-func BenchmarkMetricsViewsTimeSeries_weekly_first_day_of_week_Monday(b *testing.B) {
+func BenchmarkTimeSeries_weekly_first_day_of_week_Monday(b *testing.B) {
 	rt, instanceID, mv := prepareEnvironment(b)
 
 	q := &ColumnTimeseries{
@@ -108,7 +108,7 @@ func BenchmarkMetricsViewsTimeSeries_weekly_first_day_of_week_Monday(b *testing.
 	}
 }
 
-func BenchmarkMetricsViewsTimeSeries_weekly_first_day_of_week_Sunday(b *testing.B) {
+func BenchmarkTimeSeries_weekly_first_day_of_week_Sunday(b *testing.B) {
 	rt, instanceID, mv := prepareEnvironment(b)
 
 	q := &ColumnTimeseries{
