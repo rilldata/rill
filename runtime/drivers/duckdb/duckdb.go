@@ -108,6 +108,15 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, log
 		}
 	}
 
+	if cfg.TableAsView { // path is instance_id/main.db
+		// create instance_id directory
+		if err := os.Mkdir(filepath.Base(filepath.Dir(cfg.DBFilePath)), fs.ModePerm); err != nil {
+			if !strings.Contains(err.Error(), "file exists") {
+				return nil, err
+			}
+		}
+	}
+
 	// See note in connection struct
 	olapSemSize := cfg.PoolSize - 1
 	if olapSemSize < 1 {
@@ -167,6 +176,9 @@ func (d Driver) Drop(cfgMap map[string]any, logger *zap.Logger) error {
 		_ = os.Remove(cfg.DBFilePath + ".wal")
 		// also temove the temp dir
 		_ = os.RemoveAll(cfg.DBFilePath + ".tmp")
+		if cfg.TableAsView {
+			_ = os.RemoveAll(filepath.Dir(cfg.DBFilePath))
+		}
 	}
 
 	return nil
@@ -417,7 +429,7 @@ func (c *connection) reopenDB() error {
 	}
 	defer conn.Close()
 
-	if c.config.TableAsView {
+	if !c.config.TableAsView {
 		return nil
 	}
 	dir := filepath.Dir(c.config.DBFilePath)

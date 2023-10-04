@@ -12,32 +12,32 @@ import (
 var _ drivers.OLAPStore = &connection{}
 
 // AddTableColumn implements drivers.OLAPStore.
-func (*connection) AddTableColumn(ctx context.Context, tableName string, columnName string, typ string) error {
+func (c *connection) AddTableColumn(ctx context.Context, tableName, columnName, typ string) error {
 	panic("not implemented")
 }
 
 // AlterTableColumn implements drivers.OLAPStore.
-func (*connection) AlterTableColumn(ctx context.Context, tableName string, columnName string, newType string) error {
+func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName, newType string) error {
 	panic("not implemented")
 }
 
 // CreateTableAsSelect implements drivers.OLAPStore.
-func (*connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string) error {
+func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string) error {
 	panic("not implemented")
 }
 
 // DropTable implements drivers.OLAPStore.
-func (*connection) DropTable(ctx context.Context, name string, view bool) error {
+func (c *connection) DropTable(ctx context.Context, name string, view bool) error {
 	panic("not implemented")
 }
 
 // InsertTableAsSelect implements drivers.OLAPStore.
-func (*connection) InsertTableAsSelect(ctx context.Context, name string, byName bool, sql string) error {
+func (c *connection) InsertTableAsSelect(ctx context.Context, name string, byName bool, sql string) error {
 	panic("not implemented")
 }
 
 // RenameTable implements drivers.OLAPStore.
-func (*connection) RenameTable(ctx context.Context, name string, newName string, view bool) error {
+func (c *connection) RenameTable(ctx context.Context, name, newName string, view bool) error {
 	panic("not implemented")
 }
 

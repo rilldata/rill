@@ -74,6 +74,20 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		olapConfig["pool_size"] = strconv.Itoa(alloc.CPU)
 		embedCatalog = true
 		ingestionLimit = alloc.StorageBytes
+	case "duckdb-ext-storage": // duckdb driver having capability to store table as view
+		if opts.ProdOLAPDSN != "" {
+			return nil, fmt.Errorf("passing a DSN is not allowed for driver 'duckdb-ext-storage'")
+		}
+		if opts.ProdSlots == 0 {
+			return nil, fmt.Errorf("slot count can't be 0 for driver 'duckdb-ext-storage'")
+		}
+
+		olapDriver = "duckdb"
+		olapConfig["dsn"] = fmt.Sprintf("%s.db?max_memory=%dGB", path.Join(alloc.DataDir, instanceID, "main"), alloc.MemoryGB)
+		olapConfig["pool_size"] = strconv.Itoa(alloc.CPU)
+		olapConfig["table_as_view"] = strconv.FormatBool(true)
+		embedCatalog = true
+		ingestionLimit = alloc.StorageBytes
 	case "duckdb-vip":
 		if opts.ProdOLAPDSN != "" {
 			return nil, fmt.Errorf("passing a DSN is not allowed for driver 'duckdb-vip'")
