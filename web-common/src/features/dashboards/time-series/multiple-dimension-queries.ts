@@ -35,6 +35,7 @@ export function getDimensionValuesForComparison(
 ): Readable<{
   values: string[];
   filter: V1MetricsViewFilter;
+  totals?: number[];
 }> {
   return derived(
     [
@@ -108,6 +109,9 @@ export function getDimensionValuesForComparison(
                 filter: dashboardStore?.filters,
               };
             const columnName = topListData?.data?.meta[0]?.name;
+            const totalValues = topListData?.data?.data?.map(
+              (d) => d[measures[0]]
+            ) as number[];
             const topListValues = topListData?.data?.data.map(
               (d) => d[columnName]
             );
@@ -120,6 +124,7 @@ export function getDimensionValuesForComparison(
             );
 
             return {
+              totals: totalValues,
               values: computedFilter?.includedValues,
               filter: computedFilter?.updatedFilter,
             };
@@ -215,6 +220,7 @@ export function getDimensionValueTimeSeries(
               }
               return {
                 value,
+                total: dimensionValues?.totals[i],
                 strokeClass: "stroke-" + LINE_COLORS[i],
                 fillClass: "fill-" + CHECKMARK_COLORS[i],
                 data: prepData,

@@ -11,6 +11,10 @@
   export let removable = false;
   export let active = false;
 
+  /** chip style props */
+  export let extraRounded = true;
+  export let extraPadding = true;
+
   /** color elements elements */
   export let bgBaseClass = defaultChipColors.bgBaseClass;
   export let bgHoverClass = defaultChipColors.bgHoverClass;
@@ -34,7 +38,8 @@
   <button
     on:click
     class="
-    grid gap-x-2 items-center pl-2 pr-4 py-1 rounded-2xl cursor-pointer
+    grid gap-x-2 items-center pl-2 pr-{extraPadding ? '4' : '2'}
+      py-1 rounded-{extraRounded ? '2xl' : 'sm'} cursor-pointer
     {textClass}
     {bgBaseClass} 
     {outlineClass} 

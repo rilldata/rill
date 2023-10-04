@@ -258,6 +258,7 @@
   }
 
   :global(regular-table table) {
+    color: rgb(55 65 81);
     table-layout: fixed;
     border-collapse: collapse;
     font-family: Inter;

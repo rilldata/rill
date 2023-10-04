@@ -145,6 +145,6 @@
 
 <style>
   .fixed-metric-height {
-    height: 300px;
+    height: 280px;
   }
 </style>

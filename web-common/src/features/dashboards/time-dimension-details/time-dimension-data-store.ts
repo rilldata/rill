@@ -1,4 +1,3 @@
-import { faker } from "@faker-js/faker";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
 import {
@@ -11,7 +10,12 @@ import {
   createQueryServiceMetricsViewAggregation,
   V1MetricsViewAggregationResponse,
 } from "@rilldata/web-common/runtime-client";
-import { range } from "./util";
+import { createSparkline } from "./sparkline";
+import { transposeArray } from "./util";
+import {
+  FormatPreset,
+  humanizeDataType,
+} from "@rilldata/web-common/features/dashboards/humanize-numbers";
 
 export type TimeDimensionDataState = {
   isFetching: boolean;
@@ -53,32 +57,20 @@ function createTimeDimensionAggregation(
   );
 }
 
-// Move to Data Graphics
-const scale = (n: number) => (n * 13).toFixed(2);
-const createSpark = (
-  nums: number[]
-) => `<svg width="34" height="13" viewBox="0 0 34 13" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M1 ${scale(nums[0])}L5.5 ${scale(nums[1])}L11.5 ${scale(
-  nums[2]
-)}L17 ${scale(nums[3])}L21 ${scale(nums[4])}L28 ${scale(nums[5])}L33 ${scale(
-  nums[6]
-)}" stroke="#9CA3AF"/>
-</svg>`;
-
-function prepareDimensionData(data) {
+function prepareDimensionData(data, measureName) {
   if (!data) return;
 
   const rowCount = data?.length;
   // When using row headers, be careful not to accidentally merge cells
-  const rowHeaderData = range(0, rowCount, (_) => [
+  const rowHeaderData = data?.map((row) => [
     // Dim
     {
-      value: data.name,
+      value: row?.value,
     },
     // Measure total
     {
-      value: 23.4,
-      spark: createSpark(range(0, 7, (_) => Math.random())),
+      value: row?.total,
+      spark: createSparkline(row?.data, (v) => v[measureName]),
     },
     // Measure percent of total
     {
@@ -86,33 +78,128 @@ function prepareDimensionData(data) {
     },
   ]);
 
+  const columnCount = data?.[0]?.data?.length;
+  const columnHeaderData = data?.[0]?.data?.map((v) => [{ value: v.ts }]);
+
+  /* 
+    Important: regular-table expects body data in columnar format,
+    aka an array of arrays where outer array is the columns,
+    inner array is the row values for a specific column
+  */
+  const body = data?.map((v) => v?.data?.map((v) => v[measureName]));
+  const columnarBody = transposeArray(body, rowCount, columnCount);
+
   return {
     rowCount,
     rowHeaderData,
+    columnCount,
+    columnHeaderData,
+    body: columnarBody,
   };
 }
 
-function prepareTimeComparisonDate(data) {
-  if (!data) {
-    return;
+function prepareTimeData(data, measureName, hasTimeComparison) {
+  if (!data) return;
+
+  let rowHeaderData = [];
+  rowHeaderData.push([
+    { value: "Total" },
+    {
+      value: 228.4,
+      spark: createSparkline(data, (v) => v[measureName]),
+    },
+    { value: 44 + "%" },
+  ]);
+
+  const body = [];
+  body.push(data?.map((v) => v[measureName]));
+
+  const columnCount = data?.length;
+  const columnHeaderData = data?.map((v) => [{ value: v.ts }]);
+
+  if (hasTimeComparison) {
+    rowHeaderData = rowHeaderData.concat([
+      [
+        { value: "Previous" },
+        {
+          value: 128.4,
+          spark: createSparkline(data, (v) => v[`comparison.${measureName}`]),
+        },
+        { value: 24 + "%" },
+      ],
+      [{ value: "Percentage Change" }],
+      [{ value: "Absolute Change" }],
+    ]);
+
+    console.log(rowHeaderData);
+    body.push(data?.map((v) => v[`comparison.${measureName}`]));
+
+    body.push(
+      data?.map((v) => {
+        const comparisonValue = v[`comparison.${measureName}`];
+        const currentValue = v[measureName];
+        const comparisonPercChange =
+          comparisonValue && currentValue !== undefined && currentValue !== null
+            ? (currentValue - comparisonValue) / comparisonValue
+            : undefined;
+
+        return humanizeDataType(comparisonPercChange, FormatPreset.PERCENTAGE);
+      })
+    );
+
+    body.push(
+      data?.map((v) => {
+        const comparisonValue = v[`comparison.${measureName}`];
+        const currentValue = v[measureName];
+        return comparisonValue &&
+          currentValue !== undefined &&
+          currentValue !== null
+          ? currentValue - comparisonValue
+          : undefined;
+      })
+    );
   }
-  // todo add
+
+  const rowCount = rowHeaderData.length;
+  const columnarBody = transposeArray(body, rowCount, columnCount);
+
+  return {
+    rowCount,
+    rowHeaderData,
+    columnCount,
+    columnHeaderData,
+    body: columnarBody,
+  };
 }
 
 export function createTimeDimensionDataStore(ctx: StateManagers) {
   return derived(
     [ctx.dashboardStore, useTimeControlStore(ctx), useTimeSeriesDataStore(ctx)],
     ([dashboardStore, timeControls, timeSeries]) => {
+      const measureName = dashboardStore?.expandedMeasureName;
       let comparing;
       let data;
       if (dashboardStore?.selectedComparisonDimension) {
         comparing = "dimension";
-        data = prepareDimensionData(timeSeries?.dimensionTableData);
-      } else if (timeControls.showComparison) {
-        comparing = "time";
-        data = prepareTimeComparisonDate(timeSeries?.timeSeriesData);
+
+        // TODO: Fix types
+        const allFetched = timeSeries?.dimensionTableData?.every(
+          (v) => !v?.isFetching
+        );
+
+        if (allFetched) {
+          data = prepareDimensionData(
+            timeSeries?.dimensionTableData,
+            measureName
+          );
+        }
       } else {
-        comparing = "none";
+        comparing = timeControls.showComparison ? "time" : "none";
+        data = prepareTimeData(
+          timeSeries?.timeSeriesData,
+          measureName,
+          comparing === "time"
+        );
       }
 
       return { comparing, data };

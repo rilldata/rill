@@ -53,7 +53,6 @@ const columnHeaderData = range(0, MOCK_COL_CT, (i) => {
 });
 
 export function getRowHeaderData(pos: PivotPos) {
-  console.log(rowHeaderData);
   return rowHeaderData.slice(pos.y0, pos.y1);
 }
 

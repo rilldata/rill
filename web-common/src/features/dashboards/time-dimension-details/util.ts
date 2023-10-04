@@ -52,6 +52,16 @@ export const get2DBlocks = ({
   );
 };
 
-export function range(x0: number, x1: number, f: (x: number) => any) {
-  return Array.from(Array(x1 - x0).keys()).map((x) => f(x + x0));
+export function transposeArray(arr, rowCount, columnCount) {
+  const columnarBody = [];
+
+  for (let i = 0; i < columnCount; i++) {
+    const column = [];
+    for (let j = 0; j < rowCount; j++) {
+      column.push(arr[j][i]);
+    }
+    columnarBody.push(column);
+  }
+
+  return columnarBody;
 }

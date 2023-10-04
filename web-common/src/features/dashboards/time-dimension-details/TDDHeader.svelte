@@ -4,6 +4,7 @@
   import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import ComparisonSelector from "@rilldata/web-common/features/dashboards/time-controls/ComparisonSelector.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
@@ -15,11 +16,13 @@
   import { fly } from "svelte/transition";
   import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import { Chip } from "@rilldata/web-common/components/chip";
+  import { disabledChipColors } from "@rilldata/web-common/components/chip/chip-types";
 
   export let metricViewName: string;
   export let dimensionName: string;
 
   const queryClient = useQueryClient();
+  const dispatch = createEventDispatcher();
 
   $: dashboardStore = useDashboardStore(metricViewName);
 
@@ -30,8 +33,6 @@
   $: otherFilterKey = excludeMode ? "include" : "exclude";
 
   let searchToggle = false;
-
-  const dispatch = createEventDispatcher();
 
   let searchText = "";
   function onSearch() {
@@ -53,17 +54,24 @@
 <div
   class="grid grid-auto-cols justify-between grid-flow-col items-center p-1 pb-3"
 >
-  <div class="flex gap-x-4 font-bold">
-    <Chip label="Measure A">
+  <div class="flex gap-x-3 font-bold items-center">
+    <ComparisonSelector {metricViewName} chipStyle />
+
+    <Chip extraRounded={false} label="Measure A">
       <div slot="body" class="flex">Measure A</div>
     </Chip>
-    <span> | </span>
-    <Chip>
+    <span class="font-normal text-gray-400"> | </span>
+    <Chip {...disabledChipColors} extraPadding={false}>
       <div slot="body" class="flex">Time</div>
     </Chip>
-    <span> : </span>
+    <span class="font-normal text-gray-400"> : </span>
 
-    <Chip label="Measure A">
+    <Chip
+      {...disabledChipColors}
+      extraPadding={false}
+      extraRounded={false}
+      label="Measure A"
+    >
       <div slot="body" class="flex">Measure A</div>
     </Chip>
   </div>
