@@ -183,6 +183,9 @@ func (d Driver) Drop(cfgMap map[string]any, logger *zap.Logger) error {
 	}
 
 	if cfg.DBFilePath != "" {
+		if cfg.TableAsView {
+			return os.RemoveAll(filepath.Dir(cfg.DBFilePath))
+		}
 		err = os.Remove(cfg.DBFilePath)
 		if err != nil {
 			return err
@@ -191,9 +194,6 @@ func (d Driver) Drop(cfgMap map[string]any, logger *zap.Logger) error {
 		_ = os.Remove(cfg.DBFilePath + ".wal")
 		// also temove the temp dir
 		_ = os.RemoveAll(cfg.DBFilePath + ".tmp")
-		if cfg.TableAsView {
-			_ = os.RemoveAll(filepath.Dir(cfg.DBFilePath))
-		}
 	}
 
 	return nil

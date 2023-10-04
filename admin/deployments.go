@@ -155,7 +155,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	if err != nil {
 		_, err2 := rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
 			InstanceId: instanceID,
-			DropDb:     olapDriver == "duckdb", // Only drop DB if it's DuckDB
+			DropDb:     strings.Contains(olapDriver, "duckdb"), // Only drop DB if it's DuckDB
 		})
 		return nil, multierr.Combine(err, err2)
 	}
@@ -336,7 +336,7 @@ func (s *Service) teardownDeployment(ctx context.Context, proj *database.Project
 	// Delete the instance
 	_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
 		InstanceId: depl.RuntimeInstanceID,
-		DropDb:     proj.ProdOLAPDriver == "duckdb", // Only drop DB if it's DuckDB
+		DropDb:     strings.Contains(proj.ProdOLAPDriver, "duckdb"), // Only drop DB if it's DuckDB
 	})
 	if err != nil {
 		return err
