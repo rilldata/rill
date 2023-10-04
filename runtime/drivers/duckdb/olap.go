@@ -285,7 +285,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 	dbFile := filepath.Join(sourceDir, fmt.Sprintf("%s.db", newVersion))
 	db := dbName(name, newVersion)
 	// attach new db
-	err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ATTACH '%s' AS %q", dbFile, safeSQLName(db))})
+	err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ATTACH '%s' AS %s", dbFile, safeSQLName(db))})
 	if err != nil {
 		removeDBFile(dbFile)
 		return err
@@ -447,7 +447,7 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 
 	// drop view
 	err = c.Exec(ctx, &drivers.Statement{
-		Query:       fmt.Sprintf("DROP VIEW IF EXISTS %q", oldName),
+		Query:       fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(oldName)),
 		Priority:    100,
 		LongRunning: true,
 	})
