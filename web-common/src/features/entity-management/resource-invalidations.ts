@@ -37,18 +37,18 @@ export function invalidateResourceResponse(
 ) {
   // only process for the `ResourceKind` present in `UsedResourceKinds`
   if (!UsedResourceKinds[res.name.kind]) return;
-  // for main resources only invalidate if it became idle
-  if (
-    MainResourceKinds[res.name.kind] &&
-    res.resource.meta.reconcileStatus !==
-      V1ReconcileStatus.RECONCILE_STATUS_IDLE
-  )
-    return;
-
   console.log(
     `[${res.resource.meta.reconcileStatus}] ${res.name.kind}/${res.name.name}`
   );
+
   const instanceId = get(runtime).instanceId;
+  if (
+    MainResourceKinds[res.name.kind] &&
+    shouldSkipResource(queryClient, instanceId, res.resource)
+  ) {
+    return;
+  }
+
   // invalidations will wait until the re-fetched query is completed
   // so, we should not `await` here
   switch (res.event) {
@@ -60,6 +60,8 @@ export function invalidateResourceResponse(
       invalidateRemovedResource(queryClient, instanceId, res.resource);
       break;
   }
+
+  resourcesStore.doneReconciling(res.resource);
 
   // only re-fetch list queries for kinds in `MainResources`
   if (!MainResourceKinds[res.name.kind]) return;
@@ -129,6 +131,37 @@ async function invalidateRemovedResource(
       });
       break;
   }
+}
+
+// We should not invalidate queries when resource is either queued or is running reconcile
+function shouldSkipResource(
+  queryClient: QueryClient,
+  instanceId: string,
+  res: V1Resource
+) {
+  switch (res.meta.reconcileStatus) {
+    // ignore when something becomes pending
+    // TODO: once we have proper design for how to handle these status we should not ignore them
+    case V1ReconcileStatus.RECONCILE_STATUS_PENDING:
+    case V1ReconcileStatus.RECONCILE_STATUS_UNSPECIFIED:
+      return true;
+
+    // when it starts running only update the resource
+    case V1ReconcileStatus.RECONCILE_STATUS_RUNNING:
+      if (res.meta.name.kind !== ResourceKind.Model) {
+        // ignoring model for now since it will lead to bad UX while modelling
+        queryClient.refetchQueries(
+          getRuntimeServiceGetResourceQueryKey(instanceId, {
+            "name.name": res.meta.name.name,
+            "name.kind": res.meta.name.kind,
+          })
+        );
+        resourcesStore.reconciling(res);
+      }
+      return true;
+  }
+
+  return false;
 }
 
 export async function invalidateAllResources(queryClient: QueryClient) {
