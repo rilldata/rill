@@ -438,15 +438,15 @@ func (c *connection) reopenDB() error {
 	db.SetMaxOpenConns(c.config.PoolSize)
 	c.db = db
 
+	if !c.config.TableAsView {
+		return nil
+	}
+
 	conn, err := db.Connx(context.Background())
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
-
-	if !c.config.TableAsView {
-		return nil
-	}
 	dir := filepath.Dir(c.config.DBFilePath)
 	// get all .db files in sources directory
 	return doublestar.GlobWalk(os.DirFS(dir), "./*/*.db", func(path string, d fs.DirEntry) error {

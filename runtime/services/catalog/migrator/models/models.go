@@ -23,16 +23,7 @@ type modelMigrator struct{}
 func (m *modelMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts migrator.Options, catalogObj *drivers.CatalogEntry, logger *zap.Logger, ac activity.Client) error {
 	sql := catalogObj.GetModel().Sql
 	materialize := catalogObj.GetModel().Materialize
-	materializeType := getMaterializeType(materialize)
-	return olap.Exec(ctx, &drivers.Statement{
-		Query: fmt.Sprintf(
-			"CREATE OR REPLACE %s %q AS (%s)",
-			materializeType,
-			catalogObj.Name,
-			sql,
-		),
-		Priority: 100,
-	})
+	return olap.CreateTableAsSelect(ctx, catalogObj.Name, materialize, sql)
 }
 
 func (m *modelMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts migrator.Options, oldCatalogObj, newCatalogObj *drivers.CatalogEntry, logger *zap.Logger, ac activity.Client) error {
