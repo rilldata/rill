@@ -375,6 +375,16 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 	orderClause := "true"
 	subQueryOrderClause := "true"
 	for _, s := range q.Sort {
+		if s.MeasureName == q.DimensionName {
+			orderClause += ", 1"
+			if !s.Ascending {
+				orderClause += " DESC"
+			}
+			if dialect == drivers.DialectDuckDB {
+				orderClause += " NULLS LAST"
+			}
+			break
+		}
 		i, ok := measureMap[s.MeasureName]
 		if !ok {
 			return "", nil, fmt.Errorf("metrics view '%s' doesn't contain '%s' sort column", q.MetricsViewName, s.MeasureName)
