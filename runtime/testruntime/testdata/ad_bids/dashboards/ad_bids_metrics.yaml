@@ -17,10 +17,12 @@ dimensions:
 
 measures:
   - label: "Number of bids"
+    name: "bids_cnt"
     expression: count(*)
     description: ""
     format_preset: ""
   - label: "Average bid price"
+    name: "avg_price"
     expression: avg(bid_price)
     description: ""
     format_preset: ""
