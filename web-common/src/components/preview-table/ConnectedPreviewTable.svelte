@@ -1,13 +1,20 @@
 <script lang="ts">
+  import PreviewTable from "@rilldata/web-common/components/preview-table/PreviewTable.svelte";
+  import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
+  import {
+    ResourceKind,
+    useResource,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import {
     createQueryServiceTableColumns,
     createQueryServiceTableRows,
+    V1ReconcileStatus,
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
-  import { PreviewTable } from ".";
   import { runtime } from "../../runtime-client/runtime-store";
 
   export let objectName: string;
+  export let kind: ResourceKind;
   export let limit = 150;
 
   $: profileColumnsQuery = createQueryServiceTableColumns(
@@ -40,9 +47,13 @@
       columnOverscanAmount = 10;
     }, 1000);
   });
+
+  $: resource = useResource($runtime.instanceId, objectName, kind);
 </script>
 
-{#if rows && profileColumns}
+{#if $resource?.data?.meta?.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE}
+  <ReconcilingSpinner />
+{:else if rows && profileColumns}
   <PreviewTable
     {rows}
     columnNames={profileColumns}

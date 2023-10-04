@@ -3,7 +3,10 @@ import {
   useProjectParser,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { runtimeServiceListResources } from "@rilldata/web-common/runtime-client";
+import {
+  runtimeServiceListResources,
+  V1ReconcileStatus,
+} from "@rilldata/web-common/runtime-client";
 import type {
   V1ParseError,
   V1Resource,
@@ -20,10 +23,14 @@ export type ResourcesState = {
   // this is just a mapping of file path to resource name
   // storing the entire resource is not necessary since tanstack query will do that for the get resource api
   resources: Record<string, V1ResourceName>;
+  // array of paths currently reconciling
+  // we use path since parse error will only give us paths from ProjectParser
+  currentlyReconciling: Record<string, V1ResourceName>;
 };
 
 const { update, subscribe } = writable({
   resources: {},
+  currentlyReconciling: {},
 } as ResourcesState);
 
 const resourcesStoreReducers = {
@@ -35,6 +42,12 @@ const resourcesStoreReducers = {
         case ResourceKind.Model:
         case ResourceKind.MetricsView:
           this.setResource(resource);
+          if (
+            resource.meta.reconcileStatus ===
+            V1ReconcileStatus.RECONCILE_STATUS_RUNNING
+          ) {
+            this.reconciling(resource);
+          }
           break;
       }
     }
@@ -52,6 +65,30 @@ const resourcesStoreReducers = {
   deleteFile(filePath: string) {
     update((state) => {
       if (state.resources[filePath]) delete state.resources[filePath];
+      return state;
+    });
+  },
+
+  reconciling(resource: V1Resource) {
+    update((state) => {
+      for (const path of resource.meta.filePaths) {
+        state.currentlyReconciling[path] = resource.meta.name;
+      }
+      return state;
+    });
+  },
+
+  doneReconciling(resource: V1Resource) {
+    update((state) => {
+      if (resource.meta.name.kind === ResourceKind.ProjectParser) {
+        for (const parseError of resource.projectParser.state.parseErrors) {
+          delete state.currentlyReconciling[parseError.filePath];
+        }
+      } else {
+        for (const filePath of resource.meta.filePaths) {
+          delete state.currentlyReconciling[filePath];
+        }
+      }
       return state;
     });
   },
@@ -104,10 +141,6 @@ export function getAllErrorsForFile(
         // TODO: what should the error be for failed get resource API
         return [];
       }
-      console.log(
-        filePath,
-        projectParser.data?.projectParser?.state?.parseErrors
-      );
       return [
         ...(projectParser.data?.projectParser?.state?.parseErrors ?? []).filter(
           (e) => e.filePath === filePath
@@ -135,4 +168,14 @@ export function getFileHasErrors(
     [getAllErrorsForFile(queryClient, instanceId, filePath)],
     ([errors]) => errors.length > 0
   );
+}
+
+export function getReconcilingItems() {
+  return derived([resourcesStore], ([state]) => {
+    const currentlyReconciling = new Array<V1ResourceName>();
+    for (const filePath in state.currentlyReconciling) {
+      currentlyReconciling.push(state.currentlyReconciling[filePath]);
+    }
+    return currentlyReconciling;
+  });
 }
