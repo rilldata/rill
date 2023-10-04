@@ -41,8 +41,8 @@ type ColumnTimeseries struct {
 	SampleSize          int32                                             `json:"sample_size"`
 	TimeZone            string                                            `json:"time_zone,omitempty"`
 	Result              *ColumnTimeseriesResult                           `json:"-"`
-	FirstDayOfWeek      int32
-	FirstMonthOfYear    int32
+	FirstDayOfWeek      uint32
+	FirstMonthOfYear    uint32
 
 	// MetricsView-related fields. These can be removed when MetricsViewTimeSeries is refactored to a standalone implementation.
 	MetricsView       *runtimev1.MetricsView               `json:"-"`

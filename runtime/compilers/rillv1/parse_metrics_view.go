@@ -24,8 +24,8 @@ type metricsViewYAML struct {
 	SmallestTimeGrain  string           `yaml:"smallest_time_grain"`
 	DefaultTimeRange   string           `yaml:"default_time_range"`
 	AvailableTimeZones []string         `yaml:"available_time_zones"`
-	FirstDayOfWeek     string           `yaml:"first_day_of_week"`
-	FirstMonthOfYear   string           `yaml:"first_month_of_year"`
+	FirstDayOfWeek     uint32           `yaml:"first_day_of_week"`
+	FirstMonthOfYear   uint32           `yaml:"first_month_of_year"`
 	Dimensions         []*struct {
 		Name        string
 		Label       string

@@ -1295,6 +1295,8 @@ export interface V1MetricsView {
   /** Available time zones list preferred time zones using IANA location identifiers. */
   availableTimeZones?: string[];
   security?: MetricsViewSecurity;
+  firstDayOfWeek?: number;
+  firstMonthOfYear?: number;
 }
 
 export interface V1MapType {

@@ -154,6 +154,8 @@ func (q *MetricsViewTimeSeries) resolveDuckDB(ctx context.Context, rt *runtime.R
 		MetricsViewFilter: q.Filter,
 		TimeZone:          q.TimeZone,
 		MetricsViewPolicy: policy,
+		FirstDayOfWeek:    mv.FirstDayOfWeek,
+		FirstMonthOfYear:  mv.FirstMonthOfYear,
 	}
 	err = rt.Query(ctx, instanceID, tsq, priority)
 	if err != nil {
@@ -286,6 +288,7 @@ func (q *MetricsViewTimeSeries) buildDruidMetricsTimeseriesSQL(mv *runtimev1.Met
 	if q.TimeZone != "" {
 		timezone = q.TimeZone
 	}
+
 	args = append([]any{timezone}, args...)
 	sql := fmt.Sprintf(
 		`SELECT time_floor(%s, '%s', null, CAST(? AS VARCHAR)) AS %s, %s FROM %q WHERE %s GROUP BY 1 ORDER BY 1`,
