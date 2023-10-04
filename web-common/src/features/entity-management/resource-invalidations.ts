@@ -5,6 +5,7 @@ import {
   getRuntimeServiceListResourcesQueryKey,
   V1ReconcileStatus,
   V1Resource,
+  V1ResourceEvent,
 } from "@rilldata/web-common/runtime-client";
 import type { V1WatchResourcesResponse } from "@rilldata/web-common/runtime-client";
 import {
@@ -52,11 +53,11 @@ export function invalidateResourceResponse(
   // invalidations will wait until the re-fetched query is completed
   // so, we should not `await` here
   switch (res.event) {
-    case "RESOURCE_EVENT_WRITE":
+    case V1ResourceEvent.RESOURCE_EVENT_WRITE:
       invalidateResource(queryClient, instanceId, res.resource);
       break;
 
-    case "RESOURCE_EVENT_DELETE":
+    case V1ResourceEvent.RESOURCE_EVENT_DELETE:
       invalidateRemovedResource(queryClient, instanceId, res.resource);
       break;
   }
@@ -81,12 +82,7 @@ async function invalidateResource(
 ) {
   const failed = !!resource.meta.reconcileError;
 
-  queryClient.refetchQueries(
-    getRuntimeServiceGetResourceQueryKey(instanceId, {
-      "name.name": resource.meta.name.name,
-      "name.kind": resource.meta.name.kind,
-    })
-  );
+  refreshResource(queryClient, instanceId, resource);
   switch (resource.meta.name.kind) {
     case ResourceKind.Source:
     case ResourceKind.Model:
@@ -140,28 +136,33 @@ function shouldSkipResource(
   res: V1Resource
 ) {
   switch (res.meta.reconcileStatus) {
-    // ignore when something becomes pending
-    // TODO: once we have proper design for how to handle these status we should not ignore them
-    case V1ReconcileStatus.RECONCILE_STATUS_PENDING:
     case V1ReconcileStatus.RECONCILE_STATUS_UNSPECIFIED:
       return true;
 
-    // when it starts running only update the resource
+    case V1ReconcileStatus.RECONCILE_STATUS_PENDING:
+      refreshResource(queryClient, instanceId, res);
+      return true;
+
     case V1ReconcileStatus.RECONCILE_STATUS_RUNNING:
-      if (res.meta.name.kind !== ResourceKind.Model) {
-        // ignoring model for now since it will lead to bad UX while modelling
-        queryClient.refetchQueries(
-          getRuntimeServiceGetResourceQueryKey(instanceId, {
-            "name.name": res.meta.name.name,
-            "name.kind": res.meta.name.kind,
-          })
-        );
-        resourcesStore.reconciling(res);
-      }
+      refreshResource(queryClient, instanceId, res);
+      resourcesStore.reconciling(res);
       return true;
   }
 
   return false;
+}
+
+function refreshResource(
+  queryClient: QueryClient,
+  instanceId: string,
+  res: V1Resource
+) {
+  return queryClient.refetchQueries(
+    getRuntimeServiceGetResourceQueryKey(instanceId, {
+      "name.name": res.meta.name.name,
+      "name.kind": res.meta.name.kind,
+    })
+  );
 }
 
 export async function invalidateAllResources(queryClient: QueryClient) {
