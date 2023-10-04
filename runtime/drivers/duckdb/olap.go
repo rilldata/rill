@@ -342,6 +342,8 @@ func (c *connection) DropTable(ctx context.Context, name string, view bool) erro
 		})
 	}
 
+	// ignore query cancellations
+	ctx = context.WithValue(context.Background(), connCtxKey{}, connFromContext(ctx))
 	sourceDir := filepath.Join(filepath.Dir(c.config.DBFilePath), name)
 	version, exist, err := c.tableVersion(ctx, name)
 	if err != nil {
@@ -378,8 +380,9 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name string, byNam
 
 	if !c.config.TableAsView {
 		return c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("INSERT INTO %s %s (%s)", safeSQLName(name), insertByNameClause, sql),
-			Priority: 1,
+			Query:       fmt.Sprintf("INSERT INTO %s %s (%s)", safeSQLName(name), insertByNameClause, sql),
+			Priority:    1,
+			LongRunning: true,
 		})
 	}
 	version, exist, err := c.tableVersion(ctx, name)
@@ -390,8 +393,9 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name string, byNam
 		return fmt.Errorf("table %q does not exist", name)
 	}
 	return c.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("INSERT INTO %s.default %s (%s)", safeSQLName(dbName(name, version)), insertByNameClause, sql),
-		Priority: 1,
+		Query:       fmt.Sprintf("INSERT INTO %s.default %s (%s)", safeSQLName(dbName(name, version)), insertByNameClause, sql),
+		Priority:    1,
+		LongRunning: true,
 	})
 }
 
@@ -415,6 +419,8 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 		})
 	}
 
+	// ignore query cancellations
+	ctx = context.WithValue(context.Background(), connCtxKey{}, connFromContext(ctx))
 	newSrcDir := filepath.Join(filepath.Dir(c.config.DBFilePath), newName)
 	// new name should not exist
 	exist := dirExist(newSrcDir)
