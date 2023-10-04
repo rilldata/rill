@@ -23,7 +23,7 @@ type modelMigrator struct{}
 func (m *modelMigrator) Create(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts migrator.Options, catalogObj *drivers.CatalogEntry, logger *zap.Logger, ac activity.Client) error {
 	sql := catalogObj.GetModel().Sql
 	materialize := catalogObj.GetModel().Materialize
-	return olap.CreateTableAsSelect(ctx, catalogObj.Name, materialize, sql)
+	return olap.CreateTableAsSelect(ctx, catalogObj.Name, !materialize, sql)
 }
 
 func (m *modelMigrator) Update(ctx context.Context, olap drivers.OLAPStore, repo drivers.RepoStore, opts migrator.Options, oldCatalogObj, newCatalogObj *drivers.CatalogEntry, logger *zap.Logger, ac activity.Client) error {
