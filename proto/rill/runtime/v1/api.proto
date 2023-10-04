@@ -507,7 +507,7 @@ message WatchLogsRequest {
 }
 
 message WatchLogsResponse {
-  repeated Log logs = 1;
+  Log log = 1;
 }
 
 message ListResourcesRequest {

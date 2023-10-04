@@ -4792,11 +4792,8 @@ definitions:
   v1WatchLogsResponse:
     type: object
     properties:
-      logs:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1Log'
+      log:
+        $ref: '#/definitions/v1Log'
   v1WatchResourcesResponse:
     type: object
     properties:

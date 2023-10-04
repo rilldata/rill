@@ -411,7 +411,7 @@ export interface V1WatchResourcesResponse {
 }
 
 export interface V1WatchLogsResponse {
-  logs?: V1Log[];
+  log?: V1Log;
 }
 
 export interface V1WatchFilesResponse {

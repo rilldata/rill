@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/dag"
+	"github.com/rilldata/rill/runtime/pkg/logbuffer"
 	"github.com/rilldata/rill/runtime/pkg/schedule"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -68,6 +69,7 @@ type Controller struct {
 	InstanceID  string
 	Logger      *slog.Logger
 	Activity    activity.Client
+	Logs        *logbuffer.Buffer
 	mu          sync.RWMutex
 	reconcilers map[string]Reconciler
 	catalog     *catalogCache
@@ -116,7 +118,12 @@ func NewController(ctx context.Context, rt *Runtime, instanceID string, logger *
 		logger = logger.With(zap.String("instance_id", instanceID))
 		logger = logger.Named("console")
 	}
-	c.Logger = slog.New(zapslog.HandlerOptions{LoggerName: "console"}.New(logger.Core()))
+
+	c.Logs = logbuffer.NewBuffer(rt.opts.ControllerLogBufferCapacity, rt.opts.ControllerLogBufferSizeBytes)
+	c.Logger = slog.New(&duplicatingHandler{
+		zapHandler: zapslog.HandlerOptions{LoggerName: "console"}.New(logger.Core()),
+		logs:       c.Logs,
+	})
 
 	cc, err := newCatalogCache(ctx, c, c.InstanceID)
 	if err != nil {
@@ -125,6 +132,31 @@ func NewController(ctx context.Context, rt *Runtime, instanceID string, logger *
 	c.catalog = cc
 
 	return c, nil
+}
+
+type duplicatingHandler struct {
+	zapHandler *zapslog.Handler
+	logs       *logbuffer.Buffer
+}
+
+func (d *duplicatingHandler) Enabled(ctx context.Context, level slog.Level) bool {
+	return d.zapHandler.Enabled(ctx, level)
+}
+
+func (d *duplicatingHandler) Handle(ctx context.Context, record slog.Record) error {
+	err := d.zapHandler.Handle(ctx, record)
+	if err != nil {
+		return err
+	}
+	return d.logs.Add(record)
+}
+
+func (d *duplicatingHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	panic("not implemented")
+}
+
+func (d *duplicatingHandler) WithGroup(name string) slog.Handler {
+	panic("not implemented")
 }
 
 // Run starts and runs the controller's event loop.

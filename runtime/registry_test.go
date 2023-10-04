@@ -482,12 +482,14 @@ func newTestRuntime(t *testing.T) *Runtime {
 	}
 
 	opts := &Options{
-		ConnectionCacheSize:     100,
-		MetastoreConnector:      "metastore",
-		QueryCacheSizeBytes:     int64(datasize.MB) * 100,
-		SecurityEngineCacheSize: 100,
-		AllowHostAccess:         true,
-		SystemConnectors:        globalConnectors,
+		ConnectionCacheSize:          100,
+		MetastoreConnector:           "metastore",
+		QueryCacheSizeBytes:          int64(datasize.MB) * 100,
+		SecurityEngineCacheSize:      100,
+		AllowHostAccess:              true,
+		SystemConnectors:             globalConnectors,
+		ControllerLogBufferCapacity:  10000,
+		ControllerLogBufferSizeBytes: int64(datasize.MB * 16),
 	}
 	rt, err := New(context.Background(), opts, zap.NewNop(), activity.NewNoopClient(), email.New(email.NewNoopSender()))
 	t.Cleanup(func() {
