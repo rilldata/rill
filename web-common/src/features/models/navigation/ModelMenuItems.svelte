@@ -54,10 +54,6 @@
     $runtime.instanceId,
     $modelQuery.data?.model
   );
-  $: console.log(
-    JSON.stringify($modelQuery.data?.model),
-    $modelSchema.data?.schema
-  );
 
   const createDashboardFromModel = async (modelName: string) => {
     if (!$modelQuery.data?.model) {
