@@ -1108,6 +1108,10 @@ func (c *Controller) markPending(n *runtimev1.ResourceName) (skip bool, err erro
 		if err != nil {
 			return false, err
 		}
+		if !r.Meta.Hidden {
+			logArgs := []any{slog.String("name", n.Name), slog.String("kind", unqualifiedKind(n.Kind)), slog.Any("error", errCyclicDependency)}
+			c.Logger.Error("Skipping resource", logArgs...)
+		}
 		return true, nil
 	}
 
