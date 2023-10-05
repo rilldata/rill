@@ -12,7 +12,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
-	"github.com/rilldata/rill/runtime/drivers"
 	"golang.org/x/exp/slog"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -445,16 +444,5 @@ func (r *ModelReconciler) createModel(ctx context.Context, self *runtimev1.Resou
 		defer cancel()
 	}
 
-	var typ string
-	if view {
-		typ = "VIEW"
-	} else {
-		typ = "TABLE"
-	}
-
-	return olap.Exec(ctx, &drivers.Statement{
-		Query:       fmt.Sprintf("CREATE OR REPLACE %s %s AS (%s)", typ, safeSQLName(tableName), sql),
-		Priority:    100,
-		LongRunning: true,
-	})
+	return olap.CreateTableAsSelect(ctx, tableName, view, sql)
 }
