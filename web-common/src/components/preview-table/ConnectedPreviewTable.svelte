@@ -44,7 +44,7 @@
   });
 </script>
 
-{#if loading || !objectName}
+{#if loading}
   <ReconcilingSpinner />
 {:else if rows && profileColumns}
   <PreviewTable
