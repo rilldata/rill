@@ -85,9 +85,7 @@ func TestReconcile(t *testing.T) {
 			testutils.AssertMigration(t, result, 0, 0, 0, 0, []string{})
 
 			// delete from olap
-			err = s.Olap.Exec(context.Background(), &drivers.Statement{
-				Query: "drop table AdBids",
-			})
+			err = s.Olap.DropTable(context.Background(), "AdBids", false)
 			require.NoError(t, err)
 			result, err = s.Reconcile(context.Background(), tt.config)
 			require.NoError(t, err)

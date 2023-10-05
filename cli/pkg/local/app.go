@@ -111,7 +111,9 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 	}
 
 	// If the OLAP is the default OLAP (DuckDB in stage.db), we make it relative to the project directory (not the working directory)
+	isDefault := false
 	if olapDriver == DefaultOLAPDriver && olapDSN == DefaultOLAPDSN {
+		isDefault = true
 		olapDSN = path.Join(projectPath, olapDSN)
 	}
 
@@ -131,6 +133,9 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 	olapCfg := map[string]string{"dsn": olapDSN}
 	if olapDriver == "duckdb" {
 		olapCfg["pool_size"] = "4"
+		if !isDefault {
+			olapCfg["error_on_incompatible_version"] = "true"
+		}
 	}
 
 	// Create instance with its repo set to the project directory

@@ -3,6 +3,10 @@ package duckdb
 import (
 	"context"
 	"errors"
+	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -231,4 +235,28 @@ func prepareConn(t *testing.T) drivers.Handle {
 	require.NoError(t, err)
 
 	return conn
+}
+
+func Test_safeSQLString(t *testing.T) {
+	tempDir := t.TempDir()
+	path := filepath.Join(tempDir, "let's t@st \"weird\" dirs")
+	err := os.Mkdir(path, fs.ModePerm)
+	require.NoError(t, err)
+
+	dbFile := filepath.Join(path, "st@g3's.db")
+	conn, err := Driver{}.Open(map[string]any{"dsn": dbFile}, false, activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	require.NoError(t, conn.Close())
+
+	conn, err = Driver{}.Open(map[string]any{}, false, activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+
+	olap, ok := conn.AsOLAP("")
+	require.True(t, ok)
+
+	err = olap.Exec(context.Background(), &drivers.Statement{Query: fmt.Sprintf("ATTACH '%s'", dbFile)})
+	require.Error(t, err)
+
+	err = olap.Exec(context.Background(), &drivers.Statement{Query: fmt.Sprintf("ATTACH %s", safeSQLString(dbFile))})
+	require.NoError(t, err)
 }

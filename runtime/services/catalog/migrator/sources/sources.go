@@ -2,7 +2,6 @@ package sources
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"reflect"
@@ -55,53 +54,28 @@ func (m *sourceMigrator) Update(ctx context.Context,
 	err := ingestSource(ctx, olap, repo, opts, newCatalogObj, tempName, logger, ac)
 	if err != nil {
 		// cleanup of temp table. can exist and still error out in incremental ingestion
-		_ = olap.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s", tempName),
-			Priority: 100,
-		})
+		_ = olap.DropTable(ctx, tempName, false)
 		// return the original error. error for dropping is less important for the user
 		return err
 	}
 
-	return olap.WithConnection(ctx, 100, true, true, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
-		_, err = conn.ExecContext(ctx, fmt.Sprintf("DROP TABLE IF EXISTS %s", apiSource.Name))
-		if err != nil {
-			return err
-		}
-
-		_, err = conn.ExecContext(ctx, fmt.Sprintf("ALTER TABLE %s RENAME TO %s", tempName, apiSource.Name))
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
+	return olap.RenameTable(ctx, tempName, apiSource.Name, false)
 }
 
 func (m *sourceMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalogObj *drivers.CatalogEntry) error {
 	if strings.EqualFold(from, catalogObj.Name) {
 		tempName := fmt.Sprintf("__rill_temp_%s", from)
-		err := olap.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("ALTER TABLE %s RENAME TO %s", from, tempName),
-			Priority: 100,
-		})
+		err := olap.RenameTable(ctx, from, tempName, false)
 		if err != nil {
 			return err
 		}
 		from = tempName
 	}
-
-	return olap.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("ALTER TABLE %s RENAME TO %s", from, catalogObj.Name),
-		Priority: 100,
-	})
+	return olap.RenameTable(ctx, from, catalogObj.Name, false)
 }
 
 func (m *sourceMigrator) Delete(ctx context.Context, olap drivers.OLAPStore, catalogObj *drivers.CatalogEntry) error {
-	return olap.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s", catalogObj.Name),
-		Priority: 100,
-	})
+	return olap.DropTable(ctx, catalogObj.Name, false)
 }
 
 func (m *sourceMigrator) GetDependencies(ctx context.Context, olap drivers.OLAPStore, catalog *drivers.CatalogEntry) ([]string, []*drivers.CatalogEntry) {
