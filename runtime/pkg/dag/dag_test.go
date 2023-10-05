@@ -17,6 +17,15 @@ func TestAcyclic(t *testing.T) {
 	require.ElementsMatch(t, []int{1, 2, 3}, d.Descendents(4))
 }
 
+func TestSelfReference(t *testing.T) {
+	d := New(hash)
+	require.False(t, d.Add(1, 1))
+
+	d = New(hash)
+	require.True(t, d.Add(2, 1))
+	require.False(t, d.Add(1, 1))
+}
+
 func TestRetention(t *testing.T) {
 	d := New(hash)
 	require.True(t, d.Add(1, 2))

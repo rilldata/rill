@@ -483,6 +483,13 @@ func (c *catalogCache) clone(r *runtimev1.Resource) *runtimev1.Resource {
 	return proto.Clone(r).(*runtimev1.Resource)
 }
 
+// isCyclic returns true if the resource has cyclic references.
+// It must be checked before accessing the resource in c.dag (since cyclic resources are not added to the DAG).
+func (c *catalogCache) isCyclic(n *runtimev1.ResourceName) bool {
+	_, ok := c.cyclic[nameStr(n)]
+	return ok
+}
+
 // retryCyclicRefs attempts to re-link resources into the DAG that were previously rejected due to cyclic references.
 // It returns a list of resource names that were successfully linked into the DAG.
 func (c *catalogCache) retryCyclicRefs() []*runtimev1.ResourceName {
