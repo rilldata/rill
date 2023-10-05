@@ -40,6 +40,7 @@
     "axios": "^0.27.2",
     "codemirror": "^6.3.2",
     "date-fns": "^2.30.0",
+    "duration-fns": "^3.0.2",
     "eslint": "^8.16.0",
     "eslint-config-prettier": "^8.3.0",
     "jest": "^27.5.1",

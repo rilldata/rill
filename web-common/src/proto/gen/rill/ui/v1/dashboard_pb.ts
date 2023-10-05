@@ -224,7 +224,7 @@ proto3.util.setEnumType(DashboardState_LeaderboardSortDirection, "rill.ui.v1.Das
 ]);
 
 /**
- * *
+ *
  * SortType is used to determine how to sort the leaderboard
  * and dimension detail table, as well as where to place the
  * sort arrow.
@@ -294,6 +294,8 @@ proto3.util.setEnumType(DashboardState_LeaderboardSortType, "rill.ui.v1.Dashboar
  */
 export class DashboardTimeRange extends Message<DashboardTimeRange> {
   /**
+   * Deprecated
+   *
    * @generated from field: optional string name = 1;
    */
   name?: string;
@@ -308,6 +310,16 @@ export class DashboardTimeRange extends Message<DashboardTimeRange> {
    */
   timeEnd?: Timestamp;
 
+  /**
+   * @generated from field: optional rill.ui.v1.DashboardTimeRange.Type type = 4;
+   */
+  type?: DashboardTimeRange_Type;
+
+  /**
+   * @generated from field: optional string iso_duration = 5;
+   */
+  isoDuration?: string;
+
   constructor(data?: PartialMessage<DashboardTimeRange>) {
     super();
     proto3.util.initPartial(data, this);
@@ -319,6 +331,8 @@ export class DashboardTimeRange extends Message<DashboardTimeRange> {
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 2, name: "time_start", kind: "message", T: Timestamp, opt: true },
     { no: 3, name: "time_end", kind: "message", T: Timestamp, opt: true },
+    { no: 4, name: "type", kind: "enum", T: proto3.getEnumType(DashboardTimeRange_Type), opt: true },
+    { no: 5, name: "iso_duration", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardTimeRange {
@@ -337,4 +351,42 @@ export class DashboardTimeRange extends Message<DashboardTimeRange> {
     return proto3.util.equals(DashboardTimeRange, a, b);
   }
 }
+
+/**
+ * @generated from enum rill.ui.v1.DashboardTimeRange.Type
+ */
+export enum DashboardTimeRange_Type {
+  /**
+   * @generated from enum value: TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * Must specify time_start and time_end directly
+   *
+   * @generated from enum value: TYPE_CUSTOM = 1;
+   */
+  CUSTOM = 1,
+
+  /**
+   * iso_duration is relative to data. EG: 1D => last day of data.
+   *
+   * @generated from enum value: TYPE_RELATIVE_TO_DATA = 2;
+   */
+  RELATIVE_TO_DATA = 2,
+
+  /**
+   * iso_duration is relative to current date/time. EG: 1D => today
+   *
+   * @generated from enum value: TYPE_CURRENT = 3;
+   */
+  CURRENT = 3,
+}
+// Retrieve enum metadata with: proto3.getEnumType(DashboardTimeRange_Type)
+proto3.util.setEnumType(DashboardTimeRange_Type, "rill.ui.v1.DashboardTimeRange.Type", [
+  { no: 0, name: "TYPE_UNSPECIFIED" },
+  { no: 1, name: "TYPE_CUSTOM" },
+  { no: 2, name: "TYPE_RELATIVE_TO_DATA" },
+  { no: 3, name: "TYPE_CURRENT" },
+]);
 

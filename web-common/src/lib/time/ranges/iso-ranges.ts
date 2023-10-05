@@ -1,0 +1,116 @@
+import { transformDate } from "@rilldata/web-common/lib/time/transforms";
+import {
+  Period,
+  RelativeTimeTransformation,
+  TimeOffsetType,
+  TimeTruncationType,
+} from "@rilldata/web-common/lib/time/types";
+import { Duration, parse, toString, subtract } from "duration-fns";
+
+/**
+ * Converts an ISO duration to a time range.
+ * Pass in the anchor to specify when the range should be from.
+ * NOTE: This should only be used for default time range. UI presets have their own settings.
+ */
+export function isoDurationToTimeRange(
+  isoDuration: string,
+  anchor: Date,
+  zone = "Etc/UTC"
+) {
+  const startTime = transformDate(
+    anchor,
+    getStartTimeTransformations(isoDuration),
+    zone
+  );
+  const endTime = transformDate(
+    anchor,
+    getEndTimeTransformations(isoDuration),
+    zone
+  );
+  return {
+    startTime,
+    endTime,
+  };
+}
+
+function getStartTimeTransformations(
+  isoDuration: string
+): Array<RelativeTimeTransformation> {
+  const duration = parse(isoDuration);
+  const period = getSmallestUnit(duration);
+  return [
+    {
+      period, // this is the offset alias for the given time range alias
+      truncationType: TimeTruncationType.START_OF_PERIOD,
+    }, // truncation
+    // then offset that by -1 of smallest period
+    {
+      duration: toString(subtractFromPeriod(duration, period)),
+      operationType: TimeOffsetType.SUBTRACT,
+    }, // operation
+  ];
+}
+
+function getEndTimeTransformations(
+  isoDuration: string
+): Array<RelativeTimeTransformation> {
+  const duration = parse(isoDuration);
+  const period = getSmallestUnit(duration);
+  return [
+    {
+      duration: period,
+      operationType: TimeOffsetType.ADD,
+    },
+    {
+      period,
+      truncationType: TimeTruncationType.START_OF_PERIOD,
+    },
+  ];
+}
+
+const PeriodAndUnits: Array<{
+  period: Period;
+  unit: keyof Duration;
+}> = [
+  {
+    period: Period.MINUTE,
+    unit: "minutes",
+  },
+  {
+    period: Period.HOUR,
+    unit: "hours",
+  },
+  {
+    period: Period.DAY,
+    unit: "days",
+  },
+  {
+    period: Period.WEEK,
+    unit: "weeks",
+  },
+  {
+    period: Period.MONTH,
+    unit: "months",
+  },
+  {
+    period: Period.YEAR,
+    unit: "years",
+  },
+];
+const PeriodToUnitsMap: Partial<Record<Period, keyof Duration>> = {};
+PeriodAndUnits.forEach(({ period, unit }) => (PeriodToUnitsMap[period] = unit));
+
+function getSmallestUnit(duration: Duration) {
+  for (const { period, unit } of PeriodAndUnits) {
+    if (duration[unit]) {
+      return period;
+    }
+  }
+
+  return undefined;
+}
+
+function subtractFromPeriod(duration: Duration, period: Period) {
+  if (!PeriodToUnitsMap[period]) return duration;
+  return subtract(duration, { [PeriodToUnitsMap[period]]: 1 });
+}
