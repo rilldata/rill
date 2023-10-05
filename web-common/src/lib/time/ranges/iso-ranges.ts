@@ -1,8 +1,11 @@
+import { convertTimeRangePreset } from "@rilldata/web-common/lib/time/ranges/index";
 import { transformDate } from "@rilldata/web-common/lib/time/transforms";
 import {
   Period,
   RelativeTimeTransformation,
   TimeOffsetType,
+  TimeRange,
+  TimeRangePreset,
   TimeTruncationType,
 } from "@rilldata/web-common/lib/time/types";
 import { Duration, parse, toString, subtract } from "duration-fns";
@@ -30,6 +33,44 @@ export function isoDurationToTimeRange(
   return {
     startTime,
     endTime,
+  };
+}
+
+const ISODurationToTimeRangePreset: Record<
+  string,
+  keyof typeof TimeRangePreset
+> = {
+  PT6H: TimeRangePreset.LAST_SIX_HOURS,
+  PT24H: TimeRangePreset.LAST_24_HOURS,
+  P1D: TimeRangePreset.LAST_24_HOURS,
+  P7D: TimeRangePreset.LAST_7_DAYS,
+  P14D: TimeRangePreset.LAST_14_DAYS,
+  P4W: TimeRangePreset.LAST_4_WEEKS,
+  inf: TimeRangePreset.ALL_TIME,
+};
+export function isoDurationToFullTimeRange(
+  isoDuration: string,
+  start: Date,
+  end: Date,
+  zone = "Etc/UTC"
+): TimeRange {
+  if (!isoDuration) {
+    return convertTimeRangePreset(TimeRangePreset.ALL_TIME, start, end, zone);
+  }
+  if (isoDuration in ISODurationToTimeRangePreset) {
+    return convertTimeRangePreset(
+      ISODurationToTimeRangePreset[isoDuration],
+      start,
+      end,
+      zone
+    );
+  }
+
+  const { startTime, endTime } = isoDurationToTimeRange(isoDuration, end, zone);
+  return {
+    name: TimeRangePreset.CUSTOM,
+    start: startTime,
+    end: endTime,
   };
 }
 

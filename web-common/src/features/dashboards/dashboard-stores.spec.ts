@@ -263,7 +263,8 @@ describe("dashboard-stores", () => {
       // update the mirrored dashboard mimicking meta query update
       metricsExplorerStore.sync(
         AD_BIDS_MIRROR_NAME,
-        AD_BIDS_WITH_DELETED_DIMENSION
+        AD_BIDS_WITH_DELETED_DIMENSION,
+        undefined
       );
       // assert that the filter for removed dimension is not present anymore
       assertMetricsView(
@@ -291,20 +292,24 @@ describe("dashboard-stores", () => {
       // create a mirror from state
       createAdBidsMirrorInStore(get(mock).data);
       // update the mirrored dashboard mimicking meta query update
-      metricsExplorerStore.sync(AD_BIDS_MIRROR_NAME, {
-        name: "AdBids",
-        measures: [
-          {
-            name: AD_BIDS_IMPRESSIONS_MEASURE,
-            expression: "count(*)",
-          },
-        ],
-        dimensions: [
-          {
-            name: AD_BIDS_PUBLISHER_DIMENSION,
-          },
-        ],
-      });
+      metricsExplorerStore.sync(
+        AD_BIDS_MIRROR_NAME,
+        {
+          name: "AdBids",
+          measures: [
+            {
+              name: AD_BIDS_IMPRESSIONS_MEASURE,
+              expression: "count(*)",
+            },
+          ],
+          dimensions: [
+            {
+              name: AD_BIDS_PUBLISHER_DIMENSION,
+            },
+          ],
+        },
+        undefined
+      );
       // assert that the selected measure is reset to the 1st available one
       expect(
         get(metricsExplorerStore).entities[AD_BIDS_MIRROR_NAME]
@@ -324,7 +329,8 @@ describe("dashboard-stores", () => {
       // update the mirrored dashboard mimicking meta query update
       metricsExplorerStore.sync(
         AD_BIDS_MIRROR_NAME,
-        AD_BIDS_WITH_DELETED_DIMENSION
+        AD_BIDS_WITH_DELETED_DIMENSION,
+        undefined
       );
       // assert that the selected dimension is cleared
       expect(

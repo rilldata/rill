@@ -18,14 +18,12 @@ import {
 import {
   convertTimeRangePreset,
   getAdjustedFetchTime,
-  ISODurationToTimePreset,
 } from "@rilldata/web-common/lib/time/ranges";
 import {
   TimeComparisonOption,
   TimeRange,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
-import type { TimeRangeType } from "@rilldata/web-common/lib/time/types";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
   createQueryServiceColumnTimeRange,
@@ -58,7 +56,6 @@ export type TimeControlState = {
   isFetching: boolean;
 
   // Computed properties from all time range query
-  defaultTimeRange?: TimeRangeType;
   minTimeGrain?: V1TimeGrain;
   allTimeRange?: TimeRange;
 
@@ -106,9 +103,6 @@ export function createTimeControlStore(ctx: StateManagers) {
         start: new Date(timeRangeResponse.data.timeRangeSummary.min),
         end: new Date(timeRangeResponse.data.timeRangeSummary.max),
       };
-      const defaultTimeRange = ISODurationToTimePreset(
-        metricsView.data.defaultTimeRange
-      );
       const minTimeGrain =
         (metricsView.data.smallestTimeGrain as V1TimeGrain) ||
         V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
@@ -127,7 +121,6 @@ export function createTimeControlStore(ctx: StateManagers) {
 
       return {
         isFetching: false,
-        defaultTimeRange,
         minTimeGrain,
         allTimeRange,
         ready: true,

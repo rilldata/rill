@@ -9,10 +9,8 @@ import {
 import { getTimeComparisonParametersForComponent } from "@rilldata/web-common/lib/time/comparisons";
 import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
 import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
-import {
-  ISODurationToTimePreset,
-  convertTimeRangePreset,
-} from "@rilldata/web-common/lib/time/ranges";
+import { ISODurationToTimePreset } from "@rilldata/web-common/lib/time/ranges";
+import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import type {
   DashboardTimeControls,
   ScrubRange,
@@ -253,20 +251,54 @@ function setDefaultTimeRange(
   metricsExplorer: MetricsExplorerEntity,
   fullTimeRange: V1ColumnTimeRangeResponse | undefined
 ) {
-  // This function implementation mirrors some code in the metricsExplorer.init() function
   if (!fullTimeRange) return;
-  const preset = ISODurationToTimePreset(metricsView.defaultTimeRange, true);
   const timeZone = get(getLocalUserPreferences()).timeZone;
   const fullTimeStart = new Date(fullTimeRange.timeRangeSummary.min);
   const fullTimeEnd = new Date(fullTimeRange.timeRangeSummary.max);
-  const timeRange = convertTimeRangePreset(
-    preset,
+  const timeRange = isoDurationToFullTimeRange(
+    metricsView.defaultTimeRange,
     fullTimeStart,
     fullTimeEnd,
     timeZone
   );
-  metricsExplorer.selectedTimeRange = timeRange;
+  const timeGrain = getDefaultTimeGrain(timeRange.start, timeRange.end);
+  metricsExplorer.selectedTimeRange = {
+    ...timeRange,
+    interval: timeGrain.grain,
+  };
   setSelectedScrubRange(metricsExplorer, undefined);
+  setDefaultComparisonTimeRange(metricsView, metricsExplorer, fullTimeRange);
+}
+
+function setDefaultComparisonTimeRange(
+  metricsView: V1MetricsView,
+  metricsExplorer: MetricsExplorerEntity,
+  fullTimeRange: V1ColumnTimeRangeResponse | undefined
+) {
+  const preset = ISODurationToTimePreset(metricsView.defaultTimeRange, true);
+  const comparisonOption = DEFAULT_TIME_RANGES[preset]
+    ?.defaultComparison as TimeComparisonOption;
+  if (!comparisonOption) return;
+
+  const fullTimeStart = new Date(fullTimeRange.timeRangeSummary.min);
+  const fullTimeEnd = new Date(fullTimeRange.timeRangeSummary.max);
+  const comparisonRange = getTimeComparisonParametersForComponent(
+    comparisonOption,
+    fullTimeStart,
+    fullTimeEnd,
+    metricsExplorer.selectedTimeRange.start,
+    metricsExplorer.selectedTimeRange.end
+  );
+  if (comparisonRange.isComparisonRangeAvailable) {
+    metricsExplorer.selectedComparisonTimeRange = {
+      name: comparisonOption,
+      start: comparisonRange.start,
+      end: comparisonRange.end,
+    };
+    metricsExplorer.showTimeComparison = true;
+    metricsExplorer.leaderboardContextColumn =
+      LeaderboardContextColumn.DELTA_PERCENT;
+  }
 }
 
 const metricViewReducers = {
@@ -277,53 +309,6 @@ const metricViewReducers = {
   ) {
     update((state) => {
       if (state.entities[name]) return state;
-
-      const timeSelections: Partial<MetricsExplorerEntity> = {};
-      if (fullTimeRange) {
-        const timeZone = get(getLocalUserPreferences()).timeZone;
-        const fullTimeStart = new Date(fullTimeRange.timeRangeSummary.min);
-        const fullTimeEnd = new Date(fullTimeRange.timeRangeSummary.max);
-        const preset = ISODurationToTimePreset(
-          metricsView.defaultTimeRange,
-          true
-        );
-
-        const timeRange = convertTimeRangePreset(
-          preset,
-          fullTimeStart,
-          fullTimeEnd,
-          timeZone
-        );
-        const timeGrain = getDefaultTimeGrain(timeRange.start, timeRange.end);
-        timeSelections.selectedTimezone = timeZone;
-        timeSelections.selectedTimeRange = {
-          ...timeRange,
-          interval: timeGrain.grain,
-        };
-        timeSelections.lastDefinedScrubRange = undefined;
-
-        const comparisonOption = DEFAULT_TIME_RANGES[preset]
-          ?.defaultComparison as TimeComparisonOption;
-        if (comparisonOption) {
-          const comparisonRange = getTimeComparisonParametersForComponent(
-            comparisonOption,
-            fullTimeStart,
-            fullTimeEnd,
-            timeRange.start,
-            timeRange.end
-          );
-          if (comparisonRange.isComparisonRangeAvailable) {
-            timeSelections.selectedComparisonTimeRange = {
-              name: comparisonOption,
-              start: comparisonRange.start,
-              end: comparisonRange.end,
-            };
-            timeSelections.showTimeComparison = true;
-            timeSelections.leaderboardContextColumn =
-              LeaderboardContextColumn.DELTA_PERCENT;
-          }
-        }
-      }
 
       state.entities[name] = {
         name,
@@ -350,8 +335,10 @@ const metricViewReducers = {
         sortDirection: SortDirection.DESCENDING,
 
         showTimeComparison: false,
-        ...timeSelections,
       };
+
+      // set default time range
+      setDefaultTimeRange(metricsView, state.entities[name], fullTimeRange);
 
       updateMetricsExplorerProto(state.entities[name]);
       state.entities[name].defaultProto = state.entities[name].proto;
@@ -390,6 +377,7 @@ const metricViewReducers = {
 
       // set default time range
       setDefaultTimeRange(metricsView, metricsExplorer, fullTimeRange);
+      // TODO: update defaultProto
     });
   },
 
