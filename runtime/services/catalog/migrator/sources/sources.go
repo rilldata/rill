@@ -2,7 +2,6 @@ package sources
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"reflect"
@@ -60,14 +59,7 @@ func (m *sourceMigrator) Update(ctx context.Context,
 		return err
 	}
 
-	return olap.WithConnection(ctx, 100, true, true, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
-		err = olap.DropTable(ctx, apiSource.Name, false)
-		if err != nil {
-			return err
-		}
-
-		return olap.RenameTable(ctx, tempName, apiSource.Name, false)
-	})
+	return olap.RenameTable(ctx, tempName, apiSource.Name, false)
 }
 
 func (m *sourceMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, from string, catalogObj *drivers.CatalogEntry) error {

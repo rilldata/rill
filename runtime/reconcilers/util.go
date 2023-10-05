@@ -2,7 +2,6 @@ package reconcilers
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
@@ -118,38 +117,26 @@ func olapForceRenameTable(ctx context.Context, c *runtime.Controller, connector,
 	}
 	defer release()
 
-	existingTo, _ := olap.InformationSchema().Lookup(ctx, toName)
+	// Infer SQL keyword for the table type
+	var typ string
+	if fromIsView {
+		typ = "VIEW"
+	} else {
+		typ = "TABLE"
+	}
 
-	return olap.WithConnection(ctx, 100, true, true, func(ctx context.Context, ensuredCtx context.Context, conn *sql.Conn) error {
-		// Drop the existing table at toName
-		if existingTo != nil {
-			err := olap.DropTable(ctx, toName, fromIsView)
-			if err != nil {
-				return err
-			}
+	// Renaming a table to the same name with different casing is not supported. Workaround by renaming to a temporary name first.
+	if strings.EqualFold(fromName, toName) {
+		tmpName := fmt.Sprintf("__rill_tmp_rename_%s_%s", typ, toName)
+		err = olap.RenameTable(ctx, fromName, tmpName, fromIsView)
+		if err != nil {
+			return err
 		}
+		fromName = tmpName
+	}
 
-		// Infer SQL keyword for the table type
-		var typ string
-		if fromIsView {
-			typ = "VIEW"
-		} else {
-			typ = "TABLE"
-		}
-
-		// Renaming a table to the same name with different casing is not supported. Workaround by renaming to a temporary name first.
-		if strings.EqualFold(fromName, toName) {
-			tmpName := fmt.Sprintf("__rill_tmp_rename_%s_%s", typ, toName)
-			err = olap.RenameTable(ctx, fromName, tmpName, fromIsView)
-			if err != nil {
-				return err
-			}
-			fromName = tmpName
-		}
-
-		// Do the rename
-		return olap.RenameTable(ctx, fromName, toName, fromIsView)
-	})
+	// Do the rename
+	return olap.RenameTable(ctx, fromName, toName, fromIsView)
 }
 
 // safeSQLName returns a quoted SQL identifier.

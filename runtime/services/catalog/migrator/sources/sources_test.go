@@ -344,7 +344,7 @@ func TestCSVIngestionWithColumns(t *testing.T) {
 		{"sql with read_csv_auto", "duckdb", "", map[string]any{
 			"sql": fmt.Sprintf(`
 from read_csv_auto('%s',auto_detect=false,header=true,ignore_errors=true,
-dtypes={id:'INTEGER',name:'VARCHAR',country:'VARCHAR',city:'VARCHAR'})`, filePath),
+columns={id:'INTEGER',name:'VARCHAR',country:'VARCHAR',city:'VARCHAR'})`, filePath),
 		}},
 	}
 

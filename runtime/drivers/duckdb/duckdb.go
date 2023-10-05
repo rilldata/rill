@@ -479,8 +479,7 @@ func (c *connection) reopenDB() error {
 		if err != nil {
 			c.logger.Error("attach failed", zap.String("db", dbFile), zap.Error(err))
 			_, _ = conn.ExecContext(context.Background(), fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(entry.Name())))
-			_ = os.Remove(path)
-			_ = os.Remove(filepath.Join(path, "version.txt"))
+			_ = os.RemoveAll(path)
 		}
 	}
 	return nil
