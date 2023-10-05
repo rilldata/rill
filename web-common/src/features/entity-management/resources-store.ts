@@ -19,6 +19,8 @@ import { derived, Readable, writable } from "svelte/store";
 /**
  * Global resources store that maps file name to a resource.
  */
+// TODO: Merge with FileArtifactsStore.
+//       Have an entry with filePath to object with resource name and reconciling and other stuff from FileArtifactsStore
 export type ResourcesState = {
   // this is just a mapping of file path to resource name
   // storing the entire resource is not necessary since tanstack query will do that for the get resource api
@@ -28,10 +30,10 @@ export type ResourcesState = {
   currentlyReconciling: Record<string, V1ResourceName>;
 };
 
-const { update, subscribe } = writable({
+const { update, subscribe } = writable<ResourcesState>({
   resources: {},
   currentlyReconciling: {},
-} as ResourcesState);
+});
 
 const resourcesStoreReducers = {
   async init(instanceId: string) {
@@ -64,7 +66,8 @@ const resourcesStoreReducers = {
 
   deleteFile(filePath: string) {
     update((state) => {
-      if (state.resources[filePath]) delete state.resources[filePath];
+      delete state.resources[filePath];
+      delete state.currentlyReconciling[filePath];
       return state;
     });
   },

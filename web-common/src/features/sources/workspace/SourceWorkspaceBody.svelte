@@ -6,13 +6,16 @@
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import HorizontalSplitter from "../../../layout/workspace/HorizontalSplitter.svelte";
-  import { createRuntimeServiceGetFile } from "../../../runtime-client";
+  import {
+    createRuntimeServiceGetFile,
+    V1ReconcileStatus,
+  } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
   import { EntityType } from "../../entity-management/types";
   import SourceEditor from "../editor/SourceEditor.svelte";
   import ErrorPane from "../errors/ErrorPane.svelte";
-  import { useIsSourceUnsaved } from "../selectors";
+  import { useIsSourceUnsaved, useSource } from "../selectors";
   import { useSourceStore } from "../sources-store";
 
   export let sourceName: string;
@@ -33,6 +36,8 @@
   // Get only reconcile errors here. File parse errors are shown inline
   $: source = useResourceForFile(queryClient, $runtime.instanceId, filePath);
   $: reconcileError = $source.data?.meta?.reconcileError;
+
+  $: sourceQuery = useSource($runtime.instanceId, sourceName);
 
   // Layout state
   const outputPosition = getContext(
@@ -71,8 +76,9 @@
       {#if !reconcileError}
         {#key sourceName}
           <ConnectedPreviewTable
-            objectName={sourceName}
-            kind={ResourceKind.Source}
+            objectName={$sourceQuery?.data?.source?.state?.table}
+            loading={$sourceQuery?.data?.meta?.reconcileStatus !==
+              V1ReconcileStatus.RECONCILE_STATUS_IDLE}
           />
         {/key}
       {:else}

@@ -16,6 +16,7 @@
   import {
     createRuntimeServiceGetFile,
     createRuntimeServiceRefreshAndReconcile,
+    V1ReconcileStatus,
     V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
   import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
@@ -56,6 +57,9 @@
 
   let source: V1SourceV2;
   $: source = $sourceQuery.data?.source;
+  $: sourceIsReconciling =
+    $sourceQuery.data?.meta?.reconcileStatus !==
+    V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
   let connector: string;
   $: connector = source?.state?.connector;
@@ -192,6 +196,7 @@
           </ResponsiveButtonText>
         </Button>
         <Button
+          disabled={sourceIsReconciling}
           label={isSourceUnsaved ? "Save and refresh" : "Refresh"}
           on:click={() =>
             isSourceUnsaved

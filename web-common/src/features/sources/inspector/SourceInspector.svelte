@@ -6,6 +6,7 @@
   } from "@rilldata/web-common/components/column-profile/queries";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
   import {
     formatConnectorType,
     getFileExtension,
@@ -18,6 +19,7 @@
   import {
     createQueryServiceTableCardinality,
     createQueryServiceTableColumns,
+    V1ReconcileStatus,
     V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
   import type { Readable } from "svelte/store";
@@ -111,7 +113,11 @@
 <div
   class="table-profile {isSourceUnsaved && 'grayscale'} transition duration-200"
 >
-  {#if source && !$sourceQuery.isError}
+  {#if $sourceQuery?.data?.meta?.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE}
+    <div class="h-10">
+      <ReconcilingSpinner />
+    </div>
+  {:else if source && !$sourceQuery.isError}
     <!-- summary info -->
     <div class="p-4 pt-2">
       <LeftRightGrid>
