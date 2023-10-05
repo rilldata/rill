@@ -31,6 +31,7 @@ TableCells – the cell contents.
   export let dimensionName: string;
   export let excludeMode = false;
   export let isBeingCompared = false;
+  export let isFetching: boolean;
 
   const stateManagers = getStateManagers();
 
@@ -179,9 +180,7 @@ TableCells – the cell contents.
 
   async function handleColumnHeaderClick(event) {
     colScrollOffset = $columnVirtualizer.scrollOffset;
-    dispatch("sort", event.detail);
     const columnName = event.detail;
-    console.log("onSortByColumn", columnName);
 
     if (columnName === leaderboardMeasureName + "_delta") {
       toggleSort(SortType.DELTA_ABSOLUTE);
@@ -287,6 +286,10 @@ TableCells – the cell contents.
             on:inspect={setActiveIndex}
             cellLabel="Filter dimension value"
           />
+        {:else if isFetching}
+          <div class="flex text-gray-500 justify-center mt-[30vh]">
+            Loading...
+          </div>
         {:else}
           <div class="flex text-gray-500 justify-center mt-[30vh]">
             No results to show

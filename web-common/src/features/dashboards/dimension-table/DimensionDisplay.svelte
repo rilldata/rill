@@ -33,6 +33,7 @@
     isSummableMeasure,
     prepareSortedQueryBody,
   } from "../dashboard-utils";
+  import { metricsExplorerStore } from "../dashboard-stores";
 
   export let metricViewName: string;
   export let dimensionName: string;
@@ -58,7 +59,6 @@
   const timeControlsStore = useTimeControlStore(stateManagers);
   const {
     dashboardStore,
-    metricsStore,
     selectors: {
       sorting: { sortedAscending },
     },
@@ -170,11 +170,11 @@
   function onSelectItem(event) {
     const label = tableRows[event.detail][dimensionColumn] as string;
     cancelDashboardQueries(queryClient, metricViewName);
-    metricsStore.toggleFilter(metricViewName, dimensionName, label);
+    metricsExplorerStore.toggleFilter(metricViewName, dimensionName, label);
   }
 
   function toggleComparisonDimension(dimensionName, isBeingCompared) {
-    metricsStore.setComparisonDimension(
+    metricsExplorerStore.setComparisonDimension(
       metricViewName,
       isBeingCompared ? undefined : dimensionName
     );
@@ -201,6 +201,7 @@
           on:select-item={(event) => onSelectItem(event)}
           on:toggle-dimension-comparison={() =>
             toggleComparisonDimension(dimensionName, isBeingCompared)}
+          isFetching={$sortedQuery?.isFetching}
           dimensionName={dimensionColumn}
           {isBeingCompared}
           {columns}

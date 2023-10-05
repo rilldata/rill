@@ -17,6 +17,10 @@
   export let rows;
   export let width = config.indexWidth;
   export let horizontalScrolling;
+  // Cell props
+  export let scrolling;
+  export let activeIndex;
+  export let excludeMode = false;
 
   const stateManagers = getStateManagers();
   const { sortedByDimensionValue, sortedAscending } =
@@ -27,11 +31,6 @@
       sorting: { sortByDimensionValue },
     },
   } = stateManagers;
-
-  // Cell props
-  export let scrolling;
-  export let activeIndex;
-  export let excludeMode = false;
 
   $: atLeastOneSelected = !!selectedIndex?.length;
 
@@ -58,7 +57,7 @@
     enableResize={false}
     position="top-left"
     borderRight={horizontalScrolling}
-    bgClass="bg-white"
+    bgClass={$sortedByDimensionValue ? `bg-gray-50` : "bg-white"}
     on:click={sortByDimensionValue}
     on:keydown={sortByDimensionValue}
   >
@@ -88,7 +87,7 @@
       position="left"
       header={{ size: width, start: row.start }}
       borderRight={horizontalScrolling}
-      bgClass="bg-white"
+      bgClass={$sortedByDimensionValue ? `bg-gray-50` : "bg-white"}
     >
       <Cell
         positionStatic
@@ -98,6 +97,7 @@
         {excludeMode}
         {rowActive}
         {...getCellProps(row)}
+        colSelected={$sortedByDimensionValue}
         on:inspect
         on:select-item
         label="Filter dimension value"

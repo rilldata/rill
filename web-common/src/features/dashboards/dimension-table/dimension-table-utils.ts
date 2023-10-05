@@ -237,22 +237,30 @@ export function prepareVirtualizedDimTableColumns(
   // copy column names so we don't mutate the original
   const columnNames = [...inputColumnNames];
 
-  addContextColumnNames(
-    columnNames,
-    timeComparison,
-    validPercentOfTotal,
-    selectedMeasure
-  );
+  // don't add context columns if sorting by dimension
+  if (sortType !== SortType.DIMENSION) {
+    addContextColumnNames(
+      columnNames,
+      timeComparison,
+      validPercentOfTotal,
+      selectedMeasure
+    );
+  }
   // Make dimension the first column
   columnNames.unshift(dimensionColumn);
 
   return columnNames
     .map((name) => {
-      const highlight =
-        name === selectedMeasure.name ||
-        name.endsWith("_delta") ||
-        name.endsWith("_delta_perc") ||
-        name.endsWith("_percent_of_total");
+      let highlight = false;
+      if (sortType === SortType.DIMENSION) {
+        highlight = name === dimensionColumn;
+      } else {
+        highlight =
+          name === selectedMeasure.name ||
+          name.endsWith("_delta") ||
+          name.endsWith("_delta_perc") ||
+          name.endsWith("_percent_of_total");
+      }
 
       let sorted = undefined;
       if (name.endsWith("_delta") && sortType === SortType.DELTA_ABSOLUTE) {
