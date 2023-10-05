@@ -92,6 +92,8 @@ dimensions:
 measures:
   - name: b
     expression: count(*)
+first_day_of_week: 7
+first_month_of_year: 3
 `,
 		// migration c1
 		`custom/c1.yml`: `
@@ -169,6 +171,8 @@ SELECT * FROM {{ ref "m2" }}
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
 					{Name: "b", Expression: "count(*)"},
 				},
+				FirstDayOfWeek:   7,
+				FirstMonthOfYear: 3,
 			},
 		},
 		// migration c1

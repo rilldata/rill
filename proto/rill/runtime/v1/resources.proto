@@ -60,7 +60,7 @@ message ProjectParserSpec {
   string compiler = 1;
   // watch makes the project parser watch for and incrementally parse changed files
   bool watch = 2;
-  // stage_changes sets stage_changes on created sources and models 
+  // stage_changes sets stage_changes on created sources and models
   bool stage_changes = 3;
   // stream_source_ingestion
   bool source_stream_ingestion = 4;
@@ -184,6 +184,8 @@ message MetricsViewSpec {
   repeated string available_time_zones = 10;
   // Security for the dashboard
   SecurityV2 security = 11;
+  uint32 first_day_of_week = 12;
+  uint32 first_month_of_year = 13;
 }
 
 message MetricsViewState {

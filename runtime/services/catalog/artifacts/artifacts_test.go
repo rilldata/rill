@@ -131,8 +131,10 @@ region: us-east-2
 							Format:      "humanise",
 						},
 					},
-					Label:       "dashboard name",
-					Description: "long description for dashboard",
+					Label:            "dashboard name",
+					Description:      "long description for dashboard",
+					FirstDayOfWeek:   7,
+					FirstMonthOfYear: 12,
 				},
 			},
 			`title: dashboard name
@@ -141,6 +143,8 @@ model: Model
 timeseries: time
 smallest_time_grain: day
 default_time_range: P1D
+first_day_of_week: 7
+first_month_of_year: 12
 dimensions:
     - name: dim0
       label: Dim0_L

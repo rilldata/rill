@@ -24,6 +24,8 @@ type metricsViewYAML struct {
 	SmallestTimeGrain  string           `yaml:"smallest_time_grain"`
 	DefaultTimeRange   string           `yaml:"default_time_range"`
 	AvailableTimeZones []string         `yaml:"available_time_zones"`
+	FirstDayOfWeek     uint32           `yaml:"first_day_of_week"`
+	FirstMonthOfYear   uint32           `yaml:"first_month_of_year"`
 	Dimensions         []*struct {
 		Name        string
 		Label       string
@@ -261,6 +263,8 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	spec.SmallestTimeGrain = smallestTimeGrain
 	spec.DefaultTimeRange = tmp.DefaultTimeRange
 	spec.AvailableTimeZones = tmp.AvailableTimeZones
+	spec.FirstDayOfWeek = tmp.FirstDayOfWeek
+	spec.FirstMonthOfYear = tmp.FirstMonthOfYear
 
 	for _, dim := range tmp.Dimensions {
 		if dim.Ignore {

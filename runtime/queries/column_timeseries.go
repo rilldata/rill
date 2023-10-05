@@ -41,6 +41,8 @@ type ColumnTimeseries struct {
 	SampleSize          int32                                             `json:"sample_size"`
 	TimeZone            string                                            `json:"time_zone,omitempty"`
 	Result              *ColumnTimeseriesResult                           `json:"-"`
+	FirstDayOfWeek      uint32
+	FirstMonthOfYear    uint32
 
 	// MetricsView-related fields. These can be removed when MetricsViewTimeSeries is refactored to a standalone implementation.
 	MetricsView       *runtimev1.MetricsView               `json:"-"`
@@ -126,6 +128,26 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		args = append([]any{timezone, timeRange.Start.AsTime(), timezone, timeRange.End.AsTime(), timezone}, args...)
 		args = append(args, timezone)
 
+		if q.FirstDayOfWeek > 7 || q.FirstDayOfWeek <= 0 {
+			q.FirstDayOfWeek = 1
+		}
+
+		if q.FirstMonthOfYear > 12 || q.FirstMonthOfYear <= 0 {
+			q.FirstMonthOfYear = 1
+		}
+
+		timeOffsetClause1 := ""
+		timeOffsetClause2 := ""
+		if timeRange.Interval == runtimev1.TimeGrain_TIME_GRAIN_WEEK && q.FirstDayOfWeek > 1 {
+			dayOffset := 8 - q.FirstDayOfWeek
+			timeOffsetClause1 = fmt.Sprintf(" + INTERVAL '%d DAY'", dayOffset)
+			timeOffsetClause2 = fmt.Sprintf(" - INTERVAL '%d DAY'", dayOffset)
+		} else if timeRange.Interval == runtimev1.TimeGrain_TIME_GRAIN_YEAR && q.FirstMonthOfYear > 1 {
+			monthOffset := 13 - q.FirstMonthOfYear
+			timeOffsetClause1 = fmt.Sprintf(" + INTERVAL '%d MONTH'", monthOffset)
+			timeOffsetClause2 = fmt.Sprintf(" - INTERVAL '%d MONTH'", monthOffset)
+		}
+
 		querySQL := `CREATE TEMPORARY TABLE ` + temporaryTableName + ` AS (
 			-- generate a time series column that has the intended range
 			WITH template as (
@@ -133,14 +155,14 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 					range as ` + tsAlias + `
 				FROM
 					range(
-					date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ)),
-					date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ)),
+					date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + `,
+					date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + `,
 					INTERVAL '1 ` + dateTruncSpecifier + `')
 			),
 			-- transform the original data, and optionally sample it.
 			series AS (
 			SELECT
-				date_trunc('` + dateTruncSpecifier + `', timezone(?, ` + safeName(q.TimestampColumnName) + `::TIMESTAMPTZ)) as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
+				date_trunc('` + dateTruncSpecifier + `', timezone(?, ` + safeName(q.TimestampColumnName) + `::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + ` as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
 			FROM ` + safeName(q.TableName) + ` ` + filter + `
 			GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
 			)
