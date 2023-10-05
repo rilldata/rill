@@ -98,19 +98,7 @@ func olapDropTableIfExists(ctx context.Context, c *runtime.Controller, connector
 		return
 	}
 	defer release()
-
-	var typ string
-	if view {
-		typ = "VIEW"
-	} else {
-		typ = "TABLE"
-	}
-
-	_ = olap.Exec(ctx, &drivers.Statement{
-		Query:       fmt.Sprintf("DROP %s IF EXISTS %s", typ, safeSQLName(table)),
-		Priority:    100,
-		LongRunning: true,
-	})
+	_ = olap.DropTable(ctx, table, view)
 }
 
 // olapForceRenameTable renames a table or view from fromName to toName in the OLAP connector.
@@ -135,16 +123,7 @@ func olapForceRenameTable(ctx context.Context, c *runtime.Controller, connector,
 	return olap.WithConnection(ctx, 100, true, true, func(ctx context.Context, ensuredCtx context.Context, conn *sql.Conn) error {
 		// Drop the existing table at toName
 		if existingTo != nil {
-			var typ string
-			if existingTo.View {
-				typ = "VIEW"
-			} else {
-				typ = "TABLE"
-			}
-
-			err := olap.Exec(ctx, &drivers.Statement{
-				Query: fmt.Sprintf("DROP %s IF EXISTS %s", typ, safeSQLName(existingTo.Name)),
-			})
+			err := olap.DropTable(ctx, toName, fromIsView)
 			if err != nil {
 				return err
 			}
@@ -160,15 +139,8 @@ func olapForceRenameTable(ctx context.Context, c *runtime.Controller, connector,
 
 		// Renaming a table to the same name with different casing is not supported. Workaround by renaming to a temporary name first.
 		if strings.EqualFold(fromName, toName) {
-			tmpName := "__rill_tmp_rename_%s_" + typ + toName
-			err = olap.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP %s IF EXISTS %s", typ, safeSQLName(tmpName))})
-			if err != nil {
-				return err
-			}
-
-			err := olap.Exec(ctx, &drivers.Statement{
-				Query: fmt.Sprintf("ALTER %s %s RENAME TO %s", typ, safeSQLName(fromName), safeSQLName(tmpName)),
-			})
+			tmpName := fmt.Sprintf("__rill_tmp_rename_%s_%s", typ, toName)
+			err = olap.RenameTable(ctx, fromName, tmpName, fromIsView)
 			if err != nil {
 				return err
 			}
@@ -176,14 +148,7 @@ func olapForceRenameTable(ctx context.Context, c *runtime.Controller, connector,
 		}
 
 		// Do the rename
-		err = olap.Exec(ctx, &drivers.Statement{
-			Query: fmt.Sprintf("ALTER %s %s RENAME TO %s", typ, safeSQLName(fromName), safeSQLName(toName)),
-		})
-		if err != nil {
-			return err
-		}
-
-		return nil
+		return olap.RenameTable(ctx, fromName, toName, fromIsView)
 	})
 }
 

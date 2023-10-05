@@ -3,6 +3,7 @@ package duckdb
 import (
 	"fmt"
 	"net/url"
+	"path/filepath"
 	"strconv"
 
 	"github.com/mitchellh/mapstructure"
@@ -16,12 +17,14 @@ type config struct {
 	PoolSize int `mapstructure:"pool_size"`
 	// AllowHostAccess denotes whether to limit access to the local environment and file system
 	AllowHostAccess bool `mapstructure:"allow_host_access"`
-	// TableAsView controls if table is modelled as view
-	TableAsView bool `mapstructure:"table_as_view"`
 	// ErrorOnIncompatibleVersion controls whether to return error or delete DBFile created with older duckdb version.
 	ErrorOnIncompatibleVersion bool `mapstructure:"error_on_incompatible_version"`
+	// ExtTableStorage controls if table is modelled as view
+	ExtTableStorage bool `mapstructure:"external_table_storage"`
 	// DBFilePath is the path where the database is stored. It is inferred from the DSN (can't be provided by user).
 	DBFilePath string `mapstructure:"-"`
+	// ExtStoragePath is the path where the database files are stored in case external_table_storage is true. It is inferred from the DSN (can't be provided by user).
+	ExtStoragePath string `mapstructure:"-"`
 }
 
 func newConfig(cfgMap map[string]any) (*config, error) {
@@ -45,6 +48,9 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 
 	// Infer DBFilePath
 	cfg.DBFilePath = uri.Path
+	if cfg.ExtTableStorage {
+		cfg.ExtStoragePath = filepath.Dir(cfg.DBFilePath)
+	}
 
 	// We also support overriding the pool size via the DSN by setting "rill_pool_size" as a query argument.
 	if qry.Has("rill_pool_size") {

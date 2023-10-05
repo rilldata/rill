@@ -85,7 +85,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		olapDriver = "duckdb"
 		olapConfig["dsn"] = fmt.Sprintf("%s.db?max_memory=%dGB", path.Join(alloc.DataDir, instanceID, "main"), alloc.MemoryGB)
 		olapConfig["pool_size"] = strconv.Itoa(alloc.CPU)
-		olapConfig["table_as_view"] = strconv.FormatBool(true)
+		olapConfig["external_table_storage"] = strconv.FormatBool(true)
 		embedCatalog = true
 		ingestionLimit = alloc.StorageBytes
 	case "duckdb-vip":

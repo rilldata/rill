@@ -79,7 +79,6 @@ func (m *sourceMigrator) Rename(ctx context.Context, olap drivers.OLAPStore, fro
 		}
 		from = tempName
 	}
-
 	return olap.RenameTable(ctx, from, catalogObj.Name, false)
 }
 

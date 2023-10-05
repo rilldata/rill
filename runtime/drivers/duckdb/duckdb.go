@@ -3,6 +3,7 @@ package duckdb
 import (
 	"context"
 	"database/sql/driver"
+	"errors"
 	"fmt"
 	"io/fs"
 	"net/url"
@@ -15,7 +16,6 @@ import (
 	"time"
 
 	"github.com/XSAM/otelsql"
-	"github.com/bmatcuk/doublestar/v4"
 	"github.com/c2h5oh/datasize"
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
@@ -108,10 +108,9 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, log
 		}
 	}
 
-	if cfg.TableAsView { // path is instance_id/main.db
-		// create instance_id directory
-		if err := os.Mkdir(filepath.Base(filepath.Dir(cfg.DBFilePath)), fs.ModePerm); err != nil {
-			if !strings.Contains(err.Error(), "file exists") {
+	if cfg.ExtTableStorage {
+		if err := os.Mkdir(cfg.ExtStoragePath, fs.ModePerm); err != nil {
+			if !errors.Is(err, fs.ErrExist) {
 				return nil, err
 			}
 		}
@@ -181,11 +180,10 @@ func (d Driver) Drop(cfgMap map[string]any, logger *zap.Logger) error {
 	if err != nil {
 		return err
 	}
-
+	if cfg.ExtStoragePath != "" {
+		return os.RemoveAll(cfg.ExtStoragePath)
+	}
 	if cfg.DBFilePath != "" {
-		if cfg.TableAsView {
-			return os.RemoveAll(filepath.Dir(cfg.DBFilePath))
-		}
 		err = os.Remove(cfg.DBFilePath)
 		if err != nil {
 			return err
@@ -256,6 +254,7 @@ type connection struct {
 	// driverConfig is input config passed during Open
 	driverConfig map[string]any
 	driverName   string
+	instanceID   string // populated after call to AsOLAP
 	// config is parsed configs
 	config   *config
 	logger   *zap.Logger
@@ -284,9 +283,8 @@ type connection struct {
 	dbErr       error
 	shared      bool
 	// Cancellable context to control internal processes like emitting the stats
-	ctx        context.Context
-	cancel     context.CancelFunc
-	instanceID string // populated after call to AsOLAP
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 var _ drivers.OLAPStore = &connection{}
@@ -332,6 +330,9 @@ func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 		// duckdb olap is instance specific
 		return nil, false
 	}
+	if c.instanceID != "" && c.instanceID != instanceID {
+		return nil, false
+	}
 	c.instanceID = instanceID
 	return c, true
 }
@@ -349,7 +350,7 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 
 // AsTransporter implements drivers.Connection.
 func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
-	olap, _ := to.AsOLAP("") // if c == to, connection is instance specific
+	olap, _ := to.AsOLAP(c.instanceID) // if c == to, connection is instance specific
 	if c == to {
 		if from == to {
 			return transporter.NewDuckDBToDuckDB(olap, c.logger), true
@@ -438,7 +439,7 @@ func (c *connection) reopenDB() error {
 	db.SetMaxOpenConns(c.config.PoolSize)
 	c.db = db
 
-	if !c.config.TableAsView {
+	if !c.config.ExtTableStorage {
 		return nil
 	}
 
@@ -447,22 +448,42 @@ func (c *connection) reopenDB() error {
 		return err
 	}
 	defer conn.Close()
-	dir := filepath.Dir(c.config.DBFilePath)
-	// get all .db files in sources directory
-	return doublestar.GlobWalk(os.DirFS(dir), "./*/*.db", func(path string, d fs.DirEntry) error {
-		if d.IsDir() {
-			return nil
-		}
-		name := filepath.Dir(path)
-		version, found := strings.CutSuffix(filepath.Base(path), ".db")
-		if !found {
-			return nil
-		}
-		path = filepath.Join(dir, path)
-		db := dbName(name, version)
-		_, err := conn.ExecContext(context.Background(), fmt.Sprintf("ATTACH '%s' AS %s", path, safeSQLName(db)))
+
+	// List the directories directly in the external storage directory
+	// Load the version.txt from each sub-directory
+	// If version.txt is found, attach only the .db file matching the version.txt.
+	// If attach fails, log the error and delete the version.txt and .db file (e.g. might be DuckDB version change)
+	entries, err := os.ReadDir(c.config.ExtStoragePath)
+	if err != nil {
 		return err
-	})
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		path := filepath.Join(c.config.ExtStoragePath, entry.Name())
+		version, exist, err := c.tableVersion(entry.Name())
+		if err != nil {
+			c.logger.Error("error in fetching db version", zap.String("table", entry.Name()), zap.Error(err))
+			_ = os.Remove(path)
+			continue
+		}
+		if !exist {
+			_ = os.Remove(path)
+			continue
+		}
+
+		dbFile := filepath.Join(path, fmt.Sprintf("%s.db", version))
+		db := dbName(entry.Name(), version)
+		_, err = conn.ExecContext(context.Background(), fmt.Sprintf("ATTACH %s AS %s", safeSQLPath(dbFile), safeSQLName(db)))
+		if err != nil {
+			c.logger.Error("attach failed", zap.String("db", dbFile), zap.Error(err))
+			_, _ = conn.ExecContext(context.Background(), fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(entry.Name())))
+			_ = os.Remove(path)
+			_ = os.Remove(filepath.Join(path, "version.txt"))
+		}
+	}
+	return nil
 }
 
 // acquireMetaConn gets a connection from the pool for "meta" queries like catalog and information schema (i.e. fast queries).
