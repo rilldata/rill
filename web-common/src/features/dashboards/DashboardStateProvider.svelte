@@ -18,7 +18,11 @@
 
   function syncDashboardState() {
     if (metricViewName in $metricsExplorerStore.entities) {
-      metricsExplorerStore.sync(metricViewName, $metaQuery.data);
+      metricsExplorerStore.sync(
+        metricViewName,
+        $metaQuery.data,
+        $timeRangeQuery.data
+      );
     } else {
       metricsExplorerStore.init(
         metricViewName,
