@@ -5,7 +5,7 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import type { TimeControlState } from "./time-controls/time-control-store";
 import { getQuerySortType } from "./leaderboard/leaderboard-utils";
-import type { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
+import { SortType } from "./proto-state/derived-types";
 
 export function isSummableMeasure(measure: MetricsViewMeasure): boolean {
   return (
@@ -30,7 +30,7 @@ export function prepareSortedQueryBody(
   measureNames: string[],
   timeControls: TimeControlState,
   sortMeasureName: string,
-  sortType: DashboardState_LeaderboardSortType,
+  sortType: SortType,
   sortAscending: boolean,
   filterForDimension: {
     include: {
@@ -43,6 +43,22 @@ export function prepareSortedQueryBody(
     }[];
   }
 ): QueryServiceMetricsViewComparisonToplistBody {
+  let comparisonTimeRange = {
+    start: timeControls.comparisonTimeStart,
+    end: timeControls.comparisonTimeEnd,
+  };
+
+  // FIXME: As a temporary way of enabling sorting by dimension values,
+  // Benjamin and Egor put in a patch that will allow us to use the
+  // dimension name as the measure name. This will need to be updated
+  // once they have stabilized the API.
+  if (sortType === SortType.DIMENSION) {
+    sortMeasureName = dimensionName;
+    // note also that we need to remove the comparison time range
+    // when sorting by dimension values, or the query errors
+    comparisonTimeRange = undefined;
+  }
+
   const querySortType = getQuerySortType(sortType);
 
   return {
@@ -52,10 +68,7 @@ export function prepareSortedQueryBody(
       start: timeControls.timeStart,
       end: timeControls.timeEnd,
     },
-    comparisonTimeRange: {
-      start: timeControls.comparisonTimeStart,
-      end: timeControls.comparisonTimeEnd,
-    },
+    comparisonTimeRange,
     sort: [
       {
         ascending: sortAscending,

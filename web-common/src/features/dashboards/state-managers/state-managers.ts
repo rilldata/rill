@@ -10,6 +10,23 @@ import {
   useDashboardStore,
 } from "../dashboard-stores";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import {
+  createStateManagerSelectors,
+  type StateManagerSelectors,
+} from "./selectors";
+import { createStateManagerActions, type StateManagerActions } from "./actions";
+
+/**
+ * A MetricsExplorerMutatorFn is a function that mutates a MetricsExplorerEntity,
+ * i.e., the data single dashboard.
+ */
+export type MetricsExplorerMutatorFn = (
+  metricsExplorer: MetricsExplorerEntity
+) => void;
+
+export type UpdateDashboard2ndOrderCallback = (
+  callback: MetricsExplorerMutatorFn
+) => void;
 
 export type StateManagers = {
   runtime: Writable<Runtime>;
@@ -18,9 +35,9 @@ export type StateManagers = {
   dashboardStore: Readable<MetricsExplorerEntity>;
   queryClient: QueryClient;
   setMetricsViewName: (s: string) => void;
-  updateDashboard: (
-    callback: (metricsExplorer: MetricsExplorerEntity) => void
-  ) => void;
+  updateDashboard: UpdateDashboard2ndOrderCallback;
+  selectors: StateManagerSelectors;
+  actions: StateManagerActions;
 };
 
 export const DEFAULT_STORE_KEY = Symbol("state-managers");
@@ -63,6 +80,8 @@ export function createStateManagers({
       metricsViewNameStore.set(name);
     },
     updateDashboard,
+    selectors: createStateManagerSelectors(dashboardStore),
+    actions: createStateManagerActions(updateDashboard),
   };
 }
 

@@ -1,9 +1,12 @@
 <script lang="ts">
   import StickyHeader from "@rilldata/web-common/components/virtualized-table/core/StickyHeader.svelte";
   import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
-  import { createEventDispatcher, getContext } from "svelte";
+  import { getContext } from "svelte";
   import Cell from "../../../components/virtualized-table/core/Cell.svelte";
   import type { VirtualizedTableConfig } from "../../../components/virtualized-table/types";
+  import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
+  import { fly } from "svelte/transition";
+  import { getStateManagers } from "../state-managers/state-managers";
 
   const config: VirtualizedTableConfig = getContext("config");
 
@@ -15,11 +18,20 @@
   export let width = config.indexWidth;
   export let horizontalScrolling;
 
+  const stateManagers = getStateManagers();
+  const { sortedByDimensionValue, sortedAscending } =
+    stateManagers.selectors.sorting;
+
+  const {
+    actions: {
+      sorting: { sortByDimensionValue },
+    },
+  } = stateManagers;
+
   // Cell props
   export let scrolling;
   export let activeIndex;
   export let excludeMode = false;
-  const dispatch = createEventDispatcher();
 
   $: atLeastOneSelected = !!selectedIndex?.length;
 
@@ -40,12 +52,6 @@
   class="sticky self-start left-6 top-0 z-20"
   style:height="{totalHeight}px"
   style:width="{width}px"
-  on:click={() => {
-    dispatch("dimension-sort");
-  }}
-  on:keydown={() => {
-    dispatch("dimension-sort");
-  }}
 >
   <StickyHeader
     header={{ size: width, start: 0 }}
@@ -53,8 +59,27 @@
     position="top-left"
     borderRight={horizontalScrolling}
     bgClass="bg-white"
+    on:click={sortByDimensionValue}
+    on:keydown={sortByDimensionValue}
   >
-    <span class="px-1">{column?.label || column?.name}</span>
+    <div class="flex">
+      <span class={"px-1 " + $sortedByDimensionValue ? "font-bold" : ""}
+        >{column?.label || column?.name}</span
+      >
+      {#if $sortedByDimensionValue}
+        <div class="mt-0.5 ui-copy-icon">
+          {#if $sortedAscending}
+            <div in:fly={{ duration: 200, y: -8 }} style:opacity={1}>
+              <ArrowDown size="12px" />
+            </div>
+          {:else}
+            <div in:fly={{ duration: 200, y: 8 }} style:opacity={1}>
+              <ArrowDown transform="scale(1 -1)" size="12px" />
+            </div>
+          {/if}
+        </div>
+      {/if}
+    </div>
   </StickyHeader>
   {#each virtualRowItems as row (`row-${row.key}`)}
     {@const rowActive = activeIndex === row?.index}

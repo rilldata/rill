@@ -18,17 +18,33 @@ TableCells – the cell contents.
   } from "./dimension-table-utils";
   import type { DimensionTableRow } from "./dimension-table-types";
 
+  import { getStateManagers } from "../state-managers/state-managers";
+  import { LeaderboardContextColumn } from "../leaderboard-context-column";
+  import { SortType } from "../proto-state/derived-types";
+
   const dispatch = createEventDispatcher();
 
   export let rows: DimensionTableRow[];
   export let columns: VirtualizedTableColumns[];
   export let selectedValues: Array<unknown> = [];
 
-  export let sortByColumn: string;
-  export let sortAscending: boolean;
   export let dimensionName: string;
   export let excludeMode = false;
   export let isBeingCompared = false;
+
+  const stateManagers = getStateManagers();
+
+  const { sortedAscending, sortMeasure } = stateManagers.selectors.sorting;
+
+  const {
+    dashboardStore,
+    actions: {
+      sorting: { toggleSort, setSortDescending },
+      context: { setContextColumn },
+      setLeaderboardMeasureName,
+    },
+  } = stateManagers;
+  $: leaderboardMeasureName = $dashboardStore?.leaderboardMeasureName;
 
   /** the overscan values tell us how much to render off-screen. These may be set by the consumer
    * in certain circumstances. The tradeoff: the higher the overscan amount, the more DOM elements we have
@@ -164,6 +180,25 @@ TableCells – the cell contents.
   async function handleColumnHeaderClick(event) {
     colScrollOffset = $columnVirtualizer.scrollOffset;
     dispatch("sort", event.detail);
+    const columnName = event.detail;
+    console.log("onSortByColumn", columnName);
+
+    if (columnName === leaderboardMeasureName + "_delta") {
+      toggleSort(SortType.DELTA_ABSOLUTE);
+      setContextColumn(LeaderboardContextColumn.DELTA_ABSOLUTE);
+    } else if (columnName === leaderboardMeasureName + "_delta_perc") {
+      toggleSort(SortType.DELTA_PERCENT);
+      setContextColumn(LeaderboardContextColumn.DELTA_PERCENT);
+    } else if (columnName === leaderboardMeasureName + "_percent_of_total") {
+      toggleSort(SortType.PERCENT);
+      setContextColumn(LeaderboardContextColumn.PERCENT);
+    } else if (columnName === leaderboardMeasureName) {
+      toggleSort(SortType.VALUE);
+    } else {
+      setLeaderboardMeasureName(columnName);
+      toggleSort(SortType.VALUE);
+      setSortDescending();
+    }
   }
 </script>
 
@@ -201,10 +236,10 @@ TableCells – the cell contents.
         <ColumnHeaders
           virtualColumnItems={virtualColumns}
           noPin={true}
-          selectedColumn={sortByColumn}
+          selectedColumn={$sortMeasure}
           columns={measureColumns}
           fallbackBGClass="bg-white"
-          {sortAscending}
+          sortAscending={$sortedAscending}
           on:click-column={handleColumnHeaderClick}
         />
 
@@ -242,7 +277,7 @@ TableCells – the cell contents.
             virtualColumnItems={virtualColumns}
             virtualRowItems={virtualRows}
             columns={measureColumns}
-            selectedColumn={sortByColumn}
+            selectedColumn={$sortMeasure}
             {rows}
             {activeIndex}
             {selectedIndex}

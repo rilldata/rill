@@ -29,7 +29,7 @@
       type: column.type,
       description: column.description || "",
       pinned: pinnedColumns.some((pinCol) => pinCol.name === column.name),
-      // FIXME: pretty sure isSelected can be deprecated in favor of highlight
+      // FIXME: pretty sure isSelected can be deprecated in favor of highlight for column headers
       isSelected: selectedColumn === column.name,
       highlight: column.highlight,
       sorted: column.sorted,

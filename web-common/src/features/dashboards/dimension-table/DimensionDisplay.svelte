@@ -21,8 +21,6 @@
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { SortDirection, SortType } from "../proto-state/derived-types";
-  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
   import {
     getDimensionFilterWithSearch,
     prepareDimensionTableRows,
@@ -35,7 +33,6 @@
     isSummableMeasure,
     prepareSortedQueryBody,
   } from "../dashboard-utils";
-  import { LeaderboardContextColumn } from "../leaderboard-context-column";
 
   export let metricViewName: string;
   export let dimensionName: string;
@@ -57,10 +54,15 @@
   let dimension: MetricsViewDimension;
   $: dimension = $dimensionQuery?.data;
   $: dimensionColumn = getDimensionColumn(dimension);
-
-  $: dashboardStore = useDashboardStore(metricViewName);
-
-  const timeControlsStore = useTimeControlStore(getStateManagers());
+  const stateManagers = getStateManagers();
+  const timeControlsStore = useTimeControlStore(stateManagers);
+  const {
+    dashboardStore,
+    metricsStore,
+    selectors: {
+      sorting: { sortedAscending },
+    },
+  } = stateManagers;
 
   $: leaderboardMeasureName = $dashboardStore?.leaderboardMeasureName;
   $: isBeingCompared =
@@ -95,8 +97,6 @@
   $: allMeasures = $metaQuery.data?.measures.filter((m) =>
     $dashboardStore?.visibleMeasureKeys.has(m.name)
   );
-
-  $: sortAscending = $dashboardStore.sortDirection === SortDirection.ASCENDING;
 
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     instanceId,
@@ -142,7 +142,7 @@
     $timeControlsStore,
     leaderboardMeasureName,
     $dashboardStore.dashboardSortType,
-    sortAscending,
+    $sortedAscending,
     filterSet
   );
 
@@ -170,48 +170,11 @@
   function onSelectItem(event) {
     const label = tableRows[event.detail][dimensionColumn] as string;
     cancelDashboardQueries(queryClient, metricViewName);
-    metricsExplorerStore.toggleFilter(metricViewName, dimensionName, label);
-  }
-
-  function onSortByColumn(event) {
-    const columnName = event.detail;
-
-    if (columnName === leaderboardMeasureName + "_delta") {
-      metricsExplorerStore.toggleSort(metricViewName, SortType.DELTA_ABSOLUTE);
-      metricsExplorerStore.setContextColumn(
-        metricViewName,
-        LeaderboardContextColumn.DELTA_ABSOLUTE
-      );
-    } else if (columnName === leaderboardMeasureName + "_delta_perc") {
-      metricsExplorerStore.toggleSort(metricViewName, SortType.DELTA_PERCENT);
-      metricsExplorerStore.setContextColumn(
-        metricViewName,
-        LeaderboardContextColumn.DELTA_PERCENT
-      );
-    } else if (columnName === leaderboardMeasureName + "_percent_of_total") {
-      metricsExplorerStore.toggleSort(metricViewName, SortType.PERCENT);
-      metricsExplorerStore.setContextColumn(
-        metricViewName,
-        LeaderboardContextColumn.PERCENT
-      );
-    } else if (columnName === leaderboardMeasureName) {
-      metricsExplorerStore.toggleSort(metricViewName, SortType.VALUE);
-    } else {
-      metricsExplorerStore.setLeaderboardMeasureName(
-        metricViewName,
-        columnName
-      );
-      metricsExplorerStore.toggleSort(metricViewName, SortType.VALUE);
-      metricsExplorerStore.setSortDescending(metricViewName);
-    }
-  }
-
-  function sortByDimensionValue() {
-    metricsExplorerStore.toggleSort(metricViewName, SortType.DIMENSION);
+    metricsStore.toggleFilter(metricViewName, dimensionName, label);
   }
 
   function toggleComparisonDimension(dimensionName, isBeingCompared) {
-    metricsExplorerStore.setComparisonDimension(
+    metricsStore.setComparisonDimension(
       metricViewName,
       isBeingCompared ? undefined : dimensionName
     );
@@ -236,17 +199,13 @@
       <div class="grow" style="overflow-y: hidden;">
         <DimensionTable
           on:select-item={(event) => onSelectItem(event)}
-          on:sort={(event) => onSortByColumn(event)}
-          on:dimension-sort={sortByDimensionValue}
           on:toggle-dimension-comparison={() =>
             toggleComparisonDimension(dimensionName, isBeingCompared)}
-          {sortAscending}
           dimensionName={dimensionColumn}
           {isBeingCompared}
           {columns}
           {selectedValues}
           rows={tableRows}
-          sortByColumn={leaderboardMeasureName}
           {excludeMode}
         />
       </div>
