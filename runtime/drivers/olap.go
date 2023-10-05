@@ -20,6 +20,7 @@ var ErrUnsupportedConnector = errors.New("drivers: connector not supported")
 type WithConnectionFunc func(wrappedCtx context.Context, ensuredCtx context.Context, conn *sql.Conn) error
 
 // OLAPStore is implemented by drivers that are capable of storing, transforming and serving analytical queries.
+// NOTE crud APIs are not safe to be called with `WithConnection`
 type OLAPStore interface {
 	Dialect() Dialect
 	WithConnection(ctx context.Context, priority int, longRunning, tx bool, fn WithConnectionFunc) error
@@ -31,6 +32,7 @@ type OLAPStore interface {
 	CreateTableAsSelect(ctx context.Context, name string, view bool, sql string) error
 	InsertTableAsSelect(ctx context.Context, name string, byName bool, sql string) error
 	DropTable(ctx context.Context, name string, view bool) error
+	// RenameTable is force rename
 	RenameTable(ctx context.Context, name, newName string, view bool) error
 	AddTableColumn(ctx context.Context, tableName, columnName string, typ string) error
 	AlterTableColumn(ctx context.Context, tableName, columnName string, newType string) error

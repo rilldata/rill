@@ -271,23 +271,20 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 	newVersion := fmt.Sprint(time.Now().UnixMilli())
 	dbFile := filepath.Join(sourceDir, fmt.Sprintf("%s.db", newVersion))
 	db := dbName(name, newVersion)
-	// attach new db
-	err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ATTACH %s AS %s", safeSQLString(dbFile), safeSQLName(db))})
-	if err != nil {
-		removeDBFile(dbFile)
-		return err
-	}
-
-	if err := c.Exec(ctx, &drivers.Statement{
-		Query:       fmt.Sprintf("CREATE OR REPLACE TABLE %s.default AS (%s)", safeSQLName(db), sql),
-		Priority:    1,
-		LongRunning: true,
-	}); err != nil {
-		c.detachAndRemoveFile(ctx, db, dbFile)
-		return err
-	}
 
 	return c.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
+		// attach new db
+		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ATTACH %s AS %s", safeSQLString(dbFile), safeSQLName(db))})
+		if err != nil {
+			removeDBFile(dbFile)
+			return err
+		}
+
+		if err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE TABLE %s.default AS (%s)", safeSQLName(db), sql)}); err != nil {
+			c.detachAndRemoveFile(ensuredCtx, db, dbFile)
+			return err
+		}
+
 		// success update version
 		err = c.updateVersion(name, newVersion)
 		if err != nil {
@@ -484,8 +481,8 @@ func (c *connection) dropAndReplace(ctx context.Context, oldName, newName string
 	} else {
 		typ = "TABLE"
 	}
-	existingTo, _ := c.InformationSchema().Lookup(ctx, newName)
-	if existingTo != nil {
+	_, err := c.InformationSchema().Lookup(ctx, newName)
+	if errors.Is(err, drivers.ErrNotFound) {
 		return c.Exec(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("ALTER %s %s RENAME TO %s", typ, safeSQLName(oldName), safeSQLName(newName)),
 			Priority:    100,
@@ -494,7 +491,7 @@ func (c *connection) dropAndReplace(ctx context.Context, oldName, newName string
 	}
 
 	return c.WithConnection(ctx, 100, true, true, func(ctx, ensuredCtx context.Context, conn *dbsql.Conn) error {
-		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP %s IF EXIST %s", typ, newName)})
+		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP %s IF EXISTS %s", typ, newName)})
 		if err != nil {
 			return err
 		}

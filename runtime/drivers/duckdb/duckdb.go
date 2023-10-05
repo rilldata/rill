@@ -465,11 +465,11 @@ func (c *connection) reopenDB() error {
 		version, exist, err := c.tableVersion(entry.Name())
 		if err != nil {
 			c.logger.Error("error in fetching db version", zap.String("table", entry.Name()), zap.Error(err))
-			_ = os.Remove(path)
+			_ = os.RemoveAll(path)
 			continue
 		}
 		if !exist {
-			_ = os.Remove(path)
+			_ = os.RemoveAll(path)
 			continue
 		}
 
@@ -477,7 +477,7 @@ func (c *connection) reopenDB() error {
 		db := dbName(entry.Name(), version)
 		_, err = conn.ExecContext(context.Background(), fmt.Sprintf("ATTACH %s AS %s", safeSQLString(dbFile), safeSQLName(db)))
 		if err != nil {
-			c.logger.Error("attach failed", zap.String("db", dbFile), zap.Error(err))
+			c.logger.Error("attach failed clearing db file", zap.String("db", dbFile), zap.Error(err))
 			_, _ = conn.ExecContext(context.Background(), fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(entry.Name())))
 			_ = os.RemoveAll(path)
 		}

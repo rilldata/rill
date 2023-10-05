@@ -284,3 +284,28 @@ func Test_connection_AddTableColumn(t *testing.T) {
 	require.Equal(t, "VARCHAR", typ)
 	require.NoError(t, res.Close())
 }
+
+func Test_connection_RenameToExistingTableOld(t *testing.T) {
+	handle, err := Driver{}.Open(map[string]any{"dsn": ""}, false, activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	c := handle.(*connection)
+	require.NoError(t, c.Migrate(context.Background()))
+	c.AsOLAP("default")
+
+	err = c.CreateTableAsSelect(context.Background(), "source", false, "SELECT 1 AS data")
+	require.NoError(t, err)
+
+	err = c.CreateTableAsSelect(context.Background(), "_tmp_source", false, "SELECT 2 AS DATA")
+	require.NoError(t, err)
+
+	err = c.RenameTable(context.Background(), "_tmp_source", "source", false)
+	require.NoError(t, err)
+
+	res, err := c.Execute(context.Background(), &drivers.Statement{Query: "SELECT * FROM 'source'"})
+	require.NoError(t, err)
+	require.True(t, res.Next())
+	var num int
+	require.NoError(t, res.Scan(&num))
+	require.Equal(t, 2, num)
+	require.NoError(t, res.Close())
+}
