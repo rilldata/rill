@@ -86,6 +86,18 @@ test.describe("dashboard", () => {
   });
 
   test("Dashboard runthrough", async ({ page }) => {
+    // Enable to get logs in CI
+    page.on("console", async (msg) => {
+      const values = [];
+      for (const arg of msg.args()) values.push(await arg.jsonValue());
+      console.log(...values);
+    });
+    page.on("pageerror", (exception) => {
+      console.log(
+        `Uncaught exception: "${exception.message}"\n${exception.stack}`
+      );
+    });
+
     test.setTimeout(60000);
     await page.goto("/");
     // disable animations
