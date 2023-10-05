@@ -10,6 +10,9 @@ export const createStateManagerSelectors = (
   dashboardStore: Readable<MetricsExplorerEntity>
 ): StateManagerSelectors => {
   return {
+    /**
+     * Selectors related to the sort state of the dashboard.
+     */
     sorting: createSortingSelectors(dashboardStore),
   };
 };

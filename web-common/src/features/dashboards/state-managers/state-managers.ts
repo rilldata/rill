@@ -36,7 +36,13 @@ export type StateManagers = {
   queryClient: QueryClient;
   setMetricsViewName: (s: string) => void;
   updateDashboard: UpdateDashboard2ndOrderCallback;
+  /**
+   * A collection of Readables that can be used to select data from the dashboard.
+   */
   selectors: StateManagerSelectors;
+  /**
+   * A collection of functions that update the dashboard data model.
+   */
   actions: StateManagerActions;
 };
 
