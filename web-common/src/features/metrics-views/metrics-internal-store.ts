@@ -1,4 +1,8 @@
-import {CATEGORICALS, FLOATS, NUMERICS} from "@rilldata/web-common/lib/duckdb-data-types";
+import {
+  CATEGORICALS,
+  FLOATS,
+  NUMERICS,
+} from "@rilldata/web-common/lib/duckdb-data-types";
 import { DEFAULT_TIMEZONES } from "@rilldata/web-common/lib/time/config";
 import type { V1Model } from "@rilldata/web-common/runtime-client";
 import { Document, parseDocument } from "yaml";
@@ -85,19 +89,19 @@ export function generateDashboardYAMLForModel(
 
   const fields = model.schema.fields;
   const metricsSeq = fields
-      .filter((field) => {
-        return FLOATS.has(field.type.code);
-      })
-      .map((field) => {
-        return {
-          label: "Sum(" + field.name+")",
-          expression: "sum("+ field.name+")",
-          name: "sum("+ field.name+")",
-          description: "Sum of " + capitalize(field.name),
-          format_preset: "humanize",
-          valid_percent_of_total: true,
-        };
-      });
+    .filter((field) => {
+      return FLOATS.has(field.type.code);
+    })
+    .map((field) => {
+      return {
+        label: "Sum(" + field.name + ")",
+        expression: "sum(" + field.name + ")",
+        name: "sum(" + field.name + ")",
+        description: "Sum of " + capitalize(field.name),
+        format_preset: "humanize",
+        valid_percent_of_total: true,
+      };
+    });
   metricsSeq.unshift({
     label: "Total records",
     expression: "count(*)",
