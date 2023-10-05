@@ -20,6 +20,7 @@
   import { error } from "@sveltejs/kit";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { CATALOG_ENTRY_NOT_FOUND } from "../../../../lib/errors/messages";
+  import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
 
   const queryClient = useQueryClient();
 
@@ -100,5 +101,16 @@
         </DashboardStateProvider>
       {/key}
     </StateManagersProvider>
+  </WorkspaceContainer>
+{:else if $resourceStatusStore.status === ResourceStatus.Busy}
+  <WorkspaceContainer
+    top="0px"
+    assetID={metricViewName}
+    bgClass="bg-white"
+    inspector={false}
+  >
+    <div class="grid h-screen place-content-center" slot="body">
+      <ReconcilingSpinner />
+    </div>
   </WorkspaceContainer>
 {/if}

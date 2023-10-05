@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ConnectedPreviewTable } from "@rilldata/web-common/components/preview-table";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useResourceForFile } from "@rilldata/web-common/features/entity-management/resources-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext } from "svelte";
@@ -69,7 +70,10 @@
     >
       {#if !reconcileError}
         {#key sourceName}
-          <ConnectedPreviewTable objectName={sourceName} />
+          <ConnectedPreviewTable
+            objectName={sourceName}
+            kind={ResourceKind.Source}
+          />
         {/key}
       {:else}
         <ErrorPane {sourceName} errorMessage={reconcileError} />

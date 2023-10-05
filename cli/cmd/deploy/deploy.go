@@ -25,11 +25,8 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
-	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -490,15 +487,11 @@ func createProjectFlow(ctx context.Context, client *adminclient.Client, req *adm
 }
 
 func variablesFlow(ctx context.Context, projectPath, projectName string) {
-	// Create an ad-hoc file repo for projectPath
-	instanceID := "default"
-	repoHandle, err := drivers.Open("file", map[string]any{"dsn": projectPath}, false, activity.NewNoopClient(), zap.NewNop())
+	// Parse the project's connectors
+	repo, instanceID, err := cmdutil.RepoForProjectPath(projectPath)
 	if err != nil {
 		return
 	}
-	repo, _ := repoHandle.AsRepoStore(instanceID)
-
-	// Parse the project's connectors
 	parser, err := rillv1.Parse(ctx, repo, instanceID, "", nil)
 	if err != nil {
 		return

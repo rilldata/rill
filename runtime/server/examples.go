@@ -8,7 +8,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/pkg/examples"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -141,13 +141,12 @@ func (s *Server) UnpackEmpty(ctx context.Context, req *runtimev1.UnpackEmptyRequ
 	}
 	defer release()
 
-	c := rillv1beta.New(repo, req.InstanceId)
-	if c.IsInit(ctx) && !req.Force {
+	if rillv1.IsInit(ctx, repo, req.InstanceId) && !req.Force {
 		return nil, fmt.Errorf("a Rill project already exists")
 	}
 
 	// Init empty project
-	err = c.InitEmpty(ctx, req.Title)
+	err = rillv1.InitEmpty(ctx, repo, req.InstanceId, req.Title)
 	if err != nil {
 		return nil, err
 	}

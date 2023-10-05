@@ -237,12 +237,18 @@ func (a *App) AwaitInitialReconcile(strict bool) (err error) {
 	}
 
 	// We need to do some extra work to ensure we don't return until all resources have been reconciled.
-	// We know the global project parser is created and becomes PENDING immediately.
-	// We can't call WaitUntilIdle until it has initially parsed and created the resources for the project.
-	// So we poll for it's state to transition to Watching (or for its status to become IDLE, representing a fatal error).
+	// We can't call WaitUntilIdle until the parser has initially parsed and created the resources for the project.
+	// We know the global project parser is created immediately, and should only be IDLE initially or if a fatal error occurs with the watcher.
+	// So we poll for it's state to transition to Watching.
+	start := time.Now()
 	for {
 		if a.Context.Err() != nil {
 			return nil
+		}
+
+		if time.Since(start) >= 5*time.Second {
+			// Starting the watcher should take just a few ms. This is just meant to serve as an extra safety net in case something goes wrong.
+			return fmt.Errorf("timed out waiting for project parser to start watching")
 		}
 
 		r, err := controller.Get(a.Context, runtime.GlobalProjectParserName, false)
@@ -250,7 +256,11 @@ func (a *App) AwaitInitialReconcile(strict bool) (err error) {
 			return fmt.Errorf("could not find project parser: %w", err)
 		}
 
-		if r.Meta.ReconcileStatus == runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE || r.GetProjectParser().State.Watching {
+		if r.Meta.ReconcileStatus == runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE && r.Meta.ReconcileError != "" {
+			return fmt.Errorf("parser failed: %s", r.Meta.ReconcileError)
+		}
+
+		if r.GetProjectParser().State.Watching {
 			break
 		}
 

@@ -15,7 +15,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-var errParseErrors = errors.New("encountered parse errors")
+var ErrParserHasParseErrors = errors.New("encountered parse errors")
 
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindProjectParser, newProjectParser)
@@ -157,7 +157,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	err = r.reconcileParser(ctx, inst, self, parser, nil, nil)
 
 	// If err is not for parse errors, always return. Otherwise, only return it if we're not watching for changes.
-	if err != nil && !errors.Is(err, errParseErrors) {
+	if err != nil && !errors.Is(err, ErrParserHasParseErrors) {
 		return runtime.ReconcileResult{Err: err}
 	}
 	if !inst.WatchRepo {
@@ -196,7 +196,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 		if err == nil {
 			err = r.reconcileParser(ctx, inst, self, parser, diff, changedPaths)
 		}
-		if err != nil && !errors.Is(err, errParseErrors) {
+		if err != nil && !errors.Is(err, ErrParserHasParseErrors) {
 			reparseErr = err
 			cancel()
 			return
@@ -252,7 +252,7 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 	// Set an error without returning to mark if there are parse errors (if not, force error to nil in case there previously were parse errors)
 	var parseErrsErr error
 	if len(parser.Errors) > 0 {
-		parseErrsErr = errParseErrors
+		parseErrsErr = ErrParserHasParseErrors
 	}
 	err = r.C.UpdateError(ctx, self.Meta.Name, parseErrsErr)
 	if err != nil {
