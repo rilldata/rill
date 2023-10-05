@@ -1,7 +1,6 @@
 import {
   CATEGORICALS,
   FLOATS,
-  NUMERICS,
 } from "@rilldata/web-common/lib/duckdb-data-types";
 import { DEFAULT_TIMEZONES } from "@rilldata/web-common/lib/time/config";
 import type { V1Model } from "@rilldata/web-common/runtime-client";
