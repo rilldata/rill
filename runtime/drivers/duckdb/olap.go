@@ -498,7 +498,7 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 	newDB := dbName(newName, newVersion)
 	// attach new db
 	err = c.Exec(ctx, &drivers.Statement{
-		Query:       fmt.Sprintf("ATTACH '%s' AS %s", safeSQLString(newFile), safeSQLName(newDB)),
+		Query:       fmt.Sprintf("ATTACH %s AS %s", safeSQLString(newFile), safeSQLName(newDB)),
 		Priority:    100,
 		LongRunning: true,
 	})

@@ -328,9 +328,11 @@ func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 		// duckdb olap is instance specific
 		return nil, false
 	}
-	if c.instanceID != "" && c.instanceID != instanceID {
-		return nil, false
-	}
+	// TODO Add this back once every call passes instanceID correctly.
+	// Example incorrect usage : runtime/services/catalog/migrator/sources/sources.go
+	// if c.instanceID != "" && c.instanceID != instanceID {
+	// 	return nil, false
+	// }
 	c.instanceID = instanceID
 	return c, true
 }
