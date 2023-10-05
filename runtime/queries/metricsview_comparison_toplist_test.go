@@ -30,7 +30,7 @@ func TestMetricsViewsComparison_dim_order(t *testing.T) {
 	q := &MetricsViewComparisonToplist{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
-		MeasureNames:    []string{"avg_price"},
+		MeasureNames:    []string{"measure_1"},
 		MetricsView:     mv,
 		BaseTimeRange: &runtimev1.TimeRange{
 			Start: ctr.Result.Min,
@@ -76,7 +76,7 @@ func TestMetricsViewsComparison_measure_order(t *testing.T) {
 	q := &MetricsViewComparisonToplist{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
-		MeasureNames:    []string{"avg_price"},
+		MeasureNames:    []string{"measure_1"},
 		MetricsView:     mv,
 		BaseTimeRange: &runtimev1.TimeRange{
 			Start: ctr.Result.Min,
@@ -88,7 +88,7 @@ func TestMetricsViewsComparison_measure_order(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "avg_price",
+				MeasureName: "measure_1",
 				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE,
 				Ascending:   false,
 			},

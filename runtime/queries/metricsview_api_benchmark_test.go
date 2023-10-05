@@ -18,7 +18,7 @@ func BenchmarkMetricsViewsTotals(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		q := &MetricsViewTotals{
 			MetricsViewName: "ad_bids_metrics",
-			MeasureNames:    []string{"avg_price"},
+			MeasureNames:    []string{"measure_1"},
 			MetricsView:     mv,
 		}
 		err := q.Resolve(context.Background(), rt, instanceID, 0)
@@ -35,10 +35,10 @@ func BenchmarkMetricsViewsToplist(b *testing.B) {
 		q := &MetricsViewToplist{
 			MetricsViewName: "ad_bids_metrics",
 			DimensionName:   "dom",
-			MeasureNames:    []string{"avg_price"},
+			MeasureNames:    []string{"measure_1"},
 			Sort: []*runtimev1.MetricsViewSort{
 				{
-					Name: "avg_price",
+					Name: "measure_1",
 				},
 			},
 			MetricsView: mv,
@@ -57,7 +57,7 @@ func BenchmarkMetricsViewsTimeSeries(b *testing.B) {
 		q := &MetricsViewTimeSeries{
 			MetricsViewName: "ad_bids_metrics",
 			TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
-			MeasureNames:    []string{"avg_price"},
+			MeasureNames:    []string{"measure_1"},
 			MetricsView:     mv,
 		}
 		err := q.Resolve(context.Background(), rt, instanceID, 0)
@@ -74,7 +74,7 @@ func BenchmarkMetricsViewsTimeSeries_TimeZone(b *testing.B) {
 		q := &MetricsViewTimeSeries{
 			MetricsViewName: "ad_bids_metrics",
 			TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
-			MeasureNames:    []string{"avg_price"},
+			MeasureNames:    []string{"measure_1"},
 			TimeZone:        "Asia/Kathmandu",
 			MetricsView:     mv,
 		}
@@ -91,7 +91,7 @@ func BenchmarkMetricsViewsTimeSeries_TimeZone_Hour(b *testing.B) {
 		q := &MetricsViewTimeSeries{
 			MetricsViewName: "ad_bids_metrics",
 			TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
-			MeasureNames:    []string{"avg_price"},
+			MeasureNames:    []string{"measure_1"},
 			TimeZone:        "Asia/Kathmandu",
 			MetricsView:     mv,
 		}
