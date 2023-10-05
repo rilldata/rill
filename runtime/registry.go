@@ -13,18 +13,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// Built-in resource kinds
-const (
-	ResourceKindProjectParser  string = "rill.runtime.v1.ProjectParser"
-	ResourceKindSource         string = "rill.runtime.v1.SourceV2"
-	ResourceKindModel          string = "rill.runtime.v1.ModelV2"
-	ResourceKindMetricsView    string = "rill.runtime.v1.MetricsViewV2"
-	ResourceKindMigration      string = "rill.runtime.v1.Migration"
-	ResourceKindPullTrigger    string = "rill.runtime.v1.PullTrigger"
-	ResourceKindRefreshTrigger string = "rill.runtime.v1.RefreshTrigger"
-	ResourceKindBucketPlanner  string = "rill.runtime.v1.BucketPlanner"
-)
-
 // GlobalProjectParserName is the name of the instance-global project parser resource that is created for each new instance.
 var GlobalProjectParserName = &runtimev1.ResourceName{Kind: ResourceKindProjectParser, Name: "parser"}
 
