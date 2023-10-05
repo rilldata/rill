@@ -109,10 +109,8 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, log
 	}
 
 	if cfg.ExtTableStorage {
-		if err := os.Mkdir(cfg.ExtStoragePath, fs.ModePerm); err != nil {
-			if !errors.Is(err, fs.ErrExist) {
-				return nil, err
-			}
+		if err := os.Mkdir(cfg.ExtStoragePath, fs.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
+			return nil, err
 		}
 	}
 
@@ -475,7 +473,7 @@ func (c *connection) reopenDB() error {
 
 		dbFile := filepath.Join(path, fmt.Sprintf("%s.db", version))
 		db := dbName(entry.Name(), version)
-		_, err = conn.ExecContext(context.Background(), fmt.Sprintf("ATTACH %s AS %s", safeSQLPath(dbFile), safeSQLName(db)))
+		_, err = conn.ExecContext(context.Background(), fmt.Sprintf("ATTACH %s AS %s", safeSQLString(dbFile), safeSQLName(db)))
 		if err != nil {
 			c.logger.Error("attach failed", zap.String("db", dbFile), zap.Error(err))
 			_, _ = conn.ExecContext(context.Background(), fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(entry.Name())))

@@ -285,7 +285,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 	dbFile := filepath.Join(sourceDir, fmt.Sprintf("%s.db", newVersion))
 	db := dbName(name, newVersion)
 	// attach new db
-	err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ATTACH %s AS %s", safeSQLPath(dbFile), safeSQLName(db))})
+	err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ATTACH %s AS %s", safeSQLString(dbFile), safeSQLName(db))})
 	if err != nil {
 		removeDBFile(dbFile)
 		return err
@@ -498,7 +498,7 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 	newDB := dbName(newName, newVersion)
 	// attach new db
 	err = c.Exec(ctx, &drivers.Statement{
-		Query:       fmt.Sprintf("ATTACH '%s' AS %s", newFile, safeSQLName(newDB)),
+		Query:       fmt.Sprintf("ATTACH '%s' AS %s", safeSQLString(newFile), safeSQLName(newDB)),
 		Priority:    100,
 		LongRunning: true,
 	})
@@ -614,8 +614,7 @@ func safeSQLName(name string) string {
 	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(name, "\"", "\"\""))
 }
 
-// safeSQLPath returns a quoted SQL identifier.
-func safeSQLPath(name string) string {
+func safeSQLString(name string) string {
 	if name == "" {
 		return name
 	}

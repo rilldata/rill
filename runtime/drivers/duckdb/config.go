@@ -19,7 +19,7 @@ type config struct {
 	AllowHostAccess bool `mapstructure:"allow_host_access"`
 	// ErrorOnIncompatibleVersion controls whether to return error or delete DBFile created with older duckdb version.
 	ErrorOnIncompatibleVersion bool `mapstructure:"error_on_incompatible_version"`
-	// ExtTableStorage controls if table is modelled as view
+	// ExtTableStorage controls if every table is stored in a different db file
 	ExtTableStorage bool `mapstructure:"external_table_storage"`
 	// DBFilePath is the path where the database is stored. It is inferred from the DSN (can't be provided by user).
 	DBFilePath string `mapstructure:"-"`
