@@ -203,8 +203,6 @@ TableCells – the cell contents.
           noPin={true}
           selectedColumn={sortByColumn}
           columns={measureColumns}
-          fallbackBGClass="bg-white"
-          {sortAscending}
           on:click-column={handleColumnHeaderClick}
         />
 

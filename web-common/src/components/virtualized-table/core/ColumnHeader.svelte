@@ -26,13 +26,9 @@
   export let header;
   export let position: HeaderPosition = "top";
   export let enableResize = true;
-  // FIXME: pretty sure isSelected can be deprecated in favor of highlight
   export let isSelected = false;
-  export let bgClass = "";
-  export let sorted: SortDirection;
-  // set this prop to control sorting arrow externally.
-  // if undefined, sorting arrow is toggled within the component.
-  export let sortAscending: boolean | undefined = undefined;
+  export let highlight = false;
+  export let sorted: SortDirection = undefined;
 
   const config: VirtualizedTableConfig = getContext("config");
   const dispatch = createEventDispatcher();
@@ -54,7 +50,7 @@
 
 <StickyHeader
   {enableResize}
-  {bgClass}
+  bgClass={highlight ? `bg-gray-50` : ""}
   on:reset-column-width={() => {
     dispatch("reset-column-size", { name });
   }}
