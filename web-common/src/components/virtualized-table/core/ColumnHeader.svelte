@@ -22,7 +22,7 @@
   export let showDataIcon = false;
   export let name;
   export let type: string;
-  export let description: string;
+  export let description = "";
   export let header;
   export let position: HeaderPosition = "top";
   export let enableResize = true;
