@@ -29,7 +29,6 @@
   // FIXME: pretty sure isSelected can be deprecated in favor of highlight
   export let isSelected = false;
   export let bgClass = "";
-  export let highlight: boolean;
   export let sorted: SortDirection;
   // set this prop to control sorting arrow externally.
   // if undefined, sorting arrow is toggled within the component.
