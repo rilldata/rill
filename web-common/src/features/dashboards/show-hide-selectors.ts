@@ -1,9 +1,9 @@
 import type { SearchableFilterSelectableItem } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
 import {
-  MetricsExplorerEntity,
   updateMetricsExplorerByName,
   useDashboardStore,
-} from "@rilldata/web-common/features/dashboards/dashboard-stores";
+} from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type {
   MetricsViewDimension,
   MetricsViewMeasure,

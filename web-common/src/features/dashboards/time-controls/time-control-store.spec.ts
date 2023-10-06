@@ -1,5 +1,5 @@
 import { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks";
-import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
   AD_BIDS_INIT,
   AD_BIDS_INIT_WITH_TIME,
@@ -7,7 +7,8 @@ import {
   AD_BIDS_SOURCE_NAME,
   AD_BIDS_TIMESTAMP_DIMENSION,
   initAdBidsInStore,
-} from "@rilldata/web-common/features/dashboards/dashboard-stores-test-data";
+  initStateManagers,
+} from "@rilldata/web-common/features/dashboards/stores/dashboard-stores-test-data";
 import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
   createTimeControlStore,
@@ -354,23 +355,10 @@ describe("time-control-store", () => {
   });
 
   function initTimeControlStoreTest(resp: V1MetricsView) {
-    initAdBidsInStore();
-    dashboardFetchMocks.mockMetricsView(AD_BIDS_NAME, resp);
-
-    const queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          refetchOnMount: false,
-          refetchOnReconnect: false,
-          refetchOnWindowFocus: false,
-          retry: false,
-        },
-      },
-    });
-    const stateManagers = createStateManagers({
-      queryClient,
-      metricsViewName: AD_BIDS_NAME,
-    });
+    const { stateManagers, queryClient } = initStateManagers(
+      dashboardFetchMocks,
+      resp
+    );
     const timeControlsStore = createTimeControlStore(stateManagers);
 
     const { unmount } = render(TimeControlsStoreTest, {

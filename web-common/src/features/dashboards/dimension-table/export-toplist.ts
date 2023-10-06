@@ -5,7 +5,7 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 import { runtime } from "../../../runtime-client/runtime-store";
-import { useDashboardStore } from "../dashboard-stores";
+import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
 import { getQuerySortType } from "../leaderboard/leaderboard-utils";
 import { SortDirection } from "../proto-state/derived-types";
 

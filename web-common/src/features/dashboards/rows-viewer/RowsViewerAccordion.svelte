@@ -7,7 +7,7 @@
   import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
-  import { useDashboardStore } from "../dashboard-stores";
+  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { useModelHasTimeSeries } from "../selectors";
   import ExportModelDataButton from "./ExportModelDataButton.svelte";
   import { featureFlags } from "../../feature-flags";

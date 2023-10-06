@@ -8,7 +8,7 @@
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/features/projects/invalidations";
   import { useProjectDeploymentStatus } from "@rilldata/web-admin/features/projects/selectors";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
-  import DashboardStateProvider from "@rilldata/web-common/features/dashboards/DashboardStateProvider.svelte";
+  import DashboardStateProvider from "@rilldata/web-common/features/dashboards/stores/DashboardStateProvider.svelte";
   import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import {
@@ -98,7 +98,7 @@
   <StateManagersProvider metricsViewName={dashboardName}>
     {#key dashboardName}
       <DashboardStateProvider metricViewName={dashboardName}>
-        <DashboardURLStateProvider metricViewName={dashboardName}>
+        <DashboardURLStateProvider>
           <Dashboard metricViewName={dashboardName} leftMargin={"48px"} />
         </DashboardURLStateProvider>
       </DashboardStateProvider>

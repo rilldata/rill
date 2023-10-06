@@ -1,25 +1,38 @@
+import { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks";
+import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
-  MetricsExplorerEntity,
-  metricsExplorerStore,
-} from "@rilldata/web-common/features/dashboards/dashboard-stores";
-import {
+  AD_BIDS_BID_PRICE_MEASURE,
   AD_BIDS_DEFAULT_TIME_RANGE,
   AD_BIDS_DEFAULT_URL_TIME_RANGE,
   AD_BIDS_DOMAIN_DIMENSION,
   AD_BIDS_EXCLUDE_FILTER,
+  AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_INIT,
+  AD_BIDS_INIT_WITH_TIME,
   AD_BIDS_MIRROR_NAME,
   AD_BIDS_NAME,
   AD_BIDS_PUBLISHER_DIMENSION,
+  AD_BIDS_SOURCE_NAME,
+  AD_BIDS_TIMESTAMP_DIMENSION,
+  AD_BIDS_WITH_DELETED_MEASURE,
   assertMetricsView,
   createDashboardState,
-  createMetricsMetaQueryMock,
+  initStateManagers,
   resetDashboardStore,
-} from "@rilldata/web-common/features/dashboards/dashboard-stores-test-data";
-import { useDashboardUrlSync } from "@rilldata/web-common/features/dashboards/proto-state/dashboard-url-state";
+  TestTimeConstants,
+} from "@rilldata/web-common/features/dashboards/stores/dashboard-stores-test-data";
+import {
+  useDashboardDefaultProto,
+  useDashboardUrlSync,
+} from "@rilldata/web-common/features/dashboards/proto-state/dashboard-url-state";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
+import DashboardTestComponent from "@rilldata/web-common/features/dashboards/stores/DashboardTestComponent.svelte";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
+import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { Page } from "@sveltejs/kit";
+import { render } from "@testing-library/svelte";
 import { get, Readable, writable } from "svelte/store";
 import {
   beforeEach,
@@ -45,6 +58,12 @@ vi.mock("$app/stores", () => {
 });
 
 describe("useDashboardUrlSync", () => {
+  runtime.set({
+    host: "http://localhost",
+    instanceId: "default",
+  });
+  const dashboardFetchMocks = DashboardFetchMocks.useDashboardFetchMocks();
+
   beforeAll(() => {
     createPageMock();
     initLocalUserPreferenceStore(AD_BIDS_NAME);
@@ -56,10 +75,8 @@ describe("useDashboardUrlSync", () => {
     pageMock.gotoSpy.mockClear();
   });
 
-  it("Changes from dashboard", async () => {
-    const metaMock = createMetricsMetaQueryMock();
-    const unsubscribe = useDashboardUrlSync(AD_BIDS_NAME, metaMock);
-    await wait();
+  it("Changes to dashboard through interactions", async () => {
+    const { teardown, defaultProtoStore } = await initDashboardUrlState();
 
     expect(pageMock.gotoSpy).toBeCalledTimes(0);
 
@@ -76,7 +93,7 @@ describe("useDashboardUrlSync", () => {
 
     pageMock.goto("/dashboard/AdBids");
     expect(get(metricsExplorerStore).entities[AD_BIDS_NAME].proto).toEqual(
-      get(metricsExplorerStore).entities[AD_BIDS_NAME].defaultProto
+      get(defaultProtoStore).proto
     );
     expect(get(metricsExplorerStore).entities[AD_BIDS_NAME].filters).toEqual({
       include: [],
@@ -98,16 +115,39 @@ describe("useDashboardUrlSync", () => {
     });
     expect(pageMock.gotoSpy).toBeCalledTimes(2);
 
-    unsubscribe();
+    teardown();
+  });
+
+  it("Changes to dashboard config", async () => {
+    const { teardown, queryClient, defaultProtoStore } =
+      await initDashboardUrlState();
+    expect(pageMock.gotoSpy).toBeCalledTimes(0);
+
+    dashboardFetchMocks.mockMetricsView(
+      AD_BIDS_NAME,
+      AD_BIDS_WITH_DELETED_MEASURE
+    );
+    await queryClient.refetchQueries({
+      type: "active",
+    });
+    await wait();
+    // Goto not called still since defaultProto has changed
+    expect(pageMock.gotoSpy).toBeCalledTimes(0);
+    expect(get(pageMock).url.searchParams.has("state")).toBeFalsy();
+    // This is not updated since the sync is called in a component
+    // TODO: We should add tests for the sync component
+    expect(
+      get(metricsExplorerStore).entities[AD_BIDS_NAME].selectedMeasureNames
+    ).toEqual([AD_BIDS_IMPRESSIONS_MEASURE, AD_BIDS_BID_PRICE_MEASURE]);
+
+    teardown();
   });
 
   it("Init load from url", async () => {
     gotoDashboardState(
       createDashboardState(AD_BIDS_NAME, AD_BIDS_INIT, AD_BIDS_EXCLUDE_FILTER)
     );
-    const metaMock = createMetricsMetaQueryMock();
-    const unsubscribe = useDashboardUrlSync(AD_BIDS_NAME, metaMock);
-    await wait();
+    const { teardown } = await initDashboardUrlState();
 
     assertUrlState(get(metricsExplorerStore).entities[AD_BIDS_NAME].proto);
     assertMetricsView(
@@ -116,14 +156,15 @@ describe("useDashboardUrlSync", () => {
       AD_BIDS_DEFAULT_URL_TIME_RANGE
     );
 
-    unsubscribe();
+    teardown();
   });
 
   it("Changing active dashboard", async () => {
-    const metaMock = createMetricsMetaQueryMock();
-    let unsubscribe1 = useDashboardUrlSync(AD_BIDS_NAME, metaMock);
-    let unsubscribe2 = useDashboardUrlSync(AD_BIDS_MIRROR_NAME, metaMock);
-    await wait();
+    const { teardown, stateManagers } = await initDashboardUrlState();
+    dashboardFetchMocks.mockMetricsView(
+      AD_BIDS_MIRROR_NAME,
+      AD_BIDS_INIT_WITH_TIME
+    );
 
     metricsExplorerStore.toggleFilter(
       AD_BIDS_NAME,
@@ -146,8 +187,9 @@ describe("useDashboardUrlSync", () => {
       AD_BIDS_DEFAULT_TIME_RANGE
     );
 
-    unsubscribe1();
-    pageMock.goto("/dashboard/AdBids_mirror");
+    // Go to AdBids_mirror
+    pageMock.goto(`/dashboard/${AD_BIDS_MIRROR_NAME}`);
+    stateManagers.setMetricsViewName(AD_BIDS_MIRROR_NAME);
     await wait();
     metricsExplorerStore.toggleFilter(
       AD_BIDS_MIRROR_NAME,
@@ -173,9 +215,8 @@ describe("useDashboardUrlSync", () => {
     );
 
     // Going back to AdBids should retain the selected filters
-    unsubscribe2();
-    pageMock.goto("/dashboard/AdBids");
-    unsubscribe1 = useDashboardUrlSync(AD_BIDS_NAME, metaMock);
+    pageMock.goto(`/dashboard/${AD_BIDS_NAME}`);
+    stateManagers.setMetricsViewName(AD_BIDS_NAME);
     await wait();
     assertMetricsView(
       AD_BIDS_NAME,
@@ -192,8 +233,8 @@ describe("useDashboardUrlSync", () => {
     );
 
     // Going back to AdBids_mirror should retain the selected filters
-    pageMock.goto("/dashboard/AdBids_mirror");
-    unsubscribe2 = useDashboardUrlSync(AD_BIDS_NAME, metaMock);
+    pageMock.goto(`/dashboard/${AD_BIDS_MIRROR_NAME}`);
+    stateManagers.setMetricsViewName(AD_BIDS_MIRROR_NAME);
     await wait();
     assertMetricsView(
       AD_BIDS_MIRROR_NAME,
@@ -209,9 +250,43 @@ describe("useDashboardUrlSync", () => {
       AD_BIDS_DEFAULT_TIME_RANGE
     );
 
-    unsubscribe1();
-    unsubscribe2();
+    teardown();
   });
+
+  async function initDashboardUrlState() {
+    const { queryClient, stateManagers } = initStateManagers(
+      dashboardFetchMocks,
+      AD_BIDS_INIT_WITH_TIME
+    );
+    dashboardFetchMocks.mockTimeRangeSummary(
+      AD_BIDS_SOURCE_NAME,
+      AD_BIDS_TIMESTAMP_DIMENSION,
+      {
+        min: TestTimeConstants.LAST_DAY.toISOString(),
+        max: TestTimeConstants.NOW.toISOString(),
+      }
+    );
+
+    const { unmount } = render(DashboardTestComponent, {
+      ctx: stateManagers,
+    });
+
+    const defaultProtoStore = useDashboardDefaultProto(stateManagers);
+    await waitUntil(() => !get(defaultProtoStore).isFetching, 1000, 5);
+
+    const unsubscribe = useDashboardUrlSync(stateManagers);
+    await wait();
+
+    return {
+      teardown: () => {
+        unmount();
+        unsubscribe();
+      },
+      stateManagers,
+      queryClient,
+      defaultProtoStore,
+    };
+  }
 });
 
 type PageMock = Readable<Page> & {

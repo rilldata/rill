@@ -1,8 +1,8 @@
-import {
-  MetricsExplorerEntity,
-  metricsExplorerStore,
-} from "@rilldata/web-common/features/dashboards/dashboard-stores";
+import type { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks";
+import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
 import {
   getOffset,
@@ -23,6 +23,7 @@ import {
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/query-core";
+import { QueryClient } from "@tanstack/svelte-query";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { get, writable } from "svelte/store";
 import { expect } from "vitest";
@@ -320,6 +321,32 @@ export function getOffsetByHour(time: Date) {
     TimeOffsetType.ADD,
     getLocalIANA()
   );
+}
+
+export function initStateManagers(
+  dashboardFetchMocks: DashboardFetchMocks,
+  resp: V1MetricsView
+) {
+  initAdBidsInStore();
+  dashboardFetchMocks.mockMetricsView(AD_BIDS_NAME, resp);
+
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnMount: false,
+        refetchOnReconnect: false,
+        refetchOnWindowFocus: false,
+        retry: false,
+        networkMode: "always",
+      },
+    },
+  });
+  const stateManagers = createStateManagers({
+    queryClient,
+    metricsViewName: AD_BIDS_NAME,
+  });
+
+  return { stateManagers, queryClient };
 }
 
 export const AD_BIDS_BASE_FILTER = {
