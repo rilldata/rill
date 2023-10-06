@@ -432,6 +432,7 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 	if err != nil && !errors.Is(err, fs.ErrExist) {
 		return err
 	}
+	oldSrcDir := filepath.Join(c.config.ExtStoragePath, oldName)
 
 	return c.WithConnection(ctx, 100, true, false, func(currentCtx, ctx context.Context, conn *dbsql.Conn) error {
 		// drop old view
@@ -448,12 +449,14 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 
 		// move old file as a new file in source directory
 		newVersion := fmt.Sprint(time.Now().UnixMilli())
-		oldFile := filepath.Join(c.config.ExtStoragePath, oldName, fmt.Sprintf("%s.db", oldVersion))
 		newFile := filepath.Join(newSrcDir, fmt.Sprintf("%s.db", newVersion))
-		err = os.Rename(oldFile, newFile)
+		err = os.Rename(filepath.Join(oldSrcDir, fmt.Sprintf("%s.db", oldVersion)), newFile)
 		if err != nil {
 			return fmt.Errorf("rename: rename file failed: %w", err)
 		}
+		// also move .db.wal file in case checkpointing was not completed
+		_ = os.Rename(filepath.Join(oldSrcDir, fmt.Sprintf("%s.db.wal", oldVersion)),
+			filepath.Join(newSrcDir, fmt.Sprintf("%s.db.wal", newVersion)))
 
 		err = c.updateVersion(newName, newVersion)
 		if err != nil {
