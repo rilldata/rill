@@ -138,11 +138,13 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, log
 		ctx:            ctx,
 		cancel:         cancel,
 	}
+
+	// register a callback to add a gauge on number of connections in use per db
 	attrs := []attribute.KeyValue{attribute.String("db", c.config.DBFilePath)}
 	c.metrics = observability.Must(meter.RegisterCallback(func(ctx context.Context, observer metric.Observer) error {
-		observer.ObserveInt64(runningOLAPQueriesGauge, int64(c.dbConnCount), metric.WithAttributes(attrs...))
+		observer.ObserveInt64(connectionsInUse, int64(c.dbConnCount), metric.WithAttributes(attrs...))
 		return nil
-	}, runningOLAPQueriesGauge))
+	}, connectionsInUse))
 
 	// Open the DB
 	err = c.reopenDB()
@@ -289,8 +291,9 @@ type connection struct {
 	dbErr       error
 	shared      bool
 	// Cancellable context to control internal processes like emitting the stats
-	ctx     context.Context
-	cancel  context.CancelFunc
+	ctx    context.Context
+	cancel context.CancelFunc
+	// metrics registration should be unregistered once connection is closed
 	metrics metric.Registration
 }
 
