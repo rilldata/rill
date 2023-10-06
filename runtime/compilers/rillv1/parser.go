@@ -20,9 +20,6 @@ var (
 	maxFileSize = 1 << 17 // 128kb
 )
 
-// ErrInvalidProject indicates a project without a rill.yaml file
-var ErrInvalidProject = errors.New("not a valid project (rill.yaml not found)")
-
 // Resource parsed from code files.
 // One file may output multiple resources and multiple files may contribute config to one resource.
 type Resource struct {
@@ -105,11 +102,12 @@ func (k ResourceKind) String() string {
 
 // Diff shows changes to Parser.Resources following an incremental reparse.
 type Diff struct {
-	Added            []ResourceName
-	Modified         []ResourceName
-	ModifiedRillYAML bool
-	ModifiedDotEnv   bool
-	Deleted          []ResourceName
+	Reloaded       bool
+	Skipped        bool
+	Added          []ResourceName
+	Modified       []ResourceName
+	ModifiedDotEnv bool
+	Deleted        []ResourceName
 }
 
 // Parser parses a Rill project directory into a set of resources.
@@ -149,6 +147,10 @@ func ParseRillYAML(ctx context.Context, repo drivers.RepoStore, instanceID strin
 		return nil, err
 	}
 
+	if p.RillYAML == nil {
+		return nil, errors.New("rill.yaml not found")
+	}
+
 	return p.RillYAML, nil
 }
 
@@ -158,23 +160,71 @@ func ParseRillYAML(ctx context.Context, repo drivers.RepoStore, instanceID strin
 // To enable SQL parsing for a connector, pass it in duckDBConnectors. If DuckDB SQL parsing should be used on files where no connector is specified, put the defaultConnector in duckDBConnectors.
 func Parse(ctx context.Context, repo drivers.RepoStore, instanceID, defaultConnector string, duckDBConnectors []string) (*Parser, error) {
 	p := &Parser{
-		Repo:                       repo,
-		InstanceID:                 instanceID,
-		DefaultConnector:           defaultConnector,
-		DuckDBConnectors:           duckDBConnectors,
-		Resources:                  make(map[ResourceName]*Resource),
-		resourcesForPath:           make(map[string][]*Resource),
-		resourcesForUnspecifiedRef: make(map[string][]*Resource),
+		Repo:             repo,
+		InstanceID:       instanceID,
+		DefaultConnector: defaultConnector,
+		DuckDBConnectors: duckDBConnectors,
 	}
 
-	paths, err := p.Repo.ListRecursive(ctx, "**/*.{sql,yaml,yml}")
-	if err != nil {
-		return nil, fmt.Errorf("could not list project files: %w", err)
-	}
-
-	err = p.parsePaths(ctx, paths)
+	err := p.reload(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	return p, nil
+}
+
+// Reparse re-parses the indicated file paths, updating the Parser's state.
+// If rill.yaml has previously errored, or if rill.yaml is included in paths, it will reload the entire project.
+// If a previous call to Reparse has returned an error, the Parser may not be accessed or called again.
+func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
+	var changedRillYAML bool
+	for _, p := range paths {
+		if pathIsRillYAML(p) {
+			changedRillYAML = true
+			break
+		}
+	}
+
+	if changedRillYAML {
+		err := p.reload(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return &Diff{Reloaded: true}, nil
+	}
+
+	// If rill.yaml previously errored, we're not going to reparse anything until it's changed, at which point we'll reload the entire project.
+	if p.RillYAML == nil {
+		return &Diff{Skipped: true}, nil
+	}
+
+	return p.reparseExceptRillYAML(ctx, paths)
+}
+
+// reload resets the parser's state and then parses the entire project.
+func (p *Parser) reload(ctx context.Context) error {
+	// Reset state
+	p.RillYAML = nil
+	p.DotEnv = nil
+	p.Resources = make(map[ResourceName]*Resource)
+	p.Errors = nil
+	p.resourcesForPath = make(map[string][]*Resource)
+	p.resourcesForUnspecifiedRef = make(map[string][]*Resource)
+	p.insertedResources = nil
+	p.updatedResources = nil
+	p.deletedResources = nil
+
+	// Load entire repo
+	paths, err := p.Repo.ListRecursive(ctx, "**/*.{sql,yaml,yml}")
+	if err != nil {
+		return fmt.Errorf("could not list project files: %w", err)
+	}
+
+	// Parse all files
+	err = p.parsePaths(ctx, paths)
+	if err != nil {
+		return err
 	}
 
 	// Infer unspecified refs for all inserted resources
@@ -182,12 +232,12 @@ func Parse(ctx context.Context, repo drivers.RepoStore, instanceID, defaultConne
 		p.inferUnspecifiedRefs(r)
 	}
 
-	return p, nil
+	return nil
 }
 
-// Reparse re-parses the indicated file paths, updating the Parser's state.
-// If a previous call to Reparse has returned an error, the Parser may not be accessed or called again.
-func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
+// reparseExceptRillYAML re-parses the indicated file paths, updating the Parser's state.
+// It assumes that p.RillYAML is valid and does not need to be reloaded.
+func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Diff, error) {
 	// The logic here is slightly tricky because the relationship between files and resources can vary:
 	//
 	// - Case 1: one file created one resource
@@ -195,7 +245,7 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	// - Case 3: multiple files contributed to one resource (for example, "model.sql" and "model.yaml")
 	//
 	// The high-level approach is: We'll delete all existing resources *related* to the changed paths and (re)parse them.
-	// Then at the end, we build a diff that treats any resource that was both "deleted" and "added" as an "update".
+	// Then at the end, we build a diff that treats any resource that was both "deleted" and "added" as "modified".
 	// (Renames are not supported in the parser. It needs to be handled by the caller, since parser state alone is insufficient to detect it.)
 	//
 	// Another wrinkle is that we need to re-infer unspecified refs for:
@@ -212,13 +262,12 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	// And delete all resources and parse errors related to those paths.
 	var parsePaths []string           // Paths we should pass to parsePaths
 	checkPaths := slices.Clone(paths) // Paths we should visit in the loop
-	for _, perr := range p.Errors {   // Also re-check check paths with external parse errors
+	for _, perr := range p.Errors {   // Also re-check paths with external parse errors
 		if perr.External {
 			checkPaths = append(checkPaths, perr.FilePath)
 		}
 	}
 	seenPaths := make(map[string]bool) // Paths already visited by the loop
-	modifiedRillYAML := false          // whether rill.yaml file was modified
 	modifiedDotEnv := false            // whether .env file was modified
 	for i := 0; i < len(checkPaths); i++ {
 		// Don't check the same path twice
@@ -244,11 +293,8 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 			return nil, fmt.Errorf("unexpected file stat error: %w", err)
 		}
 
-		// Check if path is rill.yaml or .env and clear it (so we can re-parse it)
-		if pathIsRillYAML(path) {
-			modifiedRillYAML = true
-			p.RillYAML = nil
-		} else if isDotEnv {
+		// Check if path is .env and clear it (so we can re-parse it)
+		if isDotEnv {
 			modifiedDotEnv = true
 			p.DotEnv = nil
 		}
@@ -332,8 +378,7 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 
 	// Phase 3: Build the diff using p.insertedResources, p.updatedResources and p.deletedResources
 	diff := &Diff{
-		ModifiedRillYAML: modifiedRillYAML,
-		ModifiedDotEnv:   modifiedDotEnv,
+		ModifiedDotEnv: modifiedDotEnv,
 	}
 	for _, resource := range p.insertedResources {
 		addedBack := false
@@ -384,14 +429,16 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 	})
 
 	// Iterate over the sorted paths, processing all paths with the same stem at once (stem = path without extension).
+	sawRillYAML := false
 	for i := 0; i < len(paths); {
-		// Handle rill.yaml and .env separately (if parsing of rill.yaml fails, we exit early instead of adding a ParseError)
+		// Handle rill.yaml and .env separately
 		path := paths[i]
 		if pathIsRillYAML(path) {
 			err := p.parseRillYAML(ctx, path)
 			if err != nil {
-				return err
+				p.addParseError(path, err, false)
 			}
+			sawRillYAML = true
 			i++
 			continue
 		} else if pathIsDotEnv(path) {
@@ -420,9 +467,9 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 		i = j
 	}
 
-	// If we didn't encounter rill.yaml, that's a breaking error
-	if p.RillYAML == nil {
-		return ErrInvalidProject
+	// If we didn't encounter rill.yaml (in this run or a previous run), that's a breaking error
+	if !sawRillYAML && p.RillYAML == nil {
+		p.addParseError("/rill.yaml", errors.New("rill.yaml not found"), false)
 	}
 
 	// As a special case, we need to check that there aren't any sources and models with the same name.

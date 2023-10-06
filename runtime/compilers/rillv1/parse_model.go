@@ -28,7 +28,7 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	tmp := &modelYAML{}
 	if p.RillYAML != nil && !p.RillYAML.Defaults.Models.IsZero() {
 		if err := p.RillYAML.Defaults.Models.Decode(tmp); err != nil {
-			return pathError{path: node.YAMLPath, err: fmt.Errorf("failed applying defaults from rill.yaml: %w", newYAMLError(err))}
+			return pathError{path: node.YAMLPath, err: fmt.Errorf("failed applying defaults from rill.yaml: %w", err)}
 		}
 	}
 	if node.YAML != nil {

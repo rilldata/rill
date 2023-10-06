@@ -593,6 +593,65 @@ path: hello
 	}, diff)
 }
 
+func TestReparseRillYAML(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{})
+
+	mdl := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+		Paths: []string{"/models/m1.sql"},
+		ModelSpec: &runtimev1.ModelSpec{
+			Sql: "SELECT 10",
+		},
+	}
+	perr := &runtimev1.ParseError{
+		Message:  "rill.yaml not found",
+		FilePath: "/rill.yaml",
+	}
+
+	// Parse empty project. Expect rill.yaml error.
+	p, err := Parse(ctx, repo, "", "", []string{""})
+	require.NoError(t, err)
+	require.Nil(t, p.RillYAML)
+	requireResourcesAndErrors(t, p, nil, []*runtimev1.ParseError{perr})
+
+	// Add rill.yaml. Expect success.
+	putRepo(t, repo, map[string]string{
+		`rill.yaml`: ``,
+	})
+	diff, err := p.Reparse(ctx, []string{"/rill.yaml"})
+	require.NoError(t, err)
+	require.True(t, diff.Reloaded)
+	require.NotNil(t, p.RillYAML)
+	requireResourcesAndErrors(t, p, nil, nil)
+
+	// Remove rill.yaml and add a model. Expect reloaded.
+	deleteRepo(t, repo, "/rill.yaml")
+	putRepo(t, repo, map[string]string{"/models/m1.sql": "SELECT 10"})
+	diff, err = p.Reparse(ctx, []string{"/rill.yaml", "/models/m1.sql"})
+	require.NoError(t, err)
+	require.True(t, diff.Reloaded)
+	require.Nil(t, p.RillYAML)
+	requireResourcesAndErrors(t, p, []*Resource{mdl}, []*runtimev1.ParseError{perr})
+
+	// Edit model. Expect nothing to happen because rill.yaml is still broken.
+	putRepo(t, repo, map[string]string{"/models/m1.sql": "SELECT 20"})
+	diff, err = p.Reparse(ctx, []string{"/models/m1.sql"})
+	require.NoError(t, err)
+	require.Equal(t, &Diff{Skipped: true}, diff)
+	require.Nil(t, p.RillYAML)
+	requireResourcesAndErrors(t, p, []*Resource{mdl}, []*runtimev1.ParseError{perr})
+
+	// Fix rill.yaml. Expect reloaded.
+	mdl.ModelSpec.Sql = "SELECT 20"
+	putRepo(t, repo, map[string]string{"/rill.yaml": ""})
+	diff, err = p.Reparse(ctx, []string{"/rill.yaml"})
+	require.NoError(t, err)
+	require.True(t, diff.Reloaded)
+	require.NotNil(t, p.RillYAML)
+	requireResourcesAndErrors(t, p, []*Resource{mdl}, nil)
+}
+
 func TestRefInferrence(t *testing.T) {
 	// Create model referencing "bar"
 	foo := &Resource{

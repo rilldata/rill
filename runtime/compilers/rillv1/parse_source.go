@@ -28,7 +28,7 @@ func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 	tmp := &sourceYAML{}
 	if p.RillYAML != nil && !p.RillYAML.Defaults.Sources.IsZero() {
 		if err := p.RillYAML.Defaults.Sources.Decode(tmp); err != nil {
-			return pathError{path: node.YAMLPath, err: fmt.Errorf("failed applying defaults from rill.yaml: %w", newYAMLError(err))}
+			return pathError{path: node.YAMLPath, err: fmt.Errorf("failed applying defaults from rill.yaml: %w", err)}
 		}
 	}
 	if node.YAML != nil {
