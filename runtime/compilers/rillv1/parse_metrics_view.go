@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -265,6 +266,23 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	spec.AvailableTimeZones = tmp.AvailableTimeZones
 	spec.FirstDayOfWeek = tmp.FirstDayOfWeek
 	spec.FirstMonthOfYear = tmp.FirstMonthOfYear
+	if tmp.FirstDayOfWeek == 0 && p.RillYAML.Dashboards["first_day_of_week"] != "" {
+		i, err := strconv.Atoi(p.RillYAML.Dashboards["first_day_of_week"])
+		if err != nil {
+			return err
+		}
+
+		spec.FirstDayOfWeek = uint32(i)
+	}
+
+	if tmp.FirstMonthOfYear == 0 && p.RillYAML.Dashboards["first_month_of_year"] != "" {
+		i, err := strconv.Atoi(p.RillYAML.Dashboards["first_month_of_year"])
+		if err != nil {
+			return err
+		}
+
+		spec.FirstMonthOfYear = uint32(i)
+	}
 
 	for _, dim := range tmp.Dimensions {
 		if dim.Ignore {

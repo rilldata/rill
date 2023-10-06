@@ -33,6 +33,10 @@ connectors:
 
 env:
   foo: bar
+
+dashboards:
+  first_day_of_week: 7
+  first_month_of_year: 3
 `,
 	})
 
@@ -51,6 +55,9 @@ env:
 	require.Len(t, res.Variables, 1)
 	require.Equal(t, "foo", res.Variables[0].Name)
 	require.Equal(t, "bar", res.Variables[0].Default)
+
+	require.Equal(t, "7", res.Dashboards["first_day_of_week"])
+	require.Equal(t, "3", res.Dashboards["first_month_of_year"])
 }
 
 func TestComplete(t *testing.T) {
