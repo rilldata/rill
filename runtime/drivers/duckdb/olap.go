@@ -30,7 +30,6 @@ var (
 	queryLatencyHistogram   = observability.Must(meter.Int64Histogram("query_latency", metric.WithUnit("ms")))
 	totalLatencyHistogram   = observability.Must(meter.Int64Histogram("total_latency", metric.WithUnit("ms")))
 	runningOLAPQueriesGauge = observability.Must(meter.Int64ObservableGauge("running_olap_queries"))
-	runningMetaQueriesGauge = observability.Must(meter.Int64ObservableGauge("running_meta_queries"))
 )
 
 func (c *connection) Dialect() drivers.Dialect {

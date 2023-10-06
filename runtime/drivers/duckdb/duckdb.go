@@ -140,11 +140,9 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, log
 	}
 	attrs := []attribute.KeyValue{attribute.String("db", c.config.DBFilePath)}
 	c.metrics = observability.Must(meter.RegisterCallback(func(ctx context.Context, observer metric.Observer) error {
-		// runningQueriesGauge.
 		observer.ObserveInt64(runningOLAPQueriesGauge, int64(c.dbConnCount), metric.WithAttributes(attrs...))
-		observer.ObserveInt64(runningMetaQueriesGauge, int64(c.dbConnCount), metric.WithAttributes(attrs...))
 		return nil
-	}, runningOLAPQueriesGauge, runningMetaQueriesGauge))
+	}, runningOLAPQueriesGauge))
 
 	// Open the DB
 	err = c.reopenDB()
