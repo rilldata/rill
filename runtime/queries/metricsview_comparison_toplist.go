@@ -27,7 +27,7 @@ type MetricsViewComparisonToplist struct {
 	Filter              *runtimev1.MetricsViewFilter           `json:"filter,omitempty"`
 	MetricsView         *runtimev1.MetricsView                 `json:"-"`
 	ResolvedMVSecurity  *runtime.ResolvedMetricsViewSecurity   `json:"security"`
-	Approximate         bool                                   `json:"approximate"`
+	Exact               bool                                   `json:"exact"`
 
 	Result *runtimev1.MetricsViewComparisonToplistResponse `json:"-"`
 }
@@ -418,15 +418,20 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 	comparisonLimitClause := ""
 
 	joinType := "FULL"
-	if q.Approximate {
+	if !q.Exact {
+		approximationLimit := q.Limit
+		if q.Limit < 100 {
+			approximationLimit = 100
+		}
+
 		if q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE ||
 			q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA ||
 			q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA {
 			joinType = "LEFT OUTER"
-			baseLimitClause = fmt.Sprintf("LIMIT %d", q.Limit)
+			baseLimitClause = fmt.Sprintf("LIMIT %d", approximationLimit)
 		} else if q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE {
 			joinType = "RIGHT OUTER"
-			comparisonLimitClause = fmt.Sprintf("LIMIT %d", q.Limit)
+			comparisonLimitClause = fmt.Sprintf("LIMIT %d", approximationLimit)
 		}
 	}
 

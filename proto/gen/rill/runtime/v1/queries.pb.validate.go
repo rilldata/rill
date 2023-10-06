@@ -2333,7 +2333,7 @@ func (m *MetricsViewComparisonToplistRequest) validate(all bool) error {
 
 	// no validation rules for Priority
 
-	// no validation rules for Approximate
+	// no validation rules for Exact
 
 	if len(errors) > 0 {
 		return MetricsViewComparisonToplistRequestMultiError(errors)

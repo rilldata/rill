@@ -1164,7 +1164,7 @@ paths:
               priority:
                 type: integer
                 format: int32
-              approximate:
+              exact:
                 type: boolean
             title: Request message for QueryService.MetricsViewComparisonToplist
       tags:
@@ -3527,7 +3527,7 @@ definitions:
       priority:
         type: integer
         format: int32
-      approximate:
+      exact:
         type: boolean
     title: Request message for QueryService.MetricsViewComparisonToplist
   v1MetricsViewComparisonToplistResponse:

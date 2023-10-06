@@ -308,7 +308,7 @@ message MetricsViewComparisonToplistRequest {
   int64 limit = 10 [(validate.rules).int64.gte = 0];
   int64 offset = 11 [(validate.rules).int64.gte = 0];
   int32 priority = 12;
-  bool approximate = 13;
+  bool exact = 13;
 }
 
 // Response message for QueryService.MetricsViewComparisonToplist

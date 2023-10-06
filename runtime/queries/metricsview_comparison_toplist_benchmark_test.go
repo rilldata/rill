@@ -419,8 +419,8 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_app
 				Ascending:   false,
 			},
 		},
-		Limit:       250,
-		Approximate: true,
+		Limit: 250,
+		Exact: false,
 	}
 
 	b.ResetTimer()
@@ -540,8 +540,8 @@ func BenchmarkMetricsViewsComparison_high_cardinality_compare_spending_approxima
 				Ascending:   false,
 			},
 		},
-		Limit:       250,
-		Approximate: true,
+		Limit: 250,
+		Exact: false,
 	}
 
 	b.ResetTimer()
