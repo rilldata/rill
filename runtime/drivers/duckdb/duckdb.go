@@ -141,7 +141,7 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, log
 
 	// register a callback to add a gauge on number of connections in use per db
 	attrs := []attribute.KeyValue{attribute.String("db", c.config.DBFilePath)}
-	c.metrics = observability.Must(meter.RegisterCallback(func(ctx context.Context, observer metric.Observer) error {
+	c.registration = observability.Must(meter.RegisterCallback(func(ctx context.Context, observer metric.Observer) error {
 		observer.ObserveInt64(connectionsInUse, int64(c.dbConnCount), metric.WithAttributes(attrs...))
 		return nil
 	}, connectionsInUse))
@@ -293,8 +293,8 @@ type connection struct {
 	// Cancellable context to control internal processes like emitting the stats
 	ctx    context.Context
 	cancel context.CancelFunc
-	// metrics registration should be unregistered once connection is closed
-	metrics metric.Registration
+	// registration should be unregistered on close
+	registration metric.Registration
 }
 
 var _ drivers.OLAPStore = &connection{}
@@ -312,7 +312,7 @@ func (c *connection) Config() map[string]any {
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
 	c.cancel()
-	_ = c.metrics.Unregister()
+	_ = c.registration.Unregister()
 	return c.db.Close()
 }
 
