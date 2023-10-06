@@ -39,7 +39,6 @@
 
   $: isDimensionTable = config.table === "DimensionTable";
   $: isDimensionColumn = isDimensionTable && type === "VARCHAR";
-  $: isDeltaColumn = isDimensionTable && typeof name !== "string";
 
   $: textAlignment = isDimensionColumn ? "text-left pl-1" : "text-right pr-1";
 
@@ -136,7 +135,7 @@
           </TooltipDescription>
         {/if}
         <TooltipShortcutContainer>
-          {#if !isDeltaColumn && isDimensionTable}
+          {#if isDimensionTable}
             <div>Sort column</div>
             <Shortcut>Click</Shortcut>
           {/if}
