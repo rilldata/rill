@@ -6,10 +6,8 @@ import {
   AD_BIDS_NAME,
   AD_BIDS_SOURCE_NAME,
   AD_BIDS_TIMESTAMP_DIMENSION,
-  initAdBidsInStore,
   initStateManagers,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores-test-data";
-import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
   createTimeControlStore,
   TimeControlState,
@@ -25,7 +23,6 @@ import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
-import { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 import { describe, it, expect, beforeAll, beforeEach } from "vitest";
 import { render } from "@testing-library/svelte";

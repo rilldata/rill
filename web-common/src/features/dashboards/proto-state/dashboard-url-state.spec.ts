@@ -119,8 +119,7 @@ describe("useDashboardUrlSync", () => {
   });
 
   it("Changes to dashboard config", async () => {
-    const { teardown, queryClient, defaultProtoStore } =
-      await initDashboardUrlState();
+    const { teardown, queryClient } = await initDashboardUrlState();
     expect(pageMock.gotoSpy).toBeCalledTimes(0);
 
     dashboardFetchMocks.mockMetricsView(
