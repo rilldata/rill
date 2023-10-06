@@ -356,14 +356,6 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	return diff, nil
 }
 
-func pathIsRillYAML(path string) bool {
-	return path == "/rill.yaml" || path == "/rill.yml"
-}
-
-func pathIsDotEnv(path string) bool {
-	return path == "/.env"
-}
-
 // parsePaths is the internal entrypoint for parsing a list of paths.
 // It assumes that the caller has already checked that the paths exist.
 // It also assumes that the caller has already removed any previous resources related to the paths,
@@ -742,6 +734,16 @@ func (p *Parser) addParseError(path string, err error) {
 		FilePath:      path,
 		StartLocation: loc,
 	})
+}
+
+// pathIsRillYAML returns true if the path is rill.yaml
+func pathIsRillYAML(path string) bool {
+	return path == "/rill.yaml" || path == "/rill.yml"
+}
+
+// pathIsDotEnv returns true if the path is .env
+func pathIsDotEnv(path string) bool {
+	return path == "/.env"
 }
 
 // normalizePath normalizes a user-provided path to the format returned from ListRecursive.
