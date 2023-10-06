@@ -88,9 +88,7 @@ test.describe("dashboard", () => {
   test("Dashboard runthrough", async ({ page }) => {
     // Enable to get logs in CI
     page.on("console", async (msg) => {
-      const values = [];
-      for (const arg of msg.args()) values.push(await arg.jsonValue());
-      console.log(...values);
+      console.log(msg.text());
     });
     page.on("pageerror", (exception) => {
       console.log(
