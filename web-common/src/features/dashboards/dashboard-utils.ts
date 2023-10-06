@@ -2,6 +2,7 @@ import type {
   QueryServiceMetricsViewComparisonToplistBody,
   MetricsViewDimension,
   MetricsViewMeasure,
+  V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
 import type { TimeControlState } from "./time-controls/time-control-store";
 import { getQuerySortType } from "./leaderboard/leaderboard-utils";
@@ -32,16 +33,7 @@ export function prepareSortedQueryBody(
   sortMeasureName: string,
   sortType: DashboardState_LeaderboardSortType,
   sortAscending: boolean,
-  filterForDimension: {
-    include: {
-      name: string;
-      in: string[];
-    }[];
-    exclude: {
-      name: string;
-      in: string[];
-    }[];
-  }
+  filterForDimension: V1MetricsViewFilter
 ): QueryServiceMetricsViewComparisonToplistBody {
   const querySortType = getQuerySortType(sortType);
 
