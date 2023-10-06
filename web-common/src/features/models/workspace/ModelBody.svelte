@@ -14,6 +14,7 @@
     createQueryServiceTableRows,
     createRuntimeServiceGetFile,
     createRuntimeServicePutFile,
+    V1ReconcileStatus,
   } from "@rilldata/web-common/runtime-client";
   import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -24,7 +25,7 @@
   import type { LayoutElement } from "../../../layout/workspace/types";
   import { httpRequestQueue } from "../../../runtime-client/http-client";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { useModelFileIsEmpty } from "../selectors";
+  import { useModel, useModelFileIsEmpty } from "../selectors";
   import { sanitizeQuery } from "../utils/sanitize-query";
   import Editor from "./Editor.svelte";
 
@@ -60,6 +61,8 @@
 
   $: modelSql = $modelSqlQuery?.data?.blob;
   $: hasModelSql = typeof modelSql === "string";
+
+  $: modelQuery = useModel(runtimeInstanceId, modelName);
 
   let sanitizedQuery: string;
   $: sanitizedQuery = sanitizeQuery(modelSql ?? "");
@@ -163,8 +166,9 @@
         >
           {#if !$modelEmpty?.data}
             <ConnectedPreviewTable
-              objectName={modelName}
-              kind={ResourceKind.Model}
+              objectName={$modelQuery?.data?.model?.state?.table}
+              loading={$modelQuery?.data?.meta?.reconcileStatus !==
+                V1ReconcileStatus.RECONCILE_STATUS_IDLE}
               {limit}
             />
           {/if}

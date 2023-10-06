@@ -3,9 +3,12 @@ package duckdb
 import (
 	"context"
 	"database/sql/driver"
+	"errors"
 	"fmt"
+	"io/fs"
 	"net/url"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -105,6 +108,12 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, log
 		}
 	}
 
+	if cfg.ExtTableStorage {
+		if err := os.Mkdir(cfg.ExtStoragePath, fs.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
+			return nil, err
+		}
+	}
+
 	// See note in connection struct
 	olapSemSize := cfg.PoolSize - 1
 	if olapSemSize < 1 {
@@ -130,7 +139,22 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, log
 	// Open the DB
 	err = c.reopenDB()
 	if err != nil {
-		return nil, err
+		if c.config.ErrorOnIncompatibleVersion || !strings.Contains(err.Error(), "created with an older, incompatible version of Rill") {
+			return nil, err
+		}
+
+		c.logger.Named("console").Info("Resetting .db file because it was created with an older, incompatible version of Rill")
+
+		tmpPath := cfg.DBFilePath + ".tmp"
+		_ = os.RemoveAll(tmpPath)
+		walPath := cfg.DBFilePath + ".wal"
+		_ = os.Remove(walPath)
+		_ = os.Remove(cfg.DBFilePath)
+
+		// reopen connection again
+		if err := c.reopenDB(); err != nil {
+			return nil, err
+		}
 	}
 
 	// Return nice error for old macOS versions
@@ -154,7 +178,9 @@ func (d Driver) Drop(cfgMap map[string]any, logger *zap.Logger) error {
 	if err != nil {
 		return err
 	}
-
+	if cfg.ExtStoragePath != "" {
+		return os.RemoveAll(cfg.ExtStoragePath)
+	}
 	if cfg.DBFilePath != "" {
 		err = os.Remove(cfg.DBFilePath)
 		if err != nil {
@@ -162,6 +188,8 @@ func (d Driver) Drop(cfgMap map[string]any, logger *zap.Logger) error {
 		}
 		// Hacky approach to remove the wal file
 		_ = os.Remove(cfg.DBFilePath + ".wal")
+		// also temove the temp dir
+		_ = os.RemoveAll(cfg.DBFilePath + ".tmp")
 	}
 
 	return nil
@@ -224,6 +252,7 @@ type connection struct {
 	// driverConfig is input config passed during Open
 	driverConfig map[string]any
 	driverName   string
+	instanceID   string // populated after call to AsOLAP
 	// config is parsed configs
 	config   *config
 	logger   *zap.Logger
@@ -255,6 +284,8 @@ type connection struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 }
+
+var _ drivers.OLAPStore = &connection{}
 
 // Driver implements drivers.Connection.
 func (c *connection) Driver() string {
@@ -297,6 +328,12 @@ func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 		// duckdb olap is instance specific
 		return nil, false
 	}
+	// TODO Add this back once every call passes instanceID correctly.
+	// Example incorrect usage : runtime/services/catalog/migrator/sources/sources.go
+	// if c.instanceID != "" && c.instanceID != instanceID {
+	// 	return nil, false
+	// }
+	c.instanceID = instanceID
 	return c, true
 }
 
@@ -313,7 +350,7 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 
 // AsTransporter implements drivers.Connection.
 func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
-	olap, _ := to.AsOLAP("") // if c == to, connection is instance specific
+	olap, _ := to.AsOLAP(c.instanceID) // if c == to, connection is instance specific
 	if c == to {
 		if from == to {
 			return transporter.NewDuckDBToDuckDB(olap, c.logger), true
@@ -402,6 +439,49 @@ func (c *connection) reopenDB() error {
 	db.SetMaxOpenConns(c.config.PoolSize)
 	c.db = db
 
+	if !c.config.ExtTableStorage {
+		return nil
+	}
+
+	conn, err := db.Connx(context.Background())
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	// List the directories directly in the external storage directory
+	// Load the version.txt from each sub-directory
+	// If version.txt is found, attach only the .db file matching the version.txt.
+	// If attach fails, log the error and delete the version.txt and .db file (e.g. might be DuckDB version change)
+	entries, err := os.ReadDir(c.config.ExtStoragePath)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		path := filepath.Join(c.config.ExtStoragePath, entry.Name())
+		version, exist, err := c.tableVersion(entry.Name())
+		if err != nil {
+			c.logger.Error("error in fetching db version", zap.String("table", entry.Name()), zap.Error(err))
+			_ = os.RemoveAll(path)
+			continue
+		}
+		if !exist {
+			_ = os.RemoveAll(path)
+			continue
+		}
+
+		dbFile := filepath.Join(path, fmt.Sprintf("%s.db", version))
+		db := dbName(entry.Name(), version)
+		_, err = conn.ExecContext(context.Background(), fmt.Sprintf("ATTACH %s AS %s", safeSQLString(dbFile), safeSQLName(db)))
+		if err != nil {
+			c.logger.Error("attach failed clearing db file", zap.String("db", dbFile), zap.Error(err))
+			_, _ = conn.ExecContext(context.Background(), fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(entry.Name())))
+			_ = os.RemoveAll(path)
+		}
+	}
 	return nil
 }
 

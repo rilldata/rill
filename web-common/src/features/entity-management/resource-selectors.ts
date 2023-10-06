@@ -11,9 +11,9 @@ import type { QueryClient } from "@tanstack/svelte-query";
 
 export enum ResourceKind {
   ProjectParser = "rill.runtime.v1.ProjectParser",
-  Source = "rill.runtime.v1.SourceV2",
-  Model = "rill.runtime.v1.ModelV2",
-  MetricsView = "rill.runtime.v1.MetricsViewV2",
+  Source = "rill.runtime.v1.Source",
+  Model = "rill.runtime.v1.Model",
+  MetricsView = "rill.runtime.v1.MetricsView",
 }
 export const SingletonProjectParserName = "parser";
 

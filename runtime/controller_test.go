@@ -712,6 +712,25 @@ func TestCyclesWithTwoModels(t *testing.T) {
 	testruntime.RequireResource(t, rt, id, bar2Res)
 }
 
+func TestSelfReference(t *testing.T) {
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/bar1.sql": `SELECT * FROM bar1`,
+	})
+	bar1Model, bar1Res := newModel("SELECT * FROM bar1", "bar1", "bar1")
+	bar1Res.Meta.Refs[0].Kind = runtime.ResourceKindModel
+	bar1Res.Meta.ReconcileError = `cyclic dependency`
+	bar1Model.State = &runtimev1.ModelState{}
+
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 2, 1, 0)
+	testruntime.RequireResource(t, rt, id, bar1Res)
+
+	testruntime.DeleteFiles(t, rt, id, "/models/bar1.sql")
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 1, 0, 0)
+}
+
 func TestCyclesWithThreeModels(t *testing.T) {
 	// Create cyclic model
 	rt, id := testruntime.NewInstance(t)

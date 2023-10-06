@@ -92,6 +92,8 @@ dimensions:
 measures:
   - name: b
     expression: count(*)
+first_day_of_week: 7
+first_month_of_year: 3
 `,
 		// migration c1
 		`custom/c1.yml`: `
@@ -169,6 +171,8 @@ SELECT * FROM {{ ref "m2" }}
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
 					{Name: "b", Expression: "count(*)"},
 				},
+				FirstDayOfWeek:   7,
+				FirstMonthOfYear: 3,
 			},
 		},
 		// migration c1
@@ -691,6 +695,138 @@ materialize: true
 		require.NoError(b, err)
 		require.Empty(b, p.Errors)
 	}
+}
+
+func TestProjectModelDefaults(t *testing.T) {
+	ctx := context.Background()
+	truth := true
+	falsity := false
+
+	files := map[string]string{
+		// Provide dashboard defaults in rill.yaml
+		`rill.yaml`: `
+models:
+  materialize: true
+`,
+		// Model that inherits defaults
+		`models/m1.sql`: `
+SELECT * FROM t1
+`,
+		// Model that overrides defaults
+		`models/m2.sql`: `
+-- @materialize: false
+SELECT * FROM t2
+`,
+	}
+
+	resources := []*Resource{
+		// m1
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+			Paths: []string{"/models/m1.sql"},
+			ModelSpec: &runtimev1.ModelSpec{
+				Sql:         strings.TrimSpace(files["models/m1.sql"]),
+				Materialize: &truth,
+			},
+		},
+		// m2
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "m2"},
+			Paths: []string{"/models/m2.sql"},
+			ModelSpec: &runtimev1.ModelSpec{
+				Sql:         strings.TrimSpace(files["models/m2.sql"]),
+				Materialize: &falsity,
+			},
+		},
+	}
+
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestProjectDashboardDefaults(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		// Provide dashboard defaults in rill.yaml
+		`rill.yaml`: `
+dashboards:
+  first_day_of_week: 7
+  available_time_zones:
+    - America/New_York
+  security:
+    access: true
+`,
+		// Dashboard that inherits defaults
+		`dashboards/d1.yaml`: `
+table: t1
+dimensions:
+  - name: a
+measures:
+  - name: b
+    expression: count(*)
+`,
+		// Dashboard that overrides defaults
+		`dashboards/d2.yaml`: `
+table: t2
+dimensions:
+  - name: a
+measures:
+  - name: b
+    expression: count(*)
+first_day_of_week: 1
+available_time_zones: []
+security:
+  row_filter: true
+`,
+	})
+
+	resources := []*Resource{
+		// dashboard d1
+		{
+			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
+			Paths: []string{"/dashboards/d1.yaml"},
+			MetricsViewSpec: &runtimev1.MetricsViewSpec{
+				Table: "t1",
+				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
+					{Name: "a"},
+				},
+				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
+					{Name: "b", Expression: "count(*)"},
+				},
+				FirstDayOfWeek:     7,
+				AvailableTimeZones: []string{"America/New_York"},
+				Security: &runtimev1.MetricsViewSpec_SecurityV2{
+					Access: "true",
+				},
+			},
+		},
+		// dashboard d2
+		{
+			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d2"},
+			Paths: []string{"/dashboards/d2.yaml"},
+			MetricsViewSpec: &runtimev1.MetricsViewSpec{
+				Table: "t2",
+				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
+					{Name: "a"},
+				},
+				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
+					{Name: "b", Expression: "count(*)"},
+				},
+				FirstDayOfWeek:     1,
+				AvailableTimeZones: []string{},
+				Security: &runtimev1.MetricsViewSpec_SecurityV2{
+					Access:    "true",
+					RowFilter: "true",
+				},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
 }
 
 func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {

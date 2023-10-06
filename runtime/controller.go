@@ -539,9 +539,11 @@ func (c *Controller) UpdateName(ctx context.Context, name, newName, owner *runti
 	}
 
 	// All resources pointing to the old name need to be reconciled (they'll pointing to a void resource after this)
-	ns := c.catalog.dag.Children(name)
-	for _, n := range ns {
-		c.enqueue(n)
+	if !c.catalog.isCyclic(name) {
+		ns := c.catalog.dag.Children(name)
+		for _, n := range ns {
+			c.enqueue(n)
+		}
 	}
 
 	err = c.safeRename(name, newName)
@@ -556,7 +558,7 @@ func (c *Controller) UpdateName(ctx context.Context, name, newName, owner *runti
 	}
 
 	// We updated a name, so it may have broken previous cyclic references
-	ns = c.catalog.retryCyclicRefs()
+	ns := c.catalog.retryCyclicRefs()
 	for _, n := range ns {
 		c.enqueue(n)
 	}
@@ -659,9 +661,11 @@ func (c *Controller) Delete(ctx context.Context, name *runtimev1.ResourceName) e
 	}
 
 	// All resources pointing to deleted resource need to be reconciled (they'll pointing to a void resource after this)
-	ns := c.catalog.dag.Children(name)
-	for _, n := range ns {
-		c.enqueue(n)
+	if !c.catalog.isCyclic(name) {
+		ns := c.catalog.dag.Children(name)
+		for _, n := range ns {
+			c.enqueue(n)
+		}
 	}
 
 	if c.isReconcilerForResource(ctx, name) {
@@ -686,7 +690,7 @@ func (c *Controller) Delete(ctx context.Context, name *runtimev1.ResourceName) e
 	}
 
 	// We removed a name, so it may have broken previous cyclic references
-	ns = c.catalog.retryCyclicRefs()
+	ns := c.catalog.retryCyclicRefs()
 	for _, n := range ns {
 		c.enqueue(n)
 	}
@@ -1095,8 +1099,7 @@ func (c *Controller) markPending(n *runtimev1.ResourceName) (skip bool, err erro
 	}
 
 	// If resource is cyclic, set error and skip it
-	_, cyclic := c.catalog.cyclic[nameStr(n)]
-	if cyclic {
+	if c.catalog.isCyclic(n) {
 		err = c.catalog.updateError(n, errCyclicDependency)
 		if err != nil {
 			return false, err
@@ -1105,10 +1108,15 @@ func (c *Controller) markPending(n *runtimev1.ResourceName) (skip bool, err erro
 		if err != nil {
 			return false, err
 		}
+		if !r.Meta.Hidden {
+			logArgs := []any{slog.String("name", n.Name), slog.String("kind", unqualifiedKind(n.Kind)), slog.Any("error", errCyclicDependency)}
+			c.Logger.Error("Skipping resource", logArgs...)
+		}
 		return true, nil
 	}
 
 	// Ensure all descendents get marked pending and cancel any running descendents.
+	// NOTE: DAG access is safe because we have already checked for cyclic.
 	descendentRunning := false
 	err = c.catalog.dag.Visit(n, func(ds string, dn *runtimev1.ResourceName) error {
 		dr, err := c.catalog.get(dn, true, false)
@@ -1179,7 +1187,8 @@ func (c *Controller) trySchedule(n *runtimev1.ResourceName) (success bool, err e
 	}
 
 	// Return true if any parents are pending or running.
-	// NOTE: Only getting parents if it's not a deletion (deleted resources are not tracked in the DAG).
+	// NOTE 1: Only getting parents if it's not a deletion (deleted resources are not tracked in the DAG).
+	// NOTE 2: DAG access is safe because markPending ensures we never trySchedule a cyclic resource.
 	var parents []*runtimev1.ResourceName
 	if r.Meta.DeletedOn == nil {
 		parents = c.catalog.dag.Parents(n, true)
@@ -1405,9 +1414,12 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 		}
 	}
 
-	// If not a delete, we re-enqueue its children (unless we're rescheduling, since then the children would be blocked anyway).
-	// For deletes (r == nil), the children are already enqueued when c.Delete(...) is called.
-	if r != nil && !inv.reschedule {
+	// Re-enqueue children if:
+	if !inv.reschedule && // Not rescheduling  (since then the children would be blocked anyway)
+		r != nil && // Not a hard delete (children were already enqueued when the soft delete happened)
+		r.Meta.DeletedOn == nil && // Not a soft delete (children were already enqueued when c.Delete(...) was called)
+		!c.catalog.isCyclic(inv.name) && // Hasn't become cyclic (since DAG access is not safe for cyclic names)
+		true {
 		for _, rn := range c.catalog.dag.Children(inv.name) {
 			c.enqueue(rn)
 		}

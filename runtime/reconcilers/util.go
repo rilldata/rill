@@ -2,7 +2,6 @@ package reconcilers
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
@@ -99,17 +98,7 @@ func olapDropTableIfExists(ctx context.Context, c *runtime.Controller, connector
 	}
 	defer release()
 
-	var typ string
-	if view {
-		typ = "VIEW"
-	} else {
-		typ = "TABLE"
-	}
-
-	_ = olap.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("DROP %s IF EXISTS %s", typ, safeSQLName(table)),
-		Priority: 100,
-	})
+	_ = olap.DropTable(ctx, table, view)
 }
 
 // olapForceRenameTable renames a table or view from fromName to toName in the OLAP connector.
@@ -129,61 +118,26 @@ func olapForceRenameTable(ctx context.Context, c *runtime.Controller, connector,
 	}
 	defer release()
 
-	existingTo, _ := olap.InformationSchema().Lookup(ctx, toName)
+	// Infer SQL keyword for the table type
+	var typ string
+	if fromIsView {
+		typ = "VIEW"
+	} else {
+		typ = "TABLE"
+	}
 
-	return olap.WithConnection(ctx, 100, true, true, func(ctx context.Context, ensuredCtx context.Context, conn *sql.Conn) error {
-		// Infer SQL keyword for the table type
-		var typ string
-		if fromIsView {
-			typ = "VIEW"
-		} else {
-			typ = "TABLE"
-		}
-
-		// Renaming a table to the same name with different casing is not supported. Workaround by renaming to a temporary name first.
-		if strings.EqualFold(fromName, toName) {
-			tmpName := "__rill_tmp_rename_%s_" + typ + toName
-			err = olap.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP %s IF EXISTS %s", typ, safeSQLName(tmpName))})
-			if err != nil {
-				return err
-			}
-
-			err := olap.Exec(ctx, &drivers.Statement{
-				Query: fmt.Sprintf("ALTER %s %s RENAME TO %s", typ, safeSQLName(fromName), safeSQLName(tmpName)),
-			})
-			if err != nil {
-				return err
-			}
-			fromName = tmpName
-		}
-
-		// Drop the existing table at toName
-		if existingTo != nil {
-			var existingTyp string
-			if existingTo.View {
-				existingTyp = "VIEW"
-			} else {
-				existingTyp = "TABLE"
-			}
-
-			err := olap.Exec(ctx, &drivers.Statement{
-				Query: fmt.Sprintf("DROP %s IF EXISTS %s", existingTyp, safeSQLName(existingTo.Name)),
-			})
-			if err != nil {
-				return err
-			}
-		}
-
-		// Do the rename
-		err = olap.Exec(ctx, &drivers.Statement{
-			Query: fmt.Sprintf("ALTER %s %s RENAME TO %s", typ, safeSQLName(fromName), safeSQLName(toName)),
-		})
+	// Renaming a table to the same name with different casing is not supported. Workaround by renaming to a temporary name first.
+	if strings.EqualFold(fromName, toName) {
+		tmpName := fmt.Sprintf("__rill_tmp_rename_%s_%s", typ, toName)
+		err = olap.RenameTable(ctx, fromName, tmpName, fromIsView)
 		if err != nil {
 			return err
 		}
+		fromName = tmpName
+	}
 
-		return nil
-	})
+	// Do the rename
+	return olap.RenameTable(ctx, fromName, toName, fromIsView)
 }
 
 // safeSQLName returns a quoted SQL identifier.

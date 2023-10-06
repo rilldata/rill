@@ -62,10 +62,9 @@ export function invalidateResourceResponse(
       break;
   }
 
-  resourcesStore.doneReconciling(res.resource);
-
   // only re-fetch list queries for kinds in `MainResources`
   if (!MainResourceKinds[res.name.kind]) return;
+  resourcesStore.doneReconciling(res.resource);
   resourcesStore.setResource(res.resource);
   return queryClient.refetchQueries(
     // we only use individual kind's queries

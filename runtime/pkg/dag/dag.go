@@ -55,6 +55,9 @@ func (d DAG[K, V]) Add(val V, parentVals ...V) bool {
 	parents := make(map[K]*vertex[K, V], len(parentVals))
 	for _, pv := range parentVals {
 		pk := d.hash(pv)
+		if pk == k { // Check for a self-reference (direct cycle)
+			return false
+		}
 		p, ok := d.vertices[pk]
 		if !ok {
 			p = &vertex[K, V]{val: pv}

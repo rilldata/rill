@@ -74,6 +74,20 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		olapConfig["pool_size"] = strconv.Itoa(alloc.CPU)
 		embedCatalog = true
 		ingestionLimit = alloc.StorageBytes
+	case "duckdb-ext-storage": // duckdb driver having capability to store table as view
+		if opts.ProdOLAPDSN != "" {
+			return nil, fmt.Errorf("passing a DSN is not allowed for driver 'duckdb-ext-storage'")
+		}
+		if opts.ProdSlots == 0 {
+			return nil, fmt.Errorf("slot count can't be 0 for driver 'duckdb-ext-storage'")
+		}
+
+		olapDriver = "duckdb"
+		olapConfig["dsn"] = fmt.Sprintf("%s.db?max_memory=%dGB", path.Join(alloc.DataDir, instanceID, "main"), alloc.MemoryGB)
+		olapConfig["pool_size"] = strconv.Itoa(alloc.CPU)
+		olapConfig["external_table_storage"] = strconv.FormatBool(true)
+		embedCatalog = true
+		ingestionLimit = alloc.StorageBytes
 	case "duckdb-vip":
 		if opts.ProdOLAPDSN != "" {
 			return nil, fmt.Errorf("passing a DSN is not allowed for driver 'duckdb-vip'")
@@ -141,7 +155,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	if err != nil {
 		_, err2 := rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
 			InstanceId: instanceID,
-			DropDb:     olapDriver == "duckdb" || olapDriver == "duckdb-vip", // Only drop DB if it's DuckDB
+			DropDb:     strings.Contains(olapDriver, "duckdb"), // Only drop DB if it's DuckDB
 		})
 		return nil, multierr.Combine(err, err2)
 	}
@@ -283,7 +297,7 @@ func (s *Service) teardownDeployment(ctx context.Context, proj *database.Project
 	// Delete the instance
 	_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
 		InstanceId: depl.RuntimeInstanceID,
-		DropDb:     proj.ProdOLAPDriver == "duckdb" || proj.ProdOLAPDriver == "duckdb-vip", // Only drop DB if it's DuckDB
+		DropDb:     strings.Contains(proj.ProdOLAPDriver, "duckdb"), // Only drop DB if it's DuckDB
 	})
 	if err != nil {
 		return err

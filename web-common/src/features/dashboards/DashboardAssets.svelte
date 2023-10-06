@@ -9,7 +9,10 @@
   import { Divider } from "@rilldata/web-common/components/menu/index.js";
   import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { deleteFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import {
+    getFileAPIPathFromNameAndType,
+    getFilePathFromNameAndType,
+  } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import {
     FileArtifactsData,
     fileArtifactsStore,
@@ -76,13 +79,12 @@
       showMetricsDefs = true;
     }
     const newDashboardName = getName("dashboard", $dashboardNames.data);
-    const filePath = getFilePathFromNameAndType(
-      newDashboardName,
-      EntityType.MetricsDefinition
-    );
     await $createDashboard.mutateAsync({
       instanceId,
-      path: filePath,
+      path: getFileAPIPathFromNameAndType(
+        newDashboardName,
+        EntityType.MetricsDefinition
+      ),
       data: {
         blob: "",
         create: true,

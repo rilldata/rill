@@ -24,6 +24,8 @@ type metricsViewYAML struct {
 	SmallestTimeGrain  string           `yaml:"smallest_time_grain"`
 	DefaultTimeRange   string           `yaml:"default_time_range"`
 	AvailableTimeZones []string         `yaml:"available_time_zones"`
+	FirstDayOfWeek     uint32           `yaml:"first_day_of_week"`
+	FirstMonthOfYear   uint32           `yaml:"first_month_of_year"`
 	Dimensions         []*struct {
 		Name        string
 		Label       string
@@ -59,6 +61,11 @@ type metricsViewYAML struct {
 func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	// Parse YAML
 	tmp := &metricsViewYAML{}
+	if p.RillYAML != nil && !p.RillYAML.Defaults.Dashboards.IsZero() {
+		if err := p.RillYAML.Defaults.Dashboards.Decode(tmp); err != nil {
+			return pathError{path: node.YAMLPath, err: fmt.Errorf("failed applying defaults from rill.yaml: %w", newYAMLError(err))}
+		}
+	}
 	if node.YAMLRaw != "" {
 		// Can't use node.YAML because we need to set KnownFields for metrics views
 		dec := yaml.NewDecoder(strings.NewReader(node.YAMLRaw))
@@ -264,6 +271,8 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	spec.SmallestTimeGrain = smallestTimeGrain
 	spec.DefaultTimeRange = tmp.DefaultTimeRange
 	spec.AvailableTimeZones = tmp.AvailableTimeZones
+	spec.FirstDayOfWeek = tmp.FirstDayOfWeek
+	spec.FirstMonthOfYear = tmp.FirstMonthOfYear
 
 	for _, dim := range tmp.Dimensions {
 		if dim.Ignore {
