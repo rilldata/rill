@@ -29,7 +29,8 @@ type config struct {
 
 func newConfig(cfgMap map[string]any) (*config, error) {
 	cfg := &config{
-		PoolSize: 1, // Default value
+		PoolSize:        1, // Default value
+		ExtTableStorage: true,
 	}
 	err := mapstructure.WeakDecode(cfgMap, cfg)
 	if err != nil {

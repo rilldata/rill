@@ -45,7 +45,7 @@ const (
 const (
 	DefaultInstanceID = "default"
 	DefaultOLAPDriver = "duckdb"
-	DefaultOLAPDSN    = "stage.db"
+	DefaultOLAPDSN    = "default/stage.db"
 )
 
 // App encapsulates the logic associated with configuring and running the UI and the runtime in a local environment.
