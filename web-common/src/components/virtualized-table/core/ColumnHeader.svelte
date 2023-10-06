@@ -41,10 +41,6 @@
 
   let showMore = false;
 
-  // if sorting is controlled externally, use that prop value
-  // otherwise, default to true
-  $: isSortingDesc = sortAscending !== undefined ? !sortAscending : true;
-
   $: isDimensionTable = config.table === "DimensionTable";
   $: isDimensionColumn = isDimensionTable && type === "VARCHAR";
   $: isDeltaColumn = isDimensionTable && typeof name !== "string";
@@ -77,13 +73,6 @@
     showMore = false;
   }}
   on:click={() => {
-    // only toggle `isSortingDesc` within the component if
-    // sorting is not controlled externally
-    // FIXME is this actually used anywhere?
-    if (sortAscending === undefined) {
-      if (isSelected) isSortingDesc = !isSortingDesc;
-      else isSortingDesc = true;
-    }
     dispatch("click-column");
   }}
 >
