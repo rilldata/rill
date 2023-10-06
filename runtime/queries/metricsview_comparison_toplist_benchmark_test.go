@@ -90,6 +90,7 @@ func BenchmarkMetricsViewsComparison_nocompare_all(b *testing.B) {
 			},
 		},
 		Limit: 250,
+		Exact: true,
 	}
 
 	b.ResetTimer()
@@ -129,6 +130,7 @@ func BenchmarkMetricsViewsComparison_compare_spending(b *testing.B) {
 			},
 		},
 		Limit: 250,
+		Exact: true,
 	}
 
 	b.ResetTimer()
@@ -171,6 +173,7 @@ func BenchmarkMetricsViewsComparison_nocompare_all_spending(b *testing.B) {
 			},
 		},
 		Limit: 250,
+		Exact: true,
 	}
 
 	b.ResetTimer()
@@ -219,6 +222,7 @@ func BenchmarkMetricsViewsComparison_delta_compare(b *testing.B) {
 			},
 		},
 		Limit: 250,
+		Exact: true,
 	}
 
 	b.ResetTimer()
@@ -261,6 +265,7 @@ func BenchmarkMetricsViewsComparison_delta_nocompare_all(b *testing.B) {
 			},
 		},
 		Limit: 250,
+		Exact: true,
 	}
 
 	b.ResetTimer()
@@ -300,6 +305,7 @@ func BenchmarkMetricsViewsComparison_delta_compare_spending(b *testing.B) {
 			},
 		},
 		Limit: 250,
+		Exact: true,
 	}
 
 	b.ResetTimer()
@@ -342,6 +348,7 @@ func BenchmarkMetricsViewsComparison_delta_nocompare_all_spending(b *testing.B) 
 			},
 		},
 		Limit: 250,
+		Exact: true,
 	}
 
 	b.ResetTimer()
@@ -381,6 +388,7 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending(b *
 			},
 		},
 		Limit: 250,
+		Exact: true,
 	}
 
 	b.ResetTimer()
@@ -463,6 +471,7 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_nocompare_all_spendi
 			},
 		},
 		Limit: 250,
+		Exact: true,
 	}
 
 	b.ResetTimer()
@@ -502,6 +511,7 @@ func BenchmarkMetricsViewsComparison_high_cardinality_compare_spending(b *testin
 			},
 		},
 		Limit: 250,
+		Exact: true,
 	}
 
 	b.ResetTimer()
@@ -584,6 +594,7 @@ func BenchmarkMetricsViewsComparison_high_cardinality_nocompare_all_spending(b *
 			},
 		},
 		Limit: 250,
+		Exact: true,
 	}
 
 	b.ResetTimer()
