@@ -15,7 +15,15 @@ type RillYAML struct {
 	Description string
 	Connectors  []*ConnectorDef
 	Variables   []*VariableDef
-	Dashboards  map[string]string
+	Defaults    RillYAMLDefaults
+}
+
+// RillYAMLDefaults contains project-wide default YAML properties for different resources
+type RillYAMLDefaults struct {
+	Sources    yaml.Node
+	Models     yaml.Node
+	Dashboards yaml.Node
+	Migrations yaml.Node
 }
 
 // ConnectorDef is a subtype of RillYAML, defining connectors required by the project
@@ -41,7 +49,10 @@ type rillYAML struct {
 		Name     string            `yaml:"name"`
 		Defaults map[string]string `yaml:"defaults"`
 	} `yaml:"connectors"`
-	Dashboards map[string]string `yaml:"dashboards"`
+	Sources    yaml.Node `yaml:"sources"`
+	Models     yaml.Node `yaml:"models"`
+	Dashboards yaml.Node `yaml:"dashboards"`
+	Migrations yaml.Node `yaml:"migrations"`
 }
 
 // parseRillYAML parses rill.yaml
@@ -61,7 +72,12 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		Description: tmp.Description,
 		Connectors:  make([]*ConnectorDef, len(tmp.Connectors)),
 		Variables:   make([]*VariableDef, len(tmp.Env)),
-		Dashboards:  tmp.Dashboards,
+		Defaults: RillYAMLDefaults{
+			Sources:    tmp.Sources,
+			Models:     tmp.Models,
+			Dashboards: tmp.Dashboards,
+			Migrations: tmp.Migrations,
+		},
 	}
 
 	for i, c := range tmp.Connectors {
