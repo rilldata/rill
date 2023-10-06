@@ -15,6 +15,7 @@ type RillYAML struct {
 	Description string
 	Connectors  []*ConnectorDef
 	Variables   []*VariableDef
+	Dashboards  map[string]string
 }
 
 // ConnectorDef is a subtype of RillYAML, defining connectors required by the project
@@ -40,6 +41,7 @@ type rillYAML struct {
 		Name     string            `yaml:"name"`
 		Defaults map[string]string `yaml:"defaults"`
 	} `yaml:"connectors"`
+	Dashboards map[string]string `yaml:"dashboards"`
 }
 
 // parseRillYAML parses rill.yaml
@@ -59,6 +61,7 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		Description: tmp.Description,
 		Connectors:  make([]*ConnectorDef, len(tmp.Connectors)),
 		Variables:   make([]*VariableDef, len(tmp.Env)),
+		Dashboards:  tmp.Dashboards,
 	}
 
 	for i, c := range tmp.Connectors {

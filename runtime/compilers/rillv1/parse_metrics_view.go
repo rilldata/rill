@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,6 +25,8 @@ type metricsViewYAML struct {
 	SmallestTimeGrain  string           `yaml:"smallest_time_grain"`
 	DefaultTimeRange   string           `yaml:"default_time_range"`
 	AvailableTimeZones []string         `yaml:"available_time_zones"`
+	FirstDayOfWeek     uint32           `yaml:"first_day_of_week"`
+	FirstMonthOfYear   uint32           `yaml:"first_month_of_year"`
 	Dimensions         []*struct {
 		Name        string
 		Label       string
@@ -264,6 +267,25 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	spec.SmallestTimeGrain = smallestTimeGrain
 	spec.DefaultTimeRange = tmp.DefaultTimeRange
 	spec.AvailableTimeZones = tmp.AvailableTimeZones
+	spec.FirstDayOfWeek = tmp.FirstDayOfWeek
+	spec.FirstMonthOfYear = tmp.FirstMonthOfYear
+	if tmp.FirstDayOfWeek == 0 && p.RillYAML.Dashboards["first_day_of_week"] != "" {
+		i, err := strconv.Atoi(p.RillYAML.Dashboards["first_day_of_week"])
+		if err != nil {
+			return err
+		}
+
+		spec.FirstDayOfWeek = uint32(i)
+	}
+
+	if tmp.FirstMonthOfYear == 0 && p.RillYAML.Dashboards["first_month_of_year"] != "" {
+		i, err := strconv.Atoi(p.RillYAML.Dashboards["first_month_of_year"])
+		if err != nil {
+			return err
+		}
+
+		spec.FirstMonthOfYear = uint32(i)
+	}
 
 	for _, dim := range tmp.Dimensions {
 		if dim.Ignore {

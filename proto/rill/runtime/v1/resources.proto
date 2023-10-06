@@ -172,6 +172,8 @@ message MetricsViewSpec {
   repeated string available_time_zones = 10;
   // Security for the dashboard
   SecurityV2 security = 11;
+  uint32 first_day_of_week = 12;
+  uint32 first_month_of_year = 13;
 }
 
 message MetricsViewState {

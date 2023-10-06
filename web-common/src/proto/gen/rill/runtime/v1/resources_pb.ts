@@ -920,6 +920,16 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    */
   security?: MetricsViewSpec_SecurityV2;
 
+  /**
+   * @generated from field: uint32 first_day_of_week = 12;
+   */
+  firstDayOfWeek = 0;
+
+  /**
+   * @generated from field: uint32 first_month_of_year = 13;
+   */
+  firstMonthOfYear = 0;
+
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -939,6 +949,8 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 9, name: "default_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "available_time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "security", kind: "message", T: MetricsViewSpec_SecurityV2 },
+    { no: 12, name: "first_day_of_week", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 13, name: "first_month_of_year", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {

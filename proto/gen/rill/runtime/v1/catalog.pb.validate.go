@@ -596,6 +596,10 @@ func (m *MetricsView) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for FirstDayOfWeek
+
+	// no validation rules for FirstMonthOfYear
+
 	if len(errors) > 0 {
 		return MetricsViewMultiError(errors)
 	}
