@@ -94,10 +94,14 @@ export function createTimeControlStore(ctx: StateManagers) {
     [useMetaQuery(ctx), createTimeRangeSummary(ctx), ctx.dashboardStore],
     ([metricsView, timeRangeResponse, metricsExplorer]) => {
       const hasTimeSeries = Boolean(metricsView.data?.timeDimension);
-      if (!timeRangeResponse || !timeRangeResponse.isSuccess) {
+      if (
+        !metricsExplorer ||
+        !timeRangeResponse ||
+        !timeRangeResponse.isSuccess
+      ) {
         return {
           isFetching: metricsView.isFetching || timeRangeResponse.isRefetching,
-          ready: !hasTimeSeries,
+          ready: !metricsExplorer || !hasTimeSeries,
         } as TimeControlState;
       }
 
@@ -118,6 +122,11 @@ export function createTimeControlStore(ctx: StateManagers) {
         allTimeRange,
         minTimeGrain
       );
+      if (!timeRangeState) {
+        return {
+          ready: false,
+        };
+      }
 
       const comparisonTimeRangeState = calculateComparisonTimeRangePartial(
         metricsExplorer,
@@ -156,7 +165,11 @@ function calculateTimeRangePartial(
   allTimeRange: DashboardTimeControls,
   minTimeGrain: V1TimeGrain
 ): TimeRangeState {
+  if (!metricsExplorer.selectedTimeRange) return undefined;
+
   const selectedTimeRange = getTimeRange(metricsExplorer, allTimeRange);
+  if (!selectedTimeRange) return undefined;
+
   selectedTimeRange.interval = getTimeGrain(
     metricsExplorer,
     selectedTimeRange,
@@ -256,7 +269,7 @@ function getTimeRange(
 ) {
   let timeRange: DashboardTimeControls;
 
-  if (metricsExplorer.selectedTimeRange.name === TimeRangePreset.CUSTOM) {
+  if (metricsExplorer.selectedTimeRange?.name === TimeRangePreset.CUSTOM) {
     /** set the time range to the fixed custom time range */
     timeRange = {
       name: TimeRangePreset.CUSTOM,

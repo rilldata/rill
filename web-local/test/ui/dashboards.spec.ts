@@ -86,6 +86,10 @@ test.describe("dashboard", () => {
   });
 
   test("Dashboard runthrough", async ({ page }) => {
+    // Uncomment for remote debugging
+    // page.on("console", (msg) => console.log(msg.text()));
+    // page.on("pageerror", (error) => console.log(error.stack));
+
     test.setTimeout(60000);
     await page.goto("/");
     // disable animations
