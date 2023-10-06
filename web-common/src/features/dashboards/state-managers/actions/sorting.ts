@@ -1,7 +1,7 @@
 import { SortDirection, SortType } from "../../proto-state/derived-types";
 import type { MetricsExplorerEntity } from "../../dashboard-stores";
 
-const toggleSort =
+export const toggleSort =
   (sortType: SortType) => (metricsExplorer: MetricsExplorerEntity) => {
     // if sortType is not provided,  or if it is provided
     // and is the same as the current sort type,

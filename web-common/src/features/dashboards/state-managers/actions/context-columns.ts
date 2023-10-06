@@ -1,7 +1,7 @@
 import { sortTypeForContextColumnType } from "../../dashboard-stores";
 import { LeaderboardContextColumn } from "../../leaderboard-context-column";
 
-const setContextColumn =
+export const setContextColumn =
   (contextColumn: LeaderboardContextColumn) => (metricsExplorer) => {
     const initialSort = sortTypeForContextColumnType(
       metricsExplorer.leaderboardContextColumn

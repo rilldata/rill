@@ -17,15 +17,17 @@ import {
 import { createStateManagerActions, type StateManagerActions } from "./actions";
 
 /**
- * A MetricsExplorerMutatorFn is a function that mutates a MetricsExplorerEntity,
- * i.e., the data single dashboard.
+ * A MetricsExplorerMutatorClosure is a function that mutates
+ * a MetricsExplorerEntity, i.e., the data single dashboard.
+ * This will often be a closure over other parameters
+ * that are relevant to the mutation.
  */
-export type MetricsExplorerMutatorFn = (
+export type MetricsExplorerMutatorClosure = (
   metricsExplorer: MetricsExplorerEntity
 ) => void;
 
 export type UpdateDashboard2ndOrderCallback = (
-  callback: MetricsExplorerMutatorFn
+  callback: MetricsExplorerMutatorClosure
 ) => void;
 
 export type StateManagers = {
