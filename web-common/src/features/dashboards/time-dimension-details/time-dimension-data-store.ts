@@ -16,11 +16,13 @@ import {
   FormatPreset,
   humanizeDataType,
 } from "@rilldata/web-common/features/dashboards/humanize-numbers";
+import { createTimeFormat } from "@rilldata/web-common/components/data-graphic/utils";
 
 export type TimeDimensionDataState = {
   isFetching: boolean;
   comparing: "dimension" | "time" | "none";
   data?: unknown[];
+  timeFormatter: (v: Date) => string;
 };
 
 export type TimeSeriesDataStore = Readable<TimeDimensionDataState>;
@@ -142,7 +144,6 @@ function prepareTimeData(data, measureName, hasTimeComparison) {
           comparisonValue && currentValue !== undefined && currentValue !== null
             ? (currentValue - comparisonValue) / comparisonValue
             : undefined;
-
         return humanizeDataType(comparisonPercChange, FormatPreset.PERCENTAGE);
       })
     );
@@ -177,6 +178,11 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
     [ctx.dashboardStore, useTimeControlStore(ctx), useTimeSeriesDataStore(ctx)],
     ([dashboardStore, timeControls, timeSeries]) => {
       const measureName = dashboardStore?.expandedMeasureName;
+      const timeFormatter = createTimeFormat([
+        new Date(timeControls?.adjustedStart),
+        new Date(timeControls?.adjustedEnd),
+      ])[0];
+
       let comparing;
       let data;
       if (dashboardStore?.selectedComparisonDimension) {
@@ -202,7 +208,7 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
         );
       }
 
-      return { comparing, data };
+      return { comparing, data, timeFormatter };
     }
   ) as TimeSeriesDataStore;
 }

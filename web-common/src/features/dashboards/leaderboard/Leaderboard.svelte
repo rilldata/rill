@@ -103,9 +103,6 @@
   $: isBeingCompared =
     $dashboardStore?.selectedComparisonDimension === dimensionName;
 
-  $: isBeingCompared =
-    $dashboardStore?.selectedComparisonDimension === dimensionName;
-
   $: sortAscending = $dashboardStore.sortDirection === SortDirection.ASCENDING;
   $: sortType = $dashboardStore.dashboardSortType;
 

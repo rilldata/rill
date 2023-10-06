@@ -8,7 +8,7 @@
   export let metricViewName;
 
   const timeDimensionDataStore = useTimeDimensionDataStore(getStateManagers());
-  $: console.log($timeDimensionDataStore);
+  $: console.log($timeDimensionDataStore.timeFormatter);
 
   $: dashboardStore = useDashboardStore(metricViewName);
   $: dimensionName = $dashboardStore?.selectedComparisonDimension;
@@ -17,5 +17,8 @@
 <TDDHeader {dimensionName} {metricViewName} />
 
 {#if $timeDimensionDataStore?.data}
-  <TddNew data={$timeDimensionDataStore.data} />
+  <TddNew
+    timeFormatter={$timeDimensionDataStore.timeFormatter}
+    data={$timeDimensionDataStore.data}
+  />
 {/if}

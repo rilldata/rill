@@ -1,5 +1,6 @@
 import type { ScaleLinear, ScaleTime } from "d3-scale";
 import { bisector } from "d3-array";
+import { timeFormat } from "d3-time-format";
 import { area, curveLinear, curveStep, line } from "d3-shape";
 import { getContext } from "svelte";
 import { derived, writable } from "svelte/store";
@@ -306,4 +307,32 @@ export function bisectData(value, direction, accessor, data) {
   const bisect = bisector((d) => d[accessor])[direction];
 
   return value !== undefined ? data[bisect(data, value)] : undefined;
+}
+
+/** For a scale domain returns a formatter for axis label and super label */
+export function createTimeFormat(scaleDomain) {
+  console.log("scaleDomain", scaleDomain);
+  const diff = Math.abs(scaleDomain[1] - scaleDomain[0]) / 1000;
+
+  const millisecondDiff = diff < 1;
+  const secondDiff = diff < 60;
+  const twoDayDiff = diff / (60 * 60) < 48;
+  const threeDaysDiff = diff / (60 * 60) < 24 * 3;
+  const fourDaysDiff = diff / (60 * 60) < 24 * 4;
+  const manyDaysDiff = diff / (60 * 60 * 24) < 60;
+  const manyMonthsDiff = diff / (60 * 60 * 24) < 3 * 365;
+
+  if (millisecondDiff) {
+    return [timeFormat("%M:%S.%L"), timeFormat("%H %d %b %Y")];
+  } else if (secondDiff) {
+    return [timeFormat("%M:%S"), timeFormat("%H %d %b %Y")];
+  } else if (twoDayDiff || threeDaysDiff) {
+    return [timeFormat("%H:%M"), timeFormat("%d %b %Y")];
+  } else if (fourDaysDiff || manyDaysDiff) {
+    return [timeFormat("%b %d"), timeFormat("%Y")];
+  } else if (manyMonthsDiff) {
+    return [timeFormat("%b"), timeFormat("%Y")];
+  } else {
+    return [timeFormat("%Y"), undefined];
+  }
 }
