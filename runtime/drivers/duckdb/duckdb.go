@@ -311,7 +311,7 @@ func (c *connection) Config() map[string]any {
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
 	c.cancel()
-	c.metrics.Unregister()
+	_ = c.metrics.Unregister()
 	return c.db.Close()
 }
 
