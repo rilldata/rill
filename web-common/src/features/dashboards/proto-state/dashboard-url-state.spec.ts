@@ -122,10 +122,10 @@ describe("useDashboardUrlSync", () => {
     const { teardown, queryClient } = await initDashboardUrlState();
     expect(pageMock.gotoSpy).toBeCalledTimes(0);
 
-    dashboardFetchMocks.mockMetricsView(
-      AD_BIDS_NAME,
-      AD_BIDS_WITH_DELETED_MEASURE
-    );
+    dashboardFetchMocks.mockMetricsView(AD_BIDS_NAME, {
+      ...AD_BIDS_WITH_DELETED_MEASURE,
+      timeDimension: AD_BIDS_TIMESTAMP_DIMENSION,
+    });
     await queryClient.refetchQueries({
       type: "active",
     });

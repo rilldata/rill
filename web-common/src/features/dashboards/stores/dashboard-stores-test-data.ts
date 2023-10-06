@@ -124,6 +124,7 @@ export const AD_BIDS_INIT_WITH_TIME: V1MetricsView = {
 };
 export const AD_BIDS_WITH_DELETED_MEASURE = {
   name: "AdBids",
+  model: "AdBids_Source",
   measures: [
     {
       name: AD_BIDS_IMPRESSIONS_MEASURE,
@@ -134,11 +135,13 @@ export const AD_BIDS_WITH_DELETED_MEASURE = {
 };
 export const AD_BIDS_WITH_THREE_MEASURES = {
   name: "AdBids",
+  model: "AdBids_Source",
   measures: AD_BIDS_THREE_MEASURES,
   dimensions: AD_BIDS_INIT_DIMENSIONS,
 };
 export const AD_BIDS_WITH_DELETED_DIMENSION = {
   name: "AdBids",
+  model: "AdBids_Source",
   measures: AD_BIDS_INIT_MEASURES,
   dimensions: [
     {
@@ -148,6 +151,7 @@ export const AD_BIDS_WITH_DELETED_DIMENSION = {
 };
 export const AD_BIDS_WITH_THREE_DIMENSIONS = {
   name: "AdBids",
+  model: "AdBids_Source",
   measures: AD_BIDS_INIT_MEASURES,
   dimensions: AD_BIDS_THREE_DIMENSIONS,
 };
