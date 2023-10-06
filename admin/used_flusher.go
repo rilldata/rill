@@ -152,7 +152,7 @@ func (u *usedFlusher) flush() {
 // Helper function to perform the flushing of used_on to the database.
 func (u *usedFlusher) flushToDB(data map[string]bool, updateFn func(ctx context.Context, ids []string) error, logMsg string) {
 	if len(data) > 0 {
-		u.logger.Info("flushing used_on to db", zap.Int(logMsg, len(data)))
+		u.logger.Debug("flushing used_on to db", zap.Int(logMsg, len(data)))
 
 		ctx, cancel := context.WithTimeout(context.Background(), flushTimeout)
 		defer cancel()
