@@ -239,7 +239,6 @@ TableCells – the cell contents.
             virtualColumnItems={virtualColumns}
             virtualRowItems={virtualRows}
             columns={measureColumns}
-            selectedColumn={sortByColumn}
             {rows}
             {activeIndex}
             {selectedIndex}

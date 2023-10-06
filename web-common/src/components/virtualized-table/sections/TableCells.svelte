@@ -8,7 +8,6 @@
   export let virtualRowItems: VirtualItem[];
   export let rows;
   export let selectedIndex = [];
-  export let selectedColumn = undefined;
   export let columns: VirtualizedTableColumns[];
   export let scrolling = false;
   export let activeIndex: number;
