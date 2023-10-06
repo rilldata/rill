@@ -26,6 +26,11 @@ type modelYAML struct {
 func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	// Parse YAML
 	tmp := &modelYAML{}
+	if p.RillYAML != nil && !p.RillYAML.Defaults.Models.IsZero() {
+		if err := p.RillYAML.Defaults.Models.Decode(tmp); err != nil {
+			return pathError{path: node.YAMLPath, err: fmt.Errorf("failed applying defaults from rill.yaml: %w", newYAMLError(err))}
+		}
+	}
 	if node.YAML != nil {
 		if err := node.YAML.Decode(tmp); err != nil {
 			return pathError{path: node.YAMLPath, err: newYAMLError(err)}

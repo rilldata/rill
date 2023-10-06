@@ -26,6 +26,11 @@ type sourceYAML struct {
 func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 	// Parse YAML
 	tmp := &sourceYAML{}
+	if p.RillYAML != nil && !p.RillYAML.Defaults.Sources.IsZero() {
+		if err := p.RillYAML.Defaults.Sources.Decode(tmp); err != nil {
+			return pathError{path: node.YAMLPath, err: fmt.Errorf("failed applying defaults from rill.yaml: %w", newYAMLError(err))}
+		}
+	}
 	if node.YAML != nil {
 		if err := node.YAML.Decode(tmp); err != nil {
 			return pathError{path: node.YAMLPath, err: newYAMLError(err)}

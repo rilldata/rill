@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -62,6 +61,11 @@ type metricsViewYAML struct {
 func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	// Parse YAML
 	tmp := &metricsViewYAML{}
+	if p.RillYAML != nil && !p.RillYAML.Defaults.Dashboards.IsZero() {
+		if err := p.RillYAML.Defaults.Dashboards.Decode(tmp); err != nil {
+			return pathError{path: node.YAMLPath, err: fmt.Errorf("failed applying defaults from rill.yaml: %w", newYAMLError(err))}
+		}
+	}
 	if node.YAMLRaw != "" {
 		// Can't use node.YAML because we need to set KnownFields for metrics views
 		dec := yaml.NewDecoder(strings.NewReader(node.YAMLRaw))
@@ -269,23 +273,6 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	spec.AvailableTimeZones = tmp.AvailableTimeZones
 	spec.FirstDayOfWeek = tmp.FirstDayOfWeek
 	spec.FirstMonthOfYear = tmp.FirstMonthOfYear
-	if tmp.FirstDayOfWeek == 0 && p.RillYAML.Dashboards["first_day_of_week"] != "" {
-		i, err := strconv.Atoi(p.RillYAML.Dashboards["first_day_of_week"])
-		if err != nil {
-			return err
-		}
-
-		spec.FirstDayOfWeek = uint32(i)
-	}
-
-	if tmp.FirstMonthOfYear == 0 && p.RillYAML.Dashboards["first_month_of_year"] != "" {
-		i, err := strconv.Atoi(p.RillYAML.Dashboards["first_month_of_year"])
-		if err != nil {
-			return err
-		}
-
-		spec.FirstMonthOfYear = uint32(i)
-	}
 
 	for _, dim := range tmp.Dimensions {
 		if dim.Ignore {
