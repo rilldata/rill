@@ -176,6 +176,15 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, d
 		return "", nil, err
 	}
 
+	measureNameToLabel := make(map[string]string)
+	for _, m := range mv.Measures {
+		if m.Label == "" {
+			measureNameToLabel[m.Name] = m.Name
+		} else {
+			measureNameToLabel[m.Name] = m.Label
+		}
+	}
+
 	colName, err := metricsViewDimensionToSafeColumn(mv, q.DimensionName)
 	if err != nil {
 		return "", nil, err
@@ -183,7 +192,7 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, d
 
 	selectCols := []string{colName}
 	for _, m := range ms {
-		expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
+		expr := fmt.Sprintf(`%s as "%s"`, m.Expression, measureNameToLabel[m.Name])
 		selectCols = append(selectCols, expr)
 	}
 
@@ -211,7 +220,11 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, d
 
 	sortingCriteria := make([]string, 0, len(q.Sort))
 	for _, s := range q.Sort {
-		sortCriterion := safeName(s.Name)
+		sortName := s.Name
+		if measureNameToLabel[s.Name] != "" {
+			sortName = measureNameToLabel[s.Name]
+		}
+		sortCriterion := safeName(sortName)
 		if !s.Ascending {
 			sortCriterion += " DESC"
 		}

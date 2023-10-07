@@ -27,6 +27,7 @@ type MetricsViewComparisonToplist struct {
 	Filter              *runtimev1.MetricsViewFilter           `json:"filter,omitempty"`
 	MetricsView         *runtimev1.MetricsView                 `json:"-"`
 	ResolvedMVSecurity  *runtime.ResolvedMetricsViewSecurity   `json:"security"`
+	measureNameToLabel  map[string]string
 
 	Result *runtimev1.MetricsViewComparisonToplistResponse `json:"-"`
 }
@@ -234,6 +235,15 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 		return "", nil, err
 	}
 
+	q.measureNameToLabel = make(map[string]string)
+	for _, m := range mv.Measures {
+		if m.Label == "" {
+			q.measureNameToLabel[m.Name] = m.Name
+		} else {
+			q.measureNameToLabel[m.Name] = m.Label
+		}
+	}
+
 	colName, err := metricsViewDimensionToSafeColumn(mv, q.DimensionName)
 	if err != nil {
 		return "", nil, err
@@ -241,7 +251,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 
 	selectCols := []string{colName}
 	for _, m := range ms {
-		expr := fmt.Sprintf(`%s as %s`, m.Expression, safeName(m.Name))
+		expr := fmt.Sprintf(`%s as %s`, m.Expression, safeName(q.measureNameToLabel[m.Name]))
 		selectCols = append(selectCols, expr)
 	}
 
@@ -265,7 +275,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 	orderClause := "true"
 	for _, s := range q.Sort {
 		orderClause += ", "
-		orderClause += safeName(s.MeasureName)
+		orderClause += safeName(q.measureNameToLabel[s.MeasureName])
 		if !s.Ascending {
 			orderClause += " DESC"
 		}
@@ -299,6 +309,15 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 		return "", nil, err
 	}
 
+	q.measureNameToLabel = make(map[string]string)
+	for _, m := range mv.Measures {
+		if m.Label == "" {
+			q.measureNameToLabel[m.Name] = m.Name
+		} else {
+			q.measureNameToLabel[m.Name] = m.Label
+		}
+	}
+
 	colName, err := metricsViewDimensionToSafeColumn(mv, q.DimensionName)
 	if err != nil {
 		return "", nil, err
@@ -310,21 +329,21 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 	measureMap := make(map[string]int)
 	for i, m := range ms {
 		measureMap[m.Name] = i
-		expr := fmt.Sprintf(`%s as %s`, m.Expression, safeName(m.Name))
+		expr := fmt.Sprintf(`%s as %s`, m.Expression, safeName(q.measureNameToLabel[m.Name]))
 		selectCols = append(selectCols, expr)
 		var columnsTuple string
 		if dialect != drivers.DialectDruid {
 			columnsTuple = fmt.Sprintf(
 				"base.%[1]s, comparison.%[1]s AS %[2]s, base.%[1]s - comparison.%[1]s AS %[3]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[4]s",
-				safeName(m.Name),
-				safeName(m.Name+"__previous"),
-				safeName(m.Name+"__delta_abs"),
-				safeName(m.Name+"__delta_rel"),
+				safeName(q.measureNameToLabel[m.Name]),
+				safeName(q.measureNameToLabel[m.Name]+"__previous"),
+				safeName(q.measureNameToLabel[m.Name]+"__delta_abs"),
+				safeName(q.measureNameToLabel[m.Name]+"__delta_rel"),
 			)
 		} else {
 			columnsTuple = fmt.Sprintf(
 				"ANY_VALUE(base.%[1]s), ANY_VALUE(comparison.%[1]s), ANY_VALUE(base.%[1]s - comparison.%[1]s), ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS FLOAT))",
-				safeName(m.Name),
+				safeName(q.measureNameToLabel[m.Name]),
 			)
 		}
 		finalSelectCols = append(
@@ -630,22 +649,22 @@ func (q *MetricsViewComparisonToplist) generalExport(ctx context.Context, rt *ru
 	if !isTimeRangeNil(q.ComparisonTimeRange) {
 		for i, m := range q.Result.Rows[0].MeasureValues {
 			meta[1+i*4] = &runtimev1.MetricsViewColumn{
-				Name: m.MeasureName,
+				Name: q.measureNameToLabel[m.MeasureName],
 			}
 			meta[2+i*4] = &runtimev1.MetricsViewColumn{
-				Name: fmt.Sprintf("%s__previous", m.MeasureName),
+				Name: fmt.Sprintf("%s__previous", q.measureNameToLabel[m.MeasureName]),
 			}
 			meta[3+i*4] = &runtimev1.MetricsViewColumn{
-				Name: fmt.Sprintf("%s__delta_abs", m.MeasureName),
+				Name: fmt.Sprintf("%s__delta_abs", q.measureNameToLabel[m.MeasureName]),
 			}
 			meta[4+i*4] = &runtimev1.MetricsViewColumn{
-				Name: fmt.Sprintf("%s__delta_rel", m.MeasureName),
+				Name: fmt.Sprintf("%s__delta_rel", q.measureNameToLabel[m.MeasureName]),
 			}
 		}
 	} else {
 		for i, m := range q.Result.Rows[0].MeasureValues {
 			meta[1+i] = &runtimev1.MetricsViewColumn{
-				Name: m.MeasureName,
+				Name: q.measureNameToLabel[m.MeasureName],
 			}
 		}
 	}
@@ -664,22 +683,22 @@ func (q *MetricsViewComparisonToplist) generalExport(ctx context.Context, rt *ru
 		comparison := !isTimeRangeNil(q.ComparisonTimeRange)
 		for _, m := range row.MeasureValues {
 			if comparison {
-				data[i].Fields[m.MeasureName] = &structpb.Value{
+				data[i].Fields[q.measureNameToLabel[m.MeasureName]] = &structpb.Value{
 					Kind: &structpb.Value_NumberValue{
 						NumberValue: m.BaseValue.GetNumberValue(),
 					},
 				}
-				data[i].Fields[fmt.Sprintf("%s__previous", m.MeasureName)] = &structpb.Value{
+				data[i].Fields[fmt.Sprintf("%s__previous", q.measureNameToLabel[m.MeasureName])] = &structpb.Value{
 					Kind: &structpb.Value_NumberValue{
 						NumberValue: m.ComparisonValue.GetNumberValue(),
 					},
 				}
-				data[i].Fields[fmt.Sprintf("%s__delta_abs", m.MeasureName)] = &structpb.Value{
+				data[i].Fields[fmt.Sprintf("%s__delta_abs", q.measureNameToLabel[m.MeasureName])] = &structpb.Value{
 					Kind: &structpb.Value_NumberValue{
 						NumberValue: m.DeltaAbs.GetNumberValue(),
 					},
 				}
-				data[i].Fields[fmt.Sprintf("%s__delta_rel", m.MeasureName)] = &structpb.Value{
+				data[i].Fields[fmt.Sprintf("%s__delta_rel", q.measureNameToLabel[m.MeasureName])] = &structpb.Value{
 					Kind: &structpb.Value_NumberValue{
 						NumberValue: m.DeltaRel.GetNumberValue(),
 					},
