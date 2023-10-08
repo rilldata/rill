@@ -75,8 +75,13 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
+	var forExport bool
+	if ctx.Value(forExportKey{}) != nil {
+		forExport = ctx.Value(forExportKey{}).(bool)
+	}
+
 	// Build query
-	sql, args, err := q.buildMetricsTopListSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVSecurity)
+	sql, args, err := q.buildMetricsTopListSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVSecurity, forExport)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -109,7 +114,7 @@ func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, in
 				return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 			}
 
-			sql, args, err := q.buildMetricsTopListSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVSecurity)
+			sql, args, err := q.buildMetricsTopListSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVSecurity, true)
 			if err != nil {
 				return err
 			}
@@ -135,6 +140,7 @@ func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, in
 }
 
 func (q *MetricsViewToplist) generalExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions, mv *runtimev1.MetricsView) error {
+	ctx = context.WithValue(ctx, forExportKey{}, true)
 	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
 	if err != nil {
 		return err
@@ -170,18 +176,18 @@ func (q *MetricsViewToplist) generateFilename(mv *runtimev1.MetricsView) string 
 	return filename
 }
 
-func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
+func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity, forExport bool) (string, []any, error) {
 	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
 	if err != nil {
 		return "", nil, err
 	}
 
 	measureNameToLabel := make(map[string]string)
-	for _, m := range mv.Measures {
-		if m.Label == "" {
-			measureNameToLabel[m.Name] = m.Name
-		} else {
+	for _, m := range ms {
+		if m.Label != "" && forExport {
 			measureNameToLabel[m.Name] = m.Label
+		} else {
+			measureNameToLabel[m.Name] = m.Name
 		}
 	}
 

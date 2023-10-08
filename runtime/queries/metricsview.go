@@ -25,6 +25,8 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+type forExportKey struct{}
+
 // resolveMeasures returns the selected measures
 func resolveMeasures(mv *runtimev1.MetricsView, inlines []*runtimev1.InlineMeasure, selectedNames []string) ([]*runtimev1.MetricsView_Measure, error) {
 	// Build combined measures

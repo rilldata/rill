@@ -85,7 +85,12 @@ func (q *MetricsViewComparisonToplist) Resolve(ctx context.Context, rt *runtime.
 }
 
 func (q *MetricsViewComparisonToplist) executeToplist(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsView, priority int, policy *runtime.ResolvedMetricsViewSecurity) error {
-	sql, args, err := q.buildMetricsTopListSQL(mv, olap.Dialect(), policy)
+	var forExport bool
+	if ctx.Value(forExportKey{}) != nil {
+		forExport = ctx.Value(forExportKey{}).(bool)
+	}
+
+	sql, args, err := q.buildMetricsTopListSQL(mv, olap.Dialect(), policy, forExport)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -139,7 +144,12 @@ func (q *MetricsViewComparisonToplist) executeToplist(ctx context.Context, olap 
 }
 
 func (q *MetricsViewComparisonToplist) executeComparisonToplist(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsView, priority int, policy *runtime.ResolvedMetricsViewSecurity) error {
-	sql, args, err := q.buildMetricsComparisonTopListSQL(mv, olap.Dialect(), policy)
+	var forExport bool
+	if ctx.Value(forExportKey{}) != nil {
+		forExport = ctx.Value(forExportKey{}).(bool)
+	}
+
+	sql, args, err := q.buildMetricsComparisonTopListSQL(mv, olap.Dialect(), policy, forExport)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -229,18 +239,18 @@ func timeRangeClause(timeRange *runtimev1.TimeRange, td string, args *[]any) str
 	return clause
 }
 
-func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
+func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity, forExport bool) (string, []any, error) {
 	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
 	if err != nil {
 		return "", nil, err
 	}
 
 	q.measureNameToLabel = make(map[string]string)
-	for _, m := range mv.Measures {
-		if m.Label == "" {
-			q.measureNameToLabel[m.Name] = m.Name
-		} else {
+	for _, m := range ms {
+		if m.Label != "" && forExport {
 			q.measureNameToLabel[m.Name] = m.Label
+		} else {
+			q.measureNameToLabel[m.Name] = m.Name
 		}
 	}
 
@@ -303,18 +313,18 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 	return sql, args, nil
 }
 
-func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
+func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity, forExport bool) (string, []any, error) {
 	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
 	if err != nil {
 		return "", nil, err
 	}
 
 	q.measureNameToLabel = make(map[string]string)
-	for _, m := range mv.Measures {
-		if m.Label == "" {
-			q.measureNameToLabel[m.Name] = m.Name
-		} else {
+	for _, m := range ms {
+		if m.Label != "" && forExport {
 			q.measureNameToLabel[m.Name] = m.Label
+		} else {
+			q.measureNameToLabel[m.Name] = m.Name
 		}
 	}
 
@@ -592,12 +602,12 @@ func (q *MetricsViewComparisonToplist) Export(ctx context.Context, rt *runtime.R
 			var sql string
 			var args []any
 			if !isTimeRangeNil(q.ComparisonTimeRange) {
-				sql, args, err = q.buildMetricsComparisonTopListSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVSecurity)
+				sql, args, err = q.buildMetricsComparisonTopListSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVSecurity, true)
 				if err != nil {
 					return fmt.Errorf("error building query: %w", err)
 				}
 			} else {
-				sql, args, err = q.buildMetricsTopListSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVSecurity)
+				sql, args, err = q.buildMetricsTopListSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVSecurity, true)
 				if err != nil {
 					return fmt.Errorf("error building query: %w", err)
 				}
@@ -624,6 +634,7 @@ func (q *MetricsViewComparisonToplist) Export(ctx context.Context, rt *runtime.R
 }
 
 func (q *MetricsViewComparisonToplist) generalExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions, mv *runtimev1.MetricsView) error {
+	ctx = context.WithValue(ctx, forExportKey{}, true)
 	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
 	if err != nil {
 		return err
