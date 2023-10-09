@@ -13,7 +13,12 @@ type catalogStore struct {
 }
 
 func (c *catalogStore) NextControllerVersion(ctx context.Context) (int64, error) {
-	_, err := c.db.ExecContext(ctx, "UPDATE controller_version SET version = version + 1 WHERE instance_id=?", c.instanceID)
+	_, err := c.db.ExecContext(ctx, "INSERT OR IGNORE INTO controller_version(instance_id, version) VALUES (?, 0)", c.instanceID)
+	if err != nil {
+		return 0, err
+	}
+
+	_, err = c.db.ExecContext(ctx, "UPDATE controller_version SET version = version + 1 WHERE instance_id=?", c.instanceID)
 	if err != nil {
 		return 0, err
 	}
