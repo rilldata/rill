@@ -21,13 +21,14 @@ const maxBufferSize = 1000
 
 // watcher implements a recursive, batching file watcher on top of fsnotify.
 type watcher struct {
-	root        string
-	watcher     *fsnotify.Watcher
-	done        chan struct{}
-	err         error
-	mu          sync.Mutex
-	subscribers map[string]drivers.WatchCallback
-	buffer      map[string]drivers.WatchEvent
+	root             string
+	watcher          *fsnotify.Watcher
+	done             chan struct{}
+	err              error
+	mu               sync.Mutex
+	subscribers      map[int]drivers.WatchCallback
+	nextSubscriberID int
+	buffer           map[string]drivers.WatchEvent
 }
 
 func newWatcher(root string) (*watcher, error) {
@@ -40,7 +41,7 @@ func newWatcher(root string) (*watcher, error) {
 		root:        root,
 		watcher:     fsw,
 		done:        make(chan struct{}),
-		subscribers: make(map[string]drivers.WatchCallback),
+		subscribers: make(map[int]drivers.WatchCallback),
 		buffer:      make(map[string]drivers.WatchEvent),
 	}
 
@@ -85,7 +86,8 @@ func (w *watcher) subscribe(ctx context.Context, fn drivers.WatchCallback) error
 		w.mu.Unlock()
 		return w.err
 	}
-	id := fmt.Sprintf("%v", fn)
+	id := w.nextSubscriberID
+	w.nextSubscriberID++
 	w.subscribers[id] = fn
 	w.mu.Unlock()
 
