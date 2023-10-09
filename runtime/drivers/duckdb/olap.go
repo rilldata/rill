@@ -501,8 +501,12 @@ func (c *connection) dropAndReplace(ctx context.Context, oldName, newName string
 	} else {
 		typ = "TABLE"
 	}
-	_, err := c.InformationSchema().Lookup(ctx, newName)
-	if errors.Is(err, drivers.ErrNotFound) {
+
+	existing, err := c.InformationSchema().Lookup(ctx, newName)
+	if err != nil {
+		if !errors.Is(err, drivers.ErrNotFound) {
+			return err
+		}
 		return c.Exec(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("ALTER %s %s RENAME TO %s", typ, safeSQLName(oldName), safeSQLName(newName)),
 			Priority:    100,
@@ -511,10 +515,18 @@ func (c *connection) dropAndReplace(ctx context.Context, oldName, newName string
 	}
 
 	return c.WithConnection(ctx, 100, true, true, func(ctx, ensuredCtx context.Context, conn *dbsql.Conn) error {
-		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP %s IF EXISTS %s", typ, newName)})
+		var existingTyp string
+		if existing.View {
+			existingTyp = "VIEW"
+		} else {
+			existingTyp = "TABLE"
+		}
+
+		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP %s IF EXISTS %s", existingTyp, newName)})
 		if err != nil {
 			return err
 		}
+
 		return c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ALTER %s %s RENAME TO %s", typ, safeSQLName(oldName), safeSQLName(newName))})
 	})
 }
