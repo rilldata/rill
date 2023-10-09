@@ -422,6 +422,13 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 		return fmt.Errorf("rename: table %q does not exist", oldName)
 	}
 
+	// reopen duckdb connections which should delete any temporary files built up during ingestion
+	// making an empty call so that stop the world call with tx=true is very fast and only blocks for the duration of close and open db hanle call
+	err = c.WithConnection(ctx, 100, false, true, func(_, _ context.Context, _ *dbsql.Conn) error { return nil })
+	if err != nil {
+		return err
+	}
+
 	oldVersionInNewDir, replaceInNewTable, err := c.tableVersion(newName)
 	if err != nil {
 		return err
@@ -434,8 +441,7 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 	}
 	oldSrcDir := filepath.Join(c.config.ExtStoragePath, oldName)
 
-	// rename with tx=true to reopen duckdb connections which should delete any temporary files built up during ingestion
-	return c.WithConnection(ctx, 100, true, true, func(currentCtx, ctx context.Context, conn *dbsql.Conn) error {
+	return c.WithConnection(ctx, 100, true, false, func(currentCtx, ctx context.Context, conn *dbsql.Conn) error {
 		// drop old view
 		err = c.Exec(currentCtx, &drivers.Statement{Query: fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(oldName))})
 		if err != nil {
