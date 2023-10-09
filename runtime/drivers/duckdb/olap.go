@@ -515,6 +515,7 @@ func (c *connection) dropAndReplace(ctx context.Context, oldName, newName string
 	}
 
 	return c.WithConnection(ctx, 100, true, true, func(ctx, ensuredCtx context.Context, conn *dbsql.Conn) error {
+		// The newName may currently be occupied by a name of another type than oldName.
 		var existingTyp string
 		if existing.View {
 			existingTyp = "VIEW"
