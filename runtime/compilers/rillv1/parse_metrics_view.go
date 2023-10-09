@@ -61,9 +61,9 @@ type metricsViewYAML struct {
 func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	// Parse YAML
 	tmp := &metricsViewYAML{}
-	if p.RillYAML != nil && !p.RillYAML.Defaults.Dashboards.IsZero() {
-		if err := p.RillYAML.Defaults.Dashboards.Decode(tmp); err != nil {
-			return pathError{path: node.YAMLPath, err: fmt.Errorf("failed applying defaults from rill.yaml: %w", newYAMLError(err))}
+	if p.RillYAML != nil && !p.RillYAML.Defaults.MetricsViews.IsZero() {
+		if err := p.RillYAML.Defaults.MetricsViews.Decode(tmp); err != nil {
+			return pathError{path: node.YAMLPath, err: fmt.Errorf("failed applying defaults from rill.yaml: %w", err)}
 		}
 	}
 	if node.YAMLRaw != "" {

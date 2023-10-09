@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/pkg/examples"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -109,16 +108,6 @@ func (s *Server) UnpackExample(ctx context.Context, req *runtimev1.UnpackExample
 		}
 	}
 
-	ctrl, err := s.runtime.Controller(req.InstanceId)
-	if err != nil {
-		return nil, err
-	}
-
-	err = ctrl.Reconcile(ctx, runtime.GlobalProjectParserName)
-	if err != nil {
-		return nil, err
-	}
-
 	return &runtimev1.UnpackExampleResponse{}, nil
 }
 
@@ -147,16 +136,6 @@ func (s *Server) UnpackEmpty(ctx context.Context, req *runtimev1.UnpackEmptyRequ
 
 	// Init empty project
 	err = rillv1.InitEmpty(ctx, repo, req.InstanceId, req.Title)
-	if err != nil {
-		return nil, err
-	}
-
-	ctrl, err := s.runtime.Controller(req.InstanceId)
-	if err != nil {
-		return nil, err
-	}
-
-	err = ctrl.Reconcile(ctx, runtime.GlobalProjectParserName)
 	if err != nil {
 		return nil, err
 	}

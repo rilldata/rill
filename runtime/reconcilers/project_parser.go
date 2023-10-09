@@ -70,9 +70,11 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	}
 
 	// Reset watching to false (in case of a crash during a previous watch)
-	pp.State.Watching = false
-	if err = r.C.UpdateState(ctx, n, self); err != nil {
-		return runtime.ReconcileResult{Err: err}
+	if pp.State.Watching {
+		pp.State.Watching = false
+		if err = r.C.UpdateState(ctx, n, self); err != nil {
+			return runtime.ReconcileResult{Err: err}
+		}
 	}
 
 	// Does not support renames
@@ -144,12 +146,6 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	// Parse the project
 	parser, err := compilerv1.Parse(ctx, repo, r.C.InstanceID, inst.OLAPConnector, duckdbConnectors)
 	if err != nil {
-		if errors.Is(err, compilerv1.ErrInvalidProject) && inst.IgnoreInitialInvalidProjectError && self.Meta.StateVersion == 1 {
-			// This handles a very specific case - when opening the application on an uninitialized directory, we do not want to an error log for "rill.yaml not found".
-			// But if the user subsequently in the session, after initializing the project, removes rill.yaml, then we DO want to propagate the error.
-			// So we rely on StateVersion == 1 on the first call to the reconciler (the UpdateState calls above do not mutate `self`, which is a cloned object).
-			return runtime.ReconcileResult{}
-		}
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to parse: %w", err)}
 	}
 
@@ -185,9 +181,17 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 		// Get changed paths that are not directories
 		changedPaths := make([]string, 0, len(events))
 		for _, e := range events {
-			if !e.Dir {
-				changedPaths = append(changedPaths, e.Path)
+			if e.Dir {
+				continue
 			}
+			if strings.HasSuffix(e.Path, ".db") || strings.HasSuffix(e.Path, ".wal") {
+				continue
+			}
+			changedPaths = append(changedPaths, e.Path)
+		}
+
+		if len(changedPaths) == 0 {
+			return
 		}
 
 		// If reparsing fails, we cancel repo.Watch and exit.
@@ -220,14 +224,6 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 
 // reconcileParser reconciles a parser's output with the current resources in the catalog.
 func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *drivers.Instance, self *runtimev1.Resource, parser *compilerv1.Parser, diff *compilerv1.Diff, changedPaths []string) error {
-	// Update state from rill.yaml and .env
-	if diff == nil || diff.ModifiedRillYAML || diff.ModifiedDotEnv {
-		err := r.reconcileProjectConfig(ctx, parser)
-		if err != nil {
-			return err
-		}
-	}
-
 	// Update parse errors
 	pp := self.GetProjectParser()
 	pp.State.ParseErrors = parser.Errors
@@ -238,9 +234,20 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 
 	// Log parse errors
 	if diff == nil {
+		// This handles a very specific case - when opening the application on an uninitialized directory, we do not want to print an error for "rill.yaml not found".
+		// But if the user subsequently in the session, after initializing the project, breaks rill.yaml, then we DO want to log the error.
+		// So we rely on StateVersion == 1 on the first call to the reconciler.
+		// (The UpdateState calls above do not mutate `self`, which is a cloned object, so the starting StateVersion is preserved here. Also quite hacky.)
+		skipRillYAMLErr := inst.IgnoreInitialInvalidProjectError && self.Meta.StateVersion == 1
+
 		for _, e := range parser.Errors {
+			if skipRillYAMLErr && e.FilePath == "/rill.yaml" {
+				continue
+			}
 			r.C.Logger.Error("Parser error", slog.String("path", e.FilePath), slog.String("err", e.Message))
 		}
+	} else if diff.Skipped {
+		r.C.Logger.Error("Not parsing changed paths due to broken rill.yaml")
 	} else {
 		for _, e := range parser.Errors {
 			if slices.Contains(changedPaths, e.FilePath) {
@@ -257,6 +264,24 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 	err = r.C.UpdateError(ctx, self.Meta.Name, parseErrsErr)
 	if err != nil {
 		return err
+	}
+
+	// If RillYAML is missing, don't reconcile anything
+	if parser.RillYAML == nil {
+		return parseErrsErr
+	}
+
+	// Treat reloads the same as a fresh parse (where there's no diff)
+	if diff != nil && diff.Reloaded {
+		diff = nil
+	}
+
+	// Update state from rill.yaml and .env
+	if diff == nil || diff.ModifiedDotEnv {
+		err := r.reconcileProjectConfig(ctx, parser)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Reconcile resources.
