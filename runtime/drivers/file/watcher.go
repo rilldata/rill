@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -23,6 +24,7 @@ const maxBufferSize = 1000
 type watcher struct {
 	root             string
 	watcher          *fsnotify.Watcher
+	closed           atomic.Bool
 	done             chan struct{}
 	err              error
 	mu               sync.Mutex
@@ -61,14 +63,10 @@ func (w *watcher) close() {
 }
 
 func (w *watcher) closeWithErr(err error) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-
-	select {
-	case <-w.done:
-		// Already closed
+	// Support multiple calls, but only actually close once.
+	// Not using w.mu here because someday someone will try to close the watcher from a callback.
+	if w.closed.Swap(true) {
 		return
-	default:
 	}
 
 	closeErr := w.watcher.Close()
