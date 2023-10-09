@@ -1,4 +1,4 @@
-import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
   AD_BIDS_BID_PRICE_MEASURE,
   AD_BIDS_COUNTRY_DIMENSION,
@@ -20,7 +20,7 @@ import {
   createAdBidsMirrorInStore,
   createMetricsMetaQueryMock,
   resetDashboardStore,
-} from "@rilldata/web-common/features/dashboards/dashboard-stores-test-data";
+} from "@rilldata/web-common/features/dashboards/stores/dashboard-stores-test-data";
 import {
   createShowHideDimensionsStore,
   createShowHideMeasuresStore,

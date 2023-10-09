@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
-  import { useDashboardStore } from "../dashboard-stores";
+  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import {
     getAbbreviationForIANA,
     getLabelForIANA,

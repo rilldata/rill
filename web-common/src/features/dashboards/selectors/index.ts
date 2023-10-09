@@ -103,8 +103,8 @@ export function createTimeRangeSummary(
 ): CreateQueryResult<V1ColumnTimeRangeResponse> {
   return derived(
     [ctx.runtime, useMetaQuery(ctx)],
-    ([runtime, metricsView], set) =>
-      createQueryServiceColumnTimeRange(
+    ([runtime, metricsView], set) => {
+      return createQueryServiceColumnTimeRange(
         runtime.instanceId,
         metricsView.data?.model,
         {
@@ -116,6 +116,7 @@ export function createTimeRangeSummary(
             queryClient: ctx.queryClient,
           },
         }
-      ).subscribe(set)
+      ).subscribe(set);
+    }
   );
 }
