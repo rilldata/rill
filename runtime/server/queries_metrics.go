@@ -126,6 +126,10 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 		return nil, err
 	}
 
+	if req.Limit == 0 {
+		req.Limit = 100
+	}
+
 	q := &queries.MetricsViewToplist{
 		MetricsViewName:    req.MetricsViewName,
 		DimensionName:      req.DimensionName,
@@ -197,6 +201,10 @@ func (s *Server) MetricsViewComparisonToplist(ctx context.Context, req *runtimev
 	err = validateInlineMeasures(req.InlineMeasures)
 	if err != nil {
 		return nil, err
+	}
+
+	if req.Limit == 0 {
+		req.Limit = 100
 	}
 
 	q := &queries.MetricsViewComparisonToplist{
