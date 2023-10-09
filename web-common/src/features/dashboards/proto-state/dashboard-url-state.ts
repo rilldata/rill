@@ -77,10 +77,22 @@ export function useDashboardUrlSync(ctx: StateManagers) {
   const metaQuery = useMetaQuery(ctx);
 
   let lastKnownProto = get(dashboardUrlState)?.defaultProto;
-  return dashboardUrlState.subscribe((state) => {
+  const unsub = dashboardUrlState.subscribe((state) => {
     const metricViewName = get(ctx.metricsViewName);
-    if (!state.isReady || state.urlName !== metricViewName || !state.proto)
+    if (state.urlName !== metricViewName) {
+      // Edge case where the instance of sync doesnt match the active metrics view
+      // TODO: We really need to rethink the new architecture that leads to this issue.
+      //       Using a single constant store that changes based on name in ctx will lead to stale data.
+      try {
+        // Race condition when unsub is not yet initialised
+        unsub();
+      } catch (e) {
+        // no-op
+      }
       return;
+    }
+
+    if (!state.isReady || !state.proto) return;
 
     if (state.proto !== lastKnownProto) {
       // changed when filters etc are changed on the dashboard
@@ -97,6 +109,8 @@ export function useDashboardUrlSync(ctx: StateManagers) {
       lastKnownProto = state.urlProto;
     }
   });
+
+  return unsub;
 }
 
 function gotoNewDashboardUrl(url: URL, newState: string, defaultState: string) {
@@ -117,6 +131,10 @@ function gotoNewDashboardUrl(url: URL, newState: string, defaultState: string) {
   goto(newUrl.toString());
 }
 
+// NOTE: the data here can be stale when metricsViewName changes in ctx, along with the metaQuery.
+//       but the time range summary is yet to be triggered to change causing it to have data from previous active dashboard
+// Above issue is currently fixed in useDashboardUrlSync and DashboardURLStateProvider by create a new instance when the url is changed.
+// TODO: we need to update the architecture to perhaps recreate all derived stores when the metricsViewName changes
 export function useDashboardDefaultProto(ctx: StateManagers) {
   return derived(
     [useMetaQuery(ctx), createTimeRangeSummary(ctx)],

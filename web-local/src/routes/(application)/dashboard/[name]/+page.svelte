@@ -90,7 +90,7 @@
     <StateManagersProvider metricsViewName={metricViewName} slot="body">
       {#key metricViewName}
         <DashboardStateProvider {metricViewName}>
-          <DashboardURLStateProvider>
+          <DashboardURLStateProvider {metricViewName}>
             <Dashboard {metricViewName} />
           </DashboardURLStateProvider>
         </DashboardStateProvider>

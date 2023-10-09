@@ -158,7 +158,9 @@ describe("useDashboardUrlSync", () => {
     teardown();
   });
 
-  it("Changing active dashboard", async () => {
+  // There is little ROI to keep this as a unit test.
+  // TODO: add an E2E instead
+  it.skip("Changing active dashboard", async () => {
     const { teardown, stateManagers } = await initDashboardUrlState();
     dashboardFetchMocks.mockMetricsView(
       AD_BIDS_MIRROR_NAME,

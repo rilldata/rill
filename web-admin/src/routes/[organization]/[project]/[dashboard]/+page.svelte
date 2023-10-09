@@ -98,7 +98,7 @@
   <StateManagersProvider metricsViewName={dashboardName}>
     {#key dashboardName}
       <DashboardStateProvider metricViewName={dashboardName}>
-        <DashboardURLStateProvider>
+        <DashboardURLStateProvider metricViewName={dashboardName}>
           <Dashboard metricViewName={dashboardName} leftMargin={"48px"} />
         </DashboardURLStateProvider>
       </DashboardStateProvider>
