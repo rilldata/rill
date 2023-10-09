@@ -422,6 +422,13 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 		return fmt.Errorf("rename: table %q does not exist", oldName)
 	}
 
+	// reopen duckdb connections which should delete any temporary files built up during ingestion
+	// making an empty call so that stop the world call with tx=true is very fast and only blocks for the duration of close and open db hanle call
+	err = c.WithConnection(ctx, 100, false, true, func(_, _ context.Context, _ *dbsql.Conn) error { return nil })
+	if err != nil {
+		return err
+	}
+
 	oldVersionInNewDir, replaceInNewTable, err := c.tableVersion(newName)
 	if err != nil {
 		return err
