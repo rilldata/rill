@@ -434,7 +434,8 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 	}
 	oldSrcDir := filepath.Join(c.config.ExtStoragePath, oldName)
 
-	return c.WithConnection(ctx, 100, true, false, func(currentCtx, ctx context.Context, conn *dbsql.Conn) error {
+	// rename with tx=true to reopen duckdb connections which should delete any temporary files built up during ingestion
+	return c.WithConnection(ctx, 100, true, true, func(currentCtx, ctx context.Context, conn *dbsql.Conn) error {
 		// drop old view
 		err = c.Exec(currentCtx, &drivers.Statement{Query: fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(oldName))})
 		if err != nil {
