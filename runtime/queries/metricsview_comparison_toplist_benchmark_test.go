@@ -605,3 +605,82 @@ func BenchmarkMetricsViewsComparison_high_cardinality_nocompare_all_spending(b *
 		require.NotEmpty(b, q.Result)
 	}
 }
+
+func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_limit_x2(b *testing.B) {
+	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
+
+	obj, err := rt.GetCatalogEntry(context.Background(), instanceID, "spending_dashboard")
+	require.NoError(b, err)
+
+	mv := obj.GetMetricsView()
+	q := &MetricsViewComparisonToplist{
+		MetricsViewName: "spending_dashboard",
+		DimensionName:   "recipient_parent_name",
+		MeasureNames:    []string{"total_agencies"},
+		MetricsView:     mv,
+		BaseTimeRange: &runtimev1.TimeRange{
+			Start: parseTimeB(b, "2020-01-01T00:00:00Z"),
+			End:   parseTimeB(b, "2021-11-01T00:00:00Z"),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: parseTimeB(b, "2021-11-01T00:00:00Z"),
+			End:   parseTimeB(b, "2024-10-01T00:00:00Z"),
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				MeasureName: "total_agencies",
+				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
+				Ascending:   false,
+			},
+		},
+		Limit: 250 * 2,
+		Exact: true,
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+
+		err := q.Resolve(context.Background(), rt, instanceID, 0)
+		require.NoError(b, err)
+		require.NotEmpty(b, q.Result)
+	}
+}
+func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_limit_x5(b *testing.B) {
+	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
+
+	obj, err := rt.GetCatalogEntry(context.Background(), instanceID, "spending_dashboard")
+	require.NoError(b, err)
+
+	mv := obj.GetMetricsView()
+	q := &MetricsViewComparisonToplist{
+		MetricsViewName: "spending_dashboard",
+		DimensionName:   "recipient_parent_name",
+		MeasureNames:    []string{"total_agencies"},
+		MetricsView:     mv,
+		BaseTimeRange: &runtimev1.TimeRange{
+			Start: parseTimeB(b, "2020-01-01T00:00:00Z"),
+			End:   parseTimeB(b, "2021-11-01T00:00:00Z"),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: parseTimeB(b, "2021-11-01T00:00:00Z"),
+			End:   parseTimeB(b, "2024-10-01T00:00:00Z"),
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				MeasureName: "total_agencies",
+				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
+				Ascending:   false,
+			},
+		},
+		Limit: 250 * 5,
+		Exact: true,
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+
+		err := q.Resolve(context.Background(), rt, instanceID, 0)
+		require.NoError(b, err)
+		require.NotEmpty(b, q.Result)
+	}
+}

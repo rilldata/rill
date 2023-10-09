@@ -517,7 +517,6 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 			baseLimitClause,           // 12
 			comparisonLimitClause,     // 12
 		)
-		fmt.Println(sql)
 	} else {
 		/*
 			Example of the SQL query:
