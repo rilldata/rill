@@ -8,7 +8,7 @@
   import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { MEASURE_CONFIG } from "../config";
-  import { useDashboardStore } from "../dashboard-stores";
+  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
 
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";

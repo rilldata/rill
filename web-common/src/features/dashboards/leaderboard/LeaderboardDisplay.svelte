@@ -12,7 +12,10 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { onDestroy, onMount } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
+  import {
+    metricsExplorerStore,
+    useDashboardStore,
+  } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { FormatPreset } from "../humanize-numbers";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";

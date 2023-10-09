@@ -1,4 +1,4 @@
-import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
   AD_BIDS_BASE_FILTER,
   AD_BIDS_BID_PRICE_MEASURE,
@@ -22,7 +22,7 @@ import {
   resetDashboardStore,
   TestTimeConstants,
   TestTimeOffsetConstants,
-} from "@rilldata/web-common/features/dashboards/dashboard-stores-test-data";
+} from "@rilldata/web-common/features/dashboards/stores/dashboard-stores-test-data";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";

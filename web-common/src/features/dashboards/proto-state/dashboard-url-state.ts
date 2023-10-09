@@ -1,41 +1,50 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
+import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import {
-  metricsExplorerStore,
-  useDashboardStore,
-} from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  createTimeRangeSummary,
+  useMetaQuery,
+} from "@rilldata/web-common/features/dashboards/selectors/index";
+import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
+import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { getUrlForPath } from "@rilldata/web-common/lib/url-utils";
-import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived, get, Readable } from "svelte/store";
 
 export type DashboardUrlState = {
-  proto: string;
-  defaultProto: string;
-  urlName: string;
-  urlProto: string;
+  isReady: boolean;
+  proto?: string;
+  defaultProto?: string;
+  urlName?: string;
+  urlProto?: string;
 };
 export type DashboardUrlStore = Readable<DashboardUrlState>;
 
 /**
  * Creates a derived store that has the current proto and default proto of a dashboard along with the proto in the url.
  */
-export function useDashboardUrlState(
-  metricViewName: string
-): DashboardUrlStore {
+export function useDashboardUrlState(ctx: StateManagers): DashboardUrlStore {
   return derived(
     [
-      useDashboardProto(metricViewName),
-      useDashboardDefaultProto(metricViewName),
+      derived(ctx.dashboardStore, (dashboard) => dashboard?.proto),
+      useDashboardDefaultProto(ctx),
       page,
     ],
-    ([proto, defaultProto, page]) => {
+    ([proto, defaultProtoState, page]) => {
+      if (defaultProtoState.isFetching)
+        return {
+          isReady: false,
+        };
+
+      const defaultProto = defaultProtoState.proto;
+
       let urlProto = page.url.searchParams.get("state");
       if (urlProto) urlProto = decodeURIComponent(urlProto);
       else urlProto = defaultProto;
 
       return {
+        isReady: true,
         proto,
         defaultProto,
         urlName: getNameFromFile(page.url.pathname),
@@ -63,14 +72,27 @@ export function useDashboardUrlState(
  * 4. This triggers a sync of state in the url to the dashboard store.
  * 5. After updating the store proto in the state will be the same as `lastKnownProto`. No navigations happen.
  */
-export function useDashboardUrlSync(
-  metricViewName: string,
-  metaQuery: CreateQueryResult<V1MetricsView>
-) {
-  const dashboardUrlState = useDashboardUrlState(metricViewName);
+export function useDashboardUrlSync(ctx: StateManagers) {
+  const dashboardUrlState = useDashboardUrlState(ctx);
+  const metaQuery = useMetaQuery(ctx);
+
   let lastKnownProto = get(dashboardUrlState)?.defaultProto;
-  return dashboardUrlState.subscribe((state) => {
-    if (state.urlName !== metricViewName || !state.proto) return;
+  const unsub = dashboardUrlState.subscribe((state) => {
+    const metricViewName = get(ctx.metricsViewName);
+    if (state.urlName !== metricViewName) {
+      // Edge case where the instance of sync doesnt match the active metrics view
+      // TODO: We really need to rethink the new architecture that leads to this issue.
+      //       Using a single constant store that changes based on name in ctx will lead to stale data.
+      try {
+        // Race condition when unsub is not yet initialised
+        unsub();
+      } catch (e) {
+        // no-op
+      }
+      return;
+    }
+
+    if (!state.isReady || !state.proto) return;
 
     if (state.proto !== lastKnownProto) {
       // changed when filters etc are changed on the dashboard
@@ -87,6 +109,8 @@ export function useDashboardUrlSync(
       lastKnownProto = state.urlProto;
     }
   });
+
+  return unsub;
 }
 
 function gotoNewDashboardUrl(url: URL, newState: string, defaultState: string) {
@@ -107,14 +131,30 @@ function gotoNewDashboardUrl(url: URL, newState: string, defaultState: string) {
   goto(newUrl.toString());
 }
 
-// TODO: if these are necessary anywhere else move them to a separate file
-// memoization of dashboard proto
-export function useDashboardProto(name: string) {
-  return derived(useDashboardStore(name), (dashboard) => dashboard?.proto);
-}
-export function useDashboardDefaultProto(name: string) {
+// NOTE: the data here can be stale when metricsViewName changes in ctx, along with the metaQuery.
+//       but the time range summary is yet to be triggered to change causing it to have data from previous active dashboard
+// Above issue is currently fixed in useDashboardUrlSync and DashboardURLStateProvider by create a new instance when the url is changed.
+// TODO: we need to update the architecture to perhaps recreate all derived stores when the metricsViewName changes
+export function useDashboardDefaultProto(ctx: StateManagers) {
   return derived(
-    useDashboardStore(name),
-    (dashboard) => dashboard?.defaultProto
+    [useMetaQuery(ctx), createTimeRangeSummary(ctx)],
+    ([metricsView, timeRangeSummary]) => {
+      const hasTimeSeries = Boolean(metricsView.data?.timeDimension);
+      if (!metricsView.data || (hasTimeSeries && !timeRangeSummary.data))
+        return {
+          isFetching: true,
+          proto: "",
+        };
+
+      const metricsExplorer = getDefaultMetricsExplorerEntity(
+        get(ctx.metricsViewName),
+        metricsView.data,
+        timeRangeSummary.data
+      );
+      return {
+        isFetching: false,
+        proto: getProtoFromDashboardState(metricsExplorer),
+      };
+    }
   );
 }

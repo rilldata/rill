@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
-  import DashboardStateProvider from "@rilldata/web-common/features/dashboards/DashboardStateProvider.svelte";
+  import DashboardStateProvider from "@rilldata/web-common/features/dashboards/stores/DashboardStateProvider.svelte";
   import { resetSelectedMockUserAfterNavigate } from "@rilldata/web-common/features/dashboards/granular-access-policies/resetSelectedMockUserAfterNavigate";
   import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
   import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";

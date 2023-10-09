@@ -25,7 +25,10 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { SortDirection } from "../proto-state/derived-types";
-  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
+  import {
+    metricsExplorerStore,
+    useDashboardStore,
+  } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { humanizeGroupByColumns, FormatPreset } from "../humanize-numbers";
   import {
     computeComparisonValues,

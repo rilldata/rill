@@ -10,7 +10,7 @@
   import type { Tweened } from "svelte/motion";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
-  import { useDashboardStore } from "../dashboard-stores";
+  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
   import Filters from "../filters/Filters.svelte";
   import MockUserHasNoAccess from "../granular-access-policies/MockUserHasNoAccess.svelte";
