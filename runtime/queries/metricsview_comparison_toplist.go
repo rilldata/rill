@@ -548,7 +548,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 			leftWhereClause,     // 4
 			rightWhereClause,    // 5
 			orderClause,         // 6
-			q.Limit,             // 7
+			limitClause,         // 7
 			q.Offset,            // 8
 			finalSelectClause,   // 9
 			twiceTheLimitClause, // 10
