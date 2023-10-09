@@ -1,6 +1,5 @@
 <script lang="ts">
   import { ConnectedPreviewTable } from "@rilldata/web-common/components/preview-table";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useResourceForFile } from "@rilldata/web-common/features/entity-management/resources-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext } from "svelte";

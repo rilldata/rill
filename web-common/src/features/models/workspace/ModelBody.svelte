@@ -6,7 +6,6 @@
     getFileAPIPathFromNameAndType,
     getFilePathFromNameAndType,
   } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { getAllErrorsForFile } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import type { QueryHighlightState } from "@rilldata/web-common/features/models/query-highlight-store";
