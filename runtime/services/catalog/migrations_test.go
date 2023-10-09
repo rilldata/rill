@@ -85,9 +85,7 @@ func TestReconcile(t *testing.T) {
 			testutils.AssertMigration(t, result, 0, 0, 0, 0, []string{})
 
 			// delete from olap
-			err = s.Olap.Exec(context.Background(), &drivers.Statement{
-				Query: "drop table AdBids",
-			})
+			err = s.Olap.DropTable(context.Background(), "AdBids", false)
 			require.NoError(t, err)
 			result, err = s.Reconcile(context.Background(), tt.config)
 			require.NoError(t, err)
@@ -544,6 +542,8 @@ measures:
 - expression: count(*)
 - expression: avg(bid_price)
   ignore: true
+first_day_of_week: 7
+first_month_of_year: 12
 `))
 	require.NoError(t, err)
 	result, err = s.Reconcile(context.Background(), catalog.ReconcileConfig{})
@@ -555,6 +555,8 @@ measures:
 	require.Equal(t, "count(*)", mv.Measures[0].Expression)
 	require.Len(t, mv.Dimensions, 1)
 	require.Equal(t, "publisher", mv.Dimensions[0].Name)
+	require.Equal(t, uint32(7), mv.FirstDayOfWeek)
+	require.Equal(t, uint32(12), mv.FirstMonthOfYear)
 
 	time.Sleep(time.Millisecond * 10)
 	err = s.Repo.Put(context.Background(), AdBidsDashboardRepoPath, strings.NewReader(`model: AdBids_model

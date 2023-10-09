@@ -1,16 +1,14 @@
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
-import { getLocalUserPreferences } from "@rilldata/web-common/features/dashboards/user-preferences";
+import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
   getMapFromArray,
   removeIfExists,
 } from "@rilldata/web-common/lib/arrayUtils";
 import { getTimeComparisonParametersForComponent } from "@rilldata/web-common/lib/time/comparisons";
 import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
-import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
-import { ISODurationToTimePreset } from "@rilldata/web-common/lib/time/ranges";
-import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import type {
   DashboardTimeControls,
   ScrubRange,
@@ -23,95 +21,11 @@ import type {
   V1MetricsViewFilter,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
-import { Readable, derived, get, writable } from "svelte/store";
-import { SortDirection, SortType } from "./proto-state/derived-types";
-
-export interface LeaderboardValue {
-  value: number;
-  label: string;
-}
-
-export interface LeaderboardValues {
-  values: Array<LeaderboardValue>;
-  dimensionName: string;
-}
-
-export type ActiveValues = Record<string, Array<[unknown, boolean]>>;
-
-export interface MetricsExplorerEntity {
-  name: string;
-  // selected measure names to be shown
-  selectedMeasureNames: Array<string>;
-
-  // This array controls which measures are visible in
-  // explorer on the client. Note that this will need to be
-  // updated to include all measure keys upon initialization
-  // or else all measure will be hidden
-  visibleMeasureKeys: Set<string>;
-  // While the `visibleMeasureKeys` has the list of visible measures,
-  // this is explicitly needed to fill the state.
-  // TODO: clean this up when we refactor how url state is synced
-  allMeasuresVisible: boolean;
-
-  // This array controls which dimensions are visible in
-  // explorer on the client.Note that if this is null, all
-  // dimensions will be visible (this is needed to default to all visible
-  // when there are not existing keys in the URL or saved on the
-  // server)
-  visibleDimensionKeys: Set<string>;
-  // While the `visibleDimensionKeys` has the list of all visible dimensions,
-  // this is explicitly needed to fill the state.
-  // TODO: clean this up when we refactor how url state is synced
-  allDimensionsVisible: boolean;
-
-  // This is the name of the primary active measure in the dashboard.
-  // This is the measure that will be shown in leaderboards, and
-  // will be used for sorting the leaderboard and dimension
-  // detail table.
-  // This "name" is the internal name of the measure from the YAML,
-  // not the human readable name.
-  leaderboardMeasureName: string;
-
-  // This is the sort type that will be used for the leaderboard
-  // and dimension detail table. See SortType for more details.
-  dashboardSortType: SortType;
-  // This is the sort direction that will be used for the leaderboard
-  // and dimension detail table.
-  sortDirection: SortDirection;
-
-  filters: V1MetricsViewFilter;
-  // stores whether a dimension is in include/exclude filter mode
-  // false/absence = include, true = exclude
-  dimensionFilterExcludeMode: Map<string, boolean>;
-  // user selected time range
-  selectedTimeRange?: DashboardTimeControls;
-
-  // user selected scrub range
-  selectedScrubRange?: ScrubRange;
-  lastDefinedScrubRange?: ScrubRange;
-
-  selectedComparisonTimeRange?: DashboardTimeControls;
-  selectedComparisonDimension?: string;
-
-  // user selected timezone
-  selectedTimezone?: string;
-
-  // flag to show/hide time comparison based on user preference.
-  // This controls whether a time comparison is shown in e.g.
-  // the line charts and bignums.
-  // It does NOT affect the leaderboard context column.
-  showTimeComparison?: boolean;
-
-  // state of context column in the leaderboard
-  leaderboardContextColumn: LeaderboardContextColumn;
-
-  // user selected dimension
-  selectedDimensionName?: string;
-
-  proto?: string;
-  // proto for the default set of selections
-  defaultProto?: string;
-}
+import { derived, Readable, writable } from "svelte/store";
+import {
+  SortDirection,
+  SortType,
+} from "web-common/src/features/dashboards/proto-state/derived-types";
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, MetricsExplorerEntity>;
@@ -246,61 +160,6 @@ function syncDimensions(
   }
 }
 
-function setDefaultTimeRange(
-  metricsView: V1MetricsView,
-  metricsExplorer: MetricsExplorerEntity,
-  fullTimeRange: V1ColumnTimeRangeResponse | undefined
-) {
-  if (!fullTimeRange) return;
-  const timeZone = get(getLocalUserPreferences()).timeZone;
-  const fullTimeStart = new Date(fullTimeRange.timeRangeSummary.min);
-  const fullTimeEnd = new Date(fullTimeRange.timeRangeSummary.max);
-  const timeRange = isoDurationToFullTimeRange(
-    metricsView.defaultTimeRange,
-    fullTimeStart,
-    fullTimeEnd,
-    timeZone
-  );
-  const timeGrain = getDefaultTimeGrain(timeRange.start, timeRange.end);
-  metricsExplorer.selectedTimeRange = {
-    ...timeRange,
-    interval: timeGrain.grain,
-  };
-  setSelectedScrubRange(metricsExplorer, undefined);
-  setDefaultComparisonTimeRange(metricsView, metricsExplorer, fullTimeRange);
-}
-
-function setDefaultComparisonTimeRange(
-  metricsView: V1MetricsView,
-  metricsExplorer: MetricsExplorerEntity,
-  fullTimeRange: V1ColumnTimeRangeResponse | undefined
-) {
-  const preset = ISODurationToTimePreset(metricsView.defaultTimeRange, true);
-  const comparisonOption = DEFAULT_TIME_RANGES[preset]
-    ?.defaultComparison as TimeComparisonOption;
-  if (!comparisonOption) return;
-
-  const fullTimeStart = new Date(fullTimeRange.timeRangeSummary.min);
-  const fullTimeEnd = new Date(fullTimeRange.timeRangeSummary.max);
-  const comparisonRange = getTimeComparisonParametersForComponent(
-    comparisonOption,
-    fullTimeStart,
-    fullTimeEnd,
-    metricsExplorer.selectedTimeRange.start,
-    metricsExplorer.selectedTimeRange.end
-  );
-  if (comparisonRange.isComparisonRangeAvailable) {
-    metricsExplorer.selectedComparisonTimeRange = {
-      name: comparisonOption,
-      start: comparisonRange.start,
-      end: comparisonRange.end,
-    };
-    metricsExplorer.showTimeComparison = true;
-    metricsExplorer.leaderboardContextColumn =
-      LeaderboardContextColumn.DELTA_PERCENT;
-  }
-}
-
 const metricViewReducers = {
   init(
     name: string,
@@ -310,38 +169,13 @@ const metricViewReducers = {
     update((state) => {
       if (state.entities[name]) return state;
 
-      state.entities[name] = {
+      state.entities[name] = getDefaultMetricsExplorerEntity(
         name,
-        selectedMeasureNames: metricsView.measures.map(
-          (measure) => measure.name
-        ),
-
-        visibleMeasureKeys: new Set(
-          metricsView.measures.map((measure) => measure.name)
-        ),
-        allMeasuresVisible: true,
-        visibleDimensionKeys: new Set(
-          metricsView.dimensions.map((dim) => dim.name)
-        ),
-        allDimensionsVisible: true,
-        leaderboardMeasureName: metricsView.measures[0]?.name,
-        filters: {
-          include: [],
-          exclude: [],
-        },
-        dimensionFilterExcludeMode: new Map(),
-        leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
-        dashboardSortType: SortType.VALUE,
-        sortDirection: SortDirection.DESCENDING,
-
-        showTimeComparison: false,
-      };
-
-      // set default time range
-      setDefaultTimeRange(metricsView, state.entities[name], fullTimeRange);
+        metricsView,
+        fullTimeRange
+      );
 
       updateMetricsExplorerProto(state.entities[name]);
-      state.entities[name].defaultProto = state.entities[name].proto;
       return state;
     });
   },
@@ -362,11 +196,7 @@ const metricViewReducers = {
     });
   },
 
-  sync(
-    name: string,
-    metricsView: V1MetricsView,
-    fullTimeRange: V1ColumnTimeRangeResponse | undefined
-  ) {
+  sync(name: string, metricsView: V1MetricsView) {
     if (!name || !metricsView || !metricsView.measures) return;
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       // remove references to non existent measures
@@ -374,10 +204,6 @@ const metricViewReducers = {
 
       // remove references to non existent dimensions
       syncDimensions(metricsView, metricsExplorer);
-
-      // set default time range
-      setDefaultTimeRange(metricsView, metricsExplorer, fullTimeRange);
-      // TODO: update defaultProto
     });
   },
 

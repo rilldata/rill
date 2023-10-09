@@ -15,6 +15,11 @@ type migrationYAML struct {
 func (p *Parser) parseMigration(ctx context.Context, node *Node) error {
 	// Parse YAML
 	tmp := &migrationYAML{}
+	if p.RillYAML != nil && !p.RillYAML.Defaults.Migrations.IsZero() {
+		if err := p.RillYAML.Defaults.Migrations.Decode(tmp); err != nil {
+			return pathError{path: node.YAMLPath, err: fmt.Errorf("failed applying defaults from rill.yaml: %w", newYAMLError(err))}
+		}
+	}
 	if node.YAML != nil {
 		if err := node.YAML.Decode(tmp); err != nil {
 			return pathError{path: node.YAMLPath, err: newYAMLError(err)}
