@@ -1,5 +1,6 @@
 import { skipDebounceAnnotation } from "@rilldata/web-common/components/editor/annotations";
 import { setLineStatuses } from "@rilldata/web-common/components/editor/line-status";
+import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
@@ -37,6 +38,8 @@ export function createUpdateMetricsCallback(
     })) as V1PutFileAndReconcileResponse;
     fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
     invalidateAfterReconcile(queryClient, instanceId, resp);
+    // Remove the explorer entity so that everything is reset to defaults next time user navigates to it
+    metricsExplorerStore.remove(metricsDefName);
   }
 
   return function updateMetrics(event) {

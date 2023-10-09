@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import {
     createTimeRangeSummary,
     useMetaQuery,

@@ -227,9 +227,6 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, d
 
 	var limitClause string
 	if q.Limit != nil {
-		if *q.Limit == 0 {
-			*q.Limit = 100
-		}
 		limitClause = fmt.Sprintf("LIMIT %d", *q.Limit)
 	}
 

@@ -1119,6 +1119,8 @@ export interface V1MetricsViewSpec {
   defaultTimeRange?: string;
   availableTimeZones?: string[];
   security?: MetricsViewSpecSecurityV2;
+  firstDayOfWeek?: number;
+  firstMonthOfYear?: number;
 }
 
 export interface V1MetricsViewState {
@@ -1295,6 +1297,8 @@ export interface V1MetricsView {
   /** Available time zones list preferred time zones using IANA location identifiers. */
   availableTimeZones?: string[];
   security?: MetricsViewSecurity;
+  firstDayOfWeek?: number;
+  firstMonthOfYear?: number;
 }
 
 export interface V1MapType {

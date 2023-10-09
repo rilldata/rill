@@ -7,7 +7,7 @@
     createQueryServiceMetricsViewRows,
     createQueryServiceTableColumns,
   } from "@rilldata/web-common/runtime-client";
-  import { useDashboardStore } from "../dashboard-stores";
+  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import PreviewTable from "@rilldata/web-common/components/preview-table/PreviewTable.svelte";
   import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
   import { writable } from "svelte/store";

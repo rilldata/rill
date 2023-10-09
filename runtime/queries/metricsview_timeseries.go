@@ -154,6 +154,8 @@ func (q *MetricsViewTimeSeries) resolveDuckDB(ctx context.Context, rt *runtime.R
 		MetricsViewFilter: q.Filter,
 		TimeZone:          q.TimeZone,
 		MetricsViewPolicy: policy,
+		FirstDayOfWeek:    mv.FirstDayOfWeek,
+		FirstMonthOfYear:  mv.FirstMonthOfYear,
 	}
 	err = rt.Query(ctx, instanceID, tsq, priority)
 	if err != nil {
@@ -282,15 +284,24 @@ func (q *MetricsViewTimeSeries) buildDruidMetricsTimeseriesSQL(mv *runtimev1.Met
 	tsAlias := tempName("_ts_")
 	tsSpecifier := convertToDruidTimeFloorSpecifier(q.TimeGranularity)
 
+	timeClause := fmt.Sprintf("time_floor(%s, '%s', null, CAST(? AS VARCHAR))", safeName(mv.TimeDimension), tsSpecifier)
+	if q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_WEEK && mv.FirstDayOfWeek > 1 {
+		dayOffset := 8 - mv.FirstDayOfWeek
+		timeClause = fmt.Sprintf("time_shift(time_floor(time_shift(%[1]s, 'P1D', %[3]d), '%[2]s', null, CAST(? AS VARCHAR)), 'P1D', -%[3]d)", safeName(mv.TimeDimension), tsSpecifier, dayOffset)
+	} else if q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_YEAR && mv.FirstMonthOfYear > 1 {
+		monthOffset := 13 - mv.FirstMonthOfYear
+		timeClause = fmt.Sprintf("time_shift(time_floor(time_shift(%[1]s, 'P1M', %[3]d), '%[2]s', null, CAST(? AS VARCHAR)), 'P1M', -%[3]d)", safeName(mv.TimeDimension), tsSpecifier, monthOffset)
+	}
+
 	timezone := "UTC"
 	if q.TimeZone != "" {
 		timezone = q.TimeZone
 	}
+
 	args = append([]any{timezone}, args...)
 	sql := fmt.Sprintf(
-		`SELECT time_floor(%s, '%s', null, CAST(? AS VARCHAR)) AS %s, %s FROM %q WHERE %s GROUP BY 1 ORDER BY 1`,
-		safeName(mv.TimeDimension),
-		tsSpecifier,
+		`SELECT %s AS %s, %s FROM %q WHERE %s GROUP BY 1 ORDER BY 1`,
+		timeClause,
 		tsAlias,
 		strings.Join(selectCols, ", "),
 		mv.Model,

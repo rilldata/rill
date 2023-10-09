@@ -225,7 +225,7 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 		// Skip files that aren't SQL or YAML or .env file
 		isSQL := strings.HasSuffix(path, ".sql")
 		isYAML := strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")
-		isDotEnv := strings.EqualFold(path, "/.env")
+		isDotEnv := pathIsDotEnv(path)
 		if !isSQL && !isYAML && !isDotEnv {
 			continue
 		}
@@ -239,10 +239,10 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 		}
 
 		// Check if path is rill.yaml or .env and clear it (so we can re-parse it)
-		if path == "/rill.yaml" || path == "/rill.yml" {
+		if pathIsRillYAML(path) {
 			modifiedRillYAML = true
 			p.RillYAML = nil
-		} else if path == "/.env" {
+		} else if isDotEnv {
 			modifiedDotEnv = true
 			p.DotEnv = nil
 		}
@@ -367,20 +367,30 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 		return fmt.Errorf("project exceeds file limit of %d", maxFiles)
 	}
 
-	// Sort paths such that we align files with the same name but different extensions next to each other.
-	// Then iterate over the sorted paths, processing all paths with the same stem at once (stem = path without extension).
-	slices.Sort(paths)
+	// Sort paths such that a) we always parse rill.yaml first (to pick up defaults),
+	// and b) we align files with the same name but different extensions next to each other.
+	slices.SortFunc(paths, func(a, b string) bool {
+		if pathIsRillYAML(a) {
+			return true
+		}
+		if pathIsRillYAML(b) {
+			return false
+		}
+		return a < b
+	})
+
+	// Iterate over the sorted paths, processing all paths with the same stem at once (stem = path without extension).
 	for i := 0; i < len(paths); {
 		// Handle rill.yaml and .env separately (if parsing of rill.yaml fails, we exit early instead of adding a ParseError)
 		path := paths[i]
-		if path == "/rill.yaml" || path == "/rill.yml" {
+		if pathIsRillYAML(path) {
 			err := p.parseRillYAML(ctx, path)
 			if err != nil {
 				return err
 			}
 			i++
 			continue
-		} else if path == "/.env" {
+		} else if pathIsDotEnv(path) {
 			err := p.parseDotEnv(ctx, path)
 			if err != nil {
 				p.addParseError(path, err)
@@ -724,6 +734,16 @@ func (p *Parser) addParseError(path string, err error) {
 		FilePath:      path,
 		StartLocation: loc,
 	})
+}
+
+// pathIsRillYAML returns true if the path is rill.yaml
+func pathIsRillYAML(path string) bool {
+	return path == "/rill.yaml" || path == "/rill.yml"
+}
+
+// pathIsDotEnv returns true if the path is .env
+func pathIsDotEnv(path string) bool {
+	return path == "/.env"
 }
 
 // normalizePath normalizes a user-provided path to the format returned from ListRecursive.

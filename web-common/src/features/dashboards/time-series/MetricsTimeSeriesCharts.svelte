@@ -3,7 +3,7 @@
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
-  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { getFilterForComparedDimension, prepareTimeSeries } from "./utils";
   import {
     humanizeDataType,

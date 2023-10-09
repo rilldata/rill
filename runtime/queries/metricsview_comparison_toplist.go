@@ -280,18 +280,19 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 		}
 	}
 
-	if q.Limit == 0 {
-		q.Limit = 100
+	limitClause := ""
+	if q.Limit > 0 {
+		limitClause = fmt.Sprintf(" LIMIT %d", q.Limit)
 	}
 
 	sql := fmt.Sprintf(
-		`SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s ORDER BY %[5]s LIMIT %[6]d OFFSET %[7]d`,
+		`SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s ORDER BY %[5]s %[6]s OFFSET %[7]d`,
 		selectClause,    // 1
 		colName,         // 2
 		mv.Model,        // 3
 		baseWhereClause, // 4
 		orderClause,     // 5
-		q.Limit,         // 6
+		limitClause,     // 6
 		q.Offset,        // 7
 	)
 
@@ -381,6 +382,16 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 	orderClause := "true"
 	subQueryOrderClause := "true"
 	for _, s := range q.Sort {
+		if s.MeasureName == q.DimensionName {
+			orderClause += ", 1"
+			if !s.Ascending {
+				orderClause += " DESC"
+			}
+			if dialect == drivers.DialectDuckDB {
+				orderClause += " NULLS LAST"
+			}
+			break
+		}
 		i, ok := measureMap[s.MeasureName]
 		if !ok {
 			return "", nil, fmt.Errorf("metrics view '%s' doesn't contain '%s' sort column", q.MetricsViewName, s.MeasureName)
@@ -410,8 +421,11 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 		}
 	}
 
-	if q.Limit == 0 {
-		q.Limit = 100
+	limitClause := ""
+	twiceTheLimitClause := ""
+	if q.Limit > 0 {
+		limitClause = fmt.Sprintf(" LIMIT %d", q.Limit)
+		twiceTheLimitClause = fmt.Sprintf(" LIMIT %d", q.Limit*2)
 	}
 
 	baseLimitClause := ""
@@ -450,8 +464,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 				base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
 		ORDER BY
 			%[6]s
-		LIMIT
-			%[7]d
+		%[7]s
 		OFFSET
 			%[8]d
 		`,
@@ -461,7 +474,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 			baseWhereClause,           // 4
 			comparisonWhereClause,     // 5
 			orderClause,               // 6
-			q.Limit,                   // 7
+			limitClause,               // 7
 			q.Offset,                  // 8
 			finalSelectClause,         // 9
 			safeName(q.DimensionName), // 10
@@ -514,7 +527,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 		sql = fmt.Sprintf(`
 				SELECT COALESCE(base.%[2]s, comparison.%[2]s), %[9]s FROM 
 					(
-						SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s ORDER BY %[13]s LIMIT %[10]d OFFSET %[8]d 
+						SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s ORDER BY %[13]s %[10]s OFFSET %[8]d 
 					) %[11]s
 				LEFT OUTER JOIN
 					(
@@ -524,11 +537,11 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 						base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
 				ORDER BY
 					%[6]s
-				LIMIT
-					%[7]d
+				%[7]s
 				OFFSET
 					%[8]d
 				`,
+
 			subSelectClause,     // 1
 			colName,             // 2
 			mv.Model,            // 3
@@ -538,7 +551,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 			q.Limit,             // 7
 			q.Offset,            // 8
 			finalSelectClause,   // 9
-			q.Limit*2,           // 10
+			twiceTheLimitClause, // 10
 			leftSubQueryAlias,   // 11
 			rightSubQueryAlias,  // 12
 			subQueryOrderClause, // 13
