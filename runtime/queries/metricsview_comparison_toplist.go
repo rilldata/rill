@@ -270,6 +270,16 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 
 	orderClause := "true"
 	for _, s := range q.Sort {
+		if s.MeasureName == q.DimensionName {
+			orderClause += ", 1"
+			if !s.Ascending {
+				orderClause += " DESC"
+			}
+			if dialect == drivers.DialectDuckDB {
+				orderClause += " NULLS LAST"
+			}
+			break
+		}
 		orderClause += ", "
 		orderClause += safeName(s.MeasureName)
 		if !s.Ascending {
@@ -384,12 +394,16 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 	for _, s := range q.Sort {
 		if s.MeasureName == q.DimensionName {
 			orderClause += ", 1"
+			subQueryOrderClause += ", 1"
+			var ending string
 			if !s.Ascending {
-				orderClause += " DESC"
+				ending += " DESC"
 			}
 			if dialect == drivers.DialectDuckDB {
-				orderClause += " NULLS LAST"
+				ending += " NULLS LAST"
 			}
+			orderClause += ending
+			subQueryOrderClause += ending
 			break
 		}
 		i, ok := measureMap[s.MeasureName]
@@ -412,13 +426,16 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 			return "", nil, fmt.Errorf("undefined sort type for measure %s", s.MeasureName)
 		}
 		orderClause += fmt.Sprint(pos)
-		subQueryOrderClause += fmt.Sprint(i + 2)
+		subQueryOrderClause += fmt.Sprint(i + 2) // 1-based + skip the first dim column
+		ending := ""
 		if !s.Ascending {
-			orderClause += " DESC"
+			ending += " DESC"
 		}
 		if dialect == drivers.DialectDuckDB {
-			orderClause += " NULLS LAST"
+			ending += " NULLS LAST"
 		}
+		orderClause += ending
+		subQueryOrderClause += ending
 	}
 
 	limitClause := ""
@@ -442,13 +459,31 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 			q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA ||
 			q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA {
 			joinType = "LEFT OUTER"
-			baseLimitClause = fmt.Sprintf("LIMIT %d", approximationLimit)
+			baseLimitClause = fmt.Sprintf("ORDER BY %s LIMIT %d", subQueryOrderClause, approximationLimit)
 		} else if q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE {
 			joinType = "RIGHT OUTER"
-			comparisonLimitClause = fmt.Sprintf("LIMIT %d", approximationLimit)
+			comparisonLimitClause = fmt.Sprintf("ORDER BY %s LIMIT %d", subQueryOrderClause, approximationLimit)
 		}
 	}
 
+	/*
+		Example of the SQL:
+
+		SELECT COALESCE(base."domain", comparison."domain") AS "dom", base."measure_1", comparison."measure_1" AS "measure_1__previous", base."measure_1" - comparison."measure_1" AS "measure_1__delta_abs", (base."measure_1" - comparison."measure_1")/comparison."measure_1"::DOUBLE AS "measure_1__delta_rel" FROM
+			(
+				SELECT "domain", avg(bid_price) as "measure_1" FROM "ad_bids" WHERE 1=1 AND "timestamp" >= ? AND "timestamp" < ? GROUP BY "domain" ORDER BY true, 1 NULLS LAST LIMIT 100
+			) base
+		LEFT OUTER JOIN
+			(
+				SELECT "domain", avg(bid_price) as "measure_1" FROM "ad_bids" WHERE 1=1 AND "timestamp" >= ? AND "timestamp" < ? GROUP BY "domain"
+			) comparison
+		ON
+				base."domain" = comparison."domain" OR (base."domain" is null and comparison."domain" is null)
+		ORDER BY
+			true, 1 NULLS LAST
+		LIMIT 10
+		OFFSET 0
+	*/
 	var sql string
 	if dialect != drivers.DialectDruid {
 		sql = fmt.Sprintf(`
@@ -482,6 +517,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 			baseLimitClause,           // 12
 			comparisonLimitClause,     // 12
 		)
+		fmt.Println(sql)
 	} else {
 		/*
 			Example of the SQL query:
