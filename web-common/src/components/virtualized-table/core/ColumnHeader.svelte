@@ -16,6 +16,7 @@
   import type { HeaderPosition, VirtualizedTableConfig } from "../types";
   import StickyHeader from "./StickyHeader.svelte";
   import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
+  import type { ResizeEvent } from "../drag-table-cell";
 
   export let pinned = false;
   export let noPin = false;
@@ -45,6 +46,13 @@
   $: columnFontWeight = isSelected
     ? "font-bold"
     : config.columnHeaderFontWeightClass;
+
+  const handleResize = (event: ResizeEvent) => {
+    dispatch("resize-column", {
+      size: event.detail.size,
+      name,
+    });
+  };
 </script>
 
 <StickyHeader
@@ -55,12 +63,7 @@
   on:reset-column-width={() => {
     dispatch("reset-column-width", { name });
   }}
-  on:resize={(event) => {
-    dispatch("resize-column", {
-      size: event.detail.size,
-      name,
-    });
-  }}
+  on:resize={handleResize}
   {position}
   {header}
   on:focus={() => {

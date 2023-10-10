@@ -4,6 +4,7 @@
   import { createEventDispatcher, getContext } from "svelte";
   import Cell from "../../../components/virtualized-table/core/Cell.svelte";
   import type { VirtualizedTableConfig } from "../../../components/virtualized-table/types";
+  import type { ResizeEvent } from "@rilldata/web-common/components/virtualized-table/drag-table-cell";
 
   const config: VirtualizedTableConfig = getContext("config");
 
@@ -35,6 +36,12 @@
       rowSelected: selectedIndex.findIndex((tgt) => row?.index === tgt) >= 0,
     };
   };
+  const handleResize = (event: ResizeEvent) => {
+    dispatch("resize-column", {
+      size: event.detail.size,
+      name,
+    });
+  };
 </script>
 
 <div
@@ -48,12 +55,7 @@
     position="top-left"
     borderRight={horizontalScrolling}
     bgClass="bg-white"
-    on:resize={(event) => {
-      dispatch("resize-column", {
-        size: event.detail.size,
-        name,
-      });
-    }}
+    on:resize={handleResize}
   >
     <span class="px-1">{column?.label || column?.name}</span>
   </StickyHeader>
