@@ -62,3 +62,26 @@ export async function updateCodeEditor(page: Page, code: string) {
   await page.keyboard.press("Delete");
   await page.keyboard.insertText(code);
 }
+
+export async function waitForValidResource(
+  page: Page,
+  name: string,
+  kind: string
+) {
+  await page.waitForResponse(async (response) => {
+    if (
+      !response
+        .url()
+        .includes(
+          `/v1/instances/default/resource?name.kind=${kind}&name.name=${name}`
+        )
+    )
+      return false;
+    try {
+      const resp = JSON.parse((await response.body()).toString());
+      return resp.resource?.meta?.reconcileStatus === "RECONCILE_STATUS_IDLE";
+    } catch (err) {
+      return false;
+    }
+  });
+}

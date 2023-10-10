@@ -22,7 +22,10 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import { createRuntimeServicePutFile } from "@rilldata/web-common/runtime-client";
+  import {
+    createRuntimeServicePutFile,
+    V1ReconcileStatus,
+  } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -49,6 +52,10 @@
     $runtime.instanceId,
     modelPath
   );
+  $: modelIsIdle =
+    $modelQuery.data?.meta?.reconcileStatus ===
+    V1ReconcileStatus.RECONCILE_STATUS_IDLE;
+  $: disableCreateDashboard = $modelHasError || !modelIsIdle;
 
   $: modelSchema = useSchemaForTable(
     $runtime.instanceId,
@@ -129,7 +136,7 @@
 </script>
 
 <MenuItem
-  disabled={$modelHasError}
+  disabled={disableCreateDashboard}
   icon
   on:select={() => createDashboardFromModel(modelName)}
   propogateSelect={false}
@@ -139,6 +146,8 @@
   <svelte:fragment slot="description">
     {#if $modelHasError}
       Model has errors
+    {:else if !modelIsIdle}
+      Dependencies are being reconciled.
     {/if}
   </svelte:fragment>
 </MenuItem>
