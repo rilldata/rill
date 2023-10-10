@@ -33,7 +33,7 @@
     isSummableMeasure,
     prepareSortedQueryBody,
   } from "../dashboard-utils";
-  import { metricsExplorerStore } from "../dashboard-stores";
+  import { metricsExplorerStore } from "../stores/dashboard-stores";
 
   export let metricViewName: string;
   export let dimensionName: string;
