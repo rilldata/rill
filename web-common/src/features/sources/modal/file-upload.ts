@@ -10,6 +10,10 @@ import {
   fileHasValidExtension,
 } from "@rilldata/web-common/features/sources/modal/possible-file-extensions";
 import { importOverlayVisible } from "@rilldata/web-common/layout/overlay-store";
+import {
+  giveBackFocus,
+  takeFocus,
+} from "@rilldata/web-common/lib/viewport-utils";
 import { runtimeServiceFileUpload } from "@rilldata/web-common/runtime-client/manual-clients";
 import { getTableNameFromFile } from "../extract-table-name";
 import {
@@ -173,6 +177,7 @@ export function openFileUploadDialog(multiple = true) {
     input.type = "file";
     /** an event callback when a source table file is chosen manually */
     input.onchange = (e: Event) => {
+      giveBackFocus();
       const files = (<HTMLInputElement>e.target)?.files as FileList;
       if (files) {
         resolve(Array.from(files));
@@ -183,6 +188,7 @@ export function openFileUploadDialog(multiple = true) {
     const focusHandler = () => {
       window.removeEventListener("focus", focusHandler);
       setTimeout(() => {
+        giveBackFocus();
         resolve([]);
       }, 1000);
     };
@@ -191,6 +197,7 @@ export function openFileUploadDialog(multiple = true) {
     input.accept = [...PossibleFileExtensions, ...PossibleZipExtensions].join(
       ","
     );
+    takeFocus();
     input.click();
   });
 }
