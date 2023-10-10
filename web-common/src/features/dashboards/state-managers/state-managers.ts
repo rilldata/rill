@@ -31,8 +31,7 @@ export type DashboardMutatorCallback = (
  * DashboardMutatorCallback and executes it. The
  * DashboardCallbackExecutor is a closure containing a reference
  * to the live dashboard, and therefore calling this function
- * on a DashboardMutatorCallback will
- * actually update the dashboard.
+ * on a DashboardMutatorCallback will actually update the dashboard.
  */
 export type DashboardCallbackExecutor = (
   callback: DashboardMutatorCallback
