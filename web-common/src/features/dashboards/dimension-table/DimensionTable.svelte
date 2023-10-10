@@ -25,7 +25,6 @@ TableCells – the cell contents.
   export let selectedValues: Array<unknown> = [];
 
   export let sortByColumn: string;
-  export let sortAscending: boolean;
   export let dimensionName: string;
   export let excludeMode = false;
   export let isBeingCompared = false;

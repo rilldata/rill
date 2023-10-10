@@ -240,7 +240,6 @@
           on:sort={(event) => onSortByColumn(event)}
           on:toggle-dimension-comparison={() =>
             toggleComparisonDimension(dimensionName, isBeingCompared)}
-          {sortAscending}
           dimensionName={dimensionColumn}
           {isBeingCompared}
           {columns}
