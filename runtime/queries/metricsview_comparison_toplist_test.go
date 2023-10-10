@@ -31,7 +31,7 @@ func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(
 	require.NoError(t, err)
 	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(t, err)
-	mv := r.GetMetricsView()
+	mv := r.GetMetricsView().Spec
 
 	q := &MetricsViewComparisonToplist{
 		MetricsViewName: "ad_bids_metrics",
