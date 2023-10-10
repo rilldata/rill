@@ -1,3 +1,5 @@
+export type ResizeEvent = UIEvent & { detail: { size: number } };
+
 export function dragTableCell(node) {
   let moving = false;
   function mousedown() {

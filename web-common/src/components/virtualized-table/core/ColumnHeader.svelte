@@ -13,6 +13,7 @@
   import { createEventDispatcher, getContext } from "svelte";
   import { fly } from "svelte/transition";
   import TooltipDescription from "../../tooltip/TooltipDescription.svelte";
+  import type { ResizeEvent } from "../drag-table-cell";
   import type { HeaderPosition, VirtualizedTableConfig } from "../types";
   import StickyHeader from "./StickyHeader.svelte";
 
@@ -51,20 +52,22 @@
   $: columnFontWeight = isSelected
     ? "font-bold"
     : config.columnHeaderFontWeightClass;
+
+  const handleResize = (event: ResizeEvent) => {
+    dispatch("resize-column", {
+      size: event.detail.size,
+      name,
+    });
+  };
 </script>
 
 <StickyHeader
   {enableResize}
   {bgClass}
   on:reset-column-width={() => {
-    dispatch("reset-column-size", { name });
+    dispatch("reset-column-width", { name });
   }}
-  on:resize={(event) => {
-    dispatch("resize-column", {
-      size: event.detail.size,
-      name,
-    });
-  }}
+  on:resize={handleResize}
   {position}
   {header}
   on:focus={() => {

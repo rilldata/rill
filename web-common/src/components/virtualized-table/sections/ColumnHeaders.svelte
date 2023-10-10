@@ -58,7 +58,7 @@
     {@const props = getColumnHeaderProps(header)}
     <ColumnHeader
       on:resize-column
-      on:reset-column-size
+      on:reset-column-width
       bgClass={props.isSelected || isHighlightedColumn(header?.key)
         ? `bg-gray-50`
         : fallbackBGClass}

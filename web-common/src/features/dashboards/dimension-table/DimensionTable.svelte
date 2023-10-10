@@ -9,13 +9,13 @@ TableCells – the cell contents.
   import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
   import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { createEventDispatcher, setContext } from "svelte";
-  import DimensionFilterGutter from "./DimensionFilterGutter.svelte";
-  import { DimensionTableConfig as config } from "./DimensionTableConfig";
-  import DimensionValueHeader from "./DimensionValueHeader.svelte";
   import {
     estimateColumnCharacterWidths,
     estimateColumnSizes,
   } from "./dimension-table-utils";
+  import DimensionFilterGutter from "./DimensionFilterGutter.svelte";
+  import { DimensionTableConfig as config } from "./DimensionTableConfig";
+  import DimensionValueHeader from "./DimensionValueHeader.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -23,7 +23,6 @@ TableCells – the cell contents.
   export let columns: VirtualizedTableColumns[];
   export let selectedValues: Array<unknown> = [];
   export let sortByColumn: string;
-  export let sortAscending: boolean;
   export let dimensionName: string;
   export let excludeMode = false;
   export let isBeingCompared = false;
@@ -84,6 +83,8 @@ TableCells – the cell contents.
 
   let horizontalScrolling = false;
 
+  let manualDimensionColumnWidth: number | null = null;
+
   $: if (rows && columns) {
     rowVirtualizer = createVirtualizer({
       getScrollElement: () => container,
@@ -105,25 +106,30 @@ TableCells – the cell contents.
       .slice(1)
       .reduce((a, b) => a + b, 0);
 
-    /* Dimension column should expand to cover whole container */
-    estimateColumnSize[0] = Math.max(
-      containerWidth - measureColumnSizeSum - FILTER_COLUMN_WIDTH,
-      estimateColumnSize[0]
-    );
-
-    columnVirtualizer = createVirtualizer({
-      getScrollElement: () => container,
-      horizontal: true,
-      count: measureColumns.length,
-      getItemKey: (index) => measureColumns[index].name,
-      estimateSize: (index) => {
-        return estimateColumnSize[index + 1];
-      },
-      overscan: columnOverscanAmount,
-      paddingStart: estimateColumnSize[0] + FILTER_COLUMN_WIDTH,
-      initialOffset: colScrollOffset,
-    });
+    // Dimension column should expand to cover whole container
+    // if not manually resized
+    if (manualDimensionColumnWidth === null) {
+      estimateColumnSize[0] = Math.max(
+        containerWidth - measureColumnSizeSum - FILTER_COLUMN_WIDTH,
+        estimateColumnSize[0]
+      );
+    } else {
+      estimateColumnSize[0] = manualDimensionColumnWidth;
+    }
   }
+
+  $: columnVirtualizer = createVirtualizer({
+    getScrollElement: () => container,
+    horizontal: true,
+    count: measureColumns.length,
+    getItemKey: (index) => measureColumns[index].name,
+    estimateSize: (index) => {
+      return estimateColumnSize[index + 1];
+    },
+    overscan: columnOverscanAmount,
+    paddingStart: estimateColumnSize[0] + FILTER_COLUMN_WIDTH,
+    initialOffset: colScrollOffset,
+  });
 
   $: if (rowVirtualizer) {
     virtualRows = $rowVirtualizer.getVirtualItems();
@@ -165,6 +171,14 @@ TableCells – the cell contents.
     colScrollOffset = $columnVirtualizer.scrollOffset;
     dispatch("sort", event.detail);
   }
+
+  async function handleResizeDimensionColumn(event) {
+    rowScrollOffset = $rowVirtualizer.scrollOffset;
+    colScrollOffset = $columnVirtualizer.scrollOffset;
+
+    const { size } = event.detail;
+    manualDimensionColumnWidth = Math.max(config.minColumnWidth, size);
+  }
 </script>
 
 <div
@@ -198,17 +212,16 @@ TableCells – the cell contents.
         style:width="{virtualWidth}px"
         style:height="{virtualHeight}px"
       >
-        <!-- ColumnHeaders -->
+        <!-- measure column headers -->
         <ColumnHeaders
           virtualColumnItems={virtualColumns}
           noPin={true}
           selectedColumn={sortByColumn}
           columns={measureColumns}
           fallbackBGClass="bg-white"
-          {sortAscending}
           on:click-column={handleColumnHeaderClick}
         />
-
+        <!-- dimension value and gutter column -->
         <div class="flex">
           <!-- Gutter for Include Exlude Filter -->
           <DimensionFilterGutter
@@ -222,6 +235,7 @@ TableCells – the cell contents.
             on:select-item={(event) => onSelectItem(event)}
           />
           <DimensionValueHeader
+            on:resize-column={handleResizeDimensionColumn}
             virtualRowItems={virtualRows}
             totalHeight={virtualHeight}
             width={estimateColumnSize[0]}
