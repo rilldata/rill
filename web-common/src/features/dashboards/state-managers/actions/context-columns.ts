@@ -1,5 +1,5 @@
-import { sortTypeForContextColumnType } from "../../dashboard-stores";
 import { LeaderboardContextColumn } from "../../leaderboard-context-column";
+import { sortTypeForContextColumnType } from "../../stores/dashboard-stores";
 
 export const setContextColumn =
   (contextColumn: LeaderboardContextColumn) => (metricsExplorer) => {
