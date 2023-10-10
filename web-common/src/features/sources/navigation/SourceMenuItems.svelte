@@ -25,6 +25,7 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
+  import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import type { V1SourceV2 } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
@@ -57,6 +58,10 @@
     runtimeInstanceId,
     filePath
   );
+  $: sourceIsIdle =
+    $sourceQuery.data?.meta?.reconcileStatus ===
+    V1ReconcileStatus.RECONCILE_STATUS_IDLE;
+  $: disableCreateDashboard = $sourceHasError || !sourceIsIdle;
 
   $: sourceFromYaml = useSourceFromYaml($runtime.instanceId, filePath);
 
@@ -160,7 +165,7 @@
 </MenuItem>
 
 <MenuItem
-  disabled={$sourceHasError}
+  disabled={disableCreateDashboard}
   icon
   on:select={() => handleCreateDashboardFromSource(sourceName)}
   propogateSelect={false}
@@ -170,6 +175,8 @@
   <svelte:fragment slot="description">
     {#if $sourceHasError}
       Source has errors
+    {:else if !sourceIsIdle}
+      Source is being ingested
     {/if}
   </svelte:fragment>
 </MenuItem>

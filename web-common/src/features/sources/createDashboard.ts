@@ -46,6 +46,11 @@ export const useCreateDashboardFromSource = <
     const { data } = props ?? {};
     const sourceName = data.sourceResource?.meta?.name?.name;
     if (!sourceName) throw new Error("Source name is missing");
+    if (
+      !data.sourceResource.source.state.connector ||
+      !data.sourceResource.source.state.table
+    )
+      throw new Error("Source is not ready");
 
     // first, create model from source
 
