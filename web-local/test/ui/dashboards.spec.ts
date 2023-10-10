@@ -87,14 +87,14 @@ test.describe("dashboard", () => {
 
   test("Dashboard runthrough", async ({ page }) => {
     // Enable to get logs in CI
-    page.on("console", async (msg) => {
-      console.log(msg.text());
-    });
-    page.on("pageerror", (exception) => {
-      console.log(
-        `Uncaught exception: "${exception.message}"\n${exception.stack}`
-      );
-    });
+    // page.on("console", async (msg) => {
+    //   console.log(msg.text());
+    // });
+    // page.on("pageerror", (exception) => {
+    //   console.log(
+    //     `Uncaught exception: "${exception.message}"\n${exception.stack}`
+    //   );
+    // });
 
     test.setTimeout(60000);
     await page.goto("/");
