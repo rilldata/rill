@@ -3022,7 +3022,6 @@ definitions:
       - EXPORT_FORMAT_XLSX
       - EXPORT_FORMAT_PARQUET
     default: EXPORT_FORMAT_UNSPECIFIED
-    title: ExportFormat is a file format for a data export
   v1ExportResponse:
     type: object
     properties:
@@ -3607,9 +3606,11 @@ definitions:
       firstDayOfWeek:
         type: integer
         format: int64
+        description: ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday).
       firstMonthOfYear:
         type: integer
         format: int64
+        description: Month number to use as the base for time aggregations by year. Defaults to 1 (January).
   v1MetricsViewState:
     type: object
     properties:
@@ -4338,6 +4339,88 @@ definitions:
   v1RenameFileResponse:
     type: object
     title: Response message for RuntimeService.RenameFile
+  v1Report:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1ReportSpec'
+      state:
+        $ref: '#/definitions/v1ReportState'
+  v1ReportExecution:
+    type: object
+    properties:
+      adhoc:
+        type: boolean
+      status:
+        $ref: '#/definitions/v1ReportStatus'
+      errorMessage:
+        type: string
+      reportTime:
+        type: string
+        format: date-time
+      startedOn:
+        type: string
+        format: date-time
+      finishedOn:
+        type: string
+        format: date-time
+  v1ReportSpec:
+    type: object
+    properties:
+      trigger:
+        type: boolean
+      title:
+        type: string
+      disabled:
+        type: boolean
+      refreshSchedule:
+        $ref: '#/definitions/v1Schedule'
+      timeoutSeconds:
+        type: integer
+        format: int64
+      operationName:
+        type: string
+      operationProperties:
+        type: object
+      operationTimeRange:
+        type: string
+      exportLimit:
+        type: integer
+        format: int64
+      exportFormat:
+        $ref: '#/definitions/v1ExportFormat'
+      recipients:
+        type: array
+        items:
+          type: string
+  v1ReportState:
+    type: object
+    properties:
+      nextRunOn:
+        type: string
+        format: date-time
+      currentExecution:
+        $ref: '#/definitions/v1ReportExecution'
+      executionHistory:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ReportExecution'
+      executionCount:
+        type: integer
+        format: int64
+  v1ReportStatus:
+    type: string
+    enum:
+      - REPORT_STATUS_UNSPECIFIED
+      - REPORT_STATUS_PENDING
+      - REPORT_STATUS_QUERYING
+      - REPORT_STATUS_EXPORTING
+      - REPORT_STATUS_SENDING
+      - REPORT_STATUS_CANCELLED
+      - REPORT_STATUS_FAILED
+      - REPORT_STATUS_SUCCEEDED
+    default: REPORT_STATUS_UNSPECIFIED
   v1Resource:
     type: object
     properties:
@@ -4354,6 +4437,8 @@ definitions:
         $ref: '#/definitions/v1MetricsViewV2'
       migration:
         $ref: '#/definitions/v1Migration'
+      report:
+        $ref: '#/definitions/v1Report'
       pullTrigger:
         $ref: '#/definitions/v1PullTrigger'
       refreshTrigger:
@@ -4492,6 +4577,8 @@ definitions:
       tickerSeconds:
         type: integer
         format: int64
+      timeZone:
+        type: string
   v1Source:
     type: object
     properties:

@@ -3,6 +3,7 @@ package rill.runtime.v1;
 
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
+import "rill/runtime/v1/export_format.proto";
 import "rill/runtime/v1/time_grain.proto";
 
 enum ReconcileStatus {
@@ -21,6 +22,7 @@ message Resource {
     ModelV2 model = 4;
     MetricsViewV2 metrics_view = 5;
     Migration migration = 9;
+    Report report = 10;
     PullTrigger pull_trigger = 6;
     RefreshTrigger refresh_trigger = 7;
     BucketPlanner bucket_planner = 8;
@@ -172,7 +174,9 @@ message MetricsViewSpec {
   repeated string available_time_zones = 10;
   // Security for the dashboard
   SecurityV2 security = 11;
+  // ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday).
   uint32 first_day_of_week = 12;
+  // Month number to use as the base for time aggregations by year. Defaults to 1 (January).
   uint32 first_month_of_year = 13;
 }
 
@@ -193,6 +197,52 @@ message MigrationSpec {
 
 message MigrationState {
   uint32 version = 1;
+}
+
+message Report {
+  ReportSpec spec = 1;
+  ReportState state = 2;
+}
+
+message ReportSpec {
+  bool trigger = 1;
+  string title = 2;
+  bool disabled = 3;
+  Schedule refresh_schedule = 4;
+  uint32 timeout_seconds = 5;
+  string operation_name = 10;
+  google.protobuf.Struct operation_properties = 11;
+  string operation_time_range = 12;
+  uint32 export_limit = 13;
+  ExportFormat export_format = 14;
+  repeated string recipients = 15;
+}
+
+message ReportState {
+  google.protobuf.Timestamp next_run_on = 1;
+  ReportExecution current_execution = 2;
+  repeated ReportExecution execution_history = 3;
+  uint32 execution_count = 4;
+}
+
+message ReportExecution {
+  bool adhoc = 1;
+  ReportStatus status = 2;
+  string error_message = 3;
+  google.protobuf.Timestamp report_time = 4;
+  google.protobuf.Timestamp started_on = 5;
+  google.protobuf.Timestamp finished_on = 6;
+}
+
+enum ReportStatus {
+  REPORT_STATUS_UNSPECIFIED = 0;
+  REPORT_STATUS_PENDING = 1;
+  REPORT_STATUS_QUERYING = 2;
+  REPORT_STATUS_EXPORTING = 3;
+  REPORT_STATUS_SENDING = 4;
+  REPORT_STATUS_CANCELLED = 5;
+  REPORT_STATUS_FAILED = 6;
+  REPORT_STATUS_SUCCEEDED = 7;
 }
 
 message PullTrigger {
@@ -243,6 +293,7 @@ message BucketExtractPolicy {
 message Schedule {
   string cron = 1;
   uint32 ticker_seconds = 2;
+  string time_zone = 3;
 }
 
 message ParseError {
