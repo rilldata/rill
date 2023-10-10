@@ -178,10 +178,6 @@ TableCells – the cell contents.
 
     const { size } = event.detail;
     manualDimensionColumnWidth = Math.max(config.minColumnWidth, size);
-    // manuallyResizedColumns.update((state) => {
-    //   state[name] = Math.max(config.minColumnWidth, size);
-    //   return state;
-    // });
   }
 </script>
 
