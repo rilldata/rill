@@ -151,7 +151,7 @@ function shouldSkipResource(
   return false;
 }
 
-function refreshResource(
+export function refreshResource(
   queryClient: QueryClient,
   instanceId: string,
   res: V1Resource
