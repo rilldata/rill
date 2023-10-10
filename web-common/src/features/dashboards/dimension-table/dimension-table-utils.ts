@@ -24,6 +24,7 @@ import { getDimensionColumn } from "../dashboard-utils";
 import type { DimensionTableRow } from "./dimension-table-types";
 import { getFilterForDimension } from "../selectors";
 import { SortDirection, SortType } from "../proto-state/derived-types";
+import type { MetricsExplorerEntity } from "../stores/metrics-explorer-entity";
 
 /** Returns an updated filter set for a given dimension on search */
 export function updateFilterOnSearch(
@@ -217,25 +218,25 @@ export function estimateColumnSizes(
 }
 
 export function prepareVirtualizedDimTableColumns(
+  dash: MetricsExplorerEntity,
   allMeasures: MetricsViewMeasure[],
-  leaderboardMeasureName: string,
   referenceValues: { [key: string]: number },
   dimension: MetricsViewDimension,
-
-  inputColumnNames: string[],
   timeComparison: boolean,
-  validPercentOfTotal: boolean,
-  sortType: SortType,
-  sortDirection: SortDirection
+  validPercentOfTotal: boolean
 ): VirtualizedTableColumns[] {
+  const sortType = dash.dashboardSortType;
+  const sortDirection = dash.sortDirection;
+
   const measureNames = allMeasures.map((m) => m.name);
+  const leaderboardMeasureName = dash.leaderboardMeasureName;
   const selectedMeasure = allMeasures.find(
     (m) => m.name === leaderboardMeasureName
   );
   const dimensionColumn = getDimensionColumn(dimension);
 
   // copy column names so we don't mutate the original
-  const columnNames = [...inputColumnNames];
+  const columnNames = [...dash.visibleMeasureKeys];
 
   // don't add context columns if sorting by dimension
   if (sortType !== SortType.DIMENSION) {

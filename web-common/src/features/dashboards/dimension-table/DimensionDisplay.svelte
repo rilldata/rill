@@ -126,15 +126,12 @@
   }
 
   $: columns = prepareVirtualizedDimTableColumns(
+    $dashboardStore,
     allMeasures,
-    leaderboardMeasureName,
     referenceValues,
     dimension,
-    [...$dashboardStore.visibleMeasureKeys],
     $timeControlsStore.showComparison,
-    validPercentOfTotal,
-    $dashboardStore.dashboardSortType,
-    $dashboardStore.sortDirection
+    validPercentOfTotal
   );
 
   $: sortedQueryBody = prepareSortedQueryBody(
