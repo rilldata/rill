@@ -1,14 +1,41 @@
 import { sortActions } from "./sorting";
-import type {
-  // DashboardMutatorCallback,
-  DashboardCallbackExecutor,
-} from "../state-managers";
+import type { DashboardCallbackExecutor } from "../state-managers";
 import { contextColActions } from "./context-columns";
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
+import { setLeaderboardMeasureName } from "./core-actions";
+import { dimTableActions } from "./dimension-table";
 
 export type StateManagerActions = ReturnType<typeof createStateManagerActions>;
 
-//////////////////////////
+export const createStateManagerActions = (
+  updateDashboard: DashboardCallbackExecutor
+) => {
+  return {
+    /**
+     * Actions related to the sorting state of the dashboard.
+     */
+    sorting: createDashboardUpdaters(updateDashboard, sortActions),
+    /**
+     * Actions related to the dashboard context columns.
+     */
+    contextCol: createDashboardUpdaters(updateDashboard, contextColActions),
+    /**
+     * Actions related to the dimension table.
+     */
+    dimTable: createDashboardUpdaters(updateDashboard, dimTableActions),
+    // Note: for now, some core actions are kept in the root of the
+    // actions object. Can revisit that later if we want to move them.
+    setLeaderboardMeasureName: dashboardMutatorToUpdater(
+      updateDashboard,
+      setLeaderboardMeasureName
+    ),
+  };
+};
+
+// Note: the types below are helper types to simplify the type inference
+// used in the creation of StateManagerActions, so that we can have nice
+// autocomplete and type checking in the IDE, while still keeping the
+// code that is used to define actions organized and readable.
 
 /**
  * A DashboardMutatorFn is a function mutates the data
@@ -22,18 +49,9 @@ type DashboardMutatorFn<T extends unknown[]> = (
 ) => void;
 
 /**
- * A DashboardUpdaterFn is a function that takes a parameters
- * relevant to a specific mutation, and applies that mutation to
- * the dashboard. In order to apply the mutation, the updaterFn
- * is a closure over a reference to a DashboardCallbackExecutor
- */
-type DashboardUpdaterFn<T extends unknown[]> = (...params: T) => void;
-
-// type UpdaterFromMutator<T extends DashboardMutatorFn<S extends unknown[]>> = DashboardUpdaterFn<S>
-
-/**
- * `createDashboardUpdaterFn` take a DashboardMutatorCallbackProducer
- * and returns a that directly updates the dashboard.
+ * `dashboardMutatorToUpdater` take a DashboardCallbackExecutor
+ * and returns a DashboardMutatorFn that directly updates the dashboard
+ * by calling the DashboardCallbackExecutor.
  **/
 function dashboardMutatorToUpdater<T extends unknown[]>(
   updateDashboard: DashboardCallbackExecutor,
@@ -45,33 +63,24 @@ function dashboardMutatorToUpdater<T extends unknown[]>(
   };
 }
 
-// dashboardMutatorToUpdater(
-
 type DashboardMutatorFns = {
   [key: string]: DashboardMutatorFn<unknown[]>;
 };
 
+/**
+ * A helper type that drops the first element from a tuple.
+ */
 type DropFirst<T extends unknown[]> = T extends [unknown, ...infer U]
   ? U
   : never;
+
 /**
  * A DashboardUpdaters object is a collection of functions that
  * directly update the live dashboard.
  */
 type DashboardUpdaters2<T extends DashboardMutatorFns> = Expand<{
-  // [P in keyof T]: (...params: Parameters<T[P]>) => void;
   [P in keyof T]: (...params: DropFirst<Parameters<T[P]>>) => void;
 }>;
-
-// type TestMutators = {
-//   foo: (dash: MetricsExplorerEntity) => void;
-//   bar: (dash: MetricsExplorerEntity, a: number) => void;
-//   bat: (dash: MetricsExplorerEntity, b: number, c: string) => void;
-// };
-
-// type TestUpdaters = DashboardUpdaters2<TestMutators>;
-
-// type TestUpdaters2 = DashboardUpdaters2<typeof sortActions>;
 
 /**
  * Takes an object containing `DashboardMutatorFn`s,
@@ -88,18 +97,3 @@ function createDashboardUpdaters<T extends DashboardMutatorFns>(
     ])
   ) as DashboardUpdaters2<T>;
 }
-
-export const createStateManagerActions = (
-  updateDashboard: DashboardCallbackExecutor
-) => {
-  return {
-    sorting: createDashboardUpdaters(updateDashboard, sortActions),
-    context: createDashboardUpdaters(updateDashboard, contextColActions),
-    setLeaderboardMeasureName: dashboardMutatorToUpdater(
-      updateDashboard,
-      (dash, name: string) => {
-        dash.leaderboardMeasureName = name;
-      }
-    ),
-  };
-};

@@ -57,6 +57,7 @@
   $: dimensionColumn = getDimensionColumn(dimension);
   const stateManagers = getStateManagers();
   const timeControlsStore = useTimeControlStore(stateManagers);
+
   const {
     dashboardStore,
     selectors: {
