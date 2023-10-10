@@ -581,6 +581,8 @@ func (m *ResourceMeta) validate(all bool) error {
 
 	}
 
+	// no validation rules for Hidden
+
 	// no validation rules for Version
 
 	// no validation rules for SpecVersion
@@ -1166,18 +1168,6 @@ func (m *ProjectParserSpec) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Compiler
-
-	// no validation rules for Watch
-
-	// no validation rules for StageChanges
-
-	// no validation rules for SourceStreamIngestion
-
-	// no validation rules for ModelDefaultMaterialize
-
-	// no validation rules for ModelMaterializeDelaySeconds
-
 	if len(errors) > 0 {
 		return ProjectParserSpecMultiError(errors)
 	}
@@ -1315,6 +1305,8 @@ func (m *ProjectParserState) validate(all bool) error {
 	}
 
 	// no validation rules for CurrentCommitSha
+
+	// no validation rules for Watching
 
 	if len(errors) > 0 {
 		return ProjectParserStateMultiError(errors)
@@ -4572,6 +4564,8 @@ func (m *ParseError) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for External
 
 	if len(errors) > 0 {
 		return ParseErrorMultiError(errors)

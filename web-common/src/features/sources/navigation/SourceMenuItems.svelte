@@ -7,38 +7,31 @@
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import RefreshIcon from "@rilldata/web-common/components/icons/RefreshIcon.svelte";
   import { Divider, MenuItem } from "@rilldata/web-common/components/menu";
-  import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
+  import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import {
+    useSource,
+    useSourceFileNames,
     useSourceFromYaml,
-    useSourceNames,
   } from "@rilldata/web-common/features/sources/selectors";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import {
-    createRuntimeServiceDeleteFileAndReconcile,
-    createRuntimeServiceGetCatalogEntry,
-    createRuntimeServicePutFileAndReconcile,
-    createRuntimeServiceRefreshAndReconcile,
-    getRuntimeServiceGetCatalogEntryQueryKey,
-    V1ReconcileResponse,
-    V1Source,
-  } from "@rilldata/web-common/runtime-client";
-  import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
+  import type { V1SourceV2 } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
   import { getName } from "../../entity-management/name-utils";
   import { EntityType } from "../../entity-management/types";
-  import { useModelNames } from "../../models/selectors";
   import { useCreateDashboardFromSource } from "../createDashboard";
   import { createModelFromSource } from "../createModel";
   import { refreshSource } from "../refreshSource";
@@ -46,6 +39,7 @@
   export let sourceName: string;
   // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
   export let toggleMenu: () => void;
+  $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
 
   const queryClient = useQueryClient();
 
@@ -53,39 +47,30 @@
 
   const dispatch = createEventDispatcher();
 
-  $: getSource = createRuntimeServiceGetCatalogEntry(
+  $: sourceQuery = useSource(runtimeInstanceId, sourceName);
+  let source: V1SourceV2;
+  $: source = $sourceQuery.data?.source;
+  $: embedded = false; // TODO: remove embedded support
+  $: path = source?.spec?.properties?.path;
+  $: sourceHasError = getFileHasErrors(
+    queryClient,
     runtimeInstanceId,
-    sourceName
-  );
-  let source: V1Source;
-  $: source = $getSource?.data?.entry?.source;
-  $: embedded = $getSource?.data?.entry?.embedded;
-  $: path = source?.properties?.path;
-  $: hasNoSourceCatalog = !source;
-
-  $: sourceFromYaml = useSourceFromYaml(
-    $runtime.instanceId,
-    getFilePathFromNameAndType(sourceName, EntityType.Table)
+    filePath
   );
 
-  $: sourceNames = useSourceNames($runtime.instanceId);
-  $: modelNames = useModelNames($runtime.instanceId);
-  $: dashboardNames = useDashboardNames($runtime.instanceId);
+  $: sourceFromYaml = useSourceFromYaml($runtime.instanceId, filePath);
 
-  const deleteSource = createRuntimeServiceDeleteFileAndReconcile();
-  const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
-  const createEntityMutation = createRuntimeServicePutFileAndReconcile();
+  $: sourceNames = useSourceFileNames($runtime.instanceId);
+  $: modelNames = useModelFileNames($runtime.instanceId);
+  $: dashboardNames = useDashboardFileNames($runtime.instanceId);
+
   const createDashboardFromSourceMutation = useCreateDashboardFromSource();
-  const createFileMutation = createRuntimeServicePutFileAndReconcile();
 
   const handleDeleteSource = async (tableName: string) => {
     await deleteFileArtifact(
-      queryClient,
       runtimeInstanceId,
       tableName,
       EntityType.Table,
-      $deleteSource,
-      $appScreen,
       $sourceNames.data
     );
     toggleMenu();
@@ -95,12 +80,10 @@
     try {
       const previousActiveEntity = $appScreen?.type;
       const newModelName = await createModelFromSource(
-        queryClient,
         runtimeInstanceId,
         $modelNames.data,
         sourceName,
-        embedded ? `"${path}"` : sourceName,
-        $createFileMutation
+        embedded ? `"${path}"` : sourceName
       );
 
       behaviourEvent.fireNavigationEvent(
@@ -115,7 +98,7 @@
     }
   };
 
-  const handleCreateDashboardFromSource = (sourceName: string) => {
+  const handleCreateDashboardFromSource = async (sourceName: string) => {
     overlay.set({
       title: "Creating a dashboard for " + sourceName,
     });
@@ -124,18 +107,18 @@
       `${sourceName}_dashboard`,
       $dashboardNames.data
     );
+    await waitUntil(() => !!$sourceQuery.data);
     $createDashboardFromSourceMutation.mutate(
       {
         data: {
           instanceId: $runtime.instanceId,
-          sourceName,
+          sourceResource: $sourceQuery.data,
           newModelName,
           newDashboardName,
         },
       },
       {
-        onSuccess: async (resp: V1ReconcileResponse) => {
-          fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
+        onSuccess: async () => {
           goto(`/dashboard/${newDashboardName}`);
           const previousActiveEntity = $appScreen?.type;
           behaviourEvent.fireNavigationEvent(
@@ -145,7 +128,6 @@
             previousActiveEntity,
             MetricsEventScreenName.Dashboard
           );
-          return invalidateAfterReconcile(queryClient, runtimeInstanceId, resp);
         },
         onSettled: () => {
           overlay.set(null);
@@ -157,35 +139,14 @@
 
   const onRefreshSource = async (tableName: string) => {
     const connector: string =
-      $getSource?.data?.entry.source?.connector ?? $sourceFromYaml.data?.type;
+      source?.state?.connector ?? $sourceFromYaml.data?.type;
     if (!connector) {
       // if parse failed or there is no catalog entry, we cannot refresh source
       // TODO: show the import source modal with fixed tableName
       return;
     }
     try {
-      await refreshSource(
-        connector,
-        tableName,
-        runtimeInstanceId,
-        $refreshSourceMutation,
-        $createEntityMutation,
-        queryClient,
-        connector === "s3" || connector === "gcs" || connector === "https"
-          ? source?.properties?.path
-          : sourceName
-      );
-
-      // invalidate the data preview (async)
-      // TODO: use new runtime approach
-      // Old approach: dataModelerService.dispatch("collectTableInfo", [currentSource?.id]);
-
-      // invalidate the "refreshed_on" time
-      const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
-        runtimeInstanceId,
-        tableName
-      );
-      await queryClient.refetchQueries(queryKey);
+      await refreshSource(connector, tableName, runtimeInstanceId);
     } catch (err) {
       // no-op
     }
@@ -199,7 +160,7 @@
 </MenuItem>
 
 <MenuItem
-  disabled={hasNoSourceCatalog}
+  disabled={$sourceHasError}
   icon
   on:select={() => handleCreateDashboardFromSource(sourceName)}
   propogateSelect={false}
@@ -207,13 +168,13 @@
   <Explore slot="icon" />
   Autogenerate dashboard
   <svelte:fragment slot="description">
-    {#if hasNoSourceCatalog}
+    {#if $sourceHasError}
       Source has errors
     {/if}
   </svelte:fragment>
 </MenuItem>
 
-{#if $getSource?.data?.entry?.source?.connector === "local_file"}
+{#if source?.state?.connector === "local_file"}
   <MenuItem icon on:select={() => onRefreshSource(sourceName)}>
     <svelte:fragment slot="icon">
       <Import />

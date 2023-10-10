@@ -418,6 +418,240 @@ path: hello
 	require.Equal(t, &Diff{}, diff)
 }
 
+func TestReparseSourceModelCollision(t *testing.T) {
+	// Create project with model m1
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`models/m1.sql`: `
+SELECT 10
+		`,
+	})
+	m1 := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+		Paths: []string{"/models/m1.sql"},
+		ModelSpec: &runtimev1.ModelSpec{
+			Sql: "SELECT 10",
+		},
+	}
+	p, err := Parse(ctx, repo, "", "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{m1}, nil)
+
+	// Add colliding source m1
+	putRepo(t, repo, map[string]string{
+		`sources/m1.yaml`: `
+connector: s3
+path: hello
+`,
+	})
+	s1 := &Resource{
+		Name:  ResourceName{Kind: ResourceKindSource, Name: "m1"},
+		Paths: []string{"/sources/m1.yaml"},
+		SourceSpec: &runtimev1.SourceSpec{
+			SourceConnector: "s3",
+			Properties:      must(structpb.NewStruct(map[string]any{"path": "hello"})),
+		},
+	}
+	diff, err := p.Reparse(ctx, s1.Paths)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{s1}, []*runtimev1.ParseError{
+		{
+			Message:  "model name collides with source \"m1\"",
+			FilePath: "/models/m1.sql",
+		},
+	})
+	require.Equal(t, &Diff{
+		Added:   []ResourceName{s1.Name},
+		Deleted: []ResourceName{m1.Name},
+	}, diff)
+
+	// Remove colliding source, verify model is restored
+	deleteRepo(t, repo, "/sources/m1.yaml")
+	diff, err = p.Reparse(ctx, s1.Paths)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{m1}, nil)
+	require.Equal(t, &Diff{
+		Added:   []ResourceName{m1.Name},
+		Deleted: []ResourceName{s1.Name},
+	}, diff)
+}
+
+func TestReparseNameCollision(t *testing.T) {
+	// Create project with model m1
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`models/m1.sql`: `
+SELECT 10
+		`,
+		`models/nested/m1.sql`: `
+SELECT 20
+		`,
+		`models/m2.sql`: `
+SELECT * FROM m1
+		`,
+	})
+	m1 := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+		Paths: []string{"/models/m1.sql"},
+		ModelSpec: &runtimev1.ModelSpec{
+			Sql: "SELECT 10",
+		},
+	}
+	m1Nested := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+		Paths: []string{"/models/nested/m1.sql"},
+		ModelSpec: &runtimev1.ModelSpec{
+			Sql: "SELECT 20",
+		},
+	}
+	m2 := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "m2"},
+		Paths: []string{"/models/m2.sql"},
+		Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
+		ModelSpec: &runtimev1.ModelSpec{
+			Sql: "SELECT * FROM m1",
+		},
+	}
+	p, err := Parse(ctx, repo, "", "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{m1, m2}, []*runtimev1.ParseError{
+		{
+			Message:  "name collision",
+			FilePath: "/models/nested/m1.sql",
+			External: true,
+		},
+	})
+
+	// Remove colliding model, verify things still work
+	deleteRepo(t, repo, "/models/m1.sql")
+	diff, err := p.Reparse(ctx, m1.Paths)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{m1Nested, m2}, nil)
+	require.Equal(t, &Diff{
+		Modified: []ResourceName{m1.Name, m2.Name}, // m2 due to ref re-inference
+	}, diff)
+}
+
+func TestReparseMultiKindNameCollision(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`:            ``,
+		`models/m1.sql`:        `SELECT 10`,
+		`models/nested/m1.sql`: `SELECT 20`,
+		`sources/m1.yaml`: `
+type: s3
+path: hello
+`,
+	})
+	src := &Resource{
+		Name:  ResourceName{Kind: ResourceKindSource, Name: "m1"},
+		Paths: []string{"/sources/m1.yaml"},
+		SourceSpec: &runtimev1.SourceSpec{
+			SourceConnector: "s3",
+			Properties:      must(structpb.NewStruct(map[string]any{"path": "hello"})),
+		},
+	}
+	mdl := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+		Paths: []string{"/models/m1.sql"},
+		ModelSpec: &runtimev1.ModelSpec{
+			Sql: "SELECT 10",
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{src}, []*runtimev1.ParseError{
+		{
+			Message:  "collides with source",
+			FilePath: "/models/m1.sql",
+			External: true,
+		},
+		{
+			Message:  "name collision",
+			FilePath: "/models/nested/m1.sql",
+			External: true,
+		},
+	})
+
+	// Delete source m1
+	deleteRepo(t, repo, "/sources/m1.yaml")
+	diff, err := p.Reparse(ctx, src.Paths)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{mdl}, []*runtimev1.ParseError{
+		{
+			Message:  "name collision",
+			FilePath: "/models/nested/m1.sql",
+			External: true,
+		},
+	})
+	require.Equal(t, &Diff{
+		Added:   []ResourceName{mdl.Name},
+		Deleted: []ResourceName{src.Name},
+	}, diff)
+}
+
+func TestReparseRillYAML(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{})
+
+	mdl := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+		Paths: []string{"/models/m1.sql"},
+		ModelSpec: &runtimev1.ModelSpec{
+			Sql: "SELECT 10",
+		},
+	}
+	perr := &runtimev1.ParseError{
+		Message:  "rill.yaml not found",
+		FilePath: "/rill.yaml",
+	}
+
+	// Parse empty project. Expect rill.yaml error.
+	p, err := Parse(ctx, repo, "", "", []string{""})
+	require.NoError(t, err)
+	require.Nil(t, p.RillYAML)
+	requireResourcesAndErrors(t, p, nil, []*runtimev1.ParseError{perr})
+
+	// Add rill.yaml. Expect success.
+	putRepo(t, repo, map[string]string{
+		`rill.yaml`: ``,
+	})
+	diff, err := p.Reparse(ctx, []string{"/rill.yaml"})
+	require.NoError(t, err)
+	require.True(t, diff.Reloaded)
+	require.NotNil(t, p.RillYAML)
+	requireResourcesAndErrors(t, p, nil, nil)
+
+	// Remove rill.yaml and add a model. Expect reloaded.
+	deleteRepo(t, repo, "/rill.yaml")
+	putRepo(t, repo, map[string]string{"/models/m1.sql": "SELECT 10"})
+	diff, err = p.Reparse(ctx, []string{"/rill.yaml", "/models/m1.sql"})
+	require.NoError(t, err)
+	require.True(t, diff.Reloaded)
+	require.Nil(t, p.RillYAML)
+	requireResourcesAndErrors(t, p, []*Resource{mdl}, []*runtimev1.ParseError{perr})
+
+	// Edit model. Expect nothing to happen because rill.yaml is still broken.
+	putRepo(t, repo, map[string]string{"/models/m1.sql": "SELECT 20"})
+	diff, err = p.Reparse(ctx, []string{"/models/m1.sql"})
+	require.NoError(t, err)
+	require.Equal(t, &Diff{Skipped: true}, diff)
+	require.Nil(t, p.RillYAML)
+	requireResourcesAndErrors(t, p, []*Resource{mdl}, []*runtimev1.ParseError{perr})
+
+	// Fix rill.yaml. Expect reloaded.
+	mdl.ModelSpec.Sql = "SELECT 20"
+	putRepo(t, repo, map[string]string{"/rill.yaml": ""})
+	diff, err = p.Reparse(ctx, []string{"/rill.yaml"})
+	require.NoError(t, err)
+	require.True(t, diff.Reloaded)
+	require.NotNil(t, p.RillYAML)
+	requireResourcesAndErrors(t, p, []*Resource{mdl}, nil)
+}
+
 func TestRefInferrence(t *testing.T) {
 	// Create model referencing "bar"
 	foo := &Resource{
@@ -674,13 +908,9 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 				break
 			}
 		}
-		if !found {
-			t.Errorf("missing resource %v", want.Name)
-		}
+		require.True(t, found, "missing resource %q", want.Name)
 	}
-	if len(gotResources) > 0 {
-		t.Errorf("unexpected resources: %v", gotResources)
-	}
+	require.True(t, len(gotResources) == 0, "unexpected resources: %v", gotResources)
 
 	// Check errors
 	// NOTE: Assumes there's at most one parse error per file path
@@ -697,13 +927,9 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 				break
 			}
 		}
-		if !found {
-			t.Errorf("missing error for path %q", want.FilePath)
-		}
+		require.True(t, found, "missing error for path %q", want.FilePath)
 	}
-	if len(gotErrors) > 0 {
-		t.Errorf("unexpected errors: %v", gotErrors)
-	}
+	require.True(t, len(gotErrors) == 0, "unexpected errors: %v", gotErrors)
 }
 
 func makeRepo(t testing.TB, files map[string]string) drivers.RepoStore {

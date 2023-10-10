@@ -59,7 +59,7 @@
 
   $: if (
     $timeControlsStore.ready &&
-    !!$metaQuery?.data?.model &&
+    !!$metaQuery?.data?.table &&
     !!$metaQuery?.data?.timeDimension
   ) {
     availableTimeZones = $metaQuery?.data?.availableTimeZones;
@@ -184,7 +184,7 @@
 
 <div class="flex flex-row items-center gap-x-1">
   {#if !hasTimeSeries}
-    <NoTimeDimensionCTA {metricViewName} modelName={$metaQuery?.data?.model} />
+    <NoTimeDimensionCTA {metricViewName} modelName={$metaQuery?.data?.table} />
   {:else if allTimeRange?.start}
     <TimeRangeSelector
       {metricViewName}

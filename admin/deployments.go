@@ -117,13 +117,9 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
-		InstanceId:          instanceID,
-		OlapConnector:       olapDriver,
-		RepoConnector:       "repo",
-		EmbedCatalog:        embedCatalog,
-		Variables:           opts.ProdVariables,
-		IngestionLimitBytes: ingestionLimit,
-		Annotations:         opts.Annotations.toMap(),
+		InstanceId:    instanceID,
+		OlapConnector: olapDriver,
+		RepoConnector: "repo",
 		Connectors: []*runtimev1.Connector{
 			{
 				Name:   olapDriver,
@@ -136,6 +132,11 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 				Config: map[string]string{"dsn": repoDSN},
 			},
 		},
+		Variables:           opts.ProdVariables,
+		Annotations:         opts.Annotations.toMap(),
+		EmbedCatalog:        embedCatalog,
+		IngestionLimitBytes: ingestionLimit,
+		StageChanges:        true,
 	})
 	if err != nil {
 		return nil, err
@@ -149,8 +150,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		RuntimeHost:       alloc.Host,
 		RuntimeInstanceID: instanceID,
 		RuntimeAudience:   alloc.Audience,
-		Status:            database.DeploymentStatusPending,
-		Logs:              "",
+		Status:            database.DeploymentStatusOK,
 	})
 	if err != nil {
 		_, err2 := rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
@@ -169,7 +169,7 @@ type updateDeploymentOptions struct {
 	Subpath              string
 	Branch               string
 	Variables            map[string]string
-	Annotations          *deploymentAnnotations
+	Annotations          deploymentAnnotations
 }
 
 func (s *Service) updateDeployment(ctx context.Context, depl *database.Deployment, opts *updateDeploymentOptions) error {
@@ -192,6 +192,7 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 	if err != nil {
 		return err
 	}
+
 	connectors := res.Instance.Connectors
 	for _, c := range connectors {
 		if c.Name == "repo" {
@@ -203,14 +204,11 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 		}
 	}
 
-	var annotations map[string]string
-	if opts.Annotations != nil { // annotations changed
-		annotations = opts.Annotations.toMap()
-	}
 	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
 		InstanceId:  depl.RuntimeInstanceID,
 		Connectors:  connectors,
-		Annotations: annotations,
+		Annotations: opts.Annotations.toMap(),
+		Variables:   opts.Variables,
 	})
 	if err != nil {
 		return err
@@ -227,10 +225,6 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 		depl.UpdatedOn = newDepl.UpdatedOn
 	}
 
-	if err := s.triggerReconcile(ctx, depl); err != nil {
-		s.Logger.Error("failed to trigger reconcile", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
-		return err
-	}
 	return nil
 }
 
@@ -248,11 +242,6 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 	s.Logger.Info("hibernate: starting", zap.Int("deployments", len(depls)))
 
 	for _, depl := range depls {
-		if depl.Status == database.DeploymentStatusReconciling && time.Since(depl.UpdatedOn) < 30*time.Minute {
-			s.Logger.Info("hibernate: skipping deployment because it is reconciling", zap.String("deployment_id", depl.ID), observability.ZapCtx(ctx))
-			continue
-		}
-
 		proj, err := s.DB.FindProject(ctx, depl.ProjectID)
 		if err != nil {
 			s.Logger.Error("hibernate: find project error", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
@@ -289,34 +278,6 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 	s.Logger.Info("hibernate: completed", zap.Int("deployments", len(depls)))
 
 	return nil
-}
-
-func (s *Service) updateDeplVariables(ctx context.Context, depl *database.Deployment, variables map[string]string) error {
-	rt, err := s.openRuntimeClientForDeployment(depl)
-	if err != nil {
-		return err
-	}
-	defer rt.Close()
-
-	_, err = rt.EditInstanceVariables(ctx, &runtimev1.EditInstanceVariablesRequest{
-		InstanceId: depl.RuntimeInstanceID,
-		Variables:  variables,
-	})
-	return err
-}
-
-func (s *Service) updateDeplAnnotations(ctx context.Context, depl *database.Deployment, annotations deploymentAnnotations) error {
-	rt, err := s.openRuntimeClientForDeployment(depl)
-	if err != nil {
-		return err
-	}
-	defer rt.Close()
-
-	_, err = rt.EditInstanceAnnotations(ctx, &runtimev1.EditInstanceAnnotationsRequest{
-		InstanceId:  depl.RuntimeInstanceID,
-		Annotations: annotations.toMap(),
-	})
-	return err
 }
 
 func (s *Service) teardownDeployment(ctx context.Context, proj *database.Project, depl *database.Deployment) error {

@@ -86,9 +86,15 @@ test.describe("dashboard", () => {
   });
 
   test("Dashboard runthrough", async ({ page }) => {
-    // Uncomment for remote debugging
-    // page.on("console", (msg) => console.log(msg.text()));
-    // page.on("pageerror", (error) => console.log(error.stack));
+    // Enable to get logs in CI
+    page.on("console", async (msg) => {
+      console.log(msg.text());
+    });
+    page.on("pageerror", (exception) => {
+      console.log(
+        `Uncaught exception: "${exception.message}"\n${exception.stack}`
+      );
+    });
 
     test.setTimeout(60000);
     await page.goto("/");
@@ -380,7 +386,7 @@ test.describe("dashboard", () => {
     await updateCodeEditor(page, deleteOnlyMeasureDoc);
     // Check warning message appears, Go to Dashboard is disabled
     await expect(
-      page.getByText("at least one measure should be present")
+      page.getByText("must define at least one measure")
     ).toBeVisible();
 
     await expect(

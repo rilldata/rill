@@ -6,10 +6,13 @@ import (
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	// Register drivers
+	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 )
 
 func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(t *testing.T) {
@@ -110,15 +113,17 @@ func TestMetricsViewsComparison_dim_order(t *testing.T) {
 	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
 	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
 
-	obj, err := rt.GetCatalogEntry(context.Background(), instanceID, "ad_bids_metrics")
+	ctrl, err := rt.Controller(instanceID)
 	require.NoError(t, err)
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
+	require.NoError(t, err)
+	mv := r.GetMetricsView()
 
-	mv := obj.GetMetricsView()
 	q := &MetricsViewComparisonToplist{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
 		MeasureNames:    []string{"measure_1"},
-		MetricsView:     mv,
+		MetricsView:     mv.Spec,
 		BaseTimeRange: &runtimev1.TimeRange{
 			Start: ctr.Result.Min,
 			End:   timestamppb.New(maxTime),
@@ -156,15 +161,17 @@ func TestMetricsViewsComparison_measure_order(t *testing.T) {
 	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
 	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
 
-	obj, err := rt.GetCatalogEntry(context.Background(), instanceID, "ad_bids_metrics")
+	ctrl, err := rt.Controller(instanceID)
 	require.NoError(t, err)
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
+	require.NoError(t, err)
+	mv := r.GetMetricsView()
 
-	mv := obj.GetMetricsView()
 	q := &MetricsViewComparisonToplist{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
 		MeasureNames:    []string{"measure_1"},
-		MetricsView:     mv,
+		MetricsView:     mv.Spec,
 		BaseTimeRange: &runtimev1.TimeRange{
 			Start: ctr.Result.Min,
 			End:   timestamppb.New(maxTime),

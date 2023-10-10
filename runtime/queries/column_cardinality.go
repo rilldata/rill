@@ -7,6 +7,7 @@ import (
 	"io"
 	"reflect"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 )
@@ -23,8 +24,11 @@ func (q *ColumnCardinality) Key() string {
 	return fmt.Sprintf("ColumnCardinality:%s:%s", q.TableName, q.ColumnName)
 }
 
-func (q *ColumnCardinality) Deps() []string {
-	return []string{q.TableName}
+func (q *ColumnCardinality) Deps() []*runtimev1.ResourceName {
+	return []*runtimev1.ResourceName{
+		{Kind: runtime.ResourceKindSource, Name: q.TableName},
+		{Kind: runtime.ResourceKindModel, Name: q.TableName},
+	}
 }
 
 func (q *ColumnCardinality) MarshalResult() *runtime.QueryResult {

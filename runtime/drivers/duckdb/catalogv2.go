@@ -97,7 +97,7 @@ func (c *connection) CreateResource(ctx context.Context, v int64, r drivers.Reso
 	// Using an application side check instead of unique index becauwse of DuckDB limitations on indexes:
 	// https://duckdb.org/docs/sql/indexes#over-eager-unique-constraint-checking
 	var exists bool
-	if err := conn.QueryRowContext(ctx, "SELECT EXISTS (SELECT 1 FROM rill.catalogv2 WHERE kind = ? AND name = ?)", r.Kind, r.Name).Scan(&exists); err != nil {
+	if err := conn.QueryRowContext(ctx, "SELECT EXISTS (SELECT 1 FROM rill.catalogv2 WHERE kind = ? AND lower(name) = lower(?))", r.Kind, r.Name).Scan(&exists); err != nil {
 		return err
 	}
 	if exists {
@@ -133,16 +133,22 @@ func (c *connection) UpdateResource(ctx context.Context, v int64, r drivers.Reso
 	}
 	defer func() { _ = release() }()
 
-	_, err = conn.ExecContext(
+	res, err := conn.ExecContext(
 		ctx,
-		"UPDATE rill.catalogv2 SET kind=?, name=?, data=?, updated_on=?) VALUES (?, ?, ?, ?)",
-		r.Kind,
+		"UPDATE rill.catalogv2 SET name=?, data=?, updated_on=? WHERE kind=? AND lower(name)=lower(?)",
 		r.Name,
 		r.Data,
 		time.Now(),
+		r.Kind,
+		r.Name,
 	)
 	if err != nil {
 		return c.checkErr(err)
+	}
+	if n, err := res.RowsAffected(); err == nil {
+		if n != 1 {
+			return fmt.Errorf("catalog entry for kind=%q, name=%q not found", r.Kind, r.Name)
+		}
 	}
 
 	return nil
@@ -160,7 +166,7 @@ func (c *connection) DeleteResource(ctx context.Context, v int64, k, n string) e
 	}
 	defer func() { _ = release() }()
 
-	_, err = conn.ExecContext(ctx, "DELETE FROM rill.catalogv2 WHERE kind=? AND name=?", k, n)
+	_, err = conn.ExecContext(ctx, "DELETE FROM rill.catalogv2 WHERE kind=? AND lower(name)=lower(?)", k, n)
 	if err != nil {
 		return c.checkErr(err)
 	}
