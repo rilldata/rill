@@ -336,7 +336,6 @@ path: data/foo.csv
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 2, 1, 1)
 
-	time.Sleep(time.Second) // this is needed since we add second to the cache key
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/models/bar.sql": `SELECT * FROM foo LIMIT 1`,
 	})
@@ -619,7 +618,6 @@ path: data/foo.csv
 	testruntime.RequireOLAPTableCount(t, rt, id, "bar1", 1)
 	testruntime.RequireOLAPTableCount(t, rt, id, "bar2", 2)
 
-	time.Sleep(time.Second) // this is needed since we add second to the cache key
 	// Rename model A to B and model B to A, verify success
 	testruntime.RenameFile(t, rt, id, "/models/bar2.sql", "/models/bar3.sql")
 	testruntime.RenameFile(t, rt, id, "/models/bar1.sql", "/models/bar2.sql")

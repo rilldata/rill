@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"strings"
 	"time"
 
@@ -90,7 +89,6 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 		}
 		// Using StateUpdatedOn instead of StateVersion because the state version is reset when the resource is deleted and recreated.
 		key := fmt.Sprintf("%s:%s:%d:%d", res.Meta.Name.Kind, res.Meta.Name.Name, res.Meta.StateUpdatedOn.Seconds, res.Meta.StateUpdatedOn.Nanos/int32(time.Millisecond))
-		log.Printf("KEY: %v", key)
 		depKeys = append(depKeys, key)
 	}
 

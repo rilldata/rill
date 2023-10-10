@@ -37,7 +37,7 @@ export async function getDashboardsForProject(
 
   // TODO: use resource API
   const catalogEntriesResponse = await axios.get(
-    `/v1/instances/${projectData.prodDeployment.runtimeInstanceId}/resources?name.kind=${ResourceKind.MetricsView}`
+    `/v1/instances/${projectData.prodDeployment.runtimeInstanceId}/resources?kind=${ResourceKind.MetricsView}`
   );
 
   const catalogEntries = catalogEntriesResponse.data?.resources as V1Resource[];
