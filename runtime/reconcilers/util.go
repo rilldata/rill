@@ -97,6 +97,7 @@ func olapDropTableIfExists(ctx context.Context, c *runtime.Controller, connector
 		return
 	}
 	defer release()
+
 	_ = olap.DropTable(ctx, table, view)
 }
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -22,8 +23,11 @@ func (q *TableHead) Key() string {
 	return fmt.Sprintf("TableHead:%s:%d", q.TableName, q.Limit)
 }
 
-func (q *TableHead) Deps() []string {
-	return []string{q.TableName}
+func (q *TableHead) Deps() []*runtimev1.ResourceName {
+	return []*runtimev1.ResourceName{
+		{Kind: runtime.ResourceKindSource, Name: q.TableName},
+		{Kind: runtime.ResourceKindModel, Name: q.TableName},
+	}
 }
 
 func (q *TableHead) MarshalResult() *runtime.QueryResult {

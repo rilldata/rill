@@ -6,15 +6,15 @@
   } from "@rilldata/web-admin/client";
   import { getDashboardsForProject } from "@rilldata/web-admin/features/projects/dashboards";
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/features/projects/invalidations";
+  import ProjectErrored from "@rilldata/web-admin/features/projects/ProjectErrored.svelte";
   import { useProjectDeploymentStatus } from "@rilldata/web-admin/features/projects/selectors";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardStateProvider from "@rilldata/web-common/features/dashboards/stores/DashboardStateProvider.svelte";
   import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
+  import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
-  import {
-    createRuntimeServiceGetCatalogEntry,
-    getRuntimeServiceGetCatalogEntryQueryKey,
-  } from "@rilldata/web-common/runtime-client";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { getRuntimeServiceGetResourceQueryKey } from "@rilldata/web-common/runtime-client";
   import type { QueryError } from "@rilldata/web-common/runtime-client/error";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -35,9 +35,9 @@
   $: isProjectPending =
     $projectDeploymentStatus.data ===
     V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING;
-  $: isProjectReconciling =
-    $projectDeploymentStatus.data ===
-    V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING;
+  $: isProjectReconciling = false;
+  // $projectDeploymentStatus.data ===
+  // V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING;
   $: isProjectErrored =
     $projectDeploymentStatus.data ===
     V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR;
@@ -57,23 +57,28 @@
 
       // Invalidate the query used to assess dashboard validity
       queryClient.invalidateQueries(
-        getRuntimeServiceGetCatalogEntryQueryKey(instanceId, dashboardName)
+        getRuntimeServiceGetResourceQueryKey(instanceId, {
+          "name.name": dashboardName,
+          "name.kind": ResourceKind.MetricsView,
+        })
       );
     }
   }
 
   async function getDashboardsAndInvalidate() {
     const dashboardListings = await getDashboardsForProject($project.data);
-    const dashboardNames = dashboardListings.map((listing) => listing.name);
+    const dashboardNames = dashboardListings.map(
+      (listing) => listing.meta.name.name
+    );
     return invalidateDashboardsQueries(queryClient, dashboardNames);
   }
 
-  $: dashboard = createRuntimeServiceGetCatalogEntry(instanceId, dashboardName);
+  $: dashboard = useDashboard(instanceId, dashboardName);
   $: isDashboardOK = $dashboard.isSuccess;
   $: isDashboardNotFound =
     $dashboard.isError &&
     ($dashboard.error as QueryError)?.response?.status === 404;
-  // isDashboardErrored // We'll reinstate this case once we integrate the new Reconcile
+  $: isDashboardErrored = !$dashboard.data?.metricsView?.state?.validSpec;
 
   // If no dashboard is found, show a 404 page
   $: if (isProjectBuilt && isDashboardNotFound) {
@@ -95,17 +100,18 @@
 {#if isProjectBuilding && isDashboardNotFound}
   <ProjectBuilding organization={orgName} project={projectName} />
 {:else if isDashboardOK}
-  <StateManagersProvider metricsViewName={dashboardName}>
-    {#key dashboardName}
-      <DashboardStateProvider metricViewName={dashboardName}>
-        <DashboardURLStateProvider metricViewName={dashboardName}>
-          <Dashboard metricViewName={dashboardName} leftMargin={"48px"} />
-        </DashboardURLStateProvider>
-      </DashboardStateProvider>
-    {/key}
-  </StateManagersProvider>
+  {#if isDashboardErrored}
+    <!-- TODO: we should show the reconcile error -->
+    <ProjectErrored organization={orgName} project={projectName} />
+  {:else}
+    <StateManagersProvider metricsViewName={dashboardName}>
+      {#key dashboardName}
+        <DashboardStateProvider metricViewName={dashboardName}>
+          <DashboardURLStateProvider metricViewName={dashboardName}>
+            <Dashboard metricViewName={dashboardName} leftMargin={"48px"} />
+          </DashboardURLStateProvider>
+        </DashboardStateProvider>
+      {/key}
+    </StateManagersProvider>
+  {/if}
 {/if}
-<!-- We'll reinstate this case once we integrate the new Reconcile -->
-<!-- {:else if isDashboardErrored}
-  <ProjectErrored organization={orgName} project={projectName} />
-{/if} -->

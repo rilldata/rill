@@ -6,6 +6,8 @@
   import type { Writable } from "svelte/store";
   import type { QueryHighlightState } from "../../models/query-highlight-store";
 
+  // TODO: remove embedded support
+
   const queryHighlight: Writable<QueryHighlightState> = getContext(
     "rill:app:query-highlight"
   );
@@ -30,11 +32,11 @@
 <span
   class=" w-full ui-copy-muted flex justify-between
    gap-x-4 p-1 pl-4 pr-4 hover:bg-yellow-200"
-  on:focus={focus(reference)}
-  on:mouseover={focus(reference)}
-  on:mouseleave={blur}
-  on:blur={blur}
   class:text-gray-500={modelHasError}
+  on:blur={blur}
+  on:focus={focus(reference)}
+  on:mouseleave={blur}
+  on:mouseover={focus(reference)}
 >
   <EmbeddedSourceEntry connector={entry.source.connector} path={entry.path} />
 

@@ -29,7 +29,7 @@ export async function renameEntityUsingMenu(
   // type new name and submit
   await page.locator(".portal input").fill(toName);
   await Promise.all([
-    page.waitForResponse(/rename-and-reconcile/),
+    page.waitForResponse(/rename/),
     clickModalButton(page, "Change Name"),
   ]);
 }
@@ -43,7 +43,11 @@ export async function deleteEntity(page: Page, name: string) {
   // open context menu and click rename
   await openEntityMenu(page, name);
   await Promise.all([
-    page.waitForResponse(/delete-and-reconcile/),
+    page.waitForResponse(
+      (response) =>
+        response.url().includes(name) &&
+        response.request().method() === "DELETE"
+    ),
     clickMenuButton(page, "Delete"),
   ]);
 }

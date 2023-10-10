@@ -7,11 +7,13 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"golang.org/x/exp/maps"
 )
 
 const batchInterval = 250 * time.Millisecond
@@ -20,13 +22,15 @@ const maxBufferSize = 1000
 
 // watcher implements a recursive, batching file watcher on top of fsnotify.
 type watcher struct {
-	root        string
-	watcher     *fsnotify.Watcher
-	done        chan struct{}
-	err         error
-	mu          sync.Mutex
-	subscribers map[string]drivers.WatchCallback
-	buffer      []drivers.WatchEvent
+	root             string
+	watcher          *fsnotify.Watcher
+	closed           atomic.Bool
+	done             chan struct{}
+	err              error
+	mu               sync.Mutex
+	subscribers      map[int]drivers.WatchCallback
+	nextSubscriberID int
+	buffer           map[string]drivers.WatchEvent
 }
 
 func newWatcher(root string) (*watcher, error) {
@@ -39,7 +43,8 @@ func newWatcher(root string) (*watcher, error) {
 		root:        root,
 		watcher:     fsw,
 		done:        make(chan struct{}),
-		subscribers: make(map[string]drivers.WatchCallback),
+		subscribers: make(map[int]drivers.WatchCallback),
+		buffer:      make(map[string]drivers.WatchEvent),
 	}
 
 	err = w.addDir(root, false)
@@ -58,14 +63,10 @@ func (w *watcher) close() {
 }
 
 func (w *watcher) closeWithErr(err error) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-
-	select {
-	case <-w.done:
-		// Already closed
+	// Support multiple calls, but only actually close once.
+	// Not using w.mu here because someday someone will try to close the watcher from a callback.
+	if w.closed.Swap(true) {
 		return
-	default:
 	}
 
 	closeErr := w.watcher.Close()
@@ -83,7 +84,8 @@ func (w *watcher) subscribe(ctx context.Context, fn drivers.WatchCallback) error
 		w.mu.Unlock()
 		return w.err
 	}
-	id := fmt.Sprintf("%v", fn)
+	id := w.nextSubscriberID
+	w.nextSubscriberID++
 	w.subscribers[id] = fn
 	w.mu.Unlock()
 
@@ -109,14 +111,16 @@ func (w *watcher) flush() {
 		return
 	}
 
+	events := maps.Values(w.buffer)
+
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
 	for _, fn := range w.subscribers {
-		fn(w.buffer)
+		fn(events)
 	}
 
-	w.buffer = nil
+	w.buffer = make(map[string]drivers.WatchEvent)
 }
 
 func (w *watcher) run() {
@@ -144,7 +148,7 @@ func (w *watcher) runInner() error {
 			}
 
 			we := drivers.WatchEvent{}
-			if e.Has(fsnotify.Create) || e.Has(fsnotify.Write) {
+			if e.Has(fsnotify.Create) || e.Has(fsnotify.Write) || e.Has(fsnotify.Chmod) {
 				we.Type = runtimev1.FileEvent_FILE_EVENT_WRITE
 			} else if e.Has(fsnotify.Remove) || e.Has(fsnotify.Rename) {
 				we.Type = runtimev1.FileEvent_FILE_EVENT_DELETE
@@ -164,7 +168,7 @@ func (w *watcher) runInner() error {
 				we.Dir = err == nil && info.IsDir()
 			}
 
-			w.buffer = append(w.buffer, we)
+			w.buffer[path] = we
 
 			// Calling addDir after appending to w.buffer, to sequence events correctly
 			if we.Dir && e.Has(fsnotify.Create) {
@@ -210,11 +214,11 @@ func (w *watcher) addDir(path string, replay bool) error {
 			}
 			ep = filepath.Join("/", ep)
 
-			w.buffer = append(w.buffer, drivers.WatchEvent{
+			w.buffer[ep] = drivers.WatchEvent{
 				Path: ep,
 				Type: runtimev1.FileEvent_FILE_EVENT_WRITE,
 				Dir:  e.IsDir(),
-			})
+			}
 		}
 
 		if e.IsDir() {

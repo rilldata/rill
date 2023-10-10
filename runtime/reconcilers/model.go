@@ -50,7 +50,7 @@ func (r *ModelReconciler) AssignState(from, to *runtimev1.Resource) error {
 	if a == nil || b == nil {
 		return fmt.Errorf("cannot assign state from %T to %T", from.Resource, to.Resource)
 	}
-	b.Spec = a.Spec
+	b.State = a.State
 	return nil
 }
 
@@ -113,16 +113,22 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			model.State.Table = ""
 			model.State.SpecHash = ""
 			model.State.RefreshedOn = nil
-			err = r.C.UpdateState(ctx, self.Meta.Name, self)
-			if err != nil {
-				r.C.Logger.Error("refs check: failed to update state", slog.Any("err", err))
+			subErr := r.C.UpdateState(ctx, self.Meta.Name, self)
+			if subErr != nil {
+				r.C.Logger.Error("refs check: failed to update state", slog.Any("err", subErr))
 			}
 		}
 		return runtime.ReconcileResult{Err: err}
 	}
 
+	// Determine if we should materialize
+	var materialize bool
+	if model.Spec.Materialize != nil && *model.Spec.Materialize {
+		materialize = true
+	}
+
 	// Use a hash of execution-related fields from the spec to determine if something has changed
-	hash, err := r.executionSpecHash(ctx, self.Meta.Refs, model.Spec)
+	hash, err := r.executionSpecHash(ctx, self.Meta.Refs, model.Spec, materialize)
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to compute hash: %w", err)}
 	}
@@ -134,12 +140,6 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
 		}
-	}
-
-	// Determine if we should materialize
-	var materialize bool
-	if model.Spec.Materialize != nil {
-		materialize = true
 	}
 
 	// Check if the model still exists (might have been corrupted/lost somehow)
@@ -159,7 +159,14 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	var delayedMaterializeOn time.Time
 	var delayedMaterialize bool
 	if !trigger && materialize && t.View {
-		delayedMaterializeOn, delayedMaterialize = r.delayedMaterializeTime(model.Spec, model.State.RefreshedOn.AsTime())
+		var refreshedOn time.Time
+		if model.State.RefreshedOn != nil {
+			refreshedOn = model.State.RefreshedOn.AsTime()
+		}
+		delayedMaterializeOn = r.delayedMaterializeTime(model.Spec, refreshedOn)
+		if !delayedMaterializeOn.IsZero() && !delayedMaterializeOn.After(time.Now()) {
+			delayedMaterialize = true
+		}
 	}
 
 	// Reschedule if we're not triggering
@@ -190,14 +197,18 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 	// Determine if we should delay materialization (note difference between "delayedMaterialize" and "delayingMaterialize")
 	delayingMaterialize := false
-	if materialize && model.State.SpecHash != hash && model.Spec.MaterializeDelaySeconds > 0 {
+	if !delayedMaterialize && materialize && model.State.SpecHash != hash && model.Spec.MaterializeDelaySeconds > 0 {
 		delayingMaterialize = true
 		materialize = false
 	}
 
-	// Should NEVER happen
-	if delayedMaterialize && delayingMaterialize {
-		return runtime.ReconcileResult{Err: fmt.Errorf("internal error: delayed and delaying materialization")}
+	// Log delayed materialization info
+	if delayingMaterialize {
+		delay := time.Duration(model.Spec.MaterializeDelaySeconds) * time.Second
+		r.C.Logger.Info("Delaying model materialization", slog.String("name", n.Name), slog.String("delay", delay.String()))
+	}
+	if delayedMaterialize {
+		r.C.Logger.Info("Materializing model", slog.String("name", n.Name))
 	}
 
 	// Drop the staging table if it exists
@@ -255,9 +266,13 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		model.State.RefreshedOn = nil
 	}
 	if update {
-		err = r.C.UpdateState(ctx, self.Meta.Name, self)
-		if err != nil {
-			return runtime.ReconcileResult{Err: err}
+		// We don't UpdateState for delayed materializations to avoid triggering derived models to re-compute materializations redundantly (since ref's state versions are incorporated into the hash).
+		// The only downside to this is that delayed materializations do not update RefreshedOn, which is an acceptable limitation.
+		if !delayedMaterialize {
+			err = r.C.UpdateState(ctx, self.Meta.Name, self)
+			if err != nil {
+				return runtime.ReconcileResult{Err: err}
+			}
 		}
 	}
 
@@ -276,10 +291,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 	// If we're delaying materialization, we need to retrigger after the delay
 	if createErr == nil && delayingMaterialize {
-		t, ok := r.delayedMaterializeTime(model.Spec, time.Now())
-		if ok {
-			return runtime.ReconcileResult{Retrigger: t}
-		}
+		t := r.delayedMaterializeTime(model.Spec, time.Now())
+		return runtime.ReconcileResult{Retrigger: t}
 	}
 
 	// Compute next refresh time
@@ -298,15 +311,15 @@ func (r *ModelReconciler) stagingTableName(table string) string {
 }
 
 // delayedMaterializeTime derives the timestamp (if any) to materialize a model with delayed materialization configured.
-func (r *ModelReconciler) delayedMaterializeTime(spec *runtimev1.ModelSpec, since time.Time) (time.Time, bool) {
+func (r *ModelReconciler) delayedMaterializeTime(spec *runtimev1.ModelSpec, since time.Time) time.Time {
 	if spec.MaterializeDelaySeconds == 0 {
-		return time.Time{}, false
+		return time.Time{}
 	}
-	return since.Add(time.Duration(spec.MaterializeDelaySeconds) * time.Second), true
+	return since.Add(time.Duration(spec.MaterializeDelaySeconds) * time.Second)
 }
 
 // executionSpecHash computes a hash of only those model properties that impact execution.
-func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtimev1.ResourceName, spec *runtimev1.ModelSpec) (string, error) {
+func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtimev1.ResourceName, spec *runtimev1.ModelSpec, materialize bool) (string, error) {
 	hash := md5.New()
 
 	for _, ref := range refs { // Refs are always sorted
@@ -349,7 +362,7 @@ func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtime
 		return "", err
 	}
 
-	err = binary.Write(hash, binary.BigEndian, spec.Materialize)
+	err = binary.Write(hash, binary.BigEndian, materialize)
 	if err != nil {
 		return "", err
 	}
@@ -384,7 +397,7 @@ func (r *ModelReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Reso
 
 // createModel creates or updates the model in the OLAP connector.
 func (r *ModelReconciler) createModel(ctx context.Context, self *runtimev1.Resource, tableName string, view bool) error {
-	inst, err := r.C.Runtime.FindInstance(ctx, r.C.InstanceID)
+	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
 	if err != nil {
 		return err
 	}

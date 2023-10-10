@@ -7,16 +7,14 @@
   import {
     createRuntimeServiceGetFile,
     createRuntimeServiceListConnectors,
-    createRuntimeServicePutFileAndReconcile,
-    createRuntimeServiceRefreshAndReconcile,
-    getRuntimeServiceGetCatalogEntryQueryKey,
   } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { parseDocument } from "yaml";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
   import { fileArtifactsStore } from "../../entity-management/file-artifacts-store";
   import { EntityType } from "../../entity-management/types";
+
+  // TODO: remove this file since it is not used
 
   export let sourceName: string;
 
@@ -38,32 +36,19 @@
     (name) => name !== "local_file"
   );
 
-  const queryClient = useQueryClient();
-  const createSource = createRuntimeServicePutFileAndReconcile();
-  const refreshSourceMutation = createRuntimeServiceRefreshAndReconcile();
-
   const onRefreshClick = async (tableName: string) => {
     try {
       await refreshSource(
         currentConnector?.name,
         tableName,
-        $runtime?.instanceId,
-        $refreshSourceMutation,
-        $createSource,
-        queryClient
+        $runtime?.instanceId
       );
-      const queryKey = getRuntimeServiceGetCatalogEntryQueryKey(
-        $runtime?.instanceId,
-        tableName
-      );
-      await queryClient.refetchQueries(queryKey);
     } catch (err) {
       // no-op
     }
     overlay.set(null);
   };
 
-  $: isReconciling = $fileArtifactsStore.entities[sourcePath]?.isReconciling;
   let uploadErrors = undefined;
   $: uploadErrors = $fileArtifactsStore.entities[sourcePath]?.errors;
 </script>

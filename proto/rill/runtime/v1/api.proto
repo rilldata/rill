@@ -44,22 +44,6 @@ service RuntimeService {
     };
   }
 
-  // EditInstanceVariables edits the instance variable
-  rpc EditInstanceVariables(EditInstanceVariablesRequest) returns (EditInstanceVariablesResponse) {
-    option (google.api.http) = {
-      put: "/v1/instances/{instance_id}",
-      body: "*"
-    };
-  }
-
-  // EditInstanceAnnotations edits the instance annotations
-  rpc EditInstanceAnnotations(EditInstanceAnnotationsRequest) returns (EditInstanceAnnotationsResponse) {
-    option (google.api.http) = {
-      put: "/v1/instances/{instance_id}/annotations",
-      body: "*"
-    };
-  }
-
   // DeleteInstance deletes an instance
   rpc DeleteInstance(DeleteInstanceRequest) returns (DeleteInstanceResponse) {
     option (google.api.http) = {
@@ -185,12 +169,6 @@ service RuntimeService {
     option (google.api.http) = {post: "/v1/instances/{instance_id}/catalog/{name}/refresh"};
   }
 
-  // TriggerSync syncronizes the instance's catalog with the underlying OLAP's information schema.
-  // If the instance has exposed=true, tables found in the information schema will be added to the catalog.
-  rpc TriggerSync(TriggerSyncRequest) returns (TriggerSyncResponse) {
-    option (google.api.http) = {post: "/v1/instances/{instance_id}/sync"};
-  }
-
   // Reconcile applies a full set of artifacts from a repo to the catalog and infra.
   // It attempts to infer a minimal number of migrations to apply to reconcile the current state with
   // the desired state expressed in the artifacts. Any existing objects not described in the submitted
@@ -270,24 +248,22 @@ message PingResponse {
 // projects, but also multiple tenants. On local, the runtime will usually have
 // just a single instance.
 message Instance {
-  // Identifier (UUID)
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  // OLAP connector name (typically called : olap )
   string olap_connector = 2;
-  // Connector name for repo driver(typically called : repo). 
-  // Repo driver is for reading/editing code artifacts. This enables virtualizing a file system in a cloud setting.
   string repo_connector = 4;
-  // If true, the runtime will store the instance's catalog in its OLAP store instead
-  // of in the runtime's metadata store. Currently only supported for the duckdb driver.
-  bool embed_catalog = 6;
-  // instance specific variables
-  map<string, string> variables = 7;
-  // project defaults
-  map<string, string> project_variables = 8;
-  // ingestion limit across all sources, 0 means no limit
-  int64 ingestion_limit_bytes = 9;
-  // bare minimum connectors required by the instance. 
+  google.protobuf.Timestamp created_on = 11;
+  google.protobuf.Timestamp updated_on = 12;
   repeated Connector connectors = 10;
+  repeated Connector project_connectors = 13;
+  map<string, string> variables = 7;
+  map<string, string> project_variables = 8;
+  map<string, string> annotations = 14;
+  bool embed_catalog = 6;
+  int64 ingestion_limit_bytes = 9;
+  bool watch_repo = 15;
+  bool stage_changes = 16;
+  bool model_default_materialize = 17;
+  uint32 model_materialize_delay_seconds = 18;
 }
  
 message Connector {
@@ -330,11 +306,15 @@ message CreateInstanceRequest {
   }];
   string olap_connector = 2;
   string repo_connector = 4;
-  bool embed_catalog = 6;
-  map<string, string> variables = 7;
-  int64 ingestion_limit_bytes = 8;
-  map<string, string> annotations = 9;
   repeated Connector connectors = 10;
+  map<string, string> variables = 7;
+  map<string, string> annotations = 9;
+  bool embed_catalog = 6;
+  int64 ingestion_limit_bytes = 8;
+  bool watch_repo = 11;
+  bool stage_changes = 12;
+  bool model_default_materialize = 13;
+  uint32 model_materialize_delay_seconds = 14;
 }
 
 // Response message for RuntimeService.CreateInstance
@@ -357,39 +337,21 @@ message EditInstanceRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   optional string olap_connector = 2;
   optional string repo_connector = 4;
+  repeated Connector connectors = 9;
+  map<string, string> variables = 15;
+  map<string, string> annotations = 10;
   optional bool embed_catalog = 6;
   optional int64 ingestion_limit_bytes = 8;
-  repeated Connector connectors = 9;
-  map<string, string> annotations = 10;
+  optional bool watch_repo = 11;
+  optional bool stage_changes = 12;
+  optional bool model_default_materialize = 13;
+  optional uint32 model_materialize_delay_seconds = 14;
 }
 
 // Response message for RuntimeService.EditInstance
 message EditInstanceResponse {
   Instance instance = 1;
 }
-
-// Request message for RuntimeService.EditInstanceVariables.
-message EditInstanceVariablesRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  map<string, string> variables = 2;
-}
-
-// Response message for RuntimeService.EditInstanceVariables
-message EditInstanceVariablesResponse {
-  Instance instance = 1;
-}
-
-// Request message for RuntimeService.EditInstanceAnnotations.
-message EditInstanceAnnotationsRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  map<string, string> annotations = 2;
-}
-
-// Response message for RuntimeService.EditInstanceAnnotations
-message EditInstanceAnnotationsResponse {
-  Instance instance = 1;
-}
-
 
 // **********
 // Repos

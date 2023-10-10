@@ -25,7 +25,7 @@ type MetricsViewAggregation struct {
 	Priority           int32                                        `json:"priority,omitempty"`
 	Limit              *int64                                       `json:"limit,omitempty"`
 	Offset             int64                                        `json:"offset,omitempty"`
-	MetricsView        *runtimev1.MetricsView                       `json:"-"`
+	MetricsView        *runtimev1.MetricsViewSpec                   `json:"-"`
 	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity         `json:"security"`
 
 	Result *runtimev1.MetricsViewAggregationResponse `json:"-"`
@@ -41,8 +41,10 @@ func (q *MetricsViewAggregation) Key() string {
 	return fmt.Sprintf("MetricsViewAggregation:%s", string(r))
 }
 
-func (q *MetricsViewAggregation) Deps() []string {
-	return []string{q.MetricsViewName}
+func (q *MetricsViewAggregation) Deps() []*runtimev1.ResourceName {
+	return []*runtimev1.ResourceName{
+		{Kind: runtime.ResourceKindMetricsView, Name: q.MetricsViewName},
+	}
 }
 
 func (q *MetricsViewAggregation) MarshalResult() *runtime.QueryResult {
@@ -102,7 +104,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 		return err
 	}
 
-	filename := strings.ReplaceAll(q.MetricsView.Model, `"`, `_`)
+	filename := strings.ReplaceAll(q.MetricsView.Table, `"`, `_`)
 	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
 		filename += "_filtered"
 	}
@@ -130,7 +132,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	return nil
 }
 
-func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
+func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
 	if len(q.Dimensions) == 0 && len(q.Measures) == 0 {
 		return "", nil, errors.New("no dimensions or measures specified")
 	}
@@ -240,7 +242,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 
 	sql := fmt.Sprintf("SELECT %s FROM %s %s %s %s %s OFFSET %d",
 		strings.Join(selectCols, ", "),
-		safeName(mv.Model),
+		safeName(mv.Table),
 		whereClause,
 		groupClause,
 		orderClause,

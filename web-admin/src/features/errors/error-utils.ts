@@ -11,6 +11,8 @@ export function globalErrorCallback(error: AxiosError): void {
   const isDashboardPage =
     get(page).route.id === "/[organization]/[project]/[dashboard]";
 
+  if (!error.response) return;
+
   // Special handling for some errors on the Project page
   if (isProjectPage) {
     // If "repository not found", ignore the error and show the page

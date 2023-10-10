@@ -1,14 +1,16 @@
 <script lang="ts">
+  import PreviewTable from "@rilldata/web-common/components/preview-table/PreviewTable.svelte";
+  import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
   import {
     createQueryServiceTableColumns,
     createQueryServiceTableRows,
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
-  import { PreviewTable } from ".";
   import { runtime } from "../../runtime-client/runtime-store";
 
   export let objectName: string;
   export let limit = 150;
+  export let loading = false;
 
   $: profileColumnsQuery = createQueryServiceTableColumns(
     $runtime?.instanceId,
@@ -42,7 +44,9 @@
   });
 </script>
 
-{#if rows && profileColumns}
+{#if loading}
+  <ReconcilingSpinner />
+{:else if rows && profileColumns}
   <PreviewTable
     {rows}
     columnNames={profileColumns}

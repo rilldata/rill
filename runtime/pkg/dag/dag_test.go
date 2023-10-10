@@ -6,178 +6,81 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestDAG_Add(t *testing.T) {
-	d := NewDAG()
-
-	_, err := d.Add("A0", []string{})
-	require.NoError(t, err)
-	_, err = d.Add("B1", []string{"B0", "C0"})
-	require.NoError(t, err)
-	_, err = d.Add("B2", []string{"A1", "B1"})
-	require.NoError(t, err)
-	// A0  B0  C0
-	//     |  /
-	// A1  B1
-	//   \ |
-	//     B2
-	require.Equal(t, []string{}, d.GetDeepChildren("A0"))
-	require.Equal(t, []string{"B1", "B2"}, d.GetDeepChildren("B0"))
-	require.Equal(t, []string{"B1", "B2"}, d.GetDeepChildren("C0"))
-	require.Equal(t, []string{"B2"}, d.GetDeepChildren("A1"))
-	require.Equal(t, []string{"B2"}, d.GetDeepChildren("B1"))
-
-	_, err = d.Add("A1", []string{"A0", "B0"})
-	require.NoError(t, err)
-	_, err = d.Add("A2", []string{"C0"})
-	require.NoError(t, err)
-	// A0  B0  C0
-	// | / | / |
-	// A1  B1  |
-	//   \ |   |
-	//     B2  A2
-	require.Equal(t, []string{"A1", "B2"}, d.GetDeepChildren("A0"))
-	require.ElementsMatch(t, []string{"A1", "B1", "B2"}, d.GetDeepChildren("B0"))
-	require.ElementsMatch(t, []string{"B1", "A2", "B2"}, d.GetDeepChildren("C0"))
-	require.Equal(t, []string{"B2"}, d.GetDeepChildren("A1"))
-	require.Equal(t, []string{"B2"}, d.GetDeepChildren("B1"))
-
-	_, err = d.Add("A1", []string{"C0"})
-	require.NoError(t, err)
-	_, err = d.Add("B1", []string{"C0"})
-	require.NoError(t, err)
-	// A0   C0   B0
-	//    / / |
-	// A1  B1  |
-	//   \ |   |
-	//     B2  A2
-	require.Equal(t, []string{}, d.GetDeepChildren("A0"))
-	require.Equal(t, []string{}, d.GetDeepChildren("B0"))
-	require.ElementsMatch(t, []string{"B1", "A2", "A1", "B2"}, d.GetDeepChildren("C0"))
+func TestAcyclic(t *testing.T) {
+	d := New(hash)
+	require.True(t, d.Add(1, 2))
+	require.True(t, d.Add(2, 3, 4))
+	require.True(t, d.Add(3, 4))
+	require.False(t, d.Add(4, 1))
+	require.Len(t, d.vertices, 4)
+	require.True(t, d.Add(4))
+	require.ElementsMatch(t, []int{1, 2, 3}, d.Descendents(4))
 }
 
-func TestDAG_DeleteButBranchRetained(t *testing.T) {
-	d, err := getTestDAG()
-	require.NoError(t, err)
-	d.Delete("A0")
-	require.Equal(t, []string{"A1", "B2"}, d.GetDeepChildren("A0"))
+func TestSelfReference(t *testing.T) {
+	d := New(hash)
+	require.False(t, d.Add(1, 1))
 
-	d.Delete("A1")
-	require.Equal(t, []string{"A1", "B2"}, d.GetDeepChildren("A0"))
-
-	_, err = d.Add("A1", []string{"A0"})
-	require.NoError(t, err)
-	d.Delete("B2")
-	require.Equal(t, []string{"A1"}, d.GetDeepChildren("A0"))
+	d = New(hash)
+	require.True(t, d.Add(2, 1))
+	require.False(t, d.Add(1, 1))
 }
 
-func TestDAG_DeleteBranch(t *testing.T) {
-	d, err := getTestDAG()
-	require.NoError(t, err)
+func TestRetention(t *testing.T) {
+	d := New(hash)
+	require.True(t, d.Add(1, 2))
+	require.True(t, d.Add(2, 3))
+	require.Len(t, d.vertices, 3)
 
-	d.Delete("A0")
-	d.Delete("A1")
-	require.Equal(t, []string{"A1", "B2"}, d.GetDeepChildren("A0"))
+	require.True(t, d.Add(3))
+	require.Len(t, d.vertices, 3)
+	require.ElementsMatch(t, []int{3}, d.Parents(2, true))
+	require.ElementsMatch(t, []int{3}, d.Parents(2, false))
 
-	d.Delete("B2")
-	require.Equal(t, []string{}, d.GetDeepChildren("A0"))
+	d.Remove(2)
+	require.Len(t, d.vertices, 3)
+	require.ElementsMatch(t, []int{}, d.Children(3))
+	require.ElementsMatch(t, []int{}, d.Parents(1, true))
+	require.ElementsMatch(t, []int{2}, d.Parents(1, false))
+
+	d.Remove(1)
+	require.Len(t, d.vertices, 1)
+	require.ElementsMatch(t, []int{}, d.Children(3))
 }
 
-func getTestDAG() (*DAG, error) {
-	d := NewDAG()
-	_, err := d.Add("A0", []string{})
-	if err != nil {
-		return nil, err
-	}
-	_, err = d.Add("B1", []string{"B0", "C0"})
-	if err != nil {
-		return nil, err
-	}
-	_, err = d.Add("B2", []string{"A1", "B1"})
-	if err != nil {
-		return nil, err
-	}
-	_, err = d.Add("A1", []string{"A0", "B0"})
-	if err != nil {
-		return nil, err
-	}
-	_, err = d.Add("A2", []string{"C0"})
-	if err != nil {
-		return nil, err
-	}
-	// A0  B0  C0
-	// | / | / |
-	// A1  B1  |
-	//   \ |   |
-	//     B2  A2
-	return d, nil
+func TestPanics(t *testing.T) {
+	// Already exists
+	d := New(hash)
+	require.True(t, d.Add(1))
+	require.Panics(t, func() { d.Add(1) })
+
+	// Doesn't exist
+	d = New(hash)
+	require.True(t, d.Add(1))
+	require.Panics(t, func() { d.Remove(2) })
+	require.Panics(t, func() { d.Parents(2, false) })
+	require.Panics(t, func() { d.Children(2) })
 }
 
-func TestCyclicDAG(t *testing.T) {
-	d := NewDAG()
-	n, err := d.Add("A0", []string{"B1"})
-	require.NoError(t, err)
-	require.Equal(t, "A0", n.Name)
+func TestParents(t *testing.T) {
+	d := New(hash)
+	require.True(t, d.Add(1, 2))
+	require.True(t, d.Add(2, 3))
+	require.True(t, d.Add(3))
+	require.Len(t, d.vertices, 3)
 
-	p, ok := n.Parents["B1"]
-	require.Equal(t, true, ok)
-	require.Equal(t, "B1", p.Name)
+	// Remove 3, check it's a non-present parent
+	d.Remove(3)
+	require.ElementsMatch(t, []int{3}, d.Parents(2, false))
+	require.ElementsMatch(t, []int{}, d.Parents(2, true))
 
-	n, err = d.Add("B1", []string{"A0"})
-	require.Nil(t, n)
-	require.Error(t, err)
-
-	d.Delete("A0")
-	d.Delete("B1")
-	_, err = d.Add("A0", []string{})
-	require.NoError(t, err)
-	_, err = d.Add("B1", []string{"A0"})
-	require.NoError(t, err)
-	_, err = d.Add("B2", []string{"B1"})
-	require.NoError(t, err)
-	n, err = d.Add("B0", []string{"B1"})
-	// A0
-	// |
-	// B1
-	// |  \
-	// B2 B0
-
-	require.NoError(t, err)
-	require.Equal(t, "B0", n.Name)
-	require.ElementsMatch(t, []string{"B1", "B2", "B0"}, d.GetDeepChildren("A0"))
-
-	// A0 ----
-	// |      |
-	// B1     |
-	// |  \   |
-	// B2 B0 -
-	_, err = d.Add("A0", []string{"B0"})
-	require.Error(t, err)
+	// Add 3 back and remove 2, then add 2 back without a reference to 3 and check
+	require.True(t, d.Add(3))
+	d.Remove(2)
+	require.True(t, d.Add(2))
+	require.Len(t, d.Parents(2, false), 0)
 }
 
-func TestOrderedGetDeepChildren(t *testing.T) {
-	d := NewDAG()
-	_, err := d.Add("A0", []string{})
-	require.NoError(t, err)
-	_, err = d.Add("B1", []string{"A0"})
-	require.NoError(t, err)
-	_, err = d.Add("B2", []string{"B1"})
-	require.NoError(t, err)
-	_, err = d.Add("A1", []string{"A0", "B1"})
-	require.NoError(t, err)
-	_, err = d.Add("A2", []string{"A1"})
-	require.NoError(t, err)
-	// A0
-	// |  \
-	// A1 - B1
-	// |    |
-	// A2   B2
-
-	i := 0
-	for i < 10 {
-		sorted := d.TopologicalSort()
-		require.Equal(t, sorted[0], "A0")
-		require.Equal(t, sorted[1], "B1")
-		// we cannot guarantee the order of the other nodes
-		i++
-	}
+func hash(i int) int {
+	return i
 }

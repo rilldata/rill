@@ -18,8 +18,8 @@ import {
   MetricsViewDimension,
   MetricsViewMeasure,
   RpcStatus,
-  V1MetricsView,
   V1MetricsViewFilter,
+  V1MetricsViewSpec,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/query-core";
@@ -112,19 +112,19 @@ export const AD_BIDS_DEFAULT_URL_TIME_RANGE = {
   end: undefined,
 };
 
-export const AD_BIDS_INIT: V1MetricsView = {
-  name: "AdBids",
-  model: "AdBids_Source",
+export const AD_BIDS_INIT: V1MetricsViewSpec = {
+  title: "AdBids",
+  table: "AdBids_Source",
   measures: AD_BIDS_INIT_MEASURES,
   dimensions: AD_BIDS_INIT_DIMENSIONS,
 };
-export const AD_BIDS_INIT_WITH_TIME: V1MetricsView = {
+export const AD_BIDS_INIT_WITH_TIME: V1MetricsViewSpec = {
   ...AD_BIDS_INIT,
   timeDimension: AD_BIDS_TIMESTAMP_DIMENSION,
 };
-export const AD_BIDS_WITH_DELETED_MEASURE = {
-  name: "AdBids",
-  model: "AdBids_Source",
+export const AD_BIDS_WITH_DELETED_MEASURE: V1MetricsViewSpec = {
+  title: "AdBids",
+  table: "AdBids_Source",
   measures: [
     {
       name: AD_BIDS_IMPRESSIONS_MEASURE,
@@ -133,15 +133,15 @@ export const AD_BIDS_WITH_DELETED_MEASURE = {
   ],
   dimensions: AD_BIDS_INIT_DIMENSIONS,
 };
-export const AD_BIDS_WITH_THREE_MEASURES = {
-  name: "AdBids",
-  model: "AdBids_Source",
+export const AD_BIDS_WITH_THREE_MEASURES: V1MetricsViewSpec = {
+  title: "AdBids",
+  table: "AdBids_Source",
   measures: AD_BIDS_THREE_MEASURES,
   dimensions: AD_BIDS_INIT_DIMENSIONS,
 };
-export const AD_BIDS_WITH_DELETED_DIMENSION = {
-  name: "AdBids",
-  model: "AdBids_Source",
+export const AD_BIDS_WITH_DELETED_DIMENSION: V1MetricsViewSpec = {
+  title: "AdBids",
+  table: "AdBids_Source",
   measures: AD_BIDS_INIT_MEASURES,
   dimensions: [
     {
@@ -149,9 +149,9 @@ export const AD_BIDS_WITH_DELETED_DIMENSION = {
     },
   ],
 };
-export const AD_BIDS_WITH_THREE_DIMENSIONS = {
-  name: "AdBids",
-  model: "AdBids_Source",
+export const AD_BIDS_WITH_THREE_DIMENSIONS: V1MetricsViewSpec = {
+  title: "AdBids",
+  table: "AdBids_Source",
   measures: AD_BIDS_INIT_MEASURES,
   dimensions: AD_BIDS_THREE_DIMENSIONS,
 };
@@ -192,7 +192,7 @@ export function initAdBidsMirrorInStore() {
 
 export function createDashboardState(
   name: string,
-  metrics: V1MetricsView,
+  metrics: V1MetricsViewSpec,
   filters: V1MetricsViewFilter = {
     include: [],
     exclude: [],
@@ -221,7 +221,7 @@ export function createDashboardState(
   };
 }
 
-export function createAdBidsMirrorInStore(metrics: V1MetricsView) {
+export function createAdBidsMirrorInStore(metrics: V1MetricsViewSpec) {
   const proto = get(metricsExplorerStore).entities[AD_BIDS_NAME].proto;
   // actual url is not relevant here
   metricsExplorerStore.syncFromUrl(
@@ -233,12 +233,12 @@ export function createAdBidsMirrorInStore(metrics: V1MetricsView) {
 
 export function createMetricsMetaQueryMock(
   shouldInit = true
-): CreateQueryResult<V1MetricsView, RpcStatus> & {
+): CreateQueryResult<V1MetricsViewSpec, RpcStatus> & {
   setMeasures: (measures: Array<MetricsViewMeasure>) => void;
   setDimensions: (dimensions: Array<MetricsViewDimension>) => void;
 } {
   const { update, subscribe } = writable<
-    QueryObserverResult<V1MetricsView, RpcStatus>
+    QueryObserverResult<V1MetricsViewSpec, RpcStatus>
   >({
     data: undefined,
     isSuccess: false,
@@ -329,7 +329,7 @@ export function getOffsetByHour(time: Date) {
 
 export function initStateManagers(
   dashboardFetchMocks: DashboardFetchMocks,
-  resp: V1MetricsView
+  resp: V1MetricsViewSpec
 ) {
   initAdBidsInStore();
   dashboardFetchMocks.mockMetricsView(AD_BIDS_NAME, resp);
