@@ -1,7 +1,7 @@
 <script lang="ts">
   import StickyHeader from "@rilldata/web-common/components/virtualized-table/core/StickyHeader.svelte";
   import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
-  import { getContext } from "svelte";
+  import { createEventDispatcher, getContext } from "svelte";
   import Cell from "../../../components/virtualized-table/core/Cell.svelte";
   import type { VirtualizedTableConfig } from "../../../components/virtualized-table/types";
 
@@ -19,6 +19,8 @@
   export let scrolling;
   export let activeIndex;
   export let excludeMode = false;
+
+  const dispatch = createEventDispatcher();
 
   $: atLeastOneSelected = !!selectedIndex?.length;
 
@@ -42,10 +44,16 @@
 >
   <StickyHeader
     header={{ size: width, start: 0 }}
-    enableResize={false}
+    enableResize={true}
     position="top-left"
     borderRight={horizontalScrolling}
     bgClass="bg-white"
+    on:resize={(event) => {
+      dispatch("resize-column", {
+        size: event.detail.size,
+        name,
+      });
+    }}
   >
     <span class="px-1">{column?.label || column?.name}</span>
   </StickyHeader>

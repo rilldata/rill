@@ -49,7 +49,9 @@
 
 <StickyHeader
   {enableResize}
-  bgClass={highlight ? `bg-gray-50` : ""}
+  bgClass={highlight
+    ? config.headerBgColorHighlightClass
+    : config.headerBgColorClass}
   on:reset-column-width={() => {
     dispatch("reset-column-width", { name });
   }}
