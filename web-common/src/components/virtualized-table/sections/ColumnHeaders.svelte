@@ -11,12 +11,6 @@
   export let noPin = false;
   export let showDataIcon = false;
   export let selectedColumn: string = null;
-  export let fallbackBGClass = "";
-
-  // set this prop to control sorting arrow externally.
-  // if undefined, sorting arrow is toggled within the
-  // cell header component.
-  export let sortAscending: boolean = undefined;
 
   const getColumnHeaderProps = (header) => {
     const column = columns[header.index];
@@ -29,7 +23,6 @@
       type: column.type,
       description: column.description || "",
       pinned: pinnedColumns.some((pinCol) => pinCol.name === column.name),
-      // FIXME: pretty sure isSelected can be deprecated in favor of highlight for column headers
       isSelected: selectedColumn === column.name,
       highlight: column.highlight,
       sorted: column.sorted,
@@ -43,12 +36,10 @@
     <ColumnHeader
       on:resize-column
       on:reset-column-size
-      bgClass={props.highlight ? `bg-gray-50` : fallbackBGClass}
       {...props}
       {header}
       {noPin}
       {showDataIcon}
-      {sortAscending}
       on:pin={() => {
         dispatch("pin", columns[header.index]);
       }}

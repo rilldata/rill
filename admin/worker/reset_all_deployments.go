@@ -35,10 +35,6 @@ func (w *Worker) resetAllDeployments(ctx context.Context) error {
 		}
 	}
 
-	// Wait for all the background reconciles to finish.
-	// We can remove this when the runtime supports async reconciles.
-	w.admin.UnsafeWaitForReconciles()
-
 	return nil
 }
 
@@ -50,7 +46,7 @@ func (w *Worker) resetAllDeploymentsForProject(ctx context.Context, proj *databa
 
 	for _, depl := range depls {
 		w.logger.Info("reset all deployments: redeploying deployment", zap.String("deployment", depl.ID), observability.ZapCtx(ctx))
-		err := w.admin.TriggerRedeploy(ctx, proj, depl)
+		_, err = w.admin.TriggerRedeploy(ctx, proj, depl)
 		if err != nil {
 			return err
 		}

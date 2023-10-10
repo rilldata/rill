@@ -13,7 +13,7 @@ import (
 func TestResolveMetricsView(t *testing.T) {
 	type args struct {
 		attr map[string]any
-		mv   *runtimev1.MetricsView
+		mv   *runtimev1.MetricsViewSpec
 	}
 	tests := []struct {
 		name           string
@@ -32,9 +32,8 @@ func TestResolveMetricsView(t *testing.T) {
 					"groups": []interface{}{"test"},
 					"admin":  true,
 				},
-				mv: &runtimev1.MetricsView{
-					Name: "test_domain",
-					Security: &runtimev1.MetricsView_Security{
+				mv: &runtimev1.MetricsViewSpec{
+					Security: &runtimev1.MetricsViewSpec_SecurityV2{
 						Access:    "{{.user.admin}}",
 						RowFilter: "WHERE domain = '{{.user.domain}}'",
 						Include:   nil,
@@ -60,9 +59,8 @@ func TestResolveMetricsView(t *testing.T) {
 					"groups": []interface{}{"test"},
 					"admin":  true,
 				},
-				mv: &runtimev1.MetricsView{
-					Name: "test_group",
-					Security: &runtimev1.MetricsView_Security{
+				mv: &runtimev1.MetricsViewSpec{
+					Security: &runtimev1.MetricsViewSpec_SecurityV2{
 						Access:    "'{{.user.domain}}' = 'rilldata.com'",
 						RowFilter: "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
 						Include:   nil,
@@ -88,9 +86,8 @@ func TestResolveMetricsView(t *testing.T) {
 					"groups": []interface{}{"g1", "g2"},
 					"admin":  true,
 				},
-				mv: &runtimev1.MetricsView{
-					Name: "test_groups",
-					Security: &runtimev1.MetricsView_Security{
+				mv: &runtimev1.MetricsViewSpec{
+					Security: &runtimev1.MetricsViewSpec_SecurityV2{
 						Access:    "'{{.user.domain}}' = 'rilldata.com'",
 						RowFilter: "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
 						Include:   nil,
@@ -116,9 +113,8 @@ func TestResolveMetricsView(t *testing.T) {
 					"groups": nil,
 					"admin":  false,
 				},
-				mv: &runtimev1.MetricsView{
-					Name: "test_no_groups",
-					Security: &runtimev1.MetricsView_Security{
+				mv: &runtimev1.MetricsViewSpec{
+					Security: &runtimev1.MetricsViewSpec_SecurityV2{
 						Access:    "{{.user.admin}}",
 						RowFilter: "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
 						Include:   nil,
@@ -144,12 +140,11 @@ func TestResolveMetricsView(t *testing.T) {
 					"groups": []interface{}{"all"},
 					"admin":  true,
 				},
-				mv: &runtimev1.MetricsView{
-					Name: "test_include",
-					Security: &runtimev1.MetricsView_Security{
+				mv: &runtimev1.MetricsViewSpec{
+					Security: &runtimev1.MetricsViewSpec_SecurityV2{
 						Access:    "'{{.user.domain}}' = 'rilldata.com'",
 						RowFilter: "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
-						Include: []*runtimev1.MetricsView_Security_FieldCondition{
+						Include: []*runtimev1.MetricsViewSpec_SecurityV2_FieldConditionV2{
 							{
 								Names:     []string{"col1"},
 								Condition: "'{{.user.domain}}' = 'test.com'",
@@ -185,12 +180,11 @@ func TestResolveMetricsView(t *testing.T) {
 					"groups": []interface{}{"all"},
 					"admin":  true,
 				},
-				mv: &runtimev1.MetricsView{
-					Name: "test",
-					Security: &runtimev1.MetricsView_Security{
+				mv: &runtimev1.MetricsViewSpec{
+					Security: &runtimev1.MetricsViewSpec_SecurityV2{
 						Access:    "'{{.user.domain}}' = 'rilldata.com'",
 						RowFilter: "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
-						Include: []*runtimev1.MetricsView_Security_FieldCondition{
+						Include: []*runtimev1.MetricsViewSpec_SecurityV2_FieldConditionV2{
 							{
 								Names:     []string{"col1", "col2"},
 								Condition: "'{{.user.domain}}' = 'test.com'",
@@ -226,12 +220,11 @@ func TestResolveMetricsView(t *testing.T) {
 					"groups": []interface{}{"all"},
 					"admin":  true,
 				},
-				mv: &runtimev1.MetricsView{
-					Name: "test_include_empty_condition",
-					Security: &runtimev1.MetricsView_Security{
+				mv: &runtimev1.MetricsViewSpec{
+					Security: &runtimev1.MetricsViewSpec_SecurityV2{
 						Access:    "'{{.user.domain}}' = 'rilldata.com'",
 						RowFilter: "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
-						Include: []*runtimev1.MetricsView_Security_FieldCondition{
+						Include: []*runtimev1.MetricsViewSpec_SecurityV2_FieldConditionV2{
 							{
 								Names:     []string{"col1"},
 								Condition: "",
@@ -264,13 +257,12 @@ func TestResolveMetricsView(t *testing.T) {
 					"groups": []interface{}{"all"},
 					"admin":  true,
 				},
-				mv: &runtimev1.MetricsView{
-					Name: "test",
-					Security: &runtimev1.MetricsView_Security{
+				mv: &runtimev1.MetricsViewSpec{
+					Security: &runtimev1.MetricsViewSpec_SecurityV2{
 						Access:    "'{{.user.domain}}' = 'rilldata.com'",
 						RowFilter: "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
 						Include:   nil,
-						Exclude: []*runtimev1.MetricsView_Security_FieldCondition{
+						Exclude: []*runtimev1.MetricsViewSpec_SecurityV2_FieldConditionV2{
 							{
 								Names:     []string{"col1"},
 								Condition: "'{{.user.domain}}' = 'test.com'",
@@ -301,13 +293,12 @@ func TestResolveMetricsView(t *testing.T) {
 					"groups": []interface{}{"all"},
 					"admin":  true,
 				},
-				mv: &runtimev1.MetricsView{
-					Name: "test",
-					Security: &runtimev1.MetricsView_Security{
+				mv: &runtimev1.MetricsViewSpec{
+					Security: &runtimev1.MetricsViewSpec_SecurityV2{
 						Access:    "'{{.user.domain}}' = 'rilldata.com'",
 						RowFilter: "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
 						Include:   nil,
-						Exclude: []*runtimev1.MetricsView_Security_FieldCondition{
+						Exclude: []*runtimev1.MetricsViewSpec_SecurityV2_FieldConditionV2{
 							{
 								Names:     []string{"col1", "col2"},
 								Condition: "'{{.user.domain}}' = 'test.com'",
@@ -338,9 +329,8 @@ func TestResolveMetricsView(t *testing.T) {
 					"groups": []interface{}{"all"},
 					"admin":  true,
 				},
-				mv: &runtimev1.MetricsView{
-					Name:     "test_empty_Security",
-					Security: &runtimev1.MetricsView_Security{},
+				mv: &runtimev1.MetricsViewSpec{
+					Security: &runtimev1.MetricsViewSpec_SecurityV2{},
 				},
 			},
 			want: &ResolvedMetricsViewSecurity{
@@ -361,8 +351,7 @@ func TestResolveMetricsView(t *testing.T) {
 					"groups": []interface{}{"all"},
 					"admin":  true,
 				},
-				mv: &runtimev1.MetricsView{
-					Name:     "test_nil_Security",
+				mv: &runtimev1.MetricsViewSpec{
 					Security: nil,
 				},
 			},
@@ -373,9 +362,8 @@ func TestResolveMetricsView(t *testing.T) {
 			name: "test_empty_user_attr",
 			args: args{
 				attr: nil,
-				mv: &runtimev1.MetricsView{
-					Name: "test",
-					Security: &runtimev1.MetricsView_Security{
+				mv: &runtimev1.MetricsViewSpec{
+					Security: &runtimev1.MetricsViewSpec_SecurityV2{
 						Access:    "'{{.user.domain}}' = 'rilldata.com'",
 						RowFilter: "WHERE domain = '{{.user.domain}}'",
 						Include:   nil,
@@ -402,9 +390,8 @@ func TestResolveMetricsView(t *testing.T) {
 					"groups": []interface{}{"all"},
 					"admin":  true,
 				},
-				mv: &runtimev1.MetricsView{
-					Name: "test_empty_access",
-					Security: &runtimev1.MetricsView_Security{
+				mv: &runtimev1.MetricsViewSpec{
+					Security: &runtimev1.MetricsViewSpec_SecurityV2{
 						RowFilter: "WHERE domain = '{{.user.domain}}'",
 						Include:   nil,
 						Exclude:   nil,
@@ -429,9 +416,8 @@ func TestResolveMetricsView(t *testing.T) {
 					"groups": []interface{}{"test"},
 					"admin":  true,
 				},
-				mv: &runtimev1.MetricsView{
-					Name: "test",
-					Security: &runtimev1.MetricsView_Security{
+				mv: &runtimev1.MetricsViewSpec{
+					Security: &runtimev1.MetricsViewSpec_SecurityV2{
 						Access:    "'{{.user.domain}}' = 'rilldata.com' OR '{{.user.domain}}' = 'gmail.com'",
 						RowFilter: "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
 						Include:   nil,
@@ -457,9 +443,8 @@ func TestResolveMetricsView(t *testing.T) {
 					"groups": []interface{}{"test"},
 					"admin":  true,
 				},
-				mv: &runtimev1.MetricsView{
-					Name: "test",
-					Security: &runtimev1.MetricsView_Security{
+				mv: &runtimev1.MetricsViewSpec{
+					Security: &runtimev1.MetricsViewSpec_SecurityV2{
 						Access:    "('{{.user.domain}}' = 'rilldata.com' OR '{{.user.domain}}' = 'gmail.com') AND {{.user.admin}}",
 						RowFilter: "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
 						Include:   nil,

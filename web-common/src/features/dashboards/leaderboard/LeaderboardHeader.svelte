@@ -65,15 +65,16 @@
     "
     style="max-width: calc(100% - 22px);"
     style:flex="1"
-    style:grid-template-columns="auto max-content"
+    style:grid-template-columns="1fr max-content"
     style:height="32px"
   >
-    <div>
+    <div style:width="100%">
       <Tooltip distance={16} location="top">
         <button
           on:click={() => dispatch("open-dimension-details")}
-          class="pl-2 truncate"
+          class="pl-2 truncate flex justify-start"
           style="max-width: calc(315px - 60px);"
+          style:width="100%"
           aria-label="Open dimension details"
         >
           {displayName}

@@ -23,6 +23,20 @@ func instanceWith2RowsModel(t *testing.T) (*runtime.Runtime, string) {
 	return rt, instanceID
 }
 
+func instanceWith1RowModel(t *testing.T) (*runtime.Runtime, string) {
+	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `
+		SELECT 1.0 AS clicks, TIMESTAMP '2023-10-03 00:00:00' AS time, DATE '2019-01-01' as day, 'android' AS device, 'Google' AS publisher, 'google.com' AS domain
+	`)
+	return rt, instanceID
+}
+
+func instanceWith1RowModelWithTime(t *testing.T, tm string) (*runtime.Runtime, string) {
+	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `
+		SELECT 1.0 AS clicks, TIMESTAMP '`+tm+`' AS time, DATE '2019-01-01' as day, 'android' AS device, 'Google' AS publisher, 'google.com' AS domain
+	`)
+	return rt, instanceID
+}
+
 func instanceWithSparkModel(t *testing.T) (*runtime.Runtime, string) {
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `
 		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-01T00:00:00Z' AS time, 'android' AS device
@@ -195,6 +209,134 @@ func TestTimeseries_Key(t *testing.T) {
 	assert.NotEmpty(t, k2)
 
 	assert.NotEqual(t, k1, k2)
+}
+
+func TestTimeseries_FirstDayOfWeek_Monday(t *testing.T) {
+	rt, instanceID := instanceWith1RowModel(t)
+
+	q := &ColumnTimeseries{
+		TableName:           "test",
+		TimestampColumnName: "time",
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_WEEK,
+		},
+		FirstDayOfWeek: 1,
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.Equal(t, parseTime(t, "2023-10-02T00:00:00.000Z").AsTime(), q.Result.Results[0].Ts.AsTime())
+}
+
+func TestTimeseries_FirstDayOfWeek_Sunday(t *testing.T) {
+	rt, instanceID := instanceWith1RowModel(t)
+
+	q := &ColumnTimeseries{
+		TableName:           "test",
+		TimestampColumnName: "time",
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_WEEK,
+		},
+		FirstDayOfWeek: 7,
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.Equal(t, parseTime(t, "2023-10-01T00:00:00.000Z").AsTime(), q.Result.Results[0].Ts.AsTime())
+}
+
+func TestTimeseries_FirstDayOfWeek_Sunday_OnSunday(t *testing.T) {
+	rt, instanceID := instanceWith1RowModelWithTime(t, "2023-10-01 00:00:00")
+
+	q := &ColumnTimeseries{
+		TableName:           "test",
+		TimestampColumnName: "time",
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_WEEK,
+		},
+		FirstDayOfWeek: 7,
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.Equal(t, parseTime(t, "2023-10-01T00:00:00.000Z").AsTime(), q.Result.Results[0].Ts.AsTime())
+}
+
+func TestTimeseries_FirstDayOfWeek_Saturday(t *testing.T) {
+	rt, instanceID := instanceWith1RowModel(t)
+
+	q := &ColumnTimeseries{
+		TableName:           "test",
+		TimestampColumnName: "time",
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_WEEK,
+		},
+		FirstDayOfWeek: 6,
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.Equal(t, parseTime(t, "2023-09-30T00:00:00.000Z").AsTime(), q.Result.Results[0].Ts.AsTime())
+}
+
+func TestTimeseries_FirstMonthOfYear_January(t *testing.T) {
+	rt, instanceID := instanceWith1RowModel(t)
+
+	q := &ColumnTimeseries{
+		TableName:           "test",
+		TimestampColumnName: "time",
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+		},
+		FirstMonthOfYear: 1,
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.Equal(t, parseTime(t, "2023-01-01T00:00:00.000Z").AsTime(), q.Result.Results[0].Ts.AsTime())
+}
+
+func TestTimeseries_FirstMonthOfYear_March(t *testing.T) {
+	rt, instanceID := instanceWith1RowModel(t)
+
+	q := &ColumnTimeseries{
+		TableName:           "test",
+		TimestampColumnName: "time",
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+		},
+		FirstMonthOfYear: 3,
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.Equal(t, parseTime(t, "2023-03-01T00:00:00.000Z").AsTime(), q.Result.Results[0].Ts.AsTime())
+}
+
+func TestTimeseries_FirstMonthOfYear_December(t *testing.T) {
+	rt, instanceID := instanceWith1RowModel(t)
+
+	q := &ColumnTimeseries{
+		TableName:           "test",
+		TimestampColumnName: "time",
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+		},
+		FirstMonthOfYear: 12,
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.Equal(t, parseTime(t, "2022-12-01T00:00:00.000Z").AsTime(), q.Result.Results[0].Ts.AsTime())
+}
+
+func TestTimeseries_FirstMonthOfYear_December_InDecember(t *testing.T) {
+	rt, instanceID := instanceWith1RowModelWithTime(t, "2023-12-04 00:00:00")
+
+	q := &ColumnTimeseries{
+		TableName:           "test",
+		TimestampColumnName: "time",
+		TimeRange: &runtimev1.TimeSeriesTimeRange{
+			Interval: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+		},
+		FirstMonthOfYear: 12,
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.Equal(t, parseTime(t, "2023-12-01T00:00:00.000Z").AsTime(), q.Result.Results[0].Ts.AsTime())
 }
 
 func parseTime(tst *testing.T, t string) *timestamppb.Timestamp {

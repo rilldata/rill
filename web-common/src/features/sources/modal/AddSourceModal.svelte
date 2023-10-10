@@ -160,7 +160,8 @@
       <div>
         Don't see what you're looking for? <button
           on:click={goToRequestConnector}
-          class="text-blue-500">Request a new connector</button
+          class="text-blue-500 hover:text-blue-600 font-medium"
+          >Request a new connector</button
         >
       </div>
     {:else if step === 2}

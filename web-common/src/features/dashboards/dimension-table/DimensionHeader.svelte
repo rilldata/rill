@@ -16,7 +16,7 @@
   import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
   import Spinner from "../../entity-management/Spinner.svelte";
-  import { metricsExplorerStore } from "../dashboard-stores";
+  import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import ExportDimensionTableDataButton from "./ExportDimensionTableDataButton.svelte";
   import { getStateManagers } from "../state-managers/state-managers";
   import { SortType } from "../proto-state/derived-types";

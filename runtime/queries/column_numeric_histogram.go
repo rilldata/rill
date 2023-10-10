@@ -26,8 +26,11 @@ func (q *ColumnNumericHistogram) Key() string {
 	return fmt.Sprintf("ColumnNumericHistogram:%s:%s:%s:%d", q.TableName, q.ColumnName, q.Method.String(), q.Threshold)
 }
 
-func (q *ColumnNumericHistogram) Deps() []string {
-	return []string{q.TableName}
+func (q *ColumnNumericHistogram) Deps() []*runtimev1.ResourceName {
+	return []*runtimev1.ResourceName{
+		{Kind: runtime.ResourceKindSource, Name: q.TableName},
+		{Kind: runtime.ResourceKindModel, Name: q.TableName},
+	}
 }
 
 func (q *ColumnNumericHistogram) MarshalResult() *runtime.QueryResult {

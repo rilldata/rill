@@ -1,14 +1,14 @@
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { writable, Writable, Readable, derived, get } from "svelte/store";
 import { getContext } from "svelte";
 import type { QueryClient } from "@tanstack/svelte-query";
 import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
-  MetricsExplorerEntity,
   MetricsExplorerStoreType,
   metricsExplorerStore,
   updateMetricsExplorerByName,
   useDashboardStore,
-} from "../dashboard-stores";
+} from "web-common/src/features/dashboards/stores/dashboard-stores";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
   createStateManagerSelectors,

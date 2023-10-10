@@ -1,0 +1,1 @@
+UPDATE deployments SET status=2 WHERE status in (3,4)

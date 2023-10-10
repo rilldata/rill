@@ -26,11 +26,6 @@ export enum DeploymentStatus {
   OK = 2,
 
   /**
-   * @generated from enum value: DEPLOYMENT_STATUS_RECONCILING = 3;
-   */
-  RECONCILING = 3,
-
-  /**
    * @generated from enum value: DEPLOYMENT_STATUS_ERROR = 4;
    */
   ERROR = 4,
@@ -40,7 +35,6 @@ proto3.util.setEnumType(DeploymentStatus, "rill.admin.v1.DeploymentStatus", [
   { no: 0, name: "DEPLOYMENT_STATUS_UNSPECIFIED" },
   { no: 1, name: "DEPLOYMENT_STATUS_PENDING" },
   { no: 2, name: "DEPLOYMENT_STATUS_OK" },
-  { no: 3, name: "DEPLOYMENT_STATUS_RECONCILING" },
   { no: 4, name: "DEPLOYMENT_STATUS_ERROR" },
 ]);
 
@@ -2715,8 +2709,6 @@ export class SetSuperuserResponse extends Message<SetSuperuserResponse> {
 }
 
 /**
- * SudoGetResourceRequest
- *
  * @generated from message rill.admin.v1.SudoGetResourceRequest
  */
 export class SudoGetResourceRequest extends Message<SudoGetResourceRequest> {
@@ -2788,8 +2780,6 @@ export class SudoGetResourceRequest extends Message<SudoGetResourceRequest> {
 }
 
 /**
- * SudoGetResourceResponse
- *
  * @generated from message rill.admin.v1.SudoGetResourceResponse
  */
 export class SudoGetResourceResponse extends Message<SudoGetResourceResponse> {
@@ -2861,8 +2851,6 @@ export class SudoGetResourceResponse extends Message<SudoGetResourceResponse> {
 }
 
 /**
- * SudoUpdateOrganizationQuotasRequest
- *
  * @generated from message rill.admin.v1.SudoUpdateOrganizationQuotasRequest
  */
 export class SudoUpdateOrganizationQuotasRequest extends Message<SudoUpdateOrganizationQuotasRequest> {
@@ -2930,8 +2918,6 @@ export class SudoUpdateOrganizationQuotasRequest extends Message<SudoUpdateOrgan
 }
 
 /**
- * SudoUpdateOrganizationQuotasResponse
- *
  * @generated from message rill.admin.v1.SudoUpdateOrganizationQuotasResponse
  */
 export class SudoUpdateOrganizationQuotasResponse extends Message<SudoUpdateOrganizationQuotasResponse> {
@@ -2969,8 +2955,6 @@ export class SudoUpdateOrganizationQuotasResponse extends Message<SudoUpdateOrga
 }
 
 /**
- * SudoUpdateUserQuotasRequest
- *
  * @generated from message rill.admin.v1.SudoUpdateUserQuotasRequest
  */
 export class SudoUpdateUserQuotasRequest extends Message<SudoUpdateUserQuotasRequest> {
@@ -3014,8 +2998,6 @@ export class SudoUpdateUserQuotasRequest extends Message<SudoUpdateUserQuotasReq
 }
 
 /**
- * SudoUpdateUserQuotasResponse
- *
  * @generated from message rill.admin.v1.SudoUpdateUserQuotasResponse
  */
 export class SudoUpdateUserQuotasResponse extends Message<SudoUpdateUserQuotasResponse> {
@@ -3655,8 +3637,6 @@ export class GetUserResponse extends Message<GetUserResponse> {
 }
 
 /**
- * Message containing user preferences
- *
  * @generated from message rill.admin.v1.UserPreferences
  */
 export class UserPreferences extends Message<UserPreferences> {
@@ -3694,8 +3674,6 @@ export class UserPreferences extends Message<UserPreferences> {
 }
 
 /**
- * Updating user preferences for the current user
- *
  * @generated from message rill.admin.v1.UpdateUserPreferencesRequest
  */
 export class UpdateUserPreferencesRequest extends Message<UpdateUserPreferencesRequest> {
@@ -4078,8 +4056,6 @@ export class RemoveBookmarkResponse extends Message<RemoveBookmarkResponse> {
 }
 
 /**
- * It can be some string as well so not validating for email here
- *
  * @generated from message rill.admin.v1.SearchUsersRequest
  */
 export class SearchUsersRequest extends Message<SearchUsersRequest> {
@@ -5453,9 +5429,9 @@ export class Deployment extends Message<Deployment> {
   status = DeploymentStatus.UNSPECIFIED;
 
   /**
-   * @generated from field: string logs = 8;
+   * @generated from field: string status_message = 8;
    */
-  logs = "";
+  statusMessage = "";
 
   /**
    * @generated from field: google.protobuf.Timestamp created_on = 9;
@@ -5482,7 +5458,7 @@ export class Deployment extends Message<Deployment> {
     { no: 5, name: "runtime_host", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "runtime_instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "status", kind: "enum", T: proto3.getEnumType(DeploymentStatus) },
-    { no: 8, name: "logs", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "status_message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "created_on", kind: "message", T: Timestamp },
     { no: 10, name: "updated_on", kind: "message", T: Timestamp },
   ]);

@@ -21,7 +21,10 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { SortDirection } from "../proto-state/derived-types";
-  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
+  import {
+    metricsExplorerStore,
+    useDashboardStore,
+  } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import type { FormatPreset } from "../humanize-numbers";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import {

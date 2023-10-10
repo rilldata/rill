@@ -22,18 +22,14 @@
   export let showDataIcon = false;
   export let name;
   export let type: string;
-  export let description: string;
+  export let description = "";
   export let header;
   export let position: HeaderPosition = "top";
   export let enableResize = true;
   // FIXME: pretty sure isSelected can be deprecated in favor of highlight
   export let isSelected = false;
-  export let bgClass = "";
-  export let highlight: boolean;
-  export let sorted: SortDirection;
-  // set this prop to control sorting arrow externally.
-  // if undefined, sorting arrow is toggled within the component.
-  export let sortAscending: boolean | undefined = undefined;
+  export let highlight = false;
+  export let sorted: SortDirection = undefined;
 
   const config: VirtualizedTableConfig = getContext("config");
   const dispatch = createEventDispatcher();
@@ -42,13 +38,8 @@
 
   let showMore = false;
 
-  // if sorting is controlled externally, use that prop value
-  // otherwise, default to true
-  $: isSortingDesc = sortAscending !== undefined ? !sortAscending : true;
-
   $: isDimensionTable = config.table === "DimensionTable";
   $: isDimensionColumn = isDimensionTable && type === "VARCHAR";
-  $: isDeltaColumn = isDimensionTable && typeof name !== "string";
 
   $: textAlignment = isDimensionColumn ? "text-left pl-1" : "text-right pr-1";
 
@@ -59,7 +50,7 @@
 
 <StickyHeader
   {enableResize}
-  {bgClass}
+  bgClass={highlight ? `bg-gray-50` : ""}
   on:reset-column-width={() => {
     dispatch("reset-column-size", { name });
   }}
@@ -78,13 +69,6 @@
     showMore = false;
   }}
   on:click={() => {
-    // only toggle `isSortingDesc` within the component if
-    // sorting is not controlled externally
-    // FIXME is this actually used anywhere?
-    if (sortAscending === undefined) {
-      if (isSelected) isSortingDesc = !isSortingDesc;
-      else isSortingDesc = true;
-    }
     dispatch("click-column");
   }}
 >
@@ -152,7 +136,7 @@
           </TooltipDescription>
         {/if}
         <TooltipShortcutContainer>
-          {#if !isDeltaColumn && isDimensionTable}
+          {#if isDimensionTable}
             <div>Sort column</div>
             <Shortcut>Click</Shortcut>
           {/if}
