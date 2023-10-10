@@ -36,7 +36,6 @@ export function useResource<T = V1Resource>(
           (selector ? selector(data?.resource) : data?.resource) as T,
         enabled: !!instanceId && !!name && !!kind,
         queryClient,
-        retry: 2,
       },
     }
   );
