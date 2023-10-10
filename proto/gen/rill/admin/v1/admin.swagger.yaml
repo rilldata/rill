@@ -1607,7 +1607,7 @@ definitions:
         type: string
       status:
         $ref: '#/definitions/v1DeploymentStatus'
-      logs:
+      statusMessage:
         type: string
       createdOn:
         type: string
@@ -1621,7 +1621,6 @@ definitions:
       - DEPLOYMENT_STATUS_UNSPECIFIED
       - DEPLOYMENT_STATUS_PENDING
       - DEPLOYMENT_STATUS_OK
-      - DEPLOYMENT_STATUS_RECONCILING
       - DEPLOYMENT_STATUS_ERROR
     default: DEPLOYMENT_STATUS_UNSPECIFIED
   v1GetBookmarkResponse:
@@ -2060,7 +2059,6 @@ definitions:
         $ref: '#/definitions/v1Deployment'
       instance:
         $ref: '#/definitions/v1Deployment'
-    title: SudoGetResourceResponse
   v1SudoUpdateOrganizationQuotasRequest:
     type: object
     properties:
@@ -2081,13 +2079,11 @@ definitions:
       outstandingInvites:
         type: integer
         format: int64
-    title: SudoUpdateOrganizationQuotasRequest
   v1SudoUpdateOrganizationQuotasResponse:
     type: object
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
-    title: SudoUpdateOrganizationQuotasResponse
   v1SudoUpdateUserQuotasRequest:
     type: object
     properties:
@@ -2096,13 +2092,11 @@ definitions:
       singleuserOrgs:
         type: integer
         format: int64
-    title: SudoUpdateUserQuotasRequest
   v1SudoUpdateUserQuotasResponse:
     type: object
     properties:
       user:
         $ref: '#/definitions/v1User'
-    title: SudoUpdateUserQuotasResponse
   v1TriggerReconcileResponse:
     type: object
   v1TriggerRedeployRequest:
@@ -2148,7 +2142,6 @@ definitions:
     properties:
       preferences:
         $ref: '#/definitions/v1UserPreferences'
-    title: Updating user preferences for the current user
   v1UpdateUserPreferencesResponse:
     type: object
     properties:
@@ -2187,7 +2180,6 @@ definitions:
     properties:
       timeZone:
         type: string
-    title: Message containing user preferences
   v1UserQuotas:
     type: object
     properties:

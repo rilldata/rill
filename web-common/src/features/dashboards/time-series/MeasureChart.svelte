@@ -28,7 +28,7 @@
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import MeasureScrub from "./MeasureScrub.svelte";
   import ChartBody from "./ChartBody.svelte";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import DimensionValueMouseover from "@rilldata/web-common/features/dashboards/time-series/DimensionValueMouseover.svelte";
 
   export let metricViewName: string;
@@ -219,17 +219,17 @@
     <Grid />
     <Body>
       <ChartBody
-        {xMin}
-        {xMax}
-        {yExtentMax}
-        {showComparison}
-        isHovering={mouseoverValue?.x}
         {data}
         {dimensionData}
-        {xAccessor}
-        {yAccessor}
-        {scrubStart}
+        isHovering={mouseoverValue?.x}
         {scrubEnd}
+        {scrubStart}
+        {showComparison}
+        {xAccessor}
+        {xMax}
+        {xMin}
+        {yAccessor}
+        {yExtentMax}
       />
       <line
         class="stroke-blue-200"

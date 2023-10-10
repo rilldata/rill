@@ -164,6 +164,11 @@ export class ResourceMeta extends Message<ResourceMeta> {
   filePaths: string[] = [];
 
   /**
+   * @generated from field: bool hidden = 7;
+   */
+  hidden = false;
+
+  /**
    * @generated from field: int64 version = 15;
    */
   version = protoInt64.zero;
@@ -230,6 +235,7 @@ export class ResourceMeta extends Message<ResourceMeta> {
     { no: 2, name: "refs", kind: "message", T: ResourceName, repeated: true },
     { no: 3, name: "owner", kind: "message", T: ResourceName, opt: true },
     { no: 4, name: "file_paths", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 7, name: "hidden", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 15, name: "version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 5, name: "spec_version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 6, name: "state_version", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
@@ -350,48 +356,6 @@ export class ProjectParser extends Message<ProjectParser> {
  * @generated from message rill.runtime.v1.ProjectParserSpec
  */
 export class ProjectParserSpec extends Message<ProjectParserSpec> {
-  /**
-   * compiler identifies the project parser to use
-   *
-   * @generated from field: string compiler = 1;
-   */
-  compiler = "";
-
-  /**
-   * watch makes the project parser watch for and incrementally parse changed files
-   *
-   * @generated from field: bool watch = 2;
-   */
-  watch = false;
-
-  /**
-   * stage_changes sets stage_changes on created sources and models 
-   *
-   * @generated from field: bool stage_changes = 3;
-   */
-  stageChanges = false;
-
-  /**
-   * stream_source_ingestion
-   *
-   * @generated from field: bool source_stream_ingestion = 4;
-   */
-  sourceStreamIngestion = false;
-
-  /**
-   * model_default_materialize sets a default for whether or not to materialize a model, if not explicitly set in the model
-   *
-   * @generated from field: bool model_default_materialize = 5;
-   */
-  modelDefaultMaterialize = false;
-
-  /**
-   * materialize_model_delay_seconds makes the project parser delay materialization of updated models
-   *
-   * @generated from field: uint32 model_materialize_delay_seconds = 6;
-   */
-  modelMaterializeDelaySeconds = 0;
-
   constructor(data?: PartialMessage<ProjectParserSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -400,12 +364,6 @@ export class ProjectParserSpec extends Message<ProjectParserSpec> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.ProjectParserSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "compiler", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "watch", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 3, name: "stage_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 4, name: "source_stream_ingestion", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 5, name: "model_default_materialize", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 6, name: "model_materialize_delay_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectParserSpec {
@@ -440,9 +398,9 @@ export class ProjectParserState extends Message<ProjectParserState> {
   currentCommitSha = "";
 
   /**
-   * @generated from field: repeated string changed_paths = 3;
+   * @generated from field: bool watching = 3;
    */
-  changedPaths: string[] = [];
+  watching = false;
 
   constructor(data?: PartialMessage<ProjectParserState>) {
     super();
@@ -454,7 +412,7 @@ export class ProjectParserState extends Message<ProjectParserState> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "parse_errors", kind: "message", T: ParseError, repeated: true },
     { no: 2, name: "current_commit_sha", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "changed_paths", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 3, name: "watching", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectParserState {
@@ -962,6 +920,16 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    */
   security?: MetricsViewSpec_SecurityV2;
 
+  /**
+   * @generated from field: uint32 first_day_of_week = 12;
+   */
+  firstDayOfWeek = 0;
+
+  /**
+   * @generated from field: uint32 first_month_of_year = 13;
+   */
+  firstMonthOfYear = 0;
+
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -981,6 +949,8 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 9, name: "default_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "available_time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "security", kind: "message", T: MetricsViewSpec_SecurityV2 },
+    { no: 12, name: "first_day_of_week", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 13, name: "first_month_of_year", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {
@@ -1876,6 +1846,11 @@ export class ParseError extends Message<ParseError> {
    */
   startLocation?: CharLocation;
 
+  /**
+   * @generated from field: bool external = 4;
+   */
+  external = false;
+
   constructor(data?: PartialMessage<ParseError>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1887,6 +1862,7 @@ export class ParseError extends Message<ParseError> {
     { no: 1, name: "message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "file_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "start_location", kind: "message", T: CharLocation },
+    { no: 4, name: "external", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ParseError {

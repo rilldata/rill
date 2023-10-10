@@ -6,23 +6,24 @@
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
+  import {
+    getFileAPIPathFromNameAndType,
+    getFilePathFromNameAndType,
+  } from "@rilldata/web-common/features/entity-management/entity-mappers.js";
+  import { useSchemaForTable } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { waitForResource } from "@rilldata/web-common/features/entity-management/resource-status-utils";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { useModel } from "@rilldata/web-common/features/models/selectors";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import {
-    createRuntimeServiceGetCatalogEntry,
-    createRuntimeServicePutFileAndReconcile,
-    V1ReconcileResponse,
-  } from "@rilldata/web-common/runtime-client";
-  import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
+  import { createRuntimeServicePutFile } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { getName } from "../../entity-management/name-utils";
@@ -32,17 +33,23 @@
   export let hasError = false;
   export let collapse = false;
 
-  $: getModel = createRuntimeServiceGetCatalogEntry(
-    $runtime.instanceId,
-    modelName
-  );
-  $: model = $getModel.data?.entry?.model;
-  $: dashboardNames = useDashboardNames($runtime.instanceId);
-
   const queryClient = useQueryClient();
-  const createFileMutation = createRuntimeServicePutFileAndReconcile();
+
+  $: modelQuery = useModel($runtime.instanceId, modelName);
+  $: dashboardNames = useDashboardFileNames($runtime.instanceId);
+
+  $: modelSchema = useSchemaForTable(
+    $runtime.instanceId,
+    $modelQuery.data?.model
+  );
+
+  const createFileMutation = createRuntimeServicePutFile();
 
   async function handleCreateDashboard() {
+    if (!$modelQuery.data?.model) {
+      return;
+    }
+
     overlay.set({
       title: "Creating a dashboard for " + modelName,
     });
@@ -50,28 +57,36 @@
       `${modelName}_dashboard`,
       $dashboardNames.data
     );
+    await waitUntil(() => !!$modelSchema.data?.schema);
     const dashboardYAML = generateDashboardYAMLForModel(
-      model,
+      modelName,
+      $modelSchema.data?.schema,
       newDashboardName
     );
 
     $createFileMutation.mutate(
       {
+        instanceId: $runtime.instanceId,
+        path: getFileAPIPathFromNameAndType(
+          newDashboardName,
+          EntityType.MetricsDefinition
+        ),
         data: {
-          instanceId: $runtime.instanceId,
-          path: getFilePathFromNameAndType(
-            newDashboardName,
-            EntityType.MetricsDefinition
-          ),
           blob: dashboardYAML,
           create: true,
           createOnly: true,
-          strict: false,
         },
       },
       {
-        onSuccess: (resp: V1ReconcileResponse) => {
-          fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
+        onSuccess: async () => {
+          await waitForResource(
+            queryClient,
+            $runtime.instanceId,
+            getFilePathFromNameAndType(
+              newDashboardName,
+              EntityType.MetricsDefinition
+            )
+          );
           goto(`/dashboard/${newDashboardName}`);
           behaviourEvent.fireNavigationEvent(
             newDashboardName,
@@ -79,11 +94,6 @@
             MetricsEventSpace.RightPanel,
             MetricsEventScreenName.Model,
             MetricsEventScreenName.Dashboard
-          );
-          return invalidateAfterReconcile(
-            queryClient,
-            $runtime.instanceId,
-            resp
           );
         },
         onError: (err) => {

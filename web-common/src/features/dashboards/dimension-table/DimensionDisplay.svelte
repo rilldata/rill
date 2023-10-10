@@ -21,8 +21,13 @@
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
+
   import { SortDirection, SortType } from "../proto-state/derived-types";
-  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
+  import {
+    metricsExplorerStore,
+    useDashboardStore,
+  } from "web-common/src/features/dashboards/stores/dashboard-stores";
+
   import {
     getDimensionFilterWithSearch,
     prepareDimensionTableRows,

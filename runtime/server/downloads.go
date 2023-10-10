@@ -294,6 +294,9 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// downloadTokenTTL determines how long a download token is valid.
+const downloadTokenTTL = 1 * time.Hour
+
 // downloadTokenEncoder is an in-memory symmetric cryptography encoder for download tokens.
 // TODO: Replace it with a stable environment-configured key. And multiple key versions for key rotation.
 var downloadTokenEncoder = symmetriccrypto.Must(symmetriccrypto.NewEphemeralEncoder(32))
@@ -302,6 +305,7 @@ var downloadTokenEncoder = symmetriccrypto.Must(symmetriccrypto.NewEphemeralEnco
 type downloadTokenJSON struct {
 	Request    []byte         `json:"req"`
 	Attributes map[string]any `json:"attrs"`
+	ExpiresOn  time.Time      `json:"exp"`
 }
 
 // generateDownloadToken generates and encrypts a download token for the given request and attributes.
@@ -314,6 +318,7 @@ func (s *Server) generateDownloadToken(req *runtimev1.ExportRequest, attrs map[s
 	tknJSON := downloadTokenJSON{
 		Request:    r,
 		Attributes: attrs,
+		ExpiresOn:  time.Now().Add(downloadTokenTTL),
 	}
 
 	data, err := json.Marshal(tknJSON)
@@ -345,6 +350,10 @@ func (s *Server) parseDownloadToken(tkn string) (*runtimev1.ExportRequest, map[s
 	err = json.Unmarshal(decrypted, &tknJSON)
 	if err != nil {
 		return nil, nil, err
+	}
+
+	if tknJSON.ExpiresOn.Before(time.Now()) {
+		return nil, nil, fmt.Errorf("download token expired")
 	}
 
 	req := &runtimev1.ExportRequest{}

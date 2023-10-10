@@ -119,7 +119,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 	}
 
 	if !permissions.ReadProdStatus {
-		depl.Logs = ""
+		depl.StatusMessage = ""
 	}
 
 	var attr map[string]any
@@ -436,7 +436,19 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to update project variables")
 	}
 
-	proj, err = s.admin.UpdateProjectVariables(ctx, proj, req.Variables)
+	proj, err = s.admin.UpdateProject(ctx, proj, &database.UpdateProjectOptions{
+		Name:                 proj.Name,
+		Description:          proj.Description,
+		Public:               proj.Public,
+		GithubURL:            proj.GithubURL,
+		GithubInstallationID: proj.GithubInstallationID,
+		ProdBranch:           proj.ProdBranch,
+		ProdVariables:        req.Variables,
+		ProdDeploymentID:     proj.ProdDeploymentID,
+		ProdSlots:            proj.ProdSlots,
+		ProdTTLSeconds:       proj.ProdTTLSeconds,
+		Region:               proj.Region,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "variables updated failed with error %s", err.Error())
 	}
@@ -798,8 +810,6 @@ func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
 		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_PENDING
 	case database.DeploymentStatusOK:
 		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK
-	case database.DeploymentStatusReconciling:
-		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_RECONCILING
 	case database.DeploymentStatusError:
 		s = adminv1.DeploymentStatus_DEPLOYMENT_STATUS_ERROR
 	default:
@@ -814,7 +824,7 @@ func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
 		RuntimeHost:       d.RuntimeHost,
 		RuntimeInstanceId: d.RuntimeInstanceID,
 		Status:            s,
-		Logs:              d.Logs,
+		StatusMessage:     d.StatusMessage,
 		CreatedOn:         timestamppb.New(d.CreatedOn),
 		UpdatedOn:         timestamppb.New(d.UpdatedOn),
 	}

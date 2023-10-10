@@ -4,7 +4,6 @@
   export let isNull = false;
   export let inTable = false;
   export let dark = false;
-  export let type;
   export let value;
 </script>
 

@@ -3,6 +3,8 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -11,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
+	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -47,6 +50,12 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+
+	slices.SortFunc(rs, func(a, b *runtimev1.Resource) bool {
+		an := a.Meta.Name
+		bn := b.Meta.Name
+		return an.Kind < bn.Kind || (an.Kind == bn.Kind && an.Name < bn.Name)
+	})
 
 	for i := 0; i < len(rs); i++ {
 		r := rs[i]
@@ -168,7 +177,43 @@ func (s *Server) GetResource(ctx context.Context, req *runtimev1.GetResourceRequ
 
 // CreateTrigger implements runtimev1.RuntimeServiceServer
 func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTriggerRequest) (*runtimev1.CreateTriggerResponse, error) {
-	panic("not implemented")
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+	)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.EditInstance) {
+		return nil, ErrForbidden
+	}
+
+	ctrl, err := s.runtime.Controller(req.InstanceId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	var kind string
+	r := &runtimev1.Resource{}
+
+	switch trg := req.Trigger.(type) {
+	case *runtimev1.CreateTriggerRequest_PullTriggerSpec:
+		kind = runtime.ResourceKindPullTrigger
+		r.Resource = &runtimev1.Resource_PullTrigger{PullTrigger: &runtimev1.PullTrigger{Spec: trg.PullTriggerSpec}}
+	case *runtimev1.CreateTriggerRequest_RefreshTriggerSpec:
+		kind = runtime.ResourceKindRefreshTrigger
+		r.Resource = &runtimev1.Resource_RefreshTrigger{RefreshTrigger: &runtimev1.RefreshTrigger{Spec: trg.RefreshTriggerSpec}}
+	}
+
+	n := &runtimev1.ResourceName{
+		Kind: kind,
+		Name: fmt.Sprintf("trigger_adhoc_%s", time.Now().Format("200601021504059999")),
+	}
+
+	err = ctrl.Create(ctx, n, nil, nil, nil, true, r)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, fmt.Errorf("failed to create trigger: %w", err).Error())
+	}
+
+	return &runtimev1.CreateTriggerResponse{}, nil
 }
 
 // applySecurityPolicy applies relevant security policies to the resource.
@@ -180,7 +225,7 @@ func (s *Server) applySecurityPolicy(ctx context.Context, instID string, r *runt
 		return r, true, nil
 	}
 
-	security, err := s.runtime.ResolveMetricsViewSecurityV2(auth.GetClaims(ctx).Attributes(), instID, mv.State.ValidSpec, r.Meta.StateUpdatedOn.AsTime())
+	security, err := s.runtime.ResolveMetricsViewSecurity(auth.GetClaims(ctx).Attributes(), instID, mv.State.ValidSpec, r.Meta.StateUpdatedOn.AsTime())
 	if err != nil {
 		return nil, false, err
 	}
