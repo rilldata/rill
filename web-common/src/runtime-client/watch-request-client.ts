@@ -1,3 +1,5 @@
+import { page } from "$app/stores";
+import { pageInFocus } from "@rilldata/web-common/lib/viewport-utils";
 import { ExponentialBackoffTracker } from "@rilldata/web-common/runtime-client/exponential-backoff-tracker";
 import type {
   V1WatchFilesResponse,
@@ -7,7 +9,7 @@ import type {
 import { streamingFetchWrapper } from "@rilldata/web-common/runtime-client/fetch-streaming-wrapper";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { get, Unsubscriber } from "svelte/store";
+import { derived, get, Unsubscriber } from "svelte/store";
 
 type WatchResponse =
   | V1WatchFilesResponse
@@ -33,12 +35,19 @@ export class WatchRequestClient<Res extends WatchResponse> {
   ) {}
 
   public start(): Unsubscriber {
-    const unsubscribe = runtime.subscribe((runtimeState) => {
-      if (
-        !runtimeState ||
-        (runtimeState.instanceId === this.prevInstanceId &&
-          runtimeState.host === this.prevHost)
-      ) {
+    const store = derived([runtime, pageInFocus], (state) => state);
+    const unsubscribe = store.subscribe(([runtimeState, pageInFocus]) => {
+      const runtimeUnchanged =
+        runtimeState.instanceId === this.prevInstanceId &&
+        runtimeState.host === this.prevHost;
+
+      if (!runtimeState || runtimeUnchanged || !pageInFocus) {
+        if (!pageInFocus) {
+          // cancel the watcher if page is not in focus
+          // TODO: throttling?
+          this.prevInstanceId = this.prevHost = undefined;
+          this.controller?.abort();
+        }
         return;
       }
       this.prevInstanceId = runtimeState.instanceId;
