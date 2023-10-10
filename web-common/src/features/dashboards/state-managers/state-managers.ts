@@ -11,23 +11,31 @@ import {
 } from "web-common/src/features/dashboards/stores/dashboard-stores";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
-  createStateManagerSelectors,
-  type StateManagerSelectors,
+  StateManagerReadables,
+  createStateManagerReadables,
 } from "./selectors";
 import { createStateManagerActions, type StateManagerActions } from "./actions";
 
 /**
- * A MetricsExplorerMutatorFn is a function that mutates
+ * A DashboardMutatorCallback is a function that mutates
  * a MetricsExplorerEntity, i.e., the data single dashboard.
  * This will often be a closure over other parameters
  * that are relevant to the mutation.
  */
-export type MetricsExplorerMutatorFn = (
+export type DashboardMutatorCallback = (
   metricsExplorer: MetricsExplorerEntity
 ) => void;
 
-export type UpdateDashboard2ndOrderCallback = (
-  callback: MetricsExplorerMutatorFn
+/**
+ * DashboardCallbackExecutor is a function that takes a
+ * DashboardMutatorCallback and executes it. The
+ * DashboardCallbackExecutor is a closure containing a reference
+ * to the live dashboard, and therefore calling this function
+ * on a DashboardMutatorCallback will
+ * actually update the dashboard.
+ */
+export type DashboardCallbackExecutor = (
+  callback: DashboardMutatorCallback
 ) => void;
 
 export type StateManagers = {
@@ -37,11 +45,11 @@ export type StateManagers = {
   dashboardStore: Readable<MetricsExplorerEntity>;
   queryClient: QueryClient;
   setMetricsViewName: (s: string) => void;
-  updateDashboard: UpdateDashboard2ndOrderCallback;
+  updateDashboard: DashboardCallbackExecutor;
   /**
    * A collection of Readables that can be used to select data from the dashboard.
    */
-  selectors: StateManagerSelectors;
+  selectors: StateManagerReadables;
   /**
    * A collection of functions that update the dashboard data model.
    */
@@ -88,7 +96,7 @@ export function createStateManagers({
       metricsViewNameStore.set(name);
     },
     updateDashboard,
-    selectors: createStateManagerSelectors(dashboardStore),
+    selectors: createStateManagerReadables(dashboardStore),
     actions: createStateManagerActions(updateDashboard),
   };
 }
