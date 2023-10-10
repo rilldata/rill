@@ -51,7 +51,7 @@
   {enableResize}
   bgClass={highlight ? `bg-gray-50` : ""}
   on:reset-column-width={() => {
-    dispatch("reset-column-size", { name });
+    dispatch("reset-column-width", { name });
   }}
   on:resize={(event) => {
     dispatch("resize-column", {

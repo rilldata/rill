@@ -273,7 +273,7 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
         {pinnedColumns}
         on:pin={handlePin}
         on:resize-column={handleResizeColumn}
-        on:reset-column-size={handleResetColumnSize}
+        on:reset-column-width={handleResetColumnSize}
       />
       <!-- RowHeader -->
       <RowHeaders virtualRowItems={virtualRows} totalHeight={virtualHeight} />
