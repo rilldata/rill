@@ -27,10 +27,12 @@ func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(
 	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
 	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
 
-	obj, err := rt.GetCatalogEntry(context.Background(), instanceID, "ad_bids_metrics")
+	ctrl, err := rt.Controller(instanceID)
 	require.NoError(t, err)
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
+	require.NoError(t, err)
+	mv := r.GetMetricsView()
 
-	mv := obj.GetMetricsView()
 	q := &MetricsViewComparisonToplist{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
