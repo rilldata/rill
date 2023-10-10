@@ -27,6 +27,7 @@ proto/
 *.parquet.gz
 .travis.yml
 .DS_Store
+.gitkeep
 buf.lock
 go.mod
 go.sum
@@ -41,6 +42,7 @@ Duckdb-Dockerfile
 README.md
 docs
 *.json
+*.yaml
 *.cjs
 _redirects
 Makefile
