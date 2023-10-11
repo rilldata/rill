@@ -2,7 +2,6 @@
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
   import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
-  import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../../runtime-client/runtime-store";
   import { useModel, useModelFileIsEmpty } from "../../selectors";
   import ModelInspectorHeader from "./ModelInspectorHeader.svelte";

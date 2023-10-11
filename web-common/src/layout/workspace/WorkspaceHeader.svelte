@@ -13,7 +13,6 @@
   import type { Writable } from "svelte/store";
   import SourceUnsavedIndicator from "../../features/sources/editor/SourceUnsavedIndicator.svelte";
   import type { LayoutElement } from "./types";
-  import WorkspaceHeaderStatusSpinner from "./WorkspaceHeaderStatusSpinner.svelte";
 
   export let onChangeCallback;
   export let titleInput;

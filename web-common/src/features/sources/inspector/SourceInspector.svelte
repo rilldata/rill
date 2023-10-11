@@ -20,7 +20,6 @@
   import {
     createQueryServiceTableCardinality,
     createQueryServiceTableColumns,
-    V1ReconcileStatus,
     V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
   import type { Readable } from "svelte/store";

@@ -6,10 +6,7 @@
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import HorizontalSplitter from "../../../layout/workspace/HorizontalSplitter.svelte";
-  import {
-    createRuntimeServiceGetFile,
-    V1ReconcileStatus,
-  } from "../../../runtime-client";
+  import { createRuntimeServiceGetFile } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
   import { EntityType } from "../../entity-management/types";

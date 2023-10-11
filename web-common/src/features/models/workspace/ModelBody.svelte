@@ -14,7 +14,6 @@
     createQueryServiceTableRows,
     createRuntimeServiceGetFile,
     createRuntimeServicePutFile,
-    V1ReconcileStatus,
   } from "@rilldata/web-common/runtime-client";
   import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
   import { useQueryClient } from "@tanstack/svelte-query";
