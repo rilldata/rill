@@ -122,26 +122,6 @@ func (p *Printer) PrintResource(v interface{}) error {
 	}
 
 	return fmt.Errorf("unknown printer.Format: %T", *p.format)
-
-}
-
-func (p *Printer) TablePrinter1(v interface{}) {
-	var out io.Writer = os.Stdout
-	if p.humanOut != nil {
-		out = p.humanOut
-	}
-
-	if p.format != nil && *p.format == JSON {
-		err := p.PrintJSON(v)
-		if err != nil {
-			fmt.Println(err)
-		}
-		return
-	}
-
-	var b strings.Builder
-	tableprinter.Print(&b, v)
-	fmt.Fprint(out, b.String())
 }
 
 func (p *Printer) PrintJSON(v interface{}) error {

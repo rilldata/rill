@@ -5,15 +5,11 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
-	"os"
 	"testing"
 	"time"
 
 	qt "github.com/frankban/quicktest"
 	"github.com/google/go-github/v50/github"
-	"github.com/joho/godotenv"
-	"github.com/kelseyhightower/envconfig"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/email"
@@ -41,7 +37,7 @@ func TestOrgCmd(t *testing.T) {
 	ctx := context.Background()
 	logger, _ := zap.NewDevelopment()
 
-	sender, err := email.NewConsoleSender(logger, "rakesh.sharma@rilldata.com", "")
+	sender, err := email.NewConsoleSender(logger, "rill-test@rilldata.io", "")
 	require.NoError(t, err)
 	emailClient := email.New(sender, "", "")
 
@@ -64,11 +60,6 @@ func TestOrgCmd(t *testing.T) {
 	}
 	defer adm.Close()
 
-	err = godotenv.Load("/Users/rakeshrilldata/Workspace/rill/.env")
-	if err != nil {
-		fmt.Println("Error loading .env file", err)
-	}
-
 	db := adm.DB
 	// create admin user
 	adminUser, err := db.InsertUser(ctx, &database.InsertUserOptions{
@@ -83,15 +74,18 @@ func TestOrgCmd(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, adminAuthToken)
 
-	// Init config
-	var conf admincli.Config
-	err = envconfig.Process("rill_admin", &conf)
-	if err != nil {
-		fmt.Printf("failed to load config: %s\n", err.Error())
-		os.Exit(1)
+	// Creating a dummy config
+	seesionKeyPairs := []string{"7938b8c95ac90b3731c353076daeae8a", "90c22a5a6c6b442afdb46855f95eb7d6"}
+	conf := &admincli.Config{
+		DatabaseURL:     pg.DatabaseURL,
+		HTTPPort:        8080,
+		GRPCPort:        9090,
+		ExternalURL:     "http://localhost:8080",
+		FrontendURL:     "http://localhost:3000",
+		SessionKeyPairs: seesionKeyPairs,
+		AuthDomain:      "gorillio-stage.auth0.com",
 	}
 
-	conf.DatabaseURL = pg.DatabaseURL
 	keyPairs := make([][]byte, len(conf.SessionKeyPairs))
 	for idx, keyHex := range conf.SessionKeyPairs {
 		key, err := hex.DecodeString(keyHex)
