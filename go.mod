@@ -45,7 +45,6 @@ require (
 	github.com/jackc/pgconn v1.14.0
 	github.com/jackc/pgx/v4 v4.17.2
 	github.com/jackc/pgx/v5 v5.4.3
-	github.com/jinzhu/copier v0.3.5
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
@@ -276,4 +275,4 @@ replace cloud.google.com/go/bigquery v1.53.0 => github.com/k-anshul/google-cloud
 
 exclude modernc.org/sqlite v1.18.1
 
-replace github.com/marcboeker/go-duckdb v1.4.1 => github.com/k-anshul/go-duckdb v0.0.0-20230928050328-7f7a8536c36b
+replace github.com/marcboeker/go-duckdb v1.4.1 => github.com/marcboeker/go-duckdb v1.4.5-0.20231008201308-f6f973f60771
